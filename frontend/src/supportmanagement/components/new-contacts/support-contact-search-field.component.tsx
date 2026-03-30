@@ -9,6 +9,7 @@ import { luhnCheck } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import { cx, FormControl, FormErrorMessage, FormLabel, Input, isArray, SearchField, Select } from '@sk-web-gui/react';
 import { SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
+import { ChangeEvent, Dispatch, FC, SetStateAction } from 'react';
 import { UseFieldArrayAppend, UseFormReturn } from 'react-hook-form';
 
 interface SupportSearchFieldProps {
@@ -18,20 +19,20 @@ interface SupportSearchFieldProps {
   notFound: boolean;
   setUnsaved: (unsaved: boolean) => void;
   id: string;
-  setSearchResultArray: React.Dispatch<React.SetStateAction<AddressResult[]>>;
-  setSelectedUser: React.Dispatch<React.SetStateAction<AddressResult | undefined>>;
-  setSearchResult: React.Dispatch<React.SetStateAction<boolean>>;
-  setQuery: React.Dispatch<React.SetStateAction<string>>;
+  setSearchResultArray: Dispatch<SetStateAction<AddressResult[]>>;
+  setSelectedUser: Dispatch<SetStateAction<AddressResult | undefined>>;
+  setSearchResult: Dispatch<SetStateAction<boolean>>;
+  setQuery: Dispatch<SetStateAction<string>>;
   query: string;
   searching: boolean;
   searchResultArray: AddressResult[];
-  setSearching: React.Dispatch<React.SetStateAction<boolean>>;
-  setNotFound: React.Dispatch<React.SetStateAction<boolean>>;
+  setSearching: Dispatch<SetStateAction<boolean>>;
+  setNotFound: Dispatch<SetStateAction<boolean>>;
   appendPhonenumber: UseFieldArrayAppend<SupportStakeholderFormModel, 'phoneNumbers'>;
   appendEmail: UseFieldArrayAppend<SupportStakeholderFormModel, 'emails'>;
 }
 
-export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
+export const SupportContactSearchField: FC<SupportSearchFieldProps> = ({
   searchMode,
   disabled,
   form,
@@ -130,7 +131,7 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
         });
   };
 
-  const onSelectUserHandler = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const onSelectUserHandler = (e: ChangeEvent<HTMLSelectElement>) => {
     const user = searchResultArray?.find((data) => `${data.firstName} ${data.lastName}` === e.target.value);
     setSelectedUser(user);
     setSearchResultArray([]);

@@ -1,10 +1,11 @@
 import { useAppContext } from '@contexts/app.context';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
-import { SupportMetadata, SupportType } from '@supportmanagement/services/support-metadata-service';
-import { useEffect, useState } from 'react';
-import { useFormContext } from 'react-hook-form';
-import { SupportManagementFilter } from '../supportmanagement-filtering.component';
+import { SupportType } from '@supportmanagement/services/support-metadata-service';
 import { ChevronDown } from 'lucide-react';
+import { FC, useEffect, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
+
+import { SupportManagementFilter } from '../supportmanagement-filtering.component';
 
 export interface TypeFilter {
   type: string[];
@@ -14,7 +15,7 @@ export const TypeValues: TypeFilter = {
   type: [],
 };
 
-export const SupportManagementFilterType: React.FC = () => {
+export const SupportManagementFilterType: FC = () => {
   const { watch, setValue } = useFormContext<SupportManagementFilter>();
   const categories = watch('category');
   const types = watch('type');

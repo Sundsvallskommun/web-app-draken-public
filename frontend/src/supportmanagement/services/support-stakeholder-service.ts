@@ -1,12 +1,13 @@
 import { Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import { Admin } from '@common/services/user-service';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
+
 import {
   ContactChannelType,
   SupportErrand,
   SupportStakeholderFormModel,
   SupportStakeholderTypeEnum,
 } from './support-errand-service';
-import { Admin } from '@common/services/user-service';
 
 export const getAdminName = (a: Admin) => {
   return a && a.firstName && a.lastName ? `${a.firstName} ${a.lastName} (${a.adAccount})` : ``;

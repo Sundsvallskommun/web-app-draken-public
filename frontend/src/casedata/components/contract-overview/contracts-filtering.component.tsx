@@ -1,10 +1,10 @@
-import { ContractType, Status } from '@casedata/interfaces/contracts';
+import { Status } from '@casedata/interfaces/contracts';
 import { contractTypes, leaseTypes } from '@casedata/services/contract-service';
-import { Button, Checkbox, cx, DatePicker, PopupMenu, SearchField } from '@sk-web-gui/react';
+import { Button, Checkbox, DatePicker, PopupMenu, SearchField } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
-import { useFormContext } from 'react-hook-form';
 import { ChevronDown } from 'lucide-react';
+import { FC, useEffect, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 export interface ContractFilter {
   query: string;
@@ -40,7 +40,7 @@ const leaseTypeOptions = leaseTypes.map((t) => ({
   value: t.key,
 }));
 
-export const ContractFilterStatusComponent: React.FC = () => {
+export const ContractFilterStatusComponent: FC = () => {
   const { register } = useFormContext<ContractFilter>();
 
   return (
@@ -75,7 +75,7 @@ export const ContractFilterStatusComponent: React.FC = () => {
   );
 };
 
-export const ContractFilterTypeComponent: React.FC = () => {
+export const ContractFilterTypeComponent: FC = () => {
   const { register } = useFormContext<ContractFilter>();
 
   return (
@@ -110,7 +110,7 @@ export const ContractFilterTypeComponent: React.FC = () => {
   );
 };
 
-export const ContractFilterLeaseTypeComponent: React.FC = () => {
+export const ContractFilterLeaseTypeComponent: FC = () => {
   const { register } = useFormContext<ContractFilter>();
 
   return (
@@ -145,7 +145,7 @@ export const ContractFilterLeaseTypeComponent: React.FC = () => {
   );
 };
 
-export const ContractFilterDatesComponent: React.FC = () => {
+export const ContractFilterDatesComponent: FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   const { setValue, watch } = useFormContext<ContractFilter>();
 
@@ -191,7 +191,7 @@ export const ContractFilterDatesComponent: React.FC = () => {
   );
 };
 
-export const ContractFilterQueryComponent: React.FC = () => {
+export const ContractFilterQueryComponent: FC = () => {
   const { watch, setValue } = useFormContext<ContractFilter>();
   const value = watch('query');
   const [query, setQuery] = useState<string>(value);
@@ -224,7 +224,7 @@ export const ContractFilterQueryComponent: React.FC = () => {
   );
 };
 
-export const ContractsFilteringComponent: React.FC = () => {
+export const ContractsFilteringComponent: FC = () => {
   return (
     <div className="flex flex-col w-full gap-16 py-19">
       <div className="w-full flex flex-col md:flex-row justify-start items-center p-10 gap-4 bg-background-200 rounded-groups flex-wrap">

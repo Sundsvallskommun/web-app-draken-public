@@ -12,17 +12,18 @@ import { getErrand } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@contexts/app.context';
 import { Button, Divider, useSnackbar } from '@sk-web-gui/react';
-import { useCallback, useEffect, useState } from 'react';
+import { Plus } from 'lucide-react';
+import { FC, useCallback, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
+
 import { AddBillingService } from './add-billing-service.component';
 import { BillingLeaseholder } from './billing-leaseholder.component';
 import { BillingServiceTable } from './billing-service-table.component';
 import { BillingSpecifications } from './billing-specifications.component';
 import { BillingTable } from './billing-table.component';
-import { Plus } from 'lucide-react';
 
-export const CaseDataBillingForm: React.FC = () => {
+export const CaseDataBillingForm: FC = () => {
   const { errand, municipalityId, user, setErrand } = useAppContext();
   const toastMessage = useSnackbar();
 

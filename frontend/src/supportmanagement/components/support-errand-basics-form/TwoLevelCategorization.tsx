@@ -8,10 +8,10 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportMetadata, SupportType } from '@supportmanagement/services/support-metadata-service';
 import { useTranslation } from 'next-i18next';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
-export const TwoLevelCategorization: React.FC = () => {
+export const TwoLevelCategorization: FC = () => {
   const { supportErrand, supportMetadata } = useAppContext();
   const formControls: UseFormReturn<SupportErrand> = useFormContext();
   const { getValues, setValue, trigger, register, watch, formState } = formControls;

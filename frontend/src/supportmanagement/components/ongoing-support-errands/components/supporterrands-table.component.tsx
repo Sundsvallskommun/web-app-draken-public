@@ -5,11 +5,12 @@ import { SortMode } from '@sk-web-gui/table';
 import { useSupportErrandTable } from '@supportmanagement/components/support-errand/useSupportErrandTable';
 import { Status, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { globalAcknowledgeSupportNotification } from '@supportmanagement/services/support-notification-service';
-import { useState } from 'react';
+import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+
 import { TableForm } from '../ongoing-support-errands.component';
 
-export const SupportErrandsTable: React.FC = () => {
+export const SupportErrandsTable: FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
   const { supportErrands: data, municipalityId, selectedSupportErrandStatuses }: AppContextInterface = useAppContext();
   const [rowHeight, setRowHeight] = useState<string>('normal');

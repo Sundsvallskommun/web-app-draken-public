@@ -6,11 +6,12 @@ import { isSupportErrandLocked, Status, validateAction } from '@supportmanagemen
 import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
 import { Mail } from 'lucide-react';
 import { useTranslation } from 'next-i18next';
-import React, { useEffect, useState } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
+
 import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
 import MessageTreeComponent from './support-messages-tree.component';
 
-export const SupportMessagesTab: React.FC<{
+export const SupportMessagesTab: FC<{
   messages: Message[];
   messageTree: Message[];
   supportConversations: Message[];
@@ -28,12 +29,12 @@ export const SupportMessagesTab: React.FC<{
   const [sortedMessages, setSortedMessages] = useState<Message[]>();
   const { t } = useTranslation();
 
-  const allMessages = React.useMemo(
+  const allMessages = useMemo(
     () => [...(props.messages || []), ...(props.supportConversations || [])],
     [props.messages, props.supportConversations]
   );
 
-  const allMessagesTree = React.useMemo(
+  const allMessagesTree = useMemo(
     () => [...(props.messageTree || []), ...(props.conversationMessageTree || [])],
     [props.messageTree, props.conversationMessageTree]
   );

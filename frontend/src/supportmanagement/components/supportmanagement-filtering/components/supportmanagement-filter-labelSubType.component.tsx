@@ -2,11 +2,11 @@ import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useAppContext } from '@contexts/app.context';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { getLabelTypeFromDisplayName } from '@supportmanagement/services/support-errand-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useEffect, useState } from 'react';
-import { useFormContext } from 'react-hook-form';
-import { SupportManagementFilter } from '../supportmanagement-filtering.component';
 import { ChevronDown } from 'lucide-react';
+import { FC, useEffect, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
+
+import { SupportManagementFilter } from '../supportmanagement-filtering.component';
 
 export interface LabelSubTypeFilter {
   labelSubType: string[];
@@ -16,7 +16,7 @@ export const LabelSubTypeValues: LabelSubTypeFilter = {
   labelSubType: [],
 };
 
-export const SupportManagementFilterLabelSubType: React.FC = () => {
+export const SupportManagementFilterLabelSubType: FC = () => {
   const { watch, setValue } = useFormContext<SupportManagementFilter>();
   const labelCategories = watch('labelCategory');
   const labelTypes = watch('labelType');
@@ -62,7 +62,9 @@ export const SupportManagementFilterLabelSubType: React.FC = () => {
     // labelSubType filter works with the displayName and not the names of the types
     //
     // See comment in ongoing-support-errands.component.tsx for more information
-    setAllStringSubTypes(Array.from(new Set(_subTypes.map((l) => l.displayName).filter((d): d is string => d !== undefined))));
+    setAllStringSubTypes(
+      Array.from(new Set(_subTypes.map((l) => l.displayName).filter((d): d is string => d !== undefined)))
+    );
   }, [supportMetadata, labelCategories, labelTypes]);
 
   return (

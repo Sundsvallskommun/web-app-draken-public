@@ -24,11 +24,12 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useForm, UseFormSetValue } from 'react-hook-form';
+
 import { FacilityDetails } from './facilities-details';
 
-export const Facilities: React.FC<{
+export const Facilities: FC<{
   setValue: UseFormSetValue<any>;
   setUnsaved: (unsaved: boolean) => void;
   facilities: FacilityDTO[];
@@ -123,7 +124,7 @@ export const Facilities: React.FC<{
       });
   };
 
-  const ResultList: React.FC<{ result: EstateInfoSearch[] }> = ({ result }) => {
+  const ResultList: FC<{ result: EstateInfoSearch[] }> = ({ result }) => {
     const data = result ?? [];
     return searchResult.length > 0 ? (
       <SearchField.SuggestionsList data-cy="suggestion-list" className="w-full" key={`searchList-${searchQuery}`}>

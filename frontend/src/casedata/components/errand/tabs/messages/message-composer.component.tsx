@@ -2,7 +2,6 @@
 
 import { Attachment } from '@casedata/interfaces/attachment';
 import { Channels } from '@casedata/interfaces/channels';
-import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Role } from '@casedata/interfaces/role';
 import { ACCEPTED_UPLOAD_FILETYPES, getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
@@ -20,7 +19,6 @@ import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { User } from '@common/interfaces/user';
 import { isMEX, isPT } from '@common/services/application-service';
 import {
   invalidPhoneMessage,
@@ -34,6 +32,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
   Chip,
+  cx,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -41,16 +40,15 @@ import {
   Modal,
   RadioButton,
   Select,
-  cx,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useTranslation } from 'next-i18next';
+import { File, Paperclip, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useTranslation } from 'next-i18next';
+import { FC, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { File, Paperclip, X } from 'lucide-react';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface CasedataMessageTabFormModel {
@@ -157,7 +155,7 @@ let formSchema = yup
   })
   .required();
 
-export const MessageComposer: React.FC<{
+export const MessageComposer: FC<{
   message?: MessageNode;
   show: boolean;
   closeHandler: () => void;

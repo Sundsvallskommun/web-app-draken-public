@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+
 import {
   BASE_URL_PREFIX,
   CREDENTIALS,
@@ -7,13 +9,13 @@ import {
   PORT,
   SAML_CALLBACK_URL,
   SAML_ENTRY_SSO,
-  SAML_SUCCESS_REDIRECT,
   SAML_FAILURE_REDIRECT,
   SAML_IDP_PUBLIC_CERT,
   SAML_ISSUER,
   SAML_LOGOUT_CALLBACK_URL,
   SAML_PRIVATE_KEY,
   SAML_PUBLIC_KEY,
+  SAML_SUCCESS_REDIRECT,
   SECRET_KEY,
   SWAGGER_ENABLED,
 } from '@config';
@@ -35,16 +37,16 @@ import morgan from 'morgan';
 import type { ReferenceObject, SchemaObject } from 'openapi3-ts';
 import passport from 'passport';
 import { join } from 'path';
-import 'reflect-metadata';
 import { getMetadataArgsStorage, useExpressServer } from 'routing-controllers';
 import { routingControllersToSpec } from 'routing-controllers-openapi';
 import swaggerUi from 'swagger-ui-express';
+
 import { HttpException } from './exceptions/HttpException';
 import { Profile } from './interfaces/profile.interface';
 import { authorizeGroups, getPermissions, getRole } from './services/authorization.service';
 import { additionalConverters } from './utils/custom-validation-classes';
-import { isValidUrl } from './utils/util';
 import { isValidOrigin } from './utils/isValidateOrigin';
+import { isValidUrl } from './utils/util';
 
 passport.serializeUser(function (user, done) {
   done(null, user);
@@ -155,7 +157,7 @@ class App {
   public swaggerEnabled: boolean;
 
   constructor(
-    Controllers: Function[],
+    Controllers: NewableFunction[],
     private readonly sessionStore: session.Store,
   ) {
     this.app = express();
@@ -353,7 +355,7 @@ class App {
     });
   }
 
-  private initializeRoutes(controllers: Function[]) {
+  private initializeRoutes(controllers: NewableFunction[]) {
     useExpressServer(this.app, {
       routePrefix: BASE_URL_PREFIX,
       cors: {
@@ -366,7 +368,7 @@ class App {
     });
   }
 
-  private initializeSwagger(controllers: Function[]) {
+  private initializeSwagger(controllers: NewableFunction[]) {
     const schemas = validationMetadatasToSchemas({
       classTransformerMetadataStorage: defaultMetadataStorage,
       refPointerPrefix: '#/components/schemas/',

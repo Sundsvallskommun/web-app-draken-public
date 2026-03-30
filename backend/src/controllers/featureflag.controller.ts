@@ -1,3 +1,7 @@
+import authMiddleware from '@middlewares/auth.middleware';
+import { Controller, Get, Req, UseBefore } from 'routing-controllers';
+import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
+
 import { MUNICIPALITY_ID } from '@/config';
 import { FeatureFlagDto } from '@/dtos/featureflag.dto';
 import { HttpException } from '@/exceptions/HttpException';
@@ -5,9 +9,6 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import { FeatureFlagsApiResponse } from '@/responses/featureflag.response';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
-import authMiddleware from '@middlewares/auth.middleware';
-import { Controller, Get, Req, UseBefore } from 'routing-controllers';
-import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 @Controller()
 export class FeatureFlagController {

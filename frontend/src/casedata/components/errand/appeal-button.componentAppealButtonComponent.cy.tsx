@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { AppealButtonComponent } from './appeal-button.component';
 
 describe('<AppealButtonComponent />', () => {

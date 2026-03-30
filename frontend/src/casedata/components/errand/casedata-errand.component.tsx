@@ -13,13 +13,14 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { ArrowRight } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { FC, Fragment, useEffect, useRef, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+
 import { SaveButtonComponent } from '../save-button/save-button.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 
-export const CasedataErrandComponent: React.FC = () => {
+export const CasedataErrandComponent: FC = () => {
   const params = useParams<{ errandNumber?: string }>();
   const errandNumber = params?.errandNumber;
   let formSchema = yup

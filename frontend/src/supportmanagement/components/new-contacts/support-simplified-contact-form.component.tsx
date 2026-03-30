@@ -22,16 +22,17 @@ import {
   SupportStakeholderTypeEnum,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import React, { useEffect, useState } from 'react';
+import { Pen } from 'lucide-react';
+import { FC, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
+
 import { SupportContactModal } from './support-contact-modal.component';
 import { SupportContactSearchField } from './support-contact-search-field.component';
 import { SupportContactSearchModeSelector } from './support-contact-search-mode-selector.component';
 import { SupportSearchResult } from './support-search-result.component';
-import { Pen } from 'lucide-react';
-export const SupportSimplifiedContactForm: React.FC<{
+export const SupportSimplifiedContactForm: FC<{
   contact: SupportStakeholderFormModel;
   editing: boolean;
   setUnsaved: (unsaved: boolean) => void;

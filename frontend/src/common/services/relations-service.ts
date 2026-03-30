@@ -1,8 +1,9 @@
+import { Relation, RelationPagedResponse } from '@common/data-contracts/relations/data-contracts';
+import { appConfig } from '@config/appconfig';
 import { All } from '@supportmanagement/interfaces/priority';
+
 import { ApiResponse, apiService } from './api-service';
 import { CaseStatusResponse } from './casestatus-service';
-import { appConfig } from '@config/appconfig';
-import { Relation, RelationPagedResponse } from '@common/data-contracts/relations/data-contracts';
 
 export const relationsToLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },

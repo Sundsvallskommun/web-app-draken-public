@@ -9,9 +9,8 @@ import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { default as NextLink } from 'next/link';
-import { useEffect, useRef } from 'react';
-
-const Arende: React.FC = () => {
+import { FC, useEffect, useRef } from 'react';
+const Arende: FC = () => {
   const { municipalityId, setMunicipalityId, setSupportMetadata, setAdministrators } = useAppContext();
 
   const initialFocus = useRef<HTMLBodyElement>(null);

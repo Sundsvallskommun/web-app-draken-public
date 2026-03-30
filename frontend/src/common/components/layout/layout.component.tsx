@@ -6,14 +6,15 @@ import { appConfig } from '@config/appconfig';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
+import { ExternalLink, Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, ReactNode, useEffect, useState } from 'react';
+
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
-import { ExternalLink, Menu } from 'lucide-react';
 
-export default function Layout({ title, children }: { title: string; children: React.ReactNode }) {
+export default function Layout({ title, children }: { title: string; children: ReactNode }) {
   const { user, errand, supportErrand, supportMetadata } = useAppContext();
   const applicationEnvironment = getApplicationEnvironment();
   const { isMinLargeDevice } = useThemeQueries();

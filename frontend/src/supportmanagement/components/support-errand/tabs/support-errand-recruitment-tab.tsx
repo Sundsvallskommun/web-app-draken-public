@@ -3,16 +3,16 @@ import { useAppContext } from '@contexts/app.context';
 import { Checkbox, Disclosure, FormControl, FormLabel, Input, Label, Textarea } from '@sk-web-gui/react';
 import { getRecruitmentParameters, saveParameters } from '@supportmanagement/services/support-parameter-service';
 import { Text } from 'lucide-react';
-import React, { useEffect } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useForm, useFormContext } from 'react-hook-form';
 
-export const SupportErrandRecruitmentTab: React.FC<{
+export const SupportErrandRecruitmentTab: FC<{
   update: () => void;
   setUnsaved: (unsaved: boolean) => void;
 }> = (props) => {
   const { supportErrand } = useAppContext();
-  const [recruitmentParameterGroups, setParameters] = React.useState<{ [key: string]: Parameter[] }>({});
-  const [loading, setLoading] = React.useState(false);
+  const [recruitmentParameterGroups, setParameters] = useState<{ [key: string]: Parameter[] }>({});
+  const [loading, setLoading] = useState(false);
 
   const recruitmentForm = useForm<{ [key: string]: Parameter[] }>({
     defaultValues: recruitmentParameterGroups,

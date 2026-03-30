@@ -16,6 +16,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
   Chip,
+  cx,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -24,13 +25,12 @@ import {
   Modal,
   RadioButton,
   Select,
-  cx,
   useSnackbar,
 } from '@sk-web-gui/react';
 import {
+  getSupportAttachment,
   SingleSupportAttachment,
   SupportAttachment,
-  getSupportAttachment,
 } from '@supportmanagement/services/support-attachment-service';
 import {
   getOrCreateSupportConversationId,
@@ -38,19 +38,20 @@ import {
 } from '@supportmanagement/services/support-conversation-service';
 import {
   Channels,
-  Status,
   getSupportErrandById,
   isSupportErrandLocked,
   setSupportErrandStatus,
+  Status,
 } from '@supportmanagement/services/support-errand-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { File, Paperclip, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
+
 import { getDefaultEmailBody, getDefaultSmsBody, removeEmailInformation } from '../templates/default-message-template';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
@@ -128,13 +129,13 @@ let formSchema = yup
   })
   .required();
 
-export const SupportMessageForm: React.FC<{
+export const SupportMessageForm: FC<{
   locked?: boolean;
   prefillPhone?: string;
   prefillEmail?: string;
   showMessageForm: boolean;
   message: Message;
-  setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMessageForm: Dispatch<SetStateAction<boolean>>;
   setUnsaved?: (unsaved: boolean) => void;
   update?: () => void;
 }> = (props) => {

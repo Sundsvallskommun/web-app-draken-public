@@ -1,4 +1,5 @@
-export const AngeSymbol: React.FC<React.SVGProps<SVGSVGElement>> = (props) => {
+import { FC, SVGProps } from 'react';
+export const AngeSymbol: FC<SVGProps<SVGSVGElement>> = (props) => {
   if (process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260') {
     return (
       <svg

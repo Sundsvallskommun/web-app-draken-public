@@ -1,10 +1,3 @@
-import { apiServiceName } from '@/config/api-config';
-import { Errand as ErrandDTO, Note as NoteDTO } from '@/data-contracts/case-data/data-contracts';
-import { CreateErrandNoteDto } from '@/interfaces/errand-note.interface';
-import { validationMiddleware } from '@/middlewares/validation.middleware';
-import { noteIsTjansteanteckning } from '@/services/errand-note.service';
-import { logger } from '@/utils/logger';
-import { apiURL } from '@/utils/util';
 import { HttpException } from '@exceptions/HttpException';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
@@ -12,6 +5,14 @@ import ApiService from '@services/api.service';
 import { validateAction } from '@services/errand.service';
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+
+import { apiServiceName } from '@/config/api-config';
+import { Errand as ErrandDTO, Note as NoteDTO } from '@/data-contracts/case-data/data-contracts';
+import { CreateErrandNoteDto } from '@/interfaces/errand-note.interface';
+import { validationMiddleware } from '@/middlewares/validation.middleware';
+import { noteIsTjansteanteckning } from '@/services/errand-note.service';
+import { logger } from '@/utils/logger';
+import { apiURL } from '@/utils/util';
 
 export interface ResponseData {
   data: any;

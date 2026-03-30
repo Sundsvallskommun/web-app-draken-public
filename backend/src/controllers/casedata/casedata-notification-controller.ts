@@ -1,3 +1,7 @@
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Body, Controller, Get, HttpCode, Param, Patch, Put, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Notification as CasedataNotification, PatchNotification } from '@/data-contracts/case-data/data-contracts';
@@ -7,9 +11,6 @@ import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
-import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
-import { Body, Controller, Get, HttpCode, Param, Patch, Put, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
 
 export class CasedataNotificationDto implements CasedataNotification {
   @IsOptional()

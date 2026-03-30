@@ -1,20 +1,21 @@
-import { MessageNode, countAllMessages, countUnreadMessages } from '@casedata/services/casedata-message-service';
-import React, { Fragment, useState } from 'react';
-import { RenderedMessage } from './rendered-message.component';
+import { countAllMessages, countUnreadMessages, MessageNode } from '@casedata/services/casedata-message-service';
 import { Button, cx, Divider } from '@sk-web-gui/react';
+import { Dispatch, FC, Fragment, SetStateAction, useState } from 'react';
+
+import { RenderedMessage } from './rendered-message.component';
 
 interface MessageTreeProps {
   nodes: MessageNode[];
   onSelect: (node: MessageNode) => void;
-  setShowMessageComposer: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMessageComposer: Dispatch<SetStateAction<boolean>>;
 }
 
 const getId = (node: MessageNode): string => node.emailHeaders?.find((h) => h.header === 'MESSAGE_ID')?.values?.[0];
 
-const MessageNodeComponent: React.FC<{
+const MessageNodeComponent: FC<{
   node: MessageNode;
   onSelect: (node: MessageNode) => void;
-  setShowMessageComposer: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMessageComposer: Dispatch<SetStateAction<boolean>>;
   root?: boolean;
 }> = ({ node, onSelect, setShowMessageComposer, root = false }) => {
   const [showChildren, setShowChildren] = useState(true);
@@ -58,7 +59,7 @@ const MessageNodeComponent: React.FC<{
   );
 };
 
-const MessageTreeComponent: React.FC<MessageTreeProps> = ({ nodes, onSelect, setShowMessageComposer }) => {
+const MessageTreeComponent: FC<MessageTreeProps> = ({ nodes, onSelect, setShowMessageComposer }) => {
   return (
     <div className="my-lg" data-cy="message-container">
       {nodes.map((node, idx) => (

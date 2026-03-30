@@ -11,13 +11,13 @@ import { useAppContext } from '@common/contexts/app.context';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { Avatar, Button, Divider, FormControl, Modal, PopupMenu, Textarea, cx, useSnackbar } from '@sk-web-gui/react';
+import { Avatar, Button, cx, Divider, FormControl, Modal, PopupMenu, Textarea, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
-import { UseFormReturn, useForm } from 'react-hook-form';
 import { Ellipsis, Pencil, Trash } from 'lucide-react';
+import { FC, useEffect, useState } from 'react';
+import { useForm, UseFormReturn } from 'react-hook-form';
 
-export const SidebarGenericNotes: React.FC<{
+export const SidebarGenericNotes: FC<{
   label_plural: 'Kommentarer' | 'Tjänsteanteckningar';
   label_singular: 'Kommentar' | 'Tjänsteanteckning';
   noteType: NoteType;

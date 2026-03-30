@@ -1,3 +1,6 @@
+import { Type as TypeTransformer } from 'class-transformer';
+import { IsArray, IsBoolean, IsEnum, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+
 import {
   AccountInformation,
   AddressDetails,
@@ -11,8 +14,6 @@ import {
   Status,
   Type,
 } from '@/data-contracts/billingpreprocessor/data-contracts';
-import { Type as TypeTransformer } from 'class-transformer';
-import { IsArray, IsBoolean, IsEnum, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 
 export class CAccountInformation implements AccountInformation {
   @IsOptional()

@@ -1,8 +1,9 @@
+import { apiURL } from '@common/utils/api-url';
+import { protectedRoutes } from '@common/utils/protected-routes';
 import { NextRequest, NextResponse } from 'next/server';
 import { i18nRouter } from 'next-i18n-router';
-import { apiURL } from '@common/utils/api-url';
+
 import i18nConfig from './app/i18nConfig';
-import { protectedRoutes } from '@common/utils/protected-routes';
 
 export async function proxy(req: NextRequest) {
   const {
