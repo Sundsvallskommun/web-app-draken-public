@@ -1,7 +1,7 @@
 # =====================
 # Dependencies
 # =====================
-FROM registry.access.redhat.com/ubi9/nodejs-20 AS deps
+FROM registry.access.redhat.com/ubi9/nodejs-22 AS deps
 
 RUN echo "Dependencies step"
 WORKDIR /app
@@ -34,14 +34,10 @@ ENV DOCKER_BUILD=true
 RUN npm install -g yarn \
  && yarn build
 
-# Reduce image size
-RUN rm -rf node_modules \
- && yarn install --production --frozen-lockfile --ignore-scripts --prefer-offline
-
 # =====================
 # Runtime
 # =====================
-FROM registry.access.redhat.com/ubi9/nodejs-20 AS runner
+FROM registry.access.redhat.com/ubi9/nodejs-22 AS runner
 
 RUN echo "Runtime step"
 WORKDIR /app
