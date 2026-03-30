@@ -29,7 +29,7 @@ envalid.cleanEnv(process.env, {
 });
 
 module.exports = {
-  distDir: `.next${process.env.NEXT_PUBLIC_APPLICATION ? `-${process.env.NEXT_PUBLIC_APPLICATION}` : ''}`,
+  distDir: process.env.DOCKER_BUILD === 'true' ? '.next' : `.next${process.env.NEXT_PUBLIC_APPLICATION ? `-${process.env.NEXT_PUBLIC_APPLICATION}` : ''}`,
   output: 'standalone',
   images: {
     remotePatterns: process.env.DOMAIN_NAME ? [{ protocol: 'https', hostname: process.env.DOMAIN_NAME }] : [],

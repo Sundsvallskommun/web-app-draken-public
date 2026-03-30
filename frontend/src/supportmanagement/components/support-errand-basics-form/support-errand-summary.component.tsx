@@ -18,7 +18,11 @@ export const SupportErrandSummary: React.FC<{}> = () => {
               Ärendestatus
             </div>
             <div data-cy="errandStatus">
-              <SupportStatusLabelComponent status={supportErrand?.status ?? ''} resolution={supportErrand?.resolution ?? ''} />
+              <SupportStatusLabelComponent
+                status={supportErrand?.status ?? ''}
+                resolution={supportErrand?.resolution ?? ''}
+                actions={supportErrand?.actions ?? []}
+              />
             </div>
           </div>
           <div className="pr-sm">

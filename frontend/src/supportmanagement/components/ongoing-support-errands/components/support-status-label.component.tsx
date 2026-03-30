@@ -2,13 +2,18 @@ import { isROB } from '@common/services/application-service';
 import { Label } from '@sk-web-gui/react';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { Resolution, ResolutionLabelROB, Status } from '@supportmanagement/services/support-errand-service';
-import { useMetadataStore } from '@stores/index';
+import { useAppContext } from '@contexts/app.context';
+import { CErrandAction } from 'src/data-contracts/backend/data-contracts';
+import { Hourglass } from 'lucide-react';
 
-export const SupportStatusLabelComponent: React.FC<{ status: string; resolution: string }> = ({
-  status,
-  resolution,
-}) => {
-  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+export const SupportStatusLabelComponent: React.FC<{
+  status: string;
+  resolution: string;
+  actions?: CErrandAction[];
+}> = ({ status, resolution, actions }) => {
+  const { supportMetadata } = useAppContext();
+
+  const sevenDaysAction = actions?.find((action) => action.actionName === 'ADD_LABEL');
 
   const solvedErrandIcon = () => {
     if (resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM) return 'split';
@@ -109,13 +114,20 @@ export const SupportStatusLabelComponent: React.FC<{ status: string; resolution:
     return supportMetadata?.statuses?.find((s) => s.name === status)?.displayName ?? status;
   };
   return (
-    <Label rounded inverted={inverted} color={color} className={`max-h-full h-auto text-center whitespace-nowrap`}>
-      {icon
-        ? (() => {
-            const DynIcon = iconMap[icon];
-            return DynIcon ? <DynIcon size={16} /> : undefined;
-          })()
-        : null}{' '}
+    <Label
+      rounded
+      inverted={inverted}
+      color={sevenDaysAction ? 'error' : color}
+      className={`max-h-full h-auto text-center whitespace-nowrap`}
+    >
+      {sevenDaysAction ? (
+        <Hourglass size={16} />
+      ) : icon ? (
+        (() => {
+          const DynIcon = iconMap[icon];
+          return DynIcon ? <DynIcon size={16} /> : undefined;
+        })()
+      ) : null}{' '}
       {solvedErrandText()}
     </Label>
   );

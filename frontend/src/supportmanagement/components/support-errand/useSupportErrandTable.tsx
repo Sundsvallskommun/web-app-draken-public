@@ -28,7 +28,13 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       screenReaderOnly: false,
       sortable: true,
       shownForStatus: All.ALL,
-      render: (errand: SupportErrand) => <SupportStatusLabelComponent status={errand.status ?? ''} resolution={errand.resolution ?? ''} />,
+      render: (errand: SupportErrand) => (
+        <SupportStatusLabelComponent
+          status={errand.status ?? ''}
+          resolution={errand.resolution ?? ''}
+          actions={errand?.actions ?? []}
+        />
+      ),
     },
     {
       label: t('common:overview.lastActivity'),
@@ -141,14 +147,18 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       screenReaderOnly: false,
       sortable: true,
       shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED, Status.ASSIGNED],
-      render: (errand: SupportErrand) => <PriorityComponent priority={(Priority as Record<string, string>)[errand.priority!]} />,
+      render: (errand: SupportErrand) => (
+        <PriorityComponent priority={(Priority as Record<string, string>)[errand.priority!]} />
+      ),
     },
     {
       label: t('common:overview.reminder'),
       screenReaderOnly: false,
       sortable: true,
       shownForStatus: [Status.SUSPENDED],
-      render: (errand: SupportErrand) => <time dateTime={errand.touched}>{prettyTime(errand.suspension?.suspendedTo!)}</time>,
+      render: (errand: SupportErrand) => (
+        <time dateTime={errand.touched}>{prettyTime(errand.suspension?.suspendedTo!)}</time>
+      ),
     },
     {
       label: t('common:overview.responsible'),

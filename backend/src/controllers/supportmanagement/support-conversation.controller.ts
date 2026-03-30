@@ -145,7 +145,7 @@ export class SupportConversationController {
 
     if (files && files.length > 0) {
       files.forEach(file => {
-        formData.append('attachments', new Blob([file.buffer], { type: file.mimetype }), file.originalname);
+        formData.append('attachments', new Blob([new Uint8Array(file.buffer)], { type: file.mimetype }), file.originalname);
       });
     }
 
