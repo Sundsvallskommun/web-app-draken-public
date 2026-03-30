@@ -4,7 +4,6 @@ export interface CreateAssetDto {
   assetId: string;
   origin: string;
   partyId: string;
-  caseReferenceIds?: string[];
   type: string;
   issued?: string | null;
   validTo?: string | null;
@@ -18,7 +17,6 @@ export interface CreateAssetDto {
 }
 
 export interface PatchAssetDto {
-  caseReferenceIds?: string[];
   validTo?: string | null;
   status?: AssetStatusDto;
   statusReason?: string;
