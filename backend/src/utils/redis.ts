@@ -16,10 +16,10 @@ export function getRedisClient(): RedisClientType | null {
     url: `redis://${redisPassword ? `:${redisPassword}@` : ''}${redisHost}:${redisPort}`,
   });
 
-  redisClient.on('error', (err) => logger.error(`Redis error: ${err.message}`));
+  redisClient.on('error', err => logger.error(`Redis error: ${err.message}`));
   redisClient.on('connect', () => logger.info(`Connected to Redis (${redisHost}:${redisPort})`));
 
-  redisClient.connect().catch((err) => logger.error(`Redis connection failed: ${err.message}`));
+  redisClient.connect().catch(err => logger.error(`Redis connection failed: ${err.message}`));
 
   return redisClient;
 }

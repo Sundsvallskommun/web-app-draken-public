@@ -79,7 +79,9 @@ export class ExportController {
         description: data.description,
         facilities: (data.facilities ?? []).map(f => f?.address?.propertyDesignation ?? 'Fastighetsbeteckning saknas'),
         applicants: (data.stakeholders ?? []).filter(s => s.roles.includes('APPLICANT'))?.map(templateStakeholder),
-        contacts: (data.stakeholders ?? []).filter(s => !s.roles.includes('APPLICANT') && !s.roles.includes('ADMINISTRATOR'))?.map(templateStakeholder),
+        contacts: (data.stakeholders ?? [])
+          .filter(s => !s.roles.includes('APPLICANT') && !s.roles.includes('ADMINISTRATOR'))
+          ?.map(templateStakeholder),
         created: dayjs(data.created).format('YYYY-MM-DD HH:mm:ss'),
         updated: dayjs(data.updated).format('YYYY-MM-DD HH:mm:ss'),
       };

@@ -57,7 +57,9 @@ export class SupportFacilitiesController {
       return response.status(404).send('No parameters found for errand with id');
     }
 
-    const filteredParameters = existingParameters.filter(p => p.key !== PROPERTY_DESIGNATION_KEY && p.key !== DISTRICT_NAME_KEY && p.key !== STREET_KEY);
+    const filteredParameters = existingParameters.filter(
+      p => p.key !== PROPERTY_DESIGNATION_KEY && p.key !== DISTRICT_NAME_KEY && p.key !== STREET_KEY,
+    );
 
     const newParameters: Parameters = [
       ...filteredParameters,
