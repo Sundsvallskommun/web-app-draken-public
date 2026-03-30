@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "types": ["@simonsmith/cypress-image-snapshot/types"],
-    "target": "es6",
+    "target": "es2022",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
