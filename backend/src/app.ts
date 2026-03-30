@@ -55,8 +55,7 @@ function createSessionStore() {
 
   if (redisHost) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const connectRedis = require('connect-redis');
-    const RedisStore = connectRedis.default || connectRedis;
+    const { RedisStore } = require('connect-redis');
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const ioredis = require('ioredis');
     const Redis = ioredis.default || ioredis;
