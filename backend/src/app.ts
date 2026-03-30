@@ -15,7 +15,6 @@ import {
   SAML_PRIVATE_KEY,
   SAML_PUBLIC_KEY,
   SECRET_KEY,
-  SESSION_MEMORY,
   SWAGGER_ENABLED,
 } from '@config';
 import errorMiddleware from '@middlewares/error.middleware';
@@ -32,7 +31,6 @@ import session from 'express-session';
 import { existsSync, mkdirSync } from 'fs';
 import helmet from 'helmet';
 import hpp from 'hpp';
-import createMemoryStore from 'memorystore';
 import morgan from 'morgan';
 import type { ReferenceObject, SchemaObject } from 'openapi3-ts';
 import passport from 'passport';
@@ -48,10 +46,34 @@ import { authorizeGroups, getPermissions, getRole } from './services/authorizati
 import { additionalConverters } from './utils/custom-validation-classes';
 import { isValidUrl } from './utils/util';
 import { isValidOrigin } from './utils/isValidateOrigin';
-const SessionStoreCreate = SESSION_MEMORY ? createMemoryStore(session) : createFileStore(session);
+
 const sessionTTL = 4 * 24 * 60 * 60;
-// NOTE: memory uses ms while file uses seconds
-const sessionStore = new SessionStoreCreate(SESSION_MEMORY ? { checkPeriod: sessionTTL * 1000 } : { ttl: sessionTTL, path: './data/sessions' });
+
+function createSessionStore() {
+  const redisHost = process.env.REDIS_HOST;
+  const redisPassword = process.env.REDIS_PASSWORD;
+
+  if (redisHost) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { RedisStore } = require('connect-redis');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const ioredis = require('ioredis');
+    const Redis = ioredis.default || ioredis;
+    const redisClient = new Redis({
+      host: redisHost,
+      port: Number(process.env.REDIS_PORT) || 6379,
+      password: redisPassword || undefined,
+    });
+    logger.info(`Using Redis session store (${redisHost})`);
+    return new RedisStore({ client: redisClient, prefix: 'sess:', ttl: sessionTTL });
+  }
+
+  const FileStore = createFileStore(session);
+  logger.info('Using file-based session store');
+  return new FileStore({ ttl: sessionTTL, path: './data/sessions' });
+}
+
+const sessionStore = createSessionStore();
 
 passport.serializeUser(function (user, done) {
   done(null, user);

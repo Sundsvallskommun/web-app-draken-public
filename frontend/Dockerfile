@@ -17,7 +17,7 @@ RUN npm install -g yarn \
 # =====================
 # Build
 # =====================
-FROM registry.access.redhat.com/ubi9/nodejs-20 AS builder
+FROM registry.access.redhat.com/ubi9/nodejs-22 AS builder
 
 RUN echo "Build step"
 USER root
@@ -29,6 +29,7 @@ COPY --chown=1001:0 . .
 COPY --chown=1001:0 .env-cicd .env.local
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV DOCKER_BUILD=true
 
 RUN npm install -g yarn \
  && yarn build
@@ -55,9 +56,10 @@ COPY --from=builder --chown=0:0 --chmod=444 /app/package.json ./
 COPY --from=builder --chown=0:0 --chmod=555 /app/.next/standalone ./
 COPY --from=builder --chown=0:0 --chmod=555 /app/.next/static ./.next/static
 
-# Grant write only where OpenShift needs it
+# Grant write where entrypoint.sh needs to replace placeholders
 USER root
-RUN chown -R 1001:0 /app/.next && chmod -R g+w /app/.next
+RUN chown 1001:0 /app && chown 1001:0 /app/server.js && chmod g+w /app/server.js \
+ && chown -R 1001:0 /app/.next && chmod -R g+w /app/.next
 USER 1001
 
 # Entrypoint — fix line endings before locking permissions

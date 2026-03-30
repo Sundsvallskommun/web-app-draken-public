@@ -20,6 +20,9 @@ export enum Header {
   IN_REPLY_TO = "IN_REPLY_TO",
   REFERENCES = "REFERENCES",
   MESSAGE_ID = "MESSAGE_ID",
+  AUTO_SUBMITTED = "AUTO_SUBMITTED",
+  RETURN_PATH = "RETURN_PATH",
+  CONTENT_TYPE = "CONTENT_TYPE",
 }
 
 /** Message classification */
@@ -438,6 +441,8 @@ export interface CaseType {
   type?: string;
   /** The display name of the case type */
   displayName?: string;
+  /** Whether errands of this case type should start/update a process */
+  startProcess?: boolean;
 }
 
 export interface Errand {
@@ -583,7 +588,6 @@ export interface JsonNode {
   boolean?: boolean;
   valueNode?: boolean;
   container?: boolean;
-  missingNode?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -595,8 +599,9 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
+  missingNode?: boolean;
   integralNumber?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 
