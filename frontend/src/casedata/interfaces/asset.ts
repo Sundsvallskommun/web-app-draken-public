@@ -19,7 +19,6 @@ export interface Asset {
   assetId: string;
   origin: string;
   partyId: string;
-  caseReferenceIds: string[];
   type: string;
   issued: string;
   validTo: string;
@@ -31,7 +30,6 @@ export interface Asset {
 }
 
 export interface UpdateAsset {
-  caseReferenceIds: string[];
   validTo: string;
   status: AssetStatus;
   statusReason: string;
