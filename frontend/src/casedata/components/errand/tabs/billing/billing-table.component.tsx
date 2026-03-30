@@ -17,7 +17,7 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { Pen, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { CBillingRecord, CBillingRecordStatusEnum, CInvoiceRow } from 'src/data-contracts/backend/data-contracts';
 import { BillingStatusLabel } from './billing-status-label.component';
 
@@ -537,67 +537,72 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                   }
 
                   const accountInfo = row.accountInformation?.[0];
+                  const colCount = isEditing ? 7 : 5;
 
                   return (
-                    <Table.Row key={rowIndex}>
-                      <Table.Column className="!overflow-visible">
-                        <div className="relative pt-16 pb-30">
-                          <span className="font-bold">{row.descriptions?.join(', ') || '-'}</span>
-                          {accountInfo && (
-                            <span className="text-small whitespace-nowrap absolute left-0 bottom-8">
+                    <React.Fragment key={rowIndex}>
+                      <Table.Row className="!border-b-0">
+                        <Table.Column>
+                          <span className="font-bold mt-6">{row.descriptions?.join(', ') || '-'}</span>
+                        </Table.Column>
+                        <Table.Column>
+                          <span className="mt-6">{row.detailedDescriptions?.join(', ') || '-'}</span>
+                        </Table.Column>
+                        <Table.Column>
+                          <span className="mt-6">{row.quantity || 0}</span>
+                        </Table.Column>
+                        <Table.Column>
+                          <span className="whitespace-nowrap mt-6">{(row.costPerUnit || 0).toFixed(2)} kr</span>
+                        </Table.Column>
+                        <Table.Column>
+                          <span className="whitespace-nowrap mt-6">
+                            {((row.quantity || 0) * (row.costPerUnit || 0)).toFixed(2)} kr
+                          </span>
+                        </Table.Column>
+                        {isEditing && (
+                          <>
+                            <Table.Column>
+                              <div className="mt-6">
+                                <Button
+                                  size="sm"
+                                  variant="tertiary"
+                                  iconButton
+                                  onClick={() => handleEditRow(rowIndex)}
+                                  disabled={editingRowState !== null}
+                                >
+                                  <Pen size={16} />
+                                </Button>
+                              </div>
+                            </Table.Column>
+                            <Table.Column>
+                              <div className="mt-6">
+                                <Button
+                                  size="sm"
+                                  inverted
+                                  color="error"
+                                  iconButton
+                                  onClick={() => handleDeleteRow(rowIndex)}
+                                  disabled={editingRowState !== null}
+                                >
+                                  <Trash2 size={16} />
+                                </Button>
+                              </div>
+                            </Table.Column>
+                          </>
+                        )}
+                      </Table.Row>
+                      {accountInfo && (
+                        <tr className="border-b-1 border-divider">
+                          <td colSpan={colCount} className="pl-16 pb-8 pt-6">
+                            <span className="text-small text-dark-secondary">
                               Ansvar: {accountInfo.costCenter || '-'}, Underkonto: {accountInfo.subaccount || '-'},
                               Verksamhet: {accountInfo.department || '-'}, Aktivitet: {accountInfo.activity || '-'},
                               Projekt: {accountInfo.project || '-'}, Objekt: {accountInfo.article || '-'}
                             </span>
-                          )}
-                        </div>
-                      </Table.Column>
-                      <Table.Column>
-                        <div className="relative pt-16 pb-30">{row.detailedDescriptions?.join(', ') || '-'}</div>
-                      </Table.Column>
-                      <Table.Column>
-                        <div className="relative pt-16 pb-30">{row.quantity || 0}</div>
-                      </Table.Column>
-                      <Table.Column>
-                        <div className="relative pt-16 pb-30">{(row.costPerUnit || 0).toFixed(2)} kr</div>
-                      </Table.Column>
-                      <Table.Column>
-                        <div className="relative pt-16 pb-30">
-                          {((row.quantity || 0) * (row.costPerUnit || 0)).toFixed(2)} kr
-                        </div>
-                      </Table.Column>
-                      {isEditing && (
-                        <>
-                          <Table.Column>
-                            <div className="relative pt-16 pb-30">
-                              <Button
-                                size="sm"
-                                variant="tertiary"
-                                iconButton
-                                onClick={() => handleEditRow(rowIndex)}
-                                disabled={editingRowState !== null}
-                              >
-                                <Pen size={16} />
-                              </Button>
-                            </div>
-                          </Table.Column>
-                          <Table.Column>
-                            <div className="relative pt-16 pb-30">
-                              <Button
-                                size="sm"
-                                inverted
-                                color="error"
-                                iconButton
-                                onClick={() => handleDeleteRow(rowIndex)}
-                                disabled={editingRowState !== null}
-                              >
-                                <Trash2 size={16} />
-                              </Button>
-                            </div>
-                          </Table.Column>
-                        </>
+                          </td>
+                        </tr>
                       )}
-                    </Table.Row>
+                    </React.Fragment>
                   );
                 })}
               </Table.Body>
