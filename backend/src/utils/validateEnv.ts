@@ -38,7 +38,9 @@ function warnMissingEnv(spec: EnvSpec): void {
   }
   if (missing.length === 0 && invalid.length === 0) {
     console.log('✅ All required environment variables are set.');
+    return;
   }
+  process.exit(1);
 }
 
 const s = (type: 'str' | 'port' | 'url' = 'str') => ({ type });
