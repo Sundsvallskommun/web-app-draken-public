@@ -10,6 +10,12 @@
  * ---------------------------------------------------------------
  */
 
+export interface DepartmentTeamResult {
+  /** @format int32 */
+  orgId?: number;
+  teamNames?: string[] | null;
+}
+
 export interface LoginName {
   domain?: string | null;
   loginName?: string | null;

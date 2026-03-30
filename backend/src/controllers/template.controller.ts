@@ -42,7 +42,7 @@ class TemplateSelector {
   content!: string;
   @IsObject()
   @IsOptional()
-  parameters!: { [key: string]: string } | { [key: string]: Object };
+  parameters!: { [key: string]: string } | { [key: string]: object };
 }
 
 interface PdfRender {

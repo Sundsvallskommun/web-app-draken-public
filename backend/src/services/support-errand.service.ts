@@ -1,9 +1,10 @@
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
+import { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 import { User } from '@/interfaces/users.interface';
 import { apiURL } from '@/utils/util';
+
 import ApiService from './api.service';
-import { Errand } from '@/data-contracts/supportmanagement/data-contracts';
-import { apiServiceName } from '@/config/api-config';
 
 const SERVICE = apiServiceName('supportmanagement');
 const namespace = SUPPORTMANAGEMENT_NAMESPACE;

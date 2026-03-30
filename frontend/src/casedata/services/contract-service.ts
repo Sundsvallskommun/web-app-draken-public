@@ -5,9 +5,6 @@ import {
   Attachment,
   AttachmentCategory,
   Contract,
-  Stakeholder as ContractStakeholder,
-  StakeholderRole as ContractStakeholderRole,
-  StakeholderType as ContractStakeholderType,
   ContractType,
   Fees,
   InvoicedIn,
@@ -15,23 +12,27 @@ import {
   PageContract,
   Parameter,
   Party,
+  Stakeholder as ContractStakeholder,
+  StakeholderRole as ContractStakeholderRole,
+  StakeholderType as ContractStakeholderType,
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
-import { CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { PrettyRole, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact, StakeholderType } from '@casedata/interfaces/stakeholder';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+import { EstateInfoSearch } from '@common/interfaces/estate-details';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { base64ToFile } from '@common/services/attachment-service';
+import { getSingleFacilityByDesignation } from '@common/services/facilities-service';
 import { toBase64 } from '@common/utils/toBase64';
 import { UploadFile } from '@sk-web-gui/react';
 import { AxiosResponse } from 'axios';
+import { CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
+
 import { saveExtraParameters } from './casedata-extra-parameters-service';
-import { getSingleFacilityByDesignation } from '@common/services/facilities-service';
-import { EstateInfoSearch } from '@common/interfaces/estate-details';
 
 export const contractTypes = [
   { label: 'Arrende', key: ContractType.LEASE_AGREEMENT },

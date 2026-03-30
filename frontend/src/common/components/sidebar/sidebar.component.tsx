@@ -1,13 +1,14 @@
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { isPT } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
-import { Button, cx, useGui } from '@sk-web-gui/react';
-import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
-import { KeyboardEvent, useRef, useState } from 'react';
-import { useMediaQuery } from 'usehooks-ts';
-import { SidebarTooltip } from '../../../casedata/components/errand/sidebar/sidebar-tooltip.component';
+import { Badge, Button, cx, useGui } from '@sk-web-gui/react';
+import { supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
+import { FC, KeyboardEvent, ReactNode, useRef, useState } from 'react';
+import { useMediaQuery } from 'usehooks-ts';
+
+import { SidebarTooltip } from '../../../casedata/components/errand/sidebar/sidebar-tooltip.component';
 
 export type SidebarButtonKey =
   | 'notes'
@@ -20,12 +21,12 @@ export type SidebarButtonKey =
   | 'export'
   | undefined;
 
-export const Sidebar: React.FC<{
+export const Sidebar: FC<{
   buttons: {
     label: string;
     key: SidebarButtonKey;
     icon: string;
-    component: React.ReactNode;
+    component: ReactNode;
   }[];
 }> = ({ buttons }) => {
   const [open, setOpen] = useState(true);
@@ -37,9 +38,12 @@ export const Sidebar: React.FC<{
   const gui = useGui();
   const isLg = useMediaQuery(`screen and (min-width: ${gui.theme.screens.lg})`);
 
-  const {
-    supportErrand,
-  } = useAppContext();
+  const { supportErrand, notesCount, serviceNotesCount } = useAppContext();
+
+  const badgeCounts: Record<string, number> = {
+    Kommentarer: notesCount,
+    Tjänsteanteckningar: serviceNotesCount,
+  };
 
   const updateScroll = () => {
     if (menuRef.current) {
@@ -116,10 +120,24 @@ export const Sidebar: React.FC<{
                   iconButton
                   leftIcon={
                     <>
-                      {(() => { const DynIcon = iconMap[b.icon as any]; return DynIcon ? <DynIcon /> : undefined; })()}
+                      {(() => {
+                        const DynIcon = iconMap[b.icon as any];
+                        return DynIcon ? <DynIcon /> : undefined;
+                      })()}
                     </>
                   }
-                />
+                >
+                  {badgeCounts[b.label] > 0 && (
+                    <Badge
+                      className="absolute -top-10 -right-10 text-white"
+                      rounded
+                      color="vattjom"
+                      inverted
+                      size="sm"
+                      counter={badgeCounts[b.label] > 99 ? '99+' : badgeCounts[b.label]}
+                    />
+                  )}
+                </Button>
               </div>
             )
           )}

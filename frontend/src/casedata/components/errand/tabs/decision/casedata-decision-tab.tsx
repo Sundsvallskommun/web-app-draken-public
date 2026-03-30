@@ -1,7 +1,13 @@
 'use client';
 
+import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
+import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
+import { ContractData } from '@casedata/interfaces/contract-data';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
+import { Role } from '@casedata/interfaces/role';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
+import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import {
   fetchDecisionTemplates,
   getFinalDecisonWithHighestId,
@@ -18,21 +24,9 @@ import {
   isErrandLocked,
   updateErrandStatus,
   validateAction,
+  validateErrandForDecision,
+  validateStatusForDecision,
 } from '@casedata/services/casedata-errand-service';
-import { useAppContext } from '@common/contexts/app.context';
-import { yupResolver } from '@hookform/resolvers/yup';
-import type { RJSFSchema } from '@rjsf/utils';
-import dayjs from 'dayjs';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Resolver, useForm } from 'react-hook-form';
-import * as yup from 'yup';
-
-import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
-import { ContractData } from '@casedata/interfaces/contract-data';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { Role } from '@casedata/interfaces/role';
-import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
-import { validateErrandForDecision, validateStatusForDecision } from '@casedata/services/casedata-errand-service';
 import { sendDecisionMessage, sendMessage } from '@casedata/services/casedata-message-service';
 import {
   getOwnerStakeholder,
@@ -43,33 +37,40 @@ import {
 import { getErrandContract } from '@casedata/services/contract-service';
 import { triggerErrandPhaseChange } from '@casedata/services/process-service';
 import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
-import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
+import { TemplatePdfPreview } from '@common/components/template-preview/template-pdf-preview.component';
+import { useAppContext } from '@common/contexts/app.context';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
 import { Template } from '@common/interfaces/template';
-import { TemplatePdfPreview } from '@common/components/template-preview/template-pdf-preview.component';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
+import { yupResolver } from '@hookform/resolvers/yup';
+import type { RJSFSchema } from '@rjsf/utils';
 import {
   Button,
   Combobox,
+  cx,
   Dialog,
   FormControl,
   FormErrorMessage,
   FormLabel,
   Input,
   Select,
-  cx,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import dayjs from 'dayjs';
+import { Download, SendHorizontal } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
+import { Resolver, useForm } from 'react-hook-form';
+import * as yup from 'yup';
+
 import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
 import { ServiceListComponent } from '../services/casedata-service-list.component';
 import { useErrandServices } from '../services/useErrandService';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
-import { Download, SendHorizontal } from 'lucide-react';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
@@ -132,7 +133,7 @@ let formSchema = yup
   })
   .required();
 
-export const CasedataDecisionTab: React.FC<{
+export const CasedataDecisionTab: FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
   onRefetchServices?: (refetch: () => void) => void;
@@ -156,7 +157,9 @@ export const CasedataDecisionTab: React.FC<{
 
   const sortedDec = useMemo(() => {
     if (!errand) return [];
-    return [...errand.decisions].sort((a, b) => new Date(b.updated ?? 0).getTime() - new Date(a.updated ?? 0).getTime());
+    return [...errand.decisions].sort(
+      (a, b) => new Date(b.updated ?? 0).getTime() - new Date(a.updated ?? 0).getTime()
+    );
   }, [errand]);
 
   const existingDecision = useMemo(() => {

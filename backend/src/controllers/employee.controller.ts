@@ -1,11 +1,12 @@
+import authMiddleware from '@middlewares/auth.middleware';
+import { Controller, Get, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Employeev2, Employment, PortalPersonData } from '@/data-contracts/employee/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
-import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
-import { Controller, Get, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
 
 interface UserEmploymentDTO {
   orgId?: number;
@@ -48,20 +49,22 @@ export class EmployeeController {
 
       const employments = employees[0].employments
         .filter((emp: Employment) => emp.orgId && emp.orgName)
-        .map((emp: Employment): UserEmploymentDTO => ({
-          orgId: emp.orgId,
-          orgName: emp.orgName ?? undefined,
-          topOrgId: emp.topOrgId,
-          isMainEmployment: emp.isMainEmployment,
-          manager: emp.manager
-            ? {
-                personId: emp.manager.personId,
-                givenname: emp.manager.givenname ?? undefined,
-                lastname: emp.manager.lastname ?? undefined,
-                emailAddress: emp.manager.emailAddress ?? undefined,
-              }
-            : undefined,
-        }))
+        .map(
+          (emp: Employment): UserEmploymentDTO => ({
+            orgId: emp.orgId,
+            orgName: emp.orgName ?? undefined,
+            topOrgId: emp.topOrgId,
+            isMainEmployment: emp.isMainEmployment,
+            manager: emp.manager
+              ? {
+                  personId: emp.manager.personId,
+                  givenname: emp.manager.givenname ?? undefined,
+                  lastname: emp.manager.lastname ?? undefined,
+                  emailAddress: emp.manager.emailAddress ?? undefined,
+                }
+              : undefined,
+          }),
+        )
         .sort((a: UserEmploymentDTO, b: UserEmploymentDTO) => {
           if (a.isMainEmployment && !b.isMainEmployment) return -1;
           if (!a.isMainEmployment && b.isMainEmployment) return 1;

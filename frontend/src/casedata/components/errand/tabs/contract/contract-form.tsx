@@ -1,6 +1,6 @@
+import { ContractInvoicesTable } from '@casedata/components/contract-overview/contract-invoices-table.component';
 import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
 import { ContractType, IntervalType, StakeholderRole, Status, TimeUnit } from '@casedata/interfaces/contracts';
-import { IErrand } from '@casedata/interfaces/errand';
 import { validateAction } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
 import {
@@ -9,7 +9,6 @@ import {
   isLeaseAgreement,
   prettyContractRoles,
 } from '@casedata/services/contract-service';
-import { User } from '@common/interfaces/user';
 import { useAppContext } from '@contexts/app.context';
 import {
   Button,
@@ -25,13 +24,13 @@ import {
   Table,
   Textarea,
 } from '@sk-web-gui/react';
-import React, { useEffect, useState } from 'react';
-import { useFieldArray, useFormContext } from 'react-hook-form';
-import { ContractAttachments } from './contract-attachments';
-import { ContractInvoicesTable } from '@casedata/components/contract-overview/contract-invoices-table.component';
 import { Calendar, FilePen, Info, MapPin, Receipt, RefreshCcw, Users, Wallet } from 'lucide-react';
+import { ChangeEvent, FC, useEffect, useState } from 'react';
+import { useFieldArray, useFormContext } from 'react-hook-form';
 
-export const ContractForm: React.FC<{
+import { ContractAttachments } from './contract-attachments';
+
+export const ContractForm: FC<{
   changeBadgeColor?: (badgeId: string) => void;
   onSave?: (data: ContractData) => Promise<void>;
   readOnly?: boolean;
@@ -43,6 +42,7 @@ export const ContractForm: React.FC<{
   updateStakeholders?: () => void;
   contractStatus?: Status;
   onUpdateLesseesOnly?: () => void;
+  contractOveriewMode?: boolean;
 }> = ({
   changeBadgeColor,
   onSave,
@@ -55,12 +55,9 @@ export const ContractForm: React.FC<{
   updateStakeholders,
   contractStatus,
   onUpdateLesseesOnly,
+  contractOveriewMode = false,
 }) => {
-  const {
-    municipalityId,
-    errand,
-    user,
-  } = useAppContext();
+  const { municipalityId, errand, user } = useAppContext();
   const { register, setValue, control, handleSubmit, getValues, watch, formState, trigger } =
     useFormContext<ContractData>();
   const [lesseeNoticeIndex, setLesseeNoticeIndex] = useState(0);
@@ -186,13 +183,15 @@ export const ContractForm: React.FC<{
 
         // Find index for InvoiceInfo extraparameter
         const _invoiceInfoIndex = existingContract.extraParameters?.findIndex((p) => p.name === 'InvoiceInfo') ?? -1;
-        setInvoiceInfoIndex(_invoiceInfoIndex === -1 ? (existingContract.extraParameters ?? []).length : _invoiceInfoIndex);
+        setInvoiceInfoIndex(
+          _invoiceInfoIndex === -1 ? (existingContract.extraParameters ?? []).length : _invoiceInfoIndex
+        );
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingContract]);
 
-  const toPropertyDesignation = (pd: { name?: string } | string): string => (typeof pd === 'object' && pd.name ? pd.name : typeof pd === 'string' ? pd : '');
+  const toPropertyDesignation = (pd: { name?: string } | string): string =>
+    typeof pd === 'object' && pd.name ? pd.name : typeof pd === 'string' ? pd : '';
 
   const saveButton = () => {
     if (readOnly) return null;
@@ -616,7 +615,7 @@ export const ContractForm: React.FC<{
               <div className="flex justify-between gap-32 items-end mb-md">
                 <FormControl
                   className="flex-grow"
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     if (!isEditable('general')) return;
                     setValue('extension.autoExtend', e.target.value === 'true');
                     trigger();
@@ -724,7 +723,7 @@ export const ContractForm: React.FC<{
                   <div className="flex gap-18 justify-start">
                     <FormControl
                       className="flex-grow"
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
                         if (!isEditable('general')) return;
                         setValue('indexAdjusted', e.target.value as 'true' | 'false');
                       }}
@@ -747,13 +746,13 @@ export const ContractForm: React.FC<{
                           Nej
                         </RadioButton>
                       </RadioButton.Group>
-                      <small>Indexreglering baseras på nuvarande år (Oktober månad)</small>
+                      {!contractOveriewMode && <small>Indexreglering baseras på nuvarande år (Oktober månad)</small>}
                     </FormControl>
                   </div>
                   <div className="flex gap-18 justify-start">
                     <FormControl
                       className="flex-grow"
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
                         if (!isEditable('general')) return;
                         setValue('invoicing.invoiceInterval', e.target.value as IntervalType);
                       }}

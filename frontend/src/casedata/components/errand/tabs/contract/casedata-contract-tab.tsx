@@ -10,7 +10,6 @@ import {
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
-import { IErrand } from '@casedata/interfaces/errand';
 import { Role } from '@casedata/interfaces/role';
 import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { getStakeholdersByRelation } from '@casedata/services/casedata-stakeholder-service';
@@ -25,14 +24,14 @@ import {
   saveContract,
   saveContractToErrand,
 } from '@casedata/services/contract-service';
-import { User } from '@common/interfaces/user';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Checkbox, FormControl, FormLabel, Input, Select, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+
 import ContractForm from './contract-form';
 import { ContractNavigation } from './contract-navigation';
 
@@ -41,7 +40,7 @@ interface CasedataContractProps {
   setUnsaved: Dispatch<SetStateAction<boolean>>;
 }
 
-export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
+export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
   let formSchema = yup
     .object({
       type: yup.string().required('Avtalstyp måste anges'),
@@ -95,12 +94,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
       }),
     })
     .required();
-  const {
-    municipalityId,
-    errand,
-    setErrand,
-    user,
-  } = useAppContext();
+  const { municipalityId, errand, setErrand, user } = useAppContext();
   const [loading, setIsLoading] = useState<string>();
   const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
   const [sellers, setSellers] = useState<StakeholderWithPersonnumber[]>([]);

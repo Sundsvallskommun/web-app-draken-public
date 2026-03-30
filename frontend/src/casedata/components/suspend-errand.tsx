@@ -1,16 +1,14 @@
-import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { getErrand, isErrandLocked, setErrandStatus } from '@casedata/services/casedata-errand-service';
-import { User } from '@common/interfaces/user';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, FormLabel, Input, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useState } from 'react';
+import { CirclePause } from 'lucide-react';
+import { FC, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { CirclePause } from 'lucide-react';
 
 const yupSuspendForm = yup.object().shape({
   date: yup.string().required('Datum är obligatoriskt'),
@@ -24,13 +22,8 @@ export interface SuspendFormProps {
   comment: string;
 }
 
-export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
-  const {
-    municipalityId,
-    errand,
-    setErrand,
-    user,
-  } = useAppContext();
+export const SuspendErrandComponent: FC<{ disabled: boolean }> = ({ disabled }) => {
+  const { municipalityId, errand, setErrand, user } = useAppContext();
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);

@@ -1,6 +1,5 @@
 import { useAppContext } from '@common/contexts/app.context';
 import { sanitized } from '@common/services/sanitizer-service';
-import { Admin } from '@common/services/user-service';
 import { Avatar, Button, Modal, Spinner } from '@sk-web-gui/react';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { ParsedSupportEvent } from '@supportmanagement/interfaces/supportEvent';
@@ -11,23 +10,14 @@ import {
   ResolutionLabelKA,
   ResolutionLabelKS,
   ResolutionLabelLOP,
-  StatusLabel,
-  SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportErrandEvents } from '@supportmanagement/services/support-history-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { fetchRevisionDiff } from '@supportmanagement/services/support-revision-service';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
 import { History } from 'lucide-react';
-
-export const SidebarHistory: React.FC<{}> = () => {
-  const {
-    municipalityId,
-    supportErrand,
-    supportMetadata,
-    administrators,
-  } = useAppContext();
+import { FC, useEffect, useState } from 'react';
+export const SidebarHistory: FC<{}> = () => {
+  const { municipalityId, supportErrand, supportMetadata, administrators } = useAppContext();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -53,8 +43,8 @@ export const SidebarHistory: React.FC<{}> = () => {
 
   useEffect(() => {
     const _km: Record<string, string> = { NONE: 'Ingen' };
-    Object.entries(StatusLabel).forEach((e) => {
-      _km[e[0]] = e[1];
+    supportMetadata?.statuses?.forEach((e) => {
+      if (e.name && e.displayName) _km[e.name] = e.displayName;
     });
     [
       ...Object.entries(ResolutionLabelKS),

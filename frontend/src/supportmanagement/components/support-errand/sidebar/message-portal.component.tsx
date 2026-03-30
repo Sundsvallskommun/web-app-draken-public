@@ -2,9 +2,8 @@ import { MessageWrapper } from '@common/components/message/message-wrapper.compo
 import { useAppContext } from '@contexts/app.context';
 import { SupportMessageForm } from '@supportmanagement/components/support-message-form/support-message-form.component';
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
-import { useEffect, useState } from 'react';
-
-export const MessagePortal: React.FC = () => {
+import { FC, useEffect, useState } from 'react';
+export const MessagePortal: FC = () => {
   const { supportErrand, setSupportErrand } = useAppContext();
   const [show, setShow] = useState(false);
 

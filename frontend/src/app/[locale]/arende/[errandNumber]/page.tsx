@@ -9,12 +9,8 @@ import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { default as NextLink } from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-
-const Arende: React.FC = () => {
-  const pathName = usePathname();
-  const [errandNumber, setErrandNumber] = useState<string>();
+import { FC, useEffect, useRef } from 'react';
+const Arende: FC = () => {
   const { municipalityId, setMunicipalityId, setSupportMetadata, setAdministrators } = useAppContext();
 
   const initialFocus = useRef<HTMLBodyElement>(null);
@@ -25,19 +21,13 @@ const Arende: React.FC = () => {
   };
 
   useEffect(() => {
+    setMunicipalityId(process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '');
     getFeatureFlags().then((res) => {
       applyRuntimeFeatureFlags(res.data);
     });
-    setMunicipalityId(process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '');
     getAdminUsers().then((data) => {
       setAdministrators(data);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const errandNumber = pathName?.split('/')[2];
-    errandNumber && setErrandNumber(errandNumber);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -62,9 +52,9 @@ const Arende: React.FC = () => {
         </NextLink>
 
         {appConfig.isCaseData
-          ? !!errandNumber && <CasedataErrandComponent errandNumber={errandNumber} />
+          ? !!municipalityId && <CasedataErrandComponent />
           : appConfig.isSupportManagement
-          ? !!errandNumber && !!municipalityId && <SupportErrandComponent errandNumber={errandNumber} />
+          ? !!municipalityId && <SupportErrandComponent />
           : null}
       </Layout>
     </div>

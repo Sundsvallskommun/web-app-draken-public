@@ -1,20 +1,22 @@
 'use client';
 
+import 'dayjs/locale/se';
+
 import { AppWrapper } from '@common/contexts/app.context';
 import { getMe } from '@common/services/user-service';
 import {
   ColorSchemeMode,
   ConfirmationDialogContextProvider,
-  GuiProvider,
   defaultTheme,
   extendTheme,
+  GuiProvider,
 } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
 import dayjs from 'dayjs';
-import 'dayjs/locale/se';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import utc from 'dayjs/plugin/utc';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
+
 import LoaderFullScreen from '../loader/loader-fullscreen';
 
 dayjs.extend(utc);

@@ -9,15 +9,16 @@ import type { Errand } from '@common/data-contracts/case-data/data-contracts';
 import { isMEX, isPT } from '@common/services/application-service';
 import { sortBy, truncate } from '@common/services/helper-service';
 import { useAppContext } from '@contexts/app.context';
-import { Input, Pagination, Select, Spinner, Table, cx } from '@sk-web-gui/react';
+import { cx, Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
-import { useState } from 'react';
+import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+
 import { TableForm } from '../ongoing-casedata-errands.component';
 import { CasedataStatusLabelComponent } from './casedata-status-label.component';
 
-export const ErrandsTable: React.FC = () => {
+export const ErrandsTable: FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
   const { municipalityId, errands: data } = useAppContext();
   const [rowHeight, setRowHeight] = useState<string>('normal');

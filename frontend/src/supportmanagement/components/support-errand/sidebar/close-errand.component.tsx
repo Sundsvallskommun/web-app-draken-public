@@ -1,29 +1,35 @@
 import { isIK, isKA, isLOP, isROB, isSE } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
-import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
-import { ArrowRight, Check } from 'lucide-react';
 import { Button, Checkbox, FormControl, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
 import {
+  closeSupportErrand,
+  getSupportErrandById,
   Resolution,
   ResolutionLabelIK,
   ResolutionLabelKA,
   ResolutionLabelKS,
   ResolutionLabelLOP,
   ResolutionLabelROB,
+  setSupportErrandStatus,
   Status,
   SupportErrand,
-  closeSupportErrand,
-  getSupportErrandById,
-  setSupportErrandStatus,
 } from '@supportmanagement/services/support-errand-service';
 import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
 import { applicantHasContactChannel, getAdminName } from '@supportmanagement/services/support-stakeholder-service';
-import { useState } from 'react';
-import { UseFormReturn, useFormContext } from 'react-hook-form';
-import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
+import { ArrowRight, Check } from 'lucide-react';
+import { FC, useState } from 'react';
+import { useFormContext, UseFormReturn } from 'react-hook-form';
+
+const getResolutionLabels = (): Record<string, string> => {
+  if (isLOP()) return ResolutionLabelLOP;
+  if (isIK() || isSE()) return ResolutionLabelIK;
+  if (isKA()) return ResolutionLabelKA;
+  if (isROB()) return ResolutionLabelROB;
+  return ResolutionLabelKS;
+};
 
 const getDefaultResolution = (errand: SupportErrand | undefined): Resolution => {
   if (!!errand?.resolution) return errand?.resolution as Resolution;
@@ -35,7 +41,7 @@ const getDefaultResolution = (errand: SupportErrand | undefined): Resolution => 
     : Resolution.SOLVED;
 };
 
-export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+export const CloseErrandComponent: FC<{ disabled: boolean }> = ({ disabled }) => {
   const { administrators, municipalityId, supportErrand, setSupportErrand } = useAppContext();
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);
@@ -134,8 +140,8 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
             <span>
               Ärendet har redan en avslutningskod. Du kan ändra koden eller avsluta ärendet med nuvarande kod.
             </span>
-            <div className="w-fit my-16">
-              <SupportStatusLabelComponent status={'SOLVED'} resolution={supportErrand?.resolution} />
+            <div className="w-fit my-16 font-bold">
+              {getResolutionLabels()[supportErrand?.resolution] || supportErrand?.resolution}
             </div>
             <div className="flex flex-row gap-10 mt-40">
               <Button variant="secondary" rightIcon={<ArrowRight />} onClick={() => setChangeResolution(true)}>
@@ -169,17 +175,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
               <p className="text-content font-semibold">Välj en lösning</p>
               <FormControl id="resolution" className="w-full" required>
                 <RadioButton.Group data-cy="solve-radiolist">
-                  {Object.entries(
-                    isLOP()
-                      ? ResolutionLabelLOP
-                      : isIK() || isSE()
-                      ? ResolutionLabelIK
-                      : isKA()
-                      ? ResolutionLabelKA
-                      : isROB()
-                      ? ResolutionLabelROB
-                      : ResolutionLabelKS
-                  )
+                  {Object.entries(getResolutionLabels())
                     .filter(([_key, _label]) => _label !== 'Vidarebefordrat via växelprogrammet')
                     .sort((a, b) => a[1].localeCompare(b[1]))
                     .map(([_key, _label], idx) => (

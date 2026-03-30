@@ -1,6 +1,5 @@
 import { cx } from '@sk-web-gui/react';
-import { ElementType, JSX, ReactNode } from 'react';
-
+import { ElementType, FC, JSX, ReactNode } from 'react';
 interface PageHeaderProps {
   logo?: JSX.Element;
   children?: ReactNode;
@@ -14,7 +13,7 @@ interface PageHeaderProps {
   className?: string;
 }
 
-export const PageHeader: React.FC<PageHeaderProps> = ({
+export const PageHeader: FC<PageHeaderProps> = ({
   logo,
   children,
   userMenu,

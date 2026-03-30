@@ -3,8 +3,9 @@ import { ContractFilterParams, contractTypes, fetchContracts } from '@casedata/s
 import { DetailPanelWrapper } from '@common/components/detail-panel-wrapper/detail-panel-wrapper.component';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { Button, Link, useSnackbar } from '@sk-web-gui/react';
-import { useEffect, useMemo, useState } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+
 import { ContractDetailForm } from './contract-detail-form.component';
 import { ContractFilter, ContractFilterValues, ContractsFilteringComponent } from './contracts-filtering.component';
 import { ContractsTable, ContractTableForm } from './contracts-table.component';
@@ -13,7 +14,7 @@ const getContractTypeLabel = (type: ContractType): string => {
   return contractTypes.find((t) => t.key === type)?.label || 'Avtal';
 };
 
-export const ContractOverview: React.FC = () => {
+export const ContractOverview: FC = () => {
   const filterForm = useForm<ContractFilter>({ defaultValues: ContractFilterValues });
   const { watch: watchFilter } = filterForm;
 

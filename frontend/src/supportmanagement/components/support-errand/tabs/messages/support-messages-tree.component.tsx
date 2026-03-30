@@ -1,15 +1,16 @@
-import React, { Fragment, useState } from 'react';
-import { RenderedSupportMessage } from './rendered-support-message.component';
 import { Button, cx, Divider } from '@sk-web-gui/react';
 import {
-  MessageNode,
   countAllMessages,
   countUnreadMessages,
+  MessageNode,
 } from '@supportmanagement/services/support-message-service';
+import { Dispatch, FC, Fragment, SetStateAction, useState } from 'react';
+
+import { RenderedSupportMessage } from './rendered-support-message.component';
 
 interface MessageTreeProps {
   update: () => void;
-  setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMessageForm: Dispatch<SetStateAction<boolean>>;
   nodes: MessageNode[];
   selected: string;
   onSelect: (node: MessageNode) => void;
@@ -25,9 +26,9 @@ const getId = (node: MessageNode): string => {
   return '';
 };
 
-const MessageNodeComponent: React.FC<{
+const MessageNodeComponent: FC<{
   update: () => void;
-  setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMessageForm: Dispatch<SetStateAction<boolean>>;
   node: MessageNode;
   selected: string;
   onSelect: (node: MessageNode) => void;
@@ -83,13 +84,7 @@ const MessageNodeComponent: React.FC<{
   );
 };
 
-const MessageTreeComponent: React.FC<MessageTreeProps> = ({
-  update,
-  setShowMessageForm,
-  nodes,
-  selected,
-  onSelect,
-}) => {
+const MessageTreeComponent: FC<MessageTreeProps> = ({ update, setShowMessageForm, nodes, selected, onSelect }) => {
   return (
     <div className="my-lg">
       {nodes.map((node, idx) => (

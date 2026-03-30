@@ -1,46 +1,40 @@
-import { UiPhase } from '@casedata/interfaces/errand-phase';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { isROB } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
-import { Admin } from '@common/services/user-service';
+import { appConfig } from '@config/appconfig';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import {
-  Resolution,
-  Status,
-  StatusLabel,
-  StatusLabelROB,
-  SupportErrand,
   defaultSupportErrandInformation,
   getSupportErrandById,
   isSupportErrandLocked,
+  Resolution,
   setSupportErrandAdmin,
   setSupportErrandStatus,
   setSuspension,
+  Status,
   supportErrandIsEmpty,
   updateSupportErrand,
   validateAction,
 } from '@supportmanagement/services/support-errand-service';
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
 import dayjs from 'dayjs';
-import React, { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
-import { UseFormReturn, useFormContext } from 'react-hook-form';
+import { CirclePause, Mail, Undo2 } from 'lucide-react';
+import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
+import { useFormContext, UseFormReturn } from 'react-hook-form';
+
 import { CloseErrandComponent } from './close-errand.component';
 import { ForwardErrandComponent } from './forward-errand.component';
 import { StartProcessComponent } from './start-process.component';
 import { SupportResumeErrandButton } from './support-resume-errand-button.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
-import { appConfig } from '@config/appconfig';
-import { CirclePause, Mail, Undo2 } from 'lucide-react';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
-export const SidebarInfo: React.FC<{
+export const SidebarInfo: FC<{
   unsavedFacility: boolean;
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
 }> = (props) => {
-  const { user, supportErrand, setSupportErrand, administrators, municipalityId } = useAppContext();
-  const [selectableStatuses, setSelectableStatuses] = useState<{ key: string; label: string }[]>([]);
+  const { user, supportErrand, setSupportErrand, administrators, municipalityId, supportMetadata } = useAppContext();
   const [selectablePriorities, setSelectablePriorities] = useState<{ key: string; label: string }[]>([]);
   const [isLoading, setIsLoading] = useState<'status' | 'admin' | 'priority' | 'suspend' | false | true>();
   const [error, setError] = useState(false);
@@ -221,16 +215,6 @@ export const SidebarInfo: React.FC<{
 
   useEffect(() => {
     if (supportErrand?.priority && supportErrand?.status) {
-      const statusLabel = isROB() ? StatusLabelROB : StatusLabel;
-      const statuses = Object.keys(statusLabel).map((key) => {
-        return {
-          key: key,
-          label: (statusLabel as Record<string, string>)[key],
-        };
-      });
-
-      setSelectableStatuses(statuses);
-
       const prio = [
         { key: 'LOW', label: Priority.LOW },
         { key: 'MEDIUM', label: Priority.MEDIUM },
@@ -455,9 +439,9 @@ export const SidebarInfo: React.FC<{
               }
             >
               {!supportErrand?.status ? <Select.Option>Välj status</Select.Option> : null}
-              {selectableStatuses.map((c: { key: string; label: string }, index) => (
-                <Select.Option value={c.key} key={`${c}-${index}`}>
-                  {c.label}
+              {supportMetadata?.statuses?.map((status, index) => (
+                <Select.Option value={status?.name} key={`${status?.name}-${index}`}>
+                  {status?.displayName}
                 </Select.Option>
               ))}
             </Select>

@@ -575,6 +575,11 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         customer: [],
       }).as('getErrandWithoutStakeholders');
 
+      cy.intercept('GET', `**/supporterrands/2281/${mockSupportErrand.id}`, {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+      }).as('getErrandAfterOwnerChange');
+
       cy.visit('/arende/KC-00000001');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
@@ -608,6 +613,8 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="save-button"]').should('be.enabled');
 
       cy.get('[data-cy="save-button"]').click();
+
+      cy.wait('@getErrandAfterOwnerChange');
       cy.get('[data-cy="save-button"]').should('be.disabled');
     });
 
@@ -671,9 +678,11 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
     });
 
     it('displays saved facilities with street address when loading errand', () => {
-      cy.intercept('GET', `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSupportErrandWithFacilities).as(
-        'getErrandWithFacilities'
-      );
+      cy.intercept(
+        'GET',
+        `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+        mockSupportErrandWithFacilities
+      ).as('getErrandWithFacilities');
       cy.visit(`/arende/${mockSupportErrand.errandNumber}`);
       cy.wait('@getErrandWithFacilities');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();

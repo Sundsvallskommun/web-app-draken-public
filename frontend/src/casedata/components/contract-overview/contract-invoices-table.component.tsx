@@ -4,18 +4,17 @@ import {
   invoiceStatusColors,
   invoiceStatusLabels,
 } from '@casedata/services/contract-service';
-import { formatCurrency, prettyTime } from '@common/services/helper-service';
+import { formatCurrency } from '@common/services/helper-service';
 import { Button, Label, Pagination, Spinner, Table } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import React, { useCallback, useEffect, useState } from 'react';
 import { Download } from 'lucide-react';
-
+import { FC, useCallback, useEffect, useState } from 'react';
 interface ContractInvoicesTableProps {
   contractId?: string;
   municipalityId: string;
 }
 
-export const ContractInvoicesTable: React.FC<ContractInvoicesTableProps> = ({ contractId, municipalityId }) => {
+export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({ contractId, municipalityId }) => {
   const [invoices, setInvoices] = useState<ContractInvoice[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [page, setPage] = useState<number>(0);

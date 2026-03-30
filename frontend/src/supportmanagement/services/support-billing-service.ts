@@ -17,6 +17,7 @@ import {
   SupportErrandDto,
 } from 'src/data-contracts/backend/data-contracts';
 import * as yup from 'yup';
+
 import { ExternalCustomerIdentity, InternalCustomerIdentity, invoiceSettings } from './invoiceSettings';
 import { SupportErrand } from './support-errand-service';
 
@@ -96,10 +97,7 @@ export const billingFormSchema = yup.object({
             activity: yup
               .mixed<string>()
               .required('Välj aktivitet')
-              .oneOf(
-                invoiceSettings.activities.map((a) => a.value) as string[],
-                'Välj aktivitet'
-              ),
+              .oneOf(invoiceSettings.activities.map((a) => a.value) as string[], 'Välj aktivitet'),
           })
         ),
       })
@@ -253,7 +251,6 @@ export const setBillingRecordStatus: (
   const url = `billing/${municipalityId}/billingrecords/${record.id}/status`;
   let data: CBillingRecord = {
     ...record,
-    ...(status === CBillingRecordStatusEnum.APPROVED && { approvedBy: `${user.firstName} ${user.lastName}` }),
     status,
   };
   data = satisfyApi(data);
@@ -351,7 +348,10 @@ export const getEmployeeData: (username: string, domain?: string) => Promise<Por
 export const getEmployeeOrganizationId: (
   username: string,
   domain?: string
-) => Promise<{ companyId: number; organizationId: string; referenceNumber?: string } | undefined> = async (username, domain) => {
+) => Promise<{ companyId: number; organizationId: string; referenceNumber?: string } | undefined> = async (
+  username,
+  domain
+) => {
   if (!username || !domain) {
     return undefined;
   }
@@ -406,15 +406,18 @@ export const getEmployeeCustomerIdentity: (
 export const getOrganization: (
   orgNr: string,
   addressSource: 'address' | 'postAddress'
-) => Promise<{
-  partyId: string;
-  address: {
-    city: string;
-    street: string;
-    careOf: string;
-    postalCode: string;
-  };
-} | undefined> = async (orgNr, addressSource) => {
+) => Promise<
+  | {
+      partyId: string;
+      address: {
+        city: string;
+        street: string;
+        careOf: string;
+        postalCode: string;
+      };
+    }
+  | undefined
+> = async (orgNr, addressSource) => {
   return apiService
     .post<ApiResponse<CLegalEntity2WithId>, { orgNr: string }>(`organization/`, { orgNr })
     .then((res) => {

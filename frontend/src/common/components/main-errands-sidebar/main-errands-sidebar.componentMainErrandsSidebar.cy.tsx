@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { MainErrandsSidebar } from './main-errands-sidebar.component';
-import { mockMe } from '@cypress/e2e/case-data/fixtures/mockMe';
-import { useAppContext } from '@contexts/app.context';
 import { User } from '@common/interfaces/user';
+import { useAppContext } from '@contexts/app.context';
+import { mockMe } from '@cypress/e2e/case-data/fixtures/mockMe';
 import { mockNotifications } from '@cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
+import React, { useState } from 'react';
+
+import { MainErrandsSidebar } from './main-errands-sidebar.component';
 
 describe('<MainErrandsSidebar />', () => {
   it('renders', () => {

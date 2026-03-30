@@ -1,5 +1,9 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { deleteCasedataBillingRecord, updateCasedataBillingRecord } from '@casedata/services/casedata-billing-service';
+import {
+  approveCasedataBillingRecord,
+  deleteCasedataBillingRecord,
+  updateCasedataBillingRecord,
+} from '@casedata/services/casedata-billing-service';
 import { useAppContext } from '@contexts/app.context';
 import {
   Button,
@@ -13,8 +17,9 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { Pen, Trash2 } from 'lucide-react';
-import { useState } from 'react';
-import { CBillingRecord, CInvoiceRow } from 'src/data-contracts/backend/data-contracts';
+import { FC, Fragment, useState } from 'react';
+import { CBillingRecord, CBillingRecordStatusEnum, CInvoiceRow } from 'src/data-contracts/backend/data-contracts';
+
 import { BillingStatusLabel } from './billing-status-label.component';
 
 interface BillingTableProps {
@@ -46,17 +51,13 @@ interface EditRowState {
   object: string;
 }
 
-export const BillingTable: React.FC<BillingTableProps> = ({
-  errand,
-  billingRecords,
-  onDeleteRecord,
-  onUpdateRecord,
-}) => {
+export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, onDeleteRecord, onUpdateRecord }) => {
   const { municipalityId } = useAppContext();
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [editFormState, setEditFormState] = useState<EditFormState | null>(null);
   const [editingRowState, setEditingRowState] = useState<EditRowState | null>(null);
@@ -130,6 +131,42 @@ export const BillingTable: React.FC<BillingTableProps> = ({
       });
     } finally {
       setSavingId(null);
+    }
+  };
+
+  const handleApprove = async (record: CBillingRecord) => {
+    const confirmed = await confirm.showConfirmation(
+      'Godkänn faktura',
+      'Är du säker på att du vill godkänna denna faktura?',
+      'Ja',
+      'Avbryt',
+      'info'
+    );
+
+    if (!confirmed) return;
+
+    setApprovingId(record.id ?? null);
+
+    try {
+      const savedRecord = await approveCasedataBillingRecord(record, municipalityId);
+      onUpdateRecord(savedRecord);
+
+      toastMessage({
+        position: 'bottom',
+        closeable: true,
+        message: 'Faktura godkänd',
+        status: 'success',
+      });
+    } catch (error) {
+      console.error('Failed to approve billing record:', error);
+      toastMessage({
+        position: 'bottom',
+        closeable: true,
+        message: 'Kunde inte godkänna faktura',
+        status: 'error',
+      });
+    } finally {
+      setApprovingId(null);
     }
   };
 
@@ -269,10 +306,18 @@ export const BillingTable: React.FC<BillingTableProps> = ({
       {billingRecords.map((record) => {
         const isEditing = editingRecordId === record.id;
         const displayRows = isEditing && editFormState ? editFormState.invoiceRows : record.invoice.invoiceRows;
+        const isPastDue = record.invoice?.date ? new Date(record.invoice.date) < new Date() : false;
 
         return (
           <div key={record.id} className="bg-background-100 rounded-16 p-32 flex flex-col gap-24">
-            <BillingStatusLabel status={record.status} />
+            <div className="flex flex-row">
+              <BillingStatusLabel status={record.status} />{' '}
+              {record.status === CBillingRecordStatusEnum.NEW && (
+                <span className="text-small italic ml-6 mt-4">
+                  Du behöver även godkänna underlaget för att fakturan ska kunna skickas enligt önskat aviseringsdatum.
+                </span>
+              )}
+            </div>
             {!isEditing ? (
               <>
                 <div className="w-full flex flex-row">
@@ -488,53 +533,72 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                   }
 
                   const accountInfo = row.accountInformation?.[0];
+                  const colCount = isEditing ? 7 : 5;
 
                   return (
-                    <Table.Row key={rowIndex}>
-                      <Table.Column className="!overflow-visible">
-                        <div className="relative pt-24 pb-24">
-                          <span className="font-bold">{row.descriptions?.join(', ') || '-'}</span>
-                          {accountInfo && (
-                            <span className="text-small whitespace-nowrap absolute left-0 bottom-1">
+                    <Fragment key={rowIndex}>
+                      <Table.Row className="!border-b-0">
+                        <Table.Column>
+                          <span className="font-bold mt-6">{row.descriptions?.join(', ') || '-'}</span>
+                        </Table.Column>
+                        <Table.Column>
+                          <span className="mt-6">{row.detailedDescriptions?.join(', ') || '-'}</span>
+                        </Table.Column>
+                        <Table.Column>
+                          <span className="mt-6">{row.quantity || 0}</span>
+                        </Table.Column>
+                        <Table.Column>
+                          <span className="whitespace-nowrap mt-6">{(row.costPerUnit || 0).toFixed(2)} kr</span>
+                        </Table.Column>
+                        <Table.Column>
+                          <span className="whitespace-nowrap mt-6">
+                            {((row.quantity || 0) * (row.costPerUnit || 0)).toFixed(2)} kr
+                          </span>
+                        </Table.Column>
+                        {isEditing && (
+                          <>
+                            <Table.Column>
+                              <div className="mt-6">
+                                <Button
+                                  size="sm"
+                                  variant="tertiary"
+                                  iconButton
+                                  onClick={() => handleEditRow(rowIndex)}
+                                  disabled={editingRowState !== null}
+                                >
+                                  <Pen size={16} />
+                                </Button>
+                              </div>
+                            </Table.Column>
+                            <Table.Column>
+                              <div className="mt-6">
+                                <Button
+                                  size="sm"
+                                  inverted
+                                  color="error"
+                                  iconButton
+                                  onClick={() => handleDeleteRow(rowIndex)}
+                                  disabled={editingRowState !== null}
+                                >
+                                  <Trash2 size={16} />
+                                </Button>
+                              </div>
+                            </Table.Column>
+                          </>
+                        )}
+                      </Table.Row>
+                      {accountInfo && (
+                        <tr className="border-b-1 border-divider">
+                          <td colSpan={colCount} className="pl-16 pb-8 pt-6">
+                            <span className="text-small text-dark-secondary">
                               Ansvar: {accountInfo.costCenter || '-'}, Underkonto: {accountInfo.subaccount || '-'},
                               Verksamhet: {accountInfo.department || '-'}, Aktivitet: {accountInfo.activity || '-'},
                               Projekt: {accountInfo.project || '-'}, Objekt: {accountInfo.article || '-'}
                             </span>
-                          )}
-                        </div>
-                      </Table.Column>
-                      <Table.Column>{row.detailedDescriptions?.join(', ') || '-'}</Table.Column>
-                      <Table.Column>{row.quantity || 0}</Table.Column>
-                      <Table.Column>{(row.costPerUnit || 0).toFixed(2)} kr</Table.Column>
-                      <Table.Column>{((row.quantity || 0) * (row.costPerUnit || 0)).toFixed(2)} kr</Table.Column>
-                      {isEditing && (
-                        <>
-                          <Table.Column>
-                            <Button
-                              size="sm"
-                              variant="tertiary"
-                              iconButton
-                              onClick={() => handleEditRow(rowIndex)}
-                              disabled={editingRowState !== null}
-                            >
-                              <Pen size={16} />
-                            </Button>
-                          </Table.Column>
-                          <Table.Column>
-                            <Button
-                              size="sm"
-                              inverted
-                              color="error"
-                              iconButton
-                              onClick={() => handleDeleteRow(rowIndex)}
-                              disabled={editingRowState !== null}
-                            >
-                              <Trash2 size={16} />
-                            </Button>
-                          </Table.Column>
-                        </>
+                          </td>
+                        </tr>
                       )}
-                    </Table.Row>
+                    </Fragment>
                   );
                 })}
               </Table.Body>
@@ -548,12 +612,23 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                       variant="tertiary"
                       onClick={() => handleDeleteRecord(record)}
                       loading={deletingId === record.id}
+                      disabled={isPastDue}
                     >
                       Ta bort
                     </Button>
-                    <Button variant="secondary" onClick={() => startEditing(record)}>
+                    <Button variant="secondary" onClick={() => startEditing(record)} disabled={isPastDue}>
                       Redigera
                     </Button>
+                    {record.status === CBillingRecordStatusEnum.NEW && (
+                      <Button
+                        variant="primary"
+                        onClick={() => handleApprove(record)}
+                        loading={approvingId === record.id}
+                        color={'vattjom'}
+                      >
+                        Godkänn underlag
+                      </Button>
+                    )}
                   </>
                 ) : (
                   <>

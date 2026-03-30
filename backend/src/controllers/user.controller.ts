@@ -1,3 +1,7 @@
+import authMiddleware from '@middlewares/auth.middleware';
+import { Controller, Get, Header, Param, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { PortalPersonData } from '@/data-contracts/employee/data-contracts';
@@ -5,9 +9,6 @@ import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { Permissions } from '@/interfaces/users.interface';
 import ApiService from '@/services/api.service';
-import authMiddleware from '@middlewares/auth.middleware';
-import { Controller, Get, Header, Param, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
 
 interface UserData {
   name: string;

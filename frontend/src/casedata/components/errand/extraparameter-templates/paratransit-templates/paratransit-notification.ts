@@ -202,7 +202,7 @@ export const notification_UppgiftFieldTemplate: UppgiftField[] = [
     ],
     section: 'Yttre omständigheter',
   },
-    {
+  {
     field: 'external.assistanceDuringTravel',
     value: '',
     label: 'Behöver den sökande aktiv hjälp under själva resan? (T.ex. hjälp med betalning eller kommunicering)',

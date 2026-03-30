@@ -14,6 +14,7 @@ import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
 import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
+
 import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
@@ -143,34 +144,6 @@ export enum Status {
   SUBPACKAGE_HANDLED = 'SUBPACKAGE_HANDLED',
 }
 
-export enum StatusLabel {
-  NEW = 'Inkommet',
-  ONGOING = 'Pågående',
-  PENDING = 'Komplettering',
-  SUSPENDED = 'Parkerat',
-  ASSIGNED = 'Tilldelat',
-  SOLVED = 'Löst',
-  AWAITING_INTERNAL_RESPONSE = 'Intern återkoppling',
-}
-
-export enum StatusLabelROB {
-  NEW = 'Inkommet',
-  ONGOING = 'Pågående',
-  UPSTART = 'Uppstart',
-  PUBLISH_SELECTION = 'Publicera och urval',
-  INTERNAL_CONTROL_AND_INTERVIEWS = 'Intern kontroll och intervjuer',
-  REFERENCE_CHECK = 'Referenstagning',
-  REVIEW = 'Avstämning',
-  SECURITY_CLEARENCE = 'Säkerhetsprövning',
-  FEEDBACK_CLOSURE = 'Återkoppling och avslut',
-  SUBPACKAGE_HANDLED = 'Delpaket hanterad',
-  PENDING = 'Komplettering',
-  SUSPENDED = 'Parkerat',
-  ASSIGNED = 'Tilldelat',
-  SOLVED = 'Löst',
-  AWAITING_INTERNAL_RESPONSE = 'Intern återkoppling',
-}
-
 export const shouldShowResumeErrandButton = (status?: Status): boolean => {
   return (
     !!status && [Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.SUSPENDED, Status.ASSIGNED].includes(status)
@@ -228,12 +201,6 @@ export const getStatusLabel = (statuses: Status[]) => {
   }
 };
 
-export const findStatusKeyForStatusLabel = (statusKey: string) =>
-  Object.entries(StatusLabel).find((e: [string, string]) => e[1] === statusKey)?.[0];
-
-export const findStatusLabelForStatusKey = (statusLabel: string) =>
-  Object.entries(StatusLabel).find((e: [string, string]) => e[0] === statusLabel)?.[1];
-
 export const findPriorityKeyForPriorityLabel = (priorityKey: string) =>
   Object.entries(Priority).find((e: [string, string]) => e[1] === priorityKey)?.[0];
 
@@ -271,16 +238,11 @@ export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): L
 
 export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
   const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
-  const allSubTypesFlattened = (allTypesFlattened
+  const allSubTypesFlattened = allTypesFlattened
     .filter((l) => l?.labels && l.labels.length > 0)
-    .flatMap((l) => l.labels ?? [])) as Label[];
+    .flatMap((l) => l.labels ?? []) as Label[];
   return allSubTypesFlattened.find((t) => t?.resourcePath === name);
 };
-
-// This might be instance specific in the future, meaning
-// it will need to be configurable
-export const ongoingStatusesLabels = 'Inkommet,Pågående,Parkerat';
-export const ongoingStatusKeys = ongoingStatusesLabels.split(',').map(findStatusKeyForStatusLabel).join(',');
 
 export enum Resolution {
   SOLVED = 'SOLVED',
@@ -647,60 +609,59 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       ...e,
       category: (e.classification?.category === 'NONE' ? '' : e.classification?.category) || '',
       type: (e.classification?.type === 'NONE' ? '' : e.classification?.type) || '',
-      subType: (appConfig.features.useThreeLevelCategorization
-        ? e.labels?.find((l) => l.classification === 'SUBTYPE')?.resourcePath
-        : undefined) || '',
+      subType:
+        (appConfig.features.useThreeLevelCategorization
+          ? e.labels?.find((l) => l.classification === 'SUBTYPE')?.resourcePath
+          : undefined) || '',
       contactReason: e.contactReason,
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
       labels: e.labels || [],
       description: sanitized(e?.description ?? ''),
-      customer:
-        (e.stakeholders
-          ?.filter((s) => s.role === 'PRIMARY')
-          ?.map((s) => ({
-            ...s,
-            // TODO Remove s.firstName when the API is updated with dedicated field for organization name
-            organizationName: s.organizationName || s.firstName || '',
-            stakeholderType: mapExternalIdTypeToStakeholderType(s),
-            username: s.parameters?.find((p) => p.key === 'username')?.values?.[0],
-            administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values?.[0],
-            administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values?.[0],
-            title: s.parameters?.find((p) => p.key === 'title')?.values?.[0],
-            referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values?.[0],
-            department: s.parameters?.find((p) => p.key === 'department')?.values?.[0],
-            newRole: 'PRIMARY',
-            internalId: uuidv4(),
-            emails: (s.contactChannels ?? [])
-              .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
-              .map((c) => ({ value: c.value })),
-            phoneNumbers: (s.contactChannels ?? [])
-              .filter((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)
-              .map((c) => ({ value: c.value })),
-          })) ?? []) as SupportStakeholderFormModel[],
-      contacts:
-        (e.stakeholders
-          ?.filter((s) => s.role !== 'PRIMARY')
-          ?.map((s) => ({
-            ...s,
-            // TODO Remove s.firstName when the API is updated with dedicated field for organization name
-            organizationName: s.organizationName || s.firstName || '',
-            stakeholderType: mapExternalIdTypeToStakeholderType(s),
-            username: s.parameters?.find((p) => p.key === 'username')?.values?.[0],
-            administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values?.[0],
-            administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values?.[0],
-            title: s.parameters?.find((p) => p.key === 'title')?.values?.[0],
-            referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values?.[0],
-            department: s.parameters?.find((p) => p.key === 'department')?.values?.[0],
-            newRole: s.role as string,
-            internalId: uuidv4(),
-            emails: (s.contactChannels ?? [])
-              .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
-              .map((c) => ({ value: c.value })),
-            phoneNumbers: (s.contactChannels ?? [])
-              .filter((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)
-              .map((c) => ({ value: c.value })),
-          })) ?? []) as SupportStakeholderFormModel[],
+      customer: (e.stakeholders
+        ?.filter((s) => s.role === 'PRIMARY')
+        ?.map((s) => ({
+          ...s,
+          // TODO Remove s.firstName when the API is updated with dedicated field for organization name
+          organizationName: s.organizationName || s.firstName || '',
+          stakeholderType: mapExternalIdTypeToStakeholderType(s),
+          username: s.parameters?.find((p) => p.key === 'username')?.values?.[0],
+          administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values?.[0],
+          administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values?.[0],
+          title: s.parameters?.find((p) => p.key === 'title')?.values?.[0],
+          referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values?.[0],
+          department: s.parameters?.find((p) => p.key === 'department')?.values?.[0],
+          newRole: 'PRIMARY',
+          internalId: uuidv4(),
+          emails: (s.contactChannels ?? [])
+            .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
+            .map((c) => ({ value: c.value })),
+          phoneNumbers: (s.contactChannels ?? [])
+            .filter((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)
+            .map((c) => ({ value: c.value })),
+        })) ?? []) as SupportStakeholderFormModel[],
+      contacts: (e.stakeholders
+        ?.filter((s) => s.role !== 'PRIMARY')
+        ?.map((s) => ({
+          ...s,
+          // TODO Remove s.firstName when the API is updated with dedicated field for organization name
+          organizationName: s.organizationName || s.firstName || '',
+          stakeholderType: mapExternalIdTypeToStakeholderType(s),
+          username: s.parameters?.find((p) => p.key === 'username')?.values?.[0],
+          administrationCode: s.parameters?.find((p) => p.key === 'administrationCode')?.values?.[0],
+          administrationName: s.parameters?.find((p) => p.key === 'administrationName')?.values?.[0],
+          title: s.parameters?.find((p) => p.key === 'title')?.values?.[0],
+          referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values?.[0],
+          department: s.parameters?.find((p) => p.key === 'department')?.values?.[0],
+          newRole: s.role as string,
+          internalId: uuidv4(),
+          emails: (s.contactChannels ?? [])
+            .filter((c) => c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.Email)
+            .map((c) => ({ value: c.value })),
+          phoneNumbers: (s.contactChannels ?? [])
+            .filter((c) => c.type === ContactChannelType.PHONE || c.type === ContactChannelType.Phone)
+            .map((c) => ({ value: c.value })),
+        })) ?? []) as SupportStakeholderFormModel[],
     };
     return ierrand;
   } catch (e) {
@@ -838,12 +799,13 @@ export const updateSupportErrand: (
     ...(formdata.priority && {
       priority: formdata.priority,
     }),
-    ...(formdata.category && formdata.type && {
-      classification: {
-        category: formdata.category,
-        type: formdata.type,
-      },
-    }),
+    ...(formdata.category &&
+      formdata.type && {
+        classification: {
+          category: formdata.category,
+          type: formdata.type,
+        },
+      }),
     labels: (formdata.labels ?? []).map((label): Label => ({ ...label, labels: undefined })),
     ...(formdata.contactReason && { contactReason: formdata.contactReason }),
     ...(typeof formdata.contactReasonDescription !== 'undefined' && {

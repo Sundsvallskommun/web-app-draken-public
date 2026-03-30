@@ -1,11 +1,12 @@
+import authMiddleware from '@middlewares/auth.middleware';
+import { Controller, Get, Param, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { OrganizationTree } from '@/data-contracts/company/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
-import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
-import { Controller, Get, Param, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
 
 interface OrgLeafNodeDTO {
   orgId: number;

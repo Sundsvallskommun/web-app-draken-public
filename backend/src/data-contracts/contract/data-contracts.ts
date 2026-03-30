@@ -158,9 +158,15 @@ export interface AttachmentMetadata {
   id?: number;
   /** Attachment category */
   category?: AttachmentCategory;
-  /** The attachment filename */
+  /**
+   * The attachment filename
+   * @minLength 1
+   */
   filename: string;
-  /** The attachment mime-type */
+  /**
+   * The attachment mime-type
+   * @minLength 1
+   */
   mimeType: string;
   /** Notes on the attachment */
   note?: string;
@@ -323,10 +329,7 @@ export interface Fees {
    * @format int32
    */
   indexYear?: number;
-  /**
-   * Index number
-   * @format int32
-   */
+  /** Index number */
   indexNumber?: number;
   /**
    * Specifies what proportion of the consumer price index should be used for invoicing.
@@ -588,22 +591,22 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  pojo?: boolean;
-  floatingPointNumber?: boolean;
   short?: boolean;
-  int?: boolean;
-  long?: boolean;
-  double?: boolean;
-  bigDecimal?: boolean;
+  valueNode?: boolean;
   bigInteger?: boolean;
+  binary?: boolean;
+  bigDecimal?: boolean;
+  floatingPointNumber?: boolean;
+  double?: boolean;
+  missingNode?: boolean;
   /** @deprecated */
   textual?: boolean;
-  binary?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
+  int?: boolean;
+  long?: boolean;
+  pojo?: boolean;
   integralNumber?: boolean;
   container?: boolean;
-  missingNode?: boolean;
-  valueNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   number?: boolean;
   string?: boolean;
   boolean?: boolean;

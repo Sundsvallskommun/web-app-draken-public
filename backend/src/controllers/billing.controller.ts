@@ -1,3 +1,7 @@
+import dayjs from 'dayjs';
+import { Body, Controller, Delete, Get, Param, Post, Put, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
+
 import { apiServiceName } from '@/config/api-config';
 import { BillingRecord, Status } from '@/data-contracts/billingpreprocessor/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -8,9 +12,6 @@ import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL, toOffsetDateTime } from '@/utils/util';
-import dayjs from 'dayjs';
-import { Body, Controller, Delete, Get, Param, Post, Put, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 @Controller()
 @UseBefore(hasAnyPermission(['canEditSupportManagement', 'canEditCasedata']))
@@ -149,7 +150,7 @@ export class BillingController {
   @Put('/billing/:municipalityId/billingrecords/:id/status')
   @OpenAPI({ summary: 'Set billing record status' })
   @ResponseSchema(CBillingRecord)
-  @UseBefore(authMiddleware, validationMiddleware(CBillingRecord, 'body'), hasPermissions(['canEditAttestations']))
+  @UseBefore(authMiddleware, validationMiddleware(CBillingRecord, 'body'), hasAnyPermission(['canEditAttestations', 'canEditCasedata']))
   async setBillingRecordStatus(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
@@ -157,6 +158,7 @@ export class BillingController {
     @Body() data: CBillingRecord,
     @Res() response: any,
   ): Promise<BillingRecord> {
+    data.approvedBy = `${req.user.firstName} ${req.user.lastName}`;
     const url = `${municipalityId}/billingrecords/${id}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.put<BillingRecord, BillingRecord>({ url, baseURL, data }, req.user);

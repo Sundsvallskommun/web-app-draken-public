@@ -3,20 +3,20 @@ import { Category } from '@common/data-contracts/supportmanagement/data-contract
 import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
+import { Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
 import {
-  SupportErrand,
   defaultSupportErrandInformation,
   getSupportErrandByErrandNumber,
-  getSupportErrandById,
   initiateSupportErrand,
+  SupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { getSupportNotesCount } from '@supportmanagement/services/support-note-service';
+import { useParams, useRouter } from 'next/navigation';
+import { FC, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+
 import { SupportErrandSummary } from '../support-errand-basics-form/support-errand-summary.component';
 import { MessagePortal } from './sidebar/message-portal.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
@@ -33,17 +33,14 @@ let formSchema = yup
   })
   .required();
 
-export const SupportErrandComponent: React.FC<{ errandNumber?: string }> = ({ errandNumber }) => {
-  const [isLoading, setIsLoading] = useState(false);
+export const SupportErrandComponent: FC = () => {
+  const params = useParams<{ errandNumber?: string }>();
+  const errandNumber = params?.errandNumber;
+  const [isLoading, setIsLoading] = useState(!!errandNumber);
   const [message, setMessage] = useState('Hämtar ärende..');
   const [categoriesList, setCategoriesList] = useState<Category[]>();
   const [unsavedFacility, setUnsavedFacility] = useState(false);
-  const {
-    municipalityId,
-    supportErrand,
-    setSupportErrand,
-    supportMetadata,
-  } = useAppContext();
+  const { municipalityId, supportErrand, setSupportErrand, supportMetadata, setNotesCount } = useAppContext();
   const toastMessage = useSnackbar();
 
   const methods = useForm<SupportErrand>({
@@ -123,6 +120,27 @@ export const SupportErrandComponent: React.FC<{ errandNumber?: string }> = ({ er
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, municipalityId, errandNumber]);
 
+  useEffect(() => {
+    if (supportErrand && !supportErrandIsEmpty(supportErrand)) {
+      getSupportNotesCount(supportErrand!.id!, municipalityId!).then((res) => {
+        setNotesCount(res);
+      });
+    }
+  }, [supportErrand, municipalityId]);
+
+  const isReady = !isLoading && !!supportErrand?.id && !!supportMetadata;
+
+  if (!isReady) {
+    return (
+      <div className="grow shrink overflow-y-hidden">
+        <div className="h-full w-full flex flex-col items-center justify-start p-28">
+          <Spinner size={4} />
+          <span className="text-gray m-md">{message}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <FormProvider {...methods}>
       <div className="grow shrink overflow-y-hidden">
@@ -135,61 +153,39 @@ export const SupportErrandComponent: React.FC<{ errandNumber?: string }> = ({ er
                 minHeight: `calc(100vh - 7.2rem)`,
               }}
             >
-              {isLoading ? (
-                <div className="h-full w-full flex flex-col items-center justify-start p-28">
-                  <Spinner size={4} />
-                  <span className="text-gray m-md">{message}</span>
-                </div>
-              ) : (
-                <div className="flex-grow w-full max-w-screen-lg">
-                  <section className="bg-transparent pt-24 pb-4">
-                    <div className="container m-auto pl-0 pr-24 md:pr-40">
-                      <div className="w-full flex flex-wrap flex-col justify-between gap-24">
-                        {!supportErrandIsEmpty(supportErrand!) ? (
-                          <>
-                            <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
-                              {appConfig.features.useThreeLevelCategorization
-                                ? supportErrand!.labels?.find((l) => l.classification === 'TYPE')?.displayName ??
-                                  '(Ärendetyp saknas)'
-                                : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
-                                    ?.displayName}
-                            </h1>
-                            {/* TODO: Add some logic or featureflag for this component to be displayed */}
-                            {process.env.NEXT_PUBLIC_APPLICATION === 'IAF' && <SupportErrandSummary />}
-                          </>
-                        ) : supportErrand ? (
-                          <div className="flex justify-between items-center pt-8">
-                            <h1 className="text-h3-sm md:text-h3-md xl:text-h2-lg mb-0 break-words">
-                              Registrera nytt ärende
-                            </h1>
-                            <div className="flex gap-md">
-                              <Button
-                                variant="tertiary"
-                                onClick={() => {
-                                  window.close();
-                                }}
-                              >
-                                Avbryt
-                              </Button>
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-                  </section>
-
-                  <section className="bg-transparent pb-4">
-                    <div className="container m-auto bg-transparent py-12 pl-0 pr-24 md:pr-40">
-                      {supportErrand && (
+              <div className="flex-grow w-full max-w-screen-lg">
+                <section className="bg-transparent pt-24 pb-4">
+                  <div className="container m-auto pl-0 pr-24 md:pr-40">
+                    <div className="w-full flex flex-wrap flex-col justify-between gap-24">
+                      {!supportErrandIsEmpty(supportErrand!) ? (
                         <>
-                          <SupportTabsWrapper setUnsavedFacility={setUnsavedFacility} />
-                          <MessagePortal />
+                          <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
+                            {appConfig.features.useThreeLevelCategorization
+                              ? supportErrand!.labels?.find((l) => l.classification === 'TYPE')?.displayName ??
+                                '(Ärendetyp saknas)'
+                              : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
+                                  ?.displayName}
+                          </h1>
+                          {process.env.NEXT_PUBLIC_APPLICATION === 'IAF' && <SupportErrandSummary />}
                         </>
+                      ) : (
+                        <div className="flex justify-between items-center pt-8">
+                          <h1 className="text-h3-sm md:text-h3-md xl:text-h2-lg mb-0 break-words">
+                            Registrera nytt ärende
+                          </h1>
+                        </div>
                       )}
                     </div>
-                  </section>
-                </div>
-              )}
+                  </div>
+                </section>
+
+                <section className="bg-transparent pb-4">
+                  <div className="container m-auto bg-transparent py-12 pl-0 pr-24 md:pr-40">
+                    <SupportTabsWrapper setUnsavedFacility={setUnsavedFacility} />
+                    <MessagePortal />
+                  </div>
+                </section>
+              </div>
             </main>
           </div>
           <SidebarWrapper setUnsavedFacility={setUnsavedFacility} unsavedFacility={unsavedFacility} />

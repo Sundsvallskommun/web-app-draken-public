@@ -1,8 +1,9 @@
+import { Controller, Get } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { User } from '@/interfaces/users.interface';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
-import { Controller, Get } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
 
 @Controller()
 export class HealthController {
@@ -24,7 +25,7 @@ export class HealthController {
       email: '',
       password: '',
       username: '',
-      groups: '',
+      groups: [],
       permissions: { canEditCasedata: false, canEditSupportManagement: false, canViewAttestations: false, canEditAttestations: false },
     };
     const res = await this.apiService.post<{ status: string }, { status: string }>({ url, data }, dummyUser).catch(e => {

@@ -13,6 +13,7 @@ import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import { TemplateApiResponse } from '@supportmanagement/services/message-template-service';
 import dayjs from 'dayjs';
+
 import { isFTErrand, isFTNationalErrand } from './casedata-errand-service';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
 
@@ -139,8 +140,7 @@ export const saveDecision: (
     decisionOutcome: formData.outcome as DecisionOutcome,
     description: formData.description,
     law: formData.law,
-    validFrom:
-      isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validFrom).startOf('day').toISOString() : '',
+    validFrom: isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validFrom).startOf('day').toISOString() : '',
     validTo: isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validTo).endOf('day').toISOString() : '',
     decidedAt: dayjs().toISOString(),
     decidedBy: decidedBy,

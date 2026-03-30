@@ -13,8 +13,9 @@ import {
   useSupportErrands,
 } from '@supportmanagement/services/support-errand-service';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+
 import SupportManagementFiltering, {
   SupportManagementFilter,
   SupportManagementValues,
@@ -31,7 +32,7 @@ export interface TableForm {
   pageSize: number;
 }
 
-export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props) => {
+export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
   const filterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, getValues, setValue } = filterForm;
 
@@ -353,7 +354,7 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
         </div>
       </div>
 
-      <main className="px-5 pb-40 w-full">
+      <main className="pl-40 pb-40 w-full">
         <div className="container mx-auto p-0 w-full">
           <div className="mt-32 flex flex-col gap-16">
             <div>

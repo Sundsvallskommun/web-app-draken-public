@@ -21,7 +21,6 @@ import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures
 import { mockRelations } from '../lop/fixtures/mockRelations';
 import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
-import { mock } from 'node:test';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('errand page', () => {
@@ -132,7 +131,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
 
       // Status
       cy.get(`[data-cy="status-input"]`).should('exist');
-      cy.get(`[data-cy="status-input"]`).select('PENDING').should('have.value', 'PENDING');
+      cy.get(`[data-cy="status-input"]`).select('SUSPENDED').should('have.value', 'SUSPENDED');
 
       // Priority
       cy.get(`[data-cy="priority-input"]`).should('exist');
@@ -141,7 +140,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
 
       cy.wait('@updateErrand').then((interception) => {
         expect(interception?.request.body.priority).to.eq('LOW');
-        expect(interception?.request.body.status).to.eq('PENDING');
+        expect(interception?.request.body.status).to.eq('SUSPENDED');
         expect(interception?.response?.statusCode).to.eq(200);
       });
     });

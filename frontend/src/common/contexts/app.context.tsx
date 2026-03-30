@@ -3,20 +3,20 @@ import { ErrandsData, IErrand } from '@casedata/interfaces/errand';
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { emptyErrandList } from '@casedata/services/casedata-errand-service';
 import { MessageNode } from '@casedata/services/casedata-message-service';
+import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
+import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { Admin, emptyUser } from '@common/services/user-service';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
+  emptySupportErrandList,
   Status,
   SupportErrand,
   SupportErrandsData,
   SupportStakeholderFormModel,
-  emptySupportErrandList,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
-import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
-import { createContext, useContext, useState } from 'react';
+import { createContext, ReactNode, useContext, useState } from 'react';
 import { CPageBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
 export interface AppContextInterface {
@@ -124,11 +124,17 @@ export interface AppContextInterface {
 
   billingRecords: CPageBillingRecord;
   setBillingRecords: (billingRecords: CPageBillingRecord) => void;
+
+  notesCount: number;
+  setNotesCount: (notesCount: number) => void;
+
+  serviceNotesCount: number;
+  setServiceNotesCount: (serviceNotesCount: number) => void;
 }
 
 const AppContext = createContext<AppContextInterface | null>(null);
 
-export function AppWrapper({ children }: { children: React.ReactNode }) {
+export function AppWrapper({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<User>(emptyUser);
   const [avatar, setAvatar] = useState<string>('');
@@ -164,6 +170,8 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
   const [notifications, setNotifications] = useState<(SupportNotification | CaseDataNotification)[]>([]);
   const [uiPhase, setUiPhase] = useState<UiPhase>();
   const [billingRecords, setBillingRecords] = useState<CPageBillingRecord>({ content: [] });
+  const [notesCount, setNotesCount] = useState<number>(0);
+  const [serviceNotesCount, setServiceNotesCount] = useState<number>(0);
 
   return (
     <AppContext.Provider
@@ -263,7 +271,8 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
         setSidebarLabel: (sidebarLabel: string) => setSidebarLabel(sidebarLabel),
 
         notifications,
-        setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) => setNotifications(notifications),
+        setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) =>
+          setNotifications(notifications),
 
         administrators,
         setAdministrators: (admins: Admin[]) => {
@@ -278,6 +287,12 @@ export function AppWrapper({ children }: { children: React.ReactNode }) {
 
         billingRecords,
         setBillingRecords: (billingRecords: CPageBillingRecord) => setBillingRecords(billingRecords),
+
+        notesCount,
+        setNotesCount: (notesCount: number) => setNotesCount(notesCount),
+
+        serviceNotesCount,
+        setServiceNotesCount: (serviceNotesCount: number) => setServiceNotesCount(serviceNotesCount),
       }}
     >
       {children}

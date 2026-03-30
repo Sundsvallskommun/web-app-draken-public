@@ -4,9 +4,11 @@ import { useAppContext } from '@contexts/app.context';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { Channels } from '@supportmanagement/services/support-errand-service';
 import { getSupportReporterStakeholder } from '@supportmanagement/services/support-stakeholder-service';
+import { FC } from 'react';
+
 import { SupportStatusLabelComponent } from '../ongoing-support-errands/components/support-status-label.component';
 
-export const SupportErrandSummary: React.FC<{}> = () => {
+export const SupportErrandSummary: FC<{}> = () => {
   const { supportErrand } = useAppContext();
 
   return (
@@ -18,7 +20,11 @@ export const SupportErrandSummary: React.FC<{}> = () => {
               Ärendestatus
             </div>
             <div data-cy="errandStatus">
-              <SupportStatusLabelComponent status={supportErrand?.status ?? ''} resolution={supportErrand?.resolution ?? ''} />
+              <SupportStatusLabelComponent
+                status={supportErrand?.status ?? ''}
+                resolution={supportErrand?.resolution ?? ''}
+                actions={supportErrand?.actions ?? []}
+              />
             </div>
           </div>
           <div className="pr-sm">

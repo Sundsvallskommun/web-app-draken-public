@@ -128,3 +128,45 @@ export function buildUpdateAssetPayload(
     jsonParameters: mergedParams,
   };
 }
+
+export function buildRemoveParameterPayload(paramIndex: number, existing: Asset): Partial<Asset> & Record<string, any> {
+  return {
+    ...existing,
+    origin: existing.origin,
+    partyId: existing.partyId,
+    assetId: existing.assetId,
+    type: existing.type,
+    issued: existing.issued ?? null,
+    validTo: existing.validTo ?? null,
+    status: existing.status,
+    description: existing.description ?? '',
+    additionalParameters: existing.additionalParameters ?? {},
+    jsonParameters: (existing.jsonParameters ?? []).filter((_, i) => i !== paramIndex),
+  };
+}
+
+export function buildReplaceParameterPayload(
+  formData: any,
+  paramIndex: number,
+  { schemaId, assetType, partyId, assetId }: BuildArgs,
+  existing: Asset
+): Partial<Asset> & Record<string, any> {
+  const params = [...(existing.jsonParameters ?? [])];
+  if (paramIndex < 0 || paramIndex >= params.length) {
+    throw new Error(`Parameter index ${paramIndex} out of range (0–${params.length - 1}).`);
+  }
+  params[paramIndex] = { key: assetType, value: formData, schemaId };
+  return {
+    ...existing,
+    origin: existing.origin,
+    partyId: existing.partyId ?? partyId,
+    assetId: existing.assetId ?? assetId,
+    type: existing.type,
+    issued: formData?.validFrom ?? existing.issued,
+    validTo: formData?.validityType === 'tillsvidare' ? null : formData?.validTo ?? existing.validTo,
+    status: existing.status,
+    description: existing.description ?? '',
+    additionalParameters: existing.additionalParameters ?? {},
+    jsonParameters: params,
+  };
+}

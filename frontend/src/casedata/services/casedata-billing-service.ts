@@ -7,6 +7,7 @@ import {
   CBillingRecordTypeEnum,
   CInvoiceRow,
 } from 'src/data-contracts/backend/data-contracts';
+
 import { BillingFormData, BillingServiceItem } from '../interfaces/billing';
 import { IErrand } from '../interfaces/errand';
 import { casedataInvoiceSettings, CasedataService } from './billing/casedata-invoice-settings';
@@ -277,6 +278,22 @@ export const updateCasedataBillingRecord = async (
     return res.data;
   } catch (e) {
     console.error('Something went wrong when updating billing record');
+    throw e;
+  }
+};
+
+export const approveCasedataBillingRecord = async (
+  record: CBillingRecord,
+  municipalityId: string
+): Promise<CBillingRecord> => {
+  const url = `billing/${municipalityId}/billingrecords/${record.id}/status`;
+  const data = satisfyApi({ ...record, status: CBillingRecordStatusEnum.APPROVED });
+
+  try {
+    const res = await apiService.put<CBillingRecord, CBillingRecord>(url, data);
+    return res.data;
+  } catch (e) {
+    console.error('Something went wrong when approving billing record');
     throw e;
   }
 };

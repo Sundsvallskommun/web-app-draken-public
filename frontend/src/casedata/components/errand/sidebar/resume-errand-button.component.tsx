@@ -4,10 +4,9 @@ import { sortBy } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useState } from 'react';
 import { CirclePlay } from 'lucide-react';
-
-export const ResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+import { FC, useState } from 'react';
+export const ResumeErrandButton: FC<{ disabled: boolean }> = ({ disabled }) => {
   const { municipalityId, errand, setErrand } = useAppContext();
   const confirm = useConfirm();
   const toastMessage = useSnackbar();

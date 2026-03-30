@@ -1,4 +1,5 @@
 import { UppgiftField } from '@casedata/services/casedata-extra-parameters-service';
+
 import { swedishMunicipalities } from '../municipalities';
 
 export const journeyFieldsGroup = {
@@ -178,7 +179,7 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
       },
     ],
   },
-    {
+  {
     field: 'personal.needForEscort',
     value: '',
     label: 'Behöver den sökande aktiv hjälp av en ledsagare under själva resan?',

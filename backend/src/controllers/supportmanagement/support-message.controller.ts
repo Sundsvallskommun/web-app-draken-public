@@ -1,3 +1,9 @@
+import { Type } from 'class-transformer';
+import { IsArray, IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, ValidateIf, ValidateNested } from 'class-validator';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
+import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
+import { v4 as uuidv4 } from 'uuid';
+
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
@@ -17,11 +23,6 @@ import { validateSupportAction } from '@/services/support-errand.service';
 import { fileUploadOptions } from '@/utils/fileUploadOptions';
 import { logger } from '@/utils/logger';
 import { validateRequestBody } from '@/utils/validate';
-import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, ValidateIf, ValidateNested } from 'class-validator';
-import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
-import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
-import { v4 as uuidv4 } from 'uuid';
 
 export interface SupportAttachment {
   id: string;

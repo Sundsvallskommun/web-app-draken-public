@@ -1,7 +1,9 @@
+import { Relation } from '@common/data-contracts/relations/data-contracts';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { MessageNode } from '@supportmanagement/services/support-message-service';
+
+import { SingleSupportAttachment } from './support-attachment-service';
 import { SupportErrand } from './support-errand-service';
-import { Relation } from '@common/data-contracts/relations/data-contracts';
 
 export const getSupportConversations: (municipalityId: string, errandId: string) => Promise<ApiResponse<any[]>> = (
   municipalityId,
@@ -74,17 +76,26 @@ export const sendSupportConversationMessage = (
   errandId: string,
   conversationId: string,
   message: string,
-  files?: { file: File }[]
+  files?: { file: File }[],
+  existingAttachments?: SingleSupportAttachment[]
 ) => {
   const url = `supportmanagement/${municipalityId}/namespace/errand/${errandId}/communication/conversations/${conversationId}/messages`;
 
   const formData = new FormData();
-  formData.append(
-    'message',
-    JSON.stringify({
-      content: message,
-    })
-  );
+  const messageBody: { content: string; attachmentIds?: string[] } = {
+    content: message,
+  };
+
+  if (existingAttachments && existingAttachments.length > 0) {
+    const ids = existingAttachments
+      .map((a: any) => a.attachmentId ?? a.errandAttachmentHeader?.id)
+      .filter((id: any) => id != null);
+    if (ids.length > 0) {
+      messageBody.attachmentIds = ids;
+    }
+  }
+
+  formData.append('message', JSON.stringify(messageBody));
 
   if (files && files.length > 0) {
     files.forEach((fileList) => {
@@ -107,7 +118,7 @@ export const sendSupportConversationMessage = (
 
 export const getSupportConversationAttachment: (
   municipalityId: string,
-  errandId: number,
+  errandId: string,
   conversationId: string,
   messageId: string,
   attachmentId: string

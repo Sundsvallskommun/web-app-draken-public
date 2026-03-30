@@ -62,13 +62,15 @@ export const exportSingleErrand: (
       file: '',
     })),
     caseLabel: (MEXCaseLabel as Record<string, string>)[errand.caseType],
-    extraParameters: mappedParams.filter((ep): ep is NonNullable<typeof ep> => ep != null).map((ep) => ({
-      id: ep.field,
-      key: ep.field,
-      displayName: ep.label,
-      values: Array.isArray(ep.value) ? ep.value : [ep.value],
-      label: getExtraParametersLabels(errand.caseType)?.[ep.field] || '',
-    })),
+    extraParameters: mappedParams
+      .filter((ep): ep is NonNullable<typeof ep> => ep != null)
+      .map((ep) => ({
+        id: ep.field,
+        key: ep.field,
+        displayName: ep.label,
+        values: Array.isArray(ep.value) ? ep.value : [ep.value],
+        label: getExtraParametersLabels(errand.caseType)?.[ep.field] || '',
+      })),
   };
 
   return renderPdf(url, preparedErrand, includeParameters);
@@ -84,7 +86,12 @@ const downloadFile = (name: string, url: string) => {
   document.body.removeChild(link);
 };
 
-export const downloadPdf = (d: { pdfBase64: string; error?: string }, name: string, successHandler: () => void, errorHandler: () => void) => {
+export const downloadPdf = (
+  d: { pdfBase64: string; error?: string },
+  name: string,
+  successHandler: () => void,
+  errorHandler: () => void
+) => {
   if (typeof d.error === 'undefined' && typeof d.pdfBase64 !== 'undefined') {
     const byteCharacters = atob(d.pdfBase64);
     const byteNumbers = new Array(byteCharacters.length);

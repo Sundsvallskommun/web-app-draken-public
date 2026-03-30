@@ -7,8 +7,9 @@ import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { appConfig } from '@config/appconfig';
 import store from '@supportmanagement/services/storage-service';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+
 import CaseDataFiltering, { CaseDataFilter, CaseDataValues } from '../casedata-filtering/casedata-filtering.component';
 import { ErrandsTable } from './components/errands-table.component';
 
@@ -22,7 +23,7 @@ export interface TableForm {
   pageSize: number;
 }
 
-export const OngoingCaseDataErrands: React.FC = () => {
+export const OngoingCaseDataErrands: FC = () => {
   const filterForm = useForm<CaseDataFilter>({ defaultValues: CaseDataValues });
   const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, setValue, getValues } = filterForm;
   const tableForm = useForm<TableForm>({ defaultValues: { sortColumn: 'updated', sortOrder: 'desc', pageSize: 12 } });
@@ -262,7 +263,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
         </div>
       </div>
 
-      <main className="px-5 pb-40 w-full h-full">
+      <main className="pl-40 pb-40 w-full h-full">
         <div className="container mx-auto p-0 w-full">
           <div className="mt-32 flex flex-col gap-16">
             <div className="flex justify-between">

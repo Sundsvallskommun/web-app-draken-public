@@ -1,7 +1,6 @@
 'use client';
 
 import { DecisionOutcomeKey } from '@casedata/interfaces/decision';
-import { IErrand } from '@casedata/interfaces/errand';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
 import { renderUtredningPdf, saveDecision } from '@casedata/services/casedata-decision-service';
@@ -9,12 +8,11 @@ import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@cased
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
-import { User } from '@common/interfaces/user';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, cx, FormControl, FormErrorMessage, Input, useSnackbar } from '@sk-web-gui/react';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
@@ -49,13 +47,8 @@ let formSchema = yup
   })
   .required();
 
-export const SidebarUtredning: React.FC = () => {
-  const {
-    municipalityId,
-    errand,
-    setErrand,
-    user,
-  } = useAppContext();
+export const SidebarUtredning: FC = () => {
+  const { municipalityId, errand, setErrand, user } = useAppContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
