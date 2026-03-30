@@ -1,9 +1,6 @@
-import { useAppContext } from '@common/contexts/app.context';
-import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
-import { getMe } from '@common/services/user-service';
-import { appConfig } from '@config/appconfig';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
+import { useSnackbar } from '@sk-web-gui/react';
 import {
   SupportErrand,
   defaultSupportErrandInformation,
@@ -12,16 +9,13 @@ import {
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportNotesCount } from '@supportmanagement/services/support-note-service';
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { SupportErrandSummary } from '../support-errand-basics-form/support-errand-summary.component';
-import { MessagePortal } from './sidebar/message-portal.component';
-import { SidebarWrapper } from './sidebar/sidebar.wrapper';
-import { SupportTabsWrapper } from './support-tabs-wrapper';
+import { SupportErrandLayout } from './support-errand-layout';
 
-let formSchema = yup
+const formSchema = yup
   .object({
     id: yup.string(),
     category: yup.string().required('Välj ärendekategori'),
@@ -32,44 +26,23 @@ let formSchema = yup
   })
   .required();
 
-export const SupportErrandComponent: React.FC = () => {
-  const params = useParams<{ errandNumber?: string }>();
-  const errandNumber = params?.errandNumber;
-  const [isLoading, setIsLoading] = useState(!!errandNumber);
+export const SupportErrandComponent: React.FC<{ errandNumber?: string }> = ({ errandNumber }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('Hämtar ärende..');
-  const [categoriesList, setCategoriesList] = useState<Category[]>();
-  const [unsavedFacility, setUnsavedFacility] = useState(false);
-  const { municipalityId, supportErrand, setSupportErrand, supportMetadata, setNotesCount } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const setNotesCount = useSupportStore((s) => s.setNotesCount);
   const toastMessage = useSnackbar();
+  const router = useRouter();
 
   const methods = useForm<SupportErrand>({
     resolver: yupResolver(formSchema) as any,
     defaultValues: defaultSupportErrandInformation,
-    mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
+    mode: 'onChange',
   });
 
-  const initialFocus = useRef<HTMLButtonElement>(null);
-  const setInitialFocus = () => {
-    setTimeout(() => {
-      initialFocus.current && initialFocus.current.focus();
-    });
-  };
-  const router = useRouter();
-  const { setUser } = useAppContext();
-
-  const { theme } = useGui();
-
   useEffect(() => {
-    setCategoriesList(supportMetadata?.categories);
-  }, [supportMetadata]);
-
-  useEffect(() => {
-    setInitialFocus();
-    getMe()
-      .then((user) => {
-        setUser(user);
-      })
-      .catch((e) => {});
     if (errandNumber) {
       setIsLoading(true);
       getSupportErrandByErrandNumber(errandNumber)
@@ -94,102 +67,40 @@ export const SupportErrandComponent: React.FC = () => {
             status: 'error',
           });
         });
-    } else {
-      if (municipalityId && supportErrandIsEmpty(supportErrand!) && !isLoading) {
-        setIsLoading(true);
-        setMessage('Registrerar nytt ärende..');
-        initiateSupportErrand(municipalityId)
-          .then((result) =>
-            setTimeout(() => {
-              router.push(`/arende/${result.errandNumber}`);
-            }, 10)
-          )
-          .catch((e) => {
-            console.error('Error when initiating errand:', e);
-            setIsLoading(false);
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Något gick fel när ärendet skulle initieras',
-              status: 'error',
-            });
+    } else if (municipalityId && (!supportErrand || supportErrandIsEmpty(supportErrand)) && !isLoading) {
+      setIsLoading(true);
+      setMessage('Registrerar nytt ärende..');
+      initiateSupportErrand(municipalityId)
+        .then((result) =>
+          setTimeout(() => {
+            router.push(`/arende/${result.errandNumber}`);
+          }, 10)
+        )
+        .catch((e) => {
+          console.error('Error when initiating errand:', e);
+          setIsLoading(false);
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Något gick fel när ärendet skulle initieras',
+            status: 'error',
           });
-      }
+        });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, municipalityId, errandNumber]);
 
   useEffect(() => {
     if (supportErrand && !supportErrandIsEmpty(supportErrand)) {
-      getSupportNotesCount(supportErrand!.id!, municipalityId!).then((res) => {
+      getSupportNotesCount(supportErrand.id!, municipalityId!).then((res) => {
         setNotesCount(res);
       });
     }
   }, [supportErrand, municipalityId]);
 
-  const isReady = !isLoading && !!supportErrand?.id && !!supportMetadata;
-
-  if (!isReady) {
-    return (
-      <div className="grow shrink overflow-y-hidden">
-        <div className="h-full w-full flex flex-col items-center justify-start p-28">
-          <Spinner size={4} />
-          <span className="text-gray m-md">{message}</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <FormProvider {...methods}>
-      <div className="grow shrink overflow-y-hidden">
-        <div className="flex justify-end w-full pl-24 md:pl-40 h-full">
-          <div className="flex justify-center overflow-y-auto w-full grow max-lg:mr-[5.6rem]">
-            <main
-              className="flex-grow flex justify-center max-w-content h-fit w-full pb-40"
-              style={{
-                maxWidth: `calc(${theme.spacing['max-content']} + (100vw - ${theme.spacing['max-content']})/2)`,
-                minHeight: `calc(100vh - 7.2rem)`,
-              }}
-            >
-              <div className="flex-grow w-full max-w-screen-lg">
-                <section className="bg-transparent pt-24 pb-4">
-                  <div className="container m-auto pl-0 pr-24 md:pr-40">
-                    <div className="w-full flex flex-wrap flex-col justify-between gap-24">
-                      {!supportErrandIsEmpty(supportErrand!) ? (
-                        <>
-                          <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
-                            {appConfig.features.useThreeLevelCategorization
-                              ? supportErrand!.labels?.find((l) => l.classification === 'TYPE')?.displayName ??
-                                '(Ärendetyp saknas)'
-                              : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
-                                  ?.displayName}
-                          </h1>
-                          {process.env.NEXT_PUBLIC_APPLICATION === 'IAF' && <SupportErrandSummary />}
-                        </>
-                      ) : (
-                        <div className="flex justify-between items-center pt-8">
-                          <h1 className="text-h3-sm md:text-h3-md xl:text-h2-lg mb-0 break-words">
-                            Registrera nytt ärende
-                          </h1>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </section>
-
-                <section className="bg-transparent pb-4">
-                  <div className="container m-auto bg-transparent py-12 pl-0 pr-24 md:pr-40">
-                    <SupportTabsWrapper setUnsavedFacility={setUnsavedFacility} />
-                    <MessagePortal />
-                  </div>
-                </section>
-              </div>
-            </main>
-          </div>
-          <SidebarWrapper setUnsavedFacility={setUnsavedFacility} unsavedFacility={unsavedFacility} />
-        </div>
-      </div>
+      <SupportErrandLayout isLoading={isLoading} loadingMessage={message} />
     </FormProvider>
   );
 };
