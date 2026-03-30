@@ -58,7 +58,7 @@ export const APIS = [
   },
   {
     name: 'partyassets',
-    version: '4.0',
+    version: '5.0',
   },
   {
     name: 'jsonschema',

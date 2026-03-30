@@ -42,25 +42,9 @@ export const CasedataPermitServicesTab: React.FC<{}> = () => {
       isColumnSortable: false,
       renderColumn: (value) => {
         return (
-          <span data-cy="table-column-status">{Object.entries(assetStatusLabels).find((x) => x[0] === value)?.[1]}</span>
-        );
-      },
-    },
-    {
-      property: 'caseReferenceIds',
-      label: 'Ärendenummer',
-      isColumnSortable: false,
-      renderColumn: (value) => {
-        return (
-          <>
-            {value.map((v: string) => {
-              return (
-                <span data-cy="table-column-errandNumber" key={`caseref-${v}`}>
-                  {v}
-                </span>
-              );
-            })}
-          </>
+          <span data-cy="table-column-status">
+            {Object.entries(assetStatusLabels).find((x) => x[0] === value)?.[1]}
+          </span>
         );
       },
     },
