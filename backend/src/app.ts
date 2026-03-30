@@ -57,13 +57,11 @@ function createSessionStore() {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { RedisStore } = require('connect-redis');
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const ioredis = require('ioredis');
-    const Redis = ioredis.default || ioredis;
-    const redisClient = new Redis({
-      host: redisHost,
-      port: Number(process.env.REDIS_PORT) || 6379,
-      password: redisPassword || undefined,
+    const { createClient } = require('redis');
+    const redisClient = createClient({
+      url: `redis://${redisPassword ? `:${redisPassword}@` : ''}${redisHost}:${process.env.REDIS_PORT || 6379}`,
     });
+    redisClient.connect().catch((err: Error) => logger.error(`Redis connection error: ${err.message}`));
     logger.info(`Using Redis session store (${redisHost})`);
     return new RedisStore({ client: redisClient, prefix: 'sess:', ttl: sessionTTL });
   }
