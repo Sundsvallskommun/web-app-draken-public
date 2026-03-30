@@ -87,6 +87,8 @@ export enum LeaseType {
   USUFRUCT_FARMING = "USUFRUCT_FARMING",
   USUFRUCT_MISC = "USUFRUCT_MISC",
   LAND_LEASE_MISC = "LAND_LEASE_MISC",
+  LAND_LEASE_LICENSE = "LAND_LEASE_LICENSE",
+  LAND_LEASE_MUNICIPALITY = "LAND_LEASE_MUNICIPALITY",
   OTHER_FEE = "OTHER_FEE",
 }
 
@@ -112,6 +114,7 @@ export enum ContractType {
   SHORT_TERM_LEASE_AGREEMENT = "SHORT_TERM_LEASE_AGREEMENT",
   OBJECT_LEASE = "OBJECT_LEASE",
   LEASEHOLD = "LEASEHOLD",
+  MAINTENANCE_AGREEMENT = "MAINTENANCE_AGREEMENT",
 }
 
 /** Attachment category */
@@ -591,22 +594,22 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  short?: boolean;
-  valueNode?: boolean;
-  bigInteger?: boolean;
-  binary?: boolean;
-  bigDecimal?: boolean;
-  floatingPointNumber?: boolean;
-  double?: boolean;
+  container?: boolean;
   missingNode?: boolean;
-  /** @deprecated */
-  textual?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
+  pojo?: boolean;
+  floatingPointNumber?: boolean;
+  short?: boolean;
   int?: boolean;
   long?: boolean;
-  pojo?: boolean;
-  integralNumber?: boolean;
-  container?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
+  double?: boolean;
+  bigDecimal?: boolean;
+  bigInteger?: boolean;
+  /** @deprecated */
+  textual?: boolean;
+  binary?: boolean;
+  valueNode?: boolean;
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
@@ -616,18 +619,18 @@ export interface JsonNode {
 export type SpecificationContractEntity = any;
 
 export interface PageContract {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Contract[];
   /** @format int32 */
   number?: number;
+  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
-  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;

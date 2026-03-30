@@ -1,18 +1,18 @@
 import type { Asset } from '@casedata/interfaces/asset';
-import { enumTitleOf, enumTitlesOfArray } from '@common/components/json/utils/schema-utils';
+import { enumTitlesOfArray } from '@common/components/json/utils/schema-utils';
 import type { RJSFSchema } from '@rjsf/utils';
 
 export interface Service {
   id: string;
-  restyp: string;
+  restyp: string[];
   aids: string[];
   addon: string[];
   transportMode: string[];
   comment: string;
-  startDate: string;
-  endDate: string;
   isWinterService: boolean;
-  validityType: 'tidsbegransad' | 'tillsvidare';
+  issued?: string;
+  validTo?: string;
+  schemaVersion?: string;
 }
 
 function normalizeArray(values: any): string[] {
@@ -26,23 +26,20 @@ function normalizeArray(values: any): string[] {
 }
 
 export function mapFormToServiceFromPayload(fd: any, schema: RJSFSchema | null, id: string): Service {
-  const validityType: Service['validityType'] = fd?.validityType ?? 'tillsvidare';
   const mobilityIds = normalizeArray(fd?.mobilityAids);
   const addonIds = normalizeArray(fd?.additionalAids);
   const transportModeIds = normalizeArray(fd?.transportMode);
+  const typeIds = Array.isArray(fd?.type) ? fd.type : fd?.type ? [fd.type] : [];
   const isWinterService = fd?.isWinterService === 'ja' || fd?.isWinterService === true;
 
   return {
     id,
-    restyp: enumTitleOf(schema, 'type', fd?.type ?? ''),
+    restyp: enumTitlesOfArray(schema, 'type', typeIds),
     aids: enumTitlesOfArray(schema, 'mobilityAids', mobilityIds),
     addon: enumTitlesOfArray(schema, 'additionalAids', addonIds),
     transportMode: enumTitlesOfArray(schema, 'transportMode', transportModeIds),
     comment: typeof fd?.notes === 'string' ? fd.notes : '',
-    startDate: fd?.validFrom ?? '',
-    endDate: validityType === 'tillsvidare' ? '' : fd?.validTo ?? '',
     isWinterService,
-    validityType,
   };
 }
 

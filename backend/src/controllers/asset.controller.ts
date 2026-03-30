@@ -4,7 +4,9 @@ import { RequestWithUser } from '@interfaces/auth.interface';
 import { Asset } from '@interfaces/parking-permit.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
-import { Body, Controller, Get, Param, Patch, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
+import { logger } from '@utils/logger';
+import { apiURL } from '@utils/util';
+import { Body, Controller, Delete, Get, Param, Patch, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 interface ResponseData<T> {
@@ -46,6 +48,20 @@ export class AssetController {
     return { data: res.data, message: 'success' };
   }
 
+  @Get('/assets/:id')
+  @OpenAPI({ summary: 'Get a single asset by id' })
+  @UseBefore(authMiddleware)
+  async getAsset(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @QueryParam('municipalityId') municipalityId?: string,
+  ): Promise<ResponseData<Asset>> {
+    municipalityId ??= '2281';
+    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets/${encodeURIComponent(id)}`;
+    const res = await this.apiService.get<Asset>({ url }, req.user);
+    return { data: res.data, message: 'success' };
+  }
+
   @Post('/assets')
   @OpenAPI({ summary: 'Create an asset' })
   @UseBefore(authMiddleware)
@@ -55,8 +71,9 @@ export class AssetController {
     @Body() body?: CreateAssetDto,
   ): Promise<ResponseData<Asset>> {
     municipalityId ??= '2281';
-    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets`;
-    const res = await this.apiService.post<any, any>({ url, data: body }, req.user);
+    const url = `${municipalityId}/assets`;
+    const baseURL = apiURL(this.PARTYASSETS_SERVICE);
+    const res = await this.apiService.post<any, any>({ url, baseURL, data: body }, req.user);
     return { data: res.data, message: 'created' };
   }
 
@@ -71,7 +88,23 @@ export class AssetController {
   ): Promise<ResponseData<Asset>> {
     municipalityId ??= '2281';
     const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets/${encodeURIComponent(id)}`;
+    logger.info(`PATCH asset request body: ${JSON.stringify(body)}`);
     const res = await this.apiService.patch<any, any>({ url, data: body }, req.user);
+    logger.info(`PATCH asset response: ${JSON.stringify(res.data)}`);
     return { data: res.data, message: 'updated' };
+  }
+
+  @Delete('/assets/:id')
+  @OpenAPI({ summary: 'Delete an asset' })
+  @UseBefore(authMiddleware)
+  async deleteAsset(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @QueryParam('municipalityId') municipalityId?: string,
+  ): Promise<ResponseData<boolean>> {
+    municipalityId ??= '2281';
+    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets/${encodeURIComponent(id)}`;
+    await this.apiService.delete<any>({ url }, req.user);
+    return { data: true, message: 'deleted' };
   }
 }

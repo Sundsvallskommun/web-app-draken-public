@@ -366,10 +366,9 @@ export const renderPdf: (
     if (services && services.length > 0) {
       renderBody.parameters!['services'] = services.map((service) => {
         const serviceData: any = {
-          restyp: service.restyp + (service.isWinterService ? ' (Vinterfärdtjänst)' : ''),
-          validFrom: service.startDate ? dayjs(service.startDate).format('YYYY-MM-DD') : '',
-          validTo: service.endDate ? dayjs(service.endDate).format('YYYY-MM-DD') : '',
-          validityType: service.validityType,
+          restyp: service.restyp.join(', ') + (service.isWinterService ? ' (Vinterfärdtjänst)' : ''),
+          validFrom: service.issued ? dayjs(service.issued).format('YYYY-MM-DD') : '',
+          validTo: service.validTo ? dayjs(service.validTo).format('YYYY-MM-DD') : '',
         };
 
         if (service.transportMode?.length > 0) {

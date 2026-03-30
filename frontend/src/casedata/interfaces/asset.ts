@@ -16,22 +16,23 @@ export enum assetTypeLabels {
 }
 export interface Asset {
   id: string;
-  assetId: string;
-  origin: string;
-  partyId: string;
-  type: string;
-  issued: string;
-  validTo: string;
-  status: AssetStatus;
-  statusReason: string;
-  description: string;
-  additionalParameters: { [key: string]: string };
-  jsonParameters: JsonParameter[];
+  assetId?: string;
+  origin?: string;
+  partyId?: string;
+  type?: string;
+  issued?: string;
+  validTo?: string | null;
+  status?: AssetStatus;
+  statusReason?: string;
+  description?: string;
+  additionalParameters?: { [key: string]: string };
+  jsonParameters?: JsonParameter[];
 }
 
 export interface UpdateAsset {
-  validTo: string;
-  status: AssetStatus;
-  statusReason: string;
-  additionalParameters: { [key: string]: string };
+  validTo?: string | null;
+  status?: AssetStatus;
+  statusReason?: string;
+  additionalParameters?: { [key: string]: string };
+  jsonParameters?: JsonParameter[];
 }

@@ -19,5 +19,6 @@
       "cd backend && yarn prettier --write",
       "cd backend && yarn eslint --no-error-on-unmatched-pattern --fix"
     ]
-  }
+  },
+  "dependencies": {}
 }
