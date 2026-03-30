@@ -2,6 +2,7 @@ import qs from 'qs';
 import axios from 'axios';
 import { HttpException } from '@exceptions/HttpException';
 import { logger } from '@utils/logger';
+import { getRedisClient } from '@utils/redis';
 import { apiURL } from '@utils/util';
 
 export interface Token {
@@ -12,29 +13,17 @@ export interface Token {
 const REDIS_TOKEN_KEY = 'wso2:access_token';
 const REDIS_EXPIRES_KEY = 'wso2:token_expires';
 
-// In-memory fallback
+// In-memory fallback when Redis is not available
 let c_access_token = '';
 let c_token_expires = 0;
 
-function getRedisClient() {
-  const redisHost = process.env.REDIS_HOST;
-  if (!redisHost) return null;
-
-  const { createClient } = require('redis');
-  const client = createClient({
-    url: `redis://${process.env.REDIS_PASSWORD ? `:${process.env.REDIS_PASSWORD}@` : ''}${redisHost}:${process.env.REDIS_PORT || 6379}`,
-  });
-  client.connect().catch((err: Error) => logger.error(`Redis token-cache connection error: ${err.message}`));
-  return client;
-}
-
-const redisClient = getRedisClient();
-
 class ApiTokenService {
   public async getToken(): Promise<string> {
-    if (redisClient) {
+    const redis = getRedisClient();
+
+    if (redis) {
       try {
-        const [token, expires] = await Promise.all([redisClient.get(REDIS_TOKEN_KEY), redisClient.get(REDIS_EXPIRES_KEY)]);
+        const [token, expires] = await Promise.all([redis.get(REDIS_TOKEN_KEY), redis.get(REDIS_EXPIRES_KEY)]);
 
         if (token && expires && Date.now() < Number(expires)) {
           return token;
@@ -42,22 +31,12 @@ class ApiTokenService {
       } catch (err) {
         logger.error(`Redis token read failed, falling back to fetch: ${err}`);
       }
-    } else {
-      if (Date.now() < c_token_expires && c_access_token) {
-        return c_access_token;
-      }
+    } else if (Date.now() < c_token_expires && c_access_token) {
+      return c_access_token;
     }
 
     logger.info('Getting oauth API token');
     await this.fetchToken();
-
-    if (redisClient) {
-      try {
-        return (await redisClient.get(REDIS_TOKEN_KEY)) || c_access_token;
-      } catch {
-        return c_access_token;
-      }
-    }
     return c_access_token;
   }
 
@@ -68,11 +47,12 @@ class ApiTokenService {
     c_access_token = token.access_token;
     c_token_expires = expiresAt;
 
-    if (redisClient) {
+    const redis = getRedisClient();
+    if (redis) {
       try {
         const ttlSeconds = Math.max(1, token.expires_in - 10);
-        await redisClient.set(REDIS_TOKEN_KEY, token.access_token, { EX: ttlSeconds });
-        await redisClient.set(REDIS_EXPIRES_KEY, String(expiresAt), { EX: ttlSeconds });
+        await redis.set(REDIS_TOKEN_KEY, token.access_token, { EX: ttlSeconds });
+        await redis.set(REDIS_EXPIRES_KEY, String(expiresAt), { EX: ttlSeconds });
         logger.info(`Token cached in Redis, valid for ${token.expires_in}s`);
       } catch (err) {
         logger.error(`Redis token write failed: ${err}`);

@@ -38,7 +38,6 @@ import { join } from 'path';
 import 'reflect-metadata';
 import { getMetadataArgsStorage, useExpressServer } from 'routing-controllers';
 import { routingControllersToSpec } from 'routing-controllers-openapi';
-import createFileStore from 'session-file-store';
 import swaggerUi from 'swagger-ui-express';
 import { HttpException } from './exceptions/HttpException';
 import { Profile } from './interfaces/profile.interface';
@@ -46,32 +45,6 @@ import { authorizeGroups, getPermissions, getRole } from './services/authorizati
 import { additionalConverters } from './utils/custom-validation-classes';
 import { isValidUrl } from './utils/util';
 import { isValidOrigin } from './utils/isValidateOrigin';
-
-const sessionTTL = 4 * 24 * 60 * 60;
-
-function createSessionStore() {
-  const redisHost = process.env.REDIS_HOST;
-  const redisPassword = process.env.REDIS_PASSWORD;
-
-  if (redisHost) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { RedisStore } = require('connect-redis');
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { createClient } = require('redis');
-    const redisClient = createClient({
-      url: `redis://${redisPassword ? `:${redisPassword}@` : ''}${redisHost}:${process.env.REDIS_PORT || 6379}`,
-    });
-    redisClient.connect().catch((err: Error) => logger.error(`Redis connection error: ${err.message}`));
-    logger.info(`Using Redis session store (${redisHost})`);
-    return new RedisStore({ client: redisClient, prefix: 'sess:', ttl: sessionTTL });
-  }
-
-  const FileStore = createFileStore(session);
-  logger.info('Using file-based session store');
-  return new FileStore({ ttl: sessionTTL, path: './data/sessions' });
-}
-
-const sessionStore = createSessionStore();
 
 passport.serializeUser(function (user, done) {
   done(null, user);
@@ -181,7 +154,10 @@ class App {
   public port: string | number;
   public swaggerEnabled: boolean;
 
-  constructor(Controllers: Function[]) {
+  constructor(
+    Controllers: Function[],
+    private readonly sessionStore: session.Store,
+  ) {
     this.app = express();
     this.env = NODE_ENV || 'development';
     this.port = PORT || 3000;
@@ -230,7 +206,7 @@ class App {
         secret: SECRET_KEY!,
         resave: false,
         saveUninitialized: false,
-        store: sessionStore,
+        store: this.sessionStore,
         cookie: {
           path: BASE_URL_PREFIX,
         },
