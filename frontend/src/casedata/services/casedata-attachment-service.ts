@@ -122,25 +122,18 @@ export const getImageAspect: (attachment: Attachment) => number | undefined = (a
     ? undefined
     : undefined;
 
-const uniqueAttachments: MEXAttachmentCategory[] = [];
 const uniquePTAttachments: PTAttachmentCategory[] = ['PASSPORT_PHOTO', 'SIGNATURE'];
 
 export const onlyOneAllowed: (cat: MEXAttachmentCategory | PTAttachmentCategory) => boolean = (
   cat: MEXAttachmentCategory | PTAttachmentCategory
-) =>
-  isMEX()
-    ? uniqueAttachments.includes(cat as MEXAttachmentCategory)
-    : uniquePTAttachments.includes(cat as PTAttachmentCategory);
+) => isPT() && uniquePTAttachments.includes(cat as PTAttachmentCategory);
 
 export const validateAttachmentsForUtredning: (errand: IErrand) => boolean = (errand) => {
+  if (!isPT()) return true;
   // Errand may only have max one passport photo and max one signature before moving to Utredning phase
-  const uniqueAttachmentsOnlyOnce = uniqueAttachments.every(
-    (u) =>
-      errand.attachments.filter(
-        (a) => (isMEX() ? (a.category as MEXAttachmentCategory) : (a.category as PTAttachmentCategory)) === u
-      ).length < 2
+  return uniquePTAttachments.every(
+    (u) => errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === u).length < 2
   );
-  return uniqueAttachmentsOnlyOnce;
 };
 
 export const validateAttachmentsForDecision: (errand: IErrand) => { valid: boolean; reason: string } = (errand) => {
