@@ -51,8 +51,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  causeAsProblem?: ThrowableProblem;
   detail?: string;
+  causeAsProblem?: ThrowableProblem;
 }
 
 export interface ThrowableProblem {
@@ -496,8 +496,10 @@ export interface Errand {
   businessRelated?: boolean;
   /** List of labels for the errand */
   labels?: ErrandLabel[];
-  /** List of phases for the errand */
+  /** Phase history for the errand */
   phases?: ErrandPhase[];
+  /** Phase metadata ID to assign as the active phase on the errand */
+  activePhaseId?: string;
   /** List of active notifications for the errand */
   activeNotifications?: Notification[];
   /** List of pending actions for the errand */
@@ -552,8 +554,8 @@ export interface ErrandLabel {
 
 /** Errand phase model */
 export interface ErrandPhase {
-  /** Phase ID */
-  id?: string;
+  /** Phase metadata ID */
+  phaseId?: string;
   /** Phase name */
   name?: string;
   /** Phase display name */
@@ -584,13 +586,14 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
+  number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  number?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
   valueNode?: boolean;
   container?: boolean;
   missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -602,7 +605,6 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  integralNumber?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -1031,40 +1033,40 @@ export interface MetadataResponse {
 }
 
 export interface PageErrand {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Errand[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
-  unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 /** Revision model */
@@ -1194,21 +1196,21 @@ export interface EventMetaData {
 }
 
 export interface PageEvent {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Event[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1299,21 +1301,21 @@ export interface Message {
 }
 
 export interface PageMessage {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Message[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 

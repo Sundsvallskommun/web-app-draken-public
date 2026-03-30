@@ -28,7 +28,7 @@ import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Role } from '@casedata/interfaces/role';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
-import { validateErrandForDecision, validateStatusForDecision } from '@casedata/services/casedata-errand-service';
+import { isFTNationalErrand, validateErrandForDecision, validateStatusForDecision } from '@casedata/services/casedata-errand-service';
 import { sendDecisionMessage, sendMessage } from '@casedata/services/casedata-message-service';
 import {
   getOwnerStakeholder,
@@ -166,7 +166,7 @@ export const CasedataDecisionTab: React.FC<{
   }, [errand?.decisions]);
 
   const ownerPartyId = errand ? getOwnerStakeholder(errand)?.personId : undefined;
-  const assetType = 'FTErrandAssets';
+  const assetType = errand && isFTNationalErrand(errand) ? 'ParatransitPermitNational' : 'ParatransitPermitLocal';
 
   useEffect(() => {
     (async () => {
@@ -178,6 +178,7 @@ export const CasedataDecisionTab: React.FC<{
   const { services, refetch: refetchServices } = useErrandServices({
     municipalityId,
     partyId: ownerPartyId ?? '',
+    errandId: String(errand?.id ?? ''),
     errandNumber: errand?.errandNumber ?? '',
     assetType: assetType,
     schema: serviceSchema,

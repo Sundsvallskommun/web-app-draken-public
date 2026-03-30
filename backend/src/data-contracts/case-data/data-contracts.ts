@@ -547,6 +547,8 @@ export interface Errand {
   updatedBy?: string;
   /** Suspension information */
   suspension?: Suspension;
+  /** Whether the errand is confidential or not */
+  confidential?: boolean;
   /** Extra parameters for the errand */
   extraParameters?: ExtraParameter[];
   /** JSON parameters for the errand */
@@ -586,8 +588,6 @@ export interface JsonNode {
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -599,9 +599,11 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
   missingNode?: boolean;
-  integralNumber?: boolean;
   nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -1082,18 +1084,18 @@ export interface PageableObject {
   /** @format int64 */
   offset?: number;
   sort?: SortObject;
+  unpaged?: boolean;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export interface CommitMetadata {

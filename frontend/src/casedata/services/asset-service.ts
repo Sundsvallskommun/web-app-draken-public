@@ -38,12 +38,24 @@ export async function getAssets(params: GetAssetsParams): Promise<ApiResponse<As
   return res.data;
 }
 
+export async function getAssetById(municipalityId: string, id: string): Promise<ApiResponse<Asset>> {
+  const url = `assets/${encodeURIComponent(id)}?municipalityId=${municipalityId}`;
+  const res = await apiService.get<ApiResponse<Asset>>(url);
+  return res.data;
+}
+
 export async function createAsset(
   municipalityId: string,
   payload: Partial<Asset> & Record<string, any>
 ): Promise<ApiResponse<Asset>> {
   const url = `assets?municipalityId=${municipalityId}`;
   const res = await apiService.post<ApiResponse<Asset>, typeof payload>(url, payload);
+  return res.data;
+}
+
+export async function deleteAsset(municipalityId: string, id: string): Promise<ApiResponse<boolean>> {
+  const url = `assets/${encodeURIComponent(id)}?municipalityId=${municipalityId}`;
+  const res = await apiService.deleteRequest<ApiResponse<boolean>>(url);
   return res.data;
 }
 
@@ -61,7 +73,7 @@ type BuildArgs = {
   schemaId: string;
   assetType: string;
   partyId: string;
-  assetId: string;
+  assetId?: string;
   origin?: string;
   status?: Asset['status'];
 };
@@ -72,104 +84,23 @@ export function buildCreateAssetPayload(
   { schemaId, assetType, partyId, assetId, origin = 'CASEDATA', status = 'ACTIVE' }: BuildArgs
 ): Partial<Asset> & Record<string, any> {
   const tillsvidare = formData?.validityType === 'tillsvidare';
+  const { validFrom, validTo, validityType, ...jsonValue } = formData ?? {};
   return {
     origin,
     partyId,
-    assetId,
     type: assetType,
-    issued: formData?.validFrom ?? null,
-    validTo: tillsvidare ? null : formData?.validTo ?? null,
+    issued: validFrom ?? null,
+    validTo: tillsvidare ? null : validTo ?? null,
     status,
     description: '',
     additionalParameters: {},
     jsonParameters: [
       {
         key: assetType,
-        value: formData,
+        value: jsonValue,
         schemaId,
       },
     ],
   };
 }
 
-export function buildUpdateAssetPayload(
-  formData: any,
-  schema: RJSFSchema | null,
-  args: BuildArgs,
-  existing: Asset
-): Partial<Asset> & Record<string, any> {
-  const base = buildCreateAssetPayload(formData, schema, args);
-  const newParam = base.jsonParameters?.[0];
-
-  const existingParams = Array.isArray(existing.jsonParameters) ? existing.jsonParameters : [];
-  let mergedParams = existingParams;
-
-  if (newParam) {
-    const alreadyExists = existingParams.some(
-      (p: any) => p?.key === newParam.key && p?.schemaId === newParam.schemaId && p?.value === newParam.value
-    );
-
-    if (!alreadyExists) {
-      mergedParams = [...existingParams, newParam];
-    }
-  }
-
-  return {
-    ...existing,
-    origin: existing.origin ?? base.origin,
-    partyId: existing.partyId ?? base.partyId,
-    assetId: existing.assetId ?? base.assetId,
-    type: existing.type ?? base.type,
-    issued: base.issued,
-    validTo: base.validTo,
-    status: base.status ?? existing.status,
-    description: base.description ?? existing.description,
-    additionalParameters: existing.additionalParameters ?? {},
-    jsonParameters: mergedParams,
-  };
-}
-
-export function buildRemoveParameterPayload(
-  paramIndex: number,
-  existing: Asset
-): Partial<Asset> & Record<string, any> {
-  return {
-    ...existing,
-    origin: existing.origin,
-    partyId: existing.partyId,
-    assetId: existing.assetId,
-    type: existing.type,
-    issued: existing.issued ?? null,
-    validTo: existing.validTo ?? null,
-    status: existing.status,
-    description: existing.description ?? '',
-    additionalParameters: existing.additionalParameters ?? {},
-    jsonParameters: (existing.jsonParameters ?? []).filter((_, i) => i !== paramIndex),
-  };
-}
-
-export function buildReplaceParameterPayload(
-  formData: any,
-  paramIndex: number,
-  { schemaId, assetType, partyId, assetId }: BuildArgs,
-  existing: Asset
-): Partial<Asset> & Record<string, any> {
-  const params = [...(existing.jsonParameters ?? [])];
-  if (paramIndex < 0 || paramIndex >= params.length) {
-    throw new Error(`Parameter index ${paramIndex} out of range (0–${params.length - 1}).`);
-  }
-  params[paramIndex] = { key: assetType, value: formData, schemaId };
-  return {
-    ...existing,
-    origin: existing.origin,
-    partyId: existing.partyId ?? partyId,
-    assetId: existing.assetId ?? assetId,
-    type: existing.type,
-    issued: formData?.validFrom ?? existing.issued,
-    validTo: formData?.validityType === 'tillsvidare' ? null : (formData?.validTo ?? existing.validTo),
-    status: existing.status,
-    description: existing.description ?? '',
-    additionalParameters: existing.additionalParameters ?? {},
-    jsonParameters: params,
-  };
-}

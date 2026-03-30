@@ -3,6 +3,7 @@ import { ApiResponse, apiService } from './api-service';
 import { CaseStatusResponse } from './casestatus-service';
 import { appConfig } from '@config/appconfig';
 import { Relation, RelationPagedResponse } from '@common/data-contracts/relations/data-contracts';
+import { RelationType, RelationService } from '@common/interfaces/relation-types';
 
 export const relationsToLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
@@ -35,11 +36,11 @@ export const createRelation = (
   const url = `${municipalityId}/relations`;
 
   const body: Partial<Relation> = {
-    type: 'LINK',
+    type: RelationType.LINK,
     source: {
       resourceId: sourceId,
       type: sourceErrandNumber,
-      service: appConfig.isSupportManagement ? 'supportmanagement' : 'case-data',
+      service: appConfig.isSupportManagement ? RelationService.SUPPORT_MANAGEMENT : RelationService.CASE_DATA,
       namespace: '',
     },
     target: {

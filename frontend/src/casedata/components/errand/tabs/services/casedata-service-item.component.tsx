@@ -22,13 +22,15 @@ export const ServiceListItem: React.FC<Props> = ({ service, onRemove, onEdit, re
         <div className="flex flex-col gap-4 flex-1">
           <div className="flex justify-between items-center">
             <div className="text-base font-bold text-dark-secondary">
-              {service.restyp}
+              {service.restyp.join(', ')}
               {service.isWinterService ? ' (Vinterfärdtjänst)' : ''}
             </div>
             <div className="text-md font-normal text-dark-secondary whitespace-nowrap">
-              {service?.validityType === 'tillsvidare'
-                ? `Insatsen gäller från och med ${service?.startDate}`
-                : `Insatsen gäller ${service?.startDate} - ${service?.endDate}`}
+              {service?.validTo
+                ? `Insatsen gäller ${service.issued} - ${service.validTo}`
+                : service?.issued
+                  ? `Insatsen gäller från och med ${service.issued}`
+                  : ''}
             </div>
           </div>
 
@@ -54,7 +56,7 @@ export const ServiceListItem: React.FC<Props> = ({ service, onRemove, onEdit, re
           />
 
           {!readOnly && (onEdit || onRemove) && (
-            <div className="pt-16 flex gap-16">
+            <div className="pt-16 flex gap-16 items-center">
               {onEdit && (
                 <Button size="sm" color="vattjom" variant="secondary" leftIcon={<Pencil size={16} />} onClick={() => onEdit(service.id)}>
                   Redigera insats
@@ -64,6 +66,11 @@ export const ServiceListItem: React.FC<Props> = ({ service, onRemove, onEdit, re
                 <Button size="sm" color="vattjom" onClick={() => onRemove(service.id)}>
                   Ta bort insats
                 </Button>
+              )}
+              {service.schemaVersion && (
+                <span className="text-small font-normal text-dark-secondary bg-vattjom-background-200 rounded px-6 py-2">
+                  v{service.schemaVersion}
+                </span>
               )}
             </div>
           )}
