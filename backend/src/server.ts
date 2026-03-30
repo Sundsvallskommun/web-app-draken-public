@@ -1,5 +1,6 @@
 import { ExportController } from '@controllers/export.controller';
 import { IndexController } from '@controllers/index.controller';
+import { createSessionStore } from '@utils/session-store';
 import validateEnv from '@utils/validateEnv';
 import App from './app';
 import { ActiveDirectoryController } from './controllers/active-directory.controller';
@@ -40,6 +41,8 @@ import { OrganizationController } from './controllers/organization.controller';
 
 validateEnv();
 
+const sessionStore = createSessionStore();
+
 const app = new App([
   ActiveDirectoryController,
   AddressController,
@@ -78,6 +81,6 @@ const app = new App([
   FeatureFlagController,
   EmployeeController,
   OrganizationController,
-]);
+], sessionStore);
 
 app.listen();
