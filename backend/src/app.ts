@@ -55,9 +55,11 @@ function createSessionStore() {
 
   if (redisHost) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const RedisStore = require('connect-redis').default;
+    const connectRedis = require('connect-redis');
+    const RedisStore = connectRedis.default || connectRedis;
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const Redis = require('ioredis');
+    const ioredis = require('ioredis');
+    const Redis = ioredis.default || ioredis;
     const redisClient = new Redis({
       host: redisHost,
       port: Number(process.env.REDIS_PORT) || 6379,
