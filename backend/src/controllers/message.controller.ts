@@ -303,7 +303,13 @@ export class MessageController {
       },
     } as EmailRequest;
 
-    return sendEmail(municipalityId, message, req, errandData, MessageClassification[messageDto.messageClassification as unknown as keyof typeof MessageClassification]);
+    return sendEmail(
+      municipalityId,
+      message,
+      req,
+      errandData,
+      MessageClassification[messageDto.messageClassification as unknown as keyof typeof MessageClassification],
+    );
   }
 
   @Post('/casedata/:municipalityId/webmessage')
@@ -331,7 +337,7 @@ export class MessageController {
       });
       message = {
         party: {
-          ...(getOwnerStakeholder(errandData.data).personId && { partyId: getOwnerStakeholder(errandData.data).personId }),
+          ...(getOwnerStakeholder(errandData.data)?.personId && { partyId: getOwnerStakeholder(errandData.data)?.personId }),
           externalReferences: [
             {
               key: 'flowInstanceId',

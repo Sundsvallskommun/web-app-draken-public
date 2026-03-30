@@ -8,7 +8,7 @@ import ApiService from './api.service';
 
 const SERVICE = apiServiceName('case-data');
 
-export const getOwnerStakeholder: (e: ErrandDTO) => StakeholderDTO = e => e.stakeholders?.find(s => s.roles.includes(Role.APPLICANT))!;
+export const getOwnerStakeholder: (e: ErrandDTO) => StakeholderDTO | undefined = e => e.stakeholders?.find(s => s.roles.includes(Role.APPLICANT));
 
 export const getOwnerStakeholderEmail: (e: ErrandDTO) => string | undefined = e => {
   const owner = getOwnerStakeholder(e);

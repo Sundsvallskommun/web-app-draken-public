@@ -186,7 +186,13 @@ export const sendEmail = (
     });
 };
 
-export const sendDigitalMail = (municipalityId: string, message: LetterRequest & { message?: string }, req: RequestWithUser, errandData: ApiResponse<ErrandDTO>, classification: MessageClassification) => {
+export const sendDigitalMail = (
+  municipalityId: string,
+  message: LetterRequest & { message?: string },
+  req: RequestWithUser,
+  errandData: ApiResponse<ErrandDTO>,
+  classification: MessageClassification,
+) => {
   const url = `${MESSAGING_SERVICE}/${municipalityId}/letter?async=false`;
   const apiService = new ApiService();
   return apiService
@@ -462,7 +468,7 @@ export const sendDecisionToOpenE = (errand: ErrandDTO, user: User, pdf: Attachme
   ];
   const message: WebMessageRequest = {
     party: {
-      partyId: getOwnerStakeholder(errand).personId,
+      partyId: getOwnerStakeholder(errand)?.personId,
       externalReferences: [
         {
           key: 'flowInstanceId',
@@ -519,7 +525,7 @@ export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: At
   ];
   const message: DigitalMailRequest = {
     party: {
-      partyIds: [getOwnerStakeholder(errand).personId!],
+      partyIds: [getOwnerStakeholder(errand)?.personId ?? ''],
       externalReferences: [],
     },
     sender: {

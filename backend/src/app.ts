@@ -155,7 +155,7 @@ class App {
   public swaggerEnabled: boolean;
 
   constructor(
-    Controllers: Function[],
+    Controllers: NewableFunction[],
     private readonly sessionStore: session.Store,
   ) {
     this.app = express();
@@ -353,7 +353,7 @@ class App {
     });
   }
 
-  private initializeRoutes(controllers: Function[]) {
+  private initializeRoutes(controllers: NewableFunction[]) {
     useExpressServer(this.app, {
       routePrefix: BASE_URL_PREFIX,
       cors: {
@@ -366,7 +366,7 @@ class App {
     });
   }
 
-  private initializeSwagger(controllers: Function[]) {
+  private initializeSwagger(controllers: NewableFunction[]) {
     const schemas = validationMetadatasToSchemas({
       classTransformerMetadataStorage: defaultMetadataStorage,
       refPointerPrefix: '#/components/schemas/',

@@ -9,7 +9,7 @@ import { validateRequestBody } from '@/utils/validate';
 import { IsOptional, IsString } from 'class-validator';
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
-const FormData = require('form-data');
+import FormData from 'form-data';
 
 interface SupportAttachment {
   id: string;
