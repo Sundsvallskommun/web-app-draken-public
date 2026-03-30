@@ -1,5 +1,5 @@
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useAppContext } from '@contexts/app.context';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, FormLabel, Input, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
 import {
@@ -27,11 +27,9 @@ export interface SuspendFormProps {
 }
 
 export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
-  const {
-    municipalityId,
-    supportErrand,
-    setSupportErrand,
-  } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);

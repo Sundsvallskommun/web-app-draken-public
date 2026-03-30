@@ -4,7 +4,7 @@ import {
   deleteCasedataBillingRecord,
   updateCasedataBillingRecord,
 } from '@casedata/services/casedata-billing-service';
-import { useAppContext } from '@contexts/app.context';
+import { useConfigStore } from '@stores/index';
 import {
   Button,
   DatePicker,
@@ -56,7 +56,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
   onDeleteRecord,
   onUpdateRecord,
 }) => {
-  const { municipalityId } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
   const [deletingId, setDeletingId] = useState<string | null>(null);

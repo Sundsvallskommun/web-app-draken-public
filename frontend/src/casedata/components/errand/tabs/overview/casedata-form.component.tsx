@@ -6,7 +6,7 @@ import { Priority } from '@casedata/interfaces/priority';
 import { Stakeholder } from '@casedata/interfaces/stakeholder';
 import { defaultMunicipality, getCaseLabels, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { LinkedErrandsDisclosure } from '@common/components/linked-errands-disclosure/linked-errands-disclosure.component';
-import { useAppContext } from '@common/contexts/app.context';
+import { useConfigStore } from '@stores/index';
 import { appConfig } from '@config/appconfig';
 import { cx, Disclosure, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { CircleAlert } from 'lucide-react';
@@ -39,7 +39,8 @@ const CasedataForm: React.FC<CasedataFormProps> = ({
   registeringNewErrand,
   setFormIsValid,
 }) => {
-  const { municipalityId, setMunicipalityId } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const setMunicipalityId = useConfigStore((s) => s.setMunicipalityId);
 
   useEffect(() => {
     if (errand) {

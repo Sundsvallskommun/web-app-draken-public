@@ -1,13 +1,13 @@
 import { PriorityComponent } from '@common/components/priority/priority.component';
 import { prettyTime } from '@common/services/helper-service';
-import { useAppContext } from '@contexts/app.context';
+import { useSupportStore } from '@stores/index';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { Channels } from '@supportmanagement/services/support-errand-service';
 import { getSupportReporterStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { SupportStatusLabelComponent } from '../ongoing-support-errands/components/support-status-label.component';
 
 export const SupportErrandSummary: React.FC<{}> = () => {
-  const { supportErrand } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand);
 
   return (
     <>

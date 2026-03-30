@@ -9,7 +9,7 @@ import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 import { saveErrandNote } from '@casedata/services/casedata-errand-notes-service';
 import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { isAppealEnabled } from '@common/services/feature-flag-service';
 import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
@@ -26,7 +26,7 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { AppealButtonComponent } from '../appeal-button.component';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
@@ -36,27 +36,21 @@ import { cancelErrandPhaseChange, phaseChangeInProgress } from '@casedata/servic
 import { ArchiveX, CirclePause, Mail } from 'lucide-react';
 
 export const SidebarInfo: React.FC<{}> = () => {
-  const {
-    municipalityId,
-    user,
-    errand,
-    setErrand,
-    administrators,
-    uiPhase,
-  } = useAppContext();
-  const [selectableStatuses, setSelectableStatuses] = useState<string[]>([]);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
+  const administrators = useUserStore((s) => s.administrators);
+  const uiPhase = useCasedataStore((s) => s.uiPhase);
   const [showMessageComposer, setShowMessageComposer] = useState<boolean>(false);
   const [dialogIsOpen, setDialogIsOpen] = useState<boolean>(false);
   const [causeIsEmpty, setCauseIsEmpty] = useState<boolean>(false);
   const [loading, setLoading] = useState(false);
   const toastMessage = useSnackbar();
   const { pollDisplayPhase } = useDisplayPhasePoller();
-  const [allowed, setAllowed] = useState(false);
-
-  useEffect(() => {
-    if (!errand) return;
-    const _a = validateAction(errand, user);
-    setAllowed(_a);
+  const allowed = useMemo(() => {
+    if (!errand) return false;
+    return validateAction(errand, user);
   }, [user, errand]);
 
   const { setValue, register, getValues, reset }: UseFormReturn<IErrand, any, undefined> = useFormContext();
@@ -79,7 +73,7 @@ export const SidebarInfo: React.FC<{}> = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand, administrators]);
 
-  useEffect(() => {
+  const selectableStatuses = useMemo(() => {
     const s = [ErrandStatus.VantarPaKomplettering, ErrandStatus.InterntAterkoppling, ErrandStatus.Tilldelat];
     if (errand?.phase === ErrandPhase.aktualisering) {
       s.unshift(ErrandStatus.ArendeInkommit);
@@ -99,9 +93,8 @@ export const SidebarInfo: React.FC<{}> = () => {
     if (!s.includes(errand?.status?.statusType as ErrandStatus)) {
       s.unshift(errand?.status?.statusType as ErrandStatus);
     }
-    setSelectableStatuses(s);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [errand]);
+    return s;
+  }, [errand, uiPhase]);
 
   const errandSave = useSaveCasedataErrand(false);
   const selfAssignErrand = async () => {
@@ -243,13 +236,13 @@ export const SidebarInfo: React.FC<{}> = () => {
                 </Button>
               </div>
               <Select
+                {...register('administratorName')}
+                value={getValues().administratorName}
                 className="w-full"
                 size="sm"
                 data-cy="admin-input"
                 placeholder="Tilldela handläggare"
                 aria-label="Tilldela handläggare"
-                {...register('administratorName')}
-                value={getValues().administratorName}
               >
                 {!errand?.administrator?.adAccount ? <Select.Option>Tilldela handläggare</Select.Option> : null}
                 {administrators
@@ -273,13 +266,13 @@ export const SidebarInfo: React.FC<{}> = () => {
             >
               <FormLabel className="text-small">Ärendestatus</FormLabel>
               <Select
+                {...register('status.statusType')}
+                value={getValues().status?.statusType}
                 className="w-full"
                 size="sm"
                 data-cy="status-input"
                 placeholder="Välj status"
                 aria-label="Välj status"
-                {...register('status.statusType')}
-                value={getValues().status?.statusType}
               >
                 {!errand?.status ? <Select.Option>Välj status</Select.Option> : null}
                 {selectableStatuses.map((c: string, index) => (

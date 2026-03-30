@@ -249,17 +249,24 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
       {detail.formField.type === 'radio' && (
         <>
           <RadioButton.Group
-            defaultValue={getValues(detail.field)}
+            name={fieldKey}
+            value={allFormValues[fieldKey] ?? ''}
             data-cy={`${detail.field}-radio-button-group`}
             inline={!!detail.formField.inline}
           >
             {detail.formField.options.map((option, i) => (
               <RadioButton
                 value={option.value}
-                {...register(fieldKey, validationRules)}
+                name={fieldKey}
                 key={`${option}-${i}`}
                 data-cy={`${detail.field}-radio-button-${i}`}
                 readOnly={isDisabled}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setValue(fieldKey, e.target.value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }}
               >
                 {option.label}
               </RadioButton>

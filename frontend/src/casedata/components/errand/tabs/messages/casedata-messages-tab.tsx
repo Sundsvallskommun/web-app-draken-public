@@ -6,9 +6,9 @@ import {
   fetchMessagesTree,
   setMessageViewStatus,
 } from '@casedata/services/casedata-message-service';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { Button, Divider, FormLabel, Select, useSnackbar } from '@sk-web-gui/react';
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 import { MessageComposer } from './message-composer.component';
 import MessageTreeComponent from './tree.component';
@@ -18,38 +18,33 @@ export const CasedataMessagesTab: React.FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
-  const {
-    municipalityId,
-    errand,
-    messages,
-    messageTree,
-    setMessages,
-    setMessageTree,
-    conversation,
-    conversationTree,
-    user,
-  } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const messages = useCasedataStore((s) => s.messages);
+  const messageTree = useCasedataStore((s) => s.messageTree);
+  const setMessages = useCasedataStore((s) => s.setMessages);
+  const setMessageTree = useCasedataStore((s) => s.setMessageTree);
+  const conversation = useCasedataStore((s) => s.conversation);
+  const conversationTree = useCasedataStore((s) => s.conversationTree);
+  const user = useUserStore((s) => s.user);
   const [selectedMessage, setSelectedMessage] = useState<MessageNode>();
   const [showMessageComposer, setShowMessageComposer] = useState<boolean>(false);
   const [sortMessages, setSortMessages] = useState<number>(0);
   const [filterSource, setFilterSource] = useState<number>(0);
-  const [sortedMessages, setSortedMessages] = useState(messages);
   const toastMessage = useSnackbar();
-  const [allowed, setAllowed] = useState(false);
 
-  const combinedMessages = React.useMemo(
+  const combinedMessages = useMemo(
     () => [...(messages || []), ...(conversation || [])],
     [messages, conversation]
   );
 
-  const combinedMessageTree = React.useMemo(
+  const combinedMessageTree = useMemo(
     () => [...(messageTree || []), ...(conversationTree || [])],
     [messageTree, conversationTree]
   );
 
-  useEffect(() => {
-    const _a = errand ? validateAction(errand, user) && !!errand.administrator : false;
-    setAllowed(_a);
+  const allowed = useMemo(() => {
+    return errand ? validateAction(errand, user) && !!errand.administrator : false;
   }, [user, errand]);
 
   const setMessageViewed = (msg: MessageNode) => {
@@ -94,76 +89,43 @@ export const CasedataMessagesTab: React.FC<{
     }
   };
 
-  useEffect(() => {
-    if (combinedMessages && combinedMessageTree) {
-      if (sortMessages === 1) {
-        let filteredMessages = combinedMessages.filter((message: MessageResponse) => message.direction === 'INBOUND');
-        setSortedMessages(filteredMessages);
-      } else if (sortMessages === 2) {
-        let filteredMessages = combinedMessages.filter((message: MessageResponse) => message.direction === 'OUTBOUND');
-        setSortedMessages(filteredMessages);
-      } else {
-        setSortedMessages(combinedMessageTree);
-      }
+  const filterBySource = (message: MessageResponse) => {
+    switch (filterSource) {
+      case 1:
+        return message.messageType === 'DRAKEN';
+      case 2:
+        return message.messageType === 'DIGITAL_MAIL';
+      case 3:
+        return message.messageType === 'EMAIL';
+      case 4:
+        return message.messageType === 'MINASIDOR';
+      case 5:
+        return message.messageType === 'SMS';
+      case 6:
+        return message.messageType === 'WEBMESSAGE' || !!message.externalCaseId;
+      default:
+        return true;
     }
-  }, [combinedMessages, combinedMessageTree, sortMessages]);
+  };
 
-  useEffect(() => {
-    if (combinedMessages && combinedMessageTree) {
-      let filtered = combinedMessages;
+  const sortedMessages = useMemo(() => {
+    if (!combinedMessages || !combinedMessageTree) return [];
 
+    let filtered = combinedMessages;
+
+    if (filterSource !== 0) {
+      filtered = filtered.filter(filterBySource);
+    }
+
+    if (sortMessages === 1) {
+      return filtered.filter((message: MessageResponse) => message.direction === 'INBOUND');
+    } else if (sortMessages === 2) {
+      return filtered.filter((message: MessageResponse) => message.direction === 'OUTBOUND');
+    } else {
       if (filterSource !== 0) {
-        filtered = filtered.filter((message: MessageResponse) => {
-          switch (filterSource) {
-            case 1:
-              return message.messageType === 'DRAKEN';
-            case 2:
-              return message.messageType === 'DIGITAL_MAIL';
-            case 3:
-              return message.messageType === 'EMAIL';
-            case 4:
-              return message.messageType === 'MINASIDOR';
-            case 5:
-              return message.messageType === 'SMS';
-            case 6:
-              return message.messageType === 'WEBMESSAGE' || !!message.externalCaseId;
-            default:
-              return true;
-          }
-        });
+        return combinedMessageTree.filter(filterBySource);
       }
-
-      if (sortMessages === 1) {
-        filtered = filtered.filter((message: MessageResponse) => message.direction === 'INBOUND');
-        setSortedMessages(filtered);
-      } else if (sortMessages === 2) {
-        filtered = filtered.filter((message: MessageResponse) => message.direction === 'OUTBOUND');
-        setSortedMessages(filtered);
-      } else {
-        if (filterSource !== 0) {
-          const filteredTree = combinedMessageTree.filter((node: MessageNode) => {
-            switch (filterSource) {
-              case 1:
-                return node.messageType === 'DRAKEN';
-              case 2:
-                return node.messageType === 'DIGITAL_MAIL';
-              case 3:
-                return node.messageType === 'EMAIL';
-              case 4:
-                return node.messageType === 'MINASIDOR';
-              case 5:
-                return node.messageType === 'SMS';
-              case 6:
-                return node.messageType === 'WEBMESSAGE' || !!node.externalCaseId;
-              default:
-                return true;
-            }
-          });
-          setSortedMessages(filteredTree);
-        } else {
-          setSortedMessages(combinedMessageTree);
-        }
-      }
+      return combinedMessageTree;
     }
   }, [combinedMessages, combinedMessageTree, sortMessages, filterSource]);
 

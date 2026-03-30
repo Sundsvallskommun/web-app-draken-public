@@ -10,7 +10,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { SupportStatusLabelComponent } from '../ongoing-support-errands/components/support-status-label.component';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
+import { useMetadataStore, useUserStore } from '@stores/index';
 import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
 import dayjs from 'dayjs';
 import { getAdminName, primaryStakeholderNameorEmail } from '@supportmanagement/services/support-stakeholder-service';
@@ -19,7 +19,8 @@ import { Admin } from '@common/services/user-service';
 
 export const useSupportErrandTable = (statuses: Status[]) => {
   const { t } = useTranslation();
-  const { supportMetadata, administrators } = useAppContext();
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  const administrators = useUserStore((s) => s.administrators);
 
   const labels = [
     {

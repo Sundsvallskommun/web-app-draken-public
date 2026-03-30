@@ -1,5 +1,5 @@
 import { isKC } from '@common/services/application-service';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import { Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import { useSupportErrandTable } from '@supportmanagement/components/support-errand/useSupportErrandTable';
@@ -11,7 +11,9 @@ import { TableForm } from '../ongoing-support-errands.component';
 
 export const SupportErrandsTable: React.FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
-  const { supportErrands: data, municipalityId, selectedSupportErrandStatuses }: AppContextInterface = useAppContext();
+  const data = useSupportStore((s) => s.supportErrands);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const selectedSupportErrandStatuses = useSupportStore((s) => s.selectedSupportErrandStatuses);
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');

@@ -1,14 +1,12 @@
 import { JsonParametersDisplay } from '@common/components/json/schema/json-parameters-display.component';
-import { useAppContext } from '@contexts/app.context';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import { Table } from '@sk-web-gui/react';
 import { isOpenEErrand, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { useMemo } from 'react';
 
 export const SupportErrandDetailsTab: React.FC<{}> = () => {
-  const {
-    supportErrand: _supportErrand,
-    municipalityId,
-  } = useAppContext();
+  const _supportErrand = useSupportStore((s) => s.supportErrand);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = _supportErrand!;
 
   const simpleParams = useMemo(

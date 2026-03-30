@@ -3,7 +3,7 @@ import { PortalPersonData } from '@common/data-contracts/employee/data-contracts
 import { User } from '@common/interfaces/user';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { twoDecimals } from '@common/services/helper-service';
-import { useAppContext } from '@contexts/app.context';
+import { useBillingStore, useConfigStore } from '@stores/index';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useCallback, useEffect } from 'react';
 import {
@@ -500,7 +500,9 @@ export const useBillingRecords = (
   sort?: { [key: string]: 'asc' | 'desc' }
 ): CPageBillingRecord => {
   const toastMessage = useSnackbar();
-  const { setIsLoading, setBillingRecords, billingRecords } = useAppContext();
+  const setIsLoading = useConfigStore((s) => s.setIsLoading);
+  const setBillingRecords = useBillingStore((s) => s.setBillingRecords);
+  const billingRecords = useBillingStore((s) => s.billingRecords);
   const fetchBillingRecords = useCallback(
     async (page: number = 0) => {
       // setIsLoading(true);

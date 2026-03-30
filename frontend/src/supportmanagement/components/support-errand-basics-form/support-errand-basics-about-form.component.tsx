@@ -1,35 +1,30 @@
-import { useAppContext } from '@common/contexts/app.context';
-import { Category, ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
+import { useMetadataStore } from '@stores/index';
+import { ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
 import {
   Channels,
   ContactChannelType,
   SupportErrand,
-  defaultSupportErrandInformation,
   isSupportErrandLocked,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
-import { SupportMetadata, SupportType, getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useTranslation } from 'next-i18next';
-import dynamic from 'next/dynamic';
+import { useTranslation } from 'react-i18next';
+import TextEditor from '@common/components/dynamic-text-editor';
 import { useEffect, useRef, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export const SupportErrandBasicsAboutForm: React.FC<{
   supportErrand: SupportErrand;
   registeringNewErrand?: boolean;
 }> = (props) => {
-  const {
-    supportMetadata,
-  } = useAppContext();
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const { supportErrand } = props;
   const { t } = useTranslation();
 
-  const [contactReasonList, setContactReasonList] = useState<ContactReason[]>();
+  const contactReasonList = supportMetadata?.contactReasons;
   const [causeDescriptionIsOpen, setCauseDescriptionIsOpen] = useState(
     supportErrand.contactReasonDescription !== undefined
   );
@@ -40,8 +35,6 @@ export const SupportErrandBasicsAboutForm: React.FC<{
     register,
     watch,
     setValue,
-    getValues,
-    trigger,
     formState: { errors },
   } = formControls;
 
@@ -53,17 +46,6 @@ export const SupportErrandBasicsAboutForm: React.FC<{
     userHasEditedDescription.current = false;
   }, [supportErrand.id]);
 
-  useEffect(() => {
-    if (supportMetadata) {
-      setContactReasonList(supportMetadata?.contactReasons);
-    } else {
-      getSupportMetadata(defaultSupportErrandInformation.municipalityId).then((data) => {
-        setContactReasonList(data.metadata?.contactReasons);
-      });
-    }
-  }, [supportMetadata]);
-
-  const checked = document.querySelector('#causecheckbox:checked') !== null;
 
   return (
     <>
@@ -133,11 +115,6 @@ export const SupportErrandBasicsAboutForm: React.FC<{
                 className="w-full text-dark-primary"
                 variant="primary"
                 size="md"
-                value={getValues().contactReason}
-                onChange={(e) => {
-                  setValue('contactReason', e.currentTarget.value, { shouldDirty: true });
-                  trigger('contactReason');
-                }}
               >
                 <Select.Option value="">Välj orsak</Select.Option>
                 {contactReasonList
@@ -169,11 +146,6 @@ export const SupportErrandBasicsAboutForm: React.FC<{
               className="w-full text-dark-primary"
               variant="primary"
               size="md"
-              value={getValues().channel}
-              onChange={(e) => {
-                setValue('channel', e.currentTarget.value, { shouldDirty: true });
-                trigger('channel');
-              }}
             >
               {Object.entries(Channels).map((c: [string, string]) => {
                 const id = c[0];
@@ -206,7 +178,7 @@ export const SupportErrandBasicsAboutForm: React.FC<{
             defaultChecked={supportErrand.contactReasonDescription !== undefined}
             data-cy="show-contactReasonDescription-input"
             className="w-full"
-            onClick={() => (checked ? setCauseDescriptionIsOpen(false) : setCauseDescriptionIsOpen(true))}
+            onClick={() => setCauseDescriptionIsOpen((prev) => !prev)}
           >
             {t(`common:basics_tab.cause_description.description_${process.env.NEXT_PUBLIC_APPLICATION}`)}
           </Checkbox>
@@ -214,11 +186,11 @@ export const SupportErrandBasicsAboutForm: React.FC<{
             <FormControl id="causedescription" className="w-full mt-lg">
               <FormLabel>{t('common:basics_tab.cause_description.title')}</FormLabel>
               <Textarea
+                {...register('contactReasonDescription')}
+                value={watch('contactReasonDescription') ?? ''}
                 data-cy="contactReasonDescription-input"
                 disabled={isSupportErrandLocked(supportErrand)}
                 className="block w-full text-[1.6rem] h-full"
-                value={getValues().contactReasonDescription}
-                {...register('contactReasonDescription')}
                 placeholder="Beskriv orsaken"
                 rows={7}
                 id="causedescription"

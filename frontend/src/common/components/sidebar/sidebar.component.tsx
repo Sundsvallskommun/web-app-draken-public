@@ -1,7 +1,7 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { isPT } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore, useSupportStore } from '@stores/index';
 import { Badge, Button, cx, useGui } from '@sk-web-gui/react';
 import { supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
@@ -37,7 +37,9 @@ export const Sidebar: React.FC<{
   const gui = useGui();
   const isLg = useMediaQuery(`screen and (min-width: ${gui.theme.screens.lg})`);
 
-  const { supportErrand, notesCount, serviceNotesCount } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const notesCount = useCasedataStore((s) => s.notesCount);
+  const serviceNotesCount = useCasedataStore((s) => s.serviceNotesCount);
 
   const badgeCounts: Record<string, number> = {
     'Kommentarer': notesCount,

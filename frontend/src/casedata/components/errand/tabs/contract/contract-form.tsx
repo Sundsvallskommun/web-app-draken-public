@@ -9,7 +9,7 @@ import {
   isLeaseAgreement,
   prettyContractRoles,
 } from '@casedata/services/contract-service';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import {
   Button,
   Checkbox,
@@ -25,7 +25,7 @@ import {
   Textarea,
 } from '@sk-web-gui/react';
 import { Calendar, FilePen, Info, MapPin, Receipt, RefreshCcw, Users, Wallet } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 import { ContractAttachments } from './contract-attachments';
 
@@ -56,7 +56,9 @@ export const ContractForm: React.FC<{
   onUpdateLesseesOnly,
   contractOveriewMode = false,
 }) => {
-  const { municipalityId, errand, user } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const user = useUserStore((s) => s.user);
   const { register, setValue, control, handleSubmit, getValues, watch, formState, trigger } =
     useFormContext<ContractData>();
   const [lesseeNoticeIndex, setLesseeNoticeIndex] = useState(0);
@@ -64,7 +66,6 @@ export const ContractForm: React.FC<{
   const [invoiceInfoIndex, setInvoiceInfoIndex] = useState(0);
 
   const [loading, setLoading] = useState<boolean>(false);
-  const [allowed, setAllowed] = useState(false);
   const [updatingParties, setUpdatingParties] = useState<boolean>(false);
 
   const contractType = watch().type;
@@ -80,9 +81,8 @@ export const ContractForm: React.FC<{
     return fieldType === 'billing' || fieldType === 'lessee';
   };
 
-  useEffect(() => {
-    const _a = errand ? validateAction(errand, user) : false;
-    setAllowed(_a);
+  const allowed = useMemo(() => {
+    return errand ? validateAction(errand, user) : false;
   }, [user, errand]);
 
   useEffect(() => {
