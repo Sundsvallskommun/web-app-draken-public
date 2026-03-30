@@ -1,5 +1,6 @@
 import { SidebarExport } from '@common/components/export/sidebar-export/sidebar-export.component';
 import { Sidebar, SidebarButtonKey } from '@common/components/sidebar/sidebar.component';
+import { ReactNode } from 'react';
 
 import { SidebarComments } from './sidebar-comments.component';
 import { SidebarGuide } from './sidebar-guide.component';
@@ -13,7 +14,7 @@ export const SidebarWrapper = () => {
     label: string;
     key: SidebarButtonKey;
     icon: string;
-    component: React.ReactNode;
+    component: ReactNode;
   }[] = [
     {
       label: 'Handläggning',

@@ -32,7 +32,7 @@ import { useAppContext } from '@contexts/app.context';
 import { Button, Checkbox, FormControl, FormLabel, Modal, Select, useSnackbar } from '@sk-web-gui/react';
 import { ExternalLink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import React, { useMemo, useState } from 'react';
+import { FC, useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 const getContractTypeLabel = (type: ContractType): string => {
@@ -120,7 +120,7 @@ const mapContractStakeholderToErrandStakeholder = (
   };
 };
 
-export const ContractDetailForm: React.FC<{
+export const ContractDetailForm: FC<{
   selectedContract: Contract;
   update?: (contractId: string) => void;
 }> = ({ selectedContract }) => {

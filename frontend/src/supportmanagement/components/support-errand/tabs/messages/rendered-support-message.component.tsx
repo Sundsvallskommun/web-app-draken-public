@@ -13,13 +13,13 @@ import {
 } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
 import { CornerDownRight, Image, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 
 import { RenderSupportMessageReciever } from './render-support-message-reciever.component';
 
-export const RenderedSupportMessage: React.FC<{
+export const RenderedSupportMessage: FC<{
   update: () => void;
-  setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMessageForm: Dispatch<SetStateAction<boolean>>;
   message: MessageNode;
   selected: string;
   onSelect: (msg: Message) => void;

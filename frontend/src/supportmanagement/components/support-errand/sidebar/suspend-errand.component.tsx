@@ -5,7 +5,7 @@ import { Button, FormControl, FormLabel, Input, Modal, Textarea, useSnackbar } f
 import { getSupportErrandById, setSuspension, Status } from '@supportmanagement/services/support-errand-service';
 import dayjs from 'dayjs';
 import { CirclePause } from 'lucide-react';
-import { useState } from 'react';
+import { FC, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -21,7 +21,7 @@ export interface SuspendFormProps {
   comment: string;
 }
 
-export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+export const SuspendErrandComponent: FC<{ disabled: boolean }> = ({ disabled }) => {
   const { municipalityId, supportErrand, setSupportErrand } = useAppContext();
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);

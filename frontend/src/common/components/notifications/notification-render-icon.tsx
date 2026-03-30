@@ -2,6 +2,7 @@ import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.componen
 import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Avatar, cx } from '@sk-web-gui/react';
+import { FC } from 'react';
 type Notification = SupportNotification | CaseDataNotification;
 
 interface NotificationRenderIconProps {
@@ -24,7 +25,7 @@ const surfaceColor: Record<string, string> = {
   bjornstigen: 'bg-bjornstigen-surface-accent',
 };
 
-export const NotificationRenderIcon: React.FC<NotificationRenderIconProps> = ({ notification }) => {
+export const NotificationRenderIcon: FC<NotificationRenderIconProps> = ({ notification }) => {
   const config = iconConfig[notification.description as keyof typeof iconConfig] ?? iconConfig.default;
   const color = notification.acknowledged ? 'primary' : config.defaultColor;
   const bgColor = surfaceColor[color] ?? 'bg-tertiary-surface';

@@ -4,10 +4,11 @@ import { useAppContext } from '@contexts/app.context';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { Channels } from '@supportmanagement/services/support-errand-service';
 import { getSupportReporterStakeholder } from '@supportmanagement/services/support-stakeholder-service';
+import { FC } from 'react';
 
 import { SupportStatusLabelComponent } from '../ongoing-support-errands/components/support-status-label.component';
 
-export const SupportErrandSummary: React.FC<{}> = () => {
+export const SupportErrandSummary: FC<{}> = () => {
   const { supportErrand } = useAppContext();
 
   return (

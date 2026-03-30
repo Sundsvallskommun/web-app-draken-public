@@ -1,6 +1,7 @@
 import { AppChannels, Channels } from '@casedata/interfaces/channels';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
 import { ChevronDown } from 'lucide-react';
+import { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 export interface CaseChannelFilter {
@@ -11,7 +12,7 @@ export const CaseChannelValues: CaseChannelFilter = {
   channel: [],
 };
 
-export const CasedataFilterChannel: React.FC = () => {
+export const CasedataFilterChannel: FC = () => {
   const { register } = useFormContext<CaseChannelFilter>();
 
   return (

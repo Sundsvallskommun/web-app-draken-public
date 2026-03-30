@@ -3,7 +3,7 @@ import { useAppContext } from '@contexts/app.context';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { ChevronDown } from 'lucide-react';
 import { useTranslation } from 'next-i18next';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
@@ -15,7 +15,7 @@ export const CategoryValues: CategoryFilter = {
   category: [],
 };
 
-export const SupportManagementFilterCategory: React.FC = () => {
+export const SupportManagementFilterCategory: FC = () => {
   const { register } = useFormContext<SupportManagementFilter>();
   const [query, setQuery] = useState<string>('');
   const [allCategories, setAllCategories] = useState<Category[]>();

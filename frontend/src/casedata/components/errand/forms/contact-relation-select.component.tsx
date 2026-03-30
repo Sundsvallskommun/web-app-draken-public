@@ -2,9 +2,10 @@ import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { isMEX, isPT } from '@common/services/application-service';
 import { cx, FormControl, FormErrorMessage, FormLabel, Select } from '@sk-web-gui/react';
+import { FC } from 'react';
 import { FieldErrors, UseFormRegister } from 'react-hook-form';
 
-export const ContactRelationSelect: React.FC<{
+export const ContactRelationSelect: FC<{
   contact: CasedataOwnerOrContact;
   register: UseFormRegister<CasedataOwnerOrContact>;
   errors: FieldErrors<CasedataOwnerOrContact>;

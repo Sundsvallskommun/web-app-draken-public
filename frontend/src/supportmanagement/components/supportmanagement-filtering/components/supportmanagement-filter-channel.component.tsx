@@ -1,7 +1,7 @@
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { Channels } from '@supportmanagement/services/support-errand-service';
 import { ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 export interface ChannelFilter {
@@ -12,7 +12,7 @@ export const ChannelValues: ChannelFilter = {
   channel: [],
 };
 
-export const SupportManagementFilterChannel: React.FC = () => {
+export const SupportManagementFilterChannel: FC = () => {
   const { register } = useFormContext<ChannelFilter>();
   const [query, setQuery] = useState<string>('');
 

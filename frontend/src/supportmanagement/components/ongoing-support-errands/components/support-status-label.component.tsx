@@ -4,9 +4,10 @@ import { useAppContext } from '@contexts/app.context';
 import { Label } from '@sk-web-gui/react';
 import { Resolution, ResolutionLabelROB, Status } from '@supportmanagement/services/support-errand-service';
 import { Hourglass } from 'lucide-react';
+import { FC } from 'react';
 import { CErrandAction } from 'src/data-contracts/backend/data-contracts';
 
-export const SupportStatusLabelComponent: React.FC<{
+export const SupportStatusLabelComponent: FC<{
   status: string;
   resolution: string;
   actions?: CErrandAction[];

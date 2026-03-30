@@ -3,7 +3,7 @@ import { useAppContext } from '@contexts/app.context';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { getLabelTypeFromDisplayName } from '@supportmanagement/services/support-errand-service';
 import { ChevronDown } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
@@ -16,7 +16,7 @@ export const LabelSubTypeValues: LabelSubTypeFilter = {
   labelSubType: [],
 };
 
-export const SupportManagementFilterLabelSubType: React.FC = () => {
+export const SupportManagementFilterLabelSubType: FC = () => {
   const { watch, setValue } = useFormContext<SupportManagementFilter>();
   const labelCategories = watch('labelCategory');
   const labelTypes = watch('labelType');

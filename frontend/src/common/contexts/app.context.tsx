@@ -16,7 +16,7 @@ import {
   SupportStakeholderFormModel,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { createContext, useContext, useState } from 'react';
+import { createContext, ReactNode, useContext, useState } from 'react';
 import { CPageBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
 export interface AppContextInterface {
@@ -134,7 +134,7 @@ export interface AppContextInterface {
 
 const AppContext = createContext<AppContextInterface | null>(null);
 
-export function AppWrapper({ children }: { children: React.ReactNode }) {
+export function AppWrapper({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<User>(emptyUser);
   const [avatar, setAvatar] = useState<string>('');

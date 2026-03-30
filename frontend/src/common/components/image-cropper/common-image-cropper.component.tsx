@@ -8,12 +8,10 @@ import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useAppContext } from '@contexts/app.context';
 import { Button, cx, Image } from '@sk-web-gui/react';
 import { ArrowLeft, Check, CircleX } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { FC, SyntheticEvent, useRef, useState } from 'react';
 import ReactCrop, { centerCrop, Crop, makeAspectCrop, PixelCrop } from 'react-image-crop';
 
-export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachment; onClose: () => void }> = (
-  props
-) => {
+export const CommonImageCropper: FC<{ errand: IErrand; attachment: Attachment; onClose: () => void }> = (props) => {
   const { municipalityId } = useAppContext();
   const imgRef = useRef<HTMLImageElement>(null);
   const [blob, setBlob] = useState<Blob>();
@@ -100,7 +98,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
     );
   }
 
-  function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+  function onImageLoad(e: SyntheticEvent<HTMLImageElement>) {
     const { width, height } = e.currentTarget;
     if (aspect) {
       setCrop(centerAspectCrop(width, height, aspect));

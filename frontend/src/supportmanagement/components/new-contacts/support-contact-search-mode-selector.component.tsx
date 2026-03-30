@@ -6,6 +6,7 @@ import {
   SupportStakeholderFormModel,
   SupportStakeholderTypeEnum,
 } from '@supportmanagement/services/support-errand-service';
+import { Dispatch, FC, SetStateAction } from 'react';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
 
 interface SupportContactSearchModeSelectorProps {
@@ -16,14 +17,14 @@ interface SupportContactSearchModeSelectorProps {
   contact: SupportStakeholderFormModel;
   id: string;
   label: string;
-  setSearchMode: React.Dispatch<React.SetStateAction<string>>;
-  setSelectedUser: React.Dispatch<React.SetStateAction<AddressResult | undefined>>;
-  setSearchResult: React.Dispatch<React.SetStateAction<boolean>>;
-  setSearchResultArray: React.Dispatch<React.SetStateAction<AddressResult[]>>;
+  setSearchMode: Dispatch<SetStateAction<string>>;
+  setSelectedUser: Dispatch<SetStateAction<AddressResult | undefined>>;
+  setSearchResult: Dispatch<SetStateAction<boolean>>;
+  setSearchResultArray: Dispatch<SetStateAction<AddressResult[]>>;
   replacePhonenumbers: UseFieldArrayReplace<SupportStakeholderFormModel, 'phoneNumbers'>;
 }
 
-export const SupportContactSearchModeSelector: React.FC<SupportContactSearchModeSelectorProps> = ({
+export const SupportContactSearchModeSelector: FC<SupportContactSearchModeSelectorProps> = ({
   inName,
   searchMode,
   disabled,

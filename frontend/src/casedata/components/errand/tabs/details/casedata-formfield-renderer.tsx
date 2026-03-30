@@ -16,7 +16,7 @@ import {
   Select,
   Textarea,
 } from '@sk-web-gui/react';
-import React, { useMemo, useState } from 'react';
+import { ComponentProps, FC, useMemo, useState } from 'react';
 import { get, UseFormReturn } from 'react-hook-form';
 
 import { RepeatableFieldGroup } from './repeatable-field-group';
@@ -28,7 +28,7 @@ interface Props {
   errand: any;
 }
 
-const getInputProps = (detail: UppgiftField): Partial<React.ComponentProps<typeof Input>> => {
+const getInputProps = (detail: UppgiftField): Partial<ComponentProps<typeof Input>> => {
   switch (detail.formField.type) {
     case 'date': {
       const opts = detail.formField.options ?? {};
@@ -46,7 +46,7 @@ const getInputProps = (detail: UppgiftField): Partial<React.ComponentProps<typeo
     }
     case 'text': {
       const opts = detail.formField.options ?? {};
-      const p: Partial<React.ComponentProps<typeof Input>> = {};
+      const p: Partial<ComponentProps<typeof Input>> = {};
 
       if (opts.placeholder) p.placeholder = opts.placeholder;
       if (opts.minLength !== undefined) p.minLength = opts.minLength;
@@ -112,7 +112,7 @@ function getConditionalValidationRules(
   };
 }
 
-export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, errand }) => {
+export const CasedataFormFieldRenderer: FC<Props> = ({ detail, idx, form, errand }) => {
   //TODO: Refactor this component and use a general form for extraparameters instead of hijacking IErrand form.
   //      Refactoring of this component should include better rendering from parent component to elimit rerenderings.
   const [initialComboBoxValue] = useState<string | string[]>(detail.value);

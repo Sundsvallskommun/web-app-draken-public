@@ -32,7 +32,7 @@ import {
 } from '@sk-web-gui/react';
 import { Check, ClipboardPenLine, Download, Info } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
@@ -69,7 +69,7 @@ let formSchemaFT = yup
   })
   .required();
 
-export const CasedataInvestigationTab: React.FC<{
+export const CasedataInvestigationTab: FC<{
   errand: IErrand;
   setUnsaved: (unsaved: boolean) => void;
 }> = (props) => {

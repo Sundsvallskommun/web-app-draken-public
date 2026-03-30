@@ -13,6 +13,7 @@ import { Admin } from '@common/services/user-service';
 import { useAppContext } from '@contexts/app.context';
 import { Chip } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
+import { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 import { CaseDataFilter, CaseDataValues } from '../casedata-filtering.component';
@@ -21,7 +22,7 @@ interface CasedataFilterTagsProps {
   administrators: Admin[];
 }
 
-export const CasedataFilterTags: React.FC<CasedataFilterTagsProps> = ({ administrators }) => {
+export const CasedataFilterTags: FC<CasedataFilterTagsProps> = ({ administrators }) => {
   const { watch, setValue, reset } = useFormContext<CaseDataFilter>();
   const types = watch('caseType');
   const statuses = watch('status');

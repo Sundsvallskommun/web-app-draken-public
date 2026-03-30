@@ -2,7 +2,7 @@ import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useAppContext } from '@contexts/app.context';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { ChevronDown } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
@@ -15,7 +15,7 @@ export const LabelTypeValues: LabelTypeFilter = {
   labelType: [],
 };
 
-export const SupportManagementFilterLabelType: React.FC = () => {
+export const SupportManagementFilterLabelType: FC = () => {
   const { watch, setValue } = useFormContext<SupportManagementFilter>();
   const labelCategories = watch('labelCategory');
   const labelTypes = watch('labelType');

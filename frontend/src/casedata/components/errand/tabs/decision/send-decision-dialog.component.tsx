@@ -1,9 +1,10 @@
 import { Button, Dialog } from '@sk-web-gui/react';
 import { ArrowRightCircle } from 'lucide-react';
+import { Dispatch, FC, SetStateAction } from 'react';
 
-export const SendDecisionDialogComponent: React.FC<{
+export const SendDecisionDialogComponent: FC<{
   dialogIsOpen: boolean;
-  setDialogIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setDialogIsOpen: Dispatch<SetStateAction<boolean>>;
   saveAndSend: () => Promise<void>;
 }> = ({ dialogIsOpen, setDialogIsOpen, saveAndSend }) => {
   return (

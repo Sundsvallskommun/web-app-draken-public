@@ -13,7 +13,7 @@ import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-serv
 import { useAppContext } from '@contexts/app.context';
 import { Button, Divider, useSnackbar } from '@sk-web-gui/react';
 import { Plus } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { FC, useCallback, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
@@ -23,7 +23,7 @@ import { BillingServiceTable } from './billing-service-table.component';
 import { BillingSpecifications } from './billing-specifications.component';
 import { BillingTable } from './billing-table.component';
 
-export const CaseDataBillingForm: React.FC = () => {
+export const CaseDataBillingForm: FC = () => {
   const { errand, municipalityId, user, setErrand } = useAppContext();
   const toastMessage = useSnackbar();
 

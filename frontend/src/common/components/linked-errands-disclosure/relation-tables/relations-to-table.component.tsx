@@ -6,8 +6,7 @@ import { Relation } from '@common/data-contracts/relations/data-contracts';
 import { CaseStatusResponse, findOperationUsingNamespace } from '@common/services/casestatus-service';
 import { relationsToLabels } from '@common/services/relations-service';
 import { Button, SortMode, Table } from '@sk-web-gui/react';
-import React from 'react';
-
+import { FC } from 'react';
 interface RelationsToTableProps {
   errands: CaseStatusResponse[];
   linkedStates: Relation[];
@@ -16,7 +15,7 @@ interface RelationsToTableProps {
   dataCy: string;
 }
 
-const LinkButtonComponent: React.FC<{ isLinked: boolean; onClick: () => void }> = ({ isLinked, onClick }) => {
+const LinkButtonComponent: FC<{ isLinked: boolean; onClick: () => void }> = ({ isLinked, onClick }) => {
   return (
     <div className="flex justify-center">
       <Button
@@ -50,7 +49,7 @@ const headers = relationsToLabels.map((header, index) => (
   </Table.HeaderColumn>
 ));
 
-export const RelationsToTable: React.FC<RelationsToTableProps> = ({
+export const RelationsToTable: FC<RelationsToTableProps> = ({
   errands,
   linkedStates,
   handleLinkClick,

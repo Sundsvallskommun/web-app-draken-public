@@ -4,6 +4,7 @@ import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV
 import { useAppContext } from '@contexts/app.context';
 import { Button, FormErrorMessage } from '@sk-web-gui/react';
 import { Plus } from 'lucide-react';
+import { FC } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 
 import { ContactRelationSelect } from './contact-relation-select.component';
@@ -17,7 +18,7 @@ interface SearchResultProps {
   label: string;
 }
 
-export const SearchResult: React.FC<SearchResultProps> = ({
+export const SearchResult: FC<SearchResultProps> = ({
   contact,
   searchMode,
   disabled,

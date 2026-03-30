@@ -3,7 +3,7 @@ import { Combobox, FormControl, FormErrorMessage, FormLabel, Select } from '@sk-
 import { isSupportErrandLocked, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { useTranslation } from 'next-i18next';
-import { useEffect, useState } from 'react';
+import { ChangeEvent, FC, useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 const CLASSIFICATIONS = {
@@ -36,7 +36,7 @@ const getSelectedLabels = (errandLabels: Label[]): SelectedLabels => {
 const getErrandLabelId = (errand: SupportErrand, classification: Classification): string | undefined =>
   (errand.labels ?? []).find((l) => l.classification === classification)?.id;
 
-export const ThreeLevelCategorization: React.FC<{
+export const ThreeLevelCategorization: FC<{
   supportErrand: SupportErrand;
   supportMetadata: SupportMetadata;
 }> = ({ supportErrand, supportMetadata }) => {
@@ -75,7 +75,7 @@ export const ThreeLevelCategorization: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLabels]);
 
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleCategoryChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const selectedCategory = categoriesList?.find((c) => c.id === e.currentTarget.value);
     setTypesList(
       selectedCategory?.labels?.sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? '')) ?? []

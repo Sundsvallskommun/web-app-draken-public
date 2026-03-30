@@ -16,12 +16,12 @@ import {
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
 import { ChevronsLeft, ChevronsRight, FileText, SquarePen } from 'lucide-react';
 import NextLink from 'next/link';
-import { useState } from 'react';
+import { FC, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { userMenuGroups } from '../layout/userMenuGroups';
 
-export const MainErrandsSidebar: React.FC<{
+export const MainErrandsSidebar: FC<{
   showAttestationTable: boolean;
   setShowAttestationTable: (show: boolean) => void;
   showContractTable: boolean;

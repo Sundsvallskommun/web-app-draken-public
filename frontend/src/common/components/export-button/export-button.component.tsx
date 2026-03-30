@@ -4,14 +4,13 @@ import { downloadPdf, exportErrands } from '@common/services/export-service';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { Download } from 'lucide-react';
-import React, { useState } from 'react';
-
+import { FC, useState } from 'react';
 interface ExportButtonProps {
   errands: ErrandsData;
   municipalityId: string;
 }
 
-export const ExportButton: React.FC<ExportButtonProps> = (props) => {
+export const ExportButton: FC<ExportButtonProps> = (props) => {
   const exportConfirm = useConfirm();
   const [isExportLoading, setIsExportLoading] = useState<boolean>(false);
   const toastMessage = useSnackbar();

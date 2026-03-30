@@ -18,7 +18,7 @@ import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, Input } from '@sk-web-gui/react';
 import { Pen } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
@@ -58,7 +58,7 @@ export const createEmptyContact = (role: Role = Role.CONTACT_PERSON): CasedataOw
   clientId: uuidv4(),
 });
 
-export const SimplifiedContactForm: React.FC<{
+export const SimplifiedContactForm: FC<{
   allowOrganization?: boolean;
   contact: CasedataOwnerOrContact;
   setUnsaved: (unsaved: boolean) => void;

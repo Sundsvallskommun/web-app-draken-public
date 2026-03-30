@@ -10,7 +10,7 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { buildStakeholdersList } from '@supportmanagement/services/support-stakeholder-service';
 import { Info, Users } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
@@ -21,7 +21,7 @@ interface SupportContactsProps {
   registeringNewErrand?: boolean;
 }
 
-export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) => {
+export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
   const [selectedContact, setSelectedContact] = useState<SupportStakeholderFormModel>();
   const { supportErrand, user, supportMetadata } = useAppContext();
   const deleteConfirm = useConfirm();

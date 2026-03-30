@@ -2,11 +2,11 @@ import { useAppContext } from '@contexts/app.context';
 import { Disclosure } from '@sk-web-gui/react';
 import { ApiSupportErrand, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { Info } from 'lucide-react';
-import React, { useEffect } from 'react';
+import { FC, useEffect } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { SupportErrandBasicsAboutForm } from '../support-errand-basics-form/support-errand-basics-about-form.component';
-export const SupportErrandBasicsAboutDisclosure: React.FC<{
+export const SupportErrandBasicsAboutDisclosure: FC<{
   errand: ApiSupportErrand;
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;

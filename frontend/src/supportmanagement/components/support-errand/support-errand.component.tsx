@@ -13,7 +13,7 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportNotesCount } from '@supportmanagement/services/support-note-service';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -33,7 +33,7 @@ let formSchema = yup
   })
   .required();
 
-export const SupportErrandComponent: React.FC = () => {
+export const SupportErrandComponent: FC = () => {
   const params = useParams<{ errandNumber?: string }>();
   const errandNumber = params?.errandNumber;
   const [isLoading, setIsLoading] = useState(!!errandNumber);

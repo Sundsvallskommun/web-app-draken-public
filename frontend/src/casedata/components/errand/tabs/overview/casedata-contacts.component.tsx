@@ -12,7 +12,7 @@ import { useAppContext } from '@common/contexts/app.context';
 import { appConfig } from '@config/appconfig';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { Info, User, Users } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -22,7 +22,7 @@ interface CasedataContactsProps {
   registeringNewErrand?: boolean;
 }
 
-export const CasedataContactsComponent: React.FC<CasedataContactsProps> = (props) => {
+export const CasedataContactsComponent: FC<CasedataContactsProps> = (props) => {
   const [addContact, setAddContact] = useState(false);
   const [selectedContact, setSelectedContact] = useState<CasedataOwnerOrContact>();
   const { errand } = useAppContext();

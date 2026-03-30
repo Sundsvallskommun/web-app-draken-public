@@ -22,7 +22,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FileUpload, PopupMenu, UploadFile, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { Eye, Pencil, Trash, Upload } from 'lucide-react';
-import { Fragment, useEffect, useState } from 'react';
+import { FC, Fragment, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -38,7 +38,7 @@ const defaultAttachmentInformation: CasedataAttachmentFormModel = {
   newFiles: [],
 };
 
-export const CasedataAttachments: React.FC = () => {
+export const CasedataAttachments: FC = () => {
   const [modalAttachment, setModalAttachment] = useState<Attachment>();
   const [addAttachmentWindowIsOpen, setAddAttachmentWindowIsOpen] = useState<boolean>(false);
   const [attachmentTypeExists, setAttachmentTypeExists] = useState<boolean>(false);

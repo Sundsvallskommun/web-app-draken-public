@@ -14,7 +14,7 @@ import { appConfig } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { Button, Checkbox, cx, Link } from '@sk-web-gui/react';
 import { ListFilter } from 'lucide-react';
-import { useState } from 'react';
+import { FC, useState } from 'react';
 
 import {
   CaseAdminsFilter,
@@ -73,7 +73,7 @@ export const CaseDataValues = {
   ...CaseStakeholderTypeValues,
 };
 
-const CaseDataFiltering: React.FC<{
+const CaseDataFiltering: FC<{
   ownerFilterHandler: (b: boolean) => void;
   ownerFilter?: boolean;
   administrators?: Admin[];

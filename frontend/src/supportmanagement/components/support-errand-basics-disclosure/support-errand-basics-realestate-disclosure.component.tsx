@@ -4,10 +4,10 @@ import { useAppContext } from '@contexts/app.context';
 import { Disclosure } from '@sk-web-gui/react';
 import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import { MapPin } from 'lucide-react';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
-export const SupportErrandBasicsRealEstateDisclosure: React.FC<{
+export const SupportErrandBasicsRealEstateDisclosure: FC<{
   supportErrand: SupportErrand;
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
 }> = (props) => {

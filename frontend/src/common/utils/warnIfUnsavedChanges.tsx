@@ -1,7 +1,6 @@
 import { useRouter } from 'next/navigation';
-import React, { Fragment, useEffect, useRef } from 'react';
-
-function WarnIfUnsavedChanges({ children, showWarning }: { children: React.ReactNode; showWarning: boolean }) {
+import { Fragment, ReactNode, useEffect, useRef } from 'react';
+function WarnIfUnsavedChanges({ children, showWarning }: { children: ReactNode; showWarning: boolean }) {
   const router = useRouter();
   const warningText = 'Du har osparade ändringar. Är du säker på att du vill lämna den här sidan?';
   const shouldWarn = useRef(showWarning);

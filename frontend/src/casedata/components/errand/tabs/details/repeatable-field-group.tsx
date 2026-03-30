@@ -3,7 +3,7 @@ import { EXTRAPARAMETER_SEPARATOR, UppgiftField } from '@casedata/services/cased
 import { useAppContext } from '@contexts/app.context';
 import { Button } from '@sk-web-gui/react';
 import { Plus, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
@@ -18,7 +18,7 @@ interface RepeatableFieldGroupProps {
   initialData?: Record<number, Record<string, string | string[]>>;
 }
 
-export const RepeatableFieldGroup: React.FC<RepeatableFieldGroupProps> = ({
+export const RepeatableFieldGroup: FC<RepeatableFieldGroupProps> = ({
   groupName,
   basePath,
   fields,

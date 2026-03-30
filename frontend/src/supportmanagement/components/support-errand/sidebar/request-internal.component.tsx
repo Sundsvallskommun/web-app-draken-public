@@ -31,7 +31,7 @@ import {
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { FileInput, Plus } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
@@ -76,7 +76,7 @@ export interface RequestInternalFormProps {
 
 //NOT IN USE?
 
-export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+export const RequestInternalComponent: FC<{ disabled: boolean }> = ({ disabled }) => {
   const {
     user,
     municipalityId,

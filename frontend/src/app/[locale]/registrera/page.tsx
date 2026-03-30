@@ -8,9 +8,8 @@ import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
 import { useAppContext } from '@contexts/app.context';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import { default as NextLink } from 'next/link';
-import { useEffect, useRef } from 'react';
-
-const Registrera: React.FC = () => {
+import { FC, useEffect, useRef } from 'react';
+const Registrera: FC = () => {
   const { setAdministrators, setMunicipalityId } = useAppContext();
 
   const initialFocus = useRef<HTMLBodyElement>(null);

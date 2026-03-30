@@ -1,9 +1,10 @@
 import { BillingFormData } from '@casedata/interfaces/billing';
 import { useAppContext } from '@contexts/app.context';
 import { Checkbox, DatePicker, FormControl, FormLabel, Input, Textarea } from '@sk-web-gui/react';
+import { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
 
-export const BillingSpecifications: React.FC = () => {
+export const BillingSpecifications: FC = () => {
   const { errand } = useAppContext();
   const { register, watch, setValue } = useFormContext<BillingFormData>();
 

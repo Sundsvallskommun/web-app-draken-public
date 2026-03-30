@@ -8,7 +8,7 @@ import { jsonWidgets } from '@common/components/json/widgets/index.componant';
 import Form, { FormProps, IChangeEvent } from '@rjsf/core';
 import type { RegistryFieldsType, RegistryWidgetsType, RJSFSchema, UiSchema } from '@rjsf/utils';
 import validatorAjv8 from '@rjsf/validator-ajv8';
-import { useCallback, useMemo, useState } from 'react';
+import { ComponentType, useCallback, useMemo, useState } from 'react';
 
 import createJsonErrorTransformer from '../utils/schema-form-error-handling';
 
@@ -33,7 +33,7 @@ type SchemaFormProps = {
   formData?: any;
   onChange?: (data: any, e?: IChangeEvent) => void;
   onSubmit?: (payload: any, e: IChangeEvent) => void;
-  objectFieldTemplate?: React.ComponentType<any>;
+  objectFieldTemplate?: ComponentType<any>;
   disabled?: boolean;
   submitButtonOptions?: { label?: string; leadingIcon?: boolean };
 };

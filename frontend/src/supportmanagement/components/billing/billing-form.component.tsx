@@ -2,10 +2,11 @@ import { Button, FormControl, FormErrorMessage, FormLabel, Input, Select, Table 
 import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
 import { getOrganization } from '@supportmanagement/services/support-billing-service';
 import { RefreshCcw } from 'lucide-react';
+import { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
-const BillingForm: React.FC<{
+const BillingForm: FC<{
   resetManager?: () => void;
   handleChange: (
     description: string,

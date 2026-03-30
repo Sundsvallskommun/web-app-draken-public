@@ -1,4 +1,5 @@
 import {
+import { FC } from 'react';
   ArchiveX,
   ArrowLeft,
   ArrowRight,
@@ -82,7 +83,7 @@ import {
   X,
 } from 'lucide-react';
 
-const iconMap: Record<string, React.FC<LucideProps>> = {
+const iconMap: Record<string, FC<LucideProps>> = {
   'archive-x': ArchiveX,
   'arrow-left': ArrowLeft,
   'arrow-right': ArrowRight,

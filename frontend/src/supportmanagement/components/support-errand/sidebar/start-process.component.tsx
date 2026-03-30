@@ -7,9 +7,10 @@ import {
   Status,
 } from '@supportmanagement/services/support-errand-service';
 import { ArrowRight } from 'lucide-react';
+import { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
 
-export const StartProcessComponent: React.FC<{
+export const StartProcessComponent: FC<{
   disabled: boolean;
   onSubmit: () => Promise<any>;
   onError: () => void;

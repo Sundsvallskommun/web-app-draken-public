@@ -10,7 +10,7 @@ import { useAppContext } from '@common/contexts/app.context';
 import { appConfig } from '@config/appconfig';
 import { cx, Disclosure, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { CircleAlert } from 'lucide-react';
-import { Dispatch, SetStateAction, useEffect } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { CasedataContactsComponent } from './casedata-contacts.component';
@@ -34,7 +34,7 @@ interface CasedataFormProps {
   setFormIsValid: Dispatch<SetStateAction<boolean>>;
 }
 
-const CasedataForm: React.FC<CasedataFormProps> = ({
+const CasedataForm: FC<CasedataFormProps> = ({
   errand,
   setUnsaved = () => {},
   registeringNewErrand,

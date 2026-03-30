@@ -17,7 +17,7 @@ import { isPT } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { Tabs, useSnackbar } from '@sk-web-gui/react';
-import React, { useEffect, useRef, useState } from 'react';
+import { FC, ReactNode, useEffect, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { CasedataAttachments } from './tabs/attachments/casedata-attachments.component';
@@ -30,7 +30,7 @@ import CasedataForm from './tabs/overview/casedata-form.component';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
 
-export const CasedataTabsWrapper: React.FC = () => {
+export const CasedataTabsWrapper: FC = () => {
   const {
     municipalityId,
     errand,
@@ -141,7 +141,7 @@ export const CasedataTabsWrapper: React.FC = () => {
 
   const tabs: {
     label: string;
-    content: React.ReactNode;
+    content: ReactNode;
     disabled: boolean;
     visibleFor: ErrandPhase[];
   }[] = [
@@ -381,7 +381,7 @@ export const CasedataTabsWrapper: React.FC = () => {
     },
   ];
 
-  const [current, setCurrent] = React.useState<number | undefined>(0);
+  const [current, setCurrent] = useState<number | undefined>(0);
 
   let currentTab = current;
 

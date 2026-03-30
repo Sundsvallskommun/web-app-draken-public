@@ -4,8 +4,7 @@ import { BaseRelationsTable } from '@common/components/linked-errands-disclosure
 import { CaseStatusResponse, findOperationUsingNamespace } from '@common/services/casestatus-service';
 import { relationsFromLabels } from '@common/services/relations-service';
 import { SortMode, Table } from '@sk-web-gui/react';
-import React from 'react';
-
+import { FC } from 'react';
 interface RelationsFromTableProps {
   errands: CaseStatusResponse[];
   title: string;
@@ -26,7 +25,7 @@ const headers = relationsFromLabels.map((header, index) => (
   </Table.HeaderColumn>
 ));
 
-export const RelationsFromTable: React.FC<RelationsFromTableProps> = ({ errands, title, dataCy }) => {
+export const RelationsFromTable: FC<RelationsFromTableProps> = ({ errands, title, dataCy }) => {
   return (
     <BaseRelationsTable
       errands={errands}

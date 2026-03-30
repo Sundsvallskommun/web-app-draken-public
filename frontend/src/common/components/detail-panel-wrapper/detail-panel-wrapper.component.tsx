@@ -1,19 +1,18 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { Button, cx, Header } from '@sk-web-gui/react';
 import { X } from 'lucide-react';
-import React, { useEffect } from 'react';
-
+import { FC, ReactNode, useEffect } from 'react';
 interface DetailPanelWrapperProps {
   show: boolean;
   label: string;
   closeAriaLabel: string;
   closeHandler: () => void;
   icon: 'glasses' | 'file-text';
-  children: React.ReactNode;
+  children: ReactNode;
   dataCy?: string;
 }
 
-export const DetailPanelWrapper: React.FC<DetailPanelWrapperProps> = ({
+export const DetailPanelWrapper: FC<DetailPanelWrapperProps> = ({
   show,
   label = '',
   closeAriaLabel,

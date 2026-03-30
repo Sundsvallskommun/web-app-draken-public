@@ -6,7 +6,7 @@ import { SortMode } from '@sk-web-gui/table';
 import { attestationLabels, billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
 import { findAttestationStatusLabelForAttestationStatusKey } from '@supportmanagement/services/support-errand-service';
 import NextLink from 'next/link';
-import { useState } from 'react';
+import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 
@@ -20,7 +20,7 @@ export interface AttestationTableForm {
   pageSize: number;
 }
 
-export const AttestationsTable: React.FC<{
+export const AttestationsTable: FC<{
   setSelectedRecord: (record: CBillingRecord | undefined) => void;
   setShowSelectedRecord: (show: boolean) => void;
 }> = ({ setSelectedRecord, setShowSelectedRecord }) => {

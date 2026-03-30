@@ -17,7 +17,7 @@ import {
   groupByConversationIdSortedTree,
   MessageNode,
 } from '@supportmanagement/services/support-message-service';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, FC, ReactNode, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
@@ -25,7 +25,7 @@ import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-t
 import { SupportErrandBasicsTab } from './tabs/support-errand-basics-tab';
 import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
 
-export const SupportTabsWrapper: React.FC<{
+export const SupportTabsWrapper: FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
 }> = (props) => {
   const [messages, setMessages] = useState<any>([]);
@@ -88,7 +88,7 @@ export const SupportTabsWrapper: React.FC<{
 
   const tabs: {
     label: string;
-    content: React.ReactNode;
+    content: ReactNode;
     disabled: boolean;
     visibleFor: boolean;
   }[] = [

@@ -21,7 +21,7 @@ import {
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
 import dayjs from 'dayjs';
 import { CirclePause, Mail, Undo2 } from 'lucide-react';
-import React, { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { CloseErrandComponent } from './close-errand.component';
@@ -30,7 +30,7 @@ import { StartProcessComponent } from './start-process.component';
 import { SupportResumeErrandButton } from './support-resume-errand-button.component';
 import { SuspendErrandComponent } from './suspend-errand.component';
 
-export const SidebarInfo: React.FC<{
+export const SidebarInfo: FC<{
   unsavedFacility: boolean;
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
 }> = (props) => {

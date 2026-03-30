@@ -9,13 +9,13 @@ import {
 import { useAppContext } from '@common/contexts/app.context';
 import { Button, Divider, FormLabel, Select, useSnackbar } from '@sk-web-gui/react';
 import { Mail } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 
 import { MessageComposer } from './message-composer.component';
 import MessageTreeComponent from './tree.component';
 
-export const CasedataMessagesTab: React.FC<{
+export const CasedataMessagesTab: FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
@@ -38,12 +38,9 @@ export const CasedataMessagesTab: React.FC<{
   const toastMessage = useSnackbar();
   const [allowed, setAllowed] = useState(false);
 
-  const combinedMessages = React.useMemo(
-    () => [...(messages || []), ...(conversation || [])],
-    [messages, conversation]
-  );
+  const combinedMessages = useMemo(() => [...(messages || []), ...(conversation || [])], [messages, conversation]);
 
-  const combinedMessageTree = React.useMemo(
+  const combinedMessageTree = useMemo(
     () => [...(messageTree || []), ...(conversationTree || [])],
     [messageTree, conversationTree]
   );

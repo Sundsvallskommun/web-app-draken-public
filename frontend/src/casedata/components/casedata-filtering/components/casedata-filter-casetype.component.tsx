@@ -1,7 +1,7 @@
 import { getCaseLabels } from '@casedata/services/casedata-errand-service';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 export interface CaseTypeFilter {
@@ -12,7 +12,7 @@ export const CaseTypeValues: CaseTypeFilter = {
   caseType: [],
 };
 
-export const CasedataFilterCaseType: React.FC = () => {
+export const CasedataFilterCaseType: FC = () => {
   const { register } = useFormContext<CaseTypeFilter>();
   const [query, setQuery] = useState<string>('');
 

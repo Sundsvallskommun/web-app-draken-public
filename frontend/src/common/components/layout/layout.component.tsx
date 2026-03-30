@@ -9,12 +9,12 @@ import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoi
 import { ExternalLink, Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, ReactNode, useEffect, useState } from 'react';
 
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
 
-export default function Layout({ title, children }: { title: string; children: React.ReactNode }) {
+export default function Layout({ title, children }: { title: string; children: ReactNode }) {
   const { user, errand, supportErrand, supportMetadata } = useAppContext();
   const applicationEnvironment = getApplicationEnvironment();
   const { isMinLargeDevice } = useThemeQueries();

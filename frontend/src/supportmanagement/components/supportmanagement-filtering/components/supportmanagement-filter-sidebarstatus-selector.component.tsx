@@ -14,8 +14,7 @@ import {
   Status,
   suspendedStatuses,
 } from '@supportmanagement/services/support-errand-service';
-import { useMemo } from 'react';
-
+import { FC, useMemo } from 'react';
 export interface SupportManagementStatusFilter {
   status: Status[];
 }
@@ -24,7 +23,7 @@ export const SupportManagementStatusValues: SupportManagementStatusFilter = {
   status: [],
 };
 
-export const SupportManagementFilterSidebarStatusSelector: React.FC<{
+export const SupportManagementFilterSidebarStatusSelector: FC<{
   showAttestationTable: boolean;
   setShowAttestationTable: (show: boolean) => void;
   iconButton: boolean;

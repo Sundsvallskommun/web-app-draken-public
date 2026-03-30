@@ -15,13 +15,13 @@ import {
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { Check, ThumbsDown } from 'lucide-react';
 import NextLink from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { FC, useCallback, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 
 import BillingForm from '../billing/billing-form.component';
 
-export const AttestationInvoiceForm: React.FC<{
+export const AttestationInvoiceForm: FC<{
   setUnsaved?: (unsaved: boolean) => void;
   update: (recordId: string) => void;
   selectedrecord: CBillingRecord;

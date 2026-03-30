@@ -34,7 +34,7 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import dayjs from 'dayjs';
 import { Ellipsis, Eye, Trash, Upload } from 'lucide-react';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { FC, Fragment, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -55,7 +55,7 @@ const defaultAttachmentInformation: SupportAttachmentFormModel = {
   attachmentList: [],
 };
 
-export const SupportErrandAttachmentsTab: React.FC<{
+export const SupportErrandAttachmentsTab: FC<{
   update: () => void;
 }> = (props) => {
   const { supportErrand, setSupportErrand, supportAttachments, user, municipalityId } = useAppContext();

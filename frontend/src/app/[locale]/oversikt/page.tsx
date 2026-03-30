@@ -12,9 +12,8 @@ import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
 import { OngoingSupportErrands } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useEffect, useState } from 'react';
-
-const Oversikt: React.FC = () => {
+import { FC, useEffect, useState } from 'react';
+const Oversikt: FC = () => {
   const { user, municipalityId, setSupportMetadata, setAdministrators, setMunicipalityId } = useAppContext();
   const [showAttestationTable, setShowAttestationTable] = useState<boolean>(false);
   const [showContractTable, setShowContractTable] = useState<boolean>(false);

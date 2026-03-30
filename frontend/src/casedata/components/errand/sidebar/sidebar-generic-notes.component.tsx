@@ -14,10 +14,10 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Avatar, Button, cx, Divider, FormControl, Modal, PopupMenu, Textarea, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { Ellipsis, Pencil, Trash } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 
-export const SidebarGenericNotes: React.FC<{
+export const SidebarGenericNotes: FC<{
   label_plural: 'Kommentarer' | 'Tjänsteanteckningar';
   label_singular: 'Kommentar' | 'Tjänsteanteckning';
   noteType: NoteType;

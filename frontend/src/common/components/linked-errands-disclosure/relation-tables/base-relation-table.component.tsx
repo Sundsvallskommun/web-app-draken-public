@@ -1,22 +1,15 @@
 import { CaseStatusResponse } from '@common/services/casestatus-service';
 import { Table } from '@sk-web-gui/react';
-import React from 'react';
-
+import { FC, ReactNode } from 'react';
 interface BaseRelationsTableProps {
   errands: CaseStatusResponse[];
-  headers: React.ReactNode;
+  headers: ReactNode;
   title: string;
   dataCy: string;
-  renderRow: (errand: any, index: number) => React.ReactNode;
+  renderRow: (errand: any, index: number) => ReactNode;
 }
 
-export const BaseRelationsTable: React.FC<BaseRelationsTableProps> = ({
-  errands,
-  headers,
-  title,
-  dataCy,
-  renderRow,
-}) => {
+export const BaseRelationsTable: FC<BaseRelationsTableProps> = ({ errands, headers, title, dataCy, renderRow }) => {
   return (
     <>
       <h3 className="py-[1.2rem] text-h3-md">{title}</h3>

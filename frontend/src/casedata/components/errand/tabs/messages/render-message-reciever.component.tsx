@@ -4,8 +4,7 @@ import { MessageNode } from '@casedata/services/casedata-message-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import sanitized from '@common/services/sanitizer-service';
 import { Button } from '@sk-web-gui/button';
-import { useState } from 'react';
-
+import { FC, useState } from 'react';
 const MAX_VISIBLE_RECIPIENTS = 2;
 
 const getMessageSourceLabel = (message: MessageNode, errand: IErrand | undefined): string | string[] => {
@@ -43,7 +42,7 @@ interface EmailRecipientsProps {
   recipients: string[];
 }
 
-const EmailRecipients: React.FC<EmailRecipientsProps> = ({ recipients }) => {
+const EmailRecipients: FC<EmailRecipientsProps> = ({ recipients }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const totalCount = recipients.length;
@@ -68,7 +67,7 @@ const EmailRecipients: React.FC<EmailRecipientsProps> = ({ recipients }) => {
   );
 };
 
-export const RenderMessageReciever: React.FC<{ selectedMessage: MessageNode; errand: IErrand | undefined }> = ({
+export const RenderMessageReciever: FC<{ selectedMessage: MessageNode; errand: IErrand | undefined }> = ({
   selectedMessage,
   errand,
 }) => {

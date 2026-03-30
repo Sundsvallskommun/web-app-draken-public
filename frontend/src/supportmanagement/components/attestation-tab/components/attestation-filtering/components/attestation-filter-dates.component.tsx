@@ -1,7 +1,7 @@
 import { Button, DatePicker, PopupMenu } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { ChevronDown } from 'lucide-react';
-import React, { useState } from 'react';
+import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 export interface AttestationDatesFilter {
@@ -14,7 +14,7 @@ export const AttestationDatesValues = {
   enddate: '',
 };
 
-export const AttestationFilterDatesComponent: React.FC = () => {
+export const AttestationFilterDatesComponent: FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   const { setValue, watch } = useFormContext<AttestationDatesFilter>();
 

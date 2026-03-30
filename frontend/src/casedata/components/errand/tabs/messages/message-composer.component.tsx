@@ -46,7 +46,7 @@ import {
 import { File, Paperclip, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useTranslation } from 'next-i18next';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
@@ -155,7 +155,7 @@ let formSchema = yup
   })
   .required();
 
-export const MessageComposer: React.FC<{
+export const MessageComposer: FC<{
   message?: MessageNode;
   show: boolean;
   closeHandler: () => void;

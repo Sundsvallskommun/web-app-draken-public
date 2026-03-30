@@ -1,6 +1,8 @@
 import { BillingServiceItem } from '@casedata/interfaces/billing';
 import { Button, Table } from '@sk-web-gui/react';
 import { Pen, Trash2 } from 'lucide-react';
+import { FC, Fragment } from 'react';
+
 import { AddBillingService } from './add-billing-service.component';
 
 interface BillingServiceTableProps {
@@ -12,7 +14,7 @@ interface BillingServiceTableProps {
   editingServiceId: string | null;
 }
 
-export const BillingServiceTable: React.FC<BillingServiceTableProps> = ({
+export const BillingServiceTable: FC<BillingServiceTableProps> = ({
   services,
   onRemoveService,
   onEditService,
@@ -45,7 +47,7 @@ export const BillingServiceTable: React.FC<BillingServiceTableProps> = ({
             }
 
             return (
-              <React.Fragment key={service.id}>
+              <Fragment key={service.id}>
                 <Table.Row className="!border-b-0">
                   <Table.Column>
                     <span className="font-bold mt-6">{service.name}</span>
@@ -101,7 +103,7 @@ export const BillingServiceTable: React.FC<BillingServiceTableProps> = ({
                     </span>
                   </td>
                 </tr>
-              </React.Fragment>
+              </Fragment>
             );
           })}
         </Table.Body>

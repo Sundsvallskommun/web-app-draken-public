@@ -20,7 +20,7 @@ import {
 import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
 import { applicantHasContactChannel, getAdminName } from '@supportmanagement/services/support-stakeholder-service';
 import { ArrowRight, Check } from 'lucide-react';
-import { useState } from 'react';
+import { FC, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 const getResolutionLabels = (): Record<string, string> => {
@@ -41,7 +41,7 @@ const getDefaultResolution = (errand: SupportErrand | undefined): Resolution => 
     : Resolution.SOLVED;
 };
 
-export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+export const CloseErrandComponent: FC<{ disabled: boolean }> = ({ disabled }) => {
   const { administrators, municipalityId, supportErrand, setSupportErrand } = useAppContext();
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);

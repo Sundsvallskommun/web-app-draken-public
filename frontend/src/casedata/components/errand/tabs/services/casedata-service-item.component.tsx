@@ -1,7 +1,7 @@
 import sanitized from '@common/services/sanitizer-service';
 import { Button } from '@sk-web-gui/react';
 import { Car, Cog, ListChecks, Pencil, PlusCircle } from 'lucide-react';
-import React from 'react';
+import { FC } from 'react';
 
 import { Service } from './casedata-service-mapper';
 
@@ -12,7 +12,7 @@ interface Props {
   readOnly?: boolean;
 }
 
-export const ServiceListItem: React.FC<Props> = ({ service, onRemove, onEdit, readOnly }) => {
+export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly }) => {
   return (
     <div className="w-full py-24 border-b border-gray-200">
       <div className="flex items-start gap-18">

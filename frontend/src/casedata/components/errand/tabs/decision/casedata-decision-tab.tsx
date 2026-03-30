@@ -57,7 +57,7 @@ import {
 import dayjs from 'dayjs';
 import { Download, SendHorizontal } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -127,7 +127,7 @@ let formSchema = yup
   })
   .required();
 
-export const CasedataDecisionTab: React.FC<{
+export const CasedataDecisionTab: FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
   onRefetchServices?: (refetch: () => void) => void;

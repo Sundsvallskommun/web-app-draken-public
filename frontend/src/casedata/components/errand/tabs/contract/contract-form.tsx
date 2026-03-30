@@ -25,12 +25,12 @@ import {
   Textarea,
 } from '@sk-web-gui/react';
 import { Calendar, FilePen, Info, MapPin, Receipt, RefreshCcw, Users, Wallet } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import { ChangeEvent, FC, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
 
 import { ContractAttachments } from './contract-attachments';
 
-export const ContractForm: React.FC<{
+export const ContractForm: FC<{
   changeBadgeColor?: (badgeId: string) => void;
   onSave?: (data: ContractData) => Promise<void>;
   readOnly?: boolean;
@@ -615,7 +615,7 @@ export const ContractForm: React.FC<{
               <div className="flex justify-between gap-32 items-end mb-md">
                 <FormControl
                   className="flex-grow"
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     if (!isEditable('general')) return;
                     setValue('extension.autoExtend', e.target.value === 'true');
                     trigger();
@@ -723,7 +723,7 @@ export const ContractForm: React.FC<{
                   <div className="flex gap-18 justify-start">
                     <FormControl
                       className="flex-grow"
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
                         if (!isEditable('general')) return;
                         setValue('indexAdjusted', e.target.value as 'true' | 'false');
                       }}
@@ -752,7 +752,7 @@ export const ContractForm: React.FC<{
                   <div className="flex gap-18 justify-start">
                     <FormControl
                       className="flex-grow"
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
                         if (!isEditable('general')) return;
                         setValue('invoicing.invoiceInterval', e.target.value as IntervalType);
                       }}

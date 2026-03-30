@@ -1,7 +1,7 @@
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
 import { billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
 import { ChevronDown } from 'lucide-react';
-import React, { useMemo } from 'react';
+import { FC, useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 
@@ -13,7 +13,7 @@ export const AttestationStatusValues: AttestationStatusFilter = {
   status: [],
 };
 
-export const AttestationFilterStatusComponent: React.FC = () => {
+export const AttestationFilterStatusComponent: FC = () => {
   const { register } = useFormContext();
   const statuses = useMemo(() => {
     return (

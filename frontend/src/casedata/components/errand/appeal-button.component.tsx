@@ -4,10 +4,10 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { FC, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
-export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) => {
+export const AppealButtonComponent: FC<{ disabled: boolean }> = (props) => {
   const { municipalityId, errand, setErrand } = useAppContext();
 
   const toastMessage = useSnackbar();

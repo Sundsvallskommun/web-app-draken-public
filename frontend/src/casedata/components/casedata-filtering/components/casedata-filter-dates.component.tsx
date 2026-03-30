@@ -1,7 +1,7 @@
 import { Button, DatePicker, PopupMenu } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 export interface CaseDatesFilter {
@@ -14,7 +14,7 @@ export const CaseDatesValues = {
   enddate: '',
 };
 
-export const CasedataFilterDates: React.FC = () => {
+export const CasedataFilterDates: FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   const { setValue, watch } = useFormContext<CaseDatesFilter>();
 

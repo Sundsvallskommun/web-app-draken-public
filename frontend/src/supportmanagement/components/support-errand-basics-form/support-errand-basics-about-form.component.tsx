@@ -13,14 +13,14 @@ import {
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import dynamic from 'next/dynamic';
 import { useTranslation } from 'next-i18next';
-import { useEffect, useRef, useState } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
-export const SupportErrandBasicsAboutForm: React.FC<{
+export const SupportErrandBasicsAboutForm: FC<{
   supportErrand: SupportErrand;
   registeringNewErrand?: boolean;
 }> = (props) => {

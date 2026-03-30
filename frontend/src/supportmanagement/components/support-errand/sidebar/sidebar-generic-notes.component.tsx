@@ -29,7 +29,7 @@ import {
 } from '@supportmanagement/services/support-note-service';
 import dayjs from 'dayjs';
 import { Ellipsis, Pencil, Trash } from 'lucide-react';
-import { Fragment, useEffect, useState } from 'react';
+import { FC, Fragment, useEffect, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -41,7 +41,7 @@ let formSchema = yup
   })
   .required();
 
-export const SidebarGenericNotes: React.FC<{
+export const SidebarGenericNotes: FC<{
   label_plural: 'Kommentarer' | 'Tjänsteanteckningar';
   label_singular: 'Kommentar' | 'Tjänsteanteckning';
   noteType: NoteType;

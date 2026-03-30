@@ -2,8 +2,9 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { Label } from '@sk-web-gui/react';
 import { IconName } from 'lucide-react/dynamic';
+import { FC } from 'react';
 
-export const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ status }) => {
+export const CasedataStatusLabelComponent: FC<{ status: string }> = ({ status }) => {
   let color,
     inverted = false,
     icon: IconName | null = null;

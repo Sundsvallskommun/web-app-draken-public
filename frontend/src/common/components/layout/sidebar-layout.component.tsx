@@ -1,6 +1,6 @@
 import { Button, CookieConsent } from '@sk-web-gui/react';
 import NextLink from 'next/link';
-import { useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 
 import { MainErrandsSidebar } from '../main-errands-sidebar/main-errands-sidebar.component';
 
@@ -13,7 +13,7 @@ export default function SidebarLayout({
   setShowContractTable,
 }: {
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
   showAttestationTable: boolean;
   setShowAttestationTable: (show: boolean) => void;
   showContractTable: boolean;

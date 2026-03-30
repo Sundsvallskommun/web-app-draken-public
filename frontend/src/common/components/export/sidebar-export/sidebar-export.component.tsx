@@ -2,7 +2,7 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { downloadPdf, exportSingleErrand } from '@common/services/export-service';
 import { useAppContext } from '@contexts/app.context';
 import { Button, Checkbox, FormControl, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import React, { useState } from 'react';
+import { FC, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface ExportParameters {
@@ -14,7 +14,7 @@ interface ExportParameters {
   investigationText: boolean;
 }
 
-export const SidebarExport: React.FC = () => {
+export const SidebarExport: FC = () => {
   const { municipalityId, errand: contextErrand } = useAppContext();
   const errand = contextErrand!;
   const [isExportLoading, setIsExportLoading] = useState<boolean>(false);

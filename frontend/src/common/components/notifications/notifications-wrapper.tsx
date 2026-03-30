@@ -13,15 +13,12 @@ import {
   getSupportNotifications,
 } from '@supportmanagement/services/support-notification-service';
 import { Bell, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 
 import { NotificationItem } from './notification-item';
 import { getFilteredNotifications } from './notification-utils';
 
-export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boolean) => void }> = ({
-  show,
-  setShow,
-}) => {
+export const NotificationsWrapper: FC<{ show: boolean; setShow: (arg0: boolean) => void }> = ({ show, setShow }) => {
   const { municipalityId, notifications, setNotifications }: AppContextInterface = useAppContext();
   const { user } = useAppContext();
   const toastMessage = useSnackbar();

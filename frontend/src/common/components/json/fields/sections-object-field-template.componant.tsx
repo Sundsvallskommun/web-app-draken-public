@@ -3,8 +3,7 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import type { ObjectFieldTemplateProps, RJSFSchema, UiSchema } from '@rjsf/utils';
 import { Checkbox, Disclosure, Divider, Label } from '@sk-web-gui/react';
-import React, { useState } from 'react';
-
+import { ReactNode, useState } from 'react';
 interface ConditionalRule {
   if: {
     properties: Record<string, { const: unknown }>;
@@ -86,7 +85,7 @@ function getSectionDefinitions(uiSchema: UiSchema | undefined): SectionDefinitio
 interface SectionDisclosureProps {
   section: SectionDefinition;
   isReadonly: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 function SectionDisclosure({ section, isReadonly, children }: SectionDisclosureProps) {

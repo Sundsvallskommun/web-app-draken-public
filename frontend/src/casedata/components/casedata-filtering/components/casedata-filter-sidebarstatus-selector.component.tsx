@@ -12,9 +12,8 @@ import { SidebarButton } from '@common/interfaces/sidebar-button';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { Badge, Button, Spinner } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
-import { useMemo } from 'react';
-
-export const CasedataFilterSidebarStatusSelector: React.FC<{
+import { FC, useMemo } from 'react';
+export const CasedataFilterSidebarStatusSelector: FC<{
   showContractTable: boolean;
   setShowContractTable: (show: boolean) => void;
   iconButton: boolean;

@@ -28,7 +28,7 @@ import {
 import { getEscalationEmails, getEscalationMessage } from '@supportmanagement/services/support-escalation-service';
 import { Forward } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
@@ -72,7 +72,7 @@ export interface ForwardFormProps {
   newEmail?: string;
 }
 
-export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+export const ForwardErrandComponent: FC<{ disabled: boolean }> = ({ disabled }) => {
   const { user, municipalityId, supportErrand, setSupportErrand, supportMetadata, supportAttachments } =
     useAppContext();
   const confirm = useConfirm();

@@ -11,14 +11,14 @@ import { useAppContext } from '@contexts/app.context';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { CornerDownRight, Image, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 
 import { RenderMessageReciever } from './render-message-reciever.component';
 
-export const RenderedMessage: React.FC<{
+export const RenderedMessage: FC<{
   message: MessageNode;
   onSelect: (msg: MessageNode) => void;
-  setShowMessageComposer: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMessageComposer: Dispatch<SetStateAction<boolean>>;
   root?: boolean;
   children: any;
 }> = ({ message, onSelect, setShowMessageComposer, root = false, children }) => {

@@ -18,7 +18,7 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useAppContext } from '@contexts/app.context';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { Modal, useSnackbar } from '@sk-web-gui/react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { FC, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ServiceListComponent } from './casedata-service-list.component';
 import { useErrandServices } from './useErrandService';
@@ -53,7 +53,7 @@ function filterSchemaByCase(schema: RJSFSchema | null, caseType: string): RJSFSc
   return filtered;
 }
 
-export const CasedataServicesTab: React.FC = () => {
+export const CasedataServicesTab: FC = () => {
   const { municipalityId, errand } = useAppContext();
   const [schema, setSchema] = useState<RJSFSchema | null>(null);
   const [uiSchema, setUiSchema] = useState<UiSchema | null>(null);

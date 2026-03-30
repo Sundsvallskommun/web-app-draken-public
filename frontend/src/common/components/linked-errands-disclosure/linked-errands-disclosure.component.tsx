@@ -21,11 +21,11 @@ import { Disclosure, SearchField, Spinner } from '@sk-web-gui/react';
 import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { Link2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 
 import { RelationsToTable } from './relation-tables/relations-to-table.component';
 
-export const LinkedErrandsDisclosure: React.FC<{
+export const LinkedErrandsDisclosure: FC<{
   errand: SupportErrand | IErrand;
 }> = ({ errand }) => {
   const { municipalityId } = useAppContext();

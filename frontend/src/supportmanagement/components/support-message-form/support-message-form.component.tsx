@@ -47,7 +47,7 @@ import { Message, MessageRequest, sendMessage } from '@supportmanagement/service
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { File, Paperclip, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
@@ -129,13 +129,13 @@ let formSchema = yup
   })
   .required();
 
-export const SupportMessageForm: React.FC<{
+export const SupportMessageForm: FC<{
   locked?: boolean;
   prefillPhone?: string;
   prefillEmail?: string;
   showMessageForm: boolean;
   message: Message;
-  setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMessageForm: Dispatch<SetStateAction<boolean>>;
   setUnsaved?: (unsaved: boolean) => void;
   update?: () => void;
 }> = (props) => {

@@ -27,7 +27,7 @@ import {
 } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { ArchiveX, CirclePause, Mail } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { AppealButtonComponent } from '../appeal-button.component';
@@ -35,7 +35,7 @@ import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { MessageComposer } from '../tabs/messages/message-composer.component';
 import { ResumeErrandButton } from './resume-errand-button.component';
 
-export const SidebarInfo: React.FC<{}> = () => {
+export const SidebarInfo: FC<{}> = () => {
   const { municipalityId, user, errand, setErrand, administrators, uiPhase } = useAppContext();
   const [selectableStatuses, setSelectableStatuses] = useState<string[]>([]);
   const [showMessageComposer, setShowMessageComposer] = useState<boolean>(false);

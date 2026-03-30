@@ -15,9 +15,8 @@ import { getSupportErrandEvents } from '@supportmanagement/services/support-hist
 import { fetchRevisionDiff } from '@supportmanagement/services/support-revision-service';
 import dayjs from 'dayjs';
 import { History } from 'lucide-react';
-import { useEffect, useState } from 'react';
-
-export const SidebarHistory: React.FC<{}> = () => {
+import { FC, useEffect, useState } from 'react';
+export const SidebarHistory: FC<{}> = () => {
   const { municipalityId, supportErrand, supportMetadata, administrators } = useAppContext();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

@@ -6,7 +6,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, FormLabel, Input, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { CirclePause } from 'lucide-react';
-import { useState } from 'react';
+import { FC, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -22,7 +22,7 @@ export interface SuspendFormProps {
   comment: string;
 }
 
-export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+export const SuspendErrandComponent: FC<{ disabled: boolean }> = ({ disabled }) => {
   const { municipalityId, errand, setErrand, user } = useAppContext();
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();

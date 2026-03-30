@@ -6,7 +6,7 @@ import { Priority } from '@supportmanagement/interfaces/priority';
 import { Channels, Status } from '@supportmanagement/services/support-errand-service';
 import { SupportType } from '@supportmanagement/services/support-metadata-service';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 import { SupportManagementFilter, SupportManagementValues } from '../supportmanagement-filtering.component';
@@ -15,7 +15,7 @@ interface SupportManagementFilterTagsProps {
   administrators: Admin[];
 }
 
-export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsProps> = ({ administrators }) => {
+export const SupportManagementFilterTags: FC<SupportManagementFilterTagsProps> = ({ administrators }) => {
   const { watch, setValue, reset } = useFormContext<SupportManagementFilter>();
   const categories = watch('category');
   const labelCategories = watch('labelCategory');

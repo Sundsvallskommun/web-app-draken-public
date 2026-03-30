@@ -1,7 +1,7 @@
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
 import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
 import { ChevronDown } from 'lucide-react';
-import React from 'react';
+import { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 export interface AttestationInvoiceTypeFilter {
@@ -12,7 +12,7 @@ export const AttestationInvoiceTypeValues: AttestationInvoiceTypeFilter = {
   invoiceType: [],
 };
 
-export const AttestationFilterInvoiceTypeComponent: React.FC = () => {
+export const AttestationFilterInvoiceTypeComponent: FC = () => {
   const { register, getValues } = useFormContext<AttestationInvoiceTypeFilter>();
 
   return (

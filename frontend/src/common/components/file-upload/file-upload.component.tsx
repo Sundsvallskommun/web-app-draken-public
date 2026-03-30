@@ -5,7 +5,7 @@ import { isMEX } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Button, cx, FormControl, FormErrorMessage, FormHelperText, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { UploadCloud, X } from 'lucide-react';
-import { KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { FC, KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { UseFormRegister, UseFormSetValue } from 'react-hook-form';
 
 import { useFileUpload } from './file-upload-dragdrop-context';
@@ -20,7 +20,7 @@ export const imageMimeTypes = [
   'image/heif',
 ];
 
-const FileUpload: React.FC<{
+const FileUpload: FC<{
   dragDrop: boolean;
   fieldName: string;
   fields: any[];

@@ -5,9 +5,8 @@ import { sanitized } from '@common/services/sanitizer-service';
 import { Button, cx, Modal, Spinner } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { History } from 'lucide-react';
-import { useEffect, useState } from 'react';
-
-export const SidebarHistory: React.FC<{}> = () => {
+import { FC, useEffect, useState } from 'react';
+export const SidebarHistory: FC<{}> = () => {
   const { municipalityId, errand, administrators } = useAppContext();
   const [history, setHistory] = useState<ParsedErrandHistory>([]);
   const [isOpen, setIsOpen] = useState(false);

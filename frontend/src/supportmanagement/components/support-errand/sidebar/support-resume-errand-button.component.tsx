@@ -8,9 +8,8 @@ import {
   Status,
 } from '@supportmanagement/services/support-errand-service';
 import { CirclePlay } from 'lucide-react';
-import { useState } from 'react';
-
-export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+import { FC, useState } from 'react';
+export const SupportResumeErrandButton: FC<{ disabled: boolean }> = ({ disabled }) => {
   const { municipalityId, supportErrand, setSupportErrand } = useAppContext();
   const confirm = useConfirm();
   const toastMessage = useSnackbar();

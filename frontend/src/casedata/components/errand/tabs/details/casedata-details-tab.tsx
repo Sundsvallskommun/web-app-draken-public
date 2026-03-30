@@ -16,7 +16,7 @@ import { cx, Disclosure, FormControl, FormLabel, Input, useSnackbar } from '@sk-
 import { MapPin } from 'lucide-react';
 import { IconName } from 'lucide-react/dynamic';
 import dynamic from 'next/dynamic';
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 import { baseDetails } from '../../extraparameter-templates/base-template';
@@ -29,7 +29,7 @@ interface CasedataDetailsProps {
   registeringNewErrand: boolean;
 }
 
-export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
+export const CasedataDetailsTab: FC<CasedataDetailsProps> = (props) => {
   const { municipalityId, errand, setErrand, user } = useAppContext();
   const [fields, setFields] = useState<UppgiftField[]>([]);
   const toastMessage = useSnackbar();

@@ -17,7 +17,7 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { Pen, Trash2 } from 'lucide-react';
-import React, { useState } from 'react';
+import { FC, Fragment, useState } from 'react';
 import { CBillingRecord, CBillingRecordStatusEnum, CInvoiceRow } from 'src/data-contracts/backend/data-contracts';
 
 import { BillingStatusLabel } from './billing-status-label.component';
@@ -51,12 +51,7 @@ interface EditRowState {
   object: string;
 }
 
-export const BillingTable: React.FC<BillingTableProps> = ({
-  errand,
-  billingRecords,
-  onDeleteRecord,
-  onUpdateRecord,
-}) => {
+export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, onDeleteRecord, onUpdateRecord }) => {
   const { municipalityId } = useAppContext();
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
@@ -541,7 +536,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                   const colCount = isEditing ? 7 : 5;
 
                   return (
-                    <React.Fragment key={rowIndex}>
+                    <Fragment key={rowIndex}>
                       <Table.Row className="!border-b-0">
                         <Table.Column>
                           <span className="font-bold mt-6">{row.descriptions?.join(', ') || '-'}</span>
@@ -603,7 +598,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                           </td>
                         </tr>
                       )}
-                    </React.Fragment>
+                    </Fragment>
                   );
                 })}
               </Table.Body>

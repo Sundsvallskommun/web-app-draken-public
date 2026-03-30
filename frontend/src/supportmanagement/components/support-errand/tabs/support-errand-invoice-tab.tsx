@@ -21,7 +21,7 @@ import {
   validateAction,
 } from '@supportmanagement/services/support-errand-service';
 import { Check, ThumbsDown } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import {
   CBillingRecord,
@@ -30,7 +30,7 @@ import {
   CSupportStakeholder,
 } from 'src/data-contracts/backend/data-contracts';
 
-export const SupportErrandInvoiceTab: React.FC<{
+export const SupportErrandInvoiceTab: FC<{
   errand: ApiSupportErrand;
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;

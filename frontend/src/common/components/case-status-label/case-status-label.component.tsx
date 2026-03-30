@@ -1,6 +1,7 @@
 import { Label } from '@sk-web-gui/react';
+import { FC } from 'react';
 
-export const CaseStatusLabelComponent: React.FC<{ externalStatus: string }> = ({ externalStatus }) => {
+export const CaseStatusLabelComponent: FC<{ externalStatus: string }> = ({ externalStatus }) => {
   let color,
     inverted = true;
   switch (externalStatus) {
