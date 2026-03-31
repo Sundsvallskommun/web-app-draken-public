@@ -798,7 +798,7 @@ export const ContractForm: FC<{
                   </div>
                   <div className="flex gap-18 justify-start">
                     <FormControl>
-                      <FormLabel>Ange fakturans referensnummer</FormLabel>
+                      <FormLabel>Ange fakturans referens</FormLabel>
                       <Input
                         type="text"
                         readOnly={!isEditable('billing')}
