@@ -269,7 +269,8 @@ export const CaseDataBillingForm: FC = () => {
               </Button>
             </div>
             <div className="flex flex-col pt-24">
-              <h3 className="text-h3-md pb-16">Skapade fakturaunderlag</h3>
+              <h3 className="text-h3-md pb-6">Skapade fakturaunderlag</h3>
+              <span className="pb-16">Aviserade fakturor kommer att visas i avtalsöversikten</span>
               <BillingTable
                 errand={errand!}
                 billingRecords={billingRecords}
