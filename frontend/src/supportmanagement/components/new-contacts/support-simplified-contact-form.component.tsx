@@ -174,7 +174,7 @@ export const SupportSimplifiedContactForm: React.FC<{
 
   const form = useForm<SupportStakeholderFormModel>({
     defaultValues: contact,
-    mode: 'onSubmit', // NOTE: Needed if we want to disable submit until valid
+    mode: 'onBlur', // NOTE: Needed if we want to disable submit until valid
     resolver: yupResolver(yupContact) as unknown as Resolver<SupportStakeholderFormModel>,
   });
 
@@ -236,7 +236,9 @@ export const SupportSimplifiedContactForm: React.FC<{
   useEffect(() => {
     if (searchResult) {
       setSearchResult(false);
-      reset({}, { keepErrors: true });
+      const currentStakeholderType = form.getValues('stakeholderType');
+      const currentExternalIdType = form.getValues('externalIdType');
+      reset({ stakeholderType: currentStakeholderType, externalIdType: currentExternalIdType }, { keepErrors: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationNumber, personNumber]);

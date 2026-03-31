@@ -137,7 +137,7 @@ export const clearSearchResultOnPersonNumberChange = (mockAdressResponse: any) =
   cy.get('[data-cy="search-result"').contains(mockAdressResponse.data.addresses[0].city).should('exist');
 
   // Change personnumber
-  cy.get('[data-cy="contact-personNumber-owner"]').type('1');
+  cy.get('[data-cy="contact-personNumber-owner"]').clear().type('1');
   // Blur field to trigger validation (onBlur calls form.trigger)
   cy.get('[data-cy="contact-personNumber-owner"]').blur();
   cy.get('[data-cy="personal-number-error-message"').should('exist');

@@ -58,12 +58,13 @@ export const SupportContactSearchModeSelector: React.FC<SupportContactSearchMode
         form.setValue(`organizationName`, '', { shouldDirty: false });
         form.setValue(`organizationNumber`, '', { shouldDirty: false });
         form.setValue(`stakeholderType`, SupportStakeholderTypeEnum.PERSON, { shouldDirty: true });
+        form.clearErrors(['organizationNumber', 'organizationName']);
       } else {
         form.setValue(`firstName`, '', { shouldDirty: false });
         form.setValue(`lastName`, '', { shouldDirty: false });
         form.setValue(`stakeholderType`, SupportStakeholderTypeEnum.ORGANIZATION, { shouldDirty: true });
+        form.clearErrors(['personNumber', 'firstName', 'lastName']);
       }
-      form.clearErrors();
     }, 0);
   };
 

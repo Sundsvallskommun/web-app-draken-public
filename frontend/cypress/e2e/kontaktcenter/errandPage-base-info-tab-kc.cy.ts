@@ -139,7 +139,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       });
     });
 
-    it.only('validates the person number and organization number fields', () => {
+    it('validates the person number and organization number fields', () => {
       cy.intercept('GET', `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
         ...mockSupportErrand,
         id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
@@ -390,7 +390,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="search-result"]').contains(Cypress.env('mockPhoneNumber')).should('exist');
 
       // Change orgnumber
-      cy.get('[data-cy="contact-orgNumber-owner"]').type('1');
+      cy.get('[data-cy="contact-orgNumber-owner"]').clear().type('111111');
       // Blur field to trigger validation (onBlur calls form.trigger)
       cy.get('[data-cy="contact-orgNumber-owner"]').blur();
       cy.get('[data-cy="org-number-error-message"]').should('exist');
@@ -431,7 +431,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="contact-organizationNumber"]').should('have.value', '');
 
       // Close modal
-      cy.get('button').contains('Avbryt').click();
+      cy.get('[data-cy="cancel-contact-button"]').click();
 
       // Verify search field is cleared
       cy.get('[data-cy="contact-orgNumber-owner"]').should('have.value', '');
@@ -465,7 +465,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="contact-personNumber"]').should('have.value', '');
 
       // Close modal
-      cy.get('button').contains('Avbryt').click();
+      cy.get('[data-cy="cancel-contact-button"]').click();
 
       // Verify search field is cleared
       cy.get('[data-cy="contact-personNumber-owner"]').should('have.value', '');
