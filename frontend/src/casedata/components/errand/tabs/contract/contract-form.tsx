@@ -797,7 +797,7 @@ export const ContractForm: FC<{
                     </FormControl>
                   </div>
                   <div className="flex gap-18 justify-start">
-                    <FormControl>
+                    <FormControl className="w-[36.7rem]">
                       <FormLabel>Ange fakturans referens</FormLabel>
                       <Input
                         type="text"
@@ -805,7 +805,7 @@ export const ContractForm: FC<{
                         {...register(`extraParameters.${invoiceInfoIndex}.parameters.markup`)}
                         data-cy="invoice-markup-input"
                       />
-                      <small>Om fakturamottagaren är ett företag måste referens anges.</small>
+                      <small>Referens måste alltid anges.</small>
                       <Input
                         type="hidden"
                         {...register(`extraParameters.${invoiceInfoIndex}.name`)}

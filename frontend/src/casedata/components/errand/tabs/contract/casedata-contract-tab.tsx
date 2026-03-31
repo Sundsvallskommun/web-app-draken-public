@@ -92,6 +92,24 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           otherwise: (schema) => schema,
         }),
       }),
+      extraParameters: yup.array().when('generateInvoice', {
+        is: 'true',
+        then: (schema) =>
+          schema.of(
+            yup.object({
+              name: yup.string(),
+              parameters: yup.object().when('name', {
+                is: 'InvoiceInfo',
+                then: (s) =>
+                  s.shape({
+                    markup: yup.string().required('Fakturareferens måste anges'),
+                  }),
+                otherwise: (s) => s,
+              }),
+            })
+          ),
+        otherwise: (schema) => schema,
+      }),
     })
     .required();
   const { municipalityId, errand, setErrand, user } = useAppContext();
