@@ -5,6 +5,7 @@ import {
   ExtraParameterGroup,
   IntervalType,
   InvoicedIn,
+  LeaseType,
   Party,
   StakeholderRole,
   Status,
@@ -308,11 +309,13 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                   <FormControl id="contractSubType" className="my-md">
                     <FormLabel>Undertyp</FormLabel>
                     <Select data-cy="contract-subtype-select" {...contractForm.register('leaseType')}>
-                      {leaseTypes.map((lt) => (
-                        <option key={lt.key} value={lt.key}>
-                          {lt.label}
-                        </option>
-                      ))}
+                      {leaseTypes
+                        .filter((lt) => existingContract?.contractId || lt.key !== LeaseType.OTHER_FEE)
+                        .map((lt) => (
+                          <option key={lt.key} value={lt.key}>
+                            {lt.label}
+                          </option>
+                        ))}
                     </Select>
                   </FormControl>
                 )}

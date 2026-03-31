@@ -41,6 +41,7 @@ export const contractTypes = [
   { label: 'Korttidsarrende', key: ContractType.SHORT_TERM_LEASE_AGREEMENT },
   { label: 'Tomträtt', key: ContractType.LEASEHOLD },
   { label: 'Hyresobjekt', key: ContractType.OBJECT_LEASE },
+  { label: 'Skötselavtal', key: ContractType.MAINTENANCE_AGREEMENT },
 ];
 
 export const leaseTypes = [
@@ -49,7 +50,10 @@ export const leaseTypes = [
   { label: 'Jaktarrende', key: LeaseType.USUFRUCT_HUNTING },
   { label: 'Jordbruksarrende', key: LeaseType.USUFRUCT_FARMING },
   { label: 'Lägenhetsarrende', key: LeaseType.LAND_LEASE_MISC },
-  { label: 'Nyttjanderätt', key: LeaseType.USUFRUCT_MISC },
+  { label: 'Arrende', key: LeaseType.USUFRUCT_MISC },
+  { label: 'Markupplåtelseavtal', key: LeaseType.LAND_LEASE_LICENSE },
+  { label: 'Av kommunen arrenderad mark', key: LeaseType.LAND_LEASE_MUNICIPALITY },
+  { label: 'Arrende', key: LeaseType.OTHER_FEE }, // Ska inte kunna finnas för nya avtal
 ];
 
 export const isLeaseAgreement = (contractType: ContractType) =>
@@ -59,6 +63,26 @@ export const isLeaseAgreement = (contractType: ContractType) =>
     ContractType.SHORT_TERM_LEASE_AGREEMENT,
     ContractType.LEASEHOLD,
   ].includes(contractType);
+
+export const hasRecurringFee = (contractType: ContractType, leaseType?: LeaseType) =>
+  [
+    ContractType.LAND_LEASE_PUBLIC,
+    ContractType.OBJECT_LEASE,
+    ContractType.LEASEHOLD,
+    ContractType.LEASE_AGREEMENT,
+  ].includes(contractType) ||
+  (contractType === ContractType.LEASE_AGREEMENT &&
+    !!leaseType &&
+    [
+      LeaseType.SITE_LEASE_COMMERCIAL,
+      LeaseType.LAND_LEASE_RESIDENTIAL,
+      LeaseType.LAND_LEASE_MISC,
+      LeaseType.USUFRUCT_HUNTING,
+      LeaseType.USUFRUCT_FARMING,
+      LeaseType.USUFRUCT_MISC,
+      LeaseType.LAND_LEASE_LICENSE,
+      LeaseType.OTHER_FEE,
+    ].includes(leaseType));
 
 export const roleLabels: { [key in ContractStakeholderRole]: string } = {
   BUYER: 'Köpare',

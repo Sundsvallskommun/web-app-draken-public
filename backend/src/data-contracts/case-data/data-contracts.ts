@@ -547,6 +547,8 @@ export interface Errand {
   updatedBy?: string;
   /** Suspension information */
   suspension?: Suspension;
+  /** Whether the errand is confidential or not */
+  confidential?: boolean;
   /** Extra parameters for the errand */
   extraParameters?: ExtraParameter[];
   /** JSON parameters for the errand */
@@ -586,6 +588,8 @@ export interface JsonNode {
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
   valueNode?: boolean;
   container?: boolean;
   pojo?: boolean;
@@ -600,8 +604,6 @@ export interface JsonNode {
   textual?: boolean;
   binary?: boolean;
   missingNode?: boolean;
-  integralNumber?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 
@@ -1073,20 +1075,20 @@ export interface PageErrand {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  sort?: SortObject;
   pageable?: PageableObject;
+  sort?: SortObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  sort?: SortObject;
   unpaged?: boolean;
 }
 
@@ -1222,8 +1224,8 @@ export interface PageMessage {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  sort?: SortObject;
   pageable?: PageableObject;
+  sort?: SortObject;
   empty?: boolean;
 }
 
@@ -1241,8 +1243,8 @@ export interface PageDecision {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  sort?: SortObject;
   pageable?: PageableObject;
+  sort?: SortObject;
   empty?: boolean;
 }
 
