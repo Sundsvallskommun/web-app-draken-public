@@ -76,6 +76,7 @@ export class CasedataContractsController {
 
       let queryFilter = `(`;
       queryFilter += `contractId~'*${query}*'`;
+      queryFilter += ` or externalReferenceId~'*${query}*'`;
       queryFilter += ` or exists(propertyDesignations.name~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.organizationName~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.organizationNumber~'*${query}*')`;
