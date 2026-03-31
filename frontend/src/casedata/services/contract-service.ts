@@ -83,8 +83,8 @@ export const defaultKopeavtal: ContractData = {
   propertyDesignations: [],
   buyers: [],
   sellers: [],
-  generateInvoice: 'false' as 'true' | 'false',
-  indexAdjusted: 'false' as 'true' | 'false',
+  generateInvoice: 'false',
+  indexAdjusted: 'true',
 };
 
 export const defaultLagenhetsarrende: ContractData = {
@@ -124,7 +124,7 @@ export const defaultLagenhetsarrende: ContractData = {
     },
   ],
   generateInvoice: 'true',
-  indexAdjusted: 'false' as 'true' | 'false',
+  indexAdjusted: 'true',
 };
 
 export const saveContract: (contract: ContractData) => Promise<Contract> = (contract) => {
