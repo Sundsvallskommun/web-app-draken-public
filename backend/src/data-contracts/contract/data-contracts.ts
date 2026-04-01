@@ -591,21 +591,21 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
-  pojo?: boolean;
-  floatingPointNumber?: boolean;
   short?: boolean;
-  int?: boolean;
-  long?: boolean;
-  double?: boolean;
-  bigDecimal?: boolean;
+  valueNode?: boolean;
   bigInteger?: boolean;
+  binary?: boolean;
+  bigDecimal?: boolean;
+  floatingPointNumber?: boolean;
+  double?: boolean;
+  missingNode?: boolean;
   /** @deprecated */
   textual?: boolean;
-  binary?: boolean;
+  int?: boolean;
+  long?: boolean;
+  pojo?: boolean;
   integralNumber?: boolean;
+  container?: boolean;
   nodeType?: JsonNodeNodeTypeEnum;
   number?: boolean;
   string?: boolean;
@@ -616,10 +616,10 @@ export interface JsonNode {
 export type SpecificationContractEntity = any;
 
 export interface PageContract {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Contract[];

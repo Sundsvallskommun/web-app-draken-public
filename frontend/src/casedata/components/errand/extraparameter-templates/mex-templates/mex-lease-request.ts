@@ -1,4 +1,5 @@
 import { UppgiftField } from '@casedata/services/casedata-extra-parameters-service';
+
 import { baseDetails } from '../base-template';
 
 export const mexLeaseRequest_UppgiftFieldTemplate: UppgiftField[] = [

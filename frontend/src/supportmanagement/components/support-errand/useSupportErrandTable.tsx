@@ -1,3 +1,8 @@
+import { PriorityComponent } from '@common/components/priority/priority.component';
+import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
+import { Admin } from '@common/services/user-service';
+import { appConfig } from '@config/appconfig';
+import { useAppContext } from '@contexts/app.context';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
 import {
   Channels,
@@ -7,15 +12,11 @@ import {
   Status,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
-import { useTranslation } from 'react-i18next';
-import { SupportStatusLabelComponent } from '../ongoing-support-errands/components/support-status-label.component';
-import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
-import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
-import dayjs from 'dayjs';
 import { getAdminName, primaryStakeholderNameorEmail } from '@supportmanagement/services/support-stakeholder-service';
-import { PriorityComponent } from '@common/components/priority/priority.component';
-import { Admin } from '@common/services/user-service';
+import dayjs from 'dayjs';
+import { useTranslation } from 'react-i18next';
+
+import { SupportStatusLabelComponent } from '../ongoing-support-errands/components/support-status-label.component';
 
 export const useSupportErrandTable = (statuses: Status[]) => {
   const { t } = useTranslation();
@@ -27,7 +28,13 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       screenReaderOnly: false,
       sortable: true,
       shownForStatus: All.ALL,
-      render: (errand: SupportErrand) => <SupportStatusLabelComponent status={errand.status ?? ''} resolution={errand.resolution ?? ''} />,
+      render: (errand: SupportErrand) => (
+        <SupportStatusLabelComponent
+          status={errand.status ?? ''}
+          resolution={errand.resolution ?? ''}
+          actions={errand?.actions ?? []}
+        />
+      ),
     },
     {
       label: t('common:overview.lastActivity'),
@@ -140,14 +147,18 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       screenReaderOnly: false,
       sortable: true,
       shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED, Status.ASSIGNED],
-      render: (errand: SupportErrand) => <PriorityComponent priority={(Priority as Record<string, string>)[errand.priority!]} />,
+      render: (errand: SupportErrand) => (
+        <PriorityComponent priority={(Priority as Record<string, string>)[errand.priority!]} />
+      ),
     },
     {
       label: t('common:overview.reminder'),
       screenReaderOnly: false,
       sortable: true,
       shownForStatus: [Status.SUSPENDED],
-      render: (errand: SupportErrand) => <time dateTime={errand.touched}>{prettyTime(errand.suspension?.suspendedTo!)}</time>,
+      render: (errand: SupportErrand) => (
+        <time dateTime={errand.touched}>{prettyTime(errand.suspension?.suspendedTo!)}</time>
+      ),
     },
     {
       label: t('common:overview.responsible'),

@@ -3,13 +3,12 @@ import { PrettyRole, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { useAppContext } from '@contexts/app.context';
 import { FormControl, FormLabel, Select } from '@sk-web-gui/react';
-import { useState } from 'react';
-
+import { FC, useState } from 'react';
 interface BillingLeaseholderProps {
   onSelectRecipient: (recipient: BillingRecipient | undefined) => void;
 }
 
-export const BillingLeaseholder: React.FC<BillingLeaseholderProps> = ({ onSelectRecipient }) => {
+export const BillingLeaseholder: FC<BillingLeaseholderProps> = ({ onSelectRecipient }) => {
   const { errand } = useAppContext();
   const [selectedStakeholderId, setSelectedStakeholderId] = useState<string>('');
 

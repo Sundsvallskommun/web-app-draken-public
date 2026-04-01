@@ -1,4 +1,4 @@
-import { Notification as CasedataNotification, Errand } from '@common/data-contracts/case-data/data-contracts';
+import { Errand, Notification as CasedataNotification } from '@common/data-contracts/case-data/data-contracts';
 import { apiService } from '@common/services/api-service';
 import { PatchNotificationDto } from 'src/data-contracts/backend/data-contracts';
 

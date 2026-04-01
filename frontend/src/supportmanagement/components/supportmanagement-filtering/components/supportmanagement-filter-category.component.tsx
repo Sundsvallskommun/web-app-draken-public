@@ -1,12 +1,12 @@
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { useAppContext } from '@contexts/app.context';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useEffect, useState } from 'react';
-import { useFormContext } from 'react-hook-form';
-import { SupportManagementFilter } from '../supportmanagement-filtering.component';
-import { useTranslation } from 'next-i18next';
 import { ChevronDown } from 'lucide-react';
+import { useTranslation } from 'next-i18next';
+import { FC, useEffect, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
+
+import { SupportManagementFilter } from '../supportmanagement-filtering.component';
 export interface CategoryFilter {
   category: string[];
 }
@@ -15,7 +15,7 @@ export const CategoryValues: CategoryFilter = {
   category: [],
 };
 
-export const SupportManagementFilterCategory: React.FC = () => {
+export const SupportManagementFilterCategory: FC = () => {
   const { register } = useFormContext<SupportManagementFilter>();
   const [query, setQuery] = useState<string>('');
   const [allCategories, setAllCategories] = useState<Category[]>();

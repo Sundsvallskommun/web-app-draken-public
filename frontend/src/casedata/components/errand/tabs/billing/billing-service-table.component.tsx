@@ -1,6 +1,8 @@
 import { BillingServiceItem } from '@casedata/interfaces/billing';
 import { Button, Table } from '@sk-web-gui/react';
 import { Pen, Trash2 } from 'lucide-react';
+import { FC, Fragment } from 'react';
+
 import { AddBillingService } from './add-billing-service.component';
 
 interface BillingServiceTableProps {
@@ -12,7 +14,7 @@ interface BillingServiceTableProps {
   editingServiceId: string | null;
 }
 
-export const BillingServiceTable: React.FC<BillingServiceTableProps> = ({
+export const BillingServiceTable: FC<BillingServiceTableProps> = ({
   services,
   onRemoveService,
   onEditService,
@@ -45,63 +47,63 @@ export const BillingServiceTable: React.FC<BillingServiceTableProps> = ({
             }
 
             return (
-              <Table.Row key={service.id}>
-                <Table.Column className="!overflow-visible">
-                  <div className="relative pt-16 pb-30">
-                    <span className="font-bold">{service.name}</span>
-                    <span className="text-small whitespace-nowrap absolute left-0 bottom-8">
+              <Fragment key={service.id}>
+                <Table.Row className="!border-b-0">
+                  <Table.Column>
+                    <span className="font-bold mt-6">{service.name}</span>
+                  </Table.Column>
+                  <Table.Column className="">
+                    <span className="mt-6">{service.avitext || '-'}</span>
+                  </Table.Column>
+                  <Table.Column>
+                    <span className="mt-6">{service.quantity}</span>
+                  </Table.Column>
+                  <Table.Column>
+                    <span className="whitespace-nowrap mt-6">{service.costPerUnit.toFixed(2)} kr</span>
+                  </Table.Column>
+                  <Table.Column>
+                    <span className="whitespace-nowrap mt-6">{service.totalAmount.toFixed(2)} kr</span>
+                  </Table.Column>
+                  <Table.Column>
+                    <div className="mt-6">
+                      <Button
+                        size="sm"
+                        variant="tertiary"
+                        iconButton
+                        onClick={() => onEditService(service.id)}
+                        disabled={editingServiceId !== null}
+                      >
+                        <Pen size={16} />
+                      </Button>
+                    </div>
+                  </Table.Column>
+                  <Table.Column>
+                    <div className="mt-6">
+                      <Button
+                        size="sm"
+                        inverted
+                        iconButton
+                        color="error"
+                        onClick={() => onRemoveService(service.id)}
+                        disabled={editingServiceId !== null}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
+                  </Table.Column>
+                </Table.Row>
+                <tr className="border-b-1 border-divider">
+                  <td colSpan={7} className="pl-16 pb-8 pt-6">
+                    <span className="text-small text-dark-secondary">
                       Ansvar: {service.accountInformation.costCenter || '-'}, Underkonto:{' '}
                       {service.accountInformation.subaccount || '-'}, Verksamhet:{' '}
                       {service.accountInformation.department || '-'}, Aktivitet:{' '}
                       {service.accountInformation.activity || '-'}, Projekt: {service.accountInformation.project || '-'}
                       , Objekt: {service.accountInformation.object || '-'}
                     </span>
-                  </div>
-                </Table.Column>
-                <Table.Column className="max-w-[14rem] whitespace-normal">
-                  {' '}
-                  <div className="relative pt-16 pb-30">{service.avitext || '-'} </div>
-                </Table.Column>
-                <Table.Column>
-                  {' '}
-                  <div className="relative pt-16 pb-30">{service.quantity}</div>
-                </Table.Column>
-                <Table.Column>
-                  {' '}
-                  <div className="relative pt-16 pb-30">{service.costPerUnit.toFixed(2)} kr</div>
-                </Table.Column>
-                <Table.Column>
-                  {' '}
-                  <div className="relative pt-16 pb-30">{service.totalAmount.toFixed(2)} kr</div>
-                </Table.Column>
-                <Table.Column>
-                  <div className="relative pt-16 pb-30">
-                    <Button
-                      size="sm"
-                      variant="tertiary"
-                      iconButton
-                      onClick={() => onEditService(service.id)}
-                      disabled={editingServiceId !== null}
-                    >
-                      <Pen size={16} />
-                    </Button>
-                  </div>
-                </Table.Column>
-                <Table.Column>
-                  <div className="relative pt-16 pb-30">
-                    <Button
-                      size="sm"
-                      inverted
-                      iconButton
-                      color="error"
-                      onClick={() => onRemoveService(service.id)}
-                      disabled={editingServiceId !== null}
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  </div>
-                </Table.Column>
-              </Table.Row>
+                  </td>
+                </tr>
+              </Fragment>
             );
           })}
         </Table.Body>

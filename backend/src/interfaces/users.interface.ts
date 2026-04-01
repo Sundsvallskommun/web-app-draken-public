@@ -7,7 +7,7 @@ export interface User {
   email: string;
   password: string;
   username: string;
-  groups: string;
+  groups: string[];
   permissions: Permissions;
 }
 export interface Permissions {

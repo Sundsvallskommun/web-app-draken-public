@@ -1,4 +1,4 @@
-import { ValidationOptions, ValidatorConstraint, ValidatorConstraintInterface, registerDecorator } from 'class-validator';
+import { registerDecorator, ValidationOptions, ValidatorConstraint, ValidatorConstraintInterface } from 'class-validator';
 
 const isNull = (value: any) => {
   return value !== null;
@@ -12,7 +12,7 @@ export class IsNull implements ValidatorConstraintInterface {
 }
 
 export function IsNullable(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isNullable',
       target: object.constructor,

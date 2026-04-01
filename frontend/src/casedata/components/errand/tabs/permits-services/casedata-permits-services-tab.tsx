@@ -1,11 +1,9 @@
-import { useAppContext } from '@common/contexts/app.context';
-import { AutoTable, AutoTableHeader } from '@sk-web-gui/react';
-import { useEffect, useState } from 'react';
-
 import { assetStatusLabels, assetTypeLabels } from '@casedata/interfaces/asset';
 import { validateAction } from '@casedata/services/casedata-errand-service';
-
-export const CasedataPermitServicesTab: React.FC<{}> = () => {
+import { useAppContext } from '@common/contexts/app.context';
+import { AutoTable, AutoTableHeader } from '@sk-web-gui/react';
+import { FC, useEffect, useState } from 'react';
+export const CasedataPermitServicesTab: FC<{}> = () => {
   const { errand, assets, user } = useAppContext();
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
@@ -42,25 +40,9 @@ export const CasedataPermitServicesTab: React.FC<{}> = () => {
       isColumnSortable: false,
       renderColumn: (value) => {
         return (
-          <span data-cy="table-column-status">{Object.entries(assetStatusLabels).find((x) => x[0] === value)?.[1]}</span>
-        );
-      },
-    },
-    {
-      property: 'caseReferenceIds',
-      label: 'Ärendenummer',
-      isColumnSortable: false,
-      renderColumn: (value) => {
-        return (
-          <>
-            {value.map((v: string) => {
-              return (
-                <span data-cy="table-column-errandNumber" key={`caseref-${v}`}>
-                  {v}
-                </span>
-              );
-            })}
-          </>
+          <span data-cy="table-column-status">
+            {Object.entries(assetStatusLabels).find((x) => x[0] === value)?.[1]}
+          </span>
         );
       },
     },

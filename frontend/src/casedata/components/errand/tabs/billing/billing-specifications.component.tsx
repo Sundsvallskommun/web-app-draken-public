@@ -1,9 +1,10 @@
 import { BillingFormData } from '@casedata/interfaces/billing';
 import { useAppContext } from '@contexts/app.context';
 import { Checkbox, DatePicker, FormControl, FormLabel, Input, Textarea } from '@sk-web-gui/react';
+import { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
 
-export const BillingSpecifications: React.FC = () => {
+export const BillingSpecifications: FC = () => {
   const { errand } = useAppContext();
   const { register, watch, setValue } = useFormContext<BillingFormData>();
 
@@ -42,8 +43,7 @@ export const BillingSpecifications: React.FC = () => {
       <div>
         <FormControl>
           <FormLabel>
-            Ange vilka fastighet/er som fakturan gäller{' '}
-            <span className="font-normal">(hämtad från uppgifter)</span>
+            Ange vilka fastighet/er som fakturan gäller <span className="font-normal">(hämtad från uppgifter)</span>
           </FormLabel>
           {(errand?.facilities?.length ?? 0) > 0 ? (
             <Checkbox.Group data-cy="property-designation-checkboxgroup" name="propertyDesignations">

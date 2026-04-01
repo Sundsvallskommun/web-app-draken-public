@@ -5,8 +5,9 @@ import { useAppContext } from '@contexts/app.context';
 import { Badge, Button, cx, useGui } from '@sk-web-gui/react';
 import { supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
-import { KeyboardEvent, useRef, useState } from 'react';
+import { FC, KeyboardEvent, ReactNode, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
+
 import { SidebarTooltip } from '../../../casedata/components/errand/sidebar/sidebar-tooltip.component';
 
 export type SidebarButtonKey =
@@ -20,12 +21,12 @@ export type SidebarButtonKey =
   | 'export'
   | undefined;
 
-export const Sidebar: React.FC<{
+export const Sidebar: FC<{
   buttons: {
     label: string;
     key: SidebarButtonKey;
     icon: string;
-    component: React.ReactNode;
+    component: ReactNode;
   }[];
 }> = ({ buttons }) => {
   const [open, setOpen] = useState(true);
@@ -40,8 +41,8 @@ export const Sidebar: React.FC<{
   const { supportErrand, notesCount, serviceNotesCount } = useAppContext();
 
   const badgeCounts: Record<string, number> = {
-    'Kommentarer': notesCount,
-    'Tjänsteanteckningar': serviceNotesCount,
+    Kommentarer: notesCount,
+    Tjänsteanteckningar: serviceNotesCount,
   };
 
   const updateScroll = () => {

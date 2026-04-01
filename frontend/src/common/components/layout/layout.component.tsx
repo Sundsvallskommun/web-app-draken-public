@@ -6,20 +6,16 @@ import { appConfig } from '@config/appconfig';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
+import { ExternalLink, Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, ReactNode, useEffect, useState } from 'react';
+
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
-import { ExternalLink, Menu } from 'lucide-react';
 
-export default function Layout({ title, children }: { title: string; children: React.ReactNode }) {
-  const {
-    user,
-    errand,
-    supportErrand,
-    supportMetadata,
-  } = useAppContext();
+export default function Layout({ title, children }: { title: string; children: ReactNode }) {
+  const { user, errand, supportErrand, supportMetadata } = useAppContext();
   const applicationEnvironment = getApplicationEnvironment();
   const { isMinLargeDevice } = useThemeQueries();
   const pathName = usePathname() ?? '';
@@ -68,7 +64,11 @@ export default function Layout({ title, children }: { title: string; children: R
       <span className="text-large">
         {appConfig.isSupportManagement ? (
           <>
-            <SupportStatusLabelComponent status={supportErrand?.status ?? ''} resolution={supportErrand?.resolution ?? ''} />
+            <SupportStatusLabelComponent
+              status={supportErrand?.status ?? ''}
+              resolution={supportErrand?.resolution ?? ''}
+              actions={supportErrand?.actions ?? []}
+            />
             <span className="font-bold ml-8">
               {appConfig.features.useThreeLevelCategorization
                 ? supportErrand?.labels?.find((l) => l.classification === 'TYPE')?.displayName ?? '(Ärendetyp saknas)'
@@ -115,11 +115,7 @@ export default function Layout({ title, children }: { title: string; children: R
                 target="_blank"
                 data-cy="register-new-errand-button"
               >
-                <Button
-                  color={'primary'}
-                  variant={'tertiary'}
-                  rightIcon={<ExternalLink />}
-                >
+                <Button color={'primary'} variant={'tertiary'} rightIcon={<ExternalLink />}>
                   Nytt ärende
                 </Button>
               </Link>
@@ -138,8 +134,7 @@ export default function Layout({ title, children }: { title: string; children: R
                   <PopupMenu.Group>
                     <PopupMenu.Item>
                       <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
-                        <ExternalLink className="h-md" /> Nytt
-                        ärende
+                        <ExternalLink className="h-md" /> Nytt ärende
                       </Link>
                     </PopupMenu.Item>
                   </PopupMenu.Group>

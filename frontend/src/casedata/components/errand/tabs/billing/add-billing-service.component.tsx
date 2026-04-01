@@ -1,8 +1,8 @@
 import { BillingServiceItem } from '@casedata/interfaces/billing';
-import { calculateServiceTotal } from '@casedata/services/casedata-billing-service';
 import { casedataInvoiceSettings, CasedataService } from '@casedata/services/billing/casedata-invoice-settings';
+import { calculateServiceTotal } from '@casedata/services/casedata-billing-service';
 import { Button, FormControl, FormLabel, Input, Select, Textarea } from '@sk-web-gui/react';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface AddBillingServiceProps {
@@ -25,7 +25,7 @@ const emptyFormState = {
   avitext: '',
 };
 
-export const AddBillingService: React.FC<AddBillingServiceProps> = ({ onSave, onCancel, editingService }) => {
+export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel, editingService }) => {
   const [formState, setFormState] = useState(emptyFormState);
   const [selectedService, setSelectedService] = useState<CasedataService | null>(null);
 

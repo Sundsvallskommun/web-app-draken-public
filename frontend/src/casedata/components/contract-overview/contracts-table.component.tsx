@@ -3,9 +3,9 @@ import { contractTypes, leaseTypes } from '@casedata/services/contract-service';
 import { Button, Input, Label, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
-import React, { useState } from 'react';
-import { useFormContext } from 'react-hook-form';
 import { ArrowRight } from 'lucide-react';
+import { FC, ReactNode, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 export interface ContractTableForm {
   sortOrder: 'asc' | 'desc';
@@ -33,7 +33,7 @@ const getStakeholderName = (stakeholder: Stakeholder): string => {
   return stakeholder.organizationName || '-';
 };
 
-const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ status }) => {
+const CasedataStatusLabelComponent: FC<{ status: string }> = ({ status }) => {
   switch (status) {
     case 'DRAFT':
       return (
@@ -67,7 +67,7 @@ const formatDate = (date?: string): string => {
   return dayjs(date).format('YYYY-MM-DD');
 };
 
-const formatPeriod = (start?: string, end?: string): React.ReactNode => {
+const formatPeriod = (start?: string, end?: string): ReactNode => {
   const startStr = formatDate(start);
   const endStr = formatDate(end);
   if (startStr || endStr) {
@@ -94,7 +94,7 @@ export const contractTableLabels = [
   { label: '', sortable: false, column: '' },
 ];
 
-export const ContractsTable: React.FC<{
+export const ContractsTable: FC<{
   contracts: Contract[];
   isLoading: boolean;
   onRowClick?: (contract: Contract) => void;

@@ -1,4 +1,5 @@
 import { InternalRole } from '@/interfaces/users.interface';
+
 import { isMEX, isPT } from './application.service';
 
 export type RoleADMapping = {

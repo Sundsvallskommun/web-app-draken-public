@@ -4,17 +4,16 @@ import { ContractOverview } from '@casedata/components/contract-overview/contrac
 import { OngoingCaseDataErrands } from '@casedata/components/ongoing-casedata-errands/ongoing-casedata-errands.component';
 import SidebarLayout from '@common/components/layout/sidebar-layout.component';
 import { useAppContext } from '@common/contexts/app.context';
+import { isMEX } from '@common/services/application-service';
+import { getFeatureFlags } from '@common/services/feature-flag-service';
+import { getAdminUsers } from '@common/services/user-service';
 import { DeployInfoBanner } from '@common/utils/deploy-info-banner';
 import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
 import { OngoingSupportErrands } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useEffect, useState } from 'react';
-import { getAdminUsers } from '@common/services/user-service';
-import { getFeatureFlags } from '@common/services/feature-flag-service';
-import { isMEX } from '@common/services/application-service';
-
-const Oversikt: React.FC = () => {
+import { FC, useEffect, useState } from 'react';
+const Oversikt: FC = () => {
   const { user, municipalityId, setSupportMetadata, setAdministrators, setMunicipalityId } = useAppContext();
   const [showAttestationTable, setShowAttestationTable] = useState<boolean>(false);
   const [showContractTable, setShowContractTable] = useState<boolean>(false);

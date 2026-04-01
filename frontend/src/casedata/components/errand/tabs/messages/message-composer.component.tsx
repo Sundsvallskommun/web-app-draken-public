@@ -2,7 +2,6 @@
 
 import { Attachment } from '@casedata/interfaces/attachment';
 import { Channels } from '@casedata/interfaces/channels';
-import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Role } from '@casedata/interfaces/role';
 import { ACCEPTED_UPLOAD_FILETYPES, getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
@@ -20,7 +19,6 @@ import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { User } from '@common/interfaces/user';
 import { isMEX, isPT } from '@common/services/application-service';
 import {
   invalidPhoneMessage,
@@ -34,6 +32,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
   Chip,
+  cx,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -41,16 +40,15 @@ import {
   Modal,
   RadioButton,
   Select,
-  cx,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useTranslation } from 'next-i18next';
+import { File, Paperclip, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useTranslation } from 'next-i18next';
+import { FC, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { File, Paperclip, X } from 'lucide-react';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface CasedataMessageTabFormModel {
@@ -142,6 +140,7 @@ let formSchema = yup
     attachUtredning: yup.bool(),
     existingAttachments: yup.array(
       yup.object().shape({
+        attachmentId: yup.mixed(),
         category: yup.string(),
         name: yup.string(),
         note: yup.string(),
@@ -156,7 +155,7 @@ let formSchema = yup
   })
   .required();
 
-export const MessageComposer: React.FC<{
+export const MessageComposer: FC<{
   message?: MessageNode;
   show: boolean;
   closeHandler: () => void;
@@ -260,7 +259,8 @@ export const MessageComposer: React.FC<{
         errand!.id,
         conversationId,
         data.messageBody,
-        data.messageAttachments.map((a) => a.file).filter((f): f is FileList => !!f)
+        data.messageAttachments.map((a) => a.file).filter((f): f is FileList => !!f),
+        fields
       )
         .then(() => {
           toastMessage(
@@ -399,9 +399,9 @@ export const MessageComposer: React.FC<{
       setValue(
         'emails',
         props.message.direction === 'OUTBOUND'
-          ? (props.message?.recipients?.map((email) => ({
+          ? props.message?.recipients?.map((email) => ({
               value: email,
-            })) ?? [])
+            })) ?? []
           : [{ value: props.message.email ?? '' }]
       );
       setValue(
@@ -677,66 +677,64 @@ export const MessageComposer: React.FC<{
                       </div>
                     ))
                 : null}
-              {contactMeans === 'email' || contactMeans === 'webmessage' ? (
-                <FormControl id="addExisting" className="w-full">
-                  <FormLabel>Bilagor från ärendet</FormLabel>
-                  <div className="flex gap-16">
-                    {/* <Input type="hidden" {...register('addExisting')} /> */}
-                    <Select
-                      tabIndex={props.show ? 0 : -1}
-                      {...register('addExisting')}
-                      className="w-full"
-                      placeholder="Välj bilaga"
-                      size="sm"
-                      onChange={(r) => {
-                        setValue('addExisting', r.currentTarget.value);
-                      }}
-                      value={getValues('addExisting')}
-                      data-cy="select-errand-attachment"
-                    >
-                      <Select.Option value="">Välj bilaga</Select.Option>
-                      {(errand?.attachments ?? [])
-                        .filter((a) => !fields.map((f) => (f as Attachment).name).includes(a.name))
-                        .map((att, idx) => {
-                          const label = `${getAttachmentLabel(att)}: ${att.name}`;
-                          return (
-                            <Select.Option
-                              value={att.name}
-                              key={`attachmentId-${idx}`}
-                              className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
-                            >
-                              {label}
-                            </Select.Option>
-                          );
-                        })}
-                    </Select>
-                    <Button
-                      tabIndex={props.show ? 0 : -1}
-                      type="button"
-                      variant="tertiary"
-                      size="sm"
-                      disabled={!addExisting}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (addExisting) {
-                          const att = (errand?.attachments ?? []).find((a) => a.name === addExisting);
-                          if (att) append(att);
-                          setValue(`addExisting`, '' as any);
-                        }
-                      }}
-                      className="rounded"
-                      data-cy="add-selected-attachment"
-                    >
-                      Lägg till
-                    </Button>
+
+              <FormControl id="addExisting" className="w-full">
+                <FormLabel>Bilagor från ärendet</FormLabel>
+                <div className="flex gap-16">
+                  <Select
+                    tabIndex={props.show ? 0 : -1}
+                    {...register('addExisting')}
+                    className="w-full"
+                    placeholder="Välj bilaga"
+                    size="sm"
+                    onChange={(r) => {
+                      setValue('addExisting', r.currentTarget.value);
+                    }}
+                    value={getValues('addExisting')}
+                    data-cy="select-errand-attachment"
+                  >
+                    <Select.Option value="">Välj bilaga</Select.Option>
+                    {(errand?.attachments ?? [])
+                      .filter((a) => !fields.map((f) => (f as Attachment).name).includes(a.name))
+                      .map((att, idx) => {
+                        const label = `${getAttachmentLabel(att)}: ${att.name}`;
+                        return (
+                          <Select.Option
+                            value={att.name}
+                            key={`attachmentId-${idx}`}
+                            className={cx(`cursor-pointer select-none relative py-4 pl-10 pr-4`)}
+                          >
+                            {label}
+                          </Select.Option>
+                        );
+                      })}
+                  </Select>
+                  <Button
+                    tabIndex={props.show ? 0 : -1}
+                    type="button"
+                    variant="tertiary"
+                    size="sm"
+                    disabled={!addExisting}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (addExisting) {
+                        const att = (errand?.attachments ?? []).find((a) => a.name === addExisting);
+                        if (att) append({ ...att, attachmentId: att.id });
+                        setValue(`addExisting`, '' as any);
+                      }
+                    }}
+                    className="rounded"
+                    data-cy="add-selected-attachment"
+                  >
+                    Lägg till
+                  </Button>
+                </div>
+                {errors.addExisting && (
+                  <div className="my-sm">
+                    <FormErrorMessage>{errors.addExisting.message}</FormErrorMessage>
                   </div>
-                  {errors.addExisting && (
-                    <div className="my-sm">
-                      <FormErrorMessage>{errors.addExisting.message}</FormErrorMessage>
-                    </div>
-                  )}
-                </FormControl>
-              ) : null}
+                )}
+              </FormControl>
               {fields.length > 0 ? (
                 <div className="flex items-center w-full flex-wrap justify-start gap-md">
                   {fields.map((field, k) => {

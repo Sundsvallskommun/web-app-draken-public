@@ -1,8 +1,7 @@
-import { Priority } from '@casedata/interfaces/priority';
-import { PriorityComponent } from '@common/components/priority/priority.component';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
-import { useFormContext } from 'react-hook-form';
 import { ChevronDown } from 'lucide-react';
+import { FC } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 export interface CaseStakeholderTypeFilter {
   stakeholderType: string[];
@@ -12,7 +11,7 @@ export const CaseStakeholderTypeValues: CaseStakeholderTypeFilter = {
   stakeholderType: [],
 };
 
-export const CasedataStakeholderType: React.FC = () => {
+export const CasedataStakeholderType: FC = () => {
   const { register } = useFormContext<CaseStakeholderTypeFilter>();
 
   return (

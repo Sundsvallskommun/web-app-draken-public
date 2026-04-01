@@ -12,10 +12,10 @@
 
 /** Status model */
 export enum Status {
-  ACTIVE = "ACTIVE",
-  EXPIRED = "EXPIRED",
-  BLOCKED = "BLOCKED",
-  TEMPORARY = "TEMPORARY",
+  ACTIVE = 'ACTIVE',
+  EXPIRED = 'EXPIRED',
+  BLOCKED = 'BLOCKED',
+  TEMPORARY = 'TEMPORARY',
 }
 
 export interface Problem {
@@ -121,6 +121,7 @@ export interface JsonNode {
   container?: boolean;
   missingNode?: boolean;
   nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -132,7 +133,6 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  integralNumber?: boolean;
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
@@ -189,13 +189,13 @@ export interface Asset {
 }
 
 export enum JsonNodeNodeTypeEnum {
-  ARRAY = "ARRAY",
-  BINARY = "BINARY",
-  BOOLEAN = "BOOLEAN",
-  MISSING = "MISSING",
-  NULL = "NULL",
-  NUMBER = "NUMBER",
-  OBJECT = "OBJECT",
-  POJO = "POJO",
-  STRING = "STRING",
+  ARRAY = 'ARRAY',
+  BINARY = 'BINARY',
+  BOOLEAN = 'BOOLEAN',
+  MISSING = 'MISSING',
+  NULL = 'NULL',
+  NUMBER = 'NUMBER',
+  OBJECT = 'OBJECT',
+  POJO = 'POJO',
+  STRING = 'STRING',
 }

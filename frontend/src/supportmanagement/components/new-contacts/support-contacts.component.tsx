@@ -1,21 +1,19 @@
 import { useAppContext } from '@common/contexts/app.context';
-import { User } from '@common/interfaces/user';
+import { appConfig } from '@config/appconfig';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
+  emptyContact,
   ExternalIdType,
+  isSupportErrandLocked,
   SupportErrand,
   SupportStakeholderFormModel,
-  emptyContact,
-  isSupportErrandLocked,
 } from '@supportmanagement/services/support-errand-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { buildStakeholdersList } from '@supportmanagement/services/support-stakeholder-service';
-import { useEffect, useState } from 'react';
-import { UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
-import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
-import { appConfig } from '@config/appconfig';
 import { Info, Users } from 'lucide-react';
+import { FC, useEffect, useState } from 'react';
+import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
+
+import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
 
 interface SupportContactsProps {
   setUnsaved: (unsaved: boolean) => void;
@@ -23,13 +21,9 @@ interface SupportContactsProps {
   registeringNewErrand?: boolean;
 }
 
-export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) => {
+export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
   const [selectedContact, setSelectedContact] = useState<SupportStakeholderFormModel>();
-  const {
-    supportErrand,
-    user,
-    supportMetadata,
-  } = useAppContext();
+  const { supportErrand, user, supportMetadata } = useAppContext();
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();
 

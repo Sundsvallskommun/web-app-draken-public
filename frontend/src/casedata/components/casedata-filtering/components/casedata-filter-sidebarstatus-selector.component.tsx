@@ -7,14 +7,13 @@ import {
   ongoingStatuses,
   suspendedStatuses,
 } from '@casedata/services/casedata-errand-service';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
 import { AppContextInterface, useAppContext } from '@contexts/app.context';
 import { Badge, Button, Spinner } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
-import { useMemo } from 'react';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-
-export const CasedataFilterSidebarStatusSelector: React.FC<{
+import { FC, useMemo } from 'react';
+export const CasedataFilterSidebarStatusSelector: FC<{
   showContractTable: boolean;
   setShowContractTable: (show: boolean) => void;
   iconButton: boolean;
@@ -108,7 +107,10 @@ export const CasedataFilterSidebarStatusSelector: React.FC<{
             aria-label={`status-button-${button.key}`}
             variant={buttonIsActive && !showContractTable ? 'primary' : 'ghost'}
             className={`${!iconButton && 'justify-start'} ${!buttonIsActive && 'hover:bg-dark-ghost'}`}
-            leftIcon={(() => { const DynIcon = iconMap[button.icon as string]; return DynIcon ? <DynIcon /> : undefined; })()}
+            leftIcon={(() => {
+              const DynIcon = iconMap[button.icon as string];
+              return DynIcon ? <DynIcon /> : undefined;
+            })()}
             key={button.key}
             iconButton={iconButton}
           >

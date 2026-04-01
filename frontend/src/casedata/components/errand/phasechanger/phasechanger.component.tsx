@@ -21,7 +21,8 @@ import { Button, FormErrorMessage, Spinner, useSnackbar } from '@sk-web-gui/reac
 import { ArrowRight } from 'lucide-react';
 import { IconName } from 'lucide-react/dynamic';
 import { JSX, useEffect, useState } from 'react';
-import { UseFormReturn, useForm } from 'react-hook-form';
+import { useForm, UseFormReturn } from 'react-hook-form';
+
 import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
 import { MEXCaseType } from '@casedata/interfaces/case-type';
 

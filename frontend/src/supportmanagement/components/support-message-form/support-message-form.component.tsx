@@ -6,7 +6,6 @@ import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { Relation } from '@common/data-contracts/relations/data-contracts';
-import { User } from '@common/interfaces/user';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
 import { getSourceRelations } from '@common/services/relations-service';
@@ -17,6 +16,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
   Chip,
+  cx,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -25,13 +25,12 @@ import {
   Modal,
   RadioButton,
   Select,
-  cx,
   useSnackbar,
 } from '@sk-web-gui/react';
 import {
+  getSupportAttachment,
   SingleSupportAttachment,
   SupportAttachment,
-  getSupportAttachment,
 } from '@supportmanagement/services/support-attachment-service';
 import {
   getOrCreateSupportConversationId,
@@ -39,20 +38,20 @@ import {
 } from '@supportmanagement/services/support-conversation-service';
 import {
   Channels,
-  Status,
-  SupportErrand,
   getSupportErrandById,
   isSupportErrandLocked,
   setSupportErrandStatus,
+  Status,
 } from '@supportmanagement/services/support-errand-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { File, Paperclip, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
+
 import { getDefaultEmailBody, getDefaultSmsBody, removeEmailInformation } from '../templates/default-message-template';
 const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
@@ -130,13 +129,13 @@ let formSchema = yup
   })
   .required();
 
-export const SupportMessageForm: React.FC<{
+export const SupportMessageForm: FC<{
   locked?: boolean;
   prefillPhone?: string;
   prefillEmail?: string;
   showMessageForm: boolean;
   message: Message;
-  setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMessageForm: Dispatch<SetStateAction<boolean>>;
   setUnsaved?: (unsaved: boolean) => void;
   update?: () => void;
 }> = (props) => {
@@ -275,7 +274,8 @@ export const SupportMessageForm: React.FC<{
         supportErrand.id!,
         conversationId,
         data.messageBody,
-        data.messageAttachments as { file: File }[]
+        data.messageAttachments as { file: File }[],
+        existingAttachments
       );
     } else {
       const messageData: MessageRequest = {
@@ -649,7 +649,10 @@ export const SupportMessageForm: React.FC<{
         </div>
       </div>
 
-      {contactMeans === 'email' || contactMeans === 'webmessage' ? (
+      {contactMeans === 'email' ||
+      contactMeans === 'webmessage' ||
+      contactMeans === 'draken' ||
+      contactMeans === 'minasidor' ? (
         <div className="w-full gap-xl mb-lg">
           {contactMeans === 'email' && (
             <CommonNestedEmailArrayV2
@@ -675,58 +678,56 @@ export const SupportMessageForm: React.FC<{
                   </div>
                 ))
             : null}
-          {contactMeans === 'email' || contactMeans === 'webmessage' ? (
-            <FormControl id="addExisting" className="w-full mt-md">
-              <FormLabel>Bilagor från ärendet</FormLabel>
-              <div className="flex items-center justify-between">
-                {/*<Input type="hidden" {...register('addExisting')} />*/}
-                <Select
-                  {...register('addExisting')}
-                  className="w-full"
-                  size="sm"
-                  placeholder="Välj bilaga"
-                  onChange={(r) => {
-                    setValue('addExisting', r.currentTarget.value);
-                  }}
-                  value={getValues('addExisting')}
-                  data-cy="select-errand-attachment"
-                >
-                  <Select.Option value="">Välj bilaga</Select.Option>
-                  {supportAttachments?.map((attachment, index) => {
-                    return (
-                      <Select.Option key={`attachmentId-${index}`} value={attachment?.fileName}>
-                        {attachment?.fileName}
-                      </Select.Option>
-                    );
-                  })}
-                </Select>
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  disabled={!addExisting}
-                  color="primary"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (addExisting) {
-                      const attachment = supportAttachments.find((a: SupportAttachment) => a.fileName === addExisting);
-                      getSingleSupportAttachment(attachment!);
-                      setValue(`addExisting`, '');
-                    }
-                  }}
-                  className="rounded-button ml-16"
-                  data-cy="add-selected-attachment"
-                >
-                  Lägg till
-                </Button>
+          <FormControl id="addExisting" className="w-full mt-md">
+            <FormLabel>Bilagor från ärendet</FormLabel>
+            <div className="flex items-center justify-between">
+              <Select
+                {...register('addExisting')}
+                className="w-full"
+                size="sm"
+                placeholder="Välj bilaga"
+                onChange={(r) => {
+                  setValue('addExisting', r.currentTarget.value);
+                }}
+                value={getValues('addExisting')}
+                data-cy="select-errand-attachment"
+              >
+                <Select.Option value="">Välj bilaga</Select.Option>
+                {supportAttachments?.map((attachment, index) => {
+                  return (
+                    <Select.Option key={`attachmentId-${index}`} value={attachment?.fileName}>
+                      {attachment?.fileName}
+                    </Select.Option>
+                  );
+                })}
+              </Select>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                disabled={!addExisting}
+                color="primary"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (addExisting) {
+                    const attachment = supportAttachments.find((a: SupportAttachment) => a.fileName === addExisting);
+                    getSingleSupportAttachment(attachment!);
+                    setValue(`addExisting`, '');
+                  }
+                }}
+                className="rounded-button ml-16"
+                data-cy="add-selected-attachment"
+              >
+                Lägg till
+              </Button>
+            </div>
+            {errors.addExisting && (
+              <div className="my-sm">
+                <FormErrorMessage>{errors.addExisting.message}</FormErrorMessage>
               </div>
-              {errors.addExisting && (
-                <div className="my-sm">
-                  <FormErrorMessage>{errors.addExisting.message}</FormErrorMessage>
-                </div>
-              )}
-            </FormControl>
-          ) : null}
+            )}
+          </FormControl>
+
           {existingAttachmentFields.length > 0 ? (
             <div className="flex items-center w-full flex-wrap justify-start gap-md mt-16">
               {existingAttachmentFields.map((field, k) => {
@@ -798,7 +799,9 @@ export const SupportMessageForm: React.FC<{
                     <div className="bg-vattjom-surface-accent pt-4 pb-0 px-4 rounded self-center">
                       <Icon icon={<File />} size={25} />
                     </div>
-                    <div className="self-center justify-start px-8">{(attachment.file as unknown as FileList)?.[0]?.name}</div>
+                    <div className="self-center justify-start px-8">
+                      {(attachment.file as unknown as FileList)?.[0]?.name}
+                    </div>
                   </div>
                   <div>
                     <Button

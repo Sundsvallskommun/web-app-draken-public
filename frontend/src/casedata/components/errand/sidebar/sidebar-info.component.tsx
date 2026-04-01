@@ -15,9 +15,9 @@ import {
   validateAction,
 } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
+import { cancelErrandPhaseChange, phaseChangeInProgress } from '@casedata/services/process-service';
 import { useAppContext } from '@common/contexts/app.context';
 import { isAppealEnabled } from '@common/services/feature-flag-service';
-import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import {
   Button,
@@ -32,17 +32,16 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
-import { UseFormReturn, useFormContext } from 'react-hook-form';
+import { ArchiveX, CirclePause, Mail } from 'lucide-react';
+import { FC, useEffect, useState } from 'react';
+import { useFormContext, UseFormReturn } from 'react-hook-form';
+
 import { AppealButtonComponent } from '../appeal-button.component';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { MessageComposer } from '../tabs/messages/message-composer.component';
 import { ResumeErrandButton } from './resume-errand-button.component';
-import { cancelErrandPhaseChange, phaseChangeInProgress } from '@casedata/services/process-service';
-import { ArchiveX, CirclePause, Mail } from 'lucide-react';
-import { MEXCaseType } from '@casedata/interfaces/case-type';
 
-export const SidebarInfo: React.FC<{}> = () => {
+export const SidebarInfo: FC<{}> = () => {
   const { municipalityId, user, errand, setErrand, administrators, uiPhase } = useAppContext();
   const [selectableStatuses, setSelectableStatuses] = useState<string[]>([]);
   const [showMessageComposer, setShowMessageComposer] = useState<boolean>(false);

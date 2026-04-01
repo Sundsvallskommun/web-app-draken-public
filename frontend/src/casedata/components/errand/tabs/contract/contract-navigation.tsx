@@ -1,7 +1,8 @@
 import { ContractType } from '@casedata/interfaces/contracts';
 import { Badge, Link } from '@sk-web-gui/react';
+import { FC } from 'react';
 
-export const ContractNavigation: React.FC<{ contractType: ContractType }> = ({ contractType }) => {
+export const ContractNavigation: FC<{ contractType: ContractType }> = ({ contractType }) => {
   const headers: { key: string; label: string; initiallyOpen?: boolean }[] =
     contractType === ContractType.PURCHASE_AGREEMENT
       ? [

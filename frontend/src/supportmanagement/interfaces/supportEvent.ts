@@ -1,5 +1,4 @@
 import { ApiPagingData } from '@supportmanagement/interfaces/errand';
-import { ParsedSupportRevisionDifference } from './supportRevisionDiff';
 
 export const typeMap = {
   CREATE: 'Skapa',

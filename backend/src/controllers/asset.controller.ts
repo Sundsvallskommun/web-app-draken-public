@@ -1,11 +1,12 @@
-import { apiServiceName } from '@/config/api-config';
-import { CreateAssetDto, PatchAssetDto } from '@/dtos/assets-dto';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import { Asset } from '@interfaces/parking-permit.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
 import { Body, Controller, Get, Param, Patch, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+
+import { apiServiceName } from '@/config/api-config';
+import { CreateAssetDto, PatchAssetDto } from '@/dtos/assets-dto';
 
 interface ResponseData<T> {
   data: T;

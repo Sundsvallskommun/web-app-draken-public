@@ -1,5 +1,6 @@
-import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
 import FileUpload, { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
+import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { useAppContext } from '@common/contexts/app.context';
 import { isKC } from '@common/services/application-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
@@ -19,12 +20,12 @@ import {
 } from '@sk-web-gui/react';
 import {
   ACCEPTED_UPLOAD_FILETYPES,
-  SingleSupportAttachment,
-  SupportAttachment,
   deleteSupportAttachment,
   documentMimeTypes,
   getSupportAttachment,
   saveSupportAttachments,
+  SingleSupportAttachment,
+  SupportAttachment,
 } from '@supportmanagement/services/support-attachment-service';
 import {
   getSupportErrandById,
@@ -32,11 +33,10 @@ import {
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import dayjs from 'dayjs';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Ellipsis, Eye, Trash, Upload } from 'lucide-react';
+import { FC, Fragment, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { Ellipsis, Eye, Trash, Upload } from 'lucide-react';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 export interface SingleAttachment {
   file: File | undefined;
@@ -55,7 +55,7 @@ const defaultAttachmentInformation: SupportAttachmentFormModel = {
   attachmentList: [],
 };
 
-export const SupportErrandAttachmentsTab: React.FC<{
+export const SupportErrandAttachmentsTab: FC<{
   update: () => void;
 }> = (props) => {
   const { supportErrand, setSupportErrand, supportAttachments, user, municipalityId } = useAppContext();
