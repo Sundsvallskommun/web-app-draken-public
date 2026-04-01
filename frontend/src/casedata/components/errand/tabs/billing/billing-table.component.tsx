@@ -312,11 +312,17 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
           <div key={record.id} className="bg-background-100 rounded-16 p-32 flex flex-col gap-24">
             <div className="flex flex-row">
               <BillingStatusLabel status={record.status} />{' '}
-              {record.status === CBillingRecordStatusEnum.NEW && (
-                <span className="text-small italic ml-6 mt-4">
-                  Du behöver även godkänna underlaget för att fakturan ska kunna skickas enligt önskat aviseringsdatum.
-                </span>
-              )}
+              <span className="text-small italic ml-6 mt-4">
+                {record.status === CBillingRecordStatusEnum.NEW && (
+                  <>
+                    Du behöver även godkänna underlaget för att fakturan ska kunna skickas enligt önskat
+                    aviseringsdatum.
+                  </>
+                )}
+                {record.status === CBillingRecordStatusEnum.APPROVED && (
+                  <>Fakturan går att redigera fram till fakturans aviseringsdatum.</>
+                )}
+              </span>
             </div>
             {!isEditing ? (
               <>

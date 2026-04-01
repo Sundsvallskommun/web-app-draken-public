@@ -32,6 +32,7 @@ export const BillingSpecifications: FC = () => {
         <FormControl className="w-full">
           <FormLabel>Avviseringsdatum</FormLabel>
           <DatePicker {...register('specifications.rejectionDate')} />
+          <small>Sätt som rutin den första i månaden.</small>
         </FormControl>
       </div>
       <div className="w-full">
