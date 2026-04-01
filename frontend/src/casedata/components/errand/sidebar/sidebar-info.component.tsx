@@ -40,6 +40,7 @@ import { AppealButtonComponent } from '../appeal-button.component';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { MessageComposer } from '../tabs/messages/message-composer.component';
 import { ResumeErrandButton } from './resume-errand-button.component';
+import { MEXCaseType } from '@casedata/interfaces/case-type';
 
 export const SidebarInfo: FC<{}> = () => {
   const { municipalityId, user, errand, setErrand, administrators, uiPhase } = useAppContext();
