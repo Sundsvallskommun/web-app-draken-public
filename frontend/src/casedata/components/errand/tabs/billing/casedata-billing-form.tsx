@@ -134,6 +134,16 @@ export const CaseDataBillingForm: FC = () => {
       return;
     }
 
+    if (!data.specifications.avitext?.trim()) {
+      toastMessage({
+        position: 'bottom',
+        closeable: true,
+        message: 'Ange avitext för fakturan',
+        status: 'error',
+      });
+      return;
+    }
+
     if (!recipient) {
       toastMessage({
         position: 'bottom',
