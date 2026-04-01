@@ -23,6 +23,7 @@ import { IconName } from 'lucide-react/dynamic';
 import { JSX, useEffect, useState } from 'react';
 import { UseFormReturn, useForm } from 'react-hook-form';
 import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
+import { MEXCaseType } from '@casedata/interfaces/case-type';
 
 export const PhaseChanger = () => {
   const { municipalityId, user, errand, setErrand, administrators, uiPhase } = useAppContext();
@@ -223,12 +224,18 @@ export const PhaseChanger = () => {
       Starta handläggning
     </Button>
   ) : uiPhase === UiPhase.beslut ||
-    (errand.phase === ErrandPhase.verkstalla && !(isPT() && errand.status?.statusType === ErrandStatus.BeslutVerkstallt)) ||
+    (errand.phase === ErrandPhase.verkstalla &&
+      !(isPT() && errand.status?.statusType === ErrandStatus.BeslutVerkstallt)) ||
     errand.status?.statusType === ErrandStatus.ArendeAvslutat ? null : (
     <>
       <Button
         variant="primary"
-        disabled={(isErrandLocked(errand) && !(isPT() && errand.status?.statusType === ErrandStatus.BeslutVerkstallt)) || !allowed || phaseChangeText.disabled}
+        disabled={
+          (isErrandLocked(errand) && !(isPT() && errand.status?.statusType === ErrandStatus.BeslutVerkstallt)) ||
+          !allowed ||
+          phaseChangeText.disabled ||
+          errand.caseType === MEXCaseType.UPDATECONTRACT
+        }
         color="vattjom"
         loadingText="Sparar"
         loading={isLoading}

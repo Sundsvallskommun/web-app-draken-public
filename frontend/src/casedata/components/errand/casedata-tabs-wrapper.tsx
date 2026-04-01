@@ -278,9 +278,7 @@ export const CasedataTabsWrapper: React.FC = () => {
             visibleFor:
               !isPT() && errand?.id
                 ? [
-                    ...(errand?.caseType === MEXCaseType.UPDATECONTRACT && getUiPhase(errand) === UiPhase.granskning
-                      ? [ErrandPhase.aktualisering]
-                      : []),
+                    ...(errand?.caseType === MEXCaseType.UPDATECONTRACT ? [ErrandPhase.aktualisering] : []),
                     ErrandPhase.utredning,
                     ErrandPhase.beslut,
                     ErrandPhase.hantera,
