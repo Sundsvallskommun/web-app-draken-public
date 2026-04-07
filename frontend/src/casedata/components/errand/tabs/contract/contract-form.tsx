@@ -6,6 +6,7 @@ import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-serv
 import {
   getContractStakeholderName,
   getErrandPropertyInformation,
+  hasRecurringFee,
   isLeaseAgreement,
   prettyContractRoles,
 } from '@casedata/services/contract-service';
@@ -670,7 +671,7 @@ export const ContractForm: FC<{
           </Disclosure.Content>
         </Disclosure>
       )}
-      {contractType === ContractType.LEASE_AGREEMENT && (
+      {hasRecurringFee(contractType, watch().leaseType) && (
         <Disclosure
           data-cy="lopande-disclosure"
           color="gronsta"

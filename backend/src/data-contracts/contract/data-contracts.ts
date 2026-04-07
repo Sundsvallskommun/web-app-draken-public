@@ -87,6 +87,8 @@ export enum LeaseType {
   USUFRUCT_FARMING = "USUFRUCT_FARMING",
   USUFRUCT_MISC = "USUFRUCT_MISC",
   LAND_LEASE_MISC = "LAND_LEASE_MISC",
+  LAND_LEASE_LICENSE = "LAND_LEASE_LICENSE",
+  LAND_LEASE_MUNICIPALITY = "LAND_LEASE_MUNICIPALITY",
   OTHER_FEE = "OTHER_FEE",
 }
 
@@ -112,6 +114,7 @@ export enum ContractType {
   SHORT_TERM_LEASE_AGREEMENT = "SHORT_TERM_LEASE_AGREEMENT",
   OBJECT_LEASE = "OBJECT_LEASE",
   LEASEHOLD = "LEASEHOLD",
+  MAINTENANCE_AGREEMENT = "MAINTENANCE_AGREEMENT",
 }
 
 /** Attachment category */
@@ -125,6 +128,12 @@ export enum AddressType {
   POSTAL_ADDRESS = "POSTAL_ADDRESS",
   BILLING_ADDRESS = "BILLING_ADDRESS",
   VISITING_ADDRESS = "VISITING_ADDRESS",
+}
+
+export interface GeoJsonObject {
+  crs?: Crs;
+  bbox?: number[];
+  type: string;
 }
 
 export interface Problem {
@@ -339,12 +348,6 @@ export interface Fees {
   indexationRate?: number;
   /** Additional information */
   additionalInformation?: string[];
-}
-
-export interface GeoJsonObject {
-  crs?: Crs;
-  bbox?: number[];
-  type: string;
 }
 
 export type GeometryCollection = GeoJsonObject & {
@@ -591,22 +594,22 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  short?: boolean;
   valueNode?: boolean;
-  bigInteger?: boolean;
-  binary?: boolean;
-  bigDecimal?: boolean;
-  floatingPointNumber?: boolean;
-  double?: boolean;
+  container?: boolean;
   missingNode?: boolean;
-  /** @deprecated */
-  textual?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
+  pojo?: boolean;
+  floatingPointNumber?: boolean;
+  short?: boolean;
   int?: boolean;
   long?: boolean;
-  pojo?: boolean;
-  integralNumber?: boolean;
-  container?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
+  double?: boolean;
+  bigDecimal?: boolean;
+  bigInteger?: boolean;
+  /** @deprecated */
+  textual?: boolean;
+  binary?: boolean;
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
