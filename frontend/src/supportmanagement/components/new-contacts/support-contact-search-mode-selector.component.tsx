@@ -59,12 +59,13 @@ export const SupportContactSearchModeSelector: FC<SupportContactSearchModeSelect
         form.setValue(`organizationName`, '', { shouldDirty: false });
         form.setValue(`organizationNumber`, '', { shouldDirty: false });
         form.setValue(`stakeholderType`, SupportStakeholderTypeEnum.PERSON, { shouldDirty: true });
+        form.clearErrors(['organizationNumber', 'organizationName']);
       } else {
         form.setValue(`firstName`, '', { shouldDirty: false });
         form.setValue(`lastName`, '', { shouldDirty: false });
         form.setValue(`stakeholderType`, SupportStakeholderTypeEnum.ORGANIZATION, { shouldDirty: true });
+        form.clearErrors(['personNumber', 'firstName', 'lastName']);
       }
-      form.clearErrors();
     }, 0);
   };
 
@@ -83,7 +84,7 @@ export const SupportContactSearchModeSelector: FC<SupportContactSearchModeSelect
               data-cy={`search-employee-${inName}-${contact.role}`}
               size="sm"
               className="mr-sm"
-              name={`stakeholderType-${id}`}
+              name={`stakeholderType-${id}-${inName}`}
               id={`searchEmployee-${id}-${inName}`}
               value={'EMPLOYEE'}
               checked={searchMode === 'employee'}
@@ -100,7 +101,7 @@ export const SupportContactSearchModeSelector: FC<SupportContactSearchModeSelect
             data-cy={`search-person-${inName}-${contact.role}`}
             size="sm"
             className="mr-sm"
-            name={`stakeholderType-${id}`}
+            name={`stakeholderType-${id}-${inName}`}
             id={`searchPerson-${id}-${inName}`}
             value={'PERSON'}
             checked={searchMode === 'person'}
@@ -119,7 +120,7 @@ export const SupportContactSearchModeSelector: FC<SupportContactSearchModeSelect
                 data-cy={`search-enterprise-${inName}-${contact.role}`}
                 size="sm"
                 className="mr-sm"
-                name={`stakeholderType-${id}`}
+                name={`stakeholderType-${id}-${inName}`}
                 id={`searchEnterprise-${id}-${inName}`}
                 value={'ENTERPRISE'}
                 checked={searchMode === 'enterprise'}
@@ -135,7 +136,7 @@ export const SupportContactSearchModeSelector: FC<SupportContactSearchModeSelect
                 data-cy={`search-organization-${inName}-${contact.role}`}
                 size="sm"
                 className="mr-sm"
-                name={`stakeholderType-${id}`}
+                name={`stakeholderType-${id}-${inName}`}
                 id={`searchOrganization-${id}-${inName}`}
                 value={'ORGANIZATION'}
                 checked={searchMode === 'organization'}
