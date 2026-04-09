@@ -201,7 +201,19 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     }
   };
 
-  const onSave = async (data: ContractData) => {
+  const onSave = async (data: ContractData, section?: string) => {
+    if (section === 'billing' && data.generateInvoice === 'true') {
+      const hasMarkup = (data.extraParameters ?? []).some((p) => p.parameters?.markup?.trim());
+      if (!hasMarkup) {
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Fakturareferens måste anges',
+          status: 'error',
+        });
+        return;
+      }
+    }
     setIsLoading('Sparar avtal..');
     return saveContract(data)
       .then(async (res: Contract) => {

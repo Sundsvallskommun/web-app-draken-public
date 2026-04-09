@@ -33,7 +33,7 @@ import { ContractAttachments } from './contract-attachments';
 
 export const ContractForm: FC<{
   changeBadgeColor?: (badgeId: string) => void;
-  onSave?: (data: ContractData) => Promise<void>;
+  onSave?: (data: ContractData, section?: string) => Promise<void>;
   readOnly?: boolean;
   existingContract: ContractData;
   buyers: StakeholderWithPersonnumber[];
@@ -194,7 +194,7 @@ export const ContractForm: FC<{
   const toPropertyDesignation = (pd: { name?: string } | string): string =>
     typeof pd === 'object' && pd.name ? pd.name : typeof pd === 'string' ? pd : '';
 
-  const saveButton = () => {
+  const saveButton = (section?: string) => {
     if (readOnly) return null;
     return (
       <div className="my-md">
@@ -208,7 +208,7 @@ export const ContractForm: FC<{
               onClick={handleSubmit(
                 () => {
                   setLoading(true);
-                  onSave?.({ ...getValues() }).then(() => {
+                  onSave?.({ ...getValues() }, section).then(() => {
                     setLoading(false);
                   });
                 },
@@ -798,15 +798,15 @@ export const ContractForm: FC<{
                     </FormControl>
                   </div>
                   <div className="flex gap-18 justify-start">
-                    <FormControl>
-                      <FormLabel>Ange fakturans referensnummer</FormLabel>
+                    <FormControl className="w-[36.7rem]">
+                      <FormLabel>Ange fakturans referens</FormLabel>
                       <Input
                         type="text"
                         readOnly={!isEditable('billing')}
                         {...register(`extraParameters.${invoiceInfoIndex}.parameters.markup`)}
                         data-cy="invoice-markup-input"
                       />
-                      <small>Om fakturamottagaren är ett företag måste referens anges.</small>
+                      <small>Referens måste alltid anges.</small>
                       <Input
                         type="hidden"
                         {...register(`extraParameters.${invoiceInfoIndex}.name`)}
@@ -842,7 +842,7 @@ export const ContractForm: FC<{
                   </div>
                 </>
               ) : null}
-              {saveButton()}
+              {saveButton('billing')}
             </div>
           </Disclosure.Content>
         </Disclosure>
