@@ -22,7 +22,7 @@ export const APIS = [
   },
   {
     name: 'templating',
-    version: '2.0',
+    version: '2.1',
   },
   {
     name: 'messaging',
@@ -38,7 +38,7 @@ export const APIS = [
   },
   {
     name: 'billingpreprocessor',
-    version: '4.3',
+    version: '4.4',
   },
   {
     name: 'legalentity',
@@ -54,7 +54,7 @@ export const APIS = [
   },
   {
     name: 'party',
-    version: '2.0',
+    version: '2.1',
   },
   {
     name: 'partyassets',
