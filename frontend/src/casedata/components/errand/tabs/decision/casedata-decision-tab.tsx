@@ -19,9 +19,9 @@ import {
 } from '@casedata/services/casedata-decision-service';
 import {
   getErrand,
+  isErrandLocked,
   isFTErrand,
   isFTNationalErrand,
-  isErrandLocked,
   updateErrandStatus,
   validateAction,
   validateErrandForDecision,
@@ -474,7 +474,6 @@ export const CasedataDecisionTab: FC<{
     console.error('Something went wrong when saving decision', e);
   };
 
-
   useEffect(() => {
     if (!errand) return;
     setValue('errandId', errand.id);
@@ -525,7 +524,9 @@ export const CasedataDecisionTab: FC<{
     fetchDecisionTemplates(appPrefix, outcome)
       .then((templates) => {
         if (templatesRequestId.current !== requestId) return;
-        setDecisionTemplates(templates);
+        // MEX: exclude the layout template, it's used for PDF rendering only
+        const filtered = isMEX() ? templates.filter((t) => t.identifier !== 'mex.decision') : templates;
+        setDecisionTemplates(filtered);
       })
       .catch((e) => {
         if (templatesRequestId.current !== requestId) return;
@@ -572,18 +573,15 @@ export const CasedataDecisionTab: FC<{
     }
 
     if (isPT() && (law as Law[])?.length > 0) {
-      const lawsBySfs = (law as Law[]).reduce(
-        (acc, l) => {
-          if (l.article && l.sfs) {
-            if (!acc[l.sfs]) {
-              acc[l.sfs] = [];
-            }
-            acc[l.sfs].push(l.article);
+      const lawsBySfs = (law as Law[]).reduce((acc, l) => {
+        if (l.article && l.sfs) {
+          if (!acc[l.sfs]) {
+            acc[l.sfs] = [];
           }
-          return acc;
-        },
-        {} as Record<string, string[]>
-      );
+          acc[l.sfs].push(l.article);
+        }
+        return acc;
+      }, {} as Record<string, string[]>);
 
       parameters.lawReferences = Object.entries(lawsBySfs)
         .map(([sfs, articles]) => `${articles.join('§, ')}§ (${sfs})`)
@@ -606,6 +604,20 @@ export const CasedataDecisionTab: FC<{
     const template = decisionTemplates.find((t) => t.identifier === identifier);
     setSelectedTemplate(template || null);
     setValue('decisionTemplate', template?.name || identifier, { shouldDirty: true });
+
+    // MEX: inject template content into the text editor
+    if (isMEX() && template?.content) {
+      const decoded = base64Decode(template.content);
+      const adminName = errand?.administrator
+        ? `${errand.administrator.firstName} ${errand.administrator.lastName}`
+        : '';
+      const contentWithSignature =
+        decoded +
+        '<br><br>Med vänliga hälsningar<br><br>Stadsbyggnadskontoret<br>Mark- och exploateringsavdelningen<br>Handläggare ' +
+        adminName +
+        '<br>';
+      setValue('description', contentWithSignature, { shouldDirty: true });
+    }
   };
 
   const isSent = () => {
@@ -769,10 +781,9 @@ export const CasedataDecisionTab: FC<{
         <Input data-cy="decision-description-input" type="hidden" {...register('description')} />
         <Input type="hidden" {...register('errandId')} />
 
-        <TemplatePdfPreview
-          identifier={selectedTemplate?.identifier}
-          parameters={buildTemplateParameters()}
-        />
+        {!isMEX() && (
+          <TemplatePdfPreview identifier={selectedTemplate?.identifier} parameters={buildTemplateParameters()} />
+        )}
 
         <div className={cx('h-[48rem] overflow-hidden')} data-cy="decision-richtext-wrapper">
           <TextEditor

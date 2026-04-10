@@ -1,6 +1,3 @@
-import { CASEDATA_NAMESPACE, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
-import { apiServiceName } from '@/config/api-config';
-import { DetailedTemplateResponse } from '@/data-contracts/templating/data-contracts';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
@@ -8,6 +5,10 @@ import ApiService from '@services/api.service';
 import { IsObject, IsOptional, IsString } from 'class-validator';
 import { Body, Controller, Get, HttpCode, Param, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+
+import { CASEDATA_NAMESPACE, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
+import { DetailedTemplateResponse } from '@/data-contracts/templating/data-contracts';
 
 interface ResponseData {
   data: any;
@@ -167,7 +168,12 @@ export class TemplateController {
 
     if (decision) {
       filteredTemplates = filteredTemplates.filter((t: DetailedTemplateResponse) => {
-        return t.metadata?.some((m) => m.key === 'decision' && m.value === decision);
+        const decisionMeta = t.metadata?.find(m => m.key === 'decision');
+        const role = getMetadataValue(t, 'templateRole');
+        // Exclude signatures, they are not selectable decision templates
+        if (role === 'signature') return false;
+        // No decision key = show in all categories, otherwise must match
+        return !decisionMeta || decisionMeta.value === decision;
       });
     }
 
@@ -218,5 +224,5 @@ export class TemplateController {
 }
 
 function getMetadataValue(template: DetailedTemplateResponse, key: string): string | undefined {
-  return template.metadata?.find((m) => m.key === key)?.value;
+  return template.metadata?.find(m => m.key === key)?.value;
 }
