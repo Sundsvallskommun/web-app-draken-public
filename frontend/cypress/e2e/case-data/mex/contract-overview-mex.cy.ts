@@ -248,14 +248,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         // Parties disclosure should be visible and initially open
         cy.get('[data-cy="parties-disclosure"]').should('be.visible');
 
-        // Upplåtare table should show lessor
-        cy.get('[data-cy="Upplåtare-table"]').should('exist');
-        cy.get('[data-cy="Upplåtare-table"]').contains('Sundsvalls Kommun').should('exist');
-
-        // Arrendatorer table should show lessees
-        cy.get('[data-cy="Arrendatorer-table"]').should('exist');
-        cy.get('[data-cy="Arrendatorer-table"]').contains('Anna Arrendator').should('exist');
-        cy.get('[data-cy="Arrendatorer-table"]').contains('Bengt Arrendator').should('exist');
+        // Parties table should show all parties
+        cy.get('[data-cy="parties-table"]').should('exist');
+        cy.get('[data-cy="parties-table"]').contains('Sundsvalls Kommun').should('exist');
+        cy.get('[data-cy="parties-table"]').contains('Anna Arrendator').should('exist');
+        cy.get('[data-cy="parties-table"]').contains('Bengt Arrendator').should('exist');
       });
 
       it('displays parties disclosure with party tables for purchase agreement', () => {
@@ -267,13 +264,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         // Parties disclosure should be visible
         cy.get('[data-cy="parties-disclosure"]').should('exist');
 
-        // Säljare table should show seller
-        cy.get('[data-cy="Säljare-table"]').should('exist');
-        cy.get('[data-cy="Säljare-table"]').contains('Sundsvalls Kommun').should('exist');
-
-        // Köpare table should show buyer
-        cy.get('[data-cy="Köpare-table"]').should('exist');
-        cy.get('[data-cy="Köpare-table"]').contains('Kalle Köpare').should('exist');
+        // Parties table should show all parties
+        cy.get('[data-cy="parties-table"]').should('exist');
+        cy.get('[data-cy="parties-table"]').contains('Sundsvalls Kommun').should('exist');
+        cy.get('[data-cy="parties-table"]').contains('Kalle Köpare').should('exist');
       });
 
       it('displays area disclosure with property designations', () => {
