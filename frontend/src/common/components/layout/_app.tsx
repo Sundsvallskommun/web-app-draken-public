@@ -1,6 +1,5 @@
 'use client';
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { getFeatureFlags } from '@common/services/feature-flag-service';
 import { getMe, getAdminUsers } from '@common/services/user-service';
 import { useUserStore } from '@stores/user-store';
@@ -22,16 +21,6 @@ import 'dayjs/locale/se';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import utc from 'dayjs/plugin/utc';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
 
 dayjs.extend(utc);
 dayjs.locale('sv');
@@ -127,13 +116,11 @@ function AppLayout({ children }: ClientApplicationProps) {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <GuiProvider theme={theme} colorScheme={colorScheme}>
-        <ConfirmationDialogContextProvider>
-          <AppInitializer>{children}</AppInitializer>
-        </ConfirmationDialogContextProvider>
-      </GuiProvider>
-    </QueryClientProvider>
+    <GuiProvider theme={theme} colorScheme={colorScheme}>
+      <ConfirmationDialogContextProvider>
+        <AppInitializer>{children}</AppInitializer>
+      </ConfirmationDialogContextProvider>
+    </GuiProvider>
   );
 }
 

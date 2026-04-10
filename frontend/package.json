@@ -75,7 +75,6 @@
     "@sk-web-gui/text-editor": "2.0.2",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/forms": "^0.5.10",
-    "@tanstack/react-query": "^5.91.2",
     "ajv": "^8.17.1",
     "ajv-errors": "^3.0.0",
     "axios": "^1.11.0",

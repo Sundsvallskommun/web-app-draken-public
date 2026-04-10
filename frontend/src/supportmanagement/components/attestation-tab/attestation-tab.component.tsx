@@ -1,5 +1,4 @@
 import { DetailPanelWrapper } from '@common/components/detail-panel-wrapper/detail-panel-wrapper.component';
-import { useUserQuery } from '@common/services/use-user-query';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useBillingStore, useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { AttestationInvoiceForm } from '@supportmanagement/components/attestation-tab/attestation-invoice-form.component';
@@ -64,14 +63,6 @@ export const AttestationTab = () => {
   };
   const router = useRouter();
   const user = useUserStore((s) => s.user);
-  const setUser = useUserStore((s) => s.setUser);
-  const { data: userData } = useUserQuery();
-
-  useEffect(() => {
-    if (userData) {
-      setUser(userData);
-    }
-  }, [userData]);
 
   useEffect(() => {
     const filterdata = store.get('attestationFilter');

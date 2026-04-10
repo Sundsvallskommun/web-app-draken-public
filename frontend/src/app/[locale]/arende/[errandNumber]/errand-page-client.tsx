@@ -37,10 +37,10 @@ export function ErrandPageClient({ errandNumber }: Readonly<ErrandPageClientProp
 
         {(() => {
           if (appConfig.isCaseData) {
-            return <CasedataErrandComponent errandNumber={errandNumber} />;
+            return <CasedataErrandComponent />;
           }
           if (appConfig.isSupportManagement) {
-            return !!municipalityId && <SupportErrandComponent errandNumber={errandNumber} />;
+            return !!municipalityId && <SupportErrandComponent />;
           }
           return null;
         })()}

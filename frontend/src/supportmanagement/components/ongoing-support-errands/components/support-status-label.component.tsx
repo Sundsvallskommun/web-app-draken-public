@@ -2,16 +2,16 @@ import { isROB } from '@common/services/application-service';
 import { Label } from '@sk-web-gui/react';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { Resolution, ResolutionLabelROB, Status } from '@supportmanagement/services/support-errand-service';
-import { useAppContext } from '@contexts/app.context';
 import { CErrandAction } from 'src/data-contracts/backend/data-contracts';
 import { Hourglass } from 'lucide-react';
+import { useMetadataStore } from '@stores/index';
 
 export const SupportStatusLabelComponent: React.FC<{
   status: string;
   resolution: string;
   actions?: CErrandAction[];
 }> = ({ status, resolution, actions }) => {
-  const { supportMetadata } = useAppContext();
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
 
   const sevenDaysAction = actions?.find((action) => action.actionName === 'ADD_LABEL');
 

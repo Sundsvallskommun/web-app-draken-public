@@ -1,20 +1,18 @@
 import React, { useState } from 'react';
 import { MainErrandsSidebar } from './main-errands-sidebar.component';
 import { mockMe } from '@cypress/e2e/case-data/fixtures/mockMe';
-import { useAppContext } from '@contexts/app.context';
 import { User } from '@common/interfaces/user';
 import { mockNotifications } from '@cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 
 describe('<MainErrandsSidebar />', () => {
   it('renders', () => {
     const SidebarTestWrapper = () => {
       const [open, setOpen] = useState(false);
 
-      const { setUser, setNotifications, setMunicipalityId } = useAppContext();
-
-      setUser(mockMe.data as User);
-      setNotifications(mockNotifications);
-      setMunicipalityId('2281');
+      useUserStore.getState().setUser(mockMe.data as User);
+      useSupportStore.getState().setNotifications(mockNotifications);
+      useConfigStore.getState().setMunicipalityId('2281');
 
       return (
         <MainErrandsSidebar

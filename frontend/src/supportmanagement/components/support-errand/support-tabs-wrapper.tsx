@@ -1,4 +1,4 @@
-import { useAppContext } from '@common/contexts/app.context';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs } from '@sk-web-gui/react';
@@ -35,13 +35,8 @@ export const SupportTabsWrapper: React.FC<{
   const [supportConversations, setSupportConversations] = useState<any>([]);
   const [messageTree, setMessageTree] = useState<MessageNode[]>([]);
   const [conversationMessageTree, setConversationMessageTree] = useState<MessageNode[]>([]);
-  const {
-    municipalityId,
-    supportErrand,
-    setSupportErrand,
-    supportAttachments,
-    setSupportAttachments,
-  } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
 
   const [unsavedChanges, setUnsavedChanges] = useState(false);
 

@@ -2,7 +2,6 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { getStatusLabel, useErrands } from '@casedata/services/casedata-errand-service';
 import { ExportButton } from '@common/components/export-button/export-button.component';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
-import { useUserQuery } from '@common/services/use-user-query';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { appConfig } from '@config/appconfig';
 import store from '@supportmanagement/services/storage-service';
@@ -62,14 +61,6 @@ export const OngoingCaseDataErrands: React.FC = () => {
 
   const router = useRouter();
   const user = useUserStore((s) => s.user);
-  const setUser = useUserStore((s) => s.setUser);
-  const { data: userData } = useUserQuery();
-
-  useEffect(() => {
-    if (userData) {
-      setUser(userData);
-    }
-  }, [userData]);
 
   useEffect(() => {
     const filterdata = store.get('filter');

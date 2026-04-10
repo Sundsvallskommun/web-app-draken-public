@@ -1,7 +1,13 @@
 import { ErrandsData } from '@casedata/interfaces/errand';
-import { useBillingStore, useCasedataStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import {
+  useBillingStore,
+  useCasedataStore,
+  useConfigStore,
+  useMetadataStore,
+  useSupportStore,
+  useUserStore,
+} from '@stores/index';
 import { attestationEnabled } from '@common/services/feature-flag-service';
-import { useUserQuery } from '@common/services/use-user-query';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import store from '@supportmanagement/services/storage-service';
 import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
@@ -33,7 +39,13 @@ export interface TableForm {
 
 export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props) => {
   const filterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
-  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, getValues, setValue: setFilterValue } = filterForm;
+  const {
+    watch: watchFilter,
+    reset: resetFilter,
+    trigger: triggerFilter,
+    getValues,
+    setValue: setFilterValue,
+  } = filterForm;
 
   const sortData = store.get('sort');
   let sort: { sortColumn: string; sortOrder: 'asc' | 'desc'; pageSize: number } | undefined;
@@ -93,14 +105,6 @@ export const OngoingSupportErrands: React.FC<{ ongoing: ErrandsData }> = (props)
 
   const router = useRouter();
   const user = useUserStore((s) => s.user);
-  const setUser = useUserStore((s) => s.setUser);
-  const { data: userData } = useUserQuery();
-
-  useEffect(() => {
-    if (userData) {
-      setUser(userData);
-    }
-  }, [userData]);
 
   useEffect(() => {
     const filterdata = store.get('filter');
