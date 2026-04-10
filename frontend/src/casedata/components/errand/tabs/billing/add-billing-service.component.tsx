@@ -1,7 +1,7 @@
 import { BillingServiceItem } from '@casedata/interfaces/billing';
 import { casedataInvoiceSettings, CasedataService } from '@casedata/services/billing/casedata-invoice-settings';
 import { calculateServiceTotal } from '@casedata/services/casedata-billing-service';
-import { Button, FormControl, FormLabel, Input, Select, Textarea } from '@sk-web-gui/react';
+import { Button, FormControl, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { FC, useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -22,7 +22,8 @@ const emptyFormState = {
   project: '',
   object: '',
   counterpart: '',
-  avitext: '',
+  beskrivning: '',
+  descriptions: ['', '', ''] as string[],
 };
 
 export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel, editingService }) => {
@@ -31,9 +32,15 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
 
   const isEditing = !!editingService;
 
+  const resetForm = () => {
+    setFormState(emptyFormState);
+    setSelectedService(null);
+  };
+
   useEffect(() => {
     if (editingService) {
       const service = casedataInvoiceSettings.services.find((s) => s.id === editingService.serviceId);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedService(service || null);
       setFormState({
         selectedServiceId: editingService.serviceId,
@@ -46,7 +53,12 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
         project: editingService.accountInformation.project || '',
         object: editingService.accountInformation.object || '',
         counterpart: editingService.accountInformation.counterpart || '',
-        avitext: editingService.avitext || '',
+        beskrivning: editingService.description || '',
+        descriptions: [
+          editingService.descriptions?.[0] || '',
+          editingService.descriptions?.[1] || '',
+          editingService.descriptions?.[2] || '',
+        ],
       });
     } else {
       resetForm();
@@ -68,6 +80,8 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
         project: service.accountInformation.project || '',
         counterpart: service.accountInformation.counterpart || casedataInvoiceSettings.counterpart || '',
         object: service.accountInformation.object || '',
+        beskrivning: service.description || '',
+        descriptions: [service.detailedDescriptions?.[0] || '', formState.descriptions[1], formState.descriptions[2]],
       });
     }
   };
@@ -90,12 +104,12 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
       id: editingService?.id || uuidv4(),
       serviceId: selectedService.id,
       name: selectedService.name,
-      description: selectedService.description,
+      description: formState.beskrivning,
       quantity: formState.quantity,
       costPerUnit: formState.costPerUnit,
       totalAmount,
       unit: selectedService.unit,
-      avitext: formState.avitext,
+      descriptions: formState.descriptions,
       accountInformation: {
         costCenter: formState.costCenter,
         subaccount: formState.subaccount,
@@ -111,11 +125,6 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
     resetForm();
   };
 
-  const resetForm = () => {
-    setFormState(emptyFormState);
-    setSelectedService(null);
-  };
-
   const handleCancel = () => {
     resetForm();
     onCancel();
@@ -123,11 +132,11 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
 
   return (
     <div className="flex flex-col gap-16 bg-background-color-mixin-1 p-18">
-      <div className="flex flex-row w-full gap-16">
-        <FormControl className="w-full">
+      <div>
+        <FormControl className="w-fit">
           <FormLabel>Tjänst</FormLabel>
           <Select
-            className="w-full"
+            className="w-fit"
             value={formState.selectedServiceId}
             onChange={(e) => handleServiceChange(e.target.value)}
           >
@@ -138,6 +147,12 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
               </Select.Option>
             ))}
           </Select>
+        </FormControl>
+      </div>
+      <div className="flex flex-row w-full gap-16">
+        <FormControl className="w-full">
+          <FormLabel>Beskrivning</FormLabel>
+          <Input value={formState.beskrivning} onChange={(e) => handleInputChange('beskrivning', e.target.value)} />
         </FormControl>
         <FormControl className="w-full">
           <FormLabel>Antal</FormLabel>
@@ -163,7 +178,7 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
       </div>
       <div className="flex flex-row w-full gap-16">
         <FormControl className="w-full">
-          <FormLabel>Kostnadsställe</FormLabel>
+          <FormLabel>Ansvar</FormLabel>
           <Input value={formState.costCenter} onChange={(e) => handleInputChange('costCenter', e.target.value)} />
         </FormControl>
         <FormControl className="w-full">
@@ -189,14 +204,39 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
           <Input value={formState.object} onChange={(e) => handleInputChange('object', e.target.value)} />
         </FormControl>
       </div>
-      <div className="w-full">
+      <div className="flex flex-col w-full gap-16">
         <FormControl className="w-full">
-          <FormLabel>Avitext</FormLabel>
-          <Textarea
-            className="w-full"
-            rows={3}
-            value={formState.avitext}
-            onChange={(e) => handleInputChange('avitext', e.target.value)}
+          <FormLabel>Utökad beskrivning</FormLabel>
+          <Input
+            maxLength={51}
+            value={formState.descriptions[0]}
+            onChange={(e) => {
+              const updated = [...formState.descriptions];
+              updated[0] = e.target.value;
+              setFormState((prev) => ({ ...prev, descriptions: updated }));
+            }}
+          />
+        </FormControl>
+        <FormControl className="w-full">
+          <Input
+            maxLength={51}
+            value={formState.descriptions[1]}
+            onChange={(e) => {
+              const updated = [...formState.descriptions];
+              updated[1] = e.target.value;
+              setFormState((prev) => ({ ...prev, descriptions: updated }));
+            }}
+          />
+        </FormControl>
+        <FormControl className="w-full">
+          <Input
+            maxLength={51}
+            value={formState.descriptions[2]}
+            onChange={(e) => {
+              const updated = [...formState.descriptions];
+              updated[2] = e.target.value;
+              setFormState((prev) => ({ ...prev, descriptions: updated }));
+            }}
           />
         </FormControl>
       </div>
