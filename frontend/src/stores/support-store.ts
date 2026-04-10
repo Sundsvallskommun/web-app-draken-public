@@ -1,6 +1,5 @@
-import { create } from 'zustand';
-import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
+import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   Status,
@@ -8,6 +7,7 @@ import {
   SupportErrandsData,
   SupportStakeholderFormModel,
 } from '@supportmanagement/services/support-errand-service';
+import { create } from 'zustand';
 
 interface SupportState {
   supportErrand: SupportErrand | undefined;
@@ -22,7 +22,6 @@ interface SupportState {
   suspendedSupportErrands: number | null;
   assignedSupportErrands: number | null;
   solvedSupportErrands: number | null;
-  notesCount: number;
 }
 
 interface SupportActions {
@@ -38,7 +37,6 @@ interface SupportActions {
   setSuspendedSupportErrands: (count: number | null) => void;
   setAssignedSupportErrands: (count: number | null) => void;
   setSolvedSupportErrands: (count: number | null) => void;
-  setNotesCount: (count: number) => void;
   reset: () => void;
 }
 
@@ -57,7 +55,6 @@ const initialState: SupportState = {
   suspendedSupportErrands: 0,
   assignedSupportErrands: 0,
   solvedSupportErrands: 0,
-  notesCount: 0,
 };
 
 export const useSupportStore = create<SupportStore>((set) => ({
@@ -74,6 +71,5 @@ export const useSupportStore = create<SupportStore>((set) => ({
   setSuspendedSupportErrands: (suspendedSupportErrands) => set({ suspendedSupportErrands }),
   setAssignedSupportErrands: (assignedSupportErrands) => set({ assignedSupportErrands }),
   setSolvedSupportErrands: (solvedSupportErrands) => set({ solvedSupportErrands }),
-  setNotesCount: (notesCount) => set({ notesCount }),
   reset: () => set(initialState),
 }));

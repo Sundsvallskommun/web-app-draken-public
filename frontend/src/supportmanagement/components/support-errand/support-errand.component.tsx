@@ -1,9 +1,9 @@
-import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
+import { useBadgeStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   defaultSupportErrandInformation,
   getSupportErrandByErrandNumber,
@@ -41,7 +41,8 @@ export const SupportErrandComponent: FC = () => {
   const [categoriesList, setCategoriesList] = useState<Category[]>();
   const [unsavedFacility, setUnsavedFacility] = useState(false);
   const municipalityId = useConfigStore((s) => s.municipalityId);
-  const { supportErrand, setSupportErrand, setNotesCount } = useSupportStore();
+  const { supportErrand, setSupportErrand } = useSupportStore();
+  const { setNotesCount } = useBadgeStore();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const toastMessage = useSnackbar();
 

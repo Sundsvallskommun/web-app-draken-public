@@ -7,10 +7,10 @@ import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-ser
 import { getUiPhase } from '@casedata/services/process-service';
 import { PriorityComponent } from '@common/components/priority/priority.component';
 import { getMe } from '@common/services/user-service';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
+import { useBadgeStore, useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { ArrowRight } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { FC, Fragment, useEffect, useRef, useState } from 'react';
@@ -42,7 +42,8 @@ export const CasedataErrandComponent: FC = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const municipalityId = useConfigStore((s) => s.municipalityId);
-  const { errand, setErrand, setUiPhase, setNotesCount, setServiceNotesCount } = useCasedataStore();
+  const { errand, setErrand, setUiPhase } = useCasedataStore();
+  const { setNotesCount, setServiceNotesCount } = useBadgeStore();
   const toastMessage = useSnackbar();
 
   const methods = useForm<IErrand>({

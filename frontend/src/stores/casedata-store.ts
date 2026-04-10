@@ -1,8 +1,8 @@
-import { create } from 'zustand';
 import { Asset } from '@casedata/interfaces/asset';
 import { ErrandsData, IErrand } from '@casedata/interfaces/errand';
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { MessageNode } from '@casedata/services/casedata-message-service';
+import { create } from 'zustand';
 
 interface CasedataState {
   errand: IErrand | undefined;
@@ -20,8 +20,6 @@ interface CasedataState {
   assignedErrands: number | null;
   closedErrands: number | null;
   uiPhase: UiPhase | undefined;
-  notesCount: number;
-  serviceNotesCount: number;
 }
 
 interface CasedataActions {
@@ -40,8 +38,6 @@ interface CasedataActions {
   setAssignedErrands: (count: number | null) => void;
   setClosedErrands: (count: number | null) => void;
   setUiPhase: (phase: UiPhase) => void;
-  setNotesCount: (count: number) => void;
-  setServiceNotesCount: (count: number) => void;
   reset: () => void;
 }
 
@@ -63,8 +59,6 @@ const initialState: CasedataState = {
   assignedErrands: 0,
   closedErrands: 0,
   uiPhase: undefined,
-  notesCount: 0,
-  serviceNotesCount: 0,
 };
 
 export const useCasedataStore = create<CasedataStore>((set) => ({
@@ -84,7 +78,5 @@ export const useCasedataStore = create<CasedataStore>((set) => ({
   setAssignedErrands: (assignedErrands) => set({ assignedErrands }),
   setClosedErrands: (closedErrands) => set({ closedErrands }),
   setUiPhase: (uiPhase) => set({ uiPhase }),
-  setNotesCount: (notesCount) => set({ notesCount }),
-  setServiceNotesCount: (serviceNotesCount) => set({ serviceNotesCount }),
   reset: () => set(initialState),
 }));
