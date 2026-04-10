@@ -20,7 +20,7 @@ import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
 import { useAppContext } from '@common/contexts/app.context';
-import { isMEX, isPT } from '@common/services/application-service';
+import { isMEX } from '@common/services/application-service';
 import {
   invalidPhoneMessage,
   phonePattern,
@@ -47,7 +47,6 @@ import {
 import { EMAIL_INFORMATION_TEXT } from '@supportmanagement/services/message-template-service';
 import { File, Paperclip, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useTranslation } from 'next-i18next';
 import { FC, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -433,19 +432,22 @@ export const MessageComposer: FC<{
   const changeTemplate = (templateId: string) => {
     if (!templates) return;
 
-    const signature = defaultSignature();
-
     if (!templateId) {
-      setValue('messageBody', signature);
+      setValue('messageBody', defaultSignature());
       return;
     }
 
     const content = templates.byId[templateId] || '';
-    const footerId = `${templates.app}.email.publicdocuments`;
-    const needsFooter = templateId.endsWith('.priority') || templateId.endsWith('.default');
-    const footer = needsFooter ? templates.byId[footerId] || '' : '';
 
-    setValue('messageBody', content + signature + footer);
+    if (contactMeans === 'sms') {
+      // For SMS: use only the signature, not the full smsTemplate (which includes default content)
+      setValue('messageBody', content + templates.smsSignature);
+    } else {
+      const footerId = `${templates.app}.email.publicdocuments`;
+      const needsFooter = templateId.endsWith('.priority') || templateId.endsWith('.default');
+      const footer = needsFooter ? templates.byId[footerId] || '' : '';
+      setValue('messageBody', content + templates.emailSignature + footer);
+    }
   };
 
   return (
