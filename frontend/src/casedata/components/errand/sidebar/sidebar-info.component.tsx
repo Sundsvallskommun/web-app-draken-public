@@ -7,7 +7,13 @@ import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 import { saveErrandNote } from '@casedata/services/casedata-errand-notes-service';
-import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import {
+  getErrand,
+  isErrandAdmin,
+  isErrandLocked,
+  updateErrandStatus,
+  validateAction,
+} from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { cancelErrandPhaseChange, phaseChangeInProgress } from '@casedata/services/process-service';
 import { useAppContext } from '@common/contexts/app.context';
@@ -34,6 +40,7 @@ import { AppealButtonComponent } from '../appeal-button.component';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { MessageComposer } from '../tabs/messages/message-composer.component';
 import { ResumeErrandButton } from './resume-errand-button.component';
+import { MEXCaseType } from '@casedata/interfaces/case-type';
 
 export const SidebarInfo: FC<{}> = () => {
   const { municipalityId, user, errand, setErrand, administrators, uiPhase } = useAppContext();
@@ -170,6 +177,10 @@ export const SidebarInfo: FC<{}> = () => {
               status: 'success',
             })
           );
+
+          if (errand?.caseType === MEXCaseType.UPDATECONTRACT) {
+            updateErrandStatus(municipalityId, errand!.id!.toString(), ErrandStatus.ArendeAvslutat);
+          }
 
           cancelErrandPhaseChange(municipalityId, errand!)
             .then(() => {
@@ -361,7 +372,8 @@ export const SidebarInfo: FC<{}> = () => {
         {uiPhase !== UiPhase.slutfor &&
           errand.phase !== ErrandPhase.verkstalla &&
           errand.phase !== ErrandPhase.uppfoljning &&
-          errand?.status?.statusType !== ErrandStatus.Tilldelat && (
+          errand?.status?.statusType !== ErrandStatus.Tilldelat &&
+          errand?.status?.statusType !== ErrandStatus.ArendeAvslutat && (
             <>
               <Button
                 className="mt-16"
@@ -372,14 +384,15 @@ export const SidebarInfo: FC<{}> = () => {
                   setCauseIsEmpty(false);
                 }}
                 disabled={
-                  !(
+                  errand.caseType !== MEXCaseType.UPDATECONTRACT &&
+                  (!(
                     uiPhase === UiPhase.granskning ||
                     uiPhase === UiPhase.utredning ||
                     uiPhase === UiPhase.beslut ||
                     uiPhase === UiPhase.uppfoljning
                   ) ||
-                  !isErrandAdmin(errand, user) ||
-                  isErrandLocked(errand)
+                    !isErrandAdmin(errand, user) ||
+                    isErrandLocked(errand))
                 }
               >
                 Avsluta ärendet

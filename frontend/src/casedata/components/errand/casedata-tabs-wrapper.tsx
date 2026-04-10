@@ -29,6 +29,7 @@ import { CasedataInvestigationTab } from './tabs/investigation/casedata-investig
 import CasedataForm from './tabs/overview/casedata-form.component';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
+import { MEXCaseType } from '@casedata/interfaces/case-type';
 
 export const CasedataTabsWrapper: FC = () => {
   const {
@@ -277,6 +278,7 @@ export const CasedataTabsWrapper: FC = () => {
             visibleFor:
               !isPT() && errand?.id
                 ? [
+                    ...(errand?.caseType === MEXCaseType.UPDATECONTRACT ? [ErrandPhase.aktualisering] : []),
                     ErrandPhase.utredning,
                     ErrandPhase.beslut,
                     ErrandPhase.hantera,

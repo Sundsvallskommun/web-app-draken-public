@@ -24,6 +24,7 @@ import { JSX, useEffect, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 
 import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
+import { MEXCaseType } from '@casedata/interfaces/case-type';
 
 export const PhaseChanger = () => {
   const { municipalityId, user, errand, setErrand, administrators, uiPhase } = useAppContext();
@@ -233,7 +234,8 @@ export const PhaseChanger = () => {
         disabled={
           (isErrandLocked(errand) && !(isPT() && errand.status?.statusType === ErrandStatus.BeslutVerkstallt)) ||
           !allowed ||
-          phaseChangeText.disabled
+          phaseChangeText.disabled ||
+          errand.caseType === MEXCaseType.UPDATECONTRACT
         }
         color="vattjom"
         loadingText="Sparar"
