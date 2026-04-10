@@ -115,13 +115,14 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       });
     });
 
-    it('shows template dropdown after outcome selection when templates exist and renders preview', () => {
+    it('shows template dropdown after outcome selection and injects content into editor for MEX', () => {
       const mockTemplates = [
         {
           identifier: 'mex.test.template',
           name: 'Testmall',
           description: 'En testmall',
           version: '1',
+          content: btoa('Testinnehåll från mall'),
           metadata: [
             { key: 'templateType', value: 'Decision' },
             { key: 'decision', value: 'REJECTION' },
@@ -130,19 +131,14 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         },
       ];
       cy.intercept('GET', '**/templates?*', { data: mockTemplates, message: 'success' }).as('getDecisionTemplates');
-      cy.intercept('POST', '**/render/pdf', {
-        data: { output: btoa('%PDF-mock') },
-        message: 'Decision PDF rendered',
-      }).as('renderTemplatePdf');
 
       // Existing decision has APPROVAL — select a different outcome to trigger template fetch
       cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Avslag');
       cy.wait('@getDecisionTemplates');
       cy.get('[data-cy="decisionTemplate-select"]').should('exist');
       cy.get('[data-cy="decisionTemplate-select"]').select('Testmall');
-      cy.wait('@renderTemplatePdf');
-      cy.get('[data-cy="decision-template-preview"]').should('exist');
-      cy.get('[data-cy="decision-template-preview-content"]').should('exist').and('have.prop', 'tagName', 'IFRAME');
+      // MEX: template content is injected into text editor, no PDF preview
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('contain.text', 'Testinnehåll från mall');
     });
 
     it('save button enabled but send decision is disabled if no decision, fromDate or toDate is selected', () => {
