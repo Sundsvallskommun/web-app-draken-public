@@ -30,6 +30,7 @@ interface SupportSearchFieldProps {
   setNotFound: Dispatch<SetStateAction<boolean>>;
   appendPhonenumber: UseFieldArrayAppend<SupportStakeholderFormModel, 'phoneNumbers'>;
   appendEmail: UseFieldArrayAppend<SupportStakeholderFormModel, 'emails'>;
+  searchFieldKey?: number;
 }
 
 export const SupportContactSearchField: FC<SupportSearchFieldProps> = ({
@@ -50,6 +51,7 @@ export const SupportContactSearchField: FC<SupportSearchFieldProps> = ({
   setSelectedUser,
   appendPhonenumber,
   appendEmail,
+  searchFieldKey = 0,
 }) => {
   const doSearch = (val: string) => {
     setSearchResult(false);
@@ -164,16 +166,15 @@ export const SupportContactSearchField: FC<SupportSearchFieldProps> = ({
           {searchMode === 'person' || searchMode === 'employee' ? (
             <>
               <SearchField
+                key={`personNumber-${searchFieldKey}`}
                 className="max-w-[52rem]"
                 disabled={disabled}
                 data-cy={`contact-personNumber-${id}`}
                 {...form.register('personNumber')}
                 size={'md'}
                 value={query}
-                onBlur={() => {
-                  form.trigger(`personNumber`);
-                }}
-                onSearch={(e) => {
+                onSearch={async (e) => {
+                  await form.trigger(`personNumber`);
                   if (form.formState.errors.personNumber) return;
                   setSearching(true);
                   doSearch(e);
@@ -207,16 +208,15 @@ export const SupportContactSearchField: FC<SupportSearchFieldProps> = ({
             </>
           ) : (
             <SearchField
+              key={`organizationNumber-${searchFieldKey}`}
               className="max-w-[52rem]"
               disabled={disabled}
               data-cy={`contact-orgNumber-${id}`}
               {...form.register('organizationNumber')}
               size={'md'}
               value={query}
-              onBlur={() => {
-                form.trigger(`organizationNumber`);
-              }}
-              onSearch={(e) => {
+              onSearch={async (e) => {
+                await form.trigger(`organizationNumber`);
                 if (form.formState.errors.organizationNumber) return;
                 setSearching(true);
                 doSearch(e);

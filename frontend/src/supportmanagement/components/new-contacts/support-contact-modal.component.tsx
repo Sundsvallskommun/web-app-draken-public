@@ -342,7 +342,14 @@ export const SupportContactModal: FC<SupportContactModalProps> = ({
         )}
         <div className="mt-md flex gap-lg justify-start">
           <div>
-            <Button type="button" className="w-full" variant="secondary" color="primary" onClick={closeHandler}>
+            <Button
+              type="button"
+              className="w-full"
+              variant="secondary"
+              color="primary"
+              onClick={closeHandler}
+              data-cy="cancel-contact-button"
+            >
               Avbryt
             </Button>
           </div>

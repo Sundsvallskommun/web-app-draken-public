@@ -1,15 +1,20 @@
-import { BillingRecipient } from '@casedata/interfaces/billing';
+import { BillingFormData, BillingRecipient } from '@casedata/interfaces/billing';
 import { PrettyRole, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { useAppContext } from '@contexts/app.context';
-import { FormControl, FormLabel, Select } from '@sk-web-gui/react';
+import { FormControl, FormErrorMessage, FormLabel, Select } from '@sk-web-gui/react';
 import { FC, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 interface BillingLeaseholderProps {
   onSelectRecipient: (recipient: BillingRecipient | undefined) => void;
 }
 
 export const BillingLeaseholder: FC<BillingLeaseholderProps> = ({ onSelectRecipient }) => {
   const { errand } = useAppContext();
+  const {
+    formState: { errors },
+    setValue,
+  } = useFormContext<BillingFormData>();
   const [selectedStakeholderId, setSelectedStakeholderId] = useState<string>('');
 
   if (!errand) {
@@ -41,6 +46,10 @@ export const BillingLeaseholder: FC<BillingLeaseholderProps> = ({ onSelectRecipi
     if (!stakeholder) return;
 
     const isOrganization = !!stakeholder.organizationNumber || !!stakeholder.organizationName;
+    const customerRef = isOrganization
+      ? stakeholder.organizationName || ''
+      : `${stakeholder.firstName || ''} ${stakeholder.lastName || ''}`.trim();
+    setValue('specifications.customerReference', customerRef);
 
     onSelectRecipient({
       name: isOrganization ? '' : `${stakeholder.firstName || ''} ${stakeholder.lastName || ''}`.trim(),
@@ -55,8 +64,10 @@ export const BillingLeaseholder: FC<BillingLeaseholderProps> = ({ onSelectRecipi
   };
 
   return (
-    <FormControl className="w-full max-w-[46rem]">
-      <FormLabel>Fakturamottagare</FormLabel>
+    <FormControl className="w-full max-w-[46rem]" invalid={!!errors.recipient}>
+      <FormLabel>
+        Fakturamottagare * <span className="font-normal">(hämtas från grunduppgifter)</span>
+      </FormLabel>
       <Select className="w-full" value={selectedStakeholderId} onChange={(e) => handleSelect(e.target.value)}>
         <Select.Option value="">Välj fakturamottagare</Select.Option>
         {stakeholders.map((s) => (
@@ -65,6 +76,9 @@ export const BillingLeaseholder: FC<BillingLeaseholderProps> = ({ onSelectRecipi
           </Select.Option>
         ))}
       </Select>
+      {errors.recipient && (
+        <FormErrorMessage>{errors.recipient.message || 'Välj en fakturamottagare'}</FormErrorMessage>
+      )}
     </FormControl>
   );
 };

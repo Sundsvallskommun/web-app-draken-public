@@ -1,12 +1,17 @@
 import { BillingFormData } from '@casedata/interfaces/billing';
 import { useAppContext } from '@contexts/app.context';
-import { Checkbox, DatePicker, FormControl, FormLabel, Input, Textarea } from '@sk-web-gui/react';
+import { Checkbox, DatePicker, FormControl, FormErrorMessage, FormLabel, Input, Textarea } from '@sk-web-gui/react';
 import { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 export const BillingSpecifications: FC = () => {
   const { errand } = useAppContext();
-  const { register, watch, setValue } = useFormContext<BillingFormData>();
+  const {
+    register,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useFormContext<BillingFormData>();
 
   const selectedFacilities = watch('specifications.selectedFacilities') || [];
 
@@ -21,29 +26,42 @@ export const BillingSpecifications: FC = () => {
   return (
     <div className="flex flex-col gap-16">
       <div className="flex flex-row w-full gap-16">
-        <FormControl className="w-full">
-          <FormLabel>Vår referens</FormLabel>
+        <FormControl className="w-full" invalid={!!errors.specifications?.ourReference}>
+          <FormLabel>Vår referens *</FormLabel>
           <Input placeholder="Ange vår referens" {...register('specifications.ourReference')} />
+          {errors.specifications?.ourReference && (
+            <FormErrorMessage>{errors.specifications.ourReference.message}</FormErrorMessage>
+          )}
         </FormControl>
-        <FormControl className="w-full">
-          <FormLabel>Kundens referens</FormLabel>
+        <FormControl className="w-full" invalid={!!errors.specifications?.customerReference}>
+          <FormLabel>Kundens referens *</FormLabel>
           <Input placeholder="Ange kundens referens" {...register('specifications.customerReference')} />
+          {errors.specifications?.customerReference && (
+            <FormErrorMessage>{errors.specifications.customerReference.message}</FormErrorMessage>
+          )}
         </FormControl>
         <FormControl className="w-full">
-          <FormLabel>Avviseringsdatum</FormLabel>
-          <DatePicker {...register('specifications.rejectionDate')} />
+          <FormLabel>Aviseringsdatum</FormLabel>
+          <DatePicker min={new Date().toISOString().split('T')[0]} {...register('specifications.rejectionDate')} />
+          <small>Välj den första dagen i månaden</small>
         </FormControl>
       </div>
       <div className="w-full">
-        <FormControl className="w-full">
-          <FormLabel>Avitext</FormLabel>
+        <FormControl className="w-full" invalid={!!errors.specifications?.avitext}>
+          <FormLabel>
+            Avitext * <span className="font-normal">(ange vad fakturan och vilken period den gäller)</span>
+          </FormLabel>
           <Textarea className="w-full" rows={3} {...register('specifications.avitext')} />
+          {errors.specifications?.avitext && (
+            <FormErrorMessage>{errors.specifications.avitext.message}</FormErrorMessage>
+          )}
         </FormControl>
       </div>
       <div>
-        <FormControl>
+        <FormControl invalid={!!errors.specifications?.selectedFacilities}>
           <FormLabel>
-            Ange vilka fastighet/er som fakturan gäller <span className="font-normal">(hämtad från uppgifter)</span>
+            Ange vilka fastighet/er som fakturan gäller{' '}
+            <span className="font-normal">(hämtad från ärendeuppgifter)</span>
           </FormLabel>
           {(errand?.facilities?.length ?? 0) > 0 ? (
             <Checkbox.Group data-cy="property-designation-checkboxgroup" name="propertyDesignations">
@@ -63,6 +81,9 @@ export const BillingSpecifications: FC = () => {
             </Checkbox.Group>
           ) : (
             <span className="italic">Inga fastighetsbeteckningar finns angivna på ärendet</span>
+          )}
+          {errors.specifications?.selectedFacilities && (
+            <FormErrorMessage>{errors.specifications.selectedFacilities.message}</FormErrorMessage>
           )}
         </FormControl>
       </div>

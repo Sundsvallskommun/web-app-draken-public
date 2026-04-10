@@ -18,17 +18,14 @@ const PROCESS_PARAMETER_KEYS = ['process.displayPhase', 'process.phaseAction', '
 
 const buildInvoiceRows = (services: BillingServiceItem[]): CInvoiceRow[] => {
   return services.map((service) => {
-    const detailedDescriptions: string[] = [];
-    if (service.avitext) {
-      detailedDescriptions.push(service.avitext);
-    }
+    const detailedDescriptions = (service.descriptions || []).filter((d) => d !== '');
 
     const serviceConfig: CasedataService | undefined = casedataInvoiceSettings.services.find(
       (s) => s.id === service.serviceId
     );
 
     return {
-      descriptions: [service.name],
+      descriptions: [service.description || service.name],
       detailedDescriptions,
       totalAmount: twoDecimals(service.quantity * service.costPerUnit),
       costPerUnit: twoDecimals(service.costPerUnit),
@@ -91,7 +88,7 @@ const buildBillingRecord = (formData: BillingFormData, errand: IErrand): CBillin
       customerId,
       customerReference: formData.specifications.customerReference,
       ourReference: formData.specifications.ourReference,
-      description: formData.specifications.avitext || `Faktura för ärende ${errand.errandNumber}`,
+      description: formData.specifications.avitext || '',
       date: formData.specifications.rejectionDate || undefined,
       totalAmount: twoDecimals(totalAmount),
       invoiceRows,
