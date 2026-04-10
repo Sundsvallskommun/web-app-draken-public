@@ -72,7 +72,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
             name: 'Standard e-postmall',
             content: btoa('Mock email template'),
             metadata: [
-              { key: 'templateType', value: 'email' },
+              { key: 'templateType', value: 'Email' },
               { key: 'templateRole', value: 'default' },
             ],
           },
@@ -81,7 +81,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
             name: 'Signatur',
             content: btoa('Mock signature'),
             metadata: [
-              { key: 'templateType', value: 'email' },
+              { key: 'templateType', value: 'Email' },
               { key: 'templateRole', value: 'signature' },
             ],
           },
@@ -90,7 +90,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
             name: 'Standard SMS',
             content: btoa('Mock sms template'),
             metadata: [
-              { key: 'templateType', value: 'sms' },
+              { key: 'templateType', value: 'Sms' },
               { key: 'templateRole', value: 'default' },
             ],
           },
@@ -99,7 +99,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
             name: 'SMS Signatur',
             content: btoa('Mock sms signature'),
             metadata: [
-              { key: 'templateType', value: 'sms' },
+              { key: 'templateType', value: 'Sms' },
               { key: 'templateRole', value: 'signature' },
             ],
           },

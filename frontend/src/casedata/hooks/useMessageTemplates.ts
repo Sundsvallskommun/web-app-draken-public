@@ -65,11 +65,11 @@ export function useMessageTemplates(user: User, shouldLoad: boolean): UseMessage
         });
 
         const emailTemplates = appResult.templates.filter((t) => {
-          return getTemplateType(t) === 'email' && !['signature', 'publicdocuments'].includes(getTemplateRole(t) || '');
+          return getTemplateType(t) === 'Email' && !['signature', 'publicdocuments'].includes(getTemplateRole(t) || '');
         });
 
         const smsTemplates = appResult.templates.filter((t) => {
-          return getTemplateType(t) === 'sms' && getTemplateRole(t) !== 'signature';
+          return getTemplateType(t) === 'Sms' && getTemplateRole(t) !== 'signature';
         });
 
         const byId: Record<string, string> = {};

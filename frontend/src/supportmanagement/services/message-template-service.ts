@@ -67,7 +67,7 @@ export interface TemplateResult {
 
 export interface FetchTemplatesOptions {
   prefix?: string;
-  type?: 'email' | 'sms';
+  type?: 'Email' | 'Sms';
   excludeVariants?: string[];
 }
 
