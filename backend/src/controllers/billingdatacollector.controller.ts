@@ -13,8 +13,8 @@ import ApiService from '@/services/api.service';
 @Controller()
 @UseBefore(hasAnyPermission(['canEditCasedata']))
 export class BillingDataCollectorController {
-  private apiService = new ApiService();
-  private SERVICE = apiServiceName('billing-data-collector');
+  private readonly apiService = new ApiService();
+  private readonly SERVICE = apiServiceName('billing-data-collector');
 
   @Get('/billingdatacollector/:contractId')
   @OpenAPI({ summary: 'Get next scheduled billing date by contract id' })
