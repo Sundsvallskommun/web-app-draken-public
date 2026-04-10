@@ -3,8 +3,7 @@ import { PrettyRole, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { useCasedataStore } from '@stores/index';
 import { FormControl, FormLabel, Select } from '@sk-web-gui/react';
-import { useState } from 'react';
-
+import { FC, useState } from 'react';
 interface BillingLeaseholderProps {
   onSelectRecipient: (recipient: BillingRecipient | undefined) => void;
 }

@@ -129,10 +129,10 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   valueNode?: boolean;
   container?: boolean;
+  missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   number?: boolean;
   string?: boolean;
   boolean?: boolean;

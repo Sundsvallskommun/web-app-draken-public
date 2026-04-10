@@ -1,7 +1,6 @@
 import { cx } from '@sk-web-gui/react';
-import { DragEvent, ReactNode, createContext, useContext, useState } from 'react';
 import { UploadCloud } from 'lucide-react';
-
+import { createContext, DragEvent, FC, ReactNode, useContext, useState } from 'react';
 interface UseFileUploadProps {
   setActive?: (active: boolean) => void;
   setIsDragging?: (active: boolean) => void;
@@ -17,7 +16,7 @@ interface FileUploadWrapperProps {
   children?: ReactNode;
 }
 
-export const FileUploadWrapper: React.FC<FileUploadWrapperProps> = ({ children }) => {
+export const FileUploadWrapper: FC<FileUploadWrapperProps> = ({ children }) => {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [active, setActive] = useState<boolean>(false);
   const [drop, setDrop] = useState<FileList | null>(null);

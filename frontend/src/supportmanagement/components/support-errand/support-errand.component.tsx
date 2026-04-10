@@ -5,17 +5,18 @@ import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
 import {
-  SupportErrand,
   defaultSupportErrandInformation,
   getSupportErrandByErrandNumber,
   initiateSupportErrand,
+  SupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportNotesCount } from '@supportmanagement/services/support-note-service';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+
 import { SupportErrandSummary } from '../support-errand-basics-form/support-errand-summary.component';
 import { MessagePortal } from './sidebar/message-portal.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
@@ -32,7 +33,7 @@ let formSchema = yup
   })
   .required();
 
-export const SupportErrandComponent: React.FC = () => {
+export const SupportErrandComponent: FC = () => {
   const params = useParams<{ errandNumber?: string }>();
   const errandNumber = params?.errandNumber;
   const [isLoading, setIsLoading] = useState(!!errandNumber);

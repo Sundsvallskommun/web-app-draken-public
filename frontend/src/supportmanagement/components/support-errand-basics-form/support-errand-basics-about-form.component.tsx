@@ -1,7 +1,8 @@
-import { useMetadataStore } from '@stores/index';
+import TextEditor from '@common/components/dynamic-text-editor';
 import { ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
+import { useMetadataStore } from '@stores/index';
 import {
   Channels,
   ContactChannelType,
@@ -9,14 +10,13 @@ import {
   isSupportErrandLocked,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
-import { useTranslation } from 'react-i18next';
-import TextEditor from '@common/components/dynamic-text-editor';
-import { useEffect, useRef, useState } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
 
-export const SupportErrandBasicsAboutForm: React.FC<{
+export const SupportErrandBasicsAboutForm: FC<{
   supportErrand: SupportErrand;
   registeringNewErrand?: boolean;
 }> = (props) => {
@@ -45,7 +45,6 @@ export const SupportErrandBasicsAboutForm: React.FC<{
   useEffect(() => {
     userHasEditedDescription.current = false;
   }, [supportErrand.id]);
-
 
   return (
     <>
@@ -82,7 +81,11 @@ export const SupportErrandBasicsAboutForm: React.FC<{
       <div className="flex my-24 gap-xl">
         <FormControl id="description" className="w-full" data-cy="errand-description-richtext-wrapper">
           <FormLabel>Ärendebeskrivning</FormLabel>
-          <div onFocusCapture={() => { userHasEditedDescription.current = true; }}>
+          <div
+            onFocusCapture={() => {
+              userHasEditedDescription.current = true;
+            }}
+          >
             <TextEditor
               className="w-full h-[15rem] case-description-editor"
               readOnly={isSupportErrandLocked(supportErrand) || supportErrand.channel === ContactChannelType.EMAIL}

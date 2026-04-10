@@ -2,24 +2,25 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import {
   EXTRAPARAMETER_SEPARATOR,
-  UppgiftField,
   extraParametersToUppgiftMapper,
+  UppgiftField,
 } from '@casedata/services/casedata-extra-parameters-service';
 import { saveFacilities } from '@casedata/services/casedata-facilities-service';
+import TextEditor from '@common/components/dynamic-text-editor';
 import Facilities from '@common/components/facilities/facilities';
-import { useCasedataStore, useConfigStore } from '@stores/index';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
-import { Disclosure, FormControl, FormLabel, Input, cx, useSnackbar } from '@sk-web-gui/react';
+import { cx, Disclosure, FormControl, FormLabel, Input, useSnackbar } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore } from '@stores/index';
+import { MapPin } from 'lucide-react';
 import { IconName } from 'lucide-react/dynamic';
-import TextEditor from '@common/components/dynamic-text-editor';
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+
 import { baseDetails } from '../../extraparameter-templates/base-template';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
-import { MapPin } from 'lucide-react';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 interface CasedataDetailsProps {
   update: () => void;
@@ -69,7 +70,8 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   };
 
   useEffect(() => {
-    const uppgifterFields: UppgiftField[] = (errand ? extraParametersToUppgiftMapper(errand) : undefined) || baseDetails;
+    const uppgifterFields: UppgiftField[] =
+      (errand ? extraParametersToUppgiftMapper(errand) : undefined) || baseDetails;
 
     setFields(uppgifterFields ?? []);
     setRealEstates(errand?.facilities ?? []);
@@ -103,7 +105,12 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
       <div className="my-lg">
         <Disclosure variant="alt" data-cy={`section-${label}-disclosure`} initalOpen>
           <Disclosure.Header>
-            <Disclosure.Icon icon={(() => { const DynIcon = iconMap[icon as string]; return DynIcon ? <DynIcon /> : undefined; })()} />
+            <Disclosure.Icon
+              icon={(() => {
+                const DynIcon = iconMap[icon as string];
+                return DynIcon ? <DynIcon /> : undefined;
+              })()}
+            />
             <Disclosure.Title>{label}</Disclosure.Title>
             <Disclosure.Button />
           </Disclosure.Header>

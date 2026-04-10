@@ -11,7 +11,6 @@ import {
   AttestationTableForm,
 } from '@supportmanagement/components/attestation-tab/components/attestations-table.component';
 import store from '@supportmanagement/services/storage-service';
-import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 import {
   getBillingRecord,
   getBillingRecords,
@@ -20,6 +19,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
 export const AttestationTab = () => {
   const filterForm = useForm<AttestationFilter>({ defaultValues: AttestationValues });

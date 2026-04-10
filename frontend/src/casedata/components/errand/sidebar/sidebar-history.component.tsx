@@ -1,13 +1,11 @@
-import { IErrand } from '@casedata/interfaces/errand';
 import { GenericChangeData, ParsedErrandChange, ParsedErrandHistory } from '@casedata/interfaces/history';
 import { fetchChangeData, getErrandHistory } from '@casedata/services/casedata-history-service';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { sanitized } from '@common/services/sanitizer-service';
-import { Admin } from '@common/services/user-service';
-import { Button, Modal, Spinner, cx } from '@sk-web-gui/react';
+import { Button, cx, Modal, Spinner } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
 import { History } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export const SidebarHistory: React.FC<{}> = () => {
   const municipalityId = useConfigStore((s) => s.municipalityId);

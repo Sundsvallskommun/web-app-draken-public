@@ -1,7 +1,12 @@
 'use client';
 
+import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
+import { ContractData } from '@casedata/interfaces/contract-data';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
+import { Role } from '@casedata/interfaces/role';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
+import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import {
   beslutsmallMapping,
   getFinalDecisonWithHighestId,
@@ -16,18 +21,14 @@ import {
   updateErrandStatus,
   validateAction,
 } from '@casedata/services/casedata-errand-service';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { yupResolver } from '@hookform/resolvers/yup';
 import type { RJSFSchema } from '@rjsf/utils';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { Role } from '@casedata/interfaces/role';
-import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import { validateErrandForDecision, validateStatusForDecision } from '@casedata/services/casedata-errand-service';
 import { sendDecisionMessage, sendMessage } from '@casedata/services/casedata-message-service';
 import {
@@ -38,6 +39,7 @@ import {
 } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
 import { triggerErrandPhaseChange } from '@casedata/services/process-service';
+import TextEditor from '@common/components/dynamic-text-editor';
 import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
@@ -48,23 +50,22 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import {
   Button,
   Combobox,
+  cx,
   Dialog,
   FormControl,
   FormErrorMessage,
   FormLabel,
   Input,
   Select,
-  cx,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import TextEditor from '@common/components/dynamic-text-editor';
+import { Download, SendHorizontal } from 'lucide-react';
+
 import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
 import { ServiceListComponent } from '../services/casedata-service-list.component';
 import { useErrandServices } from '../services/useErrandService';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
-import { ContractData } from '@casedata/interfaces/contract-data';
-import { Download, SendHorizontal } from 'lucide-react';
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
 
@@ -126,7 +127,7 @@ let formSchema = yup
   })
   .required();
 
-export const CasedataDecisionTab: React.FC<{
+export const CasedataDecisionTab: FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
   onRefetchServices?: (refetch: () => void) => void;
@@ -150,7 +151,9 @@ export const CasedataDecisionTab: React.FC<{
 
   const sortedDec = useMemo(() => {
     if (!errand) return [];
-    return [...errand.decisions].sort((a, b) => new Date(b.updated ?? 0).getTime() - new Date(a.updated ?? 0).getTime());
+    return [...errand.decisions].sort(
+      (a, b) => new Date(b.updated ?? 0).getTime() - new Date(a.updated ?? 0).getTime()
+    );
   }, [errand]);
 
   const existingDecision = useMemo(() => {
@@ -605,7 +608,9 @@ export const CasedataDecisionTab: React.FC<{
                   disabled={isErrandLocked(errand) || isSent()}
                   onSelect={(e) => {
                     const selected = e.target.value as string[];
-                    const newLaws = getLawMapping(errand).filter((law) => law.heading && selected.includes(law.heading));
+                    const newLaws = getLawMapping(errand).filter(
+                      (law) => law.heading && selected.includes(law.heading)
+                    );
                     setValue('law', newLaws, {
                       shouldDirty: true,
                       shouldTouch: true,

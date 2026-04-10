@@ -1,18 +1,20 @@
+import { SidebarExport } from '@common/components/export/sidebar-export/sidebar-export.component';
 import { Sidebar, SidebarButtonKey } from '@common/components/sidebar/sidebar.component';
+import { ReactNode } from 'react';
+
 import { SidebarComments } from './sidebar-comments.component';
 import { SidebarGuide } from './sidebar-guide.component';
 import { SidebarHistory } from './sidebar-history.component';
 import { SidebarInfo } from './sidebar-info.component';
 import { SidebarNotes } from './sidebar-notes.component';
 import { SidebarUtredning } from './sidebar-utredning.component';
-import { SidebarExport } from '@common/components/export/sidebar-export/sidebar-export.component';
 
 export const SidebarWrapper = () => {
   const buttons: {
     label: string;
     key: SidebarButtonKey;
     icon: string;
-    component: React.ReactNode;
+    component: ReactNode;
   }[] = [
     {
       label: 'Handläggning',

@@ -29,10 +29,10 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import TextEditor from '@common/components/dynamic-text-editor';
-import { useEffect, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 import { FileInput, Plus } from 'lucide-react';
+import { FC, useEffect, useState } from 'react';
 
 const yupRequestFeedbackForm = yup.object().shape(
   {

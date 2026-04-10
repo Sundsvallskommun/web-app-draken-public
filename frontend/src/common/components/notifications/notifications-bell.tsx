@@ -1,7 +1,8 @@
 import { useSupportStore, useUserStore } from '@stores/index';
 import { Badge, Button } from '@sk-web-gui/react';
-import { getFilteredNotifications } from './notification-utils';
 import { Bell } from 'lucide-react';
+
+import { getFilteredNotifications } from './notification-utils';
 
 export const NotificationsBell = (props: { toggleShow: () => void }) => {
   const notifications = useSupportStore((s) => s.notifications);

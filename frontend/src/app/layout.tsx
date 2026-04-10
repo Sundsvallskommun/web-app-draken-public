@@ -1,7 +1,9 @@
 import '@styles/tailwind.scss';
-import { ReactNode } from 'react';
+
 import AppLayout from '@common/components/layout/_app';
 import { headers } from 'next/headers';
+import { ReactNode } from 'react';
+
 import i18nConfig from './i18nConfig';
 
 interface RootLayoutProps {

@@ -1,7 +1,8 @@
 import { ContractType } from '@casedata/interfaces/contracts';
 import { Badge, Link, cx } from '@sk-web-gui/react';
+import { FC } from 'react';
 
-export const ContractNavigation: React.FC<{ contractType: ContractType }> = ({ contractType }) => {
+export const ContractNavigation: FC<{ contractType: ContractType }> = ({ contractType }) => {
   const headers: { key: string; label: string; initiallyOpen?: boolean }[] =
     contractType === ContractType.PURCHASE_AGREEMENT
       ? [
@@ -27,7 +28,10 @@ export const ContractNavigation: React.FC<{ contractType: ContractType }> = ({ c
             id={`badge-${h.key}`}
             counter=""
             rounded
-            className={cx('!max-w-[10px] !min-w-[10px] !max-h-[10px] !min-h-[10px]', h.initiallyOpen ? 'bg-black' : 'bg-gray-300')}
+            className={cx(
+              '!max-w-[10px] !min-w-[10px] !max-h-[10px] !min-h-[10px]',
+              h.initiallyOpen ? 'bg-black' : 'bg-gray-300'
+            )}
           />
           <Link variant="tertiary">{h.label}</Link>
         </div>

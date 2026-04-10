@@ -1,3 +1,10 @@
+import { AgnosticMessageResponse, LetterResponse, MessageClassification } from '@controllers/message.controller';
+import { Role } from '@interfaces/role';
+import { User } from '@interfaces/users.interface';
+import { logger } from '@utils/logger';
+import dayjs from 'dayjs';
+import { v4 as uuidv4 } from 'uuid';
+
 import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
@@ -25,14 +32,9 @@ import {
   WebMessageRequest,
 } from '@/data-contracts/messaging/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
-import { AgnosticMessageResponse, LetterResponse, MessageClassification } from '@controllers/message.controller';
-import { Role } from '@interfaces/role';
-import { User } from '@interfaces/users.interface';
-import { logger } from '@utils/logger';
-import dayjs from 'dayjs';
-import { v4 as uuidv4 } from 'uuid';
-import ApiService, { ApiResponse } from './api.service';
 import { apiURL, base64ToByteArray } from '@/utils/util';
+
+import ApiService, { ApiResponse } from './api.service';
 import { getOwnerStakeholder } from './stakeholder.service';
 
 interface SmsMessage {
@@ -186,7 +188,13 @@ export const sendEmail = (
     });
 };
 
-export const sendDigitalMail = (municipalityId: string, message: LetterRequest & { message?: string }, req: RequestWithUser, errandData: ApiResponse<ErrandDTO>, classification: MessageClassification) => {
+export const sendDigitalMail = (
+  municipalityId: string,
+  message: LetterRequest & { message?: string },
+  req: RequestWithUser,
+  errandData: ApiResponse<ErrandDTO>,
+  classification: MessageClassification,
+) => {
   const url = `${MESSAGING_SERVICE}/${municipalityId}/letter?async=false`;
   const apiService = new ApiService();
   return apiService
@@ -462,7 +470,7 @@ export const sendDecisionToOpenE = (errand: ErrandDTO, user: User, pdf: Attachme
   ];
   const message: WebMessageRequest = {
     party: {
-      partyId: getOwnerStakeholder(errand).personId,
+      partyId: getOwnerStakeholder(errand)?.personId,
       externalReferences: [
         {
           key: 'flowInstanceId',
@@ -519,7 +527,7 @@ export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: At
   ];
   const message: DigitalMailRequest = {
     party: {
-      partyIds: [getOwnerStakeholder(errand).personId!],
+      partyIds: [getOwnerStakeholder(errand)?.personId ?? ''],
       externalReferences: [],
     },
     sender: {

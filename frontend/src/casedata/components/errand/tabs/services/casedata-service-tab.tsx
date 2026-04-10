@@ -18,7 +18,8 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useCasedataStore, useConfigStore } from '@stores/index';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { Modal, useSnackbar } from '@sk-web-gui/react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { FC, useCallback, useEffect, useMemo, useState } from 'react';
+
 import { ServiceListComponent } from './casedata-service-list.component';
 import { useErrandServices } from './useErrandService';
 
@@ -146,12 +147,7 @@ export const CasedataServicesTab: React.FC = () => {
           await updateAsset(
             municipalityId,
             existingFull.id,
-            buildUpdateAssetPayload(
-              payload,
-              schema,
-              { schemaId, assetType, partyId, assetId: errandNr },
-              existingFull
-            )
+            buildUpdateAssetPayload(payload, schema, { schemaId, assetType, partyId, assetId: errandNr }, existingFull)
           );
         } else {
           await createAsset(
@@ -284,7 +280,12 @@ export const CasedataServicesTab: React.FC = () => {
         ) : error ? (
           <div className="text-error">{error}</div>
         ) : (
-          <ServiceListComponent services={services} onRemove={removeService} onEdit={startEdit} readOnly={(errand ? isErrandLocked(errand) : false)} />
+          <ServiceListComponent
+            services={services}
+            onRemove={removeService}
+            onEdit={startEdit}
+            readOnly={errand ? isErrandLocked(errand) : false}
+          />
         )}
       </div>
 

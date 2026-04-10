@@ -1,4 +1,3 @@
-import { IErrand } from '@casedata/interfaces/errand';
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import { useCasedataStore, useConfigStore } from '@stores/index';

@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { i18nRouter } from 'next-i18n-router';
-import i18nConfig from './app/i18nConfig';
 import { protectedRoutes } from '@common/utils/protected-routes';
+import { i18nRouter } from 'next-i18n-router';
+import { NextRequest, NextResponse } from 'next/server';
+
+import i18nConfig from './app/i18nConfig';
 
 export function proxy(req: NextRequest) {
   const {

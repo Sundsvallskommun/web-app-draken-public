@@ -16,9 +16,8 @@ const tableHeaderColumns = {
   0: 'Typ',
   1: 'Kortnummer',
   2: 'Status',
-  3: 'Ärendenummer',
-  4: 'Beslutad',
-  5: 'Giltighetstid',
+  3: 'Beslutad',
+  4: 'Giltighetstid',
 };
 
 onlyOn(Cypress.env('application_name') === 'PT', () => {
@@ -79,12 +78,10 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('.sk-table-sortbutton').should('exist').contains('span', tableHeaderColumns[2]);
       cy.get('.sk-table-sortbutton').should('exist').contains('span', tableHeaderColumns[3]);
       cy.get('.sk-table-sortbutton').should('exist').contains('span', tableHeaderColumns[4]);
-      cy.get('.sk-table-sortbutton').should('exist').contains('span', tableHeaderColumns[5]);
 
       cy.get('[data-cy="table-column-type"]').should('exist').contains('strong', 'P-tillstånd');
       cy.get('[data-cy="table-column-assetId"]').should('exist').contains('span', '133773');
       cy.get('[data-cy="table-column-status"]').should('exist').contains('span', 'Aktivt');
-      cy.get('[data-cy="table-column-errandNumber"]').should('exist').contains('span', 'SGP-2023-000283');
       cy.get('[data-cy="table-column-issued"]').should('exist').contains('span', '2023-01-01');
       cy.get('[data-cy="table-column-validTo"]').should('exist').and('contain', '2023-01-01').and('contain', '2023');
     });

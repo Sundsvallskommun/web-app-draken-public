@@ -31,7 +31,7 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import TextEditor from '@common/components/dynamic-text-editor';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { Check, ClipboardPenLine, Download, Info } from 'lucide-react';
@@ -68,7 +68,7 @@ let formSchemaFT = yup
   })
   .required();
 
-export const CasedataInvestigationTab: React.FC<{
+export const CasedataInvestigationTab: FC<{
   errand: IErrand;
   setUnsaved: (unsaved: boolean) => void;
 }> = (props) => {

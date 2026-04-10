@@ -1,11 +1,11 @@
 import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
-import { useMetadataStore } from '@stores/index';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
+import { useMetadataStore } from '@stores/index';
 import { getLabelTypeFromDisplayName } from '@supportmanagement/services/support-errand-service';
-import { useMemo, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { FC, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
-import { ChevronDown } from 'lucide-react';
 
 export interface LabelSubTypeFilter {
   labelSubType: string[];
@@ -15,7 +15,7 @@ export const LabelSubTypeValues: LabelSubTypeFilter = {
   labelSubType: [],
 };
 
-export const SupportManagementFilterLabelSubType: React.FC = () => {
+export const SupportManagementFilterLabelSubType: FC = () => {
   const { watch, setValue } = useFormContext<SupportManagementFilter>();
   const labelCategories = watch('labelCategory');
   const labelTypes = watch('labelType');

@@ -1,13 +1,11 @@
 'use client';
 
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
-import { User } from '@common/interfaces/user';
-import { isKA } from '@common/services/application-service';
+import TextEditor from '@common/components/dynamic-text-editor';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
-import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
@@ -22,19 +20,17 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   forwardSupportErrand,
   getSupportErrandById,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getEscalationEmails, getEscalationMessage } from '@supportmanagement/services/support-escalation-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import TextEditor from '@common/components/dynamic-text-editor';
+import { Forward } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
-import { Forward } from 'lucide-react';
 
 const yupForwardForm = yup.object().shape(
   {

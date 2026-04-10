@@ -9,9 +9,8 @@ import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 import { saveErrandNote } from '@casedata/services/casedata-errand-notes-service';
 import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { cancelErrandPhaseChange, phaseChangeInProgress } from '@casedata/services/process-service';
 import { isAppealEnabled } from '@common/services/feature-flag-service';
-import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import {
   Button,
@@ -25,15 +24,16 @@ import {
   Textarea,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';
+import { ArchiveX, CirclePause, Mail } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
+
 import { AppealButtonComponent } from '../appeal-button.component';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
 import { MessageComposer } from '../tabs/messages/message-composer.component';
 import { ResumeErrandButton } from './resume-errand-button.component';
-import { cancelErrandPhaseChange, phaseChangeInProgress } from '@casedata/services/process-service';
-import { ArchiveX, CirclePause, Mail } from 'lucide-react';
 
 export const SidebarInfo: React.FC<{}> = () => {
   const municipalityId = useConfigStore((s) => s.municipalityId);

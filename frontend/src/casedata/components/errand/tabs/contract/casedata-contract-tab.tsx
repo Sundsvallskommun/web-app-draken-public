@@ -5,6 +5,7 @@ import {
   ExtraParameterGroup,
   IntervalType,
   InvoicedIn,
+  LeaseType,
   Party,
   StakeholderRole,
   Status,
@@ -28,9 +29,10 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Checkbox, FormControl, FormLabel, Input, Select, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+
 import ContractForm from './contract-form';
 import { ContractNavigation } from './contract-navigation';
 
@@ -39,7 +41,7 @@ interface CasedataContractProps {
   setUnsaved: Dispatch<SetStateAction<boolean>>;
 }
 
-export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
+export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
   let formSchema = yup
     .object({
       type: yup.string().required('Avtalstyp måste anges'),
@@ -202,7 +204,19 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     }
   };
 
-  const onSave = async (data: ContractData) => {
+  const onSave = async (data: ContractData, section?: string) => {
+    if (section === 'billing' && data.generateInvoice === 'true') {
+      const hasMarkup = (data.extraParameters ?? []).some((p) => p.parameters?.markup?.trim());
+      if (!hasMarkup) {
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Fakturareferens måste anges',
+          status: 'error',
+        });
+        return;
+      }
+    }
     setIsLoading('Sparar avtal..');
     return saveContract(data)
       .then(async (res: Contract) => {
@@ -310,11 +324,13 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                   <FormControl id="contractSubType" className="my-md">
                     <FormLabel>Undertyp</FormLabel>
                     <Select data-cy="contract-subtype-select" {...contractForm.register('leaseType')}>
-                      {leaseTypes.map((lt) => (
-                        <option key={lt.key} value={lt.key}>
-                          {lt.label}
-                        </option>
-                      ))}
+                      {leaseTypes
+                        .filter((lt) => existingContract?.contractId || lt.key !== LeaseType.OTHER_FEE)
+                        .map((lt) => (
+                          <option key={lt.key} value={lt.key}>
+                            {lt.label}
+                          </option>
+                        ))}
                     </Select>
                   </FormControl>
                 )}

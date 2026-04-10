@@ -22,16 +22,17 @@ import {
   SupportStakeholderTypeEnum,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import React, { useEffect, useState } from 'react';
+import { Pen } from 'lucide-react';
+import { FC, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
+
 import { SupportContactModal } from './support-contact-modal.component';
 import { SupportContactSearchField } from './support-contact-search-field.component';
 import { SupportContactSearchModeSelector } from './support-contact-search-mode-selector.component';
 import { SupportSearchResult } from './support-search-result.component';
-import { Pen } from 'lucide-react';
-export const SupportSimplifiedContactForm: React.FC<{
+export const SupportSimplifiedContactForm: FC<{
   contact: SupportStakeholderFormModel;
   editing: boolean;
   setUnsaved: (unsaved: boolean) => void;
@@ -153,6 +154,7 @@ export const SupportSimplifiedContactForm: React.FC<{
   const [searchResultArray, setSearchResultArray] = useState<AddressResult[]>([]);
   const [selectedUser, setSelectedUser] = useState<AddressResult>();
   const [query, setQuery] = useState('');
+  const [searchFieldKey, setSearchFieldKey] = useState(0);
 
   const searchProps = {
     searchResult,
@@ -169,11 +171,12 @@ export const SupportSimplifiedContactForm: React.FC<{
     searchMode,
     setUnsaved,
     setSearchMode,
+    searchFieldKey,
   };
 
   const form = useForm<SupportStakeholderFormModel>({
     defaultValues: contact,
-    mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
+    mode: 'onBlur', // NOTE: Needed if we want to disable submit until valid
     resolver: yupResolver(yupContact) as unknown as Resolver<SupportStakeholderFormModel>,
   });
 
@@ -235,7 +238,9 @@ export const SupportSimplifiedContactForm: React.FC<{
   useEffect(() => {
     if (searchResult) {
       setSearchResult(false);
-      reset({}, { keepErrors: true });
+      const currentStakeholderType = form.getValues('stakeholderType');
+      const currentExternalIdType = form.getValues('externalIdType');
+      reset({ stakeholderType: currentStakeholderType, externalIdType: currentExternalIdType }, { keepErrors: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationNumber, personNumber]);
@@ -359,6 +364,16 @@ export const SupportSimplifiedContactForm: React.FC<{
             leftIcon={<Pen />}
             onClick={() => {
               reset({}, { keepErrors: false });
+              setQuery('');
+              setSearchFieldKey((prev) => prev + 1);
+              setValue('organizationNumber', '', { shouldDirty: false });
+              setValue('personNumber', '', { shouldDirty: false });
+              setValue(
+                'stakeholderType',
+                searchMode === 'person' || searchMode === 'employee'
+                  ? SupportStakeholderTypeEnum.PERSON
+                  : SupportStakeholderTypeEnum.ORGANIZATION
+              );
               setValue(
                 'externalIdType',
                 searchMode === 'person' || searchMode === 'employee' ? ExternalIdType.PRIVATE : ExternalIdType.COMPANY

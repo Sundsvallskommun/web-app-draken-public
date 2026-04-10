@@ -1,8 +1,8 @@
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
 import { isROB } from '@common/services/application-service';
-import { useCasedataStore, useSupportStore } from '@stores/index';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { Badge, Button, Spinner } from '@sk-web-gui/react';
+import { useCasedataStore, useSupportStore } from '@stores/index';
 import store from '@supportmanagement/services/storage-service';
 import {
   assignedStatuses,
@@ -14,8 +14,7 @@ import {
   Status,
   suspendedStatuses,
 } from '@supportmanagement/services/support-errand-service';
-import { useMemo } from 'react';
-
+import { FC, useMemo } from 'react';
 export interface SupportManagementStatusFilter {
   status: Status[];
 }
@@ -24,7 +23,7 @@ export const SupportManagementStatusValues: SupportManagementStatusFilter = {
   status: [],
 };
 
-export const SupportManagementFilterSidebarStatusSelector: React.FC<{
+export const SupportManagementFilterSidebarStatusSelector: FC<{
   showAttestationTable: boolean;
   setShowAttestationTable: (show: boolean) => void;
   iconButton: boolean;
@@ -107,7 +106,10 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
             aria-label={`status-button-${button.key}`}
             variant={buttonIsActive && !showAttestationTable ? 'primary' : 'ghost'}
             className={`${!iconButton && 'justify-start'} ${!buttonIsActive && 'hover:bg-dark-ghost'}`}
-            leftIcon={(() => { const DynIcon = iconMap[button.icon as string]; return DynIcon ? <DynIcon /> : undefined; })()}
+            leftIcon={(() => {
+              const DynIcon = iconMap[button.icon as string];
+              return DynIcon ? <DynIcon /> : undefined;
+            })()}
             key={button.key}
             iconButton={iconButton}
           >

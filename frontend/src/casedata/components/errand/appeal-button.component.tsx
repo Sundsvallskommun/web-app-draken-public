@@ -1,10 +1,8 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { appealErrand, getErrand } from '@casedata/services/casedata-errand-service';
-import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useCasedataStore, useConfigStore } from '@stores/index';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore } from '@stores/index';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';

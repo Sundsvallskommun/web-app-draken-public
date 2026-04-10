@@ -1,14 +1,10 @@
-import { useConfigStore, useSupportStore } from '@stores/index';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
-import {
-  countAttachment,
-  getSupportAttachments,
-  SupportAttachment,
-} from '@supportmanagement/services/support-attachment-service';
+import { countAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import {
   getSupportConversationMessages,
   getSupportConversations,
@@ -21,14 +17,15 @@ import {
   groupByConversationIdSortedTree,
   MessageNode,
 } from '@supportmanagement/services/support-message-service';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, FC, ReactNode, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
 import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-tab';
 import { SupportErrandBasicsTab } from './tabs/support-errand-basics-tab';
 import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
 
-export const SupportTabsWrapper: React.FC<{
+export const SupportTabsWrapper: FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
 }> = (props) => {
   const [messages, setMessages] = useState<any>([]);
@@ -91,7 +88,7 @@ export const SupportTabsWrapper: React.FC<{
 
   const tabs: {
     label: string;
-    content: React.ReactNode;
+    content: ReactNode;
     disabled: boolean;
     visibleFor: boolean;
   }[] = [

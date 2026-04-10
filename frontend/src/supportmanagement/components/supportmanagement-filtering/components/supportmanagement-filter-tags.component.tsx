@@ -1,19 +1,19 @@
+import { Admin } from '@common/services/user-service';
+import { Chip } from '@sk-web-gui/react';
+import { useMetadataStore, useSupportStore } from '@stores/index';
+import { Priority } from '@supportmanagement/interfaces/priority';
+import { Channels, Status } from '@supportmanagement/services/support-errand-service';
+import { SupportType } from '@supportmanagement/services/support-metadata-service';
+import dayjs from 'dayjs';
+import { FC, useEffect, useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter, SupportManagementValues } from '../supportmanagement-filtering.component';
-import { Chip } from '@sk-web-gui/react';
-import { Channels, Status } from '@supportmanagement/services/support-errand-service';
-import dayjs from 'dayjs';
-import { Admin } from '@common/services/user-service';
-import { Priority } from '@supportmanagement/interfaces/priority';
-import { SupportType } from '@supportmanagement/services/support-metadata-service';
-import { useEffect, useMemo } from 'react';
-import { useMetadataStore, useSupportStore } from '@stores/index';
 
 interface SupportManagementFilterTagsProps {
   administrators: Admin[];
 }
 
-export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsProps> = ({ administrators }) => {
+export const SupportManagementFilterTags: FC<SupportManagementFilterTagsProps> = ({ administrators }) => {
   const { watch, setValue, reset } = useFormContext<SupportManagementFilter>();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const selectedSupportErrandStatuses = useSupportStore((s) => s.selectedSupportErrandStatuses);

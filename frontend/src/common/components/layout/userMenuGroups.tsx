@@ -1,6 +1,7 @@
 import { Button, PopupMenu } from '@sk-web-gui/react';
-import { ColorSchemeItems } from './color-scheme-items.component';
 import { ChevronRight, LogOut, Palette } from 'lucide-react';
+
+import { ColorSchemeItems } from './color-scheme-items.component';
 
 export const userMenuGroups = [
   {

@@ -358,6 +358,12 @@ export interface PatchNotificationDto {
   globalAcknowledged?: boolean;
 }
 
+export interface FeatureFlagDto {
+  name: string;
+  value?: string;
+  enabled: boolean;
+}
+
 export interface MessageDto {
   email?: string;
   contactMeans?: string;
@@ -603,12 +609,6 @@ export interface TemplateSelector {
   identifier?: string;
   content?: string;
   parameters?: object;
-}
-
-export interface FeatureFlagDto {
-  name: string;
-  value?: string;
-  enabled: boolean;
 }
 
 export enum CBillingRecordTypeEnum {

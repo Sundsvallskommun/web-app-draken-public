@@ -12,12 +12,13 @@ import { useCasedataStore, useConfigStore } from '@stores/index';
 import { Input, Pagination, Select, Spinner, Table, cx } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
-import { useState } from 'react';
+import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+
 import { TableForm } from '../ongoing-casedata-errands.component';
 import { CasedataStatusLabelComponent } from './casedata-status-label.component';
 
-export const ErrandsTable: React.FC = () => {
+export const ErrandsTable: FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const data = useCasedataStore((s) => s.errands);

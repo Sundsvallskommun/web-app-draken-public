@@ -4,6 +4,7 @@ import { useSupportStore } from '@stores/index';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { Channels } from '@supportmanagement/services/support-errand-service';
 import { getSupportReporterStakeholder } from '@supportmanagement/services/support-stakeholder-service';
+
 import { SupportStatusLabelComponent } from '../ongoing-support-errands/components/support-status-label.component';
 
 export const SupportErrandSummary: React.FC<{}> = () => {

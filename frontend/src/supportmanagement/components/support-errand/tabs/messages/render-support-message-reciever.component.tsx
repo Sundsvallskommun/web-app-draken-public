@@ -3,8 +3,7 @@ import { Button } from '@sk-web-gui/button';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { Message } from '@supportmanagement/services/support-message-service';
 import { getApplicantName } from '@supportmanagement/services/support-stakeholder-service';
-import { useState } from 'react';
-
+import { FC, useState } from 'react';
 const MAX_VISIBLE_RECIPIENTS = 2;
 
 const getReciever = (msg: Message, supportErrand: SupportErrand): string | string[] => {
@@ -37,7 +36,7 @@ interface EmailRecipientsProps {
   recipients: string[];
 }
 
-const EmailRecipients: React.FC<EmailRecipientsProps> = ({ recipients }) => {
+const EmailRecipients: FC<EmailRecipientsProps> = ({ recipients }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const totalCount = recipients.length;
@@ -62,7 +61,7 @@ const EmailRecipients: React.FC<EmailRecipientsProps> = ({ recipients }) => {
   );
 };
 
-export const RenderSupportMessageReciever: React.FC<{ selectedMessage: Message; errand: SupportErrand }> = ({
+export const RenderSupportMessageReciever: FC<{ selectedMessage: Message; errand: SupportErrand }> = ({
   selectedMessage,
   errand,
 }) => {

@@ -1,16 +1,16 @@
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
 import { CommunicationCommunicationTypeEnum } from '@common/data-contracts/supportmanagement/data-contracts';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { isSupportErrandLocked, Status, validateAction } from '@supportmanagement/services/support-errand-service';
 import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
 import { Mail } from 'lucide-react';
+import { FC, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import React, { useMemo, useState } from 'react';
 import { SupportMessageForm } from '../../../support-message-form/support-message-form.component';
 import MessageTreeComponent from './support-messages-tree.component';
 
-export const SupportMessagesTab: React.FC<{
+export const SupportMessagesTab: FC<{
   messages: Message[];
   messageTree: Message[];
   supportConversations: Message[];
@@ -38,7 +38,7 @@ export const SupportMessagesTab: React.FC<{
     [props.messageTree, props.conversationMessageTree]
   );
 
-  const allowed = useMemo(() => supportErrand ? validateAction(supportErrand, user) : false, [user, supportErrand]);
+  const allowed = useMemo(() => (supportErrand ? validateAction(supportErrand, user) : false), [user, supportErrand]);
 
   const onSelect = (message: Message) => {
     if (message.conversationId && message.conversationId !== '') {

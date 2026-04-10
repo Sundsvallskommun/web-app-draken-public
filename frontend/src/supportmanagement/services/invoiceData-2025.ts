@@ -1,4 +1,4 @@
-import { InvoiceActivity, InvoiceType, InternalCustomerIdentity, ExternalCustomerIdentity } from './invoiceSettings';
+import { ExternalCustomerIdentity, InternalCustomerIdentity, InvoiceActivity, InvoiceType } from './invoiceSettings';
 
 export const invoiceData2025: {
   category: 'SALARY_AND_PENSION';

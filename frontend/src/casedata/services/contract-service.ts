@@ -5,9 +5,6 @@ import {
   Attachment,
   AttachmentCategory,
   Contract,
-  Stakeholder as ContractStakeholder,
-  StakeholderRole as ContractStakeholderRole,
-  StakeholderType as ContractStakeholderType,
   ContractType,
   Fees,
   InvoicedIn,
@@ -15,23 +12,27 @@ import {
   PageContract,
   Parameter,
   Party,
+  Stakeholder as ContractStakeholder,
+  StakeholderRole as ContractStakeholderRole,
+  StakeholderType as ContractStakeholderType,
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
-import { CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { PrettyRole, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact, StakeholderType } from '@casedata/interfaces/stakeholder';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+import { EstateInfoSearch } from '@common/interfaces/estate-details';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
-import { toBase64 } from '@common/utils/toBase64';
-import { AxiosResponse } from 'axios';
-import { saveExtraParameters } from './casedata-extra-parameters-service';
-import { UploadFile } from '@sk-web-gui/react';
 import { base64ToFile } from '@common/services/attachment-service';
 import { getSingleFacilityByDesignation } from '@common/services/facilities-service';
-import { EstateInfoSearch } from '@common/interfaces/estate-details';
+import { toBase64 } from '@common/utils/toBase64';
+import { UploadFile } from '@sk-web-gui/react';
+import { AxiosResponse } from 'axios';
+import { CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
+
+import { saveExtraParameters } from './casedata-extra-parameters-service';
 
 export const contractTypes = [
   { label: 'Arrende', key: ContractType.LEASE_AGREEMENT },
@@ -40,6 +41,7 @@ export const contractTypes = [
   { label: 'Korttidsarrende', key: ContractType.SHORT_TERM_LEASE_AGREEMENT },
   { label: 'Tomträtt', key: ContractType.LEASEHOLD },
   { label: 'Hyresobjekt', key: ContractType.OBJECT_LEASE },
+  { label: 'Skötselavtal', key: ContractType.MAINTENANCE_AGREEMENT },
 ];
 
 export const leaseTypes = [
@@ -48,7 +50,10 @@ export const leaseTypes = [
   { label: 'Jaktarrende', key: LeaseType.USUFRUCT_HUNTING },
   { label: 'Jordbruksarrende', key: LeaseType.USUFRUCT_FARMING },
   { label: 'Lägenhetsarrende', key: LeaseType.LAND_LEASE_MISC },
-  { label: 'Nyttjanderätt', key: LeaseType.USUFRUCT_MISC },
+  { label: 'Arrende', key: LeaseType.USUFRUCT_MISC },
+  { label: 'Markupplåtelseavtal', key: LeaseType.LAND_LEASE_LICENSE },
+  { label: 'Av kommunen arrenderad mark', key: LeaseType.LAND_LEASE_MUNICIPALITY },
+  { label: 'Arrende', key: LeaseType.OTHER_FEE }, // Ska inte kunna finnas för nya avtal
 ];
 
 export const isLeaseAgreement = (contractType: ContractType) =>
@@ -58,6 +63,26 @@ export const isLeaseAgreement = (contractType: ContractType) =>
     ContractType.SHORT_TERM_LEASE_AGREEMENT,
     ContractType.LEASEHOLD,
   ].includes(contractType);
+
+export const hasRecurringFee = (contractType: ContractType, leaseType?: LeaseType) =>
+  [
+    ContractType.LAND_LEASE_PUBLIC,
+    ContractType.OBJECT_LEASE,
+    ContractType.LEASEHOLD,
+    ContractType.LEASE_AGREEMENT,
+  ].includes(contractType) ||
+  (contractType === ContractType.LEASE_AGREEMENT &&
+    !!leaseType &&
+    [
+      LeaseType.SITE_LEASE_COMMERCIAL,
+      LeaseType.LAND_LEASE_RESIDENTIAL,
+      LeaseType.LAND_LEASE_MISC,
+      LeaseType.USUFRUCT_HUNTING,
+      LeaseType.USUFRUCT_FARMING,
+      LeaseType.USUFRUCT_MISC,
+      LeaseType.LAND_LEASE_LICENSE,
+      LeaseType.OTHER_FEE,
+    ].includes(leaseType));
 
 export const roleLabels: { [key in ContractStakeholderRole]: string } = {
   BUYER: 'Köpare',
@@ -82,8 +107,8 @@ export const defaultKopeavtal: ContractData = {
   propertyDesignations: [],
   buyers: [],
   sellers: [],
-  generateInvoice: 'false' as 'true' | 'false',
-  indexAdjusted: 'false' as 'true' | 'false',
+  generateInvoice: 'false',
+  indexAdjusted: 'true',
 };
 
 export const defaultLagenhetsarrende: ContractData = {
@@ -123,7 +148,7 @@ export const defaultLagenhetsarrende: ContractData = {
     },
   ],
   generateInvoice: 'true',
-  indexAdjusted: 'false' as 'true' | 'false',
+  indexAdjusted: 'true',
 };
 
 export const saveContract: (contract: ContractData) => Promise<Contract> = (contract) => {

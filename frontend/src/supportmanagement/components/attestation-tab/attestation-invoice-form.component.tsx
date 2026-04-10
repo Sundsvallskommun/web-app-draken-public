@@ -1,5 +1,6 @@
 import { useConfigStore, useUserStore } from '@stores/index';
 import { maybe, prettyTime } from '@common/services/helper-service';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Divider, FormErrorMessage, Select, Table, useSnackbar } from '@sk-web-gui/react';
 import {
@@ -11,15 +12,15 @@ import {
   setBillingRecordStatus,
 } from '@supportmanagement/services/support-billing-service';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { Check, ThumbsDown } from 'lucide-react';
 import NextLink from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { FC, useCallback, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
-import BillingForm from '../billing/billing-form.component';
-import { getToastOptions } from '@common/utils/toast-message-settings';
-import { Check, ThumbsDown } from 'lucide-react';
 
-export const AttestationInvoiceForm: React.FC<{
+import BillingForm from '../billing/billing-form.component';
+
+export const AttestationInvoiceForm: FC<{
   setUnsaved?: (unsaved: boolean) => void;
   update: (recordId: string) => void;
   selectedrecord: CBillingRecord;

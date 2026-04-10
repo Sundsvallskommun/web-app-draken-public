@@ -86,7 +86,12 @@ const downloadFile = (name: string, url: string) => {
   document.body.removeChild(link);
 };
 
-export const downloadPdf = (d: { pdfBase64: string; error?: string }, name: string, successHandler: () => void, errorHandler: () => void) => {
+export const downloadPdf = (
+  d: { pdfBase64: string; error?: string },
+  name: string,
+  successHandler: () => void,
+  errorHandler: () => void
+) => {
   if (typeof d.error === 'undefined' && typeof d.pdfBase64 !== 'undefined') {
     const byteCharacters = atob(d.pdfBase64);
     const byteNumbers = new Array(byteCharacters.length);

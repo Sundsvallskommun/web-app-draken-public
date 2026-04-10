@@ -10,14 +10,13 @@ import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
 import {
   ColorSchemeMode,
   ConfirmationDialogContextProvider,
-  GuiProvider,
   defaultTheme,
   extendTheme,
+  GuiProvider,
 } from '@sk-web-gui/react';
 import store from '@supportmanagement/services/storage-service';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import dayjs from 'dayjs';
-import 'dayjs/locale/se';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import utc from 'dayjs/plugin/utc';
 import { ReactNode, useEffect, useMemo, useState } from 'react';

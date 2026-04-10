@@ -1,14 +1,15 @@
+import 'react-image-crop/dist/ReactCrop.css';
+
 import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
 import { getImageAspect } from '@casedata/services/casedata-attachment-service';
 import { saveCroppedImage } from '@casedata/services/casedata-errand-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { useConfigStore } from '@stores/index';
 import { Button, cx, Image } from '@sk-web-gui/react';
-import { useRef, useState } from 'react';
-import ReactCrop, { centerCrop, Crop, makeAspectCrop, PixelCrop } from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
+import { useConfigStore } from '@stores/index';
 import { ArrowLeft, Check, CircleX } from 'lucide-react';
+import { SyntheticEvent, useRef, useState } from 'react';
+import ReactCrop, { centerCrop, Crop, makeAspectCrop, PixelCrop } from 'react-image-crop';
 
 export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachment; onClose: () => void }> = (
   props
@@ -99,7 +100,7 @@ export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachm
     );
   }
 
-  function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+  function onImageLoad(e: SyntheticEvent<HTMLImageElement>) {
     const { width, height } = e.currentTarget;
     if (aspect) {
       setCrop(centerAspectCrop(width, height, aspect));

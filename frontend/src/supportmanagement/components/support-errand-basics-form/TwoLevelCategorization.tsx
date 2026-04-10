@@ -1,12 +1,9 @@
-import { useMetadataStore, useSupportStore } from '@stores/index';
 import { FormControl, FormErrorMessage, FormLabel, Select } from '@sk-web-gui/react';
-import {
-  isSupportErrandLocked,
-  SupportErrand,
-} from '@supportmanagement/services/support-errand-service';
-import { useTranslation } from 'react-i18next';
+import { useMetadataStore, useSupportStore } from '@stores/index';
+import { isSupportErrandLocked, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { useMemo } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 export const TwoLevelCategorization: React.FC = () => {
   const supportErrand = useSupportStore((s) => s.supportErrand);

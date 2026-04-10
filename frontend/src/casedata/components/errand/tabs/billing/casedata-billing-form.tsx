@@ -12,15 +12,16 @@ import { getErrand } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { Button, Divider, useSnackbar } from '@sk-web-gui/react';
-import { useCallback, useEffect, useState } from 'react';
+import { Plus } from 'lucide-react';
+import { FC, useCallback, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
+
 import { AddBillingService } from './add-billing-service.component';
 import { BillingLeaseholder } from './billing-leaseholder.component';
 import { BillingServiceTable } from './billing-service-table.component';
 import { BillingSpecifications } from './billing-specifications.component';
 import { BillingTable } from './billing-table.component';
-import { Plus } from 'lucide-react';
 
 export const CaseDataBillingForm: React.FC = () => {
   const errand = useCasedataStore((s) => s.errand);
@@ -131,6 +132,16 @@ export const CaseDataBillingForm: React.FC = () => {
         position: 'bottom',
         closeable: true,
         message: 'Ange kundens referens',
+        status: 'error',
+      });
+      return;
+    }
+
+    if (!data.specifications.avitext?.trim()) {
+      toastMessage({
+        position: 'bottom',
+        closeable: true,
+        message: 'Ange avitext för fakturan',
         status: 'error',
       });
       return;
@@ -271,7 +282,8 @@ export const CaseDataBillingForm: React.FC = () => {
               </Button>
             </div>
             <div className="flex flex-col pt-24">
-              <h3 className="text-h3-md pb-16">Skapade fakturaunderlag</h3>
+              <h3 className="text-h3-md pb-6">Skapade fakturaunderlag</h3>
+              <span className="pb-16">Aviserade fakturor kommer att visas i avtalsöversikten</span>
               <BillingTable
                 errand={errand!}
                 billingRecords={billingRecords}

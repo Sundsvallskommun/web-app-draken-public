@@ -1,11 +1,12 @@
 import { useSupportStore } from '@stores/index';
 import { Disclosure } from '@sk-web-gui/react';
 import { ApiSupportErrand, SupportErrand } from '@supportmanagement/services/support-errand-service';
-import React, { useEffect } from 'react';
 import { UseFormReturn, useFormContext } from 'react-hook-form';
 import { SupportErrandBasicsAboutForm } from '../support-errand-basics-form/support-errand-basics-about-form.component';
 import { Info } from 'lucide-react';
-export const SupportErrandBasicsAboutDisclosure: React.FC<{
+import { FC, useEffect } from 'react';
+
+export const SupportErrandBasicsAboutDisclosure: FC<{
   errand: ApiSupportErrand;
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;

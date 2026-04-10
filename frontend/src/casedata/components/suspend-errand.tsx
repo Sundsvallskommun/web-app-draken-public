@@ -1,16 +1,14 @@
-import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { getErrand, isErrandLocked, setErrandStatus } from '@casedata/services/casedata-errand-service';
-import { User } from '@common/interfaces/user';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, FormLabel, Input, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';
+import { CirclePause } from 'lucide-react';
 import { useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { CirclePause } from 'lucide-react';
 
 const yupSuspendForm = yup.object().shape({
   date: yup.string().required('Datum är obligatoriskt'),

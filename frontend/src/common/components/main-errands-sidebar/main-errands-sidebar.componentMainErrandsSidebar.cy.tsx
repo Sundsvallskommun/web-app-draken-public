@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { MainErrandsSidebar } from './main-errands-sidebar.component';
-import { mockMe } from '@cypress/e2e/case-data/fixtures/mockMe';
 import { User } from '@common/interfaces/user';
+import { mockMe } from '@cypress/e2e/case-data/fixtures/mockMe';
 import { mockNotifications } from '@cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useState } from 'react';
+import { MainErrandsSidebar } from './main-errands-sidebar.component';
 
 describe('<MainErrandsSidebar />', () => {
   it('renders', () => {
@@ -16,8 +16,8 @@ describe('<MainErrandsSidebar />', () => {
 
       return (
         <MainErrandsSidebar
-          showAttestationTable={undefined}
-          setShowAttestationTable={undefined}
+          showAttestationTable={false}
+          setShowAttestationTable={() => {}}
           open={open}
           setOpen={setOpen}
         />

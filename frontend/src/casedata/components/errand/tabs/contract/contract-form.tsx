@@ -6,6 +6,7 @@ import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-serv
 import {
   getContractStakeholderName,
   getErrandPropertyInformation,
+  hasRecurringFee,
   isLeaseAgreement,
   prettyContractRoles,
 } from '@casedata/services/contract-service';
@@ -25,13 +26,14 @@ import {
   Textarea,
 } from '@sk-web-gui/react';
 import { Calendar, FilePen, Info, MapPin, Receipt, RefreshCcw, Users, Wallet } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, FC, useEffect, useMemo, useState } from 'react';
 import { useFieldArray, useFormContext } from 'react-hook-form';
+
 import { ContractAttachments } from './contract-attachments';
 
-export const ContractForm: React.FC<{
+export const ContractForm: FC<{
   changeBadgeColor?: (badgeId: string) => void;
-  onSave?: (data: ContractData) => Promise<void>;
+  onSave?: (data: ContractData, section?: string) => Promise<void>;
   readOnly?: boolean;
   existingContract: ContractData;
   buyers: StakeholderWithPersonnumber[];
@@ -187,13 +189,12 @@ export const ContractForm: React.FC<{
         );
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existingContract]);
 
   const toPropertyDesignation = (pd: { name?: string } | string): string =>
     typeof pd === 'object' && pd.name ? pd.name : typeof pd === 'string' ? pd : '';
 
-  const saveButton = () => {
+  const saveButton = (section?: string) => {
     if (readOnly) return null;
     return (
       <div className="my-md">
@@ -207,7 +208,7 @@ export const ContractForm: React.FC<{
               onClick={handleSubmit(
                 () => {
                   setLoading(true);
-                  onSave?.({ ...getValues() }).then(() => {
+                  onSave?.({ ...getValues() }, section).then(() => {
                     setLoading(false);
                   });
                 },
@@ -615,7 +616,7 @@ export const ContractForm: React.FC<{
               <div className="flex justify-between gap-32 items-end mb-md">
                 <FormControl
                   className="flex-grow"
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     if (!isEditable('general')) return;
                     setValue('extension.autoExtend', e.target.value === 'true');
                     trigger();
@@ -670,7 +671,7 @@ export const ContractForm: React.FC<{
           </Disclosure.Content>
         </Disclosure>
       )}
-      {contractType === ContractType.LEASE_AGREEMENT && (
+      {hasRecurringFee(contractType, watch().leaseType) && (
         <Disclosure
           data-cy="lopande-disclosure"
           color="gronsta"
@@ -723,7 +724,7 @@ export const ContractForm: React.FC<{
                   <div className="flex gap-18 justify-start">
                     <FormControl
                       className="flex-grow"
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
                         if (!isEditable('general')) return;
                         setValue('indexAdjusted', e.target.value as 'true' | 'false');
                       }}
@@ -752,7 +753,7 @@ export const ContractForm: React.FC<{
                   <div className="flex gap-18 justify-start">
                     <FormControl
                       className="flex-grow"
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
                         if (!isEditable('general')) return;
                         setValue('invoicing.invoiceInterval', e.target.value as IntervalType);
                       }}
@@ -797,15 +798,15 @@ export const ContractForm: React.FC<{
                     </FormControl>
                   </div>
                   <div className="flex gap-18 justify-start">
-                    <FormControl>
-                      <FormLabel>Ange fakturans referensnummer</FormLabel>
+                    <FormControl className="w-[36.7rem]">
+                      <FormLabel>Ange fakturans referens</FormLabel>
                       <Input
                         type="text"
                         readOnly={!isEditable('billing')}
                         {...register(`extraParameters.${invoiceInfoIndex}.parameters.markup`)}
                         data-cy="invoice-markup-input"
                       />
-                      <small>Om fakturamottagaren är ett företag måste referens anges.</small>
+                      <small>Referens måste alltid anges.</small>
                       <Input
                         type="hidden"
                         {...register(`extraParameters.${invoiceInfoIndex}.name`)}
@@ -841,7 +842,7 @@ export const ContractForm: React.FC<{
                   </div>
                 </>
               ) : null}
-              {saveButton()}
+              {saveButton('billing')}
             </div>
           </Disclosure.Content>
         </Disclosure>

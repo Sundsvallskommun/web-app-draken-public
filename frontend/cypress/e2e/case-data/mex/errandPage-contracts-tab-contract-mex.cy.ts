@@ -330,7 +330,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="invoice-interval-halfyearly-radiobutton"]').should('exist');
       cy.get('[data-cy="invoice-interval-quarterly-radiobutton"]').should('exist').check({ force: true });
 
-      cy.get('[data-cy="invoice-markup-input"]').should('exist');
+      cy.get('[data-cy="invoice-markup-input"]').should('exist').type('TEST markup');
 
       cy.get('[data-cy="fees-additional-information-0-input"]').should('exist');
       cy.get('[data-cy="fees-additional-information-1-input"]').should('exist').type('Foobar');
@@ -421,6 +421,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
             total: null,
             currency: 'SEK',
             additionalInformation: ['Avgift, lägenhetsarrende. Fastigheter: ', ''],
+            indexYear: 2025,
+            indexNumber: 419.35,
+            indexationRate: 1,
+            indexType: 'KPI 80',
           },
           invoicing: { invoicedIn: 'ADVANCE' },
           startDate: '',

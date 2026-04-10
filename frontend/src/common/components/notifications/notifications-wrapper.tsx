@@ -12,10 +12,11 @@ import {
   acknowledgeSupportNotification,
   getSupportNotifications,
 } from '@supportmanagement/services/support-notification-service';
-import { useEffect, useState } from 'react';
+import { Bell, X } from 'lucide-react';
+import { FC, useEffect, useState } from 'react';
+
 import { NotificationItem } from './notification-item';
 import { getFilteredNotifications } from './notification-utils';
-import { Bell, X } from 'lucide-react';
 
 export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boolean) => void }> = ({
   show,

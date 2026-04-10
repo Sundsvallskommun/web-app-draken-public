@@ -20,10 +20,12 @@ import {
 } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 import { All, ApiPriority, Priority } from '@casedata/interfaces/priority';
+import { Role } from '@casedata/interfaces/role';
 import {
-  MAX_FILE_SIZE_MB,
   fetchErrandAttachments,
+  MAX_FILE_SIZE_MB,
   validateAttachmentsForDecision,
 } from '@casedata/services/casedata-attachment-service';
 import {
@@ -31,9 +33,6 @@ import {
   makeStakeholdersList,
   stakeholder2Contact,
 } from '@casedata/services/casedata-stakeholder-service';
-
-import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
-import { Role } from '@casedata/interfaces/role';
 import { User } from '@common/interfaces/user';
 import { getApplicationEnvironment, isMEX, isPT } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
@@ -41,6 +40,7 @@ import { useCasedataStore, useConfigStore } from '@stores/index';
 import { useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
+
 import { ApiResponse, apiService } from '../../common/services/api-service';
 import { saveErrandNote } from './casedata-errand-notes-service';
 import { extraParametersToUppgiftMapper } from './casedata-extra-parameters-service';

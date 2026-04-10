@@ -1,17 +1,24 @@
+import { Type as TypeTransformer } from 'class-transformer';
+import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import dayjs from 'dayjs';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { CASEDATA_NAMESPACE, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   AddressAddressCategoryEnum,
+  ContactInformationContactTypeEnum,
   Errand as CasedataErrandDTO,
   ErrandChannelEnum as CasedataErrandDtoChannelEnum,
   ErrandPriorityEnum as CasedataErrandDtoPriorityEnum,
+  Facility as FacilityDTO,
   Stakeholder as CasedataStakeholderDTO,
   StakeholderTypeEnum as CasedataStakeholderDtoTypeEnum,
-  ContactInformationContactTypeEnum,
-  Facility as FacilityDTO,
 } from '@/data-contracts/case-data/data-contracts';
 import {
   ContactChannel,
+  Errand as SupportErrand,
   ErrandAction,
   ErrandAttachment,
   ExternalTag,
@@ -19,7 +26,6 @@ import {
   Notification,
   PageErrand,
   Parameter,
-  Errand as SupportErrand,
   Priority as SupportPriority,
   Stakeholder as SupportStakeholder,
   Suspension,
@@ -39,11 +45,6 @@ import ApiService from '@/services/api.service';
 import { isIK, isKA, isKC, isLOP, isMSVA, isROB, isSE } from '@/services/application.service';
 import { logger } from '@/utils/logger';
 import { apiURL, buildCategoryFilter, findLeafComponents, luhnCheck, removeUnreachablePaths, toOffsetDateTime, withRetries } from '@/utils/util';
-import { Type as TypeTransformer } from 'class-transformer';
-import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
-import dayjs from 'dayjs';
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
 
 export enum CustomerType {
   PRIVATE,
@@ -706,48 +707,52 @@ export class SupportErrandController {
             type: 'UNCATEGORIZED',
           }
         : isKA()
-        ? {
-            category: 'ADMINISTRATION',
-            type: 'ADMINISTRATION/CONTACT_CENTER',
-          }
-        : isLOP()
-        ? {
-            category: 'SALARY',
-            type: 'SALARY.UNCATEGORIZED',
-          }
-        : isIK()
-        ? {
-            category: 'KSK_SERVICE_CENTER',
-            type: 'KSK_SERVICE_CENTER.UNCATEGORIZED',
-          }
-        : isMSVA()
-        ? {
-            category: 'MSVA',
-            type: 'MSVA.UNCATEGORIZED',
-          }
-        : isROB()
-        ? {
-            category: 'COMPLETE_RECRUITMENT',
-            type: 'COMPLETE_RECRUITMENT.RETAKE',
-          }
-        : isSE()
-        ? {
-            category: 'UNCATEGORIZED',
-            type: 'UNCATEGORIZED/UNCATEGORISED',
-          }
-        : {
-            category: 'CONTACT_SUNDSVALL',
-            type: 'UNCATEGORIZED',
-          },
+          ? {
+              category: 'ADMINISTRATION',
+              type: 'ADMINISTRATION/CONTACT_CENTER',
+            }
+          : isLOP()
+            ? {
+                category: 'SALARY',
+                type: 'SALARY.UNCATEGORIZED',
+              }
+            : isIK()
+              ? {
+                  category: 'KSK_SERVICE_CENTER',
+                  type: 'KSK_SERVICE_CENTER.UNCATEGORIZED',
+                }
+              : isMSVA()
+                ? {
+                    category: 'MSVA',
+                    type: 'MSVA.UNCATEGORIZED',
+                  }
+                : isROB()
+                  ? {
+                      category: 'COMPLETE_RECRUITMENT',
+                      type: 'COMPLETE_RECRUITMENT.RETAKE',
+                    }
+                  : isSE()
+                    ? {
+                        category: 'UNCATEGORIZED',
+                        type: 'UNCATEGORIZED/UNCATEGORISED',
+                      }
+                    : {
+                        category: 'CONTACT_SUNDSVALL',
+                        type: 'UNCATEGORIZED',
+                      },
       labels: isLOP()
         ? getDefaultLabels({ category: 'SALARY', type: 'SALARY/UNCATEGORIZED', subType: 'SALARY/UNCATEGORIZED/UNCATEGORIZED' })
         : isIK()
-        ? getDefaultLabels({ category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER/UNCATEGORIZED' })
-        : isKA()
-        ? getDefaultLabels({ category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER', subType: 'ADMINISTRATION/CONTACT_CENTER/GENERAL' })
-        : isSE()
-        ? getDefaultLabels({ category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' })
-        : [],
+          ? getDefaultLabels({ category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER/UNCATEGORIZED' })
+          : isKA()
+            ? getDefaultLabels({
+                category: 'ADMINISTRATION',
+                type: 'ADMINISTRATION/CONTACT_CENTER',
+                subType: 'ADMINISTRATION/CONTACT_CENTER/GENERAL',
+              })
+            : isSE()
+              ? getDefaultLabels({ category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' })
+              : [],
       priority: 'MEDIUM' as SupportPriority,
       status: Status.NEW,
       channel: 'PHONE',
@@ -899,11 +904,11 @@ export class SupportErrandController {
                           value: c.value,
                         }
                       : c.type === ContactChannelType.EMAIL
-                      ? {
-                          contactType: ContactInformationContactTypeEnum.EMAIL,
-                          value: c.value,
-                        }
-                      : null,
+                        ? {
+                            contactType: ContactInformationContactTypeEnum.EMAIL,
+                            value: c.value,
+                          }
+                        : null,
                   )
                   .filter((x): x is NonNullable<typeof x> => x !== null)
               : [],
@@ -937,11 +942,11 @@ export class SupportErrandController {
                           value: c.value,
                         }
                       : c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.EMAIL
-                      ? {
-                          contactType: ContactInformationContactTypeEnum.EMAIL,
-                          value: c.value,
-                        }
-                      : null,
+                        ? {
+                            contactType: ContactInformationContactTypeEnum.EMAIL,
+                            value: c.value,
+                          }
+                        : null,
                   )
                   .filter((x): x is NonNullable<typeof x> => x !== null)
               : [],
@@ -998,7 +1003,7 @@ export class SupportErrandController {
       caseType: MEXCaseType.MEX_FORWARDED_FROM_CONTACTSUNDSVALL as any,
       priority: existingSupportErrand.data.priority as unknown as CasedataErrandDtoPriorityEnum,
       channel: casedataChannel,
-      description: !!data?.message ? data?.message : existingSupportErrand.data.description,
+      description: data?.message ? data?.message : existingSupportErrand.data.description,
       stakeholders: stakeholders,
       // TODO How to map facilities? How are property designations stored in SupportManagement?
       facilities: facilities,

@@ -10,10 +10,9 @@ import {
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useCasedataStore, useConfigStore } from '@stores/index';
 import { Button, FileUpload, PopupMenu, UploadFile, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useEffect, useState } from 'react';
 import { Eye, FilePen, Trash } from 'lucide-react';
-
-export const ContractAttachments: React.FC<{
+import { FC, useEffect, useState } from 'react';
+export const ContractAttachments: FC<{
   existingContract: ContractData;
   readOnly?: boolean;
 }> = ({ existingContract, readOnly = false }) => {

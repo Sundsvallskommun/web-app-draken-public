@@ -1,18 +1,19 @@
 import { useMetadataStore, useSupportStore } from '@stores/index';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import {
+  emptyContact,
   ExternalIdType,
+  isSupportErrandLocked,
   SupportErrand,
   SupportStakeholderFormModel,
-  emptyContact,
-  isSupportErrandLocked,
 } from '@supportmanagement/services/support-errand-service';
 import { buildStakeholdersList } from '@supportmanagement/services/support-stakeholder-service';
-import { useEffect, useState } from 'react';
-import { UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
+import { Info, Users } from 'lucide-react';
+import { FC, useEffect, useState } from 'react';
+import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
+
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
 import { appConfig } from '@config/appconfig';
-import { Info, Users } from 'lucide-react';
 
 interface SupportContactsProps {
   setUnsaved: (unsaved: boolean) => void;
@@ -20,7 +21,7 @@ interface SupportContactsProps {
   registeringNewErrand?: boolean;
 }
 
-export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) => {
+export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
   const [selectedContact, setSelectedContact] = useState<SupportStakeholderFormModel>();
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
@@ -46,7 +47,6 @@ export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) 
     setStakeholderCustomers(supportErrand?.customer ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errandId]);
-
 
   const contactsFieldArray = useFieldArray({
     control,

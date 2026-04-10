@@ -1,8 +1,8 @@
 import { MessageAvatar } from '@common/components/message/message-avatar.component';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
-import sanitized, { formatMessage } from '@common/services/sanitizer-service';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import sanitized from '@common/services/sanitizer-service';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { getSupportConversationAttachment } from '@supportmanagement/services/support-conversation-service';
 import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
 import {
@@ -13,12 +13,12 @@ import {
 } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
 import { CornerDownRight, Image, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { RenderSupportMessageReciever } from './render-support-message-reciever.component';
 
-export const RenderedSupportMessage: React.FC<{
+export const RenderedSupportMessage: FC<{
   update: () => void;
-  setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMessageForm: Dispatch<SetStateAction<boolean>>;
   message: MessageNode;
   selected: string;
   onSelect: (msg: Message) => void;

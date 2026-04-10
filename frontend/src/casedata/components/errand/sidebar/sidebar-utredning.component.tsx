@@ -1,19 +1,17 @@
 'use client';
 
 import { DecisionOutcomeKey } from '@casedata/interfaces/decision';
-import { IErrand } from '@casedata/interfaces/errand';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
 import { renderUtredningPdf, saveDecision } from '@casedata/services/casedata-decision-service';
 import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import TextEditor from '@common/components/dynamic-text-editor';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
-import { User } from '@common/interfaces/user';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, cx, FormControl, FormErrorMessage, Input, useSnackbar } from '@sk-web-gui/react';
-import TextEditor from '@common/components/dynamic-text-editor';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';

@@ -2,7 +2,6 @@
 
 import { Attachment } from '@casedata/interfaces/attachment';
 import { Channels } from '@casedata/interfaces/channels';
-import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Role } from '@casedata/interfaces/role';
 import { ACCEPTED_UPLOAD_FILETYPES, getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
@@ -17,10 +16,9 @@ import {
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
+import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
-import { User } from '@common/interfaces/user';
 import { isMEX, isPT } from '@common/services/application-service';
 import {
   invalidPhoneMessage,
@@ -34,6 +32,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
   Chip,
+  cx,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -41,16 +40,15 @@ import {
   Modal,
   RadioButton,
   Select,
-  cx,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useTranslation } from 'react-i18next';
-import TextEditor from '@common/components/dynamic-text-editor';
-import { useEffect, useMemo, useState } from 'react';
-import { Resolver, useFieldArray, useForm } from 'react-hook-form';
-import * as yup from 'yup';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { File, Paperclip, X } from 'lucide-react';
+import { FC, useEffect, useMemo, useState } from 'react';
+import { Resolver, useFieldArray, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import * as yup from 'yup';
 
 export interface CasedataMessageTabFormModel {
   contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper' | 'draken' | 'minasidor' | 'katla';
@@ -156,7 +154,7 @@ let formSchema = yup
   })
   .required();
 
-export const MessageComposer: React.FC<{
+export const MessageComposer: FC<{
   message?: MessageNode;
   show: boolean;
   closeHandler: () => void;

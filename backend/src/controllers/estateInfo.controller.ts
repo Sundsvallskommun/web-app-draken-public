@@ -1,11 +1,12 @@
-import { apiServiceName } from '@/config/api-config';
-import { HttpException } from '@/exceptions/HttpException';
-import { EstateInfoSearch, EstateInformation } from '@/interfaces/estate-info.interface';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
 import { Controller, Get, Param, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+
+import { apiServiceName } from '@/config/api-config';
+import { HttpException } from '@/exceptions/HttpException';
+import { EstateInformation, EstateInfoSearch } from '@/interfaces/estate-info.interface';
 
 interface ResponseData {
   data: any;

@@ -7,6 +7,7 @@ import {
   CBillingRecordTypeEnum,
   CInvoiceRow,
 } from 'src/data-contracts/backend/data-contracts';
+
 import { BillingFormData, BillingServiceItem } from '../interfaces/billing';
 import { IErrand } from '../interfaces/errand';
 import { casedataInvoiceSettings, CasedataService } from './billing/casedata-invoice-settings';
@@ -90,7 +91,7 @@ const buildBillingRecord = (formData: BillingFormData, errand: IErrand): CBillin
       customerId,
       customerReference: formData.specifications.customerReference,
       ourReference: formData.specifications.ourReference,
-      description: formData.specifications.avitext || `Faktura för ärende ${errand.errandNumber}`,
+      description: formData.specifications.avitext || '',
       date: formData.specifications.rejectionDate || undefined,
       totalAmount: twoDecimals(totalAmount),
       invoiceRows,

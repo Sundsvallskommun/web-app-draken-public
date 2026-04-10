@@ -10,6 +10,7 @@ import {
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { formatOrgNr, latestBy, OrgNumberFormat } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
+
 import { getErrand } from './casedata-errand-service';
 
 export const getLastUpdatedAdministrator = (stakeholders: Stakeholder[]) => {
@@ -291,10 +292,12 @@ export const validateOwnerForSendingDecisionByLetter: (e: IErrand) => boolean = 
 };
 
 export const getStakeholderName: (c: CasedataOwnerOrContact) => string = (c) =>
-  c.stakeholderType === 'ORGANIZATION' ? (c.organizationName ?? '') : `${c.firstName} ${c.lastName}`;
+  c.stakeholderType === 'ORGANIZATION' ? c.organizationName ?? '' : `${c.firstName} ${c.lastName}`;
 
 export const getStakeholderSSN: (c: CasedataOwnerOrContact) => string = (c) => {
-  return c.stakeholderType === 'ORGANIZATION' ? (c.organizationNumber ?? '') : (c.personalNumber || '(personnummer saknas)');
+  return c.stakeholderType === 'ORGANIZATION'
+    ? c.organizationNumber ?? ''
+    : c.personalNumber || '(personnummer saknas)';
 };
 
 export const getSSNFromPersonId: (municipalityId: string, personId: string) => Promise<string> = (
