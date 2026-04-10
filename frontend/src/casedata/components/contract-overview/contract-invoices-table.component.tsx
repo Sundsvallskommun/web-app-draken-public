@@ -4,8 +4,9 @@ import {
   invoiceStatusColors,
   invoiceStatusLabels,
 } from '@casedata/services/contract-service';
+import { getNextScheduledBillingDate } from '@common/services/billing-data-collector-service';
 import { formatCurrency } from '@common/services/helper-service';
-import { Button, Label, Pagination, Spinner, Table } from '@sk-web-gui/react';
+import { Button, FormLabel, Label, Pagination, Spinner, Table } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { Download } from 'lucide-react';
 import { FC, useCallback, useEffect, useState } from 'react';
@@ -20,6 +21,7 @@ export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({ contract
   const [page, setPage] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(0);
   const [totalCount, setTotalCount] = useState<number>(0);
+  const [nextBillingDate, setNextBillingDate] = useState<string>('-');
   const pageSize = 5;
 
   const loadInvoices = useCallback(async () => {
@@ -44,6 +46,17 @@ export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({ contract
   useEffect(() => {
     loadInvoices();
   }, [loadInvoices]);
+
+  useEffect(() => {
+    getNextScheduledBillingDate(contractId || '')
+      .then((date) => {
+        setNextBillingDate(date || '-');
+      })
+      .catch((error) => {
+        console.error('Failed to load next scheduled billing date:', error);
+        setNextBillingDate('-');
+      });
+  }, [contractId]);
 
   const handleDownloadPdf = (invoiceId: string) => {
     // TODO: Implement PDF download functionality
@@ -85,6 +98,9 @@ export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({ contract
 
   return (
     <div className="max-w-full" data-cy="contract-invoices-table">
+      <div>
+        <FormLabel>Nästa faktureringsdatum:</FormLabel> <span data-cy="next-billing-date">{nextBillingDate}</span>
+      </div>
       <Table dense scrollable>
         <Table.Header>
           {headers.map((header, index) => (

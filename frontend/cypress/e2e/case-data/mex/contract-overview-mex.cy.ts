@@ -406,6 +406,34 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       });
 
       describe('Contract invoices (Fakturor)', () => {
+        it('displays next billing date from billing data collector', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
+          cy.intercept('GET', '**/billingdatacollector/*', '2026-06-01').as('getNextBillingDate');
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="fakturor-disclosure"]').click();
+
+          cy.wait('@getNextBillingDate');
+
+          cy.get('[data-cy="next-billing-date"]').should('contain.text', '2026-06-01');
+        });
+
+        it('displays dash when next billing date fails to load', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
+          cy.intercept('GET', '**/billingdatacollector/*', { statusCode: 500 }).as('getNextBillingDateFail');
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="fakturor-disclosure"]').click();
+
+          cy.wait('@getNextBillingDateFail');
+
+          cy.get('[data-cy="next-billing-date"]').should('contain.text', '-');
+        });
+
         it('displays fakturor disclosure section', () => {
           cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
           cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');

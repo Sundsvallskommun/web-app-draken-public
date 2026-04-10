@@ -8,6 +8,7 @@ import { ActiveDirectoryController } from './controllers/active-directory.contro
 import { AddressController } from './controllers/address.controller';
 import { AssetController } from './controllers/asset.controller';
 import { BillingController } from './controllers/billing.controller';
+import { BillingDataCollectorController } from './controllers/billingdatacollector.controller';
 import { CaseDataAttachmentController } from './controllers/casedata/casedata-attachment.controller';
 import { CaseDataConversationController } from './controllers/casedata/casedata-conversation.controller';
 import { CaseDataDecisionsController } from './controllers/casedata/casedata-decision.controller';
@@ -50,6 +51,7 @@ const app = new App(
     AddressController,
     AssetController,
     BillingController,
+    BillingDataCollectorController,
     CaseDataAttachmentController,
     CasedataContractsController,
     CaseDataDecisionsController,
