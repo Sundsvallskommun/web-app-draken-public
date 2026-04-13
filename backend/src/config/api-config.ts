@@ -41,6 +41,10 @@ export const APIS = [
     version: '4.4',
   },
   {
+    name: 'billing-data-collector',
+    version: '1.1',
+  },
+  {
     name: 'legalentity',
     version: '2.0',
   },

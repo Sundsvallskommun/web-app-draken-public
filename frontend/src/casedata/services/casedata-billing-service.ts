@@ -18,17 +18,14 @@ const PROCESS_PARAMETER_KEYS = ['process.displayPhase', 'process.phaseAction', '
 
 const buildInvoiceRows = (services: BillingServiceItem[]): CInvoiceRow[] => {
   return services.map((service) => {
-    const detailedDescriptions: string[] = [];
-    if (service.avitext) {
-      detailedDescriptions.push(service.avitext);
-    }
+    const detailedDescriptions = (service.descriptions || []).filter((d) => d !== '');
 
     const serviceConfig: CasedataService | undefined = casedataInvoiceSettings.services.find(
       (s) => s.id === service.serviceId
     );
 
     return {
-      descriptions: [service.name],
+      descriptions: [service.description || service.name],
       detailedDescriptions,
       totalAmount: twoDecimals(service.quantity * service.costPerUnit),
       costPerUnit: twoDecimals(service.costPerUnit),

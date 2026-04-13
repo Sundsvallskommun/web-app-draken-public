@@ -12,10 +12,11 @@
 
 /** Status model */
 export enum Status {
-  ACTIVE = "ACTIVE",
-  EXPIRED = "EXPIRED",
-  BLOCKED = "BLOCKED",
-  TEMPORARY = "TEMPORARY",
+  ACTIVE = 'ACTIVE',
+  DRAFT = 'DRAFT',
+  EXPIRED = 'EXPIRED',
+  BLOCKED = 'BLOCKED',
+  TEMPORARY = 'TEMPORARY',
 }
 
 export interface Problem {
@@ -189,13 +190,13 @@ export interface Asset {
 }
 
 export enum JsonNodeNodeTypeEnum {
-  ARRAY = "ARRAY",
-  BINARY = "BINARY",
-  BOOLEAN = "BOOLEAN",
-  MISSING = "MISSING",
-  NULL = "NULL",
-  NUMBER = "NUMBER",
-  OBJECT = "OBJECT",
-  POJO = "POJO",
-  STRING = "STRING",
+  ARRAY = 'ARRAY',
+  BINARY = 'BINARY',
+  BOOLEAN = 'BOOLEAN',
+  MISSING = 'MISSING',
+  NULL = 'NULL',
+  NUMBER = 'NUMBER',
+  OBJECT = 'OBJECT',
+  POJO = 'POJO',
+  STRING = 'STRING',
 }

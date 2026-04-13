@@ -17,7 +17,7 @@ import {
 } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
 import { Pen, Trash2 } from 'lucide-react';
-import { Fragment, useState } from 'react';
+import { useState } from 'react';
 import { CBillingRecord, CBillingRecordStatusEnum, CInvoiceRow } from 'src/data-contracts/backend/data-contracts';
 
 import { BillingStatusLabel } from './billing-status-label.component';
@@ -40,7 +40,9 @@ interface EditFormState {
 interface EditRowState {
   rowIndex: number;
   descriptions: string;
-  detailedDescriptions: string;
+  detailedDescription1: string;
+  detailedDescription2: string;
+  detailedDescription3: string;
   quantity: number;
   costPerUnit: number;
   costCenter: string;
@@ -221,7 +223,9 @@ export const BillingTable: React.FC<BillingTableProps> = ({
     setEditingRowState({
       rowIndex,
       descriptions: row.descriptions?.join(', ') || '',
-      detailedDescriptions: row.detailedDescriptions?.join(', ') || '',
+      detailedDescription1: row.detailedDescriptions?.[0] || '',
+      detailedDescription2: row.detailedDescriptions?.[1] || '',
+      detailedDescription3: row.detailedDescriptions?.[2] || '',
       quantity: row.quantity || 0,
       costPerUnit: row.costPerUnit || 0,
       costCenter: accountInfo?.costCenter || '',
@@ -250,7 +254,11 @@ export const BillingTable: React.FC<BillingTableProps> = ({
         return {
           ...row,
           descriptions: [editingRowState.descriptions],
-          detailedDescriptions: editingRowState.detailedDescriptions ? [editingRowState.detailedDescriptions] : [],
+          detailedDescriptions: [
+            editingRowState.detailedDescription1,
+            editingRowState.detailedDescription2,
+            editingRowState.detailedDescription3,
+          ].filter((d) => d !== ''),
           quantity: editingRowState.quantity,
           costPerUnit: editingRowState.costPerUnit,
           totalAmount: editingRowState.quantity * editingRowState.costPerUnit,
@@ -395,8 +403,9 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                     />
                   </FormControl>
                   <FormControl className="w-full">
-                    <FormLabel>Avviseringsdatum</FormLabel>
+                    <FormLabel>Aviseringsdatum</FormLabel>
                     <DatePicker
+                      min={new Date().toISOString().split('T')[0]}
                       value={editFormState?.date || ''}
                       onChange={(e) => handleFormChange('date', e.target.value)}
                     />
@@ -418,7 +427,6 @@ export const BillingTable: React.FC<BillingTableProps> = ({
             <Table dense>
               <Table.Header>
                 <Table.HeaderColumn>Beskrivning</Table.HeaderColumn>
-                <Table.HeaderColumn>Avitext</Table.HeaderColumn>
                 <Table.HeaderColumn>Antal</Table.HeaderColumn>
                 <Table.HeaderColumn>Pris</Table.HeaderColumn>
                 <Table.HeaderColumn>Summa</Table.HeaderColumn>
@@ -429,14 +437,15 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                   </>
                 )}
               </Table.Header>
-              <Table.Body>
-                {displayRows.map((row, rowIndex) => {
-                  const isEditingRow = isEditing && editingRowState?.rowIndex === rowIndex;
+              {displayRows.map((row, rowIndex) => {
+                const isEditingRow = isEditing && editingRowState?.rowIndex === rowIndex;
+                const colCount = isEditing ? 6 : 4;
 
-                  if (isEditingRow && editingRowState) {
-                    return (
-                      <tr key={rowIndex}>
-                        <td colSpan={7} className="p-0">
+                if (isEditingRow && editingRowState) {
+                  return (
+                    <tbody key={rowIndex}>
+                      <tr>
+                        <td colSpan={colCount} className="p-0">
                           <div className="flex flex-col gap-16 bg-background-color-mixin-1 p-18">
                             <div className="flex flex-row w-full gap-16">
                               <FormControl className="w-full">
@@ -446,15 +455,6 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                   onChange={(e) => handleRowFieldChange('descriptions', e.target.value)}
                                 />
                               </FormControl>
-                              <FormControl className="w-full">
-                                <FormLabel>Avitext</FormLabel>
-                                <Input
-                                  value={editingRowState.detailedDescriptions}
-                                  onChange={(e) => handleRowFieldChange('detailedDescriptions', e.target.value)}
-                                />
-                              </FormControl>
-                            </div>
-                            <div className="flex flex-row w-full gap-16">
                               <FormControl className="w-full">
                                 <FormLabel>Antal</FormLabel>
                                 <Input
@@ -473,13 +473,6 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                   step={0.01}
                                   value={editingRowState.costPerUnit}
                                   onChange={(e) => handleRowFieldChange('costPerUnit', parseFloat(e.target.value) || 0)}
-                                />
-                              </FormControl>
-                              <FormControl className="w-full">
-                                <FormLabel>Summa</FormLabel>
-                                <Input
-                                  disabled
-                                  value={`${(editingRowState.quantity * editingRowState.costPerUnit).toFixed(2)} kr`}
                                 />
                               </FormControl>
                             </div>
@@ -529,6 +522,30 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                 />
                               </FormControl>
                             </div>
+                            <div className="flex flex-col w-full gap-16">
+                              <FormControl className="w-full">
+                                <FormLabel>Utökad beskrivning</FormLabel>
+                                <Input
+                                  maxLength={51}
+                                  value={editingRowState.detailedDescription1}
+                                  onChange={(e) => handleRowFieldChange('detailedDescription1', e.target.value)}
+                                />
+                              </FormControl>
+                              <FormControl className="w-full">
+                                <Input
+                                  maxLength={51}
+                                  value={editingRowState.detailedDescription2}
+                                  onChange={(e) => handleRowFieldChange('detailedDescription2', e.target.value)}
+                                />
+                              </FormControl>
+                              <FormControl className="w-full">
+                                <Input
+                                  maxLength={51}
+                                  value={editingRowState.detailedDescription3}
+                                  onChange={(e) => handleRowFieldChange('detailedDescription3', e.target.value)}
+                                />
+                              </FormControl>
+                            </div>
                             <div className="flex flex-row gap-16">
                               <Button variant="secondary" onClick={handleCancelRowEdit}>
                                 Avbryt
@@ -540,79 +557,88 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                           </div>
                         </td>
                       </tr>
-                    );
-                  }
-
-                  const accountInfo = row.accountInformation?.[0];
-                  const colCount = isEditing ? 7 : 5;
-
-                  return (
-                    <Fragment key={rowIndex}>
-                      <Table.Row className="!border-b-0">
-                        <Table.Column>
-                          <span className="font-bold mt-6">{row.descriptions?.join(', ') || '-'}</span>
-                        </Table.Column>
-                        <Table.Column>
-                          <span className="mt-6">{row.detailedDescriptions?.join(', ') || '-'}</span>
-                        </Table.Column>
-                        <Table.Column>
-                          <span className="mt-6">{row.quantity || 0}</span>
-                        </Table.Column>
-                        <Table.Column>
-                          <span className="whitespace-nowrap mt-6">{(row.costPerUnit || 0).toFixed(2)} kr</span>
-                        </Table.Column>
-                        <Table.Column>
-                          <span className="whitespace-nowrap mt-6">
-                            {((row.quantity || 0) * (row.costPerUnit || 0)).toFixed(2)} kr
-                          </span>
-                        </Table.Column>
-                        {isEditing && (
-                          <>
-                            <Table.Column>
-                              <div className="mt-6">
-                                <Button
-                                  size="sm"
-                                  variant="tertiary"
-                                  iconButton
-                                  onClick={() => handleEditRow(rowIndex)}
-                                  disabled={editingRowState !== null}
-                                >
-                                  <Pen size={16} />
-                                </Button>
-                              </div>
-                            </Table.Column>
-                            <Table.Column>
-                              <div className="mt-6">
-                                <Button
-                                  size="sm"
-                                  inverted
-                                  color="error"
-                                  iconButton
-                                  onClick={() => handleDeleteRow(rowIndex)}
-                                  disabled={editingRowState !== null}
-                                >
-                                  <Trash2 size={16} />
-                                </Button>
-                              </div>
-                            </Table.Column>
-                          </>
-                        )}
-                      </Table.Row>
-                      {accountInfo && (
-                        <tr className="border-b-1 border-divider">
-                          <td colSpan={colCount} className="pl-16 pb-8 pt-6">
-                            <span className="text-small text-dark-secondary">
-                              Ansvar: {accountInfo.costCenter || '-'}, Underkonto: {accountInfo.subaccount || '-'},
-                              Verksamhet: {accountInfo.department || '-'}, Aktivitet: {accountInfo.activity || '-'},
-                              Projekt: {accountInfo.project || '-'}, Objekt: {accountInfo.article || '-'}
-                            </span>
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
+                    </tbody>
                   );
-                })}
-              </Table.Body>
+                }
+
+                const accountInfo = row.accountInformation?.[0];
+
+                return (
+                  <tbody key={rowIndex}>
+                    <Table.Row className="!border-b-0">
+                      <Table.Column>
+                        <div className="flex flex-col">
+                          <span className="font-bold mt-6">{row.descriptions?.join(', ') || '-'}</span>
+                          {row.detailedDescriptions?.some((d) => d) && (
+                            <div className="py-4">
+                              {row.detailedDescriptions
+                                .filter((d) => d)
+                                .map((desc, i) => (
+                                  <span key={i} className="text-small text-dark-secondary block">
+                                    {desc}
+                                  </span>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      </Table.Column>
+                      <Table.Column>
+                        <span className="mt-6">{row.quantity || 0}</span>
+                      </Table.Column>
+                      <Table.Column>
+                        <span className="whitespace-nowrap mt-6">{(row.costPerUnit || 0).toFixed(2)} kr</span>
+                      </Table.Column>
+                      <Table.Column>
+                        <span className="whitespace-nowrap mt-6">
+                          {((row.quantity || 0) * (row.costPerUnit || 0)).toFixed(2)} kr
+                        </span>
+                      </Table.Column>
+                      {isEditing && (
+                        <>
+                          <Table.Column>
+                            <div className="mt-6">
+                              <Button
+                                size="sm"
+                                variant="tertiary"
+                                iconButton
+                                onClick={() => handleEditRow(rowIndex)}
+                                disabled={editingRowState !== null}
+                              >
+                                <Pen size={16} />
+                              </Button>
+                            </div>
+                          </Table.Column>
+                          <Table.Column>
+                            <div className="mt-6">
+                              <Button
+                                size="sm"
+                                inverted
+                                color="error"
+                                iconButton
+                                onClick={() => handleDeleteRow(rowIndex)}
+                                disabled={editingRowState !== null}
+                              >
+                                <Trash2 size={16} />
+                              </Button>
+                            </div>
+                          </Table.Column>
+                        </>
+                      )}
+                    </Table.Row>
+                    {accountInfo && (
+                      <tr className="border-b-1 border-divider">
+                        <td colSpan={colCount} className="pl-16 pb-8 pt-2">
+                          <span className="text-small text-dark-secondary italic">
+                            Ansvar: {accountInfo.costCenter || '-'}, Underkonto: {accountInfo.subaccount || '-'},
+                            Verksamhet: {accountInfo.department || '-'}, Aktivitet: {accountInfo.activity || '-'},
+                            Projekt: {accountInfo.project || '-'}, Objekt: {accountInfo.article || '-'}
+                          </span>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                );
+              })}
             </Table>
 
             <div className="flex flex-row justify-between items-center">

@@ -1,4 +1,5 @@
 import { CasedataMessagesTab } from '@casedata/components/errand/tabs/messages/casedata-messages-tab';
+import { MEXCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { getAssets } from '@casedata/services/asset-service';
@@ -277,6 +278,7 @@ export const CasedataTabsWrapper: React.FC = () => {
             visibleFor:
               !isPT() && errand?.id
                 ? [
+                    ...(errand?.caseType === MEXCaseType.UPDATECONTRACT ? [ErrandPhase.aktualisering] : []),
                     ErrandPhase.utredning,
                     ErrandPhase.beslut,
                     ErrandPhase.hantera,
