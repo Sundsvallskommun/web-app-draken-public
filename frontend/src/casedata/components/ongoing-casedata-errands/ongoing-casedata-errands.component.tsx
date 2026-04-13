@@ -1,9 +1,9 @@
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { getStatusLabel, useErrands } from '@casedata/services/casedata-errand-service';
 import { ExportButton } from '@common/components/export-button/export-button.component';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { appConfig } from '@config/appconfig';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import store from '@supportmanagement/services/storage-service';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
@@ -24,7 +24,7 @@ export interface TableForm {
 
 export const OngoingCaseDataErrands: FC = () => {
   const filterForm = useForm<CaseDataFilter>({ defaultValues: CaseDataValues });
-  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, getValues } = filterForm;
+  const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, setValue, getValues } = filterForm;
   const tableForm = useForm<TableForm>({ defaultValues: { sortColumn: 'updated', sortOrder: 'desc', pageSize: 12 } });
   const { watch: watchTable, setValue: setTableValue } = tableForm;
   const { sortOrder, sortColumn, pageSize, page } = watchTable();
@@ -36,6 +36,18 @@ export const OngoingCaseDataErrands: FC = () => {
   const setSidebarLabel = useCasedataStore((s) => s.setSidebarLabel);
   const sidebarLabel = useCasedataStore((s) => s.sidebarLabel);
   const closedErrands = useCasedataStore((s) => s.closedErrands);
+  const selectedErrandStatuses = useCasedataStore((s) => s.selectedErrandStatuses);
+
+  useEffect(() => {
+    const current = getValues('status');
+    const same =
+      current.length === selectedErrandStatuses.length && current.every((s, i) => s === selectedErrandStatuses[i]);
+    if (!same) {
+      setValue('status', selectedErrandStatuses);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedErrandStatuses]);
+
   const startdate = watchFilter('startdate');
   const enddate = watchFilter('enddate');
   const queryFilter = watchFilter('query');
