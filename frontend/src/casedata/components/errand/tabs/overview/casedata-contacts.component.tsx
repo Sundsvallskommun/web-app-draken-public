@@ -8,9 +8,9 @@ import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { getStakeholderRelation } from '@casedata/services/casedata-stakeholder-service';
-import { useCasedataStore } from '@stores/index';
 import { appConfig } from '@config/appconfig';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
+import { useCasedataStore } from '@stores/index';
 import { Info, User, Users } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
@@ -102,10 +102,10 @@ export const CasedataContactsComponent: FC<CasedataContactsProps> = (props) => {
     const stakeholderModificationLocked = isStakeholderModificationLocked(contact);
 
     return (
-      <div className="w-full" key={`rendered-${contact.clientId ?? contact.id ?? index}`}>
+      <div className="w-full" key={`rendered-${contact.id || contact.clientId || index}`}>
         {selectedContact && isMatchingSelectedContact(selectedContact, contact) && (
           <SimplifiedContactForm
-            key={`form-${contact.clientId ?? contact.id ?? index}`}
+            key={`form-${contact.id || contact.clientId || index}`}
             disabled={errand ? isErrandLocked(errand) : false}
             setUnsaved={props.setUnsaved}
             contact={contact}
@@ -132,7 +132,6 @@ export const CasedataContactsComponent: FC<CasedataContactsProps> = (props) => {
                 updateStakeholderItem(matchingIndex, updated);
               }
               props.setUnsaved(true);
-              setSelectedContact(undefined);
             }}
             onClose={() => setSelectedContact(undefined)}
             id="edit"
@@ -397,7 +396,7 @@ export const CasedataContactsComponent: FC<CasedataContactsProps> = (props) => {
                     )
                     .map((stakeholder, idx) => {
                       return (
-                        <div key={`stakeholder-${stakeholder.clientId ?? stakeholder.id ?? idx}`}>
+                        <div key={`stakeholder-${stakeholder.id || stakeholder.clientId || idx}`}>
                           {renderContact(stakeholder, idx, 'Kontaktperson')}
                         </div>
                       );
