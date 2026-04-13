@@ -1,11 +1,7 @@
 'use client';
 
 import { getFeatureFlags } from '@common/services/feature-flag-service';
-import { getMe, getAdminUsers } from '@common/services/user-service';
-import { useUserStore } from '@stores/user-store';
-import { useConfigStore } from '@stores/config-store';
-import { useMetadataStore } from '@stores/metadata-store';
-import { useFeatureFlagStore } from '@stores/feature-flag-store';
+import { getAdminUsers, getMe } from '@common/services/user-service';
 import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
 import {
   ColorSchemeMode,
@@ -14,12 +10,16 @@ import {
   extendTheme,
   GuiProvider,
 } from '@sk-web-gui/react';
-import store from '@supportmanagement/services/storage-service';
+import { useConfigStore } from '@stores/config-store';
+import { useFeatureFlagStore } from '@stores/feature-flag-store';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useUiSettingsStore } from '@stores/ui-settings-store';
+import { useUserStore } from '@stores/user-store';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import dayjs from 'dayjs';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import utc from 'dayjs/plugin/utc';
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useSyncExternalStore } from 'react';
 
 dayjs.extend(utc);
 dayjs.locale('sv');
@@ -47,11 +47,11 @@ interface ClientApplicationProps {
 }
 
 function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   useEffect(() => {
     const municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '';
@@ -93,7 +93,11 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 function AppLayout({ children }: ClientApplicationProps) {
-  const [colorScheme, setColorScheme] = useState<ColorSchemeMode>(ColorSchemeMode.Light);
+  const colorScheme = useSyncExternalStore(
+    useUiSettingsStore.subscribe,
+    () => (useUiSettingsStore.getState().colorScheme as ColorSchemeMode) || ColorSchemeMode.Light,
+    () => ColorSchemeMode.Light
+  );
   const theme = useMemo(
     () =>
       extendTheme({
@@ -106,13 +110,6 @@ function AppLayout({ children }: ClientApplicationProps) {
       }),
     []
   );
-
-  useEffect(() => {
-    const saved = store.get('colorScheme') as ColorSchemeMode;
-    if (saved) {
-      setColorScheme(saved);
-    }
-  }, []);
 
   return (
     <GuiProvider theme={theme} colorScheme={colorScheme}>

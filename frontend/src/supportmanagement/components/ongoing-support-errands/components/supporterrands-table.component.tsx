@@ -1,7 +1,8 @@
 import { isKC } from '@common/services/application-service';
-import { useConfigStore, useSupportStore } from '@stores/index';
 import { Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
+import { useConfigStore, useSupportStore } from '@stores/index';
+import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { useSupportErrandTable } from '@supportmanagement/components/support-errand/useSupportErrandTable';
 import { Status, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { globalAcknowledgeSupportNotification } from '@supportmanagement/services/support-notification-service';
@@ -14,7 +15,7 @@ export const SupportErrandsTable: FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
   const data = useSupportStore((s) => s.supportErrands);
   const municipalityId = useConfigStore((s) => s.municipalityId);
-  const selectedSupportErrandStatuses = useSupportStore((s) => s.selectedSupportErrandStatuses);
+  const selectedSupportErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');
@@ -93,7 +94,7 @@ export const SupportErrandsTable: FC = () => {
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${errand.errandNumber}`, '_blank');
   };
 
-  const errandTableObject = useSupportErrandTable(selectedSupportErrandStatuses);
+  const errandTableObject = useSupportErrandTable(selectedSupportErrandStatuses as Status[]);
 
   const headers = errandTableObject.map((column, index) => (
     <Table.HeaderColumn key={`header-${index}`}>

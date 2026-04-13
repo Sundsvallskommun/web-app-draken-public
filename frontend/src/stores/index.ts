@@ -5,4 +5,5 @@ export { useConfigStore } from './config-store';
 export { useFeatureFlagStore } from './feature-flag-store';
 export { useMetadataStore } from './metadata-store';
 export { useSupportStore } from './support-store';
+export { useUiSettingsStore } from './ui-settings-store';
 export { useUserStore } from './user-store';

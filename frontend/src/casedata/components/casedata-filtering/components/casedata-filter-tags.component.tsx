@@ -10,8 +10,8 @@ import {
   newStatuses,
 } from '@casedata/services/casedata-errand-service';
 import { Admin } from '@common/services/user-service';
-import { useCasedataStore } from '@stores/index';
 import { Chip } from '@sk-web-gui/react';
+import { useUiSettingsStore } from '@stores/ui-settings-store';
 import dayjs from 'dayjs';
 import { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -24,7 +24,7 @@ interface CasedataFilterTagsProps {
 
 export const CasedataFilterTags: FC<CasedataFilterTagsProps> = ({ administrators }) => {
   const { watch, setValue, reset } = useFormContext<CaseDataFilter>();
-  const selectedErrandStatuses = useCasedataStore((s) => s.selectedErrandStatuses);
+  const selectedErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
   const types = watch('caseType');
   const statuses = watch('status');
   const priorities = watch('priority');

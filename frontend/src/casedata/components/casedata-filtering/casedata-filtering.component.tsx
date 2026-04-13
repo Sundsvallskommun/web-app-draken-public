@@ -10,12 +10,12 @@ import {
 } from '@casedata/components/casedata-filtering/components/casedata-filter-phase.component';
 import { isPT } from '@common/services/application-service';
 import { Admin } from '@common/services/user-service';
+import { appConfig } from '@config/appconfig';
 import { Button, Checkbox, cx, Link } from '@sk-web-gui/react';
+import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { ListFilter } from 'lucide-react';
 import { FC, useState } from 'react';
 
-import { appConfig } from '@config/appconfig';
-import { useCasedataStore } from '@stores/index';
 import {
   CaseAdminsFilter,
   CaseAdminsValues,
@@ -80,7 +80,7 @@ const CaseDataFiltering: FC<{
   numberOfFilters: number;
 }> = ({ numberOfFilters, ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const [show, setShow] = useState<boolean>(true);
-  const selectedErrandStatuses = useCasedataStore((s) => s.selectedErrandStatuses);
+  const selectedErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
 
   return (
     <>

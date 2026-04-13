@@ -1,15 +1,8 @@
 import { ErrandsData } from '@casedata/interfaces/errand';
-import {
-  useBillingStore,
-  useCasedataStore,
-  useConfigStore,
-  useMetadataStore,
-  useSupportStore,
-  useUserStore,
-} from '@stores/index';
 import { attestationEnabled } from '@common/services/feature-flag-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import store from '@supportmanagement/services/storage-service';
+import { useBillingStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
 import {
   getLabelSubTypeFromName,
@@ -48,18 +41,13 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
     setValue: setFilterValue,
   } = filterForm;
 
-  const sortData = store.get('sort');
-  let sort: { sortColumn: string; sortOrder: 'asc' | 'desc'; pageSize: number } | undefined;
-
-  if (sortData) {
-    sort = JSON.parse(sortData);
-  }
+  const storedSort = useUiSettingsStore((s) => s.sort);
 
   const tableForm = useForm<TableForm>({
     defaultValues: {
-      sortColumn: sort?.sortColumn || 'touched',
-      sortOrder: sort?.sortOrder || 'desc',
-      pageSize: sort?.pageSize || 12,
+      sortColumn: (storedSort?.sortColumn as string) || 'touched',
+      sortOrder: (storedSort?.sortOrder as 'asc' | 'desc') || 'desc',
+      pageSize: (storedSort?.pageSize as number) || 12,
       page: 0,
     },
   });
@@ -70,12 +58,15 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const administrators = useUserStore((s) => s.administrators);
   const municipalityId = useConfigStore((s) => s.municipalityId);
-  const setSelectedSupportErrandStatuses = useSupportStore((s) => s.setSelectedSupportErrandStatuses);
-  const selectedSupportErrandStatuses = useSupportStore((s) => s.selectedSupportErrandStatuses);
-  const setSidebarLabel = useCasedataStore((s) => s.setSidebarLabel);
-  const sidebarLabel = useCasedataStore((s) => s.sidebarLabel);
-  const solvedSupportErrands = useSupportStore((s) => s.solvedSupportErrands);
+  const setSelectedErrandStatuses = useUiSettingsStore((s) => s.setSelectedErrandStatuses);
+  const selectedErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
+  const setSidebarLabel = useUiSettingsStore((s) => s.setSidebarLabel);
+  const sidebarLabel = useUiSettingsStore((s) => s.sidebarLabel);
+  const solvedSupportErrands = useUiSettingsStore((s) => s.closedErrands);
   const setBillingRecords = useBillingStore((s) => s.setBillingRecords);
+  const storedFilter = useUiSettingsStore((s) => s.filter);
+  const setStoredFilter = useUiSettingsStore((s) => s.setFilter);
+  const setStoredSort = useUiSettingsStore((s) => s.setSort);
 
   const startdate = watchFilter('startdate');
   const enddate = watchFilter('enddate');
@@ -91,8 +82,11 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
   const labelSubTypeFilter = watchFilter('labelSubType');
   const channelFilter = watchFilter('channel');
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
-  const [filterObject, setFilterObject] = useState<{ [key: string]: string | boolean }>();
+  const [filterObject, setFilterObject] = useState<{ [key: string]: string | boolean } | undefined>(
+    Object.keys(storedFilter).length > 0 ? (storedFilter as { [key: string]: string | boolean }) : undefined
+  );
   const [extraFilter, setExtraFilter] = useState<{ [key: string]: string }>();
+  const filterInitialized = useRef(false);
 
   const errands = useSupportErrands(municipalityId, page, pageSize, filterObject, sortObject, extraFilter);
 
@@ -108,21 +102,17 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
   const user = useUserStore((s) => s.user);
 
   useEffect(() => {
-    const filterdata = store.get('filter');
-
-    if (filterdata && supportMetadata) {
-      let filter;
+    if (storedFilter && Object.keys(storedFilter).length > 0 && supportMetadata) {
       let storedFilters;
       try {
-        filter = JSON.parse(filterdata);
         storedFilters = {
-          category: filter?.category?.split(',') || SupportManagementValues.category,
-          labelCategory: filter?.labelCategory?.split(',') || SupportManagementValues.labelCategory,
-          type: filter?.type?.split(',') || SupportManagementValues.type,
+          category: (storedFilter?.category as string)?.split(',') || SupportManagementValues.category,
+          labelCategory: (storedFilter?.labelCategory as string)?.split(',') || SupportManagementValues.labelCategory,
+          type: (storedFilter?.type as string)?.split(',') || SupportManagementValues.type,
           labelType:
             (Array.from(
               new Set(
-                filter?.labelType
+                (storedFilter?.labelType as string)
                   ?.split(',')
                   .map((n: string) => getLabelTypeFromName(n, supportMetadata!))
                   .map((t: { displayName?: string } | undefined) => t?.displayName)
@@ -131,29 +121,32 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
           labelSubType:
             (Array.from(
               new Set(
-                filter?.labelSubType
+                (storedFilter?.labelSubType as string)
                   ?.split(',')
                   .map((n: string) => getLabelSubTypeFromName(n, supportMetadata!))
                   .map((t: { displayName?: string } | undefined) => t?.displayName)
               )
             ) as string[]) || SupportManagementValues.labelSubType,
-          priority: filter?.priority?.split(',') || SupportManagementValues.priority,
-          channel: filter?.channel?.split(',') || SupportManagementValues.channel,
-          status: filter?.status !== '' ? filter?.status?.split(',') || SupportManagementValues.status : [],
-          startdate: filter?.start || SupportManagementValues.startdate,
-          enddate: filter?.end || SupportManagementValues.enddate,
+          priority: (storedFilter?.priority as string)?.split(',') || SupportManagementValues.priority,
+          channel: (storedFilter?.channel as string)?.split(',') || SupportManagementValues.channel,
+          status:
+            storedFilter?.status !== ''
+              ? ((storedFilter?.status as string)?.split(',') as Status[]) || SupportManagementValues.status
+              : [],
+          startdate: (storedFilter?.start as string) || SupportManagementValues.startdate,
+          enddate: (storedFilter?.end as string) || SupportManagementValues.enddate,
           admins:
-            filter?.stakeholders !== user.username
-              ? filter?.stakeholders?.split(',') || SupportManagementValues.admins
+            storedFilter?.stakeholders !== user.username
+              ? (storedFilter?.stakeholders as string)?.split(',') || SupportManagementValues.admins
               : [],
         };
-        const filterStatuses = filter?.status?.split(',') || SupportManagementValues.status;
+        const filterStatuses = (storedFilter?.status as string)?.split(',') || SupportManagementValues.status;
         const selectedStatusLabel = getStatusLabel(
-          filterStatuses.map((s: string) => (Status as Record<string, string>)[s])
+          filterStatuses.map((s: string) => (Status as Record<string, string>)[s]) as Status[]
         );
         setSidebarLabel(selectedStatusLabel ?? '');
       } catch (error) {
-        store.set('filter', JSON.stringify({}));
+        setStoredFilter({});
         storedFilters = {
           category: SupportManagementValues.category,
           labelCategory: SupportManagementValues.labelCategory,
@@ -168,40 +161,28 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
           admins: [],
         };
       }
-      if (filter?.stakeholders === user.username) {
+      if (storedFilter?.stakeholders === user.username) {
         setOwnerFilter(true);
       }
       resetFilter(storedFilters);
       triggerFilter();
     }
+    filterInitialized.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetFilter, triggerFilter, user.username, supportMetadata]);
 
   useEffect(() => {
     const currentStatus = JSON.stringify(getValues('status'));
-    const storeStatus = JSON.stringify(selectedSupportErrandStatuses);
+    const storeStatus = JSON.stringify(selectedErrandStatuses);
     if (currentStatus !== storeStatus) {
-      setFilterValue('status', selectedSupportErrandStatuses);
+      setFilterValue('status', selectedErrandStatuses as Status[]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSupportErrandStatuses]);
+  }, [selectedErrandStatuses]);
 
   useEffect(() => {
-    const sortData = store.get('sort');
     if (attestationEnabled(user)) {
       getBillingRecords(municipalityId, 0, pageSize, {}, { modified: 'desc' }).then(setBillingRecords);
-    }
-
-    if (sortData) {
-      try {
-        let sort = JSON.parse(sortData);
-        setTableValue('size', sort.size);
-        setTableValue('sortOrder', sort.sortOrder);
-        setTableValue('sortColumn', sort.sortColumn);
-        setTableValue('pageSize', sort.pageSize);
-      } catch (error) {
-        store.set('sort', JSON.stringify({}));
-      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -233,6 +214,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
 
   useDebounceEffect(
     () => {
+      if (!filterInitialized.current) return;
       const fObj: Record<string, string | boolean> = {};
       const extraFilterObj: Record<string, string> = {};
       if (priorityFilter && priorityFilter.length > 0) {
@@ -251,22 +233,12 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
         fObj['type'] = typeFilter.join(',');
       }
       if (labelTypeFilter && labelTypeFilter.length > 0) {
-        // The labelType filter is a list of displayNames, but the API expects names
-        // so we need to convert the displayNames to names before sending the filter
-        //
-        // This is because the names are unique, but the displayNames are not
-        // and we want to be able to filter on multiple types with the same displayName
         const allTypesFlattened = supportMetadata?.labels?.labelStructure?.map((l) => l.labels).flat() ?? [];
         const matchedTypes = allTypesFlattened.filter((l) => l && labelTypeFilter.includes(l.displayName!));
         const matchedTypeNames = matchedTypes.map((t) => t!.resourcePath);
         fObj['labelType'] = matchedTypeNames.join(',');
       }
       if (labelSubTypeFilter && labelSubTypeFilter.length > 0) {
-        // The labelSubType filter is a list of displayNames, but the API expects names
-        // so we need to convert the displayNames to names before sending the filter
-        //
-        // This is because the names are unique, but the displayNames are not
-        // and we want to be able to filter on multiple types with the same displayName
         const allTypesFlattened = supportMetadata?.labels?.labelStructure?.map((l) => l.labels).flat() ?? [];
         const allSubTypesFlattened =
           allTypesFlattened
@@ -299,10 +271,12 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
         const date = enddate.trim();
         fObj['end'] = date;
       }
-      setFilterObject(fObj);
+      if (JSON.stringify(fObj) !== JSON.stringify(filterObject)) {
+        setFilterObject(fObj);
+      }
       setExtraFilter(extraFilterObj);
-      setSelectedSupportErrandStatuses(statusFilter);
-      store.set('filter', JSON.stringify(fObj));
+      setSelectedErrandStatuses(statusFilter);
+      setStoredFilter(fObj);
     },
     200,
     [
@@ -324,7 +298,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
 
   useDebounceEffect(
     () => {
-      store.set('sort', JSON.stringify(watchTable()));
+      setStoredSort(watchTable() as unknown as Record<string, string | number>);
     },
     200,
     [watchTable, sortObject, pageSize]

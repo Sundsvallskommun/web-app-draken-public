@@ -1,12 +1,14 @@
 import { Admin } from '@common/services/user-service';
 import { Chip } from '@sk-web-gui/react';
-import { useMetadataStore, useSupportStore } from '@stores/index';
+import { useMetadataStore } from '@stores/index';
+import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { Channels, Status } from '@supportmanagement/services/support-errand-service';
 import { SupportType } from '@supportmanagement/services/support-metadata-service';
 import dayjs from 'dayjs';
 import { FC, useEffect, useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
+
 import { SupportManagementFilter, SupportManagementValues } from '../supportmanagement-filtering.component';
 
 interface SupportManagementFilterTagsProps {
@@ -16,7 +18,7 @@ interface SupportManagementFilterTagsProps {
 export const SupportManagementFilterTags: FC<SupportManagementFilterTagsProps> = ({ administrators }) => {
   const { watch, setValue, reset } = useFormContext<SupportManagementFilter>();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
-  const selectedSupportErrandStatuses = useSupportStore((s) => s.selectedSupportErrandStatuses);
+  const selectedSupportErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
   const categories = watch('category');
   const labelCategories = watch('labelCategory');
   const types = watch('type');
