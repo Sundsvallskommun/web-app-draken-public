@@ -4,7 +4,9 @@ import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 import { apiServiceName } from '@/config/api-config';
 import { BillingRecord, Status } from '@/data-contracts/billingpreprocessor/data-contracts';
+import { RelationPagedResponse } from '@/data-contracts/relations/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
+import { User } from '@/interfaces/users.interface';
 import { CBillingRecord, CPageBillingRecord } from '@/interfaces/billing-interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasAnyPermission, hasPermissions } from '@/middlewares/permissions.middleware';
@@ -18,6 +20,7 @@ import { apiURL, toOffsetDateTime } from '@/utils/util';
 export class BillingController {
   private apiService = new ApiService();
   private SERVICE = apiServiceName('billingpreprocessor');
+  private RELATIONS_SERVICE = apiServiceName('relations');
 
   @Get('/billing/:municipalityId/billingrecords')
   @OpenAPI({ summary: 'Get all billing records' })
@@ -188,13 +191,51 @@ export class BillingController {
       return response.status(400).send('Contract id missing');
     }
 
-    // Filtering not possible yet - necessary parameters unknown
-    // const filter = `&filter=category:'MEX_INVOICE' and extraParameters.contractId:'${contractId}'`;
-    const filter = ``;
+    const billingRecordIds = await this.getAllRelatedBillingRecordIds(municipalityId, contractId, req.user);
+
+    if (billingRecordIds.length === 0) {
+      return response.status(200).send({
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+        size: size || 10,
+        number: page || 0,
+        numberOfElements: 0,
+        first: true,
+        last: true,
+        empty: true,
+      });
+    }
+
+    const uniqueIds = [...new Set(billingRecordIds)];
+    const idList = uniqueIds.map(id => `'${id}'`).join(', ');
+    const filter = `&filter=${encodeURIComponent(`id in [${idList}]`)}`;
     let url = `${this.SERVICE}/${municipalityId}/billingrecords?page=${page || 0}&size=${size || 10}`;
     url += filter;
 
     const res = await this.apiService.get<CPageBillingRecord>({ url }, req.user);
     return response.status(200).send(res.data);
+  }
+
+  private async getAllRelatedBillingRecordIds(municipalityId: string, contractId: string, user: User): Promise<string[]> {
+    const allIds: string[] = [];
+    let currentPage = 1;
+    let totalPages = 1;
+
+    while (currentPage <= totalPages) {
+      const url = `${municipalityId}/relations?filter=source.resourceId%3A%27${contractId}%27&page=${currentPage}&limit=100`;
+      const baseURL = apiURL(this.RELATIONS_SERVICE);
+      const res = await this.apiService.get<RelationPagedResponse>({ url, baseURL }, user);
+      const relations = res.data.relations || [];
+
+      relations
+        .filter(r => r.target?.type === 'billing-record' && r.target?.service === 'billingpreprocessor')
+        .forEach(r => allIds.push(r.target.resourceId));
+
+      totalPages = res.data._meta?.totalPages ?? 1;
+      currentPage++;
+    }
+
+    return allIds;
   }
 }
