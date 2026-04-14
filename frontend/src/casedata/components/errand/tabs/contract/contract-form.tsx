@@ -1,6 +1,6 @@
 import { ContractInvoicesTable } from '@casedata/components/contract-overview/contract-invoices-table.component';
 import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
-import { ContractType, IntervalType, StakeholderRole, Status, TimeUnit } from '@casedata/interfaces/contracts';
+import { ContractType, IntervalType, Party, StakeholderRole, Status, TimeUnit } from '@casedata/interfaces/contracts';
 import { validateAction } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
 import {
@@ -75,11 +75,11 @@ export const ContractForm: FC<{
   const isDraft = !contractStatus || contractStatus === Status.DRAFT;
 
   // Determine if a field type is editable based on contract status
-  // For non-DRAFT contracts, only billing and lessee fields can be edited
-  const isEditable = (fieldType: 'general' | 'billing' | 'lessee') => {
+  // For non-DRAFT contracts, only billing, lessee, and cancellation fields can be edited
+  const isEditable = (fieldType: 'general' | 'billing' | 'lessee' | 'cancellation') => {
     if (readOnly) return false;
     if (isDraft) return true;
-    return fieldType === 'billing' || fieldType === 'lessee';
+    return fieldType === 'billing' || fieldType === 'lessee' || fieldType === 'cancellation';
   };
 
   useEffect(() => {
@@ -529,6 +529,30 @@ export const ContractForm: FC<{
                     {...register('endDate')}
                     data-cy="avtalstid-end"
                   />
+                </FormControl>
+              </div>
+              <div className="flex gap-18 justify-start">
+                <FormControl id="noticeDate" className="w-full">
+                  <FormLabel>Uppsägningsdatum</FormLabel>
+                  <Input
+                    type="date"
+                    readOnly={!isEditable('cancellation')}
+                    {...register('notice.noticeDate')}
+                    data-cy="notice-date"
+                  />
+                </FormControl>
+                <FormControl id="noticeGivenBy" className="w-full">
+                  <FormLabel>Uppsagd av</FormLabel>
+                  <Select
+                    className="w-full"
+                    disabled={!isEditable('cancellation')}
+                    {...register('notice.noticeGivenBy')}
+                    data-cy="notice-given-by"
+                  >
+                    <Select.Option value="">Välj part</Select.Option>
+                    <Select.Option value={Party.LESSOR}>Upplåtare</Select.Option>
+                    <Select.Option value={Party.LESSEE}>Arrendator</Select.Option>
+                  </Select>
                 </FormControl>
               </div>
               <strong>Ange tid för nyttjanderättshavarens uppsägningstid</strong>
