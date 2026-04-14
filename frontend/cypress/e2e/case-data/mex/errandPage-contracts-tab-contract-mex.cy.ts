@@ -434,6 +434,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
               { party: 'LESSEE', periodOfNotice: 3, unit: 'MONTHS' },
               { party: 'LESSOR', periodOfNotice: 3, unit: 'MONTHS' },
             ],
+            noticeDate: '',
+            noticeGivenBy: '',
           },
           propertyDesignations: [],
           contractId: '',
