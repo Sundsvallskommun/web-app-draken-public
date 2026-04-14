@@ -92,6 +92,17 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
   const handleSave = async (record: CBillingRecord) => {
     if (!editFormState) return;
 
+    const today = new Date().toISOString().split('T')[0];
+    if (editFormState.date && editFormState.date < today) {
+      toastMessage({
+        position: 'bottom',
+        closeable: true,
+        message: 'Aviseringsdatum kan inte vara i det förflutna',
+        status: 'error',
+      });
+      return;
+    }
+
     setSavingId(record.id ?? null);
 
     try {

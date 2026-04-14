@@ -40,10 +40,13 @@ export const BillingSpecifications: FC = () => {
             <FormErrorMessage>{errors.specifications.customerReference.message}</FormErrorMessage>
           )}
         </FormControl>
-        <FormControl className="w-full">
+        <FormControl className="w-full" invalid={!!errors.specifications?.rejectionDate}>
           <FormLabel>Aviseringsdatum</FormLabel>
           <DatePicker min={new Date().toISOString().split('T')[0]} {...register('specifications.rejectionDate')} />
           <small>Välj den första dagen i månaden</small>
+          {errors.specifications?.rejectionDate && (
+            <FormErrorMessage>{errors.specifications.rejectionDate.message}</FormErrorMessage>
+          )}
         </FormControl>
       </div>
       <div className="w-full">
