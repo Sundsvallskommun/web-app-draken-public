@@ -21,6 +21,7 @@ export class BillingController {
   private apiService = new ApiService();
   private SERVICE = apiServiceName('billingpreprocessor');
   private RELATIONS_SERVICE = apiServiceName('relations');
+  private readonly BILLING_ID_CHUNK_SIZE = 50;
 
   @Get('/billing/:municipalityId/billingrecords')
   @OpenAPI({ summary: 'Get all billing records' })
@@ -192,14 +193,18 @@ export class BillingController {
     }
 
     const billingRecordIds = await this.getAllRelatedBillingRecordIds(municipalityId, contractId, req.user);
+    const uniqueIds = [...new Set(billingRecordIds)];
 
-    if (billingRecordIds.length === 0) {
+    const s = size || 10;
+    const p = page || 0;
+
+    if (uniqueIds.length === 0) {
       return response.status(200).send({
         content: [],
         totalElements: 0,
         totalPages: 0,
-        size: size || 10,
-        number: page || 0,
+        size: s,
+        number: p,
         numberOfElements: 0,
         first: true,
         last: true,
@@ -207,14 +212,36 @@ export class BillingController {
       });
     }
 
-    const uniqueIds = [...new Set(billingRecordIds)];
-    const idList = uniqueIds.map(id => `'${id}'`).join(', ');
-    const filter = `&filter=${encodeURIComponent(`id in [${idList}]`)}`;
-    let url = `${this.SERVICE}/${municipalityId}/billingrecords?page=${page || 0}&size=${size || 10}`;
-    url += filter;
+    const chunks: string[][] = [];
+    for (let i = 0; i < uniqueIds.length; i += this.BILLING_ID_CHUNK_SIZE) {
+      chunks.push(uniqueIds.slice(i, i + this.BILLING_ID_CHUNK_SIZE));
+    }
 
-    const res = await this.apiService.get<CPageBillingRecord>({ url }, req.user);
-    return response.status(200).send(res.data);
+    const results = await Promise.all(
+      chunks.map(chunk => this.fetchBillingRecordsByIds(municipalityId, chunk, req.user)),
+    );
+    const allRecords = results.flat();
+
+    const slice = allRecords.slice(p * s, (p + 1) * s);
+    return response.status(200).send({
+      content: slice,
+      totalElements: allRecords.length,
+      totalPages: Math.ceil(allRecords.length / s),
+      size: s,
+      number: p,
+      numberOfElements: slice.length,
+      first: p === 0,
+      last: (p + 1) * s >= allRecords.length,
+      empty: slice.length === 0,
+    });
+  }
+
+  private async fetchBillingRecordsByIds(municipalityId: string, ids: string[], user: User): Promise<BillingRecord[]> {
+    const idList = ids.map(id => `'${id}'`).join(', ');
+    const filter = `&filter=${encodeURIComponent(`id in [${idList}]`)}`;
+    const url = `${this.SERVICE}/${municipalityId}/billingrecords?page=0&size=${ids.length}${filter}`;
+    const res = await this.apiService.get<CPageBillingRecord>({ url }, user);
+    return res.data.content || [];
   }
 
   private async getAllRelatedBillingRecordIds(municipalityId: string, contractId: string, user: User): Promise<string[]> {
