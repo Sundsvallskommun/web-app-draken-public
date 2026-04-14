@@ -562,7 +562,7 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
                   <tbody key={rowIndex}>
                     <Table.Row className="!border-b-0">
                       <Table.Column>
-                        <div className="flex flex-col">
+                        <div className="flex flex-col w-[36rem]">
                           <span className="font-bold mt-6">{row.descriptions?.join(', ') || '-'}</span>
                           {row.detailedDescriptions?.some((d) => d) && (
                             <div className="py-4">
@@ -577,20 +577,20 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
                           )}
                         </div>
                       </Table.Column>
-                      <Table.Column>
+                      <Table.Column className="-mr-18">
                         <span className="mt-6">{row.quantity || 0}</span>
                       </Table.Column>
-                      <Table.Column>
+                      <Table.Column className="-mr-18">
                         <span className="whitespace-nowrap mt-6">{(row.costPerUnit || 0).toFixed(2)} kr</span>
                       </Table.Column>
-                      <Table.Column>
+                      <Table.Column className="-mr-18">
                         <span className="whitespace-nowrap mt-6">
                           {((row.quantity || 0) * (row.costPerUnit || 0)).toFixed(2)} kr
                         </span>
                       </Table.Column>
                       {isEditing && (
                         <>
-                          <Table.Column>
+                          <Table.Column className="max-w-[3rem]">
                             <div className="mt-6">
                               <Button
                                 size="sm"
@@ -603,7 +603,7 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
                               </Button>
                             </div>
                           </Table.Column>
-                          <Table.Column>
+                          <Table.Column className="max-w-[3rem] mr-10">
                             <div className="mt-6">
                               <Button
                                 size="sm"
