@@ -43,8 +43,8 @@ interface EditRowState {
   detailedDescription1: string;
   detailedDescription2: string;
   detailedDescription3: string;
-  quantity: number;
-  costPerUnit: number;
+  quantity: number | '';
+  costPerUnit: number | '';
   costCenter: string;
   subaccount: string;
   department: string;
@@ -243,6 +243,9 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
   const handleSaveRow = () => {
     if (!editFormState || !editingRowState) return;
 
+    const quantity = editingRowState.quantity === '' ? 0 : editingRowState.quantity;
+    const costPerUnit = editingRowState.costPerUnit === '' ? 0 : editingRowState.costPerUnit;
+
     const updatedRows = editFormState.invoiceRows.map((row, index) => {
       if (index === editingRowState.rowIndex) {
         const existingAccountInfo = row.accountInformation?.[0] || {};
@@ -254,9 +257,9 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
             editingRowState.detailedDescription2,
             editingRowState.detailedDescription3,
           ].filter((d) => d !== ''),
-          quantity: editingRowState.quantity,
-          costPerUnit: editingRowState.costPerUnit,
-          totalAmount: editingRowState.quantity * editingRowState.costPerUnit,
+          quantity,
+          costPerUnit,
+          totalAmount: quantity * costPerUnit,
           accountInformation: [
             {
               ...existingAccountInfo,
@@ -266,7 +269,7 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
               activity: editingRowState.activity,
               project: editingRowState.project,
               article: editingRowState.object,
-              amount: editingRowState.quantity * editingRowState.costPerUnit,
+              amount: quantity * costPerUnit,
             },
           ],
         };
@@ -457,7 +460,12 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
                                   min={0}
                                   step={0.01}
                                   value={editingRowState.quantity}
-                                  onChange={(e) => handleRowFieldChange('quantity', parseFloat(e.target.value) || 0)}
+                                  onChange={(e) =>
+                                    handleRowFieldChange(
+                                      'quantity',
+                                      e.target.value === '' ? '' : parseFloat(e.target.value)
+                                    )
+                                  }
                                 />
                               </FormControl>
                               <FormControl className="w-full">
@@ -467,7 +475,12 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
                                   min={0}
                                   step={0.01}
                                   value={editingRowState.costPerUnit}
-                                  onChange={(e) => handleRowFieldChange('costPerUnit', parseFloat(e.target.value) || 0)}
+                                  onChange={(e) =>
+                                    handleRowFieldChange(
+                                      'costPerUnit',
+                                      e.target.value === '' ? '' : parseFloat(e.target.value)
+                                    )
+                                  }
                                 />
                               </FormControl>
                             </div>
