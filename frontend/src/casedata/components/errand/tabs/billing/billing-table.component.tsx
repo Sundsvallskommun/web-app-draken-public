@@ -12,7 +12,6 @@ import {
   FormLabel,
   Input,
   Table,
-  Textarea,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
@@ -409,9 +408,9 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
 
                 <FormControl className="w-full">
                   <FormLabel>Avitext</FormLabel>
-                  <Textarea
+                  <Input
                     className="w-full"
-                    rows={3}
+                    maxLength={30}
                     value={editFormState?.description || ''}
                     onChange={(e) => handleFormChange('description', e.target.value)}
                   />

@@ -1,6 +1,6 @@
 import { BillingFormData } from '@casedata/interfaces/billing';
 import { useAppContext } from '@contexts/app.context';
-import { Checkbox, DatePicker, FormControl, FormErrorMessage, FormLabel, Input, Textarea } from '@sk-web-gui/react';
+import { Checkbox, DatePicker, FormControl, FormErrorMessage, FormLabel, Input } from '@sk-web-gui/react';
 import { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
 
@@ -51,7 +51,7 @@ export const BillingSpecifications: FC = () => {
           <FormLabel>
             Avitext * <span className="font-normal">(ange vad fakturan och vilken period den gäller)</span>
           </FormLabel>
-          <Textarea className="w-full" rows={3} {...register('specifications.avitext')} />
+          <Input className="w-full" maxLength={30} {...register('specifications.avitext')} />
           {errors.specifications?.avitext && (
             <FormErrorMessage>{errors.specifications.avitext.message}</FormErrorMessage>
           )}
