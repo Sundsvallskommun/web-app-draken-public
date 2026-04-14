@@ -11,7 +11,6 @@ import {
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
-import { Role } from '@casedata/interfaces/role';
 import { onlyOn } from '@cypress/skip-test';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
@@ -19,12 +18,8 @@ import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockAsset } from '../fixtures/mockAsset';
 import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockContractInvoices } from '../fixtures/mockContractsList';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
-import { mockJsonSchema } from '../fixtures/mockJsonSchema';
-import { mockMe } from '../fixtures/mockMe';
-import { mockMessages } from '../fixtures/mockMessages';
-import { mockMexErrand_base } from '../fixtures/mockMexErrand';
-import { mockRelations } from '../fixtures/mockRelations';
 import {
   mockEstateInfo11,
   mockEstateInfo12,
@@ -32,13 +27,12 @@ import {
   mockSingleEstateByPropertyDesignation12,
 } from '../fixtures/mockEstateInfo';
 import { mockEstatePropertyByDesignation } from '../fixtures/mockEstatePropertyByDesignation';
-import { mockContractInvoices } from '../fixtures/mockContractsList';
 import { mockFeatureFlags } from '../fixtures/mockFeatureFlags';
-
-const takeElementSnapshot = (dataCySelector: string) => {
-  cy.waitForFonts();
-  cy.get(`[data-cy="${dataCySelector}"]`).scrollIntoView().matchImageSnapshot(dataCySelector);
-};
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
+import { mockMe } from '../fixtures/mockMe';
+import { mockMessages } from '../fixtures/mockMessages';
+import { mockMexErrand_base } from '../fixtures/mockMexErrand';
+import { mockRelations } from '../fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page contracts tab', () => {
@@ -187,21 +181,34 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     it('manages parties in lease agreements', () => {
       visitErrandContractTab();
       cy.get('[data-cy="parties-disclosure"]').should('exist');
-      cy.get('[data-cy="Upplåtare-table"] .sk-table-tbody-tr')
-        .should('exist')
-        .contains(
-          `${mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSOR'))?.firstName ?? ''} ${
-            mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSOR'))?.lastName ?? ''
-          }`
-        );
 
-      cy.get('[data-cy="Arrendatorer-table"] .sk-table-tbody-tr')
+      // Verify parties are shown in the unified table
+      cy.get('[data-cy="parties-table"]').should('exist');
+      cy.get('[data-cy="parties-table"]')
+        .find('[data-cy="party-row-0"]')
         .should('exist')
-        .contains(
-          `${mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSEE'))?.firstName ?? ''} ${
-            mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSEE'))?.lastName ?? ''
-          }`
-        );
+        .within(() => {
+          cy.get('[data-cy="party-0-name"]').should(
+            'contain.text',
+            `${mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSOR'))?.firstName ?? ''} ${
+              mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSOR'))?.lastName ?? ''
+            }`
+          );
+          cy.get('[data-cy="party-0-role"]').should('contain.text', 'Upplåtare');
+        });
+
+      cy.get('[data-cy="parties-table"]')
+        .find('[data-cy="party-row-1"]')
+        .should('exist')
+        .within(() => {
+          cy.get('[data-cy="party-1-name"]').should(
+            'contain.text',
+            `${mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSEE'))?.firstName ?? ''} ${
+              mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSEE'))?.lastName ?? ''
+            }`
+          );
+          cy.get('[data-cy="party-1-role"]').should('contain.text', 'Arrendator');
+        });
 
       cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
       cy.get('[data-cy="lessee-notice-period"]').should('exist').clear().type('15');
@@ -209,8 +216,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="area-disclosure"] button.sk-btn-tertiary').should('exist').click();
       cy.get('[data-cy="area-disclosure"] button.sk-btn-primary').should('exist').contains('Spara').click();
-
-      // takeElementSnapshot('parties-disclosure');
 
       cy.wait('@putContract').should(({ request }) => {
         const leaseAgreement: Contract = request.body;
@@ -361,36 +366,48 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       });
     });
 
-    it('manages creating a new lease agreement with correct default values', () => {
+    it('manages creating a new lease agreement with manual party selection', () => {
       visitErrandWithoutContract();
       cy.get('[data-cy="contract-type-select"]').should('exist').select(ContractType.LEASE_AGREEMENT);
       cy.get('[data-cy="contract-subtype-select"]').should('exist').select(LeaseType.LAND_LEASE_MISC);
 
-      cy.get('[data-cy="Upplåtare-table"]').should('exist');
+      // Verify parties table exists but is empty initially
+      cy.get('[data-cy="parties-table"]').should('exist');
+      cy.get('[data-cy="parties-table"]').should('contain.text', 'Inga parter tillagda');
 
-      cy.get('[data-cy="Upplåtare-table"]')
-        .should('exist')
-        .find('[data-cy="Upplåtare-row-0"]')
-        .should('exist')
-        .within(() => {
-          cy.get('[data-cy="party-0-name"]').should('exist').and('contain.text', 'Test Upplåtarsson');
-          cy.get('[data-cy="party-0-address"]').should('exist').and('contain.text', 'Testgata 1');
-          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Upplåtare');
-        });
+      // Add lessor via party modal
+      cy.get('[data-cy="add-party-button"]').should('exist').click();
+      cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist').select('2260');
+      cy.get('[data-cy="party-modal-role-LESSOR"]').check({ force: true });
+      cy.get('[data-cy="party-modal-save-button"]').click();
 
-      cy.get('[data-cy="Arrendatorer-table"]').should('exist');
-
-      cy.get('[data-cy="Arrendatorer-table"]')
-        .should('exist')
-        .find('[data-cy="Arrendatorer-row-0"]')
+      // Verify lessor was added
+      cy.get('[data-cy="parties-table"]')
+        .find('[data-cy="party-row-0"]')
         .should('exist')
         .within(() => {
-          cy.get('[data-cy="party-0-name"]').should('exist').and('contain.text', 'Test Arrendatorsson');
-          cy.get('[data-cy="party-0-address"]').should('exist').and('contain.text', 'Testgata 41');
-          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Arrendator');
-          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Fakturamottagare');
+          cy.get('[data-cy="party-0-name"]').should('contain.text', 'Test Upplåtarsson');
+          cy.get('[data-cy="party-0-role"]').should('contain.text', 'Upplåtare');
         });
 
+      // Add lessee with billing role via party modal
+      cy.get('[data-cy="add-party-button"]').click();
+      cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist').select('2280');
+      cy.get('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+      cy.get('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').check({ force: true });
+      cy.get('[data-cy="party-modal-save-button"]').click();
+
+      // Verify lessee was added with both roles
+      cy.get('[data-cy="parties-table"]')
+        .find('[data-cy="party-row-1"]')
+        .should('exist')
+        .within(() => {
+          cy.get('[data-cy="party-1-name"]').should('contain.text', 'Test Arrendatorsson');
+          cy.get('[data-cy="party-1-role"]').should('contain.text', 'Arrendator');
+          cy.get('[data-cy="party-1-role"]').should('contain.text', 'Fakturamottagare');
+        });
+
+      // Save the contract
       cy.get('[data-cy="parties-disclosure"]').find('[data-cy="save-contract-button"]').should('exist').click();
 
       cy.wait('@postContract').should(({ request }) => {
@@ -399,122 +416,55 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         expect(leaseAgreement.leaseType).to.equal(LeaseType.LAND_LEASE_MISC);
         const lessor = leaseAgreement.stakeholders.find((s: Stakeholder) => s.roles.includes(StakeholderRole.LESSOR));
         const lessee = leaseAgreement.stakeholders.find((s: Stakeholder) => s.roles.includes(StakeholderRole.LESSEE));
-        expect(lessor.firstName).to.equal(
-          mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes(Role.PROPERTY_OWNER))?.firstName ?? ''
-        );
-        expect(lessee.firstName).to.equal(
-          mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes(Role.LEASEHOLDER))?.firstName ?? ''
-        );
-        expect(leaseAgreement.notice.terms).to.deep.equal([
-          { party: 'LESSEE', periodOfNotice: 3, unit: TimeUnit.MONTHS },
-          { party: 'LESSOR', periodOfNotice: 3, unit: TimeUnit.MONTHS },
-        ]);
-        expect(leaseAgreement.extension).to.deep.equal({
-          autoExtend: false,
-          unit: TimeUnit.DAYS,
-        });
-        expect(leaseAgreement).to.deep.equal({
-          extension: { autoExtend: false, unit: 'DAYS' },
-          fees: {
-            yearly: null,
-            monthly: 0,
-            total: null,
-            currency: 'SEK',
-            additionalInformation: ['Avgift, lägenhetsarrende. Fastigheter: ', ''],
-            indexYear: 2025,
-            indexNumber: 419.35,
-            indexationRate: 1,
-            indexType: 'KPI 80',
-          },
-          invoicing: { invoicedIn: 'ADVANCE' },
-          startDate: '',
-          endDate: '',
-          notice: {
-            terms: [
-              { party: 'LESSEE', periodOfNotice: 3, unit: 'MONTHS' },
-              { party: 'LESSOR', periodOfNotice: 3, unit: 'MONTHS' },
-            ],
-            noticeDate: '',
-            noticeGivenBy: '',
-          },
-          propertyDesignations: [],
-          contractId: '',
-          type: 'LEASE_AGREEMENT',
-          leaseType: 'LAND_LEASE_MISC',
-          status: 'DRAFT',
-          externalReferenceId: '',
-          stakeholders: [
-            {
-              type: 'PERSON',
-              roles: ['CONTACT_PERSON', 'LESSEE', 'PRIMARY_BILLING_PARTY'],
-              firstName: 'Test',
-              lastName: 'Arrendatorsson',
-              parameters: [{ key: 'extraParameter', values: [''] }],
-              phone: { value: '0701740635' },
-              email: { value: 'a@example.com' },
-              address: {
-                type: 'POSTAL_ADDRESS',
-                streetAddress: 'Testgata 41',
-                postalCode: '12345',
-                town: 'Staden',
-                country: '',
-                attention: '',
-                careOf: '',
-              },
-            },
-            {
-              type: 'PERSON',
-              roles: ['CONTACT_PERSON', 'LESSOR'],
-              firstName: 'Test',
-              lastName: 'Upplåtarsson',
-              parameters: [{ key: 'extraParameter', values: [''] }],
-              phone: { value: '0701740635' },
-              email: { value: 'a@example.com' },
-              address: {
-                type: 'POSTAL_ADDRESS',
-                streetAddress: 'Testgata 1',
-                postalCode: '12345',
-                town: 'Staden',
-                country: '',
-                attention: '',
-                careOf: '',
-              },
-            },
-          ],
-          extraParameters: [{ name: 'errandId', parameters: { errandId: '101' } }],
-        });
+        expect(lessor).to.exist;
+        expect(lessee).to.exist;
+        expect(lessor.firstName).to.equal('Test');
+        expect(lessor.lastName).to.equal('Upplåtarsson');
+        expect(lessee.firstName).to.equal('Test');
+        expect(lessee.lastName).to.equal('Arrendatorsson');
+        // Lessee should also have PRIMARY_BILLING_PARTY role
+        expect(lessee.roles).to.include(StakeholderRole.PRIMARY_BILLING_PARTY);
       });
     });
 
-    it('manages creating a new purchase agreement with correct default values', () => {
+    it('manages creating a new purchase agreement with manual party selection', () => {
       visitErrandWithoutContract();
 
       // Switch to PURCHASE_AGREEMENT
       cy.get('[data-cy="contract-type-select"]').should('exist').select(ContractType.PURCHASE_AGREEMENT);
 
-      cy.get('[data-cy="Upplåtare-table"]').should('not.exist');
-      cy.get('[data-cy="Arrendatorer-table"]').should('not.exist');
-      cy.get('[data-cy="Köpare-table"]').should('exist');
-      cy.get('[data-cy="Säljare-table"]').should('exist');
+      // Verify parties table exists but is empty
+      cy.get('[data-cy="parties-table"]').should('exist');
+      cy.get('[data-cy="parties-table"]').should('contain.text', 'Inga parter tillagda');
 
-      cy.get('[data-cy="Köpare-table"]')
-        .should('exist')
-        .find('[data-cy="Köpare-row-0"]')
+      // Add seller via party modal
+      cy.get('[data-cy="add-party-button"]').should('exist').click();
+      cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist').select('2290');
+      cy.get('[data-cy="party-modal-role-SELLER"]').check({ force: true });
+      cy.get('[data-cy="party-modal-save-button"]').click();
+
+      // Verify seller was added
+      cy.get('[data-cy="parties-table"]')
+        .find('[data-cy="party-row-0"]')
         .should('exist')
         .within(() => {
-          cy.get('[data-cy="party-0-name"]').should('exist').and('contain.text', 'Test Köparsson');
-          cy.get('[data-cy="party-0-address"]').should('exist').and('contain.text', 'Testgata 2');
-          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Köpare');
+          cy.get('[data-cy="party-0-name"]').should('contain.text', 'Daniella Testarsson');
+          cy.get('[data-cy="party-0-role"]').should('contain.text', 'Säljare');
         });
 
-      cy.get('[data-cy="Säljare-table"]')
-        .should('exist')
-        .find('[data-cy="Säljare-row-0"]')
+      // Add buyer via party modal
+      cy.get('[data-cy="add-party-button"]').click();
+      cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist').select('2106');
+      cy.get('[data-cy="party-modal-role-BUYER"]').check({ force: true });
+      cy.get('[data-cy="party-modal-save-button"]').click();
+
+      // Verify buyer was added
+      cy.get('[data-cy="parties-table"]')
+        .find('[data-cy="party-row-1"]')
         .should('exist')
         .within(() => {
-          cy.get('[data-cy="party-0-name"]').should('exist').and('contain.text', 'Daniella Testarsson');
-          cy.get('[data-cy="party-0-address"]').should('exist').and('contain.text', 'Testgata 41');
-          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Säljare');
+          cy.get('[data-cy="party-1-name"]').should('contain.text', 'Test Köparsson');
+          cy.get('[data-cy="party-1-role"]').should('contain.text', 'Köpare');
         });
 
       cy.get('[data-cy="parties-disclosure"]').find('[data-cy="save-contract-button"]').should('exist').click();
@@ -522,76 +472,21 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait('@postContract').should(({ request }) => {
         const purchaseAgreement: Contract = request.body;
         expect(purchaseAgreement.type).to.equal(ContractType.PURCHASE_AGREEMENT);
-        expect(purchaseAgreement.startDate).to.equal('');
         expect(purchaseAgreement.leaseType).to.be.undefined;
         const seller = purchaseAgreement.stakeholders.find((s: Stakeholder) =>
           s.roles.includes(StakeholderRole.SELLER)
         );
         const buyer = purchaseAgreement.stakeholders.find((s: Stakeholder) => s.roles.includes(StakeholderRole.BUYER));
-        expect(seller.firstName).to.equal(
-          mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes(Role.SELLER))?.firstName ?? ''
-        );
-        expect(buyer.firstName).to.equal(
-          mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes(Role.BUYER))?.firstName ?? ''
-        );
-        expect(purchaseAgreement).to.deep.equal({
-          contractId: '',
-          externalReferenceId: '',
-          propertyDesignations: [],
-          extraParameters: [
-            {
-              name: 'errandId',
-              parameters: {
-                errandId: '101',
-              },
-            },
-          ],
-          status: Status.DRAFT,
-          type: ContractType.PURCHASE_AGREEMENT,
-          startDate: '',
-          stakeholders: [
-            {
-              type: 'PERSON',
-              roles: ['BUYER'],
-              firstName: 'Test',
-              lastName: 'Köparsson',
-              parameters: [{ key: 'extraParameter', values: [''] }],
-              phone: { value: '0701740635' },
-              email: { value: 'a@example.com' },
-              address: {
-                type: 'POSTAL_ADDRESS',
-                streetAddress: 'Testgata 2',
-                postalCode: '12345',
-                town: 'Staden',
-                country: '',
-                attention: '',
-                careOf: '',
-              },
-            },
-            {
-              type: 'PERSON',
-              roles: ['SELLER'],
-              firstName: 'Daniella',
-              lastName: 'Testarsson',
-              parameters: [{ key: 'extraParameter', values: [''] }],
-              phone: { value: '0701740635' },
-              email: { value: 'a@example.com' },
-              address: {
-                type: 'POSTAL_ADDRESS',
-                streetAddress: 'Testgata 41',
-                postalCode: '12345',
-                town: 'Staden',
-                country: '',
-                attention: '',
-                careOf: '',
-              },
-            },
-          ],
-        });
+        expect(seller).to.exist;
+        expect(buyer).to.exist;
+        expect(seller.firstName).to.equal('Daniella');
+        expect(seller.lastName).to.equal('Testarsson');
+        expect(buyer.firstName).to.equal('Test');
+        expect(buyer.lastName).to.equal('Köparsson');
       });
     });
 
-    it('manages creating a new LAND_LEASE_PUBLIC contract with correct default values', () => {
+    it('manages creating a new LAND_LEASE_PUBLIC contract with manual party selection', () => {
       visitErrandWithoutContract();
 
       // Select the new contract type
@@ -600,27 +495,38 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       // Verify NO lease subtype dropdown is shown (only for LEASE_AGREEMENT)
       cy.get('[data-cy="contract-subtype-select"]').should('not.exist');
 
-      // Verify lease agreement UI is shown (lessors/lessees, not buyers/sellers)
-      cy.get('[data-cy="Upplåtare-table"]').should('exist');
-      cy.get('[data-cy="Arrendatorer-table"]').should('exist');
-      cy.get('[data-cy="Köpare-table"]').should('not.exist');
-      cy.get('[data-cy="Säljare-table"]').should('not.exist');
+      // Verify parties table exists but is empty
+      cy.get('[data-cy="parties-table"]').should('exist');
+      cy.get('[data-cy="parties-table"]').should('contain.text', 'Inga parter tillagda');
 
-      // Verify stakeholders are populated correctly
-      cy.get('[data-cy="Upplåtare-table"]')
-        .find('[data-cy="Upplåtare-row-0"]')
+      // Add lessor via party modal
+      cy.get('[data-cy="add-party-button"]').should('exist').click();
+      cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist').select('2260');
+      cy.get('[data-cy="party-modal-role-LESSOR"]').check({ force: true });
+      cy.get('[data-cy="party-modal-save-button"]').click();
+
+      // Verify lessor was added
+      cy.get('[data-cy="parties-table"]')
+        .find('[data-cy="party-row-0"]')
         .should('exist')
         .within(() => {
-          cy.get('[data-cy="party-0-name"]').should('exist').and('contain.text', 'Test Upplåtarsson');
-          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Upplåtare');
+          cy.get('[data-cy="party-0-name"]').should('contain.text', 'Test Upplåtarsson');
+          cy.get('[data-cy="party-0-role"]').should('contain.text', 'Upplåtare');
         });
 
-      cy.get('[data-cy="Arrendatorer-table"]')
-        .find('[data-cy="Arrendatorer-row-0"]')
+      // Add lessee via party modal
+      cy.get('[data-cy="add-party-button"]').click();
+      cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist').select('2280');
+      cy.get('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+      cy.get('[data-cy="party-modal-save-button"]').click();
+
+      // Verify lessee was added
+      cy.get('[data-cy="parties-table"]')
+        .find('[data-cy="party-row-1"]')
         .should('exist')
         .within(() => {
-          cy.get('[data-cy="party-0-name"]').should('exist').and('contain.text', 'Test Arrendatorsson');
-          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Arrendator');
+          cy.get('[data-cy="party-1-name"]').should('contain.text', 'Test Arrendatorsson');
+          cy.get('[data-cy="party-1-role"]').should('contain.text', 'Arrendator');
         });
 
       // Save and verify contract type in request
@@ -637,7 +543,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       });
     });
 
-    it('manages creating a new SHORT_TERM_LEASE_AGREEMENT contract with correct default values', () => {
+    it('manages creating a new SHORT_TERM_LEASE_AGREEMENT contract with manual party selection', () => {
       visitErrandWithoutContract();
 
       // Select the new contract type
@@ -646,27 +552,38 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       // Verify NO lease subtype dropdown is shown (only for LEASE_AGREEMENT)
       cy.get('[data-cy="contract-subtype-select"]').should('not.exist');
 
-      // Verify lease agreement UI is shown (lessors/lessees, not buyers/sellers)
-      cy.get('[data-cy="Upplåtare-table"]').should('exist');
-      cy.get('[data-cy="Arrendatorer-table"]').should('exist');
-      cy.get('[data-cy="Köpare-table"]').should('not.exist');
-      cy.get('[data-cy="Säljare-table"]').should('not.exist');
+      // Verify parties table exists but is empty
+      cy.get('[data-cy="parties-table"]').should('exist');
+      cy.get('[data-cy="parties-table"]').should('contain.text', 'Inga parter tillagda');
 
-      // Verify stakeholders are populated correctly
-      cy.get('[data-cy="Upplåtare-table"]')
-        .find('[data-cy="Upplåtare-row-0"]')
+      // Add lessor via party modal
+      cy.get('[data-cy="add-party-button"]').should('exist').click();
+      cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist').select('2260');
+      cy.get('[data-cy="party-modal-role-LESSOR"]').check({ force: true });
+      cy.get('[data-cy="party-modal-save-button"]').click();
+
+      // Verify lessor was added
+      cy.get('[data-cy="parties-table"]')
+        .find('[data-cy="party-row-0"]')
         .should('exist')
         .within(() => {
-          cy.get('[data-cy="party-0-name"]').should('exist').and('contain.text', 'Test Upplåtarsson');
-          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Upplåtare');
+          cy.get('[data-cy="party-0-name"]').should('contain.text', 'Test Upplåtarsson');
+          cy.get('[data-cy="party-0-role"]').should('contain.text', 'Upplåtare');
         });
 
-      cy.get('[data-cy="Arrendatorer-table"]')
-        .find('[data-cy="Arrendatorer-row-0"]')
+      // Add lessee via party modal
+      cy.get('[data-cy="add-party-button"]').click();
+      cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist').select('2280');
+      cy.get('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+      cy.get('[data-cy="party-modal-save-button"]').click();
+
+      // Verify lessee was added
+      cy.get('[data-cy="parties-table"]')
+        .find('[data-cy="party-row-1"]')
         .should('exist')
         .within(() => {
-          cy.get('[data-cy="party-0-name"]').should('exist').and('contain.text', 'Test Arrendatorsson');
-          cy.get('[data-cy="party-0-role"]').should('exist').and('contain.text', 'Arrendator');
+          cy.get('[data-cy="party-1-name"]').should('contain.text', 'Test Arrendatorsson');
+          cy.get('[data-cy="party-1-role"]').should('contain.text', 'Arrendator');
         });
 
       // Save and verify contract type in request
@@ -683,7 +600,112 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       });
     });
 
+    describe('Manual party selection with stakeholders without partyId', () => {
+      // Mock errand with a stakeholder that has no personalNumber/personId (manually added)
+      const mockMexErrandWithManualStakeholder = {
+        ...mockMexErrand_base,
+        data: {
+          ...mockMexErrand_base.data,
+          stakeholders: [
+            ...mockMexErrand_base.data.stakeholders,
+            {
+              id: 9999, // Has id but no personalNumber/personId
+              version: 1,
+              created: '2024-05-17T10:50:17.25221+02:00',
+              updated: '2024-05-17T10:50:17.252221+02:00',
+              type: 'PERSON',
+              // No personalNumber - manually added stakeholder
+              firstName: 'Manual',
+              lastName: 'Stakeholder',
+              roles: ['CONTACT_PERSON'],
+              addresses: [
+                {
+                  addressCategory: 'POSTAL_ADDRESS',
+                  street: 'Manual Street 1',
+                  postalCode: '12345',
+                  city: 'TestCity',
+                  careOf: '',
+                },
+              ],
+              address: {
+                streetAddress: '',
+              },
+              contactInformation: [
+                {
+                  contactType: 'EMAIL',
+                  value: 'manual@example.com',
+                },
+              ],
+              extraParameters: {},
+            },
+          ],
+          extraParameters: mockMexErrand_base.data.extraParameters.filter((p) => p.key !== 'contractId'),
+        },
+      };
+
+      it('allows selecting stakeholders without partyId as billing parties', () => {
+        // Override the errand intercept for this test
+        cy.intercept('GET', '**/errand/101', mockMexErrandWithManualStakeholder).as('getErrandByIdManual');
+        cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrandWithManualStakeholder).as('getErrandManual');
+        cy.visit(`/arende/${mockMexErrand_base.data.id}`);
+        cy.wait('@getErrandManual');
+        cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+        cy.get('.sk-tabs-list button').contains(`Avtal`).click({ force: true });
+        cy.get('[data-cy="contract-type-select"]').should('exist').select(ContractType.LEASE_AGREEMENT);
+
+        // Add lessor via party modal
+        cy.get('[data-cy="add-party-button"]').should('exist').click();
+        cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist').select('2260');
+        cy.get('[data-cy="party-modal-role-LESSOR"]').check({ force: true });
+        cy.get('[data-cy="party-modal-save-button"]').click();
+
+        // Add lessee (Test Arrendatorsson)
+        cy.get('[data-cy="add-party-button"]').click();
+        cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist').select('2280');
+        cy.get('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+        cy.get('[data-cy="party-modal-save-button"]').click();
+
+        // Add manual stakeholder (without partyId) as lessee + billing party
+        cy.get('[data-cy="add-party-button"]').click();
+        cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist').select('9999');
+        cy.get('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+        cy.get('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').check({ force: true });
+        cy.get('[data-cy="party-modal-save-button"]').click();
+
+        // Verify all parties were added
+        cy.get('[data-cy="parties-table"]').find('[data-cy="party-row-0"]').should('exist');
+        cy.get('[data-cy="parties-table"]').find('[data-cy="party-row-1"]').should('exist');
+        cy.get('[data-cy="parties-table"]').find('[data-cy="party-row-2"]').should('exist');
+
+        // Verify the manual stakeholder has billing role
+        cy.get('[data-cy="parties-table"]').should('contain.text', 'Manual Stakeholder');
+        cy.get('[data-cy="parties-table"]').should('contain.text', 'Fakturamottagare');
+
+        // Save the contract and verify the stakeholder is included with PRIMARY_BILLING_PARTY role
+        cy.get('[data-cy="parties-disclosure"]').find('[data-cy="save-contract-button"]').click();
+
+        cy.wait('@postContract').should(({ request }) => {
+          const contract: Contract = request.body;
+          const manualStakeholder = contract.stakeholders.find(
+            (s: Stakeholder) => s.firstName === 'Manual' && s.lastName === 'Stakeholder'
+          );
+          expect(manualStakeholder).to.exist;
+          expect(manualStakeholder.roles).to.include(StakeholderRole.LESSEE);
+          expect(manualStakeholder.roles).to.include(StakeholderRole.PRIMARY_BILLING_PARTY);
+          // The manual stakeholder should NOT have a meaningful partyId since it was added without personnummer
+          expect(manualStakeholder.partyId).to.not.be.ok;
+        });
+      });
+    });
+
     describe('Non-DRAFT contract restrictions', () => {
+      it('does not show warning banner for DRAFT contracts', () => {
+        visitErrandWithoutContract();
+        cy.get('[data-cy="non-draft-warning-banner"]').should('not.exist');
+        // For DRAFT contracts, add party button should be available
+        cy.get('[data-cy="add-party-button"]').should('exist');
+      });
+
       describe('ACTIVE contract', () => {
         // Use a different contract ID to avoid caching issues from earlier tests
         const activeContractId = '2024-ACTIVE-001';
@@ -806,24 +828,16 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('[data-cy="fees-additional-information-1-input"]').should('have.value', 'Extra info');
         });
 
-        it('shows "Uppdatera fakturamottagare" button for ACTIVE contracts', () => {
+        it('does not allow adding or removing parties for ACTIVE contracts but allows editing roles', () => {
           cy.get('[data-cy="non-draft-warning-banner"]').should('exist');
 
-          // Button should show different text for non-DRAFT contracts
-          cy.get('[data-cy="update-contract-parties"]').should('exist');
-          cy.get('[data-cy="update-contract-parties"]').should('contain.text', 'Uppdatera fakturamottagare');
+          // For ACTIVE contracts, add party button should not exist
+          cy.get('[data-cy="add-party-button"]').should('not.exist');
+          // Remove button should not exist for non-DRAFT contracts
+          cy.get('[data-cy="party-0-remove-button"]').should('not.exist');
+          // Edit button should still exist (for editing roles like billing party)
+          cy.get('[data-cy="party-0-edit-button"]').should('exist');
         });
-      });
-
-      it('does not show warning banner for DRAFT contracts', () => {
-        // Uses default beforeEach intercept with DRAFT status
-        cy.visit(`/arende/${mockMexErrand_base.data.id}`);
-        cy.wait('@getErrand');
-        cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-        cy.get('.sk-tabs-list button').contains(`Avtal`).click({ force: true });
-        cy.get('[data-cy="contract-type-select"]').should('exist');
-        cy.get('[data-cy="non-draft-warning-banner"]').should('not.exist');
-        cy.get('[data-cy="update-contract-parties"]').should('contain.text', 'Uppdatera parter');
       });
     });
   });

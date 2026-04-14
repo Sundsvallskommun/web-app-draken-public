@@ -1,13 +1,13 @@
 import { ContractForm } from '@casedata/components/errand/tabs/contract/contract-form';
 import { MEXCaseType } from '@casedata/interfaces/case-type';
 import { Channels } from '@casedata/interfaces/channels';
-import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
+import { ContractData, UnifiedContractParty } from '@casedata/interfaces/contract-data';
 import {
   Contract,
-  ContractType,
   Stakeholder as ContractStakeholder,
-  StakeholderRole,
   StakeholderType as ContractStakeholderType,
+  ContractType,
+  StakeholderRole,
   Status,
 } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
@@ -20,6 +20,7 @@ import { getErrand, saveErrand } from '@casedata/services/casedata-errand-servic
 import { saveExtraParameters } from '@casedata/services/casedata-extra-parameters-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import {
+  contractStakeholderToUnifiedParty,
   contractToKopeavtal,
   contractToLagenhetsArrende,
   contractTypes,
@@ -135,25 +136,10 @@ export const ContractDetailForm: FC<{
     }
   }, [selectedContract]);
 
-  const lessors = useMemo<StakeholderWithPersonnumber[]>(
-    () => (selectedContract.stakeholders || []).filter((s) => s.roles?.includes(StakeholderRole.LESSOR)),
-    [selectedContract.stakeholders]
-  );
-
-  const lessees = useMemo<StakeholderWithPersonnumber[]>(
-    () => (selectedContract.stakeholders || []).filter((s) => s.roles?.includes(StakeholderRole.LESSEE)),
-    [selectedContract.stakeholders]
-  );
-
-  const buyers = useMemo<StakeholderWithPersonnumber[]>(
-    () => (selectedContract.stakeholders || []).filter((s) => s.roles?.includes(StakeholderRole.BUYER)),
-    [selectedContract.stakeholders]
-  );
-
-  const sellers = useMemo<StakeholderWithPersonnumber[]>(
-    () => (selectedContract.stakeholders || []).filter((s) => s.roles?.includes(StakeholderRole.SELLER)),
-    [selectedContract.stakeholders]
-  );
+  // Convert stakeholders to unified party format using centralized converter
+  const contractParties = useMemo<UnifiedContractParty[]>(() => {
+    return (selectedContract.stakeholders || []).map(contractStakeholderToUnifiedParty);
+  }, [selectedContract.stakeholders]);
 
   const formControls = useForm<ContractData>({
     defaultValues: contractData,
@@ -338,10 +324,7 @@ export const ContractDetailForm: FC<{
             <ContractForm
               readOnly={true}
               existingContract={contractData}
-              buyers={buyers}
-              sellers={sellers}
-              lessees={lessees}
-              lessors={lessors}
+              contractParties={contractParties}
               contractOveriewMode
             />
           </FormProvider>

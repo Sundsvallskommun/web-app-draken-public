@@ -1,10 +1,10 @@
 import { ContractInvoicesTable } from '@casedata/components/contract-overview/contract-invoices-table.component';
-import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
+import { ContractData, UnifiedContractParty } from '@casedata/interfaces/contract-data';
 import { ContractType, IntervalType, Party, StakeholderRole, Status, TimeUnit } from '@casedata/interfaces/contracts';
+import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { validateAction } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
 import {
-  getContractStakeholderName,
   getErrandPropertyInformation,
   hasRecurringFee,
   isLeaseAgreement,
@@ -24,50 +24,54 @@ import {
   Select,
   Table,
   Textarea,
+  useConfirm,
 } from '@sk-web-gui/react';
-import { Calendar, FilePen, Info, MapPin, Receipt, RefreshCcw, Users, Wallet } from 'lucide-react';
-import { ChangeEvent, FC, useEffect, useState } from 'react';
-import { useFieldArray, useFormContext } from 'react-hook-form';
+import { Calendar, FilePen, Info, MapPin, Pencil, Receipt, Trash, Users, Wallet } from 'lucide-react';
+import { ChangeEvent, FC, useEffect, useMemo, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 import { ContractAttachments } from './contract-attachments';
+import { ContractPartyModal } from './contract-party-modal';
 
 export const ContractForm: FC<{
   changeBadgeColor?: (badgeId: string) => void;
   onSave?: (data: ContractData, section?: string) => Promise<void>;
   readOnly?: boolean;
   existingContract: ContractData;
-  buyers: StakeholderWithPersonnumber[];
-  sellers: StakeholderWithPersonnumber[];
-  lessees: StakeholderWithPersonnumber[];
-  lessors: StakeholderWithPersonnumber[];
-  updateStakeholders?: () => void;
+  contractParties: UnifiedContractParty[];
   contractStatus?: Status;
-  onUpdateLesseesOnly?: () => void;
   contractOveriewMode?: boolean;
+  errandStakeholders?: CasedataOwnerOrContact[];
+  onAddParty?: (stakeholderId: string, roles: StakeholderRole[]) => void;
+  onEditPartyRoles?: (stakeholderId: string, newRoles: StakeholderRole[]) => void;
+  onRemoveParty?: (stakeholderId: string) => void;
 }> = ({
   changeBadgeColor,
   onSave,
   readOnly = false,
   existingContract,
-  buyers,
-  sellers,
-  lessees,
-  lessors,
-  updateStakeholders,
+  contractParties,
   contractStatus,
-  onUpdateLesseesOnly,
   contractOveriewMode = false,
+  errandStakeholders,
+  onAddParty,
+  onEditPartyRoles,
+  onRemoveParty,
 }) => {
   const { municipalityId, errand, user } = useAppContext();
-  const { register, setValue, control, handleSubmit, getValues, watch, formState, trigger } =
-    useFormContext<ContractData>();
+  const confirm = useConfirm();
+  const { register, setValue, handleSubmit, getValues, watch, formState, trigger } = useFormContext<ContractData>();
   const [lesseeNoticeIndex, setLesseeNoticeIndex] = useState(0);
   const [lessorNoticeIndex, setLessorNoticeIndex] = useState(1);
   const [invoiceInfoIndex, setInvoiceInfoIndex] = useState(0);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [allowed, setAllowed] = useState(false);
-  const [updatingParties, setUpdatingParties] = useState<boolean>(false);
+
+  // State for party modal
+  const [isPartyModalOpen, setIsPartyModalOpen] = useState(false);
+  const [partyModalMode, setPartyModalMode] = useState<'add' | 'edit'>('add');
+  const [editingParty, setEditingParty] = useState<UnifiedContractParty | undefined>(undefined);
 
   const contractType = watch().type;
 
@@ -87,77 +91,35 @@ export const ContractForm: FC<{
     setAllowed(_a);
   }, [user, errand]);
 
-  useEffect(() => {
-    lessees.forEach(async (s: StakeholderWithPersonnumber) => {
-      const ssn = await getSSNFromPersonId(municipalityId, s.partyId ?? '');
-      s.personalNumber = ssn;
-      setValue('lessees', lessees);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lessees]);
-
-  const { replace: replaceLessees } = useFieldArray({
-    control,
-    keyName: 'lesseeId',
-    name: 'lessees',
-  });
+  // Memoize parties with SSN lookup - this runs only when contractParties changes
+  const [partiesWithSSN, setPartiesWithSSN] = useState<UnifiedContractParty[]>([]);
 
   useEffect(() => {
-    lessors.forEach(async (s: StakeholderWithPersonnumber) => {
-      const ssn = await getSSNFromPersonId(municipalityId, s.partyId ?? '');
-      s.personalNumber = ssn;
-      setValue('lessors', lessors);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lessors]);
+    const fetchSSNs = async () => {
+      const updatedParties = await Promise.all(
+        contractParties.map(async (party) => {
+          if (party.type === 'PERSON' && party.originalStakeholder.partyId && !party.personalNumber) {
+            const ssn = await getSSNFromPersonId(municipalityId, party.originalStakeholder.partyId);
+            return { ...party, personalNumber: ssn };
+          }
+          return party;
+        })
+      );
+      setPartiesWithSSN(updatedParties);
+    };
 
-  const { replace: replaceLessors } = useFieldArray({
-    control,
-    keyName: 'lessorId',
-    name: 'lessors',
-  });
+    if (contractParties.length > 0) {
+      fetchSSNs();
+    } else {
+      setPartiesWithSSN([]);
+    }
+  }, [contractParties, municipalityId]);
 
-  useEffect(() => {
-    buyers.forEach(async (b: StakeholderWithPersonnumber, idx) => {
-      const ssn = await getSSNFromPersonId(municipalityId, b.partyId ?? '');
-      b.personalNumber = ssn;
-      setValue('buyers', buyers);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [buyers]);
-
-  const { replace: replaceBuyers } = useFieldArray({
-    control,
-    keyName: 'buyerId',
-    name: 'buyers',
-  });
-
-  useEffect(() => {
-    sellers.forEach(async (s: StakeholderWithPersonnumber, idx) => {
-      const ssn = await getSSNFromPersonId(municipalityId, s.partyId ?? '');
-      s.personalNumber = ssn;
-      setValue('sellers', sellers);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sellers]);
-
-  const { replace: replaceSellers } = useFieldArray({
-    control,
-    keyName: 'sellerId',
-    name: 'sellers',
-  });
-
-  useEffect(() => {
-    replaceLessees(lessees);
-    replaceLessors(lessors);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lessees, lessors]);
-
-  useEffect(() => {
-    replaceSellers(sellers);
-    replaceBuyers(buyers);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [buyers, sellers]);
+  // Use parties with SSN for display, fallback to original parties
+  const displayParties = useMemo(
+    () => (partiesWithSSN.length > 0 ? partiesWithSSN : contractParties),
+    [partiesWithSSN, contractParties]
+  );
 
   const [errandPropertyDesignations, setErrandPropertyDesignations] = useState<{ name: string; district?: string }[]>(
     []
@@ -225,70 +187,167 @@ export const ContractForm: FC<{
     );
   };
 
-  const partyTable = (
-    label: 'Säljare' | 'Köpare' | 'Upplåtare' | 'Arrendatorer',
-    stakeholders: StakeholderWithPersonnumber[]
-  ) => (
-    <Table dense background data-cy={`${label}-table`}>
-      <Table.Header>
-        <Table.HeaderColumn>{label}</Table.HeaderColumn>
-        <Table.HeaderColumn>Adress</Table.HeaderColumn>
-        <Table.HeaderColumn>Roll</Table.HeaderColumn>
-      </Table.Header>
-      <Table.Body>
-        {stakeholders?.length > 0 ? (
-          stakeholders.map((b, idx) => (
-            <Table.Row key={`row-${idx}`} data-cy={`${label}-row-${idx}`}>
-              <Table.Column className="flex flex-col items-start justify-center !gap-0" data-cy={`party-${idx}-name`}>
-                <div>
-                  <strong>{getContractStakeholderName(b)}</strong>
-                </div>
-                <div>
-                  {b.type === 'ASSOCIATION' || b.type === 'MUNICIPALITY' || b.type === 'ORGANIZATION'
-                    ? b.organizationNumber
-                    : b.personalNumber}
-                </div>
-              </Table.Column>
-              <Table.Column
-                className="flex flex-col items-start justify-center !gap-0"
-                data-cy={`party-${idx}-address`}
-              >
-                {b.address?.streetAddress && b.address?.postalCode && b.address?.town ? (
-                  <>
-                    <div>
-                      <strong>{b?.address?.streetAddress}</strong>
+  // Handle opening add party modal
+  const handleOpenAddModal = () => {
+    setPartyModalMode('add');
+    setEditingParty(undefined);
+    setIsPartyModalOpen(true);
+  };
+
+  // Handle opening edit party modal
+  const handleOpenEditModal = (party: UnifiedContractParty) => {
+    setPartyModalMode('edit');
+    setEditingParty(party);
+    setIsPartyModalOpen(true);
+  };
+
+  // Handle modal save
+  const handleModalSave = (stakeholderId: string, roles: StakeholderRole[]) => {
+    if (partyModalMode === 'add') {
+      onAddParty?.(stakeholderId, roles);
+    } else {
+      onEditPartyRoles?.(stakeholderId, roles);
+    }
+  };
+
+  // Unified party table
+  const unifiedPartyTable = () => (
+    <>
+      <Table dense background data-cy="parties-table">
+        <Table.Header>
+          <Table.HeaderColumn>Namn</Table.HeaderColumn>
+          <Table.HeaderColumn>Adress</Table.HeaderColumn>
+          <Table.HeaderColumn>Roll</Table.HeaderColumn>
+          <Table.HeaderColumn className="w-[60px]"></Table.HeaderColumn>
+        </Table.Header>
+        <Table.Body>
+          {displayParties.length > 0 ? (
+            displayParties.map((party, idx) => (
+              <Table.Row key={`party-row-${idx}`} data-cy={`party-row-${idx}`} className="relative">
+                <Table.Column className="flex flex-col items-start justify-center !gap-0" data-cy={`party-${idx}-name`}>
+                  <div>
+                    <strong>{party.name}</strong>
+                  </div>
+                  <div>{party.personalNumber || party.organizationNumber}</div>
+                </Table.Column>
+                <Table.Column
+                  className="flex flex-col items-start justify-center !gap-0"
+                  data-cy={`party-${idx}-address`}
+                >
+                  {party.address.street && party.address.postalCode && party.address.city ? (
+                    <>
+                      <div>
+                        <strong>{party.address.street}</strong>
+                      </div>
+                      {party.address.careOf && <div>{party.address.careOf}</div>}
+                      <div>
+                        {party.address.postalCode} {party.address.city}
+                      </div>
+                    </>
+                  ) : (
+                    <strong>(saknas)</strong>
+                  )}
+                </Table.Column>
+                <Table.Column className="flex flex-col items-start justify-center !gap-0" data-cy={`party-${idx}-role`}>
+                  {party.roles.length > 0 ? (
+                    party.roles
+                      .filter((r) => r !== StakeholderRole.CONTACT_PERSON)
+                      .map((role, roleIdx) => <div key={`role-${roleIdx}`}>{prettyContractRoles[role]}</div>)
+                  ) : (
+                    <strong>(saknas)</strong>
+                  )}
+                </Table.Column>
+                <Table.Column className="!p-0">
+                  {!readOnly && (isDraft || isEditable('lessee')) && (
+                    <div className="flex items-center gap-2">
+                      {/* TODO: Restore PopupMenu when Table component supports overflow popups
+                      <PopupMenu position="right">
+                        <PopupMenu.Button iconButton variant="ghost" aria-label="Alternativ" data-cy={`party-${idx}-menu-button`}>
+                          <Ellipsis />
+                        </PopupMenu.Button>
+                        <PopupMenu.Panel>
+                          <PopupMenu.Items>
+                            <PopupMenu.Group>
+                              <PopupMenu.Item>
+                                <Button leftIcon={<Pencil size={18} />} variant="ghost" data-cy={`party-${idx}-edit-button`} onClick={() => handleOpenEditModal(party)}>
+                                  Redigera roll
+                                </Button>
+                              </PopupMenu.Item>
+                            </PopupMenu.Group>
+                            {isDraft && (
+                              <PopupMenu.Group>
+                                <PopupMenu.Item>
+                                  <Button leftIcon={<Trash size={18} />} variant="ghost" data-cy={`party-${idx}-remove-button`} onClick={() => onRemoveParty?.(party.stakeholderId)}>
+                                    Ta bort part
+                                  </Button>
+                                </PopupMenu.Item>
+                              </PopupMenu.Group>
+                            )}
+                          </PopupMenu.Items>
+                        </PopupMenu.Panel>
+                      </PopupMenu>
+                      */}
+                      <Button
+                        iconButton
+                        variant="ghost"
+                        size="sm"
+                        aria-label="Redigera roll"
+                        data-cy={`party-${idx}-edit-button`}
+                        onClick={() => handleOpenEditModal(party)}
+                      >
+                        <Pencil size={18} />
+                      </Button>
+                      {isDraft && (
+                        <Button
+                          iconButton
+                          variant="ghost"
+                          size="sm"
+                          aria-label="Ta bort part"
+                          data-cy={`party-${idx}-remove-button`}
+                          onClick={() => {
+                            confirm
+                              .showConfirmation(
+                                'Ta bort part',
+                                'Vill du ta bort denna part från avtalet?',
+                                'Ja',
+                                'Nej',
+                                'info',
+                                'info'
+                              )
+                              .then((confirmed) => {
+                                if (confirmed) {
+                                  onRemoveParty?.(party.stakeholderId);
+                                }
+                              });
+                          }}
+                        >
+                          <Trash size={18} />
+                        </Button>
+                      )}
                     </div>
-                    <div>{b?.address?.careOf}</div>
-                    <div>
-                      {b?.address?.postalCode} {b?.address?.town}
-                    </div>
-                  </>
-                ) : (
-                  <strong>(saknas)</strong>
-                )}
-              </Table.Column>
-              <Table.Column className="flex flex-col items-start justify-center !gap-0" data-cy={`party-${idx}-role`}>
-                {(b.roles?.length ?? 0) > 0 ? (
-                  (b.roles ?? [])
-                    .filter((r) => r !== StakeholderRole.CONTACT_PERSON)
-                    .map((role, idx) => <div key={`role-${idx}`}>{prettyContractRoles[role]}</div>)
-                ) : (
-                  <strong>(saknas)</strong>
-                )}
+                  )}
+                </Table.Column>
+              </Table.Row>
+            ))
+          ) : (
+            <Table.Row>
+              <Table.Column colSpan={4} className="flex flex-col items-start justify-center !gap-0">
+                <div>
+                  <strong>Inga parter tillagda</strong>
+                </div>
               </Table.Column>
             </Table.Row>
-          ))
-        ) : (
-          <Table.Row>
-            <Table.Column className="flex flex-col items-start justify-center !gap-0">
-              <div>
-                <strong>(saknas)</strong>
-              </div>
-            </Table.Column>
-          </Table.Row>
-        )}
-      </Table.Body>
-    </Table>
+          )}
+        </Table.Body>
+      </Table>
+      {!readOnly && isDraft && onAddParty && (
+        <div className="mt-12">
+          <Button size="sm" variant="secondary" data-cy="add-party-button" onClick={handleOpenAddModal}>
+            Lägg till ny part
+          </Button>
+        </div>
+      )}
+    </>
   );
 
   return (
@@ -322,54 +381,7 @@ export const ContractForm: FC<{
         </Disclosure.Header>
         <Disclosure.Content>
           <div className="flex flex-col gap-24">
-            {getValues().type === ContractType.PURCHASE_AGREEMENT ? (
-              <>
-                {partyTable('Säljare', sellers)}
-                {partyTable('Köpare', buyers)}
-              </>
-            ) : isLeaseAgreement(getValues().type) ? (
-              <>
-                {partyTable('Upplåtare', lessors)}
-                {partyTable('Arrendatorer', lessees)}
-              </>
-            ) : null}
-            {!readOnly && updateStakeholders && onSave && (
-              <div>
-                <Button
-                  size="sm"
-                  data-cy="update-contract-parties"
-                  rightIcon={<RefreshCcw />}
-                  variant="secondary"
-                  loading={updatingParties}
-                  loadingText="Uppdaterar"
-                  onClick={() => {
-                    setUpdatingParties(true);
-                    if (isDraft) {
-                      updateStakeholders();
-                    } else {
-                      onUpdateLesseesOnly?.();
-                    }
-                    setTimeout(
-                      handleSubmit(
-                        async () => {
-                          await onSave(getValues()).catch(() => {
-                            setUpdatingParties(false);
-                          });
-                          setUpdatingParties(false);
-                        },
-                        (e) => {
-                          console.error('Error validating form after updating parties:', e);
-                          setUpdatingParties(false);
-                        }
-                      ),
-                      0
-                    );
-                  }}
-                >
-                  {isDraft ? 'Uppdatera parter' : 'Uppdatera fakturamottagare'}
-                </Button>
-              </div>
-            )}
+            {unifiedPartyTable()}
             <div className="flex gap-18 justify-start">
               <FormControl id="oldContractId" className="w-full">
                 <FormLabel>Avtals-ID</FormLabel>
@@ -905,6 +917,18 @@ export const ContractForm: FC<{
           <ContractAttachments existingContract={existingContract} readOnly={!isEditable('general')} />
         </Disclosure.Content>
       </Disclosure>
+
+      {/* Party Modal */}
+      <ContractPartyModal
+        isOpen={isPartyModalOpen}
+        onClose={() => setIsPartyModalOpen(false)}
+        onSave={handleModalSave}
+        mode={partyModalMode}
+        stakeholderOptions={errandStakeholders ?? []}
+        existingParty={editingParty}
+        contractType={getValues().type}
+        existingParties={contractParties}
+      />
     </>
   );
 };
