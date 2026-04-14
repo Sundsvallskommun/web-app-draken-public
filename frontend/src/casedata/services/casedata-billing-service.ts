@@ -38,7 +38,7 @@ const buildInvoiceRows = (services: BillingServiceItem[]): CInvoiceRow[] => {
           activity: service.accountInformation.activity,
           project: service.accountInformation.project,
           article: service.accountInformation.object,
-          counterpart: service.accountInformation.counterpart || casedataInvoiceSettings.counterpart,
+          counterpart: service.accountInformation.counterpart || '00000000',
           amount: twoDecimals(service.quantity * service.costPerUnit),
         },
       ],
