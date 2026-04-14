@@ -561,7 +561,7 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
                 return (
                   <tbody key={rowIndex}>
                     <Table.Row className="!border-b-0">
-                      <Table.Column>
+                      <Table.Column className="!items-start">
                         <div className="flex flex-col w-[36rem]">
                           <span className="font-bold mt-6">{row.descriptions?.join(', ') || '-'}</span>
                           {row.detailedDescriptions?.some((d) => d) && (
@@ -577,13 +577,13 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
                           )}
                         </div>
                       </Table.Column>
-                      <Table.Column className="-mr-18">
+                      <Table.Column className="-mr-18 !items-start">
                         <span className="mt-6">{row.quantity || 0}</span>
                       </Table.Column>
-                      <Table.Column className="-mr-18">
+                      <Table.Column className="-mr-18 !items-start">
                         <span className="whitespace-nowrap mt-6">{(row.costPerUnit || 0).toFixed(2)} kr</span>
                       </Table.Column>
-                      <Table.Column className="-mr-18">
+                      <Table.Column className="-mr-18 !items-start">
                         <span className="whitespace-nowrap mt-6">
                           {((row.quantity || 0) * (row.costPerUnit || 0)).toFixed(2)} kr
                         </span>

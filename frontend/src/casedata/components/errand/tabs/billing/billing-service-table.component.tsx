@@ -49,7 +49,7 @@ export const BillingServiceTable: FC<BillingServiceTableProps> = ({
           return (
             <tbody key={service.id}>
               <Table.Row className="!border-b-0">
-                <Table.Column>
+                <Table.Column className="!items-start">
                   <div className="flex flex-col w-[36rem]">
                     <span className="font-bold mt-6">{service.name}</span>
                     {service.descriptions?.some((d) => d) && (
@@ -65,13 +65,13 @@ export const BillingServiceTable: FC<BillingServiceTableProps> = ({
                     )}
                   </div>
                 </Table.Column>
-                <Table.Column className="-mr-18">
+                <Table.Column className="-mr-18 !items-start">
                   <span className="mt-6">{service.quantity}</span>
                 </Table.Column>
-                <Table.Column className="-mr-18">
+                <Table.Column className="-mr-18 !items-start">
                   <span className="whitespace-nowrap mt-6">{service.costPerUnit.toFixed(2)} kr</span>
                 </Table.Column>
-                <Table.Column className="-mr-18">
+                <Table.Column className="-mr-18 !items-start">
                   <span className="whitespace-nowrap mt-6">{service.totalAmount.toFixed(2)} kr</span>
                 </Table.Column>
                 <Table.Column className="max-w-[3rem]">
