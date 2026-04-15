@@ -66,7 +66,7 @@ export const BillingLeaseholder: FC<BillingLeaseholderProps> = ({ onSelectRecipi
   return (
     <FormControl className="w-full max-w-[46rem]" invalid={!!errors.recipient}>
       <FormLabel>
-        Fakturamottagare * <span className="font-normal">(hämtas från grunduppgifter)</span>
+        Fakturamottagare * <span className="font-normal">(hämtad från grunduppgifter)</span>
       </FormLabel>
       <Select className="w-full" value={selectedStakeholderId} onChange={(e) => handleSelect(e.target.value)}>
         <Select.Option value="">Välj fakturamottagare</Select.Option>
