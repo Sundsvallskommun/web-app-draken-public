@@ -4,7 +4,9 @@ import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 import { apiServiceName } from '@/config/api-config';
 import { BillingRecord, Status } from '@/data-contracts/billingpreprocessor/data-contracts';
+import { RelationPagedResponse } from '@/data-contracts/relations/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
+import { User } from '@/interfaces/users.interface';
 import { CBillingRecord, CPageBillingRecord } from '@/interfaces/billing-interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasAnyPermission, hasPermissions } from '@/middlewares/permissions.middleware';
@@ -18,6 +20,8 @@ import { apiURL, toOffsetDateTime } from '@/utils/util';
 export class BillingController {
   private apiService = new ApiService();
   private SERVICE = apiServiceName('billingpreprocessor');
+  private RELATIONS_SERVICE = apiServiceName('relations');
+  private readonly BILLING_ID_CHUNK_SIZE = 50;
 
   @Get('/billing/:municipalityId/billingrecords')
   @OpenAPI({ summary: 'Get all billing records' })
@@ -188,13 +192,77 @@ export class BillingController {
       return response.status(400).send('Contract id missing');
     }
 
-    // Filtering not possible yet - necessary parameters unknown
-    // const filter = `&filter=category:'MEX_INVOICE' and extraParameters.contractId:'${contractId}'`;
-    const filter = ``;
-    let url = `${this.SERVICE}/${municipalityId}/billingrecords?page=${page || 0}&size=${size || 10}`;
-    url += filter;
+    const billingRecordIds = await this.getAllRelatedBillingRecordIds(municipalityId, contractId, req.user);
+    const uniqueIds = [...new Set(billingRecordIds)];
 
-    const res = await this.apiService.get<CPageBillingRecord>({ url }, req.user);
-    return response.status(200).send(res.data);
+    const s = size || 10;
+    const p = page || 0;
+
+    if (uniqueIds.length === 0) {
+      return response.status(200).send({
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+        size: s,
+        number: p,
+        numberOfElements: 0,
+        first: true,
+        last: true,
+        empty: true,
+      });
+    }
+
+    const chunks: string[][] = [];
+    for (let i = 0; i < uniqueIds.length; i += this.BILLING_ID_CHUNK_SIZE) {
+      chunks.push(uniqueIds.slice(i, i + this.BILLING_ID_CHUNK_SIZE));
+    }
+
+    const results = await Promise.all(
+      chunks.map(chunk => this.fetchBillingRecordsByIds(municipalityId, chunk, req.user)),
+    );
+    const allRecords = results.flat();
+
+    const slice = allRecords.slice(p * s, (p + 1) * s);
+    return response.status(200).send({
+      content: slice,
+      totalElements: allRecords.length,
+      totalPages: Math.ceil(allRecords.length / s),
+      size: s,
+      number: p,
+      numberOfElements: slice.length,
+      first: p === 0,
+      last: (p + 1) * s >= allRecords.length,
+      empty: slice.length === 0,
+    });
+  }
+
+  private async fetchBillingRecordsByIds(municipalityId: string, ids: string[], user: User): Promise<BillingRecord[]> {
+    const idList = ids.map(id => `'${id}'`).join(', ');
+    const filter = `&filter=${encodeURIComponent(`id in [${idList}]`)}`;
+    const url = `${this.SERVICE}/${municipalityId}/billingrecords?page=0&size=${ids.length}${filter}`;
+    const res = await this.apiService.get<CPageBillingRecord>({ url }, user);
+    return res.data.content || [];
+  }
+
+  private async getAllRelatedBillingRecordIds(municipalityId: string, contractId: string, user: User): Promise<string[]> {
+    const allIds: string[] = [];
+    let currentPage = 1;
+    let totalPages = 1;
+
+    while (currentPage <= totalPages) {
+      const url = `${municipalityId}/relations?filter=source.resourceId%3A%27${contractId}%27&page=${currentPage}&limit=100`;
+      const baseURL = apiURL(this.RELATIONS_SERVICE);
+      const res = await this.apiService.get<RelationPagedResponse>({ url, baseURL }, user);
+      const relations = res.data.relations || [];
+
+      relations
+        .filter(r => r.target?.type === 'billing-record' && r.target?.service === 'billingpreprocessor')
+        .forEach(r => allIds.push(r.target.resourceId));
+
+      totalPages = res.data._meta?.totalPages ?? 1;
+      currentPage++;
+    }
+
+    return allIds;
   }
 }

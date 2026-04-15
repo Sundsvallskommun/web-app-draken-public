@@ -1,5 +1,5 @@
 import { BillingFormData } from '@casedata/interfaces/billing';
-import { Checkbox, DatePicker, FormControl, FormErrorMessage, FormLabel, Input, Textarea } from '@sk-web-gui/react';
+import { Checkbox, DatePicker, FormControl, FormErrorMessage, FormLabel, Input } from '@sk-web-gui/react';
 import { useCasedataStore } from '@stores/index';
 import { useFormContext } from 'react-hook-form';
 
@@ -40,10 +40,13 @@ export const BillingSpecifications: React.FC = () => {
             <FormErrorMessage>{errors.specifications.customerReference.message}</FormErrorMessage>
           )}
         </FormControl>
-        <FormControl className="w-full">
+        <FormControl className="w-full" invalid={!!errors.specifications?.rejectionDate}>
           <FormLabel>Aviseringsdatum</FormLabel>
           <DatePicker min={new Date().toISOString().split('T')[0]} {...register('specifications.rejectionDate')} />
           <small>Välj den första dagen i månaden</small>
+          {errors.specifications?.rejectionDate && (
+            <FormErrorMessage>{errors.specifications.rejectionDate.message}</FormErrorMessage>
+          )}
         </FormControl>
       </div>
       <div className="w-full">
@@ -51,7 +54,7 @@ export const BillingSpecifications: React.FC = () => {
           <FormLabel>
             Avitext * <span className="font-normal">(ange vad fakturan och vilken period den gäller)</span>
           </FormLabel>
-          <Textarea className="w-full" rows={3} {...register('specifications.avitext')} />
+          <Input className="w-full" maxLength={30} {...register('specifications.avitext')} />
           {errors.specifications?.avitext && (
             <FormErrorMessage>{errors.specifications.avitext.message}</FormErrorMessage>
           )}

@@ -10,7 +10,6 @@ import {
   removeMunicipalityName,
 } from '@common/services/facilities-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { useCasedataStore, useSupportStore } from '@stores/index';
 import {
   Button,
   FormControl,
@@ -23,6 +22,7 @@ import {
   Table,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { useCasedataStore, useSupportStore } from '@stores/index';
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
 import { FC, useEffect, useState } from 'react';
 import { useForm, UseFormSetValue } from 'react-hook-form';
@@ -54,6 +54,7 @@ export const Facilities: FC<{
   const [selectedEstate, setSelectedEstate] = useState<EstateInformation>();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRealEstates(props.facilities);
   }, [props.facilities]);
 
@@ -226,7 +227,7 @@ export const Facilities: FC<{
           </Table.Header>
           <Table.Body data-cy={`facility-table`}>
             {realEstates === undefined || realEstates.length === 0 ? (
-              <Table.Row>
+              <Table.Row data-cy="no-estates-row">
                 <Table.Column>Inga fastigheter tillagda</Table.Column>
               </Table.Row>
             ) : (

@@ -11,7 +11,6 @@ import {
   FormLabel,
   Input,
   Table,
-  Textarea,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
@@ -43,8 +42,8 @@ interface EditRowState {
   detailedDescription1: string;
   detailedDescription2: string;
   detailedDescription3: string;
-  quantity: number;
-  costPerUnit: number;
+  quantity: number | '';
+  costPerUnit: number | '';
   costCenter: string;
   subaccount: string;
   department: string;
@@ -96,6 +95,17 @@ export const BillingTable: React.FC<BillingTableProps> = ({
 
   const handleSave = async (record: CBillingRecord) => {
     if (!editFormState) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    if (editFormState.date && editFormState.date < today) {
+      toastMessage({
+        position: 'bottom',
+        closeable: true,
+        message: 'Aviseringsdatum kan inte vara i det förflutna',
+        status: 'error',
+      });
+      return;
+    }
 
     setSavingId(record.id ?? null);
 
@@ -248,6 +258,9 @@ export const BillingTable: React.FC<BillingTableProps> = ({
   const handleSaveRow = () => {
     if (!editFormState || !editingRowState) return;
 
+    const quantity = editingRowState.quantity === '' ? 0 : editingRowState.quantity;
+    const costPerUnit = editingRowState.costPerUnit === '' ? 0 : editingRowState.costPerUnit;
+
     const updatedRows = editFormState.invoiceRows.map((row, index) => {
       if (index === editingRowState.rowIndex) {
         const existingAccountInfo = row.accountInformation?.[0] || {};
@@ -259,9 +272,9 @@ export const BillingTable: React.FC<BillingTableProps> = ({
             editingRowState.detailedDescription2,
             editingRowState.detailedDescription3,
           ].filter((d) => d !== ''),
-          quantity: editingRowState.quantity,
-          costPerUnit: editingRowState.costPerUnit,
-          totalAmount: editingRowState.quantity * editingRowState.costPerUnit,
+          quantity,
+          costPerUnit,
+          totalAmount: quantity * costPerUnit,
           accountInformation: [
             {
               ...existingAccountInfo,
@@ -271,7 +284,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
               activity: editingRowState.activity,
               project: editingRowState.project,
               article: editingRowState.object,
-              amount: editingRowState.quantity * editingRowState.costPerUnit,
+              amount: quantity * costPerUnit,
             },
           ],
         };
@@ -414,9 +427,9 @@ export const BillingTable: React.FC<BillingTableProps> = ({
 
                 <FormControl className="w-full">
                   <FormLabel>Avitext</FormLabel>
-                  <Textarea
+                  <Input
                     className="w-full"
-                    rows={3}
+                    maxLength={30}
                     value={editFormState?.description || ''}
                     onChange={(e) => handleFormChange('description', e.target.value)}
                   />
@@ -462,7 +475,12 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                   min={0}
                                   step={0.01}
                                   value={editingRowState.quantity}
-                                  onChange={(e) => handleRowFieldChange('quantity', parseFloat(e.target.value) || 0)}
+                                  onChange={(e) =>
+                                    handleRowFieldChange(
+                                      'quantity',
+                                      e.target.value === '' ? '' : parseFloat(e.target.value)
+                                    )
+                                  }
                                 />
                               </FormControl>
                               <FormControl className="w-full">
@@ -472,7 +490,12 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                   min={0}
                                   step={0.01}
                                   value={editingRowState.costPerUnit}
-                                  onChange={(e) => handleRowFieldChange('costPerUnit', parseFloat(e.target.value) || 0)}
+                                  onChange={(e) =>
+                                    handleRowFieldChange(
+                                      'costPerUnit',
+                                      e.target.value === '' ? '' : parseFloat(e.target.value)
+                                    )
+                                  }
                                 />
                               </FormControl>
                             </div>
@@ -566,8 +589,8 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                 return (
                   <tbody key={rowIndex}>
                     <Table.Row className="!border-b-0">
-                      <Table.Column>
-                        <div className="flex flex-col">
+                      <Table.Column className="!items-start">
+                        <div className="flex flex-col w-[36rem]">
                           <span className="font-bold mt-6">{row.descriptions?.join(', ') || '-'}</span>
                           {row.detailedDescriptions?.some((d) => d) && (
                             <div className="py-4">
@@ -582,20 +605,20 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                           )}
                         </div>
                       </Table.Column>
-                      <Table.Column>
+                      <Table.Column className="-mr-18 !items-start">
                         <span className="mt-6">{row.quantity || 0}</span>
                       </Table.Column>
-                      <Table.Column>
+                      <Table.Column className="-mr-18 !items-start">
                         <span className="whitespace-nowrap mt-6">{(row.costPerUnit || 0).toFixed(2)} kr</span>
                       </Table.Column>
-                      <Table.Column>
+                      <Table.Column className="-mr-18 !items-start">
                         <span className="whitespace-nowrap mt-6">
                           {((row.quantity || 0) * (row.costPerUnit || 0)).toFixed(2)} kr
                         </span>
                       </Table.Column>
                       {isEditing && (
                         <>
-                          <Table.Column>
+                          <Table.Column className="max-w-[3rem]">
                             <div className="mt-6">
                               <Button
                                 size="sm"
@@ -608,7 +631,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                               </Button>
                             </div>
                           </Table.Column>
-                          <Table.Column>
+                          <Table.Column className="max-w-[3rem] mr-10">
                             <div className="mt-6">
                               <Button
                                 size="sm"

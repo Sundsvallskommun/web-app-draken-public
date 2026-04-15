@@ -26,7 +26,11 @@ const billingSchema = yup.object({
     ourReference: yup.string().required('Vår referens måste anges'),
     customerReference: yup.string().required('Kundens referens måste anges'),
     avitext: yup.string().required('Avitext måste anges'),
-    rejectionDate: yup.string(),
+    rejectionDate: yup.string().test('not-past', 'Aviseringsdatum kan inte vara i det förflutna', (value) => {
+      if (!value) return true;
+      const today = new Date().toISOString().split('T')[0];
+      return value >= today;
+    }),
     selectedFacilities: yup.array().of(yup.string()),
   }),
   services: yup.array().min(1, 'Lägg till minst en kontering'),

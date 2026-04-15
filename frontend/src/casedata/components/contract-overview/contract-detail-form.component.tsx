@@ -1,7 +1,7 @@
 import { ContractForm } from '@casedata/components/errand/tabs/contract/contract-form';
 import { MEXCaseType } from '@casedata/interfaces/case-type';
 import { Channels } from '@casedata/interfaces/channels';
-import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
+import { ContractData, UnifiedContractParty } from '@casedata/interfaces/contract-data';
 import {
   Contract,
   Stakeholder as ContractStakeholder,
@@ -20,6 +20,7 @@ import { getErrand, saveErrand } from '@casedata/services/casedata-errand-servic
 import { saveExtraParameters } from '@casedata/services/casedata-extra-parameters-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import {
+  contractStakeholderToUnifiedParty,
   contractToKopeavtal,
   contractToLagenhetsArrende,
   contractTypes,
@@ -136,25 +137,10 @@ export const ContractDetailForm: FC<{
     }
   }, [selectedContract]);
 
-  const lessors = useMemo<StakeholderWithPersonnumber[]>(
-    () => (selectedContract.stakeholders || []).filter((s) => s.roles?.includes(StakeholderRole.LESSOR)),
-    [selectedContract.stakeholders]
-  );
-
-  const lessees = useMemo<StakeholderWithPersonnumber[]>(
-    () => (selectedContract.stakeholders || []).filter((s) => s.roles?.includes(StakeholderRole.LESSEE)),
-    [selectedContract.stakeholders]
-  );
-
-  const buyers = useMemo<StakeholderWithPersonnumber[]>(
-    () => (selectedContract.stakeholders || []).filter((s) => s.roles?.includes(StakeholderRole.BUYER)),
-    [selectedContract.stakeholders]
-  );
-
-  const sellers = useMemo<StakeholderWithPersonnumber[]>(
-    () => (selectedContract.stakeholders || []).filter((s) => s.roles?.includes(StakeholderRole.SELLER)),
-    [selectedContract.stakeholders]
-  );
+  // Convert stakeholders to unified party format using centralized converter
+  const contractParties = useMemo<UnifiedContractParty[]>(() => {
+    return (selectedContract.stakeholders || []).map(contractStakeholderToUnifiedParty);
+  }, [selectedContract.stakeholders]);
 
   const formControls = useForm<ContractData>({
     defaultValues: contractData,
@@ -163,6 +149,7 @@ export const ContractDetailForm: FC<{
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState<boolean>(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState<boolean>(false);
   const toastMessage = useSnackbar();
   const router = useRouter();
 
@@ -177,23 +164,20 @@ export const ContractDetailForm: FC<{
     setIsConfirmModalOpen(false);
   };
 
-  const handleChangeBillingDetails = async () => {
-    closeConfirmModal();
-    setIsLoading(true);
-
+  const createContractErrand = async (caseType: MEXCaseType, description: string) => {
     try {
       const mappedStakeholders = (selectedContract.stakeholders || [])
         .map(mapContractStakeholderToErrandStakeholder)
         .filter((s): s is CasedataOwnerOrContact => s !== null);
 
       const newErrandData: Partial<IErrand> & { municipalityId: string } = {
-        caseType: MEXCaseType.MEX_OTHER,
+        caseType,
         channel: Channels.WEB_UI,
         phase: ErrandPhase.aktualisering,
         priority: Priority.MEDIUM,
         status: { statusType: ErrandStatus.ArendeInkommit },
         municipalityId: municipalityId,
-        description: `Ändra avtalsuppgifter för avtal ${selectedContract.contractId}`,
+        description,
         stakeholders: mappedStakeholders,
       };
 
@@ -230,7 +214,7 @@ export const ContractDetailForm: FC<{
 
       router.push(`/arende/${createdErrand.errand.errandNumber}`);
     } catch (error) {
-      console.error('Error creating billing change errand:', error);
+      console.error('Error creating contract errand:', error);
       toastMessage({
         position: 'bottom',
         closeable: false,
@@ -242,24 +226,56 @@ export const ContractDetailForm: FC<{
     }
   };
 
+  const handleChangeBillingDetails = async () => {
+    closeConfirmModal();
+    setIsLoading(true);
+    await createContractErrand(
+      MEXCaseType.MEX_OTHER,
+      `Ändra avtalsuppgifter för avtal ${selectedContract.contractId}`
+    );
+  };
+
+  const handleCancelContract = async () => {
+    setIsCancelModalOpen(false);
+    setIsLoading(true);
+    await createContractErrand(
+      MEXCaseType.MEX_TERMINATION_OF_LEASE,
+      `Säg upp avtal ${selectedContract.contractId}`
+    );
+  };
+
   return (
     <>
       <div className="px-40 my-lg gap-24">
         <div className="flex flex-col gap-md mb-32">
           <div className="flex justify-between items-center">
             <h2 className="text-h4-sm m-0">{contractTypeLabel}</h2>
-            <Button
-              data-cy="contract-detail-edit-button"
-              color="vattjom"
-              variant="primary"
-              leftIcon={<ExternalLink />}
-              disabled={isLoading || !selectedContract.contractId}
-              loading={isLoading}
-              loadingText="Skapar ärende..."
-              onClick={openConfirmModal}
-            >
-              Ändra avtalsuppgifter
-            </Button>
+            <div className="flex gap-md">
+              <Button
+                data-cy="contract-detail-edit-button"
+                color="vattjom"
+                variant="primary"
+                leftIcon={<ExternalLink />}
+                disabled={isLoading || !selectedContract.contractId}
+                loading={isLoading}
+                loadingText="Skapar ärende..."
+                onClick={openConfirmModal}
+              >
+                Ändra avtalsuppgifter
+              </Button>
+              <Button
+                data-cy="contract-detail-cancel-button"
+                color="vattjom"
+                variant="secondary"
+                leftIcon={<ExternalLink />}
+                disabled={isLoading || !selectedContract.contractId}
+                loading={isLoading}
+                loadingText="Skapar ärende..."
+                onClick={() => setIsCancelModalOpen(true)}
+              >
+                Säg upp avtal
+              </Button>
+            </div>
           </div>
 
           <p className="text-small text-dark-secondary m-0">
@@ -309,10 +325,7 @@ export const ContractDetailForm: FC<{
             <ContractForm
               readOnly={true}
               existingContract={contractData}
-              buyers={buyers}
-              sellers={sellers}
-              lessees={lessees}
-              lessors={lessors}
+              contractParties={contractParties}
               contractOveriewMode
             />
           </FormProvider>
@@ -345,6 +358,31 @@ export const ContractDetailForm: FC<{
             color="vattjom"
             onClick={handleChangeBillingDetails}
             data-cy="contract-detail-confirm-submit"
+          >
+            Ja, skapa ärende
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal
+        show={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        label="Säg upp avtal"
+        className="w-[60rem]"
+        data-cy="contract-cancel-confirm-modal"
+      >
+        <Modal.Content>
+          <p>Vill du skapa ett nytt ärende för uppsägning av avtal {selectedContract.contractId}?</p>
+        </Modal.Content>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setIsCancelModalOpen(false)} data-cy="contract-cancel-confirm-cancel">
+            Avbryt
+          </Button>
+          <Button
+            variant="primary"
+            color="vattjom"
+            onClick={handleCancelContract}
+            data-cy="contract-cancel-confirm-submit"
           >
             Ja, skapa ärende
           </Button>
