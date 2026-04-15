@@ -511,7 +511,14 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     },
     startDate: data.startDate,
     endDate: data.endDate,
-    notice: data.notice,
+    notice: {
+      terms: data.notice?.terms,
+      noticeDate: data.notice?.noticeDate !== '' ? data.notice?.noticeDate : undefined,
+      noticeGivenBy:
+        data.notice?.noticeGivenBy && [Party.LESSEE, Party.LESSOR].includes(data.notice?.noticeGivenBy)
+          ? data.notice?.noticeGivenBy
+          : undefined,
+    },
     propertyDesignations: data.propertyDesignations,
     contractId: data.contractId,
     type: data.type,
