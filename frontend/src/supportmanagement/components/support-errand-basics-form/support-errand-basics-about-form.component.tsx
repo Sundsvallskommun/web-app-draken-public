@@ -1,7 +1,7 @@
 import TextEditor from '@common/components/dynamic-text-editor';
 import { ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
 import { appConfig } from '@config/appconfig';
-import { Checkbox, cx,FormControl, FormErrorMessage, FormLabel, Select, Textarea } from '@sk-web-gui/react';
+import { Checkbox, cx, FormControl, FormErrorMessage, FormLabel, Select, Textarea } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
 import {
   Channels,
@@ -10,8 +10,8 @@ import {
   SupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
-import { FC, useEffect, useRef, useState } from 'react';
-import { useFormContext,UseFormReturn } from 'react-hook-form';
+import { FC, useLayoutEffect, useRef, useState } from 'react';
+import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
@@ -42,8 +42,8 @@ export const SupportErrandBasicsAboutForm: FC<{
   const { description } = watch();
   const userHasEditedDescription = useRef(false);
 
-  // Reset the edit flag when errand changes (new errand loaded or saved)
-  useEffect(() => {
+  // useLayoutEffect fires synchronously after DOM update, before Quill's onChange
+  useLayoutEffect(() => {
     userHasEditedDescription.current = false;
   }, [supportErrand]);
 

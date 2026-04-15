@@ -618,6 +618,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
       labels: e.labels || [],
+      caseId: e.externalTags?.find((t) => t.key === 'caseId')?.value,
       description: sanitized(e?.description ?? ''),
       customer: (e.stakeholders
         ?.filter((s) => s.role === 'PRIMARY')
@@ -826,7 +827,7 @@ export const updateSupportErrand: (
     ...(formdata.description && { description: formdata.description }),
     ...(formdata.assignedUserId && { assignedUserId: formdata.assignedUserId }),
     ...{ stakeholders: stakeholders },
-    externalTags: formdata.externalTags || [],
+    externalTags: (formdata.externalTags || []).filter((t) => t.key !== 'caseId'),
     parameters: formdata.parameters || [],
   };
   if (formdata.caseId) {

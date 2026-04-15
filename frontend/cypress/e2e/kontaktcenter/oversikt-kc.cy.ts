@@ -219,7 +219,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
     });
 
     //SEARCH
-    it.only('displays search and allows to filter table', () => {
+    it('displays search and allows to filter table', () => {
       cy.get('[data-cy="query-filter"]').should('exist').type('kctest2');
       cy.get('button').contains('Sök').should('be.enabled').click();
       cy.intercept('GET', '**/supporterrands/2281?page=0*', mockFilterAdminErrands).as('getQueryErrands');

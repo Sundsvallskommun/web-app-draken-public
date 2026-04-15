@@ -1,10 +1,11 @@
-import { useSupportStore } from '@stores/index';
 import { Disclosure } from '@sk-web-gui/react';
+import { useSupportStore } from '@stores/index';
 import { ApiSupportErrand, SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { UseFormReturn, useFormContext } from 'react-hook-form';
-import { SupportErrandBasicsAboutForm } from '../support-errand-basics-form/support-errand-basics-about-form.component';
 import { Info } from 'lucide-react';
 import { FC, useEffect } from 'react';
+import { useFormContext,UseFormReturn } from 'react-hook-form';
+
+import { SupportErrandBasicsAboutForm } from '../support-errand-basics-form/support-errand-basics-about-form.component';
 
 export const SupportErrandBasicsAboutDisclosure: FC<{
   errand: ApiSupportErrand;
@@ -18,7 +19,6 @@ export const SupportErrandBasicsAboutDisclosure: FC<{
 
   useEffect(() => {
     setValue('id', supportErrand?.id, { shouldDirty: false });
-    setValue('caseId', supportErrand?.externalTags?.find((t) => t.key === 'caseId')?.value, { shouldDirty: false });
   }, [setValue, supportErrand]);
   return (
     <Disclosure variant="alt" initalOpen>
