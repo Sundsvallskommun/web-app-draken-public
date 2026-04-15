@@ -53,7 +53,7 @@ export const BillingSpecifications: FC = () => {
         <FormControl className="w-full" invalid={!!errors.specifications?.avitext}>
           <FormLabel>Avitext *</FormLabel>
           <Input className="w-full" maxLength={30} {...register('specifications.avitext')} />
-          <small>Ange vad fakturan och vilken period den gäller</small>
+          <small>Ange vad fakturan avser och vilken period den gäller</small>
           {errors.specifications?.avitext && (
             <FormErrorMessage>{errors.specifications.avitext.message}</FormErrorMessage>
           )}
