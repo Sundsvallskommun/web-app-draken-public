@@ -1,18 +1,19 @@
 import TextEditor from '@common/components/dynamic-text-editor';
 import { ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
 import { appConfig } from '@config/appconfig';
-import { Checkbox, FormControl, FormErrorMessage, FormLabel, Select, Textarea, cx } from '@sk-web-gui/react';
+import { Checkbox, cx,FormControl, FormErrorMessage, FormLabel, Select, Textarea } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
 import {
   Channels,
   ContactChannelType,
-  SupportErrand,
   isSupportErrandLocked,
+  SupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { FC, useEffect, useRef, useState } from 'react';
-import { UseFormReturn, useFormContext } from 'react-hook-form';
+import { useFormContext,UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
 
@@ -41,10 +42,10 @@ export const SupportErrandBasicsAboutForm: FC<{
   const { description } = watch();
   const userHasEditedDescription = useRef(false);
 
-  // Reset the edit flag when errand changes (new errand loaded)
+  // Reset the edit flag when errand changes (new errand loaded or saved)
   useEffect(() => {
     userHasEditedDescription.current = false;
-  }, [supportErrand.id]);
+  }, [supportErrand]);
 
   return (
     <>
