@@ -217,9 +217,7 @@ export class BillingController {
       chunks.push(uniqueIds.slice(i, i + this.BILLING_ID_CHUNK_SIZE));
     }
 
-    const results = await Promise.all(
-      chunks.map(chunk => this.fetchBillingRecordsByIds(municipalityId, chunk, req.user)),
-    );
+    const results = await Promise.all(chunks.map(chunk => this.fetchBillingRecordsByIds(municipalityId, chunk, req.user)));
     const allRecords = results.flat();
 
     const slice = allRecords.slice(p * s, (p + 1) * s);

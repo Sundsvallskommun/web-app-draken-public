@@ -34,6 +34,7 @@ import { ContractAttachments } from './contract-attachments';
 import { ContractPartyModal } from './contract-party-modal';
 
 export const ContractForm: FC<{
+  referensError: boolean;
   changeBadgeColor?: (badgeId: string) => void;
   onSave?: (data: ContractData, section?: string) => Promise<void>;
   readOnly?: boolean;
@@ -46,6 +47,7 @@ export const ContractForm: FC<{
   onEditPartyRoles?: (stakeholderId: string, newRoles: StakeholderRole[]) => void;
   onRemoveParty?: (stakeholderId: string) => void;
 }> = ({
+  referensError,
   changeBadgeColor,
   onSave,
   readOnly = false,
@@ -842,7 +844,12 @@ export const ContractForm: FC<{
                         {...register(`extraParameters.${invoiceInfoIndex}.parameters.markup`)}
                         data-cy="invoice-markup-input"
                       />
-                      <small>Referens måste alltid anges.</small>
+                      {referensError ? (
+                        <FormErrorMessage>Referens måste alltid anges.</FormErrorMessage>
+                      ) : (
+                        <small>Referens måste alltid anges.</small>
+                      )}
+
                       <Input
                         type="hidden"
                         {...register(`extraParameters.${invoiceInfoIndex}.name`)}
