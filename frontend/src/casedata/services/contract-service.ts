@@ -509,7 +509,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     startDate: data.currentPeriod?.startDate,
     endDate: data.endDate,
     notice: {
-      terms: data.notice?.terms,
+      terms: data.notice?.terms?.filter((t) => Boolean(t)),
       noticeDate: data.notice?.noticeDate !== '' ? data.notice?.noticeDate : undefined,
       noticeGivenBy:
         data.notice?.noticeGivenBy && [Party.LESSEE, Party.LESSOR].includes(data.notice?.noticeGivenBy)
