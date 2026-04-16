@@ -1,7 +1,7 @@
 import { UnifiedContractParty } from '@casedata/interfaces/contract-data';
 import { ContractType, StakeholderRole } from '@casedata/interfaces/contracts';
-import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { Role } from '@casedata/interfaces/role';
+import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { isLeaseAgreement, prettyContractRoles } from '@casedata/services/contract-service';
 import { Button, Checkbox, FormControl, FormLabel, Modal, Select } from '@sk-web-gui/react';
 import React, { useEffect, useState } from 'react';
@@ -92,9 +92,8 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
       return s.personId === p.personalNumber;
     }
     // Fallback: match by name
-    const stakeholderName = s.stakeholderType === 'ORGANIZATION'
-      ? s.organizationName
-      : `${s.firstName} ${s.lastName}`.trim();
+    const stakeholderName =
+      s.stakeholderType === 'ORGANIZATION' ? s.organizationName : `${s.firstName} ${s.lastName}`.trim();
     return stakeholderName === p.name;
   };
 
@@ -172,7 +171,7 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
           disabled={!selectedStakeholderId || selectedRoles.length === 0}
           onClick={handleSave}
         >
-          Spara
+          Lägg till
         </Button>
       </Modal.Footer>
     </Modal>

@@ -437,7 +437,12 @@ export const CasedataTabsWrapper: FC = () => {
     <div className="mb-xl">
       <WarnIfUnsavedChanges
         showWarning={
-          methods.formState.isDirty || unsavedChanges || unsavedUppgifter || unsavedUtredning || unsavedDecision
+          methods.formState.isDirty ||
+          unsavedChanges ||
+          unsavedUppgifter ||
+          unsavedUtredning ||
+          unsavedDecision ||
+          unsavedContract
         }
       >
         <Tabs
