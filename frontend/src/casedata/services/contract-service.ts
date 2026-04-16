@@ -7,6 +7,7 @@ import {
   Contract,
   ContractType,
   Fees,
+  InvoicedIn,
   LeaseType,
   PageContract,
   Parameter,
@@ -16,7 +17,6 @@ import {
   StakeholderType as ContractStakeholderType,
   Status,
   TimeUnit,
-  InvoicedIn,
 } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { PrettyRole, Role } from '@casedata/interfaces/role';
@@ -124,12 +124,7 @@ export const defaultLagenhetsarrende: ContractData = {
   notice: {
     terms: [
       {
-        party: Party.LESSEE,
-        periodOfNotice: 3,
-        unit: TimeUnit.MONTHS,
-      },
-      {
-        party: Party.LESSOR,
+        party: Party.ALL,
         periodOfNotice: 3,
         unit: TimeUnit.MONTHS,
       },
@@ -510,7 +505,8 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       invoicedIn: data.invoicing?.invoicedIn,
       invoiceInterval: data.invoicing?.invoiceInterval,
     },
-    startDate: data.startDate,
+    currentPeriod: data.currentPeriod,
+    startDate: data.currentPeriod?.startDate,
     endDate: data.endDate,
     notice: {
       terms: data.notice?.terms,

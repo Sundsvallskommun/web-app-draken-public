@@ -36,7 +36,7 @@ import {
 } from '@sk-web-gui/react';
 import { Calendar, FilePen, Info, MapPin, Pencil, Receipt, Trash, Users, Wallet } from 'lucide-react';
 import { ChangeEvent, FC, useEffect, useMemo, useState } from 'react';
-import { useFormContext } from 'react-hook-form';
+import { set, useFormContext } from 'react-hook-form';
 
 import { ContractAttachments } from './contract-attachments';
 import { ContractPartyModal } from './contract-party-modal';
@@ -69,8 +69,9 @@ export const ContractForm: FC<{
   const { municipalityId, errand, user } = useAppContext();
   const confirm = useConfirm();
   const { register, setValue, handleSubmit, getValues, watch, formState, trigger } = useFormContext<ContractData>();
-  const [lesseeNoticeIndex, setLesseeNoticeIndex] = useState(0);
-  const [lessorNoticeIndex, setLessorNoticeIndex] = useState(1);
+  const [allNoticeIndex, setAllNoticeIndex] = useState(0);
+  const [lesseeNoticeIndex, setLesseeNoticeIndex] = useState(1);
+  const [lessorNoticeIndex, setLessorNoticeIndex] = useState(2);
   const [invoiceInfoIndex, setInvoiceInfoIndex] = useState(0);
 
   const [loading, setLoading] = useState<boolean>(false);
@@ -149,8 +150,10 @@ export const ContractForm: FC<{
         // Find index for lessee and lessor notices
         const lesseeIndex = existingContract.notice?.terms?.findIndex((n) => n.party === 'LESSEE') ?? -1;
         const lessorIndex = existingContract.notice?.terms?.findIndex((n) => n.party === 'LESSOR') ?? -1;
+        const allIndex = existingContract.notice?.terms?.findIndex((n) => n.party === 'ALL') ?? -1;
         setLesseeNoticeIndex(lesseeIndex === -1 ? 0 : lesseeIndex);
         setLessorNoticeIndex(lessorIndex === -1 ? 1 : lessorIndex);
+        setAllNoticeIndex(allIndex === -1 ? 2 : allIndex);
 
         // Find index for InvoiceInfo extraparameter
         const _invoiceInfoIndex = existingContract.extraParameters?.findIndex((p) => p.name === 'InvoiceInfo') ?? -1;
@@ -533,129 +536,203 @@ export const ContractForm: FC<{
             <div className="flex flex-col gap-24">
               <div className="flex gap-18 justify-start">
                 <FormControl id="startDate" className="w-full">
-                  <FormLabel>Området upplåts från</FormLabel>
+                  <FormLabel>Avtalet gäller från</FormLabel>
+                  {/* <div>currentPeriod?.startDate: {getValues().currentPeriod?.startDate}</div> */}
+                  {/* <div>startDate: {getValues().startDate}</div> */}
+                  {/* <Input type="hidden" name="startDate" value={getValues().currentPeriod?.startDate} /> */}
                   <Input
                     type="date"
                     readOnly={!isEditable('general')}
-                    {...register('startDate')}
+                    {...register('currentPeriod.startDate')}
                     data-cy="avtalstid-start"
                   />
+                  {/* <div>A: {JSON.stringify(formState.errors)}</div> */}
+                  {/* <div>B: {JSON.stringify(formState.errors.currentPeriod?.startDate)}</div> */}
+                  {formState.errors.currentPeriod?.startDate && (
+                    <div className="my-sm text-error">
+                      <FormErrorMessage>{formState.errors.currentPeriod?.startDate?.message}</FormErrorMessage>
+                    </div>
+                  )}
                 </FormControl>
                 <FormControl id="endDate" className="w-full">
-                  <FormLabel>Området upplåts till</FormLabel>
+                  <FormLabel>Avtalet gäller till och med</FormLabel>
                   <Input
                     type="date"
                     readOnly={!isEditable('general')}
-                    {...register('endDate')}
+                    {...register('currentPeriod.endDate')}
                     data-cy="avtalstid-end"
                   />
                 </FormControl>
               </div>
-              <div className="flex gap-18 justify-start">
-                <FormControl id="noticeDate" className="w-full">
-                  <FormLabel>Uppsägningsdatum</FormLabel>
-                  <Input
-                    type="date"
-                    readOnly={!isEditable('cancellation')}
-                    {...register('notice.noticeDate')}
-                    data-cy="notice-date"
-                  />
-                </FormControl>
-                <FormControl id="noticeGivenBy" className="w-full">
-                  <FormLabel>Uppsagd av</FormLabel>
-                  <Select
-                    className="w-full"
-                    disabled={!isEditable('cancellation')}
-                    {...register('notice.noticeGivenBy')}
-                    data-cy="notice-given-by"
-                  >
-                    <Select.Option value="">Välj part</Select.Option>
-                    <Select.Option value={Party.LESSOR}>Upplåtare</Select.Option>
-                    <Select.Option value={Party.LESSEE}>Arrendator</Select.Option>
-                  </Select>
-                </FormControl>
-              </div>
-              <strong>Ange tid för nyttjanderättshavarens uppsägningstid</strong>
-              <div className="flex justify-between gap-32 items-start mb-md">
-                <FormControl id={`noticePeriod-0`} className="flex-grow max-w-[45%]">
-                  <FormLabel>Enhet</FormLabel>
-                  <Select
-                    className="w-full"
-                    disabled={!isEditable('general')}
-                    {...register(`notice.terms.${lesseeNoticeIndex}.unit`)}
-                    placeholder="Månad/år"
-                    data-cy="lessee-notice-unit"
-                  >
-                    <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
-                    <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
-                    <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
-                  </Select>
-                </FormControl>
-                <FormControl className="flex-grow max-w-[45%]">
-                  <FormLabel>Antal</FormLabel>
-                  <Input
-                    readOnly={!isEditable('general')}
-                    {...register(`notice.terms.${lesseeNoticeIndex}.periodOfNotice`)}
-                    placeholder="Ange tal"
-                    data-cy="lessee-notice-period"
-                  />
-                  <Input
-                    type="hidden"
-                    readOnly
-                    {...register(`notice.terms.${lesseeNoticeIndex}.party`)}
-                    value="LESSEE"
-                    data-cy="lessee-notice-party"
-                  />
-                  {formState.errors.notice?.terms?.[lesseeNoticeIndex]?.periodOfNotice && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>
-                        {formState.errors.notice?.terms?.[lesseeNoticeIndex]?.periodOfNotice?.message}
-                      </FormErrorMessage>
-                    </div>
-                  )}
-                </FormControl>
-              </div>
+              {getValues().contractId ? (
+                <>
+                  <div className="flex gap-18 justify-start">
+                    <FormControl id="noticeDate" className="w-full">
+                      <FormLabel>Uppsägningsdatum</FormLabel>
+                      <Input
+                        type="date"
+                        readOnly={!isEditable('cancellation')}
+                        {...register('notice.noticeDate')}
+                        data-cy="notice-date"
+                      />
+                    </FormControl>
+                    <FormControl id="endDate" className="w-full">
+                      <FormLabel>Slutdatum</FormLabel>
+                      <Input
+                        type="date"
+                        readOnly={!isEditable('cancellation')}
+                        {...register('endDate')}
+                        data-cy="endDate"
+                      />
+                    </FormControl>
+                  </div>
+                  <div className="flex gap-18 justify-start">
+                    <FormControl id="noticeGivenBy" className="w-full">
+                      <FormLabel>Uppsagd av</FormLabel>
+                      <Select
+                        className="w-full"
+                        disabled={!isEditable('cancellation')}
+                        {...register('notice.noticeGivenBy')}
+                        data-cy="notice-given-by"
+                      >
+                        <Select.Option value="">Välj part</Select.Option>
+                        <Select.Option value={Party.LESSOR}>Upplåtare</Select.Option>
+                        <Select.Option value={Party.LESSEE}>Arrendator</Select.Option>
+                      </Select>
+                    </FormControl>
+                    <div className="w-full"></div>
+                  </div>
+                </>
+              ) : null}
+              {getValues().notice?.terms?.some((t) => t.party === 'LESSOR') &&
+              getValues().notice?.terms?.some((t) => t.party === 'LESSEE') ? (
+                <>
+                  <strong>Ange tid för nyttjanderättshavarens uppsägningstid</strong>
+                  <div className="flex justify-between gap-32 items-start mb-md">
+                    <FormControl id={`noticePeriod-1`} className="flex-grow max-w-[45%]">
+                      <FormLabel>Enhet</FormLabel>
+                      <Select
+                        className="w-full"
+                        disabled={!isEditable('general')}
+                        {...register(`notice.terms.${lesseeNoticeIndex}.unit`)}
+                        placeholder="Månad/år"
+                        data-cy="lessee-notice-unit"
+                      >
+                        <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
+                        <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
+                        <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
+                      </Select>
+                    </FormControl>
+                    <FormControl className="flex-grow max-w-[45%]">
+                      <FormLabel>Antal</FormLabel>
+                      <Input
+                        readOnly={!isEditable('general')}
+                        {...register(`notice.terms.${lesseeNoticeIndex}.periodOfNotice`)}
+                        placeholder="Ange tal"
+                        data-cy="lessee-notice-period"
+                      />
+                      <Input
+                        type="hidden"
+                        readOnly
+                        {...register(`notice.terms.${lesseeNoticeIndex}.party`)}
+                        value="LESSEE"
+                        data-cy="lessee-notice-party"
+                      />
+                      {formState.errors.notice?.terms?.[lesseeNoticeIndex]?.periodOfNotice && (
+                        <div className="my-sm text-error">
+                          <FormErrorMessage>
+                            {formState.errors.notice?.terms?.[lesseeNoticeIndex]?.periodOfNotice?.message}
+                          </FormErrorMessage>
+                        </div>
+                      )}
+                    </FormControl>
+                  </div>
 
-              <strong className="text-h6-md">Ange tid för fastighetsägarens uppsägningstid</strong>
-              <div className="flex justify-between gap-32 items-start mb-md">
-                <FormControl id={`noticePeriod-1`} className="flex-grow max-w-[45%]">
-                  <FormLabel>Enhet</FormLabel>
-                  <Select
-                    className="w-full"
-                    disabled={!isEditable('general')}
-                    {...register(`notice.terms.${lessorNoticeIndex}.unit`)}
-                    placeholder="Månad/år"
-                    data-cy="lessor-notice-unit"
-                  >
-                    <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
-                    <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
-                    <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
-                  </Select>
-                </FormControl>
-                <FormControl className="flex-grow max-w-[45%]">
-                  <FormLabel>Antal</FormLabel>
-                  <Input
-                    readOnly={!isEditable('general')}
-                    {...register(`notice.terms.${lessorNoticeIndex}.periodOfNotice`)}
-                    placeholder="Ange tal"
-                    data-cy="lessor-notice-period"
-                  />
-                  <Input
-                    type="hidden"
-                    readOnly
-                    {...register(`notice.terms.${lessorNoticeIndex}.party`)}
-                    value="LESSOR"
-                    data-cy="lessor-notice-party"
-                  />
-                  {formState.errors.notice?.terms?.[lessorNoticeIndex]?.periodOfNotice && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>
-                        {formState.errors.notice?.terms?.[lessorNoticeIndex]?.periodOfNotice?.message}
-                      </FormErrorMessage>
-                    </div>
-                  )}
-                </FormControl>
-              </div>
+                  <strong className="text-h6-md">Ange tid för fastighetsägarens uppsägningstid</strong>
+                  <div className="flex justify-between gap-32 items-start mb-md">
+                    <FormControl id={`noticePeriod-2`} className="flex-grow max-w-[45%]">
+                      <FormLabel>Enhet</FormLabel>
+                      <Select
+                        className="w-full"
+                        disabled={!isEditable('general')}
+                        {...register(`notice.terms.${lessorNoticeIndex}.unit`)}
+                        placeholder="Månad/år"
+                        data-cy="lessor-notice-unit"
+                      >
+                        <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
+                        <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
+                        <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
+                      </Select>
+                    </FormControl>
+                    <FormControl className="flex-grow max-w-[45%]">
+                      <FormLabel>Antal</FormLabel>
+                      <Input
+                        readOnly={!isEditable('general')}
+                        {...register(`notice.terms.${lessorNoticeIndex}.periodOfNotice`)}
+                        placeholder="Ange tal"
+                        data-cy="lessor-notice-period"
+                      />
+                      <Input
+                        type="hidden"
+                        readOnly
+                        {...register(`notice.terms.${lessorNoticeIndex}.party`)}
+                        value="LESSOR"
+                        data-cy="lessor-notice-party"
+                      />
+                      {formState.errors.notice?.terms?.[lessorNoticeIndex]?.periodOfNotice && (
+                        <div className="my-sm text-error">
+                          <FormErrorMessage>
+                            {formState.errors.notice?.terms?.[lessorNoticeIndex]?.periodOfNotice?.message}
+                          </FormErrorMessage>
+                        </div>
+                      )}
+                    </FormControl>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <strong>Ange uppsägningstid</strong>
+                  <div className="flex justify-between gap-32 items-start mb-md">
+                    <FormControl id={`noticePeriod-0`} className="flex-grow max-w-[45%]">
+                      <FormLabel>Enhet</FormLabel>
+                      <Select
+                        className="w-full"
+                        disabled={!isEditable('general')}
+                        {...register(`notice.terms.${allNoticeIndex}.unit`)}
+                        placeholder="Månad/år"
+                        data-cy="all-notice-unit"
+                      >
+                        <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
+                        <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
+                        <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
+                      </Select>
+                    </FormControl>
+                    <FormControl className="flex-grow max-w-[45%]">
+                      <FormLabel>Antal</FormLabel>
+                      <Input
+                        readOnly={!isEditable('general')}
+                        {...register(`notice.terms.${allNoticeIndex}.periodOfNotice`)}
+                        placeholder="Ange tal"
+                        data-cy="all-notice-period"
+                      />
+                      <Input
+                        type="hidden"
+                        readOnly
+                        {...register(`notice.terms.${allNoticeIndex}.party`)}
+                        value="ALL"
+                        data-cy="all-notice-party"
+                      />
+                      {formState.errors.notice?.terms?.[allNoticeIndex]?.periodOfNotice && (
+                        <div className="my-sm text-error">
+                          <FormErrorMessage>
+                            {formState.errors.notice?.terms?.[allNoticeIndex]?.periodOfNotice?.message}
+                          </FormErrorMessage>
+                        </div>
+                      )}
+                    </FormControl>
+                  </div>
+                </>
+              )}
 
               <div className="flex justify-between gap-32 items-end mb-md">
                 <FormControl
