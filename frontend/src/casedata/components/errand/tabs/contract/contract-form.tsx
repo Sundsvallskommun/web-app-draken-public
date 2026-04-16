@@ -1,6 +1,14 @@
 import { ContractInvoicesTable } from '@casedata/components/contract-overview/contract-invoices-table.component';
 import { ContractData, UnifiedContractParty } from '@casedata/interfaces/contract-data';
-import { ContractType, IntervalType, Party, StakeholderRole, Status, TimeUnit } from '@casedata/interfaces/contracts';
+import {
+  ContractType,
+  IntervalType,
+  InvoicedIn,
+  Party,
+  StakeholderRole,
+  Status,
+  TimeUnit,
+} from '@casedata/interfaces/contracts';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { validateAction } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
@@ -829,6 +837,44 @@ export const ContractForm: FC<{
                           disabled={!isEditable('general')}
                         >
                           Kvartalsvis
+                        </RadioButton>
+                      </RadioButton.Group>
+                    </FormControl>
+                  </div>
+                  <div className="flex gap-18 justify-start">
+                    <FormControl
+                      className="flex-grow"
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        if (!isEditable('general')) return;
+                        setValue('invoicing.invoicedIn', e.target.value as InvoicedIn);
+                      }}
+                    >
+                      <FormLabel>Avgift ska betalas</FormLabel>
+                      <RadioButton.Group
+                        inline
+                        className="flex gap-24"
+                        name="invoicedIn"
+                        value={
+                          watch().invoicing?.invoicedIn === InvoicedIn.ADVANCE
+                            ? InvoicedIn.ADVANCE
+                            : watch().invoicing?.invoicedIn === InvoicedIn.ARREARS
+                            ? InvoicedIn.ARREARS
+                            : InvoicedIn.ADVANCE
+                        }
+                      >
+                        <RadioButton
+                          value={InvoicedIn.ADVANCE}
+                          data-cy="invoiced-in-advance-radiobutton"
+                          disabled={!isEditable('general')}
+                        >
+                          Förskott
+                        </RadioButton>
+                        <RadioButton
+                          value={InvoicedIn.ARREARS}
+                          data-cy="invoiced-in-arrears-radiobutton"
+                          disabled={!isEditable('general')}
+                        >
+                          Efterskott
                         </RadioButton>
                       </RadioButton.Group>
                     </FormControl>

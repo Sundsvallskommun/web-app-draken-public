@@ -7,7 +7,6 @@ import {
   Contract,
   ContractType,
   Fees,
-  InvoicedIn,
   LeaseType,
   PageContract,
   Parameter,
@@ -17,6 +16,7 @@ import {
   StakeholderType as ContractStakeholderType,
   Status,
   TimeUnit,
+  InvoicedIn,
 } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { PrettyRole, Role } from '@casedata/interfaces/role';
@@ -120,6 +120,7 @@ export const defaultLagenhetsarrende: ContractData = {
   status: Status.DRAFT,
   propertyDesignations: [],
   stakeholders: [],
+  invoicing: { invoicedIn: InvoicedIn.ADVANCE },
   notice: {
     terms: [
       {
@@ -506,7 +507,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     },
     fees: fees,
     invoicing: {
-      invoicedIn: InvoicedIn.ADVANCE,
+      invoicedIn: data.invoicing?.invoicedIn,
       invoiceInterval: data.invoicing?.invoiceInterval,
     },
     startDate: data.startDate,
