@@ -120,15 +120,11 @@ export const defaultLagenhetsarrende: ContractData = {
   status: Status.DRAFT,
   propertyDesignations: [],
   stakeholders: [],
+  invoicing: { invoicedIn: InvoicedIn.ADVANCE },
   notice: {
     terms: [
       {
-        party: Party.LESSEE,
-        periodOfNotice: 3,
-        unit: TimeUnit.MONTHS,
-      },
-      {
-        party: Party.LESSOR,
+        party: Party.ALL,
         periodOfNotice: 3,
         unit: TimeUnit.MONTHS,
       },
@@ -506,13 +502,14 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     },
     fees: fees,
     invoicing: {
-      invoicedIn: InvoicedIn.ADVANCE,
+      invoicedIn: data.invoicing?.invoicedIn,
       invoiceInterval: data.invoicing?.invoiceInterval,
     },
-    startDate: data.startDate,
+    currentPeriod: data.currentPeriod,
+    startDate: data.currentPeriod?.startDate,
     endDate: data.endDate,
     notice: {
-      terms: data.notice?.terms,
+      terms: data.notice?.terms?.filter((t) => Boolean(t)),
       noticeDate: data.notice?.noticeDate !== '' ? data.notice?.noticeDate : undefined,
       noticeGivenBy:
         data.notice?.noticeGivenBy && [Party.LESSEE, Party.LESSOR].includes(data.notice?.noticeGivenBy)

@@ -6,9 +6,8 @@ import {
 } from '@casedata/services/contract-service';
 import { getNextScheduledBillingDate } from '@common/services/billing-data-collector-service';
 import { formatCurrency } from '@common/services/helper-service';
-import { Button, FormLabel, Label, Pagination, Spinner, Table } from '@sk-web-gui/react';
+import { FormLabel, Label, Pagination, Spinner, Table } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { Download } from 'lucide-react';
 import { FC, useCallback, useEffect, useState } from 'react';
 interface ContractInvoicesTableProps {
   contractId?: string;
@@ -58,9 +57,8 @@ export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({ contract
       });
   }, [contractId]);
 
-  const handleDownloadPdf = (invoiceId: string) => {
+  const handleDownloadPdf = () => {
     // TODO: Implement PDF download functionality
-    console.log('Download PDF for invoice:', invoiceId);
   };
 
   if (!contractId) {
@@ -127,7 +125,8 @@ export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({ contract
                 {invoice.amount !== undefined ? formatCurrency(invoice.amount) : '-'}
               </Table.Column>
               <Table.Column data-cy={`invoice-number-${index}`}>{invoice.invoiceNumber || '-'}</Table.Column>
-              <Table.Column>
+              {/* NOT IMPLEMENTED YET */}
+              {/* <Table.Column>
                 <Button
                   size="sm"
                   variant="tertiary"
@@ -139,7 +138,7 @@ export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({ contract
                   <Download size={16} />
                   <span className="ml-sm">Hämta pdf</span>
                 </Button>
-              </Table.Column>
+              </Table.Column> */}
             </Table.Row>
           ))}
         </Table.Body>

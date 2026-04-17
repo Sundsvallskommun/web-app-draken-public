@@ -6,6 +6,8 @@ import {
   IntervalType,
   InvoicedIn,
   LeaseType,
+  Notice,
+  NoticeTerm,
   Party,
   StakeholderRole,
   Status,
@@ -44,6 +46,13 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
   let formSchema = yup
     .object({
       type: yup.string().required('Avtalstyp måste anges'),
+      currentPeriod: yup.object().when('type', {
+        is: (type: ContractType) => type !== ContractType.PURCHASE_AGREEMENT,
+        then: (schema) =>
+          schema.shape({
+            startDate: yup.string().required('Startdatum måste anges'),
+          }),
+      }),
       notice: yup.object().when('type', {
         is: (type: ContractType) => type !== ContractType.PURCHASE_AGREEMENT,
         then: (schema) =>
@@ -53,11 +62,15 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
               .of(
                 yup.object({
                   party: yup.string().oneOf(Object.keys(Party)).required('Part måste väljas'),
-                  periodOfNotice: yup.string().required('Antal måste anges'),
+                  periodOfNotice: yup.string().when('party', {
+                    is: (party: string) => party === 'ALL',
+                    then: (schema) => schema.required('Uppsägningstid måste anges'),
+                    otherwise: (schema) => schema,
+                  }),
                   unit: yup.string().oneOf(Object.keys(TimeUnit)).required('Enhet måste väljas'),
                 })
               )
-              .min(2),
+              .min(1),
           }),
         otherwise: (schema) => schema,
       }),
@@ -165,7 +178,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     resolver: yupResolver(formSchema) as unknown as Resolver<ContractData>,
     defaultValues:
       existingContract?.type === ContractType.PURCHASE_AGREEMENT ? defaultKopeavtal : defaultLagenhetsarrende,
-    mode: 'onChange',
+    mode: 'onSubmit',
   });
 
   const changeBadgeColor = (inId: string) => {
@@ -271,7 +284,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     if (contractType && contractType !== ContractType.LEASE_AGREEMENT) {
       contractForm.setValue('leaseType', undefined);
     }
-    contractForm.trigger();
+    contractForm.trigger('type');
   }, [contractType, contractForm]);
 
   return (

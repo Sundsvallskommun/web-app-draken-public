@@ -137,7 +137,8 @@ export const mockLeaseAgreement = {
       { name: 'AVTALSFASTIGHET 1:123', district: 'Låtsasdistrikt' },
       { name: 'AVTALSFASTIGHET 2:456', district: 'Låtsasdistrikt' },
     ],
-    notice: { terms: [] },
+    currentPeriod: { startDate: '2024-01-01' },
+    notice: { terms: [{ party: 'ALL', periodOfNotice: 3, unit: 'MONTHS' }] },
     stakeholders: [
       {
         type: 'PERSON',
