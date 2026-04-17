@@ -46,8 +46,9 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
   let formSchema = yup
     .object({
       type: yup.string().required('Avtalstyp måste anges'),
-      currentPeriod: yup.object().when('type', {
-        is: (type: ContractType) => type !== ContractType.PURCHASE_AGREEMENT,
+      currentPeriod: yup.object().when(['type', 'status'], {
+        is: (type: ContractType, status: Status) =>
+          type !== ContractType.PURCHASE_AGREEMENT && status === Status.ACTIVE,
         then: (schema) =>
           schema.shape({
             startDate: yup.string().required('Startdatum måste anges'),
@@ -355,8 +356,13 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                         .then((confirmed) => {
                           if (confirmed) {
                             contractForm.setValue('status', Status.ACTIVE);
-                            contractForm.trigger('status');
+                            contractForm.trigger().then((valid: boolean) => {
+                              if (valid) {
                             onSave(contractForm.getValues());
+                              } else {
+                                contractForm.setValue('status', Status.DRAFT);
+                              }
+                            });
                           }
                         });
                     }}
@@ -365,6 +371,9 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                     Markera som utkast
                   </Checkbox>
                   <p>Avmarkera när allt är klart med avtalet och faktureringen ska börja.</p>
+                  {contractForm.formState.isValid === false && (
+                    <p className="text-error">Avtalet saknar nödvändiga uppgifter.</p>
+                  )}
                 </FormControl>
               )}
               <Input type="hidden" readOnly {...contractForm.register('contractId')} />
