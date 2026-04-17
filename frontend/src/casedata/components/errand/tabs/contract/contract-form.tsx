@@ -34,9 +34,10 @@ import {
   Textarea,
   useConfirm,
 } from '@sk-web-gui/react';
+import dayjs from 'dayjs';
 import { Calendar, FilePen, Info, MapPin, Pencil, Receipt, Trash, Users, Wallet } from 'lucide-react';
 import { ChangeEvent, FC, useEffect, useMemo, useState } from 'react';
-import { set, useFormContext } from 'react-hook-form';
+import { useFormContext } from 'react-hook-form';
 
 import { ContractAttachments } from './contract-attachments';
 import { ContractPartyModal } from './contract-party-modal';
@@ -69,25 +70,17 @@ export const ContractForm: FC<{
   const { municipalityId, errand, user } = useAppContext();
   const confirm = useConfirm();
   const { register, setValue, handleSubmit, getValues, watch, formState, trigger } = useFormContext<ContractData>();
-  const [allNoticeIndex, setAllNoticeIndex] = useState(0);
-  const [lesseeNoticeIndex, setLesseeNoticeIndex] = useState(1);
-  const [lessorNoticeIndex, setLessorNoticeIndex] = useState(2);
-  const [invoiceInfoIndex, setInvoiceInfoIndex] = useState(0);
 
   const [loading, setLoading] = useState<boolean>(false);
-  const [allowed, setAllowed] = useState(false);
 
-  // State for party modal
   const [isPartyModalOpen, setIsPartyModalOpen] = useState(false);
   const [partyModalMode, setPartyModalMode] = useState<'add' | 'edit'>('add');
   const [editingParty, setEditingParty] = useState<UnifiedContractParty | undefined>(undefined);
 
   const contractType = watch().type;
 
-  // Determine if contract is in DRAFT status (new contracts without status default to DRAFT behavior)
   const isDraft = !contractStatus || contractStatus === Status.DRAFT;
 
-  // Determine if a field type is editable based on contract status
   // For non-DRAFT contracts, only billing, lessee, and cancellation fields can be edited
   const isEditable = (fieldType: 'general' | 'billing' | 'lessee' | 'cancellation') => {
     if (readOnly) return false;
@@ -95,36 +88,45 @@ export const ContractForm: FC<{
     return fieldType === 'billing' || fieldType === 'lessee' || fieldType === 'cancellation';
   };
 
-  useEffect(() => {
-    const _a = errand ? validateAction(errand, user) : false;
-    setAllowed(_a);
-  }, [user, errand]);
+  const allowed = useMemo(() => {
+    if (!errand) return false;
+    return validateAction(errand, user);
+  }, [errand, user]);
 
-  // Memoize parties with SSN lookup - this runs only when contractParties changes
-  const [partiesWithSSN, setPartiesWithSSN] = useState<UnifiedContractParty[]>([]);
+  const [ssnMap, setSsnMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchSSNs = async () => {
-      const updatedParties = await Promise.all(
-        contractParties.map(async (party) => {
-          if (party.type === 'PERSON' && party.originalStakeholder.partyId && !party.personalNumber) {
-            const ssn = await getSSNFromPersonId(municipalityId, party.originalStakeholder.partyId);
-            return { ...party, personalNumber: ssn };
-          }
-          return party;
+      const entries = await Promise.all(
+        contractParties
+          .filter((p) => p.type === 'PERSON' && p.originalStakeholder.partyId && !p.personalNumber)
+          .map(async (p) => {
+            const ssn = await getSSNFromPersonId(municipalityId, p.originalStakeholder.partyId!);
+            return [p.originalStakeholder.partyId!, ssn] as const;
         })
       );
-      setPartiesWithSSN(updatedParties);
+      if (!cancelled) setSsnMap(Object.fromEntries(entries));
     };
 
-    if (contractParties.length > 0) {
       fetchSSNs();
-    } else {
-      setPartiesWithSSN([]);
-    }
+
+    return () => {
+      cancelled = true;
+    };
   }, [contractParties, municipalityId]);
 
-  // Use parties with SSN for display, fallback to original parties
+  const partiesWithSSN = useMemo(
+    () =>
+      contractParties.map((party) =>
+        party.type === 'PERSON' && party.originalStakeholder.partyId && !party.personalNumber
+          ? { ...party, personalNumber: ssnMap[party.originalStakeholder.partyId] ?? party.personalNumber }
+          : party
+      ),
+    [contractParties, ssnMap]
+  );
+
   const displayParties = useMemo(
     () => (partiesWithSSN.length > 0 ? partiesWithSSN : contractParties),
     [partiesWithSSN, contractParties]
@@ -144,24 +146,34 @@ export const ContractForm: FC<{
     fetchData();
   }, [errand]);
 
-  useEffect(() => {
-    if (existingContract) {
-      if (isLeaseAgreement(existingContract.type)) {
-        // Find index for lessee and lessor notices
-        const lesseeIndex = existingContract.notice?.terms?.findIndex((n) => n.party === 'LESSEE') ?? -1;
-        const lessorIndex = existingContract.notice?.terms?.findIndex((n) => n.party === 'LESSOR') ?? -1;
-        const allIndex = existingContract.notice?.terms?.findIndex((n) => n.party === 'ALL') ?? -1;
-        setLesseeNoticeIndex(lesseeIndex === -1 ? 0 : lesseeIndex);
-        setLessorNoticeIndex(lessorIndex === -1 ? 1 : lessorIndex);
-        setAllNoticeIndex(allIndex === -1 ? 2 : allIndex);
+  const { lesseeNoticeIndex, lessorNoticeIndex, allNoticeIndex, invoiceInfoIndex } = useMemo(() => {
+    const defaults = {
+      allNoticeIndex: 0,
+      lesseeNoticeIndex: 1,
+      lessorNoticeIndex: 2,
+      invoiceInfoIndex: 0,
+    };
 
-        // Find index for InvoiceInfo extraparameter
-        const _invoiceInfoIndex = existingContract.extraParameters?.findIndex((p) => p.name === 'InvoiceInfo') ?? -1;
-        setInvoiceInfoIndex(
-          _invoiceInfoIndex === -1 ? (existingContract.extraParameters ?? []).length : _invoiceInfoIndex
-        );
-      }
+    if (!existingContract || !isLeaseAgreement(existingContract.type)) {
+      return defaults;
     }
+
+    const terms = existingContract.notice?.terms;
+    const extraParams = existingContract.extraParameters ?? [];
+
+    const findTerm = (party: string, fallback: number) => {
+      const idx = terms?.findIndex((n) => n.party === party) ?? -1;
+      return idx === -1 ? fallback : idx;
+    };
+
+    const invoiceIdx = extraParams.findIndex((p) => p.name === 'InvoiceInfo');
+
+    return {
+      allNoticeIndex: findTerm('ALL', 0),
+      lesseeNoticeIndex: findTerm('LESSEE', 1),
+      lessorNoticeIndex: findTerm('LESSOR', 2),
+      invoiceInfoIndex: invoiceIdx === -1 ? extraParams.length : invoiceIdx,
+    };
   }, [existingContract]);
 
   const toPropertyDesignation = (pd: { name?: string } | string): string =>
@@ -198,21 +210,18 @@ export const ContractForm: FC<{
     );
   };
 
-  // Handle opening add party modal
   const handleOpenAddModal = () => {
     setPartyModalMode('add');
     setEditingParty(undefined);
     setIsPartyModalOpen(true);
   };
 
-  // Handle opening edit party modal
   const handleOpenEditModal = (party: UnifiedContractParty) => {
     setPartyModalMode('edit');
     setEditingParty(party);
     setIsPartyModalOpen(true);
   };
 
-  // Handle modal save
   const handleModalSave = (stakeholderId: string, roles: StakeholderRole[]) => {
     if (partyModalMode === 'add') {
       onAddParty?.(stakeholderId, roles);
@@ -221,7 +230,6 @@ export const ContractForm: FC<{
     }
   };
 
-  // Unified party table
   const unifiedPartyTable = () => (
     <>
       <Table dense background data-cy="parties-table">
@@ -525,11 +533,12 @@ export const ContractForm: FC<{
             <Disclosure.Icon icon={<Calendar />} />
             <Disclosure.Title>Avtalstid och uppsägning</Disclosure.Title>
             {(formState.errors.notice?.terms?.length ?? 0) > 0 ||
-              (formState.errors.extension?.leaseExtension && (
-                <Label className="w-[15rem]" rounded inverted color={'error'}>
-                  Fel i formulär
-                </Label>
-              ))}
+            formState.errors.extension?.leaseExtension ||
+            !!formState.errors.currentPeriod ? (
+              <Label className="w-[15rem]" rounded inverted color={'error'}>
+                Fel i formulär
+              </Label>
+            ) : null}
             <Disclosure.Button />
           </Disclosure.Header>
           <Disclosure.Content>
@@ -537,17 +546,13 @@ export const ContractForm: FC<{
               <div className="flex gap-18 justify-start">
                 <FormControl id="startDate" className="w-full">
                   <FormLabel>Avtalet gäller från</FormLabel>
-                  {/* <div>currentPeriod?.startDate: {getValues().currentPeriod?.startDate}</div> */}
-                  {/* <div>startDate: {getValues().startDate}</div> */}
-                  {/* <Input type="hidden" name="startDate" value={getValues().currentPeriod?.startDate} /> */}
                   <Input
                     type="date"
+                    min={dayjs().format('YYYY-MM-DD')}
                     readOnly={!isEditable('general')}
                     {...register('currentPeriod.startDate')}
                     data-cy="avtalstid-start"
                   />
-                  {/* <div>A: {JSON.stringify(formState.errors)}</div> */}
-                  {/* <div>B: {JSON.stringify(formState.errors.currentPeriod?.startDate)}</div> */}
                   {formState.errors.currentPeriod?.startDate && (
                     <div className="my-sm text-error">
                       <FormErrorMessage>{formState.errors.currentPeriod?.startDate?.message}</FormErrorMessage>
@@ -558,6 +563,7 @@ export const ContractForm: FC<{
                   <FormLabel>Avtalet gäller till och med</FormLabel>
                   <Input
                     type="date"
+                    min={getValues().currentPeriod?.startDate || dayjs().format('YYYY-MM-DD')}
                     readOnly={!isEditable('general')}
                     {...register('currentPeriod.endDate')}
                     data-cy="avtalstid-end"
@@ -1041,7 +1047,6 @@ export const ContractForm: FC<{
         </Disclosure.Content>
       </Disclosure>
 
-      {/* Party Modal */}
       <ContractPartyModal
         isOpen={isPartyModalOpen}
         onClose={() => setIsPartyModalOpen(false)}
