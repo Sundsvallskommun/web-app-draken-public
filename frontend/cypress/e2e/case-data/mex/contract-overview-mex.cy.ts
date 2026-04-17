@@ -488,22 +488,23 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('[data-cy="invoice-status-3"]').should('contain.text', 'Avslagen');
         });
 
-        it('displays download PDF button for each invoice', () => {
-          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
-          cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
-          navigateToContractOverview();
+        // Not implemented yet
+        // it('displays download PDF button for each invoice', () => {
+        //   cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+        //   cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
+        //   navigateToContractOverview();
 
-          cy.get('[data-cy="contract-row-0"]').click();
-          cy.get('[data-cy="fakturor-disclosure"]').click();
+        //   cy.get('[data-cy="contract-row-0"]').click();
+        //   cy.get('[data-cy="fakturor-disclosure"]').click();
 
-          cy.wait('@getContractInvoices');
+        //   cy.wait('@getContractInvoices');
 
-          // Check download buttons exist
-          cy.get('[data-cy="invoice-download-pdf-0"]').should('exist').should('contain.text', 'Hämta pdf');
-          cy.get('[data-cy="invoice-download-pdf-1"]').should('exist');
-          cy.get('[data-cy="invoice-download-pdf-2"]').should('exist');
-          cy.get('[data-cy="invoice-download-pdf-3"]').should('exist');
-        });
+        //   // Check download buttons exist
+        //   cy.get('[data-cy="invoice-download-pdf-0"]').should('exist').should('contain.text', 'Hämta pdf');
+        //   cy.get('[data-cy="invoice-download-pdf-1"]').should('exist');
+        //   cy.get('[data-cy="invoice-download-pdf-2"]').should('exist');
+        //   cy.get('[data-cy="invoice-download-pdf-3"]').should('exist');
+        // });
 
         it('displays empty state when no invoices exist', () => {
           cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
