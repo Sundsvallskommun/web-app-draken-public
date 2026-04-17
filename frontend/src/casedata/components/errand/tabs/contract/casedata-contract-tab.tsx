@@ -107,6 +107,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
       }),
     })
     .required();
+  const [referensError, setReferensError] = useState(false);
   const { municipalityId, errand, user } = useAppContext();
   const [loading, setIsLoading] = useState<string>();
   const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
@@ -194,14 +195,10 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
 
   const onSave = async (data: ContractData, section?: string) => {
     if (section === 'billing' && data.generateInvoice === 'true') {
+      setReferensError(false);
       const hasMarkup = (data.extraParameters ?? []).some((p) => p.parameters?.markup?.trim());
       if (!hasMarkup) {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Fakturareferens måste anges',
-          status: 'error',
-        });
+        setReferensError(true);
         return;
       }
     }
@@ -372,6 +369,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
               )}
               <Input type="hidden" readOnly {...contractForm.register('contractId')} />
               <ContractForm
+                referensError={referensError}
                 changeBadgeColor={changeBadgeColor}
                 onSave={onSave}
                 existingContract={(existingContract as ContractData) || defaultKopeavtal}
