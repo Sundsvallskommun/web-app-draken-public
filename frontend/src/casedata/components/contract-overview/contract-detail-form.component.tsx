@@ -4,10 +4,10 @@ import { Channels } from '@casedata/interfaces/channels';
 import { ContractData, UnifiedContractParty } from '@casedata/interfaces/contract-data';
 import {
   Contract,
-  Stakeholder as ContractStakeholder,
-  StakeholderType as ContractStakeholderType,
   ContractType,
+  Stakeholder as ContractStakeholder,
   StakeholderRole,
+  StakeholderType as ContractStakeholderType,
   Status,
 } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
@@ -229,7 +229,7 @@ export const ContractDetailForm: FC<{
     closeConfirmModal();
     setIsLoading(true);
     await createContractErrand(
-      MEXCaseType.MEX_OTHER,
+      MEXCaseType.UPDATECONTRACT,
       `Ändra avtalsuppgifter för avtal ${selectedContract.contractId}`
     );
   };
@@ -237,10 +237,7 @@ export const ContractDetailForm: FC<{
   const handleCancelContract = async () => {
     setIsCancelModalOpen(false);
     setIsLoading(true);
-    await createContractErrand(
-      MEXCaseType.MEX_TERMINATION_OF_LEASE,
-      `Säg upp avtal ${selectedContract.contractId}`
-    );
+    await createContractErrand(MEXCaseType.MEX_TERMINATION_OF_LEASE, `Säg upp avtal ${selectedContract.contractId}`);
   };
 
   return (
@@ -374,7 +371,11 @@ export const ContractDetailForm: FC<{
           <p>Vill du skapa ett nytt ärende för uppsägning av avtal {selectedContract.contractId}?</p>
         </Modal.Content>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setIsCancelModalOpen(false)} data-cy="contract-cancel-confirm-cancel">
+          <Button
+            variant="secondary"
+            onClick={() => setIsCancelModalOpen(false)}
+            data-cy="contract-cancel-confirm-cancel"
+          >
             Avbryt
           </Button>
           <Button

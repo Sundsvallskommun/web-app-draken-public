@@ -1,4 +1,5 @@
 import { CasedataMessagesTab } from '@casedata/components/errand/tabs/messages/casedata-messages-tab';
+import { MEXCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { getAssets } from '@casedata/services/asset-service';
@@ -29,7 +30,6 @@ import { CasedataInvestigationTab } from './tabs/investigation/casedata-investig
 import CasedataForm from './tabs/overview/casedata-form.component';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
-import { MEXCaseType } from '@casedata/interfaces/case-type';
 
 export const CasedataTabsWrapper: FC = () => {
   const {
@@ -278,6 +278,7 @@ export const CasedataTabsWrapper: FC = () => {
             visibleFor:
               !isPT() && errand?.id
                 ? [
+                    ...(errand?.caseType === MEXCaseType.MEX_TERMINATION_OF_LEASE ? [ErrandPhase.aktualisering] : []),
                     ...(errand?.caseType === MEXCaseType.UPDATECONTRACT ? [ErrandPhase.aktualisering] : []),
                     ErrandPhase.utredning,
                     ErrandPhase.beslut,
