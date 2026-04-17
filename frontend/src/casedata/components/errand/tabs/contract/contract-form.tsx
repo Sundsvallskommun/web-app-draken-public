@@ -105,12 +105,12 @@ export const ContractForm: FC<{
           .map(async (p) => {
             const ssn = await getSSNFromPersonId(municipalityId, p.originalStakeholder.partyId!);
             return [p.originalStakeholder.partyId!, ssn] as const;
-        })
+          })
       );
       if (!cancelled) setSsnMap(Object.fromEntries(entries));
     };
 
-      fetchSSNs();
+    fetchSSNs();
 
     return () => {
       cancelled = true;
@@ -531,7 +531,7 @@ export const ContractForm: FC<{
         >
           <Disclosure.Header>
             <Disclosure.Icon icon={<Calendar />} />
-            <Disclosure.Title>Avtalstid och uppsägning</Disclosure.Title>
+            <Disclosure.Title>Avtalstid och uppsägningsvillkor</Disclosure.Title>
             {(formState.errors.notice?.terms?.length ?? 0) > 0 ||
             formState.errors.extension?.leaseExtension ||
             !!formState.errors.currentPeriod ? (
