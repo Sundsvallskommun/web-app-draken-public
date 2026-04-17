@@ -656,7 +656,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
           // Wait for the POST request and verify the data
           cy.wait('@postErrand').then((interception) => {
-            expect(interception.request.body).to.have.property('caseType', 'MEX_OTHER');
+            expect(interception.request.body).to.have.property('caseType', 'UPDATECONTRACT');
             expect(interception.request.body).to.have.property('channel', 'WEB_UI');
             expect(interception.request.body).to.have.property('phase', 'Aktualisering');
             expect(interception.request.body).to.have.property('priority', 'MEDIUM');
