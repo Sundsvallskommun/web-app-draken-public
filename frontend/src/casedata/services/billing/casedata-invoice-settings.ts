@@ -52,7 +52,7 @@ const mapInvoiceData = (): CasedataInvoiceSettings => {
 
   return {
     category: invoiceData.category,
-    services: services.sort((a, b) => a.name.localeCompare(b.name)),
+    services: services.toSorted((a, b) => a.name.localeCompare(b.name)),
   };
 };
 
