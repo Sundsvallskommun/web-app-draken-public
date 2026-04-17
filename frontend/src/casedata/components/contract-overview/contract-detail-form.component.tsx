@@ -228,7 +228,10 @@ export const ContractDetailForm: FC<{
   const handleChangeBillingDetails = async () => {
     closeConfirmModal();
     setIsLoading(true);
-    await createContractErrand(MEXCaseType.MEX_OTHER, `Ändra avtalsuppgifter för avtal ${selectedContract.contractId}`);
+    await createContractErrand(
+      MEXCaseType.UPDATECONTRACT,
+      `Ändra avtalsuppgifter för avtal ${selectedContract.contractId}`
+    );
   };
 
   const handleCancelContract = async () => {

@@ -6,8 +6,6 @@ import {
   IntervalType,
   InvoicedIn,
   LeaseType,
-  Notice,
-  NoticeTerm,
   Party,
   StakeholderRole,
   Status,
