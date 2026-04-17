@@ -469,6 +469,7 @@ export const contractToKopeavtal = (contract: Contract): ContractData => {
 export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
   console.log('transforming to contract: ', data);
   let fees: Fees | undefined = undefined;
+  const propertyDesignations = data.propertyDesignations ?? [];
   if (data.generateInvoice) {
     const yearlyNumber = Number.parseFloat((data.fees?.yearly ?? 0).toString());
     fees = {
@@ -477,9 +478,10 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       total: yearlyNumber,
       currency: 'SEK',
       additionalInformation: [
-        `Avgift, ${
-          leaseTypes.find((t) => t.key === data.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'
-        }. Fastigheter: ${(data.propertyDesignations ?? []).map((p) => p.name).join(', ')}`,
+        `Avgift, ${leaseTypes.find((t) => t.key === data.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'}. ` +
+          (propertyDesignations?.length > 0
+            ? `Fastigheter: ${propertyDesignations.map((p) => p.name).join(', ')}`
+            : ''),
         data.fees?.additionalInformation?.[1] ?? '',
       ],
       ...(data.indexAdjusted === 'true' && { indexYear: data.fees?.indexYear ?? 2025 }),
@@ -535,6 +537,7 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
     contract.fees?.indexNumber ||
     contract.fees?.indexationRate
   );
+  const propertyDesignations = contract.propertyDesignations ?? [];
   const lagenhetsarrende: ContractData = {
     ...defaultLagenhetsarrende,
     ...contract,
@@ -544,9 +547,10 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
     fees: {
       ...contract.fees,
       additionalInformation: [
-        `Avgift, ${
-          leaseTypes.find((t) => t.key === contract.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'
-        }. Fastigheter: ${(contract.propertyDesignations ?? []).map((p) => p.name).join(', ')}`,
+        `Avgift, ${leaseTypes.find((t) => t.key === contract.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'}. ` +
+          (propertyDesignations?.length > 0
+            ? `Fastigheter: ${propertyDesignations.map((p) => p.name).join(', ')}`
+            : ''),
         '',
       ],
     },
