@@ -16,7 +16,7 @@ import { CaseDataErrandController } from './controllers/casedata/casedata-errand
 import { caseDataFacilitiesController } from './controllers/casedata/casedata-facilities.controller';
 import { CaseDataHistoryController } from './controllers/casedata/casedata-history.controller';
 import { CasedataNotesController } from './controllers/casedata/casedata-notes.controller';
-import { CasedataNotificationController } from './controllers/casedata/casedata-notification-controller';
+import { CasedataNotificationController } from './controllers/casedata/casedata-notification.controller';
 import { CasedataStakeholderController } from './controllers/casedata/casedata-stakeholder.controller';
 import { ExtraParameterController } from './controllers/casedata/extraparameter.controller';
 import { CaseStatusController } from './controllers/casestatus.controller';
@@ -37,7 +37,7 @@ import { SupportHistoryController } from './controllers/supportmanagement/suppor
 import { SupportMessageController } from './controllers/supportmanagement/support-message.controller';
 import { SupportMetadataController } from './controllers/supportmanagement/support-metadata.controller';
 import { SupportNoteController } from './controllers/supportmanagement/support-note.controller';
-import { SupportNotificationController } from './controllers/supportmanagement/support-notification-controller';
+import { SupportNotificationController } from './controllers/supportmanagement/support-notification.controller';
 import { TemplateController } from './controllers/template.controller';
 import { UserController } from './controllers/user.controller';
 
