@@ -1,4 +1,5 @@
 import { ContractInvoicesTable } from '@casedata/components/contract-overview/contract-invoices-table.component';
+import { MEXCaseType } from '@casedata/interfaces/case-type';
 import { ContractData, UnifiedContractParty } from '@casedata/interfaces/contract-data';
 import {
   ContractType,
@@ -572,46 +573,6 @@ export const ContractForm: FC<{
                   />
                 </FormControl>
               </div>
-              {getValues().contractId ? (
-                <>
-                  <div className="flex gap-18 justify-start">
-                    <FormControl id="noticeDate" className="w-full">
-                      <FormLabel>Uppsägningsdatum</FormLabel>
-                      <Input
-                        type="date"
-                        readOnly={!isEditable('cancellation')}
-                        {...register('notice.noticeDate')}
-                        data-cy="notice-date"
-                      />
-                    </FormControl>
-                    <FormControl id="endDate" className="w-full">
-                      <FormLabel>Slutdatum</FormLabel>
-                      <Input
-                        type="date"
-                        readOnly={!isEditable('cancellation')}
-                        {...register('endDate')}
-                        data-cy="endDate"
-                      />
-                    </FormControl>
-                  </div>
-                  <div className="flex gap-18 justify-start">
-                    <FormControl id="noticeGivenBy" className="w-full">
-                      <FormLabel>Uppsagd av</FormLabel>
-                      <Select
-                        className="w-full"
-                        disabled={!isEditable('cancellation')}
-                        {...register('notice.noticeGivenBy')}
-                        data-cy="notice-given-by"
-                      >
-                        <Select.Option value="">Välj part</Select.Option>
-                        <Select.Option value={Party.LESSOR}>Upplåtare</Select.Option>
-                        <Select.Option value={Party.LESSEE}>Arrendator</Select.Option>
-                      </Select>
-                    </FormControl>
-                    <div className="w-full"></div>
-                  </div>
-                </>
-              ) : null}
               {getValues().notice?.terms?.some((t) => t.party === 'LESSOR') &&
               getValues().notice?.terms?.some((t) => t.party === 'LESSEE') ? (
                 <>
@@ -699,7 +660,7 @@ export const ContractForm: FC<{
                 </>
               ) : (
                 <>
-                  <strong>Ange uppsägningstid</strong>
+                  <strong className="-mb-16">Ange uppsägningstid</strong>
                   <div className="flex justify-between gap-32 items-start mb-md">
                     <FormControl id={`noticePeriod-0`} className="flex-grow max-w-[45%]">
                       <FormLabel>Enhet</FormLabel>
@@ -800,6 +761,48 @@ export const ContractForm: FC<{
           </Disclosure.Content>
         </Disclosure>
       )}
+      {errand?.caseType === MEXCaseType.UPDATECONTRACT || errand?.caseType === MEXCaseType.MEX_TERMINATION_OF_LEASE ? (
+        <Disclosure variant="alt">
+          <Disclosure.Header>
+            <Disclosure.Icon icon={<Calendar />} />
+            <Disclosure.Title>Uppsägning anmälan</Disclosure.Title>
+            <Disclosure.Button />
+          </Disclosure.Header>
+          <Disclosure.Content>
+            <div className="flex gap-18 justify-start">
+              <FormControl id="noticeDate" className="w-full">
+                <FormLabel>Uppsägningsdatum</FormLabel>
+                <Input
+                  type="date"
+                  readOnly={!isEditable('cancellation')}
+                  {...register('notice.noticeDate')}
+                  data-cy="notice-date"
+                />
+              </FormControl>
+              <FormControl id="endDate" className="w-full">
+                <FormLabel>Slutdatum</FormLabel>
+                <Input type="date" readOnly={!isEditable('cancellation')} {...register('endDate')} data-cy="endDate" />
+              </FormControl>
+            </div>
+            <div className="flex gap-18 justify-start">
+              <FormControl id="noticeGivenBy" className="w-full">
+                <FormLabel>Uppsagd av</FormLabel>
+                <Select
+                  className="w-full"
+                  disabled={!isEditable('cancellation')}
+                  {...register('notice.noticeGivenBy')}
+                  data-cy="notice-given-by"
+                >
+                  <Select.Option value="">Välj part</Select.Option>
+                  <Select.Option value={Party.LESSOR}>Upplåtare</Select.Option>
+                  <Select.Option value={Party.LESSEE}>Arrendator</Select.Option>
+                </Select>
+              </FormControl>
+            </div>
+            {saveButton()}
+          </Disclosure.Content>
+        </Disclosure>
+      ) : null}
       {hasRecurringFee(contractType, watch().leaseType) && (
         <Disclosure
           data-cy="lopande-disclosure"
