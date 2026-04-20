@@ -43,6 +43,10 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
 
   const availableRoles = getAvailableRoles();
 
+  const isBillingPartyTaken = existingParties.some(
+    (p) => p.stakeholderId !== existingParty?.stakeholderId && p.roles.includes(StakeholderRole.PRIMARY_BILLING_PARTY)
+  );
+
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -147,16 +151,23 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
           <FormControl>
             <FormLabel>{mode === 'add' ? 'Välj roll' : 'Byt eller lägg till roll'}</FormLabel>
             <div className="flex flex-col gap-12">
-              {availableRoles.map((role) => (
-                <Checkbox
-                  key={role}
-                  data-cy={`party-modal-role-${role}`}
-                  checked={selectedRoles.includes(role)}
-                  onChange={() => handleRoleToggle(role)}
-                >
-                  {prettyContractRoles[role] || role}
-                </Checkbox>
-              ))}
+              {availableRoles.map((role) => {
+                const disabled =
+                  role === StakeholderRole.PRIMARY_BILLING_PARTY &&
+                  isBillingPartyTaken &&
+                  !selectedRoles.includes(role);
+                return (
+                  <Checkbox
+                    key={role}
+                    data-cy={`party-modal-role-${role}`}
+                    checked={selectedRoles.includes(role)}
+                    disabled={disabled}
+                    onChange={() => handleRoleToggle(role)}
+                  >
+                    {prettyContractRoles[role] || role}
+                  </Checkbox>
+                );
+              })}
             </div>
           </FormControl>
         </div>
