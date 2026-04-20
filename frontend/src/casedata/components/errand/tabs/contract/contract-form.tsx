@@ -362,7 +362,7 @@ export const ContractForm: FC<{
           )}
         </Table.Body>
       </Table>
-      {!readOnly && isDraft && onAddParty && (
+      {!readOnly && onAddParty && (
         <div className="mt-12">
           <Button size="sm" variant="secondary" data-cy="add-party-button" onClick={handleOpenAddModal}>
             Lägg till ny part
@@ -1066,6 +1066,7 @@ export const ContractForm: FC<{
         existingParty={editingParty}
         contractType={getValues().type}
         existingParties={contractParties}
+        isDraft={isDraft}
       />
     </>
   );

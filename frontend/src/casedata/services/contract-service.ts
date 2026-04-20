@@ -564,10 +564,11 @@ export const getContractStakeholderName: (c: StakeholderWithPersonnumber) => str
     : `${c.firstName} ${c.lastName}`;
 
 // Centralized converter: API stakeholder -> UnifiedContractParty
+let internalIdCounter = 0;
 export const contractStakeholderToUnifiedParty = (stakeholder: StakeholderWithPersonnumber): UnifiedContractParty => {
   const name = getContractStakeholderName(stakeholder);
   return {
-    stakeholderId: stakeholder.stakeholderId || stakeholder.partyId || '',
+    stakeholderId: stakeholder.stakeholderId || stakeholder.partyId || `_internal-${++internalIdCounter}`,
     name,
     personalNumber: stakeholder.personalNumber,
     organizationNumber: stakeholder.organizationNumber,

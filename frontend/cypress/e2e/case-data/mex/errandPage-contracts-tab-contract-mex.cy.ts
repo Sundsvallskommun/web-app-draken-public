@@ -836,15 +836,21 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('[data-cy="fees-additional-information-1-input"]').should('have.value', 'Extra info');
         });
 
-        it('does not allow adding or removing parties for ACTIVE contracts but allows editing roles', () => {
+        it('does not allow removing parties for ACTIVE contracts but allows editing roles and adding billing party', () => {
           cy.get('[data-cy="non-draft-warning-banner"]').should('exist');
 
-          // For ACTIVE contracts, add party button should not exist
-          cy.get('[data-cy="add-party-button"]').should('not.exist');
+          // For ACTIVE contracts, add party button should exist (for adding billing party)
+          cy.get('[data-cy="add-party-button"]').should('exist');
           // Remove button should not exist for non-DRAFT contracts
           cy.get('[data-cy="party-0-remove-button"]').should('not.exist');
           // Edit button should still exist (for editing roles like billing party)
           cy.get('[data-cy="party-0-edit-button"]').should('exist');
+
+          // Opening the add party modal should only show Fakturamottagare role
+          cy.get('[data-cy="add-party-button"]').click();
+          cy.get('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').should('exist');
+          cy.get('[data-cy="party-modal-role-LESSEE"]').should('not.exist');
+          cy.get('[data-cy="party-modal-role-LESSOR"]').should('not.exist');
         });
       });
     });
