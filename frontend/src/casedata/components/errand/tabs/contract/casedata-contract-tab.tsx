@@ -14,11 +14,14 @@ import {
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import {
   contractStakeholderToUnifiedParty,
+  contractToKopeavtal,
+  contractToLagenhetsArrende,
   contractTypes,
   defaultKopeavtal,
   defaultLagenhetsarrende,
   errandStakeholderToContractStakeholder,
   getErrandContract,
+  isLeaseAgreement,
   leaseTypes,
   saveContract,
   saveContractToErrand,
@@ -217,12 +220,12 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
         // Only save to errand if this is a new contract
         if (isNewContract && res.contractId) {
           await saveContractToErrand(municipalityId, res.contractId, errand!);
-          // Update the form with the new contractId
-          contractForm.setValue('contractId', res.contractId);
         }
-        return res;
-      })
-      .then(() => {
+
+        // Convert saved contract back to form data and reset the form
+        const savedFormData = isLeaseAgreement(res.type) ? contractToLagenhetsArrende(res) : contractToKopeavtal(res);
+        contractForm.reset(savedFormData);
+
         setIsLoading(undefined);
         props.setUnsaved(false);
         toastMessage(
