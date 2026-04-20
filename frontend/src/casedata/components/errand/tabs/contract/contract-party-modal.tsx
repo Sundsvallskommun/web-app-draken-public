@@ -15,6 +15,7 @@ interface ContractPartyModalProps {
   existingParty?: UnifiedContractParty;
   contractType: ContractType;
   existingParties?: UnifiedContractParty[];
+  isDraft?: boolean;
 }
 
 export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
@@ -26,12 +27,16 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
   existingParty,
   contractType,
   existingParties = [],
+  isDraft = true,
 }) => {
   const [selectedStakeholderId, setSelectedStakeholderId] = useState<string>('');
   const [selectedRoles, setSelectedRoles] = useState<StakeholderRole[]>([]);
 
-  // Get available roles based on contract type
+  // Get available roles based on contract type and draft status
   const getAvailableRoles = (): StakeholderRole[] => {
+    if (!isDraft) {
+      return [StakeholderRole.PRIMARY_BILLING_PARTY];
+    }
     if (contractType === ContractType.PURCHASE_AGREEMENT) {
       return [StakeholderRole.BUYER, StakeholderRole.SELLER];
     }
@@ -106,8 +111,8 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
   const filteredStakeholderOptions = stakeholderOptions
     .filter((s) => s.id && !s.roles.includes(Role.ADMINISTRATOR))
     .filter((s) => {
-      if (mode === 'add') {
-        // In add mode, exclude stakeholders that are already parties
+      if (mode === 'add' && isDraft) {
+        // In add mode for DRAFT contracts, exclude stakeholders that are already parties
         return !existingParties.some((p) => stakeholderMatchesParty(s, p));
       }
       return true;
