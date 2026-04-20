@@ -576,7 +576,7 @@ export const ContractForm: FC<{
               {getValues().notice?.terms?.some((t) => t.party === 'LESSOR') &&
               getValues().notice?.terms?.some((t) => t.party === 'LESSEE') ? (
                 <>
-                  <strong>Ange tid för nyttjanderättshavarens uppsägningstid</strong>
+                  <strong>Ange tid för arrendatorns uppsägningstid</strong>
                   <div className="flex justify-between gap-32 items-start mb-md">
                     <FormControl id={`noticePeriod-1`} className="flex-grow max-w-[45%]">
                       <FormLabel>Enhet</FormLabel>
@@ -617,7 +617,7 @@ export const ContractForm: FC<{
                     </FormControl>
                   </div>
 
-                  <strong className="text-h6-md">Ange tid för fastighetsägarens uppsägningstid</strong>
+                  <strong className="text-h6-md">Ange tid för upplåtarens uppsägningstid</strong>
                   <div className="flex justify-between gap-32 items-start mb-md">
                     <FormControl id={`noticePeriod-2`} className="flex-grow max-w-[45%]">
                       <FormLabel>Enhet</FormLabel>
