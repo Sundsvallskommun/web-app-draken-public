@@ -213,8 +213,8 @@ export interface Problem {
   instance?: string;
   /** @format uri */
   type?: string;
-  title?: string;
   detail?: string;
+  title?: string;
   /** @format int32 */
   status?: number;
 }
@@ -585,11 +585,13 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
+  number?: boolean;
+  string?: boolean;
+  boolean?: boolean;
   integralNumber?: boolean;
-  pojo?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  valueNode?: boolean;
+  container?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
   int?: boolean;
@@ -600,10 +602,8 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  valueNode?: boolean;
-  number?: boolean;
-  string?: boolean;
-  boolean?: boolean;
+  missingNode?: boolean;
+  pojo?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -837,6 +837,8 @@ export interface MessageRequest {
   email?: string;
   /** List of email recipients */
   recipients?: string[];
+  /** List of CC email recipients */
+  ccRecipients?: string[];
   /** The user ID of the user that sent the message */
   userId?: string;
   /** The classification of the message */
@@ -1075,27 +1077,27 @@ export interface PageErrand {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  unpaged?: boolean;
-  sort?: SortObject;
 }
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export interface CommitMetadata {
@@ -1194,6 +1196,8 @@ export interface MessageResponse {
   mobileNumber?: string;
   /** The recipients of the message, if email */
   recipients?: string[];
+  /** The CC recipients of the message, if email */
+  ccRecipients?: string[];
   /** The email of the user that sent the message */
   email?: string;
   /** The user ID of the user that sent the message */
@@ -1224,8 +1228,8 @@ export interface PageMessage {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1243,8 +1247,8 @@ export interface PageDecision {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1291,6 +1295,7 @@ export enum ErrandChannelEnum {
   WEB_UI = 'WEB_UI',
   MOBILE = 'MOBILE',
   SYSTEM = 'SYSTEM',
+  MY_PAGES = 'MY_PAGES',
 }
 
 /**

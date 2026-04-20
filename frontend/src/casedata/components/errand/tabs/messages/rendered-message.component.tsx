@@ -13,7 +13,7 @@ import dayjs from 'dayjs';
 import { CornerDownRight, Image, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus } from 'lucide-react';
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 
-import { RenderMessageReciever } from './render-message-reciever.component';
+import { EmailRecipients, RenderMessageReciever } from './render-message-reciever.component';
 
 export const RenderedMessage: FC<{
   message: MessageNode;
@@ -31,6 +31,7 @@ export const RenderedMessage: FC<{
 
   useEffect(() => {
     const _a = errand ? validateAction(errand, user) : false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAllowed(_a);
   }, [user, errand]);
 
@@ -94,6 +95,11 @@ export const RenderedMessage: FC<{
                   <p className="mr-md break-all font-bold">
                     Till: <RenderMessageReciever selectedMessage={message} errand={errand} />
                   </p>
+                  {message.messageType === 'EMAIL' && (message.ccRecipients?.length ?? 0) > 0 && (
+                    <p className="mr-md break-all font-bold">
+                      Kopia: <EmailRecipients recipients={message.ccRecipients!} />
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
