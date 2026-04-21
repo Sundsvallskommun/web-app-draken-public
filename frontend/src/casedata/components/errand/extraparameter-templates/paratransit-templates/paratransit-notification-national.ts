@@ -155,7 +155,7 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
   {
     field: 'personal.mobilityAids',
     value: [],
-    label: 'Ange ett eller flera förflyttningshjälpmedel som den sökande är beroende av för att kunna genomföra resan',
+    label: 'Välj förflyttningshjälpmedel som den sökande är beroende av under själva resan',
     formField: {
       type: 'combobox',
       options: [
@@ -176,6 +176,27 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
         field: 'personal.mobilityAidNeeded',
         value: 'YES',
         validationMessage: 'Vänligen välj förflyttningshjälpmedel.',
+      },
+    ],
+  },
+  {
+    field: 'personal.wheelchairDimensions',
+    value: '',
+    label:
+      'Ange information om rullstolens yttermått, längd och bredd, samt totalvikten när personen sitter i rullstolen',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Yttre omständigheter',
+    dependsOnLogic: 'OR',
+    dependsOn: [
+      {
+        field: 'personal.mobilityAids',
+        value: 'COMFORT_WHEELCHAIR',
+      },
+      {
+        field: 'personal.mobilityAids',
+        value: 'ELECTRIC_WHEELCHAIR',
       },
     ],
   },
