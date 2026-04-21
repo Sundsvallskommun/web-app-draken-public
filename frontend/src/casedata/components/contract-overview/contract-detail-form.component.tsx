@@ -29,8 +29,8 @@ import {
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useAppContext } from '@contexts/app.context';
 import { Button, Checkbox, FormControl, FormLabel, Modal, Select, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore, useUserStore } from '@stores/index';
 import { ExternalLink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { FC, useMemo, useState } from 'react';
@@ -125,8 +125,9 @@ export const ContractDetailForm: FC<{
   selectedContract: Contract;
   update?: (contractId: string) => void;
 }> = ({ selectedContract }) => {
-  const { municipalityId, user, administrators }: { municipalityId: string; user: any; administrators: Admin[] } =
-    useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
+  const administrators: Admin[] = useUserStore((s) => s.administrators);
 
   const contractData = useMemo<ContractData>(() => {
     if (selectedContract.type === ContractType.PURCHASE_AGREEMENT) {

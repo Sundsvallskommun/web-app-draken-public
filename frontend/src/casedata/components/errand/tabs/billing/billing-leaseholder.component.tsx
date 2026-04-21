@@ -1,16 +1,16 @@
 import { BillingFormData, BillingRecipient } from '@casedata/interfaces/billing';
 import { PrettyRole, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
-import { useAppContext } from '@contexts/app.context';
 import { FormControl, FormErrorMessage, FormLabel, Select } from '@sk-web-gui/react';
-import { FC, useState } from 'react';
+import { useCasedataStore } from '@stores/index';
+import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 interface BillingLeaseholderProps {
   onSelectRecipient: (recipient: BillingRecipient | undefined) => void;
 }
 
-export const BillingLeaseholder: FC<BillingLeaseholderProps> = ({ onSelectRecipient }) => {
-  const { errand } = useAppContext();
+export const BillingLeaseholder: React.FC<BillingLeaseholderProps> = ({ onSelectRecipient }) => {
+  const errand = useCasedataStore((s) => s.errand);
   const {
     formState: { errors },
     setValue,

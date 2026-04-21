@@ -1,6 +1,6 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { formatCurrency, maybe, prettyTime } from '@common/services/helper-service';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { useBillingStore, useConfigStore } from '@stores/index';
 import { Button, Input, Pagination, Select, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import { attestationLabels, billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
@@ -25,7 +25,8 @@ export const AttestationsTable: FC<{
   setShowSelectedRecord: (show: boolean) => void;
 }> = ({ setSelectedRecord, setShowSelectedRecord }) => {
   const { watch, setValue, register } = useFormContext<AttestationTableForm>();
-  const { municipalityId, billingRecords }: AppContextInterface = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const billingRecords = useBillingStore((s) => s.billingRecords);
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');

@@ -1,12 +1,12 @@
 import { BillingFormData } from '@casedata/interfaces/billing';
-import { useAppContext } from '@contexts/app.context';
 import { Checkbox, DatePicker, FormControl, FormErrorMessage, FormLabel, Input } from '@sk-web-gui/react';
-import { FC } from 'react';
+import { useCasedataStore } from '@stores/index';
 import { useFormContext } from 'react-hook-form';
 
-export const BillingSpecifications: FC = () => {
+export const BillingSpecifications: React.FC = () => {
   const avitextMaxLength = 30;
-  const { errand } = useAppContext();
+  const errand = useCasedataStore((s) => s.errand);
+
   const {
     register,
     watch,

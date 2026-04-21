@@ -6,7 +6,7 @@ import { NotificationsWrapper } from '@common/components/notifications/notificat
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { attestationEnabled, contractsEnabled } from '@common/services/feature-flag-service';
 import { appConfig } from '@config/appconfig';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { useBillingStore, useConfigStore, useUserStore } from '@stores/index';
 import { Badge, Button, cx, Divider, Logo, UserMenu } from '@sk-web-gui/react';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportManagementFilterSidebarStatusSelector } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component';
@@ -31,7 +31,9 @@ export const MainErrandsSidebar: FC<{
 }> = ({ showAttestationTable, setShowAttestationTable, showContractTable, setShowContractTable, open, setOpen }) => {
   const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
-  const { user, billingRecords, isLoading }: AppContextInterface = useAppContext();
+  const user = useUserStore((s) => s.user);
+  const billingRecords = useBillingStore((s) => s.billingRecords);
+  const isLoading = useConfigStore((s) => s.isLoading);
   const [showNotifications, setShowNotifications] = useState(false);
   const applicationEnvironment = getApplicationEnvironment();
 

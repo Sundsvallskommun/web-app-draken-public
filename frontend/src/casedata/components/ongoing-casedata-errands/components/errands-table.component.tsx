@@ -8,8 +8,8 @@ import { PriorityComponent } from '@common/components/priority/priority.componen
 import type { Errand } from '@common/data-contracts/case-data/data-contracts';
 import { isMEX, isPT } from '@common/services/application-service';
 import { sortBy, truncate } from '@common/services/helper-service';
-import { useAppContext } from '@contexts/app.context';
-import { cx, Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore } from '@stores/index';
+import { Input, Pagination, Select, Spinner, Table, cx } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
 import { FC, useState } from 'react';
@@ -20,7 +20,8 @@ import { CasedataStatusLabelComponent } from './casedata-status-label.component'
 
 export const ErrandsTable: FC = () => {
   const { watch, setValue, register } = useFormContext<TableForm>();
-  const { municipalityId, errands: data } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const data = useCasedataStore((s) => s.errands);
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');

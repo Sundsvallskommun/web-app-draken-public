@@ -19,7 +19,6 @@ import {
   isLeaseAgreement,
   prettyContractRoles,
 } from '@casedata/services/contract-service';
-import { useAppContext } from '@contexts/app.context';
 import {
   Button,
   Checkbox,
@@ -35,6 +34,7 @@ import {
   Textarea,
   useConfirm,
 } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';
 import { Calendar, FilePen, Info, MapPin, Pencil, Receipt, Trash, Users, Wallet } from 'lucide-react';
 import { ChangeEvent, FC, useEffect, useMemo, useState } from 'react';
@@ -70,11 +70,14 @@ export const ContractForm: FC<{
   onEditPartyRoles,
   onRemoveParty,
 }) => {
-  const { municipalityId, errand, user } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const user = useUserStore((s) => s.user);
   const confirm = useConfirm();
   const { register, setValue, handleSubmit, getValues, watch, formState, trigger } = useFormContext<ContractData>();
 
   const [loading, setLoading] = useState<boolean>(false);
+  const [updatingParties, setUpdatingParties] = useState<boolean>(false);
 
   const [isPartyModalOpen, setIsPartyModalOpen] = useState(false);
   const [partyModalMode, setPartyModalMode] = useState<'add' | 'edit'>('add');
@@ -92,9 +95,8 @@ export const ContractForm: FC<{
   };
 
   const allowed = useMemo(() => {
-    if (!errand) return false;
-    return validateAction(errand, user);
-  }, [errand, user]);
+    return errand ? validateAction(errand, user) : false;
+  }, [user, errand]);
 
   const [ssnMap, setSsnMap] = useState<Record<string, string>>({});
 

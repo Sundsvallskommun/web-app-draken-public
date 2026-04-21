@@ -1,8 +1,8 @@
 import { prettyTime } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import BillingForm from '@supportmanagement/components/billing/billing-form.component';
 import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
 import {
@@ -35,7 +35,10 @@ export const SupportErrandInvoiceTab: FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
-  const { supportErrand, user, municipalityId, setSupportErrand } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const user = useUserStore((s) => s.user);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
 
   const [record, setRecord] = useState<CBillingRecord | undefined>(emptyBillingRecord);
   const [isLoading, setIsLoading] = useState<boolean>(false);

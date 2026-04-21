@@ -1,11 +1,11 @@
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, FormLabel, Input, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import { getSupportErrandById, setSuspension, Status } from '@supportmanagement/services/support-errand-service';
 import dayjs from 'dayjs';
 import { CirclePause } from 'lucide-react';
-import { FC, useState } from 'react';
+import { useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -21,8 +21,10 @@ export interface SuspendFormProps {
   comment: string;
 }
 
-export const SuspendErrandComponent: FC<{ disabled: boolean }> = ({ disabled }) => {
-  const { municipalityId, supportErrand, setSupportErrand } = useAppContext();
+export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);

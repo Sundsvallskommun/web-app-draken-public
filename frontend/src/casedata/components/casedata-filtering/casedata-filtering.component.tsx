@@ -11,8 +11,8 @@ import {
 import { isPT } from '@common/services/application-service';
 import { Admin } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
 import { Button, Checkbox, cx, Link } from '@sk-web-gui/react';
+import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { ListFilter } from 'lucide-react';
 import { FC, useState } from 'react';
 
@@ -80,7 +80,7 @@ const CaseDataFiltering: FC<{
   numberOfFilters: number;
 }> = ({ numberOfFilters, ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const [show, setShow] = useState<boolean>(true);
-  const { selectedErrandStatuses } = useAppContext();
+  const selectedErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
 
   return (
     <>

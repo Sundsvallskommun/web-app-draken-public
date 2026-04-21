@@ -9,7 +9,7 @@ export const AngeSymbol: FC<SVGProps<SVGSVGElement>> = (props) => {
         viewBox="0 0 93.45 103.83"
         width="85%"
         height="85%"
-        style={{ marginTop: '6px' }}
+        className="mt-[6px]"
         aria-label="Ånge kommun symbol"
         {...props}
       >

@@ -1,6 +1,6 @@
 import { isErrandLocked, isFTNotificationErrand } from '@casedata/services/casedata-errand-service';
 import { EXTRAPARAMETER_SEPARATOR, UppgiftField } from '@casedata/services/casedata-extra-parameters-service';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore } from '@stores/index';
 import { Button } from '@sk-web-gui/react';
 import { Plus, Trash2 } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
@@ -28,7 +28,7 @@ export const RepeatableFieldGroup: FC<RepeatableFieldGroupProps> = ({
   initialData,
 }) => {
   const { unregister, setValue } = useFormContext();
-  const { errand } = useAppContext();
+  const errand = useCasedataStore((s) => s.errand);
   const isReadOnly = (errand ? isErrandLocked(errand) : false) || (errand ? isFTNotificationErrand(errand) : false);
   const [itemIndices, setItemIndices] = useState<number[]>(() => {
     if (initialData && Object.keys(initialData).length > 0) {

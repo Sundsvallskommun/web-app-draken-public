@@ -13,12 +13,12 @@ import {
 } from '@casedata/services/casedata-message-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { getUiPhase, phaseChangeInProgress } from '@casedata/services/process-service';
-import { useAppContext } from '@common/contexts/app.context';
 import { isPT } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { Tabs, useSnackbar } from '@sk-web-gui/react';
-import { FC, ReactNode, useEffect, useRef, useState } from 'react';
+import { useCasedataStore, useConfigStore } from '@stores/index';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { CasedataAttachments } from './tabs/attachments/casedata-attachments.component';
@@ -31,9 +31,9 @@ import CasedataForm from './tabs/overview/casedata-form.component';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
 
-export const CasedataTabsWrapper: FC = () => {
+export const CasedataTabsWrapper: React.FC = () => {
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const {
-    municipalityId,
     errand,
     setErrand,
     messages,
@@ -44,7 +44,7 @@ export const CasedataTabsWrapper: FC = () => {
     setAssets,
     assets,
     uiPhase,
-  } = useAppContext();
+  } = useCasedataStore();
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [unsavedUppgifter, setUnsavedUppgifter] = useState(false);
   const [unsavedContract, setUnsavedContract] = useState(false);

@@ -1,10 +1,9 @@
-import { useAppContext } from '@contexts/app.context';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
+import { useMetadataStore } from '@stores/index';
 import { SupportType } from '@supportmanagement/services/support-metadata-service';
 import { ChevronDown } from 'lucide-react';
-import { FC, useEffect, useState } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
-
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
 
 export interface TypeFilter {
@@ -21,19 +20,13 @@ export const SupportManagementFilterType: FC = () => {
   const types = watch('type');
   const { register } = useFormContext<TypeFilter>();
   const [query, setQuery] = useState<string>('');
-  const [allTypes, setAllTypes] = useState<SupportType[]>();
-  const { supportMetadata } = useAppContext();
-  useEffect(() => {
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+
+  const allTypes = useMemo(() => {
     const _types: SupportType[] = [];
     if (categories.length > 0) {
       categories?.forEach((category) => {
         const categoryTypes = supportMetadata?.categories?.find((c) => c.name === category)?.types;
-        types.filter((type) => {
-          if (!categoryTypes?.find((ct) => ct.name === type)) {
-            const newTypes = types.filter((_t) => _t !== type);
-            setValue('type', newTypes);
-          }
-        });
         if (categoryTypes) {
           _types.push(...categoryTypes);
         }
@@ -43,7 +36,21 @@ export const SupportManagementFilterType: FC = () => {
         _types.push(...(category.types ?? []));
       });
     }
-    setAllTypes(_types);
+    return _types;
+  }, [supportMetadata, categories]);
+
+  useEffect(() => {
+    if (categories.length > 0) {
+      categories?.forEach((category) => {
+        const categoryTypes = supportMetadata?.categories?.find((c) => c.name === category)?.types;
+        types.filter((type) => {
+          if (!categoryTypes?.find((ct) => ct.name === type)) {
+            const newTypes = types.filter((_t) => _t !== type);
+            setValue('type', newTypes);
+          }
+        });
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportMetadata, categories, types]);
 

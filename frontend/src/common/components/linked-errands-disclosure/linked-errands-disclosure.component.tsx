@@ -16,7 +16,7 @@ import {
   getTargetRelations,
 } from '@common/services/relations-service';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
+import { useConfigStore } from '@stores/index';
 import { Disclosure, SearchField, Spinner } from '@sk-web-gui/react';
 import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
@@ -28,7 +28,7 @@ import { RelationsToTable } from './relation-tables/relations-to-table.component
 export const LinkedErrandsDisclosure: FC<{
   errand: SupportErrand | IErrand;
 }> = ({ errand }) => {
-  const { municipalityId } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const [isLoadingToErrands, setIsLoadingToErrands] = useState<boolean>(false);
   const [isLoadingFromErrands, setIsLoadingFromErrands] = useState<boolean>(false);
   const [query, setQuery] = useState('');

@@ -6,11 +6,11 @@ import {
 } from '@casedata/services/casedata-billing-service';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
-import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Divider, FormErrorMessage, useSnackbar } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { Plus } from 'lucide-react';
-import { FC, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 import * as yup from 'yup';
@@ -52,8 +52,11 @@ const billingSchema = yup.object({
     .required('Välj en fakturamottagare'),
 });
 
-export const CaseDataBillingForm: FC = () => {
-  const { errand, municipalityId, user, setErrand } = useAppContext();
+export const CaseDataBillingForm: React.FC = () => {
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
   const toastMessage = useSnackbar();
 
   const [billingRecords, setBillingRecords] = useState<CBillingRecord[]>([]);

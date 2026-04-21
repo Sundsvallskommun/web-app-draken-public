@@ -4,7 +4,6 @@ import {
   deleteCasedataBillingRecord,
   updateCasedataBillingRecord,
 } from '@casedata/services/casedata-billing-service';
-import { useAppContext } from '@contexts/app.context';
 import {
   Button,
   DatePicker,
@@ -15,8 +14,9 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { useConfigStore } from '@stores/index';
 import { Pen, Trash2 } from 'lucide-react';
-import { FC, useState } from 'react';
+import { useState } from 'react';
 import { CBillingRecord, CBillingRecordStatusEnum, CInvoiceRow } from 'src/data-contracts/backend/data-contracts';
 
 import { BillingStatusLabel } from './billing-status-label.component';
@@ -52,8 +52,13 @@ interface EditRowState {
   object: string;
 }
 
-export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, onDeleteRecord, onUpdateRecord }) => {
-  const { municipalityId } = useAppContext();
+export const BillingTable: React.FC<BillingTableProps> = ({
+  errand,
+  billingRecords,
+  onDeleteRecord,
+  onUpdateRecord,
+}) => {
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
   const [deletingId, setDeletingId] = useState<string | null>(null);

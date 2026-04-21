@@ -18,11 +18,9 @@ const BillingForm: FC<{
   setIsLoading: (isLoading: boolean) => void;
 }> = ({ resetManager, handleChange, setIsLoading }) => {
   const {
-    control,
     register,
     getValues,
     setValue,
-    trigger,
     watch,
     formState: { errors },
   } = useFormContext<CBillingRecord>();
@@ -38,6 +36,7 @@ const BillingForm: FC<{
           size="md"
           placeholder={'0'}
           onChange={(e) => {
+            setValue('invoice.description', e.target.value, { shouldDirty: true });
             const selectedInvoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === e.target.value);
             const selectedDescription = e.target.value;
             const customerId = getValues().invoice.customerId;
@@ -50,15 +49,12 @@ const BillingForm: FC<{
               ? selectedInvoiceType?.internal.accountInformation.activity
               : selectedInvoiceType?.external.accountInformation.activity;
             handleChange(selectedDescription, customerId, defaultQuantity, costcenter!, activity!);
-            trigger();
           }}
           readOnly={getValues().status !== 'NEW'}
         >
           <Select.Option value={''}>Välj faktureringstyp</Select.Option>
           {invoiceSettings.invoiceTypes
             .filter((i) => {
-              // Manager is either INTERNAL or EXTERNAL. Only show invoice types that
-              // have invoice rows for the current manager type
               return (
                 (getValues().type === 'INTERNAL' && i?.internal?.invoiceRows?.length > 0) ||
                 (getValues().type === 'EXTERNAL' && i?.external?.invoiceRows?.length > 0)
