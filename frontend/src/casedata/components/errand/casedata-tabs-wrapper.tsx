@@ -278,6 +278,7 @@ export const CasedataTabsWrapper: React.FC = () => {
             visibleFor:
               !isPT() && errand?.id
                 ? [
+                    ...(errand?.caseType === MEXCaseType.MEX_TERMINATION_OF_LEASE ? [ErrandPhase.aktualisering] : []),
                     ...(errand?.caseType === MEXCaseType.UPDATECONTRACT ? [ErrandPhase.aktualisering] : []),
                     ErrandPhase.utredning,
                     ErrandPhase.beslut,
@@ -437,7 +438,12 @@ export const CasedataTabsWrapper: React.FC = () => {
     <div className="mb-xl">
       <WarnIfUnsavedChanges
         showWarning={
-          methods.formState.isDirty || unsavedChanges || unsavedUppgifter || unsavedUtredning || unsavedDecision
+          methods.formState.isDirty ||
+          unsavedChanges ||
+          unsavedUppgifter ||
+          unsavedUtredning ||
+          unsavedDecision ||
+          unsavedContract
         }
       >
         <Tabs

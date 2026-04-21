@@ -17,14 +17,10 @@ export const BillingLeaseholder: React.FC<BillingLeaseholderProps> = ({ onSelect
   } = useFormContext<BillingFormData>();
   const [selectedStakeholderId, setSelectedStakeholderId] = useState<string>('');
 
-  if (!errand) {
-    return <span className="italic">Inga intressenter på ärendet</span>;
-  }
-
-  const stakeholders = (errand.stakeholders || []).filter((s) => !s.roles.includes(Role.ADMINISTRATOR));
+  const stakeholders = (errand?.stakeholders || []).filter((s) => !s.roles.includes(Role.ADMINISTRATOR));
 
   if (stakeholders.length === 0) {
-    return <span className="italic">Inga intressenter på ärendet</span>;
+    return <span className="text-secondary">Inga intressenter på ärendet</span>;
   }
 
   const getDisplayName = (s: CasedataOwnerOrContact) => {
@@ -65,9 +61,7 @@ export const BillingLeaseholder: React.FC<BillingLeaseholderProps> = ({ onSelect
 
   return (
     <FormControl className="w-full max-w-[46rem]" invalid={!!errors.recipient}>
-      <FormLabel>
-        Fakturamottagare * <span className="font-normal">(hämtas från grunduppgifter)</span>
-      </FormLabel>
+      <FormLabel>Fakturamottagare *</FormLabel>
       <Select className="w-full" value={selectedStakeholderId} onChange={(e) => handleSelect(e.target.value)}>
         <Select.Option value="">Välj fakturamottagare</Select.Option>
         {stakeholders.map((s) => (
@@ -76,6 +70,7 @@ export const BillingLeaseholder: React.FC<BillingLeaseholderProps> = ({ onSelect
           </Select.Option>
         ))}
       </Select>
+      <small>Fakturamottagare hämtas från de parter som lagts till under Grunduppgifter.</small>
       {errors.recipient && (
         <FormErrorMessage>{errors.recipient.message || 'Välj en fakturamottagare'}</FormErrorMessage>
       )}

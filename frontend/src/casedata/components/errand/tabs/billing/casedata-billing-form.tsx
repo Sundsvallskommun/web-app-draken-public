@@ -222,16 +222,18 @@ export const CaseDataBillingForm: React.FC = () => {
             <span>&nbsp;för att kunna skapa en engångsfaktura.</span>
           </div>
         </div>
-        <div className="flex flex-col pt-24">
-          <h3 className="text-h3-md pb-6">Skapade fakturaunderlag</h3>
-          <span className="pb-16">Aviserade fakturor kommer att visas i avtalsöversikten</span>
-          <BillingTable
-            errand={errand!}
-            billingRecords={billingRecords}
-            onDeleteRecord={handleDeleteBillingRecord}
-            onUpdateRecord={handleUpdateBillingRecord}
-          />
-        </div>
+        {billingRecords.length > 0 && (
+          <div className="flex flex-col pt-24">
+            <h3 className="text-h3-md pb-6">Skapade fakturaunderlag</h3>
+            <span className="pb-16">Aviserade fakturor kommer att visas i avtalsöversikten</span>
+            <BillingTable
+              errand={errand!}
+              billingRecords={billingRecords}
+              onDeleteRecord={handleDeleteBillingRecord}
+              onUpdateRecord={handleUpdateBillingRecord}
+            />
+          </div>
+        )}
       </div>
     );
   }

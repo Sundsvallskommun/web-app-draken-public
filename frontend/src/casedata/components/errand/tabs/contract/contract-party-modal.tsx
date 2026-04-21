@@ -1,7 +1,7 @@
 import { UnifiedContractParty } from '@casedata/interfaces/contract-data';
 import { ContractType, StakeholderRole } from '@casedata/interfaces/contracts';
-import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { Role } from '@casedata/interfaces/role';
+import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { isLeaseAgreement, prettyContractRoles } from '@casedata/services/contract-service';
 import { Button, Checkbox, FormControl, FormLabel, Modal, Select } from '@sk-web-gui/react';
 import React, { useEffect, useState } from 'react';
@@ -15,6 +15,7 @@ interface ContractPartyModalProps {
   existingParty?: UnifiedContractParty;
   contractType: ContractType;
   existingParties?: UnifiedContractParty[];
+  isDraft?: boolean;
 }
 
 export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
@@ -26,12 +27,16 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
   existingParty,
   contractType,
   existingParties = [],
+  isDraft = true,
 }) => {
   const [selectedStakeholderId, setSelectedStakeholderId] = useState<string>('');
   const [selectedRoles, setSelectedRoles] = useState<StakeholderRole[]>([]);
 
-  // Get available roles based on contract type
+  // Get available roles based on contract type and draft status
   const getAvailableRoles = (): StakeholderRole[] => {
+    if (!isDraft) {
+      return [StakeholderRole.PRIMARY_BILLING_PARTY];
+    }
     if (contractType === ContractType.PURCHASE_AGREEMENT) {
       return [StakeholderRole.BUYER, StakeholderRole.SELLER];
     }
@@ -42,6 +47,10 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
   };
 
   const availableRoles = getAvailableRoles();
+
+  const isBillingPartyTaken = existingParties.some(
+    (p) => p.stakeholderId !== existingParty?.stakeholderId && p.roles.includes(StakeholderRole.PRIMARY_BILLING_PARTY)
+  );
 
   // Reset state when modal opens
   useEffect(() => {
@@ -92,9 +101,8 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
       return s.personId === p.personalNumber;
     }
     // Fallback: match by name
-    const stakeholderName = s.stakeholderType === 'ORGANIZATION'
-      ? s.organizationName
-      : `${s.firstName} ${s.lastName}`.trim();
+    const stakeholderName =
+      s.stakeholderType === 'ORGANIZATION' ? s.organizationName : `${s.firstName} ${s.lastName}`.trim();
     return stakeholderName === p.name;
   };
 
@@ -103,8 +111,8 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
   const filteredStakeholderOptions = stakeholderOptions
     .filter((s) => s.id && !s.roles.includes(Role.ADMINISTRATOR))
     .filter((s) => {
-      if (mode === 'add') {
-        // In add mode, exclude stakeholders that are already parties
+      if (mode === 'add' && isDraft) {
+        // In add mode for DRAFT contracts, exclude stakeholders that are already parties
         return !existingParties.some((p) => stakeholderMatchesParty(s, p));
       }
       return true;
@@ -148,16 +156,23 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
           <FormControl>
             <FormLabel>{mode === 'add' ? 'Välj roll' : 'Byt eller lägg till roll'}</FormLabel>
             <div className="flex flex-col gap-12">
-              {availableRoles.map((role) => (
-                <Checkbox
-                  key={role}
-                  data-cy={`party-modal-role-${role}`}
-                  checked={selectedRoles.includes(role)}
-                  onChange={() => handleRoleToggle(role)}
-                >
-                  {prettyContractRoles[role] || role}
-                </Checkbox>
-              ))}
+              {availableRoles.map((role) => {
+                const disabled =
+                  role === StakeholderRole.PRIMARY_BILLING_PARTY &&
+                  isBillingPartyTaken &&
+                  !selectedRoles.includes(role);
+                return (
+                  <Checkbox
+                    key={role}
+                    data-cy={`party-modal-role-${role}`}
+                    checked={selectedRoles.includes(role)}
+                    disabled={disabled}
+                    onChange={() => handleRoleToggle(role)}
+                  >
+                    {prettyContractRoles[role] || role}
+                  </Checkbox>
+                );
+              })}
             </div>
           </FormControl>
         </div>
@@ -172,7 +187,7 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
           disabled={!selectedStakeholderId || selectedRoles.length === 0}
           onClick={handleSave}
         >
-          Spara
+          Lägg till
         </Button>
       </Modal.Footer>
     </Modal>

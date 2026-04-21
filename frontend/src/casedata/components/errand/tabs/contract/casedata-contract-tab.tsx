@@ -14,11 +14,14 @@ import {
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import {
   contractStakeholderToUnifiedParty,
+  contractToKopeavtal,
+  contractToLagenhetsArrende,
   contractTypes,
   defaultKopeavtal,
   defaultLagenhetsarrende,
   errandStakeholderToContractStakeholder,
   getErrandContract,
+  isLeaseAgreement,
   leaseTypes,
   saveContract,
   saveContractToErrand,
@@ -44,6 +47,14 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
   let formSchema = yup
     .object({
       type: yup.string().required('Avtalstyp måste anges'),
+      currentPeriod: yup.object().when(['type', 'status'], {
+        is: (type: ContractType, status: Status) =>
+          type !== ContractType.PURCHASE_AGREEMENT && status === Status.ACTIVE,
+        then: (schema) =>
+          schema.shape({
+            startDate: yup.string().required('Startdatum måste anges'),
+          }),
+      }),
       notice: yup.object().when('type', {
         is: (type: ContractType) => type !== ContractType.PURCHASE_AGREEMENT,
         then: (schema) =>
@@ -53,11 +64,15 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
               .of(
                 yup.object({
                   party: yup.string().oneOf(Object.keys(Party)).required('Part måste väljas'),
-                  periodOfNotice: yup.string().required('Antal måste anges'),
+                  periodOfNotice: yup.string().when('party', {
+                    is: (party: string) => party === 'ALL',
+                    then: (schema) => schema.required('Uppsägningstid måste anges'),
+                    otherwise: (schema) => schema,
+                  }),
                   unit: yup.string().oneOf(Object.keys(TimeUnit)).required('Enhet måste väljas'),
                 })
               )
-              .min(2),
+              .min(1),
           }),
         otherwise: (schema) => schema,
       }),
@@ -97,6 +112,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const errand = useCasedataStore((s) => s.errand);
   const user = useUserStore((s) => s.user);
+  const [referensError, setReferensError] = useState(false);
   const [loading, setIsLoading] = useState<string>();
   const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
   const [contractParties, setContractParties] = useState<UnifiedContractParty[]>([]);
@@ -167,7 +183,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     resolver: yupResolver(formSchema) as unknown as Resolver<ContractData>,
     defaultValues:
       existingContract?.type === ContractType.PURCHASE_AGREEMENT ? defaultKopeavtal : defaultLagenhetsarrende,
-    mode: 'onChange',
+    mode: 'onSubmit',
   });
 
   const changeBadgeColor = (inId: string) => {
@@ -183,14 +199,10 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
 
   const onSave = async (data: ContractData, section?: string) => {
     if (section === 'billing' && data.generateInvoice === 'true') {
+      setReferensError(false);
       const hasMarkup = (data.extraParameters ?? []).some((p) => p.parameters?.markup?.trim());
       if (!hasMarkup) {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Fakturareferens måste anges',
-          status: 'error',
-        });
+        setReferensError(true);
         return;
       }
     }
@@ -211,12 +223,12 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
         // Only save to errand if this is a new contract
         if (isNewContract && res.contractId) {
           await saveContractToErrand(municipalityId, res.contractId, errand!);
-          // Update the form with the new contractId
-          contractForm.setValue('contractId', res.contractId);
         }
-        return res;
-      })
-      .then(() => {
+
+        // Convert saved contract back to form data and reset the form
+        const savedFormData = isLeaseAgreement(res.type) ? contractToLagenhetsArrende(res) : contractToKopeavtal(res);
+        contractForm.reset(savedFormData);
+
         setIsLoading(undefined);
         props.setUnsaved(false);
         toastMessage(
@@ -273,7 +285,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     if (contractType && contractType !== ContractType.LEASE_AGREEMENT) {
       contractForm.setValue('leaseType', undefined);
     }
-    contractForm.trigger();
+    contractForm.trigger('type');
   }, [contractType, contractForm]);
 
   return (
@@ -347,8 +359,13 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                         .then((confirmed) => {
                           if (confirmed) {
                             contractForm.setValue('status', Status.ACTIVE);
-                            contractForm.trigger('status');
+                            contractForm.trigger().then((valid: boolean) => {
+                              if (valid) {
                             onSave(contractForm.getValues());
+                              } else {
+                                contractForm.setValue('status', Status.DRAFT);
+                              }
+                            });
                           }
                         });
                     }}
@@ -357,10 +374,14 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                     Markera som utkast
                   </Checkbox>
                   <p>Avmarkera när allt är klart med avtalet och faktureringen ska börja.</p>
+                  {contractForm.formState.isValid === false && (
+                    <p className="text-error">Avtalet saknar nödvändiga uppgifter.</p>
+                  )}
                 </FormControl>
               )}
               <Input type="hidden" readOnly {...contractForm.register('contractId')} />
               <ContractForm
+                referensError={referensError}
                 changeBadgeColor={changeBadgeColor}
                 onSave={onSave}
                 existingContract={(existingContract as ContractData) || defaultKopeavtal}

@@ -6,8 +6,8 @@ import { apiServiceName } from '@/config/api-config';
 import { BillingRecord, Status } from '@/data-contracts/billingpreprocessor/data-contracts';
 import { RelationPagedResponse } from '@/data-contracts/relations/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
-import { User } from '@/interfaces/users.interface';
 import { CBillingRecord, CPageBillingRecord } from '@/interfaces/billing-interface';
+import { User } from '@/interfaces/users.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasAnyPermission, hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
@@ -217,9 +217,7 @@ export class BillingController {
       chunks.push(uniqueIds.slice(i, i + this.BILLING_ID_CHUNK_SIZE));
     }
 
-    const results = await Promise.all(
-      chunks.map(chunk => this.fetchBillingRecordsByIds(municipalityId, chunk, req.user)),
-    );
+    const results = await Promise.all(chunks.map(chunk => this.fetchBillingRecordsByIds(municipalityId, chunk, req.user)));
     const allRecords = results.flat();
 
     const slice = allRecords.slice(p * s, (p + 1) * s);

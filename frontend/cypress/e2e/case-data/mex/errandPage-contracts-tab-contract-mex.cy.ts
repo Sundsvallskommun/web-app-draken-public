@@ -211,8 +211,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         });
 
       cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="lessee-notice-period"]').should('exist').clear().type('15');
-      cy.get('[data-cy="lessor-notice-period"]').should('exist').clear().type('1');
+      cy.get('[data-cy="avtalstid-start"]').should('exist').clear().type('2029-01-01');
+      cy.get('[data-cy="all-notice-period"]').should('exist').clear().type('15');
 
       cy.get('[data-cy="area-disclosure"] button.sk-btn-tertiary').should('exist').click();
       cy.get('[data-cy="area-disclosure"] button.sk-btn-primary').should('exist').contains('Spara').click();
@@ -267,8 +267,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       });
 
       cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="lessee-notice-period"]').should('exist').clear().type('15');
-      cy.get('[data-cy="lessor-notice-period"]').should('exist').clear().type('1');
+      cy.get('[data-cy="avtalstid-start"]').should('exist').clear().type('2029-01-01');
+      cy.get('[data-cy="all-notice-period"]').should('exist').clear().type('15');
 
       // takeElementSnapshot('area-disclosure');
 
@@ -285,34 +285,22 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errand/101', mockMexErrand_base).as('getErrand');
       cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
 
-      cy.get('[data-cy="avtalstid-start"]').should('exist').type('2024-12-01');
-      cy.get('[data-cy="avtalstid-end"]').should('exist').type('2025-12-01');
+      cy.get('[data-cy="avtalstid-start"]').should('exist').clear().type('2024-12-01');
+      cy.get('[data-cy="avtalstid-end"]').should('exist').clear().type('2025-12-01');
 
-      cy.get('[data-cy="lessee-notice-unit"]').should('exist').select(TimeUnit.DAYS);
-      cy.get('[data-cy="lessee-notice-period"]').should('exist').clear().type('15');
-      cy.get('[data-cy="lessee-notice-party"]').should('have.value', 'LESSEE');
-
-      cy.get('[data-cy="lessor-notice-unit"]').should('exist').select(TimeUnit.MONTHS);
-      cy.get('[data-cy="lessor-notice-period"]').should('exist').clear().type('1');
-      cy.get('[data-cy="lessor-notice-party"]').should('have.value', 'LESSOR');
-
-      cy.get('[data-cy="autoextend-true-radiobutton"]').should('exist').check({ force: true });
-      cy.get('[data-cy="extension-unit-selector"]').should('exist').select(TimeUnit.YEARS);
-      cy.get('[data-cy="extension-input"]').should('exist').type('180');
-
-      // takeElementSnapshot('avtalstid-disclosure');
+      cy.get('[data-cy="all-notice-unit"]').should('exist').select(TimeUnit.DAYS);
+      cy.get('[data-cy="all-notice-period"]').should('exist').clear().type('15');
+      cy.get('[data-cy="all-notice-party"]').should('have.value', 'ALL');
 
       cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-primary').contains('Spara').should('exist').click();
       cy.wait('@putContract').should(({ request }) => {
         const leaseAgreement: Contract = request.body;
         expect(leaseAgreement.notice.terms).to.deep.equal([
-          { party: 'LESSEE', periodOfNotice: '15', unit: TimeUnit.DAYS },
-          { party: 'LESSOR', periodOfNotice: '1', unit: TimeUnit.MONTHS },
+          { party: 'ALL', periodOfNotice: '15', unit: TimeUnit.DAYS },
         ]);
         expect(leaseAgreement.extension).to.deep.equal({
-          autoExtend: true,
-          unit: TimeUnit.YEARS,
-          leaseExtension: '180',
+          autoExtend: false,
+          unit: TimeUnit.DAYS,
         });
       });
     });
@@ -341,8 +329,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="fees-additional-information-1-input"]').should('exist').type('Foobar');
 
       cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
-      cy.get('[data-cy="lessee-notice-period"]').should('exist').clear().type('15');
-      cy.get('[data-cy="lessor-notice-period"]').should('exist').clear().type('1');
+      cy.get('[data-cy="avtalstid-start"]').should('exist').clear().type('2024-01-01');
+      cy.get('[data-cy="all-notice-period"]').should('exist').clear().type('1');
 
       // takeElementSnapshot('lopande-disclosure');
 
@@ -406,6 +394,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('[data-cy="party-1-role"]').should('contain.text', 'Arrendator');
           cy.get('[data-cy="party-1-role"]').should('contain.text', 'Fakturamottagare');
         });
+
+      // Fill required fields before saving
+      cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
+      cy.get('[data-cy="avtalstid-start"]').should('exist').type('2024-01-01');
+      cy.get('[data-cy="all-notice-period"]').should('exist').clear().type('3');
 
       // Save the contract
       cy.get('[data-cy="parties-disclosure"]').find('[data-cy="save-contract-button"]').should('exist').click();
@@ -529,6 +522,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('[data-cy="party-1-role"]').should('contain.text', 'Arrendator');
         });
 
+      // Fill required fields before saving
+      cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
+      cy.get('[data-cy="avtalstid-start"]').should('exist').type('2024-01-01');
+      cy.get('[data-cy="all-notice-period"]').should('exist').clear().type('3');
+
       // Save and verify contract type in request
       cy.get('[data-cy="parties-disclosure"]').find('[data-cy="save-contract-button"]').should('exist').click();
 
@@ -585,6 +583,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('[data-cy="party-1-name"]').should('contain.text', 'Test Arrendatorsson');
           cy.get('[data-cy="party-1-role"]').should('contain.text', 'Arrendator');
         });
+
+      // Fill required fields before saving
+      cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
+      cy.get('[data-cy="avtalstid-start"]').should('exist').type('2024-01-01');
+      cy.get('[data-cy="all-notice-period"]').should('exist').clear().type('3');
 
       // Save and verify contract type in request
       cy.get('[data-cy="parties-disclosure"]').find('[data-cy="save-contract-button"]').should('exist').click();
@@ -680,6 +683,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         // Verify the manual stakeholder has billing role
         cy.get('[data-cy="parties-table"]').should('contain.text', 'Manual Stakeholder');
         cy.get('[data-cy="parties-table"]').should('contain.text', 'Fakturamottagare');
+
+        // Fill required fields before saving
+        cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
+        cy.get('[data-cy="avtalstid-start"]').should('exist').type('2024-01-01');
+        cy.get('[data-cy="all-notice-period"]').should('exist').clear().type('3');
 
         // Save the contract and verify the stakeholder is included with PRIMARY_BILLING_PARTY role
         cy.get('[data-cy="parties-disclosure"]').find('[data-cy="save-contract-button"]').click();
@@ -828,15 +836,21 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('[data-cy="fees-additional-information-1-input"]').should('have.value', 'Extra info');
         });
 
-        it('does not allow adding or removing parties for ACTIVE contracts but allows editing roles', () => {
+        it('does not allow removing parties for ACTIVE contracts but allows editing roles and adding billing party', () => {
           cy.get('[data-cy="non-draft-warning-banner"]').should('exist');
 
-          // For ACTIVE contracts, add party button should not exist
-          cy.get('[data-cy="add-party-button"]').should('not.exist');
+          // For ACTIVE contracts, add party button should exist (for adding billing party)
+          cy.get('[data-cy="add-party-button"]').should('exist');
           // Remove button should not exist for non-DRAFT contracts
           cy.get('[data-cy="party-0-remove-button"]').should('not.exist');
           // Edit button should still exist (for editing roles like billing party)
           cy.get('[data-cy="party-0-edit-button"]').should('exist');
+
+          // Opening the add party modal should only show Fakturamottagare role
+          cy.get('[data-cy="add-party-button"]').click();
+          cy.get('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').should('exist');
+          cy.get('[data-cy="party-modal-role-LESSEE"]').should('not.exist');
+          cy.get('[data-cy="party-modal-role-LESSOR"]').should('not.exist');
         });
       });
     });

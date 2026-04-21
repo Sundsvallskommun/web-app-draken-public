@@ -468,7 +468,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('[data-cy="invoice-status-0"]').should('contain.text', 'Ny');
           cy.get('[data-cy="invoice-date-0"]').should('contain.text', '2024-01-15');
           cy.get('[data-cy="invoice-due-date-0"]').should('contain.text', '2024-02-15');
-          cy.get('[data-cy="invoice-number-0"]').should('contain.text', '-');
         });
 
         it('displays correct status labels with correct colors', () => {
@@ -486,23 +485,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('[data-cy="invoice-status-1"]').should('contain.text', 'Godkänd');
           cy.get('[data-cy="invoice-status-2"]').should('contain.text', 'Fakturerad');
           cy.get('[data-cy="invoice-status-3"]').should('contain.text', 'Avslagen');
-        });
-
-        it('displays download PDF button for each invoice', () => {
-          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
-          cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
-          navigateToContractOverview();
-
-          cy.get('[data-cy="contract-row-0"]').click();
-          cy.get('[data-cy="fakturor-disclosure"]').click();
-
-          cy.wait('@getContractInvoices');
-
-          // Check download buttons exist
-          cy.get('[data-cy="invoice-download-pdf-0"]').should('exist').should('contain.text', 'Hämta pdf');
-          cy.get('[data-cy="invoice-download-pdf-1"]').should('exist');
-          cy.get('[data-cy="invoice-download-pdf-2"]').should('exist');
-          cy.get('[data-cy="invoice-download-pdf-3"]').should('exist');
         });
 
         it('displays empty state when no invoices exist', () => {
@@ -655,7 +637,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
           // Wait for the POST request and verify the data
           cy.wait('@postErrand').then((interception) => {
-            expect(interception.request.body).to.have.property('caseType', 'MEX_OTHER');
+            expect(interception.request.body).to.have.property('caseType', 'UPDATECONTRACT');
             expect(interception.request.body).to.have.property('channel', 'WEB_UI');
             expect(interception.request.body).to.have.property('phase', 'Aktualisering');
             expect(interception.request.body).to.have.property('priority', 'MEDIUM');

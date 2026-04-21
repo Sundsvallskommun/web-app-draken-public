@@ -1,6 +1,15 @@
 import { ContractInvoicesTable } from '@casedata/components/contract-overview/contract-invoices-table.component';
+import { MEXCaseType } from '@casedata/interfaces/case-type';
 import { ContractData, UnifiedContractParty } from '@casedata/interfaces/contract-data';
-import { ContractType, IntervalType, Party, StakeholderRole, Status, TimeUnit } from '@casedata/interfaces/contracts';
+import {
+  ContractType,
+  IntervalType,
+  InvoicedIn,
+  Party,
+  StakeholderRole,
+  Status,
+  TimeUnit,
+} from '@casedata/interfaces/contracts';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { validateAction } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
@@ -26,6 +35,7 @@ import {
   useConfirm,
 } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import dayjs from 'dayjs';
 import { Calendar, FilePen, Info, MapPin, Pencil, Receipt, Trash, Users, Wallet } from 'lucide-react';
 import { ChangeEvent, FC, useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -34,6 +44,7 @@ import { ContractAttachments } from './contract-attachments';
 import { ContractPartyModal } from './contract-party-modal';
 
 export const ContractForm: FC<{
+  referensError: boolean;
   changeBadgeColor?: (badgeId: string) => void;
   onSave?: (data: ContractData, section?: string) => Promise<void>;
   readOnly?: boolean;
@@ -46,6 +57,7 @@ export const ContractForm: FC<{
   onEditPartyRoles?: (stakeholderId: string, newRoles: StakeholderRole[]) => void;
   onRemoveParty?: (stakeholderId: string) => void;
 }> = ({
+  referensError,
   changeBadgeColor,
   onSave,
   readOnly = false,
@@ -63,24 +75,18 @@ export const ContractForm: FC<{
   const user = useUserStore((s) => s.user);
   const confirm = useConfirm();
   const { register, setValue, handleSubmit, getValues, watch, formState, trigger } = useFormContext<ContractData>();
-  const [lesseeNoticeIndex, setLesseeNoticeIndex] = useState(0);
-  const [lessorNoticeIndex, setLessorNoticeIndex] = useState(1);
-  const [invoiceInfoIndex, setInvoiceInfoIndex] = useState(0);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [updatingParties, setUpdatingParties] = useState<boolean>(false);
 
-  // State for party modal
   const [isPartyModalOpen, setIsPartyModalOpen] = useState(false);
   const [partyModalMode, setPartyModalMode] = useState<'add' | 'edit'>('add');
   const [editingParty, setEditingParty] = useState<UnifiedContractParty | undefined>(undefined);
 
   const contractType = watch().type;
 
-  // Determine if contract is in DRAFT status (new contracts without status default to DRAFT behavior)
   const isDraft = !contractStatus || contractStatus === Status.DRAFT;
 
-  // Determine if a field type is editable based on contract status
   // For non-DRAFT contracts, only billing, lessee, and cancellation fields can be edited
   const isEditable = (fieldType: 'general' | 'billing' | 'lessee' | 'cancellation') => {
     if (readOnly) return false;
@@ -92,31 +98,40 @@ export const ContractForm: FC<{
     return errand ? validateAction(errand, user) : false;
   }, [user, errand]);
 
-  // Memoize parties with SSN lookup - this runs only when contractParties changes
-  const [partiesWithSSN, setPartiesWithSSN] = useState<UnifiedContractParty[]>([]);
+  const [ssnMap, setSsnMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchSSNs = async () => {
-      const updatedParties = await Promise.all(
-        contractParties.map(async (party) => {
-          if (party.type === 'PERSON' && party.originalStakeholder.partyId && !party.personalNumber) {
-            const ssn = await getSSNFromPersonId(municipalityId, party.originalStakeholder.partyId);
-            return { ...party, personalNumber: ssn };
-          }
-          return party;
-        })
+      const entries = await Promise.all(
+        contractParties
+          .filter((p) => p.type === 'PERSON' && p.originalStakeholder.partyId && !p.personalNumber)
+          .map(async (p) => {
+            const ssn = await getSSNFromPersonId(municipalityId, p.originalStakeholder.partyId!);
+            return [p.originalStakeholder.partyId!, ssn] as const;
+          })
       );
-      setPartiesWithSSN(updatedParties);
+      if (!cancelled) setSsnMap(Object.fromEntries(entries));
     };
 
-    if (contractParties.length > 0) {
-      fetchSSNs();
-    } else {
-      setPartiesWithSSN([]);
-    }
+    fetchSSNs();
+
+    return () => {
+      cancelled = true;
+    };
   }, [contractParties, municipalityId]);
 
-  // Use parties with SSN for display, fallback to original parties
+  const partiesWithSSN = useMemo(
+    () =>
+      contractParties.map((party) =>
+        party.type === 'PERSON' && party.originalStakeholder.partyId && !party.personalNumber
+          ? { ...party, personalNumber: ssnMap[party.originalStakeholder.partyId] ?? party.personalNumber }
+          : party
+      ),
+    [contractParties, ssnMap]
+  );
+
   const displayParties = useMemo(
     () => (partiesWithSSN.length > 0 ? partiesWithSSN : contractParties),
     [partiesWithSSN, contractParties]
@@ -136,22 +151,34 @@ export const ContractForm: FC<{
     fetchData();
   }, [errand]);
 
-  useEffect(() => {
-    if (existingContract) {
-      if (isLeaseAgreement(existingContract.type)) {
-        // Find index for lessee and lessor notices
-        const lesseeIndex = existingContract.notice?.terms?.findIndex((n) => n.party === 'LESSEE') ?? -1;
-        const lessorIndex = existingContract.notice?.terms?.findIndex((n) => n.party === 'LESSOR') ?? -1;
-        setLesseeNoticeIndex(lesseeIndex === -1 ? 0 : lesseeIndex);
-        setLessorNoticeIndex(lessorIndex === -1 ? 1 : lessorIndex);
+  const { lesseeNoticeIndex, lessorNoticeIndex, allNoticeIndex, invoiceInfoIndex } = useMemo(() => {
+    const defaults = {
+      allNoticeIndex: 0,
+      lesseeNoticeIndex: 1,
+      lessorNoticeIndex: 2,
+      invoiceInfoIndex: 0,
+    };
 
-        // Find index for InvoiceInfo extraparameter
-        const _invoiceInfoIndex = existingContract.extraParameters?.findIndex((p) => p.name === 'InvoiceInfo') ?? -1;
-        setInvoiceInfoIndex(
-          _invoiceInfoIndex === -1 ? (existingContract.extraParameters ?? []).length : _invoiceInfoIndex
-        );
-      }
+    if (!existingContract || !isLeaseAgreement(existingContract.type)) {
+      return defaults;
     }
+
+    const terms = existingContract.notice?.terms;
+    const extraParams = existingContract.extraParameters ?? [];
+
+    const findTerm = (party: string, fallback: number) => {
+      const idx = terms?.findIndex((n) => n.party === party) ?? -1;
+      return idx === -1 ? fallback : idx;
+    };
+
+    const invoiceIdx = extraParams.findIndex((p) => p.name === 'InvoiceInfo');
+
+    return {
+      allNoticeIndex: findTerm('ALL', 0),
+      lesseeNoticeIndex: findTerm('LESSEE', 1),
+      lessorNoticeIndex: findTerm('LESSOR', 2),
+      invoiceInfoIndex: invoiceIdx === -1 ? extraParams.length : invoiceIdx,
+    };
   }, [existingContract]);
 
   const toPropertyDesignation = (pd: { name?: string } | string): string =>
@@ -188,21 +215,18 @@ export const ContractForm: FC<{
     );
   };
 
-  // Handle opening add party modal
   const handleOpenAddModal = () => {
     setPartyModalMode('add');
     setEditingParty(undefined);
     setIsPartyModalOpen(true);
   };
 
-  // Handle opening edit party modal
   const handleOpenEditModal = (party: UnifiedContractParty) => {
     setPartyModalMode('edit');
     setEditingParty(party);
     setIsPartyModalOpen(true);
   };
 
-  // Handle modal save
   const handleModalSave = (stakeholderId: string, roles: StakeholderRole[]) => {
     if (partyModalMode === 'add') {
       onAddParty?.(stakeholderId, roles);
@@ -211,7 +235,6 @@ export const ContractForm: FC<{
     }
   };
 
-  // Unified party table
   const unifiedPartyTable = () => (
     <>
       <Table dense background data-cy="parties-table">
@@ -341,7 +364,7 @@ export const ContractForm: FC<{
           )}
         </Table.Body>
       </Table>
-      {!readOnly && isDraft && onAddParty && (
+      {!readOnly && onAddParty && (
         <div className="mt-12">
           <Button size="sm" variant="secondary" data-cy="add-party-button" onClick={handleOpenAddModal}>
             Lägg till ny part
@@ -513,142 +536,174 @@ export const ContractForm: FC<{
         >
           <Disclosure.Header>
             <Disclosure.Icon icon={<Calendar />} />
-            <Disclosure.Title>Avtalstid och uppsägning</Disclosure.Title>
+            <Disclosure.Title>Avtalstid och uppsägningsvillkor</Disclosure.Title>
             {(formState.errors.notice?.terms?.length ?? 0) > 0 ||
-              (formState.errors.extension?.leaseExtension && (
-                <Label className="w-[15rem]" rounded inverted color={'error'}>
-                  Fel i formulär
-                </Label>
-              ))}
+            formState.errors.extension?.leaseExtension ||
+            !!formState.errors.currentPeriod ? (
+              <Label className="w-[15rem]" rounded inverted color={'error'}>
+                Fel i formulär
+              </Label>
+            ) : null}
             <Disclosure.Button />
           </Disclosure.Header>
           <Disclosure.Content>
             <div className="flex flex-col gap-24">
               <div className="flex gap-18 justify-start">
                 <FormControl id="startDate" className="w-full">
-                  <FormLabel>Området upplåts från</FormLabel>
+                  <FormLabel>Avtalet gäller från</FormLabel>
                   <Input
                     type="date"
+                    min={dayjs().format('YYYY-MM-DD')}
                     readOnly={!isEditable('general')}
-                    {...register('startDate')}
+                    {...register('currentPeriod.startDate')}
                     data-cy="avtalstid-start"
                   />
+                  {formState.errors.currentPeriod?.startDate && (
+                    <div className="my-sm text-error">
+                      <FormErrorMessage>{formState.errors.currentPeriod?.startDate?.message}</FormErrorMessage>
+                    </div>
+                  )}
                 </FormControl>
                 <FormControl id="endDate" className="w-full">
-                  <FormLabel>Området upplåts till</FormLabel>
+                  <FormLabel>Avtalet gäller till och med</FormLabel>
                   <Input
                     type="date"
+                    min={getValues().currentPeriod?.startDate || dayjs().format('YYYY-MM-DD')}
                     readOnly={!isEditable('general')}
-                    {...register('endDate')}
+                    {...register('currentPeriod.endDate')}
                     data-cy="avtalstid-end"
                   />
                 </FormControl>
               </div>
-              <div className="flex gap-18 justify-start">
-                <FormControl id="noticeDate" className="w-full">
-                  <FormLabel>Uppsägningsdatum</FormLabel>
-                  <Input
-                    type="date"
-                    readOnly={!isEditable('cancellation')}
-                    {...register('notice.noticeDate')}
-                    data-cy="notice-date"
-                  />
-                </FormControl>
-                <FormControl id="noticeGivenBy" className="w-full">
-                  <FormLabel>Uppsagd av</FormLabel>
-                  <Select
-                    className="w-full"
-                    disabled={!isEditable('cancellation')}
-                    {...register('notice.noticeGivenBy')}
-                    data-cy="notice-given-by"
-                  >
-                    <Select.Option value="">Välj part</Select.Option>
-                    <Select.Option value={Party.LESSOR}>Upplåtare</Select.Option>
-                    <Select.Option value={Party.LESSEE}>Arrendator</Select.Option>
-                  </Select>
-                </FormControl>
-              </div>
-              <strong>Ange tid för nyttjanderättshavarens uppsägningstid</strong>
-              <div className="flex justify-between gap-32 items-start mb-md">
-                <FormControl id={`noticePeriod-0`} className="flex-grow max-w-[45%]">
-                  <FormLabel>Enhet</FormLabel>
-                  <Select
-                    className="w-full"
-                    disabled={!isEditable('general')}
-                    {...register(`notice.terms.${lesseeNoticeIndex}.unit`)}
-                    placeholder="Månad/år"
-                    data-cy="lessee-notice-unit"
-                  >
-                    <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
-                    <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
-                    <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
-                  </Select>
-                </FormControl>
-                <FormControl className="flex-grow max-w-[45%]">
-                  <FormLabel>Antal</FormLabel>
-                  <Input
-                    readOnly={!isEditable('general')}
-                    {...register(`notice.terms.${lesseeNoticeIndex}.periodOfNotice`)}
-                    placeholder="Ange tal"
-                    data-cy="lessee-notice-period"
-                  />
-                  <Input
-                    type="hidden"
-                    readOnly
-                    {...register(`notice.terms.${lesseeNoticeIndex}.party`)}
-                    value="LESSEE"
-                    data-cy="lessee-notice-party"
-                  />
-                  {formState.errors.notice?.terms?.[lesseeNoticeIndex]?.periodOfNotice && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>
-                        {formState.errors.notice?.terms?.[lesseeNoticeIndex]?.periodOfNotice?.message}
-                      </FormErrorMessage>
-                    </div>
-                  )}
-                </FormControl>
-              </div>
+              {getValues().notice?.terms?.some((t) => t.party === 'LESSOR') &&
+              getValues().notice?.terms?.some((t) => t.party === 'LESSEE') ? (
+                <>
+                  <strong>Ange tid för arrendatorns uppsägningstid</strong>
+                  <div className="flex justify-between gap-32 items-start mb-md">
+                    <FormControl id={`noticePeriod-1`} className="flex-grow max-w-[45%]">
+                      <FormLabel>Enhet</FormLabel>
+                      <Select
+                        className="w-full"
+                        disabled={!isEditable('general')}
+                        {...register(`notice.terms.${lesseeNoticeIndex}.unit`)}
+                        placeholder="Månad/år"
+                        data-cy="lessee-notice-unit"
+                      >
+                        <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
+                        <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
+                        <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
+                      </Select>
+                    </FormControl>
+                    <FormControl className="flex-grow max-w-[45%]">
+                      <FormLabel>Antal</FormLabel>
+                      <Input
+                        readOnly={!isEditable('general')}
+                        {...register(`notice.terms.${lesseeNoticeIndex}.periodOfNotice`)}
+                        placeholder="Ange tal"
+                        data-cy="lessee-notice-period"
+                      />
+                      <Input
+                        type="hidden"
+                        readOnly
+                        {...register(`notice.terms.${lesseeNoticeIndex}.party`)}
+                        value="LESSEE"
+                        data-cy="lessee-notice-party"
+                      />
+                      {formState.errors.notice?.terms?.[lesseeNoticeIndex]?.periodOfNotice && (
+                        <div className="my-sm text-error">
+                          <FormErrorMessage>
+                            {formState.errors.notice?.terms?.[lesseeNoticeIndex]?.periodOfNotice?.message}
+                          </FormErrorMessage>
+                        </div>
+                      )}
+                    </FormControl>
+                  </div>
 
-              <strong className="text-h6-md">Ange tid för fastighetsägarens uppsägningstid</strong>
-              <div className="flex justify-between gap-32 items-start mb-md">
-                <FormControl id={`noticePeriod-1`} className="flex-grow max-w-[45%]">
-                  <FormLabel>Enhet</FormLabel>
-                  <Select
-                    className="w-full"
-                    disabled={!isEditable('general')}
-                    {...register(`notice.terms.${lessorNoticeIndex}.unit`)}
-                    placeholder="Månad/år"
-                    data-cy="lessor-notice-unit"
-                  >
-                    <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
-                    <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
-                    <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
-                  </Select>
-                </FormControl>
-                <FormControl className="flex-grow max-w-[45%]">
-                  <FormLabel>Antal</FormLabel>
-                  <Input
-                    readOnly={!isEditable('general')}
-                    {...register(`notice.terms.${lessorNoticeIndex}.periodOfNotice`)}
-                    placeholder="Ange tal"
-                    data-cy="lessor-notice-period"
-                  />
-                  <Input
-                    type="hidden"
-                    readOnly
-                    {...register(`notice.terms.${lessorNoticeIndex}.party`)}
-                    value="LESSOR"
-                    data-cy="lessor-notice-party"
-                  />
-                  {formState.errors.notice?.terms?.[lessorNoticeIndex]?.periodOfNotice && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>
-                        {formState.errors.notice?.terms?.[lessorNoticeIndex]?.periodOfNotice?.message}
-                      </FormErrorMessage>
-                    </div>
-                  )}
-                </FormControl>
-              </div>
+                  <strong className="text-h6-md">Ange tid för upplåtarens uppsägningstid</strong>
+                  <div className="flex justify-between gap-32 items-start mb-md">
+                    <FormControl id={`noticePeriod-2`} className="flex-grow max-w-[45%]">
+                      <FormLabel>Enhet</FormLabel>
+                      <Select
+                        className="w-full"
+                        disabled={!isEditable('general')}
+                        {...register(`notice.terms.${lessorNoticeIndex}.unit`)}
+                        placeholder="Månad/år"
+                        data-cy="lessor-notice-unit"
+                      >
+                        <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
+                        <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
+                        <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
+                      </Select>
+                    </FormControl>
+                    <FormControl className="flex-grow max-w-[45%]">
+                      <FormLabel>Antal</FormLabel>
+                      <Input
+                        readOnly={!isEditable('general')}
+                        {...register(`notice.terms.${lessorNoticeIndex}.periodOfNotice`)}
+                        placeholder="Ange tal"
+                        data-cy="lessor-notice-period"
+                      />
+                      <Input
+                        type="hidden"
+                        readOnly
+                        {...register(`notice.terms.${lessorNoticeIndex}.party`)}
+                        value="LESSOR"
+                        data-cy="lessor-notice-party"
+                      />
+                      {formState.errors.notice?.terms?.[lessorNoticeIndex]?.periodOfNotice && (
+                        <div className="my-sm text-error">
+                          <FormErrorMessage>
+                            {formState.errors.notice?.terms?.[lessorNoticeIndex]?.periodOfNotice?.message}
+                          </FormErrorMessage>
+                        </div>
+                      )}
+                    </FormControl>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <strong className="-mb-16">Ange uppsägningstid</strong>
+                  <div className="flex justify-between gap-32 items-start mb-md">
+                    <FormControl id={`noticePeriod-0`} className="flex-grow max-w-[45%]">
+                      <FormLabel>Enhet</FormLabel>
+                      <Select
+                        className="w-full"
+                        disabled={!isEditable('general')}
+                        {...register(`notice.terms.${allNoticeIndex}.unit`)}
+                        placeholder="Månad/år"
+                        data-cy="all-notice-unit"
+                      >
+                        <Select.Option value={TimeUnit.DAYS}>Dagar</Select.Option>
+                        <Select.Option value={TimeUnit.MONTHS}>Månader</Select.Option>
+                        <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
+                      </Select>
+                    </FormControl>
+                    <FormControl className="flex-grow max-w-[45%]">
+                      <FormLabel>Antal</FormLabel>
+                      <Input
+                        readOnly={!isEditable('general')}
+                        {...register(`notice.terms.${allNoticeIndex}.periodOfNotice`)}
+                        placeholder="Ange tal"
+                        data-cy="all-notice-period"
+                      />
+                      <Input
+                        type="hidden"
+                        readOnly
+                        {...register(`notice.terms.${allNoticeIndex}.party`)}
+                        value="ALL"
+                        data-cy="all-notice-party"
+                      />
+                      {formState.errors.notice?.terms?.[allNoticeIndex]?.periodOfNotice && (
+                        <div className="my-sm text-error">
+                          <FormErrorMessage>
+                            {formState.errors.notice?.terms?.[allNoticeIndex]?.periodOfNotice?.message}
+                          </FormErrorMessage>
+                        </div>
+                      )}
+                    </FormControl>
+                  </div>
+                </>
+              )}
 
               <div className="flex justify-between gap-32 items-end mb-md">
                 <FormControl
@@ -708,6 +763,48 @@ export const ContractForm: FC<{
           </Disclosure.Content>
         </Disclosure>
       )}
+      {errand?.caseType === MEXCaseType.UPDATECONTRACT || errand?.caseType === MEXCaseType.MEX_TERMINATION_OF_LEASE ? (
+        <Disclosure variant="alt">
+          <Disclosure.Header>
+            <Disclosure.Icon icon={<Calendar />} />
+            <Disclosure.Title>Uppsägning anmälan</Disclosure.Title>
+            <Disclosure.Button />
+          </Disclosure.Header>
+          <Disclosure.Content>
+            <div className="flex gap-18 justify-start">
+              <FormControl id="noticeDate" className="w-full">
+                <FormLabel>Uppsägningsdatum</FormLabel>
+                <Input
+                  type="date"
+                  readOnly={!isEditable('cancellation')}
+                  {...register('notice.noticeDate')}
+                  data-cy="notice-date"
+                />
+              </FormControl>
+              <FormControl id="endDate" className="w-full">
+                <FormLabel>Slutdatum</FormLabel>
+                <Input type="date" readOnly={!isEditable('cancellation')} {...register('endDate')} data-cy="endDate" />
+              </FormControl>
+            </div>
+            <div className="flex gap-18 justify-start">
+              <FormControl id="noticeGivenBy" className="w-full">
+                <FormLabel>Uppsagd av</FormLabel>
+                <Select
+                  className="w-full"
+                  disabled={!isEditable('cancellation')}
+                  {...register('notice.noticeGivenBy')}
+                  data-cy="notice-given-by"
+                >
+                  <Select.Option value="">Välj part</Select.Option>
+                  <Select.Option value={Party.LESSOR}>Upplåtare</Select.Option>
+                  <Select.Option value={Party.LESSEE}>Arrendator</Select.Option>
+                </Select>
+              </FormControl>
+            </div>
+            {saveButton()}
+          </Disclosure.Content>
+        </Disclosure>
+      ) : null}
       {hasRecurringFee(contractType, watch().leaseType) && (
         <Disclosure
           data-cy="lopande-disclosure"
@@ -835,6 +932,44 @@ export const ContractForm: FC<{
                     </FormControl>
                   </div>
                   <div className="flex gap-18 justify-start">
+                    <FormControl
+                      className="flex-grow"
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        if (!isEditable('general')) return;
+                        setValue('invoicing.invoicedIn', e.target.value as InvoicedIn);
+                      }}
+                    >
+                      <FormLabel>Avgift ska betalas</FormLabel>
+                      <RadioButton.Group
+                        inline
+                        className="flex gap-24"
+                        name="invoicedIn"
+                        value={
+                          watch().invoicing?.invoicedIn === InvoicedIn.ADVANCE
+                            ? InvoicedIn.ADVANCE
+                            : watch().invoicing?.invoicedIn === InvoicedIn.ARREARS
+                            ? InvoicedIn.ARREARS
+                            : InvoicedIn.ADVANCE
+                        }
+                      >
+                        <RadioButton
+                          value={InvoicedIn.ADVANCE}
+                          data-cy="invoiced-in-advance-radiobutton"
+                          disabled={!isEditable('general')}
+                        >
+                          Förskott
+                        </RadioButton>
+                        <RadioButton
+                          value={InvoicedIn.ARREARS}
+                          data-cy="invoiced-in-arrears-radiobutton"
+                          disabled={!isEditable('general')}
+                        >
+                          Efterskott
+                        </RadioButton>
+                      </RadioButton.Group>
+                    </FormControl>
+                  </div>
+                  <div className="flex gap-18 justify-start">
                     <FormControl className="w-[36.7rem]">
                       <FormLabel>Ange fakturans referens</FormLabel>
                       <Input
@@ -843,7 +978,12 @@ export const ContractForm: FC<{
                         {...register(`extraParameters.${invoiceInfoIndex}.parameters.markup`)}
                         data-cy="invoice-markup-input"
                       />
-                      <small>Referens måste alltid anges.</small>
+                      {referensError ? (
+                        <FormErrorMessage>Referens måste alltid anges.</FormErrorMessage>
+                      ) : (
+                        <small>Referens måste alltid anges.</small>
+                      )}
+
                       <Input
                         type="hidden"
                         {...register(`extraParameters.${invoiceInfoIndex}.name`)}
@@ -919,7 +1059,6 @@ export const ContractForm: FC<{
         </Disclosure.Content>
       </Disclosure>
 
-      {/* Party Modal */}
       <ContractPartyModal
         isOpen={isPartyModalOpen}
         onClose={() => setIsPartyModalOpen(false)}
@@ -929,6 +1068,7 @@ export const ContractForm: FC<{
         existingParty={editingParty}
         contractType={getValues().type}
         existingParties={contractParties}
+        isDraft={isDraft}
       />
     </>
   );

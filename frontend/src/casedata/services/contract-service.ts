@@ -30,7 +30,7 @@ import { getSingleFacilityByDesignation } from '@common/services/facilities-serv
 import { toBase64 } from '@common/utils/toBase64';
 import { UploadFile } from '@sk-web-gui/react';
 import { AxiosResponse } from 'axios';
-import { CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
+import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 
 import { saveExtraParameters } from './casedata-extra-parameters-service';
 
@@ -120,15 +120,11 @@ export const defaultLagenhetsarrende: ContractData = {
   status: Status.DRAFT,
   propertyDesignations: [],
   stakeholders: [],
+  invoicing: { invoicedIn: InvoicedIn.ADVANCE },
   notice: {
     terms: [
       {
-        party: Party.LESSEE,
-        periodOfNotice: 3,
-        unit: TimeUnit.MONTHS,
-      },
-      {
-        party: Party.LESSOR,
+        party: Party.ALL,
         periodOfNotice: 3,
         unit: TimeUnit.MONTHS,
       },
@@ -473,6 +469,7 @@ export const contractToKopeavtal = (contract: Contract): ContractData => {
 export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
   console.log('transforming to contract: ', data);
   let fees: Fees | undefined = undefined;
+  const propertyDesignations = data.propertyDesignations ?? [];
   if (data.generateInvoice) {
     const yearlyNumber = Number.parseFloat((data.fees?.yearly ?? 0).toString());
     fees = {
@@ -481,9 +478,10 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       total: yearlyNumber,
       currency: 'SEK',
       additionalInformation: [
-        `Avgift, ${
-          leaseTypes.find((t) => t.key === data.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'
-        }. Fastigheter: ${(data.propertyDesignations ?? []).map((p) => p.name).join(', ')}`,
+        `Avgift, ${leaseTypes.find((t) => t.key === data.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'}. ` +
+          (propertyDesignations?.length > 0
+            ? `Fastigheter: ${propertyDesignations.map((p) => p.name).join(', ')}`
+            : ''),
         data.fees?.additionalInformation?.[1] ?? '',
       ],
       ...(data.indexAdjusted === 'true' && { indexYear: data.fees?.indexYear ?? 2025 }),
@@ -506,13 +504,14 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     },
     fees: fees,
     invoicing: {
-      invoicedIn: InvoicedIn.ADVANCE,
+      invoicedIn: data.invoicing?.invoicedIn,
       invoiceInterval: data.invoicing?.invoiceInterval,
     },
-    startDate: data.startDate,
+    currentPeriod: data.currentPeriod,
+    startDate: data.currentPeriod?.startDate,
     endDate: data.endDate,
     notice: {
-      terms: data.notice?.terms,
+      terms: data.notice?.terms?.filter((t) => Boolean(t)),
       noticeDate: data.notice?.noticeDate !== '' ? data.notice?.noticeDate : undefined,
       noticeGivenBy:
         data.notice?.noticeGivenBy && [Party.LESSEE, Party.LESSOR].includes(data.notice?.noticeGivenBy)
@@ -538,6 +537,7 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
     contract.fees?.indexNumber ||
     contract.fees?.indexationRate
   );
+  const propertyDesignations = contract.propertyDesignations ?? [];
   const lagenhetsarrende: ContractData = {
     ...defaultLagenhetsarrende,
     ...contract,
@@ -547,9 +547,10 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
     fees: {
       ...contract.fees,
       additionalInformation: [
-        `Avgift, ${
-          leaseTypes.find((t) => t.key === contract.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'
-        }. Fastigheter: ${(contract.propertyDesignations ?? []).map((p) => p.name).join(', ')}`,
+        `Avgift, ${leaseTypes.find((t) => t.key === contract.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'}. ` +
+          (propertyDesignations?.length > 0
+            ? `Fastigheter: ${propertyDesignations.map((p) => p.name).join(', ')}`
+            : ''),
         '',
       ],
     },
@@ -563,10 +564,11 @@ export const getContractStakeholderName: (c: StakeholderWithPersonnumber) => str
     : `${c.firstName} ${c.lastName}`;
 
 // Centralized converter: API stakeholder -> UnifiedContractParty
+let internalIdCounter = 0;
 export const contractStakeholderToUnifiedParty = (stakeholder: StakeholderWithPersonnumber): UnifiedContractParty => {
   const name = getContractStakeholderName(stakeholder);
   return {
-    stakeholderId: stakeholder.stakeholderId || stakeholder.partyId || '',
+    stakeholderId: stakeholder.stakeholderId || stakeholder.partyId || `_internal-${++internalIdCounter}`,
     name,
     personalNumber: stakeholder.personalNumber,
     organizationNumber: stakeholder.organizationNumber,
@@ -762,7 +764,6 @@ export interface ContractInvoice {
   invoiceDate?: string;
   dueDate?: string;
   amount?: number;
-  invoiceNumber?: string;
 }
 
 export interface ContractInvoicesResponse {
@@ -800,28 +801,22 @@ export const fetchContractInvoices: (
 
   return apiService
     .get<{
-      content?: Array<{
-        id?: string;
-        status: CBillingRecordStatusEnum;
-        invoice?: {
-          date?: string;
-          dueDate?: string;
-          totalAmount?: number;
-        };
-      }>;
+      content?: CBillingRecord[];
       totalElements?: number;
       totalPages?: number;
     }>(url)
     .then((res) => {
       const content = res.data?.content || [];
-      const invoices: ContractInvoice[] = content.map((record) => ({
-        id: record.id || '',
-        status: record.status,
-        invoiceDate: record.invoice?.date,
-        dueDate: record.invoice?.dueDate,
-        amount: record.invoice?.totalAmount,
-        invoiceNumber: '-', // Which field to use for invoice number is unknown at this time
-      }));
+      const invoices: ContractInvoice[] = content.map((record) => {
+        const inv: ContractInvoice = {
+          id: record.id || '',
+          status: record.status,
+          invoiceDate: record.transferDate,
+          dueDate: record.invoice?.dueDate,
+          amount: record.invoice?.totalAmount,
+        };
+        return inv;
+      });
 
       return {
         invoices,
