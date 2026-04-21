@@ -4,16 +4,7 @@ import {
   deleteCasedataBillingRecord,
   updateCasedataBillingRecord,
 } from '@casedata/services/casedata-billing-service';
-import {
-  Button,
-  DatePicker,
-  FormControl,
-  FormLabel,
-  Input,
-  Table,
-  useConfirm,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import { Button, DatePicker, FormControl, FormLabel, Input, Table, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
 import { Pen, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -462,8 +453,14 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                           <div className="flex flex-col gap-16 bg-background-color-mixin-1 p-18">
                             <div className="flex flex-row w-full gap-16">
                               <FormControl className="w-full">
-                                <FormLabel>Beskrivning</FormLabel>
+                                <div className="flex w-full justify-between">
+                                  <FormLabel>Beskrivning</FormLabel>
+                                  <span className="text-small text-dark-secondary">
+                                    {editingRowState.descriptions.length}/30
+                                  </span>
+                                </div>
                                 <Input
+                                  maxLength={30}
                                   value={editingRowState.descriptions}
                                   onChange={(e) => handleRowFieldChange('descriptions', e.target.value)}
                                 />
@@ -548,6 +545,12 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                             <div className="flex flex-col w-full gap-16">
                               <FormControl className="w-full">
                                 <FormLabel>Utökad beskrivning</FormLabel>
+                                <div className="flex w-full justify-between">
+                                  <FormLabel>Rad 1</FormLabel>
+                                  <span className="text-small text-dark-secondary">
+                                    {editingRowState.detailedDescription1.length}/51
+                                  </span>
+                                </div>
                                 <Input
                                   maxLength={51}
                                   value={editingRowState.detailedDescription1}
@@ -555,6 +558,12 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                 />
                               </FormControl>
                               <FormControl className="w-full">
+                                <div className="flex w-full justify-between">
+                                  <FormLabel>Rad 2</FormLabel>
+                                  <span className="text-small text-dark-secondary">
+                                    {editingRowState.detailedDescription2.length}/51
+                                  </span>
+                                </div>
                                 <Input
                                   maxLength={51}
                                   value={editingRowState.detailedDescription2}
@@ -562,6 +571,12 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                 />
                               </FormControl>
                               <FormControl className="w-full">
+                                <div className="flex w-full justify-between">
+                                  <FormLabel>Rad 3</FormLabel>
+                                  <span className="text-small text-dark-secondary">
+                                    {editingRowState.detailedDescription3.length}/51
+                                  </span>
+                                </div>
                                 <Input
                                   maxLength={51}
                                   value={editingRowState.detailedDescription3}

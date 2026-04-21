@@ -151,9 +151,10 @@ export interface Invoice {
   customerId: string;
   /**
    * Description of the invoice
-   * @minLength 1
+   * @minLength 0
+   * @maxLength 30
    */
-  description: string;
+  description?: string;
   /** Our reference */
   ourReference?: string;
   /**
@@ -237,25 +238,25 @@ export interface PageBillingRecord {
   content?: BillingRecord[];
   /** @format int32 */
   number?: number;
-  /** @format int32 */
-  numberOfElements?: number;
   first?: boolean;
   last?: boolean;
-  sort?: SortObject;
+  /** @format int32 */
+  numberOfElements?: number;
   pageable?: PageableObject;
+  sort?: SortObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
   unpaged?: boolean;
+  sort?: SortObject;
 }
 
 export interface SortObject {

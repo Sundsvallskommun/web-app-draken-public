@@ -57,16 +57,13 @@ export const BillingSpecifications: React.FC = () => {
       <div className="w-full pb-16">
         <FormControl className="w-full" invalid={!!errors.specifications?.avitext}>
           <div className="flex flex-row justify-between">
-            <FormLabel>Avitext *</FormLabel>
+            <FormLabel>Avitext</FormLabel>
             <span>
               {watch('specifications.avitext')?.length || 0}/{avitextMaxLength}
             </span>
           </div>
           <Input className="w-full" maxLength={avitextMaxLength} {...register('specifications.avitext')} />
           <small>Ange vad fakturan avser och vilken period den gäller.</small>
-          {errors.specifications?.avitext && (
-            <FormErrorMessage>{errors.specifications.avitext.message}</FormErrorMessage>
-          )}
         </FormControl>
       </div>
       <div>
