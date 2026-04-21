@@ -30,7 +30,7 @@ import { getSingleFacilityByDesignation } from '@common/services/facilities-serv
 import { toBase64 } from '@common/utils/toBase64';
 import { UploadFile } from '@sk-web-gui/react';
 import { AxiosResponse } from 'axios';
-import { CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
+import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 
 import { saveExtraParameters } from './casedata-extra-parameters-service';
 
@@ -764,7 +764,6 @@ export interface ContractInvoice {
   invoiceDate?: string;
   dueDate?: string;
   amount?: number;
-  invoiceNumber?: string;
 }
 
 export interface ContractInvoicesResponse {
@@ -802,28 +801,22 @@ export const fetchContractInvoices: (
 
   return apiService
     .get<{
-      content?: Array<{
-        id?: string;
-        status: CBillingRecordStatusEnum;
-        invoice?: {
-          date?: string;
-          dueDate?: string;
-          totalAmount?: number;
-        };
-      }>;
+      content?: CBillingRecord[];
       totalElements?: number;
       totalPages?: number;
     }>(url)
     .then((res) => {
       const content = res.data?.content || [];
-      const invoices: ContractInvoice[] = content.map((record) => ({
-        id: record.id || '',
-        status: record.status,
-        invoiceDate: record.invoice?.date,
-        dueDate: record.invoice?.dueDate,
-        amount: record.invoice?.totalAmount,
-        invoiceNumber: '-', // Which field to use for invoice number is unknown at this time
-      }));
+      const invoices: ContractInvoice[] = content.map((record) => {
+        const inv: ContractInvoice = {
+          id: record.id || '',
+          status: record.status,
+          invoiceDate: record.transferDate,
+          dueDate: record.invoice?.dueDate,
+          amount: record.invoice?.totalAmount,
+        };
+        return inv;
+      });
 
       return {
         invoices,
