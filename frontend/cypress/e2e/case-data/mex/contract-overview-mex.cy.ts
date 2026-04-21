@@ -468,7 +468,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('[data-cy="invoice-status-0"]').should('contain.text', 'Ny');
           cy.get('[data-cy="invoice-date-0"]').should('contain.text', '2024-01-15');
           cy.get('[data-cy="invoice-due-date-0"]').should('contain.text', '2024-02-15');
-          cy.get('[data-cy="invoice-number-0"]').should('contain.text', '-');
         });
 
         it('displays correct status labels with correct colors', () => {

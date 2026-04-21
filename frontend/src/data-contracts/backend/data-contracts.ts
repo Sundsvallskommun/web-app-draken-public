@@ -124,6 +124,7 @@ export interface CBillingRecord {
   status: CBillingRecordStatusEnum;
   invoice: CInvoice;
   extraParameters?: CExtraParameters;
+  transferDate?: string;
 }
 
 export interface CSortObject {

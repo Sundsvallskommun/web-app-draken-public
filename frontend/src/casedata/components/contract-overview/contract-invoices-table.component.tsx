@@ -90,7 +90,6 @@ export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({ contract
     { label: 'Fakturadatum', key: 'invoiceDate' },
     { label: 'Förfallodatum', key: 'dueDate' },
     { label: 'Belopp', key: 'amount' },
-    { label: 'Fakturanummer', key: 'invoiceNumber' },
     { label: 'Åtgärd', key: 'action', screenReaderOnly: true },
   ];
 
@@ -124,7 +123,6 @@ export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({ contract
               <Table.Column data-cy={`invoice-amount-${index}`}>
                 {invoice.amount !== undefined ? formatCurrency(invoice.amount) : '-'}
               </Table.Column>
-              <Table.Column data-cy={`invoice-number-${index}`}>{invoice.invoiceNumber || '-'}</Table.Column>
               {/* NOT IMPLEMENTED YET */}
               {/* <Table.Column>
                 <Button
