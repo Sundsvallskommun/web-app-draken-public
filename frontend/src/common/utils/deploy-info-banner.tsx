@@ -9,11 +9,13 @@ type DeployInfo = {
   commitUrl?: string;
 };
 
+const showDeployInfo = process.env.NEXT_PUBLIC_SHOW_DEPLOY_INFO;
+
 export function DeployInfoBanner() {
   const [info, setInfo] = useState<DeployInfo | null>(null);
 
   useEffect(() => {
-    if (process.env.NEXT_PUBLIC_SHOW_DEPLOY_INFO === 'true') {
+    if (showDeployInfo === 'true') {
       const basePath = window.location.pathname.split('/')[1];
       const baseUrl = basePath ? `/${basePath}` : '';
       const url = `${baseUrl}/deploy-info.json`;
