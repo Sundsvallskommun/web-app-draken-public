@@ -9,13 +9,15 @@ type DeployInfo = {
   commitUrl?: string;
 };
 
-const showDeployInfo = process.env.NEXT_PUBLIC_SHOW_DEPLOY_INFO;
+// Prevents build-time dead code elimination by using .includes() which Terser cannot statically evaluate.
+// In CICD builds, the inlined placeholder string is replaced by entrypoint.sh at container startup.
+const showDeployInfo = ['true'].includes(process.env.NEXT_PUBLIC_SHOW_DEPLOY_INFO ?? '');
 
 export function DeployInfoBanner() {
   const [info, setInfo] = useState<DeployInfo | null>(null);
 
   useEffect(() => {
-    if (showDeployInfo === 'true') {
+    if (showDeployInfo) {
       const basePath = window.location.pathname.split('/')[1];
       const baseUrl = basePath ? `/${basePath}` : '';
       const url = `${baseUrl}/deploy-info.json`;
