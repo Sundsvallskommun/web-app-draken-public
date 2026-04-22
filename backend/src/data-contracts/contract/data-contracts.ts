@@ -12,119 +12,128 @@
 
 /** Time unit */
 export enum TimeUnit {
-  DAYS = "DAYS",
-  MONTHS = "MONTHS",
-  YEARS = "YEARS",
+  DAYS = 'DAYS',
+  MONTHS = 'MONTHS',
+  YEARS = 'YEARS',
 }
 
 /** Status */
 export enum Status {
-  ACTIVE = "ACTIVE",
-  DRAFT = "DRAFT",
-  TERMINATED = "TERMINATED",
+  ACTIVE = 'ACTIVE',
+  DRAFT = 'DRAFT',
+  TERMINATED = 'TERMINATED',
 }
 
 /** Stakeholder type */
 export enum StakeholderType {
-  PERSON = "PERSON",
-  ORGANIZATION = "ORGANIZATION",
-  ASSOCIATION = "ASSOCIATION",
-  MUNICIPALITY = "MUNICIPALITY",
-  REGION = "REGION",
-  OTHER = "OTHER",
+  PERSON = 'PERSON',
+  ORGANIZATION = 'ORGANIZATION',
+  ASSOCIATION = 'ASSOCIATION',
+  MUNICIPALITY = 'MUNICIPALITY',
+  REGION = 'REGION',
+  OTHER = 'OTHER',
 }
 
 /** Stakeholder role */
 export enum StakeholderRole {
-  BUYER = "BUYER",
-  CONTACT_PERSON = "CONTACT_PERSON",
-  GRANTOR = "GRANTOR",
-  LAND_RIGHT_OWNER = "LAND_RIGHT_OWNER",
-  LEASEHOLDER = "LEASEHOLDER",
-  PROPERTY_OWNER = "PROPERTY_OWNER",
-  POWER_OF_ATTORNEY_CHECK = "POWER_OF_ATTORNEY_CHECK",
-  POWER_OF_ATTORNEY_ROLE = "POWER_OF_ATTORNEY_ROLE",
-  SELLER = "SELLER",
-  SIGNATORY = "SIGNATORY",
-  PRIMARY_BILLING_PARTY = "PRIMARY_BILLING_PARTY",
-  LESSOR = "LESSOR",
-  LESSEE = "LESSEE",
+  BUYER = 'BUYER',
+  CONTACT_PERSON = 'CONTACT_PERSON',
+  GRANTOR = 'GRANTOR',
+  LAND_RIGHT_OWNER = 'LAND_RIGHT_OWNER',
+  LEASEHOLDER = 'LEASEHOLDER',
+  PROPERTY_OWNER = 'PROPERTY_OWNER',
+  POWER_OF_ATTORNEY_CHECK = 'POWER_OF_ATTORNEY_CHECK',
+  POWER_OF_ATTORNEY_ROLE = 'POWER_OF_ATTORNEY_ROLE',
+  SELLER = 'SELLER',
+  SIGNATORY = 'SIGNATORY',
+  PRIMARY_BILLING_PARTY = 'PRIMARY_BILLING_PARTY',
+  LESSOR = 'LESSOR',
+  LESSEE = 'LESSEE',
 }
 
 /** Party */
 export enum Party {
-  LESSOR = "LESSOR",
-  LESSEE = "LESSEE",
-  ALL = "ALL",
+  LESSOR = 'LESSOR',
+  LESSEE = 'LESSEE',
+  ALL = 'ALL',
 }
 
 /** Leasehold type */
 export enum LeaseholdType {
-  AGRICULTURE = "AGRICULTURE",
-  APARTMENT = "APARTMENT",
-  BOATING_PLACE = "BOATING_PLACE",
-  BUILDING = "BUILDING",
-  DEPOT = "DEPOT",
-  DWELLING = "DWELLING",
-  LAND_COMPLEMENT = "LAND_COMPLEMENT",
-  LINEUP = "LINEUP",
-  OTHER = "OTHER",
-  PARKING = "PARKING",
-  RECYCLING_STATION = "RECYCLING_STATION",
-  ROAD = "ROAD",
-  SIGNBOARD = "SIGNBOARD",
-  SNOW_DUMP = "SNOW_DUMP",
-  SPORTS_PURPOSE = "SPORTS_PURPOSE",
-  SURFACE_HEAT = "SURFACE_HEAT",
-  TRAIL = "TRAIL",
+  AGRICULTURE = 'AGRICULTURE',
+  APARTMENT = 'APARTMENT',
+  BOATING_PLACE = 'BOATING_PLACE',
+  BUILDING = 'BUILDING',
+  DEPOT = 'DEPOT',
+  DWELLING = 'DWELLING',
+  LAND_COMPLEMENT = 'LAND_COMPLEMENT',
+  LINEUP = 'LINEUP',
+  OTHER = 'OTHER',
+  PARKING = 'PARKING',
+  RECYCLING_STATION = 'RECYCLING_STATION',
+  ROAD = 'ROAD',
+  SIGNBOARD = 'SIGNBOARD',
+  SNOW_DUMP = 'SNOW_DUMP',
+  SPORTS_PURPOSE = 'SPORTS_PURPOSE',
+  SURFACE_HEAT = 'SURFACE_HEAT',
+  TRAIL = 'TRAIL',
 }
 
 /** Lease type */
 export enum LeaseType {
-  LAND_LEASE_RESIDENTIAL = "LAND_LEASE_RESIDENTIAL",
-  SITE_LEASE_COMMERCIAL = "SITE_LEASE_COMMERCIAL",
-  USUFRUCT_HUNTING = "USUFRUCT_HUNTING",
-  USUFRUCT_FARMING = "USUFRUCT_FARMING",
-  USUFRUCT_MISC = "USUFRUCT_MISC",
-  LAND_LEASE_MISC = "LAND_LEASE_MISC",
-  OTHER_FEE = "OTHER_FEE",
+  LAND_LEASE_RESIDENTIAL = 'LAND_LEASE_RESIDENTIAL',
+  SITE_LEASE_COMMERCIAL = 'SITE_LEASE_COMMERCIAL',
+  USUFRUCT_HUNTING = 'USUFRUCT_HUNTING',
+  USUFRUCT_FARMING = 'USUFRUCT_FARMING',
+  USUFRUCT_MISC = 'USUFRUCT_MISC',
+  LAND_LEASE_MISC = 'LAND_LEASE_MISC',
+  LAND_LEASE_LICENSE = 'LAND_LEASE_LICENSE',
+  LAND_LEASE_MUNICIPALITY = 'LAND_LEASE_MUNICIPALITY',
+  OTHER_FEE = 'OTHER_FEE',
 }
 
 /** Invoiced in */
 export enum InvoicedIn {
-  ADVANCE = "ADVANCE",
-  ARREARS = "ARREARS",
+  ADVANCE = 'ADVANCE',
+  ARREARS = 'ARREARS',
 }
 
 /** Interval type */
 export enum IntervalType {
-  YEARLY = "YEARLY",
-  HALF_YEARLY = "HALF_YEARLY",
-  QUARTERLY = "QUARTERLY",
-  MONTHLY = "MONTHLY",
+  YEARLY = 'YEARLY',
+  HALF_YEARLY = 'HALF_YEARLY',
+  QUARTERLY = 'QUARTERLY',
+  MONTHLY = 'MONTHLY',
 }
 
 /** Contract type */
 export enum ContractType {
-  LEASE_AGREEMENT = "LEASE_AGREEMENT",
-  PURCHASE_AGREEMENT = "PURCHASE_AGREEMENT",
-  LAND_LEASE_PUBLIC = "LAND_LEASE_PUBLIC",
-  SHORT_TERM_LEASE_AGREEMENT = "SHORT_TERM_LEASE_AGREEMENT",
-  OBJECT_LEASE = "OBJECT_LEASE",
-  LEASEHOLD = "LEASEHOLD",
+  LEASE_AGREEMENT = 'LEASE_AGREEMENT',
+  PURCHASE_AGREEMENT = 'PURCHASE_AGREEMENT',
+  LAND_LEASE_PUBLIC = 'LAND_LEASE_PUBLIC',
+  SHORT_TERM_LEASE_AGREEMENT = 'SHORT_TERM_LEASE_AGREEMENT',
+  OBJECT_LEASE = 'OBJECT_LEASE',
+  LEASEHOLD = 'LEASEHOLD',
+  MAINTENANCE_AGREEMENT = 'MAINTENANCE_AGREEMENT',
 }
 
 /** Attachment category */
 export enum AttachmentCategory {
-  CONTRACT = "CONTRACT",
-  OTHER = "OTHER",
+  CONTRACT = 'CONTRACT',
+  OTHER = 'OTHER',
 }
 
 /** Address type */
 export enum AddressType {
-  POSTAL_ADDRESS = "POSTAL_ADDRESS",
-  BILLING_ADDRESS = "BILLING_ADDRESS",
-  VISITING_ADDRESS = "VISITING_ADDRESS",
+  POSTAL_ADDRESS = 'POSTAL_ADDRESS',
+  BILLING_ADDRESS = 'BILLING_ADDRESS',
+  VISITING_ADDRESS = 'VISITING_ADDRESS',
+}
+
+export interface GeoJsonObject {
+  crs?: Crs;
+  bbox?: number[];
+  type: string;
 }
 
 export interface Problem {
@@ -286,16 +295,7 @@ export interface ExtraParameterGroup {
 
 export interface Feature {
   properties?: Record<string, any>;
-  geometry?:
-    | Feature
-    | FeatureCollection
-    | GeometryCollection
-    | LineString
-    | MultiLineString
-    | MultiPoint
-    | MultiPolygon
-    | Point
-    | Polygon;
+  geometry?: Feature | FeatureCollection | GeometryCollection | LineString | MultiLineString | MultiPoint | MultiPolygon | Point | Polygon;
   crs?: Crs;
   bbox?: number[];
   id?: string;
@@ -341,24 +341,8 @@ export interface Fees {
   additionalInformation?: string[];
 }
 
-export interface GeoJsonObject {
-  crs?: Crs;
-  bbox?: number[];
-  type: string;
-}
-
 export type GeometryCollection = GeoJsonObject & {
-  geometries?: (
-    | Feature
-    | FeatureCollection
-    | GeometryCollection
-    | LineString
-    | MultiLineString
-    | MultiPoint
-    | MultiPolygon
-    | Point
-    | Polygon
-  )[];
+  geometries?: (Feature | FeatureCollection | GeometryCollection | LineString | MultiLineString | MultiPoint | MultiPolygon | Point | Polygon)[];
 };
 
 /** Invoicing details */
@@ -594,6 +578,8 @@ export interface JsonNode {
   valueNode?: boolean;
   container?: boolean;
   missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -605,11 +591,9 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  integralNumber?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  number?: boolean;
   string?: boolean;
   boolean?: boolean;
+  number?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -642,8 +626,8 @@ export interface PageableObject {
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
   unpaged?: boolean;
+  sort?: SortObject;
 }
 
 export interface SortObject {
@@ -653,24 +637,24 @@ export interface SortObject {
 }
 
 export enum CrsTypeEnum {
-  Name = "name",
-  Link = "link",
+  Name = 'name',
+  Link = 'link',
 }
 
 export enum ChangeTypeEnum {
-  ADDITION = "ADDITION",
-  REMOVAL = "REMOVAL",
-  MODIFICATION = "MODIFICATION",
+  ADDITION = 'ADDITION',
+  REMOVAL = 'REMOVAL',
+  MODIFICATION = 'MODIFICATION',
 }
 
 export enum JsonNodeNodeTypeEnum {
-  ARRAY = "ARRAY",
-  BINARY = "BINARY",
-  BOOLEAN = "BOOLEAN",
-  MISSING = "MISSING",
-  NULL = "NULL",
-  NUMBER = "NUMBER",
-  OBJECT = "OBJECT",
-  POJO = "POJO",
-  STRING = "STRING",
+  ARRAY = 'ARRAY',
+  BINARY = 'BINARY',
+  BOOLEAN = 'BOOLEAN',
+  MISSING = 'MISSING',
+  NULL = 'NULL',
+  NUMBER = 'NUMBER',
+  OBJECT = 'OBJECT',
+  POJO = 'POJO',
+  STRING = 'STRING',
 }

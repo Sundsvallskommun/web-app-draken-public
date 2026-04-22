@@ -10,7 +10,6 @@ import {
   removeMunicipalityName,
 } from '@common/services/facilities-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { useAppContext } from '@contexts/app.context';
 import {
   Button,
   FormControl,
@@ -23,12 +22,14 @@ import {
   Table,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { useCasedataStore, useSupportStore } from '@stores/index';
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useForm, UseFormSetValue } from 'react-hook-form';
+
 import { FacilityDetails } from './facilities-details';
 
-export const Facilities: React.FC<{
+export const Facilities: FC<{
   setValue: UseFormSetValue<any>;
   setUnsaved: (unsaved: boolean) => void;
   facilities: FacilityDTO[];
@@ -37,13 +38,8 @@ export const Facilities: React.FC<{
   const { setValue, setUnsaved } = props;
   const toastMessage = useSnackbar();
 
-  const {
-    supportErrand,
-    errand,
-  }: {
-    supportErrand: any;
-    errand: any;
-  } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand) as any;
+  const errand = useCasedataStore((s) => s.errand) as any;
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchType, setSearchType] = useState<string>('');
@@ -58,6 +54,7 @@ export const Facilities: React.FC<{
   const [selectedEstate, setSelectedEstate] = useState<EstateInformation>();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRealEstates(props.facilities);
   }, [props.facilities]);
 
@@ -123,7 +120,7 @@ export const Facilities: React.FC<{
       });
   };
 
-  const ResultList: React.FC<{ result: EstateInfoSearch[] }> = ({ result }) => {
+  const ResultList: FC<{ result: EstateInfoSearch[] }> = ({ result }) => {
     const data = result ?? [];
     return searchResult.length > 0 ? (
       <SearchField.SuggestionsList data-cy="suggestion-list" className="w-full" key={`searchList-${searchQuery}`}>
@@ -230,7 +227,9 @@ export const Facilities: React.FC<{
           </Table.Header>
           <Table.Body data-cy={`facility-table`}>
             {realEstates === undefined || realEstates.length === 0 ? (
-              <Table.Column>Inga fastigheter tillagda</Table.Column>
+              <Table.Row data-cy="no-estates-row">
+                <Table.Column>Inga fastigheter tillagda</Table.Column>
+              </Table.Row>
             ) : (
               <>
                 {realEstates.map((realEstate, index) => (

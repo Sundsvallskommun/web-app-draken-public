@@ -1,7 +1,12 @@
 'use client';
 
+import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
+import { ContractData } from '@casedata/interfaces/contract-data';
+import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
+import { Role } from '@casedata/interfaces/role';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
+import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import {
   beslutsmallMapping,
   getFinalDecisonWithHighestId,
@@ -16,18 +21,14 @@ import {
   updateErrandStatus,
   validateAction,
 } from '@casedata/services/casedata-errand-service';
-import { AppContextInterface, useAppContext } from '@common/contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import type { RJSFSchema } from '@rjsf/utils';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { Role } from '@casedata/interfaces/role';
-import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import { validateErrandForDecision, validateStatusForDecision } from '@casedata/services/casedata-errand-service';
 import { sendDecisionMessage, sendMessage } from '@casedata/services/casedata-message-service';
 import {
@@ -38,6 +39,7 @@ import {
 } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
 import { triggerErrandPhaseChange } from '@casedata/services/process-service';
+import TextEditor from '@common/components/dynamic-text-editor';
 import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
@@ -48,24 +50,22 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import {
   Button,
   Combobox,
+  cx,
   Dialog,
   FormControl,
   FormErrorMessage,
   FormLabel,
   Input,
   Select,
-  cx,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import dynamic from 'next/dynamic';
+import { Download, SendHorizontal } from 'lucide-react';
+
 import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
 import { ServiceListComponent } from '../services/casedata-service-list.component';
 import { useErrandServices } from '../services/useErrandService';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
-import { ContractData } from '@casedata/interfaces/contract-data';
-import { Download, SendHorizontal } from 'lucide-react';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
 
@@ -127,12 +127,15 @@ let formSchema = yup
   })
   .required();
 
-export const CasedataDecisionTab: React.FC<{
+export const CasedataDecisionTab: FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
   onRefetchServices?: (refetch: () => void) => void;
 }> = (props) => {
-  const { municipalityId, user, errand, setErrand } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaveAndSendLoading, setIsSaveAndSendLoading] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -142,14 +145,15 @@ export const CasedataDecisionTab: React.FC<{
   const quillRef = useRef<any>(null);
   const saveConfirm = useConfirm();
   const toastMessage = useSnackbar();
-  const [allowed, setAllowed] = useState(false);
   const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
   const [serviceSchema, setServiceSchema] = useState<RJSFSchema | null>(null);
 
   const sortedDec = useMemo(() => {
     if (!errand) return [];
-    return [...errand.decisions].sort((a, b) => new Date(b.updated ?? 0).getTime() - new Date(a.updated ?? 0).getTime());
+    return [...errand.decisions].sort(
+      (a, b) => new Date(b.updated ?? 0).getTime() - new Date(a.updated ?? 0).getTime()
+    );
   }, [errand]);
 
   const existingDecision = useMemo(() => {
@@ -189,10 +193,9 @@ export const CasedataDecisionTab: React.FC<{
     }
   }, [props, refetchServices]);
 
-  useEffect(() => {
-    if (!errand) return;
-    const _a = validateAction(errand, user);
-    setAllowed(_a);
+  const allowed = useMemo(() => {
+    if (!errand) return false;
+    return validateAction(errand, user);
   }, [user, errand]);
 
   const {
@@ -460,8 +463,8 @@ export const CasedataDecisionTab: React.FC<{
       .then(async (confirmed) => {
         if (confirmed) {
           setIsLoading(true);
-          await saveCasedataErrand();
           const data = getValues();
+          await saveCasedataErrand();
           await save(data);
 
           return Promise.resolve(true);
@@ -605,7 +608,9 @@ export const CasedataDecisionTab: React.FC<{
                   disabled={isErrandLocked(errand) || isSent()}
                   onSelect={(e) => {
                     const selected = e.target.value as string[];
-                    const newLaws = getLawMapping(errand).filter((law) => law.heading && selected.includes(law.heading));
+                    const newLaws = getLawMapping(errand).filter(
+                      (law) => law.heading && selected.includes(law.heading)
+                    );
                     setValue('law', newLaws, {
                       shouldDirty: true,
                       shouldTouch: true,

@@ -1,14 +1,14 @@
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { getStatusLabel, useErrands } from '@casedata/services/casedata-errand-service';
 import { ExportButton } from '@common/components/export-button/export-button.component';
-import { AppContextInterface, useAppContext } from '@common/contexts/app.context';
-import { getMe } from '@common/services/user-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { appConfig } from '@config/appconfig';
-import store from '@supportmanagement/services/storage-service';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+
 import CaseDataFiltering, { CaseDataFilter, CaseDataValues } from '../casedata-filtering/casedata-filtering.component';
 import { ErrandsTable } from './components/errands-table.component';
 
@@ -22,23 +22,44 @@ export interface TableForm {
   pageSize: number;
 }
 
-export const OngoingCaseDataErrands: React.FC = () => {
+export const OngoingCaseDataErrands: FC = () => {
   const filterForm = useForm<CaseDataFilter>({ defaultValues: CaseDataValues });
   const { watch: watchFilter, reset: resetFilter, trigger: triggerFilter, setValue, getValues } = filterForm;
-  const tableForm = useForm<TableForm>({ defaultValues: { sortColumn: 'updated', sortOrder: 'desc', pageSize: 12 } });
+
+  const storedSort = useUiSettingsStore((s) => s.sort);
+
+  const tableForm = useForm<TableForm>({
+    defaultValues: {
+      sortColumn: (storedSort?.sortColumn as string) || 'updated',
+      sortOrder: (storedSort?.sortOrder as 'asc' | 'desc') || 'desc',
+      pageSize: (storedSort?.pageSize as number) || 12,
+    },
+  });
   const { watch: watchTable, setValue: setTableValue } = tableForm;
   const { sortOrder, sortColumn, pageSize, page } = watchTable();
 
-  const {
-    municipalityId,
-    setErrand,
-    administrators,
-    selectedErrandStatuses,
-    setSelectedErrandStatuses,
-    setSidebarLabel,
-    sidebarLabel,
-    closedErrands,
-  }: AppContextInterface = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const setErrand = useCasedataStore((s) => s.setErrand);
+  const administrators = useUserStore((s) => s.administrators);
+  const setSelectedErrandStatuses = useUiSettingsStore((s) => s.setSelectedErrandStatuses);
+  const setSidebarLabel = useUiSettingsStore((s) => s.setSidebarLabel);
+  const sidebarLabel = useUiSettingsStore((s) => s.sidebarLabel);
+  const closedErrands = useUiSettingsStore((s) => s.closedErrands);
+  const selectedErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
+  const storedFilter = useUiSettingsStore((s) => s.filter);
+  const setStoredFilter = useUiSettingsStore((s) => s.setFilter);
+  const setStoredSort = useUiSettingsStore((s) => s.setSort);
+
+  useEffect(() => {
+    const current = getValues('status');
+    const same =
+      current.length === selectedErrandStatuses.length && current.every((s, i) => s === selectedErrandStatuses[i]);
+    if (!same) {
+      setValue('status', selectedErrandStatuses);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedErrandStatuses]);
+
   const startdate = watchFilter('startdate');
   const enddate = watchFilter('enddate');
   const queryFilter = watchFilter('query');
@@ -52,8 +73,11 @@ export const OngoingCaseDataErrands: React.FC = () => {
   const channelFilter = watchFilter('channel');
   const stakeholderTypeFilter = watchFilter('stakeholderType');
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
-  const [filterObject, setFilterObject] = useState<{ [key: string]: string | boolean }>();
+  const [filterObject, setFilterObject] = useState<{ [key: string]: string | boolean } | undefined>(
+    Object.keys(storedFilter).length > 0 ? (storedFilter as { [key: string]: string | boolean }) : undefined
+  );
   const [extraFilter, setExtraFilter] = useState<{ [key: string]: string }>();
+  const filterInitialized = useRef(false);
   const errands = useErrands(municipalityId, page, pageSize, filterObject, sortObject, extraFilter);
   const initialFocus = useRef<HTMLElement>(null);
 
@@ -63,40 +87,38 @@ export const OngoingCaseDataErrands: React.FC = () => {
     });
   };
 
-  useEffect(() => {
-    setValue('status', selectedErrandStatuses);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedErrandStatuses]);
-
   const router = useRouter();
-  const { user, setUser } = useAppContext();
+  const user = useUserStore((s) => s.user);
 
   useEffect(() => {
-    const filterdata = store.get('filter');
-
-    if (filterdata) {
-      let filter;
+    if (storedFilter && Object.keys(storedFilter).length > 0) {
       let storedFilters;
       try {
-        filter = JSON.parse(filterdata);
         storedFilters = {
-          caseType: filter?.caseType?.split(',') || CaseDataValues.caseType,
-          priority: filter?.priority?.split(',') || CaseDataValues.priority,
-          status: filter?.status !== '' ? filter?.status?.split(',') || CaseDataValues.status : CaseDataValues.status,
-          startdate: filter?.start || CaseDataValues.startdate,
-          enddate: filter?.end || CaseDataValues.enddate,
+          caseType: (storedFilter?.caseType as string)?.split(',') || CaseDataValues.caseType,
+          priority: (storedFilter?.priority as string)?.split(',') || CaseDataValues.priority,
+          status:
+            storedFilter?.status !== ''
+              ? (storedFilter?.status as string)?.split(',') || CaseDataValues.status
+              : CaseDataValues.status,
+          startdate: (storedFilter?.start as string) || CaseDataValues.startdate,
+          enddate: (storedFilter?.end as string) || CaseDataValues.enddate,
           admins:
-            filter?.stakeholders !== user.username ? filter?.stakeholders?.split(',') || CaseDataValues.admins : [],
-          phase: filter?.phase !== '' ? filter?.phase?.split(',') || CaseDataValues.phase : CaseDataValues.phase,
+            storedFilter?.stakeholders !== user.username
+              ? (storedFilter?.stakeholders as string)?.split(',') || CaseDataValues.admins
+              : [],
+          phase:
+            storedFilter?.phase !== ''
+              ? (storedFilter?.phase as string)?.split(',') || CaseDataValues.phase
+              : CaseDataValues.phase,
         };
-        const filterStatuses = filter?.status?.split(',') || CaseDataValues.status;
-        setSelectedErrandStatuses(filterStatuses);
+        const filterStatuses = (storedFilter?.status as string)?.split(',') || CaseDataValues.status;
         const selectedStatusLabel = getStatusLabel(
-          filterStatuses.map((s: string) => (ErrandStatus as Record<string, string>)[s])
+          filterStatuses.map((s: string) => (ErrandStatus as Record<string, string>)[s]) as ErrandStatus[]
         );
         setSidebarLabel(selectedStatusLabel);
       } catch (error) {
-        store.set('filter', JSON.stringify({}));
+        setStoredFilter({});
         storedFilters = {
           caseType: CaseDataValues.caseType,
           priority: CaseDataValues.priority,
@@ -107,31 +129,15 @@ export const OngoingCaseDataErrands: React.FC = () => {
           phase: CaseDataValues.phase,
         };
       }
-      if (filter?.stakeholders === user.username) {
+      if (storedFilter?.stakeholders === user.username) {
         setOwnerFilter(true);
       }
       resetFilter(storedFilters);
       triggerFilter();
     }
+    filterInitialized.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetFilter, triggerFilter, user.username]);
-
-  useEffect(() => {
-    const sortData = store.get('sort');
-
-    if (sortData) {
-      try {
-        let sort = JSON.parse(sortData);
-        setTableValue('size', sort.size);
-        setTableValue('pageSize', sort.pageSize);
-        setTableValue('sortOrder', sort.sortOrder);
-        setTableValue('sortColumn', sort.sortColumn);
-      } catch (error) {
-        store.set('sort', JSON.stringify({}));
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     setTableValue('page', 0);
@@ -143,11 +149,6 @@ export const OngoingCaseDataErrands: React.FC = () => {
     //       the browser will automatically scroll
     //       down to the button.
     setInitialFocus();
-    getMe()
-      .then((user) => {
-        setUser(user);
-      })
-      .catch((e) => {});
     setErrand(undefined);
     //eslint-disable-next-line
   }, [router]);
@@ -165,6 +166,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
 
   useDebounceEffect(
     () => {
+      if (!filterInitialized.current) return;
       const fObj: Record<string, string | boolean> = {};
       const extraFilterObj: Record<string, string> = {};
       if (priorityFilter && priorityFilter.length > 0) {
@@ -205,9 +207,12 @@ export const OngoingCaseDataErrands: React.FC = () => {
       if (stakeholderTypeFilter && stakeholderTypeFilter.length > 0) {
         fObj['stakeholderType'] = stakeholderTypeFilter.join(',');
       }
-      setFilterObject(fObj);
+      if (JSON.stringify(fObj) !== JSON.stringify(filterObject)) {
+        setFilterObject(fObj);
+      }
       setExtraFilter(extraFilterObj);
-      store.set('filter', JSON.stringify(fObj));
+      setSelectedErrandStatuses(statusFilter);
+      setStoredFilter(fObj);
     },
     200,
     [
@@ -228,7 +233,7 @@ export const OngoingCaseDataErrands: React.FC = () => {
 
   useDebounceEffect(
     () => {
-      store.set('sort', JSON.stringify(watchTable()));
+      setStoredSort(watchTable() as unknown as Record<string, string | number>);
     },
     200,
     [watchTable, sortObject, pageSize]

@@ -1,17 +1,19 @@
-import { useAppContext } from '@contexts/app.context';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import { useConfirm, useSnackbar, Button } from '@sk-web-gui/react';
+import { getToastOptions } from '@common/utils/toast-message-settings';
 import {
   getSupportErrandById,
   setSupportErrandStatus,
   shouldShowResumeErrandButton,
   Status,
 } from '@supportmanagement/services/support-errand-service';
-import { useState } from 'react';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 import { CirclePlay } from 'lucide-react';
+import { useState } from 'react';
 
 export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
-  const { municipalityId, supportErrand, setSupportErrand } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const confirm = useConfirm();
   const toastMessage = useSnackbar();
   const [isLoading, setIsLoading] = useState(false);

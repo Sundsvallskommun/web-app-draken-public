@@ -1,7 +1,8 @@
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Avatar, cx } from '@sk-web-gui/react';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
+import { FC } from 'react';
 type Notification = SupportNotification | CaseDataNotification;
 
 interface NotificationRenderIconProps {
@@ -24,7 +25,15 @@ const surfaceColor: Record<string, string> = {
   bjornstigen: 'bg-bjornstigen-surface-accent',
 };
 
-export const NotificationRenderIcon: React.FC<NotificationRenderIconProps> = ({ notification }) => {
+const textColor: Record<string, string> = {
+  juniskar: 'text-juniskar-surface-primary',
+  gronsta: 'text-gronsta-surface-primary',
+  vattjom: 'text-vattjom-surface-primary',
+  bjornstigen: 'text-bjornstigen-surface-primary',
+  primary: 'text-primary',
+};
+
+export const NotificationRenderIcon: FC<NotificationRenderIconProps> = ({ notification }) => {
   const config = iconConfig[notification.description as keyof typeof iconConfig] ?? iconConfig.default;
   const color = notification.acknowledged ? 'primary' : config.defaultColor;
   const bgColor = surfaceColor[color] ?? 'bg-tertiary-surface';
@@ -41,29 +50,14 @@ export const NotificationRenderIcon: React.FC<NotificationRenderIconProps> = ({ 
     );
   }
 
+  const iconColor = textColor[color] ?? 'text-primary';
+
   return (
-    <div className={cx(`w-[4rem] h-[4rem] rounded-12 flex items-center justify-center`, bgColor)}>
+    <div className={cx(`w-[4rem] h-[4rem] rounded-12 flex items-center justify-center`, bgColor, iconColor)}>
       {'icon' in config &&
         (() => {
           const DynIcon = iconMap[config.icon as string];
-          return DynIcon ? (
-            <DynIcon
-              color={
-                color as
-                  | 'gronsta'
-                  | 'juniskar'
-                  | 'vattjom'
-                  | 'primary'
-                  | 'error'
-                  | 'info'
-                  | 'success'
-                  | 'warning'
-                  | 'bjornstigen'
-                  | 'tertiary'
-              }
-              size="2.4rem"
-            />
-          ) : null;
+          return DynIcon ? <DynIcon size="2.4rem" /> : null;
         })()}
     </div>
   );

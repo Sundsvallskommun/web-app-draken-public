@@ -12,16 +12,16 @@
 
 /** Billing type model */
 export enum Type {
-  EXTERNAL = "EXTERNAL",
-  INTERNAL = "INTERNAL",
+  EXTERNAL = 'EXTERNAL',
+  INTERNAL = 'INTERNAL',
 }
 
 /** Billing status model */
 export enum Status {
-  NEW = "NEW",
-  APPROVED = "APPROVED",
-  INVOICED = "INVOICED",
-  REJECTED = "REJECTED",
+  NEW = 'NEW',
+  APPROVED = 'APPROVED',
+  INVOICED = 'INVOICED',
+  REJECTED = 'REJECTED',
 }
 
 export interface Problem {
@@ -237,24 +237,24 @@ export interface PageBillingRecord {
   content?: BillingRecord[];
   /** @format int32 */
   number?: number;
-  first?: boolean;
-  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
+  first?: boolean;
+  last?: boolean;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
   unpaged?: boolean;
 }
 
@@ -265,16 +265,16 @@ export interface SortObject {
 }
 
 export enum GetFileStatusesForMonthParamsMonthEnum {
-  JANUARY = "JANUARY",
-  FEBRUARY = "FEBRUARY",
-  MARCH = "MARCH",
-  APRIL = "APRIL",
-  MAY = "MAY",
-  JUNE = "JUNE",
-  JULY = "JULY",
-  AUGUST = "AUGUST",
-  SEPTEMBER = "SEPTEMBER",
-  OCTOBER = "OCTOBER",
-  NOVEMBER = "NOVEMBER",
-  DECEMBER = "DECEMBER",
+  JANUARY = 'JANUARY',
+  FEBRUARY = 'FEBRUARY',
+  MARCH = 'MARCH',
+  APRIL = 'APRIL',
+  MAY = 'MAY',
+  JUNE = 'JUNE',
+  JULY = 'JULY',
+  AUGUST = 'AUGUST',
+  SEPTEMBER = 'SEPTEMBER',
+  OCTOBER = 'OCTOBER',
+  NOVEMBER = 'NOVEMBER',
+  DECEMBER = 'DECEMBER',
 }

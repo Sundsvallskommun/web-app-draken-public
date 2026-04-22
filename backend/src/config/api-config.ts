@@ -6,7 +6,7 @@ export const APIS = [
   },
   {
     name: 'contract',
-    version: '6.0',
+    version: '7.0',
   },
   {
     name: 'citizen',
@@ -22,7 +22,7 @@ export const APIS = [
   },
   {
     name: 'templating',
-    version: '2.0',
+    version: '2.1',
   },
   {
     name: 'messaging',
@@ -30,7 +30,7 @@ export const APIS = [
   },
   {
     name: 'case-data',
-    version: '11.10',
+    version: '11.14',
   },
   {
     name: 'supportmanagement',
@@ -38,7 +38,11 @@ export const APIS = [
   },
   {
     name: 'billingpreprocessor',
-    version: '4.3',
+    version: '4.4',
+  },
+  {
+    name: 'billing-data-collector',
+    version: '1.1',
   },
   {
     name: 'legalentity',
@@ -54,7 +58,7 @@ export const APIS = [
   },
   {
     name: 'party',
-    version: '2.0',
+    version: '2.1',
   },
   {
     name: 'partyassets',

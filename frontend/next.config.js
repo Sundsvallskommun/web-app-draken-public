@@ -29,7 +29,7 @@ envalid.cleanEnv(process.env, {
 });
 
 module.exports = {
-  distDir: `.next${process.env.NEXT_PUBLIC_APPLICATION ? `-${process.env.NEXT_PUBLIC_APPLICATION}` : ''}`,
+  distDir: process.env.DOCKER_BUILD === 'true' ? '.next' : `.next${process.env.NEXT_PUBLIC_APPLICATION ? `-${process.env.NEXT_PUBLIC_APPLICATION}` : ''}`,
   output: 'standalone',
   images: {
     remotePatterns: process.env.DOMAIN_NAME ? [{ protocol: 'https', hostname: process.env.DOMAIN_NAME }] : [],
@@ -42,18 +42,18 @@ module.exports = {
   async rewrites() {
     return [{ source: '/napi/:path*', destination: '/api/:path*' }];
   },
-  //Note: This is a workaround for JS not working correctly when reloading a page.
-  async headers() {
-    return [
-      {
-        source: '/_next/static/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=0, must-revalidate',
-          },
-        ],
-      },
-    ];
-  },
+  // //Note: This is a workaround for JS not working correctly when reloading a page.
+  // async headers() {
+  //   return [
+  //     {
+  //       source: '/_next/static/:path*',
+  //       headers: [
+  //         {
+  //           key: 'Cache-Control',
+  //           value: 'public, max-age=0, must-revalidate',
+  //         },
+  //       ],
+  //     },
+  //   ];
+  // },
 };

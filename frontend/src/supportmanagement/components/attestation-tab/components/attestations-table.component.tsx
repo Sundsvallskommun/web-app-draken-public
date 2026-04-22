@@ -1,14 +1,14 @@
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { formatCurrency, maybe, prettyTime } from '@common/services/helper-service';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { useBillingStore, useConfigStore } from '@stores/index';
 import { Button, Input, Pagination, Select, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import { attestationLabels, billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
 import { findAttestationStatusLabelForAttestationStatusKey } from '@supportmanagement/services/support-errand-service';
 import NextLink from 'next/link';
-import { useState } from 'react';
+import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 export interface AttestationTableForm {
   sortOrder: 'asc' | 'desc';
@@ -20,12 +20,13 @@ export interface AttestationTableForm {
   pageSize: number;
 }
 
-export const AttestationsTable: React.FC<{
+export const AttestationsTable: FC<{
   setSelectedRecord: (record: CBillingRecord | undefined) => void;
   setShowSelectedRecord: (show: boolean) => void;
 }> = ({ setSelectedRecord, setShowSelectedRecord }) => {
   const { watch, setValue, register } = useFormContext<AttestationTableForm>();
-  const { municipalityId, billingRecords }: AppContextInterface = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const billingRecords = useBillingStore((s) => s.billingRecords);
   const [rowHeight, setRowHeight] = useState<string>('normal');
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');

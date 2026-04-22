@@ -6,31 +6,34 @@ Dessa APIer används i projektet, applikationsanvändaren i WSO2 måste prenumer
 
 För MEX (Mark och exploatering):
 
-| API             | Version |
-| --------------- | ------: |
-| ActiveDirectory |     2.0 |
-| Citizen         |     3.0 |
-| CaseData        |    11.5 |
-| Messaging       |    7.10 |
-| Templating      |     2.0 |
-| Contract        |     3.0 |
-| Employee        |     2.0 |
-| Party           |     2.0 |
-| SimulatorServer |     2.0 |
-| LegalEntity     |     2.0 |
-| Relations       |     1.1 |
-| CaseStatus      |     4.1 |
+| API                  | Version |
+| -------------------- | ------: |
+| ActiveDirectory      |     2.0 |
+| Citizen              |     3.0 |
+| CaseData             |   11.14 |
+| Messaging            |    7.10 |
+| Templating           |     2.1 |
+| Contract             |     7.0 |
+| Employee             |     2.0 |
+| Party                |     2.0 |
+| SimulatorServer      |     2.0 |
+| LegalEntity          |     2.0 |
+| Relations            |     1.1 |
+| CaseStatus           |     4.1 |
+| Estateinfo           |     2.2 |
+| BillingPreprocessor  |     4.4 |
+| BillingDataCollector |     1.1 |
 
 För KS (Kontakt Sundsvall):
 
 | API               | Version |
 | ----------------- | ------: |
-| CaseData          |    11.5 |
+| CaseData          |   11.14 |
 | SupportManagement |    12.3 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
-| Templating        |     2.0 |
-| Estateinfo        |     1.0 |
+| Templating        |     2.1 |
+| Estateinfo        |     2.2 |
 | Party             |     2.0 |
 | SimulatorServer   |     2.0 |
 | LegalEntity       |     2.0 |
@@ -44,10 +47,10 @@ För PT (Parkeringstillstånd):
 | --------------- | ------: |
 | ActiveDirectory |     2.0 |
 | Citizen         |     3.0 |
-| CaseData        |    11.5 |
+| CaseData        |   11.14 |
 | Messaging       |    7.10 |
-| Templating      |     2.0 |
-| Contract        |     2.1 |
+| Templating      |     2.1 |
+| Contract        |     7.0 |
 | Employee        |     2.0 |
 | SimulatorServer |     2.0 |
 | LegalEntity     |     2.0 |
@@ -63,7 +66,7 @@ För LOP (Lön och pension):
 | SupportManagement   |    12.3 |
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
-| Templating          |     2.0 |
+| Templating          |     2.1 |
 | LegalEntity         |     2.0 |
 | Employee            |     2.0 |
 | BillingPreprocessor |     4.0 |
@@ -80,7 +83,7 @@ För ROB (Rekrytering och bemanning):
 | LegalEntity         |     2.0 |
 | SimulatorServer     |     2.0 |
 | SupportManagement   |    12.3 |
-| Templating          |     2.0 |
+| Templating          |     2.1 |
 
 För KA (Kontakt Ånge):
 
@@ -89,7 +92,7 @@ För KA (Kontakt Ånge):
 | SupportManagement   |    12.3 |
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
-| Templating          |     2.0 |
+| Templating          |     2.1 |
 | LegalEntity         |     2.0 |
 | Employee            |     2.0 |
 | BillingPreprocessor |     4.0 |
@@ -102,7 +105,7 @@ För IK (Intern kundtjänst):
 | SupportManagement |    12.3 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
-| Templating        |     2.0 |
+| Templating        |     2.1 |
 | LegalEntity       |     2.0 |
 | Employee          |     2.0 |
 | SimulatorServer   |     2.0 |
@@ -114,7 +117,7 @@ För MSVA (MittSverige Vatten & avfall):
 | SupportManagement |    12.3 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
-| Templating        |     2.0 |
+| Templating        |     2.1 |
 | LegalEntity       |     2.0 |
 | Employee          |     2.0 |
 | SimulatorServer   |     2.0 |
@@ -126,7 +129,7 @@ För SE (Servicecenter Ekonomi):
 | SupportManagement |    12.3 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
-| Templating        |     2.0 |
+| Templating        |     2.1 |
 | LegalEntity       |     2.0 |
 | Employee          |     2.0 |
 | SimulatorServer   |     2.0 |

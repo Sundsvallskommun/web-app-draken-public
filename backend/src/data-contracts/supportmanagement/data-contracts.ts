@@ -12,23 +12,23 @@
 
 /** Type of event */
 export enum EventType {
-  CREATE = "CREATE",
-  UPDATE = "UPDATE",
-  DELETE = "DELETE",
-  UNKNOWN = "UNKNOWN",
+  CREATE = 'CREATE',
+  UPDATE = 'UPDATE',
+  DELETE = 'DELETE',
+  UNKNOWN = 'UNKNOWN',
 }
 
 /** ConversationType model */
 export enum ConversationType {
-  INTERNAL = "INTERNAL",
-  EXTERNAL = "EXTERNAL",
+  INTERNAL = 'INTERNAL',
+  EXTERNAL = 'EXTERNAL',
 }
 
 /** Priority model */
 export enum Priority {
-  LOW = "LOW",
-  MEDIUM = "MEDIUM",
-  HIGH = "HIGH",
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
 }
 
 export interface Problem {
@@ -282,6 +282,57 @@ export interface Role {
   modified?: string;
 }
 
+/** Phase model */
+export interface Phase {
+  /** Phase ID */
+  id?: string;
+  /**
+   * Phase name
+   * @minLength 1
+   */
+  name: string;
+  /** Display name for the phase */
+  displayName?: string;
+  /** Description of the phase */
+  description?: string;
+  /**
+   * Order of the phase in the process (0 = initial phase)
+   * @format int32
+   */
+  phaseOrder?: number;
+  /** Allowed statuses in this phase */
+  allowedStatuses?: string[];
+  /** Transitions from this phase */
+  transitions?: PhaseTransition[];
+  /**
+   * Timestamp when the phase was created
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * Timestamp when the phase was last modified
+   * @format date-time
+   */
+  modified?: string;
+}
+
+/** Phase transition model */
+export interface PhaseTransition {
+  /** Transition ID */
+  id?: string;
+  /**
+   * Target phase ID
+   * @minLength 1
+   */
+  targetPhaseId: string;
+  /** Target phase name */
+  targetPhaseName?: string;
+  /** Target phase display name */
+  targetPhaseDisplayName?: string;
+  /** Description of the transition */
+  description?: string;
+}
+
 /** ExternalIdType model */
 export interface ExternalIdType {
   /**
@@ -445,6 +496,10 @@ export interface Errand {
   businessRelated?: boolean;
   /** List of labels for the errand */
   labels?: ErrandLabel[];
+  /** Phase history for the errand */
+  phases?: ErrandPhase[];
+  /** Phase metadata ID to assign as the active phase on the errand */
+  activePhaseId?: string;
   /** List of active notifications for the errand */
   activeNotifications?: Notification[];
   /** List of pending actions for the errand */
@@ -497,6 +552,26 @@ export interface ErrandLabel {
   resourceName?: string;
 }
 
+/** Errand phase model */
+export interface ErrandPhase {
+  /** Phase metadata ID */
+  phaseId?: string;
+  /** Phase name */
+  name?: string;
+  /** Phase display name */
+  displayName?: string;
+  /**
+   * Timestamp when the errand entered this phase
+   * @format date-time
+   */
+  started?: string;
+  /**
+   * Timestamp when the errand left this phase
+   * @format date-time
+   */
+  ended?: string;
+}
+
 /** External tag model */
 export interface ExternalTag {
   /** Key for external tag */
@@ -515,9 +590,6 @@ export interface JsonNode {
   string?: boolean;
   boolean?: boolean;
   integralNumber?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -529,6 +601,9 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  missingNode?: boolean;
   nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
@@ -954,43 +1029,44 @@ export interface MetadataResponse {
   statuses?: Status[];
   roles?: Role[];
   contactReasons?: ContactReason[];
+  phases?: Phase[];
 }
 
 export interface PageErrand {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Errand[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  unpaged?: boolean;
-  sort?: SortObject;
 }
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 /** Revision model */
@@ -1120,21 +1196,21 @@ export interface EventMetaData {
 }
 
 export interface PageEvent {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Event[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1225,21 +1301,21 @@ export interface Message {
 }
 
 export interface PageMessage {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Message[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1275,32 +1351,32 @@ export interface CountResponse {
 }
 
 export enum JsonNodeNodeTypeEnum {
-  ARRAY = "ARRAY",
-  BINARY = "BINARY",
-  BOOLEAN = "BOOLEAN",
-  MISSING = "MISSING",
-  NULL = "NULL",
-  NUMBER = "NUMBER",
-  OBJECT = "OBJECT",
-  POJO = "POJO",
-  STRING = "STRING",
+  ARRAY = 'ARRAY',
+  BINARY = 'BINARY',
+  BOOLEAN = 'BOOLEAN',
+  MISSING = 'MISSING',
+  NULL = 'NULL',
+  NUMBER = 'NUMBER',
+  OBJECT = 'OBJECT',
+  POJO = 'POJO',
+  STRING = 'STRING',
 }
 
 /** If the communication is inbound or outbound from the perspective of case-data/e-service. */
 export enum CommunicationDirectionEnum {
-  INBOUND = "INBOUND",
-  OUTBOUND = "OUTBOUND",
+  INBOUND = 'INBOUND',
+  OUTBOUND = 'OUTBOUND',
 }
 
 /** The communication was delivered by */
 export enum CommunicationCommunicationTypeEnum {
-  SMS = "SMS",
-  EMAIL = "EMAIL",
-  WEB_MESSAGE = "WEB_MESSAGE",
+  SMS = 'SMS',
+  EMAIL = 'EMAIL',
+  WEB_MESSAGE = 'WEB_MESSAGE',
 }
 
 /** Type of message (user or system created) */
 export enum MessageTypeEnum {
-  USER_CREATED = "USER_CREATED",
-  SYSTEM_CREATED = "SYSTEM_CREATED",
+  USER_CREATED = 'USER_CREATED',
+  SYSTEM_CREATED = 'SYSTEM_CREATED',
 }

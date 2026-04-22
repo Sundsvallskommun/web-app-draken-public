@@ -1,6 +1,7 @@
 import { MessageNode } from '@casedata/services/casedata-message-service';
 import { Avatar } from '@sk-web-gui/react';
 import { Message } from '@supportmanagement/services/support-message-service';
+import { FC } from 'react';
 
 const getSenderInitials = (msg: MessageNode | Message): string => {
   if ('firstName' in msg && 'lastName' in msg) {
@@ -17,7 +18,7 @@ const getSenderInitials = (msg: MessageNode | Message): string => {
   return '@';
 };
 
-export const MessageAvatar: React.FC<{
+export const MessageAvatar: FC<{
   message: MessageNode | Message;
 }> = ({ message }) => {
   return (

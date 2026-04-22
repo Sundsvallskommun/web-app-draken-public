@@ -29,6 +29,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { apiService } from '@common/services/api-service';
 import escapeStringRegexp from 'escape-string-regexp';
+
 import { PROCESS_PARAMETER_KEYS } from './process-service';
 
 export const EXTRAPARAMETER_SEPARATOR = '@';
@@ -181,10 +182,13 @@ const template: ExtraParametersObject = {
 };
 
 export const getExtraParametersLabels = (caseType: string): { [key: string]: string } => {
-  return (template as Record<string, any>)[caseType]?.reduce((acc: Record<string, string>, field: { field: string; label: string }) => {
-    acc[field.field] = field.label;
-    return acc;
-  }, {} as Record<string, string>);
+  return (template as Record<string, any>)[caseType]?.reduce(
+    (acc: Record<string, string>, field: { field: string; label: string }) => {
+      acc[field.field] = field.label;
+      return acc;
+    },
+    {} as Record<string, string>
+  );
 };
 
 export const extraParametersToUppgiftMapper: (errand: IErrand) => UppgiftField[] = (errand) => {

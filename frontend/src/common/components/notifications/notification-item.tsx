@@ -6,15 +6,17 @@ import { Notification as CaseDataNotification } from '@common/data-contracts/cas
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { prettyTime } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import { Checkbox, cx, useSnackbar } from '@sk-web-gui/react';
 import {
   acknowledgeSupportNotification,
   getSupportNotifications,
 } from '@supportmanagement/services/support-notification-service';
 import NextLink from 'next/link';
+import { FC } from 'react';
+
 import { NotificationRenderIcon } from './notification-render-icon';
-import { NotificationType, getNotificationKey, labelBySubType, senderFallback } from './notification-utils';
+import { getNotificationKey, labelBySubType, NotificationType, senderFallback } from './notification-utils';
 
 interface NotificationItemProps {
   notification: NotificationType;
@@ -23,13 +25,14 @@ interface NotificationItemProps {
   showCheckbox?: boolean;
 }
 
-export const NotificationItem: React.FC<NotificationItemProps> = ({
+export const NotificationItem: FC<NotificationItemProps> = ({
   notification,
   isSelected = false,
   onToggleSelect,
   showCheckbox = false,
 }) => {
-  const { municipalityId, setNotifications }: AppContextInterface = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const setNotifications = useSupportStore((s) => s.setNotifications);
   const toastMessage = useSnackbar();
 
   const handleAcknowledge = async () => {

@@ -6,12 +6,13 @@ import { Priority } from '@casedata/interfaces/priority';
 import { Stakeholder } from '@casedata/interfaces/stakeholder';
 import { defaultMunicipality, getCaseLabels, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { LinkedErrandsDisclosure } from '@common/components/linked-errands-disclosure/linked-errands-disclosure.component';
-import { useAppContext } from '@common/contexts/app.context';
+import { useConfigStore } from '@stores/index';
 import { appConfig } from '@config/appconfig';
 import { cx, Disclosure, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { CircleAlert } from 'lucide-react';
-import { Dispatch, SetStateAction, useEffect } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+
 import { CasedataContactsComponent } from './casedata-contacts.component';
 export interface CasedataFormModel {
   id: string;
@@ -33,13 +34,14 @@ interface CasedataFormProps {
   setFormIsValid: Dispatch<SetStateAction<boolean>>;
 }
 
-const CasedataForm: React.FC<CasedataFormProps> = ({
+const CasedataForm: FC<CasedataFormProps> = ({
   errand,
   setUnsaved = () => {},
   registeringNewErrand,
   setFormIsValid,
 }) => {
-  const { municipalityId, setMunicipalityId } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const setMunicipalityId = useConfigStore((s) => s.setMunicipalityId);
 
   useEffect(() => {
     if (errand) {

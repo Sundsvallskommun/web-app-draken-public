@@ -1,12 +1,11 @@
 import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
-import { useAppContext } from '@contexts/app.context';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
+import { useMetadataStore } from '@stores/index';
 import { getLabelTypeFromDisplayName } from '@supportmanagement/services/support-errand-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useEffect, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { FC, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
-import { ChevronDown } from 'lucide-react';
 
 export interface LabelSubTypeFilter {
   labelSubType: string[];
@@ -16,17 +15,16 @@ export const LabelSubTypeValues: LabelSubTypeFilter = {
   labelSubType: [],
 };
 
-export const SupportManagementFilterLabelSubType: React.FC = () => {
+export const SupportManagementFilterLabelSubType: FC = () => {
   const { watch, setValue } = useFormContext<SupportManagementFilter>();
   const labelCategories = watch('labelCategory');
   const labelTypes = watch('labelType');
   const labelSubTypes = watch('labelSubType');
   const { register } = useFormContext<LabelSubTypeFilter>();
   const [query, setQuery] = useState<string>('');
-  const [allStringSubTypes, setAllStringSubTypes] = useState<string[]>();
-  const { supportMetadata } = useAppContext();
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
 
-  useEffect(() => {
+  const allStringSubTypes = useMemo(() => {
     const _subTypes: Label[] = [];
     if (labelTypes.length > 0) {
       labelTypes?.forEach((typeDisplayName) => {
@@ -58,11 +56,7 @@ export const SupportManagementFilterLabelSubType: React.FC = () => {
         });
       });
     }
-    // We need a list of displayNames, not objects and not names since the
-    // labelSubType filter works with the displayName and not the names of the types
-    //
-    // See comment in ongoing-support-errands.component.tsx for more information
-    setAllStringSubTypes(Array.from(new Set(_subTypes.map((l) => l.displayName).filter((d): d is string => d !== undefined))));
+    return Array.from(new Set(_subTypes.map((l) => l.displayName).filter((d): d is string => d !== undefined)));
   }, [supportMetadata, labelCategories, labelTypes]);
 
   return (

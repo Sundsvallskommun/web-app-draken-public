@@ -2,7 +2,7 @@ import { ContactModal } from '@casedata/components/errand/forms/contact-modal.co
 import { Channels } from '@casedata/interfaces/channels';
 import { Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore } from '@stores/index';
 import { isValidOrgNumber } from '@common/services/adress-service';
 import {
   invalidOrgNumberMessage,
@@ -17,14 +17,15 @@ import {
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, Input } from '@sk-web-gui/react';
-import { useEffect, useState } from 'react';
+import { Pen } from 'lucide-react';
+import { FC, useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { v4 as uuidv4 } from 'uuid';
 import * as yup from 'yup';
+
 import { ContactSearchField } from './contact-search-field.component';
 import { SearchModeSelector } from './search-mode-selector.component';
 import { SearchResult } from './search-result.component';
-import { Pen } from 'lucide-react';
 
 const emptyContact: CasedataOwnerOrContact = {
   id: '',
@@ -57,7 +58,7 @@ export const createEmptyContact = (role: Role = Role.CONTACT_PERSON): CasedataOw
   clientId: uuidv4(),
 });
 
-export const SimplifiedContactForm: React.FC<{
+export const SimplifiedContactForm: FC<{
   allowOrganization?: boolean;
   contact: CasedataOwnerOrContact;
   setUnsaved: (unsaved: boolean) => void;
@@ -186,7 +187,7 @@ export const SimplifiedContactForm: React.FC<{
     ]
   );
 
-  const { errand } = useAppContext();
+  const errand = useCasedataStore((s) => s.errand);
   const [searchMode, setSearchMode] = useState('person');
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);

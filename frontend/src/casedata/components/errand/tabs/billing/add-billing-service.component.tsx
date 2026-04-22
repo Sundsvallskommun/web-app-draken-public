@@ -1,8 +1,8 @@
 import { BillingServiceItem } from '@casedata/interfaces/billing';
-import { calculateServiceTotal } from '@casedata/services/casedata-billing-service';
 import { casedataInvoiceSettings, CasedataService } from '@casedata/services/billing/casedata-invoice-settings';
-import { Button, FormControl, FormLabel, Input, Select, Textarea } from '@sk-web-gui/react';
-import { useEffect, useState } from 'react';
+import { calculateServiceTotal } from '@casedata/services/casedata-billing-service';
+import { Button, FormControl, FormLabel, Input, Select } from '@sk-web-gui/react';
+import { FC, useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface AddBillingServiceProps {
@@ -13,8 +13,8 @@ interface AddBillingServiceProps {
 
 const emptyFormState = {
   selectedServiceId: '',
-  quantity: 1,
-  costPerUnit: 0,
+  quantity: 1 as number | '',
+  costPerUnit: 0 as number | '',
   costCenter: '',
   subaccount: '',
   department: '',
@@ -22,18 +22,25 @@ const emptyFormState = {
   project: '',
   object: '',
   counterpart: '',
-  avitext: '',
+  beskrivning: '',
+  descriptions: ['', '', ''] as string[],
 };
 
-export const AddBillingService: React.FC<AddBillingServiceProps> = ({ onSave, onCancel, editingService }) => {
+export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel, editingService }) => {
   const [formState, setFormState] = useState(emptyFormState);
   const [selectedService, setSelectedService] = useState<CasedataService | null>(null);
 
   const isEditing = !!editingService;
 
+  const resetForm = () => {
+    setFormState(emptyFormState);
+    setSelectedService(null);
+  };
+
   useEffect(() => {
     if (editingService) {
       const service = casedataInvoiceSettings.services.find((s) => s.id === editingService.serviceId);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedService(service || null);
       setFormState({
         selectedServiceId: editingService.serviceId,
@@ -46,7 +53,12 @@ export const AddBillingService: React.FC<AddBillingServiceProps> = ({ onSave, on
         project: editingService.accountInformation.project || '',
         object: editingService.accountInformation.object || '',
         counterpart: editingService.accountInformation.counterpart || '',
-        avitext: editingService.avitext || '',
+        beskrivning: editingService.description || '',
+        descriptions: [
+          editingService.descriptions?.[0] || '',
+          editingService.descriptions?.[1] || '',
+          editingService.descriptions?.[2] || '',
+        ],
       });
     } else {
       resetForm();
@@ -66,8 +78,10 @@ export const AddBillingService: React.FC<AddBillingServiceProps> = ({ onSave, on
         department: service.accountInformation.department || '',
         activity: service.accountInformation.activity || '',
         project: service.accountInformation.project || '',
-        counterpart: service.accountInformation.counterpart || casedataInvoiceSettings.counterpart || '',
+        counterpart: service.accountInformation.counterpart || '00000000',
         object: service.accountInformation.object || '',
+        beskrivning: service.description || '',
+        descriptions: [service.detailedDescriptions?.[0] || '', formState.descriptions[1], formState.descriptions[2]],
       });
     }
   };
@@ -80,22 +94,24 @@ export const AddBillingService: React.FC<AddBillingServiceProps> = ({ onSave, on
   };
 
   const handleSave = () => {
-    if (!selectedService || formState.quantity <= 0) {
+    const quantity = formState.quantity === '' ? 0 : formState.quantity;
+    const costPerUnit = formState.costPerUnit === '' ? 0 : formState.costPerUnit;
+
+    if (!selectedService || quantity <= 0) {
       return;
     }
 
-    const totalAmount = calculateServiceTotal(formState.quantity, formState.costPerUnit);
+    const totalAmount = calculateServiceTotal(quantity, costPerUnit);
 
     const serviceItem: BillingServiceItem = {
       id: editingService?.id || uuidv4(),
       serviceId: selectedService.id,
       name: selectedService.name,
-      description: selectedService.description,
-      quantity: formState.quantity,
-      costPerUnit: formState.costPerUnit,
+      description: formState.beskrivning,
+      quantity,
+      costPerUnit,
       totalAmount,
-      unit: selectedService.unit,
-      avitext: formState.avitext,
+      descriptions: formState.descriptions,
       accountInformation: {
         costCenter: formState.costCenter,
         subaccount: formState.subaccount,
@@ -111,11 +127,6 @@ export const AddBillingService: React.FC<AddBillingServiceProps> = ({ onSave, on
     resetForm();
   };
 
-  const resetForm = () => {
-    setFormState(emptyFormState);
-    setSelectedService(null);
-  };
-
   const handleCancel = () => {
     resetForm();
     onCancel();
@@ -123,11 +134,11 @@ export const AddBillingService: React.FC<AddBillingServiceProps> = ({ onSave, on
 
   return (
     <div className="flex flex-col gap-16 bg-background-color-mixin-1 p-18">
-      <div className="flex flex-row w-full gap-16">
-        <FormControl className="w-full">
+      <div>
+        <FormControl className="w-fit">
           <FormLabel>Tjänst</FormLabel>
           <Select
-            className="w-full"
+            className="w-fit"
             value={formState.selectedServiceId}
             onChange={(e) => handleServiceChange(e.target.value)}
           >
@@ -139,6 +150,12 @@ export const AddBillingService: React.FC<AddBillingServiceProps> = ({ onSave, on
             ))}
           </Select>
         </FormControl>
+      </div>
+      <div className="flex flex-row w-full gap-16">
+        <FormControl className="w-full">
+          <FormLabel>Beskrivning</FormLabel>
+          <Input value={formState.beskrivning} onChange={(e) => handleInputChange('beskrivning', e.target.value)} />
+        </FormControl>
         <FormControl className="w-full">
           <FormLabel>Antal</FormLabel>
           <Input
@@ -146,7 +163,7 @@ export const AddBillingService: React.FC<AddBillingServiceProps> = ({ onSave, on
             min={0}
             step={0.01}
             value={formState.quantity}
-            onChange={(e) => handleInputChange('quantity', parseFloat(e.target.value) || 0)}
+            onChange={(e) => handleInputChange('quantity', e.target.value === '' ? '' : parseFloat(e.target.value))}
           />
         </FormControl>
         <FormControl className="w-full">
@@ -156,14 +173,14 @@ export const AddBillingService: React.FC<AddBillingServiceProps> = ({ onSave, on
             min={0}
             step={0.01}
             value={formState.costPerUnit}
-            onChange={(e) => handleInputChange('costPerUnit', parseFloat(e.target.value) || 0)}
+            onChange={(e) => handleInputChange('costPerUnit', e.target.value === '' ? '' : parseFloat(e.target.value))}
             disabled={selectedService?.fixedPrice}
           />
         </FormControl>
       </div>
       <div className="flex flex-row w-full gap-16">
         <FormControl className="w-full">
-          <FormLabel>Kostnadsställe</FormLabel>
+          <FormLabel>Ansvar</FormLabel>
           <Input value={formState.costCenter} onChange={(e) => handleInputChange('costCenter', e.target.value)} />
         </FormControl>
         <FormControl className="w-full">
@@ -189,14 +206,39 @@ export const AddBillingService: React.FC<AddBillingServiceProps> = ({ onSave, on
           <Input value={formState.object} onChange={(e) => handleInputChange('object', e.target.value)} />
         </FormControl>
       </div>
-      <div className="w-full">
+      <div className="flex flex-col w-full gap-16">
         <FormControl className="w-full">
-          <FormLabel>Avitext</FormLabel>
-          <Textarea
-            className="w-full"
-            rows={3}
-            value={formState.avitext}
-            onChange={(e) => handleInputChange('avitext', e.target.value)}
+          <FormLabel>Utökad beskrivning</FormLabel>
+          <Input
+            maxLength={51}
+            value={formState.descriptions[0]}
+            onChange={(e) => {
+              const updated = [...formState.descriptions];
+              updated[0] = e.target.value;
+              setFormState((prev) => ({ ...prev, descriptions: updated }));
+            }}
+          />
+        </FormControl>
+        <FormControl className="w-full">
+          <Input
+            maxLength={51}
+            value={formState.descriptions[1]}
+            onChange={(e) => {
+              const updated = [...formState.descriptions];
+              updated[1] = e.target.value;
+              setFormState((prev) => ({ ...prev, descriptions: updated }));
+            }}
+          />
+        </FormControl>
+        <FormControl className="w-full">
+          <Input
+            maxLength={51}
+            value={formState.descriptions[2]}
+            onChange={(e) => {
+              const updated = [...formState.descriptions];
+              updated[2] = e.target.value;
+              setFormState((prev) => ({ ...prev, descriptions: updated }));
+            }}
           />
         </FormControl>
       </div>
@@ -204,7 +246,7 @@ export const AddBillingService: React.FC<AddBillingServiceProps> = ({ onSave, on
         <Button variant="secondary" onClick={handleCancel}>
           Avbryt
         </Button>
-        <Button onClick={handleSave} disabled={!selectedService || formState.quantity <= 0} color={'vattjom'}>
+        <Button onClick={handleSave} disabled={!selectedService || !formState.quantity} color={'vattjom'}>
           {isEditing ? 'Spara' : 'Lägg till'}
         </Button>
       </div>

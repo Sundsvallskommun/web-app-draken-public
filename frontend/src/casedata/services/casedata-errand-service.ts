@@ -20,10 +20,12 @@ import {
 } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 import { All, ApiPriority, Priority } from '@casedata/interfaces/priority';
+import { Role } from '@casedata/interfaces/role';
 import {
-  MAX_FILE_SIZE_MB,
   fetchErrandAttachments,
+  MAX_FILE_SIZE_MB,
   validateAttachmentsForDecision,
 } from '@casedata/services/casedata-attachment-service';
 import {
@@ -31,16 +33,15 @@ import {
   makeStakeholdersList,
   stakeholder2Contact,
 } from '@casedata/services/casedata-stakeholder-service';
-
-import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
-import { Role } from '@casedata/interfaces/role';
 import { User } from '@common/interfaces/user';
 import { getApplicationEnvironment, isMEX, isPT } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
-import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useUiSettingsStore } from '@stores/ui-settings-store';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
+
 import { ApiResponse, apiService } from '../../common/services/api-service';
 import { saveErrandNote } from './casedata-errand-notes-service';
 import { extraParametersToUppgiftMapper } from './casedata-extra-parameters-service';
@@ -392,20 +393,18 @@ export const useErrands = (
   extraParameters?: { [key: string]: string }
 ): ErrandsData => {
   const toastMessage = useSnackbar();
-  const {
-    setIsLoading,
-    setErrands,
-    setNewErrands,
-    setOngoingErrands,
-    setSuspendedErrands,
-    setAssignedErrands,
-    setClosedErrands,
-    errands,
-    newErrands,
-    ongoingErrands,
-    closedErrands,
-    suspendedErrands,
-  } = useAppContext();
+  const setIsLoading = useConfigStore((s) => s.setIsLoading);
+  const setErrands = useCasedataStore((s) => s.setErrands);
+  const setNewErrands = useUiSettingsStore((s) => s.setNewErrands);
+  const setOngoingErrands = useUiSettingsStore((s) => s.setOngoingErrands);
+  const setSuspendedErrands = useUiSettingsStore((s) => s.setSuspendedErrands);
+  const setAssignedErrands = useUiSettingsStore((s) => s.setAssignedErrands);
+  const setClosedErrands = useUiSettingsStore((s) => s.setClosedErrands);
+  const errands = useCasedataStore((s) => s.errands);
+  const newErrands = useUiSettingsStore((s) => s.newErrands);
+  const ongoingErrands = useUiSettingsStore((s) => s.ongoingErrands);
+  const closedErrands = useUiSettingsStore((s) => s.closedErrands);
+  const suspendedErrands = useUiSettingsStore((s) => s.suspendedErrands);
 
   const fetchErrands = useCallback(
     async (page: number = 0) => {
@@ -583,7 +582,7 @@ export const useErrands = (
   }, [filter, size, sort]);
 
   useEffect(() => {
-    if (page !== errands.page) fetchErrands(page).then(() => setIsLoading(false));
+    if (errands.page !== undefined && page !== errands.page) fetchErrands(page).then(() => setIsLoading(false));
     //eslint-disable-next-line
   }, [page]);
 

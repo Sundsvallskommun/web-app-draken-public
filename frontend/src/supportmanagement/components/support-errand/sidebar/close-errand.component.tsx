@@ -2,26 +2,26 @@ import { isIK, isKA, isLOP, isROB, isSE } from '@common/services/application-ser
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { Button, Checkbox, FormControl, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
 import {
+  closeSupportErrand,
+  getSupportErrandById,
   Resolution,
   ResolutionLabelIK,
   ResolutionLabelKA,
   ResolutionLabelKS,
   ResolutionLabelLOP,
   ResolutionLabelROB,
+  setSupportErrandStatus,
   Status,
   SupportErrand,
-  closeSupportErrand,
-  getSupportErrandById,
-  setSupportErrandStatus,
 } from '@supportmanagement/services/support-errand-service';
 import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
 import { applicantHasContactChannel, getAdminName } from '@supportmanagement/services/support-stakeholder-service';
 import { ArrowRight, Check } from 'lucide-react';
-import { useState } from 'react';
-import { UseFormReturn, useFormContext } from 'react-hook-form';
+import { FC, useState } from 'react';
+import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 const getResolutionLabels = (): Record<string, string> => {
   if (isLOP()) return ResolutionLabelLOP;
@@ -42,7 +42,10 @@ const getDefaultResolution = (errand: SupportErrand | undefined): Resolution => 
 };
 
 export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
-  const { administrators, municipalityId, supportErrand, setSupportErrand } = useAppContext();
+  const administrators = useUserStore((s) => s.administrators);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -197,7 +200,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
                   <Checkbox
                     id="closingmessagecheckbox"
                     disabled={!applicantHasContactChannel(supportErrand!)}
-                    data-cy="show-contactReasonDescription-input"
+                    data-cy="show-closing-message-input"
                     className="w-full"
                     checked={applicantHasContactChannel(supportErrand!) && closingMessage}
                     onChange={() => setClosingMessage(!closingMessage)}

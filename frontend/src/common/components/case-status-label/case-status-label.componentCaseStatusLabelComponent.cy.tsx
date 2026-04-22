@@ -1,8 +1,9 @@
 // 'use client';
 
-import React from 'react';
-import { CaseStatusLabelComponent } from './case-status-label.component';
 import { mockErrand_base } from '@cypress/e2e/case-data/fixtures/mockErrand';
+import React from 'react';
+
+import { CaseStatusLabelComponent } from './case-status-label.component';
 
 describe('<CaseStatusLabelComponent />', () => {
   it('renders', () => {

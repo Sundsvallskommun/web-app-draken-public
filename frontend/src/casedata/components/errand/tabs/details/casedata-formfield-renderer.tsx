@@ -8,16 +8,17 @@ import { resolveDateTimeToken, resolveDateToken } from '@casedata/utils/date-str
 import {
   Checkbox,
   Combobox,
+  cx,
   FormControl,
   FormLabel,
   Input,
   RadioButton,
   Select,
   Textarea,
-  cx,
 } from '@sk-web-gui/react';
-import React, { useMemo, useState } from 'react';
-import { UseFormReturn, get } from 'react-hook-form';
+import { ComponentProps, FC, useMemo, useState } from 'react';
+import { get, UseFormReturn } from 'react-hook-form';
+
 import { RepeatableFieldGroup } from './repeatable-field-group';
 
 interface Props {
@@ -27,7 +28,7 @@ interface Props {
   errand: any;
 }
 
-const getInputProps = (detail: UppgiftField): Partial<React.ComponentProps<typeof Input>> => {
+const getInputProps = (detail: UppgiftField): Partial<ComponentProps<typeof Input>> => {
   switch (detail.formField.type) {
     case 'date': {
       const opts = detail.formField.options ?? {};
@@ -45,7 +46,7 @@ const getInputProps = (detail: UppgiftField): Partial<React.ComponentProps<typeo
     }
     case 'text': {
       const opts = detail.formField.options ?? {};
-      const p: Partial<React.ComponentProps<typeof Input>> = {};
+      const p: Partial<ComponentProps<typeof Input>> = {};
 
       if (opts.placeholder) p.placeholder = opts.placeholder;
       if (opts.minLength !== undefined) p.minLength = opts.minLength;
@@ -111,7 +112,7 @@ function getConditionalValidationRules(
   };
 }
 
-export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, errand }) => {
+export const CasedataFormFieldRenderer: FC<Props> = ({ detail, idx, form, errand }) => {
   //TODO: Refactor this component and use a general form for extraparameters instead of hijacking IErrand form.
   //      Refactoring of this component should include better rendering from parent component to elimit rerenderings.
   const [initialComboBoxValue] = useState<string | string[]>(detail.value);
@@ -221,7 +222,12 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
 
       {detail.formField.type === 'select' && (
         <>
-          <Select {...register(fieldKey, validationRules)} className="w-full" data-cy={`${detail.field}-select`} readOnly={isDisabled}>
+          <Select
+            {...register(fieldKey, validationRules)}
+            className="w-full"
+            data-cy={`${detail.field}-select`}
+            readOnly={isDisabled}
+          >
             <Select.Option value="">Välj</Select.Option>
             {detail.formField.options.map((o, i) => (
               <Select.Option key={`${o}-${i}`} value={o.value}>
@@ -249,17 +255,24 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
       {detail.formField.type === 'radio' && (
         <>
           <RadioButton.Group
-            defaultValue={getValues(detail.field)}
+            name={fieldKey}
+            value={allFormValues[fieldKey] ?? ''}
             data-cy={`${detail.field}-radio-button-group`}
             inline={!!detail.formField.inline}
           >
             {detail.formField.options.map((option, i) => (
               <RadioButton
                 value={option.value}
-                {...register(fieldKey, validationRules)}
+                name={fieldKey}
                 key={`${option}-${i}`}
                 data-cy={`${detail.field}-radio-button-${i}`}
                 readOnly={isDisabled}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setValue(fieldKey, e.target.value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }}
               >
                 {option.label}
               </RadioButton>

@@ -1,38 +1,72 @@
-import {
-  BillingFormData,
-  BillingRecipient,
-  BillingServiceItem,
-  emptyBillingFormData,
-} from '@casedata/interfaces/billing';
+import { BillingFormData, BillingServiceItem, emptyBillingFormData } from '@casedata/interfaces/billing';
+import { Role } from '@casedata/interfaces/role';
 import {
   getCasedataBillingRecordsForErrand,
   saveCasedataBillingRecord,
 } from '@casedata/services/casedata-billing-service';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
-import { useAppContext } from '@contexts/app.context';
-import { Button, Divider, useSnackbar } from '@sk-web-gui/react';
+import { yupResolver } from '@hookform/resolvers/yup';
+import { Button, Divider, FormErrorMessage, useSnackbar } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { Plus } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
+import * as yup from 'yup';
+
 import { AddBillingService } from './add-billing-service.component';
 import { BillingLeaseholder } from './billing-leaseholder.component';
 import { BillingServiceTable } from './billing-service-table.component';
 import { BillingSpecifications } from './billing-specifications.component';
 import { BillingTable } from './billing-table.component';
-import { Plus } from 'lucide-react';
+
+const billingSchema = yup.object({
+  specifications: yup.object({
+    ourReference: yup.string().required('Vår referens måste anges'),
+    customerReference: yup.string().required('Kundens referens måste anges'),
+    avitext: yup.string().required('Avitext måste anges'),
+    rejectionDate: yup.string().test('not-past', 'Aviseringsdatum kan inte vara i det förflutna', (value) => {
+      if (!value) return true;
+      const today = new Date().toISOString().split('T')[0];
+      return value >= today;
+    }),
+    selectedFacilities: yup.array().of(yup.string()),
+  }),
+  services: yup.array().min(1, 'Lägg till minst en kontering'),
+  recipient: yup
+    .object({
+      name: yup.string(),
+      organizationName: yup.string(),
+      personId: yup.string(),
+      personalNumber: yup.mixed(),
+      organizationNumber: yup.string(),
+      address: yup.string().required('Fakturamottagare saknar gatuadress'),
+      postalCode: yup.string().required('Fakturamottagare saknar postnummer'),
+      city: yup.string().required('Fakturamottagare saknar ort'),
+      role: yup.string(),
+    })
+    .test('has-id', 'Fakturamottagare saknar personnummer/organisationsnummer', (value) => {
+      return !!(value?.organizationNumber || value?.personId);
+    })
+    .required('Välj en fakturamottagare'),
+});
 
 export const CaseDataBillingForm: React.FC = () => {
-  const { errand, municipalityId, user, setErrand } = useAppContext();
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
   const toastMessage = useSnackbar();
 
   const [billingRecords, setBillingRecords] = useState<CBillingRecord[]>([]);
-  const [recipient, setRecipient] = useState<BillingRecipient | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
 
   const form = useForm<BillingFormData>({
+    resolver: yupResolver(billingSchema) as any,
+    mode: 'onSubmit',
     defaultValues: {
       ...emptyBillingFormData,
       specifications: {
@@ -42,7 +76,12 @@ export const CaseDataBillingForm: React.FC = () => {
     },
   });
 
-  const { reset, watch, setValue } = form;
+  const {
+    reset,
+    watch,
+    setValue,
+    formState: { errors },
+  } = form;
   const services = watch('services');
 
   const refreshErrand = useCallback(async () => {
@@ -109,64 +148,13 @@ export const CaseDataBillingForm: React.FC = () => {
     );
   };
 
-  const onSubmit = async () => {
-    const data = form.getValues();
-    if (!errand) return;
-
-    if (data.services.length === 0) {
-      toastMessage({
-        position: 'bottom',
-        closeable: true,
-        message: 'Lägg till minst en tjänst innan du skapar faktura',
-        status: 'error',
-      });
-      return;
-    }
-
-    if (!data.specifications.customerReference) {
-      toastMessage({
-        position: 'bottom',
-        closeable: true,
-        message: 'Ange kundens referens',
-        status: 'error',
-      });
-      return;
-    }
-
-    if (!recipient) {
-      toastMessage({
-        position: 'bottom',
-        closeable: true,
-        message: 'Välj en fakturamottagare.',
-        status: 'error',
-      });
-      return;
-    }
-
-    if (!recipient.organizationNumber && !recipient.personId) {
-      toastMessage({
-        position: 'bottom',
-        closeable: true,
-        message: 'Fakturamottagare saknar personnummer/organisationsnummer.',
-        status: 'error',
-      });
-      return;
-    }
-
-    if (!recipient.address || !recipient.postalCode || !recipient.city) {
-      toastMessage({
-        position: 'bottom',
-        closeable: true,
-        message: 'Fakturamottagare saknar komplett adress (gatuadress, postnummer och ort).',
-        status: 'error',
-      });
-      return;
-    }
+  const onSubmit = async (data: BillingFormData) => {
+    if (!errand || !data.recipient) return;
 
     setIsLoading(true);
 
     try {
-      const resolvedRecipient = { ...recipient };
+      const resolvedRecipient = { ...data.recipient };
       if (!resolvedRecipient.organizationNumber && resolvedRecipient.personId) {
         try {
           resolvedRecipient.personalNumber = await getSSNFromPersonId(municipalityId, resolvedRecipient.personId);
@@ -220,6 +208,36 @@ export const CaseDataBillingForm: React.FC = () => {
 
   if (!errand) return null;
 
+  const hasStakeholders = (errand.stakeholders || []).filter((s) => !s.roles.includes(Role.ADMINISTRATOR)).length > 0;
+
+  if (!hasStakeholders) {
+    return (
+      <div className="w-full py-24 px-32">
+        <h2 className="text-h4-sm md:text-h4-md">Engångsfakturering</h2>
+        <div className="flex flex-col mt-40">
+          <span className="text-label-large">Ärendet saknar parter</span>
+          <div className="flex flex-row">
+            <span>Lägg till minst en ärendeägare eller intressent under&nbsp;</span>
+            <span className="underline">Grunduppgifter</span>
+            <span>&nbsp;för att kunna skapa en engångsfaktura.</span>
+          </div>
+        </div>
+        {billingRecords.length > 0 && (
+          <div className="flex flex-col pt-24">
+            <h3 className="text-h3-md pb-6">Skapade fakturaunderlag</h3>
+            <span className="pb-16">Aviserade fakturor kommer att visas i avtalsöversikten</span>
+            <BillingTable
+              errand={errand!}
+              billingRecords={billingRecords}
+              onDeleteRecord={handleDeleteBillingRecord}
+              onUpdateRecord={handleUpdateBillingRecord}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <FormProvider {...form}>
       <div className="w-full py-24 px-32">
@@ -227,12 +245,12 @@ export const CaseDataBillingForm: React.FC = () => {
           <div className="w-full flex flex-col gap-32">
             <h2 className="text-h4-sm md:text-h4-md">Engångsfakturering</h2>
             <Divider.Section>Fakturaspecifikationer</Divider.Section>
-            <BillingLeaseholder onSelectRecipient={setRecipient} />
+            <BillingLeaseholder onSelectRecipient={(r) => setValue('recipient', r)} />
             <div>
               <BillingSpecifications />
             </div>
             <div>
-              <Divider.Section>Fakturarader</Divider.Section>
+              <Divider.Section>Kontering</Divider.Section>
             </div>
             <div>
               <BillingServiceTable
@@ -253,22 +271,19 @@ export const CaseDataBillingForm: React.FC = () => {
                   onClick={handleStartAddNew}
                   disabled={isEditingOrAdding}
                 >
-                  Ny fakturarad
+                  Ny kontering
                 </Button>
               )}
+              {errors.services && <FormErrorMessage className="mt-8">{errors.services.message}</FormErrorMessage>}
             </div>
             <div>
-              <Button
-                onClick={onSubmit}
-                loading={isLoading}
-                disabled={services.length === 0 || isEditingOrAdding}
-                color={'vattjom'}
-              >
+              <Button onClick={form.handleSubmit(onSubmit)} loading={isLoading} disabled={isLoading} color={'vattjom'}>
                 Skapa fakturaunderlag
               </Button>
             </div>
             <div className="flex flex-col pt-24">
-              <h3 className="text-h3-md pb-16">Skapade fakturaunderlag</h3>
+              <h3 className="text-h3-md pb-6">Skapade fakturaunderlag</h3>
+              <span className="pb-16">Aviserade fakturor kommer att visas i avtalsöversikten</span>
               <BillingTable
                 errand={errand!}
                 billingRecords={billingRecords}

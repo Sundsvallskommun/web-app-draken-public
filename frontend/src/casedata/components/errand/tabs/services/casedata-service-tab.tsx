@@ -15,10 +15,11 @@ import { ServicesObjectFieldTemplate } from '@common/components/json/fields/serv
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { getLatestRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore, useConfigStore } from '@stores/index';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { Modal, useSnackbar } from '@sk-web-gui/react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { FC, useCallback, useEffect, useMemo, useState } from 'react';
+
 import { ServiceListComponent } from './casedata-service-list.component';
 import { useErrandServices } from './useErrandService';
 
@@ -53,7 +54,8 @@ function filterSchemaByCase(schema: RJSFSchema | null, caseType: string): RJSFSc
 }
 
 export const CasedataServicesTab: React.FC = () => {
-  const { municipalityId, errand } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
   const [schema, setSchema] = useState<RJSFSchema | null>(null);
   const [uiSchema, setUiSchema] = useState<UiSchema | null>(null);
   const [formData, setFormData] = useState<any>({});
@@ -145,12 +147,7 @@ export const CasedataServicesTab: React.FC = () => {
           await updateAsset(
             municipalityId,
             existingFull.id,
-            buildUpdateAssetPayload(
-              payload,
-              schema,
-              { schemaId, assetType, partyId, assetId: errandNr },
-              existingFull
-            )
+            buildUpdateAssetPayload(payload, schema, { schemaId, assetType, partyId, assetId: errandNr }, existingFull)
           );
         } else {
           await createAsset(
@@ -283,7 +280,12 @@ export const CasedataServicesTab: React.FC = () => {
         ) : error ? (
           <div className="text-error">{error}</div>
         ) : (
-          <ServiceListComponent services={services} onRemove={removeService} onEdit={startEdit} readOnly={(errand ? isErrandLocked(errand) : false)} />
+          <ServiceListComponent
+            services={services}
+            onRemove={removeService}
+            onEdit={startEdit}
+            readOnly={errand ? isErrandLocked(errand) : false}
+          />
         )}
       </div>
 

@@ -3,7 +3,7 @@ import { PortalPersonData } from '@common/data-contracts/employee/data-contracts
 import { User } from '@common/interfaces/user';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { twoDecimals } from '@common/services/helper-service';
-import { useAppContext } from '@contexts/app.context';
+import { useBillingStore, useConfigStore } from '@stores/index';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useCallback, useEffect } from 'react';
 import {
@@ -17,6 +17,7 @@ import {
   SupportErrandDto,
 } from 'src/data-contracts/backend/data-contracts';
 import * as yup from 'yup';
+
 import { ExternalCustomerIdentity, InternalCustomerIdentity, invoiceSettings } from './invoiceSettings';
 import { SupportErrand } from './support-errand-service';
 
@@ -96,10 +97,7 @@ export const billingFormSchema = yup.object({
             activity: yup
               .mixed<string>()
               .required('Välj aktivitet')
-              .oneOf(
-                invoiceSettings.activities.map((a) => a.value) as string[],
-                'Välj aktivitet'
-              ),
+              .oneOf(invoiceSettings.activities.map((a) => a.value) as string[], 'Välj aktivitet'),
           })
         ),
       })
@@ -350,7 +348,10 @@ export const getEmployeeData: (username: string, domain?: string) => Promise<Por
 export const getEmployeeOrganizationId: (
   username: string,
   domain?: string
-) => Promise<{ companyId: number; organizationId: string; referenceNumber?: string } | undefined> = async (username, domain) => {
+) => Promise<{ companyId: number; organizationId: string; referenceNumber?: string } | undefined> = async (
+  username,
+  domain
+) => {
   if (!username || !domain) {
     return undefined;
   }
@@ -405,15 +406,18 @@ export const getEmployeeCustomerIdentity: (
 export const getOrganization: (
   orgNr: string,
   addressSource: 'address' | 'postAddress'
-) => Promise<{
-  partyId: string;
-  address: {
-    city: string;
-    street: string;
-    careOf: string;
-    postalCode: string;
-  };
-} | undefined> = async (orgNr, addressSource) => {
+) => Promise<
+  | {
+      partyId: string;
+      address: {
+        city: string;
+        street: string;
+        careOf: string;
+        postalCode: string;
+      };
+    }
+  | undefined
+> = async (orgNr, addressSource) => {
   return apiService
     .post<ApiResponse<CLegalEntity2WithId>, { orgNr: string }>(`organization/`, { orgNr })
     .then((res) => {
@@ -500,7 +504,9 @@ export const useBillingRecords = (
   sort?: { [key: string]: 'asc' | 'desc' }
 ): CPageBillingRecord => {
   const toastMessage = useSnackbar();
-  const { setIsLoading, setBillingRecords, billingRecords } = useAppContext();
+  const setIsLoading = useConfigStore((s) => s.setIsLoading);
+  const setBillingRecords = useBillingStore((s) => s.setBillingRecords);
+  const billingRecords = useBillingStore((s) => s.billingRecords);
   const fetchBillingRecords = useCallback(
     async (page: number = 0) => {
       // setIsLoading(true);

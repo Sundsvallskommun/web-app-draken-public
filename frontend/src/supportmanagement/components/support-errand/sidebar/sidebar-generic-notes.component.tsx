@@ -1,6 +1,6 @@
 import { NoteType } from '@casedata/interfaces/errandNote';
 import { noteIsComment, noteIsTjansteanteckning } from '@casedata/services/casedata-errand-notes-service';
-import { useAppContext } from '@common/contexts/app.context';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
@@ -8,30 +8,30 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Avatar,
   Button,
+  cx,
   Divider,
   FormControl,
   Input,
   Modal,
   PopupMenu,
   Textarea,
-  cx,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
 import { ErrandNotesTabFormModel, GenericNote } from '@supportmanagement/interfaces/genericNote';
 import { getSupportErrandById } from '@supportmanagement/services/support-errand-service';
 import {
-  SupportNote,
   deleteSupportNote,
   getSupportNotes,
   saveSupportNote,
+  SupportNote,
   updateSupportNote,
 } from '@supportmanagement/services/support-note-service';
 import dayjs from 'dayjs';
-import { Fragment, useEffect, useState } from 'react';
-import { UseFormReturn, useForm } from 'react-hook-form';
-import * as yup from 'yup';
 import { Ellipsis, Pencil, Trash } from 'lucide-react';
+import { FC, Fragment, useEffect, useState } from 'react';
+import { useForm, UseFormReturn } from 'react-hook-form';
+import * as yup from 'yup';
 
 let formSchema = yup
   .object({
@@ -41,12 +41,15 @@ let formSchema = yup
   })
   .required();
 
-export const SidebarGenericNotes: React.FC<{
+export const SidebarGenericNotes: FC<{
   label_plural: 'Kommentarer' | 'Tjänsteanteckningar';
   label_singular: 'Kommentar' | 'Tjänsteanteckning';
   noteType: NoteType;
 }> = ({ label_plural, label_singular, noteType }) => {
-  const { supportErrand, setSupportErrand, administrators, municipalityId } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const administrators = useUserStore((s) => s.administrators);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const [selectedNote, setSelectedNote] = useState<GenericNote>();
   const [notes, setNotes] = useState<SupportNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);

@@ -124,6 +124,7 @@ export interface CBillingRecord {
   status: CBillingRecordStatusEnum;
   invoice: CInvoice;
   extraParameters?: CExtraParameters;
+  transferDate?: string;
 }
 
 export interface CSortObject {
@@ -358,6 +359,12 @@ export interface PatchNotificationDto {
   globalAcknowledged?: boolean;
 }
 
+export interface FeatureFlagDto {
+  name: string;
+  value?: string;
+  enabled: boolean;
+}
+
 export interface MessageDto {
   email?: string;
   contactMeans?: string;
@@ -463,6 +470,14 @@ export interface CSuspension {
   suspendedTo?: string;
 }
 
+export interface CErrandAction {
+  id?: string;
+  actionName?: string;
+  executeAfter?: string;
+  actionConfigId?: string;
+  displayValue?: string;
+}
+
 export interface CNotification {
   id?: string;
   created?: string;
@@ -508,6 +523,7 @@ export interface SupportErrandDto {
   created?: string;
   modified?: string;
   touched?: string;
+  actions?: CErrandAction[];
 }
 
 export interface ForwardFormDto {
@@ -594,12 +610,6 @@ export interface TemplateSelector {
   identifier?: string;
   content?: string;
   parameters?: object;
-}
-
-export interface FeatureFlagDto {
-  name: string;
-  value?: string;
-  enabled: boolean;
 }
 
 export enum CBillingRecordTypeEnum {

@@ -1,13 +1,10 @@
-import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
+import { ContractData, StakeholderWithPersonnumber, UnifiedContractParty } from '@casedata/interfaces/contract-data';
 import {
   Address,
   AddressType,
   Attachment,
   AttachmentCategory,
   Contract,
-  Stakeholder as ContractStakeholder,
-  StakeholderRole as ContractStakeholderRole,
-  StakeholderType as ContractStakeholderType,
   ContractType,
   Fees,
   InvoicedIn,
@@ -15,23 +12,27 @@ import {
   PageContract,
   Parameter,
   Party,
+  Stakeholder as ContractStakeholder,
+  StakeholderRole as ContractStakeholderRole,
+  StakeholderType as ContractStakeholderType,
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
-import { CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 import { IErrand } from '@casedata/interfaces/errand';
 import { PrettyRole, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact, StakeholderType } from '@casedata/interfaces/stakeholder';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+import { EstateInfoSearch } from '@common/interfaces/estate-details';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
-import { toBase64 } from '@common/utils/toBase64';
-import { AxiosResponse } from 'axios';
-import { saveExtraParameters } from './casedata-extra-parameters-service';
-import { UploadFile } from '@sk-web-gui/react';
 import { base64ToFile } from '@common/services/attachment-service';
 import { getSingleFacilityByDesignation } from '@common/services/facilities-service';
-import { EstateInfoSearch } from '@common/interfaces/estate-details';
+import { toBase64 } from '@common/utils/toBase64';
+import { UploadFile } from '@sk-web-gui/react';
+import { AxiosResponse } from 'axios';
+import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
+
+import { saveExtraParameters } from './casedata-extra-parameters-service';
 
 export const contractTypes = [
   { label: 'Arrende', key: ContractType.LEASE_AGREEMENT },
@@ -40,6 +41,7 @@ export const contractTypes = [
   { label: 'Korttidsarrende', key: ContractType.SHORT_TERM_LEASE_AGREEMENT },
   { label: 'Tomträtt', key: ContractType.LEASEHOLD },
   { label: 'Hyresobjekt', key: ContractType.OBJECT_LEASE },
+  { label: 'Skötselavtal', key: ContractType.MAINTENANCE_AGREEMENT },
 ];
 
 export const leaseTypes = [
@@ -48,7 +50,10 @@ export const leaseTypes = [
   { label: 'Jaktarrende', key: LeaseType.USUFRUCT_HUNTING },
   { label: 'Jordbruksarrende', key: LeaseType.USUFRUCT_FARMING },
   { label: 'Lägenhetsarrende', key: LeaseType.LAND_LEASE_MISC },
-  { label: 'Nyttjanderätt', key: LeaseType.USUFRUCT_MISC },
+  { label: 'Arrende', key: LeaseType.USUFRUCT_MISC },
+  { label: 'Markupplåtelseavtal', key: LeaseType.LAND_LEASE_LICENSE },
+  { label: 'Av kommunen arrenderad mark', key: LeaseType.LAND_LEASE_MUNICIPALITY },
+  { label: 'Arrende', key: LeaseType.OTHER_FEE }, // Ska inte kunna finnas för nya avtal
 ];
 
 export const isLeaseAgreement = (contractType: ContractType) =>
@@ -57,7 +62,28 @@ export const isLeaseAgreement = (contractType: ContractType) =>
     ContractType.LAND_LEASE_PUBLIC,
     ContractType.SHORT_TERM_LEASE_AGREEMENT,
     ContractType.LEASEHOLD,
+    ContractType.OBJECT_LEASE,
   ].includes(contractType);
+
+export const hasRecurringFee = (contractType: ContractType, leaseType?: LeaseType) =>
+  [
+    ContractType.LAND_LEASE_PUBLIC,
+    ContractType.OBJECT_LEASE,
+    ContractType.LEASEHOLD,
+    ContractType.LEASE_AGREEMENT,
+  ].includes(contractType) ||
+  (contractType === ContractType.LEASE_AGREEMENT &&
+    !!leaseType &&
+    [
+      LeaseType.SITE_LEASE_COMMERCIAL,
+      LeaseType.LAND_LEASE_RESIDENTIAL,
+      LeaseType.LAND_LEASE_MISC,
+      LeaseType.USUFRUCT_HUNTING,
+      LeaseType.USUFRUCT_FARMING,
+      LeaseType.USUFRUCT_MISC,
+      LeaseType.LAND_LEASE_LICENSE,
+      LeaseType.OTHER_FEE,
+    ].includes(leaseType));
 
 export const roleLabels: { [key in ContractStakeholderRole]: string } = {
   BUYER: 'Köpare',
@@ -80,10 +106,9 @@ export const defaultKopeavtal: ContractData = {
   type: ContractType.PURCHASE_AGREEMENT,
   contractId: '',
   propertyDesignations: [],
-  buyers: [],
-  sellers: [],
-  generateInvoice: 'false' as 'true' | 'false',
-  indexAdjusted: 'false' as 'true' | 'false',
+  stakeholders: [],
+  generateInvoice: 'false',
+  indexAdjusted: 'true',
 };
 
 export const defaultLagenhetsarrende: ContractData = {
@@ -94,17 +119,12 @@ export const defaultLagenhetsarrende: ContractData = {
   leaseType: LeaseType.LAND_LEASE_MISC,
   status: Status.DRAFT,
   propertyDesignations: [],
-  lessees: [],
-  lessors: [],
+  stakeholders: [],
+  invoicing: { invoicedIn: InvoicedIn.ADVANCE },
   notice: {
     terms: [
       {
-        party: Party.LESSEE,
-        periodOfNotice: 3,
-        unit: TimeUnit.MONTHS,
-      },
-      {
-        party: Party.LESSOR,
+        party: Party.ALL,
         periodOfNotice: 3,
         unit: TimeUnit.MONTHS,
       },
@@ -123,7 +143,7 @@ export const defaultLagenhetsarrende: ContractData = {
     },
   ],
   generateInvoice: 'true',
-  indexAdjusted: 'false' as 'true' | 'false',
+  indexAdjusted: 'true',
 };
 
 export const saveContract: (contract: ContractData) => Promise<Contract> = (contract) => {
@@ -408,6 +428,7 @@ export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOw
     ...(stakeholder.firstName && { firstName: stakeholder.firstName }),
     ...(stakeholder.lastName && { lastName: stakeholder.lastName }),
     ...(stakeholder.personId && { partyId: stakeholder.personId }),
+    ...(stakeholder.id && { stakeholderId: String(stakeholder.id) }),
     ...(stakeholder.extraInformation && { extraInformation: stakeholder.extraInformation }),
     ...(stakeholder.extraInformation && { extraInformation: stakeholder.extraInformation }),
     parameters: parameters,
@@ -418,6 +439,11 @@ export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOw
 };
 
 export const kopeavtalToContract = (data: ContractData): Contract => {
+  // Strip personalNumber and stakeholderId from stakeholders before sending to API
+  const stakeholders = ((data.stakeholders ?? []) as StakeholderWithPersonnumber[]).map(
+    ({ personalNumber, stakeholderId, ...rest }) => rest
+  );
+
   return {
     startDate: data.startDate,
     propertyDesignations: data.propertyDesignations,
@@ -425,7 +451,7 @@ export const kopeavtalToContract = (data: ContractData): Contract => {
     type: ContractType.PURCHASE_AGREEMENT,
     leaseType: undefined,
     status: data.status,
-    stakeholders: [...(data.buyers ?? []), ...(data.sellers ?? [])].map(({ personalNumber, ...rest }) => rest),
+    stakeholders,
     externalReferenceId: (data.externalReferenceId ?? '').toString(),
     extraParameters: data.extraParameters,
     additionalTerms: data.additionalTerms,
@@ -436,8 +462,6 @@ export const contractToKopeavtal = (contract: Contract): ContractData => {
   return {
     ...defaultKopeavtal,
     ...contract,
-    buyers: (contract.stakeholders ?? []).filter((s) => (s.roles ?? []).includes(ContractStakeholderRole.BUYER)),
-    sellers: (contract.stakeholders ?? []).filter((s) => (s.roles ?? []).includes(ContractStakeholderRole.SELLER)),
     attachmentMetaData: contract.attachmentMetaData,
   };
 };
@@ -445,6 +469,7 @@ export const contractToKopeavtal = (contract: Contract): ContractData => {
 export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
   console.log('transforming to contract: ', data);
   let fees: Fees | undefined = undefined;
+  const propertyDesignations = data.propertyDesignations ?? [];
   if (data.generateInvoice) {
     const yearlyNumber = Number.parseFloat((data.fees?.yearly ?? 0).toString());
     fees = {
@@ -453,9 +478,10 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       total: yearlyNumber,
       currency: 'SEK',
       additionalInformation: [
-        `Avgift, ${
-          leaseTypes.find((t) => t.key === data.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'
-        }. Fastigheter: ${(data.propertyDesignations ?? []).map((p) => p.name).join(', ')}`,
+        `Avgift, ${leaseTypes.find((t) => t.key === data.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'}. ` +
+          (propertyDesignations?.length > 0
+            ? `Fastigheter: ${propertyDesignations.map((p) => p.name).join(', ')}`
+            : ''),
         data.fees?.additionalInformation?.[1] ?? '',
       ],
       ...(data.indexAdjusted === 'true' && { indexYear: data.fees?.indexYear ?? 2025 }),
@@ -464,6 +490,12 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       ...(data.indexAdjusted === 'true' && { indexType: data.fees?.indexType ?? 'KPI 80' }),
     };
   }
+
+  // Strip personalNumber and stakeholderId from stakeholders before sending to API
+  const stakeholders = ((data.stakeholders ?? []) as StakeholderWithPersonnumber[]).map(
+    ({ personalNumber, stakeholderId, ...rest }) => rest
+  );
+
   return {
     extension: {
       autoExtend: data.extension?.autoExtend,
@@ -472,19 +504,27 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     },
     fees: fees,
     invoicing: {
-      invoicedIn: InvoicedIn.ADVANCE,
+      invoicedIn: data.invoicing?.invoicedIn,
       invoiceInterval: data.invoicing?.invoiceInterval,
     },
-    startDate: data.startDate,
+    currentPeriod: data.currentPeriod,
+    startDate: data.currentPeriod?.startDate,
     endDate: data.endDate,
-    notice: data.notice,
+    notice: {
+      terms: data.notice?.terms?.filter((t) => Boolean(t)),
+      noticeDate: data.notice?.noticeDate !== '' ? data.notice?.noticeDate : undefined,
+      noticeGivenBy:
+        data.notice?.noticeGivenBy && [Party.LESSEE, Party.LESSOR].includes(data.notice?.noticeGivenBy)
+          ? data.notice?.noticeGivenBy
+          : undefined,
+    },
     propertyDesignations: data.propertyDesignations,
     contractId: data.contractId,
     type: data.type,
     leaseType: data.leaseType,
     status: data.status,
     externalReferenceId: (data.externalReferenceId ?? '').toString(),
-    stakeholders: [...(data.lessees ?? []), ...(data.lessors ?? [])].map(({ personalNumber, ...rest }) => rest),
+    stakeholders,
     extraParameters: data.extraParameters,
     additionalTerms: data.additionalTerms,
   };
@@ -497,20 +537,20 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
     contract.fees?.indexNumber ||
     contract.fees?.indexationRate
   );
+  const propertyDesignations = contract.propertyDesignations ?? [];
   const lagenhetsarrende: ContractData = {
     ...defaultLagenhetsarrende,
     ...contract,
-    lessees: (contract.stakeholders ?? []).filter((s) => (s.roles ?? []).includes(ContractStakeholderRole.LESSEE)),
-    lessors: (contract.stakeholders ?? []).filter((s) => (s.roles ?? []).includes(ContractStakeholderRole.LESSOR)),
     attachmentMetaData: contract.attachmentMetaData,
     additionalTerms: contract.additionalTerms,
     indexAdjusted: hasIndexation ? 'true' : 'false',
     fees: {
       ...contract.fees,
       additionalInformation: [
-        `Avgift, ${
-          leaseTypes.find((t) => t.key === contract.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'
-        }. Fastigheter: ${(contract.propertyDesignations ?? []).map((p) => p.name).join(', ')}`,
+        `Avgift, ${leaseTypes.find((t) => t.key === contract.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'}. ` +
+          (propertyDesignations?.length > 0
+            ? `Fastigheter: ${propertyDesignations.map((p) => p.name).join(', ')}`
+            : ''),
         '',
       ],
     },
@@ -522,6 +562,71 @@ export const getContractStakeholderName: (c: StakeholderWithPersonnumber) => str
   c.type === 'ASSOCIATION' || c.type === 'MUNICIPALITY' || c.type === 'ORGANIZATION'
     ? c.organizationName ?? ''
     : `${c.firstName} ${c.lastName}`;
+
+// Centralized converter: API stakeholder -> UnifiedContractParty
+let internalIdCounter = 0;
+export const contractStakeholderToUnifiedParty = (stakeholder: StakeholderWithPersonnumber): UnifiedContractParty => {
+  const name = getContractStakeholderName(stakeholder);
+  return {
+    stakeholderId: stakeholder.stakeholderId || stakeholder.partyId || `_internal-${++internalIdCounter}`,
+    name,
+    personalNumber: stakeholder.personalNumber,
+    organizationNumber: stakeholder.organizationNumber,
+    address: {
+      street: stakeholder.address?.streetAddress,
+      careOf: stakeholder.address?.careOf,
+      postalCode: stakeholder.address?.postalCode,
+      city: stakeholder.address?.town,
+    },
+    roles: stakeholder.roles || [],
+    type: stakeholder.type,
+    originalStakeholder: stakeholder,
+  };
+};
+
+// Centralized converter: UnifiedContractParty -> API stakeholder (for save)
+export const unifiedPartyToContractStakeholder = (party: UnifiedContractParty): StakeholderWithPersonnumber => {
+  return {
+    ...party.originalStakeholder,
+    roles: party.roles,
+  };
+};
+
+// Convert errand stakeholder to contract stakeholder format (for adding new parties)
+export const errandStakeholderToContractStakeholder = (
+  stakeholder: CasedataOwnerOrContact,
+  roles: ContractStakeholderRole[]
+): StakeholderWithPersonnumber => {
+  const phone = stakeholder.phoneNumbers?.[0] || '';
+  const email = stakeholder.emails?.[0] || '';
+  const address: Address = {
+    type: AddressType.POSTAL_ADDRESS,
+    streetAddress: stakeholder.street || '',
+    postalCode: stakeholder.zip || '',
+    town: stakeholder.city || '',
+    country: '',
+    attention: '',
+    careOf: stakeholder.careof || '',
+  };
+
+  return {
+    type:
+      stakeholder.stakeholderType === 'ORGANIZATION'
+        ? ContractStakeholderType.ORGANIZATION
+        : ContractStakeholderType.PERSON,
+    roles,
+    firstName: stakeholder.firstName,
+    lastName: stakeholder.lastName,
+    organizationName: stakeholder.organizationName,
+    organizationNumber: stakeholder.organizationNumber,
+    partyId: stakeholder.personId,
+    personalNumber: stakeholder.personalNumber,
+    stakeholderId: String(stakeholder.id),
+    address,
+    phoneNumber: typeof phone === 'string' ? phone : phone?.value,
+    emailAddress: typeof email === 'string' ? email : email?.value,
+  };
+};
 
 export const fetchSignedContractAttachment: (
   municipalityId: string,
@@ -659,7 +764,6 @@ export interface ContractInvoice {
   invoiceDate?: string;
   dueDate?: string;
   amount?: number;
-  invoiceNumber?: string;
 }
 
 export interface ContractInvoicesResponse {
@@ -697,28 +801,22 @@ export const fetchContractInvoices: (
 
   return apiService
     .get<{
-      content?: Array<{
-        id?: string;
-        status: CBillingRecordStatusEnum;
-        invoice?: {
-          date?: string;
-          dueDate?: string;
-          totalAmount?: number;
-        };
-      }>;
+      content?: CBillingRecord[];
       totalElements?: number;
       totalPages?: number;
     }>(url)
     .then((res) => {
       const content = res.data?.content || [];
-      const invoices: ContractInvoice[] = content.map((record) => ({
-        id: record.id || '',
-        status: record.status,
-        invoiceDate: record.invoice?.date,
-        dueDate: record.invoice?.dueDate,
-        amount: record.invoice?.totalAmount,
-        invoiceNumber: '-', // Which field to use for invoice number is unknown at this time
-      }));
+      const invoices: ContractInvoice[] = content.map((record) => {
+        const inv: ContractInvoice = {
+          id: record.id || '',
+          status: record.status,
+          invoiceDate: record.transferDate,
+          dueDate: record.invoice?.dueDate,
+          amount: record.invoice?.totalAmount,
+        };
+        return inv;
+      });
 
       return {
         invoices,

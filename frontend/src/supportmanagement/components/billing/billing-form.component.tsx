@@ -1,11 +1,12 @@
 import { Button, FormControl, FormErrorMessage, FormLabel, Input, Select, Table } from '@sk-web-gui/react';
 import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
 import { getOrganization } from '@supportmanagement/services/support-billing-service';
+import { RefreshCcw } from 'lucide-react';
+import { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
-import { RefreshCcw } from 'lucide-react';
 
-const BillingForm: React.FC<{
+const BillingForm: FC<{
   resetManager?: () => void;
   handleChange: (
     description: string,
@@ -17,11 +18,9 @@ const BillingForm: React.FC<{
   setIsLoading: (isLoading: boolean) => void;
 }> = ({ resetManager, handleChange, setIsLoading }) => {
   const {
-    control,
     register,
     getValues,
     setValue,
-    trigger,
     watch,
     formState: { errors },
   } = useFormContext<CBillingRecord>();
@@ -37,6 +36,7 @@ const BillingForm: React.FC<{
           size="md"
           placeholder={'0'}
           onChange={(e) => {
+            setValue('invoice.description', e.target.value, { shouldDirty: true });
             const selectedInvoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === e.target.value);
             const selectedDescription = e.target.value;
             const customerId = getValues().invoice.customerId;
@@ -49,15 +49,12 @@ const BillingForm: React.FC<{
               ? selectedInvoiceType?.internal.accountInformation.activity
               : selectedInvoiceType?.external.accountInformation.activity;
             handleChange(selectedDescription, customerId, defaultQuantity, costcenter!, activity!);
-            trigger();
           }}
           readOnly={getValues().status !== 'NEW'}
         >
           <Select.Option value={''}>Välj faktureringstyp</Select.Option>
           {invoiceSettings.invoiceTypes
             .filter((i) => {
-              // Manager is either INTERNAL or EXTERNAL. Only show invoice types that
-              // have invoice rows for the current manager type
               return (
                 (getValues().type === 'INTERNAL' && i?.internal?.invoiceRows?.length > 0) ||
                 (getValues().type === 'EXTERNAL' && i?.external?.invoiceRows?.length > 0)

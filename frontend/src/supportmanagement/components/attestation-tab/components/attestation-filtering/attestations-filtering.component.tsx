@@ -1,5 +1,5 @@
 import { Admin } from '@common/services/user-service';
-import { useAppContext } from '@contexts/app.context';
+import { useUserStore } from '@stores/index';
 import { Button, cx, Link } from '@sk-web-gui/react';
 import {
   AttestationDatesFilter,
@@ -17,9 +17,8 @@ import {
   AttestationStatusValues,
 } from '@supportmanagement/components/attestation-tab/components/attestation-filtering/components/attestation-filter-status.component';
 import { SupportManagementFilterQuery } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-query.component';
-import { useState } from 'react';
 import { ListFilter } from 'lucide-react';
-
+import { FC, useState } from 'react';
 export type AttestationFilter = AttestationInvoiceTypeFilter & AttestationStatusFilter & AttestationDatesFilter;
 export const AttestationValues = {
   ...AttestationInvoiceTypeValues,
@@ -27,12 +26,12 @@ export const AttestationValues = {
   ...AttestationDatesValues,
 };
 
-export const AttestationsFilteringComponent: React.FC<{
+export const AttestationsFilteringComponent: FC<{
   ownerFilterHandler: (b: boolean) => void;
   ownerFilter?: boolean;
   administrators?: Admin[];
 }> = ({ ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
-  const { user } = useAppContext();
+  const user = useUserStore((s) => s.user);
   const [show, setShow] = useState<boolean>(true);
   const [showCreateInvoice, setShowCreateInvoice] = useState<boolean>(false);
 

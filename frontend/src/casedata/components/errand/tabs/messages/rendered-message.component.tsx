@@ -7,21 +7,24 @@ import { MessageNode } from '@casedata/services/casedata-message-service';
 import { MessageAvatar } from '@common/components/message/message-avatar.component';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
 import sanitized, { formatMessage } from '@common/services/sanitizer-service';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { CornerDownRight, Image, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
+
 import { RenderMessageReciever } from './render-message-reciever.component';
 
-export const RenderedMessage: React.FC<{
+export const RenderedMessage: FC<{
   message: MessageNode;
   onSelect: (msg: MessageNode) => void;
-  setShowMessageComposer: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMessageComposer: Dispatch<SetStateAction<boolean>>;
   root?: boolean;
   children: any;
 }> = ({ message, onSelect, setShowMessageComposer, root = false, children }) => {
-  const { user, errand, municipalityId } = useAppContext();
+  const user = useUserStore((s) => s.user);
+  const errand = useCasedataStore((s) => s.errand);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const [allowed, setAllowed] = useState<boolean>(false);
 
   // Changed logic for expanded message to see if it solve problem with unread message counter
@@ -55,7 +58,9 @@ export const RenderedMessage: React.FC<{
 
   const getMessageOwner = (msg: MessageNode) => {
     if (msg.direction === MessageResponseDirectionEnum.INBOUND) {
-      const ownerInfomration = (errand?.stakeholders ?? []).filter((stakeholder) => stakeholder.roles.includes(Role.APPLICANT));
+      const ownerInfomration = (errand?.stakeholders ?? []).filter((stakeholder) =>
+        stakeholder.roles.includes(Role.APPLICANT)
+      );
       const isWebMessageOpenE = msg.messageType === 'WEBMESSAGE' && msg.externalCaseId !== null;
       const isOwnerStakeholderEmail = ownerInfomration.some((stakeholder) =>
         stakeholder.emails.some((email) => email.value === msg.email)
@@ -140,7 +145,8 @@ export const RenderedMessage: React.FC<{
                     case 'DRAKEN':
                       return (
                         <>
-                          <Monitor size="1.5rem" className="align-sub mx-sm" /> Via {errand?.channel === Channels.ESERVICE_KATLA ? 'Färdtjänst' : 'Draken'}
+                          <Monitor size="1.5rem" className="align-sub mx-sm" /> Via{' '}
+                          {errand?.channel === Channels.ESERVICE_KATLA ? 'Färdtjänst' : 'Draken'}
                         </>
                       );
                     case 'MINASIDOR':

@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+
 import {
   BASE_URL_PREFIX,
   CREDENTIALS,
@@ -7,15 +9,14 @@ import {
   PORT,
   SAML_CALLBACK_URL,
   SAML_ENTRY_SSO,
-  SAML_SUCCESS_REDIRECT,
   SAML_FAILURE_REDIRECT,
   SAML_IDP_PUBLIC_CERT,
   SAML_ISSUER,
   SAML_LOGOUT_CALLBACK_URL,
   SAML_PRIVATE_KEY,
   SAML_PUBLIC_KEY,
+  SAML_SUCCESS_REDIRECT,
   SECRET_KEY,
-  SESSION_MEMORY,
   SWAGGER_ENABLED,
 } from '@config';
 import errorMiddleware from '@middlewares/error.middleware';
@@ -32,26 +33,20 @@ import session from 'express-session';
 import { existsSync, mkdirSync } from 'fs';
 import helmet from 'helmet';
 import hpp from 'hpp';
-import createMemoryStore from 'memorystore';
 import morgan from 'morgan';
 import type { ReferenceObject, SchemaObject } from 'openapi3-ts';
 import passport from 'passport';
 import { join } from 'path';
-import 'reflect-metadata';
 import { getMetadataArgsStorage, useExpressServer } from 'routing-controllers';
 import { routingControllersToSpec } from 'routing-controllers-openapi';
-import createFileStore from 'session-file-store';
 import swaggerUi from 'swagger-ui-express';
+
 import { HttpException } from './exceptions/HttpException';
 import { Profile } from './interfaces/profile.interface';
 import { authorizeGroups, getPermissions, getRole } from './services/authorization.service';
 import { additionalConverters } from './utils/custom-validation-classes';
-import { isValidUrl } from './utils/util';
 import { isValidOrigin } from './utils/isValidateOrigin';
-const SessionStoreCreate = SESSION_MEMORY ? createMemoryStore(session) : createFileStore(session);
-const sessionTTL = 4 * 24 * 60 * 60;
-// NOTE: memory uses ms while file uses seconds
-const sessionStore = new SessionStoreCreate(SESSION_MEMORY ? { checkPeriod: sessionTTL * 1000 } : { ttl: sessionTTL, path: './data/sessions' });
+import { isValidUrl } from './utils/util';
 
 passport.serializeUser(function (user, done) {
   done(null, user);
@@ -161,7 +156,10 @@ class App {
   public port: string | number;
   public swaggerEnabled: boolean;
 
-  constructor(Controllers: Function[]) {
+  constructor(
+    Controllers: NewableFunction[],
+    private readonly sessionStore: session.Store,
+  ) {
     this.app = express();
     this.env = NODE_ENV || 'development';
     this.port = PORT || 3000;
@@ -210,7 +208,7 @@ class App {
         secret: SECRET_KEY!,
         resave: false,
         saveUninitialized: false,
-        store: sessionStore,
+        store: this.sessionStore,
         cookie: {
           path: BASE_URL_PREFIX,
         },
@@ -357,7 +355,7 @@ class App {
     });
   }
 
-  private initializeRoutes(controllers: Function[]) {
+  private initializeRoutes(controllers: NewableFunction[]) {
     useExpressServer(this.app, {
       routePrefix: BASE_URL_PREFIX,
       cors: {
@@ -370,7 +368,7 @@ class App {
     });
   }
 
-  private initializeSwagger(controllers: Function[]) {
+  private initializeSwagger(controllers: NewableFunction[]) {
     const schemas = validationMetadatasToSchemas({
       classTransformerMetadataStorage: defaultMetadataStorage,
       refPointerPrefix: '#/components/schemas/',

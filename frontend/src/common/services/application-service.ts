@@ -1,19 +1,24 @@
-export const isKC = () => process.env.NEXT_PUBLIC_APPLICATION === 'KC';
+// String() prevents the minifier from folding placeholder comparisons at build time.
+// This ensures entrypoint.sh can replace placeholders in the built files at runtime.
+const APP = String(process.env.NEXT_PUBLIC_APPLICATION || '');
+const ENV = String(process.env.NEXT_PUBLIC_ENVIRONMENT || '');
 
-export const isKA = () => process.env.NEXT_PUBLIC_APPLICATION === 'KA';
+export const isKC = () => APP === 'KC';
 
-export const isIK = () => process.env.NEXT_PUBLIC_APPLICATION === 'IK';
+export const isKA = () => APP === 'KA';
 
-export const isLOP = () => process.env.NEXT_PUBLIC_APPLICATION === 'LOP';
+export const isIK = () => APP === 'IK';
 
-export const isPT = () => process.env.NEXT_PUBLIC_APPLICATION === 'PT';
+export const isLOP = () => APP === 'LOP';
 
-export const isMEX = () => process.env.NEXT_PUBLIC_APPLICATION === 'MEX';
+export const isPT = () => APP === 'PT';
 
-export const isMSVA = () => process.env.NEXT_PUBLIC_APPLICATION === 'MSVA';
+export const isMEX = () => APP === 'MEX';
 
-export const isROB = () => process.env.NEXT_PUBLIC_APPLICATION === 'ROB';
+export const isMSVA = () => APP === 'MSVA';
 
-export const isSE = () => process.env.NEXT_PUBLIC_APPLICATION === 'SE';
+export const isROB = () => APP === 'ROB';
 
-export const getApplicationEnvironment = () => (process.env.NEXT_PUBLIC_ENVIRONMENT === 'TEST' ? 'TEST' : null);
+export const isSE = () => APP === 'SE';
+
+export const getApplicationEnvironment = () => (ENV === 'TEST' ? 'TEST' : null);

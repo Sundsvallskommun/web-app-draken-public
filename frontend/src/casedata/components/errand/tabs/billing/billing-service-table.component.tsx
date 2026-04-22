@@ -1,6 +1,8 @@
 import { BillingServiceItem } from '@casedata/interfaces/billing';
 import { Button, Table } from '@sk-web-gui/react';
 import { Pen, Trash2 } from 'lucide-react';
+import { FC } from 'react';
+
 import { AddBillingService } from './add-billing-service.component';
 
 interface BillingServiceTableProps {
@@ -12,7 +14,7 @@ interface BillingServiceTableProps {
   editingServiceId: string | null;
 }
 
-export const BillingServiceTable: React.FC<BillingServiceTableProps> = ({
+export const BillingServiceTable: FC<BillingServiceTableProps> = ({
   services,
   onRemoveService,
   onEditService,
@@ -25,57 +27,55 @@ export const BillingServiceTable: React.FC<BillingServiceTableProps> = ({
       <Table dense>
         <Table.Header>
           <Table.HeaderColumn>Beskrivning</Table.HeaderColumn>
-          <Table.HeaderColumn>Avitext</Table.HeaderColumn>
           <Table.HeaderColumn>Antal</Table.HeaderColumn>
           <Table.HeaderColumn>Pris</Table.HeaderColumn>
           <Table.HeaderColumn>Summa</Table.HeaderColumn>
           <Table.HeaderColumn></Table.HeaderColumn>
           <Table.HeaderColumn></Table.HeaderColumn>
         </Table.Header>
-        <Table.Body>
-          {services.map((service) => {
-            if (editingServiceId === service.id) {
-              return (
-                <tr key={service.id}>
-                  <td colSpan={9} className="p-0">
+        {services.map((service) => {
+          if (editingServiceId === service.id) {
+            return (
+              <tbody key={service.id}>
+                <tr>
+                  <td colSpan={6} className="p-0">
                     <AddBillingService onSave={onSaveService} onCancel={onCancelEdit} editingService={service} />
                   </td>
                 </tr>
-              );
-            }
+              </tbody>
+            );
+          }
 
-            return (
-              <Table.Row key={service.id}>
-                <Table.Column className="!overflow-visible">
-                  <div className="relative pt-16 pb-30">
-                    <span className="font-bold">{service.name}</span>
-                    <span className="text-small whitespace-nowrap absolute left-0 bottom-8">
-                      Ansvar: {service.accountInformation.costCenter || '-'}, Underkonto:{' '}
-                      {service.accountInformation.subaccount || '-'}, Verksamhet:{' '}
-                      {service.accountInformation.department || '-'}, Aktivitet:{' '}
-                      {service.accountInformation.activity || '-'}, Projekt: {service.accountInformation.project || '-'}
-                      , Objekt: {service.accountInformation.object || '-'}
-                    </span>
+          return (
+            <tbody key={service.id}>
+              <Table.Row className="!border-b-0">
+                <Table.Column className="!items-start">
+                  <div className="flex flex-col w-[36rem]">
+                    <span className="font-bold mt-6">{service.name}</span>
+                    {service.descriptions?.some((d) => d) && (
+                      <div className="py-4">
+                        {service.descriptions
+                          .filter((d) => d)
+                          .map((desc, i) => (
+                            <span key={i} className="text-small text-dark-secondary block">
+                              {desc}
+                            </span>
+                          ))}
+                      </div>
+                    )}
                   </div>
                 </Table.Column>
-                <Table.Column className="max-w-[14rem] whitespace-normal">
-                  {' '}
-                  <div className="relative pt-16 pb-30">{service.avitext || '-'} </div>
+                <Table.Column className="-mr-18 !items-start">
+                  <span className="mt-6">{service.quantity}</span>
                 </Table.Column>
-                <Table.Column>
-                  {' '}
-                  <div className="relative pt-16 pb-30">{service.quantity}</div>
+                <Table.Column className="-mr-18 !items-start">
+                  <span className="whitespace-nowrap mt-6">{service.costPerUnit.toFixed(2)} kr</span>
                 </Table.Column>
-                <Table.Column>
-                  {' '}
-                  <div className="relative pt-16 pb-30">{service.costPerUnit.toFixed(2)} kr</div>
+                <Table.Column className="-mr-18 !items-start">
+                  <span className="whitespace-nowrap mt-6">{service.totalAmount.toFixed(2)} kr</span>
                 </Table.Column>
-                <Table.Column>
-                  {' '}
-                  <div className="relative pt-16 pb-30">{service.totalAmount.toFixed(2)} kr</div>
-                </Table.Column>
-                <Table.Column>
-                  <div className="relative pt-16 pb-30">
+                <Table.Column className="max-w-[3rem]">
+                  <div className="mt-6">
                     <Button
                       size="sm"
                       variant="tertiary"
@@ -87,8 +87,8 @@ export const BillingServiceTable: React.FC<BillingServiceTableProps> = ({
                     </Button>
                   </div>
                 </Table.Column>
-                <Table.Column>
-                  <div className="relative pt-16 pb-30">
+                <Table.Column className="max-w-[3rem] mr-10">
+                  <div className="mt-6">
                     <Button
                       size="sm"
                       inverted
@@ -102,9 +102,20 @@ export const BillingServiceTable: React.FC<BillingServiceTableProps> = ({
                   </div>
                 </Table.Column>
               </Table.Row>
-            );
-          })}
-        </Table.Body>
+              <tr className="border-b-1 border-divider">
+                <td colSpan={6} className="pl-16 pb-8 pt-2">
+                  <span className="text-small text-dark-secondary italic">
+                    Ansvar: {service.accountInformation.costCenter || '-'}, Underkonto:{' '}
+                    {service.accountInformation.subaccount || '-'}, Verksamhet:{' '}
+                    {service.accountInformation.department || '-'}, Aktivitet:{' '}
+                    {service.accountInformation.activity || '-'}, Projekt: {service.accountInformation.project || '-'},
+                    Objekt: {service.accountInformation.object || '-'}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          );
+        })}
       </Table>
     </div>
   );

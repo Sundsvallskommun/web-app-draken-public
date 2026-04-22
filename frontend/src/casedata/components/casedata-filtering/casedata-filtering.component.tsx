@@ -4,50 +4,51 @@ import {
   CasedataFilterChannel,
 } from '@casedata/components/casedata-filtering/components/casedata-filter-channel.component';
 import {
+  CasedataFilterPhase,
   CasePhaseFilter,
   CasePhaseValues,
-  CasedataFilterPhase,
 } from '@casedata/components/casedata-filtering/components/casedata-filter-phase.component';
 import { isPT } from '@common/services/application-service';
 import { Admin } from '@common/services/user-service';
+import { appConfig } from '@config/appconfig';
 import { Button, Checkbox, cx, Link } from '@sk-web-gui/react';
-import { useState } from 'react';
+import { useUiSettingsStore } from '@stores/ui-settings-store';
+import { ListFilter } from 'lucide-react';
+import { FC, useState } from 'react';
+
 import {
   CaseAdminsFilter,
   CaseAdminsValues,
   CasedataFilterAdmins,
 } from './components/casedata-filter-admins.component';
 import {
+  CasedataFilterCaseType,
   CaseTypeFilter,
   CaseTypeValues,
-  CasedataFilterCaseType,
 } from './components/casedata-filter-casetype.component';
-import { CaseDatesFilter, CaseDatesValues, CasedataFilterDates } from './components/casedata-filter-dates.component';
+import { CasedataFilterDates, CaseDatesFilter, CaseDatesValues } from './components/casedata-filter-dates.component';
 import {
+  CasedataFilterPriority,
   CasePriorityFilter,
   CasePriorityValues,
-  CasedataFilterPriority,
 } from './components/casedata-filter-priority.component';
 import {
+  CasedataFilterPropertyDesignation,
   CasePropertyDesignationFilter,
   CasePropertyDesignationValues,
-  CasedataFilterPropertyDesignation,
 } from './components/casedata-filter-propertyDesignation';
-import { CaseQueryFilter, CaseQueryValues, CasedataFilterQuery } from './components/casedata-filter-query.component';
-import {
-  CaseStatusFilter,
-  CaseStatusValues,
-  CasedataFilterStatus,
-} from './components/casedata-filter-status.component';
-import { CasedataFilterTags } from './components/casedata-filter-tags.component';
-import { useAppContext } from '@contexts/app.context';
-import { appConfig } from '@config/appconfig';
+import { CasedataFilterQuery, CaseQueryFilter, CaseQueryValues } from './components/casedata-filter-query.component';
 import {
   CasedataStakeholderType,
   CaseStakeholderTypeFilter,
   CaseStakeholderTypeValues,
 } from './components/casedata-filter-stakeholder-type.component';
-import { ListFilter } from 'lucide-react';
+import {
+  CasedataFilterStatus,
+  CaseStatusFilter,
+  CaseStatusValues,
+} from './components/casedata-filter-status.component';
+import { CasedataFilterTags } from './components/casedata-filter-tags.component';
 
 export type CaseDataFilter = CaseTypeFilter &
   CaseStatusFilter &
@@ -72,14 +73,14 @@ export const CaseDataValues = {
   ...CaseStakeholderTypeValues,
 };
 
-const CaseDataFiltering: React.FC<{
+const CaseDataFiltering: FC<{
   ownerFilterHandler: (b: boolean) => void;
   ownerFilter?: boolean;
   administrators?: Admin[];
   numberOfFilters: number;
 }> = ({ numberOfFilters, ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const [show, setShow] = useState<boolean>(true);
-  const { selectedErrandStatuses } = useAppContext();
+  const selectedErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
 
   return (
     <>

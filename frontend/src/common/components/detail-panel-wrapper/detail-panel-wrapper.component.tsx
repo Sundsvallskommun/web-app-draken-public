@@ -1,19 +1,18 @@
-import { Button, Header, cx } from '@sk-web-gui/react';
-import React, { useEffect } from 'react';
-import { X } from 'lucide-react';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-
+import { Button, cx, Header } from '@sk-web-gui/react';
+import { X } from 'lucide-react';
+import { FC, ReactNode, useEffect } from 'react';
 interface DetailPanelWrapperProps {
   show: boolean;
   label: string;
   closeAriaLabel: string;
   closeHandler: () => void;
   icon: 'glasses' | 'file-text';
-  children: React.ReactNode;
+  children: ReactNode;
   dataCy?: string;
 }
 
-export const DetailPanelWrapper: React.FC<DetailPanelWrapperProps> = ({
+export const DetailPanelWrapper: FC<DetailPanelWrapperProps> = ({
   show,
   label = '',
   closeAriaLabel,
@@ -44,7 +43,11 @@ export const DetailPanelWrapper: React.FC<DetailPanelWrapperProps> = ({
       >
         <Header className="h-[64px] flex justify-between" wrapperClasses="py-4 px-40">
           <div className="text-h4-sm flex items-center gap-12">
-            {(() => { const DynIcon = iconMap[icon]; return DynIcon ? <DynIcon /> : undefined; })()} {label}
+            {(() => {
+              const DynIcon = iconMap[icon];
+              return DynIcon ? <DynIcon /> : undefined;
+            })()}{' '}
+            {label}
           </div>
           <Button
             tabIndex={show ? 0 : -1}

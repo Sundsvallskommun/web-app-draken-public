@@ -87,6 +87,8 @@ export enum LeaseType {
   USUFRUCT_FARMING = 'USUFRUCT_FARMING',
   USUFRUCT_MISC = 'USUFRUCT_MISC',
   LAND_LEASE_MISC = 'LAND_LEASE_MISC',
+  LAND_LEASE_LICENSE = 'LAND_LEASE_LICENSE',
+  LAND_LEASE_MUNICIPALITY = 'LAND_LEASE_MUNICIPALITY',
   OTHER_FEE = 'OTHER_FEE',
 }
 
@@ -112,6 +114,7 @@ export enum ContractType {
   SHORT_TERM_LEASE_AGREEMENT = 'SHORT_TERM_LEASE_AGREEMENT',
   OBJECT_LEASE = 'OBJECT_LEASE',
   LEASEHOLD = 'LEASEHOLD',
+  MAINTENANCE_AGREEMENT = 'MAINTENANCE_AGREEMENT',
 }
 
 /** Attachment category */
@@ -127,21 +130,21 @@ export enum AddressType {
   VISITING_ADDRESS = 'VISITING_ADDRESS',
 }
 
+export interface GeoJsonObject {
+  crs?: Crs;
+  bbox?: number[];
+  type: string;
+}
+
 export interface Problem {
   /** @format uri */
   instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, any>;
-  status?: StatusType;
   title?: string;
   detail?: string;
-}
-
-export interface StatusType {
   /** @format int32 */
-  statusCode?: number;
-  reasonPhrase?: string;
+  status?: number;
 }
 
 export interface Address {
@@ -258,6 +261,7 @@ export interface Duration {
   /**
    * The lease duration value
    * @format int32
+   * @min 0
    */
   leaseDuration: number;
   /** The unit of the duration value */
@@ -274,6 +278,7 @@ export interface Extension {
   /**
    * The lease extension value
    * @format int32
+   * @min 0
    */
   leaseExtension?: number;
   /** The unit of the extension value */
@@ -325,7 +330,7 @@ export interface Fees {
   totalAsText?: string;
   /**
    * Index type
-   * @example 'KPI 80'
+   * @example "KPI 80"
    */
   indexType?: string;
   /**
@@ -333,10 +338,7 @@ export interface Fees {
    * @format int32
    */
   indexYear?: number;
-  /**
-   * Index number
-   * @format int32
-   */
+  /** Index number */
   indexNumber?: number;
   /**
    * Specifies what proportion of the consumer price index should be used for invoicing.
@@ -346,12 +348,6 @@ export interface Fees {
   indexationRate?: number;
   /** Additional information */
   additionalInformation?: string[];
-}
-
-export interface GeoJsonObject {
-  crs?: Crs;
-  bbox?: number[];
-  type: string;
 }
 
 export type GeometryCollection = GeoJsonObject & {
@@ -430,6 +426,7 @@ export interface NoticeTerm {
   /**
    * The period of notice
    * @format int32
+   * @min 0
    */
   periodOfNotice: number;
   /** The unit of the periodOfNotice value */
@@ -477,14 +474,14 @@ export interface PropertyDesignation {
    * Name of property designation
    * @minLength 0
    * @maxLength 255
-   * @example 'SUNDSVALL BALDER 5:1'
+   * @example "SUNDSVALL BALDER 5:1"
    */
   name?: string;
   /**
    * District of property designation
    * @minLength 0
    * @maxLength 255
-   * @example 'Sundsvall'
+   * @example "Sundsvall"
    */
   district?: string;
 }
@@ -529,84 +526,28 @@ export interface TermGroup {
 }
 
 export interface ConstraintViolationProblem {
-  cause?: ThrowableProblem;
-  stackTrace?: {
-    classLoaderName?: string;
-    moduleName?: string;
-    moduleVersion?: string;
-    methodName?: string;
-    fileName?: string;
-    /** @format int32 */
-    lineNumber?: number;
-    className?: string;
-    nativeMethod?: boolean;
-  }[];
   /** @format uri */
   type?: string;
-  status?: StatusType;
+  /** @format int32 */
+  status?: number;
   violations?: Violation[];
   title?: string;
-  message?: string;
   /** @format uri */
   instance?: string;
-  parameters?: Record<string, any>;
   detail?: string;
-  suppressed?: {
-    stackTrace?: {
-      classLoaderName?: string;
-      moduleName?: string;
-      moduleVersion?: string;
-      methodName?: string;
-      fileName?: string;
-      /** @format int32 */
-      lineNumber?: number;
-      className?: string;
-      nativeMethod?: boolean;
-    }[];
-    message?: string;
-    localizedMessage?: string;
-  }[];
-  localizedMessage?: string;
+  causeAsProblem?: ThrowableProblem;
 }
 
 export interface ThrowableProblem {
-  cause?: any;
-  stackTrace?: {
-    classLoaderName?: string;
-    moduleName?: string;
-    moduleVersion?: string;
-    methodName?: string;
-    fileName?: string;
-    /** @format int32 */
-    lineNumber?: number;
-    className?: string;
-    nativeMethod?: boolean;
-  }[];
-  message?: string;
-  /** @format uri */
-  instance?: string;
   /** @format uri */
   type?: string;
-  parameters?: Record<string, any>;
-  status?: StatusType;
   title?: string;
+  /** @format int32 */
+  status?: number;
   detail?: string;
-  suppressed?: {
-    stackTrace?: {
-      classLoaderName?: string;
-      moduleName?: string;
-      moduleVersion?: string;
-      methodName?: string;
-      fileName?: string;
-      /** @format int32 */
-      lineNumber?: number;
-      className?: string;
-      nativeMethod?: boolean;
-    }[];
-    message?: string;
-    localizedMessage?: string;
-  }[];
-  localizedMessage?: string;
+  /** @format uri */
+  instance?: string;
+  causeAsProblem?: any;
 }
 
 export interface Violation {
@@ -647,7 +588,33 @@ export interface Diff {
   availableVersions?: number[];
 }
 
-export type JsonNode = any;
+export interface JsonNode {
+  empty?: boolean;
+  array?: boolean;
+  null?: boolean;
+  object?: boolean;
+  float?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
+  pojo?: boolean;
+  floatingPointNumber?: boolean;
+  short?: boolean;
+  int?: boolean;
+  long?: boolean;
+  double?: boolean;
+  bigDecimal?: boolean;
+  bigInteger?: boolean;
+  /** @deprecated */
+  textual?: boolean;
+  binary?: boolean;
+  number?: boolean;
+  string?: boolean;
+  boolean?: boolean;
+  embeddedValue?: boolean;
+}
 
 export type SpecificationContractEntity = any;
 
@@ -661,9 +628,9 @@ export interface PageContract {
   content?: Contract[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
+  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
@@ -697,4 +664,16 @@ export enum ChangeTypeEnum {
   ADDITION = 'ADDITION',
   REMOVAL = 'REMOVAL',
   MODIFICATION = 'MODIFICATION',
+}
+
+export enum JsonNodeNodeTypeEnum {
+  ARRAY = 'ARRAY',
+  BINARY = 'BINARY',
+  BOOLEAN = 'BOOLEAN',
+  MISSING = 'MISSING',
+  NULL = 'NULL',
+  NUMBER = 'NUMBER',
+  OBJECT = 'OBJECT',
+  POJO = 'POJO',
+  STRING = 'STRING',
 }
