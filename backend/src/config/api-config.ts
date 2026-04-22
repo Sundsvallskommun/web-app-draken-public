@@ -38,7 +38,7 @@ export const APIS = [
   },
   {
     name: 'billingpreprocessor',
-    version: '4.4',
+    version: '4.5',
   },
   {
     name: 'billing-data-collector',

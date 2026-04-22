@@ -3,8 +3,8 @@ import { PrettyRole, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { FormControl, FormErrorMessage, FormLabel, Select } from '@sk-web-gui/react';
 import { useCasedataStore } from '@stores/index';
-import { useState } from 'react';
-import { useFormContext } from 'react-hook-form';
+import { useEffect, useState } from 'react';
+import { useFormContext, useWatch } from 'react-hook-form';
 interface BillingLeaseholderProps {
   onSelectRecipient: (recipient: BillingRecipient | undefined) => void;
 }
@@ -16,6 +16,14 @@ export const BillingLeaseholder: React.FC<BillingLeaseholderProps> = ({ onSelect
     setValue,
   } = useFormContext<BillingFormData>();
   const [selectedStakeholderId, setSelectedStakeholderId] = useState<string>('');
+  const recipient = useWatch<BillingFormData>({ name: 'recipient' });
+
+  useEffect(() => {
+    if (!recipient) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedStakeholderId('');
+    }
+  }, [recipient]);
 
   const stakeholders = (errand?.stakeholders || []).filter((s) => !s.roles.includes(Role.ADMINISTRATOR));
 
