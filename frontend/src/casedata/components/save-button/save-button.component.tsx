@@ -2,9 +2,9 @@ import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
-import { useAppContext } from '@common/contexts/app.context';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { Button } from '@sk-web-gui/react';
+import { useCasedataStore } from '@stores/index';
 import { ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { FC, JSX, useEffect, useState } from 'react';
@@ -19,7 +19,7 @@ export const SaveButtonComponent: FC<{
   icon?: JSX.Element;
   loading?: boolean;
 }> = (props) => {
-  const { errand, municipalityId } = useAppContext();
+  const errand = useCasedataStore((s) => s.errand);
   const [errandNumber, setErrandNumber] = useState<string | undefined>(errand?.errandNumber);
   const router = useRouter();
   const [internalLoading, setInternalLoading] = useState(false);

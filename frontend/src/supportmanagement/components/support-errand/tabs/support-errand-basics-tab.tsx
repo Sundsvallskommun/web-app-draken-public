@@ -1,5 +1,5 @@
 import { LinkedErrandsDisclosure } from '@common/components/linked-errands-disclosure/linked-errands-disclosure.component';
-import { useAppContext } from '@common/contexts/app.context';
+import { useSupportStore } from '@stores/index';
 import { appConfig } from '@config/appconfig';
 import { SupportContactsComponent } from '@supportmanagement/components/new-contacts/support-contacts.component';
 import { SupportErrandBasicsAboutDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-about-disclosure.component';
@@ -12,7 +12,7 @@ export const SupportErrandBasicsTab: FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
   update: () => void;
 }> = (props) => {
-  const { supportErrand } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand);
 
   return (
     <div className="pt-xl pb-64 px-40 flex flex-col">

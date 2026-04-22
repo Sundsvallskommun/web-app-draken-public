@@ -8,7 +8,7 @@ import {
   saveSignedContractAttachment,
 } from '@casedata/services/contract-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore, useConfigStore } from '@stores/index';
 import { Button, FileUpload, PopupMenu, UploadFile, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { Eye, FilePen, Trash } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
@@ -17,7 +17,9 @@ export const ContractAttachments: FC<{
   readOnly?: boolean;
 }> = ({ existingContract, readOnly = false }) => {
   const toastMessage = useSnackbar();
-  const { municipalityId, errand, setErrand } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
   const removeConfirm = useConfirm();
 
   const viewFileHandler = (attachment: any) => {

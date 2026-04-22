@@ -4,8 +4,9 @@ import { apiService, Data } from '@common/services/api-service';
 import { isKC, isROB } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore } from '@stores/index';
+import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
 import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
@@ -396,21 +397,19 @@ export const useSupportErrands = (
   extraParameters?: { [key: string]: string }
 ): SupportErrandsData => {
   const toastMessage = useSnackbar();
-  const {
-    setIsLoading,
-    setSupportErrands,
-    supportErrands,
-    setNewSupportErrands,
-    newSupportErrands,
-    setOngoingSupportErrands,
-    ongoingSupportErrands,
-    setSuspendedSupportErrands,
-    suspendedSupportErrands,
-    setAssignedSupportErrands,
-    assignedSupportErrands,
-    setSolvedSupportErrands,
-    solvedSupportErrands,
-  } = useAppContext();
+  const setIsLoading = useConfigStore((s) => s.setIsLoading);
+  const setSupportErrands = useSupportStore((s) => s.setSupportErrands);
+  const supportErrands = useSupportStore((s) => s.supportErrands);
+  const setNewSupportErrands = useUiSettingsStore((s) => s.setNewErrands);
+  const newSupportErrands = useUiSettingsStore((s) => s.newErrands);
+  const setOngoingSupportErrands = useUiSettingsStore((s) => s.setOngoingErrands);
+  const ongoingSupportErrands = useUiSettingsStore((s) => s.ongoingErrands);
+  const setSuspendedSupportErrands = useUiSettingsStore((s) => s.setSuspendedErrands);
+  const suspendedSupportErrands = useUiSettingsStore((s) => s.suspendedErrands);
+  const setAssignedSupportErrands = useUiSettingsStore((s) => s.setAssignedErrands);
+  const assignedSupportErrands = useUiSettingsStore((s) => s.assignedErrands);
+  const setSolvedSupportErrands = useUiSettingsStore((s) => s.setClosedErrands);
+  const solvedSupportErrands = useUiSettingsStore((s) => s.closedErrands);
 
   const fetchErrands = useCallback(
     async (page: number = 0) => {
@@ -541,7 +540,7 @@ export const useSupportErrands = (
   }, [filter, size, sort]);
 
   useEffect(() => {
-    if (page !== supportErrands.page) {
+    if (supportErrands.page !== undefined && page !== supportErrands.page) {
       fetchErrands(page).then(() => setIsLoading(false));
     }
     //eslint-disable-next-line
@@ -619,6 +618,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
       labels: e.labels || [],
+      caseId: e.externalTags?.find((t) => t.key === 'caseId')?.value,
       description: sanitized(e?.description ?? ''),
       customer: (e.stakeholders
         ?.filter((s) => s.role === 'PRIMARY')
@@ -827,7 +827,7 @@ export const updateSupportErrand: (
     ...(formdata.description && { description: formdata.description }),
     ...(formdata.assignedUserId && { assignedUserId: formdata.assignedUserId }),
     ...{ stakeholders: stakeholders },
-    externalTags: formdata.externalTags || [],
+    externalTags: (formdata.externalTags || []).filter((t) => t.key !== 'caseId'),
     parameters: formdata.parameters || [],
   };
   if (formdata.caseId) {

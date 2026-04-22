@@ -2,7 +2,7 @@ import { PriorityComponent } from '@common/components/priority/priority.componen
 import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
+import { useMetadataStore, useUserStore } from '@stores/index';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
 import {
   Channels,
@@ -15,12 +15,12 @@ import {
 import { getAdminName, primaryStakeholderNameorEmail } from '@supportmanagement/services/support-stakeholder-service';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
-
 import { SupportStatusLabelComponent } from '../ongoing-support-errands/components/support-status-label.component';
 
 export const useSupportErrandTable = (statuses: Status[]) => {
   const { t } = useTranslation();
-  const { supportMetadata, administrators } = useAppContext();
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  const administrators = useUserStore((s) => s.administrators);
 
   const labels = [
     {

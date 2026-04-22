@@ -10,7 +10,6 @@ import {
   removeMunicipalityName,
 } from '@common/services/facilities-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { useAppContext } from '@contexts/app.context';
 import {
   Button,
   FormControl,
@@ -23,6 +22,7 @@ import {
   Table,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { useCasedataStore, useSupportStore } from '@stores/index';
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
 import { FC, useEffect, useState } from 'react';
 import { useForm, UseFormSetValue } from 'react-hook-form';
@@ -38,13 +38,8 @@ export const Facilities: FC<{
   const { setValue, setUnsaved } = props;
   const toastMessage = useSnackbar();
 
-  const {
-    supportErrand,
-    errand,
-  }: {
-    supportErrand: any;
-    errand: any;
-  } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand) as any;
+  const errand = useCasedataStore((s) => s.errand) as any;
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchType, setSearchType] = useState<string>('');
@@ -59,6 +54,7 @@ export const Facilities: FC<{
   const [selectedEstate, setSelectedEstate] = useState<EstateInformation>();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRealEstates(props.facilities);
   }, [props.facilities]);
 

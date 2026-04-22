@@ -6,8 +6,8 @@ import { Notification as CaseDataNotification } from '@common/data-contracts/cas
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { sortBy } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import { Button, Checkbox, cx, Divider, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { Button, Checkbox, Divider, cx, useSnackbar } from '@sk-web-gui/react';
 import {
   acknowledgeSupportNotification,
   getSupportNotifications,
@@ -18,9 +18,14 @@ import { FC, useEffect, useState } from 'react';
 import { NotificationItem } from './notification-item';
 import { getFilteredNotifications } from './notification-utils';
 
-export const NotificationsWrapper: FC<{ show: boolean; setShow: (arg0: boolean) => void }> = ({ show, setShow }) => {
-  const { municipalityId, notifications, setNotifications }: AppContextInterface = useAppContext();
-  const { user } = useAppContext();
+export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boolean) => void }> = ({
+  show,
+  setShow,
+}) => {
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const notifications = useSupportStore((s) => s.notifications);
+  const setNotifications = useSupportStore((s) => s.setNotifications);
+  const user = useUserStore((s) => s.user);
   const toastMessage = useSnackbar();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isAcknowledging, setIsAcknowledging] = useState(false);

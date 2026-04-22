@@ -57,10 +57,6 @@ export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({ contract
       });
   }, [contractId]);
 
-  const handleDownloadPdf = () => {
-    // TODO: Implement PDF download functionality
-  };
-
   if (!contractId) {
     return (
       <div className="text-dark-disabled" data-cy="invoices-no-contract">
@@ -90,7 +86,6 @@ export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({ contract
     { label: 'Fakturadatum', key: 'invoiceDate' },
     { label: 'Förfallodatum', key: 'dueDate' },
     { label: 'Belopp', key: 'amount' },
-    { label: 'Fakturanummer', key: 'invoiceNumber' },
     { label: 'Åtgärd', key: 'action', screenReaderOnly: true },
   ];
 
@@ -124,21 +119,6 @@ export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({ contract
               <Table.Column data-cy={`invoice-amount-${index}`}>
                 {invoice.amount !== undefined ? formatCurrency(invoice.amount) : '-'}
               </Table.Column>
-              <Table.Column data-cy={`invoice-number-${index}`}>{invoice.invoiceNumber || '-'}</Table.Column>
-              {/* NOT IMPLEMENTED YET */}
-              {/* <Table.Column>
-                <Button
-                  size="sm"
-                  variant="tertiary"
-                  onClick={() => handleDownloadPdf(invoice.id)}
-                  data-cy={`invoice-download-pdf-${index}`}
-                  disabled
-                  title="Hämta pdf (kommande funktion)"
-                >
-                  <Download size={16} />
-                  <span className="ml-sm">Hämta pdf</span>
-                </Button>
-              </Table.Column> */}
             </Table.Row>
           ))}
         </Table.Body>

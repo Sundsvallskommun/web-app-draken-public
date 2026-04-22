@@ -28,9 +28,9 @@ import {
   unifiedPartyToContractStakeholder,
 } from '@casedata/services/contract-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Checkbox, FormControl, FormLabel, Input, Select, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { Dispatch, FC, SetStateAction, useCallback, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -109,8 +109,10 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
       }),
     })
     .required();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const user = useUserStore((s) => s.user);
   const [referensError, setReferensError] = useState(false);
-  const { municipalityId, errand, user } = useAppContext();
   const [loading, setIsLoading] = useState<string>();
   const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
   const [contractParties, setContractParties] = useState<UnifiedContractParty[]>([]);

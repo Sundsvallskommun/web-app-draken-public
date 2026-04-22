@@ -4,7 +4,7 @@ import { ACCEPTED_UPLOAD_FILETYPES } from '@casedata/services/casedata-attachmen
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import FileUpload from '@common/components/file-upload/file-upload.component';
-import { useAppContext } from '@common/contexts/app.context';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { Relation } from '@common/data-contracts/relations/data-contracts';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
@@ -46,14 +46,13 @@ import {
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { File, Paperclip, X } from 'lucide-react';
-import dynamic from 'next/dynamic';
+import TextEditor from '@common/components/dynamic-text-editor';
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
 
 import { getDefaultEmailBody, getDefaultSmsBody, removeEmailInformation } from '../templates/default-message-template';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface SupportMessageFormModel {
   id: string;
@@ -139,13 +138,11 @@ export const SupportMessageForm: FC<{
   setUnsaved?: (unsaved: boolean) => void;
   update?: () => void;
 }> = (props) => {
-  const {
-    municipalityId,
-    user,
-    supportErrand: _supportErrand,
-    supportAttachments: _supportAttachments,
-    setSupportErrand,
-  } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
+  const _supportErrand = useSupportStore((s) => s.supportErrand);
+  const _supportAttachments = useSupportStore((s) => s.supportAttachments);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const supportErrand = _supportErrand!;
   const supportAttachments = _supportAttachments ?? [];
 

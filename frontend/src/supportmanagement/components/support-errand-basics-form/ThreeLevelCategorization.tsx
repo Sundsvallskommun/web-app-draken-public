@@ -2,9 +2,9 @@ import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Combobox, FormControl, FormErrorMessage, FormLabel, Select } from '@sk-web-gui/react';
 import { isSupportErrandLocked, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useTranslation } from 'next-i18next';
 import { ChangeEvent, FC, useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 const CLASSIFICATIONS = {
   CATEGORY: 'CATEGORY',

@@ -1,42 +1,26 @@
-import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
-import { useAppContext } from '@contexts/app.context';
 import { FormControl, FormErrorMessage, FormLabel, Select } from '@sk-web-gui/react';
-import {
-  defaultSupportErrandInformation,
-  isSupportErrandLocked,
-  SupportErrand,
-} from '@supportmanagement/services/support-errand-service';
-import { getSupportMetadata, SupportType } from '@supportmanagement/services/support-metadata-service';
-import { useTranslation } from 'next-i18next';
-import { FC, useEffect, useState } from 'react';
+import { useMetadataStore, useSupportStore } from '@stores/index';
+import { isSupportErrandLocked, SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { useMemo } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
-export const TwoLevelCategorization: FC = () => {
-  const { supportErrand, supportMetadata } = useAppContext();
+export const TwoLevelCategorization: React.FC = () => {
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const formControls: UseFormReturn<SupportErrand> = useFormContext();
-  const { getValues, setValue, trigger, register, watch, formState } = formControls;
+  const { register, setValue, watch, formState } = formControls;
 
   const { errors } = formState;
   const { category } = watch();
 
   const { t } = useTranslation();
 
-  const [categoriesList, setCategoriesList] = useState<Category[]>();
-  const [typesList, setTypesList] = useState<SupportType[]>();
-
-  useEffect(() => {
-    if (supportMetadata) {
-      setCategoriesList(supportMetadata?.categories);
-    } else {
-      getSupportMetadata(defaultSupportErrandInformation.municipalityId).then((data) => {
-        setCategoriesList(data.metadata?.categories);
-      });
-    }
-  }, [supportMetadata]);
-
-  useEffect(() => {
-    setTypesList(categoriesList?.find((c) => c.name === category)?.types || []);
-  }, [category, categoriesList]);
+  const categoriesList = supportMetadata?.categories;
+  const typesList = useMemo(
+    () => categoriesList?.find((c) => c.name === category)?.types || [],
+    [category, categoriesList]
+  );
 
   return (
     <>
@@ -55,12 +39,9 @@ export const TwoLevelCategorization: FC = () => {
             className="w-full text-dark-primary"
             variant="primary"
             size="md"
-            value={getValues().category}
             onChange={(e) => {
               setValue('category', e.currentTarget.value, { shouldDirty: true });
               setValue('type', undefined as any, { shouldDirty: true });
-              trigger('category');
-              trigger('type');
             }}
           >
             <Select.Option value="">Välj ärendekategori</Select.Option>
@@ -94,11 +75,6 @@ export const TwoLevelCategorization: FC = () => {
             className="w-full text-dark-primary"
             variant="primary"
             size="md"
-            value={getValues().type}
-            onChange={(e) => {
-              setValue('type', e.currentTarget.value, { shouldDirty: true });
-              trigger('type');
-            }}
           >
             <Select.Option value="">Välj ärendetyp</Select.Option>
             {typesList?.map((type) => (

@@ -1,9 +1,9 @@
-import { useAppContext } from '@common/contexts/app.context';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
+import { useBadgeStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   defaultSupportErrandInformation,
   getSupportErrandByErrandNumber,
@@ -40,7 +40,10 @@ export const SupportErrandComponent: FC = () => {
   const [message, setMessage] = useState('Hämtar ärende..');
   const [categoriesList, setCategoriesList] = useState<Category[]>();
   const [unsavedFacility, setUnsavedFacility] = useState(false);
-  const { municipalityId, supportErrand, setSupportErrand, supportMetadata, setNotesCount } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const { supportErrand, setSupportErrand } = useSupportStore();
+  const { setNotesCount } = useBadgeStore();
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const toastMessage = useSnackbar();
 
   const methods = useForm<SupportErrand>({
@@ -56,7 +59,7 @@ export const SupportErrandComponent: FC = () => {
     });
   };
   const router = useRouter();
-  const { setUser } = useAppContext();
+  const setUser = useUserStore((s) => s.setUser);
 
   const { theme } = useGui();
 

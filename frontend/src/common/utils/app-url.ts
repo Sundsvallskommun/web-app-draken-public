@@ -1,5 +1,10 @@
 export const appURL = (path?: string): string => {
-  const { origin } = window.location;
+  const origin =
+    globalThis.window === undefined
+      ? process.env.NEXT_PUBLIC_APP_URL || ''
+      : globalThis.window.location.origin;
 
-  return path ? `${origin}${process.env.NEXT_PUBLIC_BASEPATH}${path}` : `${origin}${process.env.NEXT_PUBLIC_BASEPATH}`;
+  const base = process.env.NEXT_PUBLIC_BASEPATH || '';
+
+  return path ? `${origin}${base}${path}` : `${origin}${base}`;
 };

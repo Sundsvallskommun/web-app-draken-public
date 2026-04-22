@@ -1,5 +1,6 @@
 import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
+import { MEXCaseType } from '@casedata/interfaces/case-type';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
@@ -14,29 +15,31 @@ import {
 } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { phaseChangeInProgress, triggerErrandPhaseChange } from '@casedata/services/process-service';
-import { useAppContext } from '@common/contexts/app.context';
 import { isPT } from '@common/services/application-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, FormErrorMessage, Spinner, useSnackbar } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { ArrowRight } from 'lucide-react';
 import { IconName } from 'lucide-react/dynamic';
-import { JSX, useEffect, useState } from 'react';
-import { useForm, UseFormReturn } from 'react-hook-form';
+import { JSX, useEffect, useMemo, useState } from 'react';
+import { useForm,UseFormReturn } from 'react-hook-form';
 
 import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
-import { MEXCaseType } from '@casedata/interfaces/case-type';
 
 export const PhaseChanger = () => {
-  const { municipalityId, user, errand, setErrand, administrators, uiPhase } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
+  const administrators = useUserStore((s) => s.administrators);
+  const uiPhase = useCasedataStore((s) => s.uiPhase);
   const [isLoading, setIsLoading] = useState(false);
   const [phaseDialogOpen, setPhaseDialogOpen] = useState(false);
   const toastMessage = useSnackbar();
   const { pollDisplayPhase } = useDisplayPhasePoller();
-  const [allowed, setAllowed] = useState(false);
-  useEffect(() => {
-    if (!errand) return;
-    const _a = validateAction(errand, user);
-    setAllowed(_a);
+  const allowed = useMemo(() => {
+    if (!errand) return false;
+    return validateAction(errand, user);
   }, [user, errand]);
 
   const {
