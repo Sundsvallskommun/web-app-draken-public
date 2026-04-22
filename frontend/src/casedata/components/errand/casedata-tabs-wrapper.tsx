@@ -1,5 +1,5 @@
 import { CasedataMessagesTab } from '@casedata/components/errand/tabs/messages/casedata-messages-tab';
-import { MEXCaseType } from '@casedata/interfaces/case-type';
+import { MEXCaseType, MEXCaseTypesWithContractsAndBilling } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { getAssets } from '@casedata/services/asset-service';
@@ -252,23 +252,27 @@ export const CasedataTabsWrapper: React.FC = () => {
           ]
         : [],
     },
-    {
-      label: 'Engångsfakturering',
-      content: <CaseDataBillingForm />,
-      disabled: false,
-      visibleFor:
-        appConfig?.features?.useBilling && errand?.id
-          ? [
-              ErrandPhase.utredning,
-              ErrandPhase.beslut,
-              ErrandPhase.hantera,
-              ErrandPhase.verkstalla,
-              ErrandPhase.uppfoljning,
-              ErrandPhase.canceled,
-              ErrandPhase.overklagad,
-            ]
-          : [],
-    },
+    ...(appConfig.features.useBilling
+      ? [
+          {
+            label: 'Engångsfakturering',
+            content: <CaseDataBillingForm />,
+            disabled: false,
+            visibleFor:
+              errand?.id && MEXCaseTypesWithContractsAndBilling.includes(errand?.caseType)
+                ? [
+                    ErrandPhase.utredning,
+                    ErrandPhase.beslut,
+                    ErrandPhase.hantera,
+                    ErrandPhase.verkstalla,
+                    ErrandPhase.uppfoljning,
+                    ErrandPhase.canceled,
+                    ErrandPhase.overklagad,
+                  ]
+                : [],
+          },
+        ]
+      : []),
     ...(appConfig.features.useContracts
       ? [
           {
@@ -276,7 +280,7 @@ export const CasedataTabsWrapper: React.FC = () => {
             content: <CasedataContractTab setUnsaved={setUnsavedContract} update={() => {}} />,
             disabled: false,
             visibleFor:
-              !isPT() && errand?.id
+              errand?.id && MEXCaseTypesWithContractsAndBilling.includes(errand?.caseType)
                 ? [
                     ...(errand?.caseType === MEXCaseType.MEX_TERMINATION_OF_LEASE ? [ErrandPhase.aktualisering] : []),
                     ...(errand?.caseType === MEXCaseType.UPDATECONTRACT ? [ErrandPhase.aktualisering] : []),
