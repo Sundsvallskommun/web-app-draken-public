@@ -98,10 +98,10 @@ export interface Violation {
 }
 
 export interface PageScheduledBilling {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: ScheduledBilling[];
@@ -109,9 +109,9 @@ export interface PageScheduledBilling {
   number?: number;
   first?: boolean;
   last?: boolean;
+  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   sort?: SortObject;
   empty?: boolean;
 }
@@ -119,12 +119,12 @@ export interface PageScheduledBilling {
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  unpaged?: boolean;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  unpaged?: boolean;
   sort?: SortObject;
 }
 

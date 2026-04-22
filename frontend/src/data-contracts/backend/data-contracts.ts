@@ -405,7 +405,7 @@ export interface MessageResponse {
   lastName?: string;
   messageType?: string;
   mobileNumber?: string;
-  recipients?: any[];
+  recipients?: string[];
   ccRecipients?: string[];
   email?: string;
   htmlMessage?: string;
