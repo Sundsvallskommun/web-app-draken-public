@@ -118,6 +118,10 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
@@ -130,17 +134,20 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  number?: boolean;
   string?: boolean;
   boolean?: boolean;
+  number?: boolean;
   embeddedValue?: boolean;
 }
 
 export interface AssetUpdateRequest {
+  /** Asset status */
+  status?: Status;
+  /** Status reason */
+  statusReason?: string;
+}
+
+export interface DraftAssetUpdateRequest {
   /**
    * Valid to date
    * @format date

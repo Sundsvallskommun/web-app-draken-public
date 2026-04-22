@@ -575,11 +575,11 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
   valueNode?: boolean;
   container?: boolean;
   missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -591,27 +591,27 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
+  number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  number?: boolean;
   embeddedValue?: boolean;
 }
 
 export type SpecificationContractEntity = any;
 
 export interface PageContract {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Contract[];
   /** @format int32 */
   number?: number;
+  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
-  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
@@ -626,8 +626,8 @@ export interface PageableObject {
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  unpaged?: boolean;
   sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {

@@ -14,7 +14,8 @@ import {
 import dayjs from 'dayjs';
 import { CornerDownRight, Image, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus } from 'lucide-react';
 import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
-import { RenderSupportMessageReciever } from './render-support-message-reciever.component';
+
+import { EmailRecipients, RenderSupportMessageReciever } from './render-support-message-reciever.component';
 
 export const RenderedSupportMessage: FC<{
   update: () => void;
@@ -115,6 +116,11 @@ export const RenderedSupportMessage: FC<{
                   <p className="mr-md break-all font-bold">
                     Till: <RenderSupportMessageReciever selectedMessage={message} errand={supportErrand} />
                   </p>
+                  {message.communicationType === 'EMAIL' && message.ccRecipients?.length > 0 && (
+                    <p className="mr-md break-all font-bold">
+                      Kopia: <EmailRecipients recipients={message.ccRecipients} />
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
