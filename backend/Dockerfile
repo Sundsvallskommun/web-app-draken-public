@@ -1,4 +1,4 @@
-#Backend build
+#Backend
 # Install dependencies only when needed
 FROM node:22-slim AS deps
 
