@@ -19,7 +19,7 @@ let c_token_expires = 0;
 
 class ApiTokenService {
   public async getToken(): Promise<string> {
-    const redis = getRedisClient();
+    const redis = await getRedisClient();
 
     if (redis) {
       try {
@@ -47,7 +47,7 @@ class ApiTokenService {
     c_access_token = token.access_token;
     c_token_expires = expiresAt;
 
-    const redis = getRedisClient();
+    const redis = await getRedisClient();
     if (redis) {
       try {
         const ttlSeconds = Math.max(1, token.expires_in - 10);
