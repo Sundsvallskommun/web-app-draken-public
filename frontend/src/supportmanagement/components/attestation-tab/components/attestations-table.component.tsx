@@ -1,8 +1,8 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { formatCurrency, maybe, prettyTime } from '@common/services/helper-service';
-import { useBillingStore, useConfigStore } from '@stores/index';
 import { Button, Input, Pagination, Select, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
+import { useBillingStore, useConfigStore } from '@stores/index';
 import { attestationLabels, billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
 import { findAttestationStatusLabelForAttestationStatusKey } from '@supportmanagement/services/support-errand-service';
 import NextLink from 'next/link';
@@ -159,8 +159,12 @@ export const AttestationsTable: FC<{
         <Table.Column>{prettyTime(record.created)}</Table.Column>
         <Table.Column>{prettyTime(record.modified)}</Table.Column>
         <Table.Column>
-          {record.extraParameters?.['errandId'] ? (
-            <NextLink href={`/arende/${record.extraParameters?.['errandId']}`} target="_blank" className="underline">
+          {record.extraParameters?.['errandNumber'] ? (
+            <NextLink
+              href={`/arende/${record.extraParameters?.['errandNumber']}`}
+              target="_blank"
+              className="underline"
+            >
               {maybe(record.extraParameters?.['errandNumber'])}
             </NextLink>
           ) : (

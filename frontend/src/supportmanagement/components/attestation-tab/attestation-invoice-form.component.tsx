@@ -1,8 +1,8 @@
-import { useConfigStore, useUserStore } from '@stores/index';
 import { maybe, prettyTime } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Divider, FormErrorMessage, Select, Table, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore, useUserStore } from '@stores/index';
 import {
   approveBillingRecord,
   billingFormSchema,
@@ -50,16 +50,11 @@ export const AttestationInvoiceForm: FC<{
 
   const {
     register,
-    control,
     handleSubmit,
-    watch,
-    reset,
     trigger,
-    formState,
     getValues,
     setValue,
-    clearErrors,
-    formState: { errors, isDirty },
+    formState: { isDirty },
   } = formControls;
 
   const handleChange = useCallback(
@@ -168,9 +163,9 @@ export const AttestationInvoiceForm: FC<{
           <Table.Body>
             <Table.Row>
               <Table.Column>
-                {selectedRecord.extraParameters?.['errandId'] ? (
+                {selectedRecord.extraParameters?.['errandNumber'] ? (
                   <NextLink
-                    href={`/arende/${selectedRecord.extraParameters?.['errandId']}`}
+                    href={`/arende/${selectedRecord.extraParameters?.['errandNumber']}`}
                     target="_blank"
                     className="underline"
                   >
