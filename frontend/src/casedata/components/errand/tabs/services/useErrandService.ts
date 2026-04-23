@@ -1,7 +1,7 @@
 'use client';
 
 import type { Asset } from '@casedata/interfaces/asset';
-import { getAssets } from '@casedata/services/asset-service';
+import { getAssets, getDraftAssets } from '@casedata/services/asset-service';
 import type { RJSFSchema } from '@rjsf/utils';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -34,7 +34,8 @@ export function useErrandServices({
     setLoading(true);
     setError(undefined);
     try {
-      const resp = await getAssets({
+      const fetcher = status === 'DRAFT' ? getDraftAssets : getAssets;
+      const resp = await fetcher({
         municipalityId,
         partyId,
         assetId: errandNumber,

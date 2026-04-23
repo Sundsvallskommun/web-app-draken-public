@@ -5,9 +5,9 @@ import {
   buildRemoveParameterPayload,
   buildReplaceParameterPayload,
   buildUpdateAssetPayload,
-  createAsset,
-  getAssets,
-  updateAsset,
+  createDraftAsset,
+  getDraftAssets,
+  updateDraftAsset,
 } from '@casedata/services/asset-service';
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
@@ -88,13 +88,13 @@ export const CasedataServicesTab: React.FC = () => {
     partyId,
     errandNumber: errandNr,
     assetType,
-    status: 'ACTIVE',
+    status: 'DRAFT',
     schema,
   });
 
   const fetchAsset = useCallback(
     async (assetUuid: string) => {
-      const res = await getAssets({ municipalityId, partyId, assetId: errandNr, type: assetType });
+      const res = await getDraftAssets({ municipalityId, partyId, assetId: errandNr, type: assetType });
       return (res?.data ?? []).find((a) => a.id === assetUuid) ?? null;
     },
     [municipalityId, partyId, errandNr, assetType]
@@ -116,7 +116,7 @@ export const CasedataServicesTab: React.FC = () => {
           return;
         }
 
-        await updateAsset(municipalityId, asset.id, buildRemoveParameterPayload(paramIndex, asset));
+        await updateDraftAsset(municipalityId, asset.id, buildRemoveParameterPayload(paramIndex, asset));
         await refetch();
         toast(
           getToastOptions({
@@ -140,17 +140,17 @@ export const CasedataServicesTab: React.FC = () => {
     async (payload: any) => {
       if (!schema || !municipalityId || !schemaId) return;
       try {
-        const list = await getAssets({ municipalityId, partyId, assetId: errandNr, type: assetType });
+        const list = await getDraftAssets({ municipalityId, partyId, assetId: errandNr, type: assetType });
         const existingFull = (list?.data ?? [])[0];
 
         if (existingFull) {
-          await updateAsset(
+          await updateDraftAsset(
             municipalityId,
             existingFull.id,
             buildUpdateAssetPayload(payload, schema, { schemaId, assetType, partyId, assetId: errandNr }, existingFull)
           );
         } else {
-          await createAsset(
+          await createDraftAsset(
             municipalityId,
             buildCreateAssetPayload(payload, schema, {
               schemaId,
@@ -239,7 +239,7 @@ export const CasedataServicesTab: React.FC = () => {
           asset
         );
 
-        await updateAsset(municipalityId, assetUuid, replacePayload);
+        await updateDraftAsset(municipalityId, assetUuid, replacePayload);
         await refetch();
         closeEditModal();
         toast(getToastOptions({ message: 'Insatsen uppdaterades.', status: 'success' }));
@@ -251,7 +251,7 @@ export const CasedataServicesTab: React.FC = () => {
   );
 
   return (
-    <div className="w-full max-w-full py-24 px-32 overflow-x-hidden">
+    <div data-cy="services-tab" className="w-full max-w-full py-24 px-32 overflow-x-hidden">
       <h2 className="text-h4-sm md:text-h4-md">Insatser</h2>
       <p className="mt-sm text-md">
         Här specificeras vilka insatser som omfattas av färdtjänstbeslutet, samt eventuella tilläggstjänster och den
@@ -259,7 +259,7 @@ export const CasedataServicesTab: React.FC = () => {
       </p>
 
       {!(errand ? isErrandLocked(errand) : false) && (
-        <div className="mt-24 max-w-full">
+        <div data-cy="services-form" className="mt-24 max-w-full">
           {uiSchema && (
             <SchemaForm
               schema={filteredSchema!}
