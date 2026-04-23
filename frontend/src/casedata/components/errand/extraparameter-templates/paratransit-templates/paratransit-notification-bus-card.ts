@@ -1,11 +1,10 @@
 import { UppgiftField } from '@casedata/services/casedata-extra-parameters-service';
 
 export const notificationBusCard_UppgiftFieldTemplate: UppgiftField[] = [
-  //TODO: Check if valid paratransit is active. Only show this if the awnser is yes.
   {
-    field: 'personal.busCardForEscort',
+    field: 'personal.hasParatransitDecision',
     value: '',
-    label: 'Busskort gäller ledsagare/följeslagare',
+    label: 'Har den sökande ett utfärdat färdtjänstbeslut?',
     formField: {
       type: 'radio',
       options: [
@@ -13,15 +12,33 @@ export const notificationBusCard_UppgiftFieldTemplate: UppgiftField[] = [
         { label: 'Nej', value: 'NO' },
       ],
     },
-    section: 'Personlig information',
+    required: true,
+    section: 'Yttre omständigheter',
   },
   {
-    field: 'personal.caseDescription',
+    field: 'personal.noParatransitDecisionWarning',
     value: '',
-    label: 'Ärendebeskrivning',
+    label: '',
+    description: 'Det behöver finnas ett utfärdat färdtjänstbeslut för att få ansöka om busskort',
+    formField: {
+      type: 'info',
+    },
+    section: 'Yttre omständigheter',
+    dependsOn: [
+      {
+        field: 'personal.hasParatransitDecision',
+        value: 'NO',
+        validationMessage: '',
+      },
+    ],
+  },
+  {
+    field: 'personal.needsDescription',
+    value: '',
+    label: 'Beskriv behoven',
     formField: {
       type: 'textarea',
     },
-    section: 'Personlig information',
+    section: 'Yttre omständigheter',
   },
 ];

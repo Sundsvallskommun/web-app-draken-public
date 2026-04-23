@@ -16,12 +16,16 @@ export enum FTCaseLabel {
   // PARATRANSIT_RENEWAL = 'Ansökan fortsatt färdtjänst',
   PARATRANSIT_NATIONAL = 'Ansökan riksfärdtjänst',
   // PARATRANSIT_RIAK = 'Ansökan RIAK',
-  // PARATRANSIT_BUS_CARD = 'Ansökan busskort',
+  PARATRANSIT_CHANGE_APPLICATION = 'Ansökan förändring färdtjänst',
+  PARATRANSIT_REASSESSMENT_APPLICATION = 'Ansökan omprövning färdtjänst',
+  PARATRANSIT_BUS_CARD_APPLICATION = 'Ansökan busskort',
   PARATRANSIT_NOTIFICATION = 'Anmälan färdtjänst',
   // PARATRANSIT_NOTIFICATION_RENEWAL = 'Anmälan fortsatt färdtjänst',
   PARATRANSIT_NOTIFICATION_NATIONAL = 'Anmälan riksfärdtjänst',
   // PARATRANSIT_NOTIFICATION_RIAK = 'Anmälan RIAK',
-  // PARATRANSIT_NOTIFICATION_BUS_CARD = 'Anmälan busskort',
+  PARATRANSIT_NOTIFICATION_CHANGE = 'Anmälan förändring färdtjänst',
+  PARATRANSIT_NOTIFICATION_REASSESSMENT = 'Anmälan omprövning färdtjänst',
+  PARATRANSIT_NOTIFICATION_BUS_CARD = 'Anmälan busskort',
 }
 
 export const FTCaseShortLabel: Partial<Record<keyof typeof FTCaseLabel, string>> = {
@@ -29,13 +33,17 @@ export const FTCaseShortLabel: Partial<Record<keyof typeof FTCaseLabel, string>>
   // PARATRANSIT_RENEWAL: 'Ansökan forts. färdtjänst',
   PARATRANSIT_NATIONAL: 'Ansökan riksfärdtjänst',
   // PARATRANSIT_RIAK: 'Ansökan RIAK',
-  // PARATRANSIT_BUS_CARD: 'Ansökan busskort',
+  PARATRANSIT_CHANGE_APPLICATION: 'Ansökan förändring',
+  PARATRANSIT_REASSESSMENT_APPLICATION: 'Ansökan omprövning',
+  PARATRANSIT_BUS_CARD_APPLICATION: 'Ansökan busskort',
 
   PARATRANSIT_NOTIFICATION: 'Anmälan färdtjänst',
   // PARATRANSIT_NOTIFICATION_RENEWAL: 'Anmälan forts. färdtjänst',
   PARATRANSIT_NOTIFICATION_NATIONAL: 'Anmälan riksfärdtjänst',
   // PARATRANSIT_NOTIFICATION_RIAK: 'Anmälan RIAK',
-  // PARATRANSIT_NOTIFICATION_BUS_CARD: 'Anmälan busskort',
+  PARATRANSIT_NOTIFICATION_CHANGE: 'Anmälan förändring',
+  PARATRANSIT_NOTIFICATION_REASSESSMENT: 'Anmälan omprövning',
+  PARATRANSIT_NOTIFICATION_BUS_CARD: 'Anmälan busskort',
 };
 
 export enum MEXCaseLabel {
