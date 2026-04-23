@@ -7,8 +7,8 @@ import { getRedisClient } from './redis';
 
 const SESSION_TTL = 4 * 24 * 60 * 60;
 
-export function createSessionStore(): session.Store {
-  const redisClient = getRedisClient();
+export async function createSessionStore(): Promise<session.Store> {
+  const redisClient = await getRedisClient();
 
   if (redisClient) {
     logger.info('Using Redis session store');
