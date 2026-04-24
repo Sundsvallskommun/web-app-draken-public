@@ -5,7 +5,7 @@ import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { appConfig } from '@config/appconfig';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
@@ -87,7 +87,7 @@ export const OngoingCaseDataErrands: FC = () => {
     });
   };
 
-  const router = useRouter();
+  const navigate = useNavigate();
   const user = useUserStore((s) => s.user);
 
   useEffect(() => {
@@ -151,7 +151,7 @@ export const OngoingCaseDataErrands: FC = () => {
     setInitialFocus();
     setErrand(undefined);
     //eslint-disable-next-line
-  }, [router]);
+  }, [navigate]);
 
   useEffect(() => {
     if (errands) {

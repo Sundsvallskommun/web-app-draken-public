@@ -3,9 +3,10 @@ import { appealErrand, getErrand } from '@casedata/services/casedata-errand-serv
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore } from '@stores/index';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+
 
 export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -15,7 +16,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
   const toastMessage = useSnackbar();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const saveConfirm = useConfirm();
-  const router = useRouter();
+  const navigate = useNavigate();
   const {
     handleSubmit,
     formState: { errors },
@@ -41,7 +42,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
             status: 'success',
           })
         );
-        router.replace(`/arende/${appealedErrand.errand.errandNumber}`);
+        navigate(`/arende/${appealedErrand.errand.errandNumber}`, { replace: true });
         setIsLoading(false);
         return true;
       })
@@ -59,7 +60,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
   };
 
   const handleClick = (errand: IErrand) => {
-    window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${errand.relatesTo?.[0].errandNumber}`, '_blank');
+    window.open(`${import.meta.env.VITE_BASEPATH}/arende/${errand.relatesTo?.[0].errandNumber}`, '_blank');
   };
 
   return errand?.relatesTo && errand.relatesTo.length > 0 && errand.relatesTo[0].errandId ? (

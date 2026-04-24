@@ -1,5 +1,3 @@
-'use client';
-
 import { DecisionOutcomeKey } from '@casedata/interfaces/decision';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';

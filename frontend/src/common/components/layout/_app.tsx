@@ -1,5 +1,3 @@
-'use client';
-
 import { getFeatureFlags } from '@common/services/feature-flag-service';
 import { getAdminUsers, getMe } from '@common/services/user-service';
 import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
@@ -19,6 +17,7 @@ import dayjs from 'dayjs';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import utc from 'dayjs/plugin/utc';
 import { ReactNode, useEffect, useMemo, useSyncExternalStore } from 'react';
+
 
 dayjs.extend(utc);
 dayjs.locale('sv');
@@ -53,7 +52,7 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
   );
 
   useEffect(() => {
-    const municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '';
+    const municipalityId = import.meta.env.VITE_MUNICIPALITY_ID || '';
     useConfigStore.getState().setMunicipalityId(municipalityId);
 
     getMe()
@@ -76,8 +75,8 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
   }, []);
 
   useEffect(() => {
-    if (appConfig.isSupportManagement && process.env.NEXT_PUBLIC_MUNICIPALITY_ID) {
-      getSupportMetadata(process.env.NEXT_PUBLIC_MUNICIPALITY_ID).then((res) => {
+    if (appConfig.isSupportManagement && import.meta.env.VITE_MUNICIPALITY_ID) {
+      getSupportMetadata(import.meta.env.VITE_MUNICIPALITY_ID).then((res) => {
         useMetadataStore.getState().setSupportMetadata(res.metadata);
       });
     }

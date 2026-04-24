@@ -2,7 +2,9 @@
 # entrypoint.sh
 # Replaces build-time placeholders with runtime environment variables.
 
-replace_in_next() {
+STATIC_DIR="/opt/app-root/src"
+
+replace_in_dist() {
   local placeholder=$1
   local value=$2
 
@@ -13,37 +15,30 @@ replace_in_next() {
 
   echo "Replacing ${placeholder} with ${value}..."
 
-  # Replace in all text files under .next (js, css, html, json)
-  find /app/.next -type f \( -name "*.js" -o -name "*.css" -o -name "*.html" -o -name "*.json" \) \
+  # Replace in all JS and CSS files under dist
+  find "$STATIC_DIR" -type f \( -name "*.js" -o -name "*.css" -o -name "*.html" -o -name "*.json" \) \
     -exec sed -i "s|${placeholder}|${value}|g" {} +
 }
 
 echo "Replacing runtime environment variables..."
 echo "Running as user: $(id)"
 
-# --- Non NEXT_PUBLIC vars (explicit placeholders) ---
-replace_in_next "DOMAIN_NAME_PLACEHOLDER" "${DOMAIN_NAME:-__UNSET__}"
-replace_in_next "BASE_PATH_PLACEHOLDER" "${BASE_PATH:-__UNSET__}"
-replace_in_next "ADMIN_URL_PLACEHOLDER" "${ADMIN_URL:-__UNSET__}"
-replace_in_next "HEALTH_USERNAME_PLACEHOLDER" "${HEALTH_USERNAME:-__UNSET__}"
-replace_in_next "HEALTH_PASSWORD_PLACEHOLDER" "${HEALTH_PASSWORD:-__UNSET__}"
+# --- Non VITE vars (explicit placeholders) ---
+replace_in_dist "DOMAIN_NAME_PLACEHOLDER" "${DOMAIN_NAME:-__UNSET__}"
+replace_in_dist "BASE_PATH_PLACEHOLDER" "${BASE_PATH:-__UNSET__}"
+replace_in_dist "ADMIN_URL_PLACEHOLDER" "${ADMIN_URL:-__UNSET__}"
 
-# --- All NEXT_PUBLIC_* vars (automatic) ---
-echo "Replacing NEXT_PUBLIC_* placeholders..."
-env | grep '^NEXT_PUBLIC_' | while IFS='=' read -r name value; do
-  replace_in_next "${name}_PLACEHOLDER" "$value"
+# --- All VITE_* vars (automatic) ---
+echo "Replacing VITE_* placeholders..."
+env | grep '^VITE_' | while IFS='=' read -r name value; do
+  replace_in_dist "${name}_PLACEHOLDER" "$value"
 done
 
-# --- Replace placeholders in server.js ---
-# sed -i can't write temp files in /app, so process via /tmp and copy back
-echo "Preparing server.js..."
-cp /app/server.js /tmp/server.js
-sed -i "s|DOMAIN_NAME_PLACEHOLDER|${DOMAIN_NAME}|g" /tmp/server.js
-sed -i "s|BASE_PATH_PLACEHOLDER|${BASE_PATH}|g" /tmp/server.js
-env | grep '^NEXT_PUBLIC_' | while IFS='=' read -r name value; do
-  sed -i "s|${name}_PLACEHOLDER|${value}|g" /tmp/server.js
-done
-cp /tmp/server.js /app/server.js
+# --- Replace backend URL in nginx config ---
+if [ -n "$VITE_API_URL" ]; then
+  echo "Setting backend proxy URL to ${VITE_API_URL}..."
+  sed -i "s|BACKEND_URL_PLACEHOLDER|${VITE_API_URL}|g" /etc/nginx/nginx.conf
+fi
 
-echo "Starting Next.js..."
-exec node /app/server.js
+echo "Starting nginx..."
+exec nginx -g 'daemon off;'

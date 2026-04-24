@@ -16,7 +16,7 @@ import {
   getBillingRecords,
   useBillingRecords,
 } from '@supportmanagement/services/support-billing-service';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
@@ -63,7 +63,7 @@ export const AttestationTab = () => {
       initialFocus.current && initialFocus.current.focus();
     });
   };
-  const router = useRouter();
+  const navigate = useNavigate();
   const user = useUserStore((s) => s.user);
 
   useEffect(() => {
@@ -110,7 +110,7 @@ export const AttestationTab = () => {
     setSupportErrand(undefined as unknown as any);
     getBillingRecords(municipalityId);
     //eslint-disable-next-line
-  }, [router]);
+  }, [navigate]);
 
   useEffect(() => {
     if (billingRecords) {

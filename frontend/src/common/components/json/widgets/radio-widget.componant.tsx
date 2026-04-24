@@ -1,4 +1,3 @@
-'use client';
 import type { WidgetProps } from '@rjsf/utils';
 import { FormControl, RadioButton } from '@sk-web-gui/react';
 import { useId } from 'react';

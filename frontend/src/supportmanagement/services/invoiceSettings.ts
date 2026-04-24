@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+
 import { CAccountInformation } from 'src/data-contracts/backend/data-contracts';
 
 import { invoiceData2025 } from './invoiceData-2025';
@@ -60,6 +61,6 @@ export interface InvoiceTypeExternal {
   accountInformation: CAccountInformation;
 }
 
-const breakDate = process.env.NEXT_PUBLIC_INVOICE_BREAK_DATE;
+const breakDate = import.meta.env.VITE_INVOICE_BREAK_DATE;
 export const invoiceSettings =
   breakDate && dayjs().isBefore(dayjs(breakDate).endOf('day')) ? invoiceData2025 : invoiceData2026;

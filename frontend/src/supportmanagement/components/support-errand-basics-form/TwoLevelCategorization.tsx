@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
+
 export const TwoLevelCategorization: React.FC = () => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
@@ -28,7 +29,7 @@ export const TwoLevelCategorization: React.FC = () => {
         <FormControl id="category" className="w-full">
           <FormLabel>
             {t(
-              `common:basics_tab.categories.${process.env.NEXT_PUBLIC_APPLICATION}`,
+              `common:basics_tab.categories.${import.meta.env.VITE_APPLICATION}`,
               t('common:basics_tab.categories.default')
             )}
           </FormLabel>
@@ -63,10 +64,7 @@ export const TwoLevelCategorization: React.FC = () => {
       <div className="flex my-md gap-xl w-1/2">
         <FormControl id="type" className="w-full">
           <FormLabel>
-            {t(
-              `common:basics_tab.labels.${process.env.NEXT_PUBLIC_APPLICATION}`,
-              t('common:basics_tab.labels.default')
-            )}
+            {t(`common:basics_tab.labels.${import.meta.env.VITE_APPLICATION}`, t('common:basics_tab.labels.default'))}
           </FormLabel>
           <Select
             {...register('type')}

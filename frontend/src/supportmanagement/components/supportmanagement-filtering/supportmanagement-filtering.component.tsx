@@ -4,6 +4,7 @@ import { Button, Checkbox, cx, Link } from '@sk-web-gui/react';
 import { ListFilter } from 'lucide-react';
 import { FC, useState } from 'react';
 
+
 import {
   CaseAdminsFilter,
   CaseAdminsValues,
@@ -110,7 +111,7 @@ const SupportManagementFiltering: FC<{
               {show ? 'Dölj filter' : `Visa filter ${numberOfFilters !== 0 ? `(${numberOfFilters})` : ''}`}
             </Button>
             <Link
-              href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
+              href={`${import.meta.env.VITE_BASEPATH}/registrera`}
               target="_blank"
               data-cy="register-new-errand-button"
             >

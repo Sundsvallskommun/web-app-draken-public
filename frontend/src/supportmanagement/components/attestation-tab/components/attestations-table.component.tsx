@@ -5,7 +5,7 @@ import { SortMode } from '@sk-web-gui/table';
 import { useBillingStore, useConfigStore } from '@stores/index';
 import { attestationLabels, billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
 import { findAttestationStatusLabelForAttestationStatusKey } from '@supportmanagement/services/support-errand-service';
-import NextLink from 'next/link';
+import { Link as RouterLink } from 'react-router-dom';
 import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
@@ -160,13 +160,13 @@ export const AttestationsTable: FC<{
         <Table.Column>{prettyTime(record.modified)}</Table.Column>
         <Table.Column>
           {record.extraParameters?.['errandNumber'] ? (
-            <NextLink
-              href={`/arende/${record.extraParameters?.['errandNumber']}`}
+            <RouterLink
+              to={`/arende/${record.extraParameters?.['errandNumber']}`}
               target="_blank"
               className="underline"
             >
               {maybe(record.extraParameters?.['errandNumber'])}
-            </NextLink>
+            </RouterLink>
           ) : (
             maybe(record.extraParameters?.['errandNumber'])
           )}

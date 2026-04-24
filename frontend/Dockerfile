@@ -15,9 +15,6 @@ RUN npm install -g yarn \
 COPY --chown=1001:0 . .
 COPY --chown=1001:0 .env-cicd .env.local
 
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV DOCKER_BUILD=true
-
 # Optional deploy info from CI pipeline (Tekton)
 ARG DEPLOY_COMMIT=""
 ARG DEPLOY_BRANCH=""
@@ -33,31 +30,23 @@ RUN yarn build
 # =====================
 # Runtime
 # =====================
-FROM registry.access.redhat.com/ubi9/nodejs-22 AS runner
+FROM registry.access.redhat.com/ubi9/nginx-124 AS runner
 
-RUN echo "Runtime step"
-WORKDIR /app
+# Copy built static files
+COPY --from=builder --chown=1001:0 /app/dist /opt/app-root/src
 
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
+# Copy nginx config
+COPY --chown=1001:0 nginx.conf /etc/nginx/nginx.conf
 
-# Copy everything as root-owned and read-only
-COPY --from=builder --chown=0:0 --chmod=555 /app/next.config.js ./
-COPY --from=builder --chown=0:0 --chmod=555 /app/public ./public
-COPY --from=builder --chown=0:0 --chmod=444 /app/package.json ./
-COPY --from=builder --chown=0:0 --chmod=555 /app/.next/standalone ./
-COPY --from=builder --chown=0:0 --chmod=555 /app/.next/static ./.next/static
+# Copy entrypoint script
+COPY --chown=0:0 entrypoint.sh /opt/app-root/
+RUN sed -i 's/\r$//' /opt/app-root/entrypoint.sh && chmod 0555 /opt/app-root/entrypoint.sh
 
-# Grant write where entrypoint.sh needs to replace placeholders
+# Grant write to static files for runtime env replacement
 USER root
-RUN chown 1001:0 /app && chown 1001:0 /app/server.js && chmod g+w /app/server.js \
- && chown -R 1001:0 /app/.next && chmod -R g+w /app/.next
+RUN chown -R 1001:0 /opt/app-root/src && chmod -R g+w /opt/app-root/src
 USER 1001
 
-# Entrypoint — fix line endings before locking permissions
-COPY --chown=0:0 entrypoint.sh ./
-RUN sed -i 's/\r$//' ./entrypoint.sh && chmod 0555 ./entrypoint.sh
+EXPOSE 3000
 
-USER 1001
-
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["/opt/app-root/entrypoint.sh"]

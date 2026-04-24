@@ -1,5 +1,3 @@
-'use client';
-
 import { getUserEmployments, UserEmploymentDTO } from '@common/services/employee-service';
 import { getOrgLeafNodes, OrgLeafNodeDTO } from '@common/services/organization-service';
 import type { FieldProps } from '@rjsf/utils';

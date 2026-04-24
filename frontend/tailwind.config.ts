@@ -5,7 +5,8 @@ export default {
   mode: 'jit',
   content: [
     './node_modules/@sk-web-gui/*/dist/**/*.js',
-    './src/app/**/*.tsx',
+    './src/pages/**/*.tsx',
+    './src/components/**/*.tsx',
     './src/common/**/*.tsx',
     './src/casedata/components/**/*.tsx',
     './src/supportmanagement/components/**/*.tsx',

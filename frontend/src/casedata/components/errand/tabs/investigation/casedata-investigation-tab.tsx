@@ -1,5 +1,3 @@
-'use client';
-
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { DecisionOutcome } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';

@@ -6,7 +6,7 @@ import { deepFlattenToObject } from '@common/services/helper-service';
 import { Button } from '@sk-web-gui/react';
 import { useCasedataStore } from '@stores/index';
 import { ArrowRight } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { FC, JSX, useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
@@ -21,7 +21,7 @@ export const SaveButtonComponent: FC<{
 }> = (props) => {
   const errand = useCasedataStore((s) => s.errand);
   const [errandNumber, setErrandNumber] = useState<string | undefined>(errand?.errandNumber);
-  const router = useRouter();
+  const navigate = useNavigate();
   const [internalLoading, setInternalLoading] = useState(false);
 
   const { registeringNewErrand } = props;
@@ -30,7 +30,7 @@ export const SaveButtonComponent: FC<{
   useEffect(() => {
     setTimeout(() => {
       if (errandNumber && window.location.pathname.includes('registrera') && !formState.isDirty) {
-        router.push(`/arende/${errandNumber}`);
+        navigate(`/arende/${errandNumber}`);
       }
     }, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps

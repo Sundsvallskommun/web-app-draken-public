@@ -14,6 +14,7 @@ import { FC, useLayoutEffect, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
+
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
 
@@ -108,7 +109,7 @@ export const SupportErrandBasicsAboutForm: FC<{
             <FormControl id="cause" className="w-full">
               <FormLabel>
                 {t(
-                  `common:basics_tab.contactReason.${process.env.NEXT_PUBLIC_APPLICATION}`,
+                  `common:basics_tab.contactReason.${import.meta.env.VITE_APPLICATION}`,
                   t('common:basics_tab.contactReason.default')
                 )}
               </FormLabel>
@@ -184,7 +185,7 @@ export const SupportErrandBasicsAboutForm: FC<{
             className="w-full"
             onClick={() => setCauseDescriptionIsOpen((prev) => !prev)}
           >
-            {t(`common:basics_tab.cause_description.description_${process.env.NEXT_PUBLIC_APPLICATION}`)}
+            {t(`common:basics_tab.cause_description.description_${import.meta.env.VITE_APPLICATION}`)}
           </Checkbox>
           {causeDescriptionIsOpen ? (
             <FormControl id="causedescription" className="w-full mt-lg">

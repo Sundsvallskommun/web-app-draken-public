@@ -1,4 +1,3 @@
-'use client';
 import type { WidgetProps } from '@rjsf/utils';
 import { Combobox, FormErrorMessage } from '@sk-web-gui/react';
 

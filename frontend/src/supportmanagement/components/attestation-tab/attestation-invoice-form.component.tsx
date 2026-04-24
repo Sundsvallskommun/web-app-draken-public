@@ -13,7 +13,7 @@ import {
 } from '@supportmanagement/services/support-billing-service';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { Check, ThumbsDown } from 'lucide-react';
-import NextLink from 'next/link';
+import { Link as RouterLink } from 'react-router-dom';
 import { FC, useCallback, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
@@ -164,13 +164,13 @@ export const AttestationInvoiceForm: FC<{
             <Table.Row>
               <Table.Column>
                 {selectedRecord.extraParameters?.['errandNumber'] ? (
-                  <NextLink
-                    href={`/arende/${selectedRecord.extraParameters?.['errandNumber']}`}
+                  <RouterLink
+                    to={`/arende/${selectedRecord.extraParameters?.['errandNumber']}`}
                     target="_blank"
                     className="underline"
                   >
                     {maybe(selectedRecord.extraParameters?.['errandNumber'])}
-                  </NextLink>
+                  </RouterLink>
                 ) : (
                   maybe(selectedRecord.extraParameters?.['errandNumber'])
                 )}

@@ -1,7 +1,7 @@
 import { Button } from '@sk-web-gui/react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
-export default function RootNotFound() {
+export default function NotFoundPage() {
   return (
     <main>
       <div className="flex flex-col items-center justify-center min-h-screen gap-16 p-24">
@@ -11,7 +11,7 @@ export default function RootNotFound() {
           <p className="text-large text-dark-secondary">
             Sidan du letar efter finns inte eller har flyttats.
           </p>
-          <Link href="/oversikt">
+          <Link to="/oversikt">
             <Button color="vattjom">Gå till översikten</Button>
           </Link>
         </div>

@@ -12,7 +12,7 @@ import {
   acknowledgeSupportNotification,
   getSupportNotifications,
 } from '@supportmanagement/services/support-notification-service';
-import NextLink from 'next/link';
+import { Link as RouterLink } from 'react-router-dom';
 import { FC } from 'react';
 
 import { NotificationRenderIcon } from './notification-render-icon';
@@ -73,14 +73,14 @@ export const NotificationItem: FC<NotificationItemProps> = ({
       <div className="flex-grow">
         <div>
           <strong>{notification.description + ' › '}</strong>
-          <NextLink
-            href={`/arende/${notification.errandNumber}`}
+          <RouterLink
+            to={`/arende/${notification.errandNumber}`}
             target="_blank"
             onClick={handleAcknowledge}
             className="underline whitespace-nowrap"
           >
             {notification.errandNumber || 'Till ärendet'}
-          </NextLink>
+          </RouterLink>
         </div>
         <div>Från: {senderFallback(notification.createdByFullName || notification.createdBy)}</div>
         {subTypeLabel ? <div>Händelse: {subTypeLabel}</div> : null}

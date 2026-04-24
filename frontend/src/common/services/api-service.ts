@@ -1,6 +1,5 @@
-'use client';
-
 import axios, { AxiosError } from 'axios';
+
 
 export interface Data {
   error?: string;
@@ -14,10 +13,8 @@ export interface ApiResponse<T = unknown> {
 export const handleError = (error: AxiosError<ApiResponse>) => {
   if (globalThis.window !== undefined) {
     if (error?.response?.status === 401 && !globalThis.window.location.pathname.includes('login')) {
-      const basePath = process.env.NEXT_PUBLIC_BASEPATH || '';
-      globalThis.window.location.href = `${globalThis.window.location.origin}${basePath}/login?path=${globalThis.window.location.pathname}&failMessage=${
-        error.response.data.message
-      }`;
+      const basePath = import.meta.env.VITE_BASEPATH || '';
+      globalThis.window.location.href = `${globalThis.window.location.origin}${basePath}/login?path=${globalThis.window.location.pathname}&failMessage=${error.response.data.message}`;
     }
   }
 
@@ -31,28 +28,28 @@ const options = {
   withCredentials: true,
 };
 
-const get = <T>(url: string) => axios.get<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, options).catch(handleError);
+const get = <T>(url: string) => axios.get<T>(`${import.meta.env.VITE_API_URL}/${url}`, options).catch(handleError);
 
 const post = <T, U>(url: string, data: U, customOptions: { [key: string]: any } = {}) => {
   return axios
-    .post<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, data, { ...options, ...customOptions })
+    .post<T>(`${import.meta.env.VITE_API_URL}/${url}`, data, { ...options, ...customOptions })
     .catch(handleError);
 };
 
 const patch = <T, U>(url: string, data: U, customOptions: { [key: string]: any } = {}) => {
   return axios
-    .patch<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, data, { ...options, ...customOptions })
+    .patch<T>(`${import.meta.env.VITE_API_URL}/${url}`, data, { ...options, ...customOptions })
     .catch(handleError);
 };
 
 const put = <T, U>(url: string, data: U, customOptions: { [key: string]: any } = {}) => {
   return axios
-    .put<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, data, { ...options, ...customOptions })
+    .put<T>(`${import.meta.env.VITE_API_URL}/${url}`, data, { ...options, ...customOptions })
     .catch(handleError);
 };
 
 const deleteRequest = <T>(url: string) => {
-  return axios.delete<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, options).catch(handleError);
+  return axios.delete<T>(`${import.meta.env.VITE_API_URL}/${url}`, options).catch(handleError);
 };
 
 export const apiService = { get, post, patch, put, deleteRequest };

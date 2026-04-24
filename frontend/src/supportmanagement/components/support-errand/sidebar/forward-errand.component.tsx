@@ -1,5 +1,3 @@
-'use client';
-
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import TextEditor from '@common/components/dynamic-text-editor';
 import { deepFlattenToObject } from '@common/services/helper-service';

@@ -1,5 +1,3 @@
-'use client';
-
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import type { ObjectFieldTemplateProps, RJSFSchema, UiSchema } from '@rjsf/utils';
 import { Checkbox, Disclosure, Divider, Label } from '@sk-web-gui/react';

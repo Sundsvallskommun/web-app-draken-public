@@ -11,7 +11,7 @@ import {
   Status,
   useSupportErrands,
 } from '@supportmanagement/services/support-errand-service';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
@@ -98,7 +98,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
     });
   };
 
-  const router = useRouter();
+  const navigate = useNavigate();
   const user = useUserStore((s) => s.user);
 
   useEffect(() => {
@@ -199,7 +199,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
     setInitialFocus();
     setSupportErrand(undefined as unknown as any);
     //eslint-disable-next-line
-  }, [router]);
+  }, [navigate]);
 
   useEffect(() => {
     if (errands) {

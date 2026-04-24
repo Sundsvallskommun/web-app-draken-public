@@ -5,9 +5,9 @@ import { appConfig } from '@config/appconfig';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
-import NextLink from 'next/link';
-import { useParams, usePathname } from 'next/navigation';
+import { Link as RouterLink, useLocation, useParams } from 'react-router-dom';
 import { Fragment, useEffect, useState } from 'react';
+
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
 import { ExternalLink, Menu } from 'lucide-react';
@@ -18,7 +18,7 @@ export default function Layout({ title, children }: { title: string; children: R
   const applicationEnvironment = getApplicationEnvironment();
   const { isMinLargeDevice } = useThemeQueries();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
-  const pathName = usePathname() ?? '';
+  const pathName = useLocation().pathname ?? '';
   const errand = useCasedataStore((s) => s.errand);
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const params = useParams<{ errandNumber?: string }>();
@@ -30,8 +30,8 @@ export default function Layout({ title, children }: { title: string; children: R
   }, []);
 
   const MainTitle = () => (
-    <NextLink
-      href="/"
+    <RouterLink
+      to="/"
       className="no-underline"
       aria-label={`Draken - ${
         appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
@@ -40,23 +40,23 @@ export default function Layout({ title, children }: { title: string; children: R
       <Logo
         variant="service"
         title={'Draken'}
-        symbol={process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260' ? <AngeSymbol /> : undefined}
+        symbol={import.meta.env.VITE_MUNICIPALITY_ID === '2260' ? <AngeSymbol /> : undefined}
         subtitle={appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />
-    </NextLink>
+    </RouterLink>
   );
 
   const SingleErrandTitle = () => (
     <div className="flex items-center gap-24 py-10">
       <a
-        href={`${process.env.NEXT_PUBLIC_BASEPATH}`}
+        href={`${import.meta.env.VITE_BASEPATH}`}
         title={`Draken - ${
           appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
         }. Gå till startsidan.`}
       >
         <Logo
           variant="symbol"
-          symbol={process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260' ? <AngeSymbol /> : undefined}
+          symbol={import.meta.env.VITE_MUNICIPALITY_ID === '2260' ? <AngeSymbol /> : undefined}
           className="h-40"
         />
       </a>
@@ -110,7 +110,7 @@ export default function Layout({ title, children }: { title: string; children: R
 
               <Divider orientation="vertical" className="mx-24" />
               <Link
-                href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
+                href={`${import.meta.env.VITE_BASEPATH}/registrera`}
                 target="_blank"
                 data-cy="register-new-errand-button"
               >
@@ -132,7 +132,7 @@ export default function Layout({ title, children }: { title: string; children: R
                 <PopupMenu.Items>
                   <PopupMenu.Group>
                     <PopupMenu.Item>
-                      <Link href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}>
+                      <Link href={`${import.meta.env.VITE_BASEPATH}/registrera`}>
                         <ExternalLink className="h-md" /> Nytt ärende
                       </Link>
                     </PopupMenu.Item>
@@ -173,9 +173,9 @@ export default function Layout({ title, children }: { title: string; children: R
           <p>
             Vi använder kakor, cookies, för att ge dig en förbättrad upplevelse, sammanställa statistik och för att viss
             nödvändig funktionalitet ska fungera på webbplatsen.{' '}
-            <NextLink href="/kakor" passHref>
+            <RouterLink to="/kakor">
               <Button variant={'link'}>Läs mer om hur vi använder kakor</Button>
-            </NextLink>
+            </RouterLink>
           </p>
         }
         cookies={[

@@ -1,4 +1,3 @@
-'use client';
 import type { WidgetProps } from '@rjsf/utils';
 import { FormErrorMessage, Select } from '@sk-web-gui/react';
 
