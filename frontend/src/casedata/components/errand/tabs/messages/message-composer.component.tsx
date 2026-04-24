@@ -1,5 +1,3 @@
-'use client';
-
 import { Attachment } from '@casedata/interfaces/attachment';
 import { Channels } from '@casedata/interfaces/channels';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';

@@ -1,5 +1,5 @@
 import { Button, CookieConsent } from '@sk-web-gui/react';
-import NextLink from 'next/link';
+import { Link as RouterLink } from 'react-router-dom';
 import { ReactNode, useEffect, useState } from 'react';
 
 import { MainErrandsSidebar } from '../main-errands-sidebar/main-errands-sidebar.component';
@@ -48,9 +48,9 @@ export default function SidebarLayout({
           <p>
             Vi använder kakor, cookies, för att ge dig en förbättrad upplevelse, sammanställa statistik och för att viss
             nödvändig funktionalitet ska fungera på webbplatsen.{' '}
-            <NextLink href="/kakor" passHref>
+            <RouterLink to="/kakor">
               <Button variant={'link'}>Läs mer om hur vi använder kakor</Button>
-            </NextLink>
+            </RouterLink>
           </p>
         }
         cookies={[

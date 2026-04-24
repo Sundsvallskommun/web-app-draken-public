@@ -5,6 +5,7 @@ import { ChevronDown } from 'lucide-react';
 import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
 
 export interface CategoryFilter {
@@ -33,7 +34,7 @@ export const SupportManagementFilterCategory: FC = () => {
         size="sm"
         className="max-md:w-full"
       >
-        {t(`common:overview.orderType.${process.env.NEXT_PUBLIC_APPLICATION}`, t('common:overview.orderType.default'))}
+        {t(`common:overview.orderType.${import.meta.env.VITE_APPLICATION}`, t('common:overview.orderType.default'))}
       </PopupMenu.Button>
       <PopupMenu.Panel className="max-md:w-full max-h-[70vh] overflow-y-auto">
         <SearchField

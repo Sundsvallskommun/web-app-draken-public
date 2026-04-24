@@ -1,4 +1,3 @@
-'use client';
 import type { WidgetProps } from '@rjsf/utils';
 import TextEditor from '@common/components/dynamic-text-editor';
 

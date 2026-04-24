@@ -1,4 +1,5 @@
 import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
 import { isKC, isROB } from '@common/services/application-service';
@@ -364,7 +365,7 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   assignedGroupId: undefined,
   resolution: 'INFORMED',
   channel: 'PHONE',
-  municipalityId: process.env.NEXT_PUBLIC_MUNICIPALITY_ID,
+  municipalityId: import.meta.env.VITE_MUNICIPALITY_ID,
   description: '',
   messageContact: 'false',
   contactMeans: 'useEmail',

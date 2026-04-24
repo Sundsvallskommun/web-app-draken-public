@@ -15,6 +15,7 @@ import dayjs from 'dayjs';
 import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
+
 import { TableForm } from '../ongoing-casedata-errands.component';
 import { CasedataStatusLabelComponent } from './casedata-status-label.component';
 
@@ -77,7 +78,7 @@ export const ErrandsTable: FC = () => {
         throw new Error('Failed to acknowledge notification');
       });
     }
-    window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${errand.errandNumber}`, '_blank');
+    window.open(`${import.meta.env.VITE_BASEPATH}/arende/${errand.errandNumber}`, '_blank');
   };
 
   const primaryStakeholderNameorEmail = (errand: IErrand) => {

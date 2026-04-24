@@ -1,5 +1,6 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
 
+
 import { ApiSupportErrand } from './support-errand-service';
 
 export interface supportmanagementFacility {
@@ -24,7 +25,7 @@ interface Facility {
 }
 
 export const saveFacilityInfo = (id: string, facilities: Facility[]) => {
-  const municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID;
+  const municipalityId = import.meta.env.VITE_MUNICIPALITY_ID;
   const url = `supporterrands/saveFacilities/${municipalityId}/${id}`;
   const payload: FacilitiesPayload = {
     propertyDesignations: facilities?.map((f) => f.address?.propertyDesignation || '') || [],

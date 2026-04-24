@@ -15,6 +15,7 @@ import {
 import { getAdminName, primaryStakeholderNameorEmail } from '@supportmanagement/services/support-stakeholder-service';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
+
 import { SupportStatusLabelComponent } from '../ongoing-support-errands/components/support-status-label.component';
 
 export const useSupportErrandTable = (statuses: Status[]) => {
@@ -62,10 +63,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       },
     },
     {
-      label: t(
-        `common:overview.orderType.${process.env.NEXT_PUBLIC_APPLICATION}`,
-        t('common:overview.orderType.default')
-      ),
+      label: t(`common:overview.orderType.${import.meta.env.VITE_APPLICATION}`, t('common:overview.orderType.default')),
       screenReaderOnly: false,
       sortable: true,
       shownForStatus: All.ALL,
@@ -86,7 +84,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
     },
     {
       label: t(
-        `common:overview.errandType.${process.env.NEXT_PUBLIC_APPLICATION}`,
+        `common:overview.errandType.${import.meta.env.VITE_APPLICATION}`,
         t(`common:overview.errandType.default`)
       ),
       screenReaderOnly: false,

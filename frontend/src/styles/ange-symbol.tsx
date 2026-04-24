@@ -1,6 +1,7 @@
 import { FC, SVGProps } from 'react';
+
 export const AngeSymbol: FC<SVGProps<SVGSVGElement>> = (props) => {
-  if (process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260') {
+  if (import.meta.env.VITE_MUNICIPALITY_ID === '2260') {
     return (
       <svg
         id="Lager_1"

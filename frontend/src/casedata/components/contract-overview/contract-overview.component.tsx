@@ -6,6 +6,7 @@ import { Button, Link, useSnackbar } from '@sk-web-gui/react';
 import { FC, useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
+
 import { ContractDetailForm } from './contract-detail-form.component';
 import { ContractFilter, ContractFilterValues, ContractsFilteringComponent } from './contracts-filtering.component';
 import { ContractsTable, ContractTableForm } from './contracts-table.component';
@@ -158,11 +159,7 @@ export const ContractOverview: FC = () => {
   return (
     <div className="w-full h-screen relative flex flex-col overflow-hidden">
       <div className="box-border px-40 py-19 w-full flex justify-end items-center shadow-lg min-h-[6rem] max-small-device-max:px-24 flex-shrink-0">
-        <Link
-          href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
-          target="_blank"
-          data-cy="register-new-errand-button"
-        >
+        <Link href={`${import.meta.env.VITE_BASEPATH}/registrera`} target="_blank" data-cy="register-new-errand-button">
           <Button color={'vattjom'} variant={'primary'}>
             Nytt ärende
           </Button>

@@ -19,6 +19,7 @@ import {
 import { SupportManagementFilterQuery } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-query.component';
 import { ListFilter } from 'lucide-react';
 import { FC, useState } from 'react';
+
 export type AttestationFilter = AttestationInvoiceTypeFilter & AttestationStatusFilter & AttestationDatesFilter;
 export const AttestationValues = {
   ...AttestationInvoiceTypeValues,
@@ -59,7 +60,7 @@ export const AttestationsFilteringComponent: FC<{
               {show ? 'Dölj filter' : `Visa filter `}
             </Button>
             <Link
-              href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
+              href={`${import.meta.env.VITE_BASEPATH}/registrera`}
               target="_blank"
               data-cy="register-new-errand-button"
             >

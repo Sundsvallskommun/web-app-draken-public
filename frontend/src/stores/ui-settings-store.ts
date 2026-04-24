@@ -70,7 +70,7 @@ export const useUiSettingsStore = create(
       setClosedErrands: (closedErrands) => set({ closedErrands }),
     }),
     {
-      name: `${process.env.NEXT_PUBLIC_APPLICATION || 'app'}-ui-settings`,
+      name: `${import.meta.env.VITE_APPLICATION || 'app'}-ui-settings`,
       partialize: (state) =>
         ({
           colorScheme: state.colorScheme,

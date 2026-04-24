@@ -12,7 +12,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useBadgeStore, useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { ArrowRight } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useNavigate } from 'react-router-dom';
 import { FC, Fragment, useEffect, useRef, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -59,7 +59,7 @@ export const CasedataErrandComponent: FC = () => {
       initialFocus.current && initialFocus.current.focus();
     });
   };
-  const router = useRouter();
+  const navigate = useNavigate();
   const setUser = useUserStore((s) => s.setUser);
 
   useEffect(() => {
@@ -98,7 +98,7 @@ export const CasedataErrandComponent: FC = () => {
       setErrand(emptyErrand as IErrand);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router]);
+  }, [navigate]);
 
   useEffect(() => {
     if (errand) {

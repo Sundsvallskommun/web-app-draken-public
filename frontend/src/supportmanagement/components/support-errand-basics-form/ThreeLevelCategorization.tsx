@@ -6,6 +6,7 @@ import { ChangeEvent, FC, useEffect, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
+
 const CLASSIFICATIONS = {
   CATEGORY: 'CATEGORY',
   TYPE: 'TYPE',
@@ -164,7 +165,7 @@ export const ThreeLevelCategorization: FC<{
         <FormControl id="labelType" className="w-full" readOnly={!supportMetadata}>
           <FormLabel>
             {t(
-              `common:basics_tab.errandType.${process.env.NEXT_PUBLIC_APPLICATION}`,
+              `common:basics_tab.errandType.${import.meta.env.VITE_APPLICATION}`,
               t(`common:basics_tab.errandType.default`)
             )}
           </FormLabel>

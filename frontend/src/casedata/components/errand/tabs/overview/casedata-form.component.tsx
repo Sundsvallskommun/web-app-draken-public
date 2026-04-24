@@ -13,6 +13,7 @@ import { CircleAlert } from 'lucide-react';
 import { Dispatch, FC, SetStateAction, useEffect } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
+
 import { CasedataContactsComponent } from './casedata-contacts.component';
 export interface CasedataFormModel {
   id: string;
@@ -102,9 +103,9 @@ const CasedataForm: FC<CasedataFormProps> = ({
                   >
                     {Object.entries(Channels)
                       .filter((c) =>
-                        (AppChannels as Record<string, Channels[]>)[
-                          process.env.NEXT_PUBLIC_APPLICATION ?? ''
-                        ]?.includes(c[1] as Channels)
+                        (AppChannels as Record<string, Channels[]>)[import.meta.env.VITE_APPLICATION ?? '']?.includes(
+                          c[1] as Channels
+                        )
                       )
                       .map((c: [string, string]) => {
                         const id = c[0];

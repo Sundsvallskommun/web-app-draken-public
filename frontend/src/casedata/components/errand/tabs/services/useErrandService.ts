@@ -1,5 +1,3 @@
-'use client';
-
 import type { Asset } from '@casedata/interfaces/asset';
 import { getAssets } from '@casedata/services/asset-service';
 import type { RJSFSchema } from '@rjsf/utils';

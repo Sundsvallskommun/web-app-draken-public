@@ -42,6 +42,7 @@ import { useUiSettingsStore } from '@stores/ui-settings-store';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
 
+
 import { ApiResponse, apiService } from '../../common/services/api-service';
 import { saveErrandNote } from './casedata-errand-notes-service';
 import { extraParametersToUppgiftMapper } from './casedata-extra-parameters-service';
@@ -53,7 +54,9 @@ export const municipalityIds = [
   { label: 'Ånge', id: '2260' },
 ];
 
-export const defaultMunicipality = municipalityIds.find((m) => m.id === process.env.NEXT_PUBLIC_MUNICIPALITY_ID);
+export const defaultMunicipality = municipalityIds.find((m) => {
+  return m.id === import.meta.env.VITE_MUNICIPALITY_ID;
+});
 
 export const emptyMeaErrandList: ErrandsData = {
   errands: [],
@@ -336,7 +339,7 @@ export const getErrands: (
   sort?: { [key: string]: 'asc' | 'desc' },
   extraParameters?: { [key: string]: string }
 ) => Promise<ErrandsData> = (
-  municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID ?? '',
+  municipalityId = import.meta.env.VITE_MUNICIPALITY_ID ?? '',
   page = 0,
   size = 8,
   filter = {},
@@ -751,9 +754,9 @@ export const validateExtraParametersForDecision: (e: IErrand) => { valid: boolea
     }
   }, {} as Record<string, string>);
   let requiredExtraParameters: string[] = [];
-  if (isPT() && process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260') {
+  if (isPT() && import.meta.env.VITE_MUNICIPALITY_ID === '2260') {
     requiredExtraParameters = ['application.applicant.capacity', 'application.applicant.signingAbility'];
-  } else if (isPT() && process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2281') {
+  } else if (isPT() && import.meta.env.VITE_MUNICIPALITY_ID === '2281') {
     if (e.caseType === PTCaseType.PARKING_PERMIT || e.caseType === PTCaseType.PARKING_PERMIT_RENEWAL) {
       requiredExtraParameters = ['disability.duration', 'disability.walkingAbility'];
       if (e.extraParameters?.find((p) => p.key === 'application.applicant.capacity')?.values?.[0] === 'PASSENGER') {

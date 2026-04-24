@@ -9,10 +9,10 @@ export default defineConfig({
   retries: 0,
   e2e: {
     supportFile: 'cypress/support/e2e.ts',
-    baseUrl: `http://localhost:${process.env.PORT || '3000'}${process.env.NEXT_PUBLIC_BASEPATH || ''}`,
+    baseUrl: `http://localhost:${process.env.PORT || '3000'}${process.env.VITE_BASEPATH || ''}`,
     env: {
-      apiUrl: `${process.env.NEXT_PUBLIC_API_URL}`,
-      application_name: `${process.env.NEXT_PUBLIC_APPLICATION}`,
+      apiUrl: `${process.env.VITE_API_URL}`,
+      application_name: `${process.env.VITE_APPLICATION_NAME}`,
       // IMPORTANT
       // The value below is a test person number from Skatteverket, it is not a real person number
       mockPersonNumber: '199001012385',
@@ -73,8 +73,8 @@ export default defineConfig({
 
   component: {
     devServer: {
-      framework: 'next',
-      bundler: 'webpack',
+      framework: 'react',
+      bundler: 'vite',
     },
   },
 });

@@ -1,5 +1,3 @@
-'use client';
-
 import { FacilitySearchField } from '@common/components/json/fields/facility-search-field.componant';
 import { FieldTemplate } from '@common/components/json/fields/field-template.componant';
 import { SectionsObjectFieldTemplate } from '@common/components/json/fields/sections-object-field-template.componant';

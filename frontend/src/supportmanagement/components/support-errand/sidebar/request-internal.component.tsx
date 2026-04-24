@@ -1,5 +1,3 @@
-'use client';
-
 import { isIK, isLOP, isSE } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';

@@ -1,6 +1,5 @@
-'use client';
-
 import { useEffect, useState } from 'react';
+
 
 type DeployInfo = {
   commit: string;
@@ -11,7 +10,7 @@ type DeployInfo = {
 
 // Prevents build-time dead code elimination by using .includes() which Terser cannot statically evaluate.
 // In CICD builds, the inlined placeholder string is replaced by entrypoint.sh at container startup.
-const showDeployInfo = ['true'].includes(process.env.NEXT_PUBLIC_SHOW_DEPLOY_INFO ?? '');
+const showDeployInfo = ['true'].includes(import.meta.env.VITE_SHOW_DEPLOY_INFO ?? '');
 
 export function DeployInfoBanner() {
   const [info, setInfo] = useState<DeployInfo | null>(null);

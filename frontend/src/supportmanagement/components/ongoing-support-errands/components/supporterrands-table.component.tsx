@@ -9,6 +9,7 @@ import { globalAcknowledgeSupportNotification } from '@supportmanagement/service
 import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
+
 import { TableForm } from '../ongoing-support-errands.component';
 
 export const SupportErrandsTable: FC = () => {
@@ -91,7 +92,7 @@ export const SupportErrandsTable: FC = () => {
         throw new Error('Failed to acknowledge notification');
       });
     }
-    window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${errand.errandNumber}`, '_blank');
+    window.open(`${import.meta.env.VITE_BASEPATH}/arende/${errand.errandNumber}`, '_blank');
   };
 
   const errandTableObject = useSupportErrandTable(selectedSupportErrandStatuses as Status[]);

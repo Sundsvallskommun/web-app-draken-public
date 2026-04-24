@@ -31,9 +31,7 @@ export const CasedataFilterChannel: FC = () => {
         <PopupMenu.Items autoFocus={false}>
           {Object.entries(Channels)
             .filter((c) =>
-              (AppChannels as Record<string, Channels[]>)[process.env.NEXT_PUBLIC_APPLICATION ?? '']?.includes(
-                c[1] as Channels
-              )
+              (AppChannels as Record<string, Channels[]>)[import.meta.env.VITE_APPLICATION ?? '']?.includes(c[1] as Channels)
             )
             .map((c: [string, string], idx) => (
               <PopupMenu.Item key={`${c[1]}-${idx}`}>

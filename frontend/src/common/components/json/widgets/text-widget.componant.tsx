@@ -1,5 +1,3 @@
-'use client';
-
 import type { WidgetProps } from '@rjsf/utils';
 import { Input } from '@sk-web-gui/react';
 

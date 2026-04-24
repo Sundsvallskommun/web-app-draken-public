@@ -1,17 +1,15 @@
-'use client';
-
 import { ContractOverview } from '@casedata/components/contract-overview/contract-overview.component';
 import { OngoingCaseDataErrands } from '@casedata/components/ongoing-casedata-errands/ongoing-casedata-errands.component';
 import SidebarLayout from '@common/components/layout/sidebar-layout.component';
-import { useConfigStore, useUserStore } from '@stores/index';
+import { isMEX } from '@common/services/application-service';
 import { DeployInfoBanner } from '@common/utils/deploy-info-banner';
 import { appConfig } from '@config/appconfig';
+import { useConfigStore, useUserStore } from '@stores/index';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
 import { OngoingSupportErrands } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
 import { useState } from 'react';
-import { isMEX } from '@common/services/application-service';
 
-export function OversiktPageClient() {
+export default function OversiktPage() {
   const user = useUserStore((s) => s.user);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const [showAttestationTable, setShowAttestationTable] = useState<boolean>(false);

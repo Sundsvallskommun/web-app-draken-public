@@ -1,5 +1,3 @@
-'use client';
-
 import { ApiResponse, apiService } from '@common/services/api-service';
 
 export interface OrgLeafNodeDTO {

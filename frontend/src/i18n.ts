@@ -2,9 +2,14 @@ import { createInstance, i18n, Resource } from 'i18next';
 import resourcesToBackend from 'i18next-resources-to-backend';
 import { initReactI18next } from 'react-i18next/initReactI18next';
 
-import i18nConfig from './i18nConfig';
+const i18nConfig = {
+  locales: ['sv'],
+  defaultLocale: 'sv',
+};
 
-const initLocalization = async (locale: string, namespaces: string[], i18nInstance?: i18n, resources?: Resource) => {
+const namespaces = ['common', 'paths', 'layout', 'login', 'example', 'oversikt', 'registrera', 'messages'];
+
+const initLocalization = async (locale: string, ns: string[], i18nInstance?: i18n, resources?: Resource) => {
   i18nInstance = i18nInstance || createInstance();
 
   i18nInstance.use(initReactI18next);
@@ -12,7 +17,7 @@ const initLocalization = async (locale: string, namespaces: string[], i18nInstan
   if (!resources) {
     i18nInstance.use(
       resourcesToBackend(
-        (language: string, namespace: string) => import(`../../public/locales/${language}/${namespace}.json`)
+        (language: string, namespace: string) => import(`../public/locales/${language}/${namespace}.json`)
       )
     );
   }
@@ -22,9 +27,9 @@ const initLocalization = async (locale: string, namespaces: string[], i18nInstan
     resources,
     fallbackLng: i18nConfig.defaultLocale,
     supportedLngs: i18nConfig.locales,
-    defaultNS: namespaces[0],
-    fallbackNS: namespaces[0],
-    ns: namespaces,
+    defaultNS: ns[0],
+    fallbackNS: ns[0],
+    ns,
     preload: resources ? [] : i18nConfig.locales,
     initImmediate: false,
   });
@@ -36,4 +41,5 @@ const initLocalization = async (locale: string, namespaces: string[], i18nInstan
   };
 };
 
+export { i18nConfig, namespaces };
 export default initLocalization;

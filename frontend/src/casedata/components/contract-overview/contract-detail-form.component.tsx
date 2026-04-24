@@ -32,7 +32,7 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, Checkbox, FormControl, FormLabel, Modal, Select, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useUserStore } from '@stores/index';
 import { ExternalLink } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { FC, useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
@@ -151,7 +151,7 @@ export const ContractDetailForm: FC<{
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState<boolean>(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState<boolean>(false);
   const toastMessage = useSnackbar();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const contractTypeLabel = getContractTypeLabel(selectedContract.type);
   const isDraft = selectedContract.status === Status.DRAFT;
@@ -212,7 +212,7 @@ export const ContractDetailForm: FC<{
         })
       );
 
-      router.push(`/arende/${createdErrand.errand.errandNumber}`);
+      navigate(`/arende/${createdErrand.errand.errandNumber}`);
     } catch (error) {
       console.error('Error creating contract errand:', error);
       toastMessage({

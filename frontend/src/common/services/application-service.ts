@@ -1,7 +1,7 @@
 // String() prevents the minifier from folding placeholder comparisons at build time.
 // This ensures entrypoint.sh can replace placeholders in the built files at runtime.
-const APP = String(process.env.NEXT_PUBLIC_APPLICATION || '');
-const ENV = String(process.env.NEXT_PUBLIC_ENVIRONMENT || '');
+const APP = String(import.meta.env.VITE_APPLICATION || '');
+const ENV = String(import.meta.env.VITE_ENVIRONMENT || '');
 
 export const isKC = () => APP === 'KC';
 

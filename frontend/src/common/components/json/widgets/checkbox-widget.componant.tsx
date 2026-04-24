@@ -1,4 +1,3 @@
-'use client';
 import type { WidgetProps } from '@rjsf/utils';
 import { Checkbox, FormControl } from '@sk-web-gui/react';
 

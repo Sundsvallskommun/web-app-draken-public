@@ -15,9 +15,10 @@ import {
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
 import { ChevronsLeft, ChevronsRight, FileText, SquarePen } from 'lucide-react';
-import NextLink from 'next/link';
+import { Link as RouterLink } from 'react-router-dom';
 import { FC, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+
 
 import { userMenuGroups } from '../layout/userMenuGroups';
 
@@ -38,8 +39,8 @@ export const MainErrandsSidebar: FC<{
   const applicationEnvironment = getApplicationEnvironment();
 
   const MainTitle = (open: boolean) => (
-    <NextLink
-      href="/"
+    <RouterLink
+      to="/"
       className="no-underline"
       aria-label={`Draken - ${
         appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
@@ -48,11 +49,11 @@ export const MainErrandsSidebar: FC<{
       <Logo
         className={cx(open ? '' : 'w-[2.8rem]')}
         variant={open ? 'service' : 'symbol'}
-        symbol={process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260' ? <AngeSymbol /> : undefined}
+        symbol={import.meta.env.VITE_MUNICIPALITY_ID === '2260' ? <AngeSymbol /> : undefined}
         title={'Draken'}
         subtitle={appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />
-    </NextLink>
+    </RouterLink>
   );
   return (
     <aside

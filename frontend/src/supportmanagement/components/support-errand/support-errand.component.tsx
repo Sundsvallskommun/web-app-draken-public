@@ -12,9 +12,10 @@ import {
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportNotesCount } from '@supportmanagement/services/support-note-service';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useNavigate } from 'react-router-dom';
 import { FC, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+
 import * as yup from 'yup';
 
 import { SupportErrandSummary } from '../support-errand-basics-form/support-errand-summary.component';
@@ -58,7 +59,7 @@ export const SupportErrandComponent: FC = () => {
       initialFocus.current && initialFocus.current.focus();
     });
   };
-  const router = useRouter();
+  const navigate = useNavigate();
   const setUser = useUserStore((s) => s.setUser);
 
   const { theme } = useGui();
@@ -105,7 +106,7 @@ export const SupportErrandComponent: FC = () => {
         initiateSupportErrand(municipalityId)
           .then((result) =>
             setTimeout(() => {
-              router.push(`/arende/${result.errandNumber}`);
+              navigate(`/arende/${result.errandNumber}`);
             }, 10)
           )
           .catch((e) => {
@@ -121,7 +122,7 @@ export const SupportErrandComponent: FC = () => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router, municipalityId, errandNumber]);
+  }, [navigate, municipalityId, errandNumber]);
 
   useEffect(() => {
     if (supportErrand && !supportErrandIsEmpty(supportErrand)) {
@@ -169,7 +170,7 @@ export const SupportErrandComponent: FC = () => {
                               : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
                                   ?.displayName}
                           </h1>
-                          {process.env.NEXT_PUBLIC_APPLICATION === 'IAF' && <SupportErrandSummary />}
+                          {import.meta.env.VITE_APPLICATION === 'IAF' && <SupportErrandSummary />}
                         </>
                       ) : (
                         <div className="flex justify-between items-center pt-8">

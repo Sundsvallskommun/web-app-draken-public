@@ -1,5 +1,3 @@
-'use client';
-
 import { useJsonSchema } from '@common/components/json/hooks/useJsonSchema';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { JsonParameter } from '@common/data-contracts/supportmanagement/data-contracts';

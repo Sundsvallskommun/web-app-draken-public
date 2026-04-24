@@ -1,18 +1,12 @@
-'use client';
-
 import { Button } from '@sk-web-gui/react';
-import { useEffect } from 'react';
 import { TriangleAlert } from 'lucide-react';
+import { useEffect } from 'react';
+import { useRouteError } from 'react-router-dom';
 
-export default function ErrorPage({
-  error,
-  reset,
-}: Readonly<{
-  error: Error & { digest?: string };
-  reset: () => void;
-}>) {
+export default function ErrorPage() {
+  const error = useRouteError() as Error & { digest?: string };
+
   useEffect(() => {
-    // Logga felet till konsolen (ersätt med extern felrapportering vid behov)
     console.error('Ohanterat fel:', error);
   }, [error]);
 
@@ -25,19 +19,19 @@ export default function ErrorPage({
           <p className="text-large text-dark-secondary">
             Ett oväntat fel uppstod. Du kan försöka igen eller gå tillbaka till översikten.
           </p>
-          {error.digest && (
+          {error?.digest && (
             <p className="text-small text-dark-disabled">
               Felreferens: {error.digest}
             </p>
           )}
           <div className="flex gap-16">
-            <Button color="vattjom" onClick={reset}>
+            <Button color="vattjom" onClick={() => window.location.reload()}>
               Försök igen
             </Button>
             <Button
               variant="tertiary"
               color="vattjom"
-              onClick={() => (globalThis.window.location.href = '/')}
+              onClick={() => (window.location.href = '/')}
             >
               Gå till översikten
             </Button>
