@@ -88,7 +88,6 @@ export const CasedataServicesTab: React.FC = () => {
     partyId,
     errandNumber: errandNr,
     assetType,
-    status: 'DRAFT',
     schema,
   });
 
