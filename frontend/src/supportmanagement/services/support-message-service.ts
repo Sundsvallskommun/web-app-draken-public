@@ -44,6 +44,7 @@ export interface Message {
   conversationId?: string;
   messageId?: string;
   recipients: string[];
+  ccRecipients: string[];
 }
 
 const getClosingMessageBody = async (userName: string): Promise<string> => {
@@ -324,6 +325,7 @@ export const buildTree = (_list: Message[]) => {
           },
           children: [],
           recipients: [],
+          ccRecipients: [],
         };
         dummyParent?.children?.push(nodesMap.get(id)!);
         roots.push(dummyParent);

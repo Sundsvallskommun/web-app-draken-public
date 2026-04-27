@@ -4,20 +4,10 @@ import {
   deleteCasedataBillingRecord,
   updateCasedataBillingRecord,
 } from '@casedata/services/casedata-billing-service';
-import { useAppContext } from '@contexts/app.context';
-import {
-  Button,
-  DatePicker,
-  FormControl,
-  FormLabel,
-  Input,
-  Table,
-  Textarea,
-  useConfirm,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import { Button, DatePicker, FormControl, FormLabel, Input, Table, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore } from '@stores/index';
 import { Pen, Trash2 } from 'lucide-react';
-import { FC, useState } from 'react';
+import { useState } from 'react';
 import { CBillingRecord, CBillingRecordStatusEnum, CInvoiceRow } from 'src/data-contracts/backend/data-contracts';
 
 import { BillingStatusLabel } from './billing-status-label.component';
@@ -43,8 +33,8 @@ interface EditRowState {
   detailedDescription1: string;
   detailedDescription2: string;
   detailedDescription3: string;
-  quantity: number;
-  costPerUnit: number;
+  quantity: number | '';
+  costPerUnit: number | '';
   costCenter: string;
   subaccount: string;
   department: string;
@@ -53,8 +43,13 @@ interface EditRowState {
   object: string;
 }
 
-export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, onDeleteRecord, onUpdateRecord }) => {
-  const { municipalityId } = useAppContext();
+export const BillingTable: React.FC<BillingTableProps> = ({
+  errand,
+  billingRecords,
+  onDeleteRecord,
+  onUpdateRecord,
+}) => {
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -91,6 +86,17 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
 
   const handleSave = async (record: CBillingRecord) => {
     if (!editFormState) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    if (editFormState.date && editFormState.date < today) {
+      toastMessage({
+        position: 'bottom',
+        closeable: true,
+        message: 'Aviseringsdatum kan inte vara i det förflutna',
+        status: 'error',
+      });
+      return;
+    }
 
     setSavingId(record.id ?? null);
 
@@ -243,6 +249,9 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
   const handleSaveRow = () => {
     if (!editFormState || !editingRowState) return;
 
+    const quantity = editingRowState.quantity === '' ? 0 : editingRowState.quantity;
+    const costPerUnit = editingRowState.costPerUnit === '' ? 0 : editingRowState.costPerUnit;
+
     const updatedRows = editFormState.invoiceRows.map((row, index) => {
       if (index === editingRowState.rowIndex) {
         const existingAccountInfo = row.accountInformation?.[0] || {};
@@ -254,9 +263,9 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
             editingRowState.detailedDescription2,
             editingRowState.detailedDescription3,
           ].filter((d) => d !== ''),
-          quantity: editingRowState.quantity,
-          costPerUnit: editingRowState.costPerUnit,
-          totalAmount: editingRowState.quantity * editingRowState.costPerUnit,
+          quantity,
+          costPerUnit,
+          totalAmount: quantity * costPerUnit,
           accountInformation: [
             {
               ...existingAccountInfo,
@@ -266,7 +275,7 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
               activity: editingRowState.activity,
               project: editingRowState.project,
               article: editingRowState.object,
-              amount: editingRowState.quantity * editingRowState.costPerUnit,
+              amount: quantity * costPerUnit,
             },
           ],
         };
@@ -409,9 +418,9 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
 
                 <FormControl className="w-full">
                   <FormLabel>Avitext</FormLabel>
-                  <Textarea
+                  <Input
                     className="w-full"
-                    rows={3}
+                    maxLength={30}
                     value={editFormState?.description || ''}
                     onChange={(e) => handleFormChange('description', e.target.value)}
                   />
@@ -444,8 +453,14 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
                           <div className="flex flex-col gap-16 bg-background-color-mixin-1 p-18">
                             <div className="flex flex-row w-full gap-16">
                               <FormControl className="w-full">
-                                <FormLabel>Beskrivning</FormLabel>
+                                <div className="flex w-full justify-between">
+                                  <FormLabel>Beskrivning</FormLabel>
+                                  <span className="text-small text-dark-secondary">
+                                    {editingRowState.descriptions.length}/30
+                                  </span>
+                                </div>
                                 <Input
+                                  maxLength={30}
                                   value={editingRowState.descriptions}
                                   onChange={(e) => handleRowFieldChange('descriptions', e.target.value)}
                                 />
@@ -457,7 +472,12 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
                                   min={0}
                                   step={0.01}
                                   value={editingRowState.quantity}
-                                  onChange={(e) => handleRowFieldChange('quantity', parseFloat(e.target.value) || 0)}
+                                  onChange={(e) =>
+                                    handleRowFieldChange(
+                                      'quantity',
+                                      e.target.value === '' ? '' : parseFloat(e.target.value)
+                                    )
+                                  }
                                 />
                               </FormControl>
                               <FormControl className="w-full">
@@ -467,7 +487,12 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
                                   min={0}
                                   step={0.01}
                                   value={editingRowState.costPerUnit}
-                                  onChange={(e) => handleRowFieldChange('costPerUnit', parseFloat(e.target.value) || 0)}
+                                  onChange={(e) =>
+                                    handleRowFieldChange(
+                                      'costPerUnit',
+                                      e.target.value === '' ? '' : parseFloat(e.target.value)
+                                    )
+                                  }
                                 />
                               </FormControl>
                             </div>
@@ -520,6 +545,12 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
                             <div className="flex flex-col w-full gap-16">
                               <FormControl className="w-full">
                                 <FormLabel>Utökad beskrivning</FormLabel>
+                                <div className="flex w-full justify-between">
+                                  <FormLabel>Rad 1</FormLabel>
+                                  <span className="text-small text-dark-secondary">
+                                    {editingRowState.detailedDescription1.length}/51
+                                  </span>
+                                </div>
                                 <Input
                                   maxLength={51}
                                   value={editingRowState.detailedDescription1}
@@ -527,6 +558,12 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
                                 />
                               </FormControl>
                               <FormControl className="w-full">
+                                <div className="flex w-full justify-between">
+                                  <FormLabel>Rad 2</FormLabel>
+                                  <span className="text-small text-dark-secondary">
+                                    {editingRowState.detailedDescription2.length}/51
+                                  </span>
+                                </div>
                                 <Input
                                   maxLength={51}
                                   value={editingRowState.detailedDescription2}
@@ -534,6 +571,12 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
                                 />
                               </FormControl>
                               <FormControl className="w-full">
+                                <div className="flex w-full justify-between">
+                                  <FormLabel>Rad 3</FormLabel>
+                                  <span className="text-small text-dark-secondary">
+                                    {editingRowState.detailedDescription3.length}/51
+                                  </span>
+                                </div>
                                 <Input
                                   maxLength={51}
                                   value={editingRowState.detailedDescription3}
@@ -561,8 +604,8 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
                 return (
                   <tbody key={rowIndex}>
                     <Table.Row className="!border-b-0">
-                      <Table.Column>
-                        <div className="flex flex-col">
+                      <Table.Column className="!items-start">
+                        <div className="flex flex-col w-[36rem]">
                           <span className="font-bold mt-6">{row.descriptions?.join(', ') || '-'}</span>
                           {row.detailedDescriptions?.some((d) => d) && (
                             <div className="py-4">
@@ -577,20 +620,20 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
                           )}
                         </div>
                       </Table.Column>
-                      <Table.Column>
+                      <Table.Column className="-mr-18 !items-start">
                         <span className="mt-6">{row.quantity || 0}</span>
                       </Table.Column>
-                      <Table.Column>
+                      <Table.Column className="-mr-18 !items-start">
                         <span className="whitespace-nowrap mt-6">{(row.costPerUnit || 0).toFixed(2)} kr</span>
                       </Table.Column>
-                      <Table.Column>
+                      <Table.Column className="-mr-18 !items-start">
                         <span className="whitespace-nowrap mt-6">
                           {((row.quantity || 0) * (row.costPerUnit || 0)).toFixed(2)} kr
                         </span>
                       </Table.Column>
                       {isEditing && (
                         <>
-                          <Table.Column>
+                          <Table.Column className="max-w-[3rem]">
                             <div className="mt-6">
                               <Button
                                 size="sm"
@@ -603,7 +646,7 @@ export const BillingTable: FC<BillingTableProps> = ({ errand, billingRecords, on
                               </Button>
                             </div>
                           </Table.Column>
-                          <Table.Column>
+                          <Table.Column className="max-w-[3rem] mr-10">
                             <div className="mt-6">
                               <Button
                                 size="sm"

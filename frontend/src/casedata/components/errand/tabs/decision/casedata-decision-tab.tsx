@@ -36,9 +36,9 @@ import {
 } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
 import { triggerErrandPhaseChange } from '@casedata/services/process-service';
+import TextEditor from '@common/components/dynamic-text-editor';
 import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
 import { TemplatePdfPreview } from '@common/components/template-preview/template-pdf-preview.component';
-import { useAppContext } from '@common/contexts/app.context';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { MessageClassification } from '@common/interfaces/message';
 import { Template } from '@common/interfaces/template';
@@ -60,9 +60,9 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';
 import { Download, SendHorizontal } from 'lucide-react';
-import dynamic from 'next/dynamic';
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -71,7 +71,6 @@ import { CasedataMessageTabFormModel } from '../messages/message-composer.compon
 import { ServiceListComponent } from '../services/casedata-service-list.component';
 import { useErrandServices } from '../services/useErrandService';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
 
@@ -138,7 +137,10 @@ export const CasedataDecisionTab: FC<{
   update: () => void;
   onRefetchServices?: (refetch: () => void) => void;
 }> = (props) => {
-  const { municipalityId, user, errand, setErrand } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaveAndSendLoading, setIsSaveAndSendLoading] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -146,7 +148,6 @@ export const CasedataDecisionTab: FC<{
   const [error, setError] = useState<string>();
   const saveConfirm = useConfirm();
   const toastMessage = useSnackbar();
-  const [allowed, setAllowed] = useState(false);
   const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
   const [controlContractIsOpen, setControlContractIsOpen] = useState(false);
   const [serviceSchema, setServiceSchema] = useState<RJSFSchema | null>(null);
@@ -201,10 +202,9 @@ export const CasedataDecisionTab: FC<{
     }
   }, [props, refetchServices]);
 
-  useEffect(() => {
-    if (!errand) return;
-    const _a = validateAction(errand, user);
-    setAllowed(_a);
+  const allowed = useMemo(() => {
+    if (!errand) return false;
+    return validateAction(errand, user);
   }, [user, errand]);
 
   const {
@@ -462,8 +462,8 @@ export const CasedataDecisionTab: FC<{
       .then(async (confirmed) => {
         if (confirmed) {
           setIsLoading(true);
-          await saveCasedataErrand();
           const data = getValues();
+          await saveCasedataErrand();
           await save(data);
 
           return Promise.resolve(true);

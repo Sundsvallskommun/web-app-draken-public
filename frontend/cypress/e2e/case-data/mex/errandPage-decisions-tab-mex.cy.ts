@@ -122,7 +122,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           name: 'Testmall',
           description: 'En testmall',
           version: '1',
-          content: btoa('Testinnehåll från mall'),
+          content: btoa('Test content from template'),
           metadata: [
             { key: 'templateType', value: 'Decision' },
             { key: 'decision', value: 'REJECTION' },
@@ -138,7 +138,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="decisionTemplate-select"]').should('exist');
       cy.get('[data-cy="decisionTemplate-select"]').select('Testmall');
       // MEX: template content is injected into text editor, no PDF preview
-      cy.get('[data-cy="decision-richtext-wrapper"]').should('contain.text', 'Testinnehåll från mall');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('contain.text', 'Test content from template');
     });
 
     it('save button enabled but send decision is disabled if no decision, fromDate or toDate is selected', () => {

@@ -13,8 +13,8 @@ interface AddBillingServiceProps {
 
 const emptyFormState = {
   selectedServiceId: '',
-  quantity: 1,
-  costPerUnit: 0,
+  quantity: 1 as number | '',
+  costPerUnit: 0 as number | '',
   costCenter: '',
   subaccount: '',
   department: '',
@@ -78,7 +78,7 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
         department: service.accountInformation.department || '',
         activity: service.accountInformation.activity || '',
         project: service.accountInformation.project || '',
-        counterpart: service.accountInformation.counterpart || casedataInvoiceSettings.counterpart || '',
+        counterpart: service.accountInformation.counterpart || '00000000',
         object: service.accountInformation.object || '',
         beskrivning: service.description || '',
         descriptions: [service.detailedDescriptions?.[0] || '', formState.descriptions[1], formState.descriptions[2]],
@@ -94,21 +94,23 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
   };
 
   const handleSave = () => {
-    if (!selectedService || formState.quantity <= 0) {
+    const quantity = formState.quantity === '' ? 0 : formState.quantity;
+    const costPerUnit = formState.costPerUnit === '' ? 0 : formState.costPerUnit;
+
+    if (!selectedService || quantity <= 0) {
       return;
     }
 
-    const totalAmount = calculateServiceTotal(formState.quantity, formState.costPerUnit);
+    const totalAmount = calculateServiceTotal(quantity, costPerUnit);
 
     const serviceItem: BillingServiceItem = {
       id: editingService?.id || uuidv4(),
       serviceId: selectedService.id,
       name: selectedService.name,
       description: formState.beskrivning,
-      quantity: formState.quantity,
-      costPerUnit: formState.costPerUnit,
+      quantity,
+      costPerUnit,
       totalAmount,
-      unit: selectedService.unit,
       descriptions: formState.descriptions,
       accountInformation: {
         costCenter: formState.costCenter,
@@ -151,8 +153,15 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
       </div>
       <div className="flex flex-row w-full gap-16">
         <FormControl className="w-full">
-          <FormLabel>Beskrivning</FormLabel>
-          <Input value={formState.beskrivning} onChange={(e) => handleInputChange('beskrivning', e.target.value)} />
+          <div className="flex w-full justify-between">
+            <FormLabel>Beskrivning</FormLabel>
+            <span className="text-small text-dark-secondary">{formState.beskrivning.length}/30</span>
+          </div>
+          <Input
+            maxLength={30}
+            value={formState.beskrivning}
+            onChange={(e) => handleInputChange('beskrivning', e.target.value)}
+          />
         </FormControl>
         <FormControl className="w-full">
           <FormLabel>Antal</FormLabel>
@@ -161,7 +170,7 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
             min={0}
             step={0.01}
             value={formState.quantity}
-            onChange={(e) => handleInputChange('quantity', parseFloat(e.target.value) || 0)}
+            onChange={(e) => handleInputChange('quantity', e.target.value === '' ? '' : parseFloat(e.target.value))}
           />
         </FormControl>
         <FormControl className="w-full">
@@ -171,7 +180,7 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
             min={0}
             step={0.01}
             value={formState.costPerUnit}
-            onChange={(e) => handleInputChange('costPerUnit', parseFloat(e.target.value) || 0)}
+            onChange={(e) => handleInputChange('costPerUnit', e.target.value === '' ? '' : parseFloat(e.target.value))}
             disabled={selectedService?.fixedPrice}
           />
         </FormControl>
@@ -207,6 +216,10 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
       <div className="flex flex-col w-full gap-16">
         <FormControl className="w-full">
           <FormLabel>Utökad beskrivning</FormLabel>
+          <div className="flex w-full justify-between">
+            <FormLabel>Rad 1</FormLabel>
+            <span className="text-small text-dark-secondary">{formState.descriptions[0].length}/51</span>
+          </div>
           <Input
             maxLength={51}
             value={formState.descriptions[0]}
@@ -218,6 +231,10 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
           />
         </FormControl>
         <FormControl className="w-full">
+          <div className="flex w-full justify-between">
+            <FormLabel>Rad 2</FormLabel>
+            <span className="text-small text-dark-secondary">{formState.descriptions[1].length}/51</span>
+          </div>
           <Input
             maxLength={51}
             value={formState.descriptions[1]}
@@ -229,6 +246,10 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
           />
         </FormControl>
         <FormControl className="w-full">
+          <div className="flex w-full justify-between">
+            <FormLabel>Rad 3</FormLabel>
+            <span className="text-small text-dark-secondary">{formState.descriptions[2].length}/51</span>
+          </div>
           <Input
             maxLength={51}
             value={formState.descriptions[2]}
@@ -244,7 +265,7 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
         <Button variant="secondary" onClick={handleCancel}>
           Avbryt
         </Button>
-        <Button onClick={handleSave} disabled={!selectedService || formState.quantity <= 0} color={'vattjom'}>
+        <Button onClick={handleSave} disabled={!selectedService || !formState.quantity} color={'vattjom'}>
           {isEditing ? 'Spara' : 'Lägg till'}
         </Button>
       </div>

@@ -29,7 +29,12 @@ class ApiService {
           'Content-Type': 'application/json',
           'X-Request-Id': uuidv4(),
         };
-        logger.info(`x-request-id: ${defaultHeaders['X-Request-Id']}`);
+        const isSimulatorRequest = request.url?.includes('simulatorserver');
+        if (!isSimulatorRequest) {
+          const fullUrl = `${request.baseURL || ''}/${request.url}`;
+          logger.info(`MAKING ${request.method?.toUpperCase()} REQUEST TO URL ${fullUrl}`);
+          logger.info(`x-request-id: ${defaultHeaders['X-Request-Id']}`);
+        }
         request.headers = { ...defaultHeaders, ...request.headers } as any;
         request.headers['Content-Type'] = request.headers['Content-Type'] || defaultHeaders['Content-Type'];
         return Promise.resolve(request);
@@ -105,22 +110,18 @@ class ApiService {
   }
 
   public async get<T>(config: AxiosRequestConfig, user: User): Promise<ApiResponse<T>> {
-    logger.info(`MAKING GET REQUEST TO URL ${config.baseURL || ''}/${config.url}`);
     return this.request<T>({ ...config, method: 'GET' }, user);
   }
 
   public async post<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
-    logger.info(`MAKING POST REQUEST TO URL ${config.baseURL || ''}/${config.url}`);
     return this.request<T>({ ...config, method: 'POST' }, user);
   }
 
   public async patch<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
-    logger.info(`MAKING PATCH REQUEST TO URL ${config.baseURL || ''}/${config.url}`);
     return this.request<T>({ ...config, method: 'PATCH' }, user);
   }
 
   public async put<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
-    logger.info(`MAKING PUT REQUEST TO URL ${config.baseURL || ''}/${config.url}`);
     return this.request<T>({ ...config, method: 'PUT' }, user);
   }
 

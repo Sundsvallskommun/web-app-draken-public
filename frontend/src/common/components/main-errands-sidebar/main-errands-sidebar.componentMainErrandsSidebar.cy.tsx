@@ -1,9 +1,8 @@
 import { User } from '@common/interfaces/user';
-import { useAppContext } from '@contexts/app.context';
 import { mockMe } from '@cypress/e2e/case-data/fixtures/mockMe';
 import { mockNotifications } from '@cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
-import React, { useState } from 'react';
-
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useState } from 'react';
 import { MainErrandsSidebar } from './main-errands-sidebar.component';
 
 describe('<MainErrandsSidebar />', () => {
@@ -11,16 +10,14 @@ describe('<MainErrandsSidebar />', () => {
     const SidebarTestWrapper = () => {
       const [open, setOpen] = useState(false);
 
-      const { setUser, setNotifications, setMunicipalityId } = useAppContext();
-
-      setUser(mockMe.data as User);
-      setNotifications(mockNotifications);
-      setMunicipalityId('2281');
+      useUserStore.getState().setUser(mockMe.data as User);
+      useSupportStore.getState().setNotifications(mockNotifications);
+      useConfigStore.getState().setMunicipalityId('2281');
 
       return (
         <MainErrandsSidebar
-          showAttestationTable={undefined}
-          setShowAttestationTable={undefined}
+          showAttestationTable={false}
+          setShowAttestationTable={() => {}}
           open={open}
           setOpen={setOpen}
         />

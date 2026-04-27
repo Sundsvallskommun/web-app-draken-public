@@ -49,9 +49,9 @@ export const BillingServiceTable: FC<BillingServiceTableProps> = ({
           return (
             <tbody key={service.id}>
               <Table.Row className="!border-b-0">
-                <Table.Column>
-                  <div className="flex flex-col">
-                    <span className="font-bold mt-6">{service.name}</span>
+                <Table.Column className="!items-start">
+                  <div className="flex flex-col w-[36rem]">
+                    <span className="font-bold mt-6">{service.description}</span>
                     {service.descriptions?.some((d) => d) && (
                       <div className="py-4">
                         {service.descriptions
@@ -65,16 +65,16 @@ export const BillingServiceTable: FC<BillingServiceTableProps> = ({
                     )}
                   </div>
                 </Table.Column>
-                <Table.Column>
+                <Table.Column className="-mr-18 !items-start">
                   <span className="mt-6">{service.quantity}</span>
                 </Table.Column>
-                <Table.Column>
+                <Table.Column className="-mr-18 !items-start">
                   <span className="whitespace-nowrap mt-6">{service.costPerUnit.toFixed(2)} kr</span>
                 </Table.Column>
-                <Table.Column>
+                <Table.Column className="-mr-18 !items-start">
                   <span className="whitespace-nowrap mt-6">{service.totalAmount.toFixed(2)} kr</span>
                 </Table.Column>
-                <Table.Column>
+                <Table.Column className="max-w-[3rem]">
                   <div className="mt-6">
                     <Button
                       size="sm"
@@ -87,7 +87,7 @@ export const BillingServiceTable: FC<BillingServiceTableProps> = ({
                     </Button>
                   </div>
                 </Table.Column>
-                <Table.Column>
+                <Table.Column className="max-w-[3rem] mr-10">
                   <div className="mt-6">
                     <Button
                       size="sm"

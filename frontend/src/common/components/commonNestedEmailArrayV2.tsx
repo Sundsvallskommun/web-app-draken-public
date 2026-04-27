@@ -1,6 +1,6 @@
 import { PrettyRole } from '@casedata/interfaces/role';
 import { appConfig } from '@config/appconfig';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { useMetadataStore } from '@stores/index';
 import { Button, Chip, cx, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { ContactChannelType } from '@supportmanagement/services/support-errand-service';
 import { useEffect, useState } from 'react';
@@ -39,7 +39,7 @@ const CommonNestedEmailArrayV2 = ({
   size = 'sm',
 }: CommonNestedEmailArrayV2Props) => {
   const { emails, existingEmail, newEmail } = watch();
-  const { supportMetadata }: AppContextInterface = useAppContext();
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const { fields, remove, append } = useFieldArray<{ emails: { value: string }[] }>({
     control,
     name: 'emails',

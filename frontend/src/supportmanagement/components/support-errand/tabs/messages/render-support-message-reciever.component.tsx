@@ -36,7 +36,7 @@ interface EmailRecipientsProps {
   recipients: string[];
 }
 
-const EmailRecipients: FC<EmailRecipientsProps> = ({ recipients }) => {
+export const EmailRecipients: FC<EmailRecipientsProps> = ({ recipients }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const totalCount = recipients.length;

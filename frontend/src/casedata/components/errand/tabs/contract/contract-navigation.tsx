@@ -1,5 +1,5 @@
 import { ContractType } from '@casedata/interfaces/contracts';
-import { Badge, Link } from '@sk-web-gui/react';
+import { Badge, Link, cx } from '@sk-web-gui/react';
 import { FC } from 'react';
 
 export const ContractNavigation: FC<{ contractType: ContractType }> = ({ contractType }) => {
@@ -28,8 +28,10 @@ export const ContractNavigation: FC<{ contractType: ContractType }> = ({ contrac
             id={`badge-${h.key}`}
             counter=""
             rounded
-            className="!max-w-[10px] !min-w-[10px] !max-h-[10px] !min-h-[10px]"
-            style={{ backgroundColor: h.initiallyOpen ? 'black' : 'lightgray' }}
+            className={cx(
+              '!max-w-[10px] !min-w-[10px] !max-h-[10px] !min-h-[10px]',
+              h.initiallyOpen ? 'bg-black' : 'bg-gray-300'
+            )}
           />
           <Link variant="tertiary">{h.label}</Link>
         </div>

@@ -17,9 +17,9 @@ import {
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
+import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
-import { useAppContext } from '@common/contexts/app.context';
 import { isMEX } from '@common/services/application-service';
 import {
   invalidPhoneMessage,
@@ -44,13 +44,12 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { EMAIL_INFORMATION_TEXT } from '@supportmanagement/services/message-template-service';
 import { File, Paperclip, X } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import { FC, useEffect, useState } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface CasedataMessageTabFormModel {
   contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper' | 'draken' | 'minasidor' | 'katla';
@@ -163,7 +162,9 @@ export const MessageComposer: FC<{
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
-  const { municipalityId, errand, user } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const user = useUserStore((s) => s.user);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const [replying, setReplying] = useState(false);
@@ -171,14 +172,12 @@ export const MessageComposer: FC<{
 
   const closeConfirm = useConfirm();
   const toastMessage = useSnackbar();
-  const [allowed, setAllowed] = useState(false);
 
   const { templates } = useMessageTemplates(user, props.show);
 
-  useEffect(() => {
-    if (!errand) return;
-    const _a = validateAction(errand, user) && !!errand.administrator;
-    setAllowed(_a);
+  const allowed = useMemo(() => {
+    if (!errand) return false;
+    return validateAction(errand, user) && !!errand.administrator;
   }, [user, errand]);
 
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);

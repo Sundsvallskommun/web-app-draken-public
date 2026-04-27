@@ -1,7 +1,6 @@
-import FileUpload, { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
+import FileUpload, { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-import { useAppContext } from '@common/contexts/app.context';
 import { isKC } from '@common/services/application-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -18,6 +17,7 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import {
   ACCEPTED_UPLOAD_FILETYPES,
   deleteSupportAttachment,
@@ -58,7 +58,10 @@ const defaultAttachmentInformation: SupportAttachmentFormModel = {
 export const SupportErrandAttachmentsTab: FC<{
   update: () => void;
 }> = (props) => {
-  const { supportErrand, setSupportErrand, supportAttachments, user, municipalityId } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const supportAttachments = useSupportStore((s) => s.supportAttachments);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const [modalAttachment, setModalAttachment] = useState<SingleSupportAttachment>();
   const [addNewAttachment, setAddNewAttachment] = useState(false);
   const [modalFetching, setModalFetching] = useState(false);

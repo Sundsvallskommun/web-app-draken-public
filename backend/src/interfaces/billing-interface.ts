@@ -179,6 +179,9 @@ export class CBillingRecord implements BillingRecord {
     errandNumber: string;
     referenceName: string;
   };
+  @IsString()
+  @IsOptional()
+  transferDate?: string;
 }
 export class CSortObject implements SortObject {
   @IsOptional()

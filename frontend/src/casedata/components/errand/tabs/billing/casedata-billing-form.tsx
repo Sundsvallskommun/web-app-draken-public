@@ -6,11 +6,11 @@ import {
 } from '@casedata/services/casedata-billing-service';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
-import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Divider, FormErrorMessage, useSnackbar } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { Plus } from 'lucide-react';
-import { FC, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 import * as yup from 'yup';
@@ -25,8 +25,11 @@ const billingSchema = yup.object({
   specifications: yup.object({
     ourReference: yup.string().required('Vår referens måste anges'),
     customerReference: yup.string().required('Kundens referens måste anges'),
-    avitext: yup.string().required('Avitext måste anges'),
-    rejectionDate: yup.string(),
+    rejectionDate: yup.string().test('not-past', 'Aviseringsdatum kan inte vara i det förflutna', (value) => {
+      if (!value) return true;
+      const today = new Date().toISOString().split('T')[0];
+      return value >= today;
+    }),
     selectedFacilities: yup.array().of(yup.string()),
   }),
   services: yup.array().min(1, 'Lägg till minst en kontering'),
@@ -42,14 +45,25 @@ const billingSchema = yup.object({
       city: yup.string().required('Fakturamottagare saknar ort'),
       role: yup.string(),
     })
+    .test('has-recipient', 'Välj en fakturamottagare', (value) => {
+      if (!value) return false;
+      const hasAnyIdentity = !!(value.personId || value.organizationNumber || value.name || value.organizationName);
+      return hasAnyIdentity;
+    })
     .test('has-id', 'Fakturamottagare saknar personnummer/organisationsnummer', (value) => {
-      return !!(value?.organizationNumber || value?.personId);
+      if (!value) return true;
+      const hasAnyIdentity = !!(value.personId || value.organizationNumber || value.name || value.organizationName);
+      if (!hasAnyIdentity) return true;
+      return !!(value.organizationNumber || value.personId);
     })
     .required('Välj en fakturamottagare'),
 });
 
-export const CaseDataBillingForm: FC = () => {
-  const { errand, municipalityId, user, setErrand } = useAppContext();
+export const CaseDataBillingForm: React.FC = () => {
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
   const toastMessage = useSnackbar();
 
   const [billingRecords, setBillingRecords] = useState<CBillingRecord[]>([]);
@@ -174,7 +188,11 @@ export const CaseDataBillingForm: FC = () => {
       });
 
       await refreshErrand();
-      await fetchBillingRecords();
+      const updatedErrand = useCasedataStore.getState().errand;
+      if (updatedErrand) {
+        const records = await getCasedataBillingRecordsForErrand(updatedErrand, municipalityId);
+        setBillingRecords(records);
+      }
     } catch (error) {
       console.error('Failed to create invoice:', error);
       toastMessage({
@@ -215,16 +233,18 @@ export const CaseDataBillingForm: FC = () => {
             <span>&nbsp;för att kunna skapa en engångsfaktura.</span>
           </div>
         </div>
-        <div className="flex flex-col pt-24">
-          <h3 className="text-h3-md pb-6">Skapade fakturaunderlag</h3>
-          <span className="pb-16">Aviserade fakturor kommer att visas i avtalsöversikten</span>
-          <BillingTable
-            errand={errand!}
-            billingRecords={billingRecords}
-            onDeleteRecord={handleDeleteBillingRecord}
-            onUpdateRecord={handleUpdateBillingRecord}
-          />
-        </div>
+        {billingRecords.length > 0 && (
+          <div className="flex flex-col pt-24">
+            <h3 className="text-h3-md pb-6">Skapade fakturaunderlag</h3>
+            <span className="pb-16">Aviserade fakturor kommer att visas i avtalsöversikten</span>
+            <BillingTable
+              errand={errand!}
+              billingRecords={billingRecords}
+              onDeleteRecord={handleDeleteBillingRecord}
+              onUpdateRecord={handleUpdateBillingRecord}
+            />
+          </div>
+        )}
       </div>
     );
   }

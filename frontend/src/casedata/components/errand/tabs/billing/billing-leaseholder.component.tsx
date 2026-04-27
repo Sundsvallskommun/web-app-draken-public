@@ -1,30 +1,34 @@
 import { BillingFormData, BillingRecipient } from '@casedata/interfaces/billing';
 import { PrettyRole, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
-import { useAppContext } from '@contexts/app.context';
 import { FormControl, FormErrorMessage, FormLabel, Select } from '@sk-web-gui/react';
-import { FC, useState } from 'react';
-import { useFormContext } from 'react-hook-form';
+import { useCasedataStore } from '@stores/index';
+import { useEffect, useState } from 'react';
+import { useFormContext, useWatch } from 'react-hook-form';
 interface BillingLeaseholderProps {
   onSelectRecipient: (recipient: BillingRecipient | undefined) => void;
 }
 
-export const BillingLeaseholder: FC<BillingLeaseholderProps> = ({ onSelectRecipient }) => {
-  const { errand } = useAppContext();
+export const BillingLeaseholder: React.FC<BillingLeaseholderProps> = ({ onSelectRecipient }) => {
+  const errand = useCasedataStore((s) => s.errand);
   const {
     formState: { errors },
     setValue,
   } = useFormContext<BillingFormData>();
   const [selectedStakeholderId, setSelectedStakeholderId] = useState<string>('');
+  const recipient = useWatch<BillingFormData>({ name: 'recipient' });
 
-  if (!errand) {
-    return <span className="italic">Inga intressenter på ärendet</span>;
-  }
+  useEffect(() => {
+    if (!recipient) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedStakeholderId('');
+    }
+  }, [recipient]);
 
-  const stakeholders = (errand.stakeholders || []).filter((s) => !s.roles.includes(Role.ADMINISTRATOR));
+  const stakeholders = (errand?.stakeholders || []).filter((s) => !s.roles.includes(Role.ADMINISTRATOR));
 
   if (stakeholders.length === 0) {
-    return <span className="italic">Inga intressenter på ärendet</span>;
+    return <span className="text-secondary">Inga intressenter på ärendet</span>;
   }
 
   const getDisplayName = (s: CasedataOwnerOrContact) => {
@@ -65,9 +69,7 @@ export const BillingLeaseholder: FC<BillingLeaseholderProps> = ({ onSelectRecipi
 
   return (
     <FormControl className="w-full max-w-[46rem]" invalid={!!errors.recipient}>
-      <FormLabel>
-        Fakturamottagare * <span className="font-normal">(hämtas från grunduppgifter)</span>
-      </FormLabel>
+      <FormLabel>Fakturamottagare *</FormLabel>
       <Select className="w-full" value={selectedStakeholderId} onChange={(e) => handleSelect(e.target.value)}>
         <Select.Option value="">Välj fakturamottagare</Select.Option>
         {stakeholders.map((s) => (
@@ -76,6 +78,7 @@ export const BillingLeaseholder: FC<BillingLeaseholderProps> = ({ onSelectRecipi
           </Select.Option>
         ))}
       </Select>
+      <small>Fakturamottagare hämtas från de parter som lagts till under Grunduppgifter.</small>
       {errors.recipient && (
         <FormErrorMessage>{errors.recipient.message || 'Välj en fakturamottagare'}</FormErrorMessage>
       )}

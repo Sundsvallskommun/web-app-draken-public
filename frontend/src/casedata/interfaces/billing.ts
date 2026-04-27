@@ -12,7 +12,6 @@ export interface BillingServiceItem {
   quantity: number;
   costPerUnit: number;
   totalAmount: number;
-  unit: string;
   descriptions: string[];
   accountInformation: BillingAccountInformation;
 }

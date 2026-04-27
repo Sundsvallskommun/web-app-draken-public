@@ -18,6 +18,16 @@ COPY --chown=1001:0 .env-cicd .env.local
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DOCKER_BUILD=true
 
+# Optional deploy info from CI pipeline (Tekton)
+ARG DEPLOY_COMMIT=""
+ARG DEPLOY_BRANCH=""
+
+RUN if [ -n "$DEPLOY_COMMIT" ]; then \
+  printf '{\n  "commit": "%s",\n  "branch": "%s",\n  "updatedAt": "%s"\n}' \
+    "$DEPLOY_COMMIT" "$DEPLOY_BRANCH" "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" \
+  > public/deploy-info.json && echo "Generated deploy-info.json from build args"; \
+fi
+
 RUN yarn build
 
 # =====================

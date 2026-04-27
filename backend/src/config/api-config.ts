@@ -30,15 +30,19 @@ export const APIS = [
   },
   {
     name: 'case-data',
-    version: '11.14',
+    version: '12.1',
   },
   {
     name: 'supportmanagement',
-    version: '12.7',
+    version: '14.0',
   },
   {
     name: 'billingpreprocessor',
-    version: '4.4',
+    version: '4.5',
+  },
+  {
+    name: 'billing-data-collector',
+    version: '1.1',
   },
   {
     name: 'legalentity',

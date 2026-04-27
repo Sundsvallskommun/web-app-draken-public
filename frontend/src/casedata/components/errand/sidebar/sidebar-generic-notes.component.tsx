@@ -7,24 +7,28 @@ import {
   saveErrandNote,
 } from '@casedata/services/casedata-errand-notes-service';
 import { getErrand, isErrandAdmin } from '@casedata/services/casedata-errand-service';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Avatar, Button, cx, Divider, FormControl, Modal, PopupMenu, Textarea, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
+import { useEffect, useMemo, FC, useState } from 'react';
+import { UseFormReturn, useForm } from 'react-hook-form';
 import { Ellipsis, Pencil, Trash } from 'lucide-react';
-import { FC, useEffect, useState } from 'react';
-import { useForm, UseFormReturn } from 'react-hook-form';
 
 export const SidebarGenericNotes: FC<{
   label_plural: 'Kommentarer' | 'Tjänsteanteckningar';
   label_singular: 'Kommentar' | 'Tjänsteanteckning';
   noteType: NoteType;
 }> = ({ label_plural, label_singular, noteType }) => {
-  const { municipalityId, user, errand, setErrand, administrators, uiPhase } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
+  const administrators = useUserStore((s) => s.administrators);
+  const uiPhase = useCasedataStore((s) => s.uiPhase);
   const [selectedNote, setSelectedNote] = useState<ErrandNote>();
-  const [notes, setNotes] = useState<ErrandNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const [activePage, setActivePage] = useState(1);
@@ -100,14 +104,17 @@ export const SidebarGenericNotes: FC<{
     console.error('Something went wrong when saving note');
   };
 
-  useEffect(() => {
-    setNotes(
+  const notes = useMemo(
+    () =>
       (errand?.notes ?? [])
         .sort((a, b) =>
           dayjs(a.updated).isAfter(dayjs(b.updated)) ? 1 : dayjs(b.updated).isAfter(dayjs(a.updated)) ? -1 : 0
         )
-        .reverse()
-    );
+        .reverse(),
+    [errand?.notes]
+  );
+
+  useEffect(() => {
     if (selectedNote) {
       setSelectedNote(errand?.notes?.find((n) => n.id === selectedNote.id));
     }

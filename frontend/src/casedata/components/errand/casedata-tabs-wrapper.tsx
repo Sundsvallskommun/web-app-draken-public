@@ -1,4 +1,5 @@
 import { CasedataMessagesTab } from '@casedata/components/errand/tabs/messages/casedata-messages-tab';
+import { MEXCaseType, MEXCaseTypesWithContractsAndBilling } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { getAssets } from '@casedata/services/asset-service';
@@ -12,12 +13,12 @@ import {
 } from '@casedata/services/casedata-message-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { getUiPhase, phaseChangeInProgress } from '@casedata/services/process-service';
-import { useAppContext } from '@common/contexts/app.context';
 import { isPT } from '@common/services/application-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { Tabs, useSnackbar } from '@sk-web-gui/react';
-import { FC, ReactNode, useEffect, useRef, useState } from 'react';
+import { useCasedataStore, useConfigStore } from '@stores/index';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { CasedataAttachments } from './tabs/attachments/casedata-attachments.component';
@@ -29,11 +30,10 @@ import { CasedataInvestigationTab } from './tabs/investigation/casedata-investig
 import CasedataForm from './tabs/overview/casedata-form.component';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
-import { MEXCaseType } from '@casedata/interfaces/case-type';
 
-export const CasedataTabsWrapper: FC = () => {
+export const CasedataTabsWrapper: React.FC = () => {
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const {
-    municipalityId,
     errand,
     setErrand,
     messages,
@@ -44,7 +44,7 @@ export const CasedataTabsWrapper: FC = () => {
     setAssets,
     assets,
     uiPhase,
-  } = useAppContext();
+  } = useCasedataStore();
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [unsavedUppgifter, setUnsavedUppgifter] = useState(false);
   const [unsavedContract, setUnsavedContract] = useState(false);
@@ -252,23 +252,27 @@ export const CasedataTabsWrapper: FC = () => {
           ]
         : [],
     },
-    {
-      label: 'Engångsfakturering',
-      content: <CaseDataBillingForm />,
-      disabled: false,
-      visibleFor:
-        appConfig?.features?.useBilling && errand?.id
-          ? [
-              ErrandPhase.utredning,
-              ErrandPhase.beslut,
-              ErrandPhase.hantera,
-              ErrandPhase.verkstalla,
-              ErrandPhase.uppfoljning,
-              ErrandPhase.canceled,
-              ErrandPhase.overklagad,
-            ]
-          : [],
-    },
+    ...(appConfig.features.useBilling
+      ? [
+          {
+            label: 'Engångsfakturering',
+            content: <CaseDataBillingForm />,
+            disabled: false,
+            visibleFor:
+              errand?.id && MEXCaseTypesWithContractsAndBilling.includes(errand?.caseType)
+                ? [
+                    ErrandPhase.utredning,
+                    ErrandPhase.beslut,
+                    ErrandPhase.hantera,
+                    ErrandPhase.verkstalla,
+                    ErrandPhase.uppfoljning,
+                    ErrandPhase.canceled,
+                    ErrandPhase.overklagad,
+                  ]
+                : [],
+          },
+        ]
+      : []),
     ...(appConfig.features.useContracts
       ? [
           {
@@ -276,8 +280,9 @@ export const CasedataTabsWrapper: FC = () => {
             content: <CasedataContractTab setUnsaved={setUnsavedContract} update={() => {}} />,
             disabled: false,
             visibleFor:
-              !isPT() && errand?.id
+              errand?.id && MEXCaseTypesWithContractsAndBilling.includes(errand?.caseType)
                 ? [
+                    ...(errand?.caseType === MEXCaseType.MEX_TERMINATION_OF_LEASE ? [ErrandPhase.aktualisering] : []),
                     ...(errand?.caseType === MEXCaseType.UPDATECONTRACT ? [ErrandPhase.aktualisering] : []),
                     ErrandPhase.utredning,
                     ErrandPhase.beslut,
@@ -437,7 +442,12 @@ export const CasedataTabsWrapper: FC = () => {
     <div className="mb-xl">
       <WarnIfUnsavedChanges
         showWarning={
-          methods.formState.isDirty || unsavedChanges || unsavedUppgifter || unsavedUtredning || unsavedDecision
+          methods.formState.isDirty ||
+          unsavedChanges ||
+          unsavedUppgifter ||
+          unsavedUtredning ||
+          unsavedDecision ||
+          unsavedContract
         }
       >
         <Tabs

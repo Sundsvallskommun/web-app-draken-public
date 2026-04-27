@@ -1,13 +1,16 @@
 import { GenericChangeData, ParsedErrandChange, ParsedErrandHistory } from '@casedata/interfaces/history';
 import { fetchChangeData, getErrandHistory } from '@casedata/services/casedata-history-service';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { sanitized } from '@common/services/sanitizer-service';
 import { Button, cx, Modal, Spinner } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { History } from 'lucide-react';
-import { FC, useEffect, useState } from 'react';
-export const SidebarHistory: FC<{}> = () => {
-  const { municipalityId, errand, administrators } = useAppContext();
+import { useEffect, useState } from 'react';
+
+export const SidebarHistory: React.FC<{}> = () => {
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const administrators = useUserStore((s) => s.administrators);
   const [history, setHistory] = useState<ParsedErrandHistory>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

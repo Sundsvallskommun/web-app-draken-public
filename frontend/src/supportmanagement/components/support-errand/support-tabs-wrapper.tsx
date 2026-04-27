@@ -1,7 +1,7 @@
-import { useAppContext } from '@common/contexts/app.context';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
 import { countAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
@@ -32,8 +32,8 @@ export const SupportTabsWrapper: FC<{
   const [supportConversations, setSupportConversations] = useState<any>([]);
   const [messageTree, setMessageTree] = useState<MessageNode[]>([]);
   const [conversationMessageTree, setConversationMessageTree] = useState<MessageNode[]>([]);
-  const { municipalityId, supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } =
-    useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
 
   const [unsavedChanges, setUnsavedChanges] = useState(false);
 

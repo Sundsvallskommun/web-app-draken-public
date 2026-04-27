@@ -8,6 +8,7 @@ import { ActiveDirectoryController } from './controllers/active-directory.contro
 import { AddressController } from './controllers/address.controller';
 import { AssetController } from './controllers/asset.controller';
 import { BillingController } from './controllers/billing.controller';
+import { BillingDataCollectorController } from './controllers/billingdatacollector.controller';
 import { CaseDataAttachmentController } from './controllers/casedata/casedata-attachment.controller';
 import { CaseDataConversationController } from './controllers/casedata/casedata-conversation.controller';
 import { CaseDataDecisionsController } from './controllers/casedata/casedata-decision.controller';
@@ -15,7 +16,7 @@ import { CaseDataErrandController } from './controllers/casedata/casedata-errand
 import { caseDataFacilitiesController } from './controllers/casedata/casedata-facilities.controller';
 import { CaseDataHistoryController } from './controllers/casedata/casedata-history.controller';
 import { CasedataNotesController } from './controllers/casedata/casedata-notes.controller';
-import { CasedataNotificationController } from './controllers/casedata/casedata-notification-controller';
+import { CasedataNotificationController } from './controllers/casedata/casedata-notification.controller';
 import { CasedataStakeholderController } from './controllers/casedata/casedata-stakeholder.controller';
 import { ExtraParameterController } from './controllers/casedata/extraparameter.controller';
 import { CaseStatusController } from './controllers/casestatus.controller';
@@ -36,55 +37,58 @@ import { SupportHistoryController } from './controllers/supportmanagement/suppor
 import { SupportMessageController } from './controllers/supportmanagement/support-message.controller';
 import { SupportMetadataController } from './controllers/supportmanagement/support-metadata.controller';
 import { SupportNoteController } from './controllers/supportmanagement/support-note.controller';
-import { SupportNotificationController } from './controllers/supportmanagement/support-notification-controller';
+import { SupportNotificationController } from './controllers/supportmanagement/support-notification.controller';
 import { TemplateController } from './controllers/template.controller';
 import { UserController } from './controllers/user.controller';
 
 validateEnv();
 
-const sessionStore = createSessionStore();
+(async () => {
+  const sessionStore = await createSessionStore();
 
-const app = new App(
-  [
-    ActiveDirectoryController,
-    AddressController,
-    AssetController,
-    BillingController,
-    CaseDataAttachmentController,
-    CasedataContractsController,
-    CaseDataDecisionsController,
-    CaseDataErrandController,
-    caseDataFacilitiesController,
-    CaseDataHistoryController,
-    CasedataNotesController,
-    CasedataNotificationController,
-    CasedataStakeholderController,
-    EstateInfoController,
-    ExportController,
-    HealthController,
-    IndexController,
-    MessageController,
-    SupportAttachmentController,
-    SupportErrandController,
-    SupportFacilitiesController,
-    SupportHistoryController,
-    SupportMessageController,
-    SupportMetadataController,
-    SupportNoteController,
-    SupportNotificationController,
-    TemplateController,
-    UserController,
-    RelationsController,
-    CaseStatusController,
-    CaseDataConversationController,
-    SupportConversationController,
-    JsonSchemaController,
-    ExtraParameterController,
-    FeatureFlagController,
-    EmployeeController,
-    OrganizationController,
-  ],
-  sessionStore,
-);
+  const app = new App(
+    [
+      ActiveDirectoryController,
+      AddressController,
+      AssetController,
+      BillingController,
+      BillingDataCollectorController,
+      CaseDataAttachmentController,
+      CasedataContractsController,
+      CaseDataDecisionsController,
+      CaseDataErrandController,
+      caseDataFacilitiesController,
+      CaseDataHistoryController,
+      CasedataNotesController,
+      CasedataNotificationController,
+      CasedataStakeholderController,
+      EstateInfoController,
+      ExportController,
+      HealthController,
+      IndexController,
+      MessageController,
+      SupportAttachmentController,
+      SupportErrandController,
+      SupportFacilitiesController,
+      SupportHistoryController,
+      SupportMessageController,
+      SupportMetadataController,
+      SupportNoteController,
+      SupportNotificationController,
+      TemplateController,
+      UserController,
+      RelationsController,
+      CaseStatusController,
+      CaseDataConversationController,
+      SupportConversationController,
+      JsonSchemaController,
+      ExtraParameterController,
+      FeatureFlagController,
+      EmployeeController,
+      OrganizationController,
+    ],
+    sessionStore,
+  );
 
-app.listen();
+  app.listen();
+})();

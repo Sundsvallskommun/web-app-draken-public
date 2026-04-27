@@ -1,8 +1,8 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-import { useAppContext } from '@common/contexts/app.context';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import {
@@ -34,14 +34,27 @@ export const SidebarInfo: FC<{
   unsavedFacility: boolean;
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
 }> = (props) => {
-  const { user, supportErrand, setSupportErrand, administrators, municipalityId, supportMetadata } = useAppContext();
-  const [selectablePriorities, setSelectablePriorities] = useState<{ key: string; label: string }[]>([]);
+  const user = useUserStore((s) => s.user);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const administrators = useUserStore((s) => s.administrators);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  const selectablePriorities = useMemo(() => {
+    if (supportErrand?.priority && supportErrand?.status) {
+      return [
+        { key: 'LOW', label: Priority.LOW },
+        { key: 'MEDIUM', label: Priority.MEDIUM },
+        { key: 'HIGH', label: Priority.HIGH },
+      ];
+    }
+    return [];
+  }, [supportErrand]);
   const [isLoading, setIsLoading] = useState<'status' | 'admin' | 'priority' | 'suspend' | false | true>();
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
-  const [allowed, setAllowed] = useState(false);
-  useEffect(() => {
+  const allowed = useMemo(() => {
     if (!supportErrandIsEmpty(supportErrand!)) {
       let _a = validateAction(supportErrand!, user);
       if (supportErrand!.assignedUserId?.toLocaleLowerCase() === undefined) {
@@ -53,12 +66,11 @@ export const SidebarInfo: FC<{
           _a = true;
         }
       }
-      setAllowed(_a);
+      return _a;
     } else {
-      setAllowed(isAdmin());
+      return administrators.some((a) => a.adAccount === user.username);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, supportErrand]);
+  }, [user, supportErrand, administrators]);
 
   const toast = (kind: 'success' | 'error', label: string) =>
     toastMessage({
@@ -87,105 +99,72 @@ export const SidebarInfo: FC<{
 
   const { admin, status, priority } = watch();
 
-  const update = () => {
-    if (supportErrand?.id) {
-      getSupportErrandById(supportErrand.id!, municipalityId).then((res) => setSupportErrand(res.errand));
-    }
-  };
-
-  const onSubmit = () => {
+  const onSubmit = async () => {
     setError(false);
     setIsLoading(true);
 
     const municipalityId = defaultSupportErrandInformation.municipalityId;
 
-    return updateSupportErrand(municipalityId, getValues())
-      .then((res) => {
-        setIsLoading(false);
-        if (
-          supportErrand?.assignedUserId !== administrators.find((a) => a.displayName === getValues().admin)?.adAccount
-        ) {
-          saveAdmin();
-        } else if (supportErrand?.status !== getValues().status) {
-          updateSupportErrandStatus(getValues().status);
-        }
+    try {
+      await updateSupportErrand(municipalityId, getValues());
 
-        if (props.unsavedFacility) {
-          saveFacilityInfo(supportErrand!.id!, getValues().facilities)
-            .then(() => {
-              props.setUnsavedFacility(false);
-              setIsLoading(false);
-            })
-            .catch(() => {
-              setIsLoading(false);
-              toastMessage({
-                position: 'bottom',
-                closeable: false,
-                message: 'Något gick fel när fastigheter i ärendet sparades',
-                status: 'error',
-              });
-              return true;
-            });
+      // Handle admin change
+      const newAdminAccount = administrators.find((a) => a.displayName === getValues().admin)?.adAccount;
+      if (supportErrand?.assignedUserId !== newAdminAccount) {
+        const assigner = administrators.find((a) => a.adAccount === user.username);
+        if (newAdminAccount && assigner) {
+          const newStatus = newAdminAccount === assigner.adAccount ? Status.ONGOING : Status.ASSIGNED;
+          await setSupportErrandAdmin(
+            supportErrand!.id!,
+            municipalityId,
+            newAdminAccount,
+            newStatus,
+            assigner.adAccount
+          );
         }
-        update();
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendet uppdaterades',
-          status: 'success',
-        });
-        setTimeout(async () => {
-          const e = await getSupportErrandById(getValues().id!, municipalityId);
-          setSupportErrand(e.errand);
-          reset(e.errand);
-        }, 0);
-        return res;
-      })
-      .catch((e) => {
-        console.error('Error when updating errand:', e);
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när ärendet uppdaterades',
-          status: 'error',
-        });
-        setError(true);
-        setIsLoading(false);
-        return true;
+      } else if (supportErrand?.status !== getValues().status) {
+        // Handle status change
+        await setSupportErrandStatus(supportErrand!.id!, municipalityId, getValues().status);
+      }
+
+      // Handle facility save
+      if (props.unsavedFacility) {
+        try {
+          await saveFacilityInfo(supportErrand!.id!, getValues().facilities);
+          props.setUnsavedFacility(false);
+        } catch {
+          toastMessage({
+            position: 'bottom',
+            closeable: false,
+            message: 'Något gick fel när fastigheter i ärendet sparades',
+            status: 'error',
+          });
+        }
+      }
+
+      // Single fetch + reset after all operations complete
+      const e = await getSupportErrandById(getValues().id!, municipalityId);
+      setSupportErrand(e.errand);
+      reset(e.errand);
+
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: 'Ärendet uppdaterades',
+        status: 'success',
       });
-  };
-
-  const saveAdmin = () => {
-    const admin = administrators.find((a) => a.displayName === getValues().admin);
-    const assigner = administrators.find((a) => a.adAccount === user.username);
-
-    setIsLoading('admin');
-    setError(false);
-    return handleAction(
-      async () => {
-        if (admin!.adAccount === assigner!.adAccount) {
-          await setSupportErrandAdmin(
-            supportErrand!.id!,
-            municipalityId,
-            admin?.adAccount!,
-            Status.ONGOING,
-            assigner!.adAccount!
-          );
-        } else {
-          await setSupportErrandAdmin(
-            supportErrand!.id!,
-            municipalityId,
-            admin?.adAccount!,
-            Status.ASSIGNED,
-            assigner!.adAccount!
-          );
-        }
-
-        return true;
-      },
-      () => toast('success', 'Handläggare tilldelades'),
-      () => toast('error', 'Något gick fel när handläggare tilldelades')
-    );
+    } catch (e) {
+      console.error('Error when updating errand:', e);
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: 'Något gick fel när ärendet uppdaterades',
+        status: 'error',
+      });
+      setError(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -213,24 +192,14 @@ export const SidebarInfo: FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand, administrators]);
 
-  useEffect(() => {
-    if (supportErrand?.priority && supportErrand?.status) {
-      const prio = [
-        { key: 'LOW', label: Priority.LOW },
-        { key: 'MEDIUM', label: Priority.MEDIUM },
-        { key: 'HIGH', label: Priority.HIGH },
-      ];
-      setSelectablePriorities(prio);
-    }
-  }, [supportErrand]);
-
   const handleAction = (action: () => Promise<boolean>, success: () => void, fail: () => void) => {
     return action()
-      .then(() => {
+      .then(async () => {
         success();
         setIsLoading(false);
-        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
-        reset();
+        const res = await getSupportErrandById(supportErrand!.id!, municipalityId);
+        setSupportErrand(res.errand);
+        reset(res.errand);
       })
       .catch(() => {
         fail();

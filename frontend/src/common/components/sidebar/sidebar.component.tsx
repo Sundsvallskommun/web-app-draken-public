@@ -1,8 +1,8 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { isPT } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
 import { Badge, Button, cx, useGui } from '@sk-web-gui/react';
+import { useBadgeStore, useSupportStore } from '@stores/index';
 import { supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { FC, KeyboardEvent, ReactNode, useRef, useState } from 'react';
@@ -38,7 +38,9 @@ export const Sidebar: FC<{
   const gui = useGui();
   const isLg = useMediaQuery(`screen and (min-width: ${gui.theme.screens.lg})`);
 
-  const { supportErrand, notesCount, serviceNotesCount } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const notesCount = useBadgeStore((s) => s.notesCount);
+  const serviceNotesCount = useBadgeStore((s) => s.serviceNotesCount);
 
   const badgeCounts: Record<string, number> = {
     Kommentarer: notesCount,

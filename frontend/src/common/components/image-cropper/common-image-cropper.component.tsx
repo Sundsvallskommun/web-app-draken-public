@@ -5,14 +5,16 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { getImageAspect } from '@casedata/services/casedata-attachment-service';
 import { saveCroppedImage } from '@casedata/services/casedata-errand-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { useAppContext } from '@contexts/app.context';
 import { Button, cx, Image } from '@sk-web-gui/react';
+import { useConfigStore } from '@stores/index';
 import { ArrowLeft, Check, CircleX } from 'lucide-react';
-import { FC, SyntheticEvent, useRef, useState } from 'react';
+import { SyntheticEvent, useRef, useState } from 'react';
 import ReactCrop, { centerCrop, Crop, makeAspectCrop, PixelCrop } from 'react-image-crop';
 
-export const CommonImageCropper: FC<{ errand: IErrand; attachment: Attachment; onClose: () => void }> = (props) => {
-  const { municipalityId } = useAppContext();
+export const CommonImageCropper: React.FC<{ errand: IErrand; attachment: Attachment; onClose: () => void }> = (
+  props
+) => {
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const imgRef = useRef<HTMLImageElement>(null);
   const [blob, setBlob] = useState<Blob>();
   const [crop, setCrop] = useState<Crop>();

@@ -14,7 +14,7 @@ import {
 } from '@casedata/services/casedata-attachment-service';
 import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore, useConfigStore } from '@stores/index';
 import { isMEX } from '@common/services/application-service';
 import { mapAttachmentToUploadFile } from '@common/services/attachment-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
@@ -48,7 +48,9 @@ export const CasedataAttachments: FC = () => {
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [originalFile, setOriginalFile] = useState<UploadFile | null>(null);
 
-  const { municipalityId, errand, setErrand } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
   const removeConfirm = useConfirm();
   const toastMessage = useSnackbar();
 

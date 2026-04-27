@@ -1,5 +1,5 @@
 import { Admin } from '@common/services/user-service';
-import { useAppContext } from '@contexts/app.context';
+import { useUserStore } from '@stores/index';
 import { Button, cx, Link } from '@sk-web-gui/react';
 import {
   AttestationDatesFilter,
@@ -31,7 +31,7 @@ export const AttestationsFilteringComponent: FC<{
   ownerFilter?: boolean;
   administrators?: Admin[];
 }> = ({ ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
-  const { user } = useAppContext();
+  const user = useUserStore((s) => s.user);
   const [show, setShow] = useState<boolean>(true);
   const [showCreateInvoice, setShowCreateInvoice] = useState<boolean>(false);
 

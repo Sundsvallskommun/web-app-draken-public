@@ -1,6 +1,6 @@
 import { NoteType } from '@casedata/interfaces/errandNote';
 import { noteIsComment, noteIsTjansteanteckning } from '@casedata/services/casedata-errand-notes-service';
-import { useAppContext } from '@common/contexts/app.context';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
@@ -46,7 +46,10 @@ export const SidebarGenericNotes: FC<{
   label_singular: 'Kommentar' | 'Tjänsteanteckning';
   noteType: NoteType;
 }> = ({ label_plural, label_singular, noteType }) => {
-  const { supportErrand, setSupportErrand, administrators, municipalityId } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const administrators = useUserStore((s) => s.administrators);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const [selectedNote, setSelectedNote] = useState<GenericNote>();
   const [notes, setNotes] = useState<SupportNote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
