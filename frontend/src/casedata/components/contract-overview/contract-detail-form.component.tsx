@@ -343,7 +343,7 @@ export const ContractDetailForm: FC<{
           <ul className="list-disc list-inside ml-4">
             <li>Byta fakturaadress</li>
             <li>Ladda upp tilläggsbilagor</li>
-            <li>Uppdatera fakturauppgifter och -referens</li>
+            <li>Uppdatera fakturauppgifter och referens</li>
             <li>Säga upp avtal</li>
           </ul>
         </Modal.Content>
