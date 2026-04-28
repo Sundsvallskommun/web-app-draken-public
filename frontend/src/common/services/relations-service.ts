@@ -27,25 +27,20 @@ const formatServiceName = (str: string) => {
   return str.toLocaleLowerCase();
 };
 
-export const createRelation = (
-  municipalityId: string,
-  sourceId: string,
-  sourceErrandNumber: string,
-  targetErrand: CaseStatusResponse
-) => {
+export const createRelation = (municipalityId: string, sourceId: string, targetErrand: CaseStatusResponse) => {
   const url = `${municipalityId}/relations`;
 
   const body: Partial<Relation> = {
     type: 'LINK',
     source: {
       resourceId: sourceId,
-      type: sourceErrandNumber,
+      type: 'case',
       service: appConfig.isSupportManagement ? 'supportmanagement' : 'case-data',
       namespace: '',
     },
     target: {
       resourceId: targetErrand.caseId ?? '',
-      type: targetErrand.errandNumber ?? '',
+      type: 'case',
       service: formatServiceName(targetErrand.system ?? ''),
       namespace: targetErrand.namespace,
     },
@@ -87,15 +82,38 @@ export const getSourceRelations = (municipalityId: string, sourceId: string, sor
     });
 };
 
-export const getTargetRelations = (municipalityId: string, targetId: string, sort: string): Promise<Relation[]> => {
+export interface RelationWithErrandNumber {
+  relation: Relation;
+  errandNumber: string;
+}
+
+interface ResolvedRelationsResponse {
+  relations: Relation[];
+  caseStatuses: CaseStatusResponse[];
+}
+
+export const getTargetRelations = (
+  municipalityId: string,
+  targetId: string,
+  sort: string
+): Promise<ResolvedRelationsResponse> => {
   const url = `${municipalityId}/targetrelations/${sort}/${targetId}`;
 
   return apiService
-    .get<ApiResponse<RelationPagedResponse>>(url)
-    .then((res) => {
-      return res.data.data.relations ?? [];
-    })
-    .catch(() => {
-      return [] as Relation[];
-    });
+    .get<ApiResponse<ResolvedRelationsResponse>>(url)
+    .then((res) => res.data.data)
+    .catch(() => ({ relations: [], caseStatuses: [] }));
+};
+
+export const getResolvedSourceRelations = (
+  municipalityId: string,
+  sourceId: string,
+  sort: string
+): Promise<ResolvedRelationsResponse> => {
+  const url = `${municipalityId}/resolvedrelations/${sort}/${sourceId}`;
+
+  return apiService
+    .get<ApiResponse<ResolvedRelationsResponse>>(url)
+    .then((res) => res.data.data)
+    .catch(() => ({ relations: [], caseStatuses: [] }));
 };

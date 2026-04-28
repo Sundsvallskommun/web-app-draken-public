@@ -12,12 +12,12 @@ import { sortBy } from '@common/services/helper-service';
 import {
   createRelation,
   deleteRelation,
-  getSourceRelations,
+  getResolvedSourceRelations,
   getTargetRelations,
 } from '@common/services/relations-service';
 import { appConfig } from '@config/appconfig';
-import { useConfigStore } from '@stores/index';
 import { Disclosure, SearchField, Spinner } from '@sk-web-gui/react';
+import { useConfigStore } from '@stores/index';
 import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { Link2 } from 'lucide-react';
@@ -37,30 +37,38 @@ export const LinkedErrandsDisclosure: FC<{
   const [searchedErrands, setSearchedErrands] = useState<CaseStatusResponse[]>([]);
   const [relationToErrands, setRelationToErrands] = useState<CaseStatusResponse[]>([]);
   const [relationFromErrands, setRelationFromErrands] = useState<CaseStatusResponse[]>([]);
-  const [resolvedOtherErrands, setResolvedOtherErrands] = useState<CaseStatusResponse[]>([]);
+  const [resolvedSourceStatuses, setResolvedSourceStatuses] = useState<CaseStatusResponse[]>([]);
 
   const sortOrder = 'ASC';
 
-  let ongoingErrands = relationToErrands.filter(
+  // Derived state
+  const resolvedOtherErrands = resolvedSourceStatuses.filter(
+    (status) => !relationToErrands.some((relErrand) => relErrand.caseId === status.caseId)
+  );
+  const ongoingErrands = relationToErrands.filter(
     (errand) => errand.status !== 'Klart' && !resolvedOtherErrands.some((other) => other.caseId === errand.caseId)
   );
-  let closedErrands = relationToErrands.filter((errand) => errand.status === 'Klart');
+  const closedErrands = relationToErrands.filter((errand) => errand.status === 'Klart');
+
+  const refreshSourceRelations = async () => {
+    const { relations: updatedRelations, caseStatuses } = await getResolvedSourceRelations(
+      municipalityId,
+      errand.id!.toString(),
+      sortOrder
+    );
+    setRelations(updatedRelations);
+    setResolvedSourceStatuses(caseStatuses);
+  };
 
   const handleLinkClick = (id: string) => {
     if (relations.some((relation) => relation.target.resourceId === id)) {
       deleteRelation(municipalityId, relations.find((relation) => relation.target.resourceId === id)!.id!)
-        .then(async () => {
-          const relatedErrands = await getSourceRelations(municipalityId, errand.id!.toString(), sortOrder);
-          setRelations(relatedErrands);
-        })
+        .then(() => refreshSourceRelations())
         .catch((e) => console.error('Failed to delete relation:', e));
     } else {
       const targetErrand = [...relationToErrands, ...searchedErrands].find((errand) => errand.caseId === id);
-      createRelation(municipalityId, errand.id!.toString(), errand.errandNumber!, targetErrand!)
-        .then(async () => {
-          const relatedErrands = await getSourceRelations(municipalityId, errand.id!.toString(), sortOrder);
-          setRelations(relatedErrands);
-        })
+      createRelation(municipalityId, errand.id!.toString(), targetErrand!)
+        .then(() => refreshSourceRelations())
         .catch((e) => console.error('Failed to create relation:', e));
     }
   };
@@ -69,8 +77,8 @@ export const LinkedErrandsDisclosure: FC<{
     const fetchErrands = async () => {
       try {
         setIsLoadingToErrands(true);
-        const sourceRelations = await getSourceRelations(municipalityId, errand.id!.toString(), sortOrder);
-        setRelations(sourceRelations);
+
+        await refreshSourceRelations();
 
         if (appConfig.features.useStakeholderRelations) {
           let relatedPerson: {
@@ -118,13 +126,8 @@ export const LinkedErrandsDisclosure: FC<{
     const fetchErrands = async () => {
       try {
         setIsLoadingFromErrands(true);
-
-        const relatedErrands = (await getTargetRelations(municipalityId, errand.id!.toString(), sortOrder)) ?? [];
-        const relatedErrandStatuses = await Promise.all(
-          relatedErrands?.map((relation) => getErrandStatus(municipalityId, relation.source.type))
-        );
-        setRelationFromErrands(relatedErrandStatuses.flat());
-
+        const { caseStatuses } = await getTargetRelations(municipalityId, errand.id!.toString(), sortOrder);
+        setRelationFromErrands(caseStatuses);
         setIsLoadingFromErrands(false);
       } catch (error) {
         console.error('Error fetching errands or relations:', error);
@@ -135,27 +138,6 @@ export const LinkedErrandsDisclosure: FC<{
     fetchErrands();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
-
-  useEffect(() => {
-    const fetchOtherErrands = async () => {
-      const otherErrands =
-        relations?.filter(
-          (relation) => !relationToErrands.some((errand) => errand.caseId === relation.target.resourceId)
-        ) ?? [];
-      const promises = await Promise.all(
-        otherErrands.map((relation) => getErrandStatus(municipalityId, relation.target.type))
-      );
-
-      setResolvedOtherErrands(promises.flat());
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      ongoingErrands = relationToErrands.filter(
-        (errand) => errand.status !== 'Klart' && !resolvedOtherErrands.some((other) => other.caseId === errand.caseId)
-      );
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      closedErrands = relationToErrands.filter((errand) => errand.status === 'Klart');
-    };
-    fetchOtherErrands();
-  }, [municipalityId, relations, relationToErrands]);
 
   return (
     <Disclosure
