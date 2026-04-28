@@ -15,10 +15,10 @@ import { ServicesObjectFieldTemplate } from '@common/components/json/fields/serv
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { getLatestRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useCasedataStore, useConfigStore } from '@stores/index';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { Modal, useSnackbar } from '@sk-web-gui/react';
-import { FC, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ServiceListComponent } from './casedata-service-list.component';
 import { useErrandServices } from './useErrandService';
