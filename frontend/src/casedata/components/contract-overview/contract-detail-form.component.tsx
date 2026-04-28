@@ -53,7 +53,7 @@ const mapContractRoleToErrandRole = (contractRole: StakeholderRole): Role | null
     [StakeholderRole.GRANTOR]: Role.GRANTOR,
     [StakeholderRole.LEASEHOLDER]: Role.LEASEHOLDER,
     [StakeholderRole.SIGNATORY]: Role.COMPANY_SIGNATORY,
-    [StakeholderRole.PRIMARY_BILLING_PARTY]: Role.INVOICE_RECIPENT,
+    [StakeholderRole.PRIMARY_BILLING_PARTY]: Role.INVOICE_RECIPIENT,
     [StakeholderRole.POWER_OF_ATTORNEY_CHECK]: null,
     [StakeholderRole.POWER_OF_ATTORNEY_ROLE]: null,
   };

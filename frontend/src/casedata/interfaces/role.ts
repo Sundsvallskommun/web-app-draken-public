@@ -75,7 +75,7 @@ export enum PrettyRole {
   APPLICANT = 'Ärendeägare',
   PROPERTY_OWNER = 'Fastighetsägare',
   PAYMENT_PERSON = 'PAYMENT_PERSON',
-  INVOICE_RECIPENT = 'Fakturamottagare',
+  INVOICE_RECIPIENT = 'Fakturamottagare',
   OPERATOR = 'OPERATOR',
   CONTACT_PERSON = 'Kontaktperson',
   ADMINISTRATOR = 'Handläggare',
