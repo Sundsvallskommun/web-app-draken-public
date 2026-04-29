@@ -4,7 +4,7 @@ import { logger } from './logger';
 
 let redisClient: RedisClientType | null = null;
 
-export function getRedisClient(): RedisClientType | null {
+export async function getRedisClient(): Promise<RedisClientType | null> {
   if (redisClient) return redisClient;
 
   const redisHost = process.env.REDIS_HOST;
@@ -13,14 +13,20 @@ export function getRedisClient(): RedisClientType | null {
   const redisPassword = process.env.REDIS_PASSWORD;
   const redisPort = process.env.REDIS_PORT || '6379';
 
-  redisClient = createClient({
-    url: `redis://${redisPassword ? `:${redisPassword}@` : ''}${redisHost}:${redisPort}`,
-  });
+  const client = createClient({
+    socket: {
+      host: redisHost,
+      port: Number(redisPort),
+      reconnectStrategy: retries => Math.min(retries * 100, 3000),
+    },
+    password: redisPassword || undefined,
+  }) as RedisClientType;
 
-  redisClient.on('error', err => logger.error(`Redis error: ${err.message}`));
-  redisClient.on('connect', () => logger.info(`Connected to Redis (${redisHost}:${redisPort})`));
+  client.on('error', err => logger.error(`Redis error: ${err.message}`));
+  client.on('connect', () => logger.info(`Connected to Redis (${redisHost}:${redisPort})`));
+  client.on('reconnecting', () => logger.info('Redis reconnecting...'));
 
-  redisClient.connect().catch(err => logger.error(`Redis connection failed: ${err.message}`));
-
-  return redisClient;
+  await client.connect();
+  redisClient = client;
+  return client;
 }

@@ -16,11 +16,15 @@ import { mexRequestForPublicDocument_UppgiftFieldTemplate } from '@casedata/comp
 import { mexSellLandToTheMunicipality_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-sell-land-to-the-municipality';
 import { mexSquarePlace_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-square-place';
 import { mexTerminationOfLease_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-termination-of-lease';
+import { changeApplication_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-change-application';
 import { notification_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification';
 import { notificationBusCard_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-bus-card';
+import { notificationChange_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-change';
 import { notificationNational_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-national';
+import { notificationReassessment_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-reassessment';
 import { notificationRenewal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-renewal';
 import { notificationRiak_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-riak';
+import { reassessmentApplication_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-reassessment-application';
 import { parkingPermitAppeal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-appeal';
 import { lostParkingPermit_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-lost-parking-permit';
 import { parkingPermit_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-parkingpermit';
@@ -112,7 +116,8 @@ export interface UppgiftField {
     | { type: 'radio'; options: OptionBase[]; inline?: boolean }
     | { type: 'radioPlus'; options: OptionBase[]; ownOption: string }
     | { type: 'checkbox'; options: OptionBase[] }
-    | { type: 'repeatableGroup' };
+    | { type: 'repeatableGroup' }
+    | { type: 'info' };
   section: string;
   dependsOnLogic?: 'AND' | 'OR';
   dependsOn?: {
@@ -131,7 +136,6 @@ const caseTypeTemplateAlias: Record<string, string> = {
   PARATRANSIT_RENEWAL: 'PARATRANSIT_NOTIFICATION_RENEWAL',
   PARATRANSIT_NATIONAL: 'PARATRANSIT_NOTIFICATION_NATIONAL',
   PARATRANSIT_RIAK: 'PARATRANSIT_NOTIFICATION_RIAK',
-  PARATRANSIT_BUS_CARD: 'PARATRANSIT_NOTIFICATION_BUS_CARD',
 };
 
 export interface ExtraParametersObject {
@@ -143,12 +147,16 @@ const template: ExtraParametersObject = {
   PARATRANSIT_RENEWAL: notificationRenewal_UppgiftFieldTemplate,
   PARATRANSIT_NATIONAL: notificationNational_UppgiftFieldTemplate,
   PARATRANSIT_RIAK: notificationRiak_UppgiftFieldTemplate,
-  PARATRANSIT_BUS_CARD: notificationBusCard_UppgiftFieldTemplate,
+  PARATRANSIT_CHANGE_APPLICATION: changeApplication_UppgiftFieldTemplate,
+  PARATRANSIT_REASSESSMENT_APPLICATION: reassessmentApplication_UppgiftFieldTemplate,
+  PARATRANSIT_BUS_CARD_APPLICATION: notificationBusCard_UppgiftFieldTemplate,
 
   PARATRANSIT_NOTIFICATION: notification_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_RENEWAL: notificationRenewal_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_NATIONAL: notificationNational_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_RIAK: notificationRiak_UppgiftFieldTemplate,
+  PARATRANSIT_NOTIFICATION_CHANGE: notificationChange_UppgiftFieldTemplate,
+  PARATRANSIT_NOTIFICATION_REASSESSMENT: notificationReassessment_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_BUS_CARD: notificationBusCard_UppgiftFieldTemplate,
 
   ANMALAN_ATTEFALL: [],

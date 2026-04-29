@@ -51,7 +51,7 @@ export const BillingServiceTable: FC<BillingServiceTableProps> = ({
               <Table.Row className="!border-b-0">
                 <Table.Column className="!items-start">
                   <div className="flex flex-col w-[36rem]">
-                    <span className="font-bold mt-6">{service.name}</span>
+                    <span className="font-bold mt-6">{service.description}</span>
                     {service.descriptions?.some((d) => d) && (
                       <div className="py-4">
                         {service.descriptions

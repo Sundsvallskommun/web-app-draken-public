@@ -200,6 +200,14 @@ export const CasedataFormFieldRenderer: FC<Props> = ({ detail, idx, form, errand
     );
   }
 
+  if (detail.formField.type === 'info') {
+    return (
+      <div key={`${detail.field}-${idx}`} className="w-full mt-lg">
+        {detail.description && <span>{detail.description}</span>}
+      </div>
+    );
+  }
+
   return (
     <FormControl className="w-full" key={`${detail.field}-${idx}`}>
       {!detail.field.includes('account.') && <FormLabel className="mt-lg">{detail.label}</FormLabel>}

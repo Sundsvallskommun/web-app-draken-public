@@ -25,7 +25,6 @@ const billingSchema = yup.object({
   specifications: yup.object({
     ourReference: yup.string().required('Vår referens måste anges'),
     customerReference: yup.string().required('Kundens referens måste anges'),
-    avitext: yup.string().required('Avitext måste anges'),
     rejectionDate: yup.string().test('not-past', 'Aviseringsdatum kan inte vara i det förflutna', (value) => {
       if (!value) return true;
       const today = new Date().toISOString().split('T')[0];
@@ -46,8 +45,16 @@ const billingSchema = yup.object({
       city: yup.string().required('Fakturamottagare saknar ort'),
       role: yup.string(),
     })
+    .test('has-recipient', 'Välj en fakturamottagare', (value) => {
+      if (!value) return false;
+      const hasAnyIdentity = !!(value.personId || value.organizationNumber || value.name || value.organizationName);
+      return hasAnyIdentity;
+    })
     .test('has-id', 'Fakturamottagare saknar personnummer/organisationsnummer', (value) => {
-      return !!(value?.organizationNumber || value?.personId);
+      if (!value) return true;
+      const hasAnyIdentity = !!(value.personId || value.organizationNumber || value.name || value.organizationName);
+      if (!hasAnyIdentity) return true;
+      return !!(value.organizationNumber || value.personId);
     })
     .required('Välj en fakturamottagare'),
 });
@@ -181,7 +188,11 @@ export const CaseDataBillingForm: React.FC = () => {
       });
 
       await refreshErrand();
-      await fetchBillingRecords();
+      const updatedErrand = useCasedataStore.getState().errand;
+      if (updatedErrand) {
+        const records = await getCasedataBillingRecordsForErrand(updatedErrand, municipalityId);
+        setBillingRecords(records);
+      }
     } catch (error) {
       console.error('Failed to create invoice:', error);
       toastMessage({

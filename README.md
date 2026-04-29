@@ -10,7 +10,7 @@ För MEX (Mark och exploatering):
 | -------------------- | ------: |
 | ActiveDirectory      |     2.0 |
 | Citizen              |     3.0 |
-| CaseData             |   11.14 |
+| CaseData             |   12.10 |
 | Messaging            |    7.10 |
 | Templating           |     2.1 |
 | Contract             |     7.0 |
@@ -21,14 +21,14 @@ För MEX (Mark och exploatering):
 | Relations            |     1.1 |
 | CaseStatus           |     4.1 |
 | Estateinfo           |     2.2 |
-| BillingPreprocessor  |     4.4 |
+| BillingPreprocessor  |     4.5 |
 | BillingDataCollector |     1.1 |
 
 För KS (Kontakt Sundsvall):
 
 | API               | Version |
 | ----------------- | ------: |
-| CaseData          |   11.14 |
+| CaseData          |   12.10 |
 | SupportManagement |    12.3 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
@@ -47,7 +47,7 @@ För PT (Parkeringstillstånd):
 | --------------- | ------: |
 | ActiveDirectory |     2.0 |
 | Citizen         |     3.0 |
-| CaseData        |   11.14 |
+| CaseData        |   12.10 |
 | Messaging       |    7.10 |
 | Templating      |     2.1 |
 | Contract        |     7.0 |
@@ -69,7 +69,7 @@ För LOP (Lön och pension):
 | Templating          |     2.1 |
 | LegalEntity         |     2.0 |
 | Employee            |     2.0 |
-| BillingPreprocessor |     4.0 |
+| BillingPreprocessor |     4.5 |
 | SimulatorServer     |     2.0 |
 
 För ROB (Rekrytering och bemanning):
@@ -77,7 +77,6 @@ För ROB (Rekrytering och bemanning):
 | API                 | Version |
 | ------------------- | ------: |
 | ActiveDirectory     |     2.0 |
-| BillingPreprocessor |     4.0 |
 | Citizen             |     3.0 |
 | Employee            |     2.0 |
 | LegalEntity         |     2.0 |
@@ -95,7 +94,6 @@ För KA (Kontakt Ånge):
 | Templating          |     2.1 |
 | LegalEntity         |     2.0 |
 | Employee            |     2.0 |
-| BillingPreprocessor |     4.0 |
 | SimulatorServer     |     2.0 |
 
 För IK (Intern kundtjänst):

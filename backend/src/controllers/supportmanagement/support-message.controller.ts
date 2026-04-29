@@ -1,20 +1,10 @@
-import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, ValidateIf, ValidateNested } from 'class-validator';
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
-import { v4 as uuidv4 } from 'uuid';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import {
-  Communication,
-  CommunicationAttachment,
-  CommunicationCommunicationTypeEnum,
-  CommunicationDirectionEnum,
-  EmailRequest,
-  SmsRequest,
-  WebMessageRequest,
-} from '@/data-contracts/supportmanagement/data-contracts';
+import { Communication, EmailRequest, SmsRequest, WebMessageRequest } from '@/data-contracts/supportmanagement/data-contracts';
+import { CCommunication, generateMessageId, SupportMessageDto } from '@/dtos/support-message.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -24,112 +14,12 @@ import { fileUploadOptions } from '@/utils/fileUploadOptions';
 import { logger } from '@/utils/logger';
 import { validateRequestBody } from '@/utils/validate';
 
-export interface SupportAttachment {
-  id: string;
-  fileName: string;
-  mimeType: string;
-}
+export { SingleSupportAttachment, SupportAttachment } from '@/dtos/support-message.dto';
 
 interface ResponseData {
   data: any;
   message: string;
 }
-
-export interface SingleSupportAttachment {
-  errandAttachmentHeader: {
-    id: string;
-    fileName: string;
-    mimeType: string;
-  };
-  base64EncodedString: string;
-}
-
-class SupportMessageDto {
-  @IsString()
-  @IsNotEmpty()
-  contactMeans!: string;
-  @IsString()
-  @IsNotEmpty()
-  @ValidateIf(o => o.contactMeans === 'email')
-  recipientEmail!: string;
-  @IsString()
-  @IsNotEmpty()
-  @ValidateIf(o => o.contactMeans === 'sms')
-  recipientPhone!: string;
-  @IsString()
-  plaintextMessage!: string;
-  @IsString()
-  htmlMessage!: string;
-  @IsString()
-  @IsOptional()
-  senderName!: string;
-  @IsString()
-  subject!: string;
-  @IsOptional()
-  files!: Express.Multer.File[];
-  @IsString()
-  reply_to!: string;
-  @IsString()
-  references!: string;
-  @IsOptional()
-  attachmentIds!: string[];
-}
-
-class CCommunicationAttachment implements CommunicationAttachment {
-  @IsString()
-  @IsOptional()
-  id?: string;
-  @IsString()
-  @IsOptional()
-  fileName?: string;
-  @IsString()
-  @IsOptional()
-  mimeType?: string;
-}
-class CCommunication implements Communication {
-  @IsString()
-  @IsOptional()
-  communicationID?: string;
-  @IsString()
-  @IsOptional()
-  sender?: string;
-  @IsString()
-  @IsOptional()
-  errandNumber?: string;
-  @IsEnum(CommunicationDirectionEnum)
-  @IsOptional()
-  direction?: CommunicationDirectionEnum;
-  @IsString()
-  @IsOptional()
-  messageBody?: string;
-  @IsString()
-  @IsOptional()
-  sent?: string;
-  @IsString()
-  @IsOptional()
-  subject?: string;
-  @IsEnum(CommunicationCommunicationTypeEnum)
-  @IsOptional()
-  communicationType!: CommunicationCommunicationTypeEnum;
-  @IsString()
-  @IsOptional()
-  target?: string;
-  @IsBoolean()
-  @IsOptional()
-  internal?: boolean;
-  @IsBoolean()
-  @IsOptional()
-  viewed?: boolean;
-  @IsString()
-  @IsOptional()
-  emailHeaders?: Record<string, string[]>;
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CCommunicationAttachment)
-  communicationAttachments?: CommunicationAttachment[];
-}
-
-export const generateMessageId = () => `<${uuidv4()}@CONTACTCENTER>`;
 
 @Controller()
 export class SupportMessageController {

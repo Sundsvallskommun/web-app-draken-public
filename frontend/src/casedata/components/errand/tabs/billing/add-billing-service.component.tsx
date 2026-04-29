@@ -153,8 +153,15 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
       </div>
       <div className="flex flex-row w-full gap-16">
         <FormControl className="w-full">
-          <FormLabel>Beskrivning</FormLabel>
-          <Input value={formState.beskrivning} onChange={(e) => handleInputChange('beskrivning', e.target.value)} />
+          <div className="flex w-full justify-between">
+            <FormLabel>Beskrivning</FormLabel>
+            <span className="text-small text-dark-secondary">{formState.beskrivning.length}/30</span>
+          </div>
+          <Input
+            maxLength={30}
+            value={formState.beskrivning}
+            onChange={(e) => handleInputChange('beskrivning', e.target.value)}
+          />
         </FormControl>
         <FormControl className="w-full">
           <FormLabel>Antal</FormLabel>
@@ -209,6 +216,10 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
       <div className="flex flex-col w-full gap-16">
         <FormControl className="w-full">
           <FormLabel>Utökad beskrivning</FormLabel>
+          <div className="flex w-full justify-between">
+            <FormLabel>Rad 1</FormLabel>
+            <span className="text-small text-dark-secondary">{formState.descriptions[0].length}/51</span>
+          </div>
           <Input
             maxLength={51}
             value={formState.descriptions[0]}
@@ -220,6 +231,10 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
           />
         </FormControl>
         <FormControl className="w-full">
+          <div className="flex w-full justify-between">
+            <FormLabel>Rad 2</FormLabel>
+            <span className="text-small text-dark-secondary">{formState.descriptions[1].length}/51</span>
+          </div>
           <Input
             maxLength={51}
             value={formState.descriptions[1]}
@@ -231,6 +246,10 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
           />
         </FormControl>
         <FormControl className="w-full">
+          <div className="flex w-full justify-between">
+            <FormLabel>Rad 3</FormLabel>
+            <span className="text-small text-dark-secondary">{formState.descriptions[2].length}/51</span>
+          </div>
           <Input
             maxLength={51}
             value={formState.descriptions[2]}
