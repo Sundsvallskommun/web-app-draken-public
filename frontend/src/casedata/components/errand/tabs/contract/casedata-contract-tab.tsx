@@ -228,6 +228,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
         // Convert saved contract back to form data and reset the form
         const savedFormData = isLeaseAgreement(res.type) ? contractToLagenhetsArrende(res) : contractToKopeavtal(res);
         contractForm.reset(savedFormData);
+        setExistingContract(savedFormData);
 
         setIsLoading(undefined);
         props.setUnsaved(false);
@@ -337,7 +338,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                 )}
               </div>
 
-              {contractForm.getValues().status === Status.DRAFT && (
+              {contractForm.getValues().status === Status.DRAFT ? (
                 <FormControl id="isDraft" className="my-md">
                   <FormLabel>
                     Status på avtal {loading !== undefined && existingContract === undefined && <Spinner size={4} />}
@@ -361,7 +362,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                             contractForm.setValue('status', Status.ACTIVE);
                             contractForm.trigger().then((valid: boolean) => {
                               if (valid) {
-                            onSave(contractForm.getValues());
+                                onSave(contractForm.getValues());
                               } else {
                                 contractForm.setValue('status', Status.DRAFT);
                               }
@@ -378,7 +379,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                     <p className="text-error">Avtalet saknar nödvändiga uppgifter.</p>
                   )}
                 </FormControl>
-              )}
+              ) : null}
               <Input type="hidden" readOnly {...contractForm.register('contractId')} />
               <ContractForm
                 referensError={referensError}
