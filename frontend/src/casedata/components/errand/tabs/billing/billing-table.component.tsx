@@ -235,6 +235,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
       if (field === 'object' && service.accountInformation.object) return true;
       if (field === 'descriptions' && service.description) return true;
       if (field === 'detailedDescription1' && service.detailedDescriptions?.[0]) return true;
+      if (field === 'costPerUnit' && service.fixedPrice) return true;
     }
 
     // Check saved values
@@ -244,6 +245,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
     if (field === 'object' && accountInfo?.article) return true;
     if (field === 'descriptions' && originalRow.descriptions?.some((d) => d)) return true;
     if (field === 'detailedDescription1' && originalRow.detailedDescriptions?.[0]) return true;
+    if (field === 'costPerUnit' && originalRow.costPerUnit) return true;
 
     return false;
   };
