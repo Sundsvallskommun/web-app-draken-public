@@ -14,6 +14,7 @@ import {
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { getUiPhase, phaseChangeInProgress } from '@casedata/services/process-service';
 import { isPT } from '@common/services/application-service';
+import { deepFlattenToObject } from '@common/services/helper-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { Tabs, useSnackbar } from '@sk-web-gui/react';
@@ -442,7 +443,7 @@ export const CasedataTabsWrapper: React.FC = () => {
     <div className="mb-xl">
       <WarnIfUnsavedChanges
         showWarning={
-          methods.formState.isDirty ||
+          Object.values(deepFlattenToObject(methods.formState.dirtyFields)).some(Boolean) ||
           unsavedChanges ||
           unsavedUppgifter ||
           unsavedUtredning ||
