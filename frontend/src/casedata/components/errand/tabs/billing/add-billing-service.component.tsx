@@ -32,6 +32,26 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
 
   const isEditing = !!editingService;
 
+  const isFieldPreset = (field: string): boolean => {
+    if (selectedService) {
+      const accountField = field as keyof typeof selectedService.accountInformation;
+      if (['costCenter', 'subaccount', 'department', 'activity', 'project', 'object'].includes(field)) {
+        if (selectedService.accountInformation[accountField]) return true;
+      }
+      if (field === 'beskrivning' && selectedService.description) return true;
+      if (field === 'descriptions0' && selectedService.detailedDescriptions?.[0]) return true;
+    }
+    if (editingService) {
+      const accountField = field as keyof typeof editingService.accountInformation;
+      if (['costCenter', 'subaccount', 'department', 'activity', 'project', 'object'].includes(field)) {
+        if (editingService.accountInformation[accountField]) return true;
+      }
+      if (field === 'beskrivning' && editingService.description) return true;
+      if (field === 'descriptions0' && editingService.descriptions?.[0]) return true;
+    }
+    return false;
+  };
+
   const resetForm = () => {
     setFormState(emptyFormState);
     setSelectedService(null);
@@ -161,6 +181,7 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
             maxLength={30}
             value={formState.beskrivning}
             onChange={(e) => handleInputChange('beskrivning', e.target.value)}
+            readOnly={isFieldPreset('beskrivning')}
           />
         </FormControl>
         <FormControl className="w-full">
@@ -188,29 +209,53 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
       <div className="flex flex-row w-full gap-16">
         <FormControl className="w-full">
           <FormLabel>Ansvar</FormLabel>
-          <Input value={formState.costCenter} onChange={(e) => handleInputChange('costCenter', e.target.value)} />
+          <Input
+            value={formState.costCenter}
+            onChange={(e) => handleInputChange('costCenter', e.target.value)}
+            readOnly={isFieldPreset('costCenter')}
+          />
         </FormControl>
         <FormControl className="w-full">
           <FormLabel>Underkonto</FormLabel>
-          <Input value={formState.subaccount} onChange={(e) => handleInputChange('subaccount', e.target.value)} />
+          <Input
+            value={formState.subaccount}
+            onChange={(e) => handleInputChange('subaccount', e.target.value)}
+            readOnly={isFieldPreset('subaccount')}
+          />
         </FormControl>
         <FormControl className="w-full">
           <FormLabel>Verksamhet</FormLabel>
-          <Input value={formState.department} onChange={(e) => handleInputChange('department', e.target.value)} />
+          <Input
+            value={formState.department}
+            onChange={(e) => handleInputChange('department', e.target.value)}
+            readOnly={isFieldPreset('department')}
+          />
         </FormControl>
       </div>
       <div className="flex flex-row w-full gap-16">
         <FormControl className="w-full">
           <FormLabel>Aktivitet</FormLabel>
-          <Input value={formState.activity} onChange={(e) => handleInputChange('activity', e.target.value)} />
+          <Input
+            value={formState.activity}
+            onChange={(e) => handleInputChange('activity', e.target.value)}
+            readOnly={isFieldPreset('activity')}
+          />
         </FormControl>
         <FormControl className="w-full">
           <FormLabel>Projekt</FormLabel>
-          <Input value={formState.project} onChange={(e) => handleInputChange('project', e.target.value)} />
+          <Input
+            value={formState.project}
+            onChange={(e) => handleInputChange('project', e.target.value)}
+            readOnly={isFieldPreset('project')}
+          />
         </FormControl>
         <FormControl className="w-full">
           <FormLabel>Objekt</FormLabel>
-          <Input value={formState.object} onChange={(e) => handleInputChange('object', e.target.value)} />
+          <Input
+            value={formState.object}
+            onChange={(e) => handleInputChange('object', e.target.value)}
+            readOnly={isFieldPreset('object')}
+          />
         </FormControl>
       </div>
       <div className="flex flex-col w-full gap-16">
@@ -228,6 +273,7 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
               updated[0] = e.target.value;
               setFormState((prev) => ({ ...prev, descriptions: updated }));
             }}
+            readOnly={isFieldPreset('descriptions0')}
           />
         </FormControl>
         <FormControl className="w-full">

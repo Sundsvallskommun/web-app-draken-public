@@ -1,4 +1,5 @@
 import { IErrand } from '@casedata/interfaces/errand';
+import { casedataInvoiceSettings } from '@casedata/services/billing/casedata-invoice-settings';
 import {
   approveCasedataBillingRecord,
   deleteCasedataBillingRecord,
@@ -214,6 +215,37 @@ export const BillingTable: React.FC<BillingTableProps> = ({
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const isRowFieldPreset = (record: CBillingRecord, rowIndex: number, field: string): boolean => {
+    const originalRow = record.invoice.invoiceRows[rowIndex];
+    if (!originalRow) return false;
+
+    const accountInfo = originalRow.accountInformation?.[0];
+    const service = casedataInvoiceSettings.services.find(
+      (s) => originalRow.descriptions?.includes(s.description) || s.name === originalRow.descriptions?.[0]
+    );
+
+    // Check JSON config first
+    if (service) {
+      const serviceAccountField = field as keyof typeof service.accountInformation;
+      if (['costCenter', 'subaccount', 'department', 'activity', 'project'].includes(field)) {
+        if (service.accountInformation[serviceAccountField]) return true;
+      }
+      if (field === 'object' && service.accountInformation.object) return true;
+      if (field === 'descriptions' && service.description) return true;
+      if (field === 'detailedDescription1' && service.detailedDescriptions?.[0]) return true;
+    }
+
+    // Check saved values
+    if (['costCenter', 'subaccount', 'department', 'activity', 'project'].includes(field)) {
+      if (accountInfo?.[field as keyof typeof accountInfo]) return true;
+    }
+    if (field === 'object' && accountInfo?.article) return true;
+    if (field === 'descriptions' && originalRow.descriptions?.some((d) => d)) return true;
+    if (field === 'detailedDescription1' && originalRow.detailedDescriptions?.[0]) return true;
+
+    return false;
   };
 
   const handleEditRow = (rowIndex: number) => {
@@ -463,6 +495,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                   maxLength={30}
                                   value={editingRowState.descriptions}
                                   onChange={(e) => handleRowFieldChange('descriptions', e.target.value)}
+                                  readOnly={isRowFieldPreset(record, rowIndex, 'descriptions')}
                                 />
                               </FormControl>
                               <FormControl className="w-full">
@@ -493,6 +526,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                       e.target.value === '' ? '' : parseFloat(e.target.value)
                                     )
                                   }
+                                  readOnly={isRowFieldPreset(record, rowIndex, 'costPerUnit')}
                                 />
                               </FormControl>
                             </div>
@@ -502,6 +536,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                 <Input
                                   value={editingRowState.costCenter}
                                   onChange={(e) => handleRowFieldChange('costCenter', e.target.value)}
+                                  readOnly={isRowFieldPreset(record, rowIndex, 'costCenter')}
                                 />
                               </FormControl>
                               <FormControl className="w-full">
@@ -509,6 +544,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                 <Input
                                   value={editingRowState.subaccount}
                                   onChange={(e) => handleRowFieldChange('subaccount', e.target.value)}
+                                  readOnly={isRowFieldPreset(record, rowIndex, 'subaccount')}
                                 />
                               </FormControl>
                               <FormControl className="w-full">
@@ -516,6 +552,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                 <Input
                                   value={editingRowState.department}
                                   onChange={(e) => handleRowFieldChange('department', e.target.value)}
+                                  readOnly={isRowFieldPreset(record, rowIndex, 'department')}
                                 />
                               </FormControl>
                             </div>
@@ -525,6 +562,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                 <Input
                                   value={editingRowState.activity}
                                   onChange={(e) => handleRowFieldChange('activity', e.target.value)}
+                                  readOnly={isRowFieldPreset(record, rowIndex, 'activity')}
                                 />
                               </FormControl>
                               <FormControl className="w-full">
@@ -532,6 +570,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                 <Input
                                   value={editingRowState.project}
                                   onChange={(e) => handleRowFieldChange('project', e.target.value)}
+                                  readOnly={isRowFieldPreset(record, rowIndex, 'project')}
                                 />
                               </FormControl>
                               <FormControl className="w-full">
@@ -539,6 +578,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                 <Input
                                   value={editingRowState.object}
                                   onChange={(e) => handleRowFieldChange('object', e.target.value)}
+                                  readOnly={isRowFieldPreset(record, rowIndex, 'object')}
                                 />
                               </FormControl>
                             </div>
@@ -555,6 +595,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                   maxLength={51}
                                   value={editingRowState.detailedDescription1}
                                   onChange={(e) => handleRowFieldChange('detailedDescription1', e.target.value)}
+                                  readOnly={isRowFieldPreset(record, rowIndex, 'detailedDescription1')}
                                 />
                               </FormControl>
                               <FormControl className="w-full">
