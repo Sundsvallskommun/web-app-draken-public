@@ -55,7 +55,10 @@ export function useErrandServices({
           if (!parsed) return;
           const compositeId = `${a.id}#${idx}`;
           const s = mapFormToServiceFromPayload(parsed, schema, compositeId);
-          if (s) mapped.push(s);
+          if (s) {
+            s.schemaVersion = p.schemaId?.split('_').pop() ?? '';
+            mapped.push(s);
+          }
         });
       }
 

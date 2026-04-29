@@ -13,7 +13,7 @@ import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { ServicesObjectFieldTemplate } from '@common/components/json/fields/services-object-field-template.componant';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
-import { getLatestRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
+import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { useCasedataStore, useConfigStore } from '@stores/index';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
@@ -61,6 +61,9 @@ export const CasedataServicesTab: React.FC = () => {
   const [formData, setFormData] = useState<any>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<any>(null);
+  const [editSchema, setEditSchema] = useState<RJSFSchema | null>(null);
+  const [editUiSchema, setEditUiSchema] = useState<UiSchema | null>(null);
+  const [editSchemaId, setEditSchemaId] = useState<string>('');
   const [schemaId, setSchemaId] = useState<string>('');
   const toast = useSnackbar();
 
@@ -72,6 +75,10 @@ export const CasedataServicesTab: React.FC = () => {
   const filteredSchema = useMemo(() => {
     return filterSchemaByCase(schema, errand?.caseType ?? '');
   }, [schema, errand?.caseType]);
+
+  const filteredEditSchema = useMemo(() => {
+    return filterSchemaByCase(editSchema, errand?.caseType ?? '');
+  }, [editSchema, errand?.caseType]);
 
   useEffect(() => {
     (async () => {
@@ -198,7 +205,8 @@ export const CasedataServicesTab: React.FC = () => {
           return;
         }
 
-        let value = params[paramIndex]?.value;
+        const param = params[paramIndex];
+        let value = param?.value;
         if (typeof value === 'string') {
           try {
             value = JSON.parse(value);
@@ -207,23 +215,39 @@ export const CasedataServicesTab: React.FC = () => {
           }
         }
 
+        const storedSchemaId = param?.schemaId;
+        if (storedSchemaId) {
+          const fetchedSchema = await getRjsfSchema(municipalityId, storedSchemaId);
+          const fetchedUiSchema = await getUiSchemaForSchema(municipalityId, storedSchemaId);
+          setEditSchema(fetchedSchema);
+          setEditUiSchema(fetchedUiSchema);
+          setEditSchemaId(storedSchemaId);
+        } else {
+          setEditSchema(schema);
+          setEditUiSchema(uiSchema);
+          setEditSchemaId(schemaId);
+        }
+
         setEditFormData(value);
         setEditingId(compositeId);
       } catch {
         toast(getToastOptions({ message: 'Kunde inte hämta insatsdata.', status: 'error' }));
       }
     },
-    [fetchAsset, toast]
+    [fetchAsset, toast, municipalityId, schema, uiSchema, schemaId]
   );
 
   const closeEditModal = useCallback(() => {
     setEditingId(null);
     setEditFormData(null);
+    setEditSchema(null);
+    setEditUiSchema(null);
+    setEditSchemaId('');
   }, []);
 
   const handleEditSubmit = useCallback(
     async (payload: any) => {
-      if (!editingId || !schemaId) return;
+      if (!editingId || !editSchemaId) return;
       try {
         const { assetUuid, paramIndex } = fromCompositeId(editingId);
         const asset = await fetchAsset(assetUuid);
@@ -235,7 +259,7 @@ export const CasedataServicesTab: React.FC = () => {
         const replacePayload = buildReplaceParameterPayload(
           payload,
           paramIndex,
-          { schemaId, assetType, partyId, assetId: errandNr },
+          { schemaId: editSchemaId, assetType, partyId, assetId: errandNr },
           asset
         );
 
@@ -247,7 +271,7 @@ export const CasedataServicesTab: React.FC = () => {
         toast(getToastOptions({ message: 'Något gick fel när insatsen skulle uppdateras.', status: 'error' }));
       }
     },
-    [editingId, schemaId, municipalityId, partyId, errandNr, assetType, fetchAsset, refetch, closeEditModal, toast]
+    [editingId, editSchemaId, municipalityId, partyId, errandNr, assetType, fetchAsset, refetch, closeEditModal, toast]
   );
 
   return (
@@ -291,10 +315,10 @@ export const CasedataServicesTab: React.FC = () => {
 
       <Modal show={editingId !== null} className="w-[80rem]" onClose={closeEditModal} label="Redigera insats">
         <Modal.Content>
-          {editFormData && uiSchema && filteredSchema && (
+          {editFormData && editUiSchema && filteredEditSchema && (
             <SchemaForm
-              schema={filteredSchema}
-              uiSchema={uiSchema}
+              schema={filteredEditSchema}
+              uiSchema={editUiSchema}
               formData={editFormData}
               onChange={(fd) => setEditFormData(fd)}
               onSubmit={handleEditSubmit}
