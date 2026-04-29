@@ -105,89 +105,47 @@ export class RelationsController {
     return { data: response.data, message: `Relation with id ${id} removed` };
   }
 
-  @Get('/:municipalityId/sourcerelations/:sort/:query')
-  @OpenAPI({ summary: 'Find matching relations' })
-  @UseBefore(authMiddleware)
-  async getSourceRelations(
-    @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
-    @Param('query') query: string,
-    @Param('sort') sort: string,
-  ): Promise<{ data: RelationPagedResponse; message: string }> {
-    const url = `${municipalityId}/relations?filter=source.resourceId%3A%27${query}%27&sortDirection=${sort}`;
+  private async getResolvedRelations(
+    direction: 'source' | 'target',
+    municipalityId: string,
+    query: string,
+    sort: string,
+    user: any,
+  ): Promise<{ relations: Relation[]; caseStatuses: CaseStatusResponse[] }> {
+    const url = `${municipalityId}/relations?filter=${direction}.resourceId%3A%27${query}%27&sortDirection=${sort}`;
     const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.get<RelationPagedResponse>({ url, baseURL }, req.user).catch(e => {
-      logger.error('Error when fetching relations: ', e);
-      throw e;
-    });
-    return { data: res.data, message: 'success' };
-  }
-
-  @Get('/:municipalityId/targetrelations/:sort/:query')
-  @OpenAPI({ summary: 'Find target relations and resolve their case statuses' })
-  @UseBefore(authMiddleware)
-  async getTargetRelations(
-    @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
-    @Param('query') query: string,
-    @Param('sort') sort: string,
-  ): Promise<{ data: { relations: Relation[]; caseStatuses: CaseStatusResponse[] }; message: string }> {
-    const url = `${municipalityId}/relations?filter=target.resourceId%3A%27${query}%27&sortDirection=${sort}`;
-    const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.get<RelationPagedResponse>({ url, baseURL }, req.user).catch(e => {
+    const res = await this.apiService.get<RelationPagedResponse>({ url, baseURL }, user).catch(e => {
       logger.error('Error when fetching relations: ', e);
       throw e;
     });
 
     const relations = res.data.relations ?? [];
+    const resolveDirection = direction === 'source' ? 'target' : 'source';
 
     const caseStatuses = await Promise.all(
       relations.map(async relation => {
-        const errandNumber = await this.fetchErrandNumber(municipalityId, relation.source, req.user);
-        return this.fetchCaseStatus(municipalityId, errandNumber, req.user);
+        const errandNumber = await this.fetchErrandNumber(municipalityId, relation[resolveDirection], user);
+        return this.fetchCaseStatus(municipalityId, errandNumber, user);
       }),
     );
 
     return {
-      data: {
-        relations,
-        caseStatuses: caseStatuses.flat(),
-      },
-      message: 'success',
+      relations,
+      caseStatuses: caseStatuses.flat(),
     };
   }
 
-  @Get('/:municipalityId/resolvedrelations/:sort/:query')
-  @OpenAPI({ summary: 'Resolve source relations to case statuses' })
+  @Get('/:municipalityId/resolvedrelations/:direction/:sort/:query')
+  @OpenAPI({ summary: 'Find relations by direction and resolve their case statuses' })
   @UseBefore(authMiddleware)
-  async getResolvedSourceRelations(
+  async getResolvedRelationsEndpoint(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
+    @Param('direction') direction: 'source' | 'target',
     @Param('query') query: string,
     @Param('sort') sort: string,
   ): Promise<{ data: { relations: Relation[]; caseStatuses: CaseStatusResponse[] }; message: string }> {
-    const url = `${municipalityId}/relations?filter=source.resourceId%3A%27${query}%27&sortDirection=${sort}`;
-    const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.get<RelationPagedResponse>({ url, baseURL }, req.user).catch(e => {
-      logger.error('Error when fetching relations: ', e);
-      throw e;
-    });
-
-    const relations = res.data.relations ?? [];
-
-    const caseStatuses = await Promise.all(
-      relations.map(async relation => {
-        const errandNumber = await this.fetchErrandNumber(municipalityId, relation.target, req.user);
-        return this.fetchCaseStatus(municipalityId, errandNumber, req.user);
-      }),
-    );
-
-    return {
-      data: {
-        relations,
-        caseStatuses: caseStatuses.flat(),
-      },
-      message: 'success',
-    };
+    const data = await this.getResolvedRelations(direction, municipalityId, query, sort, req.user);
+    return { data, message: 'success' };
   }
 }

@@ -7,7 +7,7 @@ import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
-import { getResolvedSourceRelations, RelationWithErrandNumber } from '@common/services/relations-service';
+import { getResolvedRelations, RelationWithErrandNumber } from '@common/services/relations-service';
 import sanitized, { sanitizeHtmlMessageBody } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
@@ -416,7 +416,7 @@ export const SupportMessageForm: FC<{
   }, [contactMeans, props.message]);
 
   useEffect(() => {
-    getResolvedSourceRelations(municipalityId, supportErrand.id!, 'ASC').then(({ relations, caseStatuses }) => {
+    getResolvedRelations('source', municipalityId, supportErrand.id!, 'ASC').then(({ relations, caseStatuses }) => {
       const enriched = relations.map((relation) => {
         const status = caseStatuses.find((s) => s.caseId === relation.target.resourceId);
         return {

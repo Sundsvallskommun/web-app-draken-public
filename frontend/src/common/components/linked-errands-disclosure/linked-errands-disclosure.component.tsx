@@ -9,12 +9,7 @@ import {
   getStatusesUsingPartyId,
 } from '@common/services/casestatus-service';
 import { sortBy } from '@common/services/helper-service';
-import {
-  createRelation,
-  deleteRelation,
-  getResolvedSourceRelations,
-  getTargetRelations,
-} from '@common/services/relations-service';
+import { createRelation, deleteRelation, getResolvedRelations } from '@common/services/relations-service';
 import { appConfig } from '@config/appconfig';
 import { Disclosure, SearchField, Spinner } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
@@ -51,7 +46,8 @@ export const LinkedErrandsDisclosure: FC<{
   const closedErrands = relationToErrands.filter((errand) => errand.status === 'Klart');
 
   const refreshSourceRelations = async () => {
-    const { relations: updatedRelations, caseStatuses } = await getResolvedSourceRelations(
+    const { relations: updatedRelations, caseStatuses } = await getResolvedRelations(
+      'source',
       municipalityId,
       errand.id!.toString(),
       sortOrder
@@ -126,7 +122,7 @@ export const LinkedErrandsDisclosure: FC<{
     const fetchErrands = async () => {
       try {
         setIsLoadingFromErrands(true);
-        const { caseStatuses } = await getTargetRelations(municipalityId, errand.id!.toString(), sortOrder);
+        const { caseStatuses } = await getResolvedRelations('target', municipalityId, errand.id!.toString(), sortOrder);
         setRelationFromErrands(caseStatuses);
         setIsLoadingFromErrands(false);
       } catch (error) {
