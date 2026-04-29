@@ -37,3 +37,8 @@ export const mockDraftAssetEmpty = {
   data: [],
   message: 'success',
 };
+
+export const mockAssetEmpty = {
+  data: [],
+  message: 'success',
+};

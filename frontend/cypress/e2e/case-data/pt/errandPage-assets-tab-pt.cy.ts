@@ -6,7 +6,7 @@ import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { ErrandPhase } from '@casedata/interfaces/errand-phase';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockDraftAsset, mockDraftAssetEmpty } from '../fixtures/mockDraftAsset';
+import { mockAssetEmpty, mockDraftAsset, mockDraftAssetEmpty } from '../fixtures/mockFTAsset';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
@@ -471,6 +471,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Errand page assets tab', () => {
     const visitInsatserTab = (draftAssetFixture = mockDraftAsset) => {
       cy.intercept('GET', '**/asset-drafts**', draftAssetFixture).as('getDraftAssets');
+      cy.intercept('GET', '**/assets?**', mockAssetEmpty).as('getAssets');
       cy.visit(`/arende/${mockFTErrand.data.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
