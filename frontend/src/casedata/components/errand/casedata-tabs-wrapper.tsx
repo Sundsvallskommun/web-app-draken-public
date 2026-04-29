@@ -443,7 +443,7 @@ export const CasedataTabsWrapper: React.FC = () => {
     <div className="mb-xl">
       <WarnIfUnsavedChanges
         showWarning={
-          Object.values(deepFlattenToObject(methods.formState.dirtyFields)).some((v) => v) ||
+          Object.values(deepFlattenToObject(methods.formState.dirtyFields)).some(Boolean) ||
           unsavedChanges ||
           unsavedUppgifter ||
           unsavedUtredning ||
