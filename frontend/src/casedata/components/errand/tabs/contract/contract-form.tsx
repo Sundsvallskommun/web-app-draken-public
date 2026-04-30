@@ -568,7 +568,11 @@ export const ContractForm: FC<{
                   <FormLabel>Avtalet gäller till och med</FormLabel>
                   <Input
                     type="date"
-                    min={getValues().currentPeriod?.startDate || dayjs().format('YYYY-MM-DD')}
+                    min={
+                      getValues().status === Status.ACTIVE
+                        ? getValues().currentPeriod?.startDate
+                        : dayjs().format('YYYY-MM-DD')
+                    }
                     readOnly={!isEditable('general')}
                     {...register('currentPeriod.endDate')}
                     data-cy="avtalstid-end"
@@ -763,7 +767,9 @@ export const ContractForm: FC<{
           </Disclosure.Content>
         </Disclosure>
       )}
-      {errand?.caseType === MEXCaseType.UPDATECONTRACT || errand?.caseType === MEXCaseType.MEX_TERMINATION_OF_LEASE ? (
+      {contractOveriewMode ||
+      errand?.caseType === MEXCaseType.UPDATECONTRACT ||
+      errand?.caseType === MEXCaseType.MEX_TERMINATION_OF_LEASE ? (
         <Disclosure variant="alt">
           <Disclosure.Header>
             <Disclosure.Icon icon={<Calendar />} />
@@ -783,7 +789,14 @@ export const ContractForm: FC<{
               </FormControl>
               <FormControl id="endDate" className="w-full">
                 <FormLabel>Slutdatum</FormLabel>
-                <Input type="date" readOnly={!isEditable('cancellation')} {...register('endDate')} data-cy="endDate" />
+                <Input
+                  type="date"
+                  readOnly={
+                    !isEditable('cancellation') || watch().extension?.autoExtend || !watch().currentPeriod?.endDate
+                  }
+                  {...register('endDate')}
+                  data-cy="endDate"
+                />
               </FormControl>
             </div>
             <div className="flex gap-18 justify-start">
