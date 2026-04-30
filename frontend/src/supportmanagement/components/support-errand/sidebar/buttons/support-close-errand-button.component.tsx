@@ -2,8 +2,8 @@ import { isIK, isKA, isLOP, isROB, isSE } from '@common/services/application-ser
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { Button, Checkbox, FormControl, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   closeSupportErrand,
   getSupportErrandById,
@@ -20,7 +20,7 @@ import {
 import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
 import { applicantHasContactChannel, getAdminName } from '@supportmanagement/services/support-stakeholder-service';
 import { ArrowRight, Check } from 'lucide-react';
-import { FC, useState } from 'react';
+import { useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 const getResolutionLabels = (): Record<string, string> => {
@@ -41,7 +41,7 @@ const getDefaultResolution = (errand: SupportErrand | undefined): Resolution => 
     : Resolution.SOLVED;
 };
 
-export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const administrators = useUserStore((s) => s.administrators);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);

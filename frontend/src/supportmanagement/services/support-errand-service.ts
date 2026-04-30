@@ -7,7 +7,7 @@ import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
-import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
+import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/buttons/support-forward-errand-button.component';
 import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { AxiosError } from 'axios';
@@ -143,6 +143,7 @@ export enum Status {
   SECURITY_CLEARENCE = 'SECURITY_CLEARENCE',
   FEEDBACK_CLOSURE = 'FEEDBACK_CLOSURE',
   SUBPACKAGE_HANDLED = 'SUBPACKAGE_HANDLED',
+  REOPENED = 'REOPENED',
 }
 
 export const shouldShowResumeErrandButton = (status?: Status): boolean => {
@@ -165,7 +166,7 @@ export enum AttestationStatusLabel {
 
 export const newStatuses = [Status.NEW];
 
-export const ongoingStatuses = [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE];
+export const ongoingStatuses = [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.REOPENED];
 
 export const ongoingStatusesROB = [
   ...ongoingStatuses,
@@ -385,7 +386,12 @@ export const isOpenEErrand: (supportErrand: SupportErrand) => boolean = (support
 };
 
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
-  return errand?.status === Status.SOLVED || errand?.status === Status.SUSPENDED || errand?.status === Status.ASSIGNED;
+  return (
+    errand?.status === Status.SOLVED ||
+    errand?.status === Status.SUSPENDED ||
+    errand?.status === Status.ASSIGNED ||
+    errand?.status === Status.REOPENED
+  );
 };
 
 export const useSupportErrands = (

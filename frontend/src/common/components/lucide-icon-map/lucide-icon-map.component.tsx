@@ -1,4 +1,3 @@
-import { FC } from 'react';
 import {
   ArchiveX,
   ArrowLeft,
@@ -45,6 +44,7 @@ import {
   Link2Off,
   ListChecks,
   ListFilter,
+  LockOpen,
   LogOut,
   type LucideProps,
   Mail,
@@ -82,6 +82,7 @@ import {
   Wallet,
   X,
 } from 'lucide-react';
+import { FC } from 'react';
 
 const iconMap: Record<string, FC<LucideProps>> = {
   'archive-x': ArchiveX,
@@ -164,6 +165,7 @@ const iconMap: Record<string, FC<LucideProps>> = {
   users: Users,
   wallet: Wallet,
   x: X,
+  'lock-open': LockOpen,
 };
 
 export default iconMap;

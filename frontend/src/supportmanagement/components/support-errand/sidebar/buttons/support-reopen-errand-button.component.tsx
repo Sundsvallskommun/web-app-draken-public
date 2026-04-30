@@ -1,16 +1,16 @@
+import { appConfig } from '@config/appconfig';
+import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
-import { useConfirm, useSnackbar, Button } from '@sk-web-gui/react';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 import {
   getSupportErrandById,
   setSupportErrandStatus,
-  shouldShowResumeErrandButton,
   Status,
 } from '@supportmanagement/services/support-errand-service';
-import { CirclePlay } from 'lucide-react';
+import dayjs from 'dayjs';
+import { Undo2 } from 'lucide-react';
 import { useState } from 'react';
 
-export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+export const SupportReopenErrandButton: React.FC<{ disabled?: boolean }> = ({ disabled }) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
@@ -18,16 +18,22 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
   const toastMessage = useSnackbar();
   const [isLoading, setIsLoading] = useState(false);
 
-  const activateErrand = () => {
+  const hasClosedErrandPassedLimit = () => {
+    const limit = appConfig.reopenSupportErrandLimit;
+    const lastModified = dayjs(supportErrand?.modified);
+    return dayjs().isAfter(lastModified.add(parseInt(limit), 'day'));
+  };
+
+  const reopenErrand = () => {
     setIsLoading(true);
     return setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING)
       .then(() => {
-        toastMessage(
-          getToastOptions({
-            message: 'Ärende återupptogs',
-            status: 'success',
-          })
-        );
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Ärendet återöppnades',
+          status: 'success',
+        });
         return getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => {
           setSupportErrand(res.errand);
           setIsLoading(false);
@@ -37,38 +43,33 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
         toastMessage({
           position: 'bottom',
           closeable: false,
-          message: 'Något gick fel när ärendet återupptogs',
+          message: 'Något gick fel när ärendet återöppnades',
           status: 'error',
         });
         setIsLoading(false);
       });
   };
 
-  if (!shouldShowResumeErrandButton(supportErrand?.status as Status)) {
-    return null;
-  }
-
   return (
     <Button
-      className="w-full"
+      className="w-full mt-20"
       color="vattjom"
-      data-cy="resume-button"
-      leftIcon={<CirclePlay />}
-      variant={shouldShowResumeErrandButton(supportErrand?.status as Status) ? 'primary' : 'secondary'}
-      disabled={disabled}
+      leftIcon={<Undo2 />}
+      variant="secondary"
+      disabled={disabled || (supportErrand?.status !== Status.REOPENED && hasClosedErrandPassedLimit())}
       loading={isLoading}
-      loadingText="Återupptar"
+      loadingText="Återöppnar"
       onClick={() => {
         confirm
-          .showConfirmation('Återuppta ärende', 'Vill du återuppta ärendet?', 'Ja', 'Nej', 'info', 'info')
+          .showConfirmation('Återöppna ärende', 'Vill du återöppna ärendet?', 'Ja', 'Nej', 'info', 'info')
           .then((confirmed) => {
             if (confirmed) {
-              activateErrand();
+              reopenErrand();
             }
           });
       }}
     >
-      Återuppta ärende
+      Återöppna ärende
     </Button>
   );
 };

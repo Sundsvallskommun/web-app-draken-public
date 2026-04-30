@@ -3,15 +3,16 @@ import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-cased
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
+import { useCasedataStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
+import { ExternalLink, Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
 import { Fragment, useEffect, useState } from 'react';
+
 import { PageHeader } from './page-header.component';
 import { userMenuGroups } from './userMenuGroups';
-import { ExternalLink, Menu } from 'lucide-react';
-import { useCasedataStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 
 export default function Layout({ title, children }: { title: string; children: React.ReactNode }) {
   const user = useUserStore((s) => s.user);

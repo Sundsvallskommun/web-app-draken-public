@@ -3,8 +3,8 @@
 import { ACCEPTED_UPLOAD_FILETYPES } from '@casedata/services/casedata-attachment-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
+import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { Relation } from '@common/data-contracts/relations/data-contracts';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
@@ -27,6 +27,7 @@ import {
   Select,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   getSupportAttachment,
   SingleSupportAttachment,
@@ -46,7 +47,6 @@ import {
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { File, Paperclip, X } from 'lucide-react';
-import TextEditor from '@common/components/dynamic-text-editor';
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -583,7 +583,6 @@ export const SupportMessageForm: FC<{
           <Select
             {...register('messageTemplate')}
             className="w-full text-dark-primary"
-            variant="tertiary"
             size="sm"
             onChange={(e) => {
               const template = e.currentTarget.value;

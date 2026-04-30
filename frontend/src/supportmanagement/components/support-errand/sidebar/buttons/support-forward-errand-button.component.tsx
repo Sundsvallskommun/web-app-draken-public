@@ -71,7 +71,7 @@ export interface ForwardFormProps {
   newEmail?: string;
 }
 
-export const ForwardErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const user = useUserStore((s) => s.user);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
