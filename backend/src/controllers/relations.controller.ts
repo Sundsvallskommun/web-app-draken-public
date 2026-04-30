@@ -2,7 +2,8 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, UseBefore } 
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { apiServiceName } from '@/config/api-config';
-import { Relation, RelationPagedResponse } from '@/data-contracts/relations/data-contracts';
+import { CaseStatusResponse } from '@/data-contracts/casestatus/data-contracts';
+import { Relation, RelationPagedResponse, ResourceIdentifier } from '@/data-contracts/relations/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
@@ -13,6 +14,46 @@ import { apiURL } from '@/utils/util';
 export class RelationsController {
   private apiService = new ApiService();
   private SERVICE = apiServiceName('relations');
+  private CASEDATA_SERVICE = apiServiceName('case-data');
+  private SUPPORTMANAGEMENT_SERVICE = apiServiceName('supportmanagement');
+  private CASESTATUS_SERVICE = apiServiceName('casestatus');
+
+  private async fetchErrandNumber(municipalityId: string, resource: ResourceIdentifier, user: any): Promise<string> {
+    const { service, namespace, resourceId } = resource;
+    let url: string;
+    let baseURL: string;
+
+    if (service === 'case-data' || service === 'casedata') {
+      url = `${municipalityId}/${namespace}/errands/${resourceId}`;
+      baseURL = apiURL(this.CASEDATA_SERVICE);
+    } else if (service === 'supportmanagement') {
+      url = `${municipalityId}/${namespace}/errands/${resourceId}`;
+      baseURL = apiURL(this.SUPPORTMANAGEMENT_SERVICE);
+    } else {
+      logger.error(`Unknown service: ${service}`);
+      return '';
+    }
+
+    const res = await this.apiService.get<any>({ url, baseURL }, user).catch(e => {
+      logger.error(`Error fetching errand number for ${service}/${namespace}/${resourceId}: `, e);
+      return null;
+    });
+
+    return res?.data?.errandNumber ?? '';
+  }
+
+  private async fetchCaseStatus(municipalityId: string, errandNumber: string, user: any): Promise<CaseStatusResponse[]> {
+    if (!errandNumber) return [];
+
+    const url = `${municipalityId}/errands/statuses?errandNumber=${errandNumber}`;
+    const baseURL = apiURL(this.CASESTATUS_SERVICE);
+    const res = await this.apiService.get<CaseStatusResponse[]>({ url, baseURL }, user).catch(e => {
+      logger.error(`Error fetching case status for ${errandNumber}: `, e);
+      return null;
+    });
+
+    return res?.data ?? [];
+  }
 
   @Post('/:municipalityId/relations')
   @HttpCode(201)
@@ -28,7 +69,12 @@ export class RelationsController {
       ...relationbody,
       source: {
         ...relationbody.source,
+        type: 'case',
         namespace: relationbody.source.service === 'supportmanagement' ? process.env.SUPPORTMANAGEMENT_NAMESPACE : process.env.CASEDATA_NAMESPACE,
+      },
+      target: {
+        ...relationbody.target,
+        type: 'case',
       },
     };
     const baseURL = apiURL(this.SERVICE);
@@ -59,39 +105,47 @@ export class RelationsController {
     return { data: response.data, message: `Relation with id ${id} removed` };
   }
 
-  @Get('/:municipalityId/sourcerelations/:sort/:query')
-  @OpenAPI({ summary: 'Find matching relations' })
-  @UseBefore(authMiddleware)
-  async getSourceRelations(
-    @Req() req: RequestWithUser,
-    @Param('municipalityId') municipalityId: string,
-    @Param('query') query: string,
-    @Param('sort') sort: string,
-  ): Promise<{ data: RelationPagedResponse; message: string }> {
-    const url = `${municipalityId}/relations?filter=source.resourceId%3A%27${query}%27&sortDirection=${sort}`;
+  private async getResolvedRelations(
+    direction: 'source' | 'target',
+    municipalityId: string,
+    query: string,
+    sort: string,
+    user: any,
+  ): Promise<{ relations: Relation[]; caseStatuses: CaseStatusResponse[] }> {
+    const url = `${municipalityId}/relations?filter=${direction}.resourceId%3A%27${query}%27&sortDirection=${sort}`;
     const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.get<RelationPagedResponse>({ url, baseURL }, req.user).catch(e => {
+    const res = await this.apiService.get<RelationPagedResponse>({ url, baseURL }, user).catch(e => {
       logger.error('Error when fetching relations: ', e);
       throw e;
     });
-    return { data: res.data, message: 'success' };
+
+    const relations = res.data.relations ?? [];
+    const resolveDirection = direction === 'source' ? 'target' : 'source';
+
+    const caseStatuses = await Promise.all(
+      relations.map(async relation => {
+        const errandNumber = await this.fetchErrandNumber(municipalityId, relation[resolveDirection], user);
+        return this.fetchCaseStatus(municipalityId, errandNumber, user);
+      }),
+    );
+
+    return {
+      relations,
+      caseStatuses: caseStatuses.flat(),
+    };
   }
 
-  @Get('/:municipalityId/targetrelations/:sort/:query')
-  @OpenAPI({ summary: 'Find matching relations' })
+  @Get('/:municipalityId/resolvedrelations/:direction/:sort/:query')
+  @OpenAPI({ summary: 'Find relations by direction and resolve their case statuses' })
   @UseBefore(authMiddleware)
-  async getTargetRelations(
+  async getResolvedRelationsEndpoint(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
+    @Param('direction') direction: 'source' | 'target',
     @Param('query') query: string,
     @Param('sort') sort: string,
-  ): Promise<{ data: RelationPagedResponse; message: string }> {
-    const url = `${municipalityId}/relations?filter=target.resourceId%3A%27${query}%27&sortDirection=${sort}`;
-    const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.get<RelationPagedResponse>({ url, baseURL }, req.user).catch(e => {
-      logger.error('Error when fetching relations: ', e);
-      throw e;
-    });
-    return { data: res.data, message: 'success' };
+  ): Promise<{ data: { relations: Relation[]; caseStatuses: CaseStatusResponse[] }; message: string }> {
+    const data = await this.getResolvedRelations(direction, municipalityId, query, sort, req.user);
+    return { data, message: 'success' };
   }
 }
