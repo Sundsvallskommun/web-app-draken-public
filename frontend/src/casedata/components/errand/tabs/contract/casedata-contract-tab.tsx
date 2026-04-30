@@ -107,6 +107,34 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           otherwise: (schema) => schema,
         }),
       }),
+      stakeholders: yup.array().when(['type', 'status'], ([type, status], schema) => {
+        if (status !== Status.ACTIVE) return schema;
+
+        const baseSchema = schema.of(
+          yup.object({
+            stakeholderId: yup.string().required(),
+            roles: yup
+              .array()
+              .of(yup.string().oneOf(Object.keys(StakeholderRole)) as any)
+              .min(1, 'Minst en roll måste anges'),
+          })
+        );
+
+        const hasRole = (role: StakeholderRole) => (stakeholders: any[] | undefined) =>
+          stakeholders?.some((s) => s.roles?.includes(role)) ?? false;
+
+        if (type === ContractType.PURCHASE_AGREEMENT) {
+          return baseSchema
+            .test('has-buyer', 'Minst en köpare måste anges', hasRole(StakeholderRole.BUYER))
+            .test('has-seller', 'Minst en säljare måste anges', hasRole(StakeholderRole.SELLER));
+        }
+        if (isLeaseAgreement(type)) {
+          return baseSchema
+            .test('has-lessor', 'Minst en upplåtare måste anges', hasRole(StakeholderRole.LESSOR))
+            .test('has-lessee', 'Minst en arrendator måste anges', hasRole(StakeholderRole.LESSEE));
+        }
+        return baseSchema.min(1, 'Minst en part måste anges');
+      }),
     })
     .required();
   const municipalityId = useConfigStore((s) => s.municipalityId);
