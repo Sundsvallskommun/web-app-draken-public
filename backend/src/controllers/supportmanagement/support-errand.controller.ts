@@ -1016,11 +1016,12 @@ export class SupportErrandController {
       extraParameters: [{ key: 'supportManagementErrandNumber', values: [existingSupportErrand.data.errandNumber!] }],
     };
     logger.info('Creating new errand in CaseData', caseDataErrand);
+    const referredFrom = `LINK|${id};case;supportmanagement;${this.namespace}|`;
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands`;
     const CASEDATA_SERVICE = apiServiceName('case-data');
     const baseURL = apiURL(CASEDATA_SERVICE);
     const errand: CasedataErrandDTO = await this.apiService
-      .post<CasedataErrandDTO, Partial<CasedataErrandDTO>>({ url, baseURL, data: caseDataErrand }, req.user)
+      .post<CasedataErrandDTO, Partial<CasedataErrandDTO>>({ url, baseURL, data: caseDataErrand, params: { referredFrom } }, req.user)
       .then(errandResponse => {
         return errandResponse.data;
       })

@@ -1,5 +1,5 @@
-import { Relation } from '@common/data-contracts/relations/data-contracts';
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { RelationWithErrandNumber } from '@common/services/relations-service';
 import { MessageNode } from '@supportmanagement/services/support-message-service';
 
 import { SingleSupportAttachment } from './support-attachment-service';
@@ -144,16 +144,16 @@ export const getOrCreateSupportConversationId = async (
   supportErrand: SupportErrand,
   contactMeans: string,
   selectedRelationId: string,
-  relationErrands: Relation[],
+  relationErrands: RelationWithErrandNumber[],
   messageConversationId: string
 ): Promise<string> => {
   const conversationType = contactMeans === 'draken' ? 'INTERNAL' : 'EXTERNAL';
-  const selectedRelation = relationErrands.find((relation) => relation.target.resourceId === selectedRelationId);
+  const selectedEntry = relationErrands.find((entry) => entry.relation.target.resourceId === selectedRelationId);
 
   const conversations = await getSupportConversations(municipalityId, supportErrand.id!);
   const existingExternalConversation = conversations.data.find((c) => c.type === 'EXTERNAL');
   const existingInternalConversation = conversations.data.find(
-    (conv: any) => conv.relationIds && conv.relationIds[0] === selectedRelation?.id
+    (conv: any) => conv.relationIds && conv.relationIds[0] === selectedEntry?.relation.id
   );
 
   let conversationId: string | undefined = undefined;
@@ -175,7 +175,7 @@ export const getOrCreateSupportConversationId = async (
     if (conversationType === 'EXTERNAL') {
       topic = `Mina sidor`;
     } else {
-      topic = `${supportErrand.errandNumber}${selectedRelation ? ` - ${selectedRelation.target.type}` : ''}`;
+      topic = `${supportErrand.errandNumber}${selectedEntry ? ` - ${selectedEntry.errandNumber}` : ''}`;
     }
 
     const newConversation = await createSupportConversation(
@@ -183,7 +183,7 @@ export const getOrCreateSupportConversationId = async (
       supportErrand.id!,
       topic,
       conversationType,
-      selectedRelation?.id
+      selectedEntry?.relation.id
     );
     conversationId = newConversation.data.id;
   }

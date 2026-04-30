@@ -1,4 +1,4 @@
-import { Asset } from '@casedata/interfaces/asset';
+import { Asset, AssetUpdateRequest, DraftAssetUpdateRequest } from '@casedata/interfaces/asset';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import {
   getLatestSchema,
@@ -38,6 +38,12 @@ export async function getAssets(params: GetAssetsParams): Promise<ApiResponse<As
   return res.data;
 }
 
+export async function getDraftAssets(params: GetAssetsParams): Promise<ApiResponse<Asset[]>> {
+  const url = `asset-drafts${buildQuery(params)}`;
+  const res = await apiService.get<ApiResponse<Asset[]>>(url);
+  return res.data;
+}
+
 export async function createAsset(
   municipalityId: string,
   payload: Partial<Asset> & Record<string, any>
@@ -47,13 +53,32 @@ export async function createAsset(
   return res.data;
 }
 
+export async function createDraftAsset(
+  municipalityId: string,
+  payload: Partial<Asset> & Record<string, any>
+): Promise<ApiResponse<Asset>> {
+  const url = `asset-drafts?municipalityId=${municipalityId}`;
+  const res = await apiService.post<ApiResponse<Asset>, typeof payload>(url, payload);
+  return res.data;
+}
+
 export async function updateAsset(
   municipalityId: string,
   id: string,
-  payload: Partial<Asset> & Record<string, any>
+  payload: AssetUpdateRequest
 ): Promise<ApiResponse<Asset>> {
   const url = `assets/${encodeURIComponent(id)}?municipalityId=${municipalityId}`;
-  const res = await apiService.patch<ApiResponse<Asset>, typeof payload>(url, payload);
+  const res = await apiService.patch<ApiResponse<Asset>, AssetUpdateRequest>(url, payload);
+  return res.data;
+}
+
+export async function updateDraftAsset(
+  municipalityId: string,
+  id: string,
+  payload: DraftAssetUpdateRequest
+): Promise<ApiResponse<Asset>> {
+  const url = `asset-drafts/${encodeURIComponent(id)}?municipalityId=${municipalityId}`;
+  const res = await apiService.patch<ApiResponse<Asset>, DraftAssetUpdateRequest>(url, payload);
   return res.data;
 }
 
@@ -69,7 +94,7 @@ type BuildArgs = {
 export function buildCreateAssetPayload(
   formData: any,
   _schema: RJSFSchema | null,
-  { schemaId, assetType, partyId, assetId, origin = 'CASEDATA', status = 'ACTIVE' }: BuildArgs
+  { schemaId, assetType, partyId, assetId, origin = 'CASEDATA', status = 'DRAFT' }: BuildArgs
 ): Partial<Asset> & Record<string, any> {
   const tillsvidare = formData?.validityType === 'tillsvidare';
   return {
@@ -97,7 +122,7 @@ export function buildUpdateAssetPayload(
   schema: RJSFSchema | null,
   args: BuildArgs,
   existing: Asset
-): Partial<Asset> & Record<string, any> {
+): DraftAssetUpdateRequest {
   const base = buildCreateAssetPayload(formData, schema, args);
   const newParam = base.jsonParameters?.[0];
 
@@ -115,31 +140,19 @@ export function buildUpdateAssetPayload(
   }
 
   return {
-    ...existing,
-    origin: existing.origin ?? base.origin,
-    partyId: existing.partyId ?? base.partyId,
-    assetId: existing.assetId ?? base.assetId,
-    type: existing.type ?? base.type,
-    issued: base.issued,
     validTo: base.validTo,
     status: base.status ?? existing.status,
-    description: base.description ?? existing.description,
+    statusReason: existing.statusReason,
     additionalParameters: existing.additionalParameters ?? {},
     jsonParameters: mergedParams,
   };
 }
 
-export function buildRemoveParameterPayload(paramIndex: number, existing: Asset): Partial<Asset> & Record<string, any> {
+export function buildRemoveParameterPayload(paramIndex: number, existing: Asset): DraftAssetUpdateRequest {
   return {
-    ...existing,
-    origin: existing.origin,
-    partyId: existing.partyId,
-    assetId: existing.assetId,
-    type: existing.type,
-    issued: existing.issued ?? null,
-    validTo: existing.validTo ?? null,
+    validTo: existing.validTo ?? undefined,
     status: existing.status,
-    description: existing.description ?? '',
+    statusReason: existing.statusReason,
     additionalParameters: existing.additionalParameters ?? {},
     jsonParameters: (existing.jsonParameters ?? []).filter((_, i) => i !== paramIndex),
   };
@@ -148,24 +161,18 @@ export function buildRemoveParameterPayload(paramIndex: number, existing: Asset)
 export function buildReplaceParameterPayload(
   formData: any,
   paramIndex: number,
-  { schemaId, assetType, partyId, assetId }: BuildArgs,
+  { schemaId, assetType }: BuildArgs,
   existing: Asset
-): Partial<Asset> & Record<string, any> {
+): DraftAssetUpdateRequest {
   const params = [...(existing.jsonParameters ?? [])];
   if (paramIndex < 0 || paramIndex >= params.length) {
     throw new Error(`Parameter index ${paramIndex} out of range (0–${params.length - 1}).`);
   }
   params[paramIndex] = { key: assetType, value: formData, schemaId };
   return {
-    ...existing,
-    origin: existing.origin,
-    partyId: existing.partyId ?? partyId,
-    assetId: existing.assetId ?? assetId,
-    type: existing.type,
-    issued: formData?.validFrom ?? existing.issued,
-    validTo: formData?.validityType === 'tillsvidare' ? null : formData?.validTo ?? existing.validTo,
+    validTo: formData?.validityType === 'tillsvidare' ? undefined : formData?.validTo ?? existing.validTo,
     status: existing.status,
-    description: existing.description ?? '',
+    statusReason: existing.statusReason,
     additionalParameters: existing.additionalParameters ?? {},
     jsonParameters: params,
   };
