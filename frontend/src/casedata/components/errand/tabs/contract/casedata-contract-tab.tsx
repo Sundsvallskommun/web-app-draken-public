@@ -37,6 +37,7 @@ import * as yup from 'yup';
 
 import ContractForm from './contract-form';
 import { ContractNavigation } from './contract-navigation';
+import { CasedataStatusLabelComponent } from '@casedata/components/contract-overview/contracts-table.component';
 
 interface CasedataContractProps {
   update: () => void;
@@ -301,9 +302,10 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           <div className="flex">
             <div className="w-3/4" data-cy="contract-wrapper">
               <div>
-                <h2 className="text-h2-md">
+                <h2 className="text-h2-md flex items-center gap-12 justify-start">
                   {contractTypes.find((ct) => ct.key === contractType)?.label}{' '}
                   <span>{contractForm.getValues().contractId ? `(${contractForm.getValues().contractId})` : null}</span>
+                  <CasedataStatusLabelComponent status={contractForm.getValues().status} />
                 </h2>
                 <p className="py-16">
                   Här fyller du i avtalsuppgifter för ärendet. Kom ihåg att granska uppgifterna noga så att allt är i

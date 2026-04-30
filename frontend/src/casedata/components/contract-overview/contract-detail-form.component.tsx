@@ -35,6 +35,7 @@ import { ExternalLink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { FC, useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+import { CasedataStatusLabelComponent } from './contracts-table.component';
 
 const getContractTypeLabel = (type: ContractType): string => {
   return contractTypes.find((t) => t.key === type)?.label || 'Avtal';
@@ -241,12 +242,29 @@ export const ContractDetailForm: FC<{
     await createContractErrand(MEXCaseType.MEX_TERMINATION_OF_LEASE, `Säg upp avtal ${selectedContract.contractId}`);
   };
 
+  const prettyStatus = useMemo(() => {
+    switch (selectedContract.status) {
+      case Status.DRAFT:
+        return 'Utkast';
+      case Status.ACTIVE:
+        return 'Aktivt';
+      case Status.TERMINATED:
+        return 'Avslutad';
+      default:
+        return 'Okänd status';
+    }
+  }, [selectedContract.status]);
+
   return (
     <>
       <div className="px-40 my-lg gap-24">
         <div className="flex flex-col gap-md mb-32">
           <div className="flex justify-between items-center">
-            <h2 className="text-h4-sm m-0">{contractTypeLabel}</h2>
+            <h2 className="text-h4-sm m-0 flex justify-start gap-12 items-center">
+              {contractTypeLabel}
+              <span>{selectedContract.contractId ? ` (${selectedContract.contractId})` : null}</span>
+              <CasedataStatusLabelComponent status={selectedContract.status} />
+            </h2>
             <div className="flex gap-md">
               <Button
                 data-cy="contract-detail-edit-button"
@@ -312,9 +330,11 @@ export const ContractDetailForm: FC<{
             )}
           </div>
 
-          <Checkbox data-cy="contract-detail-draft-checkbox" checked={isDraft} disabled>
-            Markera som utkast
-          </Checkbox>
+          {isDraft ? (
+            <Checkbox data-cy="contract-detail-draft-checkbox" checked={isDraft} disabled>
+              Markera som utkast
+            </Checkbox>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-md mb-32">
