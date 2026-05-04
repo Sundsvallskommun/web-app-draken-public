@@ -485,6 +485,22 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         contact: [],
         customer: [],
       }).as('getErrandWithoutStakeholders');
+      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [
+          {
+            externalIdType: 'PRIVATE',
+            role: 'PRIMARY',
+            firstName: 'Test',
+            lastName: 'Testsson',
+            address: 'Testaddress',
+            careOf: 'TestcareOf',
+            zipCode: '12345',
+            city: 'Teststaden',
+          },
+        ],
+      }).as('getErrandById');
       cy.visit('/arende/KC-00000001');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getSupportAdmins');
@@ -626,6 +642,26 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         contact: [],
         customer: [],
       }).as('getErrandWithoutStakeholders');
+      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [
+          {
+            externalId: mockPersonIdResponse.data.personId,
+            externalIdType: 'PRIVATE',
+            role: 'PRIMARY',
+            firstName: mockAdressResponse.data.givenname,
+            lastName: mockAdressResponse.data.lastname,
+            address: mockAdressResponse.data.addresses[0].address,
+            zipCode: mockAdressResponse.data.addresses[0].postalCode,
+            city: mockAdressResponse.data.addresses[0].city,
+            contactChannels: [
+              { type: 'Email', value: Cypress.env('mockEmail') },
+              { type: 'Phone', value: Cypress.env('mockPhoneNumberCountryCode') },
+            ],
+          },
+        ],
+      }).as('getErrandById');
       cy.visit('/arende/KC-00000001');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');
