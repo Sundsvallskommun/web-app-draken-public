@@ -87,6 +87,11 @@ export const SupportStatusLabelComponent: FC<{
       color = 'error';
       inverted = true;
       break;
+    case 'REOPENED':
+      color = 'bjornstigen';
+      icon = 'lock-open';
+      inverted = true;
+      break;
     default:
       color = 'tertiary';
       break;

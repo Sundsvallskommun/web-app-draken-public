@@ -589,7 +589,6 @@ export const SupportMessageForm: FC<{
           <Select
             {...register('messageTemplate')}
             className="w-full text-dark-primary"
-            variant="tertiary"
             size="sm"
             onChange={(e) => {
               const template = e.currentTarget.value;

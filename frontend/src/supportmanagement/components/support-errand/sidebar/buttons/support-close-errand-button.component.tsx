@@ -2,8 +2,8 @@ import { isIK, isKA, isLOP, isROB, isSE } from '@common/services/application-ser
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
+import { Button, Checkbox, Divider, FormControl, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
-import { Button, Checkbox, FormControl, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
 import {
   closeSupportErrand,
   getSupportErrandById,
@@ -19,9 +19,12 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
 import { applicantHasContactChannel, getAdminName } from '@supportmanagement/services/support-stakeholder-service';
-import { ArrowRight, Check } from 'lucide-react';
-import { FC, useState } from 'react';
+import { ArrowLeft, Check } from 'lucide-react';
+import React, { useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+
+const RESOLUTION_DESCRIPTION =
+  'Du kan avsluta ärendet med nuvarande lösningskod, eller ändra om något i ärendet har påverkat lösningen.';
 
 const getResolutionLabels = (): Record<string, string> => {
   if (isLOP()) return ResolutionLabelLOP;
@@ -41,7 +44,7 @@ const getDefaultResolution = (errand: SupportErrand | undefined): Resolution => 
     : Resolution.SOLVED;
 };
 
-export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const administrators = useUserStore((s) => s.administrators);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
@@ -55,6 +58,15 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
   const [changeResolution, setChangeResolution] = useState<boolean>(false);
 
   const formControls: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
+
+  const showCloseErrorToast = () => {
+    toastMessage({
+      position: 'bottom',
+      closeable: false,
+      message: 'Något gick fel när ärendet skulle avslutas',
+      status: 'error',
+    });
+  };
 
   const handleCloseErrand = (resolution: Resolution, msg: boolean) => {
     setIsLoading(true);
@@ -80,12 +92,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
         getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
       })
       .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Något gick fel när ärendet skulle avslutas',
-          status: 'error',
-        });
+        showCloseErrorToast();
         setIsLoading(false);
         return;
       });
@@ -116,11 +123,18 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
       <Modal
         show={showModal}
         label={
-          Object.values(deepFlattenToObject(formControls.formState.dirtyFields)).some((v) => v)
-            ? 'Du har osparade ändringar'
-            : 'Avsluta ärende'
+          Object.values(deepFlattenToObject(formControls.formState.dirtyFields)).some((v) => v) ? (
+            'Du har osparade ändringar'
+          ) : changeResolution ? (
+            <div className="flex flex-row gap-8">
+              <ArrowLeft size={24} onClick={() => setChangeResolution(false)} className="hover:cursor-pointer" />{' '}
+              Avsluta ärendet
+            </div>
+          ) : (
+            'Avsluta ärendet'
+          )
         }
-        className={!!supportErrand?.resolution && supportErrand?.resolution !== '' ? 'w-[94.4rem]' : 'w-[52rem]'}
+        className={!!supportErrand?.resolution && supportErrand?.resolution !== '' ? 'w-[67.2rem]' : 'w-[52rem]'}
         onClose={() => {
           setShowModal(false);
           setChangeResolution(false);
@@ -139,57 +153,61 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
           </>
         ) : !!supportErrand?.resolution && supportErrand?.resolution !== '' && !changeResolution ? (
           <div>
-            <h3 className="text-h3-sm">Aktuell avslutningskod</h3>
-            <span>
-              Ärendet har redan en avslutningskod. Du kan ändra koden eller avsluta ärendet med nuvarande kod.
-            </span>
-            <div className="w-fit my-16 font-bold">
-              {getResolutionLabels()[supportErrand?.resolution] || supportErrand?.resolution}
+            <span>{RESOLUTION_DESCRIPTION}</span>
+            <div className="bg-vattjom-background-100 rounded-12 p-16 mt-24">
+              <div className="flex justify-between items-center">
+                <div className="flex flex-col gap-8">
+                  <span>Nuvarande lösningskod</span>
+                  <span className="font-bold">
+                    {getResolutionLabels()[supportErrand?.resolution] || supportErrand?.resolution}
+                  </span>
+                </div>
+                <Button variant="secondary" onClick={() => setChangeResolution(true)}>
+                  Ändra lösningskod
+                </Button>
+              </div>
             </div>
-            <div className="flex flex-row gap-10 mt-40">
-              <Button variant="secondary" rightIcon={<ArrowRight />} onClick={() => setChangeResolution(true)}>
-                Ändra lösningskod
-              </Button>
-              <Button
-                variant="primary"
-                color="vattjom"
-                leftIcon={<Check />}
-                onClick={async () => {
-                  try {
-                    await setSupportErrandStatus(supportErrand.id ?? '', municipalityId, Status.SOLVED);
-                    window.close();
-                  } catch (e) {
-                    toastMessage({
-                      position: 'bottom',
-                      closeable: false,
-                      message: 'Något gick fel när ärendet skulle avslutas',
-                      status: 'error',
-                    });
-                  }
-                }}
-              >
-                Avsluta ärende
-              </Button>
-            </div>
+            <Button
+              className="mt-32"
+              variant="primary"
+              color="vattjom"
+              leftIcon={<Check />}
+              onClick={async () => {
+                try {
+                  await setSupportErrandStatus(supportErrand.id ?? '', municipalityId, Status.SOLVED);
+                  window.close();
+                } catch (e) {
+                  showCloseErrorToast();
+                }
+              }}
+            >
+              Avsluta
+            </Button>
           </div>
         ) : (
           <>
             <Modal.Content>
-              <p className="text-content font-semibold">Välj en lösning</p>
+              {changeResolution && <span className="pb-24">{RESOLUTION_DESCRIPTION}</span>}
+              <p className="text-content font-semibold pb-24 ">
+                {changeResolution ? 'Välj ny lösningskod' : 'Välj en lösningskod'}
+              </p>
+
               <FormControl id="resolution" className="w-full" required>
                 <RadioButton.Group data-cy="solve-radiolist">
                   {Object.entries(getResolutionLabels())
                     .filter(([_key, _label]) => _label !== 'Vidarebefordrat via växelprogrammet')
                     .sort((a, b) => a[1].localeCompare(b[1]))
-                    .map(([_key, _label], idx) => (
-                      <RadioButton
-                        key={_key}
-                        value={_key}
-                        defaultChecked={_key === selectedResolution}
-                        onClick={(e) => setSelectedResolution((e.target as HTMLInputElement).value as Resolution)}
-                      >
-                        {_label}
-                      </RadioButton>
+                    .map(([_key, _label], idx, arr) => (
+                      <React.Fragment key={_key}>
+                        <RadioButton
+                          value={_key}
+                          defaultChecked={_key === selectedResolution}
+                          onClick={(e) => setSelectedResolution((e.target as HTMLInputElement).value as Resolution)}
+                        >
+                          {_label}
+                        </RadioButton>
+                        {idx !== arr.length - 1 && <Divider />}
+                      </React.Fragment>
                     ))}
                 </RadioButton.Group>
               </FormControl>
@@ -213,7 +231,8 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
                 variant="primary"
                 color="vattjom"
                 disabled={isLoading || disabled}
-                className="w-full"
+                className="w-fit"
+                leftIcon={<Check />}
                 loading={isLoading}
                 loadingText="Avslutar ärende"
                 onClick={() => {
@@ -222,7 +241,7 @@ export const CloseErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled
                   });
                 }}
               >
-                Avsluta ärende
+                Avsluta
               </Button>
             </Modal.Footer>
           </>

@@ -1,8 +1,8 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-import { deepFlattenToObject } from '@common/services/helper-service';
-import { appConfig } from '@config/appconfig';
-import { Button, Divider, FormControl, FormLabel, Label, Select, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { deepFlattenToObject, prettyTime } from '@common/services/helper-service';
+import { Button, Divider, FormControl, FormLabel, Label, Select, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import {
@@ -12,7 +12,6 @@ import {
   Resolution,
   setSupportErrandAdmin,
   setSupportErrandStatus,
-  setSuspension,
   Status,
   supportErrandIsEmpty,
   updateSupportErrand,
@@ -20,15 +19,16 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
 import dayjs from 'dayjs';
-import { CirclePause, Mail, Undo2 } from 'lucide-react';
+import { CirclePause, Mail } from 'lucide-react';
 import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
-import { CloseErrandComponent } from './close-errand.component';
-import { ForwardErrandComponent } from './forward-errand.component';
-import { StartProcessComponent } from './start-process.component';
-import { SupportResumeErrandButton } from './support-resume-errand-button.component';
-import { SuspendErrandComponent } from './suspend-errand.component';
+import { SupportCloseErrandButtonComponent } from './buttons/support-close-errand-button.component';
+import { SupportForwardErrandButtonComponent } from './buttons/support-forward-errand-button.component';
+import { SupportReopenErrandButton } from './buttons/support-reopen-errand-button.component';
+import { SupportResumeErrandButton } from './buttons/support-resume-errand-button.component';
+import { SupportStartProcessButtonComponent } from './buttons/support-start-process-button.component';
+import { SupportSuspendErrandButtonComponent } from './buttons/support-suspend-errand-button.component';
 
 export const SidebarInfo: FC<{
   unsavedFacility: boolean;
@@ -53,7 +53,6 @@ export const SidebarInfo: FC<{
   const [isLoading, setIsLoading] = useState<'status' | 'admin' | 'priority' | 'suspend' | false | true>();
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();
-  const confirm = useConfirm();
   const allowed = useMemo(() => {
     if (!supportErrandIsEmpty(supportErrand!)) {
       let _a = validateAction(supportErrand!, user);
@@ -209,26 +208,6 @@ export const SidebarInfo: FC<{
       });
   };
 
-  const updateSupportErrandStatus = (status: Status) => {
-    setIsLoading('status');
-    setError(false);
-    return handleAction(
-      () => setSupportErrandStatus(supportErrand!.id!, municipalityId, status),
-      () => toast('success', 'Status ändrades'),
-      () => toast('error', 'Något gick fel när status ändrades')
-    );
-  };
-
-  const activateErrand = () => {
-    setIsLoading('suspend');
-    setError(false);
-    return handleAction(
-      () => setSuspension(supportErrand!.id!, municipalityId, Status.ONGOING, null as any, null as any),
-      () => toast('success', 'Ärende återupptogs'),
-      () => toast('error', 'Något gick fel när ärendet återupptogs')
-    );
-  };
-
   const selfAssignSupportErrand = () => {
     const admin = administrators.find((a) => a.adAccount === user.username);
     if (admin) {
@@ -339,12 +318,6 @@ export const SidebarInfo: FC<{
     console.error('Something went wrong when saving');
   };
 
-  const hasClosedErrandPassedLimit = () => {
-    const limit = appConfig.reopenSupportErrandLimit;
-    const lastModified = dayjs(supportErrand?.modified);
-    return dayjs().isAfter(lastModified.add(parseInt(limit), 'day'));
-  };
-
   return (
     <div className="relative h-full flex flex-col justify-start">
       <div className="px-0 flex justify-between items-center">
@@ -372,7 +345,6 @@ export const SidebarInfo: FC<{
               </Button>
             </FormLabel>
             <Select
-              // disabled={supportErrandIsEmpty(supportErrand!)}
               className="w-full"
               size="sm"
               data-cy="admin-input"
@@ -404,6 +376,7 @@ export const SidebarInfo: FC<{
               value={status}
               disabled={
                 supportErrand?.status === Status.SOLVED ||
+                supportErrand?.status === Status.REOPENED ||
                 (!supportErrandIsEmpty(supportErrand!) && !supportErrand?.assignedUserId)
               }
             >
@@ -416,7 +389,7 @@ export const SidebarInfo: FC<{
             </Select>
           </FormControl>
 
-          {supportErrand?.status !== Status.SOLVED && (
+          {supportErrand?.status !== Status.SOLVED && supportErrand?.status !== Status.REOPENED && (
             <FormControl id="priority" className="w-full" disabled={!allowed}>
               <FormLabel className="text-small">Prioritet</FormLabel>
               <Select
@@ -465,24 +438,7 @@ export const SidebarInfo: FC<{
             {supportErrand?.status === Status.SOLVED ? (
               <>
                 {renderLabelSwitch(supportErrand.resolution!)}
-                <Button
-                  className="w-full mt-20"
-                  color="vattjom"
-                  leftIcon={<Undo2 />}
-                  variant="secondary"
-                  onClick={() => {
-                    confirm
-                      .showConfirmation('Återöppna ärende', 'Vill du återöppna ärendet?', 'Ja', 'Nej', 'info', 'info')
-                      .then((confirmed) => {
-                        if (confirmed) {
-                          updateSupportErrandStatus(Status.ONGOING);
-                        }
-                      });
-                  }}
-                  disabled={hasClosedErrandPassedLimit()}
-                >
-                  Återöppna ärende
-                </Button>
+                <SupportReopenErrandButton />
               </>
             ) : supportErrand?.status === Status.SUSPENDED || supportErrand?.status === Status.ASSIGNED ? (
               <>
@@ -511,12 +467,25 @@ export const SidebarInfo: FC<{
 
                 <SupportResumeErrandButton disabled={!allowed} />
               </>
+            ) : supportErrand?.status === Status.REOPENED ? (
+              <div className="flex flex-col gap-8">
+                <div className="flex w-fit">
+                  <SupportStatusLabelComponent
+                    status={supportErrand?.status}
+                    resolution={supportErrand?.resolution ?? ''}
+                  />
+                  <p className="text-small ml-8">{prettyTime(supportErrand?.modified ?? '')}</p>
+                </div>
+                <span className="text-dark-secondary text-small">Ärendet har återöppnats</span>
+                <SupportReopenErrandButton disabled={!allowed} />
+                <SupportCloseErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
+              </div>
             ) : (
               <div className="flex flex-col gap-8">
                 {allowed && !supportErrandIsEmpty(supportErrand!) && (
                   <>
                     <SupportResumeErrandButton disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
-                    <StartProcessComponent
+                    <SupportStartProcessButtonComponent
                       disabled={!allowed || supportErrandIsEmpty(supportErrand!)}
                       onSubmit={onSubmit}
                       onError={onError}
@@ -533,12 +502,12 @@ export const SidebarInfo: FC<{
                         Nytt meddelande
                       </Button>
                     )}
-                    <SuspendErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
+                    <SupportSuspendErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
                     <Divider className="mt-8 mb-16" />
                   </>
                 )}
-                <ForwardErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
-                <CloseErrandComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
+                <SupportForwardErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
+                <SupportCloseErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
               </div>
             )}
           </>
