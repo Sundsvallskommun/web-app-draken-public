@@ -371,6 +371,7 @@ export const ContractForm: FC<{
           </Button>
         </div>
       )}
+      {formState.errors.stakeholders && <p className="text-error">{formState.errors.stakeholders.message}</p>}
     </>
   );
 
@@ -401,6 +402,11 @@ export const ContractForm: FC<{
         <Disclosure.Header>
           <Disclosure.Icon icon={<Users />} />
           <Disclosure.Title>Parter</Disclosure.Title>
+          {(formState.errors.stakeholders as any)?.message ? (
+            <Label className="w-[15rem]" rounded inverted color={'error'}>
+              Fel i formulär
+            </Label>
+          ) : null}
           <Disclosure.Button />
         </Disclosure.Header>
         <Disclosure.Content>

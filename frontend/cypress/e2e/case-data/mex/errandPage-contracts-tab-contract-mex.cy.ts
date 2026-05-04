@@ -92,6 +92,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       );
       cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
       cy.intercept('GET', '**/featureflags', mockFeatureFlags).as('getFeatureFlags');
+      cy.intercept('GET', '**/billingdatacollector/*', { statusCode: 500 }).as('getNextBillingDateFail');
+      cy.intercept('GET', '**/asset-drafts**', mockDraftAsset).as('getDraftAssets');
+      cy.intercept('GET', '**/assets?**', mockAssetEmpty).as('getAssets');
     });
 
     const contractText: { data: Contract } = {
