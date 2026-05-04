@@ -65,6 +65,12 @@ export interface ScheduledBilling {
    * @example false
    */
   paused?: boolean;
+  /**
+   * If set, this is the last billing — no further billings will be scheduled after this date
+   * @format date
+   * @example "2026-06-30"
+   */
+  finalBillingDate?: string;
 }
 
 export interface ConstraintViolationProblem {
@@ -97,6 +103,25 @@ export interface Violation {
   message?: string;
 }
 
+/** Billing source event */
+export interface EventRequest {
+  /**
+   * External id
+   * @example "2026-00001"
+   */
+  id?: string;
+  /**
+   * Municipality id
+   * @example "2281"
+   */
+  municipalityId?: string;
+  /**
+   * Event type
+   * @example "CREATED"
+   */
+  eventType?: EventRequestEventTypeEnum;
+}
+
 export interface PageScheduledBilling {
   /** @format int64 */
   totalElements?: number;
@@ -119,13 +144,13 @@ export interface PageScheduledBilling {
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  unpaged?: boolean;
+  paged?: boolean;
   sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
@@ -139,6 +164,31 @@ export interface SortObject {
  * @example "CONTRACT"
  */
 export enum ScheduledBillingSourceEnum {
+  CONTRACT = 'CONTRACT',
+  OPENE = 'OPENE',
+}
+
+/**
+ * Event type
+ * @example "CREATED"
+ */
+export enum EventRequestEventTypeEnum {
+  CREATED = 'CREATED',
+  UPDATED = 'UPDATED',
+  DELETED = 'DELETED',
+  TERMINATED = 'TERMINATED',
+}
+
+/**
+ * Source system sending the event
+ * @example "CONTRACT"
+ */
+export enum HandleEventParamsSourceEnum {
+  CONTRACT = 'CONTRACT',
+  OPENE = 'OPENE',
+}
+
+export enum HandleEventParamsEnum {
   CONTRACT = 'CONTRACT',
   OPENE = 'OPENE',
 }

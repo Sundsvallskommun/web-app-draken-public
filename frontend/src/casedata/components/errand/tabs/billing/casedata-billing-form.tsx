@@ -2,6 +2,8 @@ import { BillingFormData, BillingServiceItem, emptyBillingFormData } from '@case
 import { Role } from '@casedata/interfaces/role';
 import {
   getCasedataBillingRecordsForErrand,
+  getCounterpart,
+  getOrganizationPartyId,
   saveCasedataBillingRecord,
 } from '@casedata/services/casedata-billing-service';
 import { getErrand } from '@casedata/services/casedata-errand-service';
@@ -170,7 +172,35 @@ export const CaseDataBillingForm: React.FC = () => {
         }
       }
 
-      await saveCasedataBillingRecord({ ...data, recipient: resolvedRecipient }, errand!, municipalityId);
+      let partyId = resolvedRecipient.personId;
+      if (!partyId && resolvedRecipient.organizationNumber) {
+        try {
+          partyId = await getOrganizationPartyId(resolvedRecipient.organizationNumber);
+        } catch (error) {
+          console.error('Failed to fetch organization partyId:', error);
+        }
+      }
+
+      const stakeholderType = resolvedRecipient.organizationNumber ? 'ORGANIZATION' : 'PERSON';
+      let resolvedServices = data.services;
+
+      if (partyId) {
+        try {
+          const counterpart = await getCounterpart(partyId, stakeholderType);
+          resolvedServices = data.services.map((service) => ({
+            ...service,
+            accountInformation: { ...service.accountInformation, counterpart },
+          }));
+        } catch (error) {
+          console.error('Failed to fetch counterpart, using default:', error);
+        }
+      }
+
+      await saveCasedataBillingRecord(
+        { ...data, services: resolvedServices, recipient: resolvedRecipient },
+        errand!,
+        municipalityId
+      );
 
       toastMessage({
         position: 'bottom',

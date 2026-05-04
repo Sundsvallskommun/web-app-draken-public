@@ -28,4 +28,18 @@ export class BillingDataCollectorController {
     const res = await this.apiService.get<ScheduledBilling>({ url }, req.user);
     return response.status(200).send(res.data.nextScheduledBilling);
   }
+
+  @Get('/billingdatacollector/counterpart/:partyid/:stakeholderType')
+  @OpenAPI({ summary: 'Get counterpart by party id and stakeholder type' })
+  @UseBefore(authMiddleware)
+  async getCounterpart(
+    @Req() req: RequestWithUser,
+    @Param('partyid') partyId: string,
+    @Param('stakeholderType') stakeholderType: string,
+    @Res() response: Response<string>,
+  ): Promise<Response<string>> {
+    const url = `${this.SERVICE}/${MUNICIPALITY_ID}/counterpart?partyId=${partyId}&stakeholderType=${stakeholderType}`;
+    const res = await this.apiService.get<string>({ url }, req.user);
+    return response.status(200).send(res.data.toString());
+  }
 }

@@ -213,8 +213,8 @@ export interface Problem {
   instance?: string;
   /** @format uri */
   type?: string;
-  detail?: string;
   title?: string;
+  detail?: string;
   /** @format int32 */
   status?: number;
 }
@@ -585,13 +585,12 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  number?: boolean;
-  string?: boolean;
-  boolean?: boolean;
-  integralNumber?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   valueNode?: boolean;
   container?: boolean;
+  missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
+  pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
   int?: boolean;
@@ -602,8 +601,9 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  missingNode?: boolean;
-  pojo?: boolean;
+  number?: boolean;
+  string?: boolean;
+  boolean?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -1064,10 +1064,10 @@ export interface PatchDecision {
 }
 
 export interface PageErrand {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1077,27 +1077,27 @@ export interface PageErrand {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  sort?: SortObject;
   pageable?: PageableObject;
+  sort?: SortObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  sort?: SortObject;
-  unpaged?: boolean;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  unsorted?: boolean;
   sorted?: boolean;
+  unsorted?: boolean;
 }
 
 export interface CommitMetadata {
@@ -1215,10 +1215,10 @@ export interface MessageResponse {
 }
 
 export interface PageMessage {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Message[];
@@ -1228,16 +1228,16 @@ export interface PageMessage {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  sort?: SortObject;
   pageable?: PageableObject;
+  sort?: SortObject;
   empty?: boolean;
 }
 
 export interface PageDecision {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Decision[];
@@ -1247,8 +1247,8 @@ export interface PageDecision {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  sort?: SortObject;
   pageable?: PageableObject;
+  sort?: SortObject;
   empty?: boolean;
 }
 
