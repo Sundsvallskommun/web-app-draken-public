@@ -1,5 +1,6 @@
 'use client';
 
+import { useMessageTemplates } from '@casedata/hooks/useMessageTemplates';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { Channels } from '@casedata/interfaces/channels';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
@@ -19,7 +20,7 @@ import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV
 import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
-import { isMEX, isPT } from '@common/services/application-service';
+import { isMEX } from '@common/services/application-service';
 import {
   invalidPhoneMessage,
   phonePattern,
@@ -44,10 +45,10 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { EMAIL_INFORMATION_TEXT } from '@supportmanagement/services/message-template-service';
 import { File, Paperclip, X } from 'lucide-react';
 import { FC, useEffect, useMemo, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
 
 export interface CasedataMessageTabFormModel {
@@ -171,7 +172,8 @@ export const MessageComposer: FC<{
 
   const closeConfirm = useConfirm();
   const toastMessage = useSnackbar();
-  const { t } = useTranslation();
+
+  const { templates } = useMessageTemplates(user, props.show);
 
   const allowed = useMemo(() => {
     if (!errand) return false;
@@ -362,28 +364,18 @@ export const MessageComposer: FC<{
   }, [contactMeans]);
 
   const defaultSignature = () => {
-    const userName = user.firstName + ' ' + user.lastName;
+    if (!templates) return '';
     switch (contactMeans) {
       case 'draken':
-        return t('messages:templates.internal_conversation_default_signature', {
-          user: userName,
-        });
+        return templates.internalSignature;
       case 'sms':
-        return t('messages:templates.sms.case_data', { user: userName });
+        return templates.smsTemplate;
       default:
-        return t('messages:templates.case_data_default_signature', {
-          user: userName,
-          department: isMEX()
-            ? 'Stadsbyggnadskontoret<br>Mark- och exploateringsavdelningen'
-            : isPT()
-            ? 'Gatuavdelningen, Trafiksektionen'
-            : null,
-          interpolation: { escapeValue: false },
-          email_information:
-            contactMeans === 'email'
-              ? '<p><b>Vänligen ändra inte ämnesraden om du svarar på detta meddelande.</b></p><br>'
-              : '',
-        });
+        // For non-email contact means, remove email_information from signature
+        if (contactMeans !== 'email') {
+          return templates.emailSignature.replace(EMAIL_INFORMATION_TEXT, '');
+        }
+        return templates.emailSignature;
     }
   };
 
@@ -436,33 +428,24 @@ export const MessageComposer: FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.message, errand]);
 
-  const changeTemplate = (inTemplateValue: string) => {
-    if (inTemplateValue === 'mex-feedbackPrio') {
-      setValue(
-        'messageBody',
-        t('messages:templates.email.MEX.priority') +
-          defaultSignature() +
-          t('messages:templates.email.MEX.public_documents')
-      );
-    } else if (inTemplateValue === 'mex-feedbackNormal') {
-      setValue(
-        'messageBody',
-        t('messages:templates.email.MEX.normal') +
-          defaultSignature() +
-          t('messages:templates.email.MEX.public_documents')
-      );
-    } else if (inTemplateValue === 'mex-additionalInformation') {
-      setValue('messageBody', t('messages:templates.email.MEX.additional_information') + defaultSignature());
-    } else if (inTemplateValue === 'mex-internalReferralBuildingPermit') {
-      setValue('messageBody', t('messages:templates.email.MEX.internal_referral_building_permit') + defaultSignature());
-    } else if (inTemplateValue === 'mex-internalReferralWire') {
-      setValue('messageBody', t('messages:templates.email.MEX.internal_referral_wire') + defaultSignature());
-    } else if (inTemplateValue === 'mex-internalReferralWireCheck') {
-      setValue('messageBody', t('messages:templates.email.MEX.internal_referral_wire_check') + defaultSignature());
-    } else if (inTemplateValue === 'mex-treeRemovalRequestRejection') {
-      setValue('messageBody', t('messages:templates.email.MEX.tree_removal_request_rejection') + defaultSignature());
+  const changeTemplate = (templateId: string) => {
+    if (!templates) return;
+
+    if (!templateId) {
+      setValue('messageBody', defaultSignature());
+      return;
+    }
+
+    const content = templates.byId[templateId] || '';
+
+    if (contactMeans === 'sms') {
+      // For SMS: use only the signature, not the full smsTemplate (which includes default content)
+      setValue('messageBody', content + templates.smsSignature);
     } else {
-      setValue('messageBody', t('messages:templates.email.default') + defaultSignature());
+      const footerId = `${templates.app}.email.publicdocuments`;
+      const needsFooter = templateId.endsWith('.priority') || templateId.endsWith('.default');
+      const footer = needsFooter ? templates.byId[footerId] || '' : '';
+      setValue('messageBody', content + templates.emailSignature + footer);
     }
   };
 
@@ -579,21 +562,11 @@ export const MessageComposer: FC<{
               data-cy="messageTemplate"
             >
               <Select.Option value="">Välj mall</Select.Option>
-              {isMEX() ? (
-                <>
-                  <Select.Option value="mex-feedbackPrio">Återkoppling – Prio</Select.Option>
-                  <Select.Option value="mex-feedbackNormal">Återkoppling – Normal prio</Select.Option>
-                  <Select.Option value="mex-additionalInformation">Begära in kompletterande uppgifter</Select.Option>
-                  <Select.Option value="mex-internalReferralBuildingPermit">Internremiss bygglov</Select.Option>
-                  <Select.Option value="mex-internalReferralWire">Internremiss ledningar</Select.Option>
-                  <Select.Option value="mex-internalReferralWireCheck">Ledningskoll - hänvisning</Select.Option>
-                  <Select.Option value="mex-treeRemovalRequestRejection">Träd - nekande svar</Select.Option>
-                </>
-              ) : isPT() ? (
-                <>
-                  <Select.Option value="pt-grundmall">Grundmall</Select.Option>
-                </>
-              ) : null}
+              {templates?.emailTemplates.map((t) => (
+                <Select.Option key={t.identifier} value={t.identifier}>
+                  {t.name}
+                </Select.Option>
+              ))}
             </Select>
           </FormControl>
 

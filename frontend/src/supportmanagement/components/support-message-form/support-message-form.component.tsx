@@ -1,5 +1,6 @@
 'use client';
 
+import { useMessageTemplates } from '@casedata/hooks/useMessageTemplates';
 import { ACCEPTED_UPLOAD_FILETYPES } from '@casedata/services/casedata-attachment-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
@@ -48,7 +49,6 @@ import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-
 import { File, Paperclip, X } from 'lucide-react';
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
 
 import { getDefaultEmailBody, getDefaultSmsBody, removeEmailInformation } from '../templates/default-message-template';
@@ -145,7 +145,6 @@ export const SupportMessageForm: FC<{
   const supportErrand = _supportErrand!;
   const supportAttachments = _supportAttachments ?? [];
 
-  const { t } = useTranslation('messages');
   const toastMessage = useSnackbar();
   const [isSending, setIsSending] = useState(false);
   const [messageError, setMessageError] = useState(false);
@@ -155,15 +154,17 @@ export const SupportMessageForm: FC<{
   const [selectedRelationId, setSelectedRelationId] = useState<string>('');
   const [relationErrands, setRelationErrands] = useState<RelationWithErrandNumber[]>([]);
 
+  const { templates } = useMessageTemplates(user, props.showMessageForm);
+
+  const emailBody = templates?.byId[`${templates.app}.email.default`]
+    ? templates.byId[`${templates.app}.email.default`] + templates.emailSignature
+    : '';
+  const smsBody = templates?.smsTemplate || '';
+  const internalSignature = templates?.internalSignature || '';
+
   const closeAttachmentModal = () => {
     setIsAttachmentModalOpen(false);
   };
-
-  const emailBody = getDefaultEmailBody(user, t);
-  const smsBody = getDefaultSmsBody(user, t);
-  const internalConversationSignature = t('messages:templates.internal_conversation_default_signature', {
-    user: user.firstName + ' ' + user.lastName,
-  });
 
   const formControls = useForm<SupportMessageFormModel>({
     defaultValues: {
@@ -178,8 +179,8 @@ export const SupportMessageForm: FC<{
       newPhoneNumber: '',
       emails: [],
       phoneNumbers: [],
-      messageBody: sanitized(emailBody),
-      messageBodyPlaintext: emailBody,
+      messageBody: '',
+      messageBodyPlaintext: '',
       messageAttachments: [],
       newMessageAttachments: [],
       headerReplyTo: '',
@@ -204,6 +205,13 @@ export const SupportMessageForm: FC<{
     clearErrors,
     formState: { errors },
   } = formControls;
+
+  useEffect(() => {
+    if (templates && emailBody && !props.message) {
+      setValue('messageBody', sanitized(emailBody));
+      setValue('messageBodyPlaintext', emailBody);
+    }
+  }, [templates, emailBody, props.message, setValue]);
 
   const {
     contactMeans,
@@ -371,10 +379,7 @@ export const SupportMessageForm: FC<{
       );
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.sender}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
 
-      let signature =
-        contactMeans === 'draken' ? internalConversationSignature : removeEmailInformation(contactMeans, emailBody);
-
-      removeEmailInformation;
+      let signature = contactMeans === 'draken' ? internalSignature : removeEmailInformation(contactMeans, emailBody);
 
       setValue(
         'messageBody',
@@ -397,7 +402,7 @@ export const SupportMessageForm: FC<{
           break;
 
         case 'draken':
-          body = internalConversationSignature;
+          body = internalSignature;
           break;
 
         default:
@@ -583,7 +588,7 @@ export const SupportMessageForm: FC<{
           </RadioButton>
         </RadioButton.Group>
       </div>
-      {isKA() && (
+      {templates && (contactMeans === 'email' || contactMeans === 'sms') && (
         <FormControl className="w-full my-12" size="sm" id="messageTemplate">
           <FormLabel>Välj meddelandemall</FormLabel>
           <Select
@@ -591,36 +596,26 @@ export const SupportMessageForm: FC<{
             className="w-full text-dark-primary"
             size="sm"
             onChange={(e) => {
-              const template = e.currentTarget.value;
-              setValue('messageTemplate', template);
+              const templateId = e.currentTarget.value;
+              setValue('messageTemplate', templateId);
 
-              if (template === 'ka-email-normal') {
-                setValue('messageBody', t('messages:templates.email.KA.normal'));
-              } else if (template === 'ka-email-request_completion') {
-                setValue('messageBody', t('messages:templates.email.KA.request_completion'));
-              } else if (template === 'ka-sms-normal') {
-                setValue('messageBody', t('messages:templates.sms.KA.normal'));
-              } else if (template === 'ka-sms-request_completion') {
-                setValue('messageBody', t('messages:templates.sms.KA.request_completion'));
-              } else {
-                setValue('messageBody', emailBody);
+              if (!templateId) {
+                const defaultBody = contactMeans === 'sms' ? smsBody : emailBody;
+                setValue('messageBody', sanitized(defaultBody));
+                return;
               }
+
+              const content = templates.byId[templateId] || '';
+              const signature = contactMeans === 'sms' ? templates.smsSignature : templates.emailSignature;
+              setValue('messageBody', sanitized(content + signature));
             }}
           >
             <Select.Option value="">Välj mall</Select.Option>
-            {contactMeans === 'email' && isKA() && (
-              <>
-                <Select.Option value="ka-email-normal">Grundmall (e-post)</Select.Option>
-                <Select.Option value="ka-email-request_completion">Begär komplettering (e-post)</Select.Option>
-              </>
-            )}
-
-            {contactMeans === 'sms' && isKA() && (
-              <>
-                <Select.Option value="ka-sms-normal">Grundmall (sms)</Select.Option>
-                <Select.Option value="ka-sms-request_completion">Begär komplettering (sms)</Select.Option>
-              </>
-            )}
+            {(contactMeans === 'email' ? templates.emailTemplates : templates.smsTemplates)?.map((t) => (
+              <Select.Option key={t.identifier} value={t.identifier}>
+                {t.name}
+              </Select.Option>
+            ))}
           </Select>
         </FormControl>
       )}

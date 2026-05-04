@@ -55,6 +55,11 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       );
       cy.intercept('PATCH', '**/errands/**/extraparameters', {});
       cy.intercept('POST', '**/render/pdf', mockPdfRender).as('postRenderPdf');
+      cy.intercept('GET', '**/templates?*', { data: [], message: 'success' }).as('getTemplates');
+      cy.intercept('POST', '**/render', {
+        data: { output: btoa('<p>Rendered template</p>') },
+        message: 'Decision HTML rendered',
+      }).as('renderTemplate');
     });
 
     const visitErrand = () => {
@@ -229,6 +234,37 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
       cy.contains('Beslut måste anges').should('exist');
       cy.get('@updateDecision.all').should('have.length', 0);
+    });
+
+    it('shows template dropdown after outcome selection when templates exist and renders preview', () => {
+      visitErrand();
+      const mockTemplates = [
+        {
+          identifier: 'pt.test.template',
+          name: 'PT Testmall',
+          description: 'En PT testmall',
+          version: '1',
+          metadata: [
+            { key: 'templateType', value: 'Decision' },
+            { key: 'decision', value: 'REJECTION' },
+          ],
+          defaultValues: [],
+        },
+      ];
+      cy.intercept('GET', '**/templates?*', { data: mockTemplates, message: 'success' }).as('getDecisionTemplates');
+      cy.intercept('POST', '**/render/pdf', {
+        data: { output: btoa('%PDF-mock') },
+        message: 'Decision PDF rendered',
+      }).as('renderTemplatePdf');
+
+      // Existing decision has APPROVAL — select a different outcome to trigger template fetch
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Avslag');
+      cy.wait('@getDecisionTemplates');
+      cy.get('[data-cy="decisionTemplate-select"]').should('exist');
+      cy.get('[data-cy="decisionTemplate-select"]').select('PT Testmall');
+      cy.wait('@renderTemplatePdf');
+      cy.get('[data-cy="decision-template-preview"]').should('exist');
+      cy.get('[data-cy="decision-template-preview-content"]').should('exist').and('have.prop', 'tagName', 'IFRAME');
     });
 
     it('shows validation error when dates are incomplete for approval', () => {
