@@ -45,7 +45,7 @@ export const SaveButtonComponent: FC<{
         data-cy="save-and-continue-button"
         disabled={
           (errand ? isErrandLocked(errand) : false) ||
-          !Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) ||
+          !Object.values(deepFlattenToObject(formState.dirtyFields)).some(Boolean) ||
           !formState.isValid ||
           errand?.status?.statusType === ErrandStatus.Parkerad
         }

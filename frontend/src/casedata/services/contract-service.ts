@@ -148,28 +148,32 @@ export const defaultLagenhetsarrende: ContractData = {
 
 export const saveContract: (contract: ContractData) => Promise<Contract> = (contract) => {
   console.log('Saving contract', contract);
-  let apiCall: Promise<AxiosResponse<ApiResponse<Contract>>>;
-  const apiContract: Contract =
-    contract.type === ContractType.PURCHASE_AGREEMENT
-      ? kopeavtalToContract(contract)
-      : lagenhetsArrendeToContract(contract);
+  try {
+    let apiCall: Promise<AxiosResponse<ApiResponse<Contract>>>;
+    const apiContract: Contract =
+      contract.type === ContractType.PURCHASE_AGREEMENT
+        ? kopeavtalToContract(contract)
+        : lagenhetsArrendeToContract(contract);
 
-  console.log('Processed:', apiContract);
-  if (contract.contractId) {
-    const url = `contracts/${contract.contractId}`;
-    apiCall = apiService.put<ApiResponse<Contract>, Contract>(url, apiContract);
-  } else {
-    const url = `contracts`;
-    apiCall = apiService.post<ApiResponse<Contract>, Contract>(url, apiContract);
+    console.log('Processed:', apiContract);
+    if (contract.contractId) {
+      const url = `contracts/${contract.contractId}`;
+      apiCall = apiService.put<ApiResponse<Contract>, Contract>(url, apiContract);
+    } else {
+      const url = `contracts`;
+      apiCall = apiService.post<ApiResponse<Contract>, Contract>(url, apiContract);
+    }
+    return apiCall
+      .then((res) => {
+        return res.data.data;
+      })
+      .catch((e) => {
+        console.error('Something went wrong when adding/editing contract: ', contract);
+        throw e;
+      });
+  } catch (error) {
+    return Promise.reject('Saving contracts is currently disabled');
   }
-  return apiCall
-    .then((res) => {
-      return res.data.data;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when adding/editing contract: ', contract);
-      throw e;
-    });
 };
 
 export const deleteContract: (contractId: string) => Promise<AxiosResponse<boolean>> = (contractId) => {
@@ -508,7 +512,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       invoiceInterval: data.invoicing?.invoiceInterval,
     },
     currentPeriod: data.currentPeriod,
-    startDate: data.currentPeriod?.startDate,
+    startDate: data.status === Status.ACTIVE ? data.startDate : data.currentPeriod?.startDate,
     endDate: data.endDate,
     notice: {
       terms: data.notice?.terms?.filter((t) => Boolean(t)),

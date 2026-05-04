@@ -210,7 +210,9 @@ export const OngoingCaseDataErrands: FC = () => {
       if (JSON.stringify(fObj) !== JSON.stringify(filterObject)) {
         setFilterObject(fObj);
       }
-      setExtraFilter(extraFilterObj);
+      if (JSON.stringify(extraFilterObj) !== JSON.stringify(extraFilter)) {
+        setExtraFilter(extraFilterObj);
+      }
       setSelectedErrandStatuses(statusFilter);
       setStoredFilter(fObj);
     },

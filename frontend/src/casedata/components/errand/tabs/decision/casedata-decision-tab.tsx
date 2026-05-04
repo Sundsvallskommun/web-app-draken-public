@@ -27,6 +27,7 @@ import {
   validateErrandForDecision,
   validateStatusForDecision,
 } from '@casedata/services/casedata-errand-service';
+import { getDraftAssets, updateAsset } from '@casedata/services/asset-service';
 import { sendDecisionMessage, sendMessage } from '@casedata/services/casedata-message-service';
 import {
   getOwnerStakeholder,
@@ -378,6 +379,16 @@ export const CasedataDecisionTab: FC<{
         throw new Error('Kontaktsätt saknas');
       }
       await updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Beslutad);
+      if (ownerPartyId) {
+        const drafts = await getDraftAssets({
+          municipalityId,
+          partyId: ownerPartyId,
+          assetId: errand.errandNumber,
+          type: assetType,
+        });
+        const draftAssets = drafts?.data ?? [];
+        await Promise.all(draftAssets.map((a) => updateAsset(municipalityId, a.id, { status: 'ACTIVE' })));
+      }
       await triggerPhaseChange();
       toastMessage(
         getToastOptions({
