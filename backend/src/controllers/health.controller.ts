@@ -9,12 +9,6 @@ import { logger } from '@/utils/logger';
 export class HealthController {
   private apiService = new ApiService();
 
-  @Get('/health')
-  @OpenAPI({ summary: 'Basic liveness check' })
-  async health() {
-    return { status: 'OK' };
-  }
-
   @Get('/health/up')
   @OpenAPI({ summary: 'Return health check' })
   async up() {

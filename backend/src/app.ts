@@ -167,6 +167,10 @@ class App {
 
     this.initializeDataFolders();
 
+    this.app.get('/health', (_req, res) => {
+      res.status(200).json({ status: 'OK' });
+    });
+
     this.initializeMiddlewares();
     this.initializeRoutes(Controllers);
     if (this.swaggerEnabled) {
