@@ -129,6 +129,10 @@ export interface UppgiftField {
   required?: boolean;
   pairWith?: string;
   repeatableGroup?: any;
+  disabledBy?: {
+    field: string;
+    value: string;
+  };
 }
 
 const caseTypeTemplateAlias: Record<string, string> = {
