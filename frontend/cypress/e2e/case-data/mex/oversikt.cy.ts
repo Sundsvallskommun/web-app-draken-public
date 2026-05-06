@@ -1,6 +1,7 @@
 /// <reference types="cypress" />
 // import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { onlyOn } from '@cypress/skip-test';
+
 import { mockNotifications } from '../../../../cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
 import { CaseLabels } from '../../../../src/casedata/interfaces/case-label';
 import { ErrandStatus } from '../../../../src/casedata/interfaces/errand-status';
@@ -232,7 +233,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       );
     });
 
-    it.only('Can use export', () => {
+    it('Can use export', () => {
       if (appConfig.features.useErrandExport) {
         cy.get('[data-cy="export-button"]').should('exist').click();
         cy.get('p').should('exist').contains('Det finns ärenden som inte är avslutade. Vill du ändå exportera listan?');

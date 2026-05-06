@@ -572,7 +572,6 @@ export const MessageComposer: FC<{
               tabIndex={props.show ? 0 : -1}
               {...register('messageTemplate')}
               className="w-full text-dark-primary"
-              variant="tertiary"
               size="sm"
               onChange={(e) => {
                 changeTemplate(e.currentTarget.value);

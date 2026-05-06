@@ -14,7 +14,7 @@ interface Props {
 
 export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly }) => {
   return (
-    <div className="w-full py-24 border-b border-gray-200">
+    <div data-cy="service-item" className="w-full py-24 border-b border-gray-200">
       <div className="flex items-start gap-18">
         <div className="p-12 bg-vattjom-background-300 rounded-lg flex items-center justify-start">
           <ListChecks size={24} className="text-dark-secondary" />
@@ -59,6 +59,7 @@ export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly
             <div className="pt-16 flex gap-16">
               {onEdit && (
                 <Button
+                  data-cy="edit-service-button"
                   size="sm"
                   color="vattjom"
                   variant="secondary"
@@ -69,7 +70,7 @@ export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly
                 </Button>
               )}
               {onRemove && (
-                <Button size="sm" color="vattjom" onClick={() => onRemove(service.id)}>
+                <Button data-cy="remove-service-button" size="sm" color="vattjom" onClick={() => onRemove(service.id)}>
                   Ta bort insats
                 </Button>
               )}

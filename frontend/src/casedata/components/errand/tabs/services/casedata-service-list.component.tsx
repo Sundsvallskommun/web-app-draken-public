@@ -10,8 +10,12 @@ type ServiceListComponentProps = {
 
 export const ServiceListComponent = ({ services, onRemove, onEdit, readOnly }: ServiceListComponentProps) => {
   const list = services ?? [];
-  return (
-    <div className="mt-32">
+  return list.length === 0 ? (
+    <div data-cy="no-services" className="mt-32">
+      Inga insatser tillagda
+    </div>
+  ) : (
+    <div data-cy="services-list" className="mt-32">
       {list.map((service) => (
         <ServiceListItem
           key={service.id}

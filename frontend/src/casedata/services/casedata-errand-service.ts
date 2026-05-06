@@ -570,6 +570,7 @@ export const useErrands = (
       size,
       filter,
       sort,
+      extraParameters,
       toastMessage,
     ]
   );
@@ -579,7 +580,7 @@ export const useErrands = (
       fetchErrands().then(() => setIsLoading(false));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, size, sort]);
+  }, [filter, size, sort, extraParameters]);
 
   useEffect(() => {
     if (errands.page !== undefined && page !== errands.page) fetchErrands(page).then(() => setIsLoading(false));

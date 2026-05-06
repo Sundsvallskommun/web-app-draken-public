@@ -37,6 +37,7 @@ import * as yup from 'yup';
 
 import ContractForm from './contract-form';
 import { ContractNavigation } from './contract-navigation';
+import { CasedataStatusLabelComponent } from '@casedata/components/contract-overview/contracts-table.component';
 
 interface CasedataContractProps {
   update: () => void;
@@ -106,6 +107,34 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
               .required('Förskott eller efterskott måste väljas'),
           otherwise: (schema) => schema,
         }),
+      }),
+      stakeholders: yup.array().when(['type', 'status'], ([type, status], schema) => {
+        if (status !== Status.ACTIVE) return schema;
+
+        const baseSchema = schema.of(
+          yup.object({
+            stakeholderId: yup.string().required(),
+            roles: yup
+              .array()
+              .of(yup.string().oneOf(Object.keys(StakeholderRole)) as any)
+              .min(1, 'Minst en roll måste anges'),
+          })
+        );
+
+        const hasRole = (role: StakeholderRole) => (stakeholders: any[] | undefined) =>
+          stakeholders?.some((s) => s.roles?.includes(role)) ?? false;
+
+        if (type === ContractType.PURCHASE_AGREEMENT) {
+          return baseSchema
+            .test('has-buyer', 'Minst en köpare måste anges', hasRole(StakeholderRole.BUYER))
+            .test('has-seller', 'Minst en säljare måste anges', hasRole(StakeholderRole.SELLER));
+        }
+        if (isLeaseAgreement(type)) {
+          return baseSchema
+            .test('has-lessor', 'Minst en upplåtare måste anges', hasRole(StakeholderRole.LESSOR))
+            .test('has-lessee', 'Minst en arrendator måste anges', hasRole(StakeholderRole.LESSEE));
+        }
+        return baseSchema.min(1, 'Minst en part måste anges');
       }),
     })
     .required();
@@ -228,6 +257,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
         // Convert saved contract back to form data and reset the form
         const savedFormData = isLeaseAgreement(res.type) ? contractToLagenhetsArrende(res) : contractToKopeavtal(res);
         contractForm.reset(savedFormData);
+        setExistingContract(savedFormData);
 
         setIsLoading(undefined);
         props.setUnsaved(false);
@@ -300,9 +330,10 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           <div className="flex">
             <div className="w-3/4" data-cy="contract-wrapper">
               <div>
-                <h2 className="text-h2-md">
+                <h2 className="text-h2-md flex items-center gap-12 justify-start">
                   {contractTypes.find((ct) => ct.key === contractType)?.label}{' '}
                   <span>{contractForm.getValues().contractId ? `(${contractForm.getValues().contractId})` : null}</span>
+                  <CasedataStatusLabelComponent status={contractForm.getValues().status} />
                 </h2>
                 <p className="py-16">
                   Här fyller du i avtalsuppgifter för ärendet. Kom ihåg att granska uppgifterna noga så att allt är i
@@ -337,7 +368,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                 )}
               </div>
 
-              {contractForm.getValues().status === Status.DRAFT && (
+              {contractForm.getValues().status === Status.DRAFT ? (
                 <FormControl id="isDraft" className="my-md">
                   <FormLabel>
                     Status på avtal {loading !== undefined && existingContract === undefined && <Spinner size={4} />}
@@ -361,7 +392,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                             contractForm.setValue('status', Status.ACTIVE);
                             contractForm.trigger().then((valid: boolean) => {
                               if (valid) {
-                            onSave(contractForm.getValues());
+                                onSave(contractForm.getValues());
                               } else {
                                 contractForm.setValue('status', Status.DRAFT);
                               }
@@ -378,7 +409,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                     <p className="text-error">Avtalet saknar nödvändiga uppgifter.</p>
                   )}
                 </FormControl>
-              )}
+              ) : null}
               <Input type="hidden" readOnly {...contractForm.register('contractId')} />
               <ContractForm
                 referensError={referensError}

@@ -7,6 +7,7 @@ import { FC, useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { ContractDetailForm } from './contract-detail-form.component';
+import { ContractsFilterTags } from './contracts-filter-tags.component';
 import { ContractFilter, ContractFilterValues, ContractsFilteringComponent } from './contracts-filtering.component';
 import { ContractsTable, ContractTableForm } from './contracts-table.component';
 
@@ -178,6 +179,7 @@ export const ContractOverview: FC = () => {
             <div className="container px-0 flex flex-wrap gap-16 items-center">
               <FormProvider {...filterForm}>
                 <ContractsFilteringComponent />
+                <ContractsFilterTags />
               </FormProvider>
             </div>
             <div>

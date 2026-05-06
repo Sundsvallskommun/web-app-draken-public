@@ -320,7 +320,7 @@ export const RenderedSupportMessage: FC<{
             <span
               className="text"
               dangerouslySetInnerHTML={{
-                __html: message.htmlMessageBody ? sanitized(message.htmlMessageBody) : message.messageBody,
+                __html: message.htmlMessageBody ? sanitized(message.htmlMessageBody) : sanitized(message.messageBody),
               }}
             />
           </div>

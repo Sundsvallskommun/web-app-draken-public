@@ -218,8 +218,6 @@ export interface Contract {
   indexTerms?: TermGroup[];
   propertyDesignations?: PropertyDesignation[];
   stakeholders?: Stakeholder[];
-  /** Duration */
-  duration?: Duration;
   /** Extension */
   extension?: Extension;
   /** Fees */
@@ -254,18 +252,6 @@ export interface Contract {
 export interface Crs {
   type?: CrsTypeEnum;
   properties?: Record<string, any>;
-}
-
-/** Duration */
-export interface Duration {
-  /**
-   * The lease duration value
-   * @format int32
-   * @min 0
-   */
-  leaseDuration: number;
-  /** The unit of the duration value */
-  unit: TimeUnit;
 }
 
 /** Extension */
@@ -575,11 +561,11 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  integralNumber?: boolean;
   valueNode?: boolean;
   container?: boolean;
   missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -597,43 +583,96 @@ export interface JsonNode {
   embeddedValue?: boolean;
 }
 
+/** Partial contract payload used for PATCH. Only the fields present in the payload are applied to the existing contract. */
+export interface PatchContract {
+  /** A description of the contract */
+  description?: string;
+  /** External referenceId */
+  externalReferenceId?: string;
+  /** Type of lease */
+  leaseType?: LeaseType;
+  /** Object identity (from Lantmäteriet) */
+  objectIdentity?: string;
+  /** Contract status */
+  status?: Status;
+  /** Contract type */
+  type?: ContractType;
+  /** Type of leasehold */
+  leasehold?: Leasehold;
+  additionalTerms?: TermGroup[];
+  /** Extra parameters */
+  extraParameters?: ExtraParameterGroup[];
+  indexTerms?: TermGroup[];
+  propertyDesignations?: PropertyDesignation[];
+  stakeholders?: Stakeholder[];
+  /** Lease extension */
+  extension?: Extension;
+  /** Fee details */
+  fees?: Fees;
+  /** Invoicing details */
+  invoicing?: Invoicing;
+  /**
+   * Start date of the contract
+   * @format date
+   */
+  startDate?: string;
+  /**
+   * End date of the contract. Set when the contract is terminated
+   * @format date
+   */
+  endDate?: string;
+  /** Notice details */
+  notice?: Notice;
+  /** Current contract period */
+  currentPeriod?: Period;
+  /**
+   * Leased area (m2)
+   * @format int32
+   */
+  area?: number;
+  /** Whether the contract is signed by a witness */
+  signedByWitness?: boolean;
+  /** Part(s) of property covered by the lease. Described by GeoJSON using polygon(s) */
+  areaData?: FeatureCollection;
+}
+
 export type SpecificationContractEntity = any;
 
 export interface PageContract {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Contract[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
   unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export enum CrsTypeEnum {

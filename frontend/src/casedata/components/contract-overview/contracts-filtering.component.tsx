@@ -24,7 +24,7 @@ export const ContractFilterValues: ContractFilter = {
   enddate: '',
 };
 
-const statusOptions = [
+export const statusOptions = [
   { label: 'Utkast', value: Status.DRAFT },
   { label: 'Aktiv', value: Status.ACTIVE },
   { label: 'Avslutad', value: Status.TERMINATED },
@@ -226,7 +226,7 @@ export const ContractFilterQueryComponent: FC = () => {
 
 export const ContractsFilteringComponent: FC = () => {
   return (
-    <div className="flex flex-col w-full gap-16 py-19">
+    <div className="flex flex-col w-full gap-16">
       <div className="w-full flex flex-col md:flex-row justify-start items-center p-10 gap-4 bg-background-200 rounded-groups flex-wrap">
         <div className="relative max-md:w-full">
           <ContractFilterQueryComponent />

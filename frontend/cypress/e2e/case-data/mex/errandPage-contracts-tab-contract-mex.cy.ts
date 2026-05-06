@@ -33,6 +33,7 @@ import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockRelations } from '../fixtures/mockRelations';
+import { mockAssetEmpty, mockDraftAsset } from '../fixtures/mockFTAsset';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page contracts tab', () => {
@@ -73,6 +74,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         'getConversationMessages'
       );
       cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
+      cy.intercept('GET', '**/asset-drafts**', mockDraftAsset).as('getDraftAssets');
+      cy.intercept('GET', '**/assets?**', mockAssetEmpty).as('getAssets');
       cy.intercept('PATCH', '**/errands/**/extraparameters', { data: [], message: 'ok' }).as('saveExtraParameters');
       cy.intercept('GET', '**/schemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
       cy.intercept('GET', '**/schemas/*/ui-schema', {
@@ -89,6 +92,9 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       );
       cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
       cy.intercept('GET', '**/featureflags', mockFeatureFlags).as('getFeatureFlags');
+      cy.intercept('GET', '**/billingdatacollector/*', { statusCode: 500 }).as('getNextBillingDateFail');
+      cy.intercept('GET', '**/asset-drafts**', mockDraftAsset).as('getDraftAssets');
+      cy.intercept('GET', '**/assets?**', mockAssetEmpty).as('getAssets');
     });
 
     const contractText: { data: Contract } = {

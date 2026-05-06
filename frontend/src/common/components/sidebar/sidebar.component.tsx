@@ -97,7 +97,7 @@ export const Sidebar: FC<{
         aria-orientation="vertical"
         className="h-full flex flex-col justify-between border-1 border-y-0 border-divider overflow-y-auto overflow-x-visible min-w-[5.6rem]"
       >
-        <div role="none" className="flex flex-col pt-18 lg:pt-32 gap-12 pb-12 items-center w-full px-8">
+        <div role="none" className="flex flex-col pt-18 lg:pt-32 gap-12 pb-12 items-center w-full px-8 overflow-hidden">
           {buttons.map((b, idx) =>
             (isPT() && (b.key === 'guides' || b.key === 'investigation')) ||
             (!appConfig.features.useErrandExport && b.key === 'export') ? null : (
@@ -131,7 +131,7 @@ export const Sidebar: FC<{
                 >
                   {badgeCounts[b.label] > 0 && (
                     <Badge
-                      className="absolute -top-10 -right-10 text-white"
+                      className="absolute -top-10 -right-10"
                       rounded
                       color="vattjom"
                       inverted

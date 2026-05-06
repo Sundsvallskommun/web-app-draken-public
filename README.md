@@ -22,7 +22,7 @@ För MEX (Mark och exploatering):
 | CaseStatus           |     4.1 |
 | Estateinfo           |     2.2 |
 | BillingPreprocessor  |     4.5 |
-| BillingDataCollector |     1.1 |
+| BillingDataCollector |     1.2 |
 
 För KS (Kontakt Sundsvall):
 

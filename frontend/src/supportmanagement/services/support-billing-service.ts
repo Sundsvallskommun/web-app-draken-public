@@ -3,8 +3,8 @@ import { PortalPersonData } from '@common/data-contracts/employee/data-contracts
 import { User } from '@common/interfaces/user';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { twoDecimals } from '@common/services/helper-service';
-import { useBillingStore, useConfigStore } from '@stores/index';
 import { useSnackbar } from '@sk-web-gui/react';
+import { useBillingStore, useConfigStore } from '@stores/index';
 import { useCallback, useEffect } from 'react';
 import {
   CBillingRecord,

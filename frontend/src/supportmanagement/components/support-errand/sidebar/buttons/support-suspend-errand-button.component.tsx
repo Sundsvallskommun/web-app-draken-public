@@ -21,7 +21,7 @@ export interface SuspendFormProps {
   comment: string;
 }
 
-export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+export const SupportSuspendErrandButtonComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);

@@ -29,6 +29,7 @@ import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
+import { getDraftAssets, updateAsset } from '@casedata/services/asset-service';
 import { validateErrandForDecision, validateStatusForDecision } from '@casedata/services/casedata-errand-service';
 import { sendDecisionMessage, sendMessage } from '@casedata/services/casedata-message-service';
 import {
@@ -369,6 +370,16 @@ export const CasedataDecisionTab: FC<{
         throw new Error('Kontaktsätt saknas');
       }
       await updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Beslutad);
+      if (ownerPartyId) {
+        const drafts = await getDraftAssets({
+          municipalityId,
+          partyId: ownerPartyId,
+          assetId: errand.errandNumber,
+          type: assetType,
+        });
+        const draftAssets = drafts?.data ?? [];
+        await Promise.all(draftAssets.map((a) => updateAsset(municipalityId, a.id, { status: 'ACTIVE' })));
+      }
       await triggerPhaseChange();
       toastMessage(
         getToastOptions({

@@ -1,5 +1,5 @@
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { Button, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   getSupportErrandById,
   setSupportErrandAdmin,
@@ -10,7 +10,7 @@ import { ArrowRight } from 'lucide-react';
 import { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
 
-export const StartProcessComponent: FC<{
+export const SupportStartProcessButtonComponent: FC<{
   disabled: boolean;
   onSubmit: () => Promise<any>;
   onError: () => void;

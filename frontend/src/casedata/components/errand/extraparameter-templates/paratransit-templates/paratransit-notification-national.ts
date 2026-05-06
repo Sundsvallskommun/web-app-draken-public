@@ -188,15 +188,14 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
       type: 'textarea',
     },
     section: 'Yttre omständigheter',
-    dependsOnLogic: 'OR',
     dependsOn: [
       {
-        field: 'personal.mobilityAids',
-        value: 'COMFORT_WHEELCHAIR',
+        field: 'personal.mobilityAidNeeded',
+        value: 'YES',
       },
       {
         field: 'personal.mobilityAids',
-        value: 'ELECTRIC_WHEELCHAIR',
+        value: ['COMFORT_WHEELCHAIR', 'ELECTRIC_WHEELCHAIR'],
       },
     ],
   },

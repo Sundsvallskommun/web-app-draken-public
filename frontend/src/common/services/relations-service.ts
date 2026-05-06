@@ -1,4 +1,4 @@
-import { Relation, RelationPagedResponse } from '@common/data-contracts/relations/data-contracts';
+import { Relation } from '@common/data-contracts/relations/data-contracts';
 import { appConfig } from '@config/appconfig';
 import { All } from '@supportmanagement/interfaces/priority';
 
@@ -27,25 +27,20 @@ const formatServiceName = (str: string) => {
   return str.toLocaleLowerCase();
 };
 
-export const createRelation = (
-  municipalityId: string,
-  sourceId: string,
-  sourceErrandNumber: string,
-  targetErrand: CaseStatusResponse
-) => {
+export const createRelation = (municipalityId: string, sourceId: string, targetErrand: CaseStatusResponse) => {
   const url = `${municipalityId}/relations`;
 
   const body: Partial<Relation> = {
     type: 'LINK',
     source: {
       resourceId: sourceId,
-      type: sourceErrandNumber,
+      type: 'case',
       service: appConfig.isSupportManagement ? 'supportmanagement' : 'case-data',
       namespace: '',
     },
     target: {
       resourceId: targetErrand.caseId ?? '',
-      type: targetErrand.errandNumber ?? '',
+      type: 'case',
       service: formatServiceName(targetErrand.system ?? ''),
       namespace: targetErrand.namespace,
     },
@@ -74,28 +69,26 @@ export const deleteRelation = (municipalityId: string, id: string) => {
     });
 };
 
-export const getSourceRelations = (municipalityId: string, sourceId: string, sort: string): Promise<Relation[]> => {
-  const url = `${municipalityId}/sourcerelations/${sort}/${sourceId}`;
+export interface RelationWithErrandNumber {
+  relation: Relation;
+  errandNumber: string;
+}
+
+interface ResolvedRelationsResponse {
+  relations: Relation[];
+  caseStatuses: CaseStatusResponse[];
+}
+
+export const getResolvedRelations = (
+  direction: 'source' | 'target',
+  municipalityId: string,
+  resourceId: string,
+  sort: string
+): Promise<ResolvedRelationsResponse> => {
+  const url = `${municipalityId}/resolvedrelations/${direction}/${sort}/${resourceId}`;
 
   return apiService
-    .get<ApiResponse<RelationPagedResponse>>(url)
-    .then((res) => {
-      return res.data.data.relations ?? [];
-    })
-    .catch(() => {
-      return [] as Relation[];
-    });
-};
-
-export const getTargetRelations = (municipalityId: string, targetId: string, sort: string): Promise<Relation[]> => {
-  const url = `${municipalityId}/targetrelations/${sort}/${targetId}`;
-
-  return apiService
-    .get<ApiResponse<RelationPagedResponse>>(url)
-    .then((res) => {
-      return res.data.data.relations ?? [];
-    })
-    .catch(() => {
-      return [] as Relation[];
-    });
+    .get<ApiResponse<ResolvedRelationsResponse>>(url)
+    .then((res) => res.data.data)
+    .catch(() => ({ relations: [], caseStatuses: [] }));
 };

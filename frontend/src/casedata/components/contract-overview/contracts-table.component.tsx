@@ -33,7 +33,7 @@ const getStakeholderName = (stakeholder: Stakeholder): string => {
   return stakeholder.organizationName || '-';
 };
 
-const CasedataStatusLabelComponent: FC<{ status: string }> = ({ status }) => {
+export const CasedataStatusLabelComponent: FC<{ status: string }> = ({ status }) => {
   switch (status) {
     case 'DRAFT':
       return (

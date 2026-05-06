@@ -42,7 +42,7 @@ export const APIS = [
   },
   {
     name: 'billing-data-collector',
-    version: '1.1',
+    version: '1.2',
   },
   {
     name: 'legalentity',
@@ -62,7 +62,7 @@ export const APIS = [
   },
   {
     name: 'partyassets',
-    version: '5.0',
+    version: '6.0',
   },
   {
     name: 'jsonschema',
