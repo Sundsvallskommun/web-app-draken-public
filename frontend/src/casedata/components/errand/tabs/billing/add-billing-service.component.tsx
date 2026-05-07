@@ -39,7 +39,6 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
         if (selectedService.accountInformation[accountField]) return true;
       }
       if (field === 'beskrivning' && selectedService.description) return true;
-      if (field === 'descriptions0' && selectedService.detailedDescriptions?.[0]) return true;
     }
     if (editingService) {
       const accountField = field as keyof typeof editingService.accountInformation;
@@ -47,7 +46,6 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
         if (editingService.accountInformation[accountField]) return true;
       }
       if (field === 'beskrivning' && editingService.description) return true;
-      if (field === 'descriptions0' && editingService.descriptions?.[0]) return true;
     }
     return false;
   };
@@ -273,7 +271,6 @@ export const AddBillingService: FC<AddBillingServiceProps> = ({ onSave, onCancel
               updated[0] = e.target.value;
               setFormState((prev) => ({ ...prev, descriptions: updated }));
             }}
-            readOnly={isFieldPreset('descriptions0')}
           />
         </FormControl>
         <FormControl className="w-full">
