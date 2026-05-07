@@ -234,7 +234,6 @@ export const BillingTable: React.FC<BillingTableProps> = ({
       }
       if (field === 'object' && service.accountInformation.object) return true;
       if (field === 'descriptions' && service.description) return true;
-      if (field === 'detailedDescription1' && service.detailedDescriptions?.[0]) return true;
       if (field === 'costPerUnit' && service.fixedPrice) return true;
     }
 
@@ -244,7 +243,6 @@ export const BillingTable: React.FC<BillingTableProps> = ({
     }
     if (field === 'object' && accountInfo?.article) return true;
     if (field === 'descriptions' && originalRow.descriptions?.some((d) => d)) return true;
-    if (field === 'detailedDescription1' && originalRow.detailedDescriptions?.[0]) return true;
     if (field === 'costPerUnit' && originalRow.costPerUnit) return true;
 
     return false;
@@ -597,7 +595,6 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                                   maxLength={51}
                                   value={editingRowState.detailedDescription1}
                                   onChange={(e) => handleRowFieldChange('detailedDescription1', e.target.value)}
-                                  readOnly={isRowFieldPreset(record, rowIndex, 'detailedDescription1')}
                                 />
                               </FormControl>
                               <FormControl className="w-full">
