@@ -31,33 +31,37 @@ const disabilityField: UppgiftField = {
 
 const currentDecisionExpiryFields: UppgiftField[] = [
   {
-    field: 'external.currentDecisionExpiryKnown',
+    field: 'external.currentDecisionExpiryTitle',
     value: '',
-    label: 'Ange datum nuvarande beslut upphör',
+    label: 'När upphör det nuvarande beslutet?',
     formField: {
-      type: 'radio',
-      options: [
-        { label: 'Ange datum', value: 'YES' },
-        { label: 'Vet ej', value: 'UNKNOWN' },
-      ],
+      type: 'info',
     },
     section: 'Yttre omständigheter',
   },
   {
     field: 'external.currentDecisionExpiryDate',
     value: '',
-    label: 'Datum nuvarande beslut upphör',
+    label: 'Datum då beslutet upphör',
     formField: {
       type: 'date',
     },
     section: 'Yttre omständigheter',
-    dependsOn: [
-      {
-        field: 'external.currentDecisionExpiryKnown',
-        value: 'YES',
-        validationMessage: 'Ange datum för när nuvarande beslut upphör.',
-      },
-    ],
+    disabledBy: {
+      field: 'external.currentDecisionExpiryDateMissing',
+      value: 'YES',
+    },
+  },
+  {
+    field: 'external.currentDecisionExpiryDateMissing',
+    value: '',
+    label: '',
+    formField: {
+      type: 'checkbox',
+      options: [{ label: 'Datum saknas', value: 'YES' }],
+    },
+    required: false,
+    section: 'Yttre omständigheter',
   },
 ];
 

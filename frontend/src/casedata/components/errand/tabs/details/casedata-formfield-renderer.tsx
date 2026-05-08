@@ -163,6 +163,14 @@ export const CasedataFormFieldRenderer: FC<Props> = ({ detail, idx, form, errand
 
   const isVisible = dependentSatisfied !== false;
 
+  const disabledByKey = detail.disabledBy?.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+  const disabledByValue = disabledByKey ? allFormValues[disabledByKey] : undefined;
+  const isDisabledByField = detail.disabledBy
+    ? Array.isArray(disabledByValue)
+      ? disabledByValue.includes(detail.disabledBy.value)
+      : disabledByValue === detail.disabledBy.value
+    : false;
+
   const validationRules = getConditionalValidationRules(detail, getValues);
   const error = get(errors, fieldKey)?.message;
   const options: OptionBase[] = (detail.formField as { options?: OptionBase[] }).options ?? [];
@@ -203,6 +211,7 @@ export const CasedataFormFieldRenderer: FC<Props> = ({ detail, idx, form, errand
   if (detail.formField.type === 'info') {
     return (
       <div key={`${detail.field}-${idx}`} className="w-full mt-lg">
+        {detail.label && <FormLabel>{detail.label}</FormLabel>}
         {detail.description && <span>{detail.description}</span>}
       </div>
     );
@@ -210,7 +219,9 @@ export const CasedataFormFieldRenderer: FC<Props> = ({ detail, idx, form, errand
 
   return (
     <FormControl className="w-full" key={`${detail.field}-${idx}`}>
-      {!detail.field.includes('account.') && <FormLabel className="mt-lg">{detail.label}</FormLabel>}
+      {!detail.field.includes('account.') && detail.label !== '' ? (
+        <FormLabel className="mt-lg">{detail.label}</FormLabel>
+      ) : null}
 
       {(detail.formField.type === 'text' ||
         detail.formField.type === 'date' ||
@@ -219,9 +230,16 @@ export const CasedataFormFieldRenderer: FC<Props> = ({ detail, idx, form, errand
           <Input
             type={detail.formField.type}
             {...register(fieldKey, validationRules)}
-            className={cx(errand.caseType === 'APPEAL' ? 'w-3/5' : 'w-full')}
+            className={cx(
+              errand.caseType === 'APPEAL'
+                ? 'w-3/5'
+                : detail.label === 'Datum då beslutet upphör'
+                ? 'w-[25rem]'
+                : 'w-full'
+            )}
             data-cy={`${detail.field}-input`}
             readOnly={isDisabled}
+            disabled={isDisabledByField}
             {...getInputProps(detail)}
           />
           {error && <span className="text-error text-md">{error}</span>}
