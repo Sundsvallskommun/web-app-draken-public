@@ -148,7 +148,7 @@ export const getOrCreateSupportConversationId = async (
   messageConversationId: string
 ): Promise<string> => {
   const conversationType = contactMeans === 'draken' ? 'INTERNAL' : 'EXTERNAL';
-  const selectedEntry = relationErrands.find((entry) => entry.relation.target.resourceId === selectedRelationId);
+  const selectedEntry = relationErrands.find((entry) => entry.otherResourceId === selectedRelationId);
 
   const conversations = await getSupportConversations(municipalityId, supportErrand.id!);
   const existingExternalConversation = conversations.data.find((c) => c.type === 'EXTERNAL');

@@ -25,6 +25,7 @@ import {
   phonePattern,
   supportManagementPhonePatternOrCountryCode,
 } from '@common/services/helper-service';
+import { getAllRelatedErrands, RelationWithErrandNumber } from '@common/services/relations-service';
 import sanitized, { formatMessage, sanitizeHtmlMessageBody } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
@@ -168,6 +169,8 @@ export const MessageComposer: FC<{
   const [error, setError] = useState(false);
   const [replying, setReplying] = useState(false);
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
+  const [selectedRelationId, setSelectedRelationId] = useState<string>('');
+  const [relationErrands, setRelationErrands] = useState<RelationWithErrandNumber[]>([]);
 
   const closeConfirm = useConfirm();
   const toastMessage = useSnackbar();
@@ -251,6 +254,8 @@ export const MessageComposer: FC<{
         municipalityId,
         errand!,
         contactMeans,
+        selectedRelationId,
+        relationErrands,
         props?.message?.conversationId ?? ''
       );
 
@@ -349,6 +354,19 @@ export const MessageComposer: FC<{
   };
 
   const { contactMeans, addExisting, existingAttachments, newAttachments, messageBody, messageBodyPlaintext } = watch();
+
+  useEffect(() => {
+    if (errand && props.show) {
+      getAllRelatedErrands(municipalityId, errand.id.toString()).then(setRelationErrands);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.show]);
+
+  useEffect(() => {
+    if (contactMeans === 'draken' && relationErrands.length > 0 && !selectedRelationId) {
+      setSelectedRelationId(relationErrands[0].otherResourceId);
+    }
+  }, [relationErrands, contactMeans, selectedRelationId]);
 
   useEffect(() => {
     if (contactMeans === 'sms' && errand) {
@@ -526,9 +544,40 @@ export const MessageComposer: FC<{
                     Katla
                   </RadioButton>
                 )}
+                {appConfig.features.useRelations && relationErrands.length > 0 && (
+                  <RadioButton
+                    tabIndex={props.show ? 0 : -1}
+                    data-cy="useDraken-radiobutton-true"
+                    className="mr-sm"
+                    id="useDraken"
+                    value={'draken'}
+                    {...register('contactMeans')}
+                  >
+                    Draken
+                  </RadioButton>
+                )}
               </RadioButton.Group>
             </fieldset>
           ) : null}
+
+          {contactMeans === 'draken' && !replying && (
+            <div className="w-full pt-16">
+              <strong className="text-md block mb-sm">Välj länkat ärende</strong>
+              {relationErrands.length > 0 ? (
+                <Select value={selectedRelationId} onChange={(e) => setSelectedRelationId(e.currentTarget.value)}>
+                  {relationErrands.map((item) => (
+                    <Select.Option key={item.otherResourceId} value={item.otherResourceId}>
+                      {item.errandNumber}
+                    </Select.Option>
+                  ))}
+                </Select>
+              ) : (
+                <Select disabled value="">
+                  <Select.Option value="">Laddar ärenden...</Select.Option>
+                </Select>
+              )}
+            </div>
+          )}
 
           <div className="w-full pt-16">
             <strong className="text-md">Typ av meddelande</strong>
