@@ -7,7 +7,7 @@ import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
-import { getResolvedRelations, RelationWithErrandNumber } from '@common/services/relations-service';
+import { getAllRelatedErrands, RelationWithErrandNumber } from '@common/services/relations-service';
 import sanitized, { sanitizeHtmlMessageBody } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
@@ -416,23 +416,13 @@ export const SupportMessageForm: FC<{
   }, [contactMeans, props.message]);
 
   useEffect(() => {
-    getResolvedRelations('source', municipalityId, supportErrand.id!, 'ASC').then(({ relations, caseStatuses }) => {
-      const enriched = relations.map((relation) => {
-        const status = caseStatuses.find((s) => s.caseId === relation.target.resourceId);
-        return {
-          relation,
-          errandNumber: status?.errandNumber ?? relation.target.resourceId,
-        };
-      });
-      const sorted = [...enriched].sort((a, b) => a.errandNumber.localeCompare(b.errandNumber));
-      setRelationErrands(sorted);
-    });
+    getAllRelatedErrands(municipalityId, supportErrand.id!).then(setRelationErrands);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.showMessageForm]);
 
   useEffect(() => {
     if (contactMeans === 'draken' && relationErrands.length > 0 && !selectedRelationId) {
-      setSelectedRelationId(relationErrands[0].relation.target.resourceId);
+      setSelectedRelationId(relationErrands[0].otherResourceId);
     }
   }, [relationErrands, contactMeans, selectedRelationId]);
 
@@ -535,7 +525,7 @@ export const SupportMessageForm: FC<{
               }}
             >
               {relationErrands.map((item) => (
-                <Select.Option key={item.relation.target.resourceId} value={item.relation.target.resourceId}>
+                <Select.Option key={item.otherResourceId} value={item.otherResourceId}>
                   {item.errandNumber}
                 </Select.Option>
               ))}
