@@ -545,7 +545,7 @@ export const MessageComposer: FC<{
 
           {contactMeans === 'draken' && !replying && (
             <div className="w-full pt-16">
-              <strong className="text-md block mb-sm">Välj länkat ärende</strong>
+              <strong className="text-md block mb-sm">Välj kopplat ärende</strong>
               {relationErrands.length > 0 ? (
                 <Select value={selectedRelationId} onChange={(e) => setSelectedRelationId(e.currentTarget.value)}>
                   {relationErrands.map((item) => (
@@ -555,9 +555,7 @@ export const MessageComposer: FC<{
                   ))}
                 </Select>
               ) : (
-                <Select disabled value="">
-                  <Select.Option value="">Laddar ärenden...</Select.Option>
-                </Select>
+                <p className="text-error">Koppla ett ärende för att kunna skicka meddelande</p>
               )}
             </div>
           )}

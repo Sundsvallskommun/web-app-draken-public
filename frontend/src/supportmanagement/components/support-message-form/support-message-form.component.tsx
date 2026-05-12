@@ -51,7 +51,7 @@ import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-import { getDefaultEmailBody, getDefaultSmsBody, removeEmailInformation } from '../templates/default-message-template';
+import { removeEmailInformation } from '../templates/default-message-template';
 
 export interface SupportMessageFormModel {
   id: string;
@@ -520,7 +520,7 @@ export const SupportMessageForm: FC<{
 
       {contactMeans === 'draken' && !replying && (
         <div className="w-full pt-16">
-          <strong className="text-md block mb-sm">Välj länkat ärende</strong>
+          <strong className="text-md block mb-sm">Välj kopplat ärende</strong>
           {relationErrands.length > 0 ? (
             <Select
               value={selectedRelationId}
@@ -536,9 +536,7 @@ export const SupportMessageForm: FC<{
               ))}
             </Select>
           ) : (
-            <Select disabled value="">
-              <Select.Option value="">Laddar ärenden...</Select.Option>
-            </Select>
+            <p className="text-error">Koppla ett ärende för att kunna skicka meddelande</p>
           )}
         </div>
       )}
