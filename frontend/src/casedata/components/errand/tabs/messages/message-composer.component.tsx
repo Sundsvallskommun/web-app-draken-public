@@ -846,7 +846,9 @@ export const MessageComposer: FC<{
               })}
               variant="primary"
               color="primary"
-              disabled={isLoading || !formState.isValid || !allowed}
+              disabled={
+                isLoading || !formState.isValid || !allowed || (contactMeans === 'draken' && !selectedRelationId)
+              }
             >
               Skicka meddelande
             </Button>
