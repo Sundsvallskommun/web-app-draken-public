@@ -527,7 +527,7 @@ export const MessageComposer: FC<{
                     Katla
                   </RadioButton>
                 )}
-                {appConfig.features.useRelations && relationErrands.length > 0 && (
+                {appConfig.features.useRelations && (
                   <RadioButton
                     tabIndex={props.show ? 0 : -1}
                     data-cy="useDraken-radiobutton-true"
