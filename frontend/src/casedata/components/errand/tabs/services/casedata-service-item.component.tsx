@@ -1,9 +1,8 @@
+import { canDeleteErrandServiceAsset, Service } from '@casedata/services/casedata-service-assets-service';
 import sanitized from '@common/services/sanitizer-service';
 import { Button } from '@sk-web-gui/react';
 import { Car, Cog, ListChecks, Pencil, PlusCircle } from 'lucide-react';
 import { FC } from 'react';
-
-import { Service } from './casedata-service-mapper';
 
 interface Props {
   service: Service;
@@ -13,6 +12,8 @@ interface Props {
 }
 
 export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly }) => {
+  const canRemove = canDeleteErrandServiceAsset(service);
+
   return (
     <div data-cy="service-item" className="w-full py-24 border-b border-gray-200">
       <div className="flex items-start gap-18">
@@ -30,8 +31,8 @@ export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly
               {service?.validTo
                 ? `Insatsen gäller ${service.issued} - ${service.validTo}`
                 : service?.issued
-                  ? `Insatsen gäller från och med ${service.issued}`
-                  : ''}
+                ? `Insatsen gäller från och med ${service.issued}`
+                : ''}
             </div>
           </div>
 
@@ -71,7 +72,7 @@ export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly
                   Redigera insats
                 </Button>
               )}
-              {onRemove && (
+              {onRemove && canRemove && (
                 <Button data-cy="remove-service-button" size="sm" color="vattjom" onClick={() => onRemove(service.id)}>
                   Ta bort insats
                 </Button>

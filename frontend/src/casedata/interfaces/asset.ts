@@ -29,6 +29,7 @@ export interface Asset {
   description?: string;
   additionalParameters?: { [key: string]: string };
   jsonParameters?: JsonParameter[];
+  sourceReference?: string;
 }
 
 export interface AssetUpdateRequest {

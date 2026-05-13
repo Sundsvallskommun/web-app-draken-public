@@ -1,19 +1,16 @@
 'use client';
 
-import {
-  buildCreateAssetPayload,
-  createDraftAsset,
-  deleteDraftAsset,
-  getDraftAssets,
-  updateDraftAsset,
-} from '@casedata/services/asset-service';
 import { isErrandLocked, isFTNationalErrand } from '@casedata/services/casedata-errand-service';
+import {
+  createErrandServiceDraftAsset,
+  deleteErrandServiceDraftAsset,
+  getErrandServiceAssetById,
+  updateErrandServiceAsset,
+} from '@casedata/services/casedata-service-assets-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { ServicesObjectFieldTemplate } from '@common/components/json/fields/services-object-field-template.componant';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
-import { Relation } from '@common/data-contracts/relations/data-contracts';
-import { ApiResponse,apiService } from '@common/services/api-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import {
@@ -26,29 +23,10 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore } from '@stores/index';
-import { ChangeEvent, FC, useCallback, useEffect, useState } from 'react';
+import { ChangeEvent, FC, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ServiceListComponent } from './casedata-service-list.component';
 import { useErrandServices } from './useErrandService';
-
-const createAssetRelation = (municipalityId: string, errandId: string, assetId: string) => {
-  const body: Partial<Relation> = {
-    type: 'LINK',
-    source: {
-      resourceId: errandId,
-      type: 'case',
-      service: 'case-data',
-      namespace: '',
-    },
-    target: {
-      resourceId: assetId,
-      type: 'asset',
-      service: 'party-assets',
-      namespace: '',
-    },
-  };
-  return apiService.post<ApiResponse<Relation>, Partial<Relation>>(`${municipalityId}/relations`, body);
-};
 
 export const CasedataServicesTab: FC = () => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -75,6 +53,10 @@ export const CasedataServicesTab: FC = () => {
   const assetType = errand && isFTNationalErrand(errand) ? 'ParatransitPermitNational' : 'ParatransitPermitLocal';
   const errandId = String(errand?.id ?? '');
   const partyId = errand ? getOwnerStakeholder(errand)?.personId ?? '' : '';
+  const serviceAssetParams = useMemo(
+    () => ({ municipalityId, partyId, errandId, assetType }),
+    [municipalityId, partyId, errandId, assetType]
+  );
 
   useEffect(() => {
     (async () => {
@@ -96,16 +78,20 @@ export const CasedataServicesTab: FC = () => {
 
   const fetchAsset = useCallback(
     async (assetId: string) => {
-      const res = await getDraftAssets({ municipalityId, partyId, errandId, type: assetType });
-      return (res?.data ?? []).find((a) => a.id === assetId) ?? null;
+      return getErrandServiceAssetById(serviceAssetParams, assetId);
     },
-    [municipalityId, partyId, errandId, assetType]
+    [serviceAssetParams]
   );
 
   const removeService = useCallback(
     async (assetId: string) => {
       try {
-        await deleteDraftAsset(municipalityId, assetId);
+        const removed = await deleteErrandServiceDraftAsset(serviceAssetParams, assetId);
+        if (!removed) {
+          await refetch();
+          toast(getToastOptions({ message: 'Insatsen finns inte längre. Listan har uppdaterats.', status: 'info' }));
+          return;
+        }
         await refetch();
         toast(getToastOptions({ message: 'Insatsen togs bort.', status: 'success' }));
       } catch (e: any) {
@@ -114,7 +100,7 @@ export const CasedataServicesTab: FC = () => {
         );
       }
     },
-    [municipalityId, refetch, toast]
+    [serviceAssetParams, refetch, toast]
   );
 
   const handleSubmit = useCallback(
@@ -135,14 +121,7 @@ export const CasedataServicesTab: FC = () => {
         validityType,
       };
       try {
-        const created = await createDraftAsset(
-          municipalityId,
-          buildCreateAssetPayload(enrichedPayload, schema, { schemaId, assetType, partyId })
-        );
-        const newAssetId = created?.data?.id;
-        if (newAssetId) {
-          await createAssetRelation(municipalityId, errandId, newAssetId);
-        }
+        await createErrandServiceDraftAsset(serviceAssetParams, enrichedPayload, schema, schemaId);
         toast(getToastOptions({ message: 'Ny insats tillagd.', status: 'success' }));
         await refetch();
         setFormData({});
@@ -156,20 +135,7 @@ export const CasedataServicesTab: FC = () => {
         );
       }
     },
-    [
-      schema,
-      municipalityId,
-      schemaId,
-      assetType,
-      errand,
-      partyId,
-      errandId,
-      startDate,
-      endDate,
-      validityType,
-      refetch,
-      toast,
-    ]
+    [schema, municipalityId, schemaId, errand, serviceAssetParams, startDate, endDate, validityType, refetch, toast]
   );
 
   const startEdit = useCallback(
@@ -239,16 +205,24 @@ export const CasedataServicesTab: FC = () => {
       const { validFrom: _vf, validTo: _vt, validityType: _vty, ...jsonValue } = payload ?? {};
       try {
         const tillsvidare = editValidityType === 'tillsvidare';
-        await updateDraftAsset(municipalityId, editingId, {
+        const { draftedActiveAsset } = await updateErrandServiceAsset(serviceAssetParams, editingId, {
           issued: editStartDate,
-          validTo: tillsvidare ? null : editEndDate,
+          validTo: tillsvidare ? undefined : editEndDate,
+          indefinitely: tillsvidare,
           jsonParameters: [{ key: assetType, value: jsonValue, schemaId: editSchemaId }],
         });
         await refetch();
         closeEditModal();
-        toast(getToastOptions({ message: 'Insatsen uppdaterades.', status: 'success' }));
-      } catch {
-        toast(getToastOptions({ message: 'Något gick fel när insatsen skulle uppdateras.', status: 'error' }));
+        toast(
+          getToastOptions({
+            message: draftedActiveAsset ? 'Insatsen flyttades till utkast och uppdaterades.' : 'Insatsen uppdaterades.',
+            status: 'success',
+          })
+        );
+      } catch (e: any) {
+        toast(
+          getToastOptions({ message: e?.message ?? 'Något gick fel när insatsen skulle uppdateras.', status: 'error' })
+        );
       }
     },
     [
@@ -257,8 +231,8 @@ export const CasedataServicesTab: FC = () => {
       editStartDate,
       editEndDate,
       editValidityType,
-      municipalityId,
       assetType,
+      serviceAssetParams,
       refetch,
       closeEditModal,
       toast,

@@ -1,5 +1,6 @@
+import { Service } from '@casedata/services/casedata-service-assets-service';
+
 import { ServiceListItem } from './casedata-service-item.component';
-import { Service } from './casedata-service-mapper';
 
 type ServiceListComponentProps = {
   services?: Service[];

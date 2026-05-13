@@ -53,18 +53,22 @@ export async function getDraftAssets(params: GetAssetsParams): Promise<ApiRespon
 
 export async function createAsset(
   municipalityId: string,
-  payload: Partial<Asset> & Record<string, any>
+  payload: Partial<Asset> & Record<string, any>,
+  errandId?: string
 ): Promise<ApiResponse<Asset>> {
-  const url = `assets?municipalityId=${municipalityId}`;
+  const query = buildQuery({ municipalityId, errandId });
+  const url = `assets${query}`;
   const res = await apiService.post<ApiResponse<Asset>, typeof payload>(url, payload);
   return res.data;
 }
 
 export async function createDraftAsset(
   municipalityId: string,
-  payload: Partial<Asset> & Record<string, any>
+  payload: Partial<Asset> & Record<string, any>,
+  errandId?: string
 ): Promise<ApiResponse<Asset>> {
-  const url = `asset-drafts?municipalityId=${municipalityId}`;
+  const query = buildQuery({ municipalityId, errandId });
+  const url = `asset-drafts${query}`;
   const res = await apiService.post<ApiResponse<Asset>, typeof payload>(url, payload);
   return res.data;
 }

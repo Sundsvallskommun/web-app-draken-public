@@ -13,13 +13,25 @@ interface ResponseData<T> {
   message: string;
 }
 
+// AssetCreateRequest is generated from partyassets OpenAPI, while sourceReference is accepted by the API at runtime.
+type AssetCreateRequestWithSourceReference = AssetCreateRequest & { sourceReference?: string };
+
 @Controller()
 export class AssetController {
   private apiService = new ApiService();
   PARTYASSETS_SERVICE = apiServiceName('partyassets');
 
   private buildSourceReference(errandId: string): string {
-    return `LINK|${errandId};case;case-data;${process.env.CASEDATA_NAMESPACE}|`;
+    const namespace = process.env.CASEDATA_NAMESPACE;
+    if (!namespace) {
+      throw new Error('CASEDATA_NAMESPACE must be set to create asset sourceReference');
+    }
+    return `LINK|${errandId};case;case-data;${namespace}|`;
+  }
+
+  private withSourceReference(body: AssetCreateRequest | undefined, errandId?: string): AssetCreateRequestWithSourceReference | undefined {
+    if (!body || !errandId) return body;
+    return { ...body, sourceReference: this.buildSourceReference(errandId) };
   }
 
   private buildAssetQuery(params: Record<string, string | undefined>): string {
@@ -74,11 +86,13 @@ export class AssetController {
   async createAsset(
     @Req() req: RequestWithUser,
     @QueryParam('municipalityId') municipalityId?: string,
+    @QueryParam('errandId') errandId?: string,
     @Body() body?: AssetCreateRequest,
   ): Promise<ResponseData<Asset>> {
     municipalityId ??= '2281';
     const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets`;
-    const res = await this.apiService.post<any, any>({ url, data: body }, req.user);
+    const data = this.withSourceReference(body, errandId);
+    const res = await this.apiService.post<any, any>({ url, data }, req.user);
     return { data: res.data, message: 'created' };
   }
 
@@ -140,11 +154,13 @@ export class AssetController {
   async createDraftAsset(
     @Req() req: RequestWithUser,
     @QueryParam('municipalityId') municipalityId?: string,
+    @QueryParam('errandId') errandId?: string,
     @Body() body?: AssetCreateRequest,
   ): Promise<ResponseData<Asset>> {
     municipalityId ??= '2281';
     const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/asset-drafts`;
-    const res = await this.apiService.post<any, any>({ url, data: body }, req.user);
+    const data = this.withSourceReference(body, errandId);
+    const res = await this.apiService.post<any, any>({ url, data }, req.user);
     return { data: res.data, message: 'created' };
   }
 
