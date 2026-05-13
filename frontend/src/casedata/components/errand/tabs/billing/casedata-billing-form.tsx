@@ -196,7 +196,7 @@ export const CaseDataBillingForm: React.FC = () => {
         }
       }
 
-      await saveCasedataBillingRecord(
+      const result = await saveCasedataBillingRecord(
         { ...data, services: resolvedServices, recipient: resolvedRecipient },
         errand!,
         municipalityId
@@ -207,6 +207,15 @@ export const CaseDataBillingForm: React.FC = () => {
         closeable: true,
         message: 'Faktura skapad',
         status: 'success',
+      });
+
+      result.warnings.forEach((warning) => {
+        toastMessage({
+          position: 'bottom',
+          closeable: true,
+          message: warning,
+          status: 'error',
+        });
       });
 
       reset({

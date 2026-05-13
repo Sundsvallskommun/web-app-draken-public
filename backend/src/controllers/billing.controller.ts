@@ -102,6 +102,35 @@ export class BillingController {
     return response.status(200).send(res.data);
   }
 
+  @Post('/billing/:municipalityId/contracts/:contractId/billingrecords/:billingRecordId/relation')
+  @OpenAPI({ summary: 'Create relation between contract and billing record' })
+  @UseBefore(authMiddleware)
+  async createContractBillingRelation(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('contractId') contractId: string,
+    @Param('billingRecordId') billingRecordId: string,
+    @Res() response: any,
+  ): Promise<any> {
+    const url = `${municipalityId}/relations`;
+    const baseURL = apiURL(this.RELATIONS_SERVICE);
+    const relationBody = {
+      type: 'LINK',
+      source: {
+        resourceId: contractId,
+        type: 'contract',
+        service: 'contract',
+      },
+      target: {
+        resourceId: billingRecordId,
+        type: 'billing-record',
+        service: 'billingpreprocessor',
+      },
+    };
+    const res = await this.apiService.post<any, any>({ url, baseURL, data: relationBody }, req.user);
+    return response.status(201).send(res.data);
+  }
+
   @Get('/billing/:municipalityId/billingrecords/:id')
   @OpenAPI({ summary: 'Get billing record by id' })
   @ResponseSchema(CBillingRecord)
