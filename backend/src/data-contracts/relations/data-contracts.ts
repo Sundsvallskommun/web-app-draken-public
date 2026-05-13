@@ -12,8 +12,8 @@
 
 /** The sort order direction */
 export enum Direction {
-  ASC = "ASC",
-  DESC = "DESC",
+  ASC = 'ASC',
+  DESC = 'DESC',
 }
 
 export interface Problem {
@@ -82,8 +82,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  detail?: string;
   causeAsProblem?: ThrowableProblem;
+  detail?: string;
 }
 
 export interface ThrowableProblem {

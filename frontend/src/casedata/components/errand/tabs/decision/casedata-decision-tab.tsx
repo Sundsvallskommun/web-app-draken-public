@@ -25,14 +25,6 @@ import {
   validateErrandForDecision,
   validateStatusForDecision,
 } from '@casedata/services/casedata-errand-service';
-import { yupResolver } from '@hookform/resolvers/yup';
-import type { RJSFSchema } from '@rjsf/utils';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
-import dayjs from 'dayjs';
-import { FC, useEffect, useMemo, useRef, useState } from 'react';
-import { Resolver, useForm } from 'react-hook-form';
-import * as yup from 'yup';
-
 import { sendDecisionMessage, sendMessage } from '@casedata/services/casedata-message-service';
 import {
   getOwnerStakeholder,
@@ -50,6 +42,8 @@ import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
+import { yupResolver } from '@hookform/resolvers/yup';
+import type { RJSFSchema } from '@rjsf/utils';
 import {
   Button,
   Combobox,
@@ -63,7 +57,12 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import dayjs from 'dayjs';
 import { Download, SendHorizontal } from 'lucide-react';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
+import { Resolver, useForm } from 'react-hook-form';
+import * as yup from 'yup';
 
 import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
 import { ServiceListComponent } from '../services/casedata-service-list.component';
@@ -184,6 +183,7 @@ export const CasedataDecisionTab: FC<{
 
   const { services, refetch: refetchServices } = useErrandServices({
     municipalityId,
+    partyId: ownerPartyId ?? '',
     errandId: String(errand?.id ?? ''),
     assetType: assetType,
     schema: serviceSchema,
@@ -373,6 +373,7 @@ export const CasedataDecisionTab: FC<{
       await updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Beslutad);
       const drafts = await getDraftAssets({
         municipalityId,
+        partyId: ownerPartyId,
         errandId: String(errand.id),
         type: assetType,
       });

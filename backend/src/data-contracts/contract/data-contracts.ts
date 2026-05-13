@@ -561,11 +561,12 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
+  number?: boolean;
+  string?: boolean;
+  boolean?: boolean;
+  integralNumber?: boolean;
   valueNode?: boolean;
   container?: boolean;
-  missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -577,9 +578,8 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  number?: boolean;
-  string?: boolean;
-  boolean?: boolean;
+  missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 
@@ -639,10 +639,10 @@ export interface PatchContract {
 export type SpecificationContractEntity = any;
 
 export interface PageContract {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Contract[];
@@ -650,29 +650,29 @@ export interface PageContract {
   number?: number;
   first?: boolean;
   last?: boolean;
+  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  sort?: SortObject;
   unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  unsorted?: boolean;
   sorted?: boolean;
+  unsorted?: boolean;
 }
 
 export enum CrsTypeEnum {

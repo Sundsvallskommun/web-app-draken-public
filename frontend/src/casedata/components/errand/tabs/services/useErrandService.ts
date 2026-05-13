@@ -9,6 +9,7 @@ import { mapFormToServiceFromPayload, Service } from './casedata-service-mapper'
 
 type UseErrandServicesArgs = {
   municipalityId: string;
+  partyId: string;
   errandId: string;
   assetType: string;
   schema?: RJSFSchema | null;
@@ -17,6 +18,7 @@ type UseErrandServicesArgs = {
 
 export function useErrandServices({
   municipalityId,
+  partyId,
   errandId,
   assetType,
   schema = null,
@@ -30,11 +32,11 @@ export function useErrandServices({
     setLoading(true);
     setError(undefined);
     try {
-      if (!errandId) {
+      if (!errandId || !partyId) {
         setServices([]);
         return;
       }
-      const fetchParams = { municipalityId, errandId, type: assetType, origin };
+      const fetchParams = { municipalityId, partyId, errandId, type: assetType, origin };
       const [draftResp, activeResp] = await Promise.all([getDraftAssets(fetchParams), getAssets(fetchParams)]);
       const draftAssets = draftResp?.data ?? [];
       const activeAssets = activeResp?.data ?? [];
@@ -64,7 +66,7 @@ export function useErrandServices({
     } finally {
       setLoading(false);
     }
-  }, [municipalityId, errandId, assetType, origin, schema]);
+  }, [municipalityId, partyId, errandId, assetType, origin, schema]);
 
   useEffect(() => {
     refetch();

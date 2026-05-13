@@ -51,15 +51,9 @@ export async function getDraftAssets(params: GetAssetsParams): Promise<ApiRespon
   return res.data;
 }
 
-export async function getDraftAssetById(municipalityId: string, id: string): Promise<ApiResponse<Asset>> {
-  const url = `asset-drafts/${encodeURIComponent(id)}?municipalityId=${municipalityId}`;
-  const res = await apiService.get<ApiResponse<Asset>>(url);
-  return res.data;
-}
-
 export async function createAsset(
   municipalityId: string,
-  payload: Partial<Asset> & Record<string, any>,
+  payload: Partial<Asset> & Record<string, any>
 ): Promise<ApiResponse<Asset>> {
   const url = `assets?municipalityId=${municipalityId}`;
   const res = await apiService.post<ApiResponse<Asset>, typeof payload>(url, payload);
@@ -68,7 +62,7 @@ export async function createAsset(
 
 export async function createDraftAsset(
   municipalityId: string,
-  payload: Partial<Asset> & Record<string, any>,
+  payload: Partial<Asset> & Record<string, any>
 ): Promise<ApiResponse<Asset>> {
   const url = `asset-drafts?municipalityId=${municipalityId}`;
   const res = await apiService.post<ApiResponse<Asset>, typeof payload>(url, payload);
@@ -90,7 +84,7 @@ export async function deleteDraftAsset(municipalityId: string, id: string): Prom
 export async function updateAsset(
   municipalityId: string,
   id: string,
-  payload: AssetUpdateRequest,
+  payload: AssetUpdateRequest
 ): Promise<ApiResponse<Asset>> {
   const url = `assets/${encodeURIComponent(id)}?municipalityId=${municipalityId}`;
   const res = await apiService.patch<ApiResponse<Asset>, AssetUpdateRequest>(url, payload);
@@ -100,7 +94,7 @@ export async function updateAsset(
 export async function updateDraftAsset(
   municipalityId: string,
   id: string,
-  payload: DraftAssetUpdateRequest,
+  payload: DraftAssetUpdateRequest
 ): Promise<ApiResponse<Asset>> {
   const url = `asset-drafts/${encodeURIComponent(id)}?municipalityId=${municipalityId}`;
   const res = await apiService.patch<ApiResponse<Asset>, DraftAssetUpdateRequest>(url, payload);
@@ -119,7 +113,7 @@ type BuildArgs = {
 export function buildCreateAssetPayload(
   formData: any,
   _schema: RJSFSchema | null,
-  { schemaId, assetType, partyId, assetId, origin = 'CASEDATA', status = 'DRAFT' }: BuildArgs,
+  { schemaId, assetType, partyId, assetId, origin = 'CASEDATA', status = 'DRAFT' }: BuildArgs
 ): Partial<Asset> & Record<string, any> {
   const tillsvidare = formData?.validityType === 'tillsvidare';
   const { validFrom, validTo, validityType, ...jsonValue } = formData ?? {};

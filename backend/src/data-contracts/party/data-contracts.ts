@@ -12,8 +12,8 @@
 
 /** Party type model */
 export enum PartyType {
-  ENTERPRISE = "ENTERPRISE",
-  PRIVATE = "PRIVATE",
+  ENTERPRISE = 'ENTERPRISE',
+  PRIVATE = 'PRIVATE',
 }
 
 export interface Problem {
@@ -55,4 +55,10 @@ export interface ThrowableProblem {
 export interface Violation {
   field?: string;
   message?: string;
+}
+
+export interface PartyLegalIdResponse {
+  personalNumbers?: Record<string, string>;
+  organizationNumbers?: Record<string, string>;
+  notFound?: string[];
 }

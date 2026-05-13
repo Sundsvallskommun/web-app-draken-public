@@ -16,11 +16,11 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
   nodeType?: JsonNodeNodeTypeEnum;
   integralNumber?: boolean;
+  missingNode?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -145,34 +145,34 @@ export interface JsonSchema {
 }
 
 export interface PageJsonSchema {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: JsonSchema[];
   /** @format int32 */
   number?: number;
+  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   first?: boolean;
   last?: boolean;
   sort?: SortObject;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  unpaged?: boolean;
-  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  unpaged?: boolean;
+  sort?: SortObject;
 }
 
 export interface SortObject {

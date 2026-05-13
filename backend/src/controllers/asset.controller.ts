@@ -6,11 +6,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, QueryParam, Req, Use
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { apiServiceName } from '@/config/api-config';
-import {
-  AssetCreateRequest,
-  AssetUpdateRequest,
-  DraftAssetUpdateRequest,
-} from '@/data-contracts/partyassets/data-contracts';
+import { AssetCreateRequest, AssetUpdateRequest, DraftAssetUpdateRequest } from '@/data-contracts/partyassets/data-contracts';
 
 interface ResponseData<T> {
   data: T;
@@ -135,20 +131,6 @@ export class AssetController {
     const query = this.buildAssetQuery({ partyId, type, status, origin, assetId, issued, validTo, sourceReference });
     const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/asset-drafts${query}`;
     const res = await this.apiService.get<Asset[]>({ url }, req.user);
-    return { data: res.data, message: 'success' };
-  }
-
-  @Get('/asset-drafts/:id')
-  @OpenAPI({ summary: 'Get a single draft asset by id' })
-  @UseBefore(authMiddleware)
-  async getDraftAsset(
-    @Req() req: RequestWithUser,
-    @Param('id') id: string,
-    @QueryParam('municipalityId') municipalityId?: string,
-  ): Promise<ResponseData<Asset>> {
-    municipalityId ??= '2281';
-    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/asset-drafts/${encodeURIComponent(id)}`;
-    const res = await this.apiService.get<Asset>({ url }, req.user);
     return { data: res.data, message: 'success' };
   }
 
