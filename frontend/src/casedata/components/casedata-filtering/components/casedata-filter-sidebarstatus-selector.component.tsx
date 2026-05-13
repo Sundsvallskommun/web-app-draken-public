@@ -7,28 +7,26 @@ import {
   ongoingStatuses,
   suspendedStatuses,
 } from '@casedata/services/casedata-errand-service';
-import { SidebarButton } from '@common/interfaces/sidebar-button';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import { Badge, Button, Spinner } from '@sk-web-gui/react';
-import store from '@supportmanagement/services/storage-service';
-import { useMemo } from 'react';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-
-export const CasedataFilterSidebarStatusSelector: React.FC<{
+import { SidebarButton } from '@common/interfaces/sidebar-button';
+import { Badge, Button, Spinner } from '@sk-web-gui/react';
+import { useUiSettingsStore } from '@stores/ui-settings-store';
+import { FC, useMemo } from 'react';
+export const CasedataFilterSidebarStatusSelector: FC<{
   showContractTable: boolean;
   setShowContractTable: (show: boolean) => void;
   iconButton: boolean;
 }> = ({ showContractTable, setShowContractTable, iconButton }) => {
-  const {
-    setSelectedErrandStatuses,
-    selectedErrandStatuses,
-    setSidebarLabel,
-    newErrands,
-    ongoingErrands,
-    assignedErrands,
-    suspendedErrands,
-    closedErrands,
-  }: AppContextInterface = useAppContext();
+  const setSelectedErrandStatuses = useUiSettingsStore((s) => s.setSelectedErrandStatuses);
+  const selectedErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
+  const setSidebarLabel = useUiSettingsStore((s) => s.setSidebarLabel);
+  const setFilter = useUiSettingsStore((s) => s.setFilter);
+  const filter = useUiSettingsStore((s) => s.filter);
+  const newErrands = useUiSettingsStore((s) => s.newErrands);
+  const ongoingErrands = useUiSettingsStore((s) => s.ongoingErrands);
+  const assignedErrands = useUiSettingsStore((s) => s.assignedErrands);
+  const suspendedErrands = useUiSettingsStore((s) => s.suspendedErrands);
+  const closedErrands = useUiSettingsStore((s) => s.closedErrands);
 
   const updateStatusFilter = (ss: ErrandStatus[]) => {
     try {
@@ -37,12 +35,8 @@ export const CasedataFilterSidebarStatusSelector: React.FC<{
         labelsToKeys[v] = k;
       });
       const statusKeys = ss.map((s) => labelsToKeys[s]);
-      const storedFilter = store.get('filter');
-      const jsonparsedstatus = JSON.parse(storedFilter);
       const status = statusKeys.join(',');
-      jsonparsedstatus.status = status;
-      const stringified = JSON.stringify(jsonparsedstatus);
-      store.set('filter', stringified);
+      setFilter({ ...filter, status });
       setSelectedErrandStatuses(statusKeys as ErrandStatus[]);
     } catch (error) {
       console.error('Error updating status filter');
@@ -108,7 +102,10 @@ export const CasedataFilterSidebarStatusSelector: React.FC<{
             aria-label={`status-button-${button.key}`}
             variant={buttonIsActive && !showContractTable ? 'primary' : 'ghost'}
             className={`${!iconButton && 'justify-start'} ${!buttonIsActive && 'hover:bg-dark-ghost'}`}
-            leftIcon={(() => { const DynIcon = iconMap[button.icon as string]; return DynIcon ? <DynIcon /> : undefined; })()}
+            leftIcon={(() => {
+              const DynIcon = iconMap[button.icon as string];
+              return DynIcon ? <DynIcon /> : undefined;
+            })()}
             key={button.key}
             iconButton={iconButton}
           >

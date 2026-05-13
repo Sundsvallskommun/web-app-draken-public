@@ -14,19 +14,20 @@ import {
 } from '@casedata/services/casedata-attachment-service';
 import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore, useConfigStore } from '@stores/index';
 import { isMEX } from '@common/services/application-service';
-import { mapAttachmentToUploadFile, validAttachment } from '@common/services/attachment-service';
+import { mapAttachmentToUploadFile } from '@common/services/attachment-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FileUpload, PopupMenu, UploadFile, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { Fragment, useEffect, useState } from 'react';
+import { Eye, Pencil, Trash, Upload } from 'lucide-react';
+import { FC, Fragment, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+
 import { EditAttachmentModal } from './edit-attachment-modal.component';
 import { UploadAttachmentModal } from './upload-attachment-modal.component';
-import { Eye, Pencil, Trash, Upload } from 'lucide-react';
 export interface CasedataAttachmentFormModel {
   files: UploadFile[];
   newFiles: UploadFile[];
@@ -37,7 +38,7 @@ const defaultAttachmentInformation: CasedataAttachmentFormModel = {
   newFiles: [],
 };
 
-export const CasedataAttachments: React.FC = () => {
+export const CasedataAttachments: FC = () => {
   const [modalAttachment, setModalAttachment] = useState<Attachment>();
   const [addAttachmentWindowIsOpen, setAddAttachmentWindowIsOpen] = useState<boolean>(false);
   const [attachmentTypeExists, setAttachmentTypeExists] = useState<boolean>(false);
@@ -47,7 +48,9 @@ export const CasedataAttachments: React.FC = () => {
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [originalFile, setOriginalFile] = useState<UploadFile | null>(null);
 
-  const { municipalityId, errand, setErrand } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
   const removeConfirm = useConfirm();
   const toastMessage = useSnackbar();
 

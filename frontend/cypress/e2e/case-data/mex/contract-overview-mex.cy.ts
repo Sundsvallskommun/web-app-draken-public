@@ -202,6 +202,166 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait('@getSortedContracts');
     });
 
+    describe('Filter chips and clear filters', () => {
+      it('shows a chip when filtering by status', () => {
+        navigateToContractOverview();
+        cy.get('[data-cy="contract-status-filter"]').click();
+        cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
+        cy.get('[data-cy="contract-status-filter-ACTIVE"]').click({ force: true });
+        cy.wait('@getFilteredContracts');
+        cy.get('[data-cy="tag-contract-status-ACTIVE"]').should('exist').and('contain.text', 'Aktiv');
+      });
+
+      it('shows a chip when filtering by contract type', () => {
+        navigateToContractOverview();
+        cy.get('[data-cy="contract-type-filter"]').click();
+        cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
+        cy.get('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+        cy.wait('@getFilteredContracts');
+        cy.get('[data-cy="tag-contract-type-LEASE_AGREEMENT"]').should('exist').and('contain.text', 'Arrende');
+      });
+
+      it('shows a chip when filtering by lease type', () => {
+        navigateToContractOverview();
+        cy.get('[data-cy="contract-lease-type-filter"]').click();
+        cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
+        cy.get('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click({ force: true });
+        cy.wait('@getFilteredContracts');
+        cy.get('[data-cy="tag-lease-type-LAND_LEASE_RESIDENTIAL"]').should('exist').and('contain.text', 'Bostadsarrende');
+      });
+
+      it('shows a chip when filtering by date period', () => {
+        navigateToContractOverview();
+        cy.get('[data-cy="contract-dates-filter"]').click();
+        cy.get('[data-cy="contract-filter-startdate"]').type('2024-01-01');
+        cy.get('[data-cy="contract-filter-enddate"]').type('2024-12-31');
+        cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
+        cy.get('[data-cy="contract-dates-apply"]').click();
+        cy.wait('@getFilteredContracts');
+        cy.get('[data-cy="tag-contract-dates"]').should('exist');
+      });
+
+      it('removes a status chip when clicking it', () => {
+        navigateToContractOverview();
+        cy.get('[data-cy="contract-status-filter"]').click();
+        cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
+        cy.get('[data-cy="contract-status-filter-ACTIVE"]').click({ force: true });
+        cy.wait('@getFilteredContracts');
+        cy.get('[data-cy="tag-contract-status-ACTIVE"]').should('exist');
+
+        cy.intercept('GET', '**/contracts?*', mockContractsList).as('getUnfilteredContracts');
+        cy.get('[data-cy="tag-contract-status-ACTIVE"]').click();
+        cy.wait('@getUnfilteredContracts');
+        cy.get('[data-cy="tag-contract-status-ACTIVE"]').should('not.exist');
+      });
+
+      it('removes a contract type chip when clicking it', () => {
+        navigateToContractOverview();
+        cy.get('[data-cy="contract-type-filter"]').click();
+        cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
+        cy.get('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+        cy.wait('@getFilteredContracts');
+        cy.get('[data-cy="tag-contract-type-LEASE_AGREEMENT"]').should('exist');
+
+        cy.intercept('GET', '**/contracts?*', mockContractsList).as('getUnfilteredContracts');
+        cy.get('[data-cy="tag-contract-type-LEASE_AGREEMENT"]').click();
+        cy.wait('@getUnfilteredContracts');
+        cy.get('[data-cy="tag-contract-type-LEASE_AGREEMENT"]').should('not.exist');
+      });
+
+      it('removes date chip when clicking it', () => {
+        navigateToContractOverview();
+        cy.get('[data-cy="contract-dates-filter"]').click();
+        cy.get('[data-cy="contract-filter-startdate"]').type('2024-01-01');
+        cy.get('[data-cy="contract-filter-enddate"]').type('2024-12-31');
+        cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
+        cy.get('[data-cy="contract-dates-apply"]').click();
+        cy.wait('@getFilteredContracts');
+        cy.get('[data-cy="tag-contract-dates"]').should('exist');
+
+        cy.intercept('GET', '**/contracts?*', mockContractsList).as('getUnfilteredContracts');
+        cy.get('[data-cy="tag-contract-dates"]').click();
+        cy.wait('@getUnfilteredContracts');
+        cy.get('[data-cy="tag-contract-dates"]').should('not.exist');
+      });
+
+      it('shows "Rensa alla" button when filters are active', () => {
+        navigateToContractOverview();
+        cy.get('[data-cy="tag-contract-clearAll"]').should('not.exist');
+
+        cy.get('[data-cy="contract-status-filter"]').click();
+        cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
+        cy.get('[data-cy="contract-status-filter-ACTIVE"]').click({ force: true });
+        cy.wait('@getFilteredContracts');
+
+        cy.get('[data-cy="tag-contract-clearAll"]').should('exist').and('contain.text', 'Rensa alla');
+      });
+
+      it('clears all filters when clicking "Rensa alla"', () => {
+        navigateToContractOverview();
+
+        // Apply status filter
+        cy.get('[data-cy="contract-status-filter"]').click();
+        cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
+        cy.get('[data-cy="contract-status-filter-ACTIVE"]').click({ force: true });
+        cy.wait('@getFilteredContracts');
+
+        // Apply contract type filter
+        cy.get('[data-cy="contract-type-filter"]').click();
+        cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts2');
+        cy.get('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+        cy.wait('@getFilteredContracts2');
+
+        // Both chips should exist
+        cy.get('[data-cy="tag-contract-status-ACTIVE"]').should('exist');
+        cy.get('[data-cy="tag-contract-type-LEASE_AGREEMENT"]').should('exist');
+
+        // Click "Rensa alla"
+        cy.intercept('GET', '**/contracts?*', mockContractsList).as('getUnfilteredContracts');
+        cy.get('[data-cy="tag-contract-clearAll"]').click();
+        cy.wait('@getUnfilteredContracts');
+
+        // All chips should be gone
+        cy.get('[data-cy="tag-contract-status-ACTIVE"]').should('not.exist');
+        cy.get('[data-cy="tag-contract-type-LEASE_AGREEMENT"]').should('not.exist');
+        cy.get('[data-cy="tag-contract-clearAll"]').should('not.exist');
+      });
+
+      it('shows multiple chips for multiple filters', () => {
+        navigateToContractOverview();
+
+        // Apply status filter
+        cy.get('[data-cy="contract-status-filter"]').click();
+        cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
+        cy.get('[data-cy="contract-status-filter-ACTIVE"]').click({ force: true });
+        cy.wait('@getFilteredContracts');
+
+        // Apply contract type filter
+        cy.get('[data-cy="contract-type-filter"]').click();
+        cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts2');
+        cy.get('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+        cy.wait('@getFilteredContracts2');
+
+        // Apply lease type filter
+        cy.get('[data-cy="contract-lease-type-filter"]').click();
+        cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts3');
+        cy.get('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click({ force: true });
+        cy.wait('@getFilteredContracts3');
+
+        // All three chips should be visible
+        cy.get('[data-cy="tag-contract-status-ACTIVE"]').should('exist');
+        cy.get('[data-cy="tag-contract-type-LEASE_AGREEMENT"]').should('exist');
+        cy.get('[data-cy="tag-lease-type-LAND_LEASE_RESIDENTIAL"]').should('exist');
+        cy.get('[data-cy="tag-contract-clearAll"]').should('exist');
+      });
+
+      it('does not show chips when no filters are active', () => {
+        navigateToContractOverview();
+        cy.get('[data-cy="tag-contract-clearAll"]').should('not.exist');
+        cy.get('.sk-chip').should('not.exist');
+      });
+    });
+
     describe('Contract detail panel', () => {
       beforeEach(() => {
         // Intercept attachment requests to prevent 401 errors
@@ -248,14 +408,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         // Parties disclosure should be visible and initially open
         cy.get('[data-cy="parties-disclosure"]').should('be.visible');
 
-        // Upplåtare table should show lessor
-        cy.get('[data-cy="Upplåtare-table"]').should('exist');
-        cy.get('[data-cy="Upplåtare-table"]').contains('Sundsvalls Kommun').should('exist');
-
-        // Arrendatorer table should show lessees
-        cy.get('[data-cy="Arrendatorer-table"]').should('exist');
-        cy.get('[data-cy="Arrendatorer-table"]').contains('Anna Arrendator').should('exist');
-        cy.get('[data-cy="Arrendatorer-table"]').contains('Bengt Arrendator').should('exist');
+        // Parties table should show all parties
+        cy.get('[data-cy="parties-table"]').should('exist');
+        cy.get('[data-cy="parties-table"]').contains('Sundsvalls Kommun').should('exist');
+        cy.get('[data-cy="parties-table"]').contains('Anna Arrendator').should('exist');
+        cy.get('[data-cy="parties-table"]').contains('Bengt Arrendator').should('exist');
       });
 
       it('displays parties disclosure with party tables for purchase agreement', () => {
@@ -267,13 +424,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         // Parties disclosure should be visible
         cy.get('[data-cy="parties-disclosure"]').should('exist');
 
-        // Säljare table should show seller
-        cy.get('[data-cy="Säljare-table"]').should('exist');
-        cy.get('[data-cy="Säljare-table"]').contains('Sundsvalls Kommun').should('exist');
-
-        // Köpare table should show buyer
-        cy.get('[data-cy="Köpare-table"]').should('exist');
-        cy.get('[data-cy="Köpare-table"]').contains('Kalle Köpare').should('exist');
+        // Parties table should show all parties
+        cy.get('[data-cy="parties-table"]').should('exist');
+        cy.get('[data-cy="parties-table"]').contains('Sundsvalls Kommun').should('exist');
+        cy.get('[data-cy="parties-table"]').contains('Kalle Köpare').should('exist');
       });
 
       it('displays area disclosure with property designations', () => {
@@ -406,6 +560,34 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       });
 
       describe('Contract invoices (Fakturor)', () => {
+        it('displays next billing date from billing data collector', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
+          cy.intercept('GET', '**/billingdatacollector/*', '2026-06-01').as('getNextBillingDate');
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="fakturor-disclosure"]').click();
+
+          cy.wait('@getNextBillingDate');
+
+          cy.get('[data-cy="next-billing-date"]').should('contain.text', '2026-06-01');
+        });
+
+        it('displays dash when next billing date fails to load', () => {
+          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
+          cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
+          cy.intercept('GET', '**/billingdatacollector/*', { statusCode: 500 }).as('getNextBillingDateFail');
+          navigateToContractOverview();
+
+          cy.get('[data-cy="contract-row-0"]').click();
+          cy.get('[data-cy="fakturor-disclosure"]').click();
+
+          cy.wait('@getNextBillingDateFail');
+
+          cy.get('[data-cy="next-billing-date"]').should('contain.text', '-');
+        });
+
         it('displays fakturor disclosure section', () => {
           cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
           cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
@@ -446,7 +628,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('[data-cy="invoice-status-0"]').should('contain.text', 'Ny');
           cy.get('[data-cy="invoice-date-0"]').should('contain.text', '2024-01-15');
           cy.get('[data-cy="invoice-due-date-0"]').should('contain.text', '2024-02-15');
-          cy.get('[data-cy="invoice-number-0"]').should('contain.text', '-');
         });
 
         it('displays correct status labels with correct colors', () => {
@@ -464,23 +645,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('[data-cy="invoice-status-1"]').should('contain.text', 'Godkänd');
           cy.get('[data-cy="invoice-status-2"]').should('contain.text', 'Fakturerad');
           cy.get('[data-cy="invoice-status-3"]').should('contain.text', 'Avslagen');
-        });
-
-        it('displays download PDF button for each invoice', () => {
-          cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
-          cy.intercept('GET', '**/billing/**/contracts/**/invoices*', mockContractInvoices).as('getContractInvoices');
-          navigateToContractOverview();
-
-          cy.get('[data-cy="contract-row-0"]').click();
-          cy.get('[data-cy="fakturor-disclosure"]').click();
-
-          cy.wait('@getContractInvoices');
-
-          // Check download buttons exist
-          cy.get('[data-cy="invoice-download-pdf-0"]').should('exist').should('contain.text', 'Hämta pdf');
-          cy.get('[data-cy="invoice-download-pdf-1"]').should('exist');
-          cy.get('[data-cy="invoice-download-pdf-2"]').should('exist');
-          cy.get('[data-cy="invoice-download-pdf-3"]').should('exist');
         });
 
         it('displays empty state when no invoices exist', () => {
@@ -633,7 +797,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
           // Wait for the POST request and verify the data
           cy.wait('@postErrand').then((interception) => {
-            expect(interception.request.body).to.have.property('caseType', 'MEX_OTHER');
+            expect(interception.request.body).to.have.property('caseType', 'UPDATECONTRACT');
             expect(interception.request.body).to.have.property('channel', 'WEB_UI');
             expect(interception.request.body).to.have.property('phase', 'Aktualisering');
             expect(interception.request.body).to.have.property('priority', 'MEDIUM');

@@ -1,4 +1,4 @@
-import { Asset } from '@casedata/interfaces/asset';
+import { Asset, AssetUpdateRequest, DraftAssetUpdateRequest } from '@casedata/interfaces/asset';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import {
   getLatestSchema,
@@ -13,7 +13,7 @@ export { getLatestSchema, getSchema, getUiSchema };
 export type { JsonSchemaResponse, UiSchemaResponse };
 
 export type GetAssetsParams = {
-  partyId: string;
+  partyId?: string;
   municipalityId?: string;
   type?: string;
   status?: string;
@@ -21,6 +21,7 @@ export type GetAssetsParams = {
   assetId?: string;
   issued?: string;
   validTo?: string;
+  errandId?: string;
 };
 
 const buildQuery = (p: GetAssetsParams) => {
@@ -44,11 +45,32 @@ export async function getAssetById(municipalityId: string, id: string): Promise<
   return res.data;
 }
 
+export async function getDraftAssets(params: GetAssetsParams): Promise<ApiResponse<Asset[]>> {
+  const url = `asset-drafts${buildQuery(params)}`;
+  const res = await apiService.get<ApiResponse<Asset[]>>(url);
+  return res.data;
+}
+
+export async function getDraftAssetById(municipalityId: string, id: string): Promise<ApiResponse<Asset>> {
+  const url = `asset-drafts/${encodeURIComponent(id)}?municipalityId=${municipalityId}`;
+  const res = await apiService.get<ApiResponse<Asset>>(url);
+  return res.data;
+}
+
 export async function createAsset(
   municipalityId: string,
-  payload: Partial<Asset> & Record<string, any>
+  payload: Partial<Asset> & Record<string, any>,
 ): Promise<ApiResponse<Asset>> {
   const url = `assets?municipalityId=${municipalityId}`;
+  const res = await apiService.post<ApiResponse<Asset>, typeof payload>(url, payload);
+  return res.data;
+}
+
+export async function createDraftAsset(
+  municipalityId: string,
+  payload: Partial<Asset> & Record<string, any>,
+): Promise<ApiResponse<Asset>> {
+  const url = `asset-drafts?municipalityId=${municipalityId}`;
   const res = await apiService.post<ApiResponse<Asset>, typeof payload>(url, payload);
   return res.data;
 }
@@ -59,13 +81,29 @@ export async function deleteAsset(municipalityId: string, id: string): Promise<A
   return res.data;
 }
 
+export async function deleteDraftAsset(municipalityId: string, id: string): Promise<ApiResponse<boolean>> {
+  const url = `asset-drafts/${encodeURIComponent(id)}?municipalityId=${municipalityId}`;
+  const res = await apiService.deleteRequest<ApiResponse<boolean>>(url);
+  return res.data;
+}
+
 export async function updateAsset(
   municipalityId: string,
   id: string,
-  payload: Partial<Asset> & Record<string, any>
+  payload: AssetUpdateRequest,
 ): Promise<ApiResponse<Asset>> {
   const url = `assets/${encodeURIComponent(id)}?municipalityId=${municipalityId}`;
-  const res = await apiService.patch<ApiResponse<Asset>, typeof payload>(url, payload);
+  const res = await apiService.patch<ApiResponse<Asset>, AssetUpdateRequest>(url, payload);
+  return res.data;
+}
+
+export async function updateDraftAsset(
+  municipalityId: string,
+  id: string,
+  payload: DraftAssetUpdateRequest,
+): Promise<ApiResponse<Asset>> {
+  const url = `asset-drafts/${encodeURIComponent(id)}?municipalityId=${municipalityId}`;
+  const res = await apiService.patch<ApiResponse<Asset>, DraftAssetUpdateRequest>(url, payload);
   return res.data;
 }
 
@@ -81,13 +119,14 @@ type BuildArgs = {
 export function buildCreateAssetPayload(
   formData: any,
   _schema: RJSFSchema | null,
-  { schemaId, assetType, partyId, assetId, origin = 'CASEDATA', status = 'ACTIVE' }: BuildArgs
+  { schemaId, assetType, partyId, assetId, origin = 'CASEDATA', status = 'DRAFT' }: BuildArgs,
 ): Partial<Asset> & Record<string, any> {
   const tillsvidare = formData?.validityType === 'tillsvidare';
   const { validFrom, validTo, validityType, ...jsonValue } = formData ?? {};
   return {
     origin,
     partyId,
+    ...(assetId ? { assetId } : {}),
     type: assetType,
     issued: validFrom ?? null,
     validTo: tillsvidare ? null : validTo ?? null,
@@ -103,4 +142,3 @@ export function buildCreateAssetPayload(
     ],
   };
 }
-

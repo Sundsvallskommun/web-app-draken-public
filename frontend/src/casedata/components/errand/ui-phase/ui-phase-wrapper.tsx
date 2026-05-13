@@ -1,10 +1,11 @@
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { useAppContext } from '@common/contexts/app.context';
+import { useCasedataStore } from '@stores/index';
 import { UiPhaseComponent } from '../ui-phase.component';
 
 export const UiPhaseWrapper = () => {
-  const { errand, uiPhase } = useAppContext();
+  const errand = useCasedataStore((s) => s.errand);
+  const uiPhase = useCasedataStore((s) => s.uiPhase);
   const arrow = <span className="border-t-2 border-r-2 h-[26px] w-[28px] rotate-45"></span>;
 
   return (

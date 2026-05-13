@@ -12,23 +12,23 @@
 
 /** Type of event */
 export enum EventType {
-  CREATE = "CREATE",
-  UPDATE = "UPDATE",
-  DELETE = "DELETE",
-  UNKNOWN = "UNKNOWN",
+  CREATE = 'CREATE',
+  UPDATE = 'UPDATE',
+  DELETE = 'DELETE',
+  UNKNOWN = 'UNKNOWN',
 }
 
 /** ConversationType model */
 export enum ConversationType {
-  INTERNAL = "INTERNAL",
-  EXTERNAL = "EXTERNAL",
+  INTERNAL = 'INTERNAL',
+  EXTERNAL = 'EXTERNAL',
 }
 
 /** Priority model */
 export enum Priority {
-  LOW = "LOW",
-  MEDIUM = "MEDIUM",
-  HIGH = "HIGH",
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
 }
 
 export interface Problem {
@@ -240,6 +240,8 @@ export interface MessageExchangeSync {
 
 /** Status model */
 export interface Status {
+  /** Status ID */
+  id?: string;
   /**
    * Name for the status
    * @minLength 1
@@ -249,6 +251,11 @@ export interface Status {
   displayName?: string | null;
   /** External display name for the status */
   externalDisplayName?: string | null;
+  /**
+   * Sort order for the status
+   * @format int32
+   */
+  sortOrder?: number | null;
   /**
    * Timestamp when the status was created
    * @format date-time
@@ -263,6 +270,8 @@ export interface Status {
 
 /** Role model */
 export interface Role {
+  /** Role ID */
+  id?: string;
   /**
    * Name for the role. Used as key
    * @minLength 1
@@ -270,6 +279,11 @@ export interface Role {
   name: string;
   /** Display name for the role */
   displayName?: string | null;
+  /**
+   * Sort order for the role
+   * @format int32
+   */
+  sortOrder?: number | null;
   /**
    * Timestamp when the role was created
    * @format date-time
@@ -335,6 +349,8 @@ export interface PhaseTransition {
 
 /** ExternalIdType model */
 export interface ExternalIdType {
+  /** ExternalIdType ID */
+  id?: string;
   /**
    * Name for the external id type
    * @minLength 1
@@ -342,6 +358,11 @@ export interface ExternalIdType {
   name: string;
   /** Display name for the external id type */
   displayName?: string | null;
+  /**
+   * Sort order for the external id type
+   * @format int32
+   */
+  sortOrder?: number | null;
   /**
    * Timestamp when the external id type was created
    * @format date-time
@@ -356,11 +377,8 @@ export interface ExternalIdType {
 
 /** Contact reason model */
 export interface ContactReason {
-  /**
-   * ID
-   * @format int64
-   */
-  id?: number;
+  /** ID */
+  id?: string;
   /**
    * Reason for contact
    * @minLength 1
@@ -368,6 +386,11 @@ export interface ContactReason {
   reason: string;
   /** Display name for the contact reason */
   displayName?: string | null;
+  /**
+   * Sort order for the contact reason
+   * @format int32
+   */
+  sortOrder?: number | null;
   /**
    * Timestamp when the contact reason was created
    * @format date-time
@@ -382,10 +405,17 @@ export interface ContactReason {
 
 /** Category model */
 export interface Category {
+  /** Category ID */
+  id?: string;
   /** Name for the category */
   name?: string;
   /** Display name for the category */
   displayName?: string;
+  /**
+   * Sort order for the category
+   * @format int32
+   */
+  sortOrder?: number | null;
   /** @uniqueItems true */
   types?: Type[];
   /**
@@ -589,11 +619,13 @@ export interface JsonNode {
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
+  /** @deprecated */
+  textual?: boolean;
+  binary?: boolean;
   integralNumber?: boolean;
+  missingNode?: boolean;
   valueNode?: boolean;
   container?: boolean;
-  missingNode?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -602,9 +634,7 @@ export interface JsonNode {
   double?: boolean;
   bigDecimal?: boolean;
   bigInteger?: boolean;
-  /** @deprecated */
-  textual?: boolean;
-  binary?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 
@@ -1033,10 +1063,10 @@ export interface MetadataResponse {
 }
 
 export interface PageErrand {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1044,29 +1074,29 @@ export interface PageErrand {
   number?: number;
   first?: boolean;
   last?: boolean;
+  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  sort?: SortObject;
-  unpaged?: boolean;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  unsorted?: boolean;
   sorted?: boolean;
+  unsorted?: boolean;
 }
 
 /** Revision model */
@@ -1196,10 +1226,10 @@ export interface EventMetaData {
 }
 
 export interface PageEvent {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Event[];
@@ -1207,10 +1237,10 @@ export interface PageEvent {
   number?: number;
   first?: boolean;
   last?: boolean;
+  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1240,6 +1270,8 @@ export interface Communication {
   target?: string;
   /** The recipients of the communication, if email */
   recipients?: string[];
+  /** The CC recipients of the communication, if email */
+  ccRecipients?: string[];
   /** Indicates if the communication is internal */
   internal?: boolean;
   /** Signal if the communication has been viewed or not */
@@ -1301,10 +1333,10 @@ export interface Message {
 }
 
 export interface PageMessage {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Message[];
@@ -1312,10 +1344,10 @@ export interface PageMessage {
   number?: number;
   first?: boolean;
   last?: boolean;
+  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
-  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1351,32 +1383,32 @@ export interface CountResponse {
 }
 
 export enum JsonNodeNodeTypeEnum {
-  ARRAY = "ARRAY",
-  BINARY = "BINARY",
-  BOOLEAN = "BOOLEAN",
-  MISSING = "MISSING",
-  NULL = "NULL",
-  NUMBER = "NUMBER",
-  OBJECT = "OBJECT",
-  POJO = "POJO",
-  STRING = "STRING",
+  ARRAY = 'ARRAY',
+  BINARY = 'BINARY',
+  BOOLEAN = 'BOOLEAN',
+  MISSING = 'MISSING',
+  NULL = 'NULL',
+  NUMBER = 'NUMBER',
+  OBJECT = 'OBJECT',
+  POJO = 'POJO',
+  STRING = 'STRING',
 }
 
 /** If the communication is inbound or outbound from the perspective of case-data/e-service. */
 export enum CommunicationDirectionEnum {
-  INBOUND = "INBOUND",
-  OUTBOUND = "OUTBOUND",
+  INBOUND = 'INBOUND',
+  OUTBOUND = 'OUTBOUND',
 }
 
 /** The communication was delivered by */
 export enum CommunicationCommunicationTypeEnum {
-  SMS = "SMS",
-  EMAIL = "EMAIL",
-  WEB_MESSAGE = "WEB_MESSAGE",
+  SMS = 'SMS',
+  EMAIL = 'EMAIL',
+  WEB_MESSAGE = 'WEB_MESSAGE',
 }
 
 /** Type of message (user or system created) */
 export enum MessageTypeEnum {
-  USER_CREATED = "USER_CREATED",
-  SYSTEM_CREATED = "SYSTEM_CREATED",
+  USER_CREATED = 'USER_CREATED',
+  SYSTEM_CREATED = 'SYSTEM_CREATED',
 }

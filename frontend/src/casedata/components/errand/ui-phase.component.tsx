@@ -1,7 +1,8 @@
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { Badge, cx } from '@sk-web-gui/react';
+import { FC } from 'react';
 
-export const UiPhaseComponent: React.FC<{ number: number; phase: UiPhase; active: boolean }> = ({
+export const UiPhaseComponent: FC<{ number: number; phase: UiPhase; active: boolean }> = ({
   number,
   phase,
   active,

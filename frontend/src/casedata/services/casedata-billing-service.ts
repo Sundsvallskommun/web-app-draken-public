@@ -7,6 +7,7 @@ import {
   CBillingRecordTypeEnum,
   CInvoiceRow,
 } from 'src/data-contracts/backend/data-contracts';
+
 import { BillingFormData, BillingServiceItem } from '../interfaces/billing';
 import { IErrand } from '../interfaces/errand';
 import { casedataInvoiceSettings, CasedataService } from './billing/casedata-invoice-settings';
@@ -17,17 +18,14 @@ const PROCESS_PARAMETER_KEYS = ['process.displayPhase', 'process.phaseAction', '
 
 const buildInvoiceRows = (services: BillingServiceItem[]): CInvoiceRow[] => {
   return services.map((service) => {
-    const detailedDescriptions: string[] = [];
-    if (service.avitext) {
-      detailedDescriptions.push(service.avitext);
-    }
+    const detailedDescriptions = (service.descriptions || []).filter((d) => d !== '');
 
     const serviceConfig: CasedataService | undefined = casedataInvoiceSettings.services.find(
       (s) => s.id === service.serviceId
     );
 
     return {
-      descriptions: [service.name],
+      descriptions: [service.description || service.name],
       detailedDescriptions,
       totalAmount: twoDecimals(service.quantity * service.costPerUnit),
       costPerUnit: twoDecimals(service.costPerUnit),
@@ -40,7 +38,7 @@ const buildInvoiceRows = (services: BillingServiceItem[]): CInvoiceRow[] => {
           activity: service.accountInformation.activity,
           project: service.accountInformation.project,
           article: service.accountInformation.object,
-          counterpart: service.accountInformation.counterpart || casedataInvoiceSettings.counterpart,
+          counterpart: service.accountInformation.counterpart || '00000000',
           amount: twoDecimals(service.quantity * service.costPerUnit),
         },
       ],
@@ -90,7 +88,7 @@ const buildBillingRecord = (formData: BillingFormData, errand: IErrand): CBillin
       customerId,
       customerReference: formData.specifications.customerReference,
       ourReference: formData.specifications.ourReference,
-      description: formData.specifications.avitext || `Faktura för ärende ${errand.errandNumber}`,
+      description: formData.specifications.avitext || '',
       date: formData.specifications.rejectionDate || undefined,
       totalAmount: twoDecimals(totalAmount),
       invoiceRows,
@@ -295,6 +293,21 @@ export const approveCasedataBillingRecord = async (
     console.error('Something went wrong when approving billing record');
     throw e;
   }
+};
+
+export const getOrganizationPartyId = async (orgNr: string): Promise<string | undefined> => {
+  try {
+    const res = await apiService.post<{ data: { partyId: string } }, { orgNr: string }>('organization', { orgNr });
+    return res.data.data.partyId;
+  } catch (error) {
+    console.error('Failed to fetch organization partyId:', error);
+    return undefined;
+  }
+};
+
+export const getCounterpart = async (partyId: string, stakeholderType: string): Promise<string> => {
+  const res = await apiService.get<string>(`billingdatacollector/counterpart/${partyId}/${stakeholderType}`);
+  return res.data.toString();
 };
 
 export const calculateServiceTotal = (quantity: number, costPerUnit: number): number => {

@@ -1,8 +1,10 @@
-export type AssetStatus = 'ACTIVE' | 'EXPIRED' | 'BLOCKED';
+export type AssetStatus = 'DRAFT' | 'ACTIVE' | 'EXPIRED' | 'BLOCKED' | 'TEMPORARY';
 export enum assetStatusLabels {
+  DRAFT = 'Utkast',
   ACTIVE = 'Aktivt',
   EXPIRED = 'Utgånget',
   BLOCKED = 'Blockerat',
+  TEMPORARY = 'Tillfälligt',
 }
 
 interface JsonParameter {
@@ -29,10 +31,16 @@ export interface Asset {
   jsonParameters?: JsonParameter[];
 }
 
-export interface UpdateAsset {
+export interface AssetUpdateRequest {
+  status?: AssetStatus;
+  statusReason?: string;
+}
+
+export interface DraftAssetUpdateRequest {
+  issued?: string;
   validTo?: string | null;
   status?: AssetStatus;
   statusReason?: string;
-  additionalParameters?: { [key: string]: string };
+  additionalParameters?: Record<string, string>;
   jsonParameters?: JsonParameter[];
 }

@@ -1,32 +1,25 @@
 'use client';
 
 import type { Asset } from '@casedata/interfaces/asset';
-import { getAssetById } from '@casedata/services/asset-service';
-import { RelationType, RelationService } from '@common/interfaces/relation-types';
-import { getSourceRelations } from '@common/services/relations-service';
+import { getAssets, getDraftAssets } from '@casedata/services/asset-service';
 import type { RJSFSchema } from '@rjsf/utils';
 import { useCallback, useEffect, useState } from 'react';
+
 import { mapFormToServiceFromPayload, Service } from './casedata-service-mapper';
 
 type UseErrandServicesArgs = {
   municipalityId: string;
-  partyId: string;
   errandId: string;
-  errandNumber: string;
   assetType: string;
   schema?: RJSFSchema | null;
-  status?: string;
   origin?: string;
 };
 
 export function useErrandServices({
   municipalityId,
-  partyId,
   errandId,
-  errandNumber,
   assetType,
   schema = null,
-  status,
   origin,
 }: UseErrandServicesArgs) {
   const [services, setServices] = useState<Service[]>([]);
@@ -37,23 +30,16 @@ export function useErrandServices({
     setLoading(true);
     setError(undefined);
     try {
-      const relations = await getSourceRelations(municipalityId, errandId, 'DESC');
-      const assetIds = relations
-        .filter((r) => r.type === RelationType.ASSET && r.target?.service === RelationService.PARTY_ASSETS)
-        .map((r) => r.target.resourceId);
-
-      if (assetIds.length === 0) {
+      if (!errandId) {
         setServices([]);
         return;
       }
-
-      const assetResponses = await Promise.all(
-        assetIds.map((id) => getAssetById(municipalityId, id).catch(() => null))
-      );
-      const assets: Asset[] = assetResponses
-        .map((r) => r?.data)
-        .filter((a): a is Asset => !!a && (!status || a.status === status));
-
+      const fetchParams = { municipalityId, errandId, type: assetType, origin };
+      const [draftResp, activeResp] = await Promise.all([getDraftAssets(fetchParams), getAssets(fetchParams)]);
+      const draftAssets = draftResp?.data ?? [];
+      const activeAssets = activeResp?.data ?? [];
+      const draftIds = new Set(draftAssets.map((a) => a.id));
+      const assets: Asset[] = [...draftAssets, ...activeAssets.filter((a) => !draftIds.has(a.id))];
       const mapped: Service[] = [];
 
       for (const a of assets) {
@@ -78,7 +64,7 @@ export function useErrandServices({
     } finally {
       setLoading(false);
     }
-  }, [municipalityId, errandId, assetType, status, schema]);
+  }, [municipalityId, errandId, assetType, origin, schema]);
 
   useEffect(() => {
     refetch();

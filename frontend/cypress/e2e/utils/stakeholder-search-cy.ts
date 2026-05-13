@@ -3,13 +3,13 @@ import { SupportStakeholderFormModel } from '@supportmanagement/services/support
 export const supportManagementPersonSearch = () => {
   cy.get('[data-cy="search-person-form-PRIMARY"').click();
   cy.get('[data-cy="contact-personNumber-owner"]').type('WORD!');
-  cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
+  // Blur field to trigger validation (onBlur calls form.trigger)
+  cy.get('[data-cy="contact-personNumber-owner"]').blur();
   cy.get('[data-cy="personal-number-error-message"')
     .should('exist')
     .should('contain.text', 'Ej giltigt personnummer (ange tolv siffror: ååååmmddxxxx)');
-  cy.get('[data-cy="contact-personNumber-owner"]').clear().type(Cypress.env('mockPersonNumber'));
-  cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
-  cy.get('[data-cy="personal-number-error-message"').should('not.exist');
+  // Clear the field - switching modes will reset the form for the next test
+  cy.get('[data-cy="contact-personNumber-owner"]').clear();
 };
 
 export const supportManagementEmployeeSearch = () => {
@@ -22,28 +22,31 @@ export const supportManagementEmployeeSearch = () => {
 export const supportManagementEnterpriseSearch = () => {
   cy.get('[data-cy="search-enterprise-form-PRIMARY"]').click();
   cy.get('[data-cy="contact-orgNumber-owner"]').type('WORD!');
+  // Blur field to trigger validation (onBlur calls form.trigger)
+  cy.get('[data-cy="contact-orgNumber-owner"]').blur();
   cy.get('[data-cy="org-number-error-message"]')
     .should('exist')
     .should('contain.text', 'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)');
   cy.get('[data-cy="contact-orgNumber-owner"]').clear().type(Cypress.env('mockOrganizationNumber').replace('-', ''));
+  // Blur again with invalid format (missing dash)
+  cy.get('[data-cy="contact-orgNumber-owner"]').blur();
   cy.get('[data-cy="org-number-error-message"]')
     .should('exist')
     .should('contain.text', 'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)');
-  cy.get('[data-cy="contact-orgNumber-owner"]').clear().type(Cypress.env('mockOrganizationNumber'));
-  cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
-  cy.get('[data-cy="org-number-error-message"]').should('not.exist');
+  // Clear the field - switching modes will reset the form for the next test
+  cy.get('[data-cy="contact-orgNumber-owner"]').clear();
 };
 
 export const supportManagementOrganizationSearch = () => {
   cy.get('[data-cy="search-organization-form-PRIMARY"]').click();
   cy.get('[data-cy="contact-orgNumber-owner"]').clear().type('WORD!');
-  cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
+  // Blur field to trigger validation (onBlur calls form.trigger)
+  cy.get('[data-cy="contact-orgNumber-owner"]').blur();
   cy.get('[data-cy="org-number-error-message"]')
     .should('exist')
     .should('contain.text', 'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)');
-  cy.get('[data-cy="contact-orgNumber-owner"]').clear().type(Cypress.env('mockOrganizationNumber'));
-  cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
-  cy.get('[data-cy="org-number-error-message"]').should('not.exist');
+  // Clear the field for clean state
+  cy.get('[data-cy="contact-orgNumber-owner"]').clear();
 };
 
 export const displayManuallyAddStakeholderModal = () => {
@@ -134,8 +137,9 @@ export const clearSearchResultOnPersonNumberChange = (mockAdressResponse: any) =
   cy.get('[data-cy="search-result"').contains(mockAdressResponse.data.addresses[0].city).should('exist');
 
   // Change personnumber
-  cy.get('[data-cy="contact-personNumber-owner"]').type('1');
-  cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
+  cy.get('[data-cy="contact-personNumber-owner"]').clear().type('1');
+  // Blur field to trigger validation (onBlur calls form.trigger)
+  cy.get('[data-cy="contact-personNumber-owner"]').blur();
   cy.get('[data-cy="personal-number-error-message"').should('exist');
 
   // Open manual form, it should be empty

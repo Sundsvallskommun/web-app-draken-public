@@ -1,3 +1,7 @@
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Put, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Notification as SupportNotification } from '@/data-contracts/supportmanagement/data-contracts';
@@ -8,9 +12,6 @@ import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, Put, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
 
 export class SupportNotificationDto {
   @IsString()

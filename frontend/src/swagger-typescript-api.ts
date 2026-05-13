@@ -1,6 +1,7 @@
+import fs from 'node:fs';
+
 import { exec } from 'child_process';
 import { config } from 'dotenv';
-import fs from 'node:fs';
 import path from 'path';
 import { promisify } from 'util';
 config();

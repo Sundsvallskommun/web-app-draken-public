@@ -1,3 +1,9 @@
+import { RequestWithUser } from '@interfaces/auth.interface';
+import authMiddleware from '@middlewares/auth.middleware';
+import ApiService from '@services/api.service';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Contract, PageContract } from '@/data-contracts/contract/data-contracts';
@@ -5,11 +11,6 @@ import { HttpException } from '@/exceptions/HttpException';
 import { validateContractAction } from '@/services/contract-service';
 import { logger } from '@/utils/logger';
 import { apiURL, luhnCheck } from '@/utils/util';
-import { RequestWithUser } from '@interfaces/auth.interface';
-import authMiddleware from '@middlewares/auth.middleware';
-import ApiService from '@services/api.service';
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
 
 export interface ResponseData {
   data: any;
@@ -75,6 +76,7 @@ export class CasedataContractsController {
 
       let queryFilter = `(`;
       queryFilter += `contractId~'*${query}*'`;
+      queryFilter += ` or externalReferenceId~'*${query}*'`;
       queryFilter += ` or exists(propertyDesignations.name~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.organizationName~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.organizationNumber~'*${query}*')`;

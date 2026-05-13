@@ -1,6 +1,6 @@
 import { User } from '@common/interfaces/user';
-import { TFunction } from 'i18next';
 import { isKA } from '@common/services/application-service';
+import { TFunction } from 'i18next';
 
 export function getDefaultEmailBody(user: User, t: TFunction): string {
   if (isKA()) {

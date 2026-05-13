@@ -2,7 +2,6 @@
 
 import { Attachment } from '@casedata/interfaces/attachment';
 import { Channels } from '@casedata/interfaces/channels';
-import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Role } from '@casedata/interfaces/role';
 import { ACCEPTED_UPLOAD_FILETYPES, getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
@@ -17,10 +16,9 @@ import {
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
+import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
-import { useAppContext } from '@common/contexts/app.context';
-import { User } from '@common/interfaces/user';
 import { isMEX, isPT } from '@common/services/application-service';
 import {
   invalidPhoneMessage,
@@ -34,6 +32,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
   Chip,
+  cx,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -41,17 +40,15 @@ import {
   Modal,
   RadioButton,
   Select,
-  cx,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useTranslation } from 'next-i18next';
-import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
-import { Resolver, useFieldArray, useForm } from 'react-hook-form';
-import * as yup from 'yup';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { File, Paperclip, X } from 'lucide-react';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
+import { FC, useEffect, useMemo, useState } from 'react';
+import { Resolver, useFieldArray, useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import * as yup from 'yup';
 
 export interface CasedataMessageTabFormModel {
   contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper' | 'draken' | 'minasidor' | 'katla';
@@ -157,14 +154,16 @@ let formSchema = yup
   })
   .required();
 
-export const MessageComposer: React.FC<{
+export const MessageComposer: FC<{
   message?: MessageNode;
   show: boolean;
   closeHandler: () => void;
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
 }> = (props) => {
-  const { municipalityId, errand, user } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const user = useUserStore((s) => s.user);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
   const [replying, setReplying] = useState(false);
@@ -172,12 +171,11 @@ export const MessageComposer: React.FC<{
 
   const closeConfirm = useConfirm();
   const toastMessage = useSnackbar();
-  const [allowed, setAllowed] = useState(false);
   const { t } = useTranslation();
-  useEffect(() => {
-    if (!errand) return;
-    const _a = validateAction(errand, user) && !!errand.administrator;
-    setAllowed(_a);
+
+  const allowed = useMemo(() => {
+    if (!errand) return false;
+    return validateAction(errand, user) && !!errand.administrator;
   }, [user, errand]);
 
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
@@ -574,7 +572,6 @@ export const MessageComposer: React.FC<{
               tabIndex={props.show ? 0 : -1}
               {...register('messageTemplate')}
               className="w-full text-dark-primary"
-              variant="tertiary"
               size="sm"
               onChange={(e) => {
                 changeTemplate(e.currentTarget.value);

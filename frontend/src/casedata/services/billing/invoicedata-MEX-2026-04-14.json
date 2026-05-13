@@ -1,0 +1,604 @@
+{
+  "category": "MEX_INVOICE",
+  "invoiceTypes": [
+    {
+      "invoiceType": "Upplåtelse allmän plats",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Markupplåtelse",
+            "detailedDescriptions": ["Allmän plats"],
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "342000",
+          "department": "810100",
+          "activity": "3056"
+        }
+      }
+    },
+    {
+      "invoiceType": "Torgplats",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Torgplats",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "342000",
+          "department": "810100",
+          "activity": "3060"
+        }
+      }
+    },
+    {
+      "invoiceType": "Foodtruck",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Foodtruck",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "342000",
+          "department": "810100",
+          "activity": "3025"
+        }
+      }
+    },
+    {
+      "invoiceType": "Upplåtelse, Fisktorget",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Markupplåtelse",
+            "detailedDescriptions": ["Fisktorget"],
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "342000",
+          "department": "810100",
+          "activity": "3065"
+        }
+      }
+    },
+    {
+      "invoiceType": "Arrende, ordinarie",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Arrende",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "342000",
+          "department": "810100",
+          "activity": "3091"
+        }
+      }
+    },
+    {
+      "invoiceType": "Arrende, jordbruk (moms)",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "25",
+            "description": "Arrende, jordbruk",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "342100",
+          "department": "810100",
+          "activity": "3091"
+        }
+      }
+    },
+    {
+      "invoiceType": "Arrende, fiske, (moms)",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "25",
+            "description": "Arrende, fiske",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "342100",
+          "department": "810100",
+          "activity": "3091"
+        }
+      }
+    },
+    {
+      "invoiceType": "Arrende, skyltar (moms)",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "25",
+            "description": "Arrende, skyltar",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "342100",
+          "department": "810100",
+          "activity": "3091"
+        }
+      }
+    },
+    {
+      "invoiceType": "Tomträtt",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Tomträtt",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "342000",
+          "department": "810100",
+          "activity": "3092"
+        }
+      }
+    },
+    {
+      "invoiceType": "Matfors Folkets Park, vidarefakturering",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Vidarefakturering",
+            "detailedDescriptions": ["Matfors Folkets Park"],
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true, "object": "2335002" }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "361000",
+          "department": "810100"
+        }
+      }
+    },
+    {
+      "invoiceType": "Hyra, inlöst fastighet",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Hyra, inlöst fastighet",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "341000",
+          "department": "215050"
+        }
+      }
+    },
+    {
+      "invoiceType": "El, Fisktorget (moms)",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "25",
+            "description": "Elanslutning",
+            "detailedDescriptions": ["Fisktorget"],
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "313200",
+          "department": "810100",
+          "activity": "3065"
+        }
+      }
+    },
+    {
+      "invoiceType": "El, Stora Torget (moms)",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "25",
+            "description": "Elanslutning",
+            "detailedDescriptions": ["Stora Torget"],
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "313200",
+          "department": "810100",
+          "activity": "3064"
+        }
+      }
+    },
+    {
+      "invoiceType": "El, båtplats Norra Kajen (moms)",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "25",
+            "description": "Elanslutning",
+            "detailedDescriptions": ["Båtplats Norra Kajen"],
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "313200",
+          "department": "215090"
+        }
+      }
+    },
+    {
+      "invoiceType": "Administrativ avgift, kommersiell",
+      "fixedPrice": true,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 1600,
+            "vatCode": "00",
+            "description": "Administrativ avgift",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "313100",
+          "department": "810100",
+          "activity": "3300"
+        }
+      }
+    },
+    {
+      "invoiceType": "Administrativ avgift, icke-kommersiell",
+      "fixedPrice": true,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 300,
+            "vatCode": "00",
+            "description": "Administrativ avgift",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "313100",
+          "department": "810100",
+          "activity": "3300"
+        }
+      }
+    },
+    {
+      "invoiceType": "Markanvisningsavtal",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Markanvisningsavtal",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "313100",
+          "department": "215050"
+        }
+      }
+    },
+    {
+      "invoiceType": "Parkeringsplats",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Parkeringsplats",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "39200000",
+          "subaccount": "342000",
+          "department": "249270"
+        }
+      }
+    },
+    {
+      "invoiceType": "Elsparkcyklar",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Elsparkcyklar",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "39200000",
+          "subaccount": "342000",
+          "department": "249130"
+        }
+      }
+    },
+    {
+      "invoiceType": "Väderskydd, reklamvitriner, offentliga toaletter",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "25",
+            "description": "Ersättning",
+            "detailedDescriptions": ["Väderskydd, reklamvitriner, offentliga toaletter"],
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "30000000",
+          "subaccount": "342100",
+          "department": "215050"
+        }
+      }
+    },
+    {
+      "invoiceType": "Fastighetsreglering",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Fastighetsreglering",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "382000",
+          "department": "215050"
+        }
+      }
+    },
+    {
+      "invoiceType": "Uttag bergmaterial",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Uttag bergmaterial",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "301100",
+          "department": "215050"
+        }
+      }
+    },
+    {
+      "invoiceType": "Industrispår",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Industrispår",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "342000",
+          "department": "800100"
+        }
+      }
+    },
+    {
+      "invoiceType": "Miljöuppdrag",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Miljöuppdrag",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "361000",
+          "department": "215060",
+          "project": "13828"
+        }
+      }
+    },
+    {
+      "invoiceType": "Miljöuppdrag Brunne",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Miljöuppdrag Brunne",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true, "object": "3338001" }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "361000",
+          "department": "215060",
+          "project": "13828"
+        }
+      }
+    },
+    {
+      "invoiceType": "Miljöuppdrag Svanö",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Miljöuppdrag Svanö",
+            "visible": true,
+            "main": true,
+            "accountInformationRows": [{ "amountFromParent": true, "object": "3338002" }]
+          }
+        ],
+        "accountInformation": {
+          "costCenter": "36000000",
+          "subaccount": "361000",
+          "department": "215060",
+          "project": "13828"
+        }
+      }
+    },
+    {
+      "invoiceType": "Faktura allmän",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "00",
+            "description": "Faktura allmän",
+            "visible": true,
+            "main": true
+          }
+        ]
+      }
+    },
+    {
+      "invoiceType": "Faktura allmän (moms)",
+      "fixedPrice": false,
+      "external": {
+        "invoiceRows": [
+          {
+            "costPerUnit": 0,
+            "vatCode": "25",
+            "description": "Faktura allmän",
+            "visible": true,
+            "main": true
+          }
+        ]
+      }
+    }
+  ]
+}

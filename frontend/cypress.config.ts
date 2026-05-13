@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export default defineConfig({
-  retries: 2,
+  retries: 0,
   e2e: {
     supportFile: 'cypress/support/e2e.ts',
     baseUrl: `http://localhost:${process.env.PORT || '3000'}${process.env.NEXT_PUBLIC_BASEPATH || ''}`,

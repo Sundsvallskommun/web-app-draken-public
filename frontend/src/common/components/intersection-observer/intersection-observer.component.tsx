@@ -1,7 +1,7 @@
 // A react component using the intersection observer api to detect when an element is visible in the viewport
 // https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API
 
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 export const useIntersectionObserver = (options) => {
   const [isIntersecting, setIntersecting] = useState(false);
   const [node, setNode] = useState(null);

@@ -59,7 +59,9 @@ export const sendMessage: (
         const blob = new Blob([buf], { type: attachment.mimeType });
         return Promise.resolve({ attachment, blob });
       }
-    ) || [new Promise((resolve) => resolve({ attachment: null as unknown as Attachment, blob: null as unknown as Blob }))];
+    ) || [
+      new Promise((resolve) => resolve({ attachment: null as unknown as Attachment, blob: null as unknown as Blob })),
+    ];
     return Promise.allSettled(newAttachmentPromises)
       .then((r) => {
         r.forEach((r) => {

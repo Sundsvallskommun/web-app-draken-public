@@ -9,6 +9,7 @@ import { luhnCheck } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import { cx, FormControl, FormErrorMessage, FormLabel, Input, isArray, SearchField, Select } from '@sk-web-gui/react';
 import { SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
+import { ChangeEvent, Dispatch, FC, SetStateAction } from 'react';
 import { UseFieldArrayAppend, UseFormReturn } from 'react-hook-form';
 
 interface SupportSearchFieldProps {
@@ -18,20 +19,21 @@ interface SupportSearchFieldProps {
   notFound: boolean;
   setUnsaved: (unsaved: boolean) => void;
   id: string;
-  setSearchResultArray: React.Dispatch<React.SetStateAction<AddressResult[]>>;
-  setSelectedUser: React.Dispatch<React.SetStateAction<AddressResult | undefined>>;
-  setSearchResult: React.Dispatch<React.SetStateAction<boolean>>;
-  setQuery: React.Dispatch<React.SetStateAction<string>>;
+  setSearchResultArray: Dispatch<SetStateAction<AddressResult[]>>;
+  setSelectedUser: Dispatch<SetStateAction<AddressResult | undefined>>;
+  setSearchResult: Dispatch<SetStateAction<boolean>>;
+  setQuery: Dispatch<SetStateAction<string>>;
   query: string;
   searching: boolean;
   searchResultArray: AddressResult[];
-  setSearching: React.Dispatch<React.SetStateAction<boolean>>;
-  setNotFound: React.Dispatch<React.SetStateAction<boolean>>;
+  setSearching: Dispatch<SetStateAction<boolean>>;
+  setNotFound: Dispatch<SetStateAction<boolean>>;
   appendPhonenumber: UseFieldArrayAppend<SupportStakeholderFormModel, 'phoneNumbers'>;
   appendEmail: UseFieldArrayAppend<SupportStakeholderFormModel, 'emails'>;
+  searchFieldKey?: number;
 }
 
-export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
+export const SupportContactSearchField: FC<SupportSearchFieldProps> = ({
   searchMode,
   disabled,
   form,
@@ -49,6 +51,7 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
   setSelectedUser,
   appendPhonenumber,
   appendEmail,
+  searchFieldKey = 0,
 }) => {
   const doSearch = (val: string) => {
     setSearchResult(false);
@@ -130,7 +133,7 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
         });
   };
 
-  const onSelectUserHandler = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const onSelectUserHandler = (e: ChangeEvent<HTMLSelectElement>) => {
     const user = searchResultArray?.find((data) => `${data.firstName} ${data.lastName}` === e.target.value);
     setSelectedUser(user);
     setSearchResultArray([]);
@@ -163,16 +166,15 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
           {searchMode === 'person' || searchMode === 'employee' ? (
             <>
               <SearchField
+                key={`personNumber-${searchFieldKey}`}
                 className="max-w-[52rem]"
                 disabled={disabled}
                 data-cy={`contact-personNumber-${id}`}
                 {...form.register('personNumber')}
                 size={'md'}
                 value={query}
-                onBlur={() => {
-                  form.trigger(`personNumber`);
-                }}
-                onSearch={(e) => {
+                onSearch={async (e) => {
+                  await form.trigger(`personNumber`);
                   if (form.formState.errors.personNumber) return;
                   setSearching(true);
                   doSearch(e);
@@ -206,16 +208,15 @@ export const SupportContactSearchField: React.FC<SupportSearchFieldProps> = ({
             </>
           ) : (
             <SearchField
+              key={`organizationNumber-${searchFieldKey}`}
               className="max-w-[52rem]"
               disabled={disabled}
               data-cy={`contact-orgNumber-${id}`}
               {...form.register('organizationNumber')}
               size={'md'}
               value={query}
-              onBlur={() => {
-                form.trigger(`organizationNumber`);
-              }}
-              onSearch={(e) => {
+              onSearch={async (e) => {
+                await form.trigger(`organizationNumber`);
                 if (form.formState.errors.organizationNumber) return;
                 setSearching(true);
                 doSearch(e);

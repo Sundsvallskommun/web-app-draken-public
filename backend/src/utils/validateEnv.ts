@@ -31,10 +31,10 @@ function warnMissingEnv(spec: EnvSpec): void {
   }
 
   if (missing.length > 0) {
-    console.error(`\nMissing environment variables:\n${missing.map((k) => `   - ${k}`).join('\n')}\n`);
+    console.error(`\nMissing environment variables:\n${missing.map(k => `   - ${k}`).join('\n')}\n`);
   }
   if (invalid.length > 0) {
-    console.error(`\nInvalid environment variables:\n${invalid.map((k) => `   - ${k}`).join('\n')}\n`);
+    console.error(`\nInvalid environment variables:\n${invalid.map(k => `   - ${k}`).join('\n')}\n`);
   }
   if (missing.length === 0 && invalid.length === 0) {
     console.log('✅ All required environment variables are set.');

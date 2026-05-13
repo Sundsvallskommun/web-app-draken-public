@@ -22,7 +22,12 @@ export function SubmitButtonFieldTemplate(props: SubmitButtonProps<any, any, any
 
   return (
     <div className={className}>
-      <Button type="submit" variant={variant as any} leftIcon={leadingIcon ? <Plus /> : undefined}>
+      <Button
+        type="submit"
+        data-cy="schema-submit-button"
+        variant={variant as any}
+        leftIcon={leadingIcon ? <Plus /> : undefined}
+      >
         {label}
       </Button>
     </div>

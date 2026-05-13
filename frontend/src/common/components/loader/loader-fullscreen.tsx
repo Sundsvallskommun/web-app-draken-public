@@ -1,4 +1,5 @@
 import { Spinner } from '@sk-web-gui/react';
+
 import EmptyLayout from '../empty-layout/empty-layout.component';
 
 export default function LoaderFullScreen() {

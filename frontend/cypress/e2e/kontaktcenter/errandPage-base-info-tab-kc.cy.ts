@@ -48,6 +48,9 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments).as(
         'getAttachments'
       );
+      cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments/*', mockSupportAttachments[0]).as(
+        'getAttachment'
+      );
       cy.intercept('GET', '**/supportmessage/2281/errands/*/communication', mockSupportMessages).as('getMessages');
       cy.intercept('GET', '**/supportnotes/2281/*', mockSupportNotes).as('getNotes');
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
@@ -387,8 +390,9 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="search-result"]').contains(Cypress.env('mockPhoneNumber')).should('exist');
 
       // Change orgnumber
-      cy.get('[data-cy="contact-orgNumber-owner"]').type('1');
-      cy.get('[data-cy="contact-form"] button').contains('Sök').should('be.enabled');
+      cy.get('[data-cy="contact-orgNumber-owner"]').clear().type('111111');
+      // Blur field to trigger validation (onBlur calls form.trigger)
+      cy.get('[data-cy="contact-orgNumber-owner"]').blur();
       cy.get('[data-cy="org-number-error-message"]').should('exist');
 
       // Open manual form, it should be empty
@@ -402,6 +406,74 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="contact-zipCode"]').should('have.value', '');
     });
 
+    it('clears the organization number search field when clicking add manually button', () => {
+      cy.intercept('GET', `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      }).as('getErrandWithoutStakeholders');
+      cy.visit('/arende/KC-00000001');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+      cy.wait('@getErrandWithoutStakeholders');
+
+      // Select enterprise mode
+      cy.get('[data-cy="search-enterprise-form-PRIMARY"]').click();
+
+      // Type in search field without searching
+      cy.get('[data-cy="contact-orgNumber-owner"]').type(Cypress.env('mockOrganizationNumber'));
+
+      // Click add manually button
+      cy.get('[data-cy="add-manually-button-owner"]').click();
+
+      // Verify modal opened and organization number is empty
+      cy.get('[data-cy="contact-organizationNumber"]').should('have.value', '');
+
+      // Close modal
+      cy.get('[data-cy="cancel-contact-button"]').click();
+
+      // Verify search field is cleared
+      cy.get('[data-cy="contact-orgNumber-owner"]').should('have.value', '');
+
+      // Verify radio button still selected
+      cy.get('[data-cy="search-enterprise-form-PRIMARY"]').should('be.checked');
+    });
+
+    it('clears the person number search field when clicking add manually button', () => {
+      cy.intercept('GET', `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      }).as('getErrandWithoutStakeholders');
+      cy.visit('/arende/KC-00000001');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+      cy.wait('@getErrandWithoutStakeholders');
+
+      // Select person mode (should be default, but click to be explicit)
+      cy.get('[data-cy="search-person-form-PRIMARY"]').click();
+
+      // Type in search field without searching
+      cy.get('[data-cy="contact-personNumber-owner"]').type(Cypress.env('mockPersonNumber'));
+
+      // Click add manually button
+      cy.get('[data-cy="add-manually-button-owner"]').click();
+
+      // Verify modal opened and person number is empty
+      cy.get('[data-cy="contact-personNumber"]').should('have.value', '');
+
+      // Close modal
+      cy.get('[data-cy="cancel-contact-button"]').click();
+
+      // Verify search field is cleared
+      cy.get('[data-cy="contact-personNumber-owner"]').should('have.value', '');
+
+      // Verify radio button still selected
+      cy.get('[data-cy="search-person-form-PRIMARY"]').should('be.checked');
+    });
+
     it('sends the correct applicant data for manually filled form, for a person', () => {
       cy.intercept('PATCH', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand).as(
         'patchErrandContacts'
@@ -413,6 +485,22 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         contact: [],
         customer: [],
       }).as('getErrandWithoutStakeholders');
+      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [
+          {
+            externalIdType: 'PRIVATE',
+            role: 'PRIMARY',
+            firstName: 'Test',
+            lastName: 'Testsson',
+            address: 'Testaddress',
+            careOf: 'TestcareOf',
+            zipCode: '12345',
+            city: 'Teststaden',
+          },
+        ],
+      }).as('getErrandById');
       cy.visit('/arende/KC-00000001');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getSupportAdmins');
@@ -554,6 +642,26 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         contact: [],
         customer: [],
       }).as('getErrandWithoutStakeholders');
+      cy.intercept('GET', '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [
+          {
+            externalId: mockPersonIdResponse.data.personId,
+            externalIdType: 'PRIVATE',
+            role: 'PRIMARY',
+            firstName: mockAdressResponse.data.givenname,
+            lastName: mockAdressResponse.data.lastname,
+            address: mockAdressResponse.data.addresses[0].address,
+            zipCode: mockAdressResponse.data.addresses[0].postalCode,
+            city: mockAdressResponse.data.addresses[0].city,
+            contactChannels: [
+              { type: 'Email', value: Cypress.env('mockEmail') },
+              { type: 'Phone', value: Cypress.env('mockPhoneNumberCountryCode') },
+            ],
+          },
+        ],
+      }).as('getErrandById');
       cy.visit('/arende/KC-00000001');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getErrandWithoutStakeholders');

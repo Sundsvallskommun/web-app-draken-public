@@ -1,5 +1,6 @@
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { FormLabel, Input, RadioButton } from '@sk-web-gui/react';
+import { Dispatch, FC, SetStateAction } from 'react';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
 
 interface SearchModeSelectorProps {
@@ -8,12 +9,12 @@ interface SearchModeSelectorProps {
   form: UseFormReturn<CasedataOwnerOrContact>;
   id: string;
   label: string;
-  setSearchMode: React.Dispatch<React.SetStateAction<string>>;
-  setSearchResult: React.Dispatch<React.SetStateAction<boolean>>;
+  setSearchMode: Dispatch<SetStateAction<string>>;
+  setSearchResult: Dispatch<SetStateAction<boolean>>;
   replacePhonenumbers: UseFieldArrayReplace<CasedataOwnerOrContact, 'phoneNumbers'>;
 }
 
-export const SearchModeSelector: React.FC<SearchModeSelectorProps> = ({
+export const SearchModeSelector: FC<SearchModeSelectorProps> = ({
   inName,
   searchMode,
   form,

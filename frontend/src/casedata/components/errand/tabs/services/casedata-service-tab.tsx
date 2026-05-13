@@ -2,10 +2,10 @@
 
 import {
   buildCreateAssetPayload,
-  createAsset,
-  deleteAsset,
-  getAssetById,
-  updateAsset,
+  createDraftAsset,
+  deleteDraftAsset,
+  getDraftAssetById,
+  updateDraftAsset,
 } from '@casedata/services/asset-service';
 import { isErrandLocked, isFTNationalErrand } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
@@ -13,43 +13,46 @@ import { ServicesObjectFieldTemplate } from '@common/components/json/fields/serv
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
 import { Relation } from '@common/data-contracts/relations/data-contracts';
-import { RelationType, RelationService } from '@common/interfaces/relation-types';
 import { apiService, ApiResponse } from '@common/services/api-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useAppContext } from '@contexts/app.context';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
-import { DatePicker, FormControl, FormErrorMessage, FormLabel, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
-import React, { useCallback, useEffect, useState } from 'react';
+import {
+  DatePicker,
+  FormControl,
+  FormErrorMessage,
+  FormLabel,
+  Modal,
+  RadioButton,
+  useSnackbar,
+} from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore } from '@stores/index';
+import { ChangeEvent, FC, useCallback, useEffect, useState } from 'react';
+
 import { ServiceListComponent } from './casedata-service-list.component';
 import { useErrandServices } from './useErrandService';
 
-const createAssetRelation = (
-  municipalityId: string,
-  errandId: string,
-  errandNumber: string,
-  assetId: string,
-  namespace: string
-) => {
+const createAssetRelation = (municipalityId: string, errandId: string, assetId: string) => {
   const body: Partial<Relation> = {
-    type: RelationType.ASSET,
+    type: 'LINK',
     source: {
       resourceId: errandId,
-      type: errandNumber,
-      service: RelationService.CASE_DATA,
-      namespace,
+      type: 'case',
+      service: 'case-data',
+      namespace: '',
     },
     target: {
       resourceId: assetId,
       type: 'asset',
-      service: RelationService.PARTY_ASSETS,
+      service: 'party-assets',
+      namespace: '',
     },
   };
   return apiService.post<ApiResponse<Relation>, Partial<Relation>>(`${municipalityId}/relations`, body);
 };
 
-
-export const CasedataServicesTab: React.FC = () => {
-  const { municipalityId, errand } = useAppContext();
+export const CasedataServicesTab: FC = () => {
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
   const [schema, setSchema] = useState<RJSFSchema | null>(null);
   const [uiSchema, setUiSchema] = useState<UiSchema | null>(null);
   const [formData, setFormData] = useState<any>({});
@@ -70,54 +73,51 @@ export const CasedataServicesTab: React.FC = () => {
   const toast = useSnackbar();
 
   const assetType = errand && isFTNationalErrand(errand) ? 'ParatransitPermitNational' : 'ParatransitPermitLocal';
-
-  const partyId = errand ? getOwnerStakeholder(errand)?.personId ?? '' : '';
-  const errandNr = errand?.errandNumber ?? '';
+  const errandId = String(errand?.id ?? '');
 
   useEffect(() => {
     (async () => {
       const { schema, schemaId } = await getLatestRjsfSchema(municipalityId, assetType);
       setSchema(schema);
       setSchemaId(schemaId);
-
       const fetchedUiSchema = await getUiSchemaForSchema(municipalityId, schemaId);
       setUiSchema(fetchedUiSchema);
     })();
   }, [municipalityId, assetType]);
+
   const { services, loading, error, refetch } = useErrandServices({
     municipalityId,
-    partyId,
-    errandId: String(errand?.id ?? ''),
-    errandNumber: errandNr,
+    errandId,
     assetType,
-    status: 'ACTIVE',
     schema,
   });
 
   const fetchAsset = useCallback(
-    async (assetUuid: string) => {
-      const res = await getAssetById(municipalityId, assetUuid);
+    async (assetId: string) => {
+      const res = await getDraftAssetById(municipalityId, assetId);
       return res?.data ?? null;
     },
-    [municipalityId]
+    [municipalityId],
   );
 
   const removeService = useCallback(
     async (assetId: string) => {
       try {
-        await deleteAsset(municipalityId, assetId);
+        await deleteDraftAsset(municipalityId, assetId);
         await refetch();
         toast(getToastOptions({ message: 'Insatsen togs bort.', status: 'success' }));
       } catch (e: any) {
-        toast(getToastOptions({ message: e?.message ?? 'Något gick fel när insatsen skulle tas bort.', status: 'error' }));
+        toast(
+          getToastOptions({ message: e?.message ?? 'Något gick fel när insatsen skulle tas bort.', status: 'error' }),
+        );
       }
     },
-    [municipalityId, refetch, toast]
+    [municipalityId, refetch, toast],
   );
 
   const handleSubmit = useCallback(
     async (payload: any) => {
-      if (!schema || !municipalityId || !schemaId) return;
+      if (!schema || !municipalityId || !schemaId || !errand) return;
       const errors: { startDate?: string; endDate?: string } = {};
       if (!startDate) errors.startDate = 'Startdatum krävs';
       if (validityType === 'tidsbegränsat') {
@@ -126,6 +126,7 @@ export const CasedataServicesTab: React.FC = () => {
       }
       setDateErrors(errors);
       if (Object.keys(errors).length > 0) return;
+      const partyId = getOwnerStakeholder(errand)?.personId ?? '';
       const enrichedPayload = {
         ...payload,
         validFrom: startDate,
@@ -133,26 +134,15 @@ export const CasedataServicesTab: React.FC = () => {
         validityType,
       };
       try {
-        const created = await createAsset(
+        const created = await createDraftAsset(
           municipalityId,
-          buildCreateAssetPayload(enrichedPayload, schema, {
-            schemaId,
-            assetType,
-            partyId,
-          })
+          buildCreateAssetPayload(enrichedPayload, schema, { schemaId, assetType, partyId }),
         );
         const newAssetId = created?.data?.id;
-        if (newAssetId && errand) {
-          await createAssetRelation(municipalityId, String(errand.id), errandNr, newAssetId, '');
+        if (newAssetId) {
+          await createAssetRelation(municipalityId, errandId, newAssetId);
         }
-
-        toast(
-          getToastOptions({
-            message: 'Ny insats tillagd.',
-            status: 'success',
-          })
-        );
-
+        toast(getToastOptions({ message: 'Ny insats tillagd.', status: 'success' }));
         await refetch();
         setFormData({});
         setStartDate('');
@@ -161,14 +151,11 @@ export const CasedataServicesTab: React.FC = () => {
         setDateErrors({});
       } catch (e: any) {
         toast(
-          getToastOptions({
-            message: e?.message ?? 'Något gick fel när insatsen skulle sparas.',
-            status: 'error',
-          })
+          getToastOptions({ message: e?.message ?? 'Något gick fel när insatsen skulle sparas.', status: 'error' }),
         );
       }
     },
-    [schema, municipalityId, schemaId, assetType, partyId, errandNr, startDate, endDate, validityType, refetch, toast]
+    [schema, municipalityId, schemaId, assetType, errand, errandId, startDate, endDate, validityType, refetch, toast],
   );
 
   const startEdit = useCallback(
@@ -179,9 +166,8 @@ export const CasedataServicesTab: React.FC = () => {
           toast(getToastOptions({ message: 'Kunde inte hitta insatsen.', status: 'error' }));
           return;
         }
-
         const param = asset.jsonParameters?.[0];
-        let value = param?.value;
+        let value: unknown = param?.value;
         if (typeof value === 'string') {
           try {
             value = JSON.parse(value);
@@ -189,7 +175,6 @@ export const CasedataServicesTab: React.FC = () => {
             // keep as-is
           }
         }
-
         const storedSchemaId = param?.schemaId;
         if (storedSchemaId) {
           const fetchedSchema = await getRjsfSchema(municipalityId, storedSchemaId);
@@ -202,18 +187,16 @@ export const CasedataServicesTab: React.FC = () => {
           setEditUiSchema(uiSchema);
           setEditSchemaId(schemaId);
         }
-
         setEditStartDate(asset.issued ?? '');
         setEditEndDate(asset.validTo ?? '');
         setEditValidityType(asset.validTo ? 'tidsbegränsat' : 'tillsvidare');
-
         setEditFormData(value);
         setEditingId(assetId);
       } catch {
         toast(getToastOptions({ message: 'Kunde inte hämta insatsdata.', status: 'error' }));
       }
     },
-    [fetchAsset, toast]
+    [fetchAsset, municipalityId, schema, schemaId, uiSchema, toast],
   );
 
   const closeEditModal = useCallback(() => {
@@ -239,19 +222,13 @@ export const CasedataServicesTab: React.FC = () => {
       }
       setEditDateErrors(errors);
       if (Object.keys(errors).length > 0) return;
-      const { validFrom, validTo, validityType: _vt, ...jsonValue } = payload ?? {};
+      const { validFrom: _vf, validTo: _vt, validityType: _vty, ...jsonValue } = payload ?? {};
       try {
         const tillsvidare = editValidityType === 'tillsvidare';
-        await updateAsset(municipalityId, editingId, {
+        await updateDraftAsset(municipalityId, editingId, {
           issued: editStartDate,
           validTo: tillsvidare ? null : editEndDate,
-          jsonParameters: [
-            {
-              key: assetType,
-              value: jsonValue,
-              schemaId: editSchemaId,
-            },
-          ],
+          jsonParameters: [{ key: assetType, value: jsonValue, schemaId: editSchemaId }],
         });
         await refetch();
         closeEditModal();
@@ -260,7 +237,18 @@ export const CasedataServicesTab: React.FC = () => {
         toast(getToastOptions({ message: 'Något gick fel när insatsen skulle uppdateras.', status: 'error' }));
       }
     },
-    [editingId, editSchemaId, editStartDate, editEndDate, editValidityType, municipalityId, assetType, refetch, closeEditModal, toast]
+    [
+      editingId,
+      editSchemaId,
+      editStartDate,
+      editEndDate,
+      editValidityType,
+      municipalityId,
+      assetType,
+      refetch,
+      closeEditModal,
+      toast,
+    ],
   );
 
   return (
@@ -274,61 +262,68 @@ export const CasedataServicesTab: React.FC = () => {
       {!(errand ? isErrandLocked(errand) : false) && (
         <div className="mt-24 max-w-full">
           {uiSchema && (
-            <>
-              <SchemaForm
-                schema={schema!}
-                uiSchema={uiSchema}
-                formData={formData}
-                onChange={(fd) => setFormData(fd)}
-                onSubmit={handleSubmit}
-                objectFieldTemplate={ServicesObjectFieldTemplate}
-                extraContent={
-                  <div className="flex flex-col gap-16 mt-16">
-                    <FormControl>
-                      <FormLabel>Giltighet</FormLabel>
-                      <div className="flex gap-16">
-                        <RadioButton
-                          name="validityType"
-                          value="tillsvidare"
-                          checked={validityType === 'tillsvidare'}
-                          onChange={() => { setValidityType('tillsvidare'); setEndDate(''); }}
-                        >
-                          Tillsvidare
-                        </RadioButton>
-                        <RadioButton
-                          name="validityType"
-                          value="tidsbegränsat"
-                          checked={validityType === 'tidsbegränsat'}
-                          onChange={() => setValidityType('tidsbegränsat')}
-                        >
-                          Tidsbegränsat
-                        </RadioButton>
-                      </div>
-                    </FormControl>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-[2.4rem] w-full">
-                      <FormControl className="form-row w-full max-w-[48rem]" invalid={!!dateErrors.startDate}>
-                        <FormLabel>Startdatum *</FormLabel>
-                        <DatePicker
-                          value={startDate}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setStartDate(e.target.value); setDateErrors((p) => ({ ...p, startDate: undefined })); }}
-                        />
-                        {dateErrors.startDate && <FormErrorMessage>{dateErrors.startDate}</FormErrorMessage>}
-                      </FormControl>
-                      <FormControl className="form-row w-full max-w-[48rem]" invalid={!!dateErrors.endDate}>
-                        <FormLabel>Slutdatum {validityType === 'tidsbegränsat' ? '*' : ''}</FormLabel>
-                        <DatePicker
-                          value={endDate}
-                          disabled={validityType === 'tillsvidare'}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setEndDate(e.target.value); setDateErrors((p) => ({ ...p, endDate: undefined })); }}
-                        />
-                        {dateErrors.endDate && <FormErrorMessage>{dateErrors.endDate}</FormErrorMessage>}
-                      </FormControl>
+            <SchemaForm
+              schema={schema!}
+              uiSchema={uiSchema}
+              formData={formData}
+              onChange={(fd) => setFormData(fd)}
+              onSubmit={handleSubmit}
+              objectFieldTemplate={ServicesObjectFieldTemplate}
+              extraContent={
+                <div className="flex flex-col gap-16 mt-16">
+                  <FormControl>
+                    <FormLabel>Giltighet</FormLabel>
+                    <div className="flex gap-16">
+                      <RadioButton
+                        name="validityType"
+                        value="tillsvidare"
+                        checked={validityType === 'tillsvidare'}
+                        onChange={() => {
+                          setValidityType('tillsvidare');
+                          setEndDate('');
+                        }}
+                      >
+                        Tillsvidare
+                      </RadioButton>
+                      <RadioButton
+                        name="validityType"
+                        value="tidsbegränsat"
+                        checked={validityType === 'tidsbegränsat'}
+                        onChange={() => setValidityType('tidsbegränsat')}
+                      >
+                        Tidsbegränsat
+                      </RadioButton>
                     </div>
+                  </FormControl>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-[2.4rem] w-full">
+                    <FormControl className="form-row w-full max-w-[48rem]" invalid={!!dateErrors.startDate}>
+                      <FormLabel>Startdatum *</FormLabel>
+                      <DatePicker
+                        value={startDate}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                          setStartDate(e.target.value);
+                          setDateErrors((p) => ({ ...p, startDate: undefined }));
+                        }}
+                      />
+                      {dateErrors.startDate && <FormErrorMessage>{dateErrors.startDate}</FormErrorMessage>}
+                    </FormControl>
+                    <FormControl className="form-row w-full max-w-[48rem]" invalid={!!dateErrors.endDate}>
+                      <FormLabel>Slutdatum {validityType === 'tidsbegränsat' ? '*' : ''}</FormLabel>
+                      <DatePicker
+                        value={endDate}
+                        disabled={validityType === 'tillsvidare'}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                          setEndDate(e.target.value);
+                          setDateErrors((p) => ({ ...p, endDate: undefined }));
+                        }}
+                      />
+                      {dateErrors.endDate && <FormErrorMessage>{dateErrors.endDate}</FormErrorMessage>}
+                    </FormControl>
                   </div>
-                }
-              />
-            </>
+                </div>
+              }
+            />
           )}
         </div>
       )}
@@ -340,7 +335,12 @@ export const CasedataServicesTab: React.FC = () => {
         ) : error ? (
           <div className="text-error">{error}</div>
         ) : (
-          <ServiceListComponent services={services} onRemove={removeService} onEdit={startEdit} readOnly={(errand ? isErrandLocked(errand) : false)} />
+          <ServiceListComponent
+            services={services}
+            onRemove={removeService}
+            onEdit={startEdit}
+            readOnly={errand ? isErrandLocked(errand) : false}
+          />
         )}
       </div>
 
@@ -364,7 +364,10 @@ export const CasedataServicesTab: React.FC = () => {
                         name="editValidityType"
                         value="tillsvidare"
                         checked={editValidityType === 'tillsvidare'}
-                        onChange={() => { setEditValidityType('tillsvidare'); setEditEndDate(''); }}
+                        onChange={() => {
+                          setEditValidityType('tillsvidare');
+                          setEditEndDate('');
+                        }}
                       >
                         Tillsvidare
                       </RadioButton>
@@ -384,7 +387,10 @@ export const CasedataServicesTab: React.FC = () => {
                       <FormLabel>Startdatum *</FormLabel>
                       <DatePicker
                         value={editStartDate}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setEditStartDate(e.target.value); setEditDateErrors((p) => ({ ...p, startDate: undefined })); }}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                          setEditStartDate(e.target.value);
+                          setEditDateErrors((p) => ({ ...p, startDate: undefined }));
+                        }}
                       />
                       {editDateErrors.startDate && <FormErrorMessage>{editDateErrors.startDate}</FormErrorMessage>}
                     </FormControl>
@@ -393,7 +399,10 @@ export const CasedataServicesTab: React.FC = () => {
                       <DatePicker
                         value={editEndDate}
                         disabled={editValidityType === 'tillsvidare'}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setEditEndDate(e.target.value); setEditDateErrors((p) => ({ ...p, endDate: undefined })); }}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                          setEditEndDate(e.target.value);
+                          setEditDateErrors((p) => ({ ...p, endDate: undefined }));
+                        }}
                       />
                       {editDateErrors.endDate && <FormErrorMessage>{editDateErrors.endDate}</FormErrorMessage>}
                     </FormControl>

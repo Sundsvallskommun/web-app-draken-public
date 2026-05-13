@@ -28,7 +28,10 @@ export const getSchema = (municipalityId: string, schemaId: string): Promise<Api
     });
 };
 
-export const getLatestSchema = (municipalityId: string, schemaName: string): Promise<ApiResponse<JsonSchemaResponse>> => {
+export const getLatestSchema = (
+  municipalityId: string,
+  schemaName: string
+): Promise<ApiResponse<JsonSchemaResponse>> => {
   const url = `${municipalityId}/schemas/${schemaName}/latest`;
 
   return apiService

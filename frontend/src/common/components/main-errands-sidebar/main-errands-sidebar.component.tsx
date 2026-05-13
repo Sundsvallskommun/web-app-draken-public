@@ -3,24 +3,25 @@ import { CasedataFilterSidebarStatusSelector } from '@casedata/components/caseda
 import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
-import { getApplicationEnvironment, isMEX } from '@common/services/application-service';
+import { getApplicationEnvironment } from '@common/services/application-service';
 import { attestationEnabled, contractsEnabled } from '@common/services/feature-flag-service';
 import { appConfig } from '@config/appconfig';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import { useBillingStore, useConfigStore, useUserStore } from '@stores/index';
 import { Badge, Button, cx, Divider, Logo, UserMenu } from '@sk-web-gui/react';
+import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportManagementFilterSidebarStatusSelector } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component';
 import {
   SupportManagementFilter,
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
-import NextLink from 'next/link';
-import { useState } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
-import { userMenuGroups } from '../layout/userMenuGroups';
-import { AngeSymbol } from '@styles/ange-symbol';
 import { ChevronsLeft, ChevronsRight, FileText, SquarePen } from 'lucide-react';
+import NextLink from 'next/link';
+import { FC, useState } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
 
-export const MainErrandsSidebar: React.FC<{
+import { userMenuGroups } from '../layout/userMenuGroups';
+
+export const MainErrandsSidebar: FC<{
   showAttestationTable: boolean;
   setShowAttestationTable: (show: boolean) => void;
   showContractTable: boolean;
@@ -30,7 +31,9 @@ export const MainErrandsSidebar: React.FC<{
 }> = ({ showAttestationTable, setShowAttestationTable, showContractTable, setShowContractTable, open, setOpen }) => {
   const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
-  const { user, billingRecords, isLoading }: AppContextInterface = useAppContext();
+  const user = useUserStore((s) => s.user);
+  const billingRecords = useBillingStore((s) => s.billingRecords);
+  const isLoading = useConfigStore((s) => s.isLoading);
   const [showNotifications, setShowNotifications] = useState(false);
   const applicationEnvironment = getApplicationEnvironment();
 

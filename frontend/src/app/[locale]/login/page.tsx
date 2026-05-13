@@ -7,14 +7,14 @@ import { appURL } from '@common/utils/app-url';
 import { appConfig } from '@config/appconfig';
 import { Button, FormErrorMessage } from '@sk-web-gui/react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { FC, Suspense, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { capitalize } from 'underscore.string';
 
 // Turn on/off automatic login
 const autoLogin = false;
 
-const Login: React.FC = () => {
+const Login: FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathName = usePathname();

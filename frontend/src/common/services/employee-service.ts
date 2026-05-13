@@ -1,6 +1,6 @@
 'use client';
 
-import { apiService, ApiResponse } from '@common/services/api-service';
+import { ApiResponse, apiService } from '@common/services/api-service';
 
 export interface OrgManagerDTO {
   personId?: string;

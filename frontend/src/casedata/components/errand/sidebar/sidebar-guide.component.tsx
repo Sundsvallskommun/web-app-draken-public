@@ -1,7 +1,6 @@
 import { List, Select } from '@sk-web-gui/react';
-import { useState } from 'react';
-
-export const SidebarGuide: React.FC<{}> = () => {
+import { FC, useState } from 'react';
+export const SidebarGuide: FC<{}> = () => {
   const [showLandLeaseAgreement, setShowLandLeaseAgreement] = useState<boolean>(false);
   const [showBuildingPermit, setBuildingPermit] = useState<boolean>(false);
   const [showRightOfUse, setRightOfUse] = useState<boolean>(false);

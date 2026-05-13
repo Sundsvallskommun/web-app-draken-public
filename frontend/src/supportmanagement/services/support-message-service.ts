@@ -5,6 +5,7 @@ import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
 import { CCommunicationAttachment } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
+
 import { SingleSupportAttachment } from './support-attachment-service';
 import { Channels, ContactChannelType, SupportErrand } from './support-errand-service';
 import { applicantContactChannel } from './support-stakeholder-service';
@@ -44,6 +45,7 @@ export interface Message {
   conversationId?: string;
   messageId?: string;
   recipients: string[];
+  ccRecipients: string[];
 }
 
 const getClosingMessageBody = (): string => {
@@ -350,6 +352,7 @@ export const buildTree = (_list: Message[]) => {
           },
           children: [],
           recipients: [],
+          ccRecipients: [],
         };
         dummyParent?.children?.push(nodesMap.get(id)!);
         roots.push(dummyParent);

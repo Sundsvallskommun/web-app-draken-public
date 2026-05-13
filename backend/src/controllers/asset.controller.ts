@@ -1,13 +1,16 @@
-import { apiServiceName } from '@/config/api-config';
-import { CreateAssetDto, PatchAssetDto } from '@/dtos/assets-dto';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import { Asset } from '@interfaces/parking-permit.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
-import { logger } from '@utils/logger';
-import { apiURL } from '@utils/util';
 import { Body, Controller, Delete, Get, Param, Patch, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+
+import { apiServiceName } from '@/config/api-config';
+import {
+  AssetCreateRequest,
+  AssetUpdateRequest,
+  DraftAssetUpdateRequest,
+} from '@/data-contracts/partyassets/data-contracts';
 
 interface ResponseData<T> {
   data: T;
@@ -18,6 +21,19 @@ interface ResponseData<T> {
 export class AssetController {
   private apiService = new ApiService();
   PARTYASSETS_SERVICE = apiServiceName('partyassets');
+
+  private buildSourceReference(errandId: string): string {
+    return `LINK|${errandId};case;case-data;${process.env.CASEDATA_NAMESPACE}|`;
+  }
+
+  private buildAssetQuery(params: Record<string, string | undefined>): string {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (v) qs.set(k, v);
+    }
+    const str = qs.toString();
+    return str ? `?${str}` : '';
+  }
 
   @Get('/assets')
   @OpenAPI({ summary: 'Returns a persons assets' })
@@ -32,18 +48,12 @@ export class AssetController {
     @QueryParam('assetId') assetId?: string,
     @QueryParam('issued') issued?: string,
     @QueryParam('validTo') validTo?: string,
+    @QueryParam('errandId') errandId?: string,
   ): Promise<ResponseData<Asset[]>> {
     municipalityId ??= '2281';
-    const params = new URLSearchParams();
-    if (partyId) params.set('partyId', partyId);
-    if (type) params.set('type', type);
-    if (status) params.set('status', status);
-    if (origin) params.set('origin', origin);
-    if (assetId) params.set('assetId', assetId);
-    if (issued) params.set('issued', issued);
-    if (validTo) params.set('validTo', validTo);
-
-    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets${params.toString() ? `?${params}` : ''}`;
+    const sourceReference = errandId ? this.buildSourceReference(errandId) : undefined;
+    const query = this.buildAssetQuery({ partyId, type, status, origin, assetId, issued, validTo, sourceReference });
+    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets${query}`;
     const res = await this.apiService.get<Asset[]>({ url }, req.user);
     return { data: res.data, message: 'success' };
   }
@@ -68,29 +78,26 @@ export class AssetController {
   async createAsset(
     @Req() req: RequestWithUser,
     @QueryParam('municipalityId') municipalityId?: string,
-    @Body() body?: CreateAssetDto,
+    @Body() body?: AssetCreateRequest,
   ): Promise<ResponseData<Asset>> {
     municipalityId ??= '2281';
-    const url = `${municipalityId}/assets`;
-    const baseURL = apiURL(this.PARTYASSETS_SERVICE);
-    const res = await this.apiService.post<any, any>({ url, baseURL, data: body }, req.user);
+    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets`;
+    const res = await this.apiService.post<any, any>({ url, data: body }, req.user);
     return { data: res.data, message: 'created' };
   }
 
   @Patch('/assets/:id')
-  @OpenAPI({ summary: 'Update an asset' })
+  @OpenAPI({ summary: 'Update an asset (status and statusReason only)' })
   @UseBefore(authMiddleware)
   async patchAsset(
     @Req() req: RequestWithUser,
     @Param('id') id: string,
     @QueryParam('municipalityId') municipalityId?: string,
-    @Body() body?: PatchAssetDto,
+    @Body() body?: AssetUpdateRequest,
   ): Promise<ResponseData<Asset>> {
     municipalityId ??= '2281';
     const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets/${encodeURIComponent(id)}`;
-    logger.info(`PATCH asset request body: ${JSON.stringify(body)}`);
     const res = await this.apiService.patch<any, any>({ url, data: body }, req.user);
-    logger.info(`PATCH asset response: ${JSON.stringify(res.data)}`);
     return { data: res.data, message: 'updated' };
   }
 
@@ -104,6 +111,86 @@ export class AssetController {
   ): Promise<ResponseData<boolean>> {
     municipalityId ??= '2281';
     const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets/${encodeURIComponent(id)}`;
+    await this.apiService.delete<any>({ url }, req.user);
+    return { data: true, message: 'deleted' };
+  }
+
+  @Get('/asset-drafts')
+  @OpenAPI({ summary: 'Returns draft assets' })
+  @UseBefore(authMiddleware)
+  async listDraftAssets(
+    @Req() req: RequestWithUser,
+    @QueryParam('municipalityId') municipalityId?: string,
+    @QueryParam('partyId') partyId?: string,
+    @QueryParam('type') type?: string,
+    @QueryParam('status') status?: string,
+    @QueryParam('origin') origin?: string,
+    @QueryParam('assetId') assetId?: string,
+    @QueryParam('issued') issued?: string,
+    @QueryParam('validTo') validTo?: string,
+    @QueryParam('errandId') errandId?: string,
+  ): Promise<ResponseData<Asset[]>> {
+    municipalityId ??= '2281';
+    const sourceReference = errandId ? this.buildSourceReference(errandId) : undefined;
+    const query = this.buildAssetQuery({ partyId, type, status, origin, assetId, issued, validTo, sourceReference });
+    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/asset-drafts${query}`;
+    const res = await this.apiService.get<Asset[]>({ url }, req.user);
+    return { data: res.data, message: 'success' };
+  }
+
+  @Get('/asset-drafts/:id')
+  @OpenAPI({ summary: 'Get a single draft asset by id' })
+  @UseBefore(authMiddleware)
+  async getDraftAsset(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @QueryParam('municipalityId') municipalityId?: string,
+  ): Promise<ResponseData<Asset>> {
+    municipalityId ??= '2281';
+    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/asset-drafts/${encodeURIComponent(id)}`;
+    const res = await this.apiService.get<Asset>({ url }, req.user);
+    return { data: res.data, message: 'success' };
+  }
+
+  @Post('/asset-drafts')
+  @OpenAPI({ summary: 'Create a draft asset' })
+  @UseBefore(authMiddleware)
+  async createDraftAsset(
+    @Req() req: RequestWithUser,
+    @QueryParam('municipalityId') municipalityId?: string,
+    @Body() body?: AssetCreateRequest,
+  ): Promise<ResponseData<Asset>> {
+    municipalityId ??= '2281';
+    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/asset-drafts`;
+    const res = await this.apiService.post<any, any>({ url, data: body }, req.user);
+    return { data: res.data, message: 'created' };
+  }
+
+  @Patch('/asset-drafts/:id')
+  @OpenAPI({ summary: 'Update a draft asset' })
+  @UseBefore(authMiddleware)
+  async patchDraftAsset(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @QueryParam('municipalityId') municipalityId?: string,
+    @Body() body?: DraftAssetUpdateRequest,
+  ): Promise<ResponseData<Asset>> {
+    municipalityId ??= '2281';
+    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/asset-drafts/${encodeURIComponent(id)}`;
+    const res = await this.apiService.patch<any, any>({ url, data: body }, req.user);
+    return { data: res.data, message: 'updated' };
+  }
+
+  @Delete('/asset-drafts/:id')
+  @OpenAPI({ summary: 'Delete a draft asset' })
+  @UseBefore(authMiddleware)
+  async deleteDraftAsset(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @QueryParam('municipalityId') municipalityId?: string,
+  ): Promise<ResponseData<boolean>> {
+    municipalityId ??= '2281';
+    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/asset-drafts/${encodeURIComponent(id)}`;
     await this.apiService.delete<any>({ url }, req.user);
     return { data: true, message: 'deleted' };
   }

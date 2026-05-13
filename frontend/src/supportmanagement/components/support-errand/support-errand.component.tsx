@@ -1,21 +1,22 @@
-import { useAppContext } from '@common/contexts/app.context';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
+import { useBadgeStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
-  SupportErrand,
   defaultSupportErrandInformation,
   getSupportErrandByErrandNumber,
   initiateSupportErrand,
+  SupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportNotesCount } from '@supportmanagement/services/support-note-service';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+
 import { SupportErrandSummary } from '../support-errand-basics-form/support-errand-summary.component';
 import { MessagePortal } from './sidebar/message-portal.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
@@ -32,14 +33,17 @@ let formSchema = yup
   })
   .required();
 
-export const SupportErrandComponent: React.FC = () => {
+export const SupportErrandComponent: FC = () => {
   const params = useParams<{ errandNumber?: string }>();
   const errandNumber = params?.errandNumber;
   const [isLoading, setIsLoading] = useState(!!errandNumber);
   const [message, setMessage] = useState('Hämtar ärende..');
   const [categoriesList, setCategoriesList] = useState<Category[]>();
   const [unsavedFacility, setUnsavedFacility] = useState(false);
-  const { municipalityId, supportErrand, setSupportErrand, supportMetadata, setNotesCount } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const { supportErrand, setSupportErrand } = useSupportStore();
+  const { setNotesCount } = useBadgeStore();
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const toastMessage = useSnackbar();
 
   const methods = useForm<SupportErrand>({
@@ -55,7 +59,7 @@ export const SupportErrandComponent: React.FC = () => {
     });
   };
   const router = useRouter();
-  const { setUser } = useAppContext();
+  const setUser = useUserStore((s) => s.setUser);
 
   const { theme } = useGui();
 

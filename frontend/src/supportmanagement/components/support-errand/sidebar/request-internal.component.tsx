@@ -1,11 +1,10 @@
 'use client';
 
-import { User } from '@common/interfaces/user';
 import { isIK, isLOP, isSE } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
@@ -29,12 +28,11 @@ import {
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import TextEditor from '@common/components/dynamic-text-editor';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 import { FileInput, Plus } from 'lucide-react';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
+import { FC, useEffect, useState } from 'react';
 
 const yupRequestFeedbackForm = yup.object().shape(
   {
@@ -77,21 +75,12 @@ export interface RequestInternalFormProps {
 //NOT IN USE?
 
 export const RequestInternalComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
-  const {
-    user,
-    municipalityId,
-    supportErrand,
-    setSupportErrand,
-    supportMetadata,
-    supportAttachments,
-  }: {
-    user: User;
-    municipalityId: string;
-    supportErrand: SupportErrand;
-    setSupportErrand: any;
-    supportMetadata: SupportMetadata;
-    supportAttachments: SupportAttachment[];
-  } = useAppContext();
+  const user = useUserStore((s) => s.user);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const supportErrand = useSupportStore((s) => s.supportErrand) as SupportErrand;
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata) as SupportMetadata;
+  const supportAttachments = useSupportStore((s) => s.supportAttachments) as SupportAttachment[];
   const confirm = useConfirm();
   const [error, setError] = useState(false);
   const toastMessage = useSnackbar();

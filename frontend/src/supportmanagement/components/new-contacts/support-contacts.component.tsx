@@ -1,21 +1,19 @@
-import { useAppContext } from '@common/contexts/app.context';
-import { User } from '@common/interfaces/user';
+import { useMetadataStore, useSupportStore } from '@stores/index';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
-import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
+  emptyContact,
   ExternalIdType,
+  isSupportErrandLocked,
   SupportErrand,
   SupportStakeholderFormModel,
-  emptyContact,
-  isSupportErrandLocked,
 } from '@supportmanagement/services/support-errand-service';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { buildStakeholdersList } from '@supportmanagement/services/support-stakeholder-service';
-import { useEffect, useState } from 'react';
-import { UseFormReturn, useFieldArray, useFormContext } from 'react-hook-form';
+import { Info, Users } from 'lucide-react';
+import { FC, useEffect, useState } from 'react';
+import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
+
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
 import { appConfig } from '@config/appconfig';
-import { Info, Users } from 'lucide-react';
 
 interface SupportContactsProps {
   setUnsaved: (unsaved: boolean) => void;
@@ -23,33 +21,32 @@ interface SupportContactsProps {
   registeringNewErrand?: boolean;
 }
 
-export const SupportContactsComponent: React.FC<SupportContactsProps> = (props) => {
+export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
   const [selectedContact, setSelectedContact] = useState<SupportStakeholderFormModel>();
-  const {
-    supportErrand,
-    user,
-    supportMetadata,
-  } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();
 
-  const { setStakeholderContacts, stakeholderContacts, setStakeholderCustomers, stakeholderCustomers } =
-    useAppContext();
+  const setStakeholderContacts = useSupportStore((s) => s.setStakeholderContacts);
+  const stakeholderContacts = useSupportStore((s) => s.stakeholderContacts);
+  const setStakeholderCustomers = useSupportStore((s) => s.setStakeholderCustomers);
+  const stakeholderCustomers = useSupportStore((s) => s.stakeholderCustomers);
   const avatarColorArray = ['vattjom', 'juniskar', 'gronsta', 'bjornstigen'];
+
+  const { control, setValue, reset }: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
+
+  const errandId = supportErrand?.id;
 
   useEffect(() => {
     setSelectedContact(undefined);
-    reset(supportErrand);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, supportErrand]);
-
-  useEffect(() => {
+    if (supportErrand) {
+      reset(supportErrand);
+    }
     setStakeholderContacts(supportErrand?.contacts ?? []);
     setStakeholderCustomers(supportErrand?.customer ?? []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const { control, setValue, reset }: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
+  }, [errandId]);
 
   const contactsFieldArray = useFieldArray({
     control,

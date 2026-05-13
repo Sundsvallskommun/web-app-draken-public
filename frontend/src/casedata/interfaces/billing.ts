@@ -12,8 +12,7 @@ export interface BillingServiceItem {
   quantity: number;
   costPerUnit: number;
   totalAmount: number;
-  unit: string;
-  avitext?: string;
+  descriptions: string[];
   accountInformation: BillingAccountInformation;
 }
 

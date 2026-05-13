@@ -3,12 +3,11 @@
 import { ACCEPTED_UPLOAD_FILETYPES } from '@casedata/services/casedata-attachment-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
+import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
-import { useAppContext } from '@common/contexts/app.context';
-import { Relation } from '@common/data-contracts/relations/data-contracts';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
-import { getSourceRelations } from '@common/services/relations-service';
+import { getResolvedRelations, RelationWithErrandNumber } from '@common/services/relations-service';
 import sanitized, { sanitizeHtmlMessageBody } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
@@ -16,6 +15,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
   Chip,
+  cx,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -24,13 +24,13 @@ import {
   Modal,
   RadioButton,
   Select,
-  cx,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import {
+  getSupportAttachment,
   SingleSupportAttachment,
   SupportAttachment,
-  getSupportAttachment,
 } from '@supportmanagement/services/support-attachment-service';
 import {
   getOrCreateSupportConversationId,
@@ -38,21 +38,20 @@ import {
 } from '@supportmanagement/services/support-conversation-service';
 import {
   Channels,
-  Status,
   getSupportErrandById,
   isSupportErrandLocked,
   setSupportErrandStatus,
+  Status,
 } from '@supportmanagement/services/support-errand-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { File, Paperclip, X } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
+
 import { getDefaultEmailBody, getDefaultSmsBody, removeEmailInformation } from '../templates/default-message-template';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface SupportMessageFormModel {
   id: string;
@@ -128,23 +127,21 @@ let formSchema = yup
   })
   .required();
 
-export const SupportMessageForm: React.FC<{
+export const SupportMessageForm: FC<{
   locked?: boolean;
   prefillPhone?: string;
   prefillEmail?: string;
   showMessageForm: boolean;
   message: Message;
-  setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMessageForm: Dispatch<SetStateAction<boolean>>;
   setUnsaved?: (unsaved: boolean) => void;
   update?: () => void;
 }> = (props) => {
-  const {
-    municipalityId,
-    user,
-    supportErrand: _supportErrand,
-    supportAttachments: _supportAttachments,
-    setSupportErrand,
-  } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
+  const _supportErrand = useSupportStore((s) => s.supportErrand);
+  const _supportAttachments = useSupportStore((s) => s.supportAttachments);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const supportErrand = _supportErrand!;
   const supportAttachments = _supportAttachments ?? [];
 
@@ -156,7 +153,7 @@ export const SupportMessageForm: React.FC<{
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
   const [selectedRelationId, setSelectedRelationId] = useState<string>('');
-  const [relationErrands, setRelationErrands] = useState<Relation[]>([]);
+  const [relationErrands, setRelationErrands] = useState<RelationWithErrandNumber[]>([]);
 
   const closeAttachmentModal = () => {
     setIsAttachmentModalOpen(false);
@@ -419,16 +416,23 @@ export const SupportMessageForm: React.FC<{
   }, [contactMeans, props.message]);
 
   useEffect(() => {
-    getSourceRelations(municipalityId, supportErrand.id!, 'ASC').then((res) => {
-      const sortedRelations = [...res].sort((a, b) => a.target.type.localeCompare(b.target.type));
-      setRelationErrands(sortedRelations);
+    getResolvedRelations('source', municipalityId, supportErrand.id!, 'ASC').then(({ relations, caseStatuses }) => {
+      const enriched = relations.map((relation) => {
+        const status = caseStatuses.find((s) => s.caseId === relation.target.resourceId);
+        return {
+          relation,
+          errandNumber: status?.errandNumber ?? relation.target.resourceId,
+        };
+      });
+      const sorted = [...enriched].sort((a, b) => a.errandNumber.localeCompare(b.errandNumber));
+      setRelationErrands(sorted);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.showMessageForm]);
 
   useEffect(() => {
     if (contactMeans === 'draken' && relationErrands.length > 0 && !selectedRelationId) {
-      setSelectedRelationId(relationErrands[0].target.resourceId);
+      setSelectedRelationId(relationErrands[0].relation.target.resourceId);
     }
   }, [relationErrands, contactMeans, selectedRelationId]);
 
@@ -531,8 +535,8 @@ export const SupportMessageForm: React.FC<{
               }}
             >
               {relationErrands.map((item) => (
-                <Select.Option key={item.target.resourceId} value={item.target.resourceId}>
-                  {item.target.type}
+                <Select.Option key={item.relation.target.resourceId} value={item.relation.target.resourceId}>
+                  {item.errandNumber}
                 </Select.Option>
               ))}
             </Select>
@@ -585,7 +589,6 @@ export const SupportMessageForm: React.FC<{
           <Select
             {...register('messageTemplate')}
             className="w-full text-dark-primary"
-            variant="tertiary"
             size="sm"
             onChange={(e) => {
               const template = e.currentTarget.value;

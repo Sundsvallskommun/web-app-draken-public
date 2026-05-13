@@ -1,10 +1,11 @@
-import { Dispatch, KeyboardEvent, SetStateAction, useRef, useState } from 'react';
+import { Dispatch, FC, ReactNode, SetStateAction } from 'react';
+
 import { Sidebar, SidebarButtonKey } from '../../../../common/components/sidebar/sidebar.component';
 import { SidebarComments } from './sidebar-comments.component';
 import { SidebarHistory } from './sidebar-history.component';
 import { SidebarInfo } from './sidebar-info.component';
 
-export const SidebarWrapper: React.FC<{
+export const SidebarWrapper: FC<{
   setUnsavedFacility?: Dispatch<SetStateAction<boolean>>;
   unsavedFacility: boolean;
 }> = (props) => {
@@ -12,7 +13,7 @@ export const SidebarWrapper: React.FC<{
     label: string;
     key: SidebarButtonKey;
     icon: string;
-    component: React.ReactNode;
+    component: ReactNode;
   }[] = [
     {
       label: 'Handläggning',

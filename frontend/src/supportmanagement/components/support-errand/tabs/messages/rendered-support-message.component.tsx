@@ -1,8 +1,8 @@
 import { MessageAvatar } from '@common/components/message/message-avatar.component';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
-import sanitized, { formatMessage } from '@common/services/sanitizer-service';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import sanitized from '@common/services/sanitizer-service';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { getSupportConversationAttachment } from '@supportmanagement/services/support-conversation-service';
 import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
 import {
@@ -13,30 +13,29 @@ import {
 } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
 import { CornerDownRight, Image, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
-import { RenderSupportMessageReciever } from './render-support-message-reciever.component';
+import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
 
-export const RenderedSupportMessage: React.FC<{
+import { EmailRecipients, RenderSupportMessageReciever } from './render-support-message-reciever.component';
+
+export const RenderedSupportMessage: FC<{
   update: () => void;
-  setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMessageForm: Dispatch<SetStateAction<boolean>>;
   message: MessageNode;
   selected: string;
   onSelect: (msg: Message) => void;
   root?: boolean;
   children: any;
 }> = ({ update, setShowMessageForm, message, onSelect, root = false, children }) => {
-  const { supportErrand: _supportErrand, municipalityId, user } = useAppContext();
+  const _supportErrand = useSupportStore((s) => s.supportErrand);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
   const supportErrand = _supportErrand!;
-  const [allowed, setAllowed] = useState(false);
 
   // Changed logic for expanded message to see if it solve problem with unread message counter
   // const [expanded, setExpanded] = useState(!message?.children?.length ? true : false);
   const [expanded, setExpanded] = useState(false);
 
-  useEffect(() => {
-    const _a = validateAction(supportErrand, user);
-    setAllowed(_a);
-  }, [user, supportErrand]);
+  const allowed = useMemo(() => validateAction(supportErrand, user), [user, supportErrand]);
 
   const toastMessage = useSnackbar();
 
@@ -117,6 +116,11 @@ export const RenderedSupportMessage: React.FC<{
                   <p className="mr-md break-all font-bold">
                     Till: <RenderSupportMessageReciever selectedMessage={message} errand={supportErrand} />
                   </p>
+                  {message.communicationType === 'EMAIL' && message.ccRecipients?.length > 0 && (
+                    <p className="mr-md break-all font-bold">
+                      Kopia: <EmailRecipients recipients={message.ccRecipients} />
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -316,7 +320,7 @@ export const RenderedSupportMessage: React.FC<{
             <span
               className="text"
               dangerouslySetInnerHTML={{
-                __html: message.htmlMessageBody ? sanitized(message.htmlMessageBody) : message.messageBody,
+                __html: message.htmlMessageBody ? sanitized(message.htmlMessageBody) : sanitized(message.messageBody),
               }}
             />
           </div>

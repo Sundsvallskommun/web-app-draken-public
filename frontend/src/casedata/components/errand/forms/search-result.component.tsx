@@ -1,11 +1,13 @@
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
-import { useAppContext } from '@contexts/app.context';
+import { useCasedataStore } from '@stores/index';
 import { Button, FormErrorMessage } from '@sk-web-gui/react';
-import { UseFormReturn } from 'react-hook-form';
-import { ContactRelationSelect } from './contact-relation-select.component';
 import { Plus } from 'lucide-react';
+import { FC } from 'react';
+import { UseFormReturn } from 'react-hook-form';
+
+import { ContactRelationSelect } from './contact-relation-select.component';
 interface SearchResultProps {
   contact: CasedataOwnerOrContact;
   searchMode: string;
@@ -16,7 +18,7 @@ interface SearchResultProps {
   label: string;
 }
 
-export const SearchResult: React.FC<SearchResultProps> = ({
+export const SearchResult: FC<SearchResultProps> = ({
   contact,
   searchMode,
   disabled,
@@ -25,7 +27,7 @@ export const SearchResult: React.FC<SearchResultProps> = ({
   onSubmit,
   label,
 }) => {
-  const { errand } = useAppContext();
+  const errand = useCasedataStore((s) => s.errand);
   const { control, register, formState, watch, setValue, trigger } = form;
   const errors = formState.errors;
 

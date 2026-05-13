@@ -28,10 +28,10 @@ export interface Employeev2 {
   lastname?: string | null;
   accounts?: Account[] | null;
   referenceNumbers?: ReferenceNumberCompany[] | null;
-  employments?: Employment[] | null;
+  employments?: EmploymentV2[] | null;
 }
 
-export interface Employment {
+export interface EmploymentV2 {
   /** @format int32 */
   companyId?: number;
   /** @format date-time */
@@ -59,6 +59,8 @@ export interface Employment {
   hiringManager?: Manager;
   aid?: string | null;
   empRowId?: string | null;
+  /** @format int32 */
+  employmentId?: number;
 }
 
 export interface Manager {
@@ -127,6 +129,8 @@ export interface NewEmployment {
   hiringManager?: Manager;
   aid?: string | null;
   empRowId?: string | null;
+  /** @format int32 */
+  employmentId?: number;
   eventType?: string | null;
   eventInfo?: string | null;
 }

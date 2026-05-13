@@ -24,6 +24,7 @@ export const mockContractInvoices = {
       extraParameters: {
         contractId: '2049-00010',
       },
+      transferDate: '2024-01-15',
     },
     {
       id: 'INV-002',
@@ -37,6 +38,7 @@ export const mockContractInvoices = {
       extraParameters: {
         contractId: '2049-00010',
       },
+      transferDate: '2024-04-15',
     },
     {
       id: 'INV-003',
@@ -50,6 +52,7 @@ export const mockContractInvoices = {
       extraParameters: {
         contractId: '2049-00010',
       },
+      transferDate: '2024-07-15',
     },
     {
       id: 'INV-004',
@@ -63,6 +66,7 @@ export const mockContractInvoices = {
       extraParameters: {
         contractId: '2049-00010',
       },
+      transferDate: '2024-10-15',
     },
   ],
   totalElements: 4,

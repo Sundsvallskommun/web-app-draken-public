@@ -1,4 +1,5 @@
 import { UppgiftField } from '@casedata/services/casedata-extra-parameters-service';
+
 import { swedishMunicipalities } from '../municipalities';
 
 export const journeyFieldsGroup = {
@@ -154,7 +155,7 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
   {
     field: 'personal.mobilityAids',
     value: [],
-    label: 'Ange ett eller flera förflyttningshjälpmedel som den sökande är beroende av för att kunna genomföra resan',
+    label: 'Välj förflyttningshjälpmedel som den sökande är beroende av under själva resan',
     formField: {
       type: 'combobox',
       options: [
@@ -178,7 +179,27 @@ export const notificationNational_UppgiftFieldTemplate: UppgiftField[] = [
       },
     ],
   },
-    {
+  {
+    field: 'personal.wheelchairDimensions',
+    value: '',
+    label:
+      'Ange information om rullstolens yttermått, längd och bredd, samt totalvikten när personen sitter i rullstolen',
+    formField: {
+      type: 'textarea',
+    },
+    section: 'Yttre omständigheter',
+    dependsOn: [
+      {
+        field: 'personal.mobilityAidNeeded',
+        value: 'YES',
+      },
+      {
+        field: 'personal.mobilityAids',
+        value: ['COMFORT_WHEELCHAIR', 'ELECTRIC_WHEELCHAIR'],
+      },
+    ],
+  },
+  {
     field: 'personal.needForEscort',
     value: '',
     label: 'Behöver den sökande aktiv hjälp av en ledsagare under själva resan?',

@@ -1,7 +1,6 @@
-import { ValidationError, validate } from 'class-validator';
-
 import { HttpException } from '@exceptions/HttpException';
 import { plainToInstance } from 'class-transformer';
+import { validate, ValidationError } from 'class-validator';
 
 export const getAllNestedErrors = (error: ValidationError): string | string[] => {
   if (error.constraints) {

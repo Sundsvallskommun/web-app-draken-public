@@ -1,8 +1,3 @@
-import { MUNICIPALITY_ID } from '@/config';
-import { apiServiceName } from '@/config/api-config';
-import { LEAddress, LegalEntity2, LEPostAddress } from '@/data-contracts/legalentity/data-contracts';
-import { logger } from '@/utils/logger';
-import { formatOrgNr, OrgNumberFormat } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
@@ -11,6 +6,12 @@ import { Type as TypeTransformer } from 'class-transformer';
 import { IsString, ValidateNested } from 'class-validator';
 import { Body, Controller, Get, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
+
+import { MUNICIPALITY_ID } from '@/config';
+import { apiServiceName } from '@/config/api-config';
+import { LEAddress, LegalEntity2, LEPostAddress } from '@/data-contracts/legalentity/data-contracts';
+import { logger } from '@/utils/logger';
+import { formatOrgNr, OrgNumberFormat } from '@/utils/util';
 
 class SsnPayload {
   @IsString()

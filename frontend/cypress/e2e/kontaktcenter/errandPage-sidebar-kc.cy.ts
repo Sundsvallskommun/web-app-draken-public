@@ -1,9 +1,19 @@
 /// <reference types="cypress" />
 import { onlyOn } from '@cypress/skip-test';
+
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
-import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
+import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
+//TODO: Update mockdata
+import { mockRelations } from '../lop/fixtures/mockRelations';
+import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
+import { mockComments } from './fixtures/mockComments';
+import { mockForwardSupportErrandToMEX, mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
 import { mockMetaData } from './fixtures/mockMetadata';
+import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
+import { mockSidebarButtons } from './fixtures/mockSidebarButtons';
+import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
+import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import {
   mockDifferentUserSupportErrand,
   mockEmptySupportErrand,
@@ -11,16 +21,7 @@ import {
   mockSupportErrand,
   mockSupportMessages,
 } from './fixtures/mockSupportErrands';
-import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
-import { mockSidebarButtons } from './fixtures/mockSidebarButtons';
-import { mockComments } from './fixtures/mockComments';
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
-import { mockForwardSupportErrandToMEX, mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
-import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
-//TODO: Update mockdata
-import { mockRelations } from '../lop/fixtures/mockRelations';
-import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
-import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('errand page', () => {
@@ -237,11 +238,11 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       ];
 
       //can change supportErrand to solved
-      cy.get(`[data-cy="solved-button"]`).should('exist').contains('Avsluta ärende').click();
+      cy.get(`[data-cy="solved-button"]`).should('exist').contains('Avsluta').click();
       cy.get('article.sk-modal-dialog').should('exist').contains('Välj en lösning');
       cy.get('[data-cy="solve-radiolist"] label').should('have.length', solveLables.length);
       cy.get('[data-cy="solve-radiolist"] label input').eq(1).should('have.value', solveLables[1].id).check();
-      cy.get('article.sk-modal-dialog button.sk-btn-primary').contains('Avsluta ärende').should('exist').click();
+      cy.get('article.sk-modal-dialog button.sk-btn-primary').contains('Avsluta').should('exist').click();
     });
 
     it('Shows current resolution when errand already has one', () => {
@@ -262,9 +263,9 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
 
       cy.get(`[data-cy="solved-button"]`).should('exist').contains('Avsluta ärende').click();
       cy.get('article.sk-modal-dialog').should('exist');
-      cy.get('article.sk-modal-dialog').contains('Aktuell avslutningskod');
+      cy.get('article.sk-modal-dialog').contains('Nuvarande lösningskod');
       cy.get('article.sk-modal-dialog').contains('Ändra lösningskod').should('exist');
-      cy.get('article.sk-modal-dialog button.sk-btn-primary').contains('Avsluta ärende').should('exist');
+      cy.get('article.sk-modal-dialog button.sk-btn-primary').contains('Avsluta').should('exist');
     });
 
     it('Can change resolution code when errand already has one', () => {
@@ -288,7 +289,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
 
       // Click "Ändra lösningskod" to switch to resolution selection view
       cy.get('article.sk-modal-dialog').contains('Ändra lösningskod').click();
-      cy.get('article.sk-modal-dialog').contains('Välj en lösning');
+      cy.get('article.sk-modal-dialog').contains('Välj ny lösningskod');
       cy.get('[data-cy="solve-radiolist"]').should('exist');
     });
 
@@ -311,7 +312,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       // Open modal and switch to "Välj en lösning"
       cy.get(`[data-cy="solved-button"]`).should('exist').contains('Avsluta ärende').click();
       cy.get('article.sk-modal-dialog').contains('Ändra lösningskod').click();
-      cy.get('article.sk-modal-dialog').contains('Välj en lösning');
+      cy.get('article.sk-modal-dialog').contains('Välj ny lösningskod');
 
       // Close modal
       cy.get('article.sk-modal-dialog .sk-modal-dialog-close').click();
@@ -320,7 +321,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       // Reopen modal - should show "Aktuell avslutningskod" again
       cy.get(`[data-cy="solved-button"]`).contains('Avsluta ärende').click();
       cy.get('article.sk-modal-dialog').should('exist');
-      cy.get('article.sk-modal-dialog').contains('Aktuell avslutningskod');
+      cy.get('article.sk-modal-dialog').contains('Nuvarande lösningskod');
     });
 
     it('Can manage Kommentarer', () => {

@@ -1,4 +1,5 @@
 import { CasedataMessagesTab } from '@casedata/components/errand/tabs/messages/casedata-messages-tab';
+import { MEXCaseType, MEXCaseTypesWithContractsAndBilling } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { getAssets } from '@casedata/services/asset-service';
@@ -11,13 +12,18 @@ import {
   groupByConversationIdSortedTree,
 } from '@casedata/services/casedata-message-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
-import { useAppContext } from '@common/contexts/app.context';
+import { getUiPhase, phaseChangeInProgress } from '@casedata/services/process-service';
 import { isPT } from '@common/services/application-service';
+import { deepFlattenToObject } from '@common/services/helper-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
+import { appConfig } from '@config/appconfig';
 import { Tabs, useSnackbar } from '@sk-web-gui/react';
-import React, { useEffect, useRef, useState } from 'react';
-import { UseFormReturn, useFormContext } from 'react-hook-form';
+import { useCasedataStore, useConfigStore } from '@stores/index';
+import { ReactNode, useEffect, useRef, useState } from 'react';
+import { useFormContext, UseFormReturn } from 'react-hook-form';
+
 import { CasedataAttachments } from './tabs/attachments/casedata-attachments.component';
+import { CaseDataBillingForm } from './tabs/billing/casedata-billing-form';
 import { CasedataContractTab } from './tabs/contract/casedata-contract-tab';
 import { CasedataDecisionTab } from './tabs/decision/casedata-decision-tab';
 import { CasedataDetailsTab } from './tabs/details/casedata-details-tab';
@@ -25,14 +31,10 @@ import { CasedataInvestigationTab } from './tabs/investigation/casedata-investig
 import CasedataForm from './tabs/overview/casedata-form.component';
 import { CasedataPermitServicesTab } from './tabs/permits-services/casedata-permits-services-tab';
 import { CasedataServicesTab } from './tabs/services/casedata-service-tab';
-import { CaseDataBillingForm } from './tabs/billing/casedata-billing-form';
-import { getUiPhase, phaseChangeInProgress } from '@casedata/services/process-service';
-import { contractsEnabled } from '@common/services/feature-flag-service';
-import { appConfig } from '@config/appconfig';
 
 export const CasedataTabsWrapper: React.FC = () => {
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const {
-    municipalityId,
     errand,
     setErrand,
     messages,
@@ -43,7 +45,7 @@ export const CasedataTabsWrapper: React.FC = () => {
     setAssets,
     assets,
     uiPhase,
-  } = useAppContext();
+  } = useCasedataStore();
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [unsavedUppgifter, setUnsavedUppgifter] = useState(false);
   const [unsavedContract, setUnsavedContract] = useState(false);
@@ -141,7 +143,7 @@ export const CasedataTabsWrapper: React.FC = () => {
 
   const tabs: {
     label: string;
-    content: React.ReactNode;
+    content: ReactNode;
     disabled: boolean;
     visibleFor: ErrandPhase[];
   }[] = [
@@ -251,23 +253,27 @@ export const CasedataTabsWrapper: React.FC = () => {
           ]
         : [],
     },
-    {
-      label: 'Engångsfakturering',
-      content: <CaseDataBillingForm />,
-      disabled: false,
-      visibleFor:
-        appConfig?.features?.useBilling && errand?.id
-          ? [
-              ErrandPhase.utredning,
-              ErrandPhase.beslut,
-              ErrandPhase.hantera,
-              ErrandPhase.verkstalla,
-              ErrandPhase.uppfoljning,
-              ErrandPhase.canceled,
-              ErrandPhase.overklagad,
-            ]
-          : [],
-    },
+    ...(appConfig.features.useBilling
+      ? [
+          {
+            label: 'Engångsfakturering',
+            content: <CaseDataBillingForm />,
+            disabled: false,
+            visibleFor:
+              errand?.id && MEXCaseTypesWithContractsAndBilling.includes(errand?.caseType)
+                ? [
+                    ErrandPhase.utredning,
+                    ErrandPhase.beslut,
+                    ErrandPhase.hantera,
+                    ErrandPhase.verkstalla,
+                    ErrandPhase.uppfoljning,
+                    ErrandPhase.canceled,
+                    ErrandPhase.overklagad,
+                  ]
+                : [],
+          },
+        ]
+      : []),
     ...(appConfig.features.useContracts
       ? [
           {
@@ -275,8 +281,10 @@ export const CasedataTabsWrapper: React.FC = () => {
             content: <CasedataContractTab setUnsaved={setUnsavedContract} update={() => {}} />,
             disabled: false,
             visibleFor:
-              !isPT() && errand?.id
+              errand?.id && MEXCaseTypesWithContractsAndBilling.includes(errand?.caseType)
                 ? [
+                    ...(errand?.caseType === MEXCaseType.MEX_TERMINATION_OF_LEASE ? [ErrandPhase.aktualisering] : []),
+                    ...(errand?.caseType === MEXCaseType.UPDATECONTRACT ? [ErrandPhase.aktualisering] : []),
                     ErrandPhase.utredning,
                     ErrandPhase.beslut,
                     ErrandPhase.hantera,
@@ -381,7 +389,7 @@ export const CasedataTabsWrapper: React.FC = () => {
     },
   ];
 
-  const [current, setCurrent] = React.useState<number | undefined>(0);
+  const [current, setCurrent] = useState<number | undefined>(0);
 
   let currentTab = current;
 
@@ -435,7 +443,12 @@ export const CasedataTabsWrapper: React.FC = () => {
     <div className="mb-xl">
       <WarnIfUnsavedChanges
         showWarning={
-          methods.formState.isDirty || unsavedChanges || unsavedUppgifter || unsavedUtredning || unsavedDecision
+          Object.values(deepFlattenToObject(methods.formState.dirtyFields)).some(Boolean) ||
+          unsavedChanges ||
+          unsavedUppgifter ||
+          unsavedUtredning ||
+          unsavedDecision ||
+          unsavedContract
         }
       >
         <Tabs

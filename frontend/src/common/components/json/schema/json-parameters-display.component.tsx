@@ -4,14 +4,13 @@ import { useJsonSchema } from '@common/components/json/hooks/useJsonSchema';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { JsonParameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Spinner } from '@sk-web-gui/react';
-import React from 'react';
-
+import { FC } from 'react';
 interface JsonParameterItemProps {
   param: JsonParameter;
   municipalityId: string;
 }
 
-const JsonParameterItem: React.FC<JsonParameterItemProps> = ({ param, municipalityId }) => {
+const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId }) => {
   const { schema, uiSchema, loading, error } = useJsonSchema(municipalityId, param.schemaId);
 
   if (loading) {
@@ -39,7 +38,7 @@ interface JsonParametersDisplayProps {
   municipalityId: string;
 }
 
-export const JsonParametersDisplay: React.FC<JsonParametersDisplayProps> = ({ jsonParameters, municipalityId }) => {
+export const JsonParametersDisplay: FC<JsonParametersDisplayProps> = ({ jsonParameters, municipalityId }) => {
   if (!jsonParameters || jsonParameters.length === 0) {
     return null;
   }
@@ -47,7 +46,11 @@ export const JsonParametersDisplay: React.FC<JsonParametersDisplayProps> = ({ js
   return (
     <div className="mt-16">
       {jsonParameters.map((param, idx) => (
-        <JsonParameterItem key={`${param.key}-${param.schemaId}-${idx}`} param={param} municipalityId={municipalityId} />
+        <JsonParameterItem
+          key={`${param.key}-${param.schemaId}-${idx}`}
+          param={param}
+          municipalityId={municipalityId}
+        />
       ))}
     </div>
   );

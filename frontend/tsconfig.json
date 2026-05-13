@@ -26,7 +26,8 @@
       "@common/*": ["src/common/*"],
       "@jestRoot/*": [".jest/*"],
       "@styles/*": ["src/styles/*"],
-      "@cypress/*": ["cypress/*"]
+      "@cypress/*": ["cypress/*"],
+      "@stores/*": ["src/stores/*"]
       // "@services/*": ["src/services/*"],
       // "@common/components/*": ["src/components/*"],
       // "@interfaces/*": ["src/interfaces/*"],

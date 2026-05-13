@@ -98,7 +98,7 @@ export interface RenderRequest {
   version?: string | null;
   metadata?: KeyValue[];
   /** Parameters (string values may be BASE64-encoded, and in that case they should be on the form "BASE64:<base64-encoded-value>") */
-  parameters?: object | string | null;
+  parameters?: Record<string, any> | string | null;
 }
 
 export interface RenderResponse {
@@ -114,7 +114,7 @@ export interface DirectRenderRequest {
    */
   content: string;
   /** Parameters (string values may be BASE64-encoded, and in that case they should be on the form "BASE64:<base64-encoded-value>") */
-  parameters?: object | string | null;
+  parameters?: Record<string, any> | string | null;
 }
 
 export interface DirectRenderResponse {

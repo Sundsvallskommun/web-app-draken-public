@@ -1,18 +1,19 @@
-import { useFormContext } from 'react-hook-form';
-import { Chip } from '@sk-web-gui/react';
-import dayjs from 'dayjs';
 import { Admin } from '@common/services/user-service';
+import { Chip } from '@sk-web-gui/react';
 import {
   AttestationFilter,
   AttestationValues,
 } from '@supportmanagement/components/attestation-tab/components/attestation-filtering/attestations-filtering.component';
 import { billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
+import dayjs from 'dayjs';
+import { FC } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 interface AttestationFilterTagsProps {
   administrators: Admin[];
 }
 
-export const AttestationFilterTagsComponent: React.FC<AttestationFilterTagsProps> = () => {
+export const AttestationFilterTagsComponent: FC<AttestationFilterTagsProps> = () => {
   const { watch, setValue, reset } = useFormContext<AttestationFilter>();
   const statuses = watch('status');
   const invoiceTypes = watch('invoiceType');

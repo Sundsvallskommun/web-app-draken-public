@@ -1,21 +1,24 @@
-import { useFormContext } from 'react-hook-form';
-import { SupportManagementFilter, SupportManagementValues } from '../supportmanagement-filtering.component';
-import { Chip } from '@sk-web-gui/react';
-import { Channels, Status } from '@supportmanagement/services/support-errand-service';
-import dayjs from 'dayjs';
 import { Admin } from '@common/services/user-service';
+import { Chip } from '@sk-web-gui/react';
+import { useMetadataStore } from '@stores/index';
+import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { Priority } from '@supportmanagement/interfaces/priority';
-import { SupportMetadata, SupportType } from '@supportmanagement/services/support-metadata-service';
-import { useEffect, useState } from 'react';
-import { useAppContext } from '@contexts/app.context';
-import { Category, Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import { Channels, Status } from '@supportmanagement/services/support-errand-service';
+import { SupportType } from '@supportmanagement/services/support-metadata-service';
+import dayjs from 'dayjs';
+import { FC, useEffect, useMemo } from 'react';
+import { useFormContext } from 'react-hook-form';
+
+import { SupportManagementFilter, SupportManagementValues } from '../supportmanagement-filtering.component';
 
 interface SupportManagementFilterTagsProps {
   administrators: Admin[];
 }
 
-export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsProps> = ({ administrators }) => {
+export const SupportManagementFilterTags: FC<SupportManagementFilterTagsProps> = ({ administrators }) => {
   const { watch, setValue, reset } = useFormContext<SupportManagementFilter>();
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  const selectedSupportErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
   const categories = watch('category');
   const labelCategories = watch('labelCategory');
   const types = watch('type');
@@ -27,26 +30,14 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
   const enddate = watch('enddate');
   const admins = watch('admins');
 
-  const [allCategories, setAllCategories] = useState<Category[]>();
-  const [allTypes, setAllTypes] = useState<SupportType[]>();
-  const [allLabelCategories, setAllLabelCategories] = useState<Label[]>();
-  const {
-    supportMetadata,
-    selectedSupportErrandStatuses,
-  } = useAppContext();
+  const allCategories = supportMetadata?.categories;
+  const allLabelCategories = supportMetadata?.labels?.labelStructure;
 
-  useEffect(() => {
-    setAllCategories(supportMetadata?.categories);
+  const allTypes = useMemo(() => {
     const _types: SupportType[] = [];
     if (categories.length > 0) {
       categories?.forEach((category) => {
         const categoryTypes = supportMetadata?.categories?.find((c) => c.name === category)?.types;
-        types.filter((type) => {
-          if (!categoryTypes?.find((ct) => ct.name === type)) {
-            const newTypes = types.filter((_t) => _t !== type);
-            setValue('type', newTypes);
-          }
-        });
         if (categoryTypes) {
           _types.push(...categoryTypes);
         }
@@ -56,28 +47,23 @@ export const SupportManagementFilterTags: React.FC<SupportManagementFilterTagsPr
         _types.push(...(category.types ?? []));
       });
     }
-    setAllTypes(_types);
+    return _types;
+  }, [supportMetadata, categories]);
 
-    if (supportMetadata?.labels?.labelStructure) {
-      setAllLabelCategories(supportMetadata?.labels.labelStructure);
-      const _labelTypes: string[] = [];
-      if (labelCategories.length > 0) {
-        // Some labelCategory is selected, get labelTypes from those
-        labelCategories?.forEach((category) => {
-          const categoryTypes = supportMetadata?.labels?.labelStructure?.find((c) => c.resourcePath === category)?.labels;
-          if (categoryTypes) {
-            _labelTypes.push(...categoryTypes.map((l) => l.resourcePath!));
+  useEffect(() => {
+    if (categories.length > 0) {
+      categories?.forEach((category) => {
+        const categoryTypes = supportMetadata?.categories?.find((c) => c.name === category)?.types;
+        types.filter((type) => {
+          if (!categoryTypes?.find((ct) => ct.name === type)) {
+            const newTypes = types.filter((_t) => _t !== type);
+            setValue('type', newTypes);
           }
         });
-      } else {
-        // No selected labelCategory, get all label types
-        supportMetadata?.labels?.labelStructure?.forEach((category) => {
-          _labelTypes.push(...(category.labels ?? []).map((l) => l.resourcePath!));
-        });
-      }
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supportMetadata, categories, types, labelCategories, labelTypes, labelSubTypes]);
+  }, [supportMetadata, categories, types]);
 
   const hasTags =
     categories.length > 0 ||

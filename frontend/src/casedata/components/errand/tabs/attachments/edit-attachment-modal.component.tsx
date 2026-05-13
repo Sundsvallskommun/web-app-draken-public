@@ -1,12 +1,11 @@
-import React from 'react';
-import { Modal, Button, Image, Spinner } from '@sk-web-gui/react';
 import { Attachment } from '@casedata/interfaces/attachment';
-import { CommonImageCropper } from '@common/components/image-cropper/common-image-cropper.component';
+import { IErrand } from '@casedata/interfaces/errand';
 import { getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
-import { IErrand } from '@casedata/interfaces/errand';
+import { CommonImageCropper } from '@common/components/image-cropper/common-image-cropper.component';
+import { Button, Image, Modal, Spinner } from '@sk-web-gui/react';
 import { Crop } from 'lucide-react';
-
+import { FC } from 'react';
 interface EditAttachmentModalProps {
   isOpen: boolean;
   isCropping: boolean;
@@ -17,7 +16,7 @@ interface EditAttachmentModalProps {
   onToggleCrop: () => void;
 }
 
-export const EditAttachmentModal: React.FC<EditAttachmentModalProps> = ({
+export const EditAttachmentModal: FC<EditAttachmentModalProps> = ({
   isOpen,
   isCropping,
   modalFetching,

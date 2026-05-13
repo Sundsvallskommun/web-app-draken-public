@@ -1,8 +1,9 @@
+import { Controller, Get } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { User } from '@/interfaces/users.interface';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
-import { Controller, Get } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
 
 @Controller()
 export class HealthController {

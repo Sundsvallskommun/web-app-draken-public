@@ -91,7 +91,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       const typ = cat.types[0];
       cy.get('[data-cy="category-input"]').select(cat.displayName);
       cy.get('[data-cy="type-input"]').select(typ.displayName);
-      cy.get('[data-cy="errand-description-richtext-wrapper"]').type('Mock description');
+      cy.get('[data-cy="errand-description-richtext-wrapper"]').find('.ql-editor').type('Mock description');
       cy.get('[data-cy="save-button"]').click();
       cy.wait(`@updateErrand`).should(({ request, response }) => {
         expect(request.body).to.deep.equal({
@@ -129,7 +129,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       const typ = cat.types[2];
       cy.get('[data-cy="category-input"]').select(cat.displayName);
       cy.get('[data-cy="type-input"]').select(typ.displayName);
-      cy.get('[data-cy="errand-description-richtext-wrapper"]').type('Mock description');
+      cy.get('[data-cy="errand-description-richtext-wrapper"]').find('.ql-editor').type('Mock description');
       cy.get('[data-cy="contactReason-input"]').select('E-tjänst saknas');
       cy.get('[data-cy="show-contactReasonDescription-input"]').should('exist').check({ force: true });
       cy.get('[data-cy="contactReasonDescription-input"]').should('exist').type('Mock contact reason description');

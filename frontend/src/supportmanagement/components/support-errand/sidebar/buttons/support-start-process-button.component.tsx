@@ -1,20 +1,25 @@
-import { useAppContext } from '@contexts/app.context';
 import { Button, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import {
-  Status,
-  setSupportErrandStatus,
-  setSupportErrandAdmin,
   getSupportErrandById,
+  setSupportErrandAdmin,
+  setSupportErrandStatus,
+  Status,
 } from '@supportmanagement/services/support-errand-service';
-import { useFormContext } from 'react-hook-form';
 import { ArrowRight } from 'lucide-react';
+import { FC } from 'react';
+import { useFormContext } from 'react-hook-form';
 
-export const StartProcessComponent: React.FC<{
+export const SupportStartProcessButtonComponent: FC<{
   disabled: boolean;
   onSubmit: () => Promise<any>;
   onError: () => void;
 }> = ({ disabled, onSubmit, onError }) => {
-  const { user, supportErrand, administrators, municipalityId, setSupportErrand } = useAppContext();
+  const user = useUserStore((s) => s.user);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const administrators = useUserStore((s) => s.administrators);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const toast = useSnackbar();
   const { handleSubmit, reset } = useFormContext();
 

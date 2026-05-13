@@ -1,8 +1,8 @@
 import { Button, DatePicker, PopupMenu } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
-import { useState } from 'react';
-import { useFormContext } from 'react-hook-form';
 import { ChevronDown } from 'lucide-react';
+import { FC, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 export interface SupportManagementDatesFilter {
   startdate: string;
@@ -14,7 +14,7 @@ export const SupportManagementDatesValues = {
   enddate: '',
 };
 
-export const SupportManagementFilterDates: React.FC = () => {
+export const SupportManagementFilterDates: FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   const { setValue, watch } = useFormContext<SupportManagementDatesFilter>();
 

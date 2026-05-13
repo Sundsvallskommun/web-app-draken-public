@@ -1,8 +1,8 @@
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { downloadPdf, downloadAttachment, exportSingleErrand } from '@common/services/export-service';
-import { useAppContext } from '@contexts/app.context';
+import { downloadPdf, exportSingleErrand } from '@common/services/export-service';
 import { Button, Checkbox, FormControl, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import React, { useState } from 'react';
+import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface ExportParameters {
@@ -15,7 +15,8 @@ interface ExportParameters {
 }
 
 export const SidebarExport: React.FC = () => {
-  const { municipalityId, errand: contextErrand } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const contextErrand = useCasedataStore((s) => s.errand);
   const errand = contextErrand!;
   const [isExportLoading, setIsExportLoading] = useState<boolean>(false);
   const exportConfirm = useConfirm();
