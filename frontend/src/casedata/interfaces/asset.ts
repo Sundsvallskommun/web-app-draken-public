@@ -39,6 +39,7 @@ export interface AssetUpdateRequest {
 export interface DraftAssetUpdateRequest {
   issued?: string;
   validTo?: string | null;
+  indefinitely?: boolean;
   status?: AssetStatus;
   statusReason?: string;
   additionalParameters?: Record<string, string>;

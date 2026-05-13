@@ -72,12 +72,60 @@ export const deleteRelation = (municipalityId: string, id: string) => {
 export interface RelationWithErrandNumber {
   relation: Relation;
   errandNumber: string;
+  otherResourceId: string;
 }
 
 interface ResolvedRelationsResponse {
   relations: Relation[];
   caseStatuses: CaseStatusResponse[];
 }
+
+const ALLOWED_SERVICES = ['supportmanagement', 'case-data'];
+
+export const getAllRelatedErrands = async (
+  municipalityId: string,
+  resourceId: string
+): Promise<RelationWithErrandNumber[]> => {
+  const [sourceResult, targetResult] = await Promise.all([
+    getResolvedRelations('source', municipalityId, resourceId, 'ASC'),
+    getResolvedRelations('target', municipalityId, resourceId, 'ASC'),
+  ]);
+
+  const allStatuses = [...sourceResult.caseStatuses, ...targetResult.caseStatuses];
+
+  const fromSource: RelationWithErrandNumber[] = sourceResult.relations
+    .filter((relation) => ALLOWED_SERVICES.includes(relation.target.service))
+    .map((relation) => {
+      const otherResourceId = relation.target.resourceId;
+      const status = allStatuses.find((s) => s.caseId === otherResourceId);
+      return {
+        relation,
+        errandNumber: status?.errandNumber ?? otherResourceId,
+        otherResourceId,
+      };
+    });
+
+  const fromTarget: RelationWithErrandNumber[] = targetResult.relations
+    .filter((relation) => ALLOWED_SERVICES.includes(relation.source.service))
+    .map((relation) => {
+      const otherResourceId = relation.source.resourceId;
+      const status = allStatuses.find((s) => s.caseId === otherResourceId);
+      return {
+        relation,
+        errandNumber: status?.errandNumber ?? otherResourceId,
+        otherResourceId,
+      };
+    });
+
+  const seen = new Set<string>();
+  const deduplicated = [...fromSource, ...fromTarget].filter((entry) => {
+    if (seen.has(entry.relation.id!)) return false;
+    seen.add(entry.relation.id!);
+    return true;
+  });
+
+  return deduplicated.sort((a, b) => a.errandNumber.localeCompare(b.errandNumber));
+};
 
 export const getResolvedRelations = (
   direction: 'source' | 'target',

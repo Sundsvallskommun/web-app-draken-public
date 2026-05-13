@@ -39,14 +39,15 @@ export type DecisionOutcome = 'APPROVAL' | 'REJECTION' | 'CANCELLATION' | 'DISMI
 export enum DecisionOutcomeLabel {
   'APPROVAL' = 'Bifall',
   'REJECTION' = 'Avslag',
-  'CANCELLATION' = '',
-  'DISMISSAL' = 'Ärendet avskrivs',
+  'CANCELLATION' = 'Ärendet avskrivs',
+  'DISMISSAL' = 'Ärendet avvisas',
   'UNKNOWN_DECISION_OUTCOME' = 'Okänt',
 }
 
 export enum DecisionOutcomeKey {
   'Bifall' = 'APPROVAL',
   'Avslag' = 'REJECTION',
-  'Ärendet avskrivs' = 'DISMISSAL',
+  'Ärendet avskrivs' = 'CANCELLATION',
+  'Ärendet avvisas' = 'DISMISSAL',
   'Okänt' = 'UNKNOWN_DECISION_OUTCOME',
 }
