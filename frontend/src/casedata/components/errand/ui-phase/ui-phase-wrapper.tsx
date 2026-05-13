@@ -1,6 +1,7 @@
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { useCasedataStore } from '@stores/index';
+
 import { UiPhaseComponent } from '../ui-phase.component';
 
 export const UiPhaseWrapper = () => {

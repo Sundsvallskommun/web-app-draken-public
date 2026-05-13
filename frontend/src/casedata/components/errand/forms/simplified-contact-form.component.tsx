@@ -2,7 +2,6 @@ import { ContactModal } from '@casedata/components/errand/forms/contact-modal.co
 import { Channels } from '@casedata/interfaces/channels';
 import { Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
-import { useCasedataStore } from '@stores/index';
 import { isValidOrgNumber } from '@common/services/adress-service';
 import {
   invalidOrgNumberMessage,
@@ -17,6 +16,7 @@ import {
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, Input } from '@sk-web-gui/react';
+import { useCasedataStore } from '@stores/index';
 import { Pen } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';

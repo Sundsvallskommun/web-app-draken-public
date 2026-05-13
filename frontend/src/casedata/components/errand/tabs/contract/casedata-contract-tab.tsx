@@ -1,3 +1,4 @@
+import { CasedataStatusLabelComponent } from '@casedata/components/contract-overview/contracts-table.component';
 import { ContractData, UnifiedContractParty } from '@casedata/interfaces/contract-data';
 import {
   Contract,
@@ -37,7 +38,6 @@ import * as yup from 'yup';
 
 import ContractForm from './contract-form';
 import { ContractNavigation } from './contract-navigation';
-import { CasedataStatusLabelComponent } from '@casedata/components/contract-overview/contracts-table.component';
 
 interface CasedataContractProps {
   update: () => void;

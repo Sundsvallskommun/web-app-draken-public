@@ -2,8 +2,8 @@ import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import { AddressResult } from '@common/services/adress-service';
 import { appConfig } from '@config/appconfig';
-import { useMetadataStore, useSupportStore } from '@stores/index';
 import { Button, cx, FormControl, FormErrorMessage, FormLabel, Input, Modal, Select } from '@sk-web-gui/react';
+import { useMetadataStore, useSupportStore } from '@stores/index';
 import { ExternalIdType, SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
 import { Dispatch, FC, SetStateAction } from 'react';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';

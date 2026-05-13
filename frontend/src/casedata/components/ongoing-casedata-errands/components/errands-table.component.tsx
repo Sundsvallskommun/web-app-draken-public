@@ -8,9 +8,9 @@ import { PriorityComponent } from '@common/components/priority/priority.componen
 import type { Errand } from '@common/data-contracts/case-data/data-contracts';
 import { isMEX, isPT } from '@common/services/application-service';
 import { sortBy, truncate } from '@common/services/helper-service';
-import { useCasedataStore, useConfigStore } from '@stores/index';
-import { Input, Pagination, Select, Spinner, Table, cx } from '@sk-web-gui/react';
+import { cx, Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
+import { useCasedataStore, useConfigStore } from '@stores/index';
 import dayjs from 'dayjs';
 import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';

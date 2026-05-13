@@ -14,9 +14,9 @@ import {
 } from '@casedata/services/casedata-decision-service';
 import { getErrand, isErrandLocked, isFTErrand, validateAction } from '@casedata/services/casedata-errand-service';
 import { FT_INVESTIGATION_TEXT } from '@casedata/utils/investigation-text';
+import TextEditor from '@common/components/dynamic-text-editor';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
@@ -30,11 +30,11 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import TextEditor from '@common/components/dynamic-text-editor';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { Check, ClipboardPenLine, Download, Info } from 'lucide-react';
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { Check, ClipboardPenLine, Download, Info } from 'lucide-react';
 
 export interface UtredningFormModel {
   id?: string;

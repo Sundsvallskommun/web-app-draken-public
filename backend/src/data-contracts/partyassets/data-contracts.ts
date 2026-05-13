@@ -24,8 +24,8 @@ export interface Problem {
   instance?: string;
   /** @format uri */
   type?: string;
-  title?: string;
   detail?: string;
+  title?: string;
   /** @format int32 */
   status?: number;
 }
@@ -118,11 +118,9 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  integralNumber?: boolean;
+  number?: boolean;
+  string?: boolean;
+  boolean?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -134,9 +132,11 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  number?: boolean;
-  string?: boolean;
-  boolean?: boolean;
+  integralNumber?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 
@@ -158,6 +158,8 @@ export interface DraftAssetUpdateRequest {
    * @format date
    */
   validTo?: string;
+  /** If true, validTo will be cleared (asset becomes indefinite). Takes precedence over validTo when both are supplied. */
+  indefinitely?: boolean;
   /** Asset status */
   status?: Status;
   /** Status reason */

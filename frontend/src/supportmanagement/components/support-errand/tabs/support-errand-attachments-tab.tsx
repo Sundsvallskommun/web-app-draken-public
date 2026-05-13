@@ -1,5 +1,5 @@
-import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
 import FileUpload, { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
+import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { isKC } from '@common/services/application-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
