@@ -42,5 +42,12 @@ export const notificationBusCard_UppgiftFieldTemplate: UppgiftField[] = [
       type: 'textarea',
     },
     section: 'Yttre omständigheter',
+    dependsOn: [
+      {
+        field: 'personal.hasParatransitDecision',
+        value: 'YES',
+        validationMessage: '',
+      },
+    ],
   },
 ];
