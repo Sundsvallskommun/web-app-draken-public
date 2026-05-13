@@ -4,6 +4,7 @@ import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { apiService } from '@common/services/api-service';
+import { isPT } from '@common/services/application-service';
 
 export const PROCESS_PARAMETER_KEYS = ['process.displayPhase', 'process.phaseAction', 'process.phaseStatus'];
 
@@ -24,7 +25,9 @@ export const phaseChangeInProgress = (errand: IErrand) => {
   if (errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values?.[0] === undefined) {
     return true;
   }
+  //Remove if statement when camunda process rule is updated for PT
   if (
+    isPT() &&
     errand.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values?.[0] === UiPhase.registrerad &&
     !!errand.administrator
   ) {
