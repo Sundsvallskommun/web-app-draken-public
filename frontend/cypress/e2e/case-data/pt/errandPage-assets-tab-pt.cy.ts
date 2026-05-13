@@ -527,6 +527,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       visitInsatserTab(mockDraftAsset);
       cy.wait('@getDraftAssets');
       cy.get('[data-cy="edit-service-button"]').first().click();
+      cy.wait('@getDraftAssets');
       cy.get('.sk-modal-dialog-header-title').should('exist').and('contain.text', 'Redigera insats');
     });
 
@@ -543,6 +544,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       visitInsatserTab(mockDraftAsset);
       cy.wait('@getDraftAssets');
       cy.get('[data-cy="edit-service-button"]').first().click();
+      cy.wait('@getDraftAssets');
       cy.get('.sk-modal').should('exist');
       cy.get("[data-cy='schema-submit-button']").contains('Spara').should('exist').click();
       cy.wait('@patchDraftAsset');
