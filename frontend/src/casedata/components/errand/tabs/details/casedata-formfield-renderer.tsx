@@ -6,6 +6,7 @@ import {
 } from '@casedata/services/casedata-extra-parameters-service';
 import { resolveDateTimeToken, resolveDateToken } from '@casedata/utils/date-string-handler-utils';
 import {
+  Alert,
   Checkbox,
   Combobox,
   cx,
@@ -16,7 +17,7 @@ import {
   Select,
   Textarea,
 } from '@sk-web-gui/react';
-import { ComponentProps, FC, useMemo, useState } from 'react';
+import { ComponentProps, FC, useEffect, useMemo, useState } from 'react';
 import { get, UseFormReturn } from 'react-hook-form';
 
 import { RepeatableFieldGroup } from './repeatable-field-group';
@@ -171,6 +172,12 @@ export const CasedataFormFieldRenderer: FC<Props> = ({ detail, idx, form, errand
       : disabledByValue === detail.disabledBy.value
     : false;
 
+  useEffect(() => {
+    if (isDisabledByField) {
+      setValue(fieldKey, '', { shouldDirty: true });
+    }
+  }, [isDisabledByField, fieldKey, setValue]);
+
   const validationRules = getConditionalValidationRules(detail, getValues);
   const error = get(errors, fieldKey)?.message;
   const options: OptionBase[] = (detail.formField as { options?: OptionBase[] }).options ?? [];
@@ -213,6 +220,19 @@ export const CasedataFormFieldRenderer: FC<Props> = ({ detail, idx, form, errand
       <div key={`${detail.field}-${idx}`} className="w-full mt-lg">
         {detail.label && <FormLabel>{detail.label}</FormLabel>}
         {detail.description && <span>{detail.description}</span>}
+      </div>
+    );
+  }
+
+  if (detail.formField.type === 'alert') {
+    return (
+      <div key={`${detail.field}-${idx}`} className="w-full mt-lg">
+        <Alert type={detail.formField.alertType || 'info'}>
+          <Alert.Content>
+            {detail.label && <Alert.Content.Title>{detail.label}</Alert.Content.Title>}
+            {detail.description && <Alert.Content.Description>{detail.description}</Alert.Content.Description>}
+          </Alert.Content>
+        </Alert>
       </div>
     );
   }

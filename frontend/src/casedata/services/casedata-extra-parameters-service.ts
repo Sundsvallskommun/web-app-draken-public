@@ -117,7 +117,8 @@ export interface UppgiftField {
     | { type: 'radioPlus'; options: OptionBase[]; ownOption: string }
     | { type: 'checkbox'; options: OptionBase[] }
     | { type: 'repeatableGroup' }
-    | { type: 'info' };
+    | { type: 'info' }
+    | { type: 'alert'; alertType?: 'neutral' | 'info' | 'success' | 'warning' | 'error' };
   section: string;
   dependsOnLogic?: 'AND' | 'OR';
   dependsOn?: {
