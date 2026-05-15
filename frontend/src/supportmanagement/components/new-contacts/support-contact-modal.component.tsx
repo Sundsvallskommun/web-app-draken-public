@@ -53,6 +53,8 @@ export const SupportContactModal: FC<SupportContactModalProps> = ({
   const username = form.watch('username');
   const personNumber = form.watch('personNumber');
   const showPersonNumberField = searchMode === 'employee' || !!personNumber || !!username;
+  const showUsername = !!username && !personNumber;
+  const personNumberFieldName = showUsername ? 'username' : 'personNumber';
 
   return (
     <Modal
@@ -84,33 +86,14 @@ export const SupportContactModal: FC<SupportContactModalProps> = ({
               <div className="flex gap-lg">
                 {showPersonNumberField ? (
                   <FormControl id={`contact-personnumber`} className="w-1/2">
-                    <FormLabel>{username && !personNumber ? 'Användarnamn' : 'Personnummer'}</FormLabel>
-                    {username && !personNumber ? (
-                      <Input
-                        size="sm"
-                        disabled={disabled}
-                        readOnly
-                        data-cy={`contact-username`}
-                        className={cx(
-                          form.formState.errors.personNumber ? 'border-2 border-error' : null,
-                          'read-only:bg-gray-lighter read-only:cursor-not-allowed'
-                        )}
-                        {...form.register(`username`)}
-                      />
-                    ) : (
-                      <Input
-                        size="sm"
-                        disabled={disabled}
-                        readOnly
-                        data-cy={`contact-personNumber`}
-                        className={cx(
-                          form.formState.errors.personNumber ? 'border-2 border-error' : null,
-                          'read-only:bg-gray-lighter read-only:cursor-not-allowed'
-                        )}
-                        {...form.register(`personNumber`)}
-                      />
-                    )}
-
+                    <FormLabel>{showUsername ? 'Användarnamn' : 'Personnummer'}</FormLabel>
+                    <Input
+                      size="sm"
+                      disabled={disabled}
+                      readOnly
+                      data-cy={`contact-${personNumberFieldName}`}
+                      {...form.register(personNumberFieldName)}
+                    />
                     {form.formState.errors.personNumber && (
                       <div className="my-sm text-error">
                         <FormErrorMessage>{form.formState.errors.personNumber?.message}</FormErrorMessage>

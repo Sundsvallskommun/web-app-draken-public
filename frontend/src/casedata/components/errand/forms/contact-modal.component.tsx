@@ -85,10 +85,6 @@ export const ContactModal: FC<ContactModalProps> = ({
                     disabled={disabled}
                     readOnly
                     data-cy={`contact-personalNumber`}
-                    className={cx(
-                      formState.errors.personalNumber ? 'border-2 border-error' : null,
-                      'read-only:bg-gray-lighter read-only:cursor-not-allowed'
-                    )}
                     {...register(`personalNumber`)}
                   />
 
