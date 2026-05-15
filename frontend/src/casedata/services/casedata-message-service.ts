@@ -159,8 +159,11 @@ export const sendSms: (
   return Promise.all(msgPromises).then((results) => results.every((r) => r));
 };
 
-const sortBySentDate = (a: { sent: string }, b: { sent: string }) =>
-  dayjs(a.sent).isAfter(dayjs(b.sent)) ? 1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? -1 : 0;
+const sortMessagesBySentDesc = (messages: MessageResponse[]): MessageResponse[] => {
+  return messages.sort((a, b) =>
+    dayjs(a.sent).isAfter(dayjs(b.sent)) ? -1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? 1 : 0
+  );
+};
 
 export const countAllMessages = (tree: MessageNode[]): number => {
   if (!tree) {
@@ -268,18 +271,37 @@ const buildTree = (_list: MessageResponse[]) => {
   return roots;
 };
 
+const getErrandMessages = (municipalityId: string, errand: IErrand): Promise<MessageResponse[]> => {
+  if (!errand?.errandNumber || !municipalityId) {
+    console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
+  }
+
+  return apiService
+    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/errand/${errand?.id}/messages`)
+    .then((res) => res.data.data);
+};
+
+export const fetchMessagesWithTree: (
+  municipalityId: string,
+  errand: IErrand
+) => Promise<{ messages: MessageResponse[]; messageTree: MessageNode[] }> = (municipalityId, errand) => {
+  return getErrandMessages(municipalityId, errand)
+    .then((res) => {
+      const messages = sortMessagesBySentDesc([...res]);
+      const messageTree = buildTree(res.map((message) => ({ ...message })));
+      return { messages, messageTree };
+    })
+    .catch((e) => {
+      console.error('Something went wrong when fetching messages for errand:', errand.id, e);
+      throw e;
+    });
+};
+
 export const fetchMessagesTree: (municipalityId: string, errand: IErrand) => Promise<MessageNode[]> = (
   municipalityId,
   errand
 ) => {
-  if (!errand?.errandNumber || !municipalityId) {
-    console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
-  }
-  return apiService
-    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/errand/${errand?.id}/messages`)
-    .then((res) => {
-      return res.data.data; //.sort(sortBySentDate); //.reduce(findLastInThread, []);
-    })
+  return getErrandMessages(municipalityId, errand)
     .then((res) => {
       const tree = buildTree(res);
       return tree;
@@ -294,15 +316,9 @@ export const fetchMessages: (municipalityId: string, errand: IErrand) => Promise
   municipalityId,
   errand
 ) => {
-  if (!errand?.errandNumber || !municipalityId) {
-    console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
-  }
-  return apiService
-    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/errand/${errand?.id}/messages`)
+  return getErrandMessages(municipalityId, errand)
     .then((res) => {
-      const list: MessageResponse[] = res.data.data.sort((a, b) =>
-        dayjs(a.sent).isAfter(dayjs(b.sent)) ? -1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? 1 : 0
-      );
+      const list: MessageResponse[] = sortMessagesBySentDesc(res);
       return list;
     })
     .catch((e) => {

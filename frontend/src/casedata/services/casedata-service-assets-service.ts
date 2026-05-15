@@ -34,6 +34,19 @@ export interface Service {
   origin?: string;
 }
 
+const assetRequestCache = new Map<string, Promise<Asset[]>>();
+
+function dedupeAssetRequest(key: string, loader: () => Promise<Asset[]>): Promise<Asset[]> {
+  const existing = assetRequestCache.get(key);
+  if (existing) return existing;
+
+  const promise = loader().finally(() => {
+    assetRequestCache.delete(key);
+  });
+  assetRequestCache.set(key, promise);
+  return promise;
+}
+
 function normalizeArray(values: any): string[] {
   if (Array.isArray(values)) {
     if (values.length > 0 && typeof values[0] === 'object') {
@@ -90,12 +103,14 @@ export const getErrandServiceAssets = async (params: ErrandServiceAssetParams): 
   if (!params.errandId || !params.partyId) return [];
 
   const fetchParams = toFetchParams(params);
-  const [draftResp, activeResp] = await Promise.all([getDraftAssets(fetchParams), getAssets(fetchParams)]);
-  const draftAssets = draftResp?.data ?? [];
-  const activeAssets = activeResp?.data ?? [];
-  const draftIds = new Set(draftAssets.map((asset) => asset.id));
+  return dedupeAssetRequest(`errand:${JSON.stringify(fetchParams)}`, async () => {
+    const [draftResp, activeResp] = await Promise.all([getDraftAssets(fetchParams), getAssets(fetchParams)]);
+    const draftAssets = draftResp?.data ?? [];
+    const activeAssets = activeResp?.data ?? [];
+    const draftIds = new Set(draftAssets.map((asset) => asset.id));
 
-  return [...draftAssets, ...activeAssets.filter((asset) => !draftIds.has(asset.id))];
+    return [...draftAssets, ...activeAssets.filter((asset) => !draftIds.has(asset.id))];
+  });
 };
 
 export type PartyServiceAssetParams = Omit<ErrandServiceAssetParams, 'errandId'>;
@@ -109,12 +124,14 @@ export const getPartyServiceAssets = async (params: PartyServiceAssetParams): Pr
     type: params.assetType,
     origin: params.origin,
   };
-  const [draftResp, activeResp] = await Promise.all([getDraftAssets(fetchParams), getAssets(fetchParams)]);
-  const draftAssets = draftResp?.data ?? [];
-  const activeAssets = activeResp?.data ?? [];
-  const draftIds = new Set(draftAssets.map((asset) => asset.id));
+  return dedupeAssetRequest(`party:${JSON.stringify(fetchParams)}`, async () => {
+    const [draftResp, activeResp] = await Promise.all([getDraftAssets(fetchParams), getAssets(fetchParams)]);
+    const draftAssets = draftResp?.data ?? [];
+    const activeAssets = activeResp?.data ?? [];
+    const draftIds = new Set(draftAssets.map((asset) => asset.id));
 
-  return [...draftAssets, ...activeAssets.filter((asset) => !draftIds.has(asset.id))];
+    return [...draftAssets, ...activeAssets.filter((asset) => !draftIds.has(asset.id))];
+  });
 };
 
 export const getErrandServiceAssetById = async (

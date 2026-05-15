@@ -1,11 +1,6 @@
 import { Channels } from '@casedata/interfaces/channels';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import {
-  fetchMessages,
-  fetchMessagesTree,
-  MessageNode,
-  setMessageViewStatus,
-} from '@casedata/services/casedata-message-service';
+import { fetchMessagesWithTree, MessageNode, setMessageViewStatus } from '@casedata/services/casedata-message-service';
 import { Button, Divider, FormLabel, Select, useSnackbar } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { Mail } from 'lucide-react';
@@ -51,7 +46,7 @@ export const CasedataMessagesTab: FC<{
     } else {
       setMessageViewStatus(errand!.id.toString(), municipalityId, msg.messageId ?? '', true)
         .then(() =>
-          fetchMessagesTree(municipalityId, errand!).catch(() => {
+          fetchMessagesWithTree(municipalityId, errand!).catch(() => {
             toastMessage({
               position: 'bottom',
               closeable: false,
@@ -60,21 +55,11 @@ export const CasedataMessagesTab: FC<{
             });
           })
         )
-        .then((tree) => {
-          if (tree) setMessageTree(tree);
-        })
-        .then(() =>
-          fetchMessages(municipalityId, errand!).catch(() => {
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Något gick fel när meddelanden hämtades',
-              status: 'error',
-            });
-          })
-        )
-        .then((msgs) => {
-          if (msgs) setMessages(msgs);
+        .then((result) => {
+          if (result) {
+            setMessages(result.messages);
+            setMessageTree(result.messageTree);
+          }
         })
         .catch(() => {
           toastMessage({

@@ -31,6 +31,13 @@ export function useErrandServices({
   const [error, setError] = useState<string>();
 
   const refetch = useCallback(async () => {
+    if (!municipalityId || !partyId || !errandId || !assetType || !schema) {
+      setServices([]);
+      setLoading(false);
+      setError(undefined);
+      return;
+    }
+
     setLoading(true);
     setError(undefined);
     try {
@@ -72,6 +79,13 @@ export function usePartyServices({
   const [error, setError] = useState<string>();
 
   const refetch = useCallback(async () => {
+    if (!municipalityId || !partyId || !assetType || !schema) {
+      setServices([]);
+      setLoading(false);
+      setError(undefined);
+      return;
+    }
+
     setLoading(true);
     setError(undefined);
     try {
