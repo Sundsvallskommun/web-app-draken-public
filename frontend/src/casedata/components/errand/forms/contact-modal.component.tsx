@@ -3,8 +3,8 @@ import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import { appConfig } from '@config/appconfig';
-import { useCasedataStore } from '@stores/index';
 import { Button, cx, FormControl, FormErrorMessage, FormLabel, Input, Modal } from '@sk-web-gui/react';
+import { useCasedataStore } from '@stores/index';
 import { Dispatch, FC, SetStateAction } from 'react';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
 
@@ -50,6 +50,9 @@ export const ContactModal: FC<ContactModalProps> = ({
   const { control, register, formState, watch, setValue, trigger } = form;
   const errors = formState.errors;
   const errand = useCasedataStore((s) => s.errand);
+  const personalNumber = watch('personalNumber');
+  const personId = watch('personId');
+  const showPersonalNumber = !!personalNumber || !!personId;
 
   return (
     <Modal
@@ -74,33 +77,35 @@ export const ContactModal: FC<ContactModalProps> = ({
         {searchMode === 'person' ? (
           <>
             <div className="flex gap-lg">
-              <FormControl id={`contact-personnumber`} className="w-1/2">
-                <FormLabel>Personnummer</FormLabel>
-                <Input
-                  size="sm"
-                  disabled={disabled}
-                  readOnly
-                  data-cy={`contact-personalNumber`}
-                  className={cx(
-                    formState.errors.personalNumber ? 'border-2 border-error' : null,
-                    'read-only:bg-gray-lighter read-only:cursor-not-allowed'
-                  )}
-                  {...register(`personalNumber`)}
-                />
+              {showPersonalNumber ? (
+                <FormControl id={`contact-personnumber`} className="w-1/2">
+                  <FormLabel>Personnummer</FormLabel>
+                  <Input
+                    size="sm"
+                    disabled={disabled}
+                    readOnly
+                    data-cy={`contact-personalNumber`}
+                    className={cx(
+                      formState.errors.personalNumber ? 'border-2 border-error' : null,
+                      'read-only:bg-gray-lighter read-only:cursor-not-allowed'
+                    )}
+                    {...register(`personalNumber`)}
+                  />
 
-                {errors && formState.errors.personalNumber && (
-                  <div className="my-sm text-error">
-                    <FormErrorMessage>{formState.errors.personalNumber?.message}</FormErrorMessage>
-                  </div>
-                )}
-              </FormControl>
+                  {errors && formState.errors.personalNumber && (
+                    <div className="my-sm text-error">
+                      <FormErrorMessage>{formState.errors.personalNumber?.message}</FormErrorMessage>
+                    </div>
+                  )}
+                </FormControl>
+              ) : null}
 
               <ContactRelationSelect
                 contact={contact}
                 register={register}
                 errors={errors}
                 disabled={disabled}
-                className={cx(manual || editing ? 'w-1/2' : 'w-full')}
+                className={cx(showPersonalNumber && (manual || editing) ? 'w-1/2' : 'w-full')}
               />
             </div>
             <div className="flex gap-lg">
