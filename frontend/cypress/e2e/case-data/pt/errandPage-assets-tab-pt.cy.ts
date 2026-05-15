@@ -39,7 +39,7 @@ const mockFTErrandLocked = {
 };
 
 const setupCommonIntercepts = () => {
-  cy.intercept('GET', '**/schemas/*/latest', {
+  cy.intercept('GET', /\/schemas\/[^/]+(\/latest)?$/, {
     data: {
       created: '2026-01-28T09:31:47.183+01:00',
       description: 'A JSON-schema that defines services for paratransit errands (FT)',
