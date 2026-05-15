@@ -1,6 +1,5 @@
 import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
-import { MEXCaseType } from '@casedata/interfaces/case-type';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
@@ -239,8 +238,7 @@ export const PhaseChanger = () => {
         disabled={
           (isErrandLocked(errand) && !(isPT() && errand.status?.statusType === ErrandStatus.BeslutVerkstallt)) ||
           !allowed ||
-          phaseChangeText.disabled ||
-          errand.caseType === MEXCaseType.UPDATECONTRACT
+          phaseChangeText.disabled
         }
         color="vattjom"
         loadingText="Sparar"
