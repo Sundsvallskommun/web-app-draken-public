@@ -31,6 +31,7 @@ export interface Service {
   validTo?: string;
   status?: AssetStatus;
   schemaVersion?: string;
+  origin?: string;
 }
 
 function normalizeArray(values: any): string[] {
@@ -97,6 +98,25 @@ export const getErrandServiceAssets = async (params: ErrandServiceAssetParams): 
   return [...draftAssets, ...activeAssets.filter((asset) => !draftIds.has(asset.id))];
 };
 
+export type PartyServiceAssetParams = Omit<ErrandServiceAssetParams, 'errandId'>;
+
+export const getPartyServiceAssets = async (params: PartyServiceAssetParams): Promise<Asset[]> => {
+  if (!params.partyId) return [];
+
+  const fetchParams = {
+    municipalityId: params.municipalityId,
+    partyId: params.partyId,
+    type: params.assetType,
+    origin: params.origin,
+  };
+  const [draftResp, activeResp] = await Promise.all([getDraftAssets(fetchParams), getAssets(fetchParams)]);
+  const draftAssets = draftResp?.data ?? [];
+  const activeAssets = activeResp?.data ?? [];
+  const draftIds = new Set(draftAssets.map((asset) => asset.id));
+
+  return [...draftAssets, ...activeAssets.filter((asset) => !draftIds.has(asset.id))];
+};
+
 export const getErrandServiceAssetById = async (
   params: ErrandServiceAssetParams,
   assetId: string
@@ -149,6 +169,7 @@ export const mapAssetsToServices = async (
     service.issued = asset.issued ?? '';
     service.validTo = asset.validTo ?? '';
     service.status = asset.status;
+    service.origin = asset.origin;
     services.push(service);
   }
 

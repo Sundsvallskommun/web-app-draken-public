@@ -26,7 +26,7 @@ import { useCasedataStore, useConfigStore } from '@stores/index';
 import { ChangeEvent, FC, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ServiceListComponent } from './casedata-service-list.component';
-import { useErrandServices } from './useErrandService';
+import { useErrandServices, usePartyServices } from './useErrandService';
 
 export const CasedataServicesTab: FC = () => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -74,6 +74,20 @@ export const CasedataServicesTab: FC = () => {
     errandId,
     assetType,
     schema,
+  });
+
+  const errandCasedataServices = useMemo(() => services.filter((s) => s.origin === 'CASEDATA'), [services]);
+  const errandCasedataIds = useMemo(() => errandCasedataServices.map((s) => s.id), [errandCasedataServices]);
+  const {
+    services: partyServices,
+    loading: partyLoading,
+    error: partyError,
+  } = usePartyServices({
+    municipalityId,
+    partyId,
+    assetType,
+    schema,
+    excludeIds: errandCasedataIds,
   });
 
   const fetchAsset = useCallback(
@@ -324,11 +338,22 @@ export const CasedataServicesTab: FC = () => {
           <div className="text-error">{error}</div>
         ) : (
           <ServiceListComponent
-            services={services}
+            services={errandCasedataServices}
             onRemove={removeService}
             onEdit={startEdit}
             readOnly={errand ? isErrandLocked(errand) : false}
           />
+        )}
+      </div>
+
+      <div className="mt-32 pt-24">
+        <h4 className="text-h6 mb-sm border-b">Personens övriga insatser</h4>
+        {partyLoading ? (
+          <div>Hämtar personens insatser…</div>
+        ) : partyError ? (
+          <div className="text-error">{partyError}</div>
+        ) : (
+          <ServiceListComponent services={partyServices} readOnly emptyMessage="Personen har inga övriga insatser" />
         )}
       </div>
 

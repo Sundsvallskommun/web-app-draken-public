@@ -189,13 +189,15 @@ export const CasedataDecisionTab: FC<{
 
   // Template fetching is driven by outcome selection — see useEffect below after watch()
 
-  const { services, refetch: refetchServices } = useErrandServices({
+  const { services: allServices, refetch: refetchServices } = useErrandServices({
     municipalityId,
     partyId: ownerPartyId ?? '',
     errandId: String(errand?.id ?? ''),
     assetType: assetType,
     schema: serviceSchema,
   });
+
+  const services = useMemo(() => allServices.filter((s) => s.status === 'DRAFT'), [allServices]);
 
   useEffect(() => {
     if (props.onRefetchServices && refetchServices) {

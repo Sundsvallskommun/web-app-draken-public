@@ -1,8 +1,26 @@
+import { AssetStatus, assetStatusLabels } from '@casedata/interfaces/asset';
 import { canDeleteErrandServiceAsset, Service } from '@casedata/services/casedata-service-assets-service';
 import sanitized from '@common/services/sanitizer-service';
-import { Button } from '@sk-web-gui/react';
+import { Button, Label } from '@sk-web-gui/react';
 import { Car, Cog, ListChecks, Pencil, PlusCircle } from 'lucide-react';
 import { FC } from 'react';
+
+const statusColor = (status?: AssetStatus): string => {
+  switch (status) {
+    case 'ACTIVE':
+      return 'gronsta';
+    case 'DRAFT':
+      return 'warning';
+    case 'EXPIRED':
+      return 'error';
+    case 'BLOCKED':
+      return 'error';
+    case 'TEMPORARY':
+      return 'info';
+    default:
+      return 'tertiary';
+  }
+};
 
 interface Props {
   service: Service;
@@ -15,17 +33,29 @@ export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly
   const canRemove = canDeleteErrandServiceAsset(service);
 
   return (
-    <div data-cy="service-item" className="w-full py-24 border-b border-gray-200">
+    <div data-cy="service-item" className="w-full py-24 border-b border-gray-200 last:border-b-0">
       <div className="flex items-start gap-18">
         <div className="p-12 bg-vattjom-background-300 rounded-lg flex items-center justify-start">
           <ListChecks size={24} className="text-dark-secondary" />
         </div>
 
         <div className="flex flex-col gap-4 flex-1">
-          <div className="flex justify-between items-center">
-            <div className="text-base font-bold text-dark-secondary">
-              {service.restyp.join(', ')}
-              {service.isWinterService ? ' (Vinterfärdtjänst)' : ''}
+          <div className="flex justify-between items-center gap-12">
+            <div className="flex items-center gap-8 flex-wrap">
+              <div className="text-base font-bold text-dark-secondary">
+                {service.restyp.join(', ')}
+                {service.isWinterService ? ' (Vinterfärdtjänst)' : ''}
+              </div>
+              {service.status && (
+                <Label
+                  rounded
+                  inverted
+                  color={statusColor(service.status)}
+                  className="max-h-full h-auto text-center whitespace-nowrap"
+                >
+                  {assetStatusLabels[service.status] ?? service.status}
+                </Label>
+              )}
             </div>
             <div className="text-md font-normal text-dark-secondary whitespace-nowrap">
               {service?.validTo

@@ -7,13 +7,20 @@ type ServiceListComponentProps = {
   onRemove?: (id: string) => void;
   onEdit?: (id: string) => void;
   readOnly?: boolean;
+  emptyMessage?: string;
 };
 
-export const ServiceListComponent = ({ services, onRemove, onEdit, readOnly }: ServiceListComponentProps) => {
+export const ServiceListComponent = ({
+  services,
+  onRemove,
+  onEdit,
+  readOnly,
+  emptyMessage = 'Inga insatser tillagda',
+}: ServiceListComponentProps) => {
   const list = services ?? [];
   return list.length === 0 ? (
     <div data-cy="no-services" className="mt-32">
-      Inga insatser tillagda
+      {emptyMessage}
     </div>
   ) : (
     <div data-cy="services-list" className="mt-32">
