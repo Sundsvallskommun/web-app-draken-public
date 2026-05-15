@@ -2,19 +2,12 @@ import { SaveButtonComponent } from '@casedata/components/save-button/save-butto
 import { SuspendErrandComponent } from '@casedata/components/suspend-errand';
 import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
-import { MEXCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 import { saveErrandNote } from '@casedata/services/casedata-errand-notes-service';
-import {
-  getErrand,
-  isErrandAdmin,
-  isErrandLocked,
-  updateErrandStatus,
-  validateAction,
-} from '@casedata/services/casedata-errand-service';
+import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { cancelErrandPhaseChange, phaseChangeInProgress } from '@casedata/services/process-service';
 import { isAppealEnabled } from '@common/services/feature-flag-service';
@@ -35,7 +28,7 @@ import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';
 import { ArchiveX, CirclePause, Mail } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useFormContext,UseFormReturn } from 'react-hook-form';
+import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { AppealButtonComponent } from '../appeal-button.component';
 import { PhaseChanger } from '../phasechanger/phasechanger.component';
@@ -177,10 +170,6 @@ export const SidebarInfo: React.FC<{}> = () => {
               status: 'success',
             })
           );
-
-          if (errand?.caseType === MEXCaseType.UPDATECONTRACT) {
-            updateErrandStatus(municipalityId, errand!.id!.toString(), ErrandStatus.ArendeAvslutat);
-          }
 
           cancelErrandPhaseChange(municipalityId, errand!)
             .then(() => {
@@ -372,8 +361,7 @@ export const SidebarInfo: React.FC<{}> = () => {
         {uiPhase !== UiPhase.slutfor &&
           errand.phase !== ErrandPhase.verkstalla &&
           errand.phase !== ErrandPhase.uppfoljning &&
-          errand?.status?.statusType !== ErrandStatus.Tilldelat &&
-          errand?.status?.statusType !== ErrandStatus.ArendeAvslutat && (
+          errand?.status?.statusType !== ErrandStatus.Tilldelat && (
             <>
               <Button
                 className="mt-16"
@@ -384,15 +372,14 @@ export const SidebarInfo: React.FC<{}> = () => {
                   setCauseIsEmpty(false);
                 }}
                 disabled={
-                  errand.caseType !== MEXCaseType.UPDATECONTRACT &&
-                  (!(
+                  !(
                     uiPhase === UiPhase.granskning ||
                     uiPhase === UiPhase.utredning ||
                     uiPhase === UiPhase.beslut ||
                     uiPhase === UiPhase.uppfoljning
                   ) ||
-                    !isErrandAdmin(errand, user) ||
-                    isErrandLocked(errand))
+                  !isErrandAdmin(errand, user) ||
+                  isErrandLocked(errand)
                 }
               >
                 Avsluta ärendet
