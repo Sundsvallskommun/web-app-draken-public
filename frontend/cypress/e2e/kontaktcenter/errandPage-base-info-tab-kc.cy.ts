@@ -461,8 +461,8 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       // Click add manually button
       cy.get('[data-cy="add-manually-button-owner"]').click();
 
-      // Verify modal opened and person number is empty
-      cy.get('[data-cy="contact-personNumber"]').should('have.value', '');
+      // Verify modal opened and person number field is hidden (manual mode, person)
+      cy.get('[data-cy="contact-personNumber"]').should('not.exist');
 
       // Close modal
       cy.get('[data-cy="cancel-contact-button"]').click();
@@ -530,8 +530,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="save-button"]').should('be.disabled');
       cy.get('[data-cy="add-manually-button-person"]').click();
 
-      cy.get('[data-cy="contact-personNumber"]').should('have.attr', 'readonly');
-      cy.get('[data-cy="contact-personNumber"]').should('have.value', '');
+      cy.get('[data-cy="contact-personNumber"]').should('not.exist');
       cy.get('[data-cy="contact-firstName"]').type('Test');
       cy.get('[data-cy="contact-lastName"]').type('Testsson');
       cy.get('[data-cy="contact-address"]').type('Testaddress');
@@ -695,8 +694,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="add-manually-button-person"]').click();
 
       cy.get('[data-cy="submit-contact-button"]').should('be.disabled');
-      cy.get('[data-cy="contact-personNumber"]').should('have.attr', 'readonly');
-      cy.get('[data-cy="contact-personNumber"]').should('have.value', '');
+      cy.get('[data-cy="contact-personNumber"]').should('not.exist');
       cy.get('[data-cy="contact-firstName"]').type('Test');
       cy.get('[data-cy="contact-lastName"]').type('Testsson');
       cy.get('[data-cy="contact-address"]').type('Testaddress');
