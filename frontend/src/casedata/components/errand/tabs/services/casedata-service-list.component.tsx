@@ -8,6 +8,7 @@ type ServiceListComponentProps = {
   onEdit?: (id: string) => void;
   readOnly?: boolean;
   emptyMessage?: string;
+  currentErrandId?: string;
 };
 
 export const ServiceListComponent = ({
@@ -16,6 +17,7 @@ export const ServiceListComponent = ({
   onEdit,
   readOnly,
   emptyMessage = 'Inga insatser tillagda',
+  currentErrandId,
 }: ServiceListComponentProps) => {
   const list = services ?? [];
   return list.length === 0 ? (
@@ -31,6 +33,7 @@ export const ServiceListComponent = ({
           readOnly={readOnly}
           onRemove={readOnly ? undefined : onRemove}
           onEdit={readOnly ? undefined : onEdit}
+          currentErrandId={currentErrandId}
         />
       ))}
     </div>

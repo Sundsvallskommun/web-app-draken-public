@@ -2,7 +2,8 @@ import { AssetStatus, assetStatusLabels } from '@casedata/interfaces/asset';
 import { canDeleteErrandServiceAsset, Service } from '@casedata/services/casedata-service-assets-service';
 import sanitized from '@common/services/sanitizer-service';
 import { Button, Label } from '@sk-web-gui/react';
-import { Car, Cog, ListChecks, Pencil, PlusCircle } from 'lucide-react';
+import { Car, Cog, ExternalLink, ListChecks, Pencil, PlusCircle } from 'lucide-react';
+import NextLink from 'next/link';
 import { FC } from 'react';
 
 const statusColor = (status?: AssetStatus): string => {
@@ -27,10 +28,13 @@ interface Props {
   onRemove?: (id: string) => void;
   onEdit?: (id: string) => void;
   readOnly?: boolean;
+  currentErrandId?: string;
 }
 
-export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly }) => {
+export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly, currentErrandId }) => {
   const canRemove = canDeleteErrandServiceAsset(service);
+  const showSourceErrandLink =
+    readOnly && !!service.sourceErrandNumber && (!currentErrandId || service.sourceErrandId !== currentErrandId);
 
   return (
     <div data-cy="service-item" className="w-full py-24 border-b border-gray-200 last:border-b-0">
@@ -87,6 +91,19 @@ export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly
             className="text-dark-secondary text-base break-words whitespace-pre-wrap leading-relaxed overflow-hidden [word-break:break-word]"
             dangerouslySetInnerHTML={{ __html: sanitized(service?.comment) }}
           />
+
+          {showSourceErrandLink && (
+            <div className="text-md font-normal">
+              <NextLink
+                href={`/arende/${service.sourceErrandNumber}`}
+                className="inline-flex items-center gap-4 text-vattjom-link hover:underline"
+                data-cy="service-source-errand-link"
+              >
+                <ExternalLink size={14} />
+                <span>Tillhör ärende {service.sourceErrandNumber}</span>
+              </NextLink>
+            </div>
+          )}
 
           {!readOnly && (onEdit || onRemove) && (
             <div className="pt-16 flex gap-16 items-center">

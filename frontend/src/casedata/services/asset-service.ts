@@ -39,6 +39,26 @@ export async function getAssets(params: GetAssetsParams): Promise<ApiResponse<As
   return res.data;
 }
 
+export type GetServicesParams = {
+  municipalityId?: string;
+  partyId?: string;
+  errandId?: string;
+  type?: string;
+  origin?: string;
+};
+
+export async function getErrandServices(params: GetServicesParams): Promise<ApiResponse<Asset[]>> {
+  const url = `errand-services${buildQuery(params as GetAssetsParams)}`;
+  const res = await apiService.get<ApiResponse<Asset[]>>(url);
+  return res.data;
+}
+
+export async function getPartyServices(params: GetServicesParams): Promise<ApiResponse<Asset[]>> {
+  const url = `party-services${buildQuery(params as GetAssetsParams)}`;
+  const res = await apiService.get<ApiResponse<Asset[]>>(url);
+  return res.data;
+}
+
 export async function getAssetById(municipalityId: string, id: string): Promise<ApiResponse<Asset>> {
   const url = `assets/${encodeURIComponent(id)}?municipalityId=${municipalityId}`;
   const res = await apiService.get<ApiResponse<Asset>>(url);

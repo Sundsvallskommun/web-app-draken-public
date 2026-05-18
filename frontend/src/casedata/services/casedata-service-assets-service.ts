@@ -3,8 +3,8 @@ import {
   buildCreateAssetPayload,
   createDraftAsset,
   deleteDraftAsset,
-  getAssets,
-  getDraftAssets,
+  getErrandServices,
+  getPartyServices,
   updateAsset,
   updateDraftAsset,
 } from '@casedata/services/asset-service';
@@ -32,6 +32,8 @@ export interface Service {
   status?: AssetStatus;
   schemaVersion?: string;
   origin?: string;
+  sourceErrandId?: string;
+  sourceErrandNumber?: string;
 }
 
 const assetRequestCache = new Map<string, Promise<Asset[]>>();
@@ -104,12 +106,8 @@ export const getErrandServiceAssets = async (params: ErrandServiceAssetParams): 
 
   const fetchParams = toFetchParams(params);
   return dedupeAssetRequest(`errand:${JSON.stringify(fetchParams)}`, async () => {
-    const [draftResp, activeResp] = await Promise.all([getDraftAssets(fetchParams), getAssets(fetchParams)]);
-    const draftAssets = draftResp?.data ?? [];
-    const activeAssets = activeResp?.data ?? [];
-    const draftIds = new Set(draftAssets.map((asset) => asset.id));
-
-    return [...draftAssets, ...activeAssets.filter((asset) => !draftIds.has(asset.id))];
+    const resp = await getErrandServices(fetchParams);
+    return resp?.data ?? [];
   });
 };
 
@@ -125,12 +123,8 @@ export const getPartyServiceAssets = async (params: PartyServiceAssetParams): Pr
     origin: params.origin,
   };
   return dedupeAssetRequest(`party:${JSON.stringify(fetchParams)}`, async () => {
-    const [draftResp, activeResp] = await Promise.all([getDraftAssets(fetchParams), getAssets(fetchParams)]);
-    const draftAssets = draftResp?.data ?? [];
-    const activeAssets = activeResp?.data ?? [];
-    const draftIds = new Set(draftAssets.map((asset) => asset.id));
-
-    return [...draftAssets, ...activeAssets.filter((asset) => !draftIds.has(asset.id))];
+    const resp = await getPartyServices(fetchParams);
+    return resp?.data ?? [];
   });
 };
 
@@ -187,6 +181,8 @@ export const mapAssetsToServices = async (
     service.validTo = asset.validTo ?? '';
     service.status = asset.status;
     service.origin = asset.origin;
+    service.sourceErrandId = asset.sourceErrandId;
+    service.sourceErrandNumber = asset.sourceErrandNumber;
     services.push(service);
   }
 

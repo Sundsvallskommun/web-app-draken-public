@@ -1,6 +1,6 @@
 import { Decision } from '@/data-contracts/case-data/data-contracts';
 
-export type AssetStatus = 'ACTIVE' | 'EXPIRED' | 'BLOCKED';
+export type AssetStatus = 'ACTIVE' | 'DRAFT' | 'EXPIRED' | 'BLOCKED' | 'TEMPORARY';
 
 export interface ParkingPermit {
   artefactPermitNumber: string;

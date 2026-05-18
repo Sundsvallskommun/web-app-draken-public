@@ -14,6 +14,7 @@ import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@commo
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import {
+  Checkbox,
   DatePicker,
   FormControl,
   FormErrorMessage,
@@ -78,6 +79,8 @@ export const CasedataServicesTab: FC = () => {
 
   const errandCasedataServices = useMemo(() => services.filter((s) => s.origin === 'CASEDATA'), [services]);
   const errandCasedataIds = useMemo(() => errandCasedataServices.map((s) => s.id), [errandCasedataServices]);
+  const [showFinishedPartyServices, setShowFinishedPartyServices] = useState(false);
+  const ACTIVE_PARTY_STATUSES = useMemo(() => new Set(['ACTIVE', 'TEMPORARY']), []);
   const {
     services: partyServices,
     loading: partyLoading,
@@ -89,6 +92,13 @@ export const CasedataServicesTab: FC = () => {
     schema,
     excludeIds: errandCasedataIds,
   });
+  const visiblePartyServices = useMemo(
+    () =>
+      showFinishedPartyServices
+        ? partyServices
+        : partyServices.filter((s) => s.status && ACTIVE_PARTY_STATUSES.has(s.status)),
+    [partyServices, showFinishedPartyServices, ACTIVE_PARTY_STATUSES]
+  );
 
   const fetchAsset = useCallback(
     async (assetId: string) => {
@@ -353,7 +363,23 @@ export const CasedataServicesTab: FC = () => {
         ) : partyError ? (
           <div className="text-error">{partyError}</div>
         ) : (
-          <ServiceListComponent services={partyServices} readOnly emptyMessage="Personen har inga övriga insatser" />
+          <>
+            <div className="mb-16">
+              <Checkbox
+                data-cy="show-finished-party-services"
+                checked={showFinishedPartyServices}
+                onChange={(e) => setShowFinishedPartyServices(e.target.checked)}
+              >
+                Visa avslutade insatser
+              </Checkbox>
+            </div>
+            <ServiceListComponent
+              services={visiblePartyServices}
+              readOnly
+              emptyMessage="Personen har inga övriga insatser"
+              currentErrandId={errandId}
+            />
+          </>
         )}
       </div>
 
