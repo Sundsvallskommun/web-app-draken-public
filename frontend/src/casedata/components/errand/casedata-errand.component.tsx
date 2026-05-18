@@ -6,6 +6,7 @@ import { emptyErrand, getErrandByErrandNumber, isErrandLocked } from '@casedata/
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { getUiPhase } from '@casedata/services/process-service';
 import { PriorityComponent } from '@common/components/priority/priority.component';
+import { ReferredFromErrandInformation } from '@common/components/referred-from-errand-information/referred-from-errand-information.component';
 import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -241,6 +242,10 @@ export const CasedataErrandComponent: FC = () => {
                                 )}
                               </div>
                             </div>
+                            <ReferredFromErrandInformation
+                              municipalityId={municipalityId}
+                              errandId={errand.id as unknown as string}
+                            />
                           </>
                         ) : errand ? (
                           <div data-cy="registerErrandHeading" className="flex justify-between items-center pt-8">
