@@ -12,11 +12,11 @@
 
 /** Status model */
 export enum Status {
-  ACTIVE = "ACTIVE",
-  DRAFT = "DRAFT",
-  EXPIRED = "EXPIRED",
-  BLOCKED = "BLOCKED",
-  TEMPORARY = "TEMPORARY",
+  ACTIVE = 'ACTIVE',
+  DRAFT = 'DRAFT',
+  EXPIRED = 'EXPIRED',
+  BLOCKED = 'BLOCKED',
+  TEMPORARY = 'TEMPORARY',
 }
 
 export interface Problem {
@@ -24,8 +24,8 @@ export interface Problem {
   instance?: string;
   /** @format uri */
   type?: string;
-  title?: string;
   detail?: string;
+  title?: string;
   /** @format int32 */
   status?: number;
 }
@@ -118,6 +118,9 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
+  number?: boolean;
+  string?: boolean;
+  boolean?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -129,14 +132,11 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
+  integralNumber?: boolean;
   valueNode?: boolean;
   container?: boolean;
   missingNode?: boolean;
   nodeType?: JsonNodeNodeTypeEnum;
-  integralNumber?: boolean;
-  number?: boolean;
-  string?: boolean;
-  boolean?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -149,10 +149,17 @@ export interface AssetUpdateRequest {
 
 export interface DraftAssetUpdateRequest {
   /**
+   * Issued date
+   * @format date
+   */
+  issued?: string;
+  /**
    * Valid to date
    * @format date
    */
   validTo?: string;
+  /** If true, validTo will be cleared (asset becomes indefinite). Takes precedence over validTo when both are supplied. */
+  indefinitely?: boolean;
   /** Asset status */
   status?: Status;
   /** Status reason */
@@ -197,13 +204,13 @@ export interface Asset {
 }
 
 export enum JsonNodeNodeTypeEnum {
-  ARRAY = "ARRAY",
-  BINARY = "BINARY",
-  BOOLEAN = "BOOLEAN",
-  MISSING = "MISSING",
-  NULL = "NULL",
-  NUMBER = "NUMBER",
-  OBJECT = "OBJECT",
-  POJO = "POJO",
-  STRING = "STRING",
+  ARRAY = 'ARRAY',
+  BINARY = 'BINARY',
+  BOOLEAN = 'BOOLEAN',
+  MISSING = 'MISSING',
+  NULL = 'NULL',
+  NUMBER = 'NUMBER',
+  OBJECT = 'OBJECT',
+  POJO = 'POJO',
+  STRING = 'STRING',
 }

@@ -4,6 +4,7 @@ import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
 import { CCommunicationAttachment } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
+
 import { getClosingTemplate } from './message-template-service';
 import { SingleSupportAttachment } from './support-attachment-service';
 import { Channels, ContactChannelType, SupportErrand } from './support-errand-service';

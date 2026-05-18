@@ -87,27 +87,27 @@ export const CasedataMessagesTab: FC<{
     }
   };
 
-  const filterBySource = (message: MessageResponse) => {
-    switch (filterSource) {
-      case 1:
-        return message.messageType === 'DRAKEN';
-      case 2:
-        return message.messageType === 'DIGITAL_MAIL';
-      case 3:
-        return message.messageType === 'EMAIL';
-      case 4:
-        return message.messageType === 'MINASIDOR';
-      case 5:
-        return message.messageType === 'SMS';
-      case 6:
-        return message.messageType === 'WEBMESSAGE' || !!message.externalCaseId;
-      default:
-        return true;
-    }
-  };
-
   const sortedMessages = useMemo(() => {
     if (!combinedMessages || !combinedMessageTree) return [];
+
+    const filterBySource = (message: MessageResponse) => {
+      switch (filterSource) {
+        case 1:
+          return message.messageType === 'DRAKEN';
+        case 2:
+          return message.messageType === 'DIGITAL_MAIL';
+        case 3:
+          return message.messageType === 'EMAIL';
+        case 4:
+          return message.messageType === 'MINASIDOR';
+        case 5:
+          return message.messageType === 'SMS';
+        case 6:
+          return message.messageType === 'WEBMESSAGE' || !!message.externalCaseId;
+        default:
+          return true;
+      }
+    };
 
     let filtered = combinedMessages;
 

@@ -1,6 +1,6 @@
 'use client';
-import type { WidgetProps } from '@rjsf/utils';
 import TextEditor from '@common/components/dynamic-text-editor';
+import type { WidgetProps } from '@rjsf/utils';
 
 export function TexteditorWidget(props: WidgetProps) {
   const { value, onChange, options = {}, disabled, readonly } = props;

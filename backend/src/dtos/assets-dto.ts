@@ -17,6 +17,7 @@ export interface CreateAssetDto {
 }
 
 export interface PatchAssetDto {
+  issued?: string | null;
   validTo?: string | null;
   status?: AssetStatusDto;
   statusReason?: string;

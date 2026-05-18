@@ -66,11 +66,10 @@ export interface ScheduledBilling {
    */
   paused?: boolean;
   /**
-   * If set, this is the last billing — no further billings will be scheduled after this date
-   * @format date
-   * @example "2026-06-30"
+   * Direction of invoicing on the contract — used to detect ADVANCE↔ARREARS switches mid-contract.
+   * @example "ADVANCE"
    */
-  finalBillingDate?: string;
+  invoicedIn?: ScheduledBillingInvoicedInEnum;
 }
 
 export interface ConstraintViolationProblem {
@@ -82,8 +81,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  detail?: string;
   causeAsProblem?: ThrowableProblem;
+  detail?: string;
 }
 
 export interface ThrowableProblem {
@@ -107,11 +106,12 @@ export interface Violation {
 export interface EventRequest {
   /**
    * External id
+   * @minLength 1
    * @example "2026-00001"
    */
-  id?: string;
+  id: string;
   /**
-   * Municipality id
+   * Municipality id (taken from the path parameter when this event is delivered via the events endpoint)
    * @example "2281"
    */
   municipalityId?: string;
@@ -119,22 +119,22 @@ export interface EventRequest {
    * Event type
    * @example "CREATED"
    */
-  eventType?: EventRequestEventTypeEnum;
+  eventType: EventRequestEventTypeEnum;
 }
 
 export interface PageScheduledBilling {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: ScheduledBilling[];
   /** @format int32 */
   number?: number;
+  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
-  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
@@ -144,13 +144,13 @@ export interface PageScheduledBilling {
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  paged?: boolean;
-  sort?: SortObject;
   unpaged?: boolean;
+  sort?: SortObject;
 }
 
 export interface SortObject {
@@ -166,6 +166,15 @@ export interface SortObject {
 export enum ScheduledBillingSourceEnum {
   CONTRACT = 'CONTRACT',
   OPENE = 'OPENE',
+}
+
+/**
+ * Direction of invoicing on the contract — used to detect ADVANCE↔ARREARS switches mid-contract.
+ * @example "ADVANCE"
+ */
+export enum ScheduledBillingInvoicedInEnum {
+  ADVANCE = 'ADVANCE',
+  ARREARS = 'ARREARS',
 }
 
 /**

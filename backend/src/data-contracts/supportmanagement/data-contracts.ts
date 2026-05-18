@@ -619,10 +619,6 @@ export interface JsonNode {
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  /** @deprecated */
-  textual?: boolean;
-  binary?: boolean;
-  integralNumber?: boolean;
   missingNode?: boolean;
   valueNode?: boolean;
   container?: boolean;
@@ -634,6 +630,10 @@ export interface JsonNode {
   double?: boolean;
   bigDecimal?: boolean;
   bigInteger?: boolean;
+  /** @deprecated */
+  textual?: boolean;
+  binary?: boolean;
+  integralNumber?: boolean;
   nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
@@ -1072,9 +1072,9 @@ export interface PageErrand {
   content?: Errand[];
   /** @format int32 */
   number?: number;
+  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
-  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
@@ -1089,8 +1089,8 @@ export interface PageableObject {
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
   unpaged?: boolean;
+  sort?: SortObject;
 }
 
 export interface SortObject {
@@ -1199,10 +1199,18 @@ export interface MetaData {
 
 /** Event model */
 export interface Event {
+  /** Unique identifier for the event */
+  id?: string;
   /** Type of event */
   type?: EventType;
-  /** Event description */
+  /** Subtype describing what kind of entity the event refers to */
+  subType?: string;
+  /** Groups related events and notifications together within one operation */
+  requestGroupId?: string;
+  /** Short event description */
   message?: string;
+  /** Detailed event description */
+  details?: string;
   /** Service that created event */
   owner?: string;
   /**
@@ -1235,9 +1243,9 @@ export interface PageEvent {
   content?: Event[];
   /** @format int32 */
   number?: number;
+  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
-  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
@@ -1342,9 +1350,9 @@ export interface PageMessage {
   content?: Message[];
   /** @format int32 */
   number?: number;
+  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
-  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;

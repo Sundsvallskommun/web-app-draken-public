@@ -1,11 +1,11 @@
 import { UtredningFormModel } from '@casedata/components/errand/sidebar/sidebar-utredning.component';
 import { DecisionFormModel } from '@casedata/components/errand/tabs/decision/casedata-decision-tab';
-import { Service } from '@casedata/components/errand/tabs/services/casedata-service-mapper';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
 import { Decision, DecisionOutcome, DecisionType } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
+import { Service } from '@casedata/services/casedata-service-assets-service';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { Render, Template, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
@@ -76,7 +76,10 @@ export const getLawMapping = (errand: IErrand): Law[] => {
 export const LOST_PERMIT_STANDARD_DECISION_TEXT =
   '<p>Inget formellt beslut fattas för borttappade kort, beslutet om att bevilja parkeringstillstånd har tagits i ärendet för den ursprungliga ansökan.</p>';
 
-export const fetchDecisionTemplates: (prefix: string, decision?: string) => Promise<Template[]> = (prefix, decision) => {
+export const fetchDecisionTemplates: (prefix: string, decision?: string) => Promise<Template[]> = (
+  prefix,
+  decision
+) => {
   const params = new URLSearchParams({ templateType: 'Decision', prefix });
   if (decision) {
     params.append('decision', decision);
@@ -268,11 +271,18 @@ export const fetchInvestigationSkeleton: (errand: IErrand) => Promise<string> = 
 
 export const mapServicesToTemplateParams = (services: Service[]): Record<string, string>[] => {
   return services.map((service) => {
+    const validFrom = service.issued ? dayjs(service.issued).format('YYYY-MM-DD') : '';
+    const validToRaw = service.validTo ? dayjs(service.validTo).format('YYYY-MM-DD') : '';
+    const validity = validFrom
+      ? validToRaw
+        ? `Insatsen gäller ${validFrom} - ${validToRaw}`
+        : `Insatsen gäller från och med ${validFrom}`
+      : '';
     const item: Record<string, string> = {
-      restyp: service.restyp + (service.isWinterService ? ' (Vinterfärdtjänst)' : ''),
-      validFrom: service.startDate ? dayjs(service.startDate).format('YYYY-MM-DD') : '',
-      validTo: service.endDate ? dayjs(service.endDate).format('YYYY-MM-DD') : '',
-      validityType: service.validityType || '',
+      restyp: service.restyp.join(', ') + (service.isWinterService ? ' (Vinterfärdtjänst)' : ''),
+      validFrom,
+      validTo: validToRaw || 'tills vidare',
+      validity,
     };
     if (service.transportMode?.length > 0) {
       item.transportMode = service.transportMode.join(', ');
@@ -377,7 +387,8 @@ export const renderPdf: (
     parameters['permitFirstname'] = owner?.firstName;
     parameters['permitLastname'] = owner?.lastName;
     parameters['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
-    parameters['disabilityReason'] = errand.extraParameters.find((p) => p.key === 'application.reason')?.values?.[0] ?? '';
+    parameters['disabilityReason'] =
+      errand.extraParameters.find((p) => p.key === 'application.reason')?.values?.[0] ?? '';
   } else if (templateType === 'decision') {
     parameters['decisionText'] = wrapWithWordBreak(formData.description);
     parameters['decisionDate'] = dayjs(decision?.decidedAt).format('YYYY-MM-DD');
@@ -411,9 +422,7 @@ export const renderPdf: (
       : '';
 
     parameters['lawReferences'] = lawReferences;
-    parameters['services'] = services && services.length > 0
-      ? mapServicesToTemplateParams(services)
-      : [];
+    parameters['services'] = services && services.length > 0 ? mapServicesToTemplateParams(services) : [];
   }
 
   const renderBody: TemplateSelector = { identifier, parameters };
@@ -450,7 +459,10 @@ export const renderHtml: (
       administratorName: errand.administrator
         ? `${errand.administrator?.firstName} ${errand.administrator?.lastName}`
         : '',
-      description: `<div style="overflow-wrap: break-word; word-break: break-word;">${formData.description.replace(/<p>/g, '<p style="margin: 0;">')}</div>`,
+      description: `<div style="overflow-wrap: break-word; word-break: break-word;">${formData.description.replace(
+        /<p>/g,
+        '<p style="margin: 0;">'
+      )}</div>`,
       decisionDate: dayjs(decision?.updated).format('YYYY-MM-DD'),
     },
   };

@@ -7,6 +7,7 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { Role } from '@casedata/interfaces/role';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
+import { deleteDraftAsset, getDraftAssets, updateAsset } from '@casedata/services/asset-service';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import {
   fetchDecisionTemplates,
@@ -27,7 +28,6 @@ import {
   validateErrandForDecision,
   validateStatusForDecision,
 } from '@casedata/services/casedata-errand-service';
-import { getDraftAssets, updateAsset } from '@casedata/services/asset-service';
 import { sendDecisionMessage, sendMessage } from '@casedata/services/casedata-message-service';
 import {
   getOwnerStakeholder,
@@ -178,7 +178,7 @@ export const CasedataDecisionTab: FC<{
   }, [errand?.decisions]);
 
   const ownerPartyId = errand ? getOwnerStakeholder(errand)?.personId : undefined;
-  const assetType = 'FTErrandAssets';
+  const assetType = errand && isFTNationalErrand(errand) ? 'ParatransitPermitNational' : 'ParatransitPermitLocal';
 
   useEffect(() => {
     (async () => {
@@ -189,13 +189,15 @@ export const CasedataDecisionTab: FC<{
 
   // Template fetching is driven by outcome selection — see useEffect below after watch()
 
-  const { services, refetch: refetchServices } = useErrandServices({
+  const { services: allServices, refetch: refetchServices } = useErrandServices({
     municipalityId,
     partyId: ownerPartyId ?? '',
-    errandNumber: errand?.errandNumber ?? '',
+    errandId: String(errand?.id ?? ''),
     assetType: assetType,
     schema: serviceSchema,
   });
+
+  const services = useMemo(() => allServices.filter((s) => s.status === 'DRAFT'), [allServices]);
 
   useEffect(() => {
     if (props.onRefetchServices && refetchServices) {
@@ -379,15 +381,17 @@ export const CasedataDecisionTab: FC<{
         throw new Error('Kontaktsätt saknas');
       }
       await updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Beslutad);
-      if (ownerPartyId) {
-        const drafts = await getDraftAssets({
-          municipalityId,
-          partyId: ownerPartyId,
-          assetId: errand.errandNumber,
-          type: assetType,
-        });
-        const draftAssets = drafts?.data ?? [];
+      const drafts = await getDraftAssets({
+        municipalityId,
+        partyId: ownerPartyId,
+        errandId: String(errand.id),
+        type: assetType,
+      });
+      const draftAssets = drafts?.data ?? [];
+      if (data.outcome === 'APPROVAL') {
         await Promise.all(draftAssets.map((a) => updateAsset(municipalityId, a.id, { status: 'ACTIVE' })));
+      } else {
+        await Promise.all(draftAssets.map((a) => deleteDraftAsset(municipalityId, a.id)));
       }
       await triggerPhaseChange();
       toastMessage(

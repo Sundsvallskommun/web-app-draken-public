@@ -1,7 +1,7 @@
 import { isErrandLocked, isFTNotificationErrand } from '@casedata/services/casedata-errand-service';
 import { EXTRAPARAMETER_SEPARATOR, UppgiftField } from '@casedata/services/casedata-extra-parameters-service';
-import { useCasedataStore } from '@stores/index';
 import { Button } from '@sk-web-gui/react';
+import { useCasedataStore } from '@stores/index';
 import { Plus, Trash2 } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';

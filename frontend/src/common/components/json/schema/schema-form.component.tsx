@@ -36,6 +36,7 @@ type SchemaFormProps = {
   objectFieldTemplate?: ComponentType<any>;
   disabled?: boolean;
   submitButtonOptions?: { label?: string; leadingIcon?: boolean };
+  extraContent?: React.ReactNode;
 };
 
 const hasType = (p: AnyProp | undefined, t: string) =>
@@ -91,6 +92,7 @@ export default function SchemaForm({
   objectFieldTemplate,
   disabled,
   submitButtonOptions,
+  extraContent,
 }: SchemaFormProps) {
   const [localData, setLocalData] = useState<any>({});
   const data = formData ?? localData;
@@ -144,13 +146,18 @@ export default function SchemaForm({
         validator={validatorAjv8}
         fields={fields}
         widgets={widgets}
-        templates={templates}
+        templates={extraContent ? { ...templates, ButtonTemplates: { SubmitButton: () => null } } : templates}
         transformErrors={createJsonErrorTransformer(schema)}
         noHtml5Validate
         showErrorList={false}
         disabled={disabled}
       >
-        {disabled ? <></> : undefined}
+        {extraContent ? (
+          <>
+            {extraContent}
+            <SubmitButtonFieldTemplate {...{ registry: { formContext } } as any} />
+          </>
+        ) : disabled ? <></> : undefined}
       </Form>
     </div>
   );

@@ -1,6 +1,6 @@
 import { Button, CookieConsent } from '@sk-web-gui/react';
 import NextLink from 'next/link';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useState } from 'react';
 
 import { MainErrandsSidebar } from '../main-errands-sidebar/main-errands-sidebar.component';
 
@@ -19,12 +19,8 @@ export default function SidebarLayout({
   showContractTable: boolean;
   setShowContractTable: (show: boolean) => void;
 }) {
-  const [hostName, setHostName] = useState('');
+  const [hostName] = useState(() => (typeof window !== 'undefined' ? window.location.hostname : ''));
   const [open, setOpen] = useState(true);
-
-  useEffect(() => {
-    setHostName(window.location.hostname);
-  }, []);
 
   return (
     <>

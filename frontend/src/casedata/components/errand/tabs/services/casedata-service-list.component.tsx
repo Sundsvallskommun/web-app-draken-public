@@ -1,18 +1,26 @@
+import { Service } from '@casedata/services/casedata-service-assets-service';
+
 import { ServiceListItem } from './casedata-service-item.component';
-import { Service } from './casedata-service-mapper';
 
 type ServiceListComponentProps = {
   services?: Service[];
   onRemove?: (id: string) => void;
   onEdit?: (id: string) => void;
   readOnly?: boolean;
+  emptyMessage?: string;
 };
 
-export const ServiceListComponent = ({ services, onRemove, onEdit, readOnly }: ServiceListComponentProps) => {
+export const ServiceListComponent = ({
+  services,
+  onRemove,
+  onEdit,
+  readOnly,
+  emptyMessage = 'Inga insatser tillagda',
+}: ServiceListComponentProps) => {
   const list = services ?? [];
   return list.length === 0 ? (
     <div data-cy="no-services" className="mt-32">
-      Inga insatser tillagda
+      {emptyMessage}
     </div>
   ) : (
     <div data-cy="services-list" className="mt-32">
