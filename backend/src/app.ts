@@ -167,6 +167,10 @@ class App {
 
     this.initializeDataFolders();
 
+    this.app.get('/health', (_req, res) => {
+      res.status(200).json({ status: 'OK' });
+    });
+
     this.initializeMiddlewares();
     this.initializeRoutes(Controllers);
     if (this.swaggerEnabled) {
@@ -189,7 +193,7 @@ class App {
   }
 
   private initializeMiddlewares() {
-    this.app.use(morgan(LOG_FORMAT!, { stream }));
+    this.app.use(morgan(LOG_FORMAT!, { stream, skip: req => req.url?.endsWith('/health/up') ?? false }));
     this.app.use(hpp());
     this.app.use(helmet());
     this.app.use(compression());

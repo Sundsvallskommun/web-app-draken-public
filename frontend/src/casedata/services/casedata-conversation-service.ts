@@ -1,6 +1,7 @@
 import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { RelationWithErrandNumber } from '@common/services/relations-service';
 
 import { MessageNode } from './casedata-message-service';
 
@@ -161,25 +162,24 @@ export const getConversationAttachment: (
     });
 };
 
-// Comments is to prepare CD for creating relations
 export const getOrCreateConversationId = async (
   municipalityId: string,
   errand: IErrand,
   contactMeans: string,
-  // selectedRelationId: string,
-  // relationErrands: Relations[],
+  selectedRelationId: string,
+  relationErrands: RelationWithErrandNumber[],
   messageConversationId: string
 ): Promise<string> => {
   const conversationType = contactMeans === 'draken' || contactMeans === 'katla' ? 'INTERNAL' : 'EXTERNAL';
 
-  // const selectedRelation = relationErrands.find((relation) => relation.target.resourceId === selectedRelationId);
+  const selectedEntry = relationErrands.find((entry) => entry.otherResourceId === selectedRelationId);
 
   const conversations = await getConversations(municipalityId, errand.id);
   const existingExternalConversation = conversations.data.find((c) => c.type === 'EXTERNAL');
 
-  // const existingInternalConversation = conversations.data.find(
-  //   (conv: any) => conv.relationIds && conv.relationIds[0] === selectedRelation.id
-  // );
+  const existingInternalConversation = conversations.data.find(
+    (conv: any) => conv.relationIds && conv.relationIds[0] === selectedEntry?.relation.id
+  );
 
   const existingRelationlessConversation = conversations.data.find(
     (c) => c.relationIds.length === 0 && c.type !== 'EXTERNAL'
@@ -187,9 +187,9 @@ export const getOrCreateConversationId = async (
 
   let conversationId: string | undefined = undefined;
 
-  // if (contactMeans === 'draken' && existingInternalConversation) {
-  //   conversationId = existingInternalConversation.id;
-  // }
+  if (contactMeans === 'draken' && existingInternalConversation) {
+    conversationId = existingInternalConversation.id;
+  }
 
   if (contactMeans === 'minasidor' && existingExternalConversation) {
     conversationId = existingExternalConversation.id;
@@ -206,20 +206,17 @@ export const getOrCreateConversationId = async (
   if (!conversationId) {
     let topic;
     if (conversationType === 'EXTERNAL') {
-      // At the time of coding, only EXTERNAL conversation can be initiated from MEX.
       topic = `Mina sidor`;
     } else {
-      // So this case will never be true, until support for initating INTERNAL conversations
-      // from MEX (to KS) is added
-      topic = `${errand.errandNumber}`; //${selectedRelation ? ` - ${selectedRelation.target.type}` : ''}`;
+      topic = `${errand.errandNumber}${selectedEntry ? ` - ${selectedEntry.errandNumber}` : ''}`;
     }
 
     const newConversation = await createConversation(
       municipalityId,
       errand.id,
       topic,
-      conversationType
-      // selectedRelation?.id
+      conversationType,
+      selectedEntry?.relation.id
     );
     conversationId = newConversation.data.id;
   }

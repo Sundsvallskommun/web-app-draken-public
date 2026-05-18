@@ -13,6 +13,7 @@ export interface Service {
   endDate: string;
   isWinterService: boolean;
   validityType: 'tidsbegransad' | 'tillsvidare';
+  schemaVersion?: string;
 }
 
 function normalizeArray(values: any): string[] {

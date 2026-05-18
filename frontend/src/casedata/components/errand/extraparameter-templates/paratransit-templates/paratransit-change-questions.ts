@@ -48,11 +48,11 @@ export const changeQuestions: UppgiftField[] = [
     value: [],
     label: 'Välj fordonstyp',
     formField: {
-      type: 'combobox',
+      type: 'checkbox',
       options: [
-        { label: 'Personbil', value: 'CAR', name: 'changeVehicleTypes' },
-        { label: 'Rullstolstaxi', value: 'WHEELCHAIR_TAXI', name: 'changeVehicleTypes' },
-        { label: 'Specialfordon', value: 'SPECIAL_VEHICLE', name: 'changeVehicleTypes' },
+        { label: 'Personbil', value: 'CAR' },
+        { label: 'Rullstolstaxi', value: 'WHEELCHAIR_TAXI' },
+        { label: 'Specialfordon', value: 'SPECIAL_VEHICLE' },
       ],
     },
     section: 'Yttre omständigheter',

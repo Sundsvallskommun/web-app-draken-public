@@ -488,8 +488,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="search-person-form-PRIMARY"').click();
       cy.get('[data-cy="add-manually-button-person"]').should('be.enabled').click();
 
-      cy.get('[data-cy="contact-personNumber"]').should('have.attr', 'readonly');
-      cy.get('[data-cy="contact-personNumber"]').should('have.value', '');
+      cy.get('[data-cy="contact-personNumber"]').should('not.exist');
       cy.get('[data-cy="contact-firstName"]').type('Test');
       cy.get('[data-cy="contact-lastName"]').type('Testsson');
       cy.get('[data-cy="contact-address"]').type('Testaddress');

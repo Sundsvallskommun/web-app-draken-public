@@ -6,6 +6,7 @@ import {
 } from '@casedata/services/casedata-extra-parameters-service';
 import { resolveDateTimeToken, resolveDateToken } from '@casedata/utils/date-string-handler-utils';
 import {
+  Alert,
   Checkbox,
   Combobox,
   cx,
@@ -16,7 +17,7 @@ import {
   Select,
   Textarea,
 } from '@sk-web-gui/react';
-import { ComponentProps, FC, useMemo, useState } from 'react';
+import { ComponentProps, FC, useEffect, useMemo, useState } from 'react';
 import { get, UseFormReturn } from 'react-hook-form';
 
 import { RepeatableFieldGroup } from './repeatable-field-group';
@@ -163,6 +164,20 @@ export const CasedataFormFieldRenderer: FC<Props> = ({ detail, idx, form, errand
 
   const isVisible = dependentSatisfied !== false;
 
+  const disabledByKey = detail.disabledBy?.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+  const disabledByValue = disabledByKey ? allFormValues[disabledByKey] : undefined;
+  const isDisabledByField = detail.disabledBy
+    ? Array.isArray(disabledByValue)
+      ? disabledByValue.includes(detail.disabledBy.value)
+      : disabledByValue === detail.disabledBy.value
+    : false;
+
+  useEffect(() => {
+    if (isDisabledByField) {
+      setValue(fieldKey, '', { shouldDirty: true });
+    }
+  }, [isDisabledByField, fieldKey, setValue]);
+
   const validationRules = getConditionalValidationRules(detail, getValues);
   const error = get(errors, fieldKey)?.message;
   const options: OptionBase[] = (detail.formField as { options?: OptionBase[] }).options ?? [];
@@ -203,14 +218,30 @@ export const CasedataFormFieldRenderer: FC<Props> = ({ detail, idx, form, errand
   if (detail.formField.type === 'info') {
     return (
       <div key={`${detail.field}-${idx}`} className="w-full mt-lg">
+        {detail.label && <FormLabel>{detail.label}</FormLabel>}
         {detail.description && <span>{detail.description}</span>}
+      </div>
+    );
+  }
+
+  if (detail.formField.type === 'alert') {
+    return (
+      <div key={`${detail.field}-${idx}`} className="w-full mt-lg">
+        <Alert type={detail.formField.alertType || 'info'}>
+          <Alert.Content>
+            {detail.label && <Alert.Content.Title>{detail.label}</Alert.Content.Title>}
+            {detail.description && <Alert.Content.Description>{detail.description}</Alert.Content.Description>}
+          </Alert.Content>
+        </Alert>
       </div>
     );
   }
 
   return (
     <FormControl className="w-full" key={`${detail.field}-${idx}`}>
-      {!detail.field.includes('account.') && <FormLabel className="mt-lg">{detail.label}</FormLabel>}
+      {!detail.field.includes('account.') && detail.label !== '' ? (
+        <FormLabel className="mt-lg">{detail.label}</FormLabel>
+      ) : null}
 
       {(detail.formField.type === 'text' ||
         detail.formField.type === 'date' ||
@@ -219,9 +250,16 @@ export const CasedataFormFieldRenderer: FC<Props> = ({ detail, idx, form, errand
           <Input
             type={detail.formField.type}
             {...register(fieldKey, validationRules)}
-            className={cx(errand.caseType === 'APPEAL' ? 'w-3/5' : 'w-full')}
+            className={cx(
+              errand.caseType === 'APPEAL'
+                ? 'w-3/5'
+                : detail.label === 'Datum då beslutet upphör'
+                ? 'w-[25rem]'
+                : 'w-full'
+            )}
             data-cy={`${detail.field}-input`}
             readOnly={isDisabled}
+            disabled={isDisabledByField}
             {...getInputProps(detail)}
           />
           {error && <span className="text-error text-md">{error}</span>}

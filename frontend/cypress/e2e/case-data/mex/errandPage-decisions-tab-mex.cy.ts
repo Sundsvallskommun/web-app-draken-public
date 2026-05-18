@@ -76,6 +76,11 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         'getEstateInfo'
       );
       cy.intercept('GET', '**/featureflags', mockFeatureFlags).as('getFeatureFlags');
+      cy.intercept('GET', '**/templates?*', { data: [], message: 'success' }).as('getTemplates');
+      cy.intercept('POST', '**/render', {
+        data: { output: btoa('<p>Rendered template</p>') },
+        message: 'Decision HTML rendered',
+      }).as('renderTemplate');
 
       cy.visit(`/arende/${mockMexErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
@@ -108,6 +113,32 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         expect(request.body.description).to.contain('Mock text');
         expect(request.body.decisionType).to.equal('FINAL');
       });
+    });
+
+    it('shows template dropdown after outcome selection and injects content into editor for MEX', () => {
+      const mockTemplates = [
+        {
+          identifier: 'mex.test.template',
+          name: 'Testmall',
+          description: 'En testmall',
+          version: '1',
+          content: btoa('Test content from template'),
+          metadata: [
+            { key: 'templateType', value: 'Decision' },
+            { key: 'decision', value: 'REJECTION' },
+          ],
+          defaultValues: [],
+        },
+      ];
+      cy.intercept('GET', '**/templates?*', { data: mockTemplates, message: 'success' }).as('getDecisionTemplates');
+
+      // Existing decision has APPROVAL — select a different outcome to trigger template fetch
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Avslag');
+      cy.wait('@getDecisionTemplates');
+      cy.get('[data-cy="decisionTemplate-select"]').should('exist');
+      cy.get('[data-cy="decisionTemplate-select"]').select('Testmall');
+      // MEX: template content is injected into text editor, no PDF preview
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('contain.text', 'Test content from template');
     });
 
     it('save button enabled but send decision is disabled if no decision, fromDate or toDate is selected', () => {

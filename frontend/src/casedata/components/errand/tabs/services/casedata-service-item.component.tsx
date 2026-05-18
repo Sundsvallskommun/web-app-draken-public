@@ -22,9 +22,16 @@ export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly
 
         <div className="flex flex-col gap-4 flex-1">
           <div className="flex justify-between items-center">
-            <div className="text-base font-bold text-dark-secondary">
-              {service.restyp}
-              {service.isWinterService ? ' (Vinterfärdtjänst)' : ''}
+            <div className="text-base font-bold text-dark-secondary flex items-center gap-8">
+              <span>
+                {service.restyp}
+                {service.isWinterService ? ' (Vinterfärdtjänst)' : ''}
+              </span>
+              {service.schemaVersion && (
+                <span className="text-small font-normal text-dark-ghost bg-background-200 rounded px-6 py-2">
+                  v{service.schemaVersion}
+                </span>
+              )}
             </div>
             <div className="text-md font-normal text-dark-secondary whitespace-nowrap">
               {service?.validityType === 'tillsvidare'

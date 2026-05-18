@@ -59,7 +59,7 @@ export const displayManuallyAddStakeholderModal = () => {
   cy.get('[data-cy="contact-role-owner"]').should('exist');
   cy.get('[data-cy="contact-role-owner"]').should('have.value', 'PRIMARY');
   cy.get('[data-cy="contact-externalId-owner"]').should('exist');
-  cy.get('[data-cy="contact-personNumber"]').should('exist');
+  cy.get('[data-cy="contact-personNumber"]').should('not.exist');
   cy.get('[data-cy="contact-firstName"]').should('exist');
   cy.get('[data-cy="contact-lastName"]').should('exist');
   cy.get('[data-cy="contact-address"]').should('exist');
@@ -144,8 +144,7 @@ export const clearSearchResultOnPersonNumberChange = (mockAdressResponse: any) =
 
   // Open manual form, it should be empty
   cy.get('[data-cy="add-manually-button-owner"]').click();
-  cy.get('[data-cy="contact-personNumber"]').should('have.attr', 'readonly');
-  cy.get('[data-cy="contact-personNumber"]').should('have.value', '');
+  cy.get('[data-cy="contact-personNumber"]').should('not.exist');
   cy.get('[data-cy="contact-firstName"]').should('have.value', '');
   cy.get('[data-cy="contact-lastName"]').should('have.value', '');
   cy.get('[data-cy="contact-address"]').should('have.value', '');
@@ -154,8 +153,7 @@ export const clearSearchResultOnPersonNumberChange = (mockAdressResponse: any) =
 };
 
 export const sendCorrectDataOnManualAddPerson = () => {
-  cy.get('[data-cy="contact-personNumber"]').should('have.attr', 'readonly');
-  cy.get('[data-cy="contact-personNumber"]').should('have.value', '');
+  cy.get('[data-cy="contact-personNumber"]').should('not.exist');
   cy.get('[data-cy="contact-firstName"]').type('Test');
   cy.get('[data-cy="contact-lastName"]').type('Testsson');
   cy.get('[data-cy="contact-address"]').type('Testaddress');

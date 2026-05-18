@@ -37,7 +37,7 @@ function warnMissingEnv(spec: EnvSpec): void {
     console.error(`\nInvalid environment variables:\n${invalid.map(k => `   - ${k}`).join('\n')}\n`);
   }
   if (missing.length === 0 && invalid.length === 0) {
-    console.log('✅ All required environment variables are set.');
+    console.info('✅ All required environment variables are set.');
     return;
   }
   process.exit(1);

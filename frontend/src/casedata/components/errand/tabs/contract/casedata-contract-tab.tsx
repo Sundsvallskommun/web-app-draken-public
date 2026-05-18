@@ -1,3 +1,4 @@
+import { CasedataStatusLabelComponent } from '@casedata/components/contract-overview/contracts-table.component';
 import { ContractData, UnifiedContractParty } from '@casedata/interfaces/contract-data';
 import {
   Contract,
@@ -29,7 +30,17 @@ import {
 } from '@casedata/services/contract-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Checkbox, FormControl, FormLabel, Input, Select, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import {
+  Checkbox,
+  FormControl,
+  FormErrorMessage,
+  FormLabel,
+  Input,
+  Select,
+  Spinner,
+  useConfirm,
+  useSnackbar,
+} from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { Dispatch, FC, SetStateAction, useCallback, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
@@ -37,7 +48,6 @@ import * as yup from 'yup';
 
 import ContractForm from './contract-form';
 import { ContractNavigation } from './contract-navigation';
-import { CasedataStatusLabelComponent } from '@casedata/components/contract-overview/contracts-table.component';
 
 interface CasedataContractProps {
   update: () => void;
@@ -113,7 +123,6 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
 
         const baseSchema = schema.of(
           yup.object({
-            stakeholderId: yup.string().required(),
             roles: yup
               .array()
               .of(yup.string().oneOf(Object.keys(StakeholderRole)) as any)
@@ -126,11 +135,21 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
 
         if (type === ContractType.PURCHASE_AGREEMENT) {
           return baseSchema
+            .test(
+              'has-buyer-and-seller',
+              'Minst en köpare och en säljare måste anges',
+              hasRole(StakeholderRole.BUYER) && hasRole(StakeholderRole.SELLER)
+            )
             .test('has-buyer', 'Minst en köpare måste anges', hasRole(StakeholderRole.BUYER))
             .test('has-seller', 'Minst en säljare måste anges', hasRole(StakeholderRole.SELLER));
         }
         if (isLeaseAgreement(type)) {
           return baseSchema
+            .test(
+              'has-lessor-and-lessee',
+              'Minst en upplåtare och en arrendator måste anges',
+              hasRole(StakeholderRole.LESSOR) && hasRole(StakeholderRole.LESSEE)
+            )
             .test('has-lessor', 'Minst en upplåtare måste anges', hasRole(StakeholderRole.LESSOR))
             .test('has-lessee', 'Minst en arrendator måste anges', hasRole(StakeholderRole.LESSEE));
         }
@@ -389,7 +408,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                         )
                         .then((confirmed) => {
                           if (confirmed) {
-                            contractForm.setValue('status', Status.ACTIVE);
+                              contractForm.setValue('status', Status.ACTIVE);
                             contractForm.trigger().then((valid: boolean) => {
                               if (valid) {
                                 onSave(contractForm.getValues());
@@ -406,7 +425,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                   </Checkbox>
                   <p>Avmarkera när allt är klart med avtalet och faktureringen ska börja.</p>
                   {contractForm.formState.isValid === false && (
-                    <p className="text-error">Avtalet saknar nödvändiga uppgifter.</p>
+                    <FormErrorMessage>Avtalet saknar nödvändiga uppgifter.</FormErrorMessage>
                   )}
                 </FormControl>
               ) : null}
