@@ -149,7 +149,7 @@ export class TemplateController {
     // Templates live in SUPPORTMANAGEMENT_NAMESPACE (e.g. CONTACTSUNDSVALL).
     // CASEDATA_NAMESPACE (e.g. SBK_MEX) is for errands only — used as fallback
     // for envs that don't have a supportmanagement namespace configured.
-    const namespace = prefix === 'internal.' ? 'CONTACTSUNDSVALL' : SUPPORTMANAGEMENT_NAMESPACE || CASEDATA_NAMESPACE;
+    const namespace = SUPPORTMANAGEMENT_NAMESPACE || CASEDATA_NAMESPACE;
     const baseUrl = `${this.SERVICE}/${MUNICIPALITY_ID}/templates`;
     const searchUrl = namespace ? `${baseUrl}?namespace=${namespace}` : baseUrl;
 
