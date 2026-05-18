@@ -11,7 +11,7 @@ import {
   getProposedOrRecommendedDecision,
   getUtredningPhrases,
   lawMapping,
-  renderUtredningPdf,
+  renderPdf,
   saveDecision,
 } from '@casedata/services/casedata-decision-service';
 import { getErrand, isErrandLocked, isFTErrand, validateAction } from '@casedata/services/casedata-errand-service';
@@ -138,7 +138,7 @@ export const CasedataInvestigationTab: FC<{
         data.outcome = 'APPROVAL';
         await saveDecision(municipalityId, props.errand, data, 'PROPOSED');
       } else {
-        const rendered = await renderUtredningPdf(errand!, data);
+        const rendered = await renderPdf(errand!, data, 'investigation');
         await saveDecision(municipalityId, props.errand, data, 'PROPOSED', rendered.pdfBase64);
       }
 

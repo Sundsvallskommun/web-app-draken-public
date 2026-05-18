@@ -290,22 +290,6 @@ export const mapServicesToTemplateParams = (services: Service[]): Record<string,
   });
 };
 
-export const renderUtredningPdf: (
-  errand: IErrand,
-  d: UtredningFormModel | DecisionFormModel,
-  services?: Service[]
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, d, services) => {
-  return renderPdf(errand, d, 'investigation', services);
-};
-
-export const renderBeslutPdf: (
-  errand: IErrand,
-  d: UtredningFormModel | DecisionFormModel,
-  services?: Service[]
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, d, services) => {
-  return renderPdf(errand, d, 'decision', services);
-};
-
 export const buildPdfTemplate: (
   errand: IErrand,
   formData: UtredningFormModel | DecisionFormModel,
