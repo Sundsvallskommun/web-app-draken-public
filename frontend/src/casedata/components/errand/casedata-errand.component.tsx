@@ -242,7 +242,10 @@ export const CasedataErrandComponent: FC = () => {
                                 )}
                               </div>
                             </div>
-                            <ReferredFromErrandInformation municipalityId={municipalityId} errandId={errand.id} />
+                            <ReferredFromErrandInformation
+                              municipalityId={municipalityId}
+                              errandId={errand.id as unknown as string}
+                            />
                           </>
                         ) : errand ? (
                           <div data-cy="registerErrandHeading" className="flex justify-between items-center pt-8">
