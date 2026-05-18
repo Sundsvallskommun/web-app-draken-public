@@ -76,7 +76,10 @@ export const getLawMapping = (errand: IErrand): Law[] => {
 export const LOST_PERMIT_STANDARD_DECISION_TEXT =
   '<p>Inget formellt beslut fattas för borttappade kort, beslutet om att bevilja parkeringstillstånd har tagits i ärendet för den ursprungliga ansökan.</p>';
 
-export const fetchDecisionTemplates: (prefix: string, decision?: string) => Promise<Template[]> = (prefix, decision) => {
+export const fetchDecisionTemplates: (prefix: string, decision?: string) => Promise<Template[]> = (
+  prefix,
+  decision
+) => {
   const params = new URLSearchParams({ templateType: 'Decision', prefix });
   if (decision) {
     params.append('decision', decision);
@@ -303,20 +306,17 @@ export const renderBeslutPdf: (
   return renderPdf(errand, d, 'decision', services);
 };
 
-export const renderPdf: (
+export const buildPdfTemplate: (
   errand: IErrand,
   formData: UtredningFormModel | DecisionFormModel,
   templateType: 'investigation' | 'decision',
   services?: Service[]
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, formData, templateType, services) => {
+) => { identifier: string; parameters: { [key: string]: any } } = (errand, formData, templateType, services) => {
   const decision = errand.decisions.find(
     (d) =>
       (templateType === 'decision' && d.decisionType === 'FINAL') ||
       (templateType === 'investigation' && d.decisionType === 'PROPOSED')
   );
-  if (!decision) {
-    console.error('No saved decision found. Rendering preview for current form values.');
-  }
   const outcome =
     formData.outcome === 'APPROVAL'
       ? 'approval'
@@ -354,7 +354,7 @@ export const renderPdf: (
 
   const owner = getOwnerStakeholder(errand);
   const wrapWithWordBreak = (html: string) =>
-    `<div style="overflow-wrap: break-word; word-break: break-word;">${html}</div>`;
+    `<div style="overflow-wrap: break-word; word-break: break-word;">${html ?? ''}</div>`;
 
   const parameters: { [key: string]: any } = {
     caseNumber: formData.errandNumber ?? '',
@@ -377,7 +377,8 @@ export const renderPdf: (
     parameters['permitFirstname'] = owner?.firstName;
     parameters['permitLastname'] = owner?.lastName;
     parameters['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
-    parameters['disabilityReason'] = errand.extraParameters.find((p) => p.key === 'application.reason')?.values?.[0] ?? '';
+    parameters['disabilityReason'] =
+      errand.extraParameters.find((p) => p.key === 'application.reason')?.values?.[0] ?? '';
   } else if (templateType === 'decision') {
     parameters['decisionText'] = wrapWithWordBreak(formData.description);
     parameters['decisionDate'] = dayjs(decision?.decidedAt).format('YYYY-MM-DD');
@@ -411,12 +412,19 @@ export const renderPdf: (
       : '';
 
     parameters['lawReferences'] = lawReferences;
-    parameters['services'] = services && services.length > 0
-      ? mapServicesToTemplateParams(services)
-      : [];
+    parameters['services'] = services && services.length > 0 ? mapServicesToTemplateParams(services) : [];
   }
 
-  const renderBody: TemplateSelector = { identifier, parameters };
+  return { identifier, parameters };
+};
+
+export const renderPdf: (
+  errand: IErrand,
+  formData: UtredningFormModel | DecisionFormModel,
+  templateType: 'investigation' | 'decision',
+  services?: Service[]
+) => Promise<{ pdfBase64: string; error?: string }> = async (errand, formData, templateType, services) => {
+  const renderBody: TemplateSelector = buildPdfTemplate(errand, formData, templateType, services);
 
   return apiService
     .post<ApiResponse<Render>, TemplateSelector>('render/pdf', renderBody)
@@ -450,7 +458,10 @@ export const renderHtml: (
       administratorName: errand.administrator
         ? `${errand.administrator?.firstName} ${errand.administrator?.lastName}`
         : '',
-      description: `<div style="overflow-wrap: break-word; word-break: break-word;">${formData.description.replace(/<p>/g, '<p style="margin: 0;">')}</div>`,
+      description: `<div style="overflow-wrap: break-word; word-break: break-word;">${formData.description.replace(
+        /<p>/g,
+        '<p style="margin: 0;">'
+      )}</div>`,
       decisionDate: dayjs(decision?.updated).format('YYYY-MM-DD'),
     },
   };
