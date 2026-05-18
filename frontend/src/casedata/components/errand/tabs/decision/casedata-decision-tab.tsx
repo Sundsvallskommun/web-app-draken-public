@@ -7,14 +7,15 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { Role } from '@casedata/interfaces/role';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
+import { getDraftAssets, updateAsset } from '@casedata/services/asset-service';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import {
   fetchDecisionTemplates,
   getFinalDecisonWithHighestId,
   getLawMapping,
   mapServicesToTemplateParams,
-  renderBeslutPdf,
   renderHtml,
+  renderPdf,
   saveDecision,
 } from '@casedata/services/casedata-decision-service';
 import {
@@ -27,7 +28,6 @@ import {
   validateErrandForDecision,
   validateStatusForDecision,
 } from '@casedata/services/casedata-errand-service';
-import { getDraftAssets, updateAsset } from '@casedata/services/asset-service';
 import { sendDecisionMessage, sendMessage } from '@casedata/services/casedata-message-service';
 import {
   getOwnerStakeholder,
@@ -284,7 +284,7 @@ export const CasedataDecisionTab: FC<{
   const save = async (data: DecisionFormModel) => {
     if (!errand) return;
     try {
-      const rendered = await renderBeslutPdf(errand, data, services);
+      const rendered = await renderPdf(errand, data, 'decision', services);
       await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
       setIsLoading(false);
       setError(undefined);
@@ -326,7 +326,7 @@ export const CasedataDecisionTab: FC<{
         adAccount: user.username,
       } as CreateStakeholderDto;
       setIsSaveAndSendLoading(true);
-      const rendered = await renderBeslutPdf(errand, data, services);
+      const rendered = await renderPdf(errand, data, 'decision', services);
       await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
 
       const renderedHtml = await renderHtml(errand, data, 'decision');
@@ -435,7 +435,7 @@ export const CasedataDecisionTab: FC<{
   const renderAndDownloadPdf = async () => {
     if (!errand) return;
     const data = getValues();
-    const pdfData = await renderBeslutPdf(errand, data, services);
+    const pdfData = await renderPdf(errand, data, 'decision', services);
     downloadPdf(pdfData.pdfBase64);
   };
 
