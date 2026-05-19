@@ -88,8 +88,18 @@ export const BillingTable: React.FC<BillingTableProps> = ({
   const handleSave = async (record: CBillingRecord) => {
     if (!editFormState) return;
 
+    if (!editFormState.date) {
+      toastMessage({
+        position: 'bottom',
+        closeable: true,
+        message: 'Aviseringsdatum måste anges',
+        status: 'error',
+      });
+      return;
+    }
+
     const today = new Date().toISOString().split('T')[0];
-    if (editFormState.date && editFormState.date < today) {
+    if (editFormState.date < today) {
       toastMessage({
         position: 'bottom',
         closeable: true,

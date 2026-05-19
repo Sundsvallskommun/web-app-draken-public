@@ -42,7 +42,7 @@ export const BillingSpecifications: React.FC = () => {
           )}
         </FormControl>
         <FormControl invalid={!!errors.specifications?.rejectionDate}>
-          <FormLabel>Aviseringsdatum</FormLabel>
+          <FormLabel>Aviseringsdatum *</FormLabel>
           <DatePicker
             className="w-[25rem]"
             min={new Date().toISOString().split('T')[0]}
