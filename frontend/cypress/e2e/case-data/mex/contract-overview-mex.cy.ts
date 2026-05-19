@@ -849,7 +849,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           });
         });
 
-        it('shows success toast and navigates to new errand after creation', () => {
+        it.only('shows success toast and opens new errand in new tab after creation', () => {
           cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
           cy.intercept('POST', '**/errands', mockCreatedErrandResponse).as('postErrand');
           cy.intercept('GET', /2281\/errand\/999/, mockCreatedErrand).as('getCreatedErrand');
@@ -858,6 +858,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
             'patchExtraParameters'
           );
           navigateToContractOverview();
+
+          cy.window().then((win) => {
+            cy.stub(win, 'open').as('windowOpen');
+          });
 
           cy.get('[data-cy="contract-row-0"]').click();
           cy.get('[data-cy="contract-detail-edit-button"]').click();
@@ -872,8 +876,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           // Success toast should be shown
           cy.contains('Ärende skapat').should('be.visible');
 
-          // Should navigate to the new errand page
-          cy.url().should('include', '/arende/MEX-2024-000999');
+          // Should open the new errand in a new tab
+          cy.get('@windowOpen').should('have.been.calledWithMatch', /\/arende\/MEX-2024-000999$/, '_blank');
         });
 
         it('shows error toast when errand creation fails', () => {
