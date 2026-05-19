@@ -861,6 +861,7 @@ export const ContractForm: FC<{
                   </RadioButton.Group>
                 </FormControl>
               </div>
+              <span>Om en administrativavgift ska faktureras behöver detta göras via engångsfakturering.</span>
               {getValues().generateInvoice === 'true' ? (
                 <>
                   <div className="flex gap-18 justify-start">
