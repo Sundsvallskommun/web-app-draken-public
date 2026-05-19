@@ -104,7 +104,7 @@ export const ContractOverview: FC = () => {
   const filterParams = useMemo<ContractFilterParams>(() => {
     const params: ContractFilterParams = {
       page: page ?? 0,
-      limit: validPageSize,
+      size: validPageSize,
       sortBy: sortColumn,
       sortOrder: sortOrder,
     };

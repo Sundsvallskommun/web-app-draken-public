@@ -51,7 +51,7 @@ export class CasedataContractsController {
   async fetch_contracts(
     @Req() req: RequestWithUser,
     @QueryParam('page') page: number,
-    @QueryParam('limit') limit: number,
+    @QueryParam('size') size: number,
     @QueryParam('sortBy') sortBy: string,
     @QueryParam('sortOrder') sortOrder: string,
     @QueryParam('query') query: string,
@@ -62,7 +62,7 @@ export class CasedataContractsController {
     @QueryParam('endDate') endDate: string,
     @Res() response: any,
   ): Promise<PageContract> {
-    let url = `${MUNICIPALITY_ID}/contracts?page=${page ?? 0}&limit=${limit || 12}`;
+    let url = `${MUNICIPALITY_ID}/contracts?page=${page ?? 0}&size=${size || 12}`;
 
     const filterList: string[] = [];
 
@@ -120,7 +120,7 @@ export class CasedataContractsController {
     }
 
     logger.info(
-      `Fetching contracts with params: page=${page}, limit=${limit}, sortBy=${sortBy}, sortOrder=${sortOrder}, query=${query}, status=${status}, contractType=${contractType}, leaseType=${leaseType}`,
+      `Fetching contracts with params: page=${page}, size=${size}, sortBy=${sortBy}, sortOrder=${sortOrder}, query=${query}, status=${status}, contractType=${contractType}, leaseType=${leaseType}`,
     );
 
     const baseURL = apiURL(this.SERVICE);

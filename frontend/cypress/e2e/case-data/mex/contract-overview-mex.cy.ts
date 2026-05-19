@@ -156,8 +156,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
     it('can change rows per page', () => {
       navigateToContractOverview();
-      cy.get('input#pageSize').should('exist').clear().type('24');
-      cy.intercept('GET', '**/contracts?*limit=24*', mockContractsList).as('getContractsNewLimit');
+      cy.intercept('GET', '**/contracts?*size=24*', mockContractsList).as('getContractsNewLimit');
+      cy.get('input#pageSize').should('exist').clear().type('24').blur();
       cy.wait('@getContractsNewLimit');
     });
 
