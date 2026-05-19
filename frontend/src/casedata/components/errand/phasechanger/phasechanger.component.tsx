@@ -14,7 +14,7 @@ import {
 } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { phaseChangeInProgress, triggerErrandPhaseChange } from '@casedata/services/process-service';
-import { isMEX, isPT } from '@common/services/application-service';
+import { isPT } from '@common/services/application-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, FormErrorMessage, Spinner, useSnackbar } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
@@ -167,8 +167,7 @@ export const PhaseChanger = () => {
         setIsLoading(false);
         getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
         reset();
-        //Remove isMEX() when camunda process rule is updated for PT
-        isMEX() && triggerErrandPhaseChange(municipalityId, errand!);
+        triggerErrandPhaseChange(municipalityId, errand!);
         pollDisplayPhase();
       })
       .catch(() => {
