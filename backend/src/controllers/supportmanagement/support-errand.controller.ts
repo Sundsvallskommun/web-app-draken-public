@@ -1016,7 +1016,7 @@ export class SupportErrandController {
       extraParameters: [{ key: 'supportManagementErrandNumber', values: [existingSupportErrand.data.errandNumber!] }],
     };
     logger.info('Creating new errand in CaseData', caseDataErrand);
-    const referredFrom = `LINK|${id};case;supportmanagement;${this.namespace}|`;
+    const referredFrom = `REFERRED_FROM|${id};case;supportmanagement;${this.namespace}|`;
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands`;
     const CASEDATA_SERVICE = apiServiceName('case-data');
     const baseURL = apiURL(CASEDATA_SERVICE);
