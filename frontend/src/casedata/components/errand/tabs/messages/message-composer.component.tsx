@@ -565,7 +565,7 @@ export const MessageComposer: FC<{
             <RadioButton.Group data-cy="message-type-radio-button-group" className="mt-sm !gap-4">
               <RadioButton
                 disabled={isLoading || !allowed}
-                name="useNewMessage"
+                name="typeOfMessage"
                 id="useNewMessage"
                 value="newMessage"
                 checked={typeOfMessage === 'newMessage'}
@@ -575,7 +575,7 @@ export const MessageComposer: FC<{
               </RadioButton>
               <RadioButton
                 disabled={isLoading || !allowed}
-                name="useInfoCompletion"
+                name="typeOfMessage"
                 id="useInfoCompletion"
                 value="infoCompletion"
                 checked={typeOfMessage === 'infoCompletion'}
@@ -585,7 +585,7 @@ export const MessageComposer: FC<{
               </RadioButton>
               <RadioButton
                 disabled={isLoading || !allowed}
-                name="useInternalCompletion"
+                name="typeOfMessage"
                 id="useInternalCompletion"
                 value="internalCompletion"
                 checked={typeOfMessage === 'internalCompletion'}
