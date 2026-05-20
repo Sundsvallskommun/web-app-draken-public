@@ -39,7 +39,7 @@ const mockFTErrandLocked = {
 };
 
 const setupCommonIntercepts = () => {
-  cy.intercept('GET', '**/schemas/*/latest', {
+  cy.intercept('GET', /\/schemas\/[^/]+(\/latest)?$/, {
     data: {
       created: '2026-01-28T09:31:47.183+01:00',
       description: 'A JSON-schema that defines services for paratransit errands (FT)',
@@ -470,6 +470,8 @@ const setupCommonIntercepts = () => {
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Errand page assets tab', () => {
     const visitInsatserTab = (draftAssetFixture = mockDraftAsset) => {
+      cy.intercept('GET', '**/errand-services**', draftAssetFixture).as('getErrandServices');
+      cy.intercept('GET', '**/party-services**', mockAssetEmpty).as('getPartyServices');
       cy.intercept('GET', '**/asset-drafts**', draftAssetFixture).as('getDraftAssets');
       cy.intercept('GET', '**/assets?**', mockAssetEmpty).as('getAssets');
       cy.visit(`/arende/${mockFTErrand.data.errandNumber}`);
@@ -502,13 +504,13 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
     it('lists existing draft services', () => {
       visitInsatserTab(mockDraftAsset);
-      cy.wait('@getDraftAssets');
+      cy.wait('@getErrandServices');
       cy.get('[data-cy="service-item"]').should('have.length', 1);
     });
 
     it('shows edit and remove buttons on draft services', () => {
       visitInsatserTab(mockDraftAsset);
-      cy.wait('@getDraftAssets');
+      cy.wait('@getErrandServices');
       cy.get('[data-cy="service-item"]')
         .first()
         .within(() => {
@@ -519,13 +521,13 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
     it('shows empty list when no draft services exist', () => {
       visitInsatserTab(mockDraftAssetEmpty);
-      cy.wait('@getDraftAssets');
+      cy.wait('@getErrandServices');
       cy.get('[data-cy="service-item"]').should('not.exist');
     });
 
     it('opens edit modal when clicking edit button', () => {
       visitInsatserTab(mockDraftAsset);
-      cy.wait('@getDraftAssets');
+      cy.wait('@getErrandServices');
       cy.get('[data-cy="edit-service-button"]').first().click();
       cy.get('.sk-modal-dialog-header-title').should('exist').and('contain.text', 'Redigera insats');
     });
@@ -533,7 +535,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     it('calls the draft asset endpoint when removing a service', () => {
       cy.intercept('PATCH', '**/asset-drafts/*', { data: 'ok', message: 'ok' }).as('patchDraftAsset');
       visitInsatserTab(mockDraftAsset);
-      cy.wait('@getDraftAssets');
+      cy.wait('@getErrandServices');
       cy.get('[data-cy="remove-service-button"]').first().click();
       cy.wait('@patchDraftAsset');
     });
@@ -541,7 +543,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     it('calls the draft asset endpoint when editing a service', () => {
       cy.intercept('PATCH', '**/asset-drafts/*', { data: 'ok', message: 'ok' }).as('patchDraftAsset');
       visitInsatserTab(mockDraftAsset);
-      cy.wait('@getDraftAssets');
+      cy.wait('@getErrandServices');
       cy.get('[data-cy="edit-service-button"]').first().click();
       cy.get('.sk-modal').should('exist');
       cy.get("[data-cy='schema-submit-button']").contains('Spara').should('exist').click();
@@ -551,7 +553,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     it('creates a new draft asset via the draft endpoint', () => {
       cy.intercept('POST', '**/asset-drafts**', { data: 'ok', message: 'ok' }).as('createDraftAsset');
       visitInsatserTab(mockDraftAssetEmpty);
-      cy.wait('@getDraftAssets');
+      cy.wait('@getErrandServices');
       cy.get('[data-cy="services-form"]').should('exist');
       cy.get('select#root_type').select('privat_fritid');
       cy.get('input#root_validFrom').type('2023-01-01');
@@ -573,7 +575,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
       it('hides edit and remove buttons on services', () => {
         visitInsatserTab(mockDraftAsset);
-        cy.wait('@getDraftAssets');
+        cy.wait('@getErrandServices');
         cy.get('[data-cy="edit-service-button"]').should('not.exist');
         cy.get('[data-cy="remove-service-button"]').should('not.exist');
       });

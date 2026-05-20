@@ -267,7 +267,7 @@ export const CasedataServicesTab: FC = () => {
   );
 
   return (
-    <div className="w-full max-w-full py-24 px-32 overflow-x-hidden">
+    <div data-cy="services-tab" className="w-full max-w-full py-24 px-32 overflow-x-hidden">
       <h2 className="text-h4-sm md:text-h4-md">Insatser</h2>
       <p className="mt-sm text-md">
         Här specificeras vilka insatser som omfattas av färdtjänstbeslutet, samt eventuella tilläggstjänster och den
@@ -275,7 +275,7 @@ export const CasedataServicesTab: FC = () => {
       </p>
 
       {!(errand ? isErrandLocked(errand) : false) && (
-        <div className="mt-24 max-w-full">
+        <div data-cy="services-form" className="mt-24 max-w-full">
           {uiSchema && (
             <SchemaForm
               schema={schema!}
