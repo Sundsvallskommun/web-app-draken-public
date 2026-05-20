@@ -546,7 +546,7 @@ export const SupportMessageForm: FC<{
         <RadioButton.Group data-cy="message-type-radio-button-group" className="mt-sm !gap-4">
           <RadioButton
             disabled={props.locked}
-            name="useNewMessage"
+            name="typeOfMessage"
             id="useNewMessage"
             value="newMessage"
             checked={typeOfMessage === 'newMessage'}
@@ -556,7 +556,7 @@ export const SupportMessageForm: FC<{
           </RadioButton>
           <RadioButton
             disabled={props.locked}
-            name="useInfoCompletion"
+            name="typeOfMessage"
             id="useInfoCompletion"
             value="infoCompletion"
             checked={typeOfMessage === 'infoCompletion'}
@@ -566,7 +566,7 @@ export const SupportMessageForm: FC<{
           </RadioButton>
           <RadioButton
             disabled={props.locked}
-            name="useInternalCompletion"
+            name="typeOfMessage"
             id="useInternalCompletion"
             value="internalCompletion"
             checked={typeOfMessage === 'internalCompletion'}
