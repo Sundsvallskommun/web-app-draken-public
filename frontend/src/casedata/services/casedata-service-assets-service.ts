@@ -40,7 +40,7 @@ const assetRequestCache = new Map<string, Promise<Asset[]>>();
 
 function dedupeAssetRequest(key: string, loader: () => Promise<Asset[]>): Promise<Asset[]> {
   const existing = assetRequestCache.get(key);
-  if (existing) return existing;
+  if (existing !== undefined) return existing;
 
   const promise = loader().finally(() => {
     assetRequestCache.delete(key);
@@ -59,11 +59,17 @@ function normalizeArray(values: any): string[] {
   return [];
 }
 
+const toTypeIds = (rawType: any): string[] => {
+  if (Array.isArray(rawType)) return rawType;
+  if (rawType) return [rawType];
+  return [];
+};
+
 export function mapFormToServiceFromPayload(fd: any, schema: RJSFSchema | null, id: string): Service {
   const mobilityIds = normalizeArray(fd?.mobilityAids);
   const addonIds = normalizeArray(fd?.additionalAids);
   const transportModeIds = normalizeArray(fd?.transportMode);
-  const typeIds = Array.isArray(fd?.type) ? fd.type : fd?.type ? [fd.type] : [];
+  const typeIds = toTypeIds(fd?.type);
   const isWinterService = fd?.isWinterService === 'ja' || fd?.isWinterService === true;
 
   return {
@@ -77,7 +83,7 @@ export function mapFormToServiceFromPayload(fd: any, schema: RJSFSchema | null, 
   };
 }
 
-export function extractFormDataFromAsset(asset: Asset, schemaId: string): any | null {
+export function extractFormDataFromAsset(asset: Asset, schemaId: string): any {
   const jp = asset.jsonParameters?.find((p) => p.schemaId === schemaId) ?? asset.jsonParameters?.[0];
   if (!jp?.value) return null;
   try {

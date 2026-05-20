@@ -30,8 +30,8 @@ type EnrichedAsset = Asset & {
 
 @Controller()
 export class AssetController {
-  private apiService = new ApiService();
-  private PARTYASSETS_SERVICE = apiServiceName('partyassets');
+  private readonly apiService = new ApiService();
+  private readonly PARTYASSETS_SERVICE = apiServiceName('partyassets');
 
   private buildAssetQuery(params: Record<string, string | undefined>): string {
     const qs = new URLSearchParams();
@@ -99,7 +99,7 @@ export class AssetController {
       }
     }
 
-    return { ...(res.data ?? {}), id: createdId, sourceErrandId: errandId };
+    return { ...res.data, id: createdId, sourceErrandId: errandId };
   }
 
   private async enrichWithErrandNumbers(user: RequestWithUser['user'], municipalityId: string, assets: EnrichedAsset[]): Promise<EnrichedAsset[]> {

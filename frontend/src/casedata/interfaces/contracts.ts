@@ -615,8 +615,6 @@ export interface JsonNode {
   embeddedValue?: boolean;
 }
 
-export type SpecificationContractEntity = any;
-
 export interface PageContract {
   /** @format int64 */
   totalElements?: number;

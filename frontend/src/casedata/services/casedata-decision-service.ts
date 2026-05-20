@@ -269,15 +269,17 @@ export const fetchInvestigationSkeleton: (errand: IErrand) => Promise<string> = 
   }
 };
 
+const buildValidityText = (validFrom: string, validToRaw: string): string => {
+  if (!validFrom) return '';
+  if (validToRaw) return `Insatsen gäller ${validFrom} - ${validToRaw}`;
+  return `Insatsen gäller från och med ${validFrom}`;
+};
+
 export const mapServicesToTemplateParams = (services: Service[]): Record<string, string>[] => {
   return services.map((service) => {
     const validFrom = service.issued ? dayjs(service.issued).format('YYYY-MM-DD') : '';
     const validToRaw = service.validTo ? dayjs(service.validTo).format('YYYY-MM-DD') : '';
-    const validity = validFrom
-      ? validToRaw
-        ? `Insatsen gäller ${validFrom} - ${validToRaw}`
-        : `Insatsen gäller från och med ${validFrom}`
-      : '';
+    const validity = buildValidityText(validFrom, validToRaw);
     const item: Record<string, string> = {
       restyp: service.restyp.join(', ') + (service.isWinterService ? ' (Vinterfärdtjänst)' : ''),
       validFrom,

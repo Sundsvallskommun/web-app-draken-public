@@ -43,33 +43,34 @@ export const CasedataMessagesTab: FC<{
   const setMessageViewed = (msg: MessageNode) => {
     if (msg.conversationId) {
       console.warn('Not implemented');
-    } else {
-      setMessageViewStatus(errand!.id.toString(), municipalityId, msg.messageId ?? '', true)
-        .then(() =>
-          fetchMessagesWithTree(municipalityId, errand!).catch(() => {
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Något gick fel när meddelanden hämtades',
-              status: 'error',
-            });
-          })
-        )
-        .then((result) => {
-          if (result) {
-            setMessages(result.messages);
-            setMessageTree(result.messageTree);
-          }
-        })
-        .catch(() => {
+      return;
+    }
+    if (!errand) return;
+    setMessageViewStatus(errand.id.toString(), municipalityId, msg.messageId ?? '', true)
+      .then(() =>
+        fetchMessagesWithTree(municipalityId, errand).catch(() => {
           toastMessage({
             position: 'bottom',
             closeable: false,
-            message: 'Något gick fel när meddelandets status uppdaterades',
+            message: 'Något gick fel när meddelanden hämtades',
             status: 'error',
           });
+        })
+      )
+      .then((result) => {
+        if (result) {
+          setMessages(result.messages);
+          setMessageTree(result.messageTree);
+        }
+      })
+      .catch(() => {
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Något gick fel när meddelandets status uppdaterades',
+          status: 'error',
         });
-    }
+      });
   };
 
   const sortedMessages = useMemo(() => {

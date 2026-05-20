@@ -823,7 +823,7 @@ export const CasedataDecisionTab: FC<{
           )}
         </div>
 
-        {isPT() && outcome === 'APPROVAL' ? (
+        {isPT() && outcome === 'APPROVAL' && (
           <div className="pb-20">
             <Disclosure variant="alt" data-cy="decision-services-disclosure" initalOpen>
               <Disclosure.Header>
@@ -840,7 +840,8 @@ export const CasedataDecisionTab: FC<{
               </Disclosure.Content>
             </Disclosure>
           </div>
-        ) : isPT() && outcome && outcome !== 'APPROVAL' ? (
+        )}
+        {isPT() && outcome && outcome !== 'APPROVAL' && (
           <div className="pb-20">
             <Alert type="info" data-cy="decision-services-info-alert">
               <Alert.Icon />
@@ -853,7 +854,7 @@ export const CasedataDecisionTab: FC<{
               </Alert.Content>
             </Alert>
           </div>
-        ) : null}
+        )}
 
         <div className="flex justify-start gap-md">
           <Button

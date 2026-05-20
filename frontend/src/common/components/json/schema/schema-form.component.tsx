@@ -152,12 +152,13 @@ export default function SchemaForm({
         showErrorList={false}
         disabled={disabled}
       >
-        {extraContent ? (
+        {extraContent && (
           <>
             {extraContent}
-            <SubmitButtonFieldTemplate {...{ registry: { formContext } } as any} />
+            <SubmitButtonFieldTemplate {...({ registry: { formContext } } as any)} />
           </>
-        ) : disabled ? <></> : undefined}
+        )}
+        {!extraContent && disabled && <></>}
       </Form>
     </div>
   );

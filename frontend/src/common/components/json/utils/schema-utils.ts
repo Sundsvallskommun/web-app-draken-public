@@ -19,7 +19,7 @@ function unwrap<T>(response: { data?: T } | T): T {
 
 function cached<T>(cache: Map<string, Promise<T>>, key: string, loader: () => Promise<T>): Promise<T> {
   const existing = cache.get(key);
-  if (existing) return existing;
+  if (existing !== undefined) return existing;
 
   const promise = loader().catch((e) => {
     cache.delete(key);

@@ -19,7 +19,9 @@ export default function SidebarLayout({
   showContractTable: boolean;
   setShowContractTable: (show: boolean) => void;
 }) {
-  const [hostName] = useState(() => (typeof window !== 'undefined' ? window.location.hostname : ''));
+  const [hostName] = useState(() =>
+    typeof globalThis.window === 'undefined' ? '' : globalThis.window.location.hostname
+  );
   const [open, setOpen] = useState(true);
 
   return (

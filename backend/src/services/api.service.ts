@@ -21,7 +21,7 @@ class ApiService {
     this.instance.interceptors.request.use(
       async function (request) {
         if (request.url === apiURL('token')) {
-          return Promise.resolve(request);
+          return request;
         }
         const token = await apiTokenService.getToken();
         const defaultHeaders = {
@@ -37,7 +37,7 @@ class ApiService {
         }
         request.headers = { ...defaultHeaders, ...request.headers } as any;
         request.headers['Content-Type'] = request.headers['Content-Type'] || defaultHeaders['Content-Type'];
-        return Promise.resolve(request);
+        return request;
       },
       function (error) {
         return Promise.reject(error);
@@ -57,7 +57,7 @@ class ApiService {
         };
         const skipLocationFollow = response.config.headers?.['x-skip-location-follow'] ?? response.config.headers?.['X-Skip-Location-Follow'];
         if (skipLocationFollow) {
-          return Promise.resolve(response);
+          return response;
         }
         if (response.headers.location && !response.config.url?.includes('messaging')) {
           logger.info(`Response contained location header: ${response.headers.location}`);
@@ -67,10 +67,10 @@ class ApiService {
             logger.error(`Base URL was: ${e.config?.baseURL}`);
             logger.error(`URL was: ${e.config?.url}`);
             logger.error(`Method was: ${e.config?.method}`);
-            return Promise.resolve(response);
+            return response;
           });
         }
-        return Promise.resolve(response);
+        return response;
       },
       function (error) {
         return Promise.reject(error);
@@ -128,14 +128,14 @@ class ApiService {
       maxContentLength: Infinity,
       maxBodyLength: Infinity,
       headers: { ...config.headers, 'X-Sent-By': [`type=adAccount; ${user.username}`], 'X-Skip-Location-Follow': '1' },
-      url: config.baseURL ? config.url : apiURL(config.url!),
+      url: config.baseURL ? config.url : apiURL(config.url ?? ''),
     };
     try {
       const res = await this.instance(preparedConfig);
       const location = (res.headers?.location ?? res.headers?.Location) as string | undefined;
-      const locationId = location?.split(/[?#]/)[0]?.split('/').filter(Boolean).pop();
+      const locationId = location?.split(/[?#]/)[0]?.split('/').reverse().find(Boolean);
       return { data: res.data, locationId, message: 'success' };
-    } catch (error: unknown | AxiosError) {
+    } catch (error: unknown) {
       if (axios.isAxiosError(error) && (error as AxiosError).response?.status === 404) {
         logger.error(`ERROR: API request failed with status: ${error.response?.status}`);
         logger.error(`Error details: ${JSON.stringify(error.response!.data)}`);

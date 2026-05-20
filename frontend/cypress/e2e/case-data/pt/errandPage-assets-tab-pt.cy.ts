@@ -556,6 +556,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.wait('@getErrandServices');
       cy.get('[data-cy="services-form"]').should('exist');
       cy.get('select#root_type').select('privat_fritid');
+      cy.get('input#root_validFrom').type('2023-01-01');
       cy.get('[data-cy="service-start-date"]').type('2023-01-01');
       cy.get("[data-cy='schema-submit-button']").contains('Lägg till').should('exist').click();
       cy.wait('@createDraftAsset');

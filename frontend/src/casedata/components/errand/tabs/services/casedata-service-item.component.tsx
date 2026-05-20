@@ -64,11 +64,12 @@ export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly
   const showSourceErrandLink =
     readOnly && !!service.sourceErrandNumber && (!currentErrandId || service.sourceErrandId !== currentErrandId);
   const showFooter = !readOnly && (onEdit || onRemove);
-  const validityText = service?.validTo
-    ? `${service.issued} – ${service.validTo}`
-    : service?.issued
-    ? `fr.o.m. ${service.issued}`
-    : '';
+  const buildValidityText = (): string => {
+    if (service?.validTo) return `${service.issued} – ${service.validTo}`;
+    if (service?.issued) return `fr.o.m. ${service.issued}`;
+    return '';
+  };
+  const validityText = buildValidityText();
 
   return (
     <div

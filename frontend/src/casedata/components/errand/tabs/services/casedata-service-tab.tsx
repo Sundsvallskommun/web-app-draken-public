@@ -27,17 +27,60 @@ import {
 } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore } from '@stores/index';
 import { Eye, EyeOff } from 'lucide-react';
-import { ChangeEvent, FC, useCallback, useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, FC, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ServiceListComponent } from './casedata-service-list.component';
 import { useErrandServices, usePartyServices } from './useErrandService';
+
+type DateErrors = { startDate?: string; endDate?: string };
+
+const renderServicesPanel = (
+  loading: boolean,
+  error: string | null | undefined,
+  loadingLabel: string,
+  content: ReactNode
+): ReactNode => {
+  if (loading) return <div>{loadingLabel}</div>;
+  if (error) return <div className="text-error">{error}</div>;
+  return content;
+};
+
+const validateDateRange = (
+  startDate: string,
+  endDate: string,
+  validityType: 'tillsvidare' | 'tidsbegränsat'
+): DateErrors => {
+  const errors: DateErrors = {};
+  if (!startDate) errors.startDate = 'Startdatum krävs';
+  if (validityType === 'tidsbegränsat') {
+    if (!endDate) {
+      errors.endDate = 'Slutdatum krävs';
+    } else if (endDate <= startDate) {
+      errors.endDate = 'Slutdatum måste vara efter startdatum';
+    }
+  }
+  return errors;
+};
+
+const parseAssetValue = (raw: unknown): unknown => {
+  if (typeof raw !== 'string') return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+};
 
 export const CasedataServicesTab: FC = () => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const errand = useCasedataStore((s) => s.errand);
   const [schema, setSchema] = useState<RJSFSchema | null>(null);
   const [uiSchema, setUiSchema] = useState<UiSchema | null>(null);
-  const [formData, setFormData] = useState<any>({});
+  const initialFormData = useMemo(
+    () => ({ validityType: 'tillsvidare', isWinterService: 'nej', transportMode: [] }),
+    []
+  );
+  const [formData, setFormData] = useState<any>(initialFormData);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<any>(null);
   const [editSchema, setEditSchema] = useState<RJSFSchema | null>(null);
@@ -133,12 +176,7 @@ export const CasedataServicesTab: FC = () => {
   const handleSubmit = useCallback(
     async (payload: any) => {
       if (!schema || !municipalityId || !schemaId || !errand) return;
-      const errors: { startDate?: string; endDate?: string } = {};
-      if (!startDate) errors.startDate = 'Startdatum krävs';
-      if (validityType === 'tidsbegränsat') {
-        if (!endDate) errors.endDate = 'Slutdatum krävs';
-        else if (endDate <= startDate) errors.endDate = 'Slutdatum måste vara efter startdatum';
-      }
+      const errors = validateDateRange(startDate, endDate, validityType);
       setDateErrors(errors);
       if (Object.keys(errors).length > 0) return;
       const enrichedPayload = {
@@ -151,7 +189,7 @@ export const CasedataServicesTab: FC = () => {
         await createErrandServiceDraftAsset(serviceAssetParams, enrichedPayload, schema, schemaId);
         toast(getToastOptions({ message: 'Ny insats tillagd.', status: 'success' }));
         await refetch();
-        setFormData({});
+        setFormData(initialFormData);
         setStartDate('');
         setEndDate('');
         setValidityType('tillsvidare');
@@ -162,7 +200,38 @@ export const CasedataServicesTab: FC = () => {
         );
       }
     },
-    [schema, municipalityId, schemaId, errand, serviceAssetParams, startDate, endDate, validityType, refetch, toast]
+    [
+      schema,
+      municipalityId,
+      schemaId,
+      errand,
+      serviceAssetParams,
+      startDate,
+      endDate,
+      validityType,
+      refetch,
+      toast,
+      initialFormData,
+    ]
+  );
+
+  const applyEditSchema = useCallback(
+    async (storedSchemaId: string | undefined) => {
+      if (storedSchemaId) {
+        const [fetchedSchema, fetchedUiSchema] = await Promise.all([
+          getRjsfSchema(municipalityId, storedSchemaId),
+          getUiSchemaForSchema(municipalityId, storedSchemaId),
+        ]);
+        setEditSchema(fetchedSchema);
+        setEditUiSchema(fetchedUiSchema);
+        setEditSchemaId(storedSchemaId);
+        return;
+      }
+      setEditSchema(schema);
+      setEditUiSchema(uiSchema);
+      setEditSchemaId(schemaId);
+    },
+    [municipalityId, schema, schemaId, uiSchema]
   );
 
   const startEdit = useCallback(
@@ -174,36 +243,17 @@ export const CasedataServicesTab: FC = () => {
           return;
         }
         const param = asset.jsonParameters?.[0];
-        let value: unknown = param?.value;
-        if (typeof value === 'string') {
-          try {
-            value = JSON.parse(value);
-          } catch {
-            // keep as-is
-          }
-        }
-        const storedSchemaId = param?.schemaId;
-        if (storedSchemaId) {
-          const fetchedSchema = await getRjsfSchema(municipalityId, storedSchemaId);
-          const fetchedUiSchema = await getUiSchemaForSchema(municipalityId, storedSchemaId);
-          setEditSchema(fetchedSchema);
-          setEditUiSchema(fetchedUiSchema);
-          setEditSchemaId(storedSchemaId);
-        } else {
-          setEditSchema(schema);
-          setEditUiSchema(uiSchema);
-          setEditSchemaId(schemaId);
-        }
+        await applyEditSchema(param?.schemaId);
         setEditStartDate(asset.issued ?? '');
         setEditEndDate(asset.validTo ?? '');
         setEditValidityType(asset.validTo ? 'tidsbegränsat' : 'tillsvidare');
-        setEditFormData(value);
+        setEditFormData(parseAssetValue(param?.value));
         setEditingId(assetId);
       } catch {
         toast(getToastOptions({ message: 'Kunde inte hämta insatsdata.', status: 'error' }));
       }
     },
-    [fetchAsset, municipalityId, schema, schemaId, uiSchema, toast]
+    [fetchAsset, applyEditSchema, toast]
   );
 
   const closeEditModal = useCallback(() => {
@@ -221,12 +271,7 @@ export const CasedataServicesTab: FC = () => {
   const handleEditSubmit = useCallback(
     async (payload: any) => {
       if (!editingId || !editSchemaId) return;
-      const errors: { startDate?: string; endDate?: string } = {};
-      if (!editStartDate) errors.startDate = 'Startdatum krävs';
-      if (editValidityType === 'tidsbegränsat') {
-        if (!editEndDate) errors.endDate = 'Slutdatum krävs';
-        else if (editEndDate <= editStartDate) errors.endDate = 'Slutdatum måste vara efter startdatum';
-      }
+      const errors = validateDateRange(editStartDate, editEndDate, editValidityType);
       setEditDateErrors(errors);
       if (Object.keys(errors).length > 0) return;
       const { validFrom: _vf, validTo: _vt, validityType: _vty, ...jsonValue } = payload ?? {};
@@ -276,9 +321,9 @@ export const CasedataServicesTab: FC = () => {
 
       {!(errand ? isErrandLocked(errand) : false) && (
         <div data-cy="services-form" className="mt-24 max-w-full">
-          {uiSchema && (
+          {uiSchema && schema && (
             <SchemaForm
-              schema={schema!}
+              schema={schema}
               uiSchema={uiSchema}
               formData={formData}
               onChange={(fd) => setFormData(fd)}
@@ -296,6 +341,7 @@ export const CasedataServicesTab: FC = () => {
                         onChange={() => {
                           setValidityType('tillsvidare');
                           setEndDate('');
+                          setFormData((p: any) => ({ ...p, validityType: 'tillsvidare', validTo: undefined }));
                         }}
                       >
                         Tillsvidare
@@ -304,7 +350,10 @@ export const CasedataServicesTab: FC = () => {
                         name="validityType"
                         value="tidsbegränsat"
                         checked={validityType === 'tidsbegränsat'}
-                        onChange={() => setValidityType('tidsbegränsat')}
+                        onChange={() => {
+                          setValidityType('tidsbegränsat');
+                          setFormData((p: any) => ({ ...p, validityType: 'tidsbegränsat' }));
+                        }}
                       >
                         Tidsbegränsat
                       </RadioButton>
@@ -319,6 +368,7 @@ export const CasedataServicesTab: FC = () => {
                         value={startDate}
                         onChange={(e: ChangeEvent<HTMLInputElement>) => {
                           setStartDate(e.target.value);
+                          setFormData((p: any) => ({ ...p, validFrom: e.target.value }));
                           setDateErrors((p) => ({ ...p, startDate: undefined }));
                         }}
                       />
@@ -332,6 +382,7 @@ export const CasedataServicesTab: FC = () => {
                         disabled={validityType === 'tillsvidare'}
                         onChange={(e: ChangeEvent<HTMLInputElement>) => {
                           setEndDate(e.target.value);
+                          setFormData((p: any) => ({ ...p, validTo: e.target.value }));
                           setDateErrors((p) => ({ ...p, endDate: undefined }));
                         }}
                       />
@@ -357,11 +408,10 @@ export const CasedataServicesTab: FC = () => {
             <Disclosure.Button />
           </Disclosure.Header>
           <Disclosure.Content>
-            {loading ? (
-              <div>Hämtar insatser…</div>
-            ) : error ? (
-              <div className="text-error">{error}</div>
-            ) : (
+            {renderServicesPanel(
+              loading,
+              error,
+              'Hämtar insatser…',
               <ServiceListComponent
                 services={errandCasedataServices}
                 onRemove={removeService}
@@ -385,11 +435,10 @@ export const CasedataServicesTab: FC = () => {
             <Disclosure.Button />
           </Disclosure.Header>
           <Disclosure.Content>
-            {partyLoading ? (
-              <div>Hämtar personens insatser…</div>
-            ) : partyError ? (
-              <div className="text-error">{partyError}</div>
-            ) : (
+            {renderServicesPanel(
+              partyLoading,
+              partyError,
+              'Hämtar personens insatser…',
               <>
                 <div className="mb-16 flex justify-end">
                   <Button

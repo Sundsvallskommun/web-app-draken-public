@@ -26,8 +26,8 @@ export type GetAssetsParams = {
 
 const buildQuery = (p: GetAssetsParams) => {
   const params = new URLSearchParams();
-  (Object.entries(p) as [keyof GetAssetsParams, any][]).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== '') params.set(String(k), String(v));
+  Object.entries(p).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') params.set(k, String(v));
   });
   const qs = params.toString();
   return qs ? `?${qs}` : '';
@@ -48,13 +48,13 @@ export type GetServicesParams = {
 };
 
 export async function getErrandServices(params: GetServicesParams): Promise<ApiResponse<Asset[]>> {
-  const url = `errand-services${buildQuery(params as GetAssetsParams)}`;
+  const url = `errand-services${buildQuery(params)}`;
   const res = await apiService.get<ApiResponse<Asset[]>>(url);
   return res.data;
 }
 
 export async function getPartyServices(params: GetServicesParams): Promise<ApiResponse<Asset[]>> {
-  const url = `party-services${buildQuery(params as GetAssetsParams)}`;
+  const url = `party-services${buildQuery(params)}`;
   const res = await apiService.get<ApiResponse<Asset[]>>(url);
   return res.data;
 }
