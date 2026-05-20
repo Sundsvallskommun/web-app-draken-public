@@ -343,7 +343,7 @@ export const buildPdfTemplate: (
   const parameters: { [key: string]: any } = {
     caseNumber: formData.errandNumber ?? '',
     caseType: getLabelFromCaseType(formData.errandCaseType),
-    personalNumber: formData.personalNumber ?? '',
+    personalNumber: owner?.personalNumber ?? '',
     addressLastname: owner?.lastName,
     addressFirstname: owner?.firstName,
     addressCo: owner?.careof,
