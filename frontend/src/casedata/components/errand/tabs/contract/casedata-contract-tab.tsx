@@ -363,7 +363,11 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
               <div className="flex justify-start gap-xl">
                 <FormControl id="contractType" className="my-md">
                   <FormLabel>Välj avtalstyp</FormLabel>
-                  <Select data-cy="contract-type-select" {...contractForm.register('type')}>
+                  <Select
+                    data-cy="contract-type-select"
+                    {...contractForm.register('type')}
+                    disabled={existingContract?.status === Status.ACTIVE}
+                  >
                     {contractTypes.map((t) => (
                       <option key={t.key} value={t.key}>
                         {t.label}
@@ -374,7 +378,11 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                 {contractForm.getValues().type === ContractType.LEASE_AGREEMENT && (
                   <FormControl id="contractSubType" className="my-md">
                     <FormLabel>Undertyp</FormLabel>
-                    <Select data-cy="contract-subtype-select" {...contractForm.register('leaseType')}>
+                    <Select
+                      data-cy="contract-subtype-select"
+                      {...contractForm.register('leaseType')}
+                      disabled={existingContract?.status === Status.ACTIVE}
+                    >
                       {leaseTypes
                         .filter((lt) => existingContract?.contractId || lt.key !== LeaseType.OTHER_FEE)
                         .map((lt) => (
@@ -408,7 +416,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                         )
                         .then((confirmed) => {
                           if (confirmed) {
-                              contractForm.setValue('status', Status.ACTIVE);
+                            contractForm.setValue('status', Status.ACTIVE);
                             contractForm.trigger().then((valid: boolean) => {
                               if (valid) {
                                 onSave(contractForm.getValues());
