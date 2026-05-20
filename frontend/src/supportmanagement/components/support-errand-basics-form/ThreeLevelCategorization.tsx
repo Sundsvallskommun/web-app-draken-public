@@ -176,7 +176,7 @@ export const ThreeLevelCategorization: FC<{
             variant="primary"
             size="md"
             placeholder={typePlaceholder}
-            value={selectedLabels.SUBTYPE?.id ?? selectedLabels.TYPE?.id}
+            value={selectedLabels.SUBTYPE?.id ?? selectedLabels.TYPE?.id ?? ''}
             onSelect={handleTypeSelect}
           >
             <Combobox.Input data-cy="labelType-input" className="w-full" />
