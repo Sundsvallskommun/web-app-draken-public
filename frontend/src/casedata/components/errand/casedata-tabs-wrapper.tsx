@@ -262,6 +262,11 @@ export const CasedataTabsWrapper: React.FC = () => {
             visibleFor:
               errand?.id && MEXCaseTypesWithContractsAndBilling.includes(errand?.caseType)
                 ? [
+                    ...((errand?.caseType === MEXCaseType.MEX_TERMINATION_OF_LEASE ||
+                      errand?.caseType === MEXCaseType.UPDATECONTRACT) &&
+                    uiPhase === UiPhase.granskning
+                      ? [ErrandPhase.aktualisering]
+                      : []),
                     ErrandPhase.utredning,
                     ErrandPhase.beslut,
                     ErrandPhase.hantera,
@@ -283,8 +288,11 @@ export const CasedataTabsWrapper: React.FC = () => {
             visibleFor:
               errand?.id && MEXCaseTypesWithContractsAndBilling.includes(errand?.caseType)
                 ? [
-                    ...(errand?.caseType === MEXCaseType.MEX_TERMINATION_OF_LEASE ? [ErrandPhase.aktualisering] : []),
-                    ...(errand?.caseType === MEXCaseType.UPDATECONTRACT ? [ErrandPhase.aktualisering] : []),
+                    ...((errand?.caseType === MEXCaseType.MEX_TERMINATION_OF_LEASE ||
+                      errand?.caseType === MEXCaseType.UPDATECONTRACT) &&
+                    uiPhase === UiPhase.granskning
+                      ? [ErrandPhase.aktualisering]
+                      : []),
                     ErrandPhase.utredning,
                     ErrandPhase.beslut,
                     ErrandPhase.hantera,
