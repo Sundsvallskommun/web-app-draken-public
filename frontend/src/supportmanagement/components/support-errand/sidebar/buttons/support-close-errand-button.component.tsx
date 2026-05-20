@@ -69,10 +69,13 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
   };
 
   const handleCloseErrand = async (resolution: Resolution, msg: boolean) => {
+    if (!supportErrand?.id) return;
+    const errandId = supportErrand.id;
     setIsLoading(true);
     try {
-      await closeSupportErrand(supportErrand!.id!, municipalityId, resolution);
+      await closeSupportErrand(errandId, municipalityId, resolution);
     } catch (e) {
+      console.error('Failed to close support errand', e);
       showCloseErrorToast();
       setIsLoading(false);
       return;
@@ -80,13 +83,14 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
 
     if (msg) {
       try {
-        const admin = administrators.find((a) => a.adAccount === supportErrand!.assignedUserId);
+        const admin = administrators.find((a) => a.adAccount === supportErrand.assignedUserId);
         const adminName = getAdminName(admin!);
-        await sendClosingMessage(adminName, supportErrand!, municipalityId);
+        await sendClosingMessage(adminName, supportErrand, municipalityId);
       } catch (e) {
+        console.error('Failed to send closing message', e);
         showCloseErrorToast('Ärendet avslutades men avslutningsmeddelandet kunde inte skickas');
         setIsLoading(false);
-        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
+        getSupportErrandById(errandId, municipalityId).then((res) => setSupportErrand(res.errand));
         return;
       }
     }
@@ -101,7 +105,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
       window.close();
     }, 2000);
     setIsLoading(false);
-    getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
+    getSupportErrandById(errandId, municipalityId).then((res) => setSupportErrand(res.errand));
   };
 
   return (

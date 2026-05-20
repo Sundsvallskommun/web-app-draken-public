@@ -77,7 +77,7 @@ export const sendClosingMessage = async (adminName: string, supportErrand: Suppo
   const contactChannels = applicantContactChannel(supportErrand);
   const messageBody = await getClosingMessageBody(adminName);
   if (!messageBody) {
-    return Promise.reject('No closing-message template available');
+    throw new Error('No closing-message template available');
   }
   const plaintextMessageBody = getPlaintextMessageBody(messageBody);
 
