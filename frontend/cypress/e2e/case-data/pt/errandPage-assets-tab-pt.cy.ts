@@ -533,11 +533,11 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     });
 
     it('calls the draft asset endpoint when removing a service', () => {
-      cy.intercept('PATCH', '**/asset-drafts/*', { data: 'ok', message: 'ok' }).as('patchDraftAsset');
+      cy.intercept('DELETE', '**/asset-drafts/*', { data: 'ok', message: 'ok' }).as('deleteDraftAsset');
       visitInsatserTab(mockDraftAsset);
       cy.wait('@getErrandServices');
       cy.get('[data-cy="remove-service-button"]').first().click();
-      cy.wait('@patchDraftAsset');
+      cy.wait('@deleteDraftAsset');
     });
 
     it('calls the draft asset endpoint when editing a service', () => {
@@ -556,7 +556,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.wait('@getErrandServices');
       cy.get('[data-cy="services-form"]').should('exist');
       cy.get('select#root_type').select('privat_fritid');
-      cy.get('input#root_validFrom').type('2023-01-01');
+      cy.get('[data-cy="service-start-date"]').type('2023-01-01');
       cy.get("[data-cy='schema-submit-button']").contains('Lägg till').should('exist').click();
       cy.wait('@createDraftAsset');
     });

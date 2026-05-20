@@ -315,6 +315,7 @@ export const CasedataServicesTab: FC = () => {
                     <FormControl className="form-row w-full max-w-[48rem]" invalid={!!dateErrors.startDate}>
                       <FormLabel>Startdatum *</FormLabel>
                       <DatePicker
+                        data-cy="service-start-date"
                         value={startDate}
                         onChange={(e: ChangeEvent<HTMLInputElement>) => {
                           setStartDate(e.target.value);
@@ -326,6 +327,7 @@ export const CasedataServicesTab: FC = () => {
                     <FormControl className="form-row w-full max-w-[48rem]" invalid={!!dateErrors.endDate}>
                       <FormLabel>Slutdatum {validityType === 'tidsbegränsat' ? '*' : ''}</FormLabel>
                       <DatePicker
+                        data-cy="service-end-date"
                         value={endDate}
                         disabled={validityType === 'tillsvidare'}
                         onChange={(e: ChangeEvent<HTMLInputElement>) => {
