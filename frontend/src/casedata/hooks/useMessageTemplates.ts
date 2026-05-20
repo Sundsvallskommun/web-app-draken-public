@@ -73,7 +73,7 @@ export function useMessageTemplates(user: User, shouldLoad: boolean): UseMessage
         });
 
         const emailTemplates = appResult.templates.filter((t) => {
-          return getTemplateType(t) === 'Email' && !['signature', 'publicdocuments'].includes(getTemplateRole(t) || '');
+          return getTemplateType(t) === 'email' && !['signature', 'publicdocuments'].includes(getTemplateRole(t) || '');
         });
 
         // If no app-specific email templates, use default ones
@@ -81,21 +81,21 @@ export function useMessageTemplates(user: User, shouldLoad: boolean): UseMessage
           emailTemplates.length === 0
             ? defaultResult.templates.filter((t) => {
                 return (
-                  getTemplateType(t) === 'Email' &&
+                  getTemplateType(t) === 'email' &&
                   !['signature', 'publicdocuments', 'closing'].includes(getTemplateRole(t) || '')
                 );
               })
             : [];
 
         const smsTemplates = appResult.templates.filter((t) => {
-          return getTemplateType(t) === 'Sms' && getTemplateRole(t) !== 'signature';
+          return getTemplateType(t) === 'sms' && getTemplateRole(t) !== 'signature';
         });
 
         // If no app-specific sms templates, use default ones
         const fallbackSmsTemplates =
           smsTemplates.length === 0
             ? defaultResult.templates.filter((t) => {
-                return getTemplateType(t) === 'Sms' && getTemplateRole(t) !== 'signature';
+                return getTemplateType(t) === 'sms' && getTemplateRole(t) !== 'signature';
               })
             : [];
 

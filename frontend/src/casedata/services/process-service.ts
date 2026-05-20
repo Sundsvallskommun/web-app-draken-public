@@ -1,4 +1,3 @@
-import { MEXCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
@@ -8,9 +7,6 @@ import { apiService } from '@common/services/api-service';
 export const PROCESS_PARAMETER_KEYS = ['process.displayPhase', 'process.phaseAction', 'process.phaseStatus'];
 
 export const phaseChangeInProgress = (errand: IErrand) => {
-  if (errand?.caseType === MEXCaseType.UPDATECONTRACT) {
-    return false;
-  }
   if (!errand?.id) {
     return false;
   }
@@ -22,12 +18,6 @@ export const phaseChangeInProgress = (errand: IErrand) => {
     return false;
   }
   if (errand.extraParameters?.find((p) => p.key === 'process.phaseStatus')?.values?.[0] === undefined) {
-    return true;
-  }
-  if (
-    errand.extraParameters?.find((p) => p.key === 'process.displayPhase')?.values?.[0] === UiPhase.registrerad &&
-    !!errand.administrator
-  ) {
     return true;
   }
   if (

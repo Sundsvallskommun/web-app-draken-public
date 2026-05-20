@@ -52,6 +52,9 @@ export const SupportContactModal: FC<SupportContactModalProps> = ({
 
   const username = form.watch('username');
   const personNumber = form.watch('personNumber');
+  const showPersonNumberField = searchMode === 'employee' || !!personNumber || !!username;
+  const showUsername = !!username && !personNumber;
+  const personNumberFieldName = showUsername ? 'username' : 'personNumber';
 
   return (
     <Modal
@@ -81,42 +84,25 @@ export const SupportContactModal: FC<SupportContactModalProps> = ({
           {searchMode === 'person' || searchMode === 'employee' ? (
             <>
               <div className="flex gap-lg">
-                <FormControl id={`contact-personnumber`} className="w-1/2">
-                  <FormLabel>{username && !personNumber ? 'Användarnamn' : 'Personnummer'}</FormLabel>
-                  {username && !personNumber ? (
+                {showPersonNumberField ? (
+                  <FormControl id={`contact-personnumber`} className="w-1/2">
+                    <FormLabel>{showUsername ? 'Användarnamn' : 'Personnummer'}</FormLabel>
                     <Input
                       size="sm"
                       disabled={disabled}
                       readOnly
-                      data-cy={`contact-username`}
-                      className={cx(
-                        form.formState.errors.personNumber ? 'border-2 border-error' : null,
-                        'read-only:bg-gray-lighter read-only:cursor-not-allowed'
-                      )}
-                      {...form.register(`username`)}
+                      data-cy={`contact-${personNumberFieldName}`}
+                      {...form.register(personNumberFieldName)}
                     />
-                  ) : (
-                    <Input
-                      size="sm"
-                      disabled={disabled}
-                      readOnly
-                      data-cy={`contact-personNumber`}
-                      className={cx(
-                        form.formState.errors.personNumber ? 'border-2 border-error' : null,
-                        'read-only:bg-gray-lighter read-only:cursor-not-allowed'
-                      )}
-                      {...form.register(`personNumber`)}
-                    />
-                  )}
-
-                  {form.formState.errors.personNumber && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>{form.formState.errors.personNumber?.message}</FormErrorMessage>
-                    </div>
-                  )}
-                </FormControl>
+                    {form.formState.errors.personNumber && (
+                      <div className="my-sm text-error">
+                        <FormErrorMessage>{form.formState.errors.personNumber?.message}</FormErrorMessage>
+                      </div>
+                    )}
+                  </FormControl>
+                ) : null}
                 {appConfig.features.useRolesForStakeholders ? (
-                  <FormControl id={`contact-relation`} size="sm" className="w-1/2">
+                  <FormControl id={`contact-relation`} size="sm" className={showPersonNumberField ? 'w-1/2' : 'w-full'}>
                     <FormLabel>Roll</FormLabel>
                     <Select
                       data-cy={`role-select`}
@@ -146,9 +132,9 @@ export const SupportContactModal: FC<SupportContactModalProps> = ({
                       </div>
                     )}
                   </FormControl>
-                ) : (
+                ) : showPersonNumberField ? (
                   <div className="w-1/2"></div>
-                )}
+                ) : null}
               </div>
               <div className="flex gap-lg">
                 <FormControl id={`firstName`} className="w-1/2">

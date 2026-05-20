@@ -30,7 +30,17 @@ import {
 } from '@casedata/services/contract-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Checkbox, FormControl, FormLabel, Input, Select, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import {
+  Checkbox,
+  FormControl,
+  FormErrorMessage,
+  FormLabel,
+  Input,
+  Select,
+  Spinner,
+  useConfirm,
+  useSnackbar,
+} from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { Dispatch, FC, SetStateAction, useCallback, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
@@ -113,7 +123,6 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
 
         const baseSchema = schema.of(
           yup.object({
-            stakeholderId: yup.string().required(),
             roles: yup
               .array()
               .of(yup.string().oneOf(Object.keys(StakeholderRole)) as any)
@@ -126,11 +135,21 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
 
         if (type === ContractType.PURCHASE_AGREEMENT) {
           return baseSchema
+            .test(
+              'has-buyer-and-seller',
+              'Minst en köpare och en säljare måste anges',
+              hasRole(StakeholderRole.BUYER) && hasRole(StakeholderRole.SELLER)
+            )
             .test('has-buyer', 'Minst en köpare måste anges', hasRole(StakeholderRole.BUYER))
             .test('has-seller', 'Minst en säljare måste anges', hasRole(StakeholderRole.SELLER));
         }
         if (isLeaseAgreement(type)) {
           return baseSchema
+            .test(
+              'has-lessor-and-lessee',
+              'Minst en upplåtare och en arrendator måste anges',
+              hasRole(StakeholderRole.LESSOR) && hasRole(StakeholderRole.LESSEE)
+            )
             .test('has-lessor', 'Minst en upplåtare måste anges', hasRole(StakeholderRole.LESSOR))
             .test('has-lessee', 'Minst en arrendator måste anges', hasRole(StakeholderRole.LESSEE));
         }
@@ -344,7 +363,11 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
               <div className="flex justify-start gap-xl">
                 <FormControl id="contractType" className="my-md">
                   <FormLabel>Välj avtalstyp</FormLabel>
-                  <Select data-cy="contract-type-select" {...contractForm.register('type')}>
+                  <Select
+                    data-cy="contract-type-select"
+                    {...contractForm.register('type')}
+                    disabled={existingContract?.status === Status.ACTIVE}
+                  >
                     {contractTypes.map((t) => (
                       <option key={t.key} value={t.key}>
                         {t.label}
@@ -355,7 +378,11 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                 {contractForm.getValues().type === ContractType.LEASE_AGREEMENT && (
                   <FormControl id="contractSubType" className="my-md">
                     <FormLabel>Undertyp</FormLabel>
-                    <Select data-cy="contract-subtype-select" {...contractForm.register('leaseType')}>
+                    <Select
+                      data-cy="contract-subtype-select"
+                      {...contractForm.register('leaseType')}
+                      disabled={existingContract?.status === Status.ACTIVE}
+                    >
                       {leaseTypes
                         .filter((lt) => existingContract?.contractId || lt.key !== LeaseType.OTHER_FEE)
                         .map((lt) => (
@@ -406,7 +433,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                   </Checkbox>
                   <p>Avmarkera när allt är klart med avtalet och faktureringen ska börja.</p>
                   {contractForm.formState.isValid === false && (
-                    <p className="text-error">Avtalet saknar nödvändiga uppgifter.</p>
+                    <FormErrorMessage>Avtalet saknar nödvändiga uppgifter.</FormErrorMessage>
                   )}
                 </FormControl>
               ) : null}

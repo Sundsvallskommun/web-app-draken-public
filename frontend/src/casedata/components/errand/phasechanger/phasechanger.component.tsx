@@ -1,6 +1,5 @@
 import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
-import { MEXCaseType } from '@casedata/interfaces/case-type';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
@@ -22,7 +21,7 @@ import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { ArrowRight } from 'lucide-react';
 import { IconName } from 'lucide-react/dynamic';
 import { JSX, useEffect, useMemo, useState } from 'react';
-import { useForm,UseFormReturn } from 'react-hook-form';
+import { useForm, UseFormReturn } from 'react-hook-form';
 
 import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
 
@@ -168,6 +167,7 @@ export const PhaseChanger = () => {
         setIsLoading(false);
         getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
         reset();
+        triggerErrandPhaseChange(municipalityId, errand!);
         pollDisplayPhase();
       })
       .catch(() => {
@@ -237,8 +237,7 @@ export const PhaseChanger = () => {
         disabled={
           (isErrandLocked(errand) && !(isPT() && errand.status?.statusType === ErrandStatus.BeslutVerkstallt)) ||
           !allowed ||
-          phaseChangeText.disabled ||
-          errand.caseType === MEXCaseType.UPDATECONTRACT
+          phaseChangeText.disabled
         }
         color="vattjom"
         loadingText="Sparar"

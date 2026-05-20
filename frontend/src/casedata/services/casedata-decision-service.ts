@@ -297,36 +297,17 @@ export const mapServicesToTemplateParams = (services: Service[]): Record<string,
   });
 };
 
-export const renderUtredningPdf: (
-  errand: IErrand,
-  d: UtredningFormModel | DecisionFormModel,
-  services?: Service[]
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, d, services) => {
-  return renderPdf(errand, d, 'investigation', services);
-};
-
-export const renderBeslutPdf: (
-  errand: IErrand,
-  d: UtredningFormModel | DecisionFormModel,
-  services?: Service[]
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, d, services) => {
-  return renderPdf(errand, d, 'decision', services);
-};
-
-export const renderPdf: (
+export const buildPdfTemplate: (
   errand: IErrand,
   formData: UtredningFormModel | DecisionFormModel,
   templateType: 'investigation' | 'decision',
   services?: Service[]
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, formData, templateType, services) => {
+) => { identifier: string; parameters: { [key: string]: any } } = (errand, formData, templateType, services) => {
   const decision = errand.decisions.find(
     (d) =>
       (templateType === 'decision' && d.decisionType === 'FINAL') ||
       (templateType === 'investigation' && d.decisionType === 'PROPOSED')
   );
-  if (!decision) {
-    console.error('No saved decision found. Rendering preview for current form values.');
-  }
   const outcome =
     formData.outcome === 'APPROVAL'
       ? 'approval'
@@ -364,7 +345,7 @@ export const renderPdf: (
 
   const owner = getOwnerStakeholder(errand);
   const wrapWithWordBreak = (html: string) =>
-    `<div style="overflow-wrap: break-word; word-break: break-word;">${html}</div>`;
+    `<div style="overflow-wrap: break-word; word-break: break-word;">${html ?? ''}</div>`;
 
   const parameters: { [key: string]: any } = {
     caseNumber: formData.errandNumber ?? '',
@@ -425,7 +406,16 @@ export const renderPdf: (
     parameters['services'] = services && services.length > 0 ? mapServicesToTemplateParams(services) : [];
   }
 
-  const renderBody: TemplateSelector = { identifier, parameters };
+  return { identifier, parameters };
+};
+
+export const renderPdf: (
+  errand: IErrand,
+  formData: UtredningFormModel | DecisionFormModel,
+  templateType: 'investigation' | 'decision',
+  services?: Service[]
+) => Promise<{ pdfBase64: string; error?: string }> = async (errand, formData, templateType, services) => {
+  const renderBody: TemplateSelector = buildPdfTemplate(errand, formData, templateType, services);
 
   return apiService
     .post<ApiResponse<Render>, TemplateSelector>('render/pdf', renderBody)

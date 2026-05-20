@@ -27,11 +27,14 @@ const billingSchema = yup.object({
   specifications: yup.object({
     ourReference: yup.string().required('Vår referens måste anges'),
     customerReference: yup.string().required('Kundens referens måste anges'),
-    rejectionDate: yup.string().test('not-past', 'Aviseringsdatum kan inte vara i det förflutna', (value) => {
-      if (!value) return true;
-      const today = new Date().toISOString().split('T')[0];
-      return value >= today;
-    }),
+    rejectionDate: yup
+      .string()
+      .required('Aviseringsdatum måste anges')
+      .test('not-past', 'Aviseringsdatum kan inte vara i det förflutna', (value) => {
+        if (!value) return true;
+        const today = new Date().toISOString().split('T')[0];
+        return value >= today;
+      }),
     selectedFacilities: yup.array().of(yup.string()),
   }),
   services: yup.array().min(1, 'Lägg till minst en kontering'),
@@ -196,7 +199,7 @@ export const CaseDataBillingForm: React.FC = () => {
         }
       }
 
-      await saveCasedataBillingRecord(
+      const result = await saveCasedataBillingRecord(
         { ...data, services: resolvedServices, recipient: resolvedRecipient },
         errand!,
         municipalityId
@@ -207,6 +210,15 @@ export const CaseDataBillingForm: React.FC = () => {
         closeable: true,
         message: 'Faktura skapad',
         status: 'success',
+      });
+
+      result.warnings.forEach((warning) => {
+        toastMessage({
+          position: 'bottom',
+          closeable: true,
+          message: warning,
+          status: 'error',
+        });
       });
 
       reset({

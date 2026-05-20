@@ -14,8 +14,8 @@ import {
   getFinalDecisonWithHighestId,
   getLawMapping,
   mapServicesToTemplateParams,
-  renderBeslutPdf,
   renderHtml,
+  renderPdf,
   saveDecision,
 } from '@casedata/services/casedata-decision-service';
 import {
@@ -289,7 +289,7 @@ export const CasedataDecisionTab: FC<{
   const save = async (data: DecisionFormModel) => {
     if (!errand) return;
     try {
-      const rendered = await renderBeslutPdf(errand, data, services);
+      const rendered = await renderPdf(errand, data, 'decision', services);
       await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
       setIsLoading(false);
       setError(undefined);
@@ -331,7 +331,7 @@ export const CasedataDecisionTab: FC<{
         adAccount: user.username,
       } as CreateStakeholderDto;
       setIsSaveAndSendLoading(true);
-      const rendered = await renderBeslutPdf(errand, data, services);
+      const rendered = await renderPdf(errand, data, 'decision', services);
       await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
 
       const renderedHtml = await renderHtml(errand, data, 'decision');
@@ -442,7 +442,7 @@ export const CasedataDecisionTab: FC<{
   const renderAndDownloadPdf = async () => {
     if (!errand) return;
     const data = getValues();
-    const pdfData = await renderBeslutPdf(errand, data, services);
+    const pdfData = await renderPdf(errand, data, 'decision', services);
     downloadPdf(pdfData.pdfBase64);
   };
 

@@ -214,7 +214,7 @@ export const ContractDetailForm: FC<{
         })
       );
 
-      router.push(`/arende/${createdErrand.errand.errandNumber}`);
+      window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${createdErrand.errand.errandNumber}`, '_blank');
     } catch (error) {
       console.error('Error creating contract errand:', error);
       toastMessage({
