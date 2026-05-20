@@ -353,7 +353,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           yearly: 120,
           total: 120,
           additionalInformation: [
-            'Avgift, lägenhetsarrende. Fastigheter: AVTALSFASTIGHET 1:123, AVTALSFASTIGHET 2:456',
+            'Avgift, lägenhetsarrende. AVTALSFASTIGHET 1:123, AVTALSFASTIGHET 2:456',
             'Foobar',
           ],
         });
