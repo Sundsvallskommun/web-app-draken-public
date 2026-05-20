@@ -4,6 +4,7 @@ import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
 import { CCommunicationAttachment } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
+
 import { getClosingTemplate } from './message-template-service';
 import { SingleSupportAttachment } from './support-attachment-service';
 import { Channels, ContactChannelType, SupportErrand } from './support-errand-service';
@@ -52,7 +53,7 @@ const getClosingMessageBody = async (userName: string): Promise<string> => {
 
   const content = await getClosingTemplate(app, { user: userName });
   if (!content) {
-    console.error(`Could not get closing-template: ${app}.email.closing`);
+    console.error(`Could not get closing-template: neither ${app}.email.closing nor default.email.closing was found`);
     return '';
   }
 
@@ -75,6 +76,9 @@ const getPlaintextMessageBody = (htmlMessage: string): string => {
 export const sendClosingMessage = async (adminName: string, supportErrand: SupportErrand, municipalityId: string) => {
   const contactChannels = applicantContactChannel(supportErrand);
   const messageBody = await getClosingMessageBody(adminName);
+  if (!messageBody) {
+    return Promise.reject('No closing-message template available');
+  }
   const plaintextMessageBody = getPlaintextMessageBody(messageBody);
 
   return sendMessage({

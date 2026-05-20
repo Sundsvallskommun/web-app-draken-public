@@ -161,10 +161,14 @@ export async function getSmsTemplate(
 
 export async function getClosingTemplate(app: string, parameters: Record<string, string> = {}): Promise<string | null> {
   const appLower = app.toLowerCase();
-  const contentId = `${appLower}.email.closing`;
   const signatureId = `${appLower}.email.signature`;
 
-  return fetchContentWithSignature(contentId, signatureId, parameters);
+  const appClosing = await fetchContentWithSignature(`${appLower}.email.closing`, signatureId, parameters);
+  if (appClosing) {
+    return appClosing;
+  }
+
+  return fetchContentWithSignature('default.email.closing', signatureId, parameters);
 }
 
 export async function getInternalSignature(parameters: Record<string, string> = {}): Promise<string | null> {
