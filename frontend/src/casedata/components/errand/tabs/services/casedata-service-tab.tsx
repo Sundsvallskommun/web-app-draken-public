@@ -14,8 +14,10 @@ import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@commo
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import {
-  Checkbox,
+  Badge,
+  Button,
   DatePicker,
+  Disclosure,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -24,6 +26,7 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore } from '@stores/index';
+import { Eye, EyeOff } from 'lucide-react';
 import { ChangeEvent, FC, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ServiceListComponent } from './casedata-service-list.component';
@@ -340,47 +343,73 @@ export const CasedataServicesTab: FC = () => {
         </div>
       )}
 
-      <div className="mt-32 pt-24">
-        <h4 className="text-h6 mb-sm border-b">Här listas de insatser som fattats kring ärendet</h4>
-        {loading ? (
-          <div>Hämtar insatser…</div>
-        ) : error ? (
-          <div className="text-error">{error}</div>
-        ) : (
-          <ServiceListComponent
-            services={errandCasedataServices}
-            onRemove={removeService}
-            onEdit={startEdit}
-            readOnly={errand ? isErrandLocked(errand) : false}
-          />
-        )}
+      <div className="mt-32">
+        <Disclosure variant="alt" data-cy="errand-services-disclosure" initalOpen>
+          <Disclosure.Header>
+            <Disclosure.Title>
+              <span className="flex items-center gap-12">
+                <span>Ärendets insatser</span>
+                <Badge rounded color="vattjom" counter={errandCasedataServices.length} />
+              </span>
+            </Disclosure.Title>
+            <Disclosure.Button />
+          </Disclosure.Header>
+          <Disclosure.Content>
+            {loading ? (
+              <div>Hämtar insatser…</div>
+            ) : error ? (
+              <div className="text-error">{error}</div>
+            ) : (
+              <ServiceListComponent
+                services={errandCasedataServices}
+                onRemove={removeService}
+                onEdit={startEdit}
+                readOnly={errand ? isErrandLocked(errand) : false}
+              />
+            )}
+          </Disclosure.Content>
+        </Disclosure>
       </div>
 
-      <div className="mt-32 pt-24">
-        <h4 className="text-h6 mb-sm border-b">Personens övriga insatser</h4>
-        {partyLoading ? (
-          <div>Hämtar personens insatser…</div>
-        ) : partyError ? (
-          <div className="text-error">{partyError}</div>
-        ) : (
-          <>
-            <div className="mb-16">
-              <Checkbox
-                data-cy="show-finished-party-services"
-                checked={showFinishedPartyServices}
-                onChange={(e) => setShowFinishedPartyServices(e.target.checked)}
-              >
-                Visa avslutade insatser
-              </Checkbox>
-            </div>
-            <ServiceListComponent
-              services={visiblePartyServices}
-              readOnly
-              emptyMessage="Personen har inga övriga insatser"
-              currentErrandId={errandId}
-            />
-          </>
-        )}
+      <div className="mt-32">
+        <Disclosure variant="alt" data-cy="party-services-disclosure">
+          <Disclosure.Header>
+            <Disclosure.Title>
+              <span className="flex items-center gap-12">
+                <span>Personens övriga insatser</span>
+                <Badge rounded color="vattjom" inverted counter={visiblePartyServices.length} />
+              </span>
+            </Disclosure.Title>
+            <Disclosure.Button />
+          </Disclosure.Header>
+          <Disclosure.Content>
+            {partyLoading ? (
+              <div>Hämtar personens insatser…</div>
+            ) : partyError ? (
+              <div className="text-error">{partyError}</div>
+            ) : (
+              <>
+                <div className="mb-16 flex justify-end">
+                  <Button
+                    data-cy="show-finished-party-services"
+                    variant="tertiary"
+                    size="sm"
+                    leftIcon={showFinishedPartyServices ? <EyeOff /> : <Eye />}
+                    onClick={() => setShowFinishedPartyServices((v) => !v)}
+                  >
+                    {showFinishedPartyServices ? 'Dölj avslutade' : 'Visa avslutade'}
+                  </Button>
+                </div>
+                <ServiceListComponent
+                  services={visiblePartyServices}
+                  readOnly
+                  emptyMessage="Personen har inga övriga insatser"
+                  currentErrandId={errandId}
+                />
+              </>
+            )}
+          </Disclosure.Content>
+        </Disclosure>
       </div>
 
       <Modal show={editingId !== null} className="w-[80rem]" onClose={closeEditModal} label="Redigera insats">
