@@ -202,7 +202,7 @@ export const fetchContract: (contractId: string) => Promise<ApiResponse<Contract
 
 export interface ContractFilterParams {
   page?: number;
-  limit?: number;
+  size?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   query?: string;
@@ -214,20 +214,9 @@ export interface ContractFilterParams {
 }
 
 export const fetchContracts: (params?: ContractFilterParams) => Promise<PageContract> = (params = {}) => {
-  const {
-    page = 0,
-    limit = 12,
-    sortBy,
-    sortOrder,
-    query,
-    status,
-    contractType,
-    leaseType,
-    startDate,
-    endDate,
-  } = params;
+  const { page = 0, size = 12, sortBy, sortOrder, query, status, contractType, leaseType, startDate, endDate } = params;
 
-  let url = `contracts?page=${page}&limit=${limit}`;
+  let url = `contracts?page=${page}&size=${size}`;
 
   if (sortBy) {
     url += `&sortBy=${sortBy}&sortOrder=${sortOrder || 'desc'}`;
