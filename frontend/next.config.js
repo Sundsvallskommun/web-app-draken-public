@@ -36,9 +36,6 @@ module.exports = {
     formats: ['image/avif', 'image/webp'],
   },
   basePath: process.env.NEXT_PUBLIC_BASEPATH || '',
-  experimental: {
-    optimizePackageImports: ['@sk-web-gui/core', '@sk-web-gui/react', 'dayjs'],
-  },
   async rewrites() {
     return [{ source: '/napi/:path*', destination: '/api/:path*' }];
   },
