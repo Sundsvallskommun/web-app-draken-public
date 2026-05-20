@@ -181,23 +181,23 @@ export const CasedataDecisionTab: FC<{
   }, [errand?.decisions]);
 
   const ownerPartyId = errand ? getOwnerStakeholder(errand)?.personId : undefined;
-  const isFt = !!(errand && isFTErrand(errand));
+  const hasFtServices = !!(errand && (isFTErrand(errand) || isFTNationalErrand(errand)));
   const assetType = errand && isFTNationalErrand(errand) ? 'ParatransitPermitNational' : 'ParatransitPermitLocal';
 
   useEffect(() => {
-    if (!isFt) return;
+    if (!hasFtServices) return;
     (async () => {
       const { schema } = await getLatestRjsfSchema(municipalityId, assetType);
       setServiceSchema(schema);
     })();
-  }, [municipalityId, assetType, isFt]);
+  }, [municipalityId, assetType, hasFtServices]);
 
   // Template fetching is driven by outcome selection — see useEffect below after watch()
 
   const { services: allServices, refetch: refetchServices } = useErrandServices({
     municipalityId,
-    partyId: isFt ? ownerPartyId ?? '' : '',
-    errandId: isFt ? String(errand?.id ?? '') : '',
+    partyId: hasFtServices ? ownerPartyId ?? '' : '',
+    errandId: hasFtServices ? String(errand?.id ?? '') : '',
     assetType: assetType,
     schema: serviceSchema,
   });
