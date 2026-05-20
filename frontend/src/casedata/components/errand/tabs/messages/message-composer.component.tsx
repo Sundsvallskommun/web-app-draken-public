@@ -374,6 +374,7 @@ export const MessageComposer: FC<{
     if (contactMeans === 'sms' && errand) {
       setValue('newPhoneNumber', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '');
     }
+    setValue('messageTemplate', '');
     setValue('messageBody', defaultSignature());
     setTimeout(() => {
       props.setUnsaved(false);
@@ -609,7 +610,7 @@ export const MessageComposer: FC<{
               data-cy="messageTemplate"
             >
               <Select.Option value="">Välj mall</Select.Option>
-              {templates?.emailTemplates.map((t) => (
+              {(contactMeans === 'sms' ? templates?.smsTemplates : templates?.emailTemplates)?.map((t) => (
                 <Select.Option key={t.identifier} value={t.identifier}>
                   {t.name}
                 </Select.Option>

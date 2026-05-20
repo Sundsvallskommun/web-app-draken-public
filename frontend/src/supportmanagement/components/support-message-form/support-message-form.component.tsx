@@ -417,6 +417,7 @@ export const SupportMessageForm: FC<{
 
       setValue('messageBody', sanitized(body));
     }
+    setValue('messageTemplate', '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contactMeans, props.message]);
 
