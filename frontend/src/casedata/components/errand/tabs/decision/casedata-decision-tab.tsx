@@ -49,10 +49,13 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import type { RJSFSchema } from '@rjsf/utils';
 import {
+  Alert,
+  Badge,
   Button,
   Combobox,
   cx,
   Dialog,
+  Disclosure,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -820,10 +823,35 @@ export const CasedataDecisionTab: FC<{
           )}
         </div>
 
-        {isPT() ? (
+        {isPT() && outcome === 'APPROVAL' ? (
           <div className="pb-20">
-            <h4 className="text-h6 mb-sm border-b">Här listas de insatser som bifalls</h4>
-            <ServiceListComponent services={services} readOnly />
+            <Disclosure variant="alt" data-cy="decision-services-disclosure" initalOpen>
+              <Disclosure.Header>
+                <Disclosure.Title>
+                  <span className="flex items-center gap-12">
+                    <span>Insatser som bifalls</span>
+                    <Badge rounded color="vattjom" counter={services.length} />
+                  </span>
+                </Disclosure.Title>
+                <Disclosure.Button />
+              </Disclosure.Header>
+              <Disclosure.Content>
+                <ServiceListComponent services={services} readOnly />
+              </Disclosure.Content>
+            </Disclosure>
+          </div>
+        ) : isPT() && outcome && outcome !== 'APPROVAL' ? (
+          <div className="pb-20">
+            <Alert type="info" data-cy="decision-services-info-alert">
+              <Alert.Icon />
+              <Alert.Content>
+                <Alert.Content.Title>Inga insatser kommer att fattas</Alert.Content.Title>
+                <Alert.Content.Description>
+                  Insatser tilldelas endast vid bifall. Med detta utfall registreras inga insatser på ärendet när
+                  beslutet skickas.
+                </Alert.Content.Description>
+              </Alert.Content>
+            </Alert>
           </div>
         ) : null}
 
