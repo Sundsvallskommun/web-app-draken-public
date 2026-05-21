@@ -80,9 +80,11 @@ export const ReferredFromErrandInformation: FC<Props> = ({ municipalityId, erran
               <div key={index} className="flex flex-col gap-8">
                 <span className="font-bold text-small">{stakeholder.roleDisplayName}</span>
                 <span className="text-small">
-                  {stakeholder.organizationName !== ''
+                  {stakeholder.externalIdType === 'COMPANY'
                     ? `${stakeholder.organizationName}, ${stakeholder.organizationNumber}`
-                    : `${stakeholder.firstName} ${stakeholder.lastName}, ${stakeholder.personNumber}`}
+                    : stakeholder.externalIdType === 'PRIVATE'
+                    ? `${stakeholder.firstName} ${stakeholder.lastName}, ${stakeholder.personNumber}`
+                    : 'Okänd part'}
                 </span>
                 <span className="text-small">
                   {stakeholder.address} {stakeholder.zipCode} {stakeholder.city}
