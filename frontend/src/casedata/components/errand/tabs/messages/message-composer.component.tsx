@@ -173,12 +173,21 @@ export const MessageComposer: FC<{
   const [selectedRelationId, setSelectedRelationId] = useState<string>('');
   const [relationErrands, setRelationErrands] = useState<RelationWithErrandNumber[]>([]);
   const [bodyEdited, setBodyEdited] = useState(false);
+  const bodyEditedRef = useRef(false);
   const lastAppliedTemplateRef = useRef<string>('');
+  const replyHistoryRef = useRef<string>('');
+  const lastNewMessageSetupKeyRef = useRef<string>('');
+  const lastReplySetupKeyRef = useRef<string>('');
 
   const closeConfirm = useConfirm();
   const toastMessage = useSnackbar();
 
   const { templates } = useMessageTemplates(user, props.show);
+
+  const setBodyEditedState = (edited: boolean) => {
+    bodyEditedRef.current = edited;
+    setBodyEdited(edited);
+  };
 
   const allowed = useMemo(() => {
     if (!errand) return false;
@@ -372,47 +381,82 @@ export const MessageComposer: FC<{
     }
   }, [relationErrands, contactMeans, selectedRelationId]);
 
-  useEffect(() => {
-    if (contactMeans === 'sms' && errand) {
-      setValue('newPhoneNumber', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '');
-    }
-    // Skip template/body management while replying — the [props.message, errand] effect
-    // owns the reply body (signature + quoted history) and must not be overwritten when
-    // templates load asynchronously.
-    if (!props.message) {
-      applyTemplate(getDefaultTemplateId(contactMeans));
-    }
-    setTimeout(() => {
-      props.setUnsaved(false);
-    }, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contactMeans, templates]);
-
-  const defaultSignature = () => {
+  const defaultSignature = (means: string = contactMeans): string => {
     if (!templates) return '';
-    switch (contactMeans) {
+    switch (means) {
       case 'draken':
         return templates.internalSignature;
       case 'sms':
         return templates.smsTemplate;
       default:
-        // For non-email contact means, remove email_information from signature
-        if (contactMeans !== 'email') {
-          return templates.emailSignature.replace(EMAIL_INFORMATION_TEXT, '');
-        }
-        return templates.emailSignature;
+        return means !== 'email'
+          ? templates.emailSignature.replace(EMAIL_INFORMATION_TEXT, '')
+          : templates.emailSignature;
     }
   };
 
   const getDefaultTemplateId = (means: string): string => {
     if (!templates) return '';
-    const list = means === 'sms' ? templates.smsTemplates : templates.emailTemplates;
+    const list = means === 'sms' ? templates.smsTemplates : means === 'email' ? templates.emailTemplates : [];
     return list?.find((t) => t.identifier?.endsWith('.default'))?.identifier || '';
   };
 
+  const buildTemplateBody = (id: string, means: string, history: string): string => {
+    if (!templates) return history;
+    if (!id) return defaultSignature(means) + history;
+
+    const content = templates.byId[id] || '';
+    if (means === 'sms') {
+      return content + templates.smsSignature + history;
+    }
+    const footerId = `${templates.app}.email.publicdocuments`;
+    const needsFooter = id.endsWith('.priority') || id.endsWith('.default');
+    const footer = needsFooter ? templates.byId[footerId] || '' : '';
+    return content + templates.emailSignature + footer + history;
+  };
+
+  const applyTemplate = (id: string, means: string = contactMeans, history: string = replyHistoryRef.current) => {
+    setValue('messageTemplate', id);
+    setValue('messageBody', buildTemplateBody(id, means, history));
+    lastAppliedTemplateRef.current = id;
+    setBodyEditedState(false);
+  };
+
+  // Effect 1: user-initiated channel changes for new messages (also fires on templates load).
+  // Skips body work when replying — Effect 2 owns the reply body.
+  useEffect(() => {
+    const setupKey = `new:${contactMeans}`;
+    if (contactMeans === 'sms' && errand) {
+      setValue('newPhoneNumber', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '');
+    }
+    setTimeout(() => {
+      props.setUnsaved(false);
+    }, 0);
+    if (props.message) return;
+    if (bodyEditedRef.current && lastNewMessageSetupKeyRef.current === setupKey) return;
+    applyTemplate(getDefaultTemplateId(contactMeans), contactMeans, '');
+    lastNewMessageSetupKeyRef.current = setupKey;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contactMeans, templates]);
+
+  // Effect 2: message state — reply setup or new-message cleanup.
+  // Uses messageMeans locally to avoid stale `contactMeans` from `watch()` after setValue.
   useEffect(() => {
     setReplying(!!props.message?.messageId);
     if (props.message) {
+      const messageMeans: CasedataMessageTabFormModel['contactMeans'] =
+        props.message.messageType === 'WEBMESSAGE'
+          ? 'webmessage'
+          : props.message.messageType === 'DRAKEN'
+          ? 'draken'
+          : props.message.messageType === 'MINASIDOR'
+          ? 'minasidor'
+          : 'email';
+      const setupKey = `reply:${props.message.messageId || ''}:${messageMeans}:${errand?.id || ''}`;
+      if (messageMeans !== contactMeans) {
+        setValue('contactMeans', messageMeans);
+      }
+
       const replyTo = props.message?.emailHeaders?.find((h) => h.header === 'MESSAGE_ID')?.values[0];
       const references = props.message?.emailHeaders?.find((h) => h.header === 'REFERENCES')?.values || [];
       references.push(replyTo);
@@ -421,74 +465,37 @@ export const MessageComposer: FC<{
       setValue(
         'emails',
         props.message.direction === 'OUTBOUND'
-          ? props.message?.recipients?.map((email) => ({
-              value: email,
-            })) ?? []
+          ? props.message?.recipients?.map((email) => ({ value: email })) ?? []
           : [{ value: props.message.email ?? '' }]
       );
-      setValue(
-        'contactMeans',
-        props.message.messageType === 'WEBMESSAGE'
-          ? 'webmessage'
-          : props.message.messageType === 'DRAKEN'
-          ? 'draken'
-          : props.message.messageType === 'MINASIDOR'
-          ? 'minasidor'
-          : 'email'
-      );
+
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${
         !!props.message?.conversationId ? props.message?.firstName + ' ' + props.message?.lastName : props.message.email
       }<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
+      const historyBlock =
+        historyHeader +
+        (props.message.htmlMessage
+          ? sanitizeHtmlMessageBody(props.message.htmlMessage)
+          : formatMessage(sanitized(props.message.message ?? '')));
 
-      setValue(
-        'messageBody',
-        defaultSignature() +
-          historyHeader +
-          (props.message.htmlMessage
-            ? sanitizeHtmlMessageBody(props.message.htmlMessage)
-            : formatMessage(sanitized(props.message.message ?? '')))
-      );
-      setValue('messageTemplate', '');
-      lastAppliedTemplateRef.current = '';
-      setBodyEdited(true);
+      replyHistoryRef.current = historyBlock;
+      if (!(bodyEditedRef.current && lastReplySetupKeyRef.current === setupKey)) {
+        applyTemplate(getDefaultTemplateId(messageMeans), messageMeans, historyBlock);
+      }
+      lastReplySetupKeyRef.current = setupKey;
       trigger();
     } else {
-      const defaultId = getDefaultTemplateId(contactMeans);
-      applyTemplate(defaultId);
+      const defaultMeans = 'email';
+      replyHistoryRef.current = '';
+      lastReplySetupKeyRef.current = '';
       setValue('headerReplyTo', '');
       setValue('headerReferences', '');
-      setValue('contactMeans', 'email');
+      setValue('contactMeans', defaultMeans);
+      applyTemplate(getDefaultTemplateId(defaultMeans), defaultMeans, '');
+      lastNewMessageSetupKeyRef.current = `new:${defaultMeans}`;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.message, errand]);
-
-  const changeTemplate = (templateId: string) => {
-    if (!templates) return;
-
-    if (!templateId) {
-      setValue('messageBody', defaultSignature());
-      return;
-    }
-
-    const content = templates.byId[templateId] || '';
-
-    if (contactMeans === 'sms') {
-      // For SMS: use only the signature, not the full smsTemplate (which includes default content)
-      setValue('messageBody', content + templates.smsSignature);
-    } else {
-      const footerId = `${templates.app}.email.publicdocuments`;
-      const needsFooter = templateId.endsWith('.priority') || templateId.endsWith('.default');
-      const footer = needsFooter ? templates.byId[footerId] || '' : '';
-      setValue('messageBody', content + templates.emailSignature + footer);
-    }
-  };
-
-  const applyTemplate = (id: string) => {
-    setValue('messageTemplate', id);
-    changeTemplate(id);
-    lastAppliedTemplateRef.current = id;
-    setBodyEdited(false);
-  };
+  }, [props.message, errand, templates]);
 
   return (
     <>
@@ -673,7 +680,7 @@ export const MessageComposer: FC<{
                     });
                     setValue('messageBodyPlaintext', e.target.value.plainText ?? '', { shouldDirty: true });
                     trigger('messageBody');
-                    setBodyEdited(true);
+                    setBodyEditedState(true);
                   }}
                   value={{ markup: messageBody, plainText: messageBodyPlaintext }}
                 />

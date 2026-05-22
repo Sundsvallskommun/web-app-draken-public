@@ -155,11 +155,19 @@ export const SupportMessageForm: FC<{
   const [selectedRelationId, setSelectedRelationId] = useState<string>('');
   const [relationErrands, setRelationErrands] = useState<RelationWithErrandNumber[]>([]);
   const [bodyEdited, setBodyEdited] = useState(false);
+  const bodyEditedRef = useRef(false);
   const lastAppliedTemplateRef = useRef<string>('');
+  const replyHistoryRef = useRef<string>('');
+  const lastMessageSetupKeyRef = useRef<string>('');
 
   const confirm = useConfirm();
 
   const { templates } = useMessageTemplates(user, props.showMessageForm);
+
+  const setBodyEditedState = (edited: boolean) => {
+    bodyEditedRef.current = edited;
+    setBodyEdited(edited);
+  };
 
   const emailBody = templates?.byId[`${templates.app}.email.default`]
     ? templates.byId[`${templates.app}.email.default`] + templates.emailSignature
@@ -216,13 +224,6 @@ export const SupportMessageForm: FC<{
     clearErrors,
     formState: { errors },
   } = formControls;
-
-  useEffect(() => {
-    if (templates && emailBody && !props.message) {
-      setValue('messageBody', sanitized(emailBody));
-      setValue('messageBodyPlaintext', emailBody);
-    }
-  }, [templates, emailBody, props.message, setValue]);
 
   const {
     contactMeans,
@@ -365,20 +366,26 @@ export const SupportMessageForm: FC<{
       });
   };
 
+  // Uses messageMeans locally inside the reply branch to avoid stale `contactMeans` from
+  // `watch()` after setValue. Fires on templates load so a reply opened before templates
+  // finished loading gets its body re-built once templates are available.
   useEffect(() => {
     setReplying(!!props?.message?.communicationID);
 
     if (props.message) {
-      setValue(
-        'contactMeans',
+      const messageMeans: SupportMessageFormModel['contactMeans'] =
         props.message.communicationType === 'WEB_MESSAGE'
           ? 'webmessage'
           : props.message.communicationType === 'DRAKEN'
           ? 'draken'
           : props.message.communicationType === 'MINASIDOR'
           ? 'minasidor'
-          : 'email'
-      );
+          : 'email';
+      const setupKey = `reply:${props.message.communicationID || ''}:${messageMeans}`;
+      if (bodyEditedRef.current && lastMessageSetupKeyRef.current === setupKey) return;
+      if (messageMeans !== contactMeans) {
+        setValue('contactMeans', messageMeans);
+      }
       const replyTo = props.message?.emailHeaders?.['MESSAGE_ID']?.[0] || '';
       const references = props.message?.emailHeaders?.['REFERENCES'] || [];
       references.push(replyTo);
@@ -389,19 +396,26 @@ export const SupportMessageForm: FC<{
         props.message.direction === 'OUTBOUND' ? [{ value: props.message?.target }] : [{ value: props.message.sender }]
       );
       const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.sender}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
+      const historyBlock =
+        historyHeader +
+        (props.message.htmlMessageBody
+          ? sanitizeHtmlMessageBody(props.message.htmlMessageBody)
+          : props.message.messageBody);
 
-      let signature = contactMeans === 'draken' ? internalSignature : removeEmailInformation(contactMeans, emailBody);
+      const signature = messageMeans === 'draken' ? internalSignature : removeEmailInformation(messageMeans, emailBody);
 
-      setValue(
-        'messageBody',
-        signature +
-          historyHeader +
-          (props.message.htmlMessageBody
-            ? sanitizeHtmlMessageBody(props.message.htmlMessageBody)
-            : props.message.messageBody)
-      );
+      replyHistoryRef.current = historyBlock;
+      setValue('messageBody', signature + historyBlock);
+
+      const defaultId = getDefaultTemplateId(messageMeans);
+      setValue('messageTemplate', defaultId);
+      lastAppliedTemplateRef.current = defaultId;
+      setBodyEditedState(false);
+      lastMessageSetupKeyRef.current = setupKey;
       trigger();
     } else {
+      const setupKey = `new:${contactMeans}`;
+      if (bodyEditedRef.current && lastMessageSetupKeyRef.current === setupKey) return;
       let body: string;
       let prefillPhone = props.prefillPhone || '';
 
@@ -426,12 +440,15 @@ export const SupportMessageForm: FC<{
       setValue('emails', []);
       setValue('phoneNumbers', []);
 
+      replyHistoryRef.current = '';
       setValue('messageBody', sanitized(body));
+
+      const defaultId = getDefaultTemplateId(contactMeans);
+      setValue('messageTemplate', defaultId);
+      lastAppliedTemplateRef.current = defaultId;
+      setBodyEditedState(false);
+      lastMessageSetupKeyRef.current = setupKey;
     }
-    const defaultId = !props.message ? getDefaultTemplateId(contactMeans) : '';
-    setValue('messageTemplate', defaultId);
-    lastAppliedTemplateRef.current = defaultId;
-    setBodyEdited(!!props.message);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contactMeans, props.message, templates]);
 
@@ -602,16 +619,17 @@ export const SupportMessageForm: FC<{
               const templateId = e.currentTarget.value;
               const apply = () => {
                 setValue('messageTemplate', templateId);
+                const history = replyHistoryRef.current;
                 if (!templateId) {
                   const defaultBody = contactMeans === 'sms' ? smsBody : emailBody;
-                  setValue('messageBody', sanitized(defaultBody));
+                  setValue('messageBody', sanitized(defaultBody) + history);
                 } else {
                   const content = templates.byId[templateId] || '';
                   const signature = contactMeans === 'sms' ? templates.smsSignature : templates.emailSignature;
-                  setValue('messageBody', sanitized(content + signature));
+                  setValue('messageBody', sanitized(content + signature) + history);
                 }
                 lastAppliedTemplateRef.current = templateId;
-                setBodyEdited(false);
+                setBodyEditedState(false);
               };
 
               if (bodyEdited) {
@@ -660,7 +678,7 @@ export const SupportMessageForm: FC<{
                 setValue('messageBody', e.target.value.markup ?? '');
                 setValue('messageBodyPlaintext', e.target.value.plainText ?? '');
                 trigger('messageBody');
-                setBodyEdited(true);
+                setBodyEditedState(true);
               }}
             />
           </div>
