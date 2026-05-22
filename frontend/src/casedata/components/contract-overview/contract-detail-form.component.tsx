@@ -341,7 +341,6 @@ export const ContractDetailForm: FC<{
         <div className="flex flex-col gap-md mb-32">
           <FormProvider {...formControls}>
             <ContractForm
-              referensError={false}
               readOnly={true}
               existingContract={contractData}
               contractParties={contractParties}
