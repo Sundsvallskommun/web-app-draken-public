@@ -3,10 +3,19 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { MessageNode } from '@casedata/services/casedata-message-service';
 import { CasedataMessageType, isCasedataWebMessageType } from '@casedata/services/casedata-message-types';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
 import sanitized from '@common/services/sanitizer-service';
 import { Button } from '@sk-web-gui/button';
 import { FC, useState } from 'react';
 const MAX_VISIBLE_RECIPIENTS = 2;
+
+const getDrakenSourceLabel = (errand: IErrand | undefined): string =>
+  errand?.channel === Channels.ESERVICE_KATLA ? 'Färdtjänst' : 'Draken';
+
+const getOwnerSourceLabel = (errand: IErrand): string => {
+  const owner = getOwnerStakeholder(errand);
+  return (owner?.firstName ?? '') + ' ' + (owner?.lastName ?? '');
+};
 
 const getMessageSourceLabel = (message: MessageNode, errand: IErrand | undefined): string | string[] => {
   if (!message) return '';
@@ -23,18 +32,13 @@ const getMessageSourceLabel = (message: MessageNode, errand: IErrand | undefined
     return 'E-tjänst';
   }
 
-  if (message.messageType === CasedataMessageType.MinaSidor && message.direction === 'OUTBOUND' && errand) {
-    const owner = getOwnerStakeholder(errand);
-    return (owner?.firstName ?? '') + ' ' + (owner?.lastName ?? '');
+  if (message.messageType === CasedataMessageType.MinaSidor) {
+    return message.direction === MessageResponseDirectionEnum.OUTBOUND && errand
+      ? getOwnerSourceLabel(errand)
+      : getDrakenSourceLabel(errand);
   }
 
-  if (message.messageType === CasedataMessageType.MinaSidor && message.direction === 'INBOUND') {
-    return errand?.channel === Channels.ESERVICE_KATLA ? 'Färdtjänst' : 'Draken';
-  }
-
-  if (message.messageType === CasedataMessageType.Draken) {
-    return errand?.channel === Channels.ESERVICE_KATLA ? 'Färdtjänst' : 'Draken';
-  }
+  if (message.messageType === CasedataMessageType.Draken) return getDrakenSourceLabel(errand);
 
   return '(okänd mottagare)';
 };

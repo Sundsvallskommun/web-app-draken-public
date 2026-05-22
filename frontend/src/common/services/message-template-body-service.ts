@@ -31,7 +31,7 @@ export interface MessageTemplates {
 export const supportsSelectableTemplates = (means: MessageContactMeans): means is 'email' | 'sms' =>
   means === 'email' || means === 'sms';
 
-export const removeEmailInformation = (means: MessageContactMeans | string, template: string): string => {
+export const removeEmailInformation = (means: MessageContactMeans, template: string): string => {
   if (means === 'email') return template;
 
   return template

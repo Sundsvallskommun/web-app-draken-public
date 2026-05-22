@@ -618,16 +618,16 @@ export const SupportMessageForm: FC<{
               const apply = () => {
                 setValue('messageTemplate', templateId);
                 const history = replyHistoryRef.current;
-                if (!templateId) {
-                  const defaultBody = contactMeans === 'sms' ? smsBody : emailBody;
-                  setValue('messageBody', sanitized(defaultBody) + history);
-                } else {
+                if (templateId) {
                   const templateBody = buildMessageTemplateBody({
                     templates,
                     templateId,
                     means: contactMeans,
                   });
                   setValue('messageBody', sanitized(templateBody) + history);
+                } else {
+                  const defaultBody = contactMeans === 'sms' ? smsBody : emailBody;
+                  setValue('messageBody', sanitized(defaultBody) + history);
                 }
                 lastAppliedTemplateRef.current = templateId;
                 setBodyEditedState(false);
