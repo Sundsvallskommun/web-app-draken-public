@@ -1,23 +1,11 @@
 import { User } from '@common/interfaces/user';
+import { EMAIL_INFORMATION_TEXT, MessageTemplates } from '@common/services/message-template-body-service';
 import { getTemplateRole, getTemplateType } from '@common/utils/template-metadata';
 import {
-  EMAIL_INFORMATION_TEXT,
   fetchTemplatesWithMetadata,
   replaceTemplateParameters,
-  TemplateInfo,
 } from '@supportmanagement/services/message-template-service';
 import { useEffect, useState } from 'react';
-
-export interface MessageTemplates {
-  internalSignature: string;
-  smsTemplate: string;
-  smsSignature: string;
-  emailSignature: string;
-  emailTemplates: TemplateInfo[];
-  smsTemplates: TemplateInfo[];
-  byId: Record<string, string>;
-  app: string;
-}
 
 interface UseMessageTemplatesResult {
   templates: MessageTemplates | null;

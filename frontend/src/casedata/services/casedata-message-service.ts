@@ -2,6 +2,7 @@ import { CasedataMessageTabFormModel } from '@casedata/components/errand/tabs/me
 import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
 import { sendAttachments } from '@casedata/services/casedata-attachment-service';
+import { CasedataMessageType } from '@casedata/services/casedata-message-types';
 import { Message, MessageStatus } from '@common/interfaces/message';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
@@ -235,7 +236,7 @@ const buildTree = (_list: MessageResponse[]) => {
   list.forEach((msg) => {
     msg.message = msg.message?.replace(/\r\n/g, '<br>');
     const id =
-      msg.messageType === 'EMAIL'
+      msg.messageType === CasedataMessageType.Email
         ? (msg.emailHeaders ?? []).find((h) => h.header === 'MESSAGE_ID')?.values?.[0]
         : msg.messageId;
     if (id) {
@@ -245,7 +246,7 @@ const buildTree = (_list: MessageResponse[]) => {
 
   list.forEach((msg) => {
     const id =
-      msg.messageType === 'EMAIL'
+      msg.messageType === CasedataMessageType.Email
         ? (msg.emailHeaders ?? []).find((h) => h.header === 'MESSAGE_ID')?.values?.[0]
         : msg.messageId;
     const parent = (msg.emailHeaders ?? []).find((h) => h.header === 'IN_REPLY_TO')?.values?.[0];

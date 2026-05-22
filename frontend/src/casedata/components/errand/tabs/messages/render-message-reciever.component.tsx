@@ -1,6 +1,7 @@
 import { Channels } from '@casedata/interfaces/channels';
 import { IErrand } from '@casedata/interfaces/errand';
 import { MessageNode } from '@casedata/services/casedata-message-service';
+import { CasedataMessageType, isCasedataWebMessageType } from '@casedata/services/casedata-message-types';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import sanitized from '@common/services/sanitizer-service';
 import { Button } from '@sk-web-gui/button';
@@ -10,28 +11,28 @@ const MAX_VISIBLE_RECIPIENTS = 2;
 const getMessageSourceLabel = (message: MessageNode, errand: IErrand | undefined): string | string[] => {
   if (!message) return '';
 
-  if (message.messageType === 'EMAIL') {
+  if (message.messageType === CasedataMessageType.Email) {
     return message.recipients ?? [];
   }
 
-  if (message.messageType === 'SMS') {
+  if (message.messageType === CasedataMessageType.Sms) {
     return message.mobileNumber ?? '';
   }
 
-  if (message.messageType === 'WEBMESSAGE' || message.externalCaseId) {
+  if (isCasedataWebMessageType(message.messageType) || message.externalCaseId) {
     return 'E-tjänst';
   }
 
-  if (message.messageType === 'MINASIDOR' && message.direction === 'OUTBOUND' && errand) {
+  if (message.messageType === CasedataMessageType.MinaSidor && message.direction === 'OUTBOUND' && errand) {
     const owner = getOwnerStakeholder(errand);
     return (owner?.firstName ?? '') + ' ' + (owner?.lastName ?? '');
   }
 
-  if (message.messageType === 'MINASIDOR' && message.direction === 'INBOUND') {
+  if (message.messageType === CasedataMessageType.MinaSidor && message.direction === 'INBOUND') {
     return errand?.channel === Channels.ESERVICE_KATLA ? 'Färdtjänst' : 'Draken';
   }
 
-  if (message.messageType === 'DRAKEN') {
+  if (message.messageType === CasedataMessageType.Draken) {
     return errand?.channel === Channels.ESERVICE_KATLA ? 'Färdtjänst' : 'Draken';
   }
 

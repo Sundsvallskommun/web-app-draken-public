@@ -4,16 +4,59 @@ import { messageAttachment } from '@casedata/services/casedata-attachment-servic
 import { getConversationAttachment } from '@casedata/services/casedata-conversation-service';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { MessageNode } from '@casedata/services/casedata-message-service';
+import {
+  CasedataMessageType,
+  isCasedataReplyableMessageType,
+  isCasedataWebMessageType,
+} from '@casedata/services/casedata-message-types';
 import { MessageAvatar } from '@common/components/message/message-avatar.component';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
 import sanitized, { formatMessage } from '@common/services/sanitizer-service';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';
-import { CornerDownRight, Image, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus } from 'lucide-react';
+import {
+  CornerDownRight,
+  Image,
+  type LucideIcon,
+  Mail,
+  Monitor,
+  Paperclip,
+  Smartphone,
+  SquareMinus,
+  SquarePlus,
+} from 'lucide-react';
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 
 import { EmailRecipients, RenderMessageReciever } from './render-message-reciever.component';
+
+type ChannelPresentation = {
+  Icon: LucideIcon;
+  label: string | ((isKatla: boolean) => string);
+};
+
+const messageChannelPresentation: Partial<Record<CasedataMessageType, ChannelPresentation>> = {
+  [CasedataMessageType.Sms]: { Icon: Smartphone, label: 'Via SMS' },
+  [CasedataMessageType.Email]: { Icon: Mail, label: 'Via e-post' },
+  [CasedataMessageType.DigitalMail]: { Icon: Mail, label: 'Via digital brevlåda' },
+  [CasedataMessageType.WebMessage]: { Icon: Monitor, label: 'via e-tjänst' },
+  [CasedataMessageType.WebMessageLegacy]: { Icon: Monitor, label: 'via e-tjänst' },
+  [CasedataMessageType.Draken]: {
+    Icon: Monitor,
+    label: (isKatla: boolean) => `Via ${isKatla ? 'Färdtjänst' : 'Draken'}`,
+  },
+  [CasedataMessageType.MinaSidor]: { Icon: Monitor, label: 'Via Mina sidor' },
+};
+
+const getChannelPresentation = (messageType: string | undefined, isKatla: boolean) => {
+  const presentation = messageChannelPresentation[messageType as CasedataMessageType];
+  if (!presentation) return null;
+
+  return {
+    Icon: presentation.Icon,
+    label: typeof presentation.label === 'function' ? presentation.label(isKatla) : presentation.label,
+  };
+};
 
 export const RenderedMessage: FC<{
   message: MessageNode;
@@ -30,6 +73,8 @@ export const RenderedMessage: FC<{
   // Changed logic for expanded message to see if it solve problem with unread message counter
   // const [expanded, setExpanded] = useState<boolean>(!message?.children?.length ? true : false);
   const [expanded, setExpanded] = useState<boolean>(false);
+  const channelPresentation = getChannelPresentation(message.messageType, errand?.channel === Channels.ESERVICE_KATLA);
+  const ChannelIcon = channelPresentation?.Icon;
 
   useEffect(() => {
     const _a = errand ? validateAction(errand, user) : false;
@@ -62,7 +107,7 @@ export const RenderedMessage: FC<{
       const ownerInfomration = (errand?.stakeholders ?? []).filter((stakeholder) =>
         stakeholder.roles.includes(Role.APPLICANT)
       );
-      const isWebMessageOpenE = msg.messageType === 'WEBMESSAGE' && msg.externalCaseId !== null;
+      const isWebMessageOpenE = isCasedataWebMessageType(msg.messageType) && msg.externalCaseId !== null;
       const isOwnerStakeholderEmail = ownerInfomration.some((stakeholder) =>
         stakeholder.emails.some((email) => email.value === msg.email)
       );
@@ -97,7 +142,7 @@ export const RenderedMessage: FC<{
                   <p className="mr-md break-all font-bold">
                     Till: <RenderMessageReciever selectedMessage={message} errand={errand} />
                   </p>
-                  {message.messageType === 'EMAIL' && (message.ccRecipients?.length ?? 0) > 0 && (
+                  {message.messageType === CasedataMessageType.Email && (message.ccRecipients?.length ?? 0) > 0 && (
                     <p className="mr-md break-all font-bold">
                       Kopia: <EmailRecipients recipients={message.ccRecipients!} />
                     </p>
@@ -121,51 +166,12 @@ export const RenderedMessage: FC<{
                   <span className="text-xs mx-sm">|</span>
                 </>
               ) : null}
-              <span className="flex text-xs whitespace-nowrap items-center">
-                {(() => {
-                  switch (message.messageType) {
-                    case 'SMS':
-                      return (
-                        <>
-                          <Smartphone size="1.5rem" className="align-sub mx-sm" /> Via SMS
-                        </>
-                      );
-                    case 'EMAIL':
-                      return (
-                        <>
-                          <Mail size="1.5rem" className="align-sub mx-sm" /> Via e-post
-                        </>
-                      );
-                    case 'DIGITAL_MAIL':
-                      return (
-                        <>
-                          <Mail size="1.5rem" className="align-sub mx-sm" /> Via digital brevlåda
-                        </>
-                      );
-                    case 'WEB_MESSAGE':
-                      return (
-                        <>
-                          <Monitor size="1.5rem" className="align-sub mx-sm" /> via e-tjänst
-                        </>
-                      );
-                    case 'DRAKEN':
-                      return (
-                        <>
-                          <Monitor size="1.5rem" className="align-sub mx-sm" /> Via{' '}
-                          {errand?.channel === Channels.ESERVICE_KATLA ? 'Färdtjänst' : 'Draken'}
-                        </>
-                      );
-                    case 'MINASIDOR':
-                      return (
-                        <>
-                          <Monitor size="1.5rem" className="align-sub mx-sm" /> Via Mina sidor
-                        </>
-                      );
-                    default:
-                      return '';
-                  }
-                })()}
-              </span>
+              {channelPresentation && ChannelIcon ? (
+                <span className="flex text-xs whitespace-nowrap items-center">
+                  <ChannelIcon size="1.5rem" className="align-sub mx-sm" />
+                  {channelPresentation.label}
+                </span>
+              ) : null}
             </div>
             {getMessageOwner(message)}
           </div>
@@ -199,11 +205,7 @@ export const RenderedMessage: FC<{
               __html: sanitized(message.subject || ''),
             }}
           ></p>
-          {expanded &&
-          (message.messageType === 'EMAIL' ||
-            message.messageType === 'WEB_MESSAGE' ||
-            message.messageType === 'DRAKEN' ||
-            message.messageType === 'MINASIDOR') ? (
+          {expanded && isCasedataReplyableMessageType(message.messageType) ? (
             <Button
               type="button"
               className="self-start"
