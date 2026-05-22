@@ -376,8 +376,12 @@ export const MessageComposer: FC<{
     if (contactMeans === 'sms' && errand) {
       setValue('newPhoneNumber', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '');
     }
-    const defaultId = !props.message ? getDefaultTemplateId(contactMeans) : '';
-    applyTemplate(defaultId);
+    // Skip template/body management while replying — the [props.message, errand] effect
+    // owns the reply body (signature + quoted history) and must not be overwritten when
+    // templates load asynchronously.
+    if (!props.message) {
+      applyTemplate(getDefaultTemplateId(contactMeans));
+    }
     setTimeout(() => {
       props.setUnsaved(false);
     }, 0);
