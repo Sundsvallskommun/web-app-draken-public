@@ -248,5 +248,39 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         expect(request.body.contactInformation[1].value).to.equal('test@example.com');
       });
     });
+
+    // https://jira.sundsvall.se/browse/DRAKEN-4258
+    it('keeps personId on the applicant when editing first and last name', () => {
+      const applicant = mockPTErrand_base.data.stakeholders.find((s) => s.roles.includes(Role.APPLICANT));
+      cy.intercept('GET', '**/errand/errandNumber/*', mockPTErrand_base).as('getErrand');
+      cy.intercept(
+        'PATCH',
+        `**/errands/${mockPTErrand_base.data.id}/stakeholders/${applicant?.id}`,
+        mockPTErrand_base
+      ).as('patchErrand');
+
+      visit();
+
+      cy.get('[data-cy="registered-applicants"] [data-cy="rendered-APPLICANT"]').should('exist');
+      cy.get('[data-cy="registered-applicants"] [data-cy="edit-stakeholder-button"]')
+        .first()
+        .should('exist')
+        .click();
+
+      cy.get('[data-cy="contact-firstName"]').should('have.value', applicant?.firstName);
+      cy.get('[data-cy="contact-lastName"]').should('have.value', applicant?.lastName);
+
+      cy.get('[data-cy="contact-firstName"]').clear().type('Annat Förnamn');
+      cy.get('[data-cy="contact-lastName"]').clear().type('Annat Efternamn');
+
+      cy.get('button').contains('Ändra uppgifter').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
+
+      cy.wait('@patchErrand').should(({ request }) => {
+        expect(request.body.firstName).to.equal('Annat Förnamn');
+        expect(request.body.lastName).to.equal('Annat Efternamn');
+        expect(request.body.personId).to.equal(applicant?.personId);
+      });
+    });
   });
 });
