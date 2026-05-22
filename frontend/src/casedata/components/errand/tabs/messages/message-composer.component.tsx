@@ -658,7 +658,13 @@ export const MessageComposer: FC<{
                     });
                     setValue('messageBodyPlaintext', e.target.value.plainText ?? '', { shouldDirty: true });
                     trigger('messageBody');
-                    setBodyEditedState(true);
+                  }}
+                  onTextChange={(_delta, _oldDelta, source) => {
+                    // Only treat user input as an edit; ignore programmatic / silent updates
+                    // so setValue() on body does not flag the form as dirty and skip auto-apply.
+                    if (source === 'user') {
+                      setBodyEditedState(true);
+                    }
                   }}
                   value={{ markup: messageBody, plainText: messageBodyPlaintext }}
                 />
