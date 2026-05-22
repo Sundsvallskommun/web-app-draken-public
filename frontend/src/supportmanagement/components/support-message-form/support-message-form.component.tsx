@@ -239,6 +239,7 @@ export const SupportMessageForm: FC<{
     existingAttachments,
     messageBody,
     messageBodyPlaintext,
+    messageTemplate,
   } = watch();
 
   const {
@@ -395,7 +396,15 @@ export const SupportMessageForm: FC<{
       lastAppliedTemplateRef.current = defaultId;
 
       if (!shouldSkipAutoApply(replyContext.setupKey)) {
-        setValue('messageBody', getDefaultMessageBody(templates, replyContext.contactMeans) + replyContext.historyHtml);
+        setValue(
+          'messageBody',
+          buildMessageTemplateBody({
+            templates,
+            templateId: defaultId,
+            means: replyContext.contactMeans,
+            history: replyContext.historyHtml,
+          })
+        );
         setBodyEditedState(false);
       }
       markAutoApplied(replyContext.setupKey);
@@ -603,6 +612,7 @@ export const SupportMessageForm: FC<{
             {...register('messageTemplate')}
             className="w-full text-dark-primary"
             size="sm"
+            value={messageTemplate ?? ''}
             onChange={(e) => {
               const templateId = e.currentTarget.value;
               const apply = () => {

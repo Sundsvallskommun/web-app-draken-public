@@ -371,7 +371,15 @@ export const MessageComposer: FC<{
     }
   };
 
-  const { contactMeans, addExisting, existingAttachments, newAttachments, messageBody, messageBodyPlaintext } = watch();
+  const {
+    contactMeans,
+    addExisting,
+    existingAttachments,
+    newAttachments,
+    messageBody,
+    messageBodyPlaintext,
+    messageTemplate,
+  } = watch();
 
   useEffect(() => {
     if (errand && props.show) {
@@ -601,6 +609,7 @@ export const MessageComposer: FC<{
                 {...register('messageTemplate')}
                 className="w-full text-dark-primary"
                 size="sm"
+                value={messageTemplate ?? ''}
                 onChange={(e) => {
                   const newId = e.currentTarget.value;
                   if (bodyEdited) {
