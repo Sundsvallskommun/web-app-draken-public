@@ -25,6 +25,7 @@ import {
   Modal,
   RadioButton,
   Select,
+  useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
@@ -47,7 +48,7 @@ import {
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { File, Paperclip, X } from 'lucide-react';
-import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -153,6 +154,10 @@ export const SupportMessageForm: FC<{
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
   const [selectedRelationId, setSelectedRelationId] = useState<string>('');
   const [relationErrands, setRelationErrands] = useState<RelationWithErrandNumber[]>([]);
+  const [bodyEdited, setBodyEdited] = useState(false);
+  const lastAppliedTemplateRef = useRef<string>('');
+
+  const confirm = useConfirm();
 
   const { templates } = useMessageTemplates(user, props.showMessageForm);
 
@@ -161,6 +166,12 @@ export const SupportMessageForm: FC<{
     : '';
   const smsBody = templates?.smsTemplate || '';
   const internalSignature = templates?.internalSignature || '';
+
+  const getDefaultTemplateId = (means: string): string => {
+    if (!templates) return '';
+    const list = means === 'sms' ? templates.smsTemplates : templates.emailTemplates;
+    return list?.find((t) => t.identifier?.endsWith('.default'))?.identifier || '';
+  };
 
   const closeAttachmentModal = () => {
     setIsAttachmentModalOpen(false);
@@ -417,9 +428,12 @@ export const SupportMessageForm: FC<{
 
       setValue('messageBody', sanitized(body));
     }
-    setValue('messageTemplate', '');
+    const defaultId = !props.message ? getDefaultTemplateId(contactMeans) : '';
+    setValue('messageTemplate', defaultId);
+    lastAppliedTemplateRef.current = defaultId;
+    setBodyEdited(!!props.message);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contactMeans, props.message]);
+  }, [contactMeans, props.message, templates]);
 
   useEffect(() => {
     getAllRelatedErrands(municipalityId, supportErrand.id!).then(setRelationErrands);
@@ -586,20 +600,42 @@ export const SupportMessageForm: FC<{
             size="sm"
             onChange={(e) => {
               const templateId = e.currentTarget.value;
-              setValue('messageTemplate', templateId);
+              const apply = () => {
+                setValue('messageTemplate', templateId);
+                if (!templateId) {
+                  const defaultBody = contactMeans === 'sms' ? smsBody : emailBody;
+                  setValue('messageBody', sanitized(defaultBody));
+                } else {
+                  const content = templates.byId[templateId] || '';
+                  const signature = contactMeans === 'sms' ? templates.smsSignature : templates.emailSignature;
+                  setValue('messageBody', sanitized(content + signature));
+                }
+                lastAppliedTemplateRef.current = templateId;
+                setBodyEdited(false);
+              };
 
-              if (!templateId) {
-                const defaultBody = contactMeans === 'sms' ? smsBody : emailBody;
-                setValue('messageBody', sanitized(defaultBody));
-                return;
+              if (bodyEdited) {
+                confirm
+                  .showConfirmation(
+                    'Skriv över texten?',
+                    'Att byta mall ersätter den text du har skrivit. Vill du fortsätta?',
+                    'Ja, skriv över',
+                    'Avbryt',
+                    'info',
+                    'info'
+                  )
+                  .then((confirmed) => {
+                    if (confirmed) {
+                      apply();
+                    } else {
+                      setValue('messageTemplate', lastAppliedTemplateRef.current);
+                    }
+                  });
+              } else {
+                apply();
               }
-
-              const content = templates.byId[templateId] || '';
-              const signature = contactMeans === 'sms' ? templates.smsSignature : templates.emailSignature;
-              setValue('messageBody', sanitized(content + signature));
             }}
           >
-            <Select.Option value="">Välj mall</Select.Option>
             {(contactMeans === 'email' ? templates.emailTemplates : templates.smsTemplates)?.map((t) => (
               <Select.Option key={t.identifier} value={t.identifier}>
                 {t.name}
@@ -624,6 +660,7 @@ export const SupportMessageForm: FC<{
                 setValue('messageBody', e.target.value.markup ?? '');
                 setValue('messageBodyPlaintext', e.target.value.plainText ?? '');
                 trigger('messageBody');
+                setBodyEdited(true);
               }}
             />
           </div>

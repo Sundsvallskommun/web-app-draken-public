@@ -48,7 +48,7 @@ import {
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { EMAIL_INFORMATION_TEXT } from '@supportmanagement/services/message-template-service';
 import { File, Paperclip, X } from 'lucide-react';
-import { FC, useEffect, useMemo, useState } from 'react';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -172,6 +172,8 @@ export const MessageComposer: FC<{
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
   const [selectedRelationId, setSelectedRelationId] = useState<string>('');
   const [relationErrands, setRelationErrands] = useState<RelationWithErrandNumber[]>([]);
+  const [bodyEdited, setBodyEdited] = useState(false);
+  const lastAppliedTemplateRef = useRef<string>('');
 
   const closeConfirm = useConfirm();
   const toastMessage = useSnackbar();
@@ -374,13 +376,13 @@ export const MessageComposer: FC<{
     if (contactMeans === 'sms' && errand) {
       setValue('newPhoneNumber', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '');
     }
-    setValue('messageTemplate', '');
-    setValue('messageBody', defaultSignature());
+    const defaultId = !props.message ? getDefaultTemplateId(contactMeans) : '';
+    applyTemplate(defaultId);
     setTimeout(() => {
       props.setUnsaved(false);
     }, 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contactMeans]);
+  }, [contactMeans, templates]);
 
   const defaultSignature = () => {
     if (!templates) return '';
@@ -398,9 +400,14 @@ export const MessageComposer: FC<{
     }
   };
 
+  const getDefaultTemplateId = (means: string): string => {
+    if (!templates) return '';
+    const list = means === 'sms' ? templates.smsTemplates : templates.emailTemplates;
+    return list?.find((t) => t.identifier?.endsWith('.default'))?.identifier || '';
+  };
+
   useEffect(() => {
     setReplying(!!props.message?.messageId);
-    setValue('messageTemplate', '');
     if (props.message) {
       const replyTo = props.message?.emailHeaders?.find((h) => h.header === 'MESSAGE_ID')?.values[0];
       const references = props.message?.emailHeaders?.find((h) => h.header === 'REFERENCES')?.values || [];
@@ -437,9 +444,13 @@ export const MessageComposer: FC<{
             ? sanitizeHtmlMessageBody(props.message.htmlMessage)
             : formatMessage(sanitized(props.message.message ?? '')))
       );
+      setValue('messageTemplate', '');
+      lastAppliedTemplateRef.current = '';
+      setBodyEdited(true);
       trigger();
     } else {
-      setValue('messageBody', defaultSignature());
+      const defaultId = getDefaultTemplateId(contactMeans);
+      applyTemplate(defaultId);
       setValue('headerReplyTo', '');
       setValue('headerReferences', '');
       setValue('contactMeans', 'email');
@@ -466,6 +477,13 @@ export const MessageComposer: FC<{
       const footer = needsFooter ? templates.byId[footerId] || '' : '';
       setValue('messageBody', content + templates.emailSignature + footer);
     }
+  };
+
+  const applyTemplate = (id: string) => {
+    setValue('messageTemplate', id);
+    changeTemplate(id);
+    lastAppliedTemplateRef.current = id;
+    setBodyEdited(false);
   };
 
   return (
@@ -605,11 +623,30 @@ export const MessageComposer: FC<{
               className="w-full text-dark-primary"
               size="sm"
               onChange={(e) => {
-                changeTemplate(e.currentTarget.value);
+                const newId = e.currentTarget.value;
+                if (bodyEdited) {
+                  closeConfirm
+                    .showConfirmation(
+                      'Skriv över texten?',
+                      'Att byta mall ersätter den text du har skrivit. Vill du fortsätta?',
+                      'Ja, skriv över',
+                      'Avbryt',
+                      'info',
+                      'info'
+                    )
+                    .then((confirmed) => {
+                      if (confirmed) {
+                        applyTemplate(newId);
+                      } else {
+                        setValue('messageTemplate', lastAppliedTemplateRef.current);
+                      }
+                    });
+                } else {
+                  applyTemplate(newId);
+                }
               }}
               data-cy="messageTemplate"
             >
-              <Select.Option value="">Välj mall</Select.Option>
               {(contactMeans === 'sms' ? templates?.smsTemplates : templates?.emailTemplates)?.map((t) => (
                 <Select.Option key={t.identifier} value={t.identifier}>
                   {t.name}
@@ -632,6 +669,7 @@ export const MessageComposer: FC<{
                     });
                     setValue('messageBodyPlaintext', e.target.value.plainText ?? '', { shouldDirty: true });
                     trigger('messageBody');
+                    setBodyEdited(true);
                   }}
                   value={{ markup: messageBody, plainText: messageBodyPlaintext }}
                 />
