@@ -148,7 +148,6 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     });
 
     it('allows editing all fields on an existing contact person if errand was created in web UI', () => {
-      const res = mockPTErrand_base;
       const contact = [
         {
           id: '667',
@@ -192,7 +191,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
           extraParameters: {} as any,
         },
       ];
-      res.data.stakeholders = contact;
+      const res = { ...mockPTErrand_base, data: { ...mockPTErrand_base.data, stakeholders: contact } };
       cy.intercept('GET', '**/errand/errandNumber/*', res).as('getErrand');
       cy.intercept(
         'PATCH',
@@ -249,7 +248,6 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       });
     });
 
-    // https://jira.sundsvall.se/browse/DRAKEN-4258
     it('keeps personId on the applicant when editing first and last name', () => {
       const applicant = mockPTErrand_base.data.stakeholders.find((s) => s.roles.includes(Role.APPLICANT));
       cy.intercept('GET', '**/errand/errandNumber/*', mockPTErrand_base).as('getErrand');
