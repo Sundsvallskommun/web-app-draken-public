@@ -849,7 +849,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           });
         });
 
-        it.only('shows success toast and opens new errand in new tab after creation', () => {
+        it('shows success toast and opens new errand in new tab after creation', () => {
           cy.intercept('GET', '**/contracts?*', mockContractDetailLeaseAgreement).as('getContracts');
           cy.intercept('POST', '**/errands', mockCreatedErrandResponse).as('postErrand');
           cy.intercept('GET', /2281\/errand\/999/, mockCreatedErrand).as('getCreatedErrand');
