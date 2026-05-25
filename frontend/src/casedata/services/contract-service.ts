@@ -473,7 +473,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     const leaseTypeLabel =
       data?.type === ContractType.LEASEHOLD
         ? 'Tomträtt'
-        : leaseTypes.find((t) => t.key === data.leaseType)?.label ?? 'Okänd typ';
+        : leaseTypes.find((t) => t.key === data.leaseType)?.label ?? 'okänd typ';
     const yearlyNumber = Number.parseFloat((data.fees?.yearly ?? 0).toString());
     fees = {
       yearly: yearlyNumber,
@@ -481,7 +481,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       total: yearlyNumber,
       currency: 'SEK',
       additionalInformation: [
-        `Avgift, ${leaseTypeLabel}. ` +
+        `Avgift, ${leaseTypeLabel.toLocaleLowerCase()}. ` +
           (propertyDesignations?.length > 0 ? `${propertyDesignations.map((p) => p.name).join(', ')}` : ''),
         data.fees?.additionalInformation?.[1] ?? '',
       ],
@@ -535,7 +535,7 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
   const leaseTypeLabel =
     contract?.type === ContractType.LEASEHOLD
       ? 'Tomträtt'
-      : leaseTypes.find((t) => t.key === contract.leaseType)?.label ?? 'Okänd typ';
+      : leaseTypes.find((t) => t.key === contract.leaseType)?.label ?? 'okänd typ';
   const hasIndexation = !!(
     contract.fees?.indexType ||
     contract.fees?.indexYear ||
@@ -552,7 +552,7 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
     fees: {
       ...contract.fees,
       additionalInformation: [
-        `Avgift, ${leaseTypeLabel}. ` +
+        `Avgift, ${leaseTypeLabel.toLocaleLowerCase()}. ` +
           (propertyDesignations?.length > 0 ? `${propertyDesignations.map((p) => p.name).join(', ')}` : ''),
         '',
       ],
