@@ -185,7 +185,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="send-message-button"]').should('be.disabled');
 
-      cy.get('[data-cy="messageTemplate"]').should('exist').first().select(1);
+      cy.get('[data-cy="messageTemplate"]').should('exist').first().select(0);
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist');
 
       cy.get('[data-cy="newPhoneNumber"]').should('exist').first().clear().type('1234abc890');
@@ -298,7 +298,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get(`[data-cy="expand-message-button-${message.emailHeaders[0].values}"]`).should('exist').click();
           messageNode.find(`[data-cy="respond-button"]`).should('exist').click({ force: true });
 
-          cy.get('[data-cy="messageTemplate"]').should('exist').first().select(1);
+          cy.get('[data-cy="messageTemplate"]').should('exist').first().select(0);
           cy.get('[data-cy="email-tag-0"]').should('exist').contains(message.email);
           cy.get('[data-cy="send-message-button"]').should('exist').first().click({ force: true });
 
