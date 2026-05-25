@@ -963,6 +963,11 @@ export const ContractForm: FC<{
                           Kvartalsvis
                         </RadioButton>
                       </RadioButton.Group>
+                      {formState.errors.invoicing?.invoiceInterval && (
+                        <div className="my-sm text-error">
+                          <FormErrorMessage>{formState.errors.invoicing?.invoiceInterval?.message}</FormErrorMessage>
+                        </div>
+                      )}
                     </FormControl>
                   </div>
                   <div className="flex gap-18 justify-start">
