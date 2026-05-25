@@ -397,7 +397,9 @@ export const CasedataInvestigationTab: FC<{
                 </div>
               </FormControl>
             );
-            return isFTErrand(props.errand) ? (
+            return isMEX() ? (
+              editorBlock
+            ) : (
               <Disclosure variant="alt" initalOpen className="mb-24" data-cy="investigation-template-disclosure">
                 <Disclosure.Header>
                   <Disclosure.Icon icon={<ClipboardPenLine size={18} />} />
@@ -406,8 +408,6 @@ export const CasedataInvestigationTab: FC<{
                 </Disclosure.Header>
                 <Disclosure.Content>{editorBlock}</Disclosure.Content>
               </Disclosure>
-            ) : (
-              editorBlock
             );
           })()}
           <div className="flex justify-left gap-10">
