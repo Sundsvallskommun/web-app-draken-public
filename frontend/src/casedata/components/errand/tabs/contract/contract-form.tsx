@@ -554,6 +554,24 @@ export const ContractForm: FC<{
             <div className="flex flex-col gap-24">
               <div className="flex gap-18 justify-start">
                 <FormControl id="startDate" className="w-full">
+                  <FormLabel>Startdatum</FormLabel>
+                  <Input
+                    type="date"
+                    min={dayjs().format('YYYY-MM-DD')}
+                    readOnly
+                    {...register('startDate')}
+                    data-cy="avtalstid-startdatum"
+                  />
+                  {formState.errors.startDate && (
+                    <div className="my-sm text-error">
+                      <FormErrorMessage>{formState.errors.startDate?.message}</FormErrorMessage>
+                    </div>
+                  )}
+                </FormControl>
+                <div className="w-full"></div>
+              </div>
+              <div className="flex gap-18 justify-start">
+                <FormControl id="currentPeriod.startDate" className="w-full">
                   <FormLabel>Avtalet gäller från</FormLabel>
                   <Input
                     type="date"
@@ -568,7 +586,7 @@ export const ContractForm: FC<{
                     </div>
                   )}
                 </FormControl>
-                <FormControl id="endDate" className="w-full">
+                <FormControl id="currentPeriod.endDate" className="w-full">
                   <FormLabel>Avtalet gäller till och med</FormLabel>
                   <Input
                     type="date"
