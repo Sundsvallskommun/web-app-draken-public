@@ -6,10 +6,19 @@ import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
+import { useMessageBodyTemplateState } from '@common/hooks/use-message-body-template-state';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
+import {
+  buildMessageTemplateBody,
+  getDefaultMessageBody,
+  getDefaultTemplateId,
+  getTemplateOptions,
+  MessageContactMeans,
+  removeEmailInformation,
+} from '@common/services/message-template-body-service';
 import { getAllRelatedErrands, RelationWithErrandNumber } from '@common/services/relations-service';
-import sanitized, { sanitizeHtmlMessageBody } from '@common/services/sanitizer-service';
+import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -25,6 +34,7 @@ import {
   Modal,
   RadioButton,
   Select,
+  useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
@@ -44,6 +54,7 @@ import {
   setSupportErrandStatus,
   Status,
 } from '@supportmanagement/services/support-errand-service';
+import { buildSupportReplyContext } from '@supportmanagement/services/support-message-reply-context-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { File, Paperclip, X } from 'lucide-react';
@@ -51,12 +62,10 @@ import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-import { removeEmailInformation } from '../templates/default-message-template';
-
 export interface SupportMessageFormModel {
   id: string;
   messageContact: boolean;
-  contactMeans: string;
+  contactMeans: MessageContactMeans;
   newEmail: string;
   emails: { value: string }[];
   newPhoneNumber: string;
@@ -153,14 +162,30 @@ export const SupportMessageForm: FC<{
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
   const [selectedRelationId, setSelectedRelationId] = useState<string>('');
   const [relationErrands, setRelationErrands] = useState<RelationWithErrandNumber[]>([]);
+  const {
+    bodyEdited,
+    lastAppliedTemplateRef,
+    replyHistoryRef,
+    setBodyEditedState,
+    shouldSkipAutoApply,
+    markAutoApplied,
+  } = useMessageBodyTemplateState();
+
+  const confirm = useConfirm();
 
   const { templates } = useMessageTemplates(user, props.showMessageForm);
 
-  const emailBody = templates?.byId[`${templates.app}.email.default`]
-    ? templates.byId[`${templates.app}.email.default`] + templates.emailSignature
-    : '';
-  const smsBody = templates?.smsTemplate || '';
-  const internalSignature = templates?.internalSignature || '';
+  const emailBody = buildMessageTemplateBody({
+    templates,
+    templateId: getDefaultTemplateId(templates, 'email'),
+    means: 'email',
+  });
+  const smsBody = buildMessageTemplateBody({
+    templates,
+    templateId: getDefaultTemplateId(templates, 'sms'),
+    means: 'sms',
+  });
+  const internalSignature = getDefaultMessageBody(templates, 'draken');
 
   const closeAttachmentModal = () => {
     setIsAttachmentModalOpen(false);
@@ -174,7 +199,7 @@ export const SupportMessageForm: FC<{
         (Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE ||
         (Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE_INTERNAL
           ? 'webmessage'
-          : 'email',
+          : ('email' as MessageContactMeans),
       newEmail: '',
       newPhoneNumber: '',
       emails: [],
@@ -206,13 +231,6 @@ export const SupportMessageForm: FC<{
     formState: { errors },
   } = formControls;
 
-  useEffect(() => {
-    if (templates && emailBody && !props.message) {
-      setValue('messageBody', sanitized(emailBody));
-      setValue('messageBodyPlaintext', emailBody);
-    }
-  }, [templates, emailBody, props.message, setValue]);
-
   const {
     contactMeans,
     messageAttachments,
@@ -221,6 +239,7 @@ export const SupportMessageForm: FC<{
     existingAttachments,
     messageBody,
     messageBodyPlaintext,
+    messageTemplate,
   } = watch();
 
   const {
@@ -354,60 +373,48 @@ export const SupportMessageForm: FC<{
       });
   };
 
+  // Reply setup and new-message defaults. Headers, recipients and the selected template are
+  // synced unconditionally so the UI matches the current scenario; only the body is preserved
+  // when the user has already typed for this same scenario (so a late template load does not
+  // wipe their text).
   useEffect(() => {
     setReplying(!!props?.message?.communicationID);
 
     if (props.message) {
-      setValue(
-        'contactMeans',
-        props.message.communicationType === 'WEB_MESSAGE'
-          ? 'webmessage'
-          : props.message.communicationType === 'DRAKEN'
-          ? 'draken'
-          : props.message.communicationType === 'MINASIDOR'
-          ? 'minasidor'
-          : 'email'
-      );
-      const replyTo = props.message?.emailHeaders?.['MESSAGE_ID']?.[0] || '';
-      const references = props.message?.emailHeaders?.['REFERENCES'] || [];
-      references.push(replyTo);
-      setValue('headerReplyTo', replyTo);
-      setValue('headerReferences', references.join(','));
-      setValue(
-        'emails',
-        props.message.direction === 'OUTBOUND' ? [{ value: props.message?.target }] : [{ value: props.message.sender }]
-      );
-      const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.sender}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
+      const replyContext = buildSupportReplyContext(props.message);
+      if (replyContext.contactMeans !== contactMeans) {
+        setValue('contactMeans', replyContext.contactMeans);
+      }
+      setValue('headerReplyTo', replyContext.headerReplyTo);
+      setValue('headerReferences', replyContext.headerReferences);
+      setValue('emails', replyContext.recipients);
 
-      let signature = contactMeans === 'draken' ? internalSignature : removeEmailInformation(contactMeans, emailBody);
+      replyHistoryRef.current = replyContext.historyHtml;
 
-      setValue(
-        'messageBody',
-        signature +
-          historyHeader +
-          (props.message.htmlMessageBody
-            ? sanitizeHtmlMessageBody(props.message.htmlMessageBody)
-            : props.message.messageBody)
-      );
+      const defaultId = getDefaultTemplateId(templates, replyContext.contactMeans);
+      setValue('messageTemplate', defaultId);
+      lastAppliedTemplateRef.current = defaultId;
+
+      if (!shouldSkipAutoApply(replyContext.setupKey)) {
+        setValue(
+          'messageBody',
+          buildMessageTemplateBody({
+            templates,
+            templateId: defaultId,
+            means: replyContext.contactMeans,
+            history: replyContext.historyHtml,
+          })
+        );
+        setBodyEditedState(false);
+      }
+      markAutoApplied(replyContext.setupKey);
       trigger();
     } else {
-      let body: string;
-      let prefillPhone = props.prefillPhone || '';
-
-      switch (contactMeans) {
-        case 'sms':
-          setValue('newPhoneNumber', prefillPhone);
-          body = smsBody;
-          clearErrors();
-          break;
-
-        case 'draken':
-          body = internalSignature;
-          break;
-
-        default:
-          body = removeEmailInformation(contactMeans, emailBody);
-          break;
+      const setupKey = `new:${contactMeans}`;
+      const prefillPhone = props.prefillPhone || '';
+      if (contactMeans === 'sms') {
+        setValue('newPhoneNumber', prefillPhone);
+        clearErrors();
       }
 
       setValue('headerReplyTo', '');
@@ -415,11 +422,32 @@ export const SupportMessageForm: FC<{
       setValue('emails', []);
       setValue('phoneNumbers', []);
 
-      setValue('messageBody', sanitized(body));
+      replyHistoryRef.current = '';
+
+      const defaultId = getDefaultTemplateId(templates, contactMeans);
+      setValue('messageTemplate', defaultId);
+      lastAppliedTemplateRef.current = defaultId;
+
+      if (!shouldSkipAutoApply(setupKey)) {
+        let body: string;
+        switch (contactMeans) {
+          case 'sms':
+            body = smsBody;
+            break;
+          case 'draken':
+            body = internalSignature;
+            break;
+          default:
+            body = removeEmailInformation(contactMeans, emailBody);
+            break;
+        }
+        setValue('messageBody', sanitized(body));
+        setBodyEditedState(false);
+      }
+      markAutoApplied(setupKey);
     }
-    setValue('messageTemplate', '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contactMeans, props.message]);
+  }, [contactMeans, props.message, templates]);
 
   useEffect(() => {
     getAllRelatedErrands(municipalityId, supportErrand.id!).then(setRelationErrands);
@@ -584,23 +612,50 @@ export const SupportMessageForm: FC<{
             {...register('messageTemplate')}
             className="w-full text-dark-primary"
             size="sm"
+            value={messageTemplate ?? ''}
             onChange={(e) => {
               const templateId = e.currentTarget.value;
-              setValue('messageTemplate', templateId);
+              const apply = () => {
+                setValue('messageTemplate', templateId);
+                const history = replyHistoryRef.current;
+                if (templateId) {
+                  const templateBody = buildMessageTemplateBody({
+                    templates,
+                    templateId,
+                    means: contactMeans,
+                  });
+                  setValue('messageBody', sanitized(templateBody) + history);
+                } else {
+                  const defaultBody = contactMeans === 'sms' ? smsBody : emailBody;
+                  setValue('messageBody', sanitized(defaultBody) + history);
+                }
+                lastAppliedTemplateRef.current = templateId;
+                setBodyEditedState(false);
+              };
 
-              if (!templateId) {
-                const defaultBody = contactMeans === 'sms' ? smsBody : emailBody;
-                setValue('messageBody', sanitized(defaultBody));
-                return;
+              if (bodyEdited) {
+                confirm
+                  .showConfirmation(
+                    'Skriv över texten?',
+                    'Att byta mall ersätter den text du har skrivit. Vill du fortsätta?',
+                    'Ja, skriv över',
+                    'Avbryt',
+                    'info',
+                    'info'
+                  )
+                  .then((confirmed) => {
+                    if (confirmed) {
+                      apply();
+                    } else {
+                      setValue('messageTemplate', lastAppliedTemplateRef.current);
+                    }
+                  });
+              } else {
+                apply();
               }
-
-              const content = templates.byId[templateId] || '';
-              const signature = contactMeans === 'sms' ? templates.smsSignature : templates.emailSignature;
-              setValue('messageBody', sanitized(content + signature));
             }}
           >
-            <Select.Option value="">Välj mall</Select.Option>
-            {(contactMeans === 'email' ? templates.emailTemplates : templates.smsTemplates)?.map((t) => (
+            {getTemplateOptions(templates, contactMeans).map((t) => (
               <Select.Option key={t.identifier} value={t.identifier}>
                 {t.name}
               </Select.Option>
@@ -624,6 +679,13 @@ export const SupportMessageForm: FC<{
                 setValue('messageBody', e.target.value.markup ?? '');
                 setValue('messageBodyPlaintext', e.target.value.plainText ?? '');
                 trigger('messageBody');
+              }}
+              onTextChange={(_delta, _oldDelta, source) => {
+                // Only treat user input as an edit; ignore programmatic / silent updates
+                // so setValue() on body does not flag the form as dirty and skip auto-apply.
+                if (source === 'user') {
+                  setBodyEditedState(true);
+                }
               }}
             />
           </div>
@@ -829,7 +891,7 @@ export const SupportMessageForm: FC<{
           type="button"
           loading={isSending}
           loadingText="Skickar meddelande"
-          disabled={isSending || formState.isSubmitting || !formState.isValid || contactMeans === ''}
+          disabled={isSending || formState.isSubmitting || !formState.isValid}
           onClick={handleSubmit(onSubmit)}
           data-cy="send-message-button"
         >

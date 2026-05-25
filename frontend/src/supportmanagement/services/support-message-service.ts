@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { getClosingTemplate } from './message-template-service';
 import { SingleSupportAttachment } from './support-attachment-service';
+import { SupportCommunicationType } from './support-communication-types';
 import { Channels, ContactChannelType, SupportErrand } from './support-errand-service';
 import { applicantContactChannel } from './support-stakeholder-service';
 
@@ -31,7 +32,7 @@ export interface MessageRequest {
 export interface Message {
   communicationAttachments: CCommunicationAttachment[];
   communicationID: string;
-  communicationType: string;
+  communicationType: SupportCommunicationType;
   direction: string;
   errandNumber: string;
   messageBody: string;
@@ -301,12 +302,18 @@ export const buildTree = (_list: Message[]) => {
   );
   list.forEach((msg) => {
     msg.messageBody = msg.messageBody?.replace(/\r\n/g, '<br>');
-    const id = msg.communicationType === 'EMAIL' ? msg.emailHeaders?.['MESSAGE_ID']?.[0] : msg.communicationID;
+    const id =
+      msg.communicationType === SupportCommunicationType.Email
+        ? msg.emailHeaders?.['MESSAGE_ID']?.[0]
+        : msg.communicationID;
     nodesMap.set(id, { ...msg, children: [] });
   });
 
   list.forEach((msg) => {
-    const id = msg.communicationType === 'EMAIL' ? msg.emailHeaders?.['MESSAGE_ID']?.[0] : msg.communicationID;
+    const id =
+      msg.communicationType === SupportCommunicationType.Email
+        ? msg.emailHeaders?.['MESSAGE_ID']?.[0]
+        : msg.communicationID;
     const parent = msg.emailHeaders?.['IN_REPLY_TO']?.[0];
     if (parent) {
       const parentMsg = nodesMap.get(parent);

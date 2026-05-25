@@ -1,4 +1,5 @@
 import { User } from '@common/interfaces/user';
+import { removeEmailInformation } from '@common/services/message-template-body-service';
 import { getEmailTemplate, getSmsTemplate } from '@supportmanagement/services/message-template-service';
 
 const APP = process.env.NEXT_PUBLIC_APPLICATION || '';
@@ -29,14 +30,4 @@ export async function getDefaultSmsBody(user: User, variant: string = 'default')
   return content;
 }
 
-export function removeEmailInformation(contactMeans: string, template: string): string {
-  let temporaryTemplate = template;
-  if (contactMeans !== 'email' && template.includes('Vänligen ändra inte ämnesraden')) {
-    temporaryTemplate = temporaryTemplate.replace(
-      /Vänligen ändra inte ämnesraden om du svarar på detta meddelande<br><br>?/gi,
-      ''
-    );
-    temporaryTemplate = temporaryTemplate.replace(/Vänligen ändra inte ämnesraden om du besvarar mejlet.<br>?/gi, '');
-  }
-  return temporaryTemplate;
-}
+export { removeEmailInformation };
