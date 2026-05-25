@@ -793,14 +793,7 @@ export const ContractForm: FC<{
               </FormControl>
               <FormControl id="endDate" className="w-full">
                 <FormLabel>Slutdatum</FormLabel>
-                <Input
-                  type="date"
-                  readOnly={
-                    !isEditable('cancellation') || watch().extension?.autoExtend || !watch().currentPeriod?.endDate
-                  }
-                  {...register('endDate')}
-                  data-cy="endDate"
-                />
+                <Input type="date" readOnly={!isEditable('cancellation')} {...register('endDate')} data-cy="endDate" />
               </FormControl>
             </div>
             <div className="flex gap-18 justify-start">
