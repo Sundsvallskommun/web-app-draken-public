@@ -81,8 +81,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  causeAsProblem?: ThrowableProblem;
   detail?: string;
+  causeAsProblem?: ThrowableProblem;
 }
 
 export interface ThrowableProblem {
@@ -123,18 +123,18 @@ export interface EventRequest {
 }
 
 export interface PageScheduledBilling {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: ScheduledBilling[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
+  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
@@ -159,13 +159,32 @@ export interface SortObject {
   unsorted?: boolean;
 }
 
+/** SCB KPI lookup response */
+export interface ScbKpiResponse {
+  /**
+   * KPI base year
+   * @example "KPI_80"
+   */
+  baseYear: ScbKpiResponseBaseYearEnum;
+  /**
+   * Period (year-month) the KPI value applies to
+   * @example "2024-10"
+   */
+  period: string;
+  /**
+   * KPI value, rounded to two decimals
+   * @example "355.91"
+   */
+  value: number;
+}
+
 /**
  * Source system where billing data is collected
  * @example "CONTRACT"
  */
 export enum ScheduledBillingSourceEnum {
-  CONTRACT = 'CONTRACT',
-  OPENE = 'OPENE',
+  CONTRACT = "CONTRACT",
+  OPENE = "OPENE",
 }
 
 /**
@@ -173,8 +192,8 @@ export enum ScheduledBillingSourceEnum {
  * @example "ADVANCE"
  */
 export enum ScheduledBillingInvoicedInEnum {
-  ADVANCE = 'ADVANCE',
-  ARREARS = 'ARREARS',
+  ADVANCE = "ADVANCE",
+  ARREARS = "ARREARS",
 }
 
 /**
@@ -182,10 +201,19 @@ export enum ScheduledBillingInvoicedInEnum {
  * @example "CREATED"
  */
 export enum EventRequestEventTypeEnum {
-  CREATED = 'CREATED',
-  UPDATED = 'UPDATED',
-  DELETED = 'DELETED',
-  TERMINATED = 'TERMINATED',
+  CREATED = "CREATED",
+  UPDATED = "UPDATED",
+  DELETED = "DELETED",
+  TERMINATED = "TERMINATED",
+}
+
+/**
+ * KPI base year
+ * @example "KPI_80"
+ */
+export enum ScbKpiResponseBaseYearEnum {
+  KPI_80 = "KPI_80",
+  KPI_2020 = "KPI_2020",
 }
 
 /**
@@ -193,13 +221,13 @@ export enum EventRequestEventTypeEnum {
  * @example "CONTRACT"
  */
 export enum HandleEventParamsSourceEnum {
-  CONTRACT = 'CONTRACT',
-  OPENE = 'OPENE',
+  CONTRACT = "CONTRACT",
+  OPENE = "OPENE",
 }
 
 export enum HandleEventParamsEnum {
-  CONTRACT = 'CONTRACT',
-  OPENE = 'OPENE',
+  CONTRACT = "CONTRACT",
+  OPENE = "OPENE",
 }
 
 /**
@@ -207,11 +235,20 @@ export enum HandleEventParamsEnum {
  * @example "CONTRACT"
  */
 export enum GetScheduledBillingExternalIdParamsSourceEnum {
-  CONTRACT = 'CONTRACT',
-  OPENE = 'OPENE',
+  CONTRACT = "CONTRACT",
+  OPENE = "OPENE",
 }
 
 export enum GetScheduledBillingExternalIdParamsEnum {
-  CONTRACT = 'CONTRACT',
-  OPENE = 'OPENE',
+  CONTRACT = "CONTRACT",
+  OPENE = "OPENE",
+}
+
+/**
+ * KPI base year
+ * @example "KPI_80"
+ */
+export enum GetKpiParamsBaseYearEnum {
+  KPI_80 = "KPI_80",
+  KPI_2020 = "KPI_2020",
 }

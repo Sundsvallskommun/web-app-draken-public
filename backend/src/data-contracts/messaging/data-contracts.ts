@@ -221,6 +221,8 @@ export interface Address {
   firstName?: string;
   /** The last name of the recipient */
   lastName?: string;
+  /** The organization name of the recipient */
+  organizationName?: string;
   /** The address */
   address?: string;
   /** The apartment number */

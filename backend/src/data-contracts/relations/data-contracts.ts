@@ -12,8 +12,8 @@
 
 /** The sort order direction */
 export enum Direction {
-  ASC = 'ASC',
-  DESC = 'DESC',
+  ASC = "ASC",
+  DESC = "DESC",
 }
 
 export interface Problem {

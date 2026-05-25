@@ -12,8 +12,8 @@
 
 /** Party type model */
 export enum PartyType {
-  ENTERPRISE = 'ENTERPRISE',
-  PRIVATE = 'PRIVATE',
+  ENTERPRISE = "ENTERPRISE",
+  PRIVATE = "PRIVATE",
 }
 
 export interface Problem {

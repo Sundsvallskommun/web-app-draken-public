@@ -12,11 +12,12 @@
 
 /** Status model */
 export enum Status {
-  ACTIVE = 'ACTIVE',
-  DRAFT = 'DRAFT',
-  EXPIRED = 'EXPIRED',
-  BLOCKED = 'BLOCKED',
-  TEMPORARY = 'TEMPORARY',
+  ACTIVE = "ACTIVE",
+  DRAFT = "DRAFT",
+  EXPIRED = "EXPIRED",
+  BLOCKED = "BLOCKED",
+  TEMPORARY = "TEMPORARY",
+  REPLACED = "REPLACED",
 }
 
 export interface Problem {
@@ -24,8 +25,8 @@ export interface Problem {
   instance?: string;
   /** @format uri */
   type?: string;
-  detail?: string;
   title?: string;
+  detail?: string;
   /** @format int32 */
   status?: number;
 }
@@ -118,9 +119,11 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  number?: boolean;
-  string?: boolean;
-  boolean?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -132,11 +135,9 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  integralNumber?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
+  string?: boolean;
+  boolean?: boolean;
+  number?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -201,16 +202,18 @@ export interface Asset {
   additionalParameters?: Record<string, string>;
   /** JSON parameters */
   jsonParameters?: AssetJsonParameter[];
+  /** Id of the asset this asset replaces */
+  replacesId?: string;
 }
 
 export enum JsonNodeNodeTypeEnum {
-  ARRAY = 'ARRAY',
-  BINARY = 'BINARY',
-  BOOLEAN = 'BOOLEAN',
-  MISSING = 'MISSING',
-  NULL = 'NULL',
-  NUMBER = 'NUMBER',
-  OBJECT = 'OBJECT',
-  POJO = 'POJO',
-  STRING = 'STRING',
+  ARRAY = "ARRAY",
+  BINARY = "BINARY",
+  BOOLEAN = "BOOLEAN",
+  MISSING = "MISSING",
+  NULL = "NULL",
+  NUMBER = "NUMBER",
+  OBJECT = "OBJECT",
+  POJO = "POJO",
+  STRING = "STRING",
 }

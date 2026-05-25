@@ -11,17 +11,17 @@
  */
 
 export enum SortDirection {
-  ASC = 'ASC',
-  DESC = 'DESC',
+  ASC = "ASC",
+  DESC = "DESC",
 }
 
 export enum ManagerEmployeesDetailOrderBy {
-  FullName = 'FullName',
-  Birthdate = 'Birthdate',
-  EmploymentId = 'EmploymentId',
-  Title = 'Title',
-  IsMainEmployment = 'IsMainEmployment',
-  OrgName = 'OrgName',
+  FullName = "FullName",
+  Birthdate = "Birthdate",
+  EmploymentId = "EmploymentId",
+  Title = "Title",
+  IsMainEmployment = "IsMainEmployment",
+  OrgName = "OrgName",
 }
 
 export interface Account {
