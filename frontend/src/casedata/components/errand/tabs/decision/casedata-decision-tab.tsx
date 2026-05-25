@@ -112,7 +112,7 @@ let formSchema = yup
       ? yup.string().when(['outcome', 'errandCaseType'], (values, schema) => {
           const [outcome, errandCaseType] = values as [string, string];
           return outcome === 'APPROVAL' && isPTCaseType(errandCaseType)
-            ? schema.required('Giltig från måste anges')
+            ? schema.required('Giltigt datum måste anges')
             : schema.notRequired();
         })
       : yup.string(),
@@ -123,7 +123,7 @@ let formSchema = yup
           .when(['outcome', 'errandCaseType'], (values, schema) => {
             const [outcome, errandCaseType] = values as [string, string];
             return outcome === 'APPROVAL' && isPTCaseType(errandCaseType)
-              ? schema.required('Giltig till måste anges')
+              ? schema.required('Giltigt datum måste anges')
               : schema.notRequired();
           })
           .test({
