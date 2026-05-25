@@ -313,7 +313,7 @@
       }
     },
     {
-      "invoiceType": "Administrativ avgift, kommersiell",
+      "invoiceType": "Administrativ avgift",
       "fixedPrice": true,
       "external": {
         "invoiceRows": [
@@ -335,7 +335,7 @@
       }
     },
     {
-      "invoiceType": "Administrativ avgift, icke-kommersiell",
+      "invoiceType": "Administrativ avgift, nedsatt",
       "fixedPrice": true,
       "external": {
         "invoiceRows": [

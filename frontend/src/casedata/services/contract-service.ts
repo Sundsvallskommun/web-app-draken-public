@@ -50,7 +50,7 @@ export const leaseTypes = [
   { label: 'Jaktarrende', key: LeaseType.USUFRUCT_HUNTING },
   { label: 'Jordbruksarrende', key: LeaseType.USUFRUCT_FARMING },
   { label: 'Lägenhetsarrende', key: LeaseType.LAND_LEASE_MISC },
-  { label: 'Arrende', key: LeaseType.USUFRUCT_MISC },
+  { label: 'Nyttjanderättsavtal', key: LeaseType.USUFRUCT_MISC },
   { label: 'Markupplåtelseavtal', key: LeaseType.LAND_LEASE_LICENSE },
   { label: 'Av kommunen arrenderad mark', key: LeaseType.LAND_LEASE_MUNICIPALITY },
   { label: 'Arrende', key: LeaseType.OTHER_FEE }, // Ska inte kunna finnas för nya avtal

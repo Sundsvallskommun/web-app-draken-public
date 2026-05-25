@@ -396,7 +396,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                       disabled={existingContract?.status === Status.ACTIVE}
                     >
                       {leaseTypes
-                        .filter((lt) => existingContract?.contractId || lt.key !== LeaseType.OTHER_FEE)
+                        .filter((lt) => existingContract?.status !== Status.ACTIVE && lt.key !== LeaseType.OTHER_FEE)
                         .map((lt) => (
                           <option key={lt.key} value={lt.key}>
                             {lt.label}
