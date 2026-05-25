@@ -1,6 +1,5 @@
 import { HttpException } from '@exceptions/HttpException';
 import { RequestWithUser } from '@interfaces/auth.interface';
-import { Asset } from '@interfaces/parking-permit.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
 import {
@@ -16,7 +15,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, QueryParam, Req, Use
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { apiServiceName } from '@/config/api-config';
-import { AssetCreateRequest, AssetUpdateRequest, DraftAssetUpdateRequest } from '@/data-contracts/partyassets/data-contracts';
+import { Asset, AssetCreateRequest, AssetUpdateRequest, DraftAssetUpdateRequest, Status } from '@/data-contracts/partyassets/data-contracts';
 
 interface ResponseData<T> {
   data: T;
@@ -185,7 +184,7 @@ export class AssetController {
 
     const actives = await this.listAssetsForPath(req, 'assets', municipalityId, { partyId, type, origin });
     return {
-      data: actives.filter(a => a.status !== 'DRAFT'),
+      data: actives.filter(a => a.status !== Status.DRAFT),
       message: 'success',
     };
   }

@@ -59,26 +59,9 @@ export async function getPartyServices(params: GetServicesParams): Promise<ApiRe
   return res.data;
 }
 
-export async function getAssetById(municipalityId: string, id: string): Promise<ApiResponse<Asset>> {
-  const url = `assets/${encodeURIComponent(id)}?municipalityId=${municipalityId}`;
-  const res = await apiService.get<ApiResponse<Asset>>(url);
-  return res.data;
-}
-
 export async function getDraftAssets(params: GetAssetsParams): Promise<ApiResponse<Asset[]>> {
   const url = `asset-drafts${buildQuery(params)}`;
   const res = await apiService.get<ApiResponse<Asset[]>>(url);
-  return res.data;
-}
-
-export async function createAsset(
-  municipalityId: string,
-  payload: Partial<Asset> & Record<string, any>,
-  errandId?: string
-): Promise<ApiResponse<Asset>> {
-  const query = buildQuery({ municipalityId, errandId });
-  const url = `assets${query}`;
-  const res = await apiService.post<ApiResponse<Asset>, typeof payload>(url, payload);
   return res.data;
 }
 
@@ -90,12 +73,6 @@ export async function createDraftAsset(
   const query = buildQuery({ municipalityId, errandId });
   const url = `asset-drafts${query}`;
   const res = await apiService.post<ApiResponse<Asset>, typeof payload>(url, payload);
-  return res.data;
-}
-
-export async function deleteAsset(municipalityId: string, id: string): Promise<ApiResponse<boolean>> {
-  const url = `assets/${encodeURIComponent(id)}?municipalityId=${municipalityId}`;
-  const res = await apiService.deleteRequest<ApiResponse<boolean>>(url);
   return res.data;
 }
 
