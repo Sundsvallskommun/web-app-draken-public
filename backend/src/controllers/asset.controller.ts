@@ -52,13 +52,11 @@ export class AssetController {
     return res.data ?? [];
   }
 
-  private async deleteUpstreamAsset(
-    user: RequestWithUser['user'],
-    municipalityId: string,
-    path: 'assets' | 'asset-drafts',
-    assetId: string,
-  ): Promise<void> {
-    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/${path}/${encodeURIComponent(assetId)}`;
+  // The upstream partyassets API does NOT expose a DELETE for drafts — `DELETE /asset-drafts/{id}`
+  // returns 405 Method Not Allowed. Drafts and actives share the same id space, so every deletion
+  // (active, draft, and create-rollback) is routed through the `/assets/{id}` endpoint instead.
+  private async deleteUpstreamAsset(user: RequestWithUser['user'], municipalityId: string, assetId: string): Promise<void> {
+    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets/${encodeURIComponent(assetId)}`;
     await this.apiService.delete({ url }, user);
   }
 
@@ -90,7 +88,7 @@ export class AssetController {
         await createErrandAssetRelation(municipalityId, errandId, createdId, req.user);
       } catch (e) {
         try {
-          await this.deleteUpstreamAsset(req.user, municipalityId, path, createdId);
+          await this.deleteUpstreamAsset(req.user, municipalityId, createdId);
         } catch (rollbackError) {
           logger.error(`Failed to rollback created ${path} asset ${createdId} after relation creation failed: `, rollbackError);
         }
@@ -268,8 +266,7 @@ export class AssetController {
     @QueryParam('municipalityId') municipalityId?: string,
   ): Promise<ResponseData<boolean>> {
     municipalityId ??= '2281';
-    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets/${encodeURIComponent(id)}`;
-    await this.apiService.delete({ url }, req.user);
+    await this.deleteUpstreamAsset(req.user, municipalityId, id);
     await this.cleanupErrandAssetRelations(municipalityId, id, req.user);
     return { data: true, message: 'deleted' };
   }
@@ -338,8 +335,8 @@ export class AssetController {
     @QueryParam('municipalityId') municipalityId?: string,
   ): Promise<ResponseData<boolean>> {
     municipalityId ??= '2281';
-    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/asset-drafts/${encodeURIComponent(id)}`;
-    await this.apiService.delete({ url }, req.user);
+    // Drafts have no upstream DELETE of their own; deletion goes via the shared assets endpoint.
+    await this.deleteUpstreamAsset(req.user, municipalityId, id);
     await this.cleanupErrandAssetRelations(municipalityId, id, req.user);
     return { data: true, message: 'deleted' };
   }
