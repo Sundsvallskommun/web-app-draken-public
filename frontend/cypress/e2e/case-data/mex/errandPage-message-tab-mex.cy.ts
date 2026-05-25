@@ -185,17 +185,17 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.get('[data-cy="send-message-button"]').should('be.disabled');
 
-      cy.get('[data-cy="messageTemplate"]').should('exist').eq(1).select(1);
+      cy.get('[data-cy="messageTemplate"]').should('exist').first().select(0);
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist');
 
-      cy.get('[data-cy="newPhoneNumber"]').should('exist').eq(1).clear().type('1234abc890');
+      cy.get('[data-cy="newPhoneNumber"]').should('exist').first().clear().type('1234abc890');
       cy.get('[data-cy="messagePhone-error"]').should('exist').contains('Ej giltigt telefonnummer');
 
-      cy.get('[data-cy="newPhoneNumber"]').should('exist').eq(1).clear().type('+46701740635');
+      cy.get('[data-cy="newPhoneNumber"]').should('exist').first().clear().type('+46701740635');
       cy.get('[data-cy="messagePhone-error"]').should('not.exist');
 
-      cy.get('[data-cy="newPhoneNumber-button"]').should('be.enabled').eq(1).click({ force: true });
-      cy.get('[data-cy="send-message-button"]').should('be.enabled').eq(1).click({ force: true });
+      cy.get('[data-cy="newPhoneNumber-button"]').should('be.enabled').first().click({ force: true });
+      cy.get('[data-cy="send-message-button"]').should('be.enabled').first().click({ force: true });
 
       cy.wait('@sendSms').should(({ request }) => {
         expect(request.body.phonenumber).to.equal('+46701740635');
@@ -209,8 +209,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       goToMessageTab();
       cy.get('[data-cy="new-message-button"]').should('exist').click();
-      // FIXME Need to use first since two message composer components are rendered,
-      // on for the sidebar and one for the message tab. Not good.
       cy.get('[data-cy="send-message-button"]').should('be.disabled');
       cy.get('[data-cy="useEmail-radiobutton-true"]').first().click({ force: true });
       cy.get('[data-cy="send-message-button"]').should('be.disabled');
@@ -300,7 +298,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get(`[data-cy="expand-message-button-${message.emailHeaders[0].values}"]`).should('exist').click();
           messageNode.find(`[data-cy="respond-button"]`).should('exist').click({ force: true });
 
-          cy.get('[data-cy="messageTemplate"]').should('exist').first().select(1);
+          cy.get('[data-cy="messageTemplate"]').should('exist').first().select(0);
           cy.get('[data-cy="email-tag-0"]').should('exist').contains(message.email);
           cy.get('[data-cy="send-message-button"]').should('exist').first().click({ force: true });
 

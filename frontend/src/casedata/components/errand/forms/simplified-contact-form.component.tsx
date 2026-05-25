@@ -260,7 +260,8 @@ export const SimplifiedContactForm: FC<{
 
   useEffect(() => {
     if (
-      (manual || editing) &&
+      manual &&
+      !editing &&
       (formState.dirtyFields?.firstName || formState.dirtyFields?.lastName || formState.dirtyFields?.organizationName)
     ) {
       resetPersonNumber();

@@ -33,7 +33,7 @@ export const MessageWrapper: FC<{
           <X data-cy="close-message-wrapper-icon" />
         </Button>
       </Header>
-      {children}
+      {show && children}
     </section>
   </>
 );

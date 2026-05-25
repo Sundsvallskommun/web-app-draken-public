@@ -3,6 +3,10 @@ import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/d
 import sanitized from '@common/services/sanitizer-service';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import {
+  isSupportReplyableCommunicationType,
+  SupportCommunicationType,
+} from '@supportmanagement/services/support-communication-types';
 import { getSupportConversationAttachment } from '@supportmanagement/services/support-conversation-service';
 import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
 import {
@@ -12,10 +16,33 @@ import {
   setMessageViewStatus,
 } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
-import { CornerDownRight, Image, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus } from 'lucide-react';
+import {
+  CornerDownRight,
+  Image,
+  type LucideIcon,
+  Mail,
+  Monitor,
+  Paperclip,
+  Smartphone,
+  SquareMinus,
+  SquarePlus,
+} from 'lucide-react';
 import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
 
 import { EmailRecipients, RenderSupportMessageReciever } from './render-support-message-reciever.component';
+
+type ChannelPresentation = {
+  Icon: LucideIcon;
+  label: string;
+};
+
+const communicationChannelPresentation: Partial<Record<SupportCommunicationType, ChannelPresentation>> = {
+  [SupportCommunicationType.Sms]: { Icon: Smartphone, label: 'Via SMS' },
+  [SupportCommunicationType.Email]: { Icon: Mail, label: 'Via e-post' },
+  [SupportCommunicationType.WebMessage]: { Icon: Monitor, label: 'Via e-tjänst' },
+  [SupportCommunicationType.Draken]: { Icon: Monitor, label: 'Via Draken' },
+  [SupportCommunicationType.MinaSidor]: { Icon: Monitor, label: 'Via Mina sidor' },
+};
 
 export const RenderedSupportMessage: FC<{
   update: () => void;
@@ -34,6 +61,8 @@ export const RenderedSupportMessage: FC<{
   // Changed logic for expanded message to see if it solve problem with unread message counter
   // const [expanded, setExpanded] = useState(!message?.children?.length ? true : false);
   const [expanded, setExpanded] = useState(false);
+  const channelPresentation = communicationChannelPresentation[message.communicationType];
+  const ChannelIcon = channelPresentation?.Icon;
 
   const allowed = useMemo(() => validateAction(supportErrand, user), [user, supportErrand]);
 
@@ -51,7 +80,7 @@ export const RenderedSupportMessage: FC<{
     if (!msg) {
       return '';
     }
-    if (msg.communicationType === 'WEB_MESSAGE') {
+    if (msg.communicationType === SupportCommunicationType.WebMessage) {
       return msg.direction === 'OUTBOUND' ? 'Draken' : msg.sender || 'E-tjänst';
     }
     return msg?.sender || '(okänd avsändare)';
@@ -61,7 +90,7 @@ export const RenderedSupportMessage: FC<{
     if (msg.direction === MessageResponseDirectionEnum.INBOUND) {
       const ownerInfomration =
         supportErrand.stakeholders?.filter((stakeholder) => stakeholder.role?.includes('PRIMARY')) ?? [];
-      const isWebMessageOpenE = msg.communicationType === 'WEB_MESSAGE';
+      const isWebMessageOpenE = msg.communicationType === SupportCommunicationType.WebMessage;
       const isOwnerStakeholderEmail = ownerInfomration.some((stakeholder) =>
         stakeholder.contactChannels?.some((value) => value.value === msg.sender)
       );
@@ -116,7 +145,7 @@ export const RenderedSupportMessage: FC<{
                   <p className="mr-md break-all font-bold">
                     Till: <RenderSupportMessageReciever selectedMessage={message} errand={supportErrand} />
                   </p>
-                  {message.communicationType === 'EMAIL' && message.ccRecipients?.length > 0 && (
+                  {message.communicationType === SupportCommunicationType.Email && message.ccRecipients?.length > 0 && (
                     <p className="mr-md break-all font-bold">
                       Kopia: <EmailRecipients recipients={message.ccRecipients} />
                     </p>
@@ -140,44 +169,12 @@ export const RenderedSupportMessage: FC<{
                   <span className="text-xs mx-sm">|</span>
                 </>
               ) : null}
-              <span className="flex text-xs whitespace-nowrap items-center">
-                {(() => {
-                  switch (message.communicationType) {
-                    case 'SMS':
-                      return (
-                        <>
-                          <Icon icon={<Smartphone />} size="1.5rem" className="align-sub mx-sm" /> Via SMS
-                        </>
-                      );
-                    case 'EMAIL':
-                      return (
-                        <>
-                          <Icon icon={<Mail />} size="1.5rem" className="align-sub mx-sm" /> Via e-post
-                        </>
-                      );
-                    case 'WEB_MESSAGE':
-                      return (
-                        <>
-                          <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
-                        </>
-                      );
-                    case 'DRAKEN':
-                      return (
-                        <>
-                          <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via Draken
-                        </>
-                      );
-                    case 'MINASIDOR':
-                      return (
-                        <>
-                          <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via Mina sidor
-                        </>
-                      );
-                    default:
-                      return '';
-                  }
-                })()}
-              </span>
+              {channelPresentation && ChannelIcon ? (
+                <span className="flex text-xs whitespace-nowrap items-center">
+                  <Icon icon={<ChannelIcon />} size="1.5rem" className="align-sub mx-sm" />
+                  {channelPresentation.label}
+                </span>
+              ) : null}
             </div>
             {getMessageOwner(message)}
           </div>
@@ -208,11 +205,7 @@ export const RenderedSupportMessage: FC<{
               __html: sanitized(message.subject || ''),
             }}
           ></p>
-          {expanded &&
-          (message.communicationType === 'EMAIL' ||
-            message.communicationType === 'WEB_MESSAGE' ||
-            message.communicationType === 'DRAKEN' ||
-            message.communicationType === 'MINASIDOR') ? (
+          {expanded && isSupportReplyableCommunicationType(message.communicationType) ? (
             <Button
               type="button"
               className="self-start"

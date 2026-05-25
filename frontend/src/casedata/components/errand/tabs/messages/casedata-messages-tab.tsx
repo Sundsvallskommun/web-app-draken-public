@@ -1,10 +1,11 @@
 import { Channels } from '@casedata/interfaces/channels';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { fetchMessagesWithTree, MessageNode, setMessageViewStatus } from '@casedata/services/casedata-message-service';
+import { CasedataMessageType, isCasedataWebMessageType } from '@casedata/services/casedata-message-types';
 import { Button, Divider, FormLabel, Select, useSnackbar } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { Mail } from 'lucide-react';
-import { FC, useMemo, useState } from 'react';
+import { FC, useCallback, useMemo, useState } from 'react';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 
 import { MessageComposer } from './message-composer.component';
@@ -73,27 +74,30 @@ export const CasedataMessagesTab: FC<{
       });
   };
 
-  const sortedMessages = useMemo(() => {
-    if (!combinedMessages || !combinedMessageTree) return [];
-
-    const filterBySource = (message: MessageResponse) => {
+  const filterBySource = useCallback(
+    (message: MessageResponse) => {
       switch (filterSource) {
         case 1:
-          return message.messageType === 'DRAKEN';
+          return message.messageType === CasedataMessageType.Draken;
         case 2:
-          return message.messageType === 'DIGITAL_MAIL';
+          return message.messageType === CasedataMessageType.DigitalMail;
         case 3:
-          return message.messageType === 'EMAIL';
+          return message.messageType === CasedataMessageType.Email;
         case 4:
-          return message.messageType === 'MINASIDOR';
+          return message.messageType === CasedataMessageType.MinaSidor;
         case 5:
-          return message.messageType === 'SMS';
+          return message.messageType === CasedataMessageType.Sms;
         case 6:
-          return message.messageType === 'WEBMESSAGE' || !!message.externalCaseId;
+          return isCasedataWebMessageType(message.messageType) || !!message.externalCaseId;
         default:
           return true;
       }
-    };
+    },
+    [filterSource]
+  );
+
+  const sortedMessages = useMemo(() => {
+    if (!combinedMessages || !combinedMessageTree) return [];
 
     let filtered = combinedMessages;
 
@@ -111,7 +115,7 @@ export const CasedataMessagesTab: FC<{
       }
       return combinedMessageTree;
     }
-  }, [combinedMessages, combinedMessageTree, sortMessages, filterSource]);
+  }, [combinedMessages, combinedMessageTree, sortMessages, filterSource, filterBySource]);
 
   return (
     <>

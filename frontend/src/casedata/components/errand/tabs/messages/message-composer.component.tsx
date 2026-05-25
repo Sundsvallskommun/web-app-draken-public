@@ -8,6 +8,7 @@ import { Role } from '@casedata/interfaces/role';
 import { ACCEPTED_UPLOAD_FILETYPES, getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
 import { getOrCreateConversationId, sendConversationMessage } from '@casedata/services/casedata-conversation-service';
 import { isErrandLocked, setErrandStatus, validateAction } from '@casedata/services/casedata-errand-service';
+import { buildCasedataReplyContext } from '@casedata/services/casedata-message-reply-context-service';
 import {
   MessageNode,
   renderMessageWithTemplates,
@@ -20,14 +21,22 @@ import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV
 import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
+import { useMessageBodyTemplateState } from '@common/hooks/use-message-body-template-state';
 import { isMEX } from '@common/services/application-service';
 import {
   invalidPhoneMessage,
   phonePattern,
   supportManagementPhonePatternOrCountryCode,
 } from '@common/services/helper-service';
+import {
+  buildMessageTemplateBody,
+  getDefaultMessageBody,
+  getDefaultTemplateId,
+  getTemplateOptions,
+  MessageContactMeans,
+  supportsSelectableTemplates,
+} from '@common/services/message-template-body-service';
 import { getAllRelatedErrands, RelationWithErrandNumber } from '@common/services/relations-service';
-import sanitized, { formatMessage, sanitizeHtmlMessageBody } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -46,14 +55,13 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
-import { EMAIL_INFORMATION_TEXT } from '@supportmanagement/services/message-template-service';
 import { File, Paperclip, X } from 'lucide-react';
 import { FC, useEffect, useMemo, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
 export interface CasedataMessageTabFormModel {
-  contactMeans: 'email' | 'sms' | 'webmessage' | 'digitalmail' | 'paper' | 'draken' | 'minasidor' | 'katla';
+  contactMeans: MessageContactMeans;
   messageClassification: string;
   messageTemplate?: string;
   emails: { value: string }[];
@@ -172,6 +180,14 @@ export const MessageComposer: FC<{
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
   const [selectedRelationId, setSelectedRelationId] = useState<string>('');
   const [relationErrands, setRelationErrands] = useState<RelationWithErrandNumber[]>([]);
+  const {
+    bodyEdited,
+    lastAppliedTemplateRef,
+    replyHistoryRef,
+    setBodyEditedState,
+    shouldSkipAutoApply,
+    markAutoApplied,
+  } = useMessageBodyTemplateState();
 
   const closeConfirm = useConfirm();
   const toastMessage = useSnackbar();
@@ -232,11 +248,11 @@ export const MessageComposer: FC<{
 
   const clearAndClose = () => {
     setTimeout(() => {
-      setValue('messageBody', defaultSignature(), { shouldDirty: false });
-      setValue('messageBodyPlaintext', defaultSignature(), { shouldDirty: false });
+      const defaultBody = getDefaultMessageBody(templates, contactMeans);
+      setValue('messageBody', defaultBody, { shouldDirty: false });
+      setValue('messageBodyPlaintext', defaultBody, { shouldDirty: false });
       setValue('emails', [], { shouldDirty: false });
       removeNewAttachment();
-      setValue('messageBody', defaultSignature());
       remove();
       props.closeHandler();
     }, 0);
@@ -355,7 +371,15 @@ export const MessageComposer: FC<{
     }
   };
 
-  const { contactMeans, addExisting, existingAttachments, newAttachments, messageBody, messageBodyPlaintext } = watch();
+  const {
+    contactMeans,
+    addExisting,
+    existingAttachments,
+    newAttachments,
+    messageBody,
+    messageBodyPlaintext,
+    messageTemplate,
+  } = watch();
 
   useEffect(() => {
     if (errand && props.show) {
@@ -370,102 +394,83 @@ export const MessageComposer: FC<{
     }
   }, [relationErrands, contactMeans, selectedRelationId]);
 
+  const applyTemplate = (
+    id: string,
+    means: MessageContactMeans = contactMeans,
+    history: string = replyHistoryRef.current,
+    options: { skipBody?: boolean } = {}
+  ) => {
+    setValue('messageTemplate', id);
+    lastAppliedTemplateRef.current = id;
+    if (options.skipBody) return;
+    setValue(
+      'messageBody',
+      buildMessageTemplateBody({
+        templates,
+        templateId: id,
+        means,
+        history,
+        includePublicDocumentsFooter: true,
+      })
+    );
+    setBodyEditedState(false);
+  };
+
+  // Effect 1: user-initiated channel changes for new messages (also fires on templates load).
+  // Skips body work when replying — Effect 2 owns the reply body.
   useEffect(() => {
+    const setupKey = `new:${contactMeans}`;
     if (contactMeans === 'sms' && errand) {
       setValue('newPhoneNumber', getOwnerStakeholder(errand)?.phoneNumbers?.[0]?.value || '');
     }
-    setValue('messageBody', defaultSignature());
     setTimeout(() => {
       props.setUnsaved(false);
     }, 0);
+    if (props.message) return;
+    applyTemplate(getDefaultTemplateId(templates, contactMeans), contactMeans, '', {
+      skipBody: shouldSkipAutoApply(setupKey),
+    });
+    markAutoApplied(setupKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contactMeans]);
+  }, [contactMeans, templates]);
 
-  const defaultSignature = () => {
-    if (!templates) return '';
-    switch (contactMeans) {
-      case 'draken':
-        return templates.internalSignature;
-      case 'sms':
-        return templates.smsTemplate;
-      default:
-        // For non-email contact means, remove email_information from signature
-        if (contactMeans !== 'email') {
-          return templates.emailSignature.replace(EMAIL_INFORMATION_TEXT, '');
-        }
-        return templates.emailSignature;
-    }
-  };
-
+  // Effect 2: message state — reply setup or new-message cleanup.
+  // Uses messageMeans locally to avoid stale `contactMeans` from `watch()` after setValue.
   useEffect(() => {
     setReplying(!!props.message?.messageId);
-    setValue('messageTemplate', '');
     if (props.message) {
-      const replyTo = props.message?.emailHeaders?.find((h) => h.header === 'MESSAGE_ID')?.values[0];
-      const references = props.message?.emailHeaders?.find((h) => h.header === 'REFERENCES')?.values || [];
-      references.push(replyTo);
-      setValue('headerReplyTo', replyTo ?? '');
-      setValue('headerReferences', references.join(','));
-      setValue(
-        'emails',
-        props.message.direction === 'OUTBOUND'
-          ? props.message?.recipients?.map((email) => ({
-              value: email,
-            })) ?? []
-          : [{ value: props.message.email ?? '' }]
-      );
-      setValue(
-        'contactMeans',
-        props.message.messageType === 'WEBMESSAGE'
-          ? 'webmessage'
-          : props.message.messageType === 'DRAKEN'
-          ? 'draken'
-          : props.message.messageType === 'MINASIDOR'
-          ? 'minasidor'
-          : 'email'
-      );
-      const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${
-        !!props.message?.conversationId ? props.message?.firstName + ' ' + props.message?.lastName : props.message.email
-      }<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
+      const replyContext = buildCasedataReplyContext(props.message, errand?.id);
+      if (replyContext.contactMeans !== contactMeans) {
+        setValue('contactMeans', replyContext.contactMeans);
+      }
 
-      setValue(
-        'messageBody',
-        defaultSignature() +
-          historyHeader +
-          (props.message.htmlMessage
-            ? sanitizeHtmlMessageBody(props.message.htmlMessage)
-            : formatMessage(sanitized(props.message.message ?? '')))
+      setValue('headerReplyTo', replyContext.headerReplyTo);
+      setValue('headerReferences', replyContext.headerReferences);
+      setValue('emails', replyContext.recipients);
+
+      replyHistoryRef.current = replyContext.historyHtml;
+      // Always sync the dropdown to the default template id; only skip body when the user
+      // has typed into the editor for this same reply (templates loading late should not
+      // wipe their text but should still show the right selection).
+      applyTemplate(
+        getDefaultTemplateId(templates, replyContext.contactMeans),
+        replyContext.contactMeans,
+        replyContext.historyHtml,
+        { skipBody: shouldSkipAutoApply(replyContext.setupKey) }
       );
+      markAutoApplied(replyContext.setupKey);
       trigger();
     } else {
-      setValue('messageBody', defaultSignature());
+      const defaultMeans = 'email';
+      replyHistoryRef.current = '';
       setValue('headerReplyTo', '');
       setValue('headerReferences', '');
-      setValue('contactMeans', 'email');
+      setValue('contactMeans', defaultMeans);
+      applyTemplate(getDefaultTemplateId(templates, defaultMeans), defaultMeans, '');
+      markAutoApplied(`new:${defaultMeans}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.message, errand]);
-
-  const changeTemplate = (templateId: string) => {
-    if (!templates) return;
-
-    if (!templateId) {
-      setValue('messageBody', defaultSignature());
-      return;
-    }
-
-    const content = templates.byId[templateId] || '';
-
-    if (contactMeans === 'sms') {
-      // For SMS: use only the signature, not the full smsTemplate (which includes default content)
-      setValue('messageBody', content + templates.smsSignature);
-    } else {
-      const footerId = `${templates.app}.email.publicdocuments`;
-      const needsFooter = templateId.endsWith('.priority') || templateId.endsWith('.default');
-      const footer = needsFooter ? templates.byId[footerId] || '' : '';
-      setValue('messageBody', content + templates.emailSignature + footer);
-    }
-  };
+  }, [props.message, errand, templates]);
 
   return (
     <>
@@ -565,7 +570,7 @@ export const MessageComposer: FC<{
             <RadioButton.Group data-cy="message-type-radio-button-group" className="mt-sm !gap-4">
               <RadioButton
                 disabled={isLoading || !allowed}
-                name="useNewMessage"
+                name="typeOfMessage"
                 id="useNewMessage"
                 value="newMessage"
                 checked={typeOfMessage === 'newMessage'}
@@ -575,7 +580,7 @@ export const MessageComposer: FC<{
               </RadioButton>
               <RadioButton
                 disabled={isLoading || !allowed}
-                name="useInfoCompletion"
+                name="typeOfMessage"
                 id="useInfoCompletion"
                 value="infoCompletion"
                 checked={typeOfMessage === 'infoCompletion'}
@@ -585,7 +590,7 @@ export const MessageComposer: FC<{
               </RadioButton>
               <RadioButton
                 disabled={isLoading || !allowed}
-                name="useInternalCompletion"
+                name="typeOfMessage"
                 id="useInternalCompletion"
                 value="internalCompletion"
                 checked={typeOfMessage === 'internalCompletion'}
@@ -596,26 +601,48 @@ export const MessageComposer: FC<{
             </RadioButton.Group>
           </div>
 
-          <FormControl className="w-full my-12" size="sm" id="messageTemplate">
-            <FormLabel>Välj meddelandemall</FormLabel>
-            <Select
-              tabIndex={props.show ? 0 : -1}
-              {...register('messageTemplate')}
-              className="w-full text-dark-primary"
-              size="sm"
-              onChange={(e) => {
-                changeTemplate(e.currentTarget.value);
-              }}
-              data-cy="messageTemplate"
-            >
-              <Select.Option value="">Välj mall</Select.Option>
-              {templates?.emailTemplates.map((t) => (
-                <Select.Option key={t.identifier} value={t.identifier}>
-                  {t.name}
-                </Select.Option>
-              ))}
-            </Select>
-          </FormControl>
+          {templates && supportsSelectableTemplates(contactMeans) && (
+            <FormControl className="w-full my-12" size="sm" id="messageTemplate">
+              <FormLabel>Välj meddelandemall</FormLabel>
+              <Select
+                tabIndex={props.show ? 0 : -1}
+                {...register('messageTemplate')}
+                className="w-full text-dark-primary"
+                size="sm"
+                value={messageTemplate ?? ''}
+                onChange={(e) => {
+                  const newId = e.currentTarget.value;
+                  if (bodyEdited) {
+                    closeConfirm
+                      .showConfirmation(
+                        'Skriv över texten?',
+                        'Att byta mall ersätter den text du har skrivit. Vill du fortsätta?',
+                        'Ja, skriv över',
+                        'Avbryt',
+                        'info',
+                        'info'
+                      )
+                      .then((confirmed) => {
+                        if (confirmed) {
+                          applyTemplate(newId);
+                        } else {
+                          setValue('messageTemplate', lastAppliedTemplateRef.current);
+                        }
+                      });
+                  } else {
+                    applyTemplate(newId);
+                  }
+                }}
+                data-cy="messageTemplate"
+              >
+                {getTemplateOptions(templates, contactMeans).map((t) => (
+                  <Select.Option key={t.identifier} value={t.identifier}>
+                    {t.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
           {props.show ? (
             <FormControl id="message-body" className="w-full">
@@ -631,6 +658,13 @@ export const MessageComposer: FC<{
                     });
                     setValue('messageBodyPlaintext', e.target.value.plainText ?? '', { shouldDirty: true });
                     trigger('messageBody');
+                  }}
+                  onTextChange={(_delta, _oldDelta, source) => {
+                    // Only treat user input as an edit; ignore programmatic / silent updates
+                    // so setValue() on body does not flag the form as dirty and skip auto-apply.
+                    if (source === 'user') {
+                      setBodyEditedState(true);
+                    }
                   }}
                   value={{ markup: messageBody, plainText: messageBodyPlaintext }}
                 />

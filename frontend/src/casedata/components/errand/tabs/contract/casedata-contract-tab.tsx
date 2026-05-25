@@ -118,6 +118,26 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           otherwise: (schema) => schema,
         }),
       }),
+      extraParameters: yup.array().when(['generateInvoice', 'status'], ([generateInvoice, status], schema) => {
+        if (status !== Status.ACTIVE) return schema;
+
+        const baseSchema = schema.of(
+          yup.object({
+            name: yup.string().required(),
+            parameters: yup.object(),
+          })
+        );
+
+        const hasReferens =
+          () => (extraParameters: { name: string; parameters: Record<string, unknown> }[] | undefined) =>
+            extraParameters?.some((s) => s.parameters?.markup) ?? false;
+
+        if (generateInvoice === 'true') {
+          return baseSchema.test('has-referens', 'Referens måste anges', hasReferens());
+        }
+
+        return schema;
+      }),
       stakeholders: yup.array().when(['type', 'status'], ([type, status], schema) => {
         if (status !== Status.ACTIVE) return schema;
 
@@ -160,7 +180,6 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const errand = useCasedataStore((s) => s.errand);
   const user = useUserStore((s) => s.user);
-  const [referensError, setReferensError] = useState(false);
   const [loading, setIsLoading] = useState<string>();
   const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
   const [contractParties, setContractParties] = useState<UnifiedContractParty[]>([]);
@@ -245,15 +264,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     }
   };
 
-  const onSave = async (data: ContractData, section?: string) => {
-    if (section === 'billing' && data.generateInvoice === 'true') {
-      setReferensError(false);
-      const hasMarkup = (data.extraParameters ?? []).some((p) => p.parameters?.markup?.trim());
-      if (!hasMarkup) {
-        setReferensError(true);
-        return;
-      }
-    }
+  const onSave = async (data: ContractData) => {
     setIsLoading('Sparar avtal..');
     const isNewContract = !data.contractId;
 
@@ -319,7 +330,8 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           newParams = [...oldParams, errandIdExtraParameter];
         })
         .catch(() => {
-          newParams = [errandIdExtraParameter];
+          const oldParams = (contractForm.getValues().extraParameters ?? []).filter((p) => p.name !== 'errandId');
+          newParams = [...oldParams, errandIdExtraParameter];
           setExistingContract(undefined);
         })
         .finally(() => {
@@ -439,7 +451,6 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
               ) : null}
               <Input type="hidden" readOnly {...contractForm.register('contractId')} />
               <ContractForm
-                referensError={referensError}
                 changeBadgeColor={changeBadgeColor}
                 onSave={onSave}
                 existingContract={(existingContract as ContractData) || defaultKopeavtal}

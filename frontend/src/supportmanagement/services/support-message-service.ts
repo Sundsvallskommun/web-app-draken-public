@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { getClosingTemplate } from './message-template-service';
 import { SingleSupportAttachment } from './support-attachment-service';
+import { SupportCommunicationType } from './support-communication-types';
 import { Channels, ContactChannelType, SupportErrand } from './support-errand-service';
 import { applicantContactChannel } from './support-stakeholder-service';
 
@@ -31,7 +32,7 @@ export interface MessageRequest {
 export interface Message {
   communicationAttachments: CCommunicationAttachment[];
   communicationID: string;
-  communicationType: string;
+  communicationType: SupportCommunicationType;
   direction: string;
   errandNumber: string;
   messageBody: string;
@@ -53,7 +54,7 @@ const getClosingMessageBody = async (userName: string): Promise<string> => {
 
   const content = await getClosingTemplate(app, { user: userName });
   if (!content) {
-    console.error(`Could not get closing-template: ${app}.email.closing`);
+    console.error(`Could not get closing-template: neither ${app}.email.closing nor default.email.closing was found`);
     return '';
   }
 
@@ -76,6 +77,9 @@ const getPlaintextMessageBody = (htmlMessage: string): string => {
 export const sendClosingMessage = async (adminName: string, supportErrand: SupportErrand, municipalityId: string) => {
   const contactChannels = applicantContactChannel(supportErrand);
   const messageBody = await getClosingMessageBody(adminName);
+  if (!messageBody) {
+    throw new Error('No closing-message template available');
+  }
   const plaintextMessageBody = getPlaintextMessageBody(messageBody);
 
   return sendMessage({
@@ -298,12 +302,18 @@ export const buildTree = (_list: Message[]) => {
   );
   list.forEach((msg) => {
     msg.messageBody = msg.messageBody?.replace(/\r\n/g, '<br>');
-    const id = msg.communicationType === 'EMAIL' ? msg.emailHeaders?.['MESSAGE_ID']?.[0] : msg.communicationID;
+    const id =
+      msg.communicationType === SupportCommunicationType.Email
+        ? msg.emailHeaders?.['MESSAGE_ID']?.[0]
+        : msg.communicationID;
     nodesMap.set(id, { ...msg, children: [] });
   });
 
   list.forEach((msg) => {
-    const id = msg.communicationType === 'EMAIL' ? msg.emailHeaders?.['MESSAGE_ID']?.[0] : msg.communicationID;
+    const id =
+      msg.communicationType === SupportCommunicationType.Email
+        ? msg.emailHeaders?.['MESSAGE_ID']?.[0]
+        : msg.communicationID;
     const parent = msg.emailHeaders?.['IN_REPLY_TO']?.[0];
     if (parent) {
       const parentMsg = nodesMap.get(parent);

@@ -136,6 +136,12 @@ export const defaultLagenhetsarrende: ContractData = {
   },
   extraParameters: [
     {
+      name: 'errandId',
+      parameters: {
+        errandId: '',
+      },
+    },
+    {
       name: 'InvoiceInfo',
       parameters: {
         markup: '',

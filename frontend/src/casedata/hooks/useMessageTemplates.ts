@@ -1,23 +1,11 @@
 import { User } from '@common/interfaces/user';
+import { EMAIL_INFORMATION_TEXT, MessageTemplates } from '@common/services/message-template-body-service';
 import { getTemplateRole, getTemplateType } from '@common/utils/template-metadata';
 import {
-  EMAIL_INFORMATION_TEXT,
   fetchTemplatesWithMetadata,
   replaceTemplateParameters,
-  TemplateInfo,
 } from '@supportmanagement/services/message-template-service';
 import { useEffect, useState } from 'react';
-
-export interface MessageTemplates {
-  internalSignature: string;
-  smsTemplate: string;
-  smsSignature: string;
-  emailSignature: string;
-  emailTemplates: TemplateInfo[];
-  smsTemplates: TemplateInfo[];
-  byId: Record<string, string>;
-  app: string;
-}
 
 interface UseMessageTemplatesResult {
   templates: MessageTemplates | null;
@@ -73,7 +61,10 @@ export function useMessageTemplates(user: User, shouldLoad: boolean): UseMessage
         });
 
         const emailTemplates = appResult.templates.filter((t) => {
-          return getTemplateType(t) === 'email' && !['signature', 'publicdocuments'].includes(getTemplateRole(t) || '');
+          return (
+            getTemplateType(t) === 'email' &&
+            !['signature', 'publicdocuments', 'closing'].includes(getTemplateRole(t) || '')
+          );
         });
 
         // If no app-specific email templates, use default ones
@@ -88,14 +79,14 @@ export function useMessageTemplates(user: User, shouldLoad: boolean): UseMessage
             : [];
 
         const smsTemplates = appResult.templates.filter((t) => {
-          return getTemplateType(t) === 'sms' && getTemplateRole(t) !== 'signature';
+          return getTemplateType(t) === 'sms' && !['signature', 'closing'].includes(getTemplateRole(t) || '');
         });
 
         // If no app-specific sms templates, use default ones
         const fallbackSmsTemplates =
           smsTemplates.length === 0
             ? defaultResult.templates.filter((t) => {
-                return getTemplateType(t) === 'sms' && getTemplateRole(t) !== 'signature';
+                return getTemplateType(t) === 'sms' && !['signature', 'closing'].includes(getTemplateRole(t) || '');
               })
             : [];
 

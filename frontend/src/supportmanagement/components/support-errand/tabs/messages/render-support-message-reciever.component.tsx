@@ -1,5 +1,6 @@
 import sanitized from '@common/services/sanitizer-service';
 import { Button } from '@sk-web-gui/button';
+import { SupportCommunicationType } from '@supportmanagement/services/support-communication-types';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { Message } from '@supportmanagement/services/support-message-service';
 import { getApplicantName } from '@supportmanagement/services/support-stakeholder-service';
@@ -11,22 +12,22 @@ const getReciever = (msg: Message, supportErrand: SupportErrand): string | strin
     return '';
   }
 
-  if (msg.communicationType === 'WEB_MESSAGE') {
+  if (msg.communicationType === SupportCommunicationType.WebMessage) {
     return msg.direction === 'INBOUND' ? 'Draken' : 'E-tjänst';
   }
-  if (msg.communicationType === 'MINASIDOR' && msg.direction === 'OUTBOUND') {
+  if (msg.communicationType === SupportCommunicationType.MinaSidor && msg.direction === 'OUTBOUND') {
     return getApplicantName(supportErrand);
   }
 
-  if (msg.communicationType === 'MINASIDOR' && msg.direction === 'INBOUND') {
+  if (msg.communicationType === SupportCommunicationType.MinaSidor && msg.direction === 'INBOUND') {
     return 'Draken';
   }
 
-  if (msg.communicationType === 'DRAKEN') {
+  if (msg.communicationType === SupportCommunicationType.Draken) {
     return 'Draken';
   }
 
-  if (msg.communicationType === 'EMAIL') {
+  if (msg.communicationType === SupportCommunicationType.Email) {
     return msg.recipients;
   }
   return msg?.target || '(okänd mottagare)';

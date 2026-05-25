@@ -15,7 +15,9 @@ export const getFeatureFlags = async () => {
       return res;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching feature flags: ' + e);
+      if (process.env.NODE_ENV === 'production') {
+        console.error('Something went wrong when fetching feature flags: ' + e);
+      }
       throw e;
     });
 };
