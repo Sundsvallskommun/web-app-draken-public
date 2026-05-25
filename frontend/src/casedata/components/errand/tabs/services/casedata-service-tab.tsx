@@ -76,10 +76,7 @@ export const CasedataServicesTab: FC = () => {
   const errand = useCasedataStore((s) => s.errand);
   const [schema, setSchema] = useState<RJSFSchema | null>(null);
   const [uiSchema, setUiSchema] = useState<UiSchema | null>(null);
-  const initialFormData = useMemo(
-    () => ({ validityType: 'tillsvidare', isWinterService: 'nej', transportMode: [] }),
-    []
-  );
+  const initialFormData = useMemo(() => ({ transportMode: [] }), []);
   const [formData, setFormData] = useState<any>(initialFormData);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<any>(null);
@@ -341,7 +338,6 @@ export const CasedataServicesTab: FC = () => {
                         onChange={() => {
                           setValidityType('tillsvidare');
                           setEndDate('');
-                          setFormData((p: any) => ({ ...p, validityType: 'tillsvidare', validTo: undefined }));
                         }}
                       >
                         Tillsvidare
@@ -352,7 +348,6 @@ export const CasedataServicesTab: FC = () => {
                         checked={validityType === 'tidsbegränsat'}
                         onChange={() => {
                           setValidityType('tidsbegränsat');
-                          setFormData((p: any) => ({ ...p, validityType: 'tidsbegränsat' }));
                         }}
                       >
                         Tidsbegränsat
@@ -368,7 +363,6 @@ export const CasedataServicesTab: FC = () => {
                         value={startDate}
                         onChange={(e: ChangeEvent<HTMLInputElement>) => {
                           setStartDate(e.target.value);
-                          setFormData((p: any) => ({ ...p, validFrom: e.target.value }));
                           setDateErrors((p) => ({ ...p, startDate: undefined }));
                         }}
                       />
@@ -382,7 +376,6 @@ export const CasedataServicesTab: FC = () => {
                         disabled={validityType === 'tillsvidare'}
                         onChange={(e: ChangeEvent<HTMLInputElement>) => {
                           setEndDate(e.target.value);
-                          setFormData((p: any) => ({ ...p, validTo: e.target.value }));
                           setDateErrors((p) => ({ ...p, endDate: undefined }));
                         }}
                       />
