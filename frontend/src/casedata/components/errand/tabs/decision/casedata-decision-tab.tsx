@@ -23,6 +23,8 @@ import {
   isErrandLocked,
   isFTErrand,
   isFTNationalErrand,
+  isPTCaseType,
+  isPTErrand,
   updateErrandStatus,
   validateAction,
   validateErrandForDecision,
@@ -107,24 +109,29 @@ let formSchema = yup
         return outcome !== '' && outcome !== 'Välj beslut';
       }),
     validFrom: isPT()
-      ? yup.string().when('outcome', (values, schema) => {
-          const [outcome] = values as [string];
-          return outcome === 'APPROVAL' ? schema.required('Giltig från måste anges') : schema.notRequired();
+      ? yup.string().when(['outcome', 'errandCaseType'], (values, schema) => {
+          const [outcome, errandCaseType] = values as [string, string];
+          return outcome === 'APPROVAL' && isPTCaseType(errandCaseType)
+            ? schema.required('Giltig från måste anges')
+            : schema.notRequired();
         })
       : yup.string(),
 
     validTo: isPT()
       ? yup
           .string()
-          .when('outcome', (values, schema) => {
-            const [outcome] = values as [string];
-            return outcome === 'APPROVAL' ? schema.required('Giltig till måste anges') : schema.notRequired();
+          .when(['outcome', 'errandCaseType'], (values, schema) => {
+            const [outcome, errandCaseType] = values as [string, string];
+            return outcome === 'APPROVAL' && isPTCaseType(errandCaseType)
+              ? schema.required('Giltig till måste anges')
+              : schema.notRequired();
           })
           .test({
             name: 'validTo-after-validFrom',
             message: 'Slutdatum måste vara efter startdatum',
             test: (value, context) => {
               if (context.parent.outcome !== 'APPROVAL') return true;
+              if (!isPTCaseType(context.parent.errandCaseType)) return true;
               if (!value || !context.parent.validFrom) return true;
               return Date.parse(context.parent.validFrom) < Date.parse(value);
             },
@@ -488,13 +495,18 @@ export const CasedataDecisionTab: FC<{
   useEffect(() => {
     if (!errand) return;
     setValue('errandId', errand.id);
+    setValue('errandCaseType', errand.caseType, { shouldDirty: false });
 
     if (existingDecision && existingDecision.decisionType === 'FINAL') {
       setValue('id', existingDecision.id!.toString(), { shouldDirty: false });
       setValue('description', existingDecision.description, { shouldDirty: false });
       setValue('outcome', existingDecision.decisionOutcome, { shouldDirty: false });
-      setValue('validFrom', dayjs(existingDecision.validFrom).format('YYYY-MM-DD'), { shouldDirty: false });
-      setValue('validTo', dayjs(existingDecision.validTo).format('YYYY-MM-DD'), { shouldDirty: false });
+      setValue('validFrom', existingDecision.validFrom ? dayjs(existingDecision.validFrom).format('YYYY-MM-DD') : '', {
+        shouldDirty: false,
+      });
+      setValue('validTo', existingDecision.validTo ? dayjs(existingDecision.validTo).format('YYYY-MM-DD') : '', {
+        shouldDirty: false,
+      });
 
       if (existingDecision.law && existingDecision.law.length > 0) {
         setValue('law', existingDecision.law, { shouldDirty: false });
@@ -759,33 +771,39 @@ export const CasedataDecisionTab: FC<{
               {errors.law && <FormErrorMessage className="text-error">{errors.law.message}</FormErrorMessage>}
             </FormControl>
 
-            <FormControl className="w-full">
-              <FormLabel>Beslut giltigt från</FormLabel>
-              <Input
-                type="date"
-                {...register('validFrom')}
-                size="sm"
-                disabled={isErrandLocked(errand) || isSent() || outcome !== 'APPROVAL'}
-                placeholder="Välj datum"
-                data-cy="validFrom-input"
-              />
-              {errors.validFrom && (
-                <FormErrorMessage className="text-error">{errors.validFrom.message}</FormErrorMessage>
-              )}
-            </FormControl>
+            {isPTErrand(errand) && (
+              <>
+                <FormControl className="w-full">
+                  <FormLabel>Beslut giltigt från</FormLabel>
+                  <Input
+                    type="date"
+                    {...register('validFrom')}
+                    size="sm"
+                    disabled={isErrandLocked(errand) || isSent() || outcome !== 'APPROVAL'}
+                    placeholder="Välj datum"
+                    data-cy="validFrom-input"
+                  />
+                  {errors.validFrom && (
+                    <FormErrorMessage className="text-error">{errors.validFrom.message}</FormErrorMessage>
+                  )}
+                </FormControl>
 
-            <FormControl className="w-full">
-              <FormLabel>Beslut giltigt till</FormLabel>
-              <Input
-                type="date"
-                {...register('validTo')}
-                size="sm"
-                disabled={isErrandLocked(errand) || isSent() || outcome !== 'APPROVAL'}
-                placeholder="Välj datum"
-                data-cy="validTo-input"
-              />
-              {errors.validTo && <FormErrorMessage className="text-error">{errors.validTo.message}</FormErrorMessage>}
-            </FormControl>
+                <FormControl className="w-full">
+                  <FormLabel>Beslut giltigt till</FormLabel>
+                  <Input
+                    type="date"
+                    {...register('validTo')}
+                    size="sm"
+                    disabled={isErrandLocked(errand) || isSent() || outcome !== 'APPROVAL'}
+                    placeholder="Välj datum"
+                    data-cy="validTo-input"
+                  />
+                  {errors.validTo && (
+                    <FormErrorMessage className="text-error">{errors.validTo.message}</FormErrorMessage>
+                  )}
+                </FormControl>
+              </>
+            )}
           </div>
         )}
 

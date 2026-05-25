@@ -128,8 +128,18 @@ export const getStatusLabel = (statuses: ErrandStatus[]) => {
   return 'Ärenden';
 };
 
+export const isFTCaseType = (caseType?: string): boolean =>
+  !!caseType && Object.values(FTCaseType).includes(caseType as FTCaseType);
+
 export const isFTErrand = (errand: IErrand) => {
-  return Object.values(FTCaseType).includes(errand.caseType as FTCaseType);
+  return isFTCaseType(errand.caseType);
+};
+
+export const isPTCaseType = (caseType?: string): boolean =>
+  !!caseType && Object.values(PTCaseType).includes(caseType as PTCaseType);
+
+export const isPTErrand = (errand: IErrand) => {
+  return isPTCaseType(errand.caseType);
 };
 
 export const isFTNotificationErrand = (errand: IErrand) => {
@@ -153,7 +163,7 @@ export const getCaseTypes = () => {
   const isTest = getApplicationEnvironment() === 'TEST';
 
   if (isPT()) {
-    return isTest ? { ...PTCaseType, ...FTCaseType } : { ...PTCaseType };
+    return { ...PTCaseType, ...FTCaseType };
   }
 
   if (isMEX()) {
