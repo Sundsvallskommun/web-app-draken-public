@@ -62,10 +62,13 @@ const buildBillingRecord = (formData: BillingFormData, errand: IErrand): CBillin
   const persNumberStr = persNumber ? String(persNumber).trim() : '';
   const customerId = orgNumberStr !== '' ? orgNumberStr : persNumberStr !== '' ? persNumberStr : '';
 
+  const invoiceDate = formData.specifications.rejectionDate || undefined;
+
   return {
     category: casedataInvoiceSettings.category,
     type: CBillingRecordTypeEnum.EXTERNAL,
     status: CBillingRecordStatusEnum.NEW,
+    transferDate: invoiceDate,
     recipient:
       hasValidRecipient && hasValidAddress && recipient
         ? {
@@ -119,6 +122,7 @@ const satisfyApi = (data: CBillingRecord): CBillingRecord => {
   processed.type = data.type;
   processed.status = data.status;
   processed.approvedBy = data.approvedBy;
+  processed.transferDate = data.transferDate;
   processed.extraParameters = data.extraParameters;
   return processed as CBillingRecord;
 };
