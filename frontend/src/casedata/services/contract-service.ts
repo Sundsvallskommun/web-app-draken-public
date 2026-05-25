@@ -56,6 +56,13 @@ export const leaseTypes = [
   { label: 'Arrende', key: LeaseType.OTHER_FEE }, // Ska inte kunna finnas för nya avtal
 ];
 
+export const getContractLabel = (contractType: ContractType, leaseType?: LeaseType): string => {
+  if (contractType === ContractType.LEASE_AGREEMENT && leaseType) {
+    return leaseTypes.find((t) => t.key === leaseType)?.label ?? 'okänd typ';
+  }
+  return contractTypes.find((t) => t.key === contractType)?.label ?? 'okänd typ';
+};
+
 export const isLeaseAgreement = (contractType: ContractType) =>
   [
     ContractType.LEASE_AGREEMENT,
@@ -470,10 +477,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
   let fees: Fees | undefined = undefined;
   const propertyDesignations = data.propertyDesignations ?? [];
   if (data.generateInvoice) {
-    const leaseTypeLabel =
-      data?.type === ContractType.LEASEHOLD
-        ? 'Tomträtt'
-        : leaseTypes.find((t) => t.key === data.leaseType)?.label ?? 'okänd typ';
+    const label = getContractLabel(data.type, data.leaseType);
     const yearlyNumber = Number.parseFloat((data.fees?.yearly ?? 0).toString());
     fees = {
       yearly: yearlyNumber,
@@ -481,7 +485,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       total: yearlyNumber,
       currency: 'SEK',
       additionalInformation: [
-        `Avgift, ${leaseTypeLabel.toLocaleLowerCase()}. ` +
+        `Avgift, ${label.toLocaleLowerCase()}. ` +
           (propertyDesignations?.length > 0 ? `${propertyDesignations.map((p) => p.name).join(', ')}` : ''),
         data.fees?.additionalInformation?.[1] ?? '',
       ],
@@ -532,10 +536,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
 };
 
 export const contractToLagenhetsArrende = (contract: Contract): ContractData => {
-  const leaseTypeLabel =
-    contract?.type === ContractType.LEASEHOLD
-      ? 'Tomträtt'
-      : leaseTypes.find((t) => t.key === contract.leaseType)?.label ?? 'okänd typ';
+  const label = getContractLabel(contract.type, contract.leaseType);
   const hasIndexation = !!(
     contract.fees?.indexType ||
     contract.fees?.indexYear ||
@@ -552,7 +553,7 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
     fees: {
       ...contract.fees,
       additionalInformation: [
-        `Avgift, ${leaseTypeLabel.toLocaleLowerCase()}. ` +
+        `Avgift, ${label.toLocaleLowerCase()}. ` +
           (propertyDesignations?.length > 0 ? `${propertyDesignations.map((p) => p.name).join(', ')}` : ''),
         '',
       ],
