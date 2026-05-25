@@ -20,7 +20,7 @@ import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockMexErrand_base, modifyField } from '../fixtures/mockMexErrand';
 import { mockPermits } from '../fixtures/mockPermits';
-import { mockRelations } from '../fixtures/mockRelations';
+import { mockRelations, mockResolvedRelations } from '../fixtures/mockRelations';
 import { mockAsset } from '../fixtures/mockAsset';
 import { preventProcessExtraParameters } from '../utils/utils';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
@@ -30,6 +30,8 @@ import {
   mockSingleEstateByPropertyDesignation11,
   mockSingleEstateByPropertyDesignation12,
 } from '../fixtures/mockEstateInfo';
+import { mockDraftAsset } from '../fixtures/mockFTAsset';
+import { mockTemplates } from '../fixtures/mockTemplates';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   const visit = () => {
@@ -71,7 +73,13 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
       cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/relations/**/**', mockRelations).as('getRelations');
+      cy.intercept('GET', '**/resolvedrelations/**/**', mockResolvedRelations).as('getResolvedRelations');
+
+      cy.intercept('GET', '**/templates**', mockTemplates).as('getTemplates');
+
       cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
+      cy.intercept('GET', '**/asset-drafts**', mockDraftAsset).as('getDraftAssets');
 
       cy.intercept('POST', '**/address', mockAddress).as('poFfastAddress');
       cy.intercept('POST', '**/errands/*/facilities', mockMexErrand_base);
