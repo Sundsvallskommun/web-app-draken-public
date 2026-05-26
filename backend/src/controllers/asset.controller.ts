@@ -16,6 +16,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { apiServiceName } from '@/config/api-config';
 import { Asset, AssetCreateRequest, AssetUpdateRequest, DraftAssetUpdateRequest, Status } from '@/data-contracts/partyassets/data-contracts';
+import { apiURL } from '@/utils/util';
 
 interface ResponseData<T> {
   data: T;
@@ -75,9 +76,10 @@ export class AssetController {
     errandId: string | undefined,
     body?: AssetCreateRequest,
   ): Promise<EnrichedAsset> {
-    const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/${path}`;
-    const res = await this.apiService.postExpectingLocation<Asset, AssetCreateRequest>({ url, data: body }, req.user);
-    const createdId = res.data?.id ?? res.locationId;
+    const baseURL = apiURL(this.PARTYASSETS_SERVICE);
+    const url = `${municipalityId}/${path}`;
+    const res = await this.apiService.post<Asset, AssetCreateRequest>({ url, baseURL, data: body }, req.user);
+    const createdId = res.data?.id;
 
     if (!createdId) {
       throw new HttpException(502, 'Created asset id missing');
@@ -96,7 +98,7 @@ export class AssetController {
       }
     }
 
-    return { ...res.data, id: createdId, sourceErrandId: errandId };
+    return { ...res.data, sourceErrandId: errandId };
   }
 
   private async enrichWithErrandNumbers(user: RequestWithUser['user'], municipalityId: string, assets: EnrichedAsset[]): Promise<EnrichedAsset[]> {

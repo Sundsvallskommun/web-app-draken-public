@@ -55,9 +55,11 @@ class ApiService {
           'Content-Type': 'application/json',
           'X-Request-Id': uuidv4(),
         };
-        const skipLocationFollow = response.config.headers?.['x-skip-location-follow'] ?? response.config.headers?.['X-Skip-Location-Follow'];
-        if (skipLocationFollow) {
-          return response;
+        // Rewerite location header to point to correct resource since the API response header
+        // contains an errouneous url - asset-drafts does not have an GET ../{id} endpoint.
+        // When this has been fixed, we can remove the rewrite.
+        if (response.headers.location && response.config.url?.includes('asset-drafts')) {
+          response.headers.location = response.headers.location.replace('/asset-drafts/', '/assets/');
         }
         if (response.headers.location && !response.config.url?.includes('messaging')) {
           logger.info(`Response contained location header: ${response.headers.location}`);
@@ -119,35 +121,6 @@ class ApiService {
 
   public async post<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
     return this.request<T>({ ...config, method: 'POST' }, user);
-  }
-
-  public async postExpectingLocation<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<{ data: T; locationId?: string; message: string }> {
-    const preparedConfig: AxiosRequestConfig = {
-      ...config,
-      method: 'POST',
-      maxContentLength: Infinity,
-      maxBodyLength: Infinity,
-      headers: { ...config.headers, 'X-Sent-By': [`type=adAccount; ${user.username}`], 'X-Skip-Location-Follow': '1' },
-      url: config.baseURL ? config.url : apiURL(config.url ?? ''),
-    };
-    try {
-      const res = await this.instance(preparedConfig);
-      const location = (res.headers?.location ?? res.headers?.Location) as string | undefined;
-      const locationId = location?.split(/[?#]/)[0]?.split('/').reverse().find(Boolean);
-      return { data: res.data, locationId, message: 'success' };
-    } catch (error: unknown) {
-      if (axios.isAxiosError(error) && (error as AxiosError).response?.status === 404) {
-        logger.error(`ERROR: API request failed with status: ${error.response?.status}`);
-        logger.error(`Error details: ${JSON.stringify(error.response!.data)}`);
-        throw new HttpException(404, 'Not found');
-      } else if (axios.isAxiosError(error) && (error as AxiosError).response?.data) {
-        logger.error(`ERROR: API request failed with status: ${error.response?.status}`);
-        logger.error(`Error details: ${JSON.stringify(error.response!.data)}`);
-      } else {
-        logger.error(`Unknown error: ${error}`);
-      }
-      throw new HttpException(500, 'Internal server error');
-    }
   }
 
   public async patch<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
