@@ -9,71 +9,16 @@ import {
 import type { RJSFSchema } from '@rjsf/utils';
 import { useCallback, useEffect, useState } from 'react';
 
-type UseErrandServicesArgs = {
-  municipalityId: string;
-  partyId: string;
-  errandId: string;
-  assetType: string;
-  schema?: RJSFSchema | null;
-  origin?: string;
-};
-
-export function useErrandServices({
-  municipalityId,
-  partyId,
-  errandId,
-  assetType,
-  schema = null,
-  origin,
-}: UseErrandServicesArgs) {
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>();
-
-  const refetch = useCallback(async () => {
-    if (!municipalityId || !partyId || !errandId || !assetType || !schema) {
-      setServices([]);
-      setLoading(false);
-      setError(undefined);
-      return;
-    }
-
-    setLoading(true);
-    setError(undefined);
-    try {
-      const assets = await getErrandServiceAssets({ municipalityId, partyId, errandId, assetType, origin });
-      setServices(await mapAssetsToServices(municipalityId, assets, schema));
-    } catch (e: any) {
-      setError(e?.message ?? 'Kunde inte hämta insatser');
-    } finally {
-      setLoading(false);
-    }
-  }, [municipalityId, partyId, errandId, assetType, origin, schema]);
-
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
-
-  return { services, loading, error, refetch, setServices };
-}
-
-type UsePartyServicesArgs = {
+type AssetServicesArgs = {
   municipalityId: string;
   partyId: string;
   assetType: string;
   schema?: RJSFSchema | null;
   origin?: string;
-  excludeIds?: string[];
+  errandId?: string;
 };
 
-export function usePartyServices({
-  municipalityId,
-  partyId,
-  assetType,
-  schema = null,
-  origin,
-  excludeIds,
-}: UsePartyServicesArgs) {
+function useAssetServices({ municipalityId, partyId, errandId, assetType, schema = null, origin }: AssetServicesArgs) {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
@@ -89,21 +34,35 @@ export function usePartyServices({
     setLoading(true);
     setError(undefined);
     try {
-      const assets = await getPartyServiceAssets({ municipalityId, partyId, assetType, origin });
+      const assets = errandId
+        ? await getErrandServiceAssets({ municipalityId, partyId, errandId, assetType, origin })
+        : await getPartyServiceAssets({ municipalityId, partyId, assetType, origin });
       setServices(await mapAssetsToServices(municipalityId, assets, schema));
     } catch (e: any) {
-      setError(e?.message ?? 'Kunde inte hämta personens insatser');
+      setError(e?.message ?? (errandId ? 'Kunde inte hämta insatser' : 'Kunde inte hämta personens insatser'));
     } finally {
       setLoading(false);
     }
-  }, [municipalityId, partyId, assetType, origin, schema]);
+  }, [municipalityId, partyId, errandId, assetType, schema, origin]);
 
   useEffect(() => {
     refetch();
   }, [refetch]);
 
-  const excludeSet = excludeIds ? new Set(excludeIds) : null;
-  const filteredServices = excludeSet ? services.filter((s) => !excludeSet.has(s.id)) : services;
+  return { services, loading, error, refetch };
+}
 
-  return { services: filteredServices, loading, error, refetch };
+type UseErrandServicesArgs = Omit<AssetServicesArgs, 'errandId'> & { errandId: string };
+
+export function useErrandServices(args: UseErrandServicesArgs) {
+  return useAssetServices(args);
+}
+
+type UsePartyServicesArgs = Omit<AssetServicesArgs, 'errandId'> & { excludeIds?: string[] };
+
+export function usePartyServices({ excludeIds, ...rest }: UsePartyServicesArgs) {
+  const { services, ...state } = useAssetServices(rest);
+  const excludeSet = excludeIds?.length ? new Set(excludeIds) : null;
+  const filteredServices = excludeSet ? services.filter((s) => !excludeSet.has(s.id)) : services;
+  return { ...state, services: filteredServices };
 }
