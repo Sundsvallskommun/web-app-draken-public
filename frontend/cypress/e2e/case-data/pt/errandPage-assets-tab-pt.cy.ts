@@ -465,6 +465,7 @@ const setupCommonIntercepts = () => {
   cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
     'getConversationMessages'
   );
+  cy.intercept('POST', '**/render/pdf', {});
   cy.intercept('PATCH', '**/errands/**/extraparameters', {});
   cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
 };
