@@ -11,7 +11,7 @@ import { mockConversationMessages, mockConversations } from '../fixtures/mockCon
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockPTErrand_base } from '../fixtures/mockPtErrand';
-import { mockRelations } from '../fixtures/mockRelations';
+import { mockRelations, mockResolvedRelations } from '../fixtures/mockRelations';
 
 const mockFTErrand = {
   data: {
@@ -459,6 +459,8 @@ const setupCommonIntercepts = () => {
   cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
   cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
   cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+  cy.intercept('GET', '**/resolvedrelations/**/**', mockResolvedRelations).as('getResolvedRelations');
+  cy.intercept('GET', '**/relations/referredfrom/**', mockRelations).as('getReferredfromRelations');
   cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as('getConversations');
   cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
     'getConversationMessages'
