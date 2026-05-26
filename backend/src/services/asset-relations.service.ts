@@ -5,6 +5,7 @@ import { apiURL } from '@utils/util';
 import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Relation, RelationPagedResponse, ResourceIdentifier } from '@/data-contracts/relations/data-contracts';
+import { mapWithConcurrency } from '@/utils/concurrency';
 
 import ApiService from './api.service';
 
@@ -63,21 +64,6 @@ const listRelationsBy = async (
     logger.error(`Error fetching relations by ${field}=${value}: `, e);
     throw e;
   }
-};
-
-const mapWithConcurrency = async <T, R>(items: T[], concurrency: number, mapper: (item: T) => Promise<R>): Promise<R[]> => {
-  const results: R[] = [];
-  let nextIndex = 0;
-
-  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
-    while (nextIndex < items.length) {
-      const index = nextIndex++;
-      results[index] = await mapper(items[index]);
-    }
-  });
-
-  await Promise.all(workers);
-  return results;
 };
 
 export const createErrandAssetRelation = async (municipalityId: string, errandId: string, assetId: string, user: User): Promise<Relation | null> => {

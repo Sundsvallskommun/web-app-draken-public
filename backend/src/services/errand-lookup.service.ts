@@ -5,26 +5,12 @@ import { apiURL } from '@utils/util';
 import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
+import { mapWithConcurrency } from '@/utils/concurrency';
 
 import ApiService from './api.service';
 
 const CASEDATA_SERVICE = apiServiceName('case-data');
 const ERRAND_LOOKUP_CONCURRENCY = 8;
-
-const mapWithConcurrency = async <T, R>(items: T[], concurrency: number, mapper: (item: T) => Promise<R>): Promise<R[]> => {
-  const results: R[] = [];
-  let nextIndex = 0;
-
-  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
-    while (nextIndex < items.length) {
-      const index = nextIndex++;
-      results[index] = await mapper(items[index]);
-    }
-  });
-
-  await Promise.all(workers);
-  return results;
-};
 
 export const fetchErrandNumberById = async (municipalityId: string, errandId: string, user: User): Promise<string | undefined> => {
   if (!errandId) return undefined;
