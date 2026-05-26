@@ -4,6 +4,7 @@ import { SupportType } from '@supportmanagement/services/support-metadata-servic
 import { ChevronDown } from 'lucide-react';
 import { FC, useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+
 import { SupportManagementFilter } from '../supportmanagement-filtering.component';
 
 export interface TypeFilter {

@@ -16,11 +16,10 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
+  string?: boolean;
   nodeType?: JsonNodeNodeTypeEnum;
-  integralNumber?: boolean;
+  number?: boolean;
+  boolean?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -32,9 +31,10 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  string?: boolean;
-  boolean?: boolean;
-  number?: boolean;
+  integralNumber?: boolean;
+  missingNode?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -154,10 +154,10 @@ export interface PageJsonSchema {
   content?: JsonSchema[];
   /** @format int32 */
   number?: number;
-  /** @format int32 */
-  numberOfElements?: number;
   first?: boolean;
   last?: boolean;
+  /** @format int32 */
+  numberOfElements?: number;
   sort?: SortObject;
   pageable?: PageableObject;
   empty?: boolean;
@@ -166,8 +166,8 @@ export interface PageJsonSchema {
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  unpaged?: boolean;
   sort?: SortObject;
+  unpaged?: boolean;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
@@ -200,13 +200,13 @@ export interface UiSchema {
 }
 
 export enum JsonNodeNodeTypeEnum {
-  ARRAY = 'ARRAY',
-  BINARY = 'BINARY',
-  BOOLEAN = 'BOOLEAN',
-  MISSING = 'MISSING',
-  NULL = 'NULL',
-  NUMBER = 'NUMBER',
-  OBJECT = 'OBJECT',
-  POJO = 'POJO',
-  STRING = 'STRING',
+  ARRAY = "ARRAY",
+  BINARY = "BINARY",
+  BOOLEAN = "BOOLEAN",
+  MISSING = "MISSING",
+  NULL = "NULL",
+  NUMBER = "NUMBER",
+  OBJECT = "OBJECT",
+  POJO = "POJO",
+  STRING = "STRING",
 }

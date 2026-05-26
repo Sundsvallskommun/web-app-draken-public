@@ -56,3 +56,9 @@ export interface Violation {
   field?: string;
   message?: string;
 }
+
+export interface PartyLegalIdResponse {
+  personalNumbers?: Record<string, string>;
+  organizationNumbers?: Record<string, string>;
+  notFound?: string[];
+}

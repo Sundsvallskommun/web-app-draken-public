@@ -1,11 +1,6 @@
 import { Channels } from '@casedata/interfaces/channels';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import {
-  fetchMessages,
-  fetchMessagesTree,
-  MessageNode,
-  setMessageViewStatus,
-} from '@casedata/services/casedata-message-service';
+import { fetchMessagesWithTree, MessageNode, setMessageViewStatus } from '@casedata/services/casedata-message-service';
 import { CasedataMessageType, isCasedataWebMessageType } from '@casedata/services/casedata-message-types';
 import { Button, Divider, FormLabel, Select, useSnackbar } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
@@ -49,43 +44,34 @@ export const CasedataMessagesTab: FC<{
   const setMessageViewed = (msg: MessageNode) => {
     if (msg.conversationId) {
       console.warn('Not implemented');
-    } else {
-      setMessageViewStatus(errand!.id.toString(), municipalityId, msg.messageId ?? '', true)
-        .then(() =>
-          fetchMessagesTree(municipalityId, errand!).catch(() => {
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Något gick fel när meddelanden hämtades',
-              status: 'error',
-            });
-          })
-        )
-        .then((tree) => {
-          if (tree) setMessageTree(tree);
-        })
-        .then(() =>
-          fetchMessages(municipalityId, errand!).catch(() => {
-            toastMessage({
-              position: 'bottom',
-              closeable: false,
-              message: 'Något gick fel när meddelanden hämtades',
-              status: 'error',
-            });
-          })
-        )
-        .then((msgs) => {
-          if (msgs) setMessages(msgs);
-        })
-        .catch(() => {
+      return;
+    }
+    if (!errand) return;
+    setMessageViewStatus(errand.id.toString(), municipalityId, msg.messageId ?? '', true)
+      .then(() =>
+        fetchMessagesWithTree(municipalityId, errand).catch(() => {
           toastMessage({
             position: 'bottom',
             closeable: false,
-            message: 'Något gick fel när meddelandets status uppdaterades',
+            message: 'Något gick fel när meddelanden hämtades',
             status: 'error',
           });
+        })
+      )
+      .then((result) => {
+        if (result) {
+          setMessages(result.messages);
+          setMessageTree(result.messageTree);
+        }
+      })
+      .catch(() => {
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: 'Något gick fel när meddelandets status uppdaterades',
+          status: 'error',
         });
-    }
+      });
   };
 
   const filterBySource = useCallback(

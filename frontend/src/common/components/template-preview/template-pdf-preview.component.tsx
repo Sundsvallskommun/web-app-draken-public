@@ -11,11 +11,7 @@ interface TemplatePdfPreviewProps {
   debounceMs?: number;
 }
 
-export const TemplatePdfPreview: React.FC<TemplatePdfPreviewProps> = ({
-  identifier,
-  parameters,
-  debounceMs = 800,
-}) => {
+export const TemplatePdfPreview: React.FC<TemplatePdfPreviewProps> = ({ identifier, parameters, debounceMs = 800 }) => {
   const [pdfBase64, setPdfBase64] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -67,12 +63,7 @@ export const TemplatePdfPreview: React.FC<TemplatePdfPreviewProps> = ({
   }
 
   return (
-    <Disclosure
-      variant="alt"
-      initalOpen
-      data-cy="decision-template-preview"
-      className="mb-24"
-    >
+    <Disclosure variant="alt" initalOpen data-cy="decision-template-preview" className="mb-24">
       <Disclosure.Header>
         <Disclosure.Icon icon={<FileText size={18} />} />
         <Disclosure.Title>Mallförhandsgranskning</Disclosure.Title>
@@ -84,9 +75,7 @@ export const TemplatePdfPreview: React.FC<TemplatePdfPreviewProps> = ({
             Laddar förhandsgranskning...
           </div>
         ) : error ? (
-          <div className="flex justify-center items-center h-[20rem] text-error">
-            {error}
-          </div>
+          <div className="flex justify-center items-center h-[20rem] text-error">{error}</div>
         ) : (
           <iframe
             src={`data:application/pdf;base64,${pdfBase64}#pagemode=none`}

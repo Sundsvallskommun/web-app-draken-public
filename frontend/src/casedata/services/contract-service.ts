@@ -168,7 +168,6 @@ export const saveContract: (contract: ContractData) => Promise<Contract> = (cont
         ? kopeavtalToContract(contract)
         : lagenhetsArrendeToContract(contract);
 
-    console.log('Processed:', apiContract);
     if (contract.contractId) {
       const url = `contracts/${contract.contractId}`;
       apiCall = apiService.put<ApiResponse<Contract>, Contract>(url, apiContract);

@@ -1,10 +1,10 @@
 'use client';
 
+import TextEditor from '@common/components/dynamic-text-editor';
 import { isIK, isLOP, isSE } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePatternOrCountryCode } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
-import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
@@ -20,6 +20,7 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   getSupportErrandById,
@@ -28,11 +29,10 @@ import {
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import TextEditor from '@common/components/dynamic-text-editor';
+import { FileInput, Plus } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
-import { FileInput, Plus } from 'lucide-react';
-import { FC, useEffect, useState } from 'react';
 
 const yupRequestFeedbackForm = yup.object().shape(
   {
