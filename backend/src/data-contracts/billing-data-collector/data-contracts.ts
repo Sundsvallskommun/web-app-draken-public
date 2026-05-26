@@ -132,11 +132,11 @@ export interface PageScheduledBilling {
   content?: ScheduledBilling[];
   /** @format int32 */
   number?: number;
-  first?: boolean;
-  last?: boolean;
   pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   sort?: SortObject;
   empty?: boolean;
 }
@@ -149,8 +149,8 @@ export interface PageableObject {
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  unpaged?: boolean;
   sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
@@ -173,7 +173,7 @@ export interface ScbKpiResponse {
   period: string;
   /**
    * KPI value, rounded to two decimals
-   * @example "355.91"
+   * @example 355.91
    */
   value: number;
 }
