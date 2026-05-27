@@ -228,8 +228,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  detail?: string;
   causeAsProblem?: ThrowableProblem;
+  detail?: string;
 }
 
 export interface ThrowableProblem {
@@ -503,7 +503,7 @@ export interface Errand {
    * The current status of the errand
    * @maxLength 255
    */
-  status?: Status;
+  status?: null;
   /** The statuses connected to the errand */
   statuses?: Status[];
   /**
@@ -587,9 +587,9 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  missingNode?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
+  string?: boolean;
+  boolean?: boolean;
+  number?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -602,10 +602,10 @@ export interface JsonNode {
   textual?: boolean;
   binary?: boolean;
   integralNumber?: boolean;
+  missingNode?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
   nodeType?: JsonNodeNodeTypeEnum;
-  number?: boolean;
-  string?: boolean;
-  boolean?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -1079,27 +1079,27 @@ export interface PageErrand {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  unpaged?: boolean;
+  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
-  unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export interface CommitMetadata {
@@ -1230,8 +1230,8 @@ export interface PageMessage {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1249,8 +1249,8 @@ export interface PageDecision {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 

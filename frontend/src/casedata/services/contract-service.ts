@@ -488,8 +488,8 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
           (propertyDesignations?.length > 0 ? `${propertyDesignations.map((p) => p.name).join(', ')}` : ''),
         data.fees?.additionalInformation?.[1] ?? '',
       ],
-      ...(data.indexAdjusted === 'true' && { indexYear: data.fees?.indexYear ?? 2025 }),
-      ...(data.indexAdjusted === 'true' && { indexNumber: data.fees?.indexNumber ?? 419.35 }),
+      ...(data.indexAdjusted === 'true' && { indexYear: data.fees?.indexYear }),
+      ...(data.indexAdjusted === 'true' && { indexNumber: data.fees?.indexNumber }),
       ...(data.indexAdjusted === 'true' && { indexationRate: data.fees?.indexationRate ?? 1 }),
       ...(data.indexAdjusted === 'true' && { indexType: data.fees?.indexType ?? 'KPI 80' }),
     };
