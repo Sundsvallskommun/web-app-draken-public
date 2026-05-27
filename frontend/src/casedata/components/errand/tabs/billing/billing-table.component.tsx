@@ -1,3 +1,4 @@
+import { ContractInvoiceDetail } from '@casedata/components/contract-overview/contract-invoice-detail.component';
 import { IErrand } from '@casedata/interfaces/errand';
 import { casedataInvoiceSettings } from '@casedata/services/billing/casedata-invoice-settings';
 import {
@@ -368,7 +369,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
         const isPastDue = record.invoice?.date ? new Date(record.invoice.date) < new Date() : false;
 
         return (
-          <div key={record.id} className="bg-background-100 rounded-16 p-32 flex flex-col gap-24">
+          <div key={record.id} className="flex flex-col gap-24">
             <div className="flex flex-row">
               <BillingStatusLabel status={record.status} />{' '}
               <span className="text-small italic ml-6 mt-4">
@@ -385,354 +386,9 @@ export const BillingTable: React.FC<BillingTableProps> = ({
             </div>
             {!isEditing ? (
               <>
-                <div className="w-full flex flex-row">
-                  <div className="flex flex-row gap-32 w-full">
-                    <div className="flex flex-col">
-                      <span className="text-label-medium">Fakturamottagare</span>
-                      <span>
-                        {record.recipient?.organizationName ||
-                          `${record.recipient?.firstName || ''} ${record.recipient?.lastName || ''}`.trim()}
-                      </span>
-                      <span>
-                        {record.recipient?.addressDetails?.street}, {record.recipient?.addressDetails?.postalCode}{' '}
-                        {record.recipient?.addressDetails?.city}
-                      </span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-label-medium">Vår referens</span>
-                      <span>{record.invoice?.ourReference || record?.extraParameters?.referenceName || '-'}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-label-medium">Kundens referens</span>
-                      <span>{record.invoice?.customerReference || '-'}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-label-medium">Aviseringsdatum</span>
-                      <span>{record.invoice?.date || '-'}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col">
-                  <span className="text-label-medium">Avitext</span>
-                  <span>{record.invoice?.description || '-'}</span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex flex-col">
-                  <span className="text-label-medium">Fakturamottagare</span>
-                  <span>
-                    {record.recipient?.organizationName ||
-                      `${record.recipient?.firstName || ''} ${record.recipient?.lastName || ''}`.trim()}
-                  </span>
-                  <span>
-                    {record.recipient?.addressDetails?.street}, {record.recipient?.addressDetails?.postalCode}{' '}
-                    {record.recipient?.addressDetails?.city}
-                  </span>
-                </div>
-                <div className="flex flex-row w-full gap-24">
-                  <FormControl className="w-full">
-                    <FormLabel>Vår referens</FormLabel>
-                    <Input
-                      placeholder="Ange vår referens"
-                      value={editFormState?.ourReference || ''}
-                      onChange={(e) => handleFormChange('ourReference', e.target.value)}
-                    />
-                  </FormControl>
-                  <FormControl className="w-full">
-                    <FormLabel>Kundens referens</FormLabel>
-                    <Input
-                      placeholder="Ange kundens referens"
-                      value={editFormState?.customerReference || ''}
-                      onChange={(e) => handleFormChange('customerReference', e.target.value)}
-                    />
-                  </FormControl>
-                  <FormControl className="w-full">
-                    <FormLabel>Aviseringsdatum</FormLabel>
-                    <DatePicker
-                      min={new Date().toISOString().split('T')[0]}
-                      value={editFormState?.date || ''}
-                      onChange={(e) => handleFormChange('date', e.target.value)}
-                    />
-                  </FormControl>
-                </div>
-
-                <FormControl className="w-full">
-                  <FormLabel>Avitext</FormLabel>
-                  <Input
-                    className="w-full"
-                    maxLength={30}
-                    value={editFormState?.description || ''}
-                    onChange={(e) => handleFormChange('description', e.target.value)}
-                  />
-                </FormControl>
-              </>
-            )}
-
-            <Table dense>
-              <Table.Header>
-                <Table.HeaderColumn>Beskrivning</Table.HeaderColumn>
-                <Table.HeaderColumn>Antal</Table.HeaderColumn>
-                <Table.HeaderColumn>Pris</Table.HeaderColumn>
-                <Table.HeaderColumn>Summa</Table.HeaderColumn>
-                {isEditing && (
-                  <>
-                    <Table.HeaderColumn></Table.HeaderColumn>
-                    <Table.HeaderColumn></Table.HeaderColumn>
-                  </>
-                )}
-              </Table.Header>
-              {displayRows.map((row, rowIndex) => {
-                const isEditingRow = isEditing && editingRowState?.rowIndex === rowIndex;
-                const colCount = isEditing ? 6 : 4;
-
-                if (isEditingRow && editingRowState) {
-                  return (
-                    <tbody key={rowIndex}>
-                      <tr>
-                        <td colSpan={colCount} className="p-0">
-                          <div className="flex flex-col gap-16 bg-background-color-mixin-1 p-18">
-                            <div className="flex flex-row w-full gap-16">
-                              <FormControl className="w-full">
-                                <div className="flex w-full justify-between">
-                                  <FormLabel>Beskrivning</FormLabel>
-                                  <span className="text-small text-dark-secondary">
-                                    {editingRowState.descriptions.length}/30
-                                  </span>
-                                </div>
-                                <Input
-                                  maxLength={30}
-                                  value={editingRowState.descriptions}
-                                  onChange={(e) => handleRowFieldChange('descriptions', e.target.value)}
-                                  readOnly={isRowFieldPreset(record, rowIndex, 'descriptions')}
-                                />
-                              </FormControl>
-                              <FormControl className="w-full">
-                                <FormLabel>Antal</FormLabel>
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  step={0.01}
-                                  value={editingRowState.quantity}
-                                  onChange={(e) =>
-                                    handleRowFieldChange(
-                                      'quantity',
-                                      e.target.value === '' ? '' : parseFloat(e.target.value)
-                                    )
-                                  }
-                                />
-                              </FormControl>
-                              <FormControl className="w-full">
-                                <FormLabel>Pris</FormLabel>
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  step={0.01}
-                                  value={editingRowState.costPerUnit}
-                                  onChange={(e) =>
-                                    handleRowFieldChange(
-                                      'costPerUnit',
-                                      e.target.value === '' ? '' : parseFloat(e.target.value)
-                                    )
-                                  }
-                                  readOnly={isRowFieldPreset(record, rowIndex, 'costPerUnit')}
-                                />
-                              </FormControl>
-                            </div>
-                            <div className="flex flex-row w-full gap-16">
-                              <FormControl className="w-full">
-                                <FormLabel>Ansvar</FormLabel>
-                                <Input
-                                  value={editingRowState.costCenter}
-                                  onChange={(e) => handleRowFieldChange('costCenter', e.target.value)}
-                                  readOnly={isRowFieldPreset(record, rowIndex, 'costCenter')}
-                                />
-                              </FormControl>
-                              <FormControl className="w-full">
-                                <FormLabel>Underkonto</FormLabel>
-                                <Input
-                                  value={editingRowState.subaccount}
-                                  onChange={(e) => handleRowFieldChange('subaccount', e.target.value)}
-                                  readOnly={isRowFieldPreset(record, rowIndex, 'subaccount')}
-                                />
-                              </FormControl>
-                              <FormControl className="w-full">
-                                <FormLabel>Verksamhet</FormLabel>
-                                <Input
-                                  value={editingRowState.department}
-                                  onChange={(e) => handleRowFieldChange('department', e.target.value)}
-                                  readOnly={isRowFieldPreset(record, rowIndex, 'department')}
-                                />
-                              </FormControl>
-                            </div>
-                            <div className="flex flex-row w-full gap-16">
-                              <FormControl className="w-full">
-                                <FormLabel>Aktivitet</FormLabel>
-                                <Input
-                                  value={editingRowState.activity}
-                                  onChange={(e) => handleRowFieldChange('activity', e.target.value)}
-                                  readOnly={isRowFieldPreset(record, rowIndex, 'activity')}
-                                />
-                              </FormControl>
-                              <FormControl className="w-full">
-                                <FormLabel>Projekt</FormLabel>
-                                <Input
-                                  value={editingRowState.project}
-                                  onChange={(e) => handleRowFieldChange('project', e.target.value)}
-                                  readOnly={isRowFieldPreset(record, rowIndex, 'project')}
-                                />
-                              </FormControl>
-                              <FormControl className="w-full">
-                                <FormLabel>Objekt</FormLabel>
-                                <Input
-                                  value={editingRowState.object}
-                                  onChange={(e) => handleRowFieldChange('object', e.target.value)}
-                                  readOnly={isRowFieldPreset(record, rowIndex, 'object')}
-                                />
-                              </FormControl>
-                            </div>
-                            <div className="flex flex-col w-full gap-16">
-                              <FormControl className="w-full">
-                                <FormLabel>Utökad beskrivning</FormLabel>
-                                <div className="flex w-full justify-between">
-                                  <FormLabel>Rad 1</FormLabel>
-                                  <span className="text-small text-dark-secondary">
-                                    {editingRowState.detailedDescription1.length}/51
-                                  </span>
-                                </div>
-                                <Input
-                                  maxLength={51}
-                                  value={editingRowState.detailedDescription1}
-                                  onChange={(e) => handleRowFieldChange('detailedDescription1', e.target.value)}
-                                />
-                              </FormControl>
-                              <FormControl className="w-full">
-                                <div className="flex w-full justify-between">
-                                  <FormLabel>Rad 2</FormLabel>
-                                  <span className="text-small text-dark-secondary">
-                                    {editingRowState.detailedDescription2.length}/51
-                                  </span>
-                                </div>
-                                <Input
-                                  maxLength={51}
-                                  value={editingRowState.detailedDescription2}
-                                  onChange={(e) => handleRowFieldChange('detailedDescription2', e.target.value)}
-                                />
-                              </FormControl>
-                              <FormControl className="w-full">
-                                <div className="flex w-full justify-between">
-                                  <FormLabel>Rad 3</FormLabel>
-                                  <span className="text-small text-dark-secondary">
-                                    {editingRowState.detailedDescription3.length}/51
-                                  </span>
-                                </div>
-                                <Input
-                                  maxLength={51}
-                                  value={editingRowState.detailedDescription3}
-                                  onChange={(e) => handleRowFieldChange('detailedDescription3', e.target.value)}
-                                />
-                              </FormControl>
-                            </div>
-                            <div className="flex flex-row gap-16">
-                              <Button variant="secondary" onClick={handleCancelRowEdit}>
-                                Avbryt
-                              </Button>
-                              <Button variant="primary" color="vattjom" onClick={handleSaveRow}>
-                                Spara
-                              </Button>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                  );
-                }
-
-                const accountInfo = row.accountInformation?.[0];
-
-                return (
-                  <tbody key={rowIndex}>
-                    <Table.Row className="!border-b-0">
-                      <Table.Column className="!items-start">
-                        <div className="flex flex-col w-[36rem]">
-                          <span className="font-bold mt-6">{row.descriptions?.join(', ') || '-'}</span>
-                          {row.detailedDescriptions?.some((d) => d) && (
-                            <div className="py-4">
-                              {row.detailedDescriptions
-                                .filter((d) => d)
-                                .map((desc, i) => (
-                                  <span key={i} className="text-small text-dark-secondary block">
-                                    {desc}
-                                  </span>
-                                ))}
-                            </div>
-                          )}
-                        </div>
-                      </Table.Column>
-                      <Table.Column className="-mr-18 !items-start">
-                        <span className="mt-6">{row.quantity || 0}</span>
-                      </Table.Column>
-                      <Table.Column className="-mr-18 !items-start">
-                        <span className="whitespace-nowrap mt-6">{(row.costPerUnit || 0).toFixed(2)} kr</span>
-                      </Table.Column>
-                      <Table.Column className="-mr-18 !items-start">
-                        <span className="whitespace-nowrap mt-6">
-                          {((row.quantity || 0) * (row.costPerUnit || 0)).toFixed(2)} kr
-                        </span>
-                      </Table.Column>
-                      {isEditing && (
-                        <>
-                          <Table.Column className="max-w-[3rem]">
-                            <div className="mt-6">
-                              <Button
-                                size="sm"
-                                variant="tertiary"
-                                iconButton
-                                onClick={() => handleEditRow(rowIndex)}
-                                disabled={editingRowState !== null}
-                              >
-                                <Pen size={16} />
-                              </Button>
-                            </div>
-                          </Table.Column>
-                          <Table.Column className="max-w-[3rem] mr-10">
-                            <div className="mt-6">
-                              <Button
-                                size="sm"
-                                inverted
-                                color="error"
-                                iconButton
-                                onClick={() => handleDeleteRow(rowIndex)}
-                                disabled={editingRowState !== null}
-                              >
-                                <Trash2 size={16} />
-                              </Button>
-                            </div>
-                          </Table.Column>
-                        </>
-                      )}
-                    </Table.Row>
-                    {accountInfo && (
-                      <tr className="border-b-1 border-divider">
-                        <td colSpan={colCount} className="pl-16 pb-8 pt-2">
-                          <span className="text-small text-dark-secondary italic">
-                            Ansvar: {accountInfo.costCenter || '-'}, Underkonto: {accountInfo.subaccount || '-'},
-                            Verksamhet: {accountInfo.department || '-'}, Aktivitet: {accountInfo.activity || '-'},
-                            Projekt: {accountInfo.project || '-'}, Objekt: {accountInfo.article || '-'}
-                          </span>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                );
-              })}
-            </Table>
-
-            <div className="flex flex-row justify-between items-center">
-              <div className="flex flex-row gap-16">
-                {!isEditing ? (
-                  <>
+                <ContractInvoiceDetail record={record} showStatus={false} />
+                <div className="flex flex-row justify-between items-center">
+                  <div className="flex flex-row gap-16">
                     <Button
                       variant="tertiary"
                       onClick={() => handleDeleteRecord(record)}
@@ -754,9 +410,314 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                         Godkänn underlag
                       </Button>
                     )}
-                  </>
-                ) : (
-                  <>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="bg-background-100 rounded-16 p-32 flex flex-col gap-24">
+                  <div className="flex flex-col">
+                    <span className="text-label-medium">Fakturamottagare</span>
+                    <span>
+                      {record.recipient?.organizationName ||
+                        `${record.recipient?.firstName || ''} ${record.recipient?.lastName || ''}`.trim()}
+                    </span>
+                    <span>
+                      {record.recipient?.addressDetails?.street}, {record.recipient?.addressDetails?.postalCode}{' '}
+                      {record.recipient?.addressDetails?.city}
+                    </span>
+                  </div>
+                  <div className="flex flex-row w-full gap-24">
+                    <FormControl className="w-full">
+                      <FormLabel>Vår referens</FormLabel>
+                      <Input
+                        placeholder="Ange vår referens"
+                        value={editFormState?.ourReference || ''}
+                        onChange={(e) => handleFormChange('ourReference', e.target.value)}
+                      />
+                    </FormControl>
+                    <FormControl className="w-full">
+                      <FormLabel>Kundens referens</FormLabel>
+                      <Input
+                        placeholder="Ange kundens referens"
+                        value={editFormState?.customerReference || ''}
+                        onChange={(e) => handleFormChange('customerReference', e.target.value)}
+                      />
+                    </FormControl>
+                    <FormControl className="w-full">
+                      <FormLabel>Aviseringsdatum</FormLabel>
+                      <DatePicker
+                        min={new Date().toISOString().split('T')[0]}
+                        value={editFormState?.date || ''}
+                        onChange={(e) => handleFormChange('date', e.target.value)}
+                      />
+                    </FormControl>
+                  </div>
+
+                  <FormControl className="w-full">
+                    <FormLabel>Avitext</FormLabel>
+                    <Input
+                      className="w-full"
+                      maxLength={30}
+                      value={editFormState?.description || ''}
+                      onChange={(e) => handleFormChange('description', e.target.value)}
+                    />
+                  </FormControl>
+
+                  <Table dense>
+                    <Table.Header>
+                      <Table.HeaderColumn>Beskrivning</Table.HeaderColumn>
+                      <Table.HeaderColumn>Antal</Table.HeaderColumn>
+                      <Table.HeaderColumn>Pris</Table.HeaderColumn>
+                      <Table.HeaderColumn>Summa</Table.HeaderColumn>
+                      <Table.HeaderColumn></Table.HeaderColumn>
+                      <Table.HeaderColumn></Table.HeaderColumn>
+                    </Table.Header>
+                    {displayRows.map((row, rowIndex) => {
+                      const isEditingRow = editingRowState?.rowIndex === rowIndex;
+                      const colCount = 6;
+
+                      if (isEditingRow && editingRowState) {
+                        return (
+                          <tbody key={rowIndex}>
+                            <tr>
+                              <td colSpan={colCount} className="p-0">
+                                <div className="flex flex-col gap-16 bg-background-color-mixin-1 p-18">
+                                  <div className="flex flex-row w-full gap-16">
+                                    <FormControl className="w-full">
+                                      <div className="flex w-full justify-between">
+                                        <FormLabel>Beskrivning</FormLabel>
+                                        <span className="text-small text-dark-secondary">
+                                          {editingRowState.descriptions.length}/30
+                                        </span>
+                                      </div>
+                                      <Input
+                                        maxLength={30}
+                                        value={editingRowState.descriptions}
+                                        onChange={(e) => handleRowFieldChange('descriptions', e.target.value)}
+                                        readOnly={isRowFieldPreset(record, rowIndex, 'descriptions')}
+                                      />
+                                    </FormControl>
+                                    <FormControl className="w-full">
+                                      <FormLabel>Antal</FormLabel>
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        step={0.01}
+                                        value={editingRowState.quantity}
+                                        onChange={(e) =>
+                                          handleRowFieldChange(
+                                            'quantity',
+                                            e.target.value === '' ? '' : parseFloat(e.target.value)
+                                          )
+                                        }
+                                      />
+                                    </FormControl>
+                                    <FormControl className="w-full">
+                                      <FormLabel>Pris</FormLabel>
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        step={0.01}
+                                        value={editingRowState.costPerUnit}
+                                        onChange={(e) =>
+                                          handleRowFieldChange(
+                                            'costPerUnit',
+                                            e.target.value === '' ? '' : parseFloat(e.target.value)
+                                          )
+                                        }
+                                        readOnly={isRowFieldPreset(record, rowIndex, 'costPerUnit')}
+                                      />
+                                    </FormControl>
+                                  </div>
+                                  <div className="flex flex-row w-full gap-16">
+                                    <FormControl className="w-full">
+                                      <FormLabel>Ansvar</FormLabel>
+                                      <Input
+                                        value={editingRowState.costCenter}
+                                        onChange={(e) => handleRowFieldChange('costCenter', e.target.value)}
+                                        readOnly={isRowFieldPreset(record, rowIndex, 'costCenter')}
+                                      />
+                                    </FormControl>
+                                    <FormControl className="w-full">
+                                      <FormLabel>Underkonto</FormLabel>
+                                      <Input
+                                        value={editingRowState.subaccount}
+                                        onChange={(e) => handleRowFieldChange('subaccount', e.target.value)}
+                                        readOnly={isRowFieldPreset(record, rowIndex, 'subaccount')}
+                                      />
+                                    </FormControl>
+                                    <FormControl className="w-full">
+                                      <FormLabel>Verksamhet</FormLabel>
+                                      <Input
+                                        value={editingRowState.department}
+                                        onChange={(e) => handleRowFieldChange('department', e.target.value)}
+                                        readOnly={isRowFieldPreset(record, rowIndex, 'department')}
+                                      />
+                                    </FormControl>
+                                  </div>
+                                  <div className="flex flex-row w-full gap-16">
+                                    <FormControl className="w-full">
+                                      <FormLabel>Aktivitet</FormLabel>
+                                      <Input
+                                        value={editingRowState.activity}
+                                        onChange={(e) => handleRowFieldChange('activity', e.target.value)}
+                                        readOnly={isRowFieldPreset(record, rowIndex, 'activity')}
+                                      />
+                                    </FormControl>
+                                    <FormControl className="w-full">
+                                      <FormLabel>Projekt</FormLabel>
+                                      <Input
+                                        value={editingRowState.project}
+                                        onChange={(e) => handleRowFieldChange('project', e.target.value)}
+                                        readOnly={isRowFieldPreset(record, rowIndex, 'project')}
+                                      />
+                                    </FormControl>
+                                    <FormControl className="w-full">
+                                      <FormLabel>Objekt</FormLabel>
+                                      <Input
+                                        value={editingRowState.object}
+                                        onChange={(e) => handleRowFieldChange('object', e.target.value)}
+                                        readOnly={isRowFieldPreset(record, rowIndex, 'object')}
+                                      />
+                                    </FormControl>
+                                  </div>
+                                  <div className="flex flex-col w-full gap-16">
+                                    <FormControl className="w-full">
+                                      <FormLabel>Utökad beskrivning</FormLabel>
+                                      <div className="flex w-full justify-between">
+                                        <FormLabel>Rad 1</FormLabel>
+                                        <span className="text-small text-dark-secondary">
+                                          {editingRowState.detailedDescription1.length}/51
+                                        </span>
+                                      </div>
+                                      <Input
+                                        maxLength={51}
+                                        value={editingRowState.detailedDescription1}
+                                        onChange={(e) => handleRowFieldChange('detailedDescription1', e.target.value)}
+                                      />
+                                    </FormControl>
+                                    <FormControl className="w-full">
+                                      <div className="flex w-full justify-between">
+                                        <FormLabel>Rad 2</FormLabel>
+                                        <span className="text-small text-dark-secondary">
+                                          {editingRowState.detailedDescription2.length}/51
+                                        </span>
+                                      </div>
+                                      <Input
+                                        maxLength={51}
+                                        value={editingRowState.detailedDescription2}
+                                        onChange={(e) => handleRowFieldChange('detailedDescription2', e.target.value)}
+                                      />
+                                    </FormControl>
+                                    <FormControl className="w-full">
+                                      <div className="flex w-full justify-between">
+                                        <FormLabel>Rad 3</FormLabel>
+                                        <span className="text-small text-dark-secondary">
+                                          {editingRowState.detailedDescription3.length}/51
+                                        </span>
+                                      </div>
+                                      <Input
+                                        maxLength={51}
+                                        value={editingRowState.detailedDescription3}
+                                        onChange={(e) => handleRowFieldChange('detailedDescription3', e.target.value)}
+                                      />
+                                    </FormControl>
+                                  </div>
+                                  <div className="flex flex-row gap-16">
+                                    <Button variant="secondary" onClick={handleCancelRowEdit}>
+                                      Avbryt
+                                    </Button>
+                                    <Button variant="primary" color="vattjom" onClick={handleSaveRow}>
+                                      Spara
+                                    </Button>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                        );
+                      }
+
+                      const accountInfo = row.accountInformation?.[0];
+
+                      return (
+                        <tbody key={rowIndex}>
+                          <Table.Row className="!border-b-0">
+                            <Table.Column className="!items-start">
+                              <div className="flex flex-col w-[36rem]">
+                                <span className="font-bold mt-6">{row.descriptions?.join(', ') || '-'}</span>
+                                {row.detailedDescriptions?.some((d) => d) && (
+                                  <div className="py-4">
+                                    {row.detailedDescriptions
+                                      .filter((d) => d)
+                                      .map((desc, i) => (
+                                        <span key={i} className="text-small text-dark-secondary block">
+                                          {desc}
+                                        </span>
+                                      ))}
+                                  </div>
+                                )}
+                              </div>
+                            </Table.Column>
+                            <Table.Column className="-mr-18 !items-start">
+                              <span className="mt-6">{row.quantity || 0}</span>
+                            </Table.Column>
+                            <Table.Column className="-mr-18 !items-start">
+                              <span className="whitespace-nowrap mt-6">{(row.costPerUnit || 0).toFixed(2)} kr</span>
+                            </Table.Column>
+                            <Table.Column className="-mr-18 !items-start">
+                              <span className="whitespace-nowrap mt-6">
+                                {((row.quantity || 0) * (row.costPerUnit || 0)).toFixed(2)} kr
+                              </span>
+                            </Table.Column>
+                            <Table.Column className="max-w-[3rem]">
+                              <div className="mt-6">
+                                <Button
+                                  size="sm"
+                                  variant="tertiary"
+                                  iconButton
+                                  onClick={() => handleEditRow(rowIndex)}
+                                  disabled={editingRowState !== null}
+                                >
+                                  <Pen size={16} />
+                                </Button>
+                              </div>
+                            </Table.Column>
+                            <Table.Column className="max-w-[3rem] mr-10">
+                              <div className="mt-6">
+                                <Button
+                                  size="sm"
+                                  inverted
+                                  color="error"
+                                  iconButton
+                                  onClick={() => handleDeleteRow(rowIndex)}
+                                  disabled={editingRowState !== null}
+                                >
+                                  <Trash2 size={16} />
+                                </Button>
+                              </div>
+                            </Table.Column>
+                          </Table.Row>
+                          {accountInfo && (
+                            <tr className="border-b-1 border-divider">
+                              <td colSpan={colCount} className="pl-16 pb-8 pt-2">
+                                <span className="text-small text-dark-secondary italic">
+                                  Ansvar: {accountInfo.costCenter || '-'}, Underkonto: {accountInfo.subaccount || '-'},
+                                  Verksamhet: {accountInfo.department || '-'}, Aktivitet: {accountInfo.activity || '-'},
+                                  Projekt: {accountInfo.project || '-'}, Objekt: {accountInfo.article || '-'}
+                                </span>
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      );
+                    })}
+                  </Table>
+                </div>
+
+                <div className="flex flex-row justify-between items-center">
+                  <div className="flex flex-row gap-16">
                     <Button variant="secondary" onClick={cancelEditing} disabled={editingRowState !== null}>
                       Avbryt
                     </Button>
@@ -769,10 +730,10 @@ export const BillingTable: React.FC<BillingTableProps> = ({
                     >
                       Spara
                     </Button>
-                  </>
-                )}
-              </div>
-            </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         );
       })}
