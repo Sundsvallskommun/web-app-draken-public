@@ -503,7 +503,7 @@ export interface Errand {
    * The current status of the errand
    * @maxLength 255
    */
-  status?: null;
+  status?: Status;
   /** The statuses connected to the errand */
   statuses?: Status[];
   /**
