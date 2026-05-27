@@ -77,7 +77,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.visit(`/arende/${mockPTErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').should('exist').contains('Godkänn alla').click();
-      cy.get('.sk-tabs-list button').eq(6).should('have.text', 'Beslut').click({ force: true });
+      cy.get('.sk-tabs-list button').contains('Beslut').should('have.text', 'Beslut').click({ force: true });
     };
 
     it('displays the correct fields', () => {
@@ -95,7 +95,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       const errandWithoutDecisions = { ...mockPTErrand_base, data: { ...mockPTErrand_base.data, decisions: [] } };
       cy.intercept('GET', '**/errand/errandNumber/*', errandWithoutDecisions).as('getErrand');
       visitErrand();
-      cy.get('.sk-tabs-list button').eq(6).should('have.text', 'Beslut').click({ force: true });
+      cy.get('.sk-tabs-list button').contains('Beslut').should('have.text', 'Beslut').click({ force: true });
 
       cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Avslag');
       cy.get('[data-cy="law-select"]').should('exist').click();
