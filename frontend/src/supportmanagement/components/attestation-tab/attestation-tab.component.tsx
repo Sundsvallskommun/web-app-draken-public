@@ -95,6 +95,7 @@ export const AttestationTab = () => {
       resetFilter(storedFilters);
       triggerFilter();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetFilter, triggerFilter, user.username]);
 
   useEffect(() => {

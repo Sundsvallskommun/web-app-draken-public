@@ -134,7 +134,7 @@ export class SupportMessageController {
     @Param('municipalityId') municipalityId: string,
     @Param('communicationID') communicationID: string,
     @Param('isViewed') isViewed: boolean,
-    @Res() response: Communication[],
+    @Res() _response: Communication[],
   ): Promise<{ data: Communication[]; message: string }> {
     const allowed = await validateSupportAction(municipalityId, id.toString(), req.user);
     if (!allowed) {
@@ -154,7 +154,7 @@ export class SupportMessageController {
     @Param('errandId') errandId: string,
     @Param('communicationID') communicationID: string,
     @Param('attachmentId') attachmentId: string,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<ResponseData> {
     if (!errandId) {
       throw Error('ErrandId not found');

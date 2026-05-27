@@ -71,7 +71,7 @@ export class CasedataStakeholderController {
     @Param('id') id: string,
     @Param('errandId') errandId: number,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<ResponseData> {
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/stakeholders/${id}`;
     const baseURL = apiURL(this.SERVICE);
@@ -114,7 +114,7 @@ export class CasedataStakeholderController {
       .then(res => {
         return res.data;
       })
-      .catch(e => undefined);
+      .catch(_e => undefined);
     return personalNumber ? { data: personalNumber, message: 'success' } : { data: '', message: '404' };
   }
 }
