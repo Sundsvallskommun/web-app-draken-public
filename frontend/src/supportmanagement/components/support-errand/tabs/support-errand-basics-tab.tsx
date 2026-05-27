@@ -1,6 +1,6 @@
 import { LinkedErrandsDisclosure } from '@common/components/linked-errands-disclosure/linked-errands-disclosure.component';
-import { useSupportStore } from '@stores/index';
 import { appConfig } from '@config/appconfig';
+import { useSupportStore } from '@stores/index';
 import { SupportContactsComponent } from '@supportmanagement/components/new-contacts/support-contacts.component';
 import { SupportErrandBasicsAboutDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-about-disclosure.component';
 import { SupportErrandBasicsRealEstateDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-realestate-disclosure.component';

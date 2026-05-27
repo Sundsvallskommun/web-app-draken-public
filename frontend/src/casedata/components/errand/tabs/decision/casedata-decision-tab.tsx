@@ -7,7 +7,7 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { Role } from '@casedata/interfaces/role';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
-import { getDraftAssets, updateAsset } from '@casedata/services/asset-service';
+import { deleteDraftAsset, getDraftAssets, updateAsset } from '@casedata/services/asset-service';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import {
   fetchDecisionTemplates,
@@ -51,10 +51,13 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import type { RJSFSchema } from '@rjsf/utils';
 import {
+  Alert,
+  Badge,
   Button,
   Combobox,
   cx,
   Dialog,
+  Disclosure,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -185,24 +188,28 @@ export const CasedataDecisionTab: FC<{
   }, [errand?.decisions]);
 
   const ownerPartyId = errand ? getOwnerStakeholder(errand)?.personId : undefined;
-  const assetType = 'FTErrandAssets';
+  const hasFtServices = !!(errand && (isFTErrand(errand) || isFTNationalErrand(errand)));
+  const assetType = errand && isFTNationalErrand(errand) ? 'ParatransitPermitNational' : 'ParatransitPermitLocal';
 
   useEffect(() => {
+    if (!hasFtServices) return;
     (async () => {
       const { schema } = await getLatestRjsfSchema(municipalityId, assetType);
       setServiceSchema(schema);
     })();
-  }, [municipalityId, assetType]);
+  }, [municipalityId, assetType, hasFtServices]);
 
   // Template fetching is driven by outcome selection — see useEffect below after watch()
 
-  const { services, refetch: refetchServices } = useErrandServices({
+  const { services: allServices, refetch: refetchServices } = useErrandServices({
     municipalityId,
-    partyId: ownerPartyId ?? '',
-    errandNumber: errand?.errandNumber ?? '',
+    partyId: hasFtServices ? ownerPartyId ?? '' : '',
+    errandId: hasFtServices ? String(errand?.id ?? '') : '',
     assetType: assetType,
     schema: serviceSchema,
   });
+
+  const services = useMemo(() => allServices.filter((s) => s.status === 'DRAFT'), [allServices]);
 
   useEffect(() => {
     if (props.onRefetchServices && refetchServices) {
@@ -386,15 +393,17 @@ export const CasedataDecisionTab: FC<{
         throw new Error('Kontaktsätt saknas');
       }
       await updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Beslutad);
-      if (ownerPartyId) {
-        const drafts = await getDraftAssets({
-          municipalityId,
-          partyId: ownerPartyId,
-          assetId: errand.errandNumber,
-          type: assetType,
-        });
-        const draftAssets = drafts?.data ?? [];
+      const drafts = await getDraftAssets({
+        municipalityId,
+        partyId: ownerPartyId,
+        errandId: String(errand.id),
+        type: assetType,
+      });
+      const draftAssets = drafts?.data ?? [];
+      if (data.outcome === 'APPROVAL') {
         await Promise.all(draftAssets.map((a) => updateAsset(municipalityId, a.id, { status: 'ACTIVE' })));
+      } else {
+        await Promise.all(draftAssets.map((a) => deleteDraftAsset(municipalityId, a.id)));
       }
       await triggerPhaseChange();
       toastMessage(
@@ -834,12 +843,38 @@ export const CasedataDecisionTab: FC<{
           )}
         </div>
 
-        {isPT() ? (
+        {isPT() && outcome === 'APPROVAL' && (
           <div className="pb-20">
-            <h4 className="text-h6 mb-sm border-b">Här listas de insatser som bifalls</h4>
-            <ServiceListComponent services={services} readOnly />
+            <Disclosure variant="alt" data-cy="decision-services-disclosure" initalOpen>
+              <Disclosure.Header>
+                <Disclosure.Title>
+                  <span className="flex items-center gap-12">
+                    <span>Insatser som bifalls</span>
+                    <Badge rounded color="vattjom" counter={services.length} />
+                  </span>
+                </Disclosure.Title>
+                <Disclosure.Button />
+              </Disclosure.Header>
+              <Disclosure.Content>
+                <ServiceListComponent services={services} readOnly />
+              </Disclosure.Content>
+            </Disclosure>
           </div>
-        ) : null}
+        )}
+        {isPT() && outcome && outcome !== 'APPROVAL' && (
+          <div className="pb-20">
+            <Alert type="info" data-cy="decision-services-info-alert">
+              <Alert.Icon />
+              <Alert.Content>
+                <Alert.Content.Title>Inga insatser kommer att fattas</Alert.Content.Title>
+                <Alert.Content.Description>
+                  Insatser tilldelas endast vid bifall. Med detta utfall registreras inga insatser på ärendet när
+                  beslutet skickas.
+                </Alert.Content.Description>
+              </Alert.Content>
+            </Alert>
+          </div>
+        )}
 
         <div className="flex justify-start gap-md">
           <Button

@@ -11,7 +11,7 @@ import { mockConversationMessages, mockConversations } from '../fixtures/mockCon
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockPTErrand_base } from '../fixtures/mockPtErrand';
-import { mockRelations } from '../fixtures/mockRelations';
+import { mockRelations, mockResolvedRelations } from '../fixtures/mockRelations';
 
 const mockFTErrand = {
   data: {
@@ -459,10 +459,13 @@ const setupCommonIntercepts = () => {
   cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
   cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
   cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+  cy.intercept('GET', '**/resolvedrelations/**/**', mockResolvedRelations).as('getResolvedRelations');
+  cy.intercept('GET', '**/relations/referredfrom/**', mockRelations).as('getReferredfromRelations');
   cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as('getConversations');
   cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
     'getConversationMessages'
   );
+  cy.intercept('POST', '**/render/pdf', {});
   cy.intercept('PATCH', '**/errands/**/extraparameters', {});
   cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
 };
@@ -470,6 +473,8 @@ const setupCommonIntercepts = () => {
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Errand page assets tab', () => {
     const visitInsatserTab = (draftAssetFixture = mockDraftAsset) => {
+      cy.intercept('GET', '**/errand-services**', draftAssetFixture).as('getErrandServices');
+      cy.intercept('GET', '**/party-services**', mockAssetEmpty).as('getPartyServices');
       cy.intercept('GET', '**/asset-drafts**', draftAssetFixture).as('getDraftAssets');
       cy.intercept('GET', '**/assets?**', mockAssetEmpty).as('getAssets');
       cy.visit(`/arende/${mockFTErrand.data.errandNumber}`);
@@ -502,13 +507,13 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
     it('lists existing draft services', () => {
       visitInsatserTab(mockDraftAsset);
-      cy.wait('@getDraftAssets');
+      cy.wait('@getErrandServices');
       cy.get('[data-cy="service-item"]').should('have.length', 1);
     });
 
     it('shows edit and remove buttons on draft services', () => {
       visitInsatserTab(mockDraftAsset);
-      cy.wait('@getDraftAssets');
+      cy.wait('@getErrandServices');
       cy.get('[data-cy="service-item"]')
         .first()
         .within(() => {
@@ -519,32 +524,30 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
     it('shows empty list when no draft services exist', () => {
       visitInsatserTab(mockDraftAssetEmpty);
-      cy.wait('@getDraftAssets');
+      cy.wait('@getErrandServices');
       cy.get('[data-cy="service-item"]').should('not.exist');
     });
 
     it('opens edit modal when clicking edit button', () => {
       visitInsatserTab(mockDraftAsset);
-      cy.wait('@getDraftAssets');
+      cy.wait('@getErrandServices');
       cy.get('[data-cy="edit-service-button"]').first().click();
-      cy.wait('@getDraftAssets');
       cy.get('.sk-modal-dialog-header-title').should('exist').and('contain.text', 'Redigera insats');
     });
 
     it('calls the draft asset endpoint when removing a service', () => {
-      cy.intercept('PATCH', '**/asset-drafts/*', { data: 'ok', message: 'ok' }).as('patchDraftAsset');
+      cy.intercept('DELETE', '**/asset-drafts/*', { data: 'ok', message: 'ok' }).as('deleteDraftAsset');
       visitInsatserTab(mockDraftAsset);
-      cy.wait('@getDraftAssets');
+      cy.wait('@getErrandServices');
       cy.get('[data-cy="remove-service-button"]').first().click();
-      cy.wait('@patchDraftAsset');
+      cy.wait('@deleteDraftAsset');
     });
 
     it('calls the draft asset endpoint when editing a service', () => {
       cy.intercept('PATCH', '**/asset-drafts/*', { data: 'ok', message: 'ok' }).as('patchDraftAsset');
       visitInsatserTab(mockDraftAsset);
-      cy.wait('@getDraftAssets');
+      cy.wait('@getErrandServices');
       cy.get('[data-cy="edit-service-button"]').first().click();
-      cy.wait('@getDraftAssets');
       cy.get('.sk-modal').should('exist');
       cy.get("[data-cy='schema-submit-button']").contains('Spara').should('exist').click();
       cy.wait('@patchDraftAsset');
@@ -553,10 +556,11 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     it('creates a new draft asset via the draft endpoint', () => {
       cy.intercept('POST', '**/asset-drafts**', { data: 'ok', message: 'ok' }).as('createDraftAsset');
       visitInsatserTab(mockDraftAssetEmpty);
-      cy.wait('@getDraftAssets');
+      cy.wait('@getErrandServices');
       cy.get('[data-cy="services-form"]').should('exist');
       cy.get('select#root_type').select('privat_fritid');
       cy.get('input#root_validFrom').type('2023-01-01');
+      cy.get('[data-cy="service-start-date"]').type('2023-01-01');
       cy.get("[data-cy='schema-submit-button']").contains('Lägg till').should('exist').click();
       cy.wait('@createDraftAsset');
     });
@@ -575,7 +579,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
       it('hides edit and remove buttons on services', () => {
         visitInsatserTab(mockDraftAsset);
-        cy.wait('@getDraftAssets');
+        cy.wait('@getErrandServices');
         cy.get('[data-cy="edit-service-button"]').should('not.exist');
         cy.get('[data-cy="remove-service-button"]').should('not.exist');
       });

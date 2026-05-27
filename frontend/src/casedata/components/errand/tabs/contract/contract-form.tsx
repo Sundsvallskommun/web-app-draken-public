@@ -963,6 +963,11 @@ export const ContractForm: FC<{
                           Kvartalsvis
                         </RadioButton>
                       </RadioButton.Group>
+                      {formState.errors.invoicing?.invoiceInterval && (
+                        <div className="my-sm text-error">
+                          <FormErrorMessage>{formState.errors.invoicing?.invoiceInterval?.message}</FormErrorMessage>
+                        </div>
+                      )}
                     </FormControl>
                   </div>
                   <div className="flex gap-18 justify-start">
@@ -1092,17 +1097,19 @@ export const ContractForm: FC<{
         </Disclosure.Content>
       </Disclosure>
 
-      <ContractPartyModal
-        isOpen={isPartyModalOpen}
-        onClose={() => setIsPartyModalOpen(false)}
-        onSave={handleModalSave}
-        mode={partyModalMode}
-        stakeholderOptions={errandStakeholders ?? []}
-        existingParty={editingParty}
-        contractType={getValues().type}
-        existingParties={contractParties}
-        isDraft={isDraft}
-      />
+      {isPartyModalOpen && (
+        <ContractPartyModal
+          isOpen={isPartyModalOpen}
+          onClose={() => setIsPartyModalOpen(false)}
+          onSave={handleModalSave}
+          mode={partyModalMode}
+          stakeholderOptions={errandStakeholders ?? []}
+          existingParty={editingParty}
+          contractType={getValues().type}
+          existingParties={contractParties}
+          isDraft={isDraft}
+        />
+      )}
     </>
   );
 };

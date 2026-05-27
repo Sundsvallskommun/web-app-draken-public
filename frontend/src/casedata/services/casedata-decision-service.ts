@@ -1,11 +1,11 @@
 import { UtredningFormModel } from '@casedata/components/errand/sidebar/sidebar-utredning.component';
 import { DecisionFormModel } from '@casedata/components/errand/tabs/decision/casedata-decision-tab';
-import { Service } from '@casedata/components/errand/tabs/services/casedata-service-mapper';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
 import { Decision, DecisionOutcome, DecisionType } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
+import { Service } from '@casedata/services/casedata-service-assets-service';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { Render, Template, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
@@ -273,13 +273,22 @@ export const fetchInvestigationSkeleton: (errand: IErrand) => Promise<string> = 
   }
 };
 
+const buildValidityText = (validFrom: string, validToRaw: string): string => {
+  if (!validFrom) return '';
+  if (validToRaw) return `Insatsen gäller ${validFrom} - ${validToRaw}`;
+  return `Insatsen gäller från och med ${validFrom}`;
+};
+
 export const mapServicesToTemplateParams = (services: Service[]): Record<string, string>[] => {
   return services.map((service) => {
+    const validFrom = service.issued ? dayjs(service.issued).format('YYYY-MM-DD') : '';
+    const validToRaw = service.validTo ? dayjs(service.validTo).format('YYYY-MM-DD') : '';
+    const validity = buildValidityText(validFrom, validToRaw);
     const item: Record<string, string> = {
-      restyp: service.restyp + (service.isWinterService ? ' (Vinterfärdtjänst)' : ''),
-      validFrom: service.startDate ? dayjs(service.startDate).format('YYYY-MM-DD') : '',
-      validTo: service.endDate ? dayjs(service.endDate).format('YYYY-MM-DD') : '',
-      validityType: service.validityType || '',
+      restyp: service.restyp.join(', ') + (service.isWinterService ? ' (Vinterfärdtjänst)' : ''),
+      validFrom,
+      validTo: validToRaw || 'tills vidare',
+      validity,
     };
     if (service.transportMode?.length > 0) {
       item.transportMode = service.transportMode.join(', ');

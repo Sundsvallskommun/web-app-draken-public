@@ -6,14 +6,14 @@ import { Notification as CaseDataNotification } from '@common/data-contracts/cas
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { sortBy } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
+import { Button, Checkbox, cx, Divider, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
-import { Button, Checkbox, Divider, cx, useSnackbar } from '@sk-web-gui/react';
 import {
   acknowledgeSupportNotification,
   getSupportNotifications,
 } from '@supportmanagement/services/support-notification-service';
 import { Bell, X } from 'lucide-react';
-import { FC, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { NotificationItem } from './notification-item';
 import { getFilteredNotifications } from './notification-utils';

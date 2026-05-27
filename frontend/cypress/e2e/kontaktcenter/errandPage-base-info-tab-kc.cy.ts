@@ -422,7 +422,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="search-enterprise-form-PRIMARY"]').click();
 
       // Type in search field without searching
-      cy.get('[data-cy="contact-orgNumber-owner"]').type('556677-8899');
+      cy.get('[data-cy="contact-orgNumber-owner"]').type(Cypress.env('mockOrganizationNumber'));
 
       // Click add manually button
       cy.get('[data-cy="add-manually-button-owner"]').click();
@@ -456,7 +456,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="search-person-form-PRIMARY"]').click();
 
       // Type in search field without searching
-      cy.get('[data-cy="contact-personNumber-owner"]').type('199001011234');
+      cy.get('[data-cy="contact-personNumber-owner"]').type(Cypress.env('mockPersonNumber'));
 
       // Click add manually button
       cy.get('[data-cy="add-manually-button-owner"]').click();

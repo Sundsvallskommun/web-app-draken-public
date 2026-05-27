@@ -1,6 +1,6 @@
-import { create } from 'zustand';
 import { User } from '@common/interfaces/user';
 import { Admin, emptyUser } from '@common/services/user-service';
+import { create } from 'zustand';
 
 interface UserState {
   user: User;

@@ -22,6 +22,7 @@ import {
   defaultLagenhetsarrende,
   errandStakeholderToContractStakeholder,
   getErrandContract,
+  hasRecurringFee,
   isLeaseAgreement,
   leaseTypes,
   saveContract,
@@ -101,22 +102,20 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           otherwise: (schema) => schema,
         }),
       }),
-      invoicing: yup.object({
-        invoiceInterval: yup.mixed<string>().when('type', {
-          is: (type: string) => type === ContractType.LEASE_AGREEMENT,
-          then: (schema) =>
-            schema.oneOf(Object.keys(IntervalType), 'Välj intervall').required('Intervall måste väljas'),
-          otherwise: (schema) => schema,
-        }),
-
-        invoicedIn: yup.mixed<string>().when('type', {
-          is: (type: string) => type === ContractType.LEASE_AGREEMENT,
-          then: (schema) =>
-            schema
+      invoicing: yup.object().when(['type', 'leaseType', 'status'], {
+        is: (type: ContractType, leaseType: LeaseType, status: Status) =>
+          hasRecurringFee(type, leaseType) && status === Status.ACTIVE,
+        then: (schema) =>
+          schema.shape({
+            invoiceInterval: yup
+              .mixed<string>()
+              .oneOf(Object.keys(IntervalType), 'Välj intervall')
+              .required('Intervall måste väljas'),
+            invoicedIn: yup
+              .mixed<string>()
               .oneOf(Object.keys(InvoicedIn), 'Välj förskott eller efterskott')
               .required('Förskott eller efterskott måste väljas'),
-          otherwise: (schema) => schema,
-        }),
+          }),
       }),
       extraParameters: yup.array().when(['generateInvoice', 'status'], ([generateInvoice, status], schema) => {
         if (status !== Status.ACTIVE) return schema;
@@ -396,7 +395,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                       disabled={existingContract?.status === Status.ACTIVE}
                     >
                       {leaseTypes
-                        .filter((lt) => existingContract?.contractId || lt.key !== LeaseType.OTHER_FEE)
+                        .filter((lt) => existingContract?.status !== Status.ACTIVE && lt.key !== LeaseType.OTHER_FEE)
                         .map((lt) => (
                           <option key={lt.key} value={lt.key}>
                             {lt.label}

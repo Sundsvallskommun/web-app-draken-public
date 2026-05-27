@@ -29,6 +29,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
       cy.intercept('GET', '**/supportnotifications/2281', mockNotifications).as('getSupportNotifications');
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse).as('getSupportAdmins');
+      cy.intercept('GET', '**/countsupporterrands/2281?*', {count: 1}).as('getSupportCount');
       cy.visit('/oversikt/');
       cy.wait('@getErrands');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();

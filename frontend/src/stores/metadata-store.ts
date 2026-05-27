@@ -1,6 +1,6 @@
+import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 
 const STALE_TIME_MS = 30 * 60 * 1000;
 
@@ -22,8 +22,7 @@ export const useMetadataStore = create(
     (set, get) => ({
       supportMetadata: undefined,
       lastFetched: null,
-      setSupportMetadata: (metadata) =>
-        set({ supportMetadata: metadata, lastFetched: Date.now() }),
+      setSupportMetadata: (metadata) => set({ supportMetadata: metadata, lastFetched: Date.now() }),
       isStale: () => {
         const { lastFetched } = get();
         if (!lastFetched) return true;
