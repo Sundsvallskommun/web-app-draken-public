@@ -717,8 +717,12 @@ export const CasedataDecisionTab: FC<{
               data-cy="decision-outcome-select"
               size="sm"
               onChange={(e) => {
-                setValue('outcome', e.currentTarget.value, { shouldDirty: true });
-                trigger();
+                setValue('outcome', e.currentTarget.value, {
+                  shouldDirty: true,
+                  shouldTouch: true,
+                  shouldValidate: true,
+                });
+                void trigger();
               }}
               placeholder="Välj beslut"
               disabled={isErrandLocked(errand) || isSent()}
@@ -853,9 +857,11 @@ export const CasedataDecisionTab: FC<{
             onChange={(e) => {
               setValue('description', e.target.value.markup ?? '', {
                 shouldDirty: true,
+                shouldValidate: true,
               });
-              setValue('descriptionPlaintext', e.target.value.plainText ?? '');
-              trigger('description');
+              setValue('descriptionPlaintext', e.target.value.plainText ?? '', {
+                shouldValidate: true,
+              });
             }}
             value={{ markup: description, plainText: descriptionPlaintext }}
           />
