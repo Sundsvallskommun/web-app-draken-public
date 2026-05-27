@@ -38,7 +38,7 @@ export const DetailPanelWrapper: FC<DetailPanelWrapperProps> = ({
         data-cy={dataCy ? `${dataCy}-panel` : undefined}
         className={cx(
           `border-1 border-t-0 absolute right-0 bottom-0 top-0 bg-background-content transition-all ease-in-out duration-150 overflow-auto z-[20] shadow-100`,
-          show ? 'w-full md:min-w-[70rem] md:w-[70vw] lg:w-[38vw]' : 'w-0 px-0'
+          show ? 'w-full md:w-[850px]' : 'w-0 px-0'
         )}
       >
         <Header className="h-[64px] flex justify-between" wrapperClasses="py-4 px-40">
