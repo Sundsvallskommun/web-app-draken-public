@@ -1,7 +1,7 @@
 'use client';
 
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
-import { DecisionOutcome } from '@casedata/interfaces/decision';
+import { DecisionOutcome, DecisionOutcomes } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
@@ -135,7 +135,7 @@ export const CasedataInvestigationTab: FC<{
       }
 
       if (isFTErrand(props.errand)) {
-        data.outcome = 'APPROVAL';
+        data.outcome = DecisionOutcomes.Approval;
         await saveDecision(municipalityId, props.errand, data, 'PROPOSED');
       } else {
         const rendered = await renderPdf(errand!, data, 'investigation');
