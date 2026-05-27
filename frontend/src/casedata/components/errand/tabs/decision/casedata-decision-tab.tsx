@@ -3,6 +3,7 @@
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
 import { ContractData } from '@casedata/interfaces/contract-data';
+import { DecisionOutcomes } from '@casedata/interfaces/decision';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { Role } from '@casedata/interfaces/role';
@@ -114,7 +115,7 @@ let formSchema = yup
     validFrom: isPT()
       ? yup.string().when(['outcome', 'errandCaseType'], (values, schema) => {
           const [outcome, errandCaseType] = values as [string, string];
-          return outcome === 'APPROVAL' && isPTCaseType(errandCaseType)
+          return outcome === DecisionOutcomes.Approval && isPTCaseType(errandCaseType)
             ? schema.required('Giltigt datum måste anges')
             : schema.notRequired();
         })
@@ -125,7 +126,7 @@ let formSchema = yup
           .string()
           .when(['outcome', 'errandCaseType'], (values, schema) => {
             const [outcome, errandCaseType] = values as [string, string];
-            return outcome === 'APPROVAL' && isPTCaseType(errandCaseType)
+            return outcome === DecisionOutcomes.Approval && isPTCaseType(errandCaseType)
               ? schema.required('Giltigt datum måste anges')
               : schema.notRequired();
           })
@@ -133,7 +134,7 @@ let formSchema = yup
             name: 'validTo-after-validFrom',
             message: 'Slutdatum måste vara efter startdatum',
             test: (value, context) => {
-              if (context.parent.outcome !== 'APPROVAL') return true;
+              if (context.parent.outcome !== DecisionOutcomes.Approval) return true;
               if (!isPTCaseType(context.parent.errandCaseType)) return true;
               if (!value || !context.parent.validFrom) return true;
               return Date.parse(context.parent.validFrom) < Date.parse(value);
@@ -400,7 +401,7 @@ export const CasedataDecisionTab: FC<{
         type: assetType,
       });
       const draftAssets = drafts?.data ?? [];
-      if (data.outcome === 'APPROVAL') {
+      if (data.outcome === DecisionOutcomes.Approval) {
         await Promise.all(draftAssets.map((a) => updateAsset(municipalityId, a.id, { status: 'ACTIVE' })));
       } else {
         await Promise.all(draftAssets.map((a) => deleteDraftAsset(municipalityId, a.id)));
@@ -525,6 +526,7 @@ export const CasedataDecisionTab: FC<{
       setValue('law', [], { shouldDirty: false });
     }
 
+    void trigger();
     props.setUnsaved(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
@@ -598,7 +600,7 @@ export const CasedataDecisionTab: FC<{
       decisionDate: dayjs().format('YYYY-MM-DD'),
     };
 
-    if (outcome === 'APPROVAL') {
+    if (outcome === DecisionOutcomes.Approval) {
       parameters.permitFirstname = owner?.firstName || '';
       parameters.permitLastname = owner?.lastName || '';
       parameters.permitEndDate = formData.validTo ? dayjs(formData.validTo).format('YYYY-MM-DD') : '';
@@ -660,9 +662,30 @@ export const CasedataDecisionTab: FC<{
     );
   };
 
+  const existingDecisionPdf = useMemo(() => {
+    if (!errand) return undefined;
+    return getFinalDecisonWithHighestId(errand.decisions)?.attachments?.[0]?.file;
+  }, [errand]);
+
   if (!errand) {
     return null;
   }
+
+  const isApproval = outcome === DecisionOutcomes.Approval;
+  const showApprovedServices = isPT() && isApproval;
+  const showNoServicesInfo = isPT() && !!outcome && !isApproval;
+
+  const decisionIsReadOnly = isErrandLocked(errand) || isSent();
+  const previewDisabled = decisionIsReadOnly ? !existingDecisionPdf : !formState.isValid || !allowed;
+  const saveDisabled = decisionIsReadOnly || !formState.isValid || !allowed;
+  const sendDisabled =
+    isSaveAndSendLoading ||
+    decisionIsReadOnly ||
+    !formState.isValid ||
+    !validateErrandForDecision(errand) ||
+    !validateOwnerForSendingDecision(errand) ||
+    !validateAttachmentsForDecision(errand).valid ||
+    !allowed;
 
   return (
     <div className="w-full py-24 px-32 overflow-hidden">
@@ -673,13 +696,13 @@ export const CasedataDecisionTab: FC<{
           color="vattjom"
           inverted={formState.isValid && allowed}
           size="sm"
-          disabled={!formState.isValid || !allowed}
+          disabled={previewDisabled}
           onClick={getPdfPreview}
           loading={isPreviewLoading}
           loadingText="Hämtar PDF"
           rightIcon={<Download />}
         >
-          {isErrandLocked(errand) || isSent() ? 'Hämta PDF' : 'Förhandsgranska PDF'}
+          {decisionIsReadOnly ? 'Hämta PDF' : 'Förhandsgranska PDF'}
         </Button>
       </div>
       <div className="mt-24">
@@ -704,16 +727,16 @@ export const CasedataDecisionTab: FC<{
               <Select.Option data-cy="outcome-input-item" value={''}>
                 Välj utfall
               </Select.Option>
-              <Select.Option data-cy="outcome-input-item" value={'APPROVAL'}>
+              <Select.Option data-cy="outcome-input-item" value={DecisionOutcomes.Approval}>
                 Bifall
               </Select.Option>
-              <Select.Option data-cy="outcome-input-item" value={'REJECTION'}>
+              <Select.Option data-cy="outcome-input-item" value={DecisionOutcomes.Rejection}>
                 Avslag
               </Select.Option>
-              <Select.Option data-cy="outcome-input-item" value={'CANCELLATION'}>
+              <Select.Option data-cy="outcome-input-item" value={DecisionOutcomes.Cancellation}>
                 Ärendet avskrivs
               </Select.Option>
-              <Select.Option data-cy="outcome-input-item" value={'DISMISSAL'}>
+              <Select.Option data-cy="outcome-input-item" value={DecisionOutcomes.Dismissal}>
                 Ärendet avvisas
               </Select.Option>
             </Select>
@@ -788,7 +811,7 @@ export const CasedataDecisionTab: FC<{
                     type="date"
                     {...register('validFrom')}
                     size="sm"
-                    disabled={isErrandLocked(errand) || isSent() || outcome !== 'APPROVAL'}
+                    disabled={isErrandLocked(errand) || isSent() || outcome !== DecisionOutcomes.Approval}
                     placeholder="Välj datum"
                     data-cy="validFrom-input"
                   />
@@ -803,7 +826,7 @@ export const CasedataDecisionTab: FC<{
                     type="date"
                     {...register('validTo')}
                     size="sm"
-                    disabled={isErrandLocked(errand) || isSent() || outcome !== 'APPROVAL'}
+                    disabled={isErrandLocked(errand) || isSent() || outcome !== DecisionOutcomes.Approval}
                     placeholder="Välj datum"
                     data-cy="validTo-input"
                   />
@@ -843,7 +866,7 @@ export const CasedataDecisionTab: FC<{
           )}
         </div>
 
-        {isPT() && outcome === 'APPROVAL' && (
+        {showApprovedServices && (
           <div className="pb-20">
             <Disclosure variant="alt" data-cy="decision-services-disclosure" initalOpen>
               <Disclosure.Header>
@@ -861,7 +884,7 @@ export const CasedataDecisionTab: FC<{
             </Disclosure>
           </div>
         )}
-        {isPT() && outcome && outcome !== 'APPROVAL' && (
+        {showNoServicesInfo && (
           <div className="pb-20">
             <Alert type="info" data-cy="decision-services-info-alert">
               <Alert.Icon />
@@ -885,7 +908,7 @@ export const CasedataDecisionTab: FC<{
             onClick={handleSubmit(onSubmit, onError)}
             loading={isLoading}
             loadingText="Sparar"
-            disabled={isErrandLocked(errand) || !allowed || isSent()}
+            disabled={saveDisabled}
           >
             Spara beslutstext
           </Button>
@@ -894,30 +917,20 @@ export const CasedataDecisionTab: FC<{
             color="vattjom"
             inverted={formState.isValid && allowed}
             size="md"
-            disabled={!formState.isValid || !allowed}
+            disabled={previewDisabled}
             onClick={getPdfPreview}
             loading={isPreviewLoading}
             loadingText="Hämtar PDF"
             rightIcon={<Download />}
           >
-            {isErrandLocked(errand) || isSent() ? 'Hämta PDF' : 'Förhandsgranska PDF'}
+            {decisionIsReadOnly ? 'Hämta PDF' : 'Förhandsgranska PDF'}
           </Button>
           <Button
             data-cy="save-and-send-decision-button"
             variant="primary"
             color="vattjom"
             size="md"
-            disabled={
-              isSaveAndSendLoading ||
-              !formState.isValid ||
-              [ErrandStatus.Beslutad, ErrandStatus.BeslutVerkstallt, ErrandStatus.ArendeAvslutat].includes(
-                errand?.status?.statusType as ErrandStatus
-              ) ||
-              !validateErrandForDecision(errand) ||
-              !validateOwnerForSendingDecision(errand) ||
-              !validateAttachmentsForDecision(errand).valid ||
-              !allowed
-            }
+            disabled={sendDisabled}
             onClick={() => {
               if (existingContract && existingContract.status === 'DRAFT') {
                 setControlContractIsOpen(true);

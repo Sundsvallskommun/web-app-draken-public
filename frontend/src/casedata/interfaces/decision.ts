@@ -34,7 +34,15 @@ export interface Decision {
 
 export type DecisionType = 'PROPOSED' | 'RECOMMENDED' | 'FINAL' | 'UNKNOWN_DECISION_TYPE';
 
-export type DecisionOutcome = 'APPROVAL' | 'REJECTION' | 'CANCELLATION' | 'DISMISSAL' | 'UNKNOWN_DECISION_OUTCOME';
+export enum DecisionOutcomes {
+  Approval = 'APPROVAL',
+  Rejection = 'REJECTION',
+  Cancellation = 'CANCELLATION',
+  Dismissal = 'DISMISSAL',
+  Unknown = 'UNKNOWN_DECISION_OUTCOME',
+}
+
+export type DecisionOutcome = `${DecisionOutcomes}`;
 
 export enum DecisionOutcomeLabel {
   'APPROVAL' = 'Bifall',
