@@ -1,13 +1,13 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { Button, cx, Header } from '@sk-web-gui/react';
 import { X } from 'lucide-react';
-import { FC, ReactNode, useEffect } from 'react';
+import { FC, JSX, ReactNode, useEffect } from 'react';
 interface DetailPanelWrapperProps {
   show: boolean;
-  label: string;
+  label: JSX.Element | string;
   closeAriaLabel: string;
   closeHandler: () => void;
-  icon: 'glasses' | 'file-text';
+  icon: 'glasses' | 'file-text' | '';
   children: ReactNode;
   dataCy?: string;
 }

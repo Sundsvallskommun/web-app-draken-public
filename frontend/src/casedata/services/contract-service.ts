@@ -771,6 +771,7 @@ export interface ContractInvoice {
 
 export interface ContractInvoicesResponse {
   invoices: ContractInvoice[];
+  records: CBillingRecord[];
   totalCount: number;
   totalPages: number;
 }
@@ -797,7 +798,7 @@ export const fetchContractInvoices: (
 ) => Promise<ContractInvoicesResponse> = async (municipalityId, contractId, page = 0, size = 10) => {
   if (!municipalityId || !contractId) {
     console.error('Missing municipalityId or contractId for fetching contract invoices');
-    return { invoices: [], totalCount: 0, totalPages: 0 };
+    return { invoices: [], records: [], totalCount: 0, totalPages: 0 };
   }
 
   const url = `billing/${municipalityId}/contracts/${contractId}/invoices?page=${page}&size=${size}`;
@@ -823,12 +824,13 @@ export const fetchContractInvoices: (
 
       return {
         invoices,
+        records: content,
         totalCount: res.data?.totalElements || 0,
         totalPages: res.data?.totalPages || 0,
       };
     })
     .catch((e) => {
       console.error('Something went wrong when fetching contract invoices:', e);
-      return { invoices: [] as any[], totalCount: 0, totalPages: 0 };
+      return { invoices: [], records: [], totalCount: 0, totalPages: 0 };
     });
 };
