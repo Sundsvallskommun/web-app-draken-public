@@ -58,7 +58,8 @@ export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({
   }, [loadInvoices]);
 
   useEffect(() => {
-    getNextScheduledBillingDate(contractId || '')
+    if (!contractId) return;
+    getNextScheduledBillingDate(contractId)
       .then((date) => {
         setNextBillingDate(date || '-');
       })
@@ -84,98 +85,96 @@ export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({
     );
   }
 
-  if (invoices.length === 0) {
-    return (
-      <div className="text-dark-disabled" data-cy="invoices-empty">
-        Inga fakturor finns kopplade till detta avtal.
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-full" data-cy="contract-invoices-table">
       <div>
         <FormLabel>Nästa faktureringsdatum:</FormLabel> <span data-cy="next-billing-date">{nextBillingDate}</span>
       </div>
-      <Table dense scrollable>
-        <Table.Header>
-          <Table.HeaderColumn>Status</Table.HeaderColumn>
-          <Table.HeaderColumn>Fakturadatum</Table.HeaderColumn>
-          <Table.HeaderColumn>Förfallodatum</Table.HeaderColumn>
-          <Table.HeaderColumn>Belopp</Table.HeaderColumn>
-          {onSelectInvoice && (
-            <Table.HeaderColumn>
-              <span className="sr-only">Åtgärd</span>
-            </Table.HeaderColumn>
-          )}
-        </Table.Header>
-        <Table.Body>
-          {invoices.map((invoice, index) => {
-            const record = records.find((r) => r.id === invoice.id);
+      {invoices.length === 0 ? (
+        <div className="text-dark-disabled mt-8" data-cy="invoices-empty">
+          Inga fakturor finns kopplade till detta avtal.
+        </div>
+      ) : (
+        <Table dense scrollable>
+          <Table.Header>
+            <Table.HeaderColumn>Status</Table.HeaderColumn>
+            <Table.HeaderColumn>Fakturadatum</Table.HeaderColumn>
+            <Table.HeaderColumn>Förfallodatum</Table.HeaderColumn>
+            <Table.HeaderColumn>Belopp</Table.HeaderColumn>
+            {onSelectInvoice && (
+              <Table.HeaderColumn>
+                <span className="sr-only">Åtgärd</span>
+              </Table.HeaderColumn>
+            )}
+          </Table.Header>
+          <Table.Body>
+            {invoices.map((invoice, index) => {
+              const record = records.find((r) => r.id === invoice.id);
 
-            return (
-              <Table.Row key={`invoice-row-${index}`} data-cy={`invoice-row-${index}`}>
-                <Table.Column>
-                  <Label
-                    rounded
-                    inverted
-                    color={invoiceStatusColors[invoice.status]}
-                    data-cy={`invoice-status-${index}`}
-                  >
-                    {invoiceStatusLabels[invoice.status]}
-                  </Label>
-                </Table.Column>
-                <Table.Column data-cy={`invoice-date-${index}`}>
-                  {invoice.invoiceDate ? dayjs(invoice.invoiceDate).format('YYYY-MM-DD') : '-'}
-                </Table.Column>
-                <Table.Column data-cy={`invoice-due-date-${index}`}>
-                  {invoice.dueDate ? dayjs(invoice.dueDate).format('YYYY-MM-DD') : '-'}
-                </Table.Column>
-                <Table.Column data-cy={`invoice-amount-${index}`}>
-                  {invoice.amount !== undefined ? formatCurrency(invoice.amount) : '-'}
-                </Table.Column>
-                {onSelectInvoice && record && (
+              return (
+                <Table.Row key={`invoice-row-${index}`} data-cy={`invoice-row-${index}`}>
                   <Table.Column>
-                    <Button
-                      size="sm"
-                      variant="tertiary"
-                      onClick={() => onSelectInvoice(record)}
-                      data-cy={`invoice-detail-button-${index}`}
-                      rightIcon={<ArrowRight />}
+                    <Label
+                      rounded
+                      inverted
+                      color={invoiceStatusColors[invoice.status]}
+                      data-cy={`invoice-status-${index}`}
                     >
-                      Visa
-                    </Button>
+                      {invoiceStatusLabels[invoice.status]}
+                    </Label>
                   </Table.Column>
-                )}
-              </Table.Row>
-            );
-          })}
-        </Table.Body>
-        {totalPages > 1 && (
-          <Table.Footer>
-            <div className="sk-table-paginationwrapper">
-              <Pagination
-                showFirst
-                showLast
-                pagesBefore={1}
-                pagesAfter={1}
-                showConstantPages={true}
-                fitContainer
-                pages={totalPages}
-                activePage={page + 1}
-                changePage={(newPage) => {
-                  setPage(newPage - 1);
-                }}
-              />
-            </div>
-            <div className="sk-table-bottom-section">
-              <span className="text-md text-dark-secondary">
-                Visar {invoices.length} av {totalCount} fakturor
-              </span>
-            </div>
-          </Table.Footer>
-        )}
-      </Table>
+                  <Table.Column data-cy={`invoice-date-${index}`}>
+                    {invoice.invoiceDate ? dayjs(invoice.invoiceDate).format('YYYY-MM-DD') : '-'}
+                  </Table.Column>
+                  <Table.Column data-cy={`invoice-due-date-${index}`}>
+                    {invoice.dueDate ? dayjs(invoice.dueDate).format('YYYY-MM-DD') : '-'}
+                  </Table.Column>
+                  <Table.Column data-cy={`invoice-amount-${index}`}>
+                    {invoice.amount !== undefined ? formatCurrency(invoice.amount) : '-'}
+                  </Table.Column>
+                  {onSelectInvoice && record && (
+                    <Table.Column>
+                      <Button
+                        size="sm"
+                        variant="tertiary"
+                        onClick={() => onSelectInvoice(record)}
+                        data-cy={`invoice-detail-button-${index}`}
+                        rightIcon={<ArrowRight />}
+                      >
+                        Visa
+                      </Button>
+                    </Table.Column>
+                  )}
+                </Table.Row>
+              );
+            })}
+          </Table.Body>
+          {totalPages > 1 && (
+            <Table.Footer>
+              <div className="sk-table-paginationwrapper">
+                <Pagination
+                  showFirst
+                  showLast
+                  pagesBefore={1}
+                  pagesAfter={1}
+                  showConstantPages={true}
+                  fitContainer
+                  pages={totalPages}
+                  activePage={page + 1}
+                  changePage={(newPage) => {
+                    setPage(newPage - 1);
+                  }}
+                />
+              </div>
+              <div className="sk-table-bottom-section">
+                <span className="text-md text-dark-secondary">
+                  Visar {invoices.length} av {totalCount} fakturor
+                </span>
+              </div>
+            </Table.Footer>
+          )}
+        </Table>
+      )}
     </div>
   );
 };

@@ -225,10 +225,10 @@ export interface InvoiceFileStatus {
 }
 
 export interface PageBillingRecord {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: BillingRecord[];
@@ -257,8 +257,8 @@ export interface PageableObject {
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export enum GetFileStatusesForMonthParamsMonthEnum {

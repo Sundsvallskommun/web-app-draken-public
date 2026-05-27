@@ -245,30 +245,19 @@ export const ContractDetailForm: FC<{
     await createContractErrand(MEXCaseType.MEX_TERMINATION_OF_LEASE, `Säg upp avtal ${selectedContract.contractId}`);
   };
 
-  const prettyStatus = useMemo(() => {
-    switch (selectedContract.status) {
-      case Status.DRAFT:
-        return 'Utkast';
-      case Status.ACTIVE:
-        return 'Aktivt';
-      case Status.TERMINATED:
-        return 'Avslutad';
-      default:
-        return 'Okänd status';
-    }
-  }, [selectedContract.status]);
-
   return (
     <>
       <div className="px-40 my-lg gap-24">
         <div className="flex flex-col gap-md mb-32">
           <div className="flex justify-between items-center">
-            <h2 className="text-h4-sm m-0 flex justify-start gap-12 items-center">
-              {contractTypeLabel}
-              <span>{selectedContract.contractId ? ` (${selectedContract.contractId})` : null}</span>
-              <CasedataStatusLabelComponent status={selectedContract.status} />
-            </h2>
-            <div className="flex gap-md">
+            <div className="flex flex-col pr-12">
+              <div className="flex flex-row items-center gap-8">
+                <h2 className="text-h2-sm max-w-[17rem]">{contractTypeLabel}</h2>
+                <CasedataStatusLabelComponent status={selectedContract.status} />
+              </div>
+              <span>{selectedContract.contractId ? `${selectedContract.contractId}` : null}</span>
+            </div>
+            <div className="flex flex-row sm:flex-col md:flex-col lg:flex-row gap-md">
               <Button
                 data-cy="contract-detail-edit-button"
                 color="vattjom"
@@ -295,12 +284,6 @@ export const ContractDetailForm: FC<{
               </Button>
             </div>
           </div>
-
-          <p className="text-small text-dark-secondary m-0">
-            Här fyller du i avtalsuppgifter för ärendet. Kom ihåg att granska uppgifterna noga så att allt är i sin
-            ordning inför signeringen. Notera att vissa uppgifter hämtas automatiskt från de uppgifter som registrerats
-            under ärendeuppgifter.
-          </p>
 
           <div className="flex gap-lg">
             <FormControl id="contractType" className="flex-1">

@@ -360,11 +360,13 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           <div className="flex">
             <div className="w-3/4" data-cy="contract-wrapper">
               <div>
-                <h2 className="text-h2-md flex items-center gap-12 justify-start">
-                  {contractTypes.find((ct) => ct.key === contractType)?.label}{' '}
-                  <span>{contractForm.getValues().contractId ? `(${contractForm.getValues().contractId})` : null}</span>
-                  <CasedataStatusLabelComponent status={contractForm.getValues().status} />
-                </h2>
+                <div className="flex flex-col">
+                  <div className="flex flex-row items-center gap-12">
+                    <h2 className="text-h2-sm">{contractTypes.find((ct) => ct.key === contractType)?.label}</h2>
+                    <CasedataStatusLabelComponent status={contractForm.getValues().status} />
+                  </div>
+                  <span>{contractForm.getValues().contractId ? `${contractForm.getValues().contractId}` : null}</span>
+                </div>
                 <p className="py-16">
                   Här fyller du i avtalsuppgifter för ärendet. Kom ihåg att granska uppgifterna noga så att allt är i
                   sin ordning inför signeringen. Notera att vissa uppgifter hämtas automatiskt från de uppgifter som

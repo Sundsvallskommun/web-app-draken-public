@@ -1,5 +1,5 @@
-import { Contract, ContractType, PageContract } from '@casedata/interfaces/contracts';
-import { ContractFilterParams, contractTypes, fetchContracts } from '@casedata/services/contract-service';
+import { Contract, PageContract } from '@casedata/interfaces/contracts';
+import { ContractFilterParams, fetchContracts } from '@casedata/services/contract-service';
 import { DetailPanelWrapper } from '@common/components/detail-panel-wrapper/detail-panel-wrapper.component';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { Button, Link, useSnackbar } from '@sk-web-gui/react';
@@ -13,10 +13,6 @@ import { ContractInvoiceDetail } from './contract-invoice-detail.component';
 import { ContractsFilterTags } from './contracts-filter-tags.component';
 import { ContractFilter, ContractFilterValues, ContractsFilteringComponent } from './contracts-filtering.component';
 import { ContractsTable, ContractTableForm } from './contracts-table.component';
-
-const getContractTypeLabel = (type: ContractType): string => {
-  return contractTypes.find((t) => t.key === type)?.label || 'Avtal';
-};
 
 export const ContractOverview: FC = () => {
   const filterForm = useForm<ContractFilter>({ defaultValues: ContractFilterValues });
@@ -208,7 +204,7 @@ export const ContractOverview: FC = () => {
       {selectedContract && (
         <DetailPanelWrapper
           show={showSelectedContract}
-          label={selectedInvoice ? selectedinvoiceHeader() : getContractTypeLabel(selectedContract.type)}
+          label={selectedInvoice ? selectedinvoiceHeader() : 'Avtal'}
           closeAriaLabel={selectedInvoice ? 'Stäng faktura' : 'Stäng avtal'}
           closeHandler={closeHandler}
           icon={selectedInvoice ? '' : 'file-text'}

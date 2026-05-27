@@ -19,6 +19,7 @@ import {
   isLeaseAgreement,
   prettyContractRoles,
 } from '@casedata/services/contract-service';
+import { getKpiIndex } from '@common/services/billing-data-collector-service';
 import {
   Button,
   Checkbox,
@@ -137,6 +138,23 @@ export const ContractForm: FC<{
     () => (partiesWithSSN.length > 0 ? partiesWithSSN : contractParties),
     [partiesWithSSN, contractParties]
   );
+
+  const [kpiData, setKpiData] = useState<{ indexYear: number; indexNumber: number } | null>(null);
+
+  useEffect(() => {
+    getKpiIndex()
+      .then((data) => setKpiData(data))
+      .catch((e) => console.error('Failed to fetch KPI index:', e));
+  }, []);
+
+  const indexAdjusted = watch('indexAdjusted');
+
+  useEffect(() => {
+    if (indexAdjusted !== 'true' || !kpiData) return;
+    setValue('fees.indexYear', kpiData.indexYear);
+    setValue('fees.indexNumber', kpiData.indexNumber);
+    setValue('fees.indexType', 'KPI 80');
+  }, [indexAdjusted, kpiData, setValue]);
 
   const [errandPropertyDesignations, setErrandPropertyDesignations] = useState<{ name: string; district?: string }[]>(
     []
