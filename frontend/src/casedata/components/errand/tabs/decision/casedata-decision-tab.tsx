@@ -919,19 +919,6 @@ export const CasedataDecisionTab: FC<{
             Spara beslutstext
           </Button>
           <Button
-            data-cy="decision-pdf-preview-button"
-            color="vattjom"
-            inverted={formState.isValid && allowed}
-            size="md"
-            disabled={previewDisabled}
-            onClick={getPdfPreview}
-            loading={isPreviewLoading}
-            loadingText="Hämtar PDF"
-            rightIcon={<Download />}
-          >
-            {decisionIsReadOnly ? 'Hämta PDF' : 'Förhandsgranska PDF'}
-          </Button>
-          <Button
             data-cy="save-and-send-decision-button"
             variant="primary"
             color="vattjom"
