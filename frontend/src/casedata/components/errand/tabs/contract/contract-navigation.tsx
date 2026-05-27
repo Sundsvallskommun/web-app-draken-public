@@ -1,5 +1,5 @@
 import { ContractType } from '@casedata/interfaces/contracts';
-import { Badge, Link, cx } from '@sk-web-gui/react';
+import { Badge, cx, Link } from '@sk-web-gui/react';
 import { FC } from 'react';
 
 export const ContractNavigation: FC<{ contractType: ContractType }> = ({ contractType }) => {

@@ -1,8 +1,8 @@
 import { GenericChangeData, ParsedErrandChange, ParsedErrandHistory } from '@casedata/interfaces/history';
 import { fetchChangeData, getErrandHistory } from '@casedata/services/casedata-history-service';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { sanitized } from '@common/services/sanitizer-service';
 import { Button, cx, Modal, Spinner } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';
 import { History } from 'lucide-react';
 import { useEffect, useState } from 'react';

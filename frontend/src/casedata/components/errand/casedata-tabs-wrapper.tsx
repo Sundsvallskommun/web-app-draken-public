@@ -7,8 +7,7 @@ import { getConversationMessages, getConversations } from '@casedata/services/ca
 import { getErrand, isFTErrand } from '@casedata/services/casedata-errand-service';
 import {
   countUnreadMessages,
-  fetchMessages,
-  fetchMessagesTree,
+  fetchMessagesWithTree,
   groupByConversationIdSortedTree,
 } from '@casedata/services/casedata-message-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
@@ -58,6 +57,27 @@ export const CasedataTabsWrapper: React.FC = () => {
 
   const methods: UseFormReturn<IErrand, any, undefined> = useFormContext();
 
+  const refreshErrandAndMessages = () => {
+    if (!errand?.id) return;
+    getErrand(municipalityId, errand.id.toString())
+      .then((res) => {
+        setErrand(res.errand);
+        return fetchMessagesWithTree(municipalityId, res.errand);
+      })
+      .then(({ messages, messageTree }) => {
+        setMessages(messages);
+        setMessageTree(messageTree);
+      })
+      .catch((e) => {
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message: `Något gick fel när ärendet skulle hämtas`,
+          status: 'error',
+        });
+      });
+  };
+
   async function handleConversation(municipalityId: string, errandId: number) {
     try {
       const res = await getConversations(municipalityId, errandId);
@@ -87,18 +107,11 @@ export const CasedataTabsWrapper: React.FC = () => {
   useEffect(() => {
     if (errand && errand.errandNumber) {
       const owner = getOwnerStakeholder(errand);
-      fetchMessages(municipalityId, errand)
-        .then(setMessages)
-        .catch((e) => {
-          toastMessage({
-            position: 'bottom',
-            closeable: false,
-            message: 'Något gick fel när meddelanden hämtades',
-            status: 'error',
-          });
-        });
-      fetchMessagesTree(municipalityId, errand)
-        .then(setMessageTree)
+      fetchMessagesWithTree(municipalityId, errand)
+        .then(({ messages, messageTree }) => {
+          setMessages(messages);
+          setMessageTree(messageTree);
+        })
         .catch((e) => {
           toastMessage({
             position: 'bottom',
@@ -202,21 +215,8 @@ export const CasedataTabsWrapper: React.FC = () => {
           setUnsaved={() => {}}
           update={() =>
             setTimeout(() => {
-              getErrand(municipalityId, errand!.id.toString())
-                .then((res) => {
-                  setErrand(res.errand);
-                  return res;
-                })
-                .then((res) => fetchMessagesTree(municipalityId, errand!).then(setMessages))
-                .catch((e) => {
-                  toastMessage({
-                    position: 'bottom',
-                    closeable: false,
-                    message: `Något gick fel när ärendet skulle hämtas`,
-                    status: 'error',
-                  });
-                });
-              handleConversation(municipalityId, errand!.id);
+              refreshErrandAndMessages();
+              handleConversation(municipalityId, errand.id);
             }, 500)
           }
         />

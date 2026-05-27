@@ -1097,17 +1097,19 @@ export const ContractForm: FC<{
         </Disclosure.Content>
       </Disclosure>
 
-      <ContractPartyModal
-        isOpen={isPartyModalOpen}
-        onClose={() => setIsPartyModalOpen(false)}
-        onSave={handleModalSave}
-        mode={partyModalMode}
-        stakeholderOptions={errandStakeholders ?? []}
-        existingParty={editingParty}
-        contractType={getValues().type}
-        existingParties={contractParties}
-        isDraft={isDraft}
-      />
+      {isPartyModalOpen && (
+        <ContractPartyModal
+          isOpen={isPartyModalOpen}
+          onClose={() => setIsPartyModalOpen(false)}
+          onSave={handleModalSave}
+          mode={partyModalMode}
+          stakeholderOptions={errandStakeholders ?? []}
+          existingParty={editingParty}
+          contractType={getValues().type}
+          existingParties={contractParties}
+          isDraft={isDraft}
+        />
+      )}
     </>
   );
 };

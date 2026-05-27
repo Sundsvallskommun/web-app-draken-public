@@ -2,7 +2,7 @@ export const mockDraftAsset = {
   data: [
     {
       id: 'draft-asset-1',
-      assetId: 'PRH-2025-000865',
+      assetId: 'PRH-2025-865',
       origin: 'CASEDATA',
       partyId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
       type: 'FTErrandAssets',

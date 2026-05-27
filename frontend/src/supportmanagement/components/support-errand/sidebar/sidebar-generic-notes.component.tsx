@@ -1,6 +1,5 @@
 import { NoteType } from '@casedata/interfaces/errandNote';
 import { noteIsComment, noteIsTjansteanteckning } from '@casedata/services/casedata-errand-notes-service';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
@@ -18,6 +17,7 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { ErrandNotesTabFormModel, GenericNote } from '@supportmanagement/interfaces/genericNote';
 import { getSupportErrandById } from '@supportmanagement/services/support-errand-service';
 import {
