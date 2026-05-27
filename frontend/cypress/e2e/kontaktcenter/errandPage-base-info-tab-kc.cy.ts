@@ -33,6 +33,7 @@ import {
   supportManagementPersonSearch,
 } from '../utils/stakeholder-search-cy';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
+import { mockResolvedRelations } from '../case-data/fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('Errand page', () => {
@@ -66,6 +67,8 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       );
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
       cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/resolvedrelations/**/**', mockResolvedRelations).as('getResolvedRelations');
+      cy.intercept('GET', '**/relations/referredfrom/**', mockRelations).as('getReferredfromRelations');
       cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
         'getConversations'
       );

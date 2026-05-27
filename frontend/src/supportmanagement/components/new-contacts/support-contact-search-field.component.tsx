@@ -82,7 +82,9 @@ export const SupportContactSearchField: FC<SupportSearchFieldProps> = ({
             return;
           }
           if (!isArray(res)) {
-            form.setValue(`externalId`, res.personId, { shouldDirty: true });
+            if (searchMode === 'person' || searchMode === 'employee') {
+              form.setValue(`externalId`, res.personId, { shouldDirty: true });
+            }
             form.setValue(`firstName`, res.firstName, { shouldDirty: true });
             form.setValue(`lastName`, res.lastName, { shouldDirty: true });
             form.setValue(`organizationName`, res.organizationName, {
