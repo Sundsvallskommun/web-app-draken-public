@@ -14,7 +14,7 @@ const tasksFor = (pkg) => (files) => {
   const joined = relativePaths.join(' ');
   return [
     `yarn --cwd ${pkg} prettier --write ${joined}`,
-    `yarn --cwd ${pkg} eslint --no-error-on-unmatched-pattern --fix ${joined}`,
+    `yarn --cwd ${pkg} eslint --no-error-on-unmatched-pattern --fix --max-warnings=0 ${joined}`,
   ];
 };
 
