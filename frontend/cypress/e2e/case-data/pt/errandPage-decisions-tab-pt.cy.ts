@@ -259,7 +259,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
 
       cy.get('[data-cy="save-decision-button"]').should('exist').should('not.be.disabled');
-      cy.get('[data-cy="decision-pdf-preview-button"]').should('have.length', 2).should('not.be.disabled');
+      cy.get('[data-cy="decision-pdf-preview-button"]').should('have.length', 1).should('not.be.disabled');
       cy.get('[data-cy="save-and-send-decision-button"]').should('exist').should('not.be.disabled');
     });
 
