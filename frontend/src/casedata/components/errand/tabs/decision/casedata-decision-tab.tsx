@@ -210,7 +210,15 @@ export const CasedataDecisionTab: FC<{
     schema: serviceSchema,
   });
 
-  const services = useMemo(() => allServices.filter((s) => s.status === 'DRAFT'), [allServices]);
+  const decisionSent =
+    errand?.status?.statusType === ErrandStatus.Beslutad ||
+    errand?.status?.statusType === ErrandStatus.BeslutVerkstallt ||
+    errand?.status?.statusType === ErrandStatus.ArendeAvslutat;
+
+  const services = useMemo(
+    () => allServices.filter((s) => (decisionSent ? s.status === 'ACTIVE' : s.status === 'DRAFT')),
+    [allServices, decisionSent]
+  );
 
   useEffect(() => {
     if (props.onRefetchServices && refetchServices) {
@@ -406,6 +414,7 @@ export const CasedataDecisionTab: FC<{
       } else {
         await Promise.all(draftAssets.map((a) => deleteDraftAsset(municipalityId, a.id)));
       }
+      await refetchServices();
       await triggerPhaseChange();
       toastMessage(
         getToastOptions({
