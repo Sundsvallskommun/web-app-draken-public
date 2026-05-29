@@ -907,16 +907,25 @@ export const CasedataDecisionTab: FC<{
         )}
         {showNoServicesInfo && (
           <div className="pb-20">
-            <Alert type="info" data-cy="decision-services-info-alert">
-              <Alert.Icon />
-              <Alert.Content>
-                <Alert.Content.Title>Inga insatser kommer att fattas</Alert.Content.Title>
-                <Alert.Content.Description>
-                  Insatser tilldelas endast vid bifall. Med detta utfall registreras inga insatser på ärendet när
-                  beslutet skickas.
-                </Alert.Content.Description>
-              </Alert.Content>
-            </Alert>
+            <Disclosure variant="alt" data-cy="decision-no-services-disclosure" initalOpen>
+              <Disclosure.Header>
+                <Disclosure.Icon icon={<HandHelping size={18} />} />
+                <Disclosure.Title>Insatser</Disclosure.Title>
+                <Disclosure.Button />
+              </Disclosure.Header>
+              <Disclosure.Content>
+                <Alert type="info" data-cy="decision-services-info-alert">
+                  <Alert.Icon />
+                  <Alert.Content>
+                    <Alert.Content.Title>Inga insatser kommer att fattas</Alert.Content.Title>
+                    <Alert.Content.Description>
+                      Insatser tilldelas endast vid bifall. Med detta utfall registreras inga insatser på ärendet när
+                      beslutet skickas.
+                    </Alert.Content.Description>
+                  </Alert.Content>
+                </Alert>
+              </Disclosure.Content>
+            </Disclosure>
           </div>
         )}
 
