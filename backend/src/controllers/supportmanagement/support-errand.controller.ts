@@ -1097,7 +1097,7 @@ export class SupportErrandController {
             referredFromRelation.id,
           ]);
 
-          await sendConversationTextMessage(errand.id!.toString(), conversation.id, req.user, data.message, data.department!);
+          await sendConversationTextMessage(errand.id!.toString(), conversation.id, req.user, data.message ?? '', data.department!);
         }
       } catch (error) {
         logger.error('Error when creating conversation message for forwarded errand:', error);
