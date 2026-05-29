@@ -69,7 +69,7 @@ import {
 } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';
-import { Download, SendHorizontal } from 'lucide-react';
+import { Download, Gavel, HandHelping, SendHorizontal } from 'lucide-react';
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -857,6 +857,7 @@ export const CasedataDecisionTab: FC<{
 
         <Disclosure variant="alt" data-cy="decision-text-disclosure" initalOpen className="mb-24">
           <Disclosure.Header>
+            <Disclosure.Icon icon={<Gavel size={18} />} />
             <Disclosure.Title>Beslutstext</Disclosure.Title>
             <Disclosure.Button />
           </Disclosure.Header>
@@ -889,6 +890,7 @@ export const CasedataDecisionTab: FC<{
           <div className="pb-20">
             <Disclosure variant="alt" data-cy="decision-services-disclosure" initalOpen>
               <Disclosure.Header>
+                <Disclosure.Icon icon={<HandHelping size={18} />} />
                 <Disclosure.Title>
                   <span className="flex items-center gap-12">
                     <span>Insatser som bifalls</span>
