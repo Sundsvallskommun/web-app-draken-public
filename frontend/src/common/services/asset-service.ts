@@ -1,4 +1,4 @@
-import { Asset, AssetUpdateRequest, DraftAssetUpdateRequest } from '@casedata/interfaces/asset';
+import { Asset, AssetUpdateRequest, DraftAssetUpdateRequest } from '@common/interfaces/asset';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import {
   getLatestSchema,

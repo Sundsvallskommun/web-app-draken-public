@@ -2,7 +2,6 @@ import { CasedataMessagesTab } from '@casedata/components/errand/tabs/messages/c
 import { MEXCaseType, MEXCaseTypesWithContractsAndBilling } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
-import { getAssets } from '@casedata/services/asset-service';
 import { getConversationMessages, getConversations } from '@casedata/services/casedata-conversation-service';
 import { getErrand, isFTErrand } from '@casedata/services/casedata-errand-service';
 import {
@@ -13,6 +12,7 @@ import {
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { getUiPhase, phaseChangeInProgress } from '@casedata/services/process-service';
 import { isPT } from '@common/services/application-service';
+import { getAssets } from '@common/services/asset-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';

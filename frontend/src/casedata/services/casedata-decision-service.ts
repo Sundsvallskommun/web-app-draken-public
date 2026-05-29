@@ -5,12 +5,12 @@ import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
 import { Decision, DecisionOutcome, DecisionType } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
-import { Service } from '@casedata/services/casedata-service-assets-service';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { Render, Template, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
+import { Service } from '@common/services/service-assets-service';
 import { TemplateApiResponse } from '@supportmanagement/services/message-template-service';
 import dayjs from 'dayjs';
 

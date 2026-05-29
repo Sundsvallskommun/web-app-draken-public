@@ -1,6 +1,6 @@
-import { Service } from '@casedata/services/casedata-service-assets-service';
+import { Service } from '@common/services/service-assets-service';
 
-import { ServiceListItem } from './casedata-service-item.component';
+import { ServiceListItem } from './service-item.component';
 
 type ServiceListComponentProps = {
   services?: Service[];
@@ -9,6 +9,8 @@ type ServiceListComponentProps = {
   readOnly?: boolean;
   emptyMessage?: string;
   currentErrandId?: string;
+  sourceErrandLinkHref?: (service: Service) => string | undefined;
+  removingId?: string | null;
 };
 
 export const ServiceListComponent = ({
@@ -18,6 +20,8 @@ export const ServiceListComponent = ({
   readOnly,
   emptyMessage = 'Inga insatser tillagda',
   currentErrandId,
+  sourceErrandLinkHref,
+  removingId,
 }: ServiceListComponentProps) => {
   const list = services ?? [];
   return list.length === 0 ? (
@@ -34,6 +38,8 @@ export const ServiceListComponent = ({
           onRemove={readOnly ? undefined : onRemove}
           onEdit={readOnly ? undefined : onEdit}
           currentErrandId={currentErrandId}
+          sourceErrandLinkHref={sourceErrandLinkHref}
+          isRemoving={!readOnly && !!removingId && service.id === removingId}
         />
       ))}
     </div>

@@ -21,6 +21,7 @@ import { Dispatch, FC, ReactNode, SetStateAction, useEffect, useState } from 're
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
+import { SupportErrandServicesTab } from './tabs/services/support-errand-services-tab';
 import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-tab';
 import { SupportErrandBasicsTab } from './tabs/support-errand-basics-tab';
 import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
@@ -132,6 +133,12 @@ export const SupportTabsWrapper: FC<{
       content: supportErrand && <SupportErrandAttachmentsTab update={update} />,
       disabled: false,
       visibleFor: true,
+    },
+    {
+      label: 'Insatser',
+      content: supportErrand && <SupportErrandServicesTab />,
+      disabled: false,
+      visibleFor: appConfig.features.useServices && !!supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY'),
     },
     {
       label: 'Rekryteringsprocess',
