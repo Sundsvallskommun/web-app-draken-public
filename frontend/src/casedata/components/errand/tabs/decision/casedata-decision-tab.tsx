@@ -855,31 +855,35 @@ export const CasedataDecisionTab: FC<{
         <Input data-cy="decision-description-input" type="hidden" {...register('description')} />
         <Input type="hidden" {...register('errandId')} />
 
-        {!isMEX() && (
-          <TemplatePdfPreview identifier={selectedTemplate?.identifier} parameters={buildTemplateParameters()} />
-        )}
-
-        <div className={cx('h-[48rem] overflow-hidden')} data-cy="decision-richtext-wrapper">
-          <TextEditor
-            className={cx('mb-md h-[80%] max-w-[95.9rem]')}
-            readOnly={isErrandLocked(errand) || isSent()}
-            onChange={(e) => {
-              setValue('description', e.target.value.markup ?? '', {
-                shouldDirty: true,
-                shouldValidate: true,
-              });
-              setValue('descriptionPlaintext', e.target.value.plainText ?? '', {
-                shouldValidate: true,
-              });
-            }}
-            value={{ markup: description, plainText: descriptionPlaintext }}
-          />
-        </div>
-        <div className="my-sm text-error">
-          {errors.description && formState.isDirty && (
-            <FormErrorMessage>{errors.description?.message}</FormErrorMessage>
-          )}
-        </div>
+        <Disclosure variant="alt" data-cy="decision-text-disclosure" initalOpen className="mb-24">
+          <Disclosure.Header>
+            <Disclosure.Title>Beslutstext</Disclosure.Title>
+            <Disclosure.Button />
+          </Disclosure.Header>
+          <Disclosure.Content>
+            <div className={cx('h-[48rem] overflow-hidden')} data-cy="decision-richtext-wrapper">
+              <TextEditor
+                className={cx('mb-md h-[80%] max-w-[95.9rem]')}
+                readOnly={isErrandLocked(errand) || isSent()}
+                onChange={(e) => {
+                  setValue('description', e.target.value.markup ?? '', {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                  setValue('descriptionPlaintext', e.target.value.plainText ?? '', {
+                    shouldValidate: true,
+                  });
+                }}
+                value={{ markup: description, plainText: descriptionPlaintext }}
+              />
+            </div>
+            <div className="my-sm text-error">
+              {errors.description && formState.isDirty && (
+                <FormErrorMessage>{errors.description?.message}</FormErrorMessage>
+              )}
+            </div>
+          </Disclosure.Content>
+        </Disclosure>
 
         {showApprovedServices && (
           <div className="pb-20">
@@ -912,6 +916,10 @@ export const CasedataDecisionTab: FC<{
               </Alert.Content>
             </Alert>
           </div>
+        )}
+
+        {!isMEX() && (
+          <TemplatePdfPreview identifier={selectedTemplate?.identifier} parameters={buildTemplateParameters()} />
         )}
 
         <div className="flex justify-start gap-md">
