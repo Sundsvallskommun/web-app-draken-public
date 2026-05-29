@@ -382,18 +382,44 @@ export const setMessageViewed = (municipalityId: string, errandId: number, messa
   return apiService.put<any, any>({ url }, user);
 };
 
-export const createConversation = async (errandId: string, user: User, converastionType: string, topic: string) => {
+export const createConversation = async (
+  errandId: string,
+  user: User,
+  converastionType: string,
+  topic: string,
+  namespace: string,
+  relationIds?: string[],
+) => {
   const apiService = new ApiService();
   const baseURL = apiURL(SERVICE);
-  const url = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations`;
-  const body = {
+  const url = `${MUNICIPALITY_ID}/${namespace}/errands/${errandId}/communication/conversations`;
+  const body: Record<string, unknown> = {
     topic: topic,
     type: converastionType,
   };
 
+  if (relationIds?.length) {
+    body.relationIds = relationIds;
+  }
+
   const res = await apiService.post<any, any>({ url, baseURL, data: body }, user);
 
   return res.data;
+};
+
+export const sendConversationTextMessage = async (errandId: string, conversationId: string, user: User, content: string, namespace: string) => {
+  const apiService = new ApiService();
+  const baseURL = apiURL(SERVICE);
+  const url = `${MUNICIPALITY_ID}/${namespace}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
+
+  const formData = new FormData();
+  const messageObj = {
+    createdBy: { type: 'adAccount', value: user.username },
+    content: content,
+  };
+  formData.append('message', JSON.stringify(messageObj));
+
+  return await apiService.post<any, any>({ url, baseURL, data: formData, headers: { 'Content-Type': 'multipart/form-data' } }, user);
 };
 
 export const sendConversation = async (errandId: string, conversationId: string, user: User, pdf: Attachment) => {
@@ -420,7 +446,7 @@ export const sendDecisionToMinaSidor = async (baseURL: string, errandId: string,
   externalConversation = conversationRes.data.find(c => c.type === 'EXTERNAL');
 
   if (externalConversation === undefined) {
-    externalConversation = await createConversation(errandId, user, 'EXTERNAL', 'Mina sidor');
+    externalConversation = await createConversation(errandId, user, 'EXTERNAL', 'Mina sidor', CASEDATA_NAMESPACE!);
   }
   return sendConversation(errandId, externalConversation!.id!, user, pdf)
     .then(async res => {
@@ -445,7 +471,7 @@ export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, us
   relationlessConversation = conversationRes.data.find(c => c.relationIds?.length === 0 && c.type !== 'EXTERNAL');
 
   if (relationlessConversation === undefined) {
-    relationlessConversation = await createConversation(errand.id!.toString(), user, 'INTERNAL', errand.errandNumber!);
+    relationlessConversation = await createConversation(errand.id!.toString(), user, 'INTERNAL', errand.errandNumber!, CASEDATA_NAMESPACE!);
   }
   return sendConversation(errand.id!.toString(), relationlessConversation!.id!, user, pdf)
     .then(async res => {

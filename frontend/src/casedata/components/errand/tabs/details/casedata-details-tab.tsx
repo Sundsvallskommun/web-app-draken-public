@@ -200,18 +200,19 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
               const filtered = fields?.filter((f) => f.section === label);
               return filtered?.length ? <div key={idx}>{renderSection(filtered, label, icon)}</div> : null;
             })}
-            <div className="flex my-24 gap-xl">
-              <FormControl id="description" className="w-full">
-                <FormLabel>Ärendebeskrivning</FormLabel>
-
-                <TextEditor
-                  className={'h-[25rem] case-description-editor'}
-                  readOnly
-                  disableToolbar
-                  value={{ markup: description }}
-                />
-              </FormControl>
-            </div>
+            {description && (
+              <div className="flex my-24 gap-xl">
+                <FormControl id="description" className="w-full">
+                  <FormLabel>Ärendebeskrivning</FormLabel>
+                  <TextEditor
+                    className={'h-[25rem] case-description-editor'}
+                    readOnly
+                    disableToolbar
+                    value={{ markup: description }}
+                  />
+                </FormControl>
+              </div>
+            )}
           </div>
         </div>
       </div>
