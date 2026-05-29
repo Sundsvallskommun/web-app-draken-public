@@ -52,6 +52,8 @@
     "lint:strict": "eslint src/ --max-warnings=0 --cache --cache-location node_modules/.cache/eslint/",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "type-check": "tsc --pretty --noEmit",
+    "knip": "knip",
+    "knip:production": "knip --production",
     "deploy:prod": "npm run build && pm2 start ecosystem.config.js --only prod",
     "deploy:dev": "pm2 start ecosystem.config.js --only dev"
   },
@@ -116,6 +118,7 @@
     "eslint-plugin-prettier": "^5.5.5",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "eslint-plugin-unused-imports": "^4.4.1",
+    "knip": "^6.14.2",
     "nodemon": "^3.1.14",
     "prettier": "^3.8.1",
     "swagger-typescript-api": "^13.6.5",
