@@ -457,62 +457,6 @@ export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, us
     });
 };
 
-export const sendDecisionToOpenE = (errand: ErrandDTO, user: User, pdf: Attachment) => {
-  const url = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/webmessage`;
-  const apiService = new ApiService();
-
-  const attachments = [
-    {
-      base64Data: pdf.file,
-      fileName: `${pdf.name}.pdf`,
-      mimeType: pdf.mimeType,
-    } as WebMessageAttachment,
-  ];
-  const message: WebMessageRequest = {
-    party: {
-      partyId: getOwnerStakeholder(errand)?.personId,
-      externalReferences: [
-        {
-          key: 'flowInstanceId',
-          value: errand.externalCaseId,
-        },
-      ],
-    },
-    message: 'Beslut fattat i ärende',
-    attachments,
-  } as WebMessageRequest;
-
-  return apiService
-    .post<AgnosticMessageResponse, WebMessageRequest>({ url, data: message }, user)
-    .then(async (res: ApiResponse<AgnosticMessageResponse>) => {
-      return saveMessageOnErrand(
-        MUNICIPALITY_ID!,
-        errand,
-        {
-          message: message.message,
-          id: res.data.messageId,
-          messageType: 'WEBMESSAGE',
-          messageClassification: MessageClassification.Informationsmeddelande,
-          header_message_Id: '',
-          header_reply_to: '',
-          header_references: '',
-        },
-        user,
-      )
-        .then(async _ => {
-          return { data: res.data, message: `Message sent to OpenE` };
-        })
-        .catch(e => {
-          logger.error('Error when saving message id:', e);
-          return { data: res.data, message: `Message to OpenE sent but id could not be stored` };
-        });
-    })
-    .catch(e => {
-      logger.error('Error when sending message to OpenE:', e);
-      throw e;
-    });
-};
-
 export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: Attachment) => {
   const url = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/letter?async=false`;
   const apiService = new ApiService();

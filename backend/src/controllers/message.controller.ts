@@ -7,7 +7,6 @@ import {
   sendDecisionToDigitalMail,
   sendDecisionToKatla,
   sendDecisionToMinaSidor,
-  sendDecisionToOpenE,
   sendEmail,
   sendSms,
   sendWebMessage,
@@ -63,14 +62,10 @@ export class MessageController {
     }
 
     const minasidor_success = await sendDecisionToMinaSidor(baseURL, errandData.data.id!.toString(), req.user, pdf);
-    if (errandData.data.externalCaseId) {
-      const openE_success = await sendDecisionToOpenE(errandData.data, req.user, pdf);
-      return [minasidor_success, openE_success];
-    } else {
-      const katla_success = await sendDecisionToKatla(baseURL, errandData.data, req.user, pdf);
-      const digitalMail_success = await sendDecisionToDigitalMail(errandData.data, req.user, pdf);
-      return [minasidor_success, katla_success, digitalMail_success];
-    }
+    const katla_success = await sendDecisionToKatla(baseURL, errandData.data, req.user, pdf);
+    const digitalMail_success = await sendDecisionToDigitalMail(errandData.data, req.user, pdf);
+
+    return [minasidor_success, katla_success, digitalMail_success];
   }
 
   @Post('/casedata/:municipalityId/sms')
