@@ -46,7 +46,7 @@ export const ContractInvoiceDetail: FC<ContractInvoiceDetailProps> = ({ record, 
           </div>
           <div className="flex flex-col">
             <span className="text-label-medium">Aviseringsdatum</span>
-            <span>{record.invoice?.date || '-'}</span>
+            <span>{record.transferDate || '-'}</span>
           </div>
         </div>
       </div>

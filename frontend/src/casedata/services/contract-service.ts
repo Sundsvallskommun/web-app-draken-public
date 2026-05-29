@@ -815,7 +815,7 @@ export const fetchContractInvoices: (
         const inv: ContractInvoice = {
           id: record.id || '',
           status: record.status,
-          invoiceDate: record.transferDate,
+          invoiceDate: record.invoice?.date || record.transferDate,
           dueDate: record.invoice?.dueDate,
           amount: record.invoice?.totalAmount,
         };
