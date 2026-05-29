@@ -6,18 +6,28 @@ import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockPhrases } from 'cypress/e2e/case-data/fixtures/mockPhrases';
 import dayjs from 'dayjs';
+
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockAsset } from '../fixtures/mockAsset';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
+import { mockPdfRender } from '../fixtures/mockDecisions';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockPermits } from '../fixtures/mockPermits';
 import { mockPTErrand_base } from '../fixtures/mockPtErrand';
 import { mockRelations } from '../fixtures/mockRelations';
-import { mockPdfRender } from '../fixtures/mockDecisions';
 
 onlyOn(Cypress.env('application_name') === 'PT', () => {
   describe('Decisions tab', () => {
+    const mockFTErrand = {
+      data: {
+        ...mockPTErrand_base.data,
+        caseType: 'PARATRANSIT',
+        decisions: [],
+      },
+      message: 'success',
+    };
+
     beforeEach(() => {
       cy.intercept('GET', '**/schemas/*/latest', { data: { id: 'mock-schema-id', value: {} }, message: 'success' });
       cy.intercept('GET', '**/schemas/*/ui-schema', {
@@ -56,6 +66,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.intercept('PATCH', '**/errands/**/extraparameters', {});
       cy.intercept('POST', '**/render/pdf', mockPdfRender).as('postRenderPdf');
       cy.intercept('GET', '**/templates?*', { data: [], message: 'success' }).as('getTemplates');
+      cy.intercept('GET', '**/errand-services?**', { data: [], message: 'success' }).as('getErrandServices');
       cy.intercept('POST', '**/render', {
         data: { output: btoa('<p>Rendered template</p>') },
         message: 'Decision HTML rendered',
@@ -66,7 +77,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.visit(`/arende/${mockPTErrand_base.data.errandNumber}`);
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').should('exist').contains('Godkänn alla').click();
-      cy.get('.sk-tabs-list button').eq(6).should('have.text', 'Beslut').click({ force: true });
+      cy.get('.sk-tabs-list button').contains('Beslut').should('have.text', 'Beslut').click({ force: true });
     };
 
     it('displays the correct fields', () => {
@@ -84,7 +95,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       const errandWithoutDecisions = { ...mockPTErrand_base, data: { ...mockPTErrand_base.data, decisions: [] } };
       cy.intercept('GET', '**/errand/errandNumber/*', errandWithoutDecisions).as('getErrand');
       visitErrand();
-      cy.get('.sk-tabs-list button').eq(6).should('have.text', 'Beslut').click({ force: true });
+      cy.get('.sk-tabs-list button').contains('Beslut').should('have.text', 'Beslut').click({ force: true });
 
       cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Avslag');
       cy.get('[data-cy="law-select"]').should('exist').click();
@@ -230,10 +241,26 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       cy.get('[data-cy="validFrom-input"]').should('exist').should('be.disabled');
       cy.get('[data-cy="validTo-input"]').should('exist').should('be.disabled');
       cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
-      cy.get('[data-cy="save-decision-button"]').should('exist').click();
+      cy.get('[data-cy="save-decision-button"]').should('exist').should('be.disabled');
 
       cy.contains('Beslut måste anges').should('exist');
       cy.get('@updateDecision.all').should('have.length', 0);
+    });
+
+    it('enables decision actions for FT approval without decision validity dates', () => {
+      cy.intercept('GET', '**/errand/errandNumber/*', mockFTErrand).as('getErrand');
+      visitErrand();
+
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Bifall');
+      cy.get('[data-cy="law-select"]').should('exist').click();
+      cy.get('[data-cy="law-select"]').contains('1§ - Lag om färdtjänst').should('exist').click();
+      cy.get('[data-cy="validFrom-input"]').should('not.exist');
+      cy.get('[data-cy="validTo-input"]').should('not.exist');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
+
+      cy.get('[data-cy="save-decision-button"]').should('exist').should('not.be.disabled');
+      cy.get('[data-cy="decision-pdf-preview-button"]').should('have.length', 2).should('not.be.disabled');
+      cy.get('[data-cy="save-and-send-decision-button"]').should('exist').should('not.be.disabled');
     });
 
     it('shows template dropdown after outcome selection when templates exist and renders preview', () => {
@@ -277,9 +304,9 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
 
       cy.get('[data-cy="validFrom-input"]').should('exist').clear();
       cy.get('[data-cy="validTo-input"]').should('exist').clear().type('2024-08-11');
-      cy.get('[data-cy="save-decision-button"]').should('exist').click();
+      cy.get('[data-cy="save-decision-button"]').should('exist').should('be.disabled');
 
-      cy.contains('Giltig från måste anges').should('exist');
+      cy.contains('Giltigt datum måste anges').should('exist');
       cy.get('@updateDecision.all').should('have.length', 0);
     });
   });

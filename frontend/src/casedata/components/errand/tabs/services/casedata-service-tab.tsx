@@ -123,6 +123,11 @@ export const CasedataServicesTab: FC = () => {
     schema,
   });
 
+  const errandStatus = errand?.status?.statusType;
+  useEffect(() => {
+    refetch();
+  }, [errandStatus]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const errandCasedataServices = useMemo(() => services.filter((s) => s.origin === 'CASEDATA'), [services]);
   const errandCasedataIds = useMemo(() => errandCasedataServices.map((s) => s.id), [errandCasedataServices]);
   const [showFinishedPartyServices, setShowFinishedPartyServices] = useState(false);

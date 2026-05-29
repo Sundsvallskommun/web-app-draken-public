@@ -40,6 +40,7 @@ import dayjs from 'dayjs';
 import { Calendar, FilePen, Info, MapPin, Pencil, Receipt, Trash, Users, Wallet } from 'lucide-react';
 import { ChangeEvent, FC, useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
 import { ContractAttachments } from './contract-attachments';
 import { ContractPartyModal } from './contract-party-modal';
@@ -56,6 +57,7 @@ export const ContractForm: FC<{
   onAddParty?: (stakeholderId: string, roles: StakeholderRole[]) => void;
   onEditPartyRoles?: (stakeholderId: string, newRoles: StakeholderRole[]) => void;
   onRemoveParty?: (stakeholderId: string) => void;
+  onSelectInvoice?: (record: CBillingRecord) => void;
 }> = ({
   changeBadgeColor,
   onSave,
@@ -68,6 +70,7 @@ export const ContractForm: FC<{
   onAddParty,
   onEditPartyRoles,
   onRemoveParty,
+  onSelectInvoice,
 }) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const errand = useCasedataStore((s) => s.errand);
@@ -1094,7 +1097,11 @@ export const ContractForm: FC<{
           <Disclosure.Button />
         </Disclosure.Header>
         <Disclosure.Content>
-          <ContractInvoicesTable contractId={existingContract?.contractId} municipalityId={municipalityId} />
+          <ContractInvoicesTable
+            contractId={existingContract?.contractId}
+            municipalityId={municipalityId}
+            onSelectInvoice={onSelectInvoice}
+          />
         </Disclosure.Content>
       </Disclosure>
       <Disclosure

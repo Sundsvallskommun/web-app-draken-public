@@ -2,7 +2,7 @@ import { UtredningFormModel } from '@casedata/components/errand/sidebar/sidebar-
 import { DecisionFormModel } from '@casedata/components/errand/tabs/decision/casedata-decision-tab';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
-import { Decision, DecisionOutcome, DecisionType } from '@casedata/interfaces/decision';
+import { Decision, DecisionOutcome, DecisionOutcomes, DecisionType } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
@@ -14,7 +14,7 @@ import { Service } from '@common/services/service-assets-service';
 import { TemplateApiResponse } from '@supportmanagement/services/message-template-service';
 import dayjs from 'dayjs';
 
-import { isFTErrand, isFTNationalErrand } from './casedata-errand-service';
+import { isFTErrand, isFTNationalErrand, isPTErrand } from './casedata-errand-service';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
 
 export const lawMapping: Law[] = [
@@ -143,8 +143,14 @@ export const saveDecision: (
     decisionOutcome: formData.outcome as DecisionOutcome,
     description: formData.description,
     law: formData.law,
-    validFrom: isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validFrom).startOf('day').toISOString() : '',
-    validTo: isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validTo).endOf('day').toISOString() : '',
+    validFrom:
+      isPTErrand(errand) && formData.outcome === DecisionOutcomes.Approval
+        ? dayjs(formData.validFrom).startOf('day').toISOString()
+        : '',
+    validTo:
+      isPTErrand(errand) && formData.outcome === DecisionOutcomes.Approval
+        ? dayjs(formData.validTo).endOf('day').toISOString()
+        : '',
     decidedAt: dayjs().toISOString(),
     decidedBy: decidedBy,
     attachments: atts,
@@ -187,13 +193,13 @@ export const getDecisionLabel: (outcome: DecisionOutcome) => string = (outcome) 
     return '';
   }
   switch (outcome) {
-    case 'APPROVAL':
+    case DecisionOutcomes.Approval:
       return 'Bifall';
-    case 'REJECTION':
+    case DecisionOutcomes.Rejection:
       return 'Avslag';
-    case 'CANCELLATION':
+    case DecisionOutcomes.Cancellation:
       return 'Ärendet avskrivs';
-    case 'DISMISSAL':
+    case DecisionOutcomes.Dismissal:
       return 'Ärendet avvisas';
     default:
       return 'Okänt utfall';
@@ -219,7 +225,7 @@ export const getPhrases: (
     (parameter) => parameter.key === 'application.applicant.capacity'
   )?.values?.[0];
   const capacity =
-    outcome === 'CANCELLATION'
+    outcome === DecisionOutcomes.Cancellation
       ? 'all'
       : extraParametersCapacity === 'DRIVER'
       ? 'driver'
@@ -311,11 +317,11 @@ export const buildPdfTemplate: (
       (templateType === 'investigation' && d.decisionType === 'PROPOSED')
   );
   const outcome =
-    formData.outcome === 'APPROVAL'
+    formData.outcome === DecisionOutcomes.Approval
       ? 'approval'
-      : formData.outcome === 'REJECTION'
+      : formData.outcome === DecisionOutcomes.Rejection
       ? 'rejection'
-      : formData.outcome === 'CANCELLATION'
+      : formData.outcome === DecisionOutcomes.Cancellation
       ? 'cancellation'
       : '';
 
@@ -378,7 +384,7 @@ export const buildPdfTemplate: (
     if (outcome === 'approval') {
       parameters['permitFirstname'] = owner?.firstName;
       parameters['permitLastname'] = owner?.lastName;
-      parameters['permitEndDate'] = dayjs(formData.validTo).format('YYYY-MM-DD');
+      parameters['permitEndDate'] = formData.validTo ? dayjs(formData.validTo).format('YYYY-MM-DD') : '';
     }
   }
   if (outcome === 'cancellation') {

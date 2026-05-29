@@ -37,6 +37,7 @@ interface AppConfigFeatures {
   useMultipleContactChannels: boolean;
   useClosedAsDefaultResolution: boolean;
   useServices: boolean;
+  useAppeal: boolean;
 }
 
 // JSON.parse prevents the minifier from folding placeholder comparisons at build time.
@@ -83,6 +84,7 @@ export const appConfig: AppConfig = {
     useMultipleContactChannels: envBool(process.env.NEXT_PUBLIC_USE_MULTIPLE_CONTACT_CHANNELS),
     useClosedAsDefaultResolution: envBool(process.env.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION),
     useServices: envBool(process.env.NEXT_PUBLIC_USE_SERVICES),
+    useAppeal: envBool(process.env.NEXT_PUBLIC_USE_APPEAL),
   },
 };
 

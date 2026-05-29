@@ -35,6 +35,7 @@ import { ExternalLink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { FC, useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
 import { CasedataStatusLabelComponent } from './contracts-table.component';
 
@@ -126,7 +127,8 @@ const mapContractStakeholderToErrandStakeholder = (
 export const ContractDetailForm: FC<{
   selectedContract: Contract;
   update?: (contractId: string) => void;
-}> = ({ selectedContract }) => {
+  onSelectInvoice?: (record: CBillingRecord) => void;
+}> = ({ selectedContract, onSelectInvoice }) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const user = useUserStore((s) => s.user);
   const administrators: Admin[] = useUserStore((s) => s.administrators);
@@ -328,6 +330,7 @@ export const ContractDetailForm: FC<{
               existingContract={contractData}
               contractParties={contractParties}
               contractOveriewMode
+              onSelectInvoice={onSelectInvoice}
             />
           </FormProvider>
         </div>
