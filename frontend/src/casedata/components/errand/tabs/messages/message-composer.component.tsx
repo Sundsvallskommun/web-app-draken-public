@@ -507,19 +507,6 @@ export const MessageComposer: FC<{
                 >
                   SMS
                 </RadioButton>
-                {appConfig.features.useMyPages && errand && !!getOwnerStakeholder(errand)?.personalNumber && (
-                  <RadioButton
-                    tabIndex={props.show ? 0 : -1}
-                    data-cy="useMinaSidor-radiobutton-true"
-                    className="mr-sm"
-                    id="useMinaSidor"
-                    value={'minasidor'}
-                    defaultChecked={!!errand?.externalCaseId}
-                    {...register('contactMeans')}
-                  >
-                    Mina sidor
-                  </RadioButton>
-                )}
                 {errand?.channel === Channels.ESERVICE_KATLA && (
                   <RadioButton
                     tabIndex={props.show ? 0 : -1}
@@ -544,6 +531,22 @@ export const MessageComposer: FC<{
                     Draken
                   </RadioButton>
                 )}
+                {appConfig.features.useMyPages &&
+                  errand &&
+                  (!!getOwnerStakeholder(errand)?.personalNumber ||
+                    !!getOwnerStakeholder(errand)?.organizationNumber) && (
+                    <RadioButton
+                      tabIndex={props.show ? 0 : -1}
+                      data-cy="useMinaSidor-radiobutton-true"
+                      className="mr-sm"
+                      id="useMinaSidor"
+                      value={'minasidor'}
+                      defaultChecked={!!errand?.externalCaseId}
+                      {...register('contactMeans')}
+                    >
+                      Mina sidor
+                    </RadioButton>
+                  )}
               </RadioButton.Group>
             </fieldset>
           ) : null}
