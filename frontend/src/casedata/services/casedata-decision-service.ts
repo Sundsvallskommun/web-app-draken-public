@@ -305,6 +305,15 @@ export const mapServicesToTemplateParams = (services: Service[]): Record<string,
   });
 };
 
+// Heading per case-type family for sbk.investigation. Parking permit has no heading; the empty value
+// makes the template's conditional block render nothing (content-neutral for PT). National before FT:
+// FTNationalCaseTypes is a subset of FTCaseType.
+const getInvestigationDocumentTitle = (errand: IErrand): string => {
+  if (isFTNationalErrand(errand)) return 'Riksfärdtjänst';
+  if (isFTErrand(errand)) return 'Färdtjänst';
+  return '';
+};
+
 export const buildPdfTemplate: (
   errand: IErrand,
   formData: UtredningFormModel | DecisionFormModel,
@@ -328,12 +337,17 @@ export const buildPdfTemplate: (
   let identifier = `mex.decision`;
   let capacity = '';
 
+  // RPH cancellation uses the decision template even from the investigation tab.
+  const isRphCancellation = isPT() && !isFTErrand(errand) && !isFTNationalErrand(errand) && outcome === 'cancellation';
+
   if (isMEX()) {
     identifier = `mex.decision`;
+  } else if (isPT() && templateType === 'investigation' && !isRphCancellation) {
+    identifier = 'sbk.investigation';
   } else if (isPT() && isFTNationalErrand(errand)) {
-    identifier = templateType === 'investigation' ? 'sbk.rft.investigation' : `sbk.rft.decision.${outcome}`;
+    identifier = `sbk.rft.decision.${outcome}`;
   } else if (isPT() && isFTErrand(errand)) {
-    identifier = templateType === 'investigation' ? 'sbk.ft.investigation' : `sbk.ft.decision.${outcome}`;
+    identifier = `sbk.ft.decision.${outcome}`;
   } else if (isPT()) {
     const extraParametersCapacity = errand.extraParameters?.find(
       (parameter) => parameter.key === 'application.applicant.capacity'
@@ -378,6 +392,9 @@ export const buildPdfTemplate: (
     parameters['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
     parameters['disabilityReason'] =
       errand.extraParameters.find((p) => p.key === 'application.reason')?.values?.[0] ?? '';
+    if (identifier === 'sbk.investigation') {
+      parameters['documentTitle'] = getInvestigationDocumentTitle(errand);
+    }
   } else if (templateType === 'decision') {
     parameters['decisionText'] = wrapWithWordBreak(formData.description);
     parameters['decisionDate'] = dayjs(decision?.decidedAt).format('YYYY-MM-DD');

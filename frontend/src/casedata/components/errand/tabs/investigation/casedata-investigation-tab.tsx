@@ -365,7 +365,6 @@ export const CasedataInvestigationTab: FC<{
               </>
             )}
           </div>
-          <TemplatePdfPreview identifier={previewTemplate.identifier} parameters={previewTemplate.parameters} />
           <Input type="hidden" {...register('id')} />
           <Input data-cy="utredning-description-input" type="hidden" {...register('description')} />
           <Input type="hidden" {...register('errandNumber')} />
@@ -410,6 +409,7 @@ export const CasedataInvestigationTab: FC<{
               </Disclosure>
             );
           })()}
+          <TemplatePdfPreview identifier={previewTemplate.identifier} parameters={previewTemplate.parameters} />
           <div className="flex justify-left gap-10">
             <Button
               data-cy="save-utredning-button"
