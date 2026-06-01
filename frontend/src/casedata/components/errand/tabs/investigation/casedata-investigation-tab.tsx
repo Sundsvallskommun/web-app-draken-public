@@ -10,7 +10,7 @@ import {
   fetchInvestigationSkeleton,
   getProposedOrRecommendedDecision,
   getUtredningPhrases,
-  lawMapping,
+  lawMappingPT,
   renderPdf,
   saveDecision,
 } from '@casedata/services/casedata-decision-service';
@@ -305,7 +305,7 @@ export const CasedataInvestigationTab: FC<{
                     onChange={(e) => {
                       setValue(
                         'law',
-                        lawMapping.filter((law) => {
+                        lawMappingPT.filter((law) => {
                           return law.heading === e.target.value;
                         }),
                         { shouldDirty: true }
@@ -317,7 +317,7 @@ export const CasedataInvestigationTab: FC<{
                     value={getValues('law')?.[0] ? getValues('law')[0].heading : undefined}
                   >
                     <Select.Option value={''}>Välj lagrum</Select.Option>
-                    {lawMapping.map((law, index) => {
+                    {lawMappingPT.map((law, index) => {
                       return (
                         <Select.Option key={index} value={law.heading}>
                           {law.heading}

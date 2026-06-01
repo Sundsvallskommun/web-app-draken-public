@@ -17,7 +17,7 @@ import dayjs from 'dayjs';
 import { isFTErrand, isFTNationalErrand, isPTErrand } from './casedata-errand-service';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
 
-export const lawMapping: Law[] = [
+export const lawMappingPT: Law[] = [
   {
     heading: '13 kap. 8 § trafikförordningen',
     sfs: 'Trafikförordningen (1998:1276)',
@@ -33,21 +33,31 @@ export const lawMapping: Law[] = [
 ];
 
 const lawMappingFT: Law[] = [
-  { heading: '1§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '1' },
-  { heading: '5§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '5' },
-  { heading: '6§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '6' },
-  { heading: '7§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '7' },
-  { heading: '8§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '8' },
-  { heading: '9§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '9' },
-  { heading: '10§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '10' },
-  { heading: '12§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '12' },
-  { heading: '13§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '13' },
-  { heading: '16§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '16' },
+  { heading: '1§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '1' },
+  { heading: '5§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '5' },
+  { heading: '6§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '6' },
+  { heading: '7§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '7' },
+  { heading: '8§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '8' },
+  { heading: '9§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '9' },
+  { heading: '10§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '10' },
+  { heading: '12§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '12' },
+  { heading: '13§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '13' },
+  { heading: '16§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '16' },
+];
+
+const lawMappingRFT: Law[] = [
+  { heading: '1§ - Lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '1' },
+  { heading: '2§ - Lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '2' },
+  { heading: '3§ - Lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '3' },
 ];
 
 export const getLawMapping = (errand: IErrand): Law[] => {
   if (isPT()) {
-    const baseLawMapping = isFTErrand(errand) ? lawMappingFT : lawMapping;
+    const baseLawMapping = isFTNationalErrand(errand)
+      ? lawMappingRFT
+      : isFTErrand(errand)
+      ? lawMappingFT
+      : lawMappingPT;
 
     const existingLaws =
       errand.decisions
