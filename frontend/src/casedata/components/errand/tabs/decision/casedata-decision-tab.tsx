@@ -167,6 +167,8 @@ export const CasedataDecisionTab: FC<{
   const [isTemplatesLoading, setIsTemplatesLoading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const templatesRequestId = useRef(0);
+  // Holds the saved template identifier to re-select once templates have been fetched on load.
+  const pendingTemplateRestore = useRef<string | null>(null);
 
   const sortedDec = useMemo(() => {
     if (!errand) return [];
@@ -304,11 +306,27 @@ export const CasedataDecisionTab: FC<{
       });
   };
 
+  // Persist the selected decision template so it can be re-selected when the page is reopened.
+  // Existing extraParameters are preserved (only relevant when updating an existing decision).
+  const withTemplateExtraParameters = (data: DecisionFormModel): DecisionFormModel => {
+    const baseExtraParameters = (data.id ? existingDecision?.extraParameters : undefined) ?? {};
+    const extraParameters: GenericExtraParameters = { ...baseExtraParameters };
+    if (selectedTemplate?.identifier) {
+      extraParameters.decisionTemplate = selectedTemplate.identifier;
+    } else {
+      delete extraParameters.decisionTemplate;
+    }
+    if (Object.keys(extraParameters).length === 0) {
+      return data;
+    }
+    return { ...data, extraParameters };
+  };
+
   const save = async (data: DecisionFormModel) => {
     if (!errand) return;
     try {
       const rendered = await renderPdf(errand, data, 'decision', services);
-      await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
+      await saveDecision(municipalityId, errand, withTemplateExtraParameters(data), 'FINAL', rendered.pdfBase64);
       setIsLoading(false);
       setError(undefined);
       props.setUnsaved(false);
@@ -350,7 +368,7 @@ export const CasedataDecisionTab: FC<{
       } as CreateStakeholderDto;
       setIsSaveAndSendLoading(true);
       const rendered = await renderPdf(errand, data, 'decision', services);
-      await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
+      await saveDecision(municipalityId, errand, withTemplateExtraParameters(data), 'FINAL', rendered.pdfBase64);
 
       const renderedHtml = await renderHtml(errand, data, 'decision');
       const owner = getOwnerStakeholder(errand);
@@ -530,9 +548,13 @@ export const CasedataDecisionTab: FC<{
       if (existingDecision.law && existingDecision.law.length > 0) {
         setValue('law', existingDecision.law, { shouldDirty: false });
       }
+
+      // Re-select the previously saved template once templates have loaded (see template fetch below).
+      pendingTemplateRestore.current = existingDecision.extraParameters?.decisionTemplate ?? null;
     } else {
       setValue('id', undefined, { shouldDirty: false });
       setValue('law', [], { shouldDirty: false });
+      pendingTemplateRestore.current = null;
     }
 
     void trigger();
@@ -570,6 +592,16 @@ export const CasedataDecisionTab: FC<{
         // MEX: exclude the layout template, it's used for PDF rendering only
         const filtered = isMEX() ? templates.filter((t) => t.identifier !== 'mex.decision') : templates;
         setDecisionTemplates(filtered);
+
+        // Restore the previously saved template selection (set during form init on load).
+        if (pendingTemplateRestore.current) {
+          const savedTemplate = filtered.find((t) => t.identifier === pendingTemplateRestore.current);
+          if (savedTemplate) {
+            setSelectedTemplate(savedTemplate);
+            setValue('decisionTemplate', savedTemplate.name || savedTemplate.identifier, { shouldDirty: false });
+          }
+          pendingTemplateRestore.current = null;
+        }
       })
       .catch((e) => {
         if (templatesRequestId.current !== requestId) return;
