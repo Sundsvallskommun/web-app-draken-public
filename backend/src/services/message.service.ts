@@ -252,7 +252,8 @@ export const saveMessageOnErrand: (
     email?: string;
   },
   user: User,
-) => Promise<ApiResponse<any>> = async (municipalityId, errand, message, user) => {
+  attachmentNameOverride?: string,
+) => Promise<ApiResponse<any>> = async (municipalityId, errand, message, user, attachmentNameOverride) => {
   const apiService = new ApiService();
   // Fetch message info from Messaging and construct SaveMessage object
   const messagingUrl = `${MESSAGING_SERVICE}/${municipalityId}/messages/${message.id}/metadata`;
@@ -294,7 +295,7 @@ export const saveMessageOnErrand: (
     userId: '',
     attachments: attachments.map(a => ({
       content: a.content ?? a.base64Data,
-      name: a.name ?? a.fileName ?? a.filename,
+      name: attachmentNameOverride ?? a.name ?? a.fileName ?? a.filename,
       contentType: a.contentType ?? a.mimeType,
     })),
     emailHeaders: emailHeaders,
@@ -396,9 +397,14 @@ export const createConversation = async (errandId: string, user: User, converast
   return res.data;
 };
 
-export const sendConversation = async (errandId: string, conversationId: string, user: User, pdf: Attachment) => {
+export const sendConversation = async (errandId: string, conversationId: string, user: User, pdf: Attachment, copyLabel: string) => {
   const apiService = new ApiService();
   const url = `${SERVICE}/${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
+
+  // The conversation endpoint always materialises its own attachment copy on the errand, so upload
+  // the decision PDF with a name that makes clear it is a copy that was sent to the recipient.
+  const baseName = pdf.name?.replace(/\.pdf$/i, '') ?? 'beslut';
+  const fileName = `${baseName} (${copyLabel}).pdf`;
 
   const formData = new FormData();
   const messageObj = {
@@ -407,7 +413,7 @@ export const sendConversation = async (errandId: string, conversationId: string,
   };
   formData.append('message', JSON.stringify(messageObj));
   const byteArray = base64ToByteArray(pdf.file!);
-  formData.append('attachments', new Blob([byteArray], { type: pdf.mimeType }), `${pdf.name}.pdf`);
+  formData.append('attachments', new Blob([byteArray], { type: pdf.mimeType }), fileName);
 
   return await apiService.post<any, any>({ url, data: formData, headers: { 'Content-Type': 'multipart/form-data' } }, user);
 };
@@ -422,7 +428,7 @@ export const sendDecisionToMinaSidor = async (baseURL: string, errandId: string,
   if (externalConversation === undefined) {
     externalConversation = await createConversation(errandId, user, 'EXTERNAL', 'Mina sidor');
   }
-  return sendConversation(errandId, externalConversation!.id!, user, pdf)
+  return sendConversation(errandId, externalConversation!.id!, user, pdf, 'Mina sidor')
     .then(async res => {
       return { data: { ...res.data, messageId: externalConversation!.id }, message: `Message sent to Mina sidor` };
     })
@@ -447,7 +453,7 @@ export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, us
   if (relationlessConversation === undefined) {
     relationlessConversation = await createConversation(errand.id!.toString(), user, 'INTERNAL', errand.errandNumber!);
   }
-  return sendConversation(errand.id!.toString(), relationlessConversation!.id!, user, pdf)
+  return sendConversation(errand.id!.toString(), relationlessConversation!.id!, user, pdf, 'Katla')
     .then(async res => {
       return { data: { ...res.data, messageId: relationlessConversation!.id }, message: `Message sent to Katla` };
     })
@@ -497,6 +503,9 @@ export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: At
       if (!id) {
         throw new Error('Error: no id returned when sending message');
       }
+      // Digital mail cannot reference an existing attachment by id, so a copy is saved on the
+      // errand. Mark the name so it is clear this is a copy that was sent as physical/digital post.
+      const baseName = pdf.name?.replace(/\.pdf$/i, '') ?? 'beslut';
       return saveMessageOnErrand(
         MUNICIPALITY_ID!,
         errand,
@@ -510,6 +519,7 @@ export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: At
           header_references: '',
         },
         user,
+        `${baseName} (Post).pdf`,
       )
         .then(async _ => {
           return { data: { messageId: id }, message: `Digital mail sent` };
