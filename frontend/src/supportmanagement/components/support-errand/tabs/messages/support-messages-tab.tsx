@@ -1,7 +1,7 @@
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
-import { CommunicationCommunicationTypeEnum } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { SupportCommunicationType } from '@supportmanagement/services/support-communication-types';
 import { isSupportErrandLocked, Status, validateAction } from '@supportmanagement/services/support-errand-service';
 import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
 import { Mail } from 'lucide-react';
@@ -136,11 +136,11 @@ export const SupportMessagesTab: FC<{
               <Select.Option defaultChecked={true} value={'allchannels'}>
                 Alla kanaler
               </Select.Option>
-              <Select.Option value={'DRAKEN'}>Draken</Select.Option>
-              <Select.Option value={CommunicationCommunicationTypeEnum.WEB_MESSAGE}>E-tjänst</Select.Option>
-              <Select.Option value={CommunicationCommunicationTypeEnum.EMAIL}>E-post</Select.Option>
-              <Select.Option value={'MINASIDOR'}>Mina sidor</Select.Option>
-              <Select.Option value={CommunicationCommunicationTypeEnum.SMS}>SMS</Select.Option>
+              <Select.Option value={SupportCommunicationType.Draken}>Draken</Select.Option>
+              <Select.Option value={SupportCommunicationType.WebMessage}>E-tjänst</Select.Option>
+              <Select.Option value={SupportCommunicationType.Email}>E-post</Select.Option>
+              <Select.Option value={SupportCommunicationType.MinaSidor}>Mina sidor</Select.Option>
+              <Select.Option value={SupportCommunicationType.Sms}>SMS</Select.Option>
             </Select>
           </FormControl>
         </div>

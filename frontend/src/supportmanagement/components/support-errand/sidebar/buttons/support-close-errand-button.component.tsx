@@ -59,43 +59,53 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
 
   const formControls: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
-  const showCloseErrorToast = () => {
+  const showCloseErrorToast = (message = 'Något gick fel när ärendet skulle avslutas') => {
     toastMessage({
       position: 'bottom',
       closeable: false,
-      message: 'Något gick fel när ärendet skulle avslutas',
+      message,
       status: 'error',
     });
   };
 
-  const handleCloseErrand = (resolution: Resolution, msg: boolean) => {
+  const handleCloseErrand = async (resolution: Resolution, msg: boolean) => {
+    if (!supportErrand?.id) return;
+    const errandId = supportErrand.id;
     setIsLoading(true);
-    return closeSupportErrand(supportErrand!.id!, municipalityId, resolution)
-      .then(() => {
-        if (msg) {
-          const admin = administrators.find((a) => a.adAccount === supportErrand!.assignedUserId);
-          const adminName = getAdminName(admin!);
-          return sendClosingMessage(adminName, supportErrand!, municipalityId);
-        }
-      })
-      .then(() => {
-        toastMessage(
-          getToastOptions({
-            message: 'Ärendet avslutades',
-            status: 'success',
-          })
-        );
-        setTimeout(() => {
-          window.close();
-        }, 2000);
+    try {
+      await closeSupportErrand(errandId, municipalityId, resolution);
+    } catch (e) {
+      console.error('Failed to close support errand', e);
+      showCloseErrorToast();
+      setIsLoading(false);
+      return;
+    }
+
+    if (msg) {
+      try {
+        const admin = administrators.find((a) => a.adAccount === supportErrand.assignedUserId);
+        const adminName = getAdminName(admin!);
+        await sendClosingMessage(adminName, supportErrand, municipalityId);
+      } catch (e) {
+        console.error('Failed to send closing message', e);
+        showCloseErrorToast('Ärendet avslutades men avslutningsmeddelandet kunde inte skickas');
         setIsLoading(false);
-        getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
-      })
-      .catch((e) => {
-        showCloseErrorToast();
-        setIsLoading(false);
+        getSupportErrandById(errandId, municipalityId).then((res) => setSupportErrand(res.errand));
         return;
-      });
+      }
+    }
+
+    toastMessage(
+      getToastOptions({
+        message: 'Ärendet avslutades',
+        status: 'success',
+      })
+    );
+    setTimeout(() => {
+      window.close();
+    }, 2000);
+    setIsLoading(false);
+    getSupportErrandById(errandId, municipalityId).then((res) => setSupportErrand(res.errand));
   };
 
   return (

@@ -50,11 +50,18 @@ export const leaseTypes = [
   { label: 'Jaktarrende', key: LeaseType.USUFRUCT_HUNTING },
   { label: 'Jordbruksarrende', key: LeaseType.USUFRUCT_FARMING },
   { label: 'Lägenhetsarrende', key: LeaseType.LAND_LEASE_MISC },
-  { label: 'Arrende', key: LeaseType.USUFRUCT_MISC },
+  { label: 'Nyttjanderättsavtal', key: LeaseType.USUFRUCT_MISC },
   { label: 'Markupplåtelseavtal', key: LeaseType.LAND_LEASE_LICENSE },
   { label: 'Av kommunen arrenderad mark', key: LeaseType.LAND_LEASE_MUNICIPALITY },
   { label: 'Arrende', key: LeaseType.OTHER_FEE }, // Ska inte kunna finnas för nya avtal
 ];
+
+export const getContractLabel = (contractType: ContractType, leaseType?: LeaseType): string => {
+  if (contractType === ContractType.LEASE_AGREEMENT && leaseType) {
+    return leaseTypes.find((t) => t.key === leaseType)?.label ?? 'okänd typ';
+  }
+  return contractTypes.find((t) => t.key === contractType)?.label ?? 'okänd typ';
+};
 
 export const isLeaseAgreement = (contractType: ContractType) =>
   [
@@ -136,6 +143,12 @@ export const defaultLagenhetsarrende: ContractData = {
   },
   extraParameters: [
     {
+      name: 'errandId',
+      parameters: {
+        errandId: '',
+      },
+    },
+    {
       name: 'InvoiceInfo',
       parameters: {
         markup: '',
@@ -155,7 +168,6 @@ export const saveContract: (contract: ContractData) => Promise<Contract> = (cont
         ? kopeavtalToContract(contract)
         : lagenhetsArrendeToContract(contract);
 
-    console.log('Processed:', apiContract);
     if (contract.contractId) {
       const url = `contracts/${contract.contractId}`;
       apiCall = apiService.put<ApiResponse<Contract>, Contract>(url, apiContract);
@@ -202,7 +214,7 @@ export const fetchContract: (contractId: string) => Promise<ApiResponse<Contract
 
 export interface ContractFilterParams {
   page?: number;
-  limit?: number;
+  size?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   query?: string;
@@ -214,20 +226,9 @@ export interface ContractFilterParams {
 }
 
 export const fetchContracts: (params?: ContractFilterParams) => Promise<PageContract> = (params = {}) => {
-  const {
-    page = 0,
-    limit = 12,
-    sortBy,
-    sortOrder,
-    query,
-    status,
-    contractType,
-    leaseType,
-    startDate,
-    endDate,
-  } = params;
+  const { page = 0, size = 12, sortBy, sortOrder, query, status, contractType, leaseType, startDate, endDate } = params;
 
-  let url = `contracts?page=${page}&limit=${limit}`;
+  let url = `contracts?page=${page}&size=${size}`;
 
   if (sortBy) {
     url += `&sortBy=${sortBy}&sortOrder=${sortOrder || 'desc'}`;
@@ -475,6 +476,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
   let fees: Fees | undefined = undefined;
   const propertyDesignations = data.propertyDesignations ?? [];
   if (data.generateInvoice) {
+    const label = getContractLabel(data.type, data.leaseType);
     const yearlyNumber = Number.parseFloat((data.fees?.yearly ?? 0).toString());
     fees = {
       yearly: yearlyNumber,
@@ -482,14 +484,12 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       total: yearlyNumber,
       currency: 'SEK',
       additionalInformation: [
-        `Avgift, ${leaseTypes.find((t) => t.key === data.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'}. ` +
-          (propertyDesignations?.length > 0
-            ? `Fastigheter: ${propertyDesignations.map((p) => p.name).join(', ')}`
-            : ''),
+        `Avgift, ${label.toLocaleLowerCase()}. ` +
+          (propertyDesignations?.length > 0 ? `${propertyDesignations.map((p) => p.name).join(', ')}` : ''),
         data.fees?.additionalInformation?.[1] ?? '',
       ],
-      ...(data.indexAdjusted === 'true' && { indexYear: data.fees?.indexYear ?? 2025 }),
-      ...(data.indexAdjusted === 'true' && { indexNumber: data.fees?.indexNumber ?? 419.35 }),
+      ...(data.indexAdjusted === 'true' && { indexYear: data.fees?.indexYear }),
+      ...(data.indexAdjusted === 'true' && { indexNumber: data.fees?.indexNumber }),
       ...(data.indexAdjusted === 'true' && { indexationRate: data.fees?.indexationRate ?? 1 }),
       ...(data.indexAdjusted === 'true' && { indexType: data.fees?.indexType ?? 'KPI 80' }),
     };
@@ -535,6 +535,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
 };
 
 export const contractToLagenhetsArrende = (contract: Contract): ContractData => {
+  const label = getContractLabel(contract.type, contract.leaseType);
   const hasIndexation = !!(
     contract.fees?.indexType ||
     contract.fees?.indexYear ||
@@ -551,10 +552,8 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
     fees: {
       ...contract.fees,
       additionalInformation: [
-        `Avgift, ${leaseTypes.find((t) => t.key === contract.leaseType)?.label.toLocaleLowerCase() ?? 'okänd typ'}. ` +
-          (propertyDesignations?.length > 0
-            ? `Fastigheter: ${propertyDesignations.map((p) => p.name).join(', ')}`
-            : ''),
+        `Avgift, ${label.toLocaleLowerCase()}. ` +
+          (propertyDesignations?.length > 0 ? `${propertyDesignations.map((p) => p.name).join(', ')}` : ''),
         '',
       ],
     },
@@ -772,6 +771,7 @@ export interface ContractInvoice {
 
 export interface ContractInvoicesResponse {
   invoices: ContractInvoice[];
+  records: CBillingRecord[];
   totalCount: number;
   totalPages: number;
 }
@@ -798,7 +798,7 @@ export const fetchContractInvoices: (
 ) => Promise<ContractInvoicesResponse> = async (municipalityId, contractId, page = 0, size = 10) => {
   if (!municipalityId || !contractId) {
     console.error('Missing municipalityId or contractId for fetching contract invoices');
-    return { invoices: [], totalCount: 0, totalPages: 0 };
+    return { invoices: [], records: [], totalCount: 0, totalPages: 0 };
   }
 
   const url = `billing/${municipalityId}/contracts/${contractId}/invoices?page=${page}&size=${size}`;
@@ -815,7 +815,7 @@ export const fetchContractInvoices: (
         const inv: ContractInvoice = {
           id: record.id || '',
           status: record.status,
-          invoiceDate: record.transferDate,
+          invoiceDate: record.invoice?.date || record.transferDate,
           dueDate: record.invoice?.dueDate,
           amount: record.invoice?.totalAmount,
         };
@@ -824,12 +824,13 @@ export const fetchContractInvoices: (
 
       return {
         invoices,
+        records: content,
         totalCount: res.data?.totalElements || 0,
         totalPages: res.data?.totalPages || 0,
       };
     })
     .catch((e) => {
       console.error('Something went wrong when fetching contract invoices:', e);
-      return { invoices: [] as any[], totalCount: 0, totalPages: 0 };
+      return { invoices: [], records: [], totalCount: 0, totalPages: 0 };
     });
 };

@@ -3,7 +3,7 @@
 import { DecisionOutcomeKey } from '@casedata/interfaces/decision';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
-import { renderUtredningPdf, saveDecision } from '@casedata/services/casedata-decision-service';
+import { renderPdf, saveDecision } from '@casedata/services/casedata-decision-service';
 import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import TextEditor from '@common/components/dynamic-text-editor';
@@ -77,7 +77,7 @@ export const SidebarUtredning: React.FC = () => {
   const save = async (data: UtredningFormModel) => {
     try {
       setIsLoading(true);
-      const rendered = await renderUtredningPdf(errand!, data);
+      const rendered = await renderPdf(errand!, data, 'investigation');
       await saveDecision(municipalityId, errand!, data, 'PROPOSED', rendered.pdfBase64);
       await getErrand(municipalityId, errand!.id.toString()).then((res) => setErrand(res.errand));
       setIsLoading(false);

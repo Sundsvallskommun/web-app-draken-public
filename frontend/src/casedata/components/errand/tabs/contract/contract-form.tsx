@@ -19,6 +19,7 @@ import {
   isLeaseAgreement,
   prettyContractRoles,
 } from '@casedata/services/contract-service';
+import { getKpiIndex } from '@common/services/billing-data-collector-service';
 import {
   Button,
   Checkbox,
@@ -39,14 +40,14 @@ import dayjs from 'dayjs';
 import { Calendar, FilePen, Info, MapPin, Pencil, Receipt, Trash, Users, Wallet } from 'lucide-react';
 import { ChangeEvent, FC, useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
 import { ContractAttachments } from './contract-attachments';
 import { ContractPartyModal } from './contract-party-modal';
 
 export const ContractForm: FC<{
-  referensError: boolean;
   changeBadgeColor?: (badgeId: string) => void;
-  onSave?: (data: ContractData, section?: string) => Promise<void>;
+  onSave?: (data: ContractData) => Promise<void>;
   readOnly?: boolean;
   existingContract: ContractData;
   contractParties: UnifiedContractParty[];
@@ -56,8 +57,8 @@ export const ContractForm: FC<{
   onAddParty?: (stakeholderId: string, roles: StakeholderRole[]) => void;
   onEditPartyRoles?: (stakeholderId: string, newRoles: StakeholderRole[]) => void;
   onRemoveParty?: (stakeholderId: string) => void;
+  onSelectInvoice?: (record: CBillingRecord) => void;
 }> = ({
-  referensError,
   changeBadgeColor,
   onSave,
   readOnly = false,
@@ -69,6 +70,7 @@ export const ContractForm: FC<{
   onAddParty,
   onEditPartyRoles,
   onRemoveParty,
+  onSelectInvoice,
 }) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const errand = useCasedataStore((s) => s.errand);
@@ -137,6 +139,23 @@ export const ContractForm: FC<{
     [partiesWithSSN, contractParties]
   );
 
+  const [kpiData, setKpiData] = useState<{ indexYear: number; indexNumber: number } | null>(null);
+
+  useEffect(() => {
+    getKpiIndex()
+      .then((data) => setKpiData(data))
+      .catch((e) => console.error('Failed to fetch KPI index:', e));
+  }, []);
+
+  const indexAdjusted = watch('indexAdjusted');
+
+  useEffect(() => {
+    if (indexAdjusted !== 'true' || !kpiData) return;
+    setValue('fees.indexYear', kpiData.indexYear);
+    setValue('fees.indexNumber', kpiData.indexNumber);
+    setValue('fees.indexType', 'KPI 80');
+  }, [indexAdjusted, kpiData, setValue]);
+
   const [errandPropertyDesignations, setErrandPropertyDesignations] = useState<{ name: string; district?: string }[]>(
     []
   );
@@ -184,7 +203,7 @@ export const ContractForm: FC<{
   const toPropertyDesignation = (pd: { name?: string } | string): string =>
     typeof pd === 'object' && pd.name ? pd.name : typeof pd === 'string' ? pd : '';
 
-  const saveButton = (section?: string) => {
+  const saveButton = () => {
     if (readOnly) return null;
     return (
       <div className="my-md">
@@ -198,7 +217,7 @@ export const ContractForm: FC<{
               onClick={handleSubmit(
                 () => {
                   setLoading(true);
-                  onSave?.({ ...getValues() }, section).then(() => {
+                  onSave?.({ ...getValues() }).then(() => {
                     setLoading(false);
                   });
                 },
@@ -371,7 +390,7 @@ export const ContractForm: FC<{
           </Button>
         </div>
       )}
-      {formState.errors.stakeholders && <p className="text-error">{formState.errors.stakeholders.message}</p>}
+      {formState.errors.stakeholders && <FormErrorMessage>{formState.errors.stakeholders.message}</FormErrorMessage>}
     </>
   );
 
@@ -556,6 +575,24 @@ export const ContractForm: FC<{
             <div className="flex flex-col gap-24">
               <div className="flex gap-18 justify-start">
                 <FormControl id="startDate" className="w-full">
+                  <FormLabel>Startdatum</FormLabel>
+                  <Input
+                    type="date"
+                    min={dayjs().format('YYYY-MM-DD')}
+                    readOnly
+                    {...register('startDate')}
+                    data-cy="avtalstid-startdatum"
+                  />
+                  {formState.errors.startDate && (
+                    <div className="my-sm text-error">
+                      <FormErrorMessage>{formState.errors.startDate?.message}</FormErrorMessage>
+                    </div>
+                  )}
+                </FormControl>
+                <div className="w-full"></div>
+              </div>
+              <div className="flex gap-18 justify-start">
+                <FormControl id="currentPeriod.startDate" className="w-full">
                   <FormLabel>Avtalet gäller från</FormLabel>
                   <Input
                     type="date"
@@ -570,7 +607,7 @@ export const ContractForm: FC<{
                     </div>
                   )}
                 </FormControl>
-                <FormControl id="endDate" className="w-full">
+                <FormControl id="currentPeriod.endDate" className="w-full">
                   <FormLabel>Avtalet gäller till och med</FormLabel>
                   <Input
                     type="date"
@@ -795,14 +832,7 @@ export const ContractForm: FC<{
               </FormControl>
               <FormControl id="endDate" className="w-full">
                 <FormLabel>Slutdatum</FormLabel>
-                <Input
-                  type="date"
-                  readOnly={
-                    !isEditable('cancellation') || watch().extension?.autoExtend || !watch().currentPeriod?.endDate
-                  }
-                  {...register('endDate')}
-                  data-cy="endDate"
-                />
+                <Input type="date" readOnly={!isEditable('cancellation')} {...register('endDate')} data-cy="endDate" />
               </FormControl>
             </div>
             <div className="flex gap-18 justify-start">
@@ -836,6 +866,11 @@ export const ContractForm: FC<{
           <Disclosure.Header>
             <Disclosure.Icon icon={<Wallet />} />
             <Disclosure.Title>Löpande avgift</Disclosure.Title>
+            {formState.errors.extraParameters?.root?.type === 'has-referens' ? (
+              <Label className="w-[15rem]" rounded inverted color={'error'}>
+                Fel i formulär
+              </Label>
+            ) : null}
             <Disclosure.Button />
           </Disclosure.Header>
           <Disclosure.Content>
@@ -861,6 +896,7 @@ export const ContractForm: FC<{
                   </RadioButton.Group>
                 </FormControl>
               </div>
+              <span>Om en administrativavgift ska faktureras behöver detta göras via engångsfakturering.</span>
               {getValues().generateInvoice === 'true' ? (
                 <>
                   <div className="flex gap-18 justify-start">
@@ -948,6 +984,11 @@ export const ContractForm: FC<{
                           Kvartalsvis
                         </RadioButton>
                       </RadioButton.Group>
+                      {formState.errors.invoicing?.invoiceInterval && (
+                        <div className="my-sm text-error">
+                          <FormErrorMessage>{formState.errors.invoicing?.invoiceInterval?.message}</FormErrorMessage>
+                        </div>
+                      )}
                     </FormControl>
                   </div>
                   <div className="flex gap-18 justify-start">
@@ -997,11 +1038,10 @@ export const ContractForm: FC<{
                         {...register(`extraParameters.${invoiceInfoIndex}.parameters.markup`)}
                         data-cy="invoice-markup-input"
                       />
-                      {referensError ? (
-                        <FormErrorMessage>Referens måste alltid anges.</FormErrorMessage>
-                      ) : (
-                        <small>Referens måste alltid anges.</small>
-                      )}
+                      {formState.errors?.extraParameters?.root?.type === 'has-referens' &&
+                      formState.errors?.extraParameters?.root?.message ? (
+                        <FormErrorMessage>{formState.errors?.extraParameters?.root?.message}</FormErrorMessage>
+                      ) : null}
 
                       <Input
                         type="hidden"
@@ -1038,7 +1078,7 @@ export const ContractForm: FC<{
                   </div>
                 </>
               ) : null}
-              {saveButton('billing')}
+              {saveButton()}
             </div>
           </Disclosure.Content>
         </Disclosure>
@@ -1057,7 +1097,11 @@ export const ContractForm: FC<{
           <Disclosure.Button />
         </Disclosure.Header>
         <Disclosure.Content>
-          <ContractInvoicesTable contractId={existingContract?.contractId} municipalityId={municipalityId} />
+          <ContractInvoicesTable
+            contractId={existingContract?.contractId}
+            municipalityId={municipalityId}
+            onSelectInvoice={onSelectInvoice}
+          />
         </Disclosure.Content>
       </Disclosure>
       <Disclosure
@@ -1078,17 +1122,19 @@ export const ContractForm: FC<{
         </Disclosure.Content>
       </Disclosure>
 
-      <ContractPartyModal
-        isOpen={isPartyModalOpen}
-        onClose={() => setIsPartyModalOpen(false)}
-        onSave={handleModalSave}
-        mode={partyModalMode}
-        stakeholderOptions={errandStakeholders ?? []}
-        existingParty={editingParty}
-        contractType={getValues().type}
-        existingParties={contractParties}
-        isDraft={isDraft}
-      />
+      {isPartyModalOpen && (
+        <ContractPartyModal
+          isOpen={isPartyModalOpen}
+          onClose={() => setIsPartyModalOpen(false)}
+          onSave={handleModalSave}
+          mode={partyModalMode}
+          stakeholderOptions={errandStakeholders ?? []}
+          existingParty={editingParty}
+          contractType={getValues().type}
+          existingParties={contractParties}
+          isDraft={isDraft}
+        />
+      )}
     </>
   );
 };

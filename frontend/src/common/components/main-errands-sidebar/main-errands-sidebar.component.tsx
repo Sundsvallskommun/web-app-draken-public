@@ -6,8 +6,8 @@ import { NotificationsWrapper } from '@common/components/notifications/notificat
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { attestationEnabled, contractsEnabled } from '@common/services/feature-flag-service';
 import { appConfig } from '@config/appconfig';
-import { useBillingStore, useConfigStore, useUserStore } from '@stores/index';
 import { Badge, Button, cx, Divider, Logo, UserMenu } from '@sk-web-gui/react';
+import { useBillingStore, useConfigStore, useUserStore } from '@stores/index';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportManagementFilterSidebarStatusSelector } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component';
 import {

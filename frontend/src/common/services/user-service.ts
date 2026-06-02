@@ -1,4 +1,5 @@
 import { User } from '@common/interfaces/user';
+
 import { ApiResponse, apiService } from './api-service';
 
 export const emptyUser: User = {

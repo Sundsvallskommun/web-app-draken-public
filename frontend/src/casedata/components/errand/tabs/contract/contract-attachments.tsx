@@ -8,8 +8,8 @@ import {
   saveSignedContractAttachment,
 } from '@casedata/services/contract-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useCasedataStore, useConfigStore } from '@stores/index';
 import { Button, FileUpload, PopupMenu, UploadFile, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore } from '@stores/index';
 import { Eye, FilePen, Trash } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 export const ContractAttachments: FC<{

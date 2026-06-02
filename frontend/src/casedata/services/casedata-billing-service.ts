@@ -62,10 +62,13 @@ const buildBillingRecord = (formData: BillingFormData, errand: IErrand): CBillin
   const persNumberStr = persNumber ? String(persNumber).trim() : '';
   const customerId = orgNumberStr !== '' ? orgNumberStr : persNumberStr !== '' ? persNumberStr : '';
 
+  const invoiceDate = formData.specifications.rejectionDate || undefined;
+
   return {
     category: casedataInvoiceSettings.category,
     type: CBillingRecordTypeEnum.EXTERNAL,
     status: CBillingRecordStatusEnum.NEW,
+    transferDate: invoiceDate,
     recipient:
       hasValidRecipient && hasValidAddress && recipient
         ? {
@@ -119,6 +122,7 @@ const satisfyApi = (data: CBillingRecord): CBillingRecord => {
   processed.type = data.type;
   processed.status = data.status;
   processed.approvedBy = data.approvedBy;
+  processed.transferDate = data.transferDate;
   processed.extraParameters = data.extraParameters;
   return processed as CBillingRecord;
 };
@@ -187,12 +191,33 @@ const removeBillingRecordIdFromErrand = async (
   );
 };
 
+const createContractBillingRelation = async (
+  errand: IErrand,
+  municipalityId: string,
+  billingRecordId: string
+): Promise<void> => {
+  const contractId = errand.extraParameters?.find((p) => p.key === 'contractId')?.values?.[0];
+  if (!contractId) {
+    return;
+  }
+
+  await apiService.post(
+    `billing/${municipalityId}/contracts/${contractId}/billingrecords/${billingRecordId}/relation`,
+    {}
+  );
+};
+
+export interface SaveBillingRecordResult {
+  record: CBillingRecord;
+  warnings: string[];
+}
+
 export const saveCasedataBillingRecord = async (
   formData: BillingFormData,
   errand: IErrand,
   municipalityId: string,
   existingRecordId?: string
-): Promise<CBillingRecord> => {
+): Promise<SaveBillingRecordResult> => {
   const record = buildBillingRecord(formData, errand);
   const url = `billing/${municipalityId}/billingrecords${existingRecordId ? `/${existingRecordId}` : ''}`;
   const action = existingRecordId ? apiService.put : apiService.post;
@@ -200,12 +225,25 @@ export const saveCasedataBillingRecord = async (
 
   try {
     const res = await action<CBillingRecord, CBillingRecord>(url, data);
+    const warnings: string[] = [];
 
     if (!existingRecordId && res.data.id) {
-      await saveBillingRecordIdToErrand(errand, municipalityId, res.data.id);
+      try {
+        await saveBillingRecordIdToErrand(errand, municipalityId, res.data.id);
+      } catch (e) {
+        console.error('Something went wrong when saving billing record id to errand', e);
+        warnings.push('Kunde inte spara fakturanumret på ärendet');
+      }
+
+      try {
+        await createContractBillingRelation(errand, municipalityId, res.data.id);
+      } catch (e) {
+        console.error('Something went wrong when creating contract-billing relation', e);
+        warnings.push('Kunde inte koppla fakturan till avtalet');
+      }
     }
 
-    return res.data;
+    return { record: res.data, warnings };
   } catch (e) {
     console.error('Something went wrong when saving billing record');
     throw e;

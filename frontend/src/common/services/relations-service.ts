@@ -127,6 +127,52 @@ export const getAllRelatedErrands = async (
   return deduplicated.sort((a, b) => a.errandNumber.localeCompare(b.errandNumber));
 };
 
+export interface ReferredFromStakeholder {
+  externalId: string;
+  externalIdType: string;
+  personNumber: string;
+  organizationNumber: string;
+  role: string;
+  roleDisplayName: string;
+  firstName: string;
+  lastName: string;
+  organizationName: string;
+  address: string;
+  careOf: string;
+  zipCode: string;
+  city: string;
+  contactChannels: { type: string; value: string }[];
+}
+
+export interface ReferredFromErrandResponse {
+  errandNumber: string;
+  classificationCategory: string;
+  classificationCategoryDisplayName: string;
+  classificationType: string;
+  classificationTypeDisplayName: string;
+  priority: string;
+  channel: string;
+  created: string;
+  description: string;
+  title: string;
+  stakeholders: ReferredFromStakeholder[];
+}
+
+export const getReferredFromErrands = (
+  municipalityId: string,
+  resourceId: string
+): Promise<ReferredFromErrandResponse[]> => {
+  const url = `${municipalityId}/relations/referredfrom/${resourceId}`;
+
+  return apiService
+    .get<ApiResponse<ReferredFromErrandResponse[]>>(url)
+    .then((res) => res.data.data)
+    .catch((e) => {
+      console.error('Error fetching referred-from errands: ' + e);
+      return [];
+    });
+};
+
 export const getResolvedRelations = (
   direction: 'source' | 'target',
   municipalityId: string,

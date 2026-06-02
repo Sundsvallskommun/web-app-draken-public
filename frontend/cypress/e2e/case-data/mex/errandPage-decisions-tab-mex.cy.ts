@@ -2,19 +2,14 @@
 
 import { onlyOn } from '@cypress/skip-test';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
+import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
 import { mockPhrases } from 'cypress/e2e/case-data/fixtures/mockPhrases';
-import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
-import { mockMessages } from '../fixtures/mockMessages';
+
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockMe } from '../fixtures/mockMe';
-import { mockPermits } from '../fixtures/mockPermits';
 import { mockAsset } from '../fixtures/mockAsset';
-import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockContractAttachment, mockLeaseAgreement, mockPurchaseAgreement } from '../fixtures/mockContract';
-import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
-import { mockRelations } from '../fixtures/mockRelations';
-import { mockJsonSchema } from '../fixtures/mockJsonSchema';
+import { mockConversationMessages,mockConversations } from '../fixtures/mockConversations';
 import {
   mockEstateInfo11,
   mockEstateInfo12,
@@ -22,6 +17,12 @@ import {
   mockSingleEstateByPropertyDesignation12,
 } from '../fixtures/mockEstateInfo';
 import { mockFeatureFlags } from '../fixtures/mockFeatureFlags';
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
+import { mockMe } from '../fixtures/mockMe';
+import { mockMessages } from '../fixtures/mockMessages';
+import { mockMexErrand_base } from '../fixtures/mockMexErrand';
+import { mockPermits } from '../fixtures/mockPermits';
+import { mockRelations } from '../fixtures/mockRelations';
 
 const DECISION_TAB_INDEX = 6;
 
@@ -141,14 +142,15 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="decision-richtext-wrapper"]').should('contain.text', 'Test content from template');
     });
 
-    it('save button enabled but send decision is disabled if no decision, fromDate or toDate is selected', () => {
+    it('disables decision actions if no decision is selected', () => {
       cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Välj utfall');
       cy.get('[data-cy="decision-richtext-wrapper"] .ql-editor')
         .should('exist')
         .clear()
         .type('Mock text', { delay: 100 });
       cy.contains('Beslut måste anges').should('exist');
-      cy.get('[data-cy="save-decision-button"]').should('exist').should('be.enabled');
+      cy.get('[data-cy="save-decision-button"]').should('exist').should('be.disabled');
+      cy.get('[data-cy="decision-pdf-preview-button"]').should('have.length', 1).should('be.disabled');
       cy.get('[data-cy="save-and-send-decision-button"]').should('exist').should('be.disabled');
     });
   });

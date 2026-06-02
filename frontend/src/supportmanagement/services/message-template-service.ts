@@ -17,9 +17,9 @@
 
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { base64Decode } from '@common/services/helper-service';
+import { EMAIL_INFORMATION_TEXT } from '@common/services/message-template-body-service';
 
-export const EMAIL_INFORMATION_TEXT =
-  '<p><b>Vänligen ändra inte ämnesraden om du svarar på detta meddelande.</b></p><br>';
+export { EMAIL_INFORMATION_TEXT };
 
 export interface TemplateApiResponse {
   identifier?: string;
@@ -161,10 +161,14 @@ export async function getSmsTemplate(
 
 export async function getClosingTemplate(app: string, parameters: Record<string, string> = {}): Promise<string | null> {
   const appLower = app.toLowerCase();
-  const contentId = `${appLower}.email.closing`;
   const signatureId = `${appLower}.email.signature`;
 
-  return fetchContentWithSignature(contentId, signatureId, parameters);
+  const appClosing = await fetchContentWithSignature(`${appLower}.email.closing`, signatureId, parameters);
+  if (appClosing) {
+    return appClosing;
+  }
+
+  return fetchContentWithSignature('default.email.closing', signatureId, parameters);
 }
 
 export async function getInternalSignature(parameters: Record<string, string> = {}): Promise<string | null> {

@@ -1,5 +1,6 @@
-import { useMetadataStore, useSupportStore } from '@stores/index';
+import { appConfig } from '@config/appconfig';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
+import { useMetadataStore, useSupportStore } from '@stores/index';
 import {
   emptyContact,
   ExternalIdType,
@@ -13,7 +14,6 @@ import { FC, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
-import { appConfig } from '@config/appconfig';
 
 interface SupportContactsProps {
   setUnsaved: (unsaved: boolean) => void;

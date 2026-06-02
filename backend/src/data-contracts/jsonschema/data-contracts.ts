@@ -16,11 +16,11 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
+  string?: boolean;
+  boolean?: boolean;
+  number?: boolean;
   valueNode?: boolean;
   container?: boolean;
-  missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -32,9 +32,9 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  string?: boolean;
-  boolean?: boolean;
-  number?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
+  missingNode?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -69,8 +69,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  detail?: string;
   causeAsProblem?: ThrowableProblem;
+  detail?: string;
 }
 
 export interface ThrowableProblem {
@@ -154,25 +154,25 @@ export interface PageJsonSchema {
   content?: JsonSchema[];
   /** @format int32 */
   number?: number;
-  /** @format int32 */
-  numberOfElements?: number;
   first?: boolean;
   last?: boolean;
-  sort?: SortObject;
   pageable?: PageableObject;
+  /** @format int32 */
+  numberOfElements?: number;
+  sort?: SortObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  unpaged?: boolean;
-  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
@@ -200,13 +200,13 @@ export interface UiSchema {
 }
 
 export enum JsonNodeNodeTypeEnum {
-  ARRAY = 'ARRAY',
-  BINARY = 'BINARY',
-  BOOLEAN = 'BOOLEAN',
-  MISSING = 'MISSING',
-  NULL = 'NULL',
-  NUMBER = 'NUMBER',
-  OBJECT = 'OBJECT',
-  POJO = 'POJO',
-  STRING = 'STRING',
+  ARRAY = "ARRAY",
+  BINARY = "BINARY",
+  BOOLEAN = "BOOLEAN",
+  MISSING = "MISSING",
+  NULL = "NULL",
+  NUMBER = "NUMBER",
+  OBJECT = "OBJECT",
+  POJO = "POJO",
+  STRING = "STRING",
 }

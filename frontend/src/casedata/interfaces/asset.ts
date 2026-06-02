@@ -18,17 +18,19 @@ export enum assetTypeLabels {
 }
 export interface Asset {
   id: string;
-  assetId: string;
-  origin: string;
-  partyId: string;
-  type: string;
-  issued: string;
-  validTo: string;
-  status: AssetStatus;
-  statusReason: string;
-  description: string;
-  additionalParameters: { [key: string]: string };
-  jsonParameters: JsonParameter[];
+  assetId?: string;
+  origin?: string;
+  partyId?: string;
+  type?: string;
+  issued?: string;
+  validTo?: string | null;
+  status?: AssetStatus;
+  statusReason?: string;
+  description?: string;
+  additionalParameters?: { [key: string]: string };
+  jsonParameters?: JsonParameter[];
+  sourceErrandId?: string;
+  sourceErrandNumber?: string;
 }
 
 export interface AssetUpdateRequest {
@@ -37,7 +39,9 @@ export interface AssetUpdateRequest {
 }
 
 export interface DraftAssetUpdateRequest {
-  validTo?: string;
+  issued?: string;
+  validTo?: string | null;
+  indefinitely?: boolean;
   status?: AssetStatus;
   statusReason?: string;
   additionalParameters?: Record<string, string>;

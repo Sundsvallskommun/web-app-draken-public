@@ -7,15 +7,15 @@ import {
   saveErrandNote,
 } from '@casedata/services/casedata-errand-notes-service';
 import { getErrand, isErrandAdmin } from '@casedata/services/casedata-errand-service';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Avatar, Button, cx, Divider, FormControl, Modal, PopupMenu, Textarea, useSnackbar } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';
-import { useEffect, useMemo, FC, useState } from 'react';
-import { UseFormReturn, useForm } from 'react-hook-form';
 import { Ellipsis, Pencil, Trash } from 'lucide-react';
+import { FC, useEffect, useMemo, useState } from 'react';
+import { useForm, UseFormReturn } from 'react-hook-form';
 
 export const SidebarGenericNotes: FC<{
   label_plural: 'Kommentarer' | 'Tjänsteanteckningar';

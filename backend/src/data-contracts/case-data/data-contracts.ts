@@ -12,31 +12,31 @@
 
 /** ConversationType model */
 export enum ConversationType {
-  INTERNAL = 'INTERNAL',
-  EXTERNAL = 'EXTERNAL',
+  INTERNAL = "INTERNAL",
+  EXTERNAL = "EXTERNAL",
 }
 
 export enum Header {
-  IN_REPLY_TO = 'IN_REPLY_TO',
-  REFERENCES = 'REFERENCES',
-  MESSAGE_ID = 'MESSAGE_ID',
-  AUTO_SUBMITTED = 'AUTO_SUBMITTED',
-  RETURN_PATH = 'RETURN_PATH',
-  CONTENT_TYPE = 'CONTENT_TYPE',
+  IN_REPLY_TO = "IN_REPLY_TO",
+  REFERENCES = "REFERENCES",
+  MESSAGE_ID = "MESSAGE_ID",
+  AUTO_SUBMITTED = "AUTO_SUBMITTED",
+  RETURN_PATH = "RETURN_PATH",
+  CONTENT_TYPE = "CONTENT_TYPE",
 }
 
 /** Message classification */
 export enum Classification {
-  INFORMATION = 'INFORMATION',
-  COMPLETION_REQUEST = 'COMPLETION_REQUEST',
-  OBTAIN_OPINION = 'OBTAIN_OPINION',
-  INTERNAL_COMMUNICATION = 'INTERNAL_COMMUNICATION',
-  OTHER = 'OTHER',
+  INFORMATION = "INFORMATION",
+  COMPLETION_REQUEST = "COMPLETION_REQUEST",
+  OBTAIN_OPINION = "OBTAIN_OPINION",
+  INTERNAL_COMMUNICATION = "INTERNAL_COMMUNICATION",
+  OTHER = "OTHER",
 }
 
 export enum NoteType {
-  INTERNAL = 'INTERNAL',
-  PUBLIC = 'PUBLIC',
+  INTERNAL = "INTERNAL",
+  PUBLIC = "PUBLIC",
 }
 
 export interface Address {
@@ -228,8 +228,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  detail?: string;
   causeAsProblem?: ThrowableProblem;
+  detail?: string;
 }
 
 export interface ThrowableProblem {
@@ -328,6 +328,8 @@ export interface Attachment {
   updated?: string;
   /** Category of the attachment */
   category?: string;
+  /** Channel through which the attachment was received */
+  channel?: AttachmentChannelEnum;
   /** Name of the attachment */
   name?: string;
   /** Note about the attachment */
@@ -585,11 +587,9 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  integralNumber?: boolean;
+  string?: boolean;
+  boolean?: boolean;
+  number?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -601,9 +601,11 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  number?: boolean;
-  string?: boolean;
-  boolean?: boolean;
+  integralNumber?: boolean;
+  missingNode?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 
@@ -1064,10 +1066,10 @@ export interface PatchDecision {
 }
 
 export interface PageErrand {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1077,27 +1079,27 @@ export interface PageErrand {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  unpaged?: boolean;
+  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
-  unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export interface CommitMetadata {
@@ -1215,10 +1217,10 @@ export interface MessageResponse {
 }
 
 export interface PageMessage {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Message[];
@@ -1228,16 +1230,16 @@ export interface PageMessage {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageDecision {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Decision[];
@@ -1247,55 +1249,63 @@ export interface PageDecision {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 /** Category of the address */
 export enum AddressAddressCategoryEnum {
-  POSTAL_ADDRESS = 'POSTAL_ADDRESS',
-  INVOICE_ADDRESS = 'INVOICE_ADDRESS',
-  VISITING_ADDRESS = 'VISITING_ADDRESS',
+  POSTAL_ADDRESS = "POSTAL_ADDRESS",
+  INVOICE_ADDRESS = "INVOICE_ADDRESS",
+  VISITING_ADDRESS = "VISITING_ADDRESS",
 }
 
 /** The type of contact information */
 export enum ContactInformationContactTypeEnum {
-  CELLPHONE = 'CELLPHONE',
-  PHONE = 'PHONE',
-  EMAIL = 'EMAIL',
+  CELLPHONE = "CELLPHONE",
+  PHONE = "PHONE",
+  EMAIL = "EMAIL",
 }
 
 /** The type of stakeholder */
 export enum StakeholderTypeEnum {
-  PERSON = 'PERSON',
-  ORGANIZATION = 'ORGANIZATION',
+  PERSON = "PERSON",
+  ORGANIZATION = "ORGANIZATION",
+}
+
+/** Channel through which the attachment was received */
+export enum AttachmentChannelEnum {
+  EMAIL = "EMAIL",
+  ESERVICE = "ESERVICE",
+  WEB_UI = "WEB_UI",
+  MY_PAGES = "MY_PAGES",
 }
 
 /** Type of the decision */
 export enum DecisionDecisionTypeEnum {
-  RECOMMENDED = 'RECOMMENDED',
-  PROPOSED = 'PROPOSED',
-  FINAL = 'FINAL',
+  RECOMMENDED = "RECOMMENDED",
+  PROPOSED = "PROPOSED",
+  FINAL = "FINAL",
 }
 
 /** Outcome of the decision */
 export enum DecisionDecisionOutcomeEnum {
-  APPROVAL = 'APPROVAL',
-  REJECTION = 'REJECTION',
-  DISMISSAL = 'DISMISSAL',
-  CANCELLATION = 'CANCELLATION',
+  APPROVAL = "APPROVAL",
+  REJECTION = "REJECTION",
+  DISMISSAL = "DISMISSAL",
+  CANCELLATION = "CANCELLATION",
 }
 
 /** How the errand was created */
 export enum ErrandChannelEnum {
-  ESERVICE = 'ESERVICE',
-  ESERVICE_KATLA = 'ESERVICE_KATLA',
-  EMAIL = 'EMAIL',
-  WEB_UI = 'WEB_UI',
-  MOBILE = 'MOBILE',
-  SYSTEM = 'SYSTEM',
-  MY_PAGES = 'MY_PAGES',
+  ESERVICE = "ESERVICE",
+  ESERVICE_KATLA = "ESERVICE_KATLA",
+  EMAIL = "EMAIL",
+  WEB_UI = "WEB_UI",
+  MOBILE = "MOBILE",
+  SYSTEM = "SYSTEM",
+  MY_PAGES = "MY_PAGES",
 }
 
 /**
@@ -1303,59 +1313,59 @@ export enum ErrandChannelEnum {
  * @default "MEDIUM"
  */
 export enum ErrandPriorityEnum {
-  HIGH = 'HIGH',
-  MEDIUM = 'MEDIUM',
-  LOW = 'LOW',
+  HIGH = "HIGH",
+  MEDIUM = "MEDIUM",
+  LOW = "LOW",
 }
 
 export enum JsonNodeNodeTypeEnum {
-  ARRAY = 'ARRAY',
-  BINARY = 'BINARY',
-  BOOLEAN = 'BOOLEAN',
-  MISSING = 'MISSING',
-  NULL = 'NULL',
-  NUMBER = 'NUMBER',
-  OBJECT = 'OBJECT',
-  POJO = 'POJO',
-  STRING = 'STRING',
+  ARRAY = "ARRAY",
+  BINARY = "BINARY",
+  BOOLEAN = "BOOLEAN",
+  MISSING = "MISSING",
+  NULL = "NULL",
+  NUMBER = "NUMBER",
+  OBJECT = "OBJECT",
+  POJO = "POJO",
+  STRING = "STRING",
 }
 
 /** If the message is inbound or outbound from the perspective of case-data/e-service. */
 export enum MessageRequestDirectionEnum {
-  INBOUND = 'INBOUND',
-  OUTBOUND = 'OUTBOUND',
+  INBOUND = "INBOUND",
+  OUTBOUND = "OUTBOUND",
 }
 
 /** Type of message (user or system created) */
 export enum MessageTypeEnum {
-  USER_CREATED = 'USER_CREATED',
-  SYSTEM_CREATED = 'SYSTEM_CREATED',
+  USER_CREATED = "USER_CREATED",
+  SYSTEM_CREATED = "SYSTEM_CREATED",
 }
 
 /** The priority of the case */
 export enum PatchErrandPriorityEnum {
-  HIGH = 'HIGH',
-  MEDIUM = 'MEDIUM',
-  LOW = 'LOW',
+  HIGH = "HIGH",
+  MEDIUM = "MEDIUM",
+  LOW = "LOW",
 }
 
 /** The type of decision */
 export enum PatchDecisionDecisionTypeEnum {
-  RECOMMENDED = 'RECOMMENDED',
-  PROPOSED = 'PROPOSED',
-  FINAL = 'FINAL',
+  RECOMMENDED = "RECOMMENDED",
+  PROPOSED = "PROPOSED",
+  FINAL = "FINAL",
 }
 
 /** The outcome of the decision */
 export enum PatchDecisionDecisionOutcomeEnum {
-  APPROVAL = 'APPROVAL',
-  REJECTION = 'REJECTION',
-  DISMISSAL = 'DISMISSAL',
-  CANCELLATION = 'CANCELLATION',
+  APPROVAL = "APPROVAL",
+  REJECTION = "REJECTION",
+  DISMISSAL = "DISMISSAL",
+  CANCELLATION = "CANCELLATION",
 }
 
 /** If the message is inbound or outbound from the perspective of case-data/e-service. */
 export enum MessageResponseDirectionEnum {
-  INBOUND = 'INBOUND',
-  OUTBOUND = 'OUTBOUND',
+  INBOUND = "INBOUND",
+  OUTBOUND = "OUTBOUND",
 }

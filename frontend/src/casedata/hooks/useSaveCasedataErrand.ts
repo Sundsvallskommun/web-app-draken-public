@@ -11,12 +11,12 @@ import {
 } from '@casedata/services/casedata-extra-parameters-service';
 import { saveFacilities } from '@casedata/services/casedata-facilities-service';
 import { editStakeholder, removeStakeholder, setAdministrator } from '@casedata/services/casedata-stakeholder-service';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { useFormContext } from 'react-hook-form';
 
 export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
