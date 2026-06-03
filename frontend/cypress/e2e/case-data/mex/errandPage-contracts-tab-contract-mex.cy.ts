@@ -352,10 +352,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           monthly: 0,
           yearly: 120,
           total: 120,
-          additionalInformation: [
-            'Avgift, lägenhetsarrende. AVTALSFASTIGHET 1:123, AVTALSFASTIGHET 2:456',
-            'Foobar',
-          ],
+          additionalInformation: ['Avgift, lägenhetsarrende', 'Foobar'],
         });
       });
     });
@@ -517,6 +514,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="add-party-button"]').click();
       cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist').select('2280');
       cy.get('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+      cy.get('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').check({ force: true });
       cy.get('[data-cy="party-modal-save-button"]').click();
 
       // Verify lessee was added
@@ -579,6 +577,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="add-party-button"]').click();
       cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist').select('2280');
       cy.get('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+      cy.get('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').check({ force: true });
       cy.get('[data-cy="party-modal-save-button"]').click();
 
       // Verify lessee was added

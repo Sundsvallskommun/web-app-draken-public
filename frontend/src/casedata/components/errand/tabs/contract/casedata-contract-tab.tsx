@@ -117,6 +117,28 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
               .required('Förskott eller efterskott måste väljas'),
           }),
       }),
+      fees: yup.object({
+        // Validates only the user-editable supplementary avitext (index 1). The auto-generated
+        // avitext (index 0) is intentionally not validated here pending the backend length decision.
+        additionalInformation: yup
+          .array()
+          .test(
+            'supplementary-non-blank',
+            'Kompletterande avitext får inte vara enbart blanksteg',
+            (additionalInformation) => {
+              const supplementary = additionalInformation?.[1];
+              return !supplementary || supplementary.trim().length > 0;
+            }
+          )
+          .test(
+            'supplementary-max-length',
+            'Kompletterande avitext får vara högst 30 tecken',
+            (additionalInformation) => {
+              const supplementary = additionalInformation?.[1];
+              return !supplementary || supplementary.trim().length <= 30;
+            }
+          ),
+      }),
       extraParameters: yup.array().when(['generateInvoice', 'status'], ([generateInvoice, status], schema) => {
         if (status !== Status.ACTIVE) return schema;
 
@@ -137,10 +159,25 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
 
         return schema;
       }),
-      stakeholders: yup.array().when(['type', 'status'], ([type, status], schema) => {
-        if (status !== Status.ACTIVE) return schema;
+      stakeholders: yup.array().when(['type', 'status', 'invoicing'], ([type, status, invoicing], schema) => {
+        const hasRole = (role: StakeholderRole) => (stakeholders: any[] | undefined) =>
+          stakeholders?.some((s) => s.roles?.includes(role)) ?? false;
 
-        const baseSchema = schema.of(
+        // Mirrors the API rule: a billing party (Fakturamottagare) is required whenever invoicing is
+        // configured, regardless of contract status (DRAFT included).
+        const requireBillingParty = !!invoicing?.invoicedIn && !!invoicing?.invoiceInterval;
+
+        if (status !== Status.ACTIVE) {
+          return requireBillingParty
+            ? schema.test(
+                'has-primary-billing-party',
+                'Fakturamottagare måste anges',
+                hasRole(StakeholderRole.PRIMARY_BILLING_PARTY)
+              )
+            : schema;
+        }
+
+        let baseSchema = schema.of(
           yup.object({
             roles: yup
               .array()
@@ -149,8 +186,13 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           })
         );
 
-        const hasRole = (role: StakeholderRole) => (stakeholders: any[] | undefined) =>
-          stakeholders?.some((s) => s.roles?.includes(role)) ?? false;
+        if (requireBillingParty) {
+          baseSchema = baseSchema.test(
+            'has-primary-billing-party',
+            'Fakturamottagare måste anges',
+            hasRole(StakeholderRole.PRIMARY_BILLING_PARTY)
+          );
+        }
 
         if (type === ContractType.PURCHASE_AGREEMENT) {
           return baseSchema
@@ -251,6 +293,13 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
       existingContract?.type === ContractType.PURCHASE_AGREEMENT ? defaultKopeavtal : defaultLagenhetsarrende,
     mode: 'onSubmit',
   });
+
+  // Keep the validated form `stakeholders` field in sync with the party state, so yup validates the
+  // same data that onSave sends (otherwise role edits never reach validation → stale value → API 400).
+  useEffect(() => {
+    contractForm.setValue('stakeholders', contractParties.map(unifiedPartyToContractStakeholder));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contractParties]);
 
   const changeBadgeColor = (inId: string) => {
     let element = document.getElementById(inId);

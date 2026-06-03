@@ -332,7 +332,7 @@ export interface Fees {
    * @max 1
    */
   indexationRate?: number;
-  /** Additional information */
+  /** Additional information. Each entry must be non-blank and between 1 and 30 characters (used as invoice row descriptions). */
   additionalInformation?: string[];
 }
 
@@ -353,9 +353,9 @@ export type GeometryCollection = GeoJsonObject & {
 /** Invoicing details */
 export interface Invoicing {
   /** How often the lease is invoiced */
-  invoiceInterval?: IntervalType;
+  invoiceInterval: IntervalType;
   /** Invoiced in */
-  invoicedIn?: InvoicedIn;
+  invoicedIn: InvoicedIn;
 }
 
 /** Leasehold */
@@ -682,10 +682,10 @@ export interface PatchContract {
 export type SpecificationContractEntity = any;
 
 export interface PageContract {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Contract[];

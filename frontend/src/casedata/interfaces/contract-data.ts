@@ -16,6 +16,8 @@ export interface UnifiedContractParty {
   originalStakeholder: StakeholderWithPersonnumber;
 }
 
+export type Override<T, R> = Omit<T, keyof R> & R;
+
 export type ContractData = Contract & {
   generateInvoice: 'true' | 'false';
   indexAdjusted: 'true' | 'false';
