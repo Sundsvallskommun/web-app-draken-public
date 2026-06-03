@@ -1,22 +1,31 @@
 'use client';
 
+import { useMessageTemplates } from '@casedata/hooks/useMessageTemplates';
 import { ACCEPTED_UPLOAD_FILETYPES } from '@casedata/services/casedata-attachment-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
+import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
-import { useAppContext } from '@common/contexts/app.context';
-import { Relation } from '@common/data-contracts/relations/data-contracts';
-import { User } from '@common/interfaces/user';
+import { useMessageBodyTemplateState } from '@common/hooks/use-message-body-template-state';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
-import { getSourceRelations } from '@common/services/relations-service';
-import sanitized, { sanitizeHtmlMessageBody } from '@common/services/sanitizer-service';
+import {
+  buildMessageTemplateBody,
+  getDefaultMessageBody,
+  getDefaultTemplateId,
+  getTemplateOptions,
+  MessageContactMeans,
+  removeEmailInformation,
+} from '@common/services/message-template-body-service';
+import { getAllRelatedErrands, RelationWithErrandNumber } from '@common/services/relations-service';
+import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
   Chip,
+  cx,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -25,13 +34,14 @@ import {
   Modal,
   RadioButton,
   Select,
-  cx,
+  useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import {
+  getSupportAttachment,
   SingleSupportAttachment,
   SupportAttachment,
-  getSupportAttachment,
 } from '@supportmanagement/services/support-attachment-service';
 import {
   getOrCreateSupportConversationId,
@@ -39,27 +49,24 @@ import {
 } from '@supportmanagement/services/support-conversation-service';
 import {
   Channels,
-  Status,
-  SupportErrand,
+  ExternalIdType,
   getSupportErrandById,
   isSupportErrandLocked,
   setSupportErrandStatus,
+  Status,
 } from '@supportmanagement/services/support-errand-service';
+import { buildSupportReplyContext } from '@supportmanagement/services/support-message-reply-context-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { File, Paperclip, X } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
 import * as yup from 'yup';
-import { getDefaultEmailBody, getDefaultSmsBody, removeEmailInformation } from '../templates/default-message-template';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface SupportMessageFormModel {
   id: string;
   messageContact: boolean;
-  contactMeans: string;
+  contactMeans: MessageContactMeans;
   newEmail: string;
   emails: { value: string }[];
   newPhoneNumber: string;
@@ -130,27 +137,24 @@ let formSchema = yup
   })
   .required();
 
-export const SupportMessageForm: React.FC<{
+export const SupportMessageForm: FC<{
   locked?: boolean;
   prefillPhone?: string;
   prefillEmail?: string;
   showMessageForm: boolean;
   message: Message;
-  setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMessageForm: Dispatch<SetStateAction<boolean>>;
   setUnsaved?: (unsaved: boolean) => void;
   update?: () => void;
 }> = (props) => {
-  const {
-    municipalityId,
-    user,
-    supportErrand: _supportErrand,
-    supportAttachments: _supportAttachments,
-    setSupportErrand,
-  } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
+  const _supportErrand = useSupportStore((s) => s.supportErrand);
+  const _supportAttachments = useSupportStore((s) => s.supportAttachments);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const supportErrand = _supportErrand!;
   const supportAttachments = _supportAttachments ?? [];
 
-  const { t } = useTranslation('messages');
   const toastMessage = useSnackbar();
   const [isSending, setIsSending] = useState(false);
   const [messageError, setMessageError] = useState(false);
@@ -158,17 +162,35 @@ export const SupportMessageForm: React.FC<{
   const [typeOfMessage, setTypeOfMessage] = useState<string>('newMessage');
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState<boolean>(false);
   const [selectedRelationId, setSelectedRelationId] = useState<string>('');
-  const [relationErrands, setRelationErrands] = useState<Relation[]>([]);
+  const [relationErrands, setRelationErrands] = useState<RelationWithErrandNumber[]>([]);
+  const {
+    bodyEdited,
+    lastAppliedTemplateRef,
+    replyHistoryRef,
+    setBodyEditedState,
+    shouldSkipAutoApply,
+    markAutoApplied,
+  } = useMessageBodyTemplateState();
+
+  const confirm = useConfirm();
+
+  const { templates } = useMessageTemplates(user, props.showMessageForm);
+
+  const emailBody = buildMessageTemplateBody({
+    templates,
+    templateId: getDefaultTemplateId(templates, 'email'),
+    means: 'email',
+  });
+  const smsBody = buildMessageTemplateBody({
+    templates,
+    templateId: getDefaultTemplateId(templates, 'sms'),
+    means: 'sms',
+  });
+  const internalSignature = getDefaultMessageBody(templates, 'draken');
 
   const closeAttachmentModal = () => {
     setIsAttachmentModalOpen(false);
   };
-
-  const emailBody = getDefaultEmailBody(user, t);
-  const smsBody = getDefaultSmsBody(user, t);
-  const internalConversationSignature = t('messages:templates.internal_conversation_default_signature', {
-    user: user.firstName + ' ' + user.lastName,
-  });
 
   const formControls = useForm<SupportMessageFormModel>({
     defaultValues: {
@@ -178,13 +200,13 @@ export const SupportMessageForm: React.FC<{
         (Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE ||
         (Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE_INTERNAL
           ? 'webmessage'
-          : 'email',
+          : ('email' as MessageContactMeans),
       newEmail: '',
       newPhoneNumber: '',
       emails: [],
       phoneNumbers: [],
-      messageBody: sanitized(emailBody),
-      messageBodyPlaintext: emailBody,
+      messageBody: '',
+      messageBodyPlaintext: '',
       messageAttachments: [],
       newMessageAttachments: [],
       headerReplyTo: '',
@@ -218,6 +240,7 @@ export const SupportMessageForm: React.FC<{
     existingAttachments,
     messageBody,
     messageBodyPlaintext,
+    messageTemplate,
   } = watch();
 
   const {
@@ -275,7 +298,8 @@ export const SupportMessageForm: React.FC<{
         supportErrand.id!,
         conversationId,
         data.messageBody,
-        data.messageAttachments as { file: File }[]
+        data.messageAttachments as { file: File }[],
+        existingAttachments
       );
     } else {
       const messageData: MessageRequest = {
@@ -350,63 +374,48 @@ export const SupportMessageForm: React.FC<{
       });
   };
 
+  // Reply setup and new-message defaults. Headers, recipients and the selected template are
+  // synced unconditionally so the UI matches the current scenario; only the body is preserved
+  // when the user has already typed for this same scenario (so a late template load does not
+  // wipe their text).
   useEffect(() => {
     setReplying(!!props?.message?.communicationID);
 
     if (props.message) {
-      setValue(
-        'contactMeans',
-        props.message.communicationType === 'WEB_MESSAGE'
-          ? 'webmessage'
-          : props.message.communicationType === 'DRAKEN'
-          ? 'draken'
-          : props.message.communicationType === 'MINASIDOR'
-          ? 'minasidor'
-          : 'email'
-      );
-      const replyTo = props.message?.emailHeaders?.['MESSAGE_ID']?.[0] || '';
-      const references = props.message?.emailHeaders?.['REFERENCES'] || [];
-      references.push(replyTo);
-      setValue('headerReplyTo', replyTo);
-      setValue('headerReferences', references.join(','));
-      setValue(
-        'emails',
-        props.message.direction === 'OUTBOUND' ? [{ value: props.message?.target }] : [{ value: props.message.sender }]
-      );
-      const historyHeader = `<br><br>-----Ursprungligt meddelande-----<br>Från: ${props.message.sender}<br>Skickat: ${props.message.sent}<br>Till: Sundsvalls kommun<br>Ämne: ${props.message.subject}<br><br>`;
+      const replyContext = buildSupportReplyContext(props.message);
+      if (replyContext.contactMeans !== contactMeans) {
+        setValue('contactMeans', replyContext.contactMeans);
+      }
+      setValue('headerReplyTo', replyContext.headerReplyTo);
+      setValue('headerReferences', replyContext.headerReferences);
+      setValue('emails', replyContext.recipients);
 
-      let signature =
-        contactMeans === 'draken' ? internalConversationSignature : removeEmailInformation(contactMeans, emailBody);
+      replyHistoryRef.current = replyContext.historyHtml;
 
-      removeEmailInformation;
+      const defaultId = getDefaultTemplateId(templates, replyContext.contactMeans);
+      setValue('messageTemplate', defaultId);
+      lastAppliedTemplateRef.current = defaultId;
 
-      setValue(
-        'messageBody',
-        signature +
-          historyHeader +
-          (props.message.htmlMessageBody
-            ? sanitizeHtmlMessageBody(props.message.htmlMessageBody)
-            : props.message.messageBody)
-      );
+      if (!shouldSkipAutoApply(replyContext.setupKey)) {
+        setValue(
+          'messageBody',
+          buildMessageTemplateBody({
+            templates,
+            templateId: defaultId,
+            means: replyContext.contactMeans,
+            history: replyContext.historyHtml,
+          })
+        );
+        setBodyEditedState(false);
+      }
+      markAutoApplied(replyContext.setupKey);
       trigger();
     } else {
-      let body: string;
-      let prefillPhone = props.prefillPhone || '';
-
-      switch (contactMeans) {
-        case 'sms':
-          setValue('newPhoneNumber', prefillPhone);
-          body = smsBody;
-          clearErrors();
-          break;
-
-        case 'draken':
-          body = internalConversationSignature;
-          break;
-
-        default:
-          body = removeEmailInformation(contactMeans, emailBody);
-          break;
+      const setupKey = `new:${contactMeans}`;
+      const prefillPhone = props.prefillPhone || '';
+      if (contactMeans === 'sms') {
+        setValue('newPhoneNumber', prefillPhone);
+        clearErrors();
       }
 
       setValue('headerReplyTo', '');
@@ -414,22 +423,41 @@ export const SupportMessageForm: React.FC<{
       setValue('emails', []);
       setValue('phoneNumbers', []);
 
-      setValue('messageBody', sanitized(body));
+      replyHistoryRef.current = '';
+
+      const defaultId = getDefaultTemplateId(templates, contactMeans);
+      setValue('messageTemplate', defaultId);
+      lastAppliedTemplateRef.current = defaultId;
+
+      if (!shouldSkipAutoApply(setupKey)) {
+        let body: string;
+        switch (contactMeans) {
+          case 'sms':
+            body = smsBody;
+            break;
+          case 'draken':
+            body = internalSignature;
+            break;
+          default:
+            body = removeEmailInformation(contactMeans, emailBody);
+            break;
+        }
+        setValue('messageBody', sanitized(body));
+        setBodyEditedState(false);
+      }
+      markAutoApplied(setupKey);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contactMeans, props.message]);
+  }, [contactMeans, props.message, templates]);
 
   useEffect(() => {
-    getSourceRelations(municipalityId, supportErrand.id!, 'ASC').then((res) => {
-      const sortedRelations = [...res].sort((a, b) => a.target.type.localeCompare(b.target.type));
-      setRelationErrands(sortedRelations);
-    });
+    getAllRelatedErrands(municipalityId, supportErrand.id!).then(setRelationErrands);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.showMessageForm]);
 
   useEffect(() => {
     if (contactMeans === 'draken' && relationErrands.length > 0 && !selectedRelationId) {
-      setSelectedRelationId(relationErrands[0].target.resourceId);
+      setSelectedRelationId(relationErrands[0].otherResourceId);
     }
   }, [relationErrands, contactMeans, selectedRelationId]);
 
@@ -503,7 +531,11 @@ export const SupportMessageForm: React.FC<{
               </RadioButton>
             )}
             {appConfig.features.useMyPages &&
-              getSupportOwnerStakeholder(supportErrand)?.personNumber &&
+              (getSupportOwnerStakeholder(supportErrand)?.personNumber ||
+                ([ExternalIdType.COMPANY, ExternalIdType.ENTERPRISE].includes(
+                  getSupportOwnerStakeholder(supportErrand)?.externalIdType as ExternalIdType
+                ) &&
+                  getSupportOwnerStakeholder(supportErrand)?.externalId)) &&
               (Channels as Record<string, string>)[supportErrand.channel!] !== Channels.ESERVICE_INTERNAL && (
                 <RadioButton
                   disabled={props.locked}
@@ -522,7 +554,7 @@ export const SupportMessageForm: React.FC<{
 
       {contactMeans === 'draken' && !replying && (
         <div className="w-full pt-16">
-          <strong className="text-md block mb-sm">Välj länkat ärende</strong>
+          <strong className="text-md block mb-sm">Välj kopplat ärende</strong>
           {relationErrands.length > 0 ? (
             <Select
               value={selectedRelationId}
@@ -532,15 +564,13 @@ export const SupportMessageForm: React.FC<{
               }}
             >
               {relationErrands.map((item) => (
-                <Select.Option key={item.target.resourceId} value={item.target.resourceId}>
-                  {item.target.type}
+                <Select.Option key={item.otherResourceId} value={item.otherResourceId}>
+                  {item.errandNumber}
                 </Select.Option>
               ))}
             </Select>
           ) : (
-            <Select disabled value="">
-              <Select.Option value="">Laddar ärenden...</Select.Option>
-            </Select>
+            <p className="text-error">Koppla ett ärende för att kunna skicka meddelande</p>
           )}
         </div>
       )}
@@ -550,7 +580,7 @@ export const SupportMessageForm: React.FC<{
         <RadioButton.Group data-cy="message-type-radio-button-group" className="mt-sm !gap-4">
           <RadioButton
             disabled={props.locked}
-            name="useNewMessage"
+            name="typeOfMessage"
             id="useNewMessage"
             value="newMessage"
             checked={typeOfMessage === 'newMessage'}
@@ -560,7 +590,7 @@ export const SupportMessageForm: React.FC<{
           </RadioButton>
           <RadioButton
             disabled={props.locked}
-            name="useInfoCompletion"
+            name="typeOfMessage"
             id="useInfoCompletion"
             value="infoCompletion"
             checked={typeOfMessage === 'infoCompletion'}
@@ -570,7 +600,7 @@ export const SupportMessageForm: React.FC<{
           </RadioButton>
           <RadioButton
             disabled={props.locked}
-            name="useInternalCompletion"
+            name="typeOfMessage"
             id="useInternalCompletion"
             value="internalCompletion"
             checked={typeOfMessage === 'internalCompletion'}
@@ -580,45 +610,61 @@ export const SupportMessageForm: React.FC<{
           </RadioButton>
         </RadioButton.Group>
       </div>
-      {isKA() && (
+      {templates && (contactMeans === 'email' || contactMeans === 'sms') && (
         <FormControl className="w-full my-12" size="sm" id="messageTemplate">
           <FormLabel>Välj meddelandemall</FormLabel>
           <Select
             {...register('messageTemplate')}
             className="w-full text-dark-primary"
-            variant="tertiary"
             size="sm"
+            value={messageTemplate ?? ''}
             onChange={(e) => {
-              const template = e.currentTarget.value;
-              setValue('messageTemplate', template);
+              const templateId = e.currentTarget.value;
+              const apply = () => {
+                setValue('messageTemplate', templateId);
+                const history = replyHistoryRef.current;
+                if (templateId) {
+                  const templateBody = buildMessageTemplateBody({
+                    templates,
+                    templateId,
+                    means: contactMeans,
+                  });
+                  setValue('messageBody', sanitized(templateBody) + history);
+                } else {
+                  const defaultBody = contactMeans === 'sms' ? smsBody : emailBody;
+                  setValue('messageBody', sanitized(defaultBody) + history);
+                }
+                lastAppliedTemplateRef.current = templateId;
+                setBodyEditedState(false);
+              };
 
-              if (template === 'ka-email-normal') {
-                setValue('messageBody', t('messages:templates.email.KA.normal'));
-              } else if (template === 'ka-email-request_completion') {
-                setValue('messageBody', t('messages:templates.email.KA.request_completion'));
-              } else if (template === 'ka-sms-normal') {
-                setValue('messageBody', t('messages:templates.sms.KA.normal'));
-              } else if (template === 'ka-sms-request_completion') {
-                setValue('messageBody', t('messages:templates.sms.KA.request_completion'));
+              if (bodyEdited) {
+                confirm
+                  .showConfirmation(
+                    'Skriv över texten?',
+                    'Att byta mall ersätter den text du har skrivit. Vill du fortsätta?',
+                    'Ja, skriv över',
+                    'Avbryt',
+                    'info',
+                    'info'
+                  )
+                  .then((confirmed) => {
+                    if (confirmed) {
+                      apply();
+                    } else {
+                      setValue('messageTemplate', lastAppliedTemplateRef.current);
+                    }
+                  });
               } else {
-                setValue('messageBody', emailBody);
+                apply();
               }
             }}
           >
-            <Select.Option value="">Välj mall</Select.Option>
-            {contactMeans === 'email' && isKA() && (
-              <>
-                <Select.Option value="ka-email-normal">Grundmall (e-post)</Select.Option>
-                <Select.Option value="ka-email-request_completion">Begär komplettering (e-post)</Select.Option>
-              </>
-            )}
-
-            {contactMeans === 'sms' && isKA() && (
-              <>
-                <Select.Option value="ka-sms-normal">Grundmall (sms)</Select.Option>
-                <Select.Option value="ka-sms-request_completion">Begär komplettering (sms)</Select.Option>
-              </>
-            )}
+            {getTemplateOptions(templates, contactMeans).map((t) => (
+              <Select.Option key={t.identifier} value={t.identifier}>
+                {t.name}
+              </Select.Option>
+            ))}
           </Select>
         </FormControl>
       )}
@@ -639,6 +685,13 @@ export const SupportMessageForm: React.FC<{
                 setValue('messageBodyPlaintext', e.target.value.plainText ?? '');
                 trigger('messageBody');
               }}
+              onTextChange={(_delta, _oldDelta, source) => {
+                // Only treat user input as an edit; ignore programmatic / silent updates
+                // so setValue() on body does not flag the form as dirty and skip auto-apply.
+                if (source === 'user') {
+                  setBodyEditedState(true);
+                }
+              }}
             />
           </div>
           {!!errors.messageBodyPlaintext && (
@@ -649,7 +702,10 @@ export const SupportMessageForm: React.FC<{
         </div>
       </div>
 
-      {contactMeans === 'email' || contactMeans === 'webmessage' ? (
+      {contactMeans === 'email' ||
+      contactMeans === 'webmessage' ||
+      contactMeans === 'draken' ||
+      contactMeans === 'minasidor' ? (
         <div className="w-full gap-xl mb-lg">
           {contactMeans === 'email' && (
             <CommonNestedEmailArrayV2
@@ -675,58 +731,56 @@ export const SupportMessageForm: React.FC<{
                   </div>
                 ))
             : null}
-          {contactMeans === 'email' || contactMeans === 'webmessage' ? (
-            <FormControl id="addExisting" className="w-full mt-md">
-              <FormLabel>Bilagor från ärendet</FormLabel>
-              <div className="flex items-center justify-between">
-                {/*<Input type="hidden" {...register('addExisting')} />*/}
-                <Select
-                  {...register('addExisting')}
-                  className="w-full"
-                  size="sm"
-                  placeholder="Välj bilaga"
-                  onChange={(r) => {
-                    setValue('addExisting', r.currentTarget.value);
-                  }}
-                  value={getValues('addExisting')}
-                  data-cy="select-errand-attachment"
-                >
-                  <Select.Option value="">Välj bilaga</Select.Option>
-                  {supportAttachments?.map((attachment, index) => {
-                    return (
-                      <Select.Option key={`attachmentId-${index}`} value={attachment?.fileName}>
-                        {attachment?.fileName}
-                      </Select.Option>
-                    );
-                  })}
-                </Select>
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  disabled={!addExisting}
-                  color="primary"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (addExisting) {
-                      const attachment = supportAttachments.find((a: SupportAttachment) => a.fileName === addExisting);
-                      getSingleSupportAttachment(attachment!);
-                      setValue(`addExisting`, '');
-                    }
-                  }}
-                  className="rounded-button ml-16"
-                  data-cy="add-selected-attachment"
-                >
-                  Lägg till
-                </Button>
+          <FormControl id="addExisting" className="w-full mt-md">
+            <FormLabel>Bilagor från ärendet</FormLabel>
+            <div className="flex items-center justify-between">
+              <Select
+                {...register('addExisting')}
+                className="w-full"
+                size="sm"
+                placeholder="Välj bilaga"
+                onChange={(r) => {
+                  setValue('addExisting', r.currentTarget.value);
+                }}
+                value={getValues('addExisting')}
+                data-cy="select-errand-attachment"
+              >
+                <Select.Option value="">Välj bilaga</Select.Option>
+                {supportAttachments?.map((attachment, index) => {
+                  return (
+                    <Select.Option key={`attachmentId-${index}`} value={attachment?.fileName}>
+                      {attachment?.fileName}
+                    </Select.Option>
+                  );
+                })}
+              </Select>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                disabled={!addExisting}
+                color="primary"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (addExisting) {
+                    const attachment = supportAttachments.find((a: SupportAttachment) => a.fileName === addExisting);
+                    getSingleSupportAttachment(attachment!);
+                    setValue(`addExisting`, '');
+                  }
+                }}
+                className="rounded-button ml-16"
+                data-cy="add-selected-attachment"
+              >
+                Lägg till
+              </Button>
+            </div>
+            {errors.addExisting && (
+              <div className="my-sm">
+                <FormErrorMessage>{errors.addExisting.message}</FormErrorMessage>
               </div>
-              {errors.addExisting && (
-                <div className="my-sm">
-                  <FormErrorMessage>{errors.addExisting.message}</FormErrorMessage>
-                </div>
-              )}
-            </FormControl>
-          ) : null}
+            )}
+          </FormControl>
+
           {existingAttachmentFields.length > 0 ? (
             <div className="flex items-center w-full flex-wrap justify-start gap-md mt-16">
               {existingAttachmentFields.map((field, k) => {
@@ -798,7 +852,9 @@ export const SupportMessageForm: React.FC<{
                     <div className="bg-vattjom-surface-accent pt-4 pb-0 px-4 rounded self-center">
                       <Icon icon={<File />} size={25} />
                     </div>
-                    <div className="self-center justify-start px-8">{(attachment.file as unknown as FileList)?.[0]?.name}</div>
+                    <div className="self-center justify-start px-8">
+                      {(attachment.file as unknown as FileList)?.[0]?.name}
+                    </div>
                   </div>
                   <div>
                     <Button
@@ -840,7 +896,7 @@ export const SupportMessageForm: React.FC<{
           type="button"
           loading={isSending}
           loadingText="Skickar meddelande"
-          disabled={isSending || formState.isSubmitting || !formState.isValid || contactMeans === ''}
+          disabled={isSending || formState.isSubmitting || !formState.isValid}
           onClick={handleSubmit(onSubmit)}
           data-cy="send-message-button"
         >

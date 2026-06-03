@@ -1,5 +1,6 @@
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
+
 import { SupportErrand } from './support-errand-service';
 
 export const getSupportNotifications: (municipalityId: string) => Promise<SupportNotification[]> = (municipalityId) => {

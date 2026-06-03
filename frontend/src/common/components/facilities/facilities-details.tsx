@@ -1,9 +1,10 @@
 import { EstateInformation } from '@common/interfaces/estate-details';
-import { Button, Header, Table, Tabs, cx } from '@sk-web-gui/react';
-import { capitalize } from 'underscore.string';
+import { Button, cx, Header, Table, Tabs } from '@sk-web-gui/react';
 import { Mail, X } from 'lucide-react';
+import { FC } from 'react';
+import { capitalize } from 'underscore.string';
 
-export const FacilityDetails: React.FC<{
+export const FacilityDetails: FC<{
   show: boolean;
   label: string;
   closeHandler: () => void;

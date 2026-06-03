@@ -5,7 +5,6 @@ export const mockAsset = {
       assetId: '133773',
       origin: 'CASEDATA',
       partyId: 'aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc',
-      caseReferenceIds: ['SGP-2023-000283'],
       type: 'PARKINGPERMIT',
       issued: '2023-01-01',
       validTo: '2023-12-24',

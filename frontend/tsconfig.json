@@ -26,7 +26,8 @@
       "@common/*": ["src/common/*"],
       "@jestRoot/*": [".jest/*"],
       "@styles/*": ["src/styles/*"],
-      "@e2e/*": ["e2e/*"]
+      "@e2e/*": ["e2e/*"],
+      "@stores/*": ["src/stores/*"]
       // "@services/*": ["src/services/*"],
       // "@common/components/*": ["src/components/*"],
       // "@interfaces/*": ["src/interfaces/*"],

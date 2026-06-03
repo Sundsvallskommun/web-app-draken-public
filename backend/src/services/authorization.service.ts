@@ -1,6 +1,8 @@
-import { logger } from '@/utils/logger';
 import { AUTHORIZED_GROUPS } from '@config';
 import { InternalRole, Permissions } from '@interfaces/users.interface';
+
+import { logger } from '@/utils/logger';
+
 import { roleADMapping } from './ad-role.service';
 
 export function authorizeGroups(groups: string) {

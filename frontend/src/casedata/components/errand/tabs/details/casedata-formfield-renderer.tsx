@@ -6,18 +6,20 @@ import {
 } from '@casedata/services/casedata-extra-parameters-service';
 import { resolveDateTimeToken, resolveDateToken } from '@casedata/utils/date-string-handler-utils';
 import {
+  Alert,
   Checkbox,
   Combobox,
+  cx,
   FormControl,
   FormLabel,
   Input,
   RadioButton,
   Select,
   Textarea,
-  cx,
 } from '@sk-web-gui/react';
-import React, { useMemo, useState } from 'react';
-import { UseFormReturn, get } from 'react-hook-form';
+import { ComponentProps, FC, useEffect, useMemo, useState } from 'react';
+import { get, UseFormReturn } from 'react-hook-form';
+
 import { RepeatableFieldGroup } from './repeatable-field-group';
 
 interface Props {
@@ -27,7 +29,7 @@ interface Props {
   errand: any;
 }
 
-const getInputProps = (detail: UppgiftField): Partial<React.ComponentProps<typeof Input>> => {
+const getInputProps = (detail: UppgiftField): Partial<ComponentProps<typeof Input>> => {
   switch (detail.formField.type) {
     case 'date': {
       const opts = detail.formField.options ?? {};
@@ -45,7 +47,7 @@ const getInputProps = (detail: UppgiftField): Partial<React.ComponentProps<typeo
     }
     case 'text': {
       const opts = detail.formField.options ?? {};
-      const p: Partial<React.ComponentProps<typeof Input>> = {};
+      const p: Partial<ComponentProps<typeof Input>> = {};
 
       if (opts.placeholder) p.placeholder = opts.placeholder;
       if (opts.minLength !== undefined) p.minLength = opts.minLength;
@@ -111,7 +113,7 @@ function getConditionalValidationRules(
   };
 }
 
-export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, errand }) => {
+export const CasedataFormFieldRenderer: FC<Props> = ({ detail, idx, form, errand }) => {
   //TODO: Refactor this component and use a general form for extraparameters instead of hijacking IErrand form.
   //      Refactoring of this component should include better rendering from parent component to elimit rerenderings.
   const [initialComboBoxValue] = useState<string | string[]>(detail.value);
@@ -162,6 +164,20 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
 
   const isVisible = dependentSatisfied !== false;
 
+  const disabledByKey = detail.disabledBy?.field.replace(/\./g, EXTRAPARAMETER_SEPARATOR);
+  const disabledByValue = disabledByKey ? allFormValues[disabledByKey] : undefined;
+  const isDisabledByField = detail.disabledBy
+    ? Array.isArray(disabledByValue)
+      ? disabledByValue.includes(detail.disabledBy.value)
+      : disabledByValue === detail.disabledBy.value
+    : false;
+
+  useEffect(() => {
+    if (isDisabledByField) {
+      setValue(fieldKey, '', { shouldDirty: true });
+    }
+  }, [isDisabledByField, fieldKey, setValue]);
+
   const validationRules = getConditionalValidationRules(detail, getValues);
   const error = get(errors, fieldKey)?.message;
   const options: OptionBase[] = (detail.formField as { options?: OptionBase[] }).options ?? [];
@@ -199,9 +215,33 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
     );
   }
 
+  if (detail.formField.type === 'info') {
+    return (
+      <div key={`${detail.field}-${idx}`} className="w-full mt-lg">
+        {detail.label && <FormLabel>{detail.label}</FormLabel>}
+        {detail.description && <span>{detail.description}</span>}
+      </div>
+    );
+  }
+
+  if (detail.formField.type === 'alert') {
+    return (
+      <div key={`${detail.field}-${idx}`} className="w-full mt-lg">
+        <Alert type={detail.formField.alertType || 'info'}>
+          <Alert.Content>
+            {detail.label && <Alert.Content.Title>{detail.label}</Alert.Content.Title>}
+            {detail.description && <Alert.Content.Description>{detail.description}</Alert.Content.Description>}
+          </Alert.Content>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <FormControl className="w-full" key={`${detail.field}-${idx}`}>
-      {!detail.field.includes('account.') && <FormLabel className="mt-lg">{detail.label}</FormLabel>}
+      {!detail.field.includes('account.') && detail.label !== '' ? (
+        <FormLabel className="mt-lg">{detail.label}</FormLabel>
+      ) : null}
 
       {(detail.formField.type === 'text' ||
         detail.formField.type === 'date' ||
@@ -210,9 +250,16 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
           <Input
             type={detail.formField.type}
             {...register(fieldKey, validationRules)}
-            className={cx(errand.caseType === 'APPEAL' ? 'w-3/5' : 'w-full')}
+            className={cx(
+              errand.caseType === 'APPEAL'
+                ? 'w-3/5'
+                : detail.label === 'Datum då beslutet upphör'
+                ? 'w-[25rem]'
+                : 'w-full'
+            )}
             data-cy={`${detail.field}-input`}
             readOnly={isDisabled}
+            disabled={isDisabledByField}
             {...getInputProps(detail)}
           />
           {error && <span className="text-error text-md">{error}</span>}
@@ -221,7 +268,12 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
 
       {detail.formField.type === 'select' && (
         <>
-          <Select {...register(fieldKey, validationRules)} className="w-full" data-cy={`${detail.field}-select`} readOnly={isDisabled}>
+          <Select
+            {...register(fieldKey, validationRules)}
+            className="w-full"
+            data-cy={`${detail.field}-select`}
+            readOnly={isDisabled}
+          >
             <Select.Option value="">Välj</Select.Option>
             {detail.formField.options.map((o, i) => (
               <Select.Option key={`${o}-${i}`} value={o.value}>
@@ -249,17 +301,24 @@ export const CasedataFormFieldRenderer: React.FC<Props> = ({ detail, idx, form, 
       {detail.formField.type === 'radio' && (
         <>
           <RadioButton.Group
-            defaultValue={getValues(detail.field)}
+            name={fieldKey}
+            value={allFormValues[fieldKey] ?? ''}
             data-cy={`${detail.field}-radio-button-group`}
             inline={!!detail.formField.inline}
           >
             {detail.formField.options.map((option, i) => (
               <RadioButton
                 value={option.value}
-                {...register(fieldKey, validationRules)}
+                name={fieldKey}
                 key={`${option}-${i}`}
                 data-cy={`${detail.field}-radio-button-${i}`}
                 readOnly={isDisabled}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setValue(fieldKey, e.target.value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                }}
               >
                 {option.label}
               </RadioButton>

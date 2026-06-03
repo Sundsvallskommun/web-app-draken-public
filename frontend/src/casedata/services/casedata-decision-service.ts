@@ -1,21 +1,23 @@
 import { UtredningFormModel } from '@casedata/components/errand/sidebar/sidebar-utredning.component';
 import { DecisionFormModel } from '@casedata/components/errand/tabs/decision/casedata-decision-tab';
-import { Service } from '@casedata/components/errand/tabs/services/casedata-service-mapper';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
-import { Decision, DecisionOutcome, DecisionType } from '@casedata/interfaces/decision';
+import { Decision, DecisionOutcome, DecisionOutcomes, DecisionType } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
+import { Service } from '@casedata/services/casedata-service-assets-service';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
-import { Render, TemplateSelector } from '@common/interfaces/template';
+import { Render, Template, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
+import { TemplateApiResponse } from '@supportmanagement/services/message-template-service';
 import dayjs from 'dayjs';
-import { isFTErrand, isFTNationalErrand } from './casedata-errand-service';
+
+import { isFTErrand, isFTNationalErrand, isPTErrand } from './casedata-errand-service';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
 
-export const lawMapping: Law[] = [
+export const lawMappingPT: Law[] = [
   {
     heading: '13 kap. 8 § trafikförordningen',
     sfs: 'Trafikförordningen (1998:1276)',
@@ -31,21 +33,31 @@ export const lawMapping: Law[] = [
 ];
 
 const lawMappingFT: Law[] = [
-  { heading: '1§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '1' },
-  { heading: '5§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '5' },
-  { heading: '6§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '6' },
-  { heading: '7§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '7' },
-  { heading: '8§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '8' },
-  { heading: '9§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '9' },
-  { heading: '10§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '10' },
-  { heading: '12§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '12' },
-  { heading: '13§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '13' },
-  { heading: '16§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '16' },
+  { heading: '1§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '1' },
+  { heading: '5§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '5' },
+  { heading: '6§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '6' },
+  { heading: '7§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '7' },
+  { heading: '8§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '8' },
+  { heading: '9§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '9' },
+  { heading: '10§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '10' },
+  { heading: '12§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '12' },
+  { heading: '13§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '13' },
+  { heading: '16§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '16' },
+];
+
+const lawMappingRFT: Law[] = [
+  { heading: '1§ - Lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '1' },
+  { heading: '2§ - Lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '2' },
+  { heading: '3§ - Lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '3' },
 ];
 
 export const getLawMapping = (errand: IErrand): Law[] => {
   if (isPT()) {
-    const baseLawMapping = isFTErrand(errand) ? lawMappingFT : lawMapping;
+    const baseLawMapping = isFTNationalErrand(errand)
+      ? lawMappingRFT
+      : isFTErrand(errand)
+      ? lawMappingFT
+      : lawMappingPT;
 
     const existingLaws =
       errand.decisions
@@ -74,20 +86,34 @@ export const getLawMapping = (errand: IErrand): Law[] => {
 export const LOST_PERMIT_STANDARD_DECISION_TEXT =
   '<p>Inget formellt beslut fattas för borttappade kort, beslutet om att bevilja parkeringstillstånd har tagits i ärendet för den ursprungliga ansökan.</p>';
 
-export const beslutsmallMapping = [
-  {
-    id: 1,
-    label: 'Förfrågan arrende avslag privatperson',
-  },
-  {
-    id: 2,
-    label: 'Förfrågan avskrivs',
-  },
-  {
-    id: 3,
-    label: 'Förfrågan mark för småhus, nekande svar',
-  },
-];
+export const fetchDecisionTemplates: (prefix: string, decision?: string) => Promise<Template[]> = (
+  prefix,
+  decision
+) => {
+  const params = new URLSearchParams({ templateType: 'Decision', prefix });
+  if (decision) {
+    params.append('decision', decision);
+  }
+  return apiService
+    .get<ApiResponse<Template[]>>(`templates?${params.toString()}`)
+    .then((res) => res.data.data)
+    .catch(() => {
+      throw new Error('Kunde inte hämta beslutsmallar');
+    });
+};
+
+export const renderTemplatePdf: (
+  identifier: string,
+  parameters: { [key: string]: string | Object }
+) => Promise<string> = (identifier, parameters) => {
+  const body: TemplateSelector = { identifier, parameters };
+  return apiService
+    .post<ApiResponse<Render>, TemplateSelector>('render/pdf', body)
+    .then((res) => res.data.data.output)
+    .catch(() => {
+      throw new Error('Något gick fel när förhandsgranskningen skulle skapas');
+    });
+};
 
 export const saveDecision: (
   municipalityId: string,
@@ -100,7 +126,7 @@ export const saveDecision: (
   if (pdf) {
     const att: Attachment = {
       category: 'BESLUT',
-      name: `beslut-arende-${errand.errandNumber}`,
+      name: `beslut-arende-${errand.errandNumber}.pdf`,
       note: '',
       extension: 'pdf',
       mimeType: 'application/pdf',
@@ -128,8 +154,13 @@ export const saveDecision: (
     description: formData.description,
     law: formData.law,
     validFrom:
-      isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validFrom).startOf('day').toISOString() : '',
-    validTo: isPT() && formData.outcome === 'APPROVAL' ? dayjs(formData.validTo).endOf('day').toISOString() : '',
+      isPTErrand(errand) && formData.outcome === DecisionOutcomes.Approval
+        ? dayjs(formData.validFrom).startOf('day').toISOString()
+        : '',
+    validTo:
+      isPTErrand(errand) && formData.outcome === DecisionOutcomes.Approval
+        ? dayjs(formData.validTo).endOf('day').toISOString()
+        : '',
     decidedAt: dayjs().toISOString(),
     decidedBy: decidedBy,
     attachments: atts,
@@ -172,13 +203,13 @@ export const getDecisionLabel: (outcome: DecisionOutcome) => string = (outcome) 
     return '';
   }
   switch (outcome) {
-    case 'APPROVAL':
+    case DecisionOutcomes.Approval:
       return 'Bifall';
-    case 'REJECTION':
+    case DecisionOutcomes.Rejection:
       return 'Avslag';
-    case 'CANCELLATION':
+    case DecisionOutcomes.Cancellation:
       return 'Ärendet avskrivs';
-    case 'DISMISSAL':
+    case DecisionOutcomes.Dismissal:
       return 'Ärendet avvisas';
     default:
       return 'Okänt utfall';
@@ -204,7 +235,7 @@ export const getPhrases: (
     (parameter) => parameter.key === 'application.applicant.capacity'
   )?.values?.[0];
   const capacity =
-    outcome === 'CANCELLATION'
+    outcome === DecisionOutcomes.Cancellation
       ? 'all'
       : extraParametersCapacity === 'DRIVER'
       ? 'driver'
@@ -239,50 +270,90 @@ export const getPhrases: (
     });
 };
 
-export const renderUtredningPdf: (
-  errand: IErrand,
-  d: UtredningFormModel | DecisionFormModel,
-  services?: Service[]
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, d, services) => {
-  return renderPdf(errand, d, 'investigation', services);
+export const fetchInvestigationSkeleton: (errand: IErrand) => Promise<string> = async (errand) => {
+  const identifier = isFTNationalErrand(errand) ? 'sbk.rft.investigation.skeleton' : 'sbk.ft.investigation.skeleton';
+  try {
+    const response = await apiService.get<ApiResponse<TemplateApiResponse>>(`templates/${identifier}`);
+    const template = response.data?.data;
+    if (template?.content) {
+      return base64Decode(template.content);
+    }
+    return '';
+  } catch (error) {
+    console.error(`Failed to fetch investigation skeleton: ${identifier}`, error);
+    return '';
+  }
 };
 
-export const renderBeslutPdf: (
-  errand: IErrand,
-  d: UtredningFormModel | DecisionFormModel,
-  services?: Service[]
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, d, services) => {
-  return renderPdf(errand, d, 'decision', services);
+const buildValidityText = (validFrom: string, validToRaw: string): string => {
+  if (!validFrom) return '';
+  if (validToRaw) return `Insatsen gäller ${validFrom} - ${validToRaw}`;
+  return `Insatsen gäller från och med ${validFrom}`;
 };
 
-export const renderPdf: (
+export const mapServicesToTemplateParams = (services: Service[]): Record<string, string>[] => {
+  return services.map((service) => {
+    const validFrom = service.issued ? dayjs(service.issued).format('YYYY-MM-DD') : '';
+    const validToRaw = service.validTo ? dayjs(service.validTo).format('YYYY-MM-DD') : '';
+    const validity = buildValidityText(validFrom, validToRaw);
+    const item: Record<string, string> = {
+      restyp: service.restyp.join(', ') + (service.isWinterService ? ' (Vinterfärdtjänst)' : ''),
+      validFrom,
+      validTo: validToRaw || 'tills vidare',
+      validity,
+    };
+    if (service.transportMode?.length > 0) {
+      item.transportMode = service.transportMode.join(', ');
+    }
+    if (service.aids?.length > 0) {
+      item.aids = service.aids.join(', ');
+    }
+    if (service.addon?.length > 0) {
+      item.addon = service.addon.join(', ');
+    }
+    return item;
+  });
+};
+
+// Heading per case-type family for sbk.investigation. Parking permit has no heading; the empty value
+// makes the template's conditional block render nothing (content-neutral for PT). National before FT:
+// FTNationalCaseTypes is a subset of FTCaseType.
+const getInvestigationDocumentTitle = (errand: IErrand): string => {
+  if (isFTNationalErrand(errand)) return 'Riksfärdtjänst';
+  if (isFTErrand(errand)) return 'Färdtjänst';
+  return '';
+};
+
+export const buildPdfTemplate: (
   errand: IErrand,
   formData: UtredningFormModel | DecisionFormModel,
   templateType: 'investigation' | 'decision',
   services?: Service[]
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, formData, templateType, services) => {
+) => { identifier: string; parameters: { [key: string]: any } } = (errand, formData, templateType, services) => {
   const decision = errand.decisions.find(
     (d) =>
       (templateType === 'decision' && d.decisionType === 'FINAL') ||
       (templateType === 'investigation' && d.decisionType === 'PROPOSED')
   );
-  if (!decision) {
-    console.error('No saved decision found. Rendering preview for current form values.');
-  }
   const outcome =
-    formData.outcome === 'APPROVAL'
+    formData.outcome === DecisionOutcomes.Approval
       ? 'approval'
-      : formData.outcome === 'REJECTION'
+      : formData.outcome === DecisionOutcomes.Rejection
       ? 'rejection'
-      : formData.outcome === 'CANCELLATION'
+      : formData.outcome === DecisionOutcomes.Cancellation
       ? 'cancellation'
       : '';
 
   let identifier = `mex.decision`;
   let capacity = '';
 
+  // RPH cancellation uses the decision template even from the investigation tab.
+  const isRphCancellation = isPT() && !isFTErrand(errand) && !isFTNationalErrand(errand) && outcome === 'cancellation';
+
   if (isMEX()) {
     identifier = `mex.decision`;
+  } else if (isPT() && templateType === 'investigation' && !isRphCancellation) {
+    identifier = 'sbk.investigation';
   } else if (isPT() && isFTNationalErrand(errand)) {
     identifier = `sbk.rft.decision.${outcome}`;
   } else if (isPT() && isFTErrand(errand)) {
@@ -305,42 +376,47 @@ export const renderPdf: (
   }
 
   const owner = getOwnerStakeholder(errand);
-  const renderBody: TemplateSelector = {
-    identifier: identifier,
-    parameters: {
-      caseNumber: formData.errandNumber ?? '',
-      caseType: getLabelFromCaseType(formData.errandCaseType),
-      personalNumber: formData.personalNumber ?? '',
-      addressLastname: owner?.lastName,
-      addressFirstname: owner?.firstName,
-      addressCo: owner?.careof,
-      addressLine1: owner?.street,
-      addressLine2: [owner?.zip, owner?.city].join(' '),
-      administratorName: errand.administrator
-        ? `${errand.administrator?.firstName} ${errand.administrator?.lastName}`
-        : '',
-    },
+  const wrapWithWordBreak = (html: string) =>
+    `<div style="overflow-wrap: break-word; word-break: break-word;">${html ?? ''}</div>`;
+
+  const parameters: { [key: string]: any } = {
+    caseNumber: formData.errandNumber ?? '',
+    caseType: getLabelFromCaseType(formData.errandCaseType),
+    personalNumber: owner?.personalNumber ?? '',
+    addressLastname: owner?.lastName,
+    addressFirstname: owner?.firstName,
+    addressCo: owner?.careof,
+    addressLine1: owner?.street,
+    addressLine2: [owner?.zip, owner?.city].join(' '),
+    administratorName: errand.administrator
+      ? `${errand.administrator?.firstName} ${errand.administrator?.lastName}`
+      : '',
+    description: wrapWithWordBreak(formData.description),
   };
+
   if (templateType === 'investigation') {
-    renderBody.parameters!['investigationText'] = formData.description;
-    renderBody.parameters!['investigationDate'] = dayjs(decision?.updated).format('YYYY-MM-DD');
-    renderBody.parameters!['permitFirstname'] = owner?.firstName;
-    renderBody.parameters!['permitLastname'] = owner?.lastName;
-    renderBody.parameters!['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
-    renderBody.parameters!['disabilityReason'] = (errand.extraParameters as any)['application.reason'];
+    parameters['investigationText'] = wrapWithWordBreak(formData.description);
+    parameters['investigationDate'] = dayjs(decision?.updated).format('YYYY-MM-DD');
+    parameters['permitFirstname'] = owner?.firstName;
+    parameters['permitLastname'] = owner?.lastName;
+    parameters['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
+    parameters['disabilityReason'] =
+      errand.extraParameters.find((p) => p.key === 'application.reason')?.values?.[0] ?? '';
+    if (identifier === 'sbk.investigation') {
+      parameters['documentTitle'] = getInvestigationDocumentTitle(errand);
+    }
   } else if (templateType === 'decision') {
-    renderBody.parameters!['decisionText'] = formData.description;
-    renderBody.parameters!['decisionDate'] = dayjs(decision?.decidedAt).format('YYYY-MM-DD');
+    parameters['decisionText'] = wrapWithWordBreak(formData.description);
+    parameters['decisionDate'] = dayjs(decision?.decidedAt).format('YYYY-MM-DD');
     if (outcome === 'approval') {
-      renderBody.parameters!['permitFirstname'] = owner?.firstName;
-      renderBody.parameters!['permitLastname'] = owner?.lastName;
-      renderBody.parameters!['permitEndDate'] = dayjs(formData.validTo).format('YYYY-MM-DD');
+      parameters['permitFirstname'] = owner?.firstName;
+      parameters['permitLastname'] = owner?.lastName;
+      parameters['permitEndDate'] = formData.validTo ? dayjs(formData.validTo).format('YYYY-MM-DD') : '';
     }
   }
   if (outcome === 'cancellation') {
-    renderBody.parameters!['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
+    parameters['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
   }
-  renderBody.parameters!['description'] = formData.description;
 
   if (isPT() && isFTErrand(errand)) {
     const lawsBySfs = (formData.law as Law[])?.reduce((acc, law) => {
@@ -361,35 +437,20 @@ export const renderPdf: (
           .join(', ')
       : '';
 
-    renderBody.parameters!['lawReferences'] = lawReferences;
-
-    if (services && services.length > 0) {
-      renderBody.parameters!['services'] = services.map((service) => {
-        const serviceData: any = {
-          restyp: service.restyp + (service.isWinterService ? ' (Vinterfärdtjänst)' : ''),
-          validFrom: service.startDate ? dayjs(service.startDate).format('YYYY-MM-DD') : '',
-          validTo: service.endDate ? dayjs(service.endDate).format('YYYY-MM-DD') : '',
-          validityType: service.validityType,
-        };
-
-        if (service.transportMode?.length > 0) {
-          serviceData.transportMode = service.transportMode.join(', ');
-        }
-
-        if (service.aids?.length > 0) {
-          serviceData.aids = service.aids.join(', ');
-        }
-
-        if (service.addon?.length > 0) {
-          serviceData.addon = service.addon.join(', ');
-        }
-
-        return serviceData;
-      });
-    } else {
-      renderBody.parameters!['services'] = [];
-    }
+    parameters['lawReferences'] = lawReferences;
+    parameters['services'] = services && services.length > 0 ? mapServicesToTemplateParams(services) : [];
   }
+
+  return { identifier, parameters };
+};
+
+export const renderPdf: (
+  errand: IErrand,
+  formData: UtredningFormModel | DecisionFormModel,
+  templateType: 'investigation' | 'decision',
+  services?: Service[]
+) => Promise<{ pdfBase64: string; error?: string }> = async (errand, formData, templateType, services) => {
+  const renderBody: TemplateSelector = buildPdfTemplate(errand, formData, templateType, services);
 
   return apiService
     .post<ApiResponse<Render>, TemplateSelector>('render/pdf', renderBody)
@@ -423,7 +484,10 @@ export const renderHtml: (
       administratorName: errand.administrator
         ? `${errand.administrator?.firstName} ${errand.administrator?.lastName}`
         : '',
-      description: formData.description.replace(/<p>/g, '<p style="margin: 0;">'),
+      description: `<div style="overflow-wrap: break-word; word-break: break-word;">${formData.description.replace(
+        /<p>/g,
+        '<p style="margin: 0;">'
+      )}</div>`,
       decisionDate: dayjs(decision?.updated).format('YYYY-MM-DD'),
     },
   };

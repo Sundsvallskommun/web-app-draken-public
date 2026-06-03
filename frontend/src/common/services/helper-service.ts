@@ -70,7 +70,11 @@ export const base64Encode = (str: string) => {
 };
 
 export const base64Decode = (base64: string) => {
-  return Buffer.from(base64, 'base64').toString();
+  try {
+    return Buffer.from(base64, 'base64').toString('utf-8');
+  } catch {
+    return atob(base64);
+  }
 };
 
 export function b64toBlob(data: string, mimeType: string) {

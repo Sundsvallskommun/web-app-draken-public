@@ -1,7 +1,7 @@
-import { appConfig } from '@config/appconfig';
 import { Button, CookieConsent } from '@sk-web-gui/react';
 import NextLink from 'next/link';
-import { useEffect, useState } from 'react';
+import { ReactNode, useState } from 'react';
+
 import { MainErrandsSidebar } from '../main-errands-sidebar/main-errands-sidebar.component';
 
 export default function SidebarLayout({
@@ -13,18 +13,16 @@ export default function SidebarLayout({
   setShowContractTable,
 }: {
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
   showAttestationTable: boolean;
   setShowAttestationTable: (show: boolean) => void;
   showContractTable: boolean;
   setShowContractTable: (show: boolean) => void;
 }) {
-  const [hostName, setHostName] = useState('');
+  const [hostName] = useState(() =>
+    typeof globalThis.window === 'undefined' ? '' : globalThis.window.location.hostname
+  );
   const [open, setOpen] = useState(true);
-
-  useEffect(() => {
-    setHostName(window.location.hostname);
-  }, []);
 
   return (
     <>

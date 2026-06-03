@@ -1,15 +1,7 @@
-import { MUNICIPALITY_ID } from '@/config';
-import { apiServiceName } from '@/config/api-config';
-import {
-  Errand as ErrandDTO,
-  PageErrand as PageErrandDTO,
-  PatchErrand as PatchErrandDTO,
-  Stakeholder as StakeholderDTO,
-} from '@/data-contracts/case-data/data-contracts';
 import { RequestWithUser } from '@interfaces/auth.interface';
+import { CPatchErrandDto, CreateErrandDto } from '@interfaces/errand.interface';
 import { ErrandPhase } from '@interfaces/errand-phase.interface';
 import { ErrandStatus } from '@interfaces/errand-status.interface';
-import { CPatchErrandDto, CreateErrandDto } from '@interfaces/errand.interface';
 import { Role } from '@interfaces/role';
 import authMiddleware from '@middlewares/auth.middleware';
 import { hasPermissions } from '@middlewares/permissions.middleware';
@@ -20,6 +12,16 @@ import { logger } from '@utils/logger';
 import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+
+import { MUNICIPALITY_ID } from '@/config';
+import { apiServiceName } from '@/config/api-config';
+import {
+  Errand as ErrandDTO,
+  PageErrand as PageErrandDTO,
+  PatchErrand as PatchErrandDTO,
+  Stakeholder as StakeholderDTO,
+} from '@/data-contracts/case-data/data-contracts';
+
 import { apiURL, luhnCheck, withRetries } from '../../utils/util';
 
 interface SingleErrandResponseData {
@@ -48,7 +50,7 @@ export class CaseDataErrandController {
       const personNumberRes = await this.apiService
         .get<string>({ url: personNumberUrl }, req.user)
         .then(res => ({ data: `${res.data}` }))
-        .catch(e => ({ data: undefined, message: '404' }));
+        .catch(_e => ({ data: undefined, message: '404' }));
       applicant.personalNumber = personNumberRes.data;
     }
     const fellowApplicants: (StakeholderDTO & { personalNumber?: string })[] =
@@ -63,7 +65,7 @@ export class CaseDataErrandController {
               fa.personalNumber = res.data;
               return res;
             })
-            .catch(e => ({ data: undefined, message: '404' }));
+            .catch(_e => ({ data: undefined, message: '404' }));
         return withRetries(3, getPersonalNumber);
       } else {
         return Promise.resolve(true);
@@ -137,7 +139,7 @@ export class CaseDataErrandController {
       const isPersonNumber = luhnCheck(query);
       if (isPersonNumber) {
         const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${query}/guid`;
-        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(e => null);
+        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(_e => null);
       }
       let queryFilter = `(`;
       queryFilter += `exists(stakeholders.firstName~'*${query}*')`;
@@ -290,7 +292,7 @@ export class CaseDataErrandController {
         const stakeholderPatchPromises =
           errandApiData.stakeholders
             ?.filter(s => !s.id)
-            .map(async (stakeholder, idx) => {
+            .map(async (stakeholder, _idx) => {
               const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandApiData.id}/stakeholders`;
               const baseURL = apiURL(this.SERVICE);
               const patchStakeholder = () =>
@@ -305,7 +307,7 @@ export class CaseDataErrandController {
         const stakeholderPutPromises =
           errandApiData.stakeholders
             ?.filter(s => s.id)
-            .map(async (stakeholder, idx) => {
+            .map(async (stakeholder, _idx) => {
               const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandApiData.id}/stakeholders/${stakeholder.id}`;
               const baseURL = apiURL(this.SERVICE);
               const putStakeholder = () =>
@@ -316,7 +318,7 @@ export class CaseDataErrandController {
                 });
               return withRetries(0, putStakeholder);
             }) || [];
-        return Promise.all([...stakeholderPatchPromises, ...stakeholderPutPromises]).then(res => errandPatchResponse);
+        return Promise.all([...stakeholderPatchPromises, ...stakeholderPutPromises]).then(_res => errandPatchResponse);
       })
       .catch(e => {
         logger.error('Something went wrong when patching errand');

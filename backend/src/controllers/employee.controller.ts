@@ -1,11 +1,12 @@
-import { MUNICIPALITY_ID } from '@/config';
-import { apiServiceName } from '@/config/api-config';
-import { Employeev2, Employment, PortalPersonData } from '@/data-contracts/employee/data-contracts';
-import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
-import ApiService from '@/services/api.service';
 import { Controller, Get, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+
+import { MUNICIPALITY_ID } from '@/config';
+import { apiServiceName } from '@/config/api-config';
+import { Employeev2, EmploymentV2, PortalPersonData } from '@/data-contracts/employee/data-contracts';
+import { RequestWithUser } from '@/interfaces/auth.interface';
+import ApiService from '@/services/api.service';
 
 interface UserEmploymentDTO {
   orgId?: number;
@@ -47,9 +48,9 @@ export class EmployeeController {
       }
 
       const employments = employees[0].employments
-        .filter((emp: Employment) => emp.orgId && emp.orgName)
+        .filter((emp: EmploymentV2) => emp.orgId && emp.orgName)
         .map(
-          (emp: Employment): UserEmploymentDTO => ({
+          (emp: EmploymentV2): UserEmploymentDTO => ({
             orgId: emp.orgId,
             orgName: emp.orgName ?? undefined,
             topOrgId: emp.topOrgId,

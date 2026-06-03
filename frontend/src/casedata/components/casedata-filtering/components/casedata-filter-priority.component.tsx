@@ -1,8 +1,9 @@
 import { Priority } from '@casedata/interfaces/priority';
 import { PriorityComponent } from '@common/components/priority/priority.component';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
-import { useFormContext } from 'react-hook-form';
 import { ChevronDown } from 'lucide-react';
+import { FC } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 export interface CasePriorityFilter {
   priority: string[];
@@ -12,7 +13,7 @@ export const CasePriorityValues: CasePriorityFilter = {
   priority: [],
 };
 
-export const CasedataFilterPriority: React.FC = () => {
+export const CasedataFilterPriority: FC = () => {
   const { register } = useFormContext<CasePriorityFilter>();
 
   return (

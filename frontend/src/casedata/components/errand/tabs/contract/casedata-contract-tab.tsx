@@ -1,36 +1,52 @@
-import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
+import { CasedataStatusLabelComponent } from '@casedata/components/contract-overview/contracts-table.component';
+import { ContractData, UnifiedContractParty } from '@casedata/interfaces/contract-data';
 import {
   Contract,
   ContractType,
   ExtraParameterGroup,
   IntervalType,
   InvoicedIn,
+  LeaseType,
   Party,
   StakeholderRole,
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
-import { Role } from '@casedata/interfaces/role';
-import { getErrand, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import { getStakeholdersByRelation } from '@casedata/services/casedata-stakeholder-service';
+import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import {
-  casedataStakeholderToContractStakeholder,
+  contractStakeholderToUnifiedParty,
+  contractToKopeavtal,
+  contractToLagenhetsArrende,
   contractTypes,
   defaultKopeavtal,
   defaultLagenhetsarrende,
+  errandStakeholderToContractStakeholder,
   getErrandContract,
+  hasRecurringFee,
   isLeaseAgreement,
   leaseTypes,
   saveContract,
   saveContractToErrand,
+  unifiedPartyToContractStakeholder,
 } from '@casedata/services/contract-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Checkbox, FormControl, FormLabel, Input, Select, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import {
+  Checkbox,
+  FormControl,
+  FormErrorMessage,
+  FormLabel,
+  Input,
+  Select,
+  Spinner,
+  useConfirm,
+  useSnackbar,
+} from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { Dispatch, FC, SetStateAction, useCallback, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+
 import ContractForm from './contract-form';
 import { ContractNavigation } from './contract-navigation';
 
@@ -39,10 +55,18 @@ interface CasedataContractProps {
   setUnsaved: Dispatch<SetStateAction<boolean>>;
 }
 
-export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
+export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
   let formSchema = yup
     .object({
       type: yup.string().required('Avtalstyp måste anges'),
+      currentPeriod: yup.object().when(['type', 'status'], {
+        is: (type: ContractType, status: Status) =>
+          type !== ContractType.PURCHASE_AGREEMENT && status === Status.ACTIVE,
+        then: (schema) =>
+          schema.shape({
+            startDate: yup.string().required('Startdatum måste anges'),
+          }),
+      }),
       notice: yup.object().when('type', {
         is: (type: ContractType) => type !== ContractType.PURCHASE_AGREEMENT,
         then: (schema) =>
@@ -52,11 +76,15 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
               .of(
                 yup.object({
                   party: yup.string().oneOf(Object.keys(Party)).required('Part måste väljas'),
-                  periodOfNotice: yup.string().required('Antal måste anges'),
+                  periodOfNotice: yup.string().when('party', {
+                    is: (party: string) => party === 'ALL',
+                    then: (schema) => schema.required('Uppsägningstid måste anges'),
+                    otherwise: (schema) => schema,
+                  }),
                   unit: yup.string().oneOf(Object.keys(TimeUnit)).required('Enhet måste väljas'),
                 })
               )
-              .min(2),
+              .min(1),
           }),
         otherwise: (schema) => schema,
       }),
@@ -74,32 +102,86 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
           otherwise: (schema) => schema,
         }),
       }),
-      invoicing: yup.object({
-        invoiceInterval: yup.mixed<string>().when('type', {
-          is: (type: string) => type === ContractType.LEASE_AGREEMENT,
-          then: (schema) =>
-            schema.oneOf(Object.keys(IntervalType), 'Välj intervall').required('Intervall måste väljas'),
-          otherwise: (schema) => schema,
-        }),
-
-        invoicedIn: yup.mixed<string>().when('type', {
-          is: (type: string) => type === ContractType.LEASE_AGREEMENT,
-          then: (schema) =>
-            schema
+      invoicing: yup.object().when(['type', 'leaseType', 'status'], {
+        is: (type: ContractType, leaseType: LeaseType, status: Status) =>
+          hasRecurringFee(type, leaseType) && status === Status.ACTIVE,
+        then: (schema) =>
+          schema.shape({
+            invoiceInterval: yup
+              .mixed<string>()
+              .oneOf(Object.keys(IntervalType), 'Välj intervall')
+              .required('Intervall måste väljas'),
+            invoicedIn: yup
+              .mixed<string>()
               .oneOf(Object.keys(InvoicedIn), 'Välj förskott eller efterskott')
               .required('Förskott eller efterskott måste väljas'),
-          otherwise: (schema) => schema,
-        }),
+          }),
+      }),
+      extraParameters: yup.array().when(['generateInvoice', 'status'], ([generateInvoice, status], schema) => {
+        if (status !== Status.ACTIVE) return schema;
+
+        const baseSchema = schema.of(
+          yup.object({
+            name: yup.string().required(),
+            parameters: yup.object(),
+          })
+        );
+
+        const hasReferens =
+          () => (extraParameters: { name: string; parameters: Record<string, unknown> }[] | undefined) =>
+            extraParameters?.some((s) => s.parameters?.markup) ?? false;
+
+        if (generateInvoice === 'true') {
+          return baseSchema.test('has-referens', 'Referens måste anges', hasReferens());
+        }
+
+        return schema;
+      }),
+      stakeholders: yup.array().when(['type', 'status'], ([type, status], schema) => {
+        if (status !== Status.ACTIVE) return schema;
+
+        const baseSchema = schema.of(
+          yup.object({
+            roles: yup
+              .array()
+              .of(yup.string().oneOf(Object.keys(StakeholderRole)) as any)
+              .min(1, 'Minst en roll måste anges'),
+          })
+        );
+
+        const hasRole = (role: StakeholderRole) => (stakeholders: any[] | undefined) =>
+          stakeholders?.some((s) => s.roles?.includes(role)) ?? false;
+
+        if (type === ContractType.PURCHASE_AGREEMENT) {
+          return baseSchema
+            .test(
+              'has-buyer-and-seller',
+              'Minst en köpare och en säljare måste anges',
+              hasRole(StakeholderRole.BUYER) && hasRole(StakeholderRole.SELLER)
+            )
+            .test('has-buyer', 'Minst en köpare måste anges', hasRole(StakeholderRole.BUYER))
+            .test('has-seller', 'Minst en säljare måste anges', hasRole(StakeholderRole.SELLER));
+        }
+        if (isLeaseAgreement(type)) {
+          return baseSchema
+            .test(
+              'has-lessor-and-lessee',
+              'Minst en upplåtare och en arrendator måste anges',
+              hasRole(StakeholderRole.LESSOR) && hasRole(StakeholderRole.LESSEE)
+            )
+            .test('has-lessor', 'Minst en upplåtare måste anges', hasRole(StakeholderRole.LESSOR))
+            .test('has-lessee', 'Minst en arrendator måste anges', hasRole(StakeholderRole.LESSEE));
+        }
+        return baseSchema.min(1, 'Minst en part måste anges');
       }),
     })
     .required();
-  const { municipalityId, errand, setErrand, user } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const user = useUserStore((s) => s.user);
   const [loading, setIsLoading] = useState<string>();
   const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
-  const [sellers, setSellers] = useState<StakeholderWithPersonnumber[]>([]);
-  const [buyers, setBuyers] = useState<StakeholderWithPersonnumber[]>([]);
-  const [lessees, setLessees] = useState<StakeholderWithPersonnumber[]>([]);
-  const [lessors, setLessors] = useState<StakeholderWithPersonnumber[]>([]);
+  const [contractParties, setContractParties] = useState<UnifiedContractParty[]>([]);
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
   const [allowed, setAllowed] = useState(false);
@@ -108,84 +190,66 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     setAllowed(_a);
   }, [user, errand]);
 
-  const updateStakeholdersFromErrand = () => {
-    if (!errand) return;
-    const _sellers: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.SELLER).map(
-      casedataStakeholderToContractStakeholder
-    );
-    const _buyers: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.BUYER).map(
-      casedataStakeholderToContractStakeholder
-    );
-    const _lessees: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.LEASEHOLDER).map(
-      (s, idx) => {
-        // FIXME Assign PRIMARY_BILLING_PARTY to the first LEASEHOLDER-stakeholder
-        // Is this the rule we should use? To be discussed
-        const l = casedataStakeholderToContractStakeholder(s);
-        if (idx === 0) {
-          if (!l.roles) l.roles = [];
-          l.roles.push(StakeholderRole.PRIMARY_BILLING_PARTY);
-        }
-        return l;
-      }
-    );
-    const _lessors: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.PROPERTY_OWNER).map(
-      casedataStakeholderToContractStakeholder
-    );
-    setSellers(_sellers || []);
-    setBuyers(_buyers || []);
-    setLessees(_lessees || []);
-    setLessors(_lessors || []);
-  };
+  // Handler to add a new party
+  const handleAddParty = useCallback(
+    (stakeholderId: string, roles: StakeholderRole[]) => {
+      const stakeholder = errand?.stakeholders?.find((s) => String(s.id) === stakeholderId);
+      if (!stakeholder) return;
 
-  // Update only lessees (invoice recipients) from errand - used for non-DRAFT contracts
-  const updateLesseesOnlyFromErrand = () => {
-    if (!errand) return;
-    const _lessees: StakeholderWithPersonnumber[] = getStakeholdersByRelation(errand, Role.LEASEHOLDER).map(
-      (s, idx) => {
-        const l = casedataStakeholderToContractStakeholder(s);
-        if (idx === 0) {
-          if (!l.roles) l.roles = [];
-          l.roles.push(StakeholderRole.PRIMARY_BILLING_PARTY);
-        }
-        return l;
-      }
-    );
-    setLessees(_lessees || []);
-    // NOTE: Does NOT update sellers, buyers, or lessors
-  };
+      const contractStakeholder = errandStakeholderToContractStakeholder(stakeholder, roles);
+      const newParty = contractStakeholderToUnifiedParty(contractStakeholder);
 
-  const getStakeholdersFromContract = (contract: ContractData) => {
-    let _sellers: StakeholderWithPersonnumber[] = [];
-    let _buyers: StakeholderWithPersonnumber[] = [];
-    let _lessees: StakeholderWithPersonnumber[] = [];
-    let _lessors: StakeholderWithPersonnumber[] = [];
-    if (contract.type === ContractType.PURCHASE_AGREEMENT) {
-      _sellers = contract.sellers ?? [];
-      _buyers = contract.buyers ?? [];
-    } else if (isLeaseAgreement(contract.type)) {
-      _lessees = contract.lessees ?? [];
-      _lessors = contract.lessors ?? [];
-    }
-    setSellers(_sellers);
-    setBuyers(_buyers);
-    setLessees(_lessees);
-    setLessors(_lessors);
-  };
+      setContractParties((prev) => [...prev, newParty]);
+      props.setUnsaved(true);
+    },
+    [errand?.stakeholders, props]
+  );
 
+  // Handler to edit party roles
+  const handleEditPartyRoles = useCallback(
+    (stakeholderId: string, newRoles: StakeholderRole[]) => {
+      setContractParties((prev) =>
+        prev.map((party) => {
+          if (party.stakeholderId === stakeholderId) {
+            return {
+              ...party,
+              roles: newRoles,
+              originalStakeholder: {
+                ...party.originalStakeholder,
+                roles: newRoles,
+              },
+            };
+          }
+          return party;
+        })
+      );
+      props.setUnsaved(true);
+    },
+    [props]
+  );
+
+  // Handler to remove a party
+  const handleRemoveParty = useCallback(
+    (stakeholderId: string) => {
+      setContractParties((prev) => prev.filter((party) => party.stakeholderId !== stakeholderId));
+      props.setUnsaved(true);
+    },
+    [props]
+  );
+
+  // Load parties from contract stakeholders
   useEffect(() => {
-    if (existingContract?.contractId) {
-      getStakeholdersFromContract(existingContract);
-    } else {
-      updateStakeholdersFromErrand();
+    if (existingContract?.stakeholders) {
+      const parties = existingContract.stakeholders.map(contractStakeholderToUnifiedParty);
+      setContractParties(parties);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [errand, existingContract]);
+  }, [existingContract]);
 
   const contractForm = useForm<ContractData>({
     resolver: yupResolver(formSchema) as unknown as Resolver<ContractData>,
     defaultValues:
       existingContract?.type === ContractType.PURCHASE_AGREEMENT ? defaultKopeavtal : defaultLagenhetsarrende,
-    mode: 'onChange',
+    mode: 'onSubmit',
   });
 
   const changeBadgeColor = (inId: string) => {
@@ -201,24 +265,37 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
 
   const onSave = async (data: ContractData) => {
     setIsLoading('Sparar avtal..');
-    return saveContract(data)
+    const isNewContract = !data.contractId;
+
+    // Convert unified parties back to contract stakeholders
+    const stakeholders = contractParties.map(unifiedPartyToContractStakeholder);
+
+    // Set stakeholders directly on contract data
+    const dataToSave: ContractData = {
+      ...data,
+      stakeholders,
+    };
+
+    return saveContract(dataToSave)
       .then(async (res: Contract) => {
-        await saveContractToErrand(municipalityId, res.contractId ?? '', errand!);
-        return res;
-      })
-      .then((res) => {
+        // Only save to errand if this is a new contract
+        if (isNewContract && res.contractId) {
+          await saveContractToErrand(municipalityId, res.contractId, errand!);
+        }
+
+        // Convert saved contract back to form data and reset the form
+        const savedFormData = isLeaseAgreement(res.type) ? contractToLagenhetsArrende(res) : contractToKopeavtal(res);
+        contractForm.reset(savedFormData);
+        setExistingContract(savedFormData);
+
         setIsLoading(undefined);
         props.setUnsaved(false);
-        getErrand(municipalityId, errand!.id.toString()).then((res) => {
-          setErrand(res.errand);
-          toastMessage(
-            getToastOptions({
-              message: 'Avtalet sparades',
-              status: 'success',
-            })
-          );
-          setIsLoading(undefined);
-        });
+        toastMessage(
+          getToastOptions({
+            message: 'Avtalet sparades',
+            status: 'success',
+          })
+        );
       })
       .catch(() => {
         setIsLoading(undefined);
@@ -252,7 +329,8 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
           newParams = [...oldParams, errandIdExtraParameter];
         })
         .catch(() => {
-          newParams = [errandIdExtraParameter];
+          const oldParams = (contractForm.getValues().extraParameters ?? []).filter((p) => p.name !== 'errandId');
+          newParams = [...oldParams, errandIdExtraParameter];
           setExistingContract(undefined);
         })
         .finally(() => {
@@ -267,7 +345,7 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
     if (contractType && contractType !== ContractType.LEASE_AGREEMENT) {
       contractForm.setValue('leaseType', undefined);
     }
-    contractForm.trigger();
+    contractForm.trigger('type');
   }, [contractType, contractForm]);
 
   return (
@@ -282,10 +360,13 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
           <div className="flex">
             <div className="w-3/4" data-cy="contract-wrapper">
               <div>
-                <h2 className="text-h2-md">
-                  {contractTypes.find((ct) => ct.key === contractType)?.label}{' '}
-                  <span>{contractForm.getValues().contractId ? `(${contractForm.getValues().contractId})` : null}</span>
-                </h2>
+                <div className="flex flex-col">
+                  <div className="flex flex-row items-center gap-12">
+                    <h2 className="text-h2-sm">{contractTypes.find((ct) => ct.key === contractType)?.label}</h2>
+                    <CasedataStatusLabelComponent status={contractForm.getValues().status} />
+                  </div>
+                  <span>{contractForm.getValues().contractId ? `${contractForm.getValues().contractId}` : null}</span>
+                </div>
                 <p className="py-16">
                   Här fyller du i avtalsuppgifter för ärendet. Kom ihåg att granska uppgifterna noga så att allt är i
                   sin ordning inför signeringen. Notera att vissa uppgifter hämtas automatiskt från de uppgifter som
@@ -295,7 +376,11 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
               <div className="flex justify-start gap-xl">
                 <FormControl id="contractType" className="my-md">
                   <FormLabel>Välj avtalstyp</FormLabel>
-                  <Select data-cy="contract-type-select" {...contractForm.register('type')}>
+                  <Select
+                    data-cy="contract-type-select"
+                    {...contractForm.register('type')}
+                    disabled={existingContract?.status === Status.ACTIVE}
+                  >
                     {contractTypes.map((t) => (
                       <option key={t.key} value={t.key}>
                         {t.label}
@@ -306,18 +391,24 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                 {contractForm.getValues().type === ContractType.LEASE_AGREEMENT && (
                   <FormControl id="contractSubType" className="my-md">
                     <FormLabel>Undertyp</FormLabel>
-                    <Select data-cy="contract-subtype-select" {...contractForm.register('leaseType')}>
-                      {leaseTypes.map((lt) => (
-                        <option key={lt.key} value={lt.key}>
-                          {lt.label}
-                        </option>
-                      ))}
+                    <Select
+                      data-cy="contract-subtype-select"
+                      {...contractForm.register('leaseType')}
+                      disabled={existingContract?.status === Status.ACTIVE}
+                    >
+                      {leaseTypes
+                        .filter((lt) => existingContract?.status !== Status.ACTIVE && lt.key !== LeaseType.OTHER_FEE)
+                        .map((lt) => (
+                          <option key={lt.key} value={lt.key}>
+                            {lt.label}
+                          </option>
+                        ))}
                     </Select>
                   </FormControl>
                 )}
               </div>
 
-              {contractForm.getValues().status === Status.DRAFT && (
+              {contractForm.getValues().status === Status.DRAFT ? (
                 <FormControl id="isDraft" className="my-md">
                   <FormLabel>
                     Status på avtal {loading !== undefined && existingContract === undefined && <Spinner size={4} />}
@@ -339,8 +430,13 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                         .then((confirmed) => {
                           if (confirmed) {
                             contractForm.setValue('status', Status.ACTIVE);
-                            contractForm.trigger('status');
-                            onSave(contractForm.getValues());
+                            contractForm.trigger().then((valid: boolean) => {
+                              if (valid) {
+                                onSave(contractForm.getValues());
+                              } else {
+                                contractForm.setValue('status', Status.DRAFT);
+                              }
+                            });
                           }
                         });
                     }}
@@ -349,20 +445,22 @@ export const CasedataContractTab: React.FC<CasedataContractProps> = (props) => {
                     Markera som utkast
                   </Checkbox>
                   <p>Avmarkera när allt är klart med avtalet och faktureringen ska börja.</p>
+                  {contractForm.formState.isValid === false && (
+                    <FormErrorMessage>Avtalet saknar nödvändiga uppgifter.</FormErrorMessage>
+                  )}
                 </FormControl>
-              )}
+              ) : null}
               <Input type="hidden" readOnly {...contractForm.register('contractId')} />
               <ContractForm
                 changeBadgeColor={changeBadgeColor}
                 onSave={onSave}
                 existingContract={(existingContract as ContractData) || defaultKopeavtal}
-                sellers={sellers}
-                buyers={buyers}
-                lessees={lessees}
-                lessors={lessors}
-                updateStakeholders={updateStakeholdersFromErrand}
-                onUpdateLesseesOnly={updateLesseesOnlyFromErrand}
+                contractParties={contractParties}
                 contractStatus={existingContract?.status}
+                errandStakeholders={errand?.stakeholders}
+                onAddParty={handleAddParty}
+                onEditPartyRoles={handleEditPartyRoles}
+                onRemoveParty={handleRemoveParty}
               />
             </div>
 

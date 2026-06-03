@@ -3,9 +3,9 @@ import { contractTypes, leaseTypes } from '@casedata/services/contract-service';
 import { Button, Input, Label, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
-import React, { useState } from 'react';
-import { useFormContext } from 'react-hook-form';
 import { ArrowRight } from 'lucide-react';
+import { FC, ReactNode, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 export interface ContractTableForm {
   sortOrder: 'asc' | 'desc';
@@ -33,7 +33,7 @@ const getStakeholderName = (stakeholder: Stakeholder): string => {
   return stakeholder.organizationName || '-';
 };
 
-const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ status }) => {
+export const CasedataStatusLabelComponent: FC<{ status: string }> = ({ status }) => {
   switch (status) {
     case 'DRAFT':
       return (
@@ -67,7 +67,7 @@ const formatDate = (date?: string): string => {
   return dayjs(date).format('YYYY-MM-DD');
 };
 
-const formatPeriod = (start?: string, end?: string): React.ReactNode => {
+const formatPeriod = (start?: string, end?: string): ReactNode => {
   const startStr = formatDate(start);
   const endStr = formatDate(end);
   if (startStr || endStr) {
@@ -94,13 +94,14 @@ export const contractTableLabels = [
   { label: '', sortable: false, column: '' },
 ];
 
-export const ContractsTable: React.FC<{
+export const ContractsTable: FC<{
   contracts: Contract[];
   isLoading: boolean;
   onRowClick?: (contract: Contract) => void;
 }> = ({ contracts, isLoading, onRowClick }) => {
-  const { watch, setValue, register } = useFormContext<ContractTableForm>();
+  const { watch, setValue } = useFormContext<ContractTableForm>();
   const [rowHeight, setRowHeight] = useState<string>('normal');
+  const [pageSizeInput, setPageSizeInput] = useState<string>((watch('pageSize') || 12).toString());
 
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');
@@ -229,13 +230,27 @@ export const ContractsTable: React.FC<{
                 Rader per sida:
               </label>
               <Input
-                {...register('pageSize')}
                 size="sm"
                 id="pageSize"
                 type="number"
                 min={1}
                 max={1000}
                 className="max-w-[6rem]"
+                value={pageSizeInput}
+                onChange={(e) => setPageSizeInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+                onBlur={() => {
+                  const parsed = parseInt(pageSizeInput, 10);
+                  if (!isNaN(parsed) && parsed > 0) {
+                    setValue('pageSize', parsed);
+                  } else {
+                    setPageSizeInput((watch('pageSize') || 12).toString());
+                  }
+                }}
               />
             </div>
             <div className="sk-table-paginationwrapper">

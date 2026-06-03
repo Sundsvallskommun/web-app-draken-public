@@ -1,27 +1,30 @@
 'use client';
 
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
-import { DecisionOutcome } from '@casedata/interfaces/decision';
+import { DecisionOutcome, DecisionOutcomes } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
 import {
+  buildPdfTemplate,
+  fetchInvestigationSkeleton,
   getProposedOrRecommendedDecision,
   getUtredningPhrases,
-  lawMapping,
-  renderUtredningPdf,
+  lawMappingPT,
+  renderPdf,
   saveDecision,
 } from '@casedata/services/casedata-decision-service';
 import { getErrand, isErrandLocked, isFTErrand, validateAction } from '@casedata/services/casedata-errand-service';
-import { FT_INVESTIGATION_TEXT } from '@casedata/utils/investigation-text';
+import TextEditor from '@common/components/dynamic-text-editor';
+import { TemplatePdfPreview } from '@common/components/template-preview/template-pdf-preview.component';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
+import { isMEX } from '@common/services/application-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useAppContext } from '@contexts/app.context';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
   Button,
   cx,
-  Divider,
+  Disclosure,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -30,12 +33,11 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { Check, ClipboardPenLine, Info } from 'lucide-react';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { Check, ClipboardPenLine, Download, Info } from 'lucide-react';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 export interface UtredningFormModel {
   id?: string;
@@ -69,17 +71,18 @@ let formSchemaFT = yup
   })
   .required();
 
-export const CasedataInvestigationTab: React.FC<{
+export const CasedataInvestigationTab: FC<{
   errand: IErrand;
   setUnsaved: (unsaved: boolean) => void;
 }> = (props) => {
   const toastMessage = useSnackbar();
   const saveConfirm = useConfirm();
-  const { municipalityId, errand, user } = useAppContext();
-  const { setErrand } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const user = useUserStore((s) => s.user);
+  const setErrand = useCasedataStore((s) => s.setErrand);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
-  const [previewError, setPreviewError] = useState(false);
   const [textIsDirty, setTextIsDirty] = useState(false);
   const [firstDescriptionChange, setFirstDescriptionChange] = useState(true);
   const [firstOutcomeChange, setFirstOutcomeChange] = useState(true);
@@ -91,11 +94,9 @@ export const CasedataInvestigationTab: React.FC<{
     content: 'Vill du återställa den här mallen?',
   };
 
-  const [allowed, setAllowed] = useState(false);
-  useEffect(() => {
-    if (!errand) return;
-    const _a = validateAction(errand, user) && !!errand.administrator;
-    setAllowed(_a);
+  const allowed = useMemo(() => {
+    if (!errand) return false;
+    return validateAction(errand, user) && !!errand.administrator;
   }, [user, errand]);
   const {
     register,
@@ -114,8 +115,15 @@ export const CasedataInvestigationTab: React.FC<{
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
 
-  const { description, outcome } = watch();
+  const { description, outcome, law } = watch();
   const saveCasedataErrand = useSaveCasedataErrand();
+
+  const previewTemplate = useMemo(() => {
+    if (isMEX()) return { identifier: undefined, parameters: {} };
+    if (!outcome && !isFTErrand(props.errand)) return { identifier: undefined, parameters: {} };
+    return buildPdfTemplate(props.errand, getValues(), 'investigation');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.errand, outcome, description, law]);
   const save = async (data: UtredningFormModel) => {
     try {
       setIsLoading(true);
@@ -127,10 +135,10 @@ export const CasedataInvestigationTab: React.FC<{
       }
 
       if (isFTErrand(props.errand)) {
-        data.outcome = 'APPROVAL';
+        data.outcome = DecisionOutcomes.Approval;
         await saveDecision(municipalityId, props.errand, data, 'PROPOSED');
       } else {
-        const rendered = await renderUtredningPdf(errand!, data);
+        const rendered = await renderPdf(errand!, data, 'investigation');
         await saveDecision(municipalityId, props.errand, data, 'PROPOSED', rendered.pdfBase64);
       }
 
@@ -155,26 +163,6 @@ export const CasedataInvestigationTab: React.FC<{
       setIsLoading(false);
       setError(false);
     }
-  };
-
-  const getPdfPreview = () => {
-    const data = getValues();
-    renderUtredningPdf(props.errand, data).then(async (d) => {
-      await saveDecision(municipalityId, props.errand, data, 'PROPOSED', d.pdfBase64);
-      await getErrand(municipalityId, props.errand.id.toString()).then((res) => setErrand(res.errand));
-      if (typeof d.error === 'undefined' && typeof d.pdfBase64 !== 'undefined') {
-        const uri = `data:application/pdf;base64,${d.pdfBase64}`;
-        const link = document.createElement('a');
-        link.href = uri;
-        link.setAttribute('download', `Utredning-${props.errand.errandNumber}.pdf`);
-        document.body.appendChild(link);
-        link.click();
-        setPreviewError(false);
-      } else {
-        console.error('Error when fetching preview');
-        setPreviewError(true);
-      }
-    });
   };
 
   const outcomeModalCallback = async (outcome: string) => {
@@ -243,8 +231,12 @@ export const CasedataInvestigationTab: React.FC<{
     });
     setValue('errandNumber', props.errand.errandNumber);
     if (isFTErrand(props.errand) && !decision) {
-      skipNextOnChange.current = true;
-      setValue('description', FT_INVESTIGATION_TEXT, { shouldDirty: false });
+      fetchInvestigationSkeleton(props.errand).then((skeleton) => {
+        if (skeleton) {
+          skipNextOnChange.current = true;
+          setValue('description', skeleton, { shouldDirty: false });
+        }
+      });
     }
     props.setUnsaved(false);
     trigger();
@@ -281,21 +273,6 @@ export const CasedataInvestigationTab: React.FC<{
         <div className="inline-flex mt-ms gap-lg justify-start items-center flex-wrap">
           <h2 className="text-h4-sm md:text-h4-md">Utredning</h2>
         </div>
-        {!isFTErrand(props.errand) && (
-          <Button
-            type="button"
-            disabled={!formState.isValid || isErrandLocked(errand) || !allowed}
-            size="sm"
-            variant="primary"
-            color="vattjom"
-            inverted={!(isErrandLocked(errand) || !allowed)}
-            rightIcon={<Download size={18} />}
-            onClick={getPdfPreview}
-            data-cy="preview-investigation-button"
-          >
-            Förhandsgranska PDF
-          </Button>
-        )}
       </div>
       <div className="mt-lg">
         {errand?.decisions && errand?.decisions.find((d) => d.decisionType === 'RECOMMENDED') && (
@@ -311,16 +288,6 @@ export const CasedataInvestigationTab: React.FC<{
           </div>
         )}
 
-        {isFTErrand(props.errand) && (
-          <div className="pb-[1.5rem]">
-            <Divider.Section orientation="horizontal">
-              <div className="flex gap-sm items-center">
-                <ClipboardPenLine />
-                <h3 className="text-h4-sm md:text-h4-md">Utredningsmall</h3>
-              </div>
-            </Divider.Section>
-          </div>
-        )}
         <form onSubmit={handleSubmit(save)} data-cy="utredning-form">
           <Input type="hidden" {...register('decidedBy')} value={user.username} />
           <div className="flex gap-24">
@@ -338,7 +305,7 @@ export const CasedataInvestigationTab: React.FC<{
                     onChange={(e) => {
                       setValue(
                         'law',
-                        lawMapping.filter((law) => {
+                        lawMappingPT.filter((law) => {
                           return law.heading === e.target.value;
                         }),
                         { shouldDirty: true }
@@ -350,7 +317,7 @@ export const CasedataInvestigationTab: React.FC<{
                     value={getValues('law')?.[0] ? getValues('law')[0].heading : undefined}
                   >
                     <Select.Option value={''}>Välj lagrum</Select.Option>
-                    {lawMapping.map((law, index) => {
+                    {lawMappingPT.map((law, index) => {
                       return (
                         <Select.Option key={index} value={law.heading}>
                           {law.heading}
@@ -398,34 +365,51 @@ export const CasedataInvestigationTab: React.FC<{
               </>
             )}
           </div>
-          <FormControl className="w-full">
-            <FormLabel>Utredningstext</FormLabel>
-            <Input type="hidden" {...register('id')} />
-            <Input data-cy="utredning-description-input" type="hidden" {...register('description')} />
-            <Input type="hidden" {...register('errandNumber')} />
-            <div data-cy="utredning-richtext-wrapper">
-              <TextEditor
-                className={cx(`mb-md h-[80%] text-editor-with-toolbar`)}
-                readOnly={isErrandLocked(errand) || !allowed}
-                onChange={(e) => {
-                  // Skip the first onChange after template load (TextEditor normalizes HTML)
-                  if (skipNextOnChange.current) {
-                    skipNextOnChange.current = false;
-                    setValue('description', e.target.value.markup ?? '', { shouldDirty: false });
-                  } else {
-                    setValue('description', e.target.value.markup ?? '', { shouldDirty: true });
-                  }
-                  trigger('description');
-                }}
-                value={{ markup: description }}
-              />
-            </div>
-            <div className="my-sm">
-              {errors.description && formState.isDirty && (
-                <FormErrorMessage>{errors.description?.message}</FormErrorMessage>
-              )}
-            </div>
-          </FormControl>
+          <Input type="hidden" {...register('id')} />
+          <Input data-cy="utredning-description-input" type="hidden" {...register('description')} />
+          <Input type="hidden" {...register('errandNumber')} />
+          {(() => {
+            const editorBlock = (
+              <FormControl className="w-full">
+                <FormLabel>Utredningstext</FormLabel>
+                <div data-cy="utredning-richtext-wrapper">
+                  <TextEditor
+                    className={cx(`mb-md h-[80%] text-editor-with-toolbar`)}
+                    readOnly={isErrandLocked(errand) || !allowed}
+                    onChange={(e) => {
+                      // Skip the first onChange after template load (TextEditor normalizes HTML)
+                      if (skipNextOnChange.current) {
+                        skipNextOnChange.current = false;
+                        setValue('description', e.target.value.markup ?? '', { shouldDirty: false });
+                      } else {
+                        setValue('description', e.target.value.markup ?? '', { shouldDirty: true });
+                      }
+                      trigger('description');
+                    }}
+                    value={{ markup: description }}
+                  />
+                </div>
+                <div className="my-sm">
+                  {errors.description && formState.isDirty && (
+                    <FormErrorMessage>{errors.description?.message}</FormErrorMessage>
+                  )}
+                </div>
+              </FormControl>
+            );
+            return isMEX() ? (
+              editorBlock
+            ) : (
+              <Disclosure variant="alt" initalOpen className="mb-24" data-cy="investigation-template-disclosure">
+                <Disclosure.Header>
+                  <Disclosure.Icon icon={<ClipboardPenLine size={18} />} />
+                  <Disclosure.Title>Utredningsmall</Disclosure.Title>
+                  <Disclosure.Button />
+                </Disclosure.Header>
+                <Disclosure.Content>{editorBlock}</Disclosure.Content>
+              </Disclosure>
+            );
+          })()}
+          <TemplatePdfPreview identifier={previewTemplate.identifier} parameters={previewTemplate.parameters} />
           <div className="flex justify-left gap-10">
             <Button
               data-cy="save-utredning-button"
@@ -435,7 +419,7 @@ export const CasedataInvestigationTab: React.FC<{
               onClick={handleSubmit(() => {
                 save(getValues());
               })}
-              disabled={!allowed || isErrandLocked(errand) || !formState.isValid || !formState.isDirty}
+              disabled={!allowed || isErrandLocked(errand) || !formState.isValid}
               leftIcon={<Check className="mr-sm" />}
               loading={isLoading}
               loadingText="Sparar"
@@ -454,9 +438,10 @@ export const CasedataInvestigationTab: React.FC<{
                       'info',
                       'info'
                     )
-                    .then((confirmed) => {
+                    .then(async (confirmed) => {
                       if (confirmed) {
-                        setValue('description', FT_INVESTIGATION_TEXT);
+                        const skeleton = await fetchInvestigationSkeleton(props.errand);
+                        setValue('description', skeleton);
                         save(getValues());
                       }
                       return confirmed ? () => true : () => {};
@@ -472,9 +457,6 @@ export const CasedataInvestigationTab: React.FC<{
           </div>
           <div className="mt-lg">
             {error && <FormErrorMessage>Något gick fel när utredningen sparades.</FormErrorMessage>}
-          </div>
-          <div className="mt-lg">
-            {previewError && <FormErrorMessage>Något gick fel när förhandsgranskningen skapades.</FormErrorMessage>}
           </div>
         </form>
       </div>

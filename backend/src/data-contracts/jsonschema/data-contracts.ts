@@ -16,10 +16,11 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
+  string?: boolean;
+  boolean?: boolean;
+  number?: boolean;
   valueNode?: boolean;
   container?: boolean;
-  missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -31,10 +32,9 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   integralNumber?: boolean;
-  number?: boolean;
-  string?: boolean;
-  boolean?: boolean;
+  missingNode?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -69,8 +69,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  detail?: string;
   causeAsProblem?: ThrowableProblem;
+  detail?: string;
 }
 
 export interface ThrowableProblem {
@@ -154,9 +154,9 @@ export interface PageJsonSchema {
   content?: JsonSchema[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
+  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
@@ -171,8 +171,8 @@ export interface PageableObject {
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  unpaged?: boolean;
   sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {

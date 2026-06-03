@@ -1,9 +1,3 @@
-import { Decision, DecisionDecisionOutcomeEnum, DecisionDecisionTypeEnum, Law } from '@/data-contracts/case-data/data-contracts';
-import { HttpException } from '@/exceptions/HttpException';
-import { DecisionDTO } from '@/interfaces/decision.interface';
-import { User } from '@/interfaces/users.interface';
-import { validateAction } from '@/services/errand.service';
-import { apiURL } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
@@ -11,8 +5,16 @@ import ApiService from '@services/api.service';
 import { logger } from '@utils/logger';
 import { Body, Controller, Get, HttpCode, Param, Patch, Put, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
-import { ResponseData } from './casedata-notes.controller';
+
 import { apiServiceName } from '@/config/api-config';
+import { Decision, DecisionDecisionOutcomeEnum, DecisionDecisionTypeEnum } from '@/data-contracts/case-data/data-contracts';
+import { HttpException } from '@/exceptions/HttpException';
+import { DecisionDTO } from '@/interfaces/decision.interface';
+import { User } from '@/interfaces/users.interface';
+import { validateAction } from '@/services/errand.service';
+import { apiURL } from '@/utils/util';
+
+import { ResponseData } from './casedata-notes.controller';
 
 @Controller()
 export class CaseDataDecisionsController {
@@ -97,7 +99,7 @@ export class CaseDataDecisionsController {
     @Param('id') errandId: number,
     @Param('decisionId') decisionId: string,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<ResponseData> {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/decisions/${decisionId}`;
     const baseURL = apiURL(this.SERVICE);

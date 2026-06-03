@@ -149,11 +149,8 @@ export interface Invoice {
    * @minLength 1
    */
   customerId: string;
-  /**
-   * Description of the invoice
-   * @minLength 1
-   */
-  description: string;
+  /** Description of the invoice. Maximum length is configurable and depends on the billing record type (INTERNAL or EXTERNAL). */
+  description?: string;
   /** Our reference */
   ourReference?: string;
   /**
@@ -228,10 +225,10 @@ export interface InvoiceFileStatus {
 }
 
 export interface PageBillingRecord {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: BillingRecord[];
@@ -241,27 +238,27 @@ export interface PageBillingRecord {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
   unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export enum GetFileStatusesForMonthParamsMonthEnum {

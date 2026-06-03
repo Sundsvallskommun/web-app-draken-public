@@ -1,7 +1,9 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { RelationWithErrandNumber } from '@common/services/relations-service';
 import { MessageNode } from '@supportmanagement/services/support-message-service';
+
+import { SingleSupportAttachment } from './support-attachment-service';
 import { SupportErrand } from './support-errand-service';
-import { Relation } from '@common/data-contracts/relations/data-contracts';
 
 export const getSupportConversations: (municipalityId: string, errandId: string) => Promise<ApiResponse<any[]>> = (
   municipalityId,
@@ -74,17 +76,26 @@ export const sendSupportConversationMessage = (
   errandId: string,
   conversationId: string,
   message: string,
-  files?: { file: File }[]
+  files?: { file: File }[],
+  existingAttachments?: SingleSupportAttachment[]
 ) => {
   const url = `supportmanagement/${municipalityId}/namespace/errand/${errandId}/communication/conversations/${conversationId}/messages`;
 
   const formData = new FormData();
-  formData.append(
-    'message',
-    JSON.stringify({
-      content: message,
-    })
-  );
+  const messageBody: { content: string; attachmentIds?: string[] } = {
+    content: message,
+  };
+
+  if (existingAttachments && existingAttachments.length > 0) {
+    const ids = existingAttachments
+      .map((a: any) => a.attachmentId ?? a.errandAttachmentHeader?.id)
+      .filter((id: any) => id != null);
+    if (ids.length > 0) {
+      messageBody.attachmentIds = ids;
+    }
+  }
+
+  formData.append('message', JSON.stringify(messageBody));
 
   if (files && files.length > 0) {
     files.forEach((fileList) => {
@@ -133,16 +144,16 @@ export const getOrCreateSupportConversationId = async (
   supportErrand: SupportErrand,
   contactMeans: string,
   selectedRelationId: string,
-  relationErrands: Relation[],
+  relationErrands: RelationWithErrandNumber[],
   messageConversationId: string
 ): Promise<string> => {
   const conversationType = contactMeans === 'draken' ? 'INTERNAL' : 'EXTERNAL';
-  const selectedRelation = relationErrands.find((relation) => relation.target.resourceId === selectedRelationId);
+  const selectedEntry = relationErrands.find((entry) => entry.otherResourceId === selectedRelationId);
 
   const conversations = await getSupportConversations(municipalityId, supportErrand.id!);
   const existingExternalConversation = conversations.data.find((c) => c.type === 'EXTERNAL');
   const existingInternalConversation = conversations.data.find(
-    (conv: any) => conv.relationIds && conv.relationIds[0] === selectedRelation?.id
+    (conv: any) => conv.relationIds && conv.relationIds[0] === selectedEntry?.relation.id
   );
 
   let conversationId: string | undefined = undefined;
@@ -164,7 +175,7 @@ export const getOrCreateSupportConversationId = async (
     if (conversationType === 'EXTERNAL') {
       topic = `Mina sidor`;
     } else {
-      topic = `${supportErrand.errandNumber}${selectedRelation ? ` - ${selectedRelation.target.type}` : ''}`;
+      topic = `${supportErrand.errandNumber}${selectedEntry ? ` - ${selectedEntry.errandNumber}` : ''}`;
     }
 
     const newConversation = await createSupportConversation(
@@ -172,7 +183,7 @@ export const getOrCreateSupportConversationId = async (
       supportErrand.id!,
       topic,
       conversationType,
-      selectedRelation?.id
+      selectedEntry?.relation.id
     );
     conversationId = newConversation.data.id;
   }

@@ -11,16 +11,20 @@ import {
 } from '@casedata/services/casedata-extra-parameters-service';
 import { saveFacilities } from '@casedata/services/casedata-facilities-service';
 import { editStakeholder, removeStakeholder, setAdministrator } from '@casedata/services/casedata-stakeholder-service';
-import { useAppContext } from '@common/contexts/app.context';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { useFormContext } from 'react-hook-form';
 
 export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
-  const { errand, administrators, municipalityId, setErrand, user } = useAppContext();
+  const errand = useCasedataStore((s) => s.errand);
+  const administrators = useUserStore((s) => s.administrators);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const setErrand = useCasedataStore((s) => s.setErrand);
+  const user = useUserStore((s) => s.user);
   const toastMessage = useSnackbar();
   const { getValues, reset, formState, trigger } = useFormContext<IErrand>();
 

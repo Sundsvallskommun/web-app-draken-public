@@ -1,13 +1,14 @@
-import { Conversation, ConversationType, Message, PageMessage } from '@/data-contracts/case-data/data-contracts';
-import { PortalPersonData } from '@/data-contracts/employee/data-contracts';
-import { apiURL } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
-import { Body, Controller, Get, Param, Post, Req, UseBefore, UploadedFiles } from 'routing-controllers';
+import { Body, Controller, Get, Param, Post, Req, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
-import { fileUploadOptions } from '@/utils/fileUploadOptions';
+
 import { apiServiceName } from '@/config/api-config';
+import { Conversation, ConversationType, PageMessage } from '@/data-contracts/case-data/data-contracts';
+import { PortalPersonData } from '@/data-contracts/employee/data-contracts';
+import { fileUploadOptions } from '@/utils/fileUploadOptions';
+import { apiURL } from '@/utils/util';
 
 interface ResponseData {
   data: any;
@@ -150,7 +151,7 @@ export class CaseDataConversationController {
 
     if (files && files.length > 0) {
       files.forEach(file => {
-        formData.append('attachments', new Blob([file.buffer], { type: file.mimetype }), file.originalname);
+        formData.append('attachments', new Blob([new Uint8Array(file.buffer)], { type: file.mimetype }), file.originalname);
       });
     }
 

@@ -1,8 +1,3 @@
-import { CASEDATA_NAMESPACE } from '@/config';
-import { apiServiceName } from '@/config/api-config';
-import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
-import { logger } from '@/utils/logger';
-import { apiURL } from '@/utils/util';
 import { Attachment, CreateAttachmentDto } from '@interfaces/attachment.interface';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
@@ -11,6 +6,12 @@ import { fileUploadOptions } from '@utils/fileUploadOptions';
 import { validateRequestBody } from '@utils/validate';
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+
+import { CASEDATA_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
+import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
+import { logger } from '@/utils/logger';
+import { apiURL } from '@/utils/util';
 
 interface ResponseData {
   data: any;
@@ -37,7 +38,6 @@ export class CaseDataAttachmentController {
     const baseURL = apiURL(this.SERVICE);
 
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments`;
-    console.log('files:', files);
     const data: CreateAttachmentDto = {
       file: files[0].buffer.toString('base64'),
       category: attachmentData.category,
@@ -113,7 +113,7 @@ export class CaseDataAttachmentController {
     @Param('id') id: string,
     @Param('errandId') errandId: string,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<ResponseData> {
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments/${id}`;
     const baseURL = apiURL(this.SERVICE);
@@ -128,7 +128,7 @@ export class CaseDataAttachmentController {
     @Req() req: RequestWithUser,
     @Param('errandId') errandId: string,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<ResponseData> {
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments`;
     const baseURL = apiURL(this.SERVICE);
@@ -175,7 +175,7 @@ export class CaseDataAttachmentController {
     @Param('messageId') messageId: string,
     @Param('attachmentId') attachmentId: string,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<ResponseData> {
     if (!errandId) {
       throw Error('ErrandId not found');

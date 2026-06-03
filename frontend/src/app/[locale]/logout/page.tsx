@@ -2,9 +2,8 @@
 
 import { appURL } from '@common/utils/app-url';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-
-const Logout: React.FC = () => {
+import { FC, useEffect } from 'react';
+const Logout: FC = () => {
   const router = useRouter();
 
   useEffect(() => {

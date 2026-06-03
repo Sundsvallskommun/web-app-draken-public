@@ -1,75 +1,68 @@
 'use client';
 
-import type { Asset } from '@casedata/interfaces/asset';
-import { getAssets } from '@casedata/services/asset-service';
+import {
+  getErrandServiceAssets,
+  getPartyServiceAssets,
+  mapAssetsToServices,
+  Service,
+} from '@casedata/services/casedata-service-assets-service';
 import type { RJSFSchema } from '@rjsf/utils';
 import { useCallback, useEffect, useState } from 'react';
-import { mapFormToServiceFromPayload, Service } from './casedata-service-mapper';
 
-type UseErrandServicesArgs = {
+type AssetServicesArgs = {
   municipalityId: string;
   partyId: string;
-  errandNumber: string;
   assetType: string;
   schema?: RJSFSchema | null;
-  status?: string;
   origin?: string;
+  errandId?: string;
 };
 
-export function useErrandServices({
-  municipalityId,
-  partyId,
-  errandNumber,
-  assetType,
-  schema = null,
-  status,
-  origin,
-}: UseErrandServicesArgs) {
+function useAssetServices({ municipalityId, partyId, errandId, assetType, schema = null, origin }: AssetServicesArgs) {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
 
   const refetch = useCallback(async () => {
+    if (!municipalityId || !partyId || !assetType || !schema) {
+      setServices([]);
+      setLoading(false);
+      setError(undefined);
+      return;
+    }
+
     setLoading(true);
     setError(undefined);
     try {
-      const resp = await getAssets({
-        municipalityId,
-        partyId,
-        assetId: errandNumber,
-        type: assetType,
-        status,
-        origin,
-      });
-
-      const assets: Asset[] = resp?.data ?? [];
-      const mapped: Service[] = [];
-
-      for (const a of assets) {
-        const params = Array.isArray(a.jsonParameters) ? a.jsonParameters : [];
-        params.forEach((p, idx) => {
-          if (!p?.value || p?.key !== assetType) return;
-
-          const parsed = typeof p.value === 'string' ? JSON.parse(p.value) : p.value;
-          if (!parsed) return;
-          const compositeId = `${a.id}#${idx}`;
-          const s = mapFormToServiceFromPayload(parsed, schema, compositeId);
-          if (s) mapped.push(s);
-        });
-      }
-
-      mapped.sort((a, b) => a.id.localeCompare(b.id));
-      setServices(mapped);
+      const assets = errandId
+        ? await getErrandServiceAssets({ municipalityId, partyId, errandId, assetType, origin })
+        : await getPartyServiceAssets({ municipalityId, partyId, assetType, origin });
+      setServices(await mapAssetsToServices(municipalityId, assets, schema));
     } catch (e: any) {
-      setError(e?.message ?? 'Kunde inte hämta insatser');
+      setError(e?.message ?? (errandId ? 'Kunde inte hämta insatser' : 'Kunde inte hämta personens insatser'));
     } finally {
       setLoading(false);
     }
-  }, [municipalityId, partyId, errandNumber, assetType, status, origin, schema]);
+  }, [municipalityId, partyId, errandId, assetType, schema, origin]);
 
   useEffect(() => {
     refetch();
   }, [refetch]);
 
-  return { services, loading, error, refetch, setServices };
+  return { services, loading, error, refetch };
+}
+
+type UseErrandServicesArgs = Omit<AssetServicesArgs, 'errandId'> & { errandId: string };
+
+export function useErrandServices(args: UseErrandServicesArgs) {
+  return useAssetServices(args);
+}
+
+type UsePartyServicesArgs = Omit<AssetServicesArgs, 'errandId'> & { excludeIds?: string[] };
+
+export function usePartyServices({ excludeIds, ...rest }: UsePartyServicesArgs) {
+  const { services, ...state } = useAssetServices(rest);
+  const excludeSet = excludeIds?.length ? new Set(excludeIds) : null;
+  const filteredServices = excludeSet ? services.filter((s) => !excludeSet.has(s.id)) : services;
+  return { ...state, services: filteredServices };
 }

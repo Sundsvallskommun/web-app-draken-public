@@ -1,5 +1,5 @@
-import { NextFunction, Request, Response } from 'express';
 import { HttpException } from '@exceptions/HttpException';
+import { NextFunction, Request, Response } from 'express';
 
 const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -8,7 +8,7 @@ const authMiddleware = async (req: Request, res: Response, next: NextFunction) =
     } else {
       next(new HttpException(401, 'NOT_AUTHORIZED'));
     }
-  } catch (error) {
+  } catch {
     next(new HttpException(401, 'AUTH_FAILED'));
   }
 };

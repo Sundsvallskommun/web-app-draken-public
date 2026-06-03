@@ -2,10 +2,12 @@ import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import { AddressResult } from '@common/services/adress-service';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
 import { Button, cx, FormControl, FormErrorMessage, FormLabel, Input, Modal, Select } from '@sk-web-gui/react';
+import { useMetadataStore, useSupportStore } from '@stores/index';
 import { ExternalIdType, SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
+import { Dispatch, FC, SetStateAction } from 'react';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
+
 import { SupportContactSearchModeSelector } from './support-contact-search-mode-selector.component';
 
 interface SupportContactModalProps {
@@ -20,14 +22,14 @@ interface SupportContactModalProps {
   form: UseFormReturn<SupportStakeholderFormModel>;
   contact: SupportStakeholderFormModel;
   id: string;
-  setSearchMode: React.Dispatch<React.SetStateAction<string>>;
-  setSelectedUser: React.Dispatch<React.SetStateAction<AddressResult | undefined>>;
-  setSearchResult: React.Dispatch<React.SetStateAction<boolean>>;
-  setSearchResultArray: React.Dispatch<React.SetStateAction<AddressResult[]>>;
+  setSearchMode: Dispatch<SetStateAction<string>>;
+  setSelectedUser: Dispatch<SetStateAction<AddressResult | undefined>>;
+  setSearchResult: Dispatch<SetStateAction<boolean>>;
+  setSearchResultArray: Dispatch<SetStateAction<AddressResult[]>>;
   replacePhonenumbers: UseFieldArrayReplace<SupportStakeholderFormModel, 'phoneNumbers'>;
 }
 
-export const SupportContactModal: React.FC<SupportContactModalProps> = ({
+export const SupportContactModal: FC<SupportContactModalProps> = ({
   manual,
   editing,
   closeHandler,
@@ -45,10 +47,14 @@ export const SupportContactModal: React.FC<SupportContactModalProps> = ({
   setSearchResultArray,
   replacePhonenumbers,
 }) => {
-  const { supportMetadata, supportErrand } = useAppContext();
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
 
   const username = form.watch('username');
   const personNumber = form.watch('personNumber');
+  const showPersonNumberField = searchMode === 'employee' || !!personNumber || !!username;
+  const showUsername = !!username && !personNumber;
+  const personNumberFieldName = showUsername ? 'username' : 'personNumber';
 
   return (
     <Modal
@@ -78,42 +84,25 @@ export const SupportContactModal: React.FC<SupportContactModalProps> = ({
           {searchMode === 'person' || searchMode === 'employee' ? (
             <>
               <div className="flex gap-lg">
-                <FormControl id={`contact-personnumber`} className="w-1/2">
-                  <FormLabel>{username && !personNumber ? 'Användarnamn' : 'Personnummer'}</FormLabel>
-                  {username && !personNumber ? (
+                {showPersonNumberField ? (
+                  <FormControl id={`contact-personnumber`} className="w-1/2">
+                    <FormLabel>{showUsername ? 'Användarnamn' : 'Personnummer'}</FormLabel>
                     <Input
                       size="sm"
                       disabled={disabled}
                       readOnly
-                      data-cy={`contact-username`}
-                      className={cx(
-                        form.formState.errors.personNumber ? 'border-2 border-error' : null,
-                        'read-only:bg-gray-lighter read-only:cursor-not-allowed'
-                      )}
-                      {...form.register(`username`)}
+                      data-cy={`contact-${personNumberFieldName}`}
+                      {...form.register(personNumberFieldName)}
                     />
-                  ) : (
-                    <Input
-                      size="sm"
-                      disabled={disabled}
-                      readOnly
-                      data-cy={`contact-personNumber`}
-                      className={cx(
-                        form.formState.errors.personNumber ? 'border-2 border-error' : null,
-                        'read-only:bg-gray-lighter read-only:cursor-not-allowed'
-                      )}
-                      {...form.register(`personNumber`)}
-                    />
-                  )}
-
-                  {form.formState.errors.personNumber && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>{form.formState.errors.personNumber?.message}</FormErrorMessage>
-                    </div>
-                  )}
-                </FormControl>
+                    {form.formState.errors.personNumber && (
+                      <div className="my-sm text-error">
+                        <FormErrorMessage>{form.formState.errors.personNumber?.message}</FormErrorMessage>
+                      </div>
+                    )}
+                  </FormControl>
+                ) : null}
                 {appConfig.features.useRolesForStakeholders ? (
-                  <FormControl id={`contact-relation`} size="sm" className="w-1/2">
+                  <FormControl id={`contact-relation`} size="sm" className={showPersonNumberField ? 'w-1/2' : 'w-full'}>
                     <FormLabel>Roll</FormLabel>
                     <Select
                       data-cy={`role-select`}
@@ -143,9 +132,9 @@ export const SupportContactModal: React.FC<SupportContactModalProps> = ({
                       </div>
                     )}
                   </FormControl>
-                ) : (
+                ) : showPersonNumberField ? (
                   <div className="w-1/2"></div>
-                )}
+                ) : null}
               </div>
               <div className="flex gap-lg">
                 <FormControl id={`firstName`} className="w-1/2">
@@ -340,7 +329,14 @@ export const SupportContactModal: React.FC<SupportContactModalProps> = ({
         )}
         <div className="mt-md flex gap-lg justify-start">
           <div>
-            <Button type="button" className="w-full" variant="secondary" color="primary" onClick={closeHandler}>
+            <Button
+              type="button"
+              className="w-full"
+              variant="secondary"
+              color="primary"
+              onClick={closeHandler}
+              data-cy="cancel-contact-button"
+            >
               Avbryt
             </Button>
           </div>

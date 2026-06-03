@@ -20,6 +20,9 @@ export enum Header {
   IN_REPLY_TO = "IN_REPLY_TO",
   REFERENCES = "REFERENCES",
   MESSAGE_ID = "MESSAGE_ID",
+  AUTO_SUBMITTED = "AUTO_SUBMITTED",
+  RETURN_PATH = "RETURN_PATH",
+  CONTENT_TYPE = "CONTENT_TYPE",
 }
 
 /** Message classification */
@@ -225,8 +228,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  detail?: string;
   causeAsProblem?: ThrowableProblem;
+  detail?: string;
 }
 
 export interface ThrowableProblem {
@@ -325,6 +328,8 @@ export interface Attachment {
   updated?: string;
   /** Category of the attachment */
   category?: string;
+  /** Channel through which the attachment was received */
+  channel?: AttachmentChannelEnum;
   /** Name of the attachment */
   name?: string;
   /** Note about the attachment */
@@ -438,6 +443,8 @@ export interface CaseType {
   type?: string;
   /** The display name of the case type */
   displayName?: string;
+  /** Whether errands of this case type should start/update a process */
+  startProcess?: boolean;
 }
 
 export interface Errand {
@@ -542,6 +549,8 @@ export interface Errand {
   updatedBy?: string;
   /** Suspension information */
   suspension?: Suspension;
+  /** Whether the errand is confidential or not */
+  confidential?: boolean;
   /** Extra parameters for the errand */
   extraParameters?: ExtraParameter[];
   /** JSON parameters for the errand */
@@ -578,12 +587,9 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
+  number?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -595,8 +601,11 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   integralNumber?: boolean;
+  missingNode?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 
@@ -830,6 +839,8 @@ export interface MessageRequest {
   email?: string;
   /** List of email recipients */
   recipients?: string[];
+  /** List of CC email recipients */
+  ccRecipients?: string[];
   /** The user ID of the user that sent the message */
   userId?: string;
   /** The classification of the message */
@@ -1076,19 +1087,19 @@ export interface PageErrand {
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  unpaged?: boolean;
   sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export interface CommitMetadata {
@@ -1187,6 +1198,8 @@ export interface MessageResponse {
   mobileNumber?: string;
   /** The recipients of the message, if email */
   recipients?: string[];
+  /** The CC recipients of the message, if email */
+  ccRecipients?: string[];
   /** The email of the user that sent the message */
   email?: string;
   /** The user ID of the user that sent the message */
@@ -1261,6 +1274,14 @@ export enum StakeholderTypeEnum {
   ORGANIZATION = "ORGANIZATION",
 }
 
+/** Channel through which the attachment was received */
+export enum AttachmentChannelEnum {
+  EMAIL = "EMAIL",
+  ESERVICE = "ESERVICE",
+  WEB_UI = "WEB_UI",
+  MY_PAGES = "MY_PAGES",
+}
+
 /** Type of the decision */
 export enum DecisionDecisionTypeEnum {
   RECOMMENDED = "RECOMMENDED",
@@ -1284,6 +1305,7 @@ export enum ErrandChannelEnum {
   WEB_UI = "WEB_UI",
   MOBILE = "MOBILE",
   SYSTEM = "SYSTEM",
+  MY_PAGES = "MY_PAGES",
 }
 
 /**

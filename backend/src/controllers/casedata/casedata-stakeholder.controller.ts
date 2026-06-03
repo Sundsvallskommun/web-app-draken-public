@@ -1,8 +1,3 @@
-import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
-import { apiServiceName } from '@/config/api-config';
-import { Errand as ErrandDTO, Stakeholder as StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
-import { logger } from '@/utils/logger';
-import { apiURL } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import { CreateStakeholderDto } from '@interfaces/stakeholder.interface';
 import authMiddleware from '@middlewares/auth.middleware';
@@ -10,6 +5,12 @@ import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+
+import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
+import { apiServiceName } from '@/config/api-config';
+import { Errand as ErrandDTO, Stakeholder as StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
+import { logger } from '@/utils/logger';
+import { apiURL } from '@/utils/util';
 
 interface ResponseData {
   data: StakeholderDTO[];
@@ -70,7 +71,7 @@ export class CasedataStakeholderController {
     @Param('id') id: string,
     @Param('errandId') errandId: number,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<ResponseData> {
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/stakeholders/${id}`;
     const baseURL = apiURL(this.SERVICE);
@@ -113,7 +114,7 @@ export class CasedataStakeholderController {
       .then(res => {
         return res.data;
       })
-      .catch(e => undefined);
+      .catch(_e => undefined);
     return personalNumber ? { data: personalNumber, message: 'success' } : { data: '', message: '404' };
   }
 }

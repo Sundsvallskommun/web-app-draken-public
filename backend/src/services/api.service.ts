@@ -4,6 +4,7 @@ import { logger } from '@utils/logger';
 import { apiURL } from '@utils/util';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
+
 import ApiTokenService from './api-token.service';
 
 export class ApiResponse<T> {
@@ -20,7 +21,7 @@ class ApiService {
     this.instance.interceptors.request.use(
       async function (request) {
         if (request.url === apiURL('token')) {
-          return Promise.resolve(request);
+          return request;
         }
         const token = await apiTokenService.getToken();
         const defaultHeaders = {
@@ -28,10 +29,15 @@ class ApiService {
           'Content-Type': 'application/json',
           'X-Request-Id': uuidv4(),
         };
-        logger.info(`x-request-id: ${defaultHeaders['X-Request-Id']}`);
+        const isSimulatorRequest = request.url?.includes('simulatorserver');
+        if (!isSimulatorRequest) {
+          const fullUrl = `${request.baseURL || ''}/${request.url}`;
+          logger.info(`MAKING ${request.method?.toUpperCase()} REQUEST TO URL ${fullUrl}`);
+          logger.info(`x-request-id: ${defaultHeaders['X-Request-Id']}`);
+        }
         request.headers = { ...defaultHeaders, ...request.headers } as any;
         request.headers['Content-Type'] = request.headers['Content-Type'] || defaultHeaders['Content-Type'];
-        return Promise.resolve(request);
+        return request;
       },
       function (error) {
         return Promise.reject(error);
@@ -49,6 +55,12 @@ class ApiService {
           'Content-Type': 'application/json',
           'X-Request-Id': uuidv4(),
         };
+        // Rewerite location header to point to correct resource since the API response header
+        // contains an errouneous url - asset-drafts does not have an GET ../{id} endpoint.
+        // When this has been fixed, we can remove the rewrite.
+        if (response.headers.location && response.config.url?.includes('asset-drafts')) {
+          response.headers.location = response.headers.location.replace('/asset-drafts/', '/assets/');
+        }
         if (response.headers.location && !response.config.url?.includes('messaging')) {
           logger.info(`Response contained location header: ${response.headers.location}`);
           logger.info(`Base URL was: ${response.config.baseURL}`);
@@ -57,10 +69,10 @@ class ApiService {
             logger.error(`Base URL was: ${e.config?.baseURL}`);
             logger.error(`URL was: ${e.config?.url}`);
             logger.error(`Method was: ${e.config?.method}`);
-            return Promise.resolve(response);
+            return response;
           });
         }
-        return Promise.resolve(response);
+        return response;
       },
       function (error) {
         return Promise.reject(error);
@@ -104,22 +116,18 @@ class ApiService {
   }
 
   public async get<T>(config: AxiosRequestConfig, user: User): Promise<ApiResponse<T>> {
-    logger.info(`MAKING GET REQUEST TO URL ${config.baseURL || ''}/${config.url}`);
     return this.request<T>({ ...config, method: 'GET' }, user);
   }
 
   public async post<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
-    logger.info(`MAKING POST REQUEST TO URL ${config.baseURL || ''}/${config.url}`);
     return this.request<T>({ ...config, method: 'POST' }, user);
   }
 
   public async patch<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
-    logger.info(`MAKING PATCH REQUEST TO URL ${config.baseURL || ''}/${config.url}`);
     return this.request<T>({ ...config, method: 'PATCH' }, user);
   }
 
   public async put<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
-    logger.info(`MAKING PUT REQUEST TO URL ${config.baseURL || ''}/${config.url}`);
     return this.request<T>({ ...config, method: 'PUT' }, user);
   }
 

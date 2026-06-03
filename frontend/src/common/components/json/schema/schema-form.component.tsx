@@ -7,9 +7,14 @@ import { SubmitButtonFieldTemplate } from '@common/components/json/fields/submit
 import { jsonWidgets } from '@common/components/json/widgets/index.componant';
 import Form, { FormProps, IChangeEvent } from '@rjsf/core';
 import type { RegistryFieldsType, RegistryWidgetsType, RJSFSchema, UiSchema } from '@rjsf/utils';
-import validatorAjv8 from '@rjsf/validator-ajv8';
-import { useCallback, useMemo, useState } from 'react';
+import { customizeValidator } from '@rjsf/validator-ajv8';
+import Ajv2020 from 'ajv/dist/2020';
+import { ComponentType, useCallback, useMemo, useState } from 'react';
+
 import createJsonErrorTransformer from '../utils/schema-form-error-handling';
+
+// Schemas declare $schema: draft 2020-12, which the default AJV8 validator (draft-07) cannot compile.
+const validator = customizeValidator({ AjvClass: Ajv2020 });
 
 const widgets: RegistryWidgetsType = jsonWidgets as RegistryWidgetsType;
 
@@ -32,9 +37,10 @@ type SchemaFormProps = {
   formData?: any;
   onChange?: (data: any, e?: IChangeEvent) => void;
   onSubmit?: (payload: any, e: IChangeEvent) => void;
-  objectFieldTemplate?: React.ComponentType<any>;
+  objectFieldTemplate?: ComponentType<any>;
   disabled?: boolean;
   submitButtonOptions?: { label?: string; leadingIcon?: boolean };
+  extraContent?: React.ReactNode;
 };
 
 const hasType = (p: AnyProp | undefined, t: string) =>
@@ -90,6 +96,7 @@ export default function SchemaForm({
   objectFieldTemplate,
   disabled,
   submitButtonOptions,
+  extraContent,
 }: SchemaFormProps) {
   const [localData, setLocalData] = useState<any>({});
   const data = formData ?? localData;
@@ -140,16 +147,22 @@ export default function SchemaForm({
         formContext={formContext}
         onChange={handleChange}
         onSubmit={handleSubmit}
-        validator={validatorAjv8}
+        validator={validator}
         fields={fields}
         widgets={widgets}
-        templates={templates}
+        templates={extraContent ? { ...templates, ButtonTemplates: { SubmitButton: () => null } } : templates}
         transformErrors={createJsonErrorTransformer(schema)}
         noHtml5Validate
         showErrorList={false}
         disabled={disabled}
       >
-        {disabled ? <></> : undefined}
+        {extraContent && (
+          <>
+            {extraContent}
+            <SubmitButtonFieldTemplate {...({ registry: { formContext } } as any)} />
+          </>
+        )}
+        {!extraContent && disabled && <></>}
       </Form>
     </div>
   );

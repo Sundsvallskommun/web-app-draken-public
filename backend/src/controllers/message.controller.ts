@@ -1,27 +1,13 @@
-import { apiServiceName } from '@/config/api-config';
-import {
-  AttachmentResponse,
-  Classification,
-  EmailHeader,
-  Errand as ErrandDTO,
-  MessageResponse as IMessageResponse,
-  MessageResponseDirectionEnum,
-} from '@/data-contracts/case-data/data-contracts';
-import { EmailAttachment, EmailRequest, SmsRequest, WebMessageAttachment, WebMessageRequest } from '@/data-contracts/messaging/data-contracts';
-import { HttpException } from '@/exceptions/HttpException';
-import { isPT } from '@/services/application.service';
-import { logger } from '@/utils/logger';
-import { apiURL, base64Encode } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
 import {
   generateMessageId,
+  sendDecisionForMex,
   sendDecisionToDigitalMail,
   sendDecisionToKatla,
   sendDecisionToMinaSidor,
-  sendDecisionToOpenE,
   sendEmail,
   sendSms,
   sendWebMessage,
@@ -29,161 +15,20 @@ import {
 import { getOwnerStakeholder, getOwnerStakeholderEmail } from '@services/stakeholder.service';
 import { fileUploadOptions } from '@utils/fileUploadOptions';
 import { validateRequestBody } from '@utils/validate';
-import { IsArray, IsOptional, IsString, Validate, ValidateNested } from 'class-validator';
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import { v4 as uuidv4 } from 'uuid';
 
-export enum MessageClassification {
-  'Efterfrågan komplettering' = 'COMPLETION_REQUEST',
-  'Informationsmeddelande' = 'INFORMATION',
-  'Hämta yttrande' = 'OBTAIN_OPINION',
-  'Intern dialog' = 'INTERNAL_COMMUNICATION',
-  // 'Övrigt' = 'OTHER
-}
+import { apiServiceName } from '@/config/api-config';
+import { Errand as ErrandDTO, MessageResponse as IMessageResponse } from '@/data-contracts/case-data/data-contracts';
+import { EmailAttachment, EmailRequest, SmsRequest, WebMessageAttachment, WebMessageRequest } from '@/data-contracts/messaging/data-contracts';
+import { AgnosticMessageResponse, DecisionMessageDto, MessageClassification, MessageDto, MessageResponse, SmsDto } from '@/dtos/message.dto';
+import { HttpException } from '@/exceptions/HttpException';
+import { isMEX, isPT } from '@/services/application.service';
+import { logger } from '@/utils/logger';
+import { apiURL, base64Encode } from '@/utils/util';
 
-class MessageDto {
-  @IsString()
-  @IsOptional()
-  email!: string;
-  @IsString()
-  @IsOptional()
-  contactMeans!: string;
-  @IsString()
-  @IsOptional()
-  subject!: string;
-  @IsString()
-  text!: string;
-  @IsString()
-  attachUtredning!: string;
-  @IsString()
-  errandId!: string;
-  @IsString()
-  municipalityId!: string;
-  @IsString()
-  messageClassification!: MessageClassification;
-  @IsString()
-  reply_to!: string;
-  @IsString()
-  references!: string;
-  @IsOptional()
-  files!: Express.Multer.File[];
-}
-
-class SmsDto {
-  @IsString()
-  phonenumber!: string;
-  @IsString()
-  text!: string;
-  @IsString()
-  errandId!: string;
-  @IsString()
-  municipalityId!: string;
-}
-
-class DecisionMessageDto {
-  @IsString()
-  errandId!: string;
-}
-
-class MessageResponse implements IMessageResponse {
-  @IsOptional()
-  @IsString()
-  messageId?: string;
-  @IsOptional()
-  @IsString()
-  errandId?: number;
-  @IsOptional()
-  @IsString()
-  municipalityId?: string;
-  @IsOptional()
-  @IsString()
-  namespace?: string;
-  @IsOptional()
-  @IsString()
-  direction?: MessageResponseDirectionEnum;
-  @IsOptional()
-  @IsString()
-  familyId?: string;
-  @IsOptional()
-  @IsString()
-  externalCaseId?: string;
-  @IsOptional()
-  @IsString()
-  message?: string;
-  @IsOptional()
-  @IsString()
-  sent?: string;
-  @IsOptional()
-  @IsString()
-  subject?: string;
-  @IsOptional()
-  @IsString()
-  username?: string;
-  @IsOptional()
-  @IsString()
-  firstName?: string;
-  @IsOptional()
-  @IsString()
-  lastName?: string;
-  @IsOptional()
-  @IsString()
-  messageType?: string;
-  @IsOptional()
-  @IsString()
-  mobileNumber?: string;
-  @IsOptional()
-  @IsArray()
-  recipients?: string[];
-  @IsOptional()
-  @IsString()
-  email?: string;
-  @IsOptional()
-  @IsString()
-  htmlMessage?: string;
-  @IsOptional()
-  @IsString()
-  userId?: string;
-  @IsOptional()
-  @IsString()
-  viewed?: boolean;
-  @IsOptional()
-  @IsString()
-  classification?: Classification;
-  @IsOptional()
-  @IsArray()
-  attachments?: AttachmentResponse[];
-  @IsOptional()
-  @IsArray()
-  emailHeaders?: EmailHeader[];
-}
-
-export interface AgnosticMessageResponse {
-  messageId: string;
-}
-
-export interface WebMessageResponse {
-  messageId: string;
-  deliveries: {
-    deliveryId: string;
-    messageType: string;
-    status: string;
-  }[];
-}
-
-export interface LetterResponse {
-  batchId: string;
-  messages: [
-    {
-      messageId: string;
-      deliveries: {
-        deliveryId: string;
-        messageType: 'DIGITAL_MAIL' | 'SNAIL_MAIL';
-        status: string;
-      }[];
-    },
-  ];
-}
+export { AgnosticMessageResponse, LetterResponse, MessageClassification, WebMessageResponse } from '@/dtos/message.dto';
 
 const MESSAGE_SUBJECT = isPT() ? 'Meddelande gällande er ansökan om parkeringstillstånd' : 'Meddelande från MEX';
 
@@ -199,12 +44,21 @@ export class MessageController {
   async decisionMessage(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
-    @Body() messageDto: { errandId: string },
+    @Body() messageDto: DecisionMessageDto,
   ): Promise<{ data: AgnosticMessageResponse; message: string }[]> {
     const baseURL = apiURL(this.SERVICE);
 
     const errandsUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
+
+    if (isMEX()) {
+      return [await sendDecisionForMex(municipalityId, req, errandData, messageDto.html ?? '', messageDto.plaintext ?? '')];
+    }
+
+    // PT Ånge (2260) sends decisions manually outside Draken.
+    if (municipalityId === '2260') {
+      return [];
+    }
 
     const decision = errandData.data?.decisions?.find(d => d.decisionType === 'FINAL');
     const pdf = decision?.attachments?.[0];
@@ -218,14 +72,10 @@ export class MessageController {
     }
 
     const minasidor_success = await sendDecisionToMinaSidor(baseURL, errandData.data.id!.toString(), req.user, pdf);
-    if (errandData.data.externalCaseId) {
-      const openE_success = await sendDecisionToOpenE(errandData.data, req.user, pdf);
-      return [minasidor_success, openE_success];
-    } else {
-      const katla_success = await sendDecisionToKatla(baseURL, errandData.data, req.user, pdf);
-      const digitalMail_success = await sendDecisionToDigitalMail(errandData.data, req.user, pdf);
-      return [minasidor_success, katla_success, digitalMail_success];
-    }
+    const katla_success = await sendDecisionToKatla(baseURL, errandData.data, req.user, pdf);
+    const digitalMail_success = await sendDecisionToDigitalMail(errandData.data, req.user, pdf);
+
+    return [minasidor_success, katla_success, digitalMail_success];
   }
 
   @Post('/casedata/:municipalityId/sms')
@@ -303,7 +153,13 @@ export class MessageController {
       },
     } as EmailRequest;
 
-    return sendEmail(municipalityId, message, req, errandData, MessageClassification[messageDto.messageClassification as unknown as keyof typeof MessageClassification]);
+    return sendEmail(
+      municipalityId,
+      message,
+      req,
+      errandData,
+      MessageClassification[messageDto.messageClassification as unknown as keyof typeof MessageClassification],
+    );
   }
 
   @Post('/casedata/:municipalityId/webmessage')
@@ -331,7 +187,7 @@ export class MessageController {
       });
       message = {
         party: {
-          ...(getOwnerStakeholder(errandData.data).personId && { partyId: getOwnerStakeholder(errandData.data).personId }),
+          ...(getOwnerStakeholder(errandData.data)?.personId && { partyId: getOwnerStakeholder(errandData.data)?.personId }),
           externalReferences: [
             {
               key: 'flowInstanceId',
@@ -356,7 +212,7 @@ export class MessageController {
     @Req() req: RequestWithUser,
     @Param('errandId') errandId: string,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: IMessageResponse[],
+    @Res() _response: IMessageResponse[],
   ): Promise<{ data: IMessageResponse[]; message: string }> {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/messages`;
     const baseURL = apiURL(this.SERVICE);
@@ -376,7 +232,7 @@ export class MessageController {
     @Param('messageId') messageId: string,
     @Param('municipalityId') municipalityId: string,
     @Param('isViewed') isViewed: boolean,
-    @Res() response: IMessageResponse[],
+    @Res() _response: IMessageResponse[],
   ): Promise<{ data: IMessageResponse[]; message: string }> {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/viewed/${isViewed}`;
     const baseURL = apiURL(this.SERVICE);

@@ -1,11 +1,12 @@
-import { apiServiceName } from '@/config/api-config';
-import { HttpException } from '@/exceptions/HttpException';
-import { EstateInfoSearch, EstateInformation } from '@/interfaces/estate-info.interface';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
 import { Controller, Get, Param, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+
+import { apiServiceName } from '@/config/api-config';
+import { HttpException } from '@/exceptions/HttpException';
+import { EstateInformation, EstateInfoSearch } from '@/interfaces/estate-info.interface';
 
 interface ResponseData {
   data: any;
@@ -62,7 +63,7 @@ export class EstateInfoController {
   async fetchEstateInfo(@Req() req: RequestWithUser, @Param('designation') designation: string) {
     if (designation !== '') {
       const url = `${this.SERVICE}/${process.env.MUNICIPALITY_ID}/estate-by-designation`;
-      const res = await this.apiService.get<EstateInfoSearch[]>({ url, params: { designation: designation, maxHits: 10 } }, req.user).catch(e => {
+      const res = await this.apiService.get<EstateInfoSearch[]>({ url, params: { designation: designation, maxHits: 10 } }, req.user).catch(_e => {
         throw new HttpException(400, 'Could not find estate for designation: ' + designation);
       });
 
@@ -72,7 +73,7 @@ export class EstateInfoController {
         const url = `${this.SERVICE}/estate-data`;
         const result = await this.apiService
           .get<EstateInformation>({ url, params: { objectidentifier: res.data[indexOfEstate].objectidentifier } }, req.user)
-          .catch(e => {
+          .catch(_e => {
             throw new HttpException(400, 'Could not find estate information for objectidentifier: ' + res.data[0].objectidentifier);
           });
         return {

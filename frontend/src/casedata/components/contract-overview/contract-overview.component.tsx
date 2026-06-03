@@ -1,19 +1,20 @@
-import { Contract, ContractType, PageContract } from '@casedata/interfaces/contracts';
-import { ContractFilterParams, contractTypes, fetchContracts } from '@casedata/services/contract-service';
+import { Contract, PageContract } from '@casedata/interfaces/contracts';
+import { ContractFilterParams, fetchContracts } from '@casedata/services/contract-service';
 import { DetailPanelWrapper } from '@common/components/detail-panel-wrapper/detail-panel-wrapper.component';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { Button, Link, useSnackbar } from '@sk-web-gui/react';
-import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import { FC, useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
+
 import { ContractDetailForm } from './contract-detail-form.component';
+import { ContractInvoiceDetail } from './contract-invoice-detail.component';
+import { ContractsFilterTags } from './contracts-filter-tags.component';
 import { ContractFilter, ContractFilterValues, ContractsFilteringComponent } from './contracts-filtering.component';
 import { ContractsTable, ContractTableForm } from './contracts-table.component';
 
-const getContractTypeLabel = (type: ContractType): string => {
-  return contractTypes.find((t) => t.key === type)?.label || 'Avtal';
-};
-
-export const ContractOverview: React.FC = () => {
+export const ContractOverview: FC = () => {
   const filterForm = useForm<ContractFilter>({ defaultValues: ContractFilterValues });
   const { watch: watchFilter } = filterForm;
 
@@ -33,6 +34,7 @@ export const ContractOverview: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedContract, setSelectedContract] = useState<Contract | undefined>();
   const [showSelectedContract, setShowSelectedContract] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<CBillingRecord | null>(null);
   const [contractsResponse, setContractsResponse] = useState<PageContract | null>(null);
 
   const [filterObject, setFilterObject] = useState<{ [key: string]: string }>({});
@@ -45,6 +47,7 @@ export const ContractOverview: React.FC = () => {
   const closeHandler = () => {
     setSelectedContract(undefined);
     setShowSelectedContract(false);
+    setSelectedInvoice(null);
   };
 
   const queryFilter = watchFilter('query');
@@ -102,7 +105,7 @@ export const ContractOverview: React.FC = () => {
   const filterParams = useMemo<ContractFilterParams>(() => {
     const params: ContractFilterParams = {
       page: page ?? 0,
-      limit: validPageSize,
+      size: validPageSize,
       sortBy: sortColumn,
       sortOrder: sortOrder,
     };
@@ -154,6 +157,15 @@ export const ContractOverview: React.FC = () => {
     [filterParams]
   );
 
+  const selectedinvoiceHeader = () => {
+    return (
+      <>
+        <ArrowLeft size={20} onClick={() => setSelectedInvoice(null)} className="hover:cursor-pointer" />
+        Fakturadetaljer
+      </>
+    );
+  };
+
   return (
     <div className="w-full h-screen relative flex flex-col overflow-hidden">
       <div className="box-border px-40 py-19 w-full flex justify-end items-center shadow-lg min-h-[6rem] max-small-device-max:px-24 flex-shrink-0">
@@ -177,6 +189,7 @@ export const ContractOverview: React.FC = () => {
             <div className="container px-0 flex flex-wrap gap-16 items-center">
               <FormProvider {...filterForm}>
                 <ContractsFilteringComponent />
+                <ContractsFilterTags />
               </FormProvider>
             </div>
             <div>
@@ -191,13 +204,22 @@ export const ContractOverview: React.FC = () => {
       {selectedContract && (
         <DetailPanelWrapper
           show={showSelectedContract}
-          label={getContractTypeLabel(selectedContract.type)}
-          closeAriaLabel="Stäng avtal"
+          label={selectedInvoice ? selectedinvoiceHeader() : 'Avtal'}
+          closeAriaLabel={selectedInvoice ? 'Stäng faktura' : 'Stäng avtal'}
           closeHandler={closeHandler}
-          icon="file-text"
+          icon={selectedInvoice ? '' : 'file-text'}
           dataCy="contract-detail"
         >
-          <ContractDetailForm selectedContract={selectedContract} />
+          {selectedInvoice ? (
+            <div className="px-32 my-lg">
+              <ContractInvoiceDetail record={selectedInvoice} />
+            </div>
+          ) : (
+            <ContractDetailForm
+              selectedContract={selectedContract}
+              onSelectInvoice={(record) => setSelectedInvoice(record)}
+            />
+          )}
         </DetailPanelWrapper>
       )}
     </div>

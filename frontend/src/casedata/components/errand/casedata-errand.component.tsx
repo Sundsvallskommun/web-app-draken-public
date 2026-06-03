@@ -6,20 +6,22 @@ import { emptyErrand, getErrandByErrandNumber, isErrandLocked } from '@casedata/
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { getUiPhase } from '@casedata/services/process-service';
 import { PriorityComponent } from '@common/components/priority/priority.component';
-import { useAppContext } from '@common/contexts/app.context';
+import { ReferredFromErrandInformation } from '@common/components/referred-from-errand-information/referred-from-errand-information.component';
 import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Spinner, useSnackbar } from '@sk-web-gui/react';
+import { useBadgeStore, useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { ArrowRight } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { FC, Fragment, useEffect, useRef, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
+
 import { SaveButtonComponent } from '../save-button/save-button.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 
-export const CasedataErrandComponent: React.FC = () => {
+export const CasedataErrandComponent: FC = () => {
   const params = useParams<{ errandNumber?: string }>();
   const errandNumber = params?.errandNumber;
   let formSchema = yup
@@ -40,7 +42,9 @@ export const CasedataErrandComponent: React.FC = () => {
     .required();
 
   const [isLoading, setIsLoading] = useState(false);
-  const { municipalityId, errand, setErrand, setUiPhase, setNotesCount, setServiceNotesCount } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const { errand, setErrand, setUiPhase } = useCasedataStore();
+  const { setNotesCount, setServiceNotesCount } = useBadgeStore();
   const toastMessage = useSnackbar();
 
   const methods = useForm<IErrand>({
@@ -57,7 +61,7 @@ export const CasedataErrandComponent: React.FC = () => {
     });
   };
   const router = useRouter();
-  const { setUser } = useAppContext();
+  const setUser = useUserStore((s) => s.setUser);
 
   useEffect(() => {
     setInitialFocus();
@@ -238,6 +242,10 @@ export const CasedataErrandComponent: React.FC = () => {
                                 )}
                               </div>
                             </div>
+                            <ReferredFromErrandInformation
+                              municipalityId={municipalityId}
+                              errandId={errand.id as unknown as string}
+                            />
                           </>
                         ) : errand ? (
                           <div data-cy="registerErrandHeading" className="flex justify-between items-center pt-8">

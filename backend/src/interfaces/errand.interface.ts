@@ -1,15 +1,17 @@
-import {
-  Decision as DecisionDTO,
-  ErrandChannelEnum,
-  Errand as ErrandDTO,
-  PatchErrand as IPatchErrandDTO,
-  PatchErrandPriorityEnum,
-  Stakeholder as StakeholderDTO,
-  ExtraParameter,
-  RelatedErrand,
-} from '@/data-contracts/case-data/data-contracts';
 import { Type } from 'class-transformer';
 import { IsArray, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+
+import {
+  Decision as DecisionDTO,
+  Errand as ErrandDTO,
+  ErrandChannelEnum,
+  ExtraParameter,
+  PatchErrand as IPatchErrandDTO,
+  PatchErrandPriorityEnum,
+  RelatedErrand,
+  Stakeholder as StakeholderDTO,
+} from '@/data-contracts/case-data/data-contracts';
+
 import { ErrandPhase } from './errand-phase.interface';
 import { StatusDTO } from './errand-status.interface';
 import { CreateStakeholderDto } from './stakeholder.interface';

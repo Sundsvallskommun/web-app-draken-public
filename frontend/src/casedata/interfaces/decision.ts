@@ -1,4 +1,5 @@
 import { Law } from '@common/data-contracts/case-data/data-contracts';
+
 import { Attachment } from './attachment';
 import { GenericExtraParameters } from './extra-parameters';
 import { CreateStakeholderDto } from './stakeholder';
@@ -33,19 +34,28 @@ export interface Decision {
 
 export type DecisionType = 'PROPOSED' | 'RECOMMENDED' | 'FINAL' | 'UNKNOWN_DECISION_TYPE';
 
-export type DecisionOutcome = 'APPROVAL' | 'REJECTION' | 'CANCELLATION' | 'DISMISSAL' | 'UNKNOWN_DECISION_OUTCOME';
+export enum DecisionOutcomes {
+  Approval = 'APPROVAL',
+  Rejection = 'REJECTION',
+  Cancellation = 'CANCELLATION',
+  Dismissal = 'DISMISSAL',
+  Unknown = 'UNKNOWN_DECISION_OUTCOME',
+}
+
+export type DecisionOutcome = `${DecisionOutcomes}`;
 
 export enum DecisionOutcomeLabel {
   'APPROVAL' = 'Bifall',
   'REJECTION' = 'Avslag',
-  'CANCELLATION' = '',
-  'DISMISSAL' = 'Ärendet avskrivs',
+  'CANCELLATION' = 'Ärendet avskrivs',
+  'DISMISSAL' = 'Ärendet avvisas',
   'UNKNOWN_DECISION_OUTCOME' = 'Okänt',
 }
 
 export enum DecisionOutcomeKey {
   'Bifall' = 'APPROVAL',
   'Avslag' = 'REJECTION',
-  'Ärendet avskrivs' = 'DISMISSAL',
+  'Ärendet avskrivs' = 'CANCELLATION',
+  'Ärendet avvisas' = 'DISMISSAL',
   'Okänt' = 'UNKNOWN_DECISION_OUTCOME',
 }

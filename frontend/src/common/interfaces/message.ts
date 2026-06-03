@@ -1,5 +1,3 @@
-import { Attachment } from '../../casedata/interfaces/attachment';
-
 type MessageType = 'MESSAGE' | 'EMAIL' | 'SMS' | 'WEB_MESSAGE' | 'DIGITAL_MAIL';
 export type MessageStatus =
   | 'AWAITING_FEEDBACK'

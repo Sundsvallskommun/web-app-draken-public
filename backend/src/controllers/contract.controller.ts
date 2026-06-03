@@ -1,3 +1,9 @@
+import { RequestWithUser } from '@interfaces/auth.interface';
+import authMiddleware from '@middlewares/auth.middleware';
+import ApiService from '@services/api.service';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Contract, PageContract } from '@/data-contracts/contract/data-contracts';
@@ -5,11 +11,6 @@ import { HttpException } from '@/exceptions/HttpException';
 import { validateContractAction } from '@/services/contract-service';
 import { logger } from '@/utils/logger';
 import { apiURL, luhnCheck } from '@/utils/util';
-import { RequestWithUser } from '@interfaces/auth.interface';
-import authMiddleware from '@middlewares/auth.middleware';
-import ApiService from '@services/api.service';
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
 
 export interface ResponseData {
   data: any;
@@ -37,7 +38,7 @@ export class CasedataContractsController {
   @Get('/contracts/:id')
   @OpenAPI({ summary: 'Fetch a contract' })
   @UseBefore(authMiddleware)
-  async fetch_contract(@Req() req: RequestWithUser, @Param('id') id: string, @Res() response: any): Promise<ResponseData> {
+  async fetch_contract(@Req() req: RequestWithUser, @Param('id') id: string, @Res() _response: any): Promise<ResponseData> {
     const url = `${MUNICIPALITY_ID}/contracts/${id}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<Contract>({ url, baseURL }, req.user);
@@ -50,7 +51,7 @@ export class CasedataContractsController {
   async fetch_contracts(
     @Req() req: RequestWithUser,
     @QueryParam('page') page: number,
-    @QueryParam('limit') limit: number,
+    @QueryParam('size') size: number,
     @QueryParam('sortBy') sortBy: string,
     @QueryParam('sortOrder') sortOrder: string,
     @QueryParam('query') query: string,
@@ -61,7 +62,7 @@ export class CasedataContractsController {
     @QueryParam('endDate') endDate: string,
     @Res() response: any,
   ): Promise<PageContract> {
-    let url = `${MUNICIPALITY_ID}/contracts?page=${page ?? 0}&limit=${limit || 12}`;
+    let url = `${MUNICIPALITY_ID}/contracts?page=${page ?? 0}&size=${size || 12}`;
 
     const filterList: string[] = [];
 
@@ -70,11 +71,12 @@ export class CasedataContractsController {
       const isPersonNumber = luhnCheck(query);
       if (isPersonNumber) {
         const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${query}/guid`;
-        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(e => null);
+        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(_e => null);
       }
 
       let queryFilter = `(`;
       queryFilter += `contractId~'*${query}*'`;
+      queryFilter += ` or externalReferenceId~'*${query}*'`;
       queryFilter += ` or exists(propertyDesignations.name~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.organizationName~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.organizationNumber~'*${query}*')`;
@@ -118,7 +120,7 @@ export class CasedataContractsController {
     }
 
     logger.info(
-      `Fetching contracts with params: page=${page}, limit=${limit}, sortBy=${sortBy}, sortOrder=${sortOrder}, query=${query}, status=${status}, contractType=${contractType}, leaseType=${leaseType}`,
+      `Fetching contracts with params: page=${page}, size=${size}, sortBy=${sortBy}, sortOrder=${sortOrder}, query=${query}, status=${status}, contractType=${contractType}, leaseType=${leaseType}`,
     );
 
     const baseURL = apiURL(this.SERVICE);
@@ -188,7 +190,7 @@ export class CasedataContractsController {
     }
     const contractUrl = `${MUNICIPALITY_ID}/contracts/${id}`;
     const existingContract: Contract = (
-      await this.apiService.get<Contract>({ url: contractUrl, baseURL }, req.user).catch(e => {
+      await this.apiService.get<Contract>({ url: contractUrl, baseURL }, req.user).catch(_e => {
         throw 'Existing contract not found.';
       })
     ).data;
@@ -211,7 +213,7 @@ export class CasedataContractsController {
     @Req() req: RequestWithUser,
     @Param('contractId') contractId: string,
     @Param('attachmentId') attachmentId: number,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<ResponseData> {
     const url = `${MUNICIPALITY_ID}/contracts/${contractId}/attachments/${attachmentId}`;
     const baseURL = apiURL(this.SERVICE);

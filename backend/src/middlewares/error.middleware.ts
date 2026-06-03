@@ -1,6 +1,6 @@
-import { NextFunction, Request, Response } from 'express';
 import { HttpException } from '@exceptions/HttpException';
 import { logger } from '@utils/logger';
+import { NextFunction, Request, Response } from 'express';
 
 // Helper function to sanitize log input by removing CR and LF characters
 function sanitizeLogInput(input: string): string {
