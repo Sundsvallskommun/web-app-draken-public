@@ -13,21 +13,28 @@ import { UploadFile } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 
-export const sendDecisionMessage: (municipalityId: string, errand: IErrand) => Promise<boolean> = (
-  municipalityId,
-  errand
-) => {
+export const sendDecisionMessage: (
+  municipalityId: string,
+  errand: IErrand,
+  html: string,
+  plaintext: string
+) => Promise<boolean> = (municipalityId, errand, html, plaintext) => {
   return apiService
-    .post<ApiResponse<MessageResponse>[], { errandId: string }>(`casedata/${municipalityId}/message/decision`, {
-      errandId: errand.id.toString(),
-    })
+    .post<ApiResponse<MessageResponse>[], { errandId: string; html: string; plaintext: string }>(
+      `casedata/${municipalityId}/message/decision`,
+      {
+        errandId: errand.id.toString(),
+        html,
+        plaintext,
+      }
+    )
     .then((res) => {
       const allSuccess = res.data.every((c) => c?.data?.messageId);
       if (allSuccess) return true;
       throw new Error('Not all channels returned a messageId');
     })
-    .catch(() => {
-      throw new Error('Något gick fel när beslutet skulle skickas');
+    .catch((e) => {
+      throw new Error(e?.response?.data?.message || 'Något gick fel när beslutet skulle skickas');
     });
 };
 
