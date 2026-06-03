@@ -261,13 +261,15 @@ test.describe('Errand page', () => {
     await page.locator('[data-cy="newPhoneNumber-button"]').click();
 
     await page.getByText('Ändra uppgifter').click();
-    await page.locator('[data-cy="save-and-continue-button"]').click();
 
-    const patchRequest = await page.waitForRequest(
+    const patchRequestPromise = page.waitForRequest(
       (req) =>
         req.url().includes(`/errands/${mockPTErrand_base.data.id}/stakeholders/${contact[0].id}`) &&
         req.method() === 'PATCH'
     );
+    await page.locator('[data-cy="save-and-continue-button"]').click();
+
+    const patchRequest = await patchRequestPromise;
     const body = patchRequest.postDataJSON();
     expect(body.firstName).toBe(contact[0].firstName);
     expect(body.lastName).toBe(contact[0].lastName);
@@ -312,13 +314,15 @@ test.describe('Errand page', () => {
     await page.locator('[data-cy="contact-lastName"]').fill('Annat Efternamn');
 
     await page.getByText('Ändra uppgifter').click();
-    await page.locator('[data-cy="save-and-continue-button"]').click();
 
-    const patchRequest = await page.waitForRequest(
+    const patchRequestPromise = page.waitForRequest(
       (req) =>
         req.url().includes(`/errands/${mockPTErrand_base.data.id}/stakeholders/${applicant?.id}`) &&
         req.method() === 'PATCH'
     );
+    await page.locator('[data-cy="save-and-continue-button"]').click();
+
+    const patchRequest = await patchRequestPromise;
     const body = patchRequest.postDataJSON();
     expect(body.firstName).toBe('Annat Förnamn');
     expect(body.lastName).toBe('Annat Efternamn');

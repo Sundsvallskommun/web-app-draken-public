@@ -99,12 +99,11 @@ test.describe('Investigation tab', () => {
 
     await page.locator('[data-cy="investigation-law-select"]').selectOption('13 kap. 8 § trafikförordningen');
     await page.locator('[data-cy="outcome-select"]').selectOption('REJECTION');
-    await page.getByText('Ja').click();
+    await page.locator('article.sk-modal-dialog').getByRole('button', { name: 'Ja' }).click();
     await page.locator('[data-cy="utredning-richtext-wrapper"]').click();
     await page.keyboard.press('Control+A');
     await page.keyboard.type('Mock text');
     await page.locator('[data-cy="save-utredning-button"]').click();
-    await page.getByText('Ja').click();
 
     const decidedBy = mockPTErrand_base.data.stakeholders.find((s) => s.roles.includes(Role.ADMINISTRATOR))!;
 

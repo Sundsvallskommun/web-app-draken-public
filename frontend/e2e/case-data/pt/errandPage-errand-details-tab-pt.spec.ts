@@ -78,7 +78,7 @@ test.describe('Errand details tab', () => {
     await page.goto('arende/PRH-2022-000019');
     await page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200);
     await dismissCookieConsent();
-    await page.getByText('Ärendeuppgifter').click();
+    await page.getByRole('tab', { name: 'Ärendeuppgifter' }).click();
   };
 
   test('shows the correct fields for a new parking permit', async ({ page, mockRoute, dismissCookieConsent }) => {

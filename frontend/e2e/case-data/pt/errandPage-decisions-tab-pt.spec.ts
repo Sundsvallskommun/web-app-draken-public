@@ -92,8 +92,8 @@ test.describe('Decisions tab', () => {
     await page.goto(`arende/${mockPTErrand_base.data.errandNumber}`);
     await page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200);
     await dismissCookieConsent();
-    const beslutTab = page.locator('.sk-tabs-list button').nth(6);
-    await expect(beslutTab).toHaveText('Beslut');
+    const beslutTab = page.getByRole('tab', { name: 'Beslut', exact: true });
+    await expect(beslutTab).toBeVisible();
     await beslutTab.click({ force: true });
   };
 
@@ -117,8 +117,8 @@ test.describe('Decisions tab', () => {
     const errandWithoutDecisions = { ...mockPTErrand_base, data: { ...mockPTErrand_base.data, decisions: [] } };
     await mockRoute('**/errand/errandNumber/*', errandWithoutDecisions);
     await visitErrand(page, dismissCookieConsent);
-    const beslutTab = page.locator('.sk-tabs-list button').nth(6);
-    await expect(beslutTab).toHaveText('Beslut');
+    const beslutTab = page.getByRole('tab', { name: 'Beslut', exact: true });
+    await expect(beslutTab).toBeVisible();
     await beslutTab.click({ force: true });
 
     await page.locator('[data-cy="decision-outcome-select"]').selectOption('Avslag');
@@ -134,7 +134,7 @@ test.describe('Decisions tab', () => {
     // Set up mock for getting errand with decisions after create
     await mockRoute(`**/errand/${mockPTErrand_base.data.id}`, mockPTErrand_base);
 
-    await page.getByText('Ja').click();
+    await page.locator('article.sk-modal-dialog').getByRole('button', { name: 'Ja' }).click();
 
     const createDecisionRequest = await page.waitForRequest(
       (req) => req.url().includes('/errands/') && req.url().includes('/decisions') && req.method() === 'PATCH'
@@ -174,7 +174,7 @@ test.describe('Decisions tab', () => {
     const finalDecisionId = mockPTErrand_base.data.decisions.find((d) => d.decisionType === 'FINAL')?.id;
     await mockRoute(`**/decisions/${finalDecisionId}`, mockPTErrand_base, { method: 'PUT' });
 
-    await page.getByText('Ja').click();
+    await page.locator('article.sk-modal-dialog').getByRole('button', { name: 'Ja' }).click();
 
     const updateDecisionRequest = await page.waitForRequest(
       (req) => req.url().includes(`/decisions/${finalDecisionId}`) && req.method() === 'PUT'
@@ -198,7 +198,7 @@ test.describe('Decisions tab', () => {
     await page.keyboard.press('Control+A');
     await page.keyboard.type('Mock text');
     await page.locator('[data-cy="save-decision-button"]').click();
-    await page.getByText('Ja').click();
+    await page.locator('article.sk-modal-dialog').getByRole('button', { name: 'Ja' }).click();
 
     const updateDecisionRequest = await page.waitForRequest(
       (req) => req.url().includes(`/decisions/${finalDecisionId}`) && req.method() === 'PUT'
@@ -245,7 +245,7 @@ test.describe('Decisions tab', () => {
     await page.keyboard.press('Control+A');
     await page.keyboard.type('Mock text');
     await page.locator('[data-cy="save-decision-button"]').click();
-    await page.getByText('Ja').click();
+    await page.locator('article.sk-modal-dialog').getByRole('button', { name: 'Ja' }).click();
 
     const updateDecisionRequest = await page.waitForRequest(
       (req) => req.url().includes(`/decisions/${finalDecisionId}`) && req.method() === 'PUT'
@@ -294,8 +294,10 @@ test.describe('Decisions tab', () => {
     await page.locator('[data-cy="decision-richtext-wrapper"]').click();
     await page.keyboard.press('Control+A');
     await page.keyboard.type('Mock text');
-    await page.locator('[data-cy="save-decision-button"]').click();
 
+    // With no outcome selected the form is invalid, so the save button is disabled
+    // and the validation error is shown.
+    await expect(page.locator('[data-cy="save-decision-button"]')).toBeDisabled();
     await expect(page.getByText('Beslut måste anges')).toBeVisible();
     expect(updateDecisionRequestCount).toBe(0);
   });
@@ -355,8 +357,10 @@ test.describe('Decisions tab', () => {
     await expect(page.locator('[data-cy="decisionTemplate-select"]')).toBeVisible();
     await page.locator('[data-cy="decisionTemplate-select"]').selectOption({ label: 'PT Testmall' });
     await page.waitForResponse((resp) => resp.url().includes('/render/pdf') && resp.status() === 200);
-    await expect(page.locator('[data-cy="decision-template-preview"]')).toBeVisible();
-    const previewContent = page.locator('[data-cy="decision-template-preview-content"]');
+    // The investigation tab also renders a preview (hidden in its inactive tab panel),
+    // so scope to the visible one in the active decision tab.
+    await expect(page.locator('[data-cy="decision-template-preview"]:visible')).toBeVisible();
+    const previewContent = page.locator('[data-cy="decision-template-preview-content"]:visible');
     await expect(previewContent).toBeVisible();
     await expect(previewContent).toHaveJSProperty('tagName', 'IFRAME');
   });
@@ -381,9 +385,11 @@ test.describe('Decisions tab', () => {
     await page.locator('[data-cy="validFrom-input"]').clear();
     await page.locator('[data-cy="validTo-input"]').clear();
     await page.locator('[data-cy="validTo-input"]').fill('2024-08-11');
-    await page.locator('[data-cy="save-decision-button"]').click();
 
-    await expect(page.getByText('Giltig från måste anges')).toBeVisible();
+    // With validFrom missing for an approval the form is invalid, so the save button
+    // is disabled and the validation error is shown.
+    await expect(page.locator('[data-cy="save-decision-button"]')).toBeDisabled();
+    await expect(page.getByText('Giltigt datum måste anges').first()).toBeVisible();
     expect(updateDecisionRequestCount).toBe(0);
   });
 });

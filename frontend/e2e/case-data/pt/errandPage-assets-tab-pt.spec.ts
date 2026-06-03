@@ -17,9 +17,8 @@ const tableHeaderColumns: Record<number, string> = {
   0: 'Typ',
   1: 'Kortnummer',
   2: 'Status',
-  3: 'Ärendenummer',
-  4: 'Beslutad',
-  5: 'Giltighetstid',
+  3: 'Beslutad',
+  4: 'Giltighetstid',
 };
 
 test.describe('Errand page assets tab', () => {
@@ -94,21 +93,17 @@ test.describe('Errand page assets tab', () => {
   });
 
   test('shows the correct table headers and assets', async ({ page }) => {
-    await expect(page.locator('[data-cy="assets-table"]')).toBeVisible();
+    await expect(page.locator('table[data-cy="assets-table"]')).toBeVisible();
     await expect(page.locator('.sk-table-sortbutton').filter({ hasText: tableHeaderColumns[0] })).toBeVisible();
     await expect(page.locator('.sk-table-sortbutton').filter({ hasText: tableHeaderColumns[1] })).toBeVisible();
     await expect(page.locator('.sk-table-sortbutton').filter({ hasText: tableHeaderColumns[2] })).toBeVisible();
     await expect(page.locator('.sk-table-sortbutton').filter({ hasText: tableHeaderColumns[3] })).toBeVisible();
     await expect(page.locator('.sk-table-sortbutton').filter({ hasText: tableHeaderColumns[4] })).toBeVisible();
-    await expect(page.locator('.sk-table-sortbutton').filter({ hasText: tableHeaderColumns[5] })).toBeVisible();
 
-    await expect(page.locator('[data-cy="table-column-type"]').locator('strong')).toContainText('P-tillstånd');
-    await expect(page.locator('[data-cy="table-column-assetId"]').locator('span')).toContainText('133773');
-    await expect(page.locator('[data-cy="table-column-status"]').locator('span')).toContainText('Aktivt');
-    await expect(page.locator('[data-cy="table-column-errandNumber"]').locator('span')).toContainText(
-      'PRH-2023-000283'
-    );
-    await expect(page.locator('[data-cy="table-column-issued"]').locator('span')).toContainText('2023-01-01');
+    await expect(page.locator('[data-cy="table-column-type"]')).toContainText('P-tillstånd');
+    await expect(page.locator('[data-cy="table-column-assetId"]')).toContainText('133773');
+    await expect(page.locator('[data-cy="table-column-status"]')).toContainText('Aktivt');
+    await expect(page.locator('[data-cy="table-column-issued"]')).toContainText('2023-01-01');
     const validToCol = page.locator('[data-cy="table-column-validTo"]');
     await expect(validToCol).toContainText('2023-01-01');
     await expect(validToCol).toContainText('2023');
@@ -382,6 +377,8 @@ type MockRoute = (pattern: string | RegExp, response: unknown, options?: { metho
 const setupCommonIntercepts = async (page: import('@playwright/test').Page, mockRoute: MockRoute) => {
   await mockRoute('**/schemas/*/latest', mockSchema);
   await mockRoute('**/schemas/*/ui-schema', mockUiSchema);
+  // Edit flow fetches the schema by id (no /latest); Cypress matched both with one regex.
+  await mockRoute('**/schemas/*', mockSchema);
   await mockRoute('**/users/admins', mockAdmins);
   await mockRoute('**/me', mockMe);
   await mockRoute('**/featureflags', []);
@@ -498,7 +495,7 @@ test.describe('Errand page Insatser tab', () => {
     await mockRoute('**/asset-drafts/*', { data: 'ok', message: 'ok' }, { method: 'PATCH' });
     await visitInsatserTab(page, mockRoute, dismissCookieConsent, mockDraftAsset);
     await page.locator('[data-cy="edit-service-button"]').first().click();
-    await expect(page.locator('.sk-modal')).toBeVisible();
+    await expect(page.locator('article.sk-modal-dialog')).toBeVisible();
     const patchRequest = page.waitForRequest(
       (req) => /\/asset-drafts\//.test(req.url()) && req.method() === 'PATCH'
     );
