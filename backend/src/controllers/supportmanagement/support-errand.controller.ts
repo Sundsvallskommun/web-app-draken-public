@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { CASEDATA_NAMESPACE, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { APPLICATION, CASEDATA_NAMESPACE, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   AddressAddressCategoryEnum,
@@ -42,7 +42,6 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { isIK, isKA, isKC, isLOP, isMSVA, isROB, isSE } from '@/services/application.service';
 import { logger } from '@/utils/logger';
 import { apiURL, buildCategoryFilter, findLeafComponents, luhnCheck, removeUnreachablePaths, toOffsetDateTime, withRetries } from '@/utils/util';
 
@@ -363,6 +362,42 @@ export enum SupportStakeholderRole {
   PRIMARY = 'PRIMARY',
   CONTACT = 'CONTACT',
 }
+
+type LabelSpec = { category: string; type: string; subType?: string };
+
+interface NewErrandDefaults {
+  classification: { category: string; type: string };
+  labels?: LabelSpec;
+}
+
+// Default classification and labels applied to a new empty errand, per application (drake).
+// Applications without a `labels` entry get no default labels.
+const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
+  KC: { classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' } },
+  KA: {
+    classification: { category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER' },
+    labels: { category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER', subType: 'ADMINISTRATION/CONTACT_CENTER/GENERAL' },
+  },
+  LOP: {
+    classification: { category: 'SALARY', type: 'SALARY.UNCATEGORIZED' },
+    labels: { category: 'SALARY', type: 'SALARY/UNCATEGORIZED', subType: 'SALARY/UNCATEGORIZED/UNCATEGORIZED' },
+  },
+  IK: {
+    classification: { category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER.UNCATEGORIZED' },
+    labels: { category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER/UNCATEGORIZED' },
+  },
+  MSVA: { classification: { category: 'MSVA', type: 'MSVA.UNCATEGORIZED' } },
+  ROB: { classification: { category: 'COMPLETE_RECRUITMENT', type: 'COMPLETE_RECRUITMENT.RETAKE' } },
+  SE: {
+    classification: { category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' },
+    labels: { category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' },
+  },
+  BOU: {
+    classification: { category: 'BOU', type: 'BOU/UNCATEGORIZED' },
+    labels: { category: 'BOU', type: 'BOU/UNCATEGORIZED' },
+  },
+};
+
 @Controller()
 @UseBefore(hasPermissions(['canEditSupportManagement']))
 export class SupportErrandController {
@@ -698,64 +733,15 @@ export class SupportErrandController {
 
     const url = `${municipalityId}/${this.namespace}/errands`;
     const baseURL = apiURL(this.SERVICE);
+    const errandDefaults = NEW_ERRAND_DEFAULTS[APPLICATION ?? ''];
     const body: Partial<SupportErrandDto> = {
       reporterUserId: req.user.username,
       assignedUserId: req.user.username,
-      classification: isKC()
-        ? {
-            category: 'CONTACT_SUNDSVALL',
-            type: 'UNCATEGORIZED',
-          }
-        : isKA()
-          ? {
-              category: 'ADMINISTRATION',
-              type: 'ADMINISTRATION/CONTACT_CENTER',
-            }
-          : isLOP()
-            ? {
-                category: 'SALARY',
-                type: 'SALARY.UNCATEGORIZED',
-              }
-            : isIK()
-              ? {
-                  category: 'KSK_SERVICE_CENTER',
-                  type: 'KSK_SERVICE_CENTER.UNCATEGORIZED',
-                }
-              : isMSVA()
-                ? {
-                    category: 'MSVA',
-                    type: 'MSVA.UNCATEGORIZED',
-                  }
-                : isROB()
-                  ? {
-                      category: 'COMPLETE_RECRUITMENT',
-                      type: 'COMPLETE_RECRUITMENT.RETAKE',
-                    }
-                  : isSE()
-                    ? {
-                        category: 'UNCATEGORIZED',
-                        type: 'UNCATEGORIZED/UNCATEGORISED',
-                      }
-                    : {
-                        category: 'CONTACT_SUNDSVALL',
-                        type: 'UNCATEGORIZED',
-                      },
-      labels: isLOP()
-        ? getDefaultLabels({ category: 'SALARY', type: 'SALARY/UNCATEGORIZED', subType: 'SALARY/UNCATEGORIZED/UNCATEGORIZED' })
-        : isIK()
-          ? getDefaultLabels({ category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER/UNCATEGORIZED' })
-          : isKA()
-            ? getDefaultLabels({
-                category: 'ADMINISTRATION',
-                type: 'ADMINISTRATION/CONTACT_CENTER',
-                subType: 'ADMINISTRATION/CONTACT_CENTER/GENERAL',
-              })
-            : isSE()
-              ? getDefaultLabels({ category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' })
-              : [],
-      priority: 'MEDIUM' as SupportPriority,
+      classification: errandDefaults?.classification,
+      labels: errandDefaults?.labels ? getDefaultLabels(errandDefaults.labels) : [],
+      priority: SupportPriority.MEDIUM,
       status: Status.NEW,
-      channel: 'PHONE',
+      channel: ContactChannelType.PHONE,
       title: 'Empty errand',
     };
     console.log('Creating new empty errand with body', body);

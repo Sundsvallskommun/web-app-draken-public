@@ -305,6 +305,9 @@ export const SidebarInfo: FC<{
       case Resolution.CANCELLED: {
         return solutionComponent('Avbruten', 'avslutade ärendet.', 'check');
       }
+      case Resolution.BACK_TO_CONTACT_SUNDSVALL: {
+        return solutionComponent('Felskickat', 'skickade tillbaka ärendet till Kontakt Sundsvall.', 'check');
+      }
     }
   };
 

@@ -21,4 +21,6 @@ export const isROB = () => APP === 'ROB';
 
 export const isSE = () => APP === 'SE';
 
+export const isBOU = () => APP === 'BOU';
+
 export const getApplicationEnvironment = () => (ENV === 'TEST' ? 'TEST' : null);
