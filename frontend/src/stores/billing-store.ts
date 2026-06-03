@@ -1,5 +1,5 @@
-import { create } from 'zustand';
 import { CPageBillingRecord } from 'src/data-contracts/backend/data-contracts';
+import { create } from 'zustand';
 
 interface BillingState {
   billingRecords: CPageBillingRecord;

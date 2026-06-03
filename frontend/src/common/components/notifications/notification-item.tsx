@@ -6,8 +6,8 @@ import { Notification as CaseDataNotification } from '@common/data-contracts/cas
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { prettyTime } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
-import { useConfigStore, useSupportStore } from '@stores/index';
 import { Checkbox, cx, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import {
   acknowledgeSupportNotification,
   getSupportNotifications,

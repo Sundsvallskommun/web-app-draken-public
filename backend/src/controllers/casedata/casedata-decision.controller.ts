@@ -99,7 +99,7 @@ export class CaseDataDecisionsController {
     @Param('id') errandId: number,
     @Param('decisionId') decisionId: string,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<ResponseData> {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/decisions/${decisionId}`;
     const baseURL = apiURL(this.SERVICE);

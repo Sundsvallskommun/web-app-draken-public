@@ -1,0 +1,11 @@
+# Strict, repo-wide lint + format gate before pushing.
+# Mirrors the CI lint workflow so failures surface locally first.
+# Bypass (discouraged): git push --no-verify
+
+echo "→ frontend: strict lint + format check"
+yarn --cwd frontend lint:strict || exit 1
+yarn --cwd frontend format:check || exit 1
+
+echo "→ backend: strict lint + format check"
+yarn --cwd backend lint:strict || exit 1
+yarn --cwd backend format:check || exit 1

@@ -151,7 +151,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
     if (!appConfig.features.useDepartmentEscalation) {
       setValue('recipient', 'EMAIL');
     }
-  }, [appConfig.features.useDepartmentEscalation]);
+  }, [setValue]);
 
   useEffect(() => {
     if (supportErrand) {

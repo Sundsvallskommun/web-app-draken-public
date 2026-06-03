@@ -148,7 +148,6 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
     });
 
     it('allows editing all fields on an existing contact person if errand was created in web UI', () => {
-      const res = mockPTErrand_base;
       const contact = [
         {
           id: '667',
@@ -192,7 +191,7 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
           extraParameters: {} as any,
         },
       ];
-      res.data.stakeholders = contact;
+      const res = { ...mockPTErrand_base, data: { ...mockPTErrand_base.data, stakeholders: contact } };
       cy.intercept('GET', '**/errand/errandNumber/*', res).as('getErrand');
       cy.intercept(
         'PATCH',
@@ -246,6 +245,39 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         expect(request.body.contactInformation[0].value).to.equal('+46701740635');
         expect(request.body.contactInformation[1].contactType).to.equal('EMAIL');
         expect(request.body.contactInformation[1].value).to.equal('test@example.com');
+      });
+    });
+
+    it('keeps personId on the applicant when editing first and last name', () => {
+      const applicant = mockPTErrand_base.data.stakeholders.find((s) => s.roles.includes(Role.APPLICANT));
+      cy.intercept('GET', '**/errand/errandNumber/*', mockPTErrand_base).as('getErrand');
+      cy.intercept(
+        'PATCH',
+        `**/errands/${mockPTErrand_base.data.id}/stakeholders/${applicant?.id}`,
+        mockPTErrand_base
+      ).as('patchErrand');
+
+      visit();
+
+      cy.get('[data-cy="registered-applicants"] [data-cy="rendered-APPLICANT"]').should('exist');
+      cy.get('[data-cy="registered-applicants"] [data-cy="edit-stakeholder-button"]')
+        .first()
+        .should('exist')
+        .click();
+
+      cy.get('[data-cy="contact-firstName"]').should('have.value', applicant?.firstName);
+      cy.get('[data-cy="contact-lastName"]').should('have.value', applicant?.lastName);
+
+      cy.get('[data-cy="contact-firstName"]').clear().type('Annat Förnamn');
+      cy.get('[data-cy="contact-lastName"]').clear().type('Annat Efternamn');
+
+      cy.get('button').contains('Ändra uppgifter').should('exist').click();
+      cy.get('[data-cy="save-and-continue-button"]').should('exist').click();
+
+      cy.wait('@patchErrand').should(({ request }) => {
+        expect(request.body.firstName).to.equal('Annat Förnamn');
+        expect(request.body.lastName).to.equal('Annat Efternamn');
+        expect(request.body.personId).to.equal(applicant?.personId);
       });
     });
   });

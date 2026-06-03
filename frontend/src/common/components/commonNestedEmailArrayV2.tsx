@@ -1,7 +1,7 @@
 import { PrettyRole } from '@casedata/interfaces/role';
 import { appConfig } from '@config/appconfig';
-import { useMetadataStore } from '@stores/index';
 import { Button, Chip, cx, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
+import { useMetadataStore } from '@stores/index';
 import { ContactChannelType } from '@supportmanagement/services/support-errand-service';
 import { useEffect, useState } from 'react';
 import { useFieldArray } from 'react-hook-form';

@@ -1,4 +1,3 @@
-/* eslint-disable */
 /* tslint:disable */
 // @ts-nocheck
 /*
@@ -615,8 +614,6 @@ export interface JsonNode {
   boolean?: boolean;
   embeddedValue?: boolean;
 }
-
-export type SpecificationContractEntity = any;
 
 export interface PageContract {
   /** @format int64 */

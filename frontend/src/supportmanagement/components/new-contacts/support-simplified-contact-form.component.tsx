@@ -12,9 +12,9 @@ import {
   usernamePattern,
 } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
-import { useConfigStore, useMetadataStore } from '@stores/index';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, Input } from '@sk-web-gui/react';
+import { useConfigStore, useMetadataStore } from '@stores/index';
 import {
   emptyContact,
   ExternalIdType,
@@ -227,7 +227,8 @@ export const SupportSimplifiedContactForm: FC<{
 
   useEffect(() => {
     if (
-      (manual || editing) &&
+      manual &&
+      !editing &&
       (formState.dirtyFields?.firstName || formState.dirtyFields?.lastName || formState.dirtyFields?.organizationName)
     ) {
       resetPersonNumber();

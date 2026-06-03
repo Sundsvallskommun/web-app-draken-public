@@ -139,11 +139,6 @@ interface ResponseData {
   message: string;
 }
 
-interface PersonIdResponseData {
-  data: { personId: string };
-  message: string;
-}
-
 @Controller()
 export class AddressController {
   private apiService = new ApiService();
@@ -189,7 +184,7 @@ export class AddressController {
   async username(
     @Req() req: RequestWithUser,
     @Param('loginName') loginName: string,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<{ data: EmployeeAddress; message: string } | undefined> {
     const baseUrl = `${this.EMPLOYEE_SERVICE}/${MUNICIPALITY_ID}/portalpersondata/PERSONAL/${loginName}`;
     const res = await this.apiService.get<EmployeeAddress>({ url: baseUrl }, req.user).catch(e => {
@@ -200,7 +195,7 @@ export class AddressController {
 
     if (personId) {
       const empUrl = `${this.EMPLOYEE_SERVICE}/${MUNICIPALITY_ID}/employments?personId=${personId}`;
-      const empRes = await this.apiService.get<any[]>({ url: empUrl }, req.user).catch(e => {
+      const empRes = await this.apiService.get<any[]>({ url: empUrl }, req.user).catch(_e => {
         logger.error('Error when fetching employment data');
         return { data: [] };
       });
@@ -225,7 +220,7 @@ export class AddressController {
   async employed(
     @Req() req: RequestWithUser,
     @Param('personalNumber') personalNumber: string,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<{ data: EmployedPersonData; message: string }> {
     const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${personalNumber}/guid`;
     const guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user);

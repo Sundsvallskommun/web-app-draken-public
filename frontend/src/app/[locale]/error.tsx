@@ -1,8 +1,8 @@
 'use client';
 
 import { Button } from '@sk-web-gui/react';
-import { useEffect } from 'react';
 import { TriangleAlert } from 'lucide-react';
+import { useEffect } from 'react';
 
 export default function ErrorPage({
   error,
@@ -25,20 +25,12 @@ export default function ErrorPage({
           <p className="text-large text-dark-secondary">
             Ett oväntat fel uppstod. Du kan försöka igen eller gå tillbaka till översikten.
           </p>
-          {error.digest && (
-            <p className="text-small text-dark-disabled">
-              Felreferens: {error.digest}
-            </p>
-          )}
+          {error.digest && <p className="text-small text-dark-disabled">Felreferens: {error.digest}</p>}
           <div className="flex gap-16">
             <Button color="vattjom" onClick={reset}>
               Försök igen
             </Button>
-            <Button
-              variant="tertiary"
-              color="vattjom"
-              onClick={() => (globalThis.window.location.href = '/')}
-            >
+            <Button variant="tertiary" color="vattjom" onClick={() => (globalThis.window.location.href = '/')}>
               Gå till översikten
             </Button>
           </div>

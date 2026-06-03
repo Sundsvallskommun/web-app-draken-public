@@ -2,6 +2,7 @@ import { CasedataMessageTabFormModel } from '@casedata/components/errand/tabs/me
 import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
 import { sendAttachments } from '@casedata/services/casedata-attachment-service';
+import { CasedataMessageType } from '@casedata/services/casedata-message-types';
 import { Message, MessageStatus } from '@common/interfaces/message';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
@@ -12,21 +13,28 @@ import { UploadFile } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 
-export const sendDecisionMessage: (municipalityId: string, errand: IErrand) => Promise<boolean> = (
-  municipalityId,
-  errand
-) => {
+export const sendDecisionMessage: (
+  municipalityId: string,
+  errand: IErrand,
+  html: string,
+  plaintext: string
+) => Promise<boolean> = (municipalityId, errand, html, plaintext) => {
   return apiService
-    .post<ApiResponse<MessageResponse>[], { errandId: string }>(`casedata/${municipalityId}/message/decision`, {
-      errandId: errand.id.toString(),
-    })
+    .post<ApiResponse<MessageResponse>[], { errandId: string; html: string; plaintext: string }>(
+      `casedata/${municipalityId}/message/decision`,
+      {
+        errandId: errand.id.toString(),
+        html,
+        plaintext,
+      }
+    )
     .then((res) => {
       const allSuccess = res.data.every((c) => c?.data?.messageId);
       if (allSuccess) return true;
       throw new Error('Not all channels returned a messageId');
     })
-    .catch(() => {
-      throw new Error('Något gick fel när beslutet skulle skickas');
+    .catch((e) => {
+      throw new Error(e?.response?.data?.message || 'Något gick fel när beslutet skulle skickas');
     });
 };
 
@@ -159,8 +167,11 @@ export const sendSms: (
   return Promise.all(msgPromises).then((results) => results.every((r) => r));
 };
 
-const sortBySentDate = (a: { sent: string }, b: { sent: string }) =>
-  dayjs(a.sent).isAfter(dayjs(b.sent)) ? 1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? -1 : 0;
+const sortMessagesBySentDesc = (messages: MessageResponse[]): MessageResponse[] => {
+  return messages.sort((a, b) =>
+    dayjs(a.sent).isAfter(dayjs(b.sent)) ? -1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? 1 : 0
+  );
+};
 
 export const countAllMessages = (tree: MessageNode[]): number => {
   if (!tree) {
@@ -235,7 +246,7 @@ const buildTree = (_list: MessageResponse[]) => {
   list.forEach((msg) => {
     msg.message = msg.message?.replace(/\r\n/g, '<br>');
     const id =
-      msg.messageType === 'EMAIL'
+      msg.messageType === CasedataMessageType.Email
         ? (msg.emailHeaders ?? []).find((h) => h.header === 'MESSAGE_ID')?.values?.[0]
         : msg.messageId;
     if (id) {
@@ -245,7 +256,7 @@ const buildTree = (_list: MessageResponse[]) => {
 
   list.forEach((msg) => {
     const id =
-      msg.messageType === 'EMAIL'
+      msg.messageType === CasedataMessageType.Email
         ? (msg.emailHeaders ?? []).find((h) => h.header === 'MESSAGE_ID')?.values?.[0]
         : msg.messageId;
     const parent = (msg.emailHeaders ?? []).find((h) => h.header === 'IN_REPLY_TO')?.values?.[0];
@@ -268,18 +279,37 @@ const buildTree = (_list: MessageResponse[]) => {
   return roots;
 };
 
+const getErrandMessages = (municipalityId: string, errand: IErrand): Promise<MessageResponse[]> => {
+  if (!errand?.errandNumber || !municipalityId) {
+    console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
+  }
+
+  return apiService
+    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/errand/${errand?.id}/messages`)
+    .then((res) => res.data.data);
+};
+
+export const fetchMessagesWithTree: (
+  municipalityId: string,
+  errand: IErrand
+) => Promise<{ messages: MessageResponse[]; messageTree: MessageNode[] }> = (municipalityId, errand) => {
+  return getErrandMessages(municipalityId, errand)
+    .then((res) => {
+      const messages = sortMessagesBySentDesc([...res]);
+      const messageTree = buildTree(res.map((message) => ({ ...message })));
+      return { messages, messageTree };
+    })
+    .catch((e) => {
+      console.error('Something went wrong when fetching messages for errand:', errand.id, e);
+      throw e;
+    });
+};
+
 export const fetchMessagesTree: (municipalityId: string, errand: IErrand) => Promise<MessageNode[]> = (
   municipalityId,
   errand
 ) => {
-  if (!errand?.errandNumber || !municipalityId) {
-    console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
-  }
-  return apiService
-    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/errand/${errand?.id}/messages`)
-    .then((res) => {
-      return res.data.data; //.sort(sortBySentDate); //.reduce(findLastInThread, []);
-    })
+  return getErrandMessages(municipalityId, errand)
     .then((res) => {
       const tree = buildTree(res);
       return tree;
@@ -294,15 +324,9 @@ export const fetchMessages: (municipalityId: string, errand: IErrand) => Promise
   municipalityId,
   errand
 ) => {
-  if (!errand?.errandNumber || !municipalityId) {
-    console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
-  }
-  return apiService
-    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/errand/${errand?.id}/messages`)
+  return getErrandMessages(municipalityId, errand)
     .then((res) => {
-      const list: MessageResponse[] = res.data.data.sort((a, b) =>
-        dayjs(a.sent).isAfter(dayjs(b.sent)) ? -1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? 1 : 0
-      );
+      const list: MessageResponse[] = sortMessagesBySentDesc(res);
       return list;
     })
     .catch((e) => {

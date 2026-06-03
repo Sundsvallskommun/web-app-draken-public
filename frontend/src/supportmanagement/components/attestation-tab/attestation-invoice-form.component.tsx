@@ -108,46 +108,43 @@ export const AttestationInvoiceForm: FC<{
       });
   };
 
-  const ChangeAttestationDecisionComponent = (p: { status: CBillingRecordStatusEnum }) => {
-    return (
-      <div className="flex gap-md my-md">
-        <Select
-          className="w-full"
-          // disabled={p.status === CBillingRecordStatusEnum.INVOICED}
-          value={p.status}
-          onChange={(e) => {
-            setValue('status', e.target.value as CBillingRecordStatusEnum, { shouldDirty: true });
-            trigger('status');
-          }}
-        >
-          <Select.Option value={CBillingRecordStatusEnum.NEW}>Inget beslut</Select.Option>
-          <Select.Option value={CBillingRecordStatusEnum.APPROVED}>Godkänn</Select.Option>
-          <Select.Option value={CBillingRecordStatusEnum.REJECTED}>Avslå</Select.Option>
-        </Select>
-        <Button
-          variant="secondary"
-          onClick={() => {
+  const changeDecisionUi = (
+    <div className="flex gap-md my-md">
+      <Select
+        className="w-full"
+        value={getValues().status as CBillingRecordStatusEnum}
+        onChange={(e) => {
+          setValue('status', e.target.value as CBillingRecordStatusEnum, { shouldDirty: true });
+          trigger('status');
+        }}
+      >
+        <Select.Option value={CBillingRecordStatusEnum.NEW}>Inget beslut</Select.Option>
+        <Select.Option value={CBillingRecordStatusEnum.APPROVED}>Godkänn</Select.Option>
+        <Select.Option value={CBillingRecordStatusEnum.REJECTED}>Avslå</Select.Option>
+      </Select>
+      <Button
+        variant="secondary"
+        onClick={() => {
+          setShowDecisionComponent(false);
+          setValue('status', selectedRecord.status);
+        }}
+      >
+        Avbryt
+      </Button>
+      <Button
+        disabled={!isDirty}
+        onClick={() => {
+          setValue('status', getValues().status);
+          setBillingRecordStatus(municipalityId, getValues(), getValues().status, user).then(() => {
+            props.update(selectedRecord.id!);
             setShowDecisionComponent(false);
-            setValue('status', selectedRecord.status);
-          }}
-        >
-          Avbryt
-        </Button>
-        <Button
-          disabled={!isDirty}
-          onClick={() => {
-            setValue('status', getValues().status);
-            setBillingRecordStatus(municipalityId, getValues(), getValues().status, user).then(() => {
-              props.update(selectedRecord.id!);
-              setShowDecisionComponent(false);
-            });
-          }}
-        >
-          Spara beslut
-        </Button>
-      </div>
-    );
-  };
+          });
+        }}
+      >
+        Spara beslut
+      </Button>
+    </div>
+  );
 
   return (
     <div className="px-40 my-lg gap-24">
@@ -220,7 +217,7 @@ export const AttestationInvoiceForm: FC<{
         </div>
       ) : selectedRecord.status === CBillingRecordStatusEnum.APPROVED ? (
         showChangeDecisionComponent ? (
-          <ChangeAttestationDecisionComponent status={getValues().status as CBillingRecordStatusEnum} />
+          changeDecisionUi
         ) : (
           <div>
             <div className="pt-16 gap-md flex justify-end">
@@ -240,7 +237,7 @@ export const AttestationInvoiceForm: FC<{
         )
       ) : selectedRecord.status === CBillingRecordStatusEnum.REJECTED ? (
         showChangeDecisionComponent ? (
-          <ChangeAttestationDecisionComponent status={getValues().status as CBillingRecordStatusEnum} />
+          changeDecisionUi
         ) : (
           <div>
             <div className="pt-16 gap-md flex justify-end">
@@ -259,7 +256,7 @@ export const AttestationInvoiceForm: FC<{
           </div>
         )
       ) : showChangeDecisionComponent ? (
-        <ChangeAttestationDecisionComponent status={getValues().status as CBillingRecordStatusEnum} />
+        changeDecisionUi
       ) : (
         <div>
           <div className="pt-16 gap-md flex justify-end">

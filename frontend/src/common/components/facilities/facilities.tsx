@@ -29,7 +29,7 @@ import { useForm, UseFormSetValue } from 'react-hook-form';
 
 import { FacilityDetails } from './facilities-details';
 
-export const Facilities: FC<{
+const Facilities: FC<{
   setValue: UseFormSetValue<any>;
   setUnsaved: (unsaved: boolean) => void;
   facilities: FacilityDTO[];
@@ -120,11 +120,10 @@ export const Facilities: FC<{
       });
   };
 
-  const ResultList: FC<{ result: EstateInfoSearch[] }> = ({ result }) => {
-    const data = result ?? [];
-    return searchResult.length > 0 ? (
+  const resultList =
+    searchResult.length > 0 ? (
       <SearchField.SuggestionsList data-cy="suggestion-list" className="w-full" key={`searchList-${searchQuery}`}>
-        {data.map((estate, index) => (
+        {searchResult.map((estate, index) => (
           <SearchField.SuggestionsOption
             key={`searchHit-${searchQuery}-${index}`}
             value={searchType === 'ADDRESS' ? `${estate.address}` : estate.designation}
@@ -147,7 +146,6 @@ export const Facilities: FC<{
         ))}
       </SearchField.SuggestionsList>
     ) : null;
-  };
 
   return (
     <div>
@@ -195,7 +193,7 @@ export const Facilities: FC<{
             data-cy="facility-search"
             showSearchButton={false}
           />
-          <ResultList result={searchResult} />
+          {resultList}
         </SearchField.Suggestions>
         {showSpinner ? (
           <div className="m-lg flex gap-16" data-cy="search-spinner">

@@ -1,6 +1,6 @@
 import { Admin } from '@common/services/user-service';
-import { useUserStore } from '@stores/index';
 import { Button, cx, Link } from '@sk-web-gui/react';
+import { useUserStore } from '@stores/index';
 import {
   AttestationDatesFilter,
   AttestationDatesValues,
@@ -26,7 +26,7 @@ export const AttestationValues = {
   ...AttestationDatesValues,
 };
 
-export const AttestationsFilteringComponent: FC<{
+const AttestationsFilteringComponent: FC<{
   ownerFilterHandler: (b: boolean) => void;
   ownerFilter?: boolean;
   administrators?: Admin[];

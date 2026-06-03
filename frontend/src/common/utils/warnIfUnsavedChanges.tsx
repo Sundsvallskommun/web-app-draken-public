@@ -30,6 +30,9 @@ function WarnIfUnsavedChanges({ children, showWarning }: { children: ReactNode; 
     const originalPush = router.push;
     const originalReplace = router.replace;
 
+    // Next.js App Router has no native route-change blocking API, so we
+    // monkey-patch push/replace and restore them on cleanup.
+    /* eslint-disable react-hooks/immutability */
     router.push = async (...args: Parameters<typeof originalPush>) => {
       handleRouteChange(args[0]);
       return originalPush.apply(router, args);
@@ -43,6 +46,7 @@ function WarnIfUnsavedChanges({ children, showWarning }: { children: ReactNode; 
       router.push = originalPush;
       router.replace = originalReplace;
     };
+    /* eslint-enable react-hooks/immutability */
   }, [router]);
 
   return <Fragment>{children}</Fragment>;

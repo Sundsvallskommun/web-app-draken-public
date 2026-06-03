@@ -3,11 +3,12 @@
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
 import { ContractData } from '@casedata/interfaces/contract-data';
+import { DecisionOutcomes } from '@casedata/interfaces/decision';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { Role } from '@casedata/interfaces/role';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
-import { getDraftAssets, updateAsset } from '@casedata/services/asset-service';
+import { deleteDraftAsset, getDraftAssets, updateAsset } from '@casedata/services/asset-service';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import {
   fetchDecisionTemplates,
@@ -23,25 +24,21 @@ import {
   isErrandLocked,
   isFTErrand,
   isFTNationalErrand,
+  isPTCaseType,
+  isPTErrand,
   updateErrandStatus,
   validateAction,
   validateErrandForDecision,
   validateStatusForDecision,
 } from '@casedata/services/casedata-errand-service';
-import { sendDecisionMessage, sendMessage } from '@casedata/services/casedata-message-service';
-import {
-  getOwnerStakeholder,
-  validateOwnerForSendingDecision,
-  validateOwnerForSendingDecisionByEmail,
-  validateOwnerForSendingDecisionByLetter,
-} from '@casedata/services/casedata-stakeholder-service';
+import { sendDecisionMessage } from '@casedata/services/casedata-message-service';
+import { getOwnerStakeholder, validateOwnerForSendingDecision } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
 import { triggerErrandPhaseChange } from '@casedata/services/process-service';
 import TextEditor from '@common/components/dynamic-text-editor';
 import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
 import { TemplatePdfPreview } from '@common/components/template-preview/template-pdf-preview.component';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
-import { MessageClassification } from '@common/interfaces/message';
 import { Template } from '@common/interfaces/template';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
@@ -49,10 +46,13 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import type { RJSFSchema } from '@rjsf/utils';
 import {
+  Alert,
+  Badge,
   Button,
   Combobox,
   cx,
   Dialog,
+  Disclosure,
   FormControl,
   FormErrorMessage,
   FormLabel,
@@ -63,17 +63,14 @@ import {
 } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';
-import { Download, SendHorizontal } from 'lucide-react';
+import { Download, Gavel, HandHelping, SendHorizontal } from 'lucide-react';
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
 import { ServiceListComponent } from '../services/casedata-service-list.component';
 import { useErrandServices } from '../services/useErrandService';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
-
-export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
 
 export interface DecisionFormModel {
   id?: string;
@@ -107,24 +104,29 @@ let formSchema = yup
         return outcome !== '' && outcome !== 'Välj beslut';
       }),
     validFrom: isPT()
-      ? yup.string().when('outcome', (values, schema) => {
-          const [outcome] = values as [string];
-          return outcome === 'APPROVAL' ? schema.required('Giltig från måste anges') : schema.notRequired();
+      ? yup.string().when(['outcome', 'errandCaseType'], (values, schema) => {
+          const [outcome, errandCaseType] = values as [string, string];
+          return outcome === DecisionOutcomes.Approval && isPTCaseType(errandCaseType)
+            ? schema.required('Giltigt datum måste anges')
+            : schema.notRequired();
         })
       : yup.string(),
 
     validTo: isPT()
       ? yup
           .string()
-          .when('outcome', (values, schema) => {
-            const [outcome] = values as [string];
-            return outcome === 'APPROVAL' ? schema.required('Giltig till måste anges') : schema.notRequired();
+          .when(['outcome', 'errandCaseType'], (values, schema) => {
+            const [outcome, errandCaseType] = values as [string, string];
+            return outcome === DecisionOutcomes.Approval && isPTCaseType(errandCaseType)
+              ? schema.required('Giltigt datum måste anges')
+              : schema.notRequired();
           })
           .test({
             name: 'validTo-after-validFrom',
             message: 'Slutdatum måste vara efter startdatum',
             test: (value, context) => {
-              if (context.parent.outcome !== 'APPROVAL') return true;
+              if (context.parent.outcome !== DecisionOutcomes.Approval) return true;
+              if (!isPTCaseType(context.parent.errandCaseType)) return true;
               if (!value || !context.parent.validFrom) return true;
               return Date.parse(context.parent.validFrom) < Date.parse(value);
             },
@@ -156,6 +158,8 @@ export const CasedataDecisionTab: FC<{
   const [isTemplatesLoading, setIsTemplatesLoading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const templatesRequestId = useRef(0);
+  // Holds the saved template identifier to re-select once templates have been fetched on load.
+  const pendingTemplateRestore = useRef<string | null>(null);
 
   const sortedDec = useMemo(() => {
     if (!errand) return [];
@@ -178,24 +182,36 @@ export const CasedataDecisionTab: FC<{
   }, [errand?.decisions]);
 
   const ownerPartyId = errand ? getOwnerStakeholder(errand)?.personId : undefined;
-  const assetType = 'FTErrandAssets';
+  const hasFtServices = !!(errand && (isFTErrand(errand) || isFTNationalErrand(errand)));
+  const assetType = errand && isFTNationalErrand(errand) ? 'ParatransitPermitNational' : 'ParatransitPermitLocal';
 
   useEffect(() => {
+    if (!hasFtServices) return;
     (async () => {
       const { schema } = await getLatestRjsfSchema(municipalityId, assetType);
       setServiceSchema(schema);
     })();
-  }, [municipalityId, assetType]);
+  }, [municipalityId, assetType, hasFtServices]);
 
   // Template fetching is driven by outcome selection — see useEffect below after watch()
 
-  const { services, refetch: refetchServices } = useErrandServices({
+  const { services: allServices, refetch: refetchServices } = useErrandServices({
     municipalityId,
-    partyId: ownerPartyId ?? '',
-    errandNumber: errand?.errandNumber ?? '',
+    partyId: hasFtServices ? ownerPartyId ?? '' : '',
+    errandId: hasFtServices ? String(errand?.id ?? '') : '',
     assetType: assetType,
     schema: serviceSchema,
   });
+
+  const decisionSent =
+    errand?.status?.statusType === ErrandStatus.Beslutad ||
+    errand?.status?.statusType === ErrandStatus.BeslutVerkstallt ||
+    errand?.status?.statusType === ErrandStatus.ArendeAvslutat;
+
+  const services = useMemo(
+    () => allServices.filter((s) => (decisionSent ? s.status === 'ACTIVE' : s.status === 'DRAFT')),
+    [allServices, decisionSent]
+  );
 
   useEffect(() => {
     if (props.onRefetchServices && refetchServices) {
@@ -281,11 +297,27 @@ export const CasedataDecisionTab: FC<{
       });
   };
 
+  // Persist the selected decision template so it can be re-selected when the page is reopened.
+  // Existing extraParameters are preserved (only relevant when updating an existing decision).
+  const withTemplateExtraParameters = (data: DecisionFormModel): DecisionFormModel => {
+    const baseExtraParameters = (data.id ? existingDecision?.extraParameters : undefined) ?? {};
+    const extraParameters: GenericExtraParameters = { ...baseExtraParameters };
+    if (selectedTemplate?.identifier) {
+      extraParameters.decisionTemplate = selectedTemplate.identifier;
+    } else {
+      delete extraParameters.decisionTemplate;
+    }
+    if (Object.keys(extraParameters).length === 0) {
+      return data;
+    }
+    return { ...data, extraParameters };
+  };
+
   const save = async (data: DecisionFormModel) => {
     if (!errand) return;
     try {
       const rendered = await renderPdf(errand, data, 'decision', services);
-      await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
+      await saveDecision(municipalityId, errand, withTemplateExtraParameters(data), 'FINAL', rendered.pdfBase64);
       setIsLoading(false);
       setError(undefined);
       props.setUnsaved(false);
@@ -327,68 +359,30 @@ export const CasedataDecisionTab: FC<{
       } as CreateStakeholderDto;
       setIsSaveAndSendLoading(true);
       const rendered = await renderPdf(errand, data, 'decision', services);
-      await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
+      await saveDecision(municipalityId, errand, withTemplateExtraParameters(data), 'FINAL', rendered.pdfBase64);
 
       const renderedHtml = await renderHtml(errand, data, 'decision');
-      const owner = getOwnerStakeholder(errand);
-      const recipientEmail = owner?.emails?.[0]?.value;
-      const contactMeans: ContactMeans = errand.externalCaseId
-        ? 'webmessage'
-        : validateOwnerForSendingDecisionByEmail(errand)
-        ? 'email'
-        : validateOwnerForSendingDecisionByLetter(errand)
-        ? 'digitalmail'
-        : false;
-      if (contactMeans === 'email' && !recipientEmail) {
-        throw new Error('Ingen e-postadress för mottagare hittades');
-      }
-      if (!contactMeans) {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendeägaren har inga godkända kontaktsätt',
-          status: 'error',
-        });
-        return;
-      }
-      const messageData: CasedataMessageTabFormModel = {
-        contactMeans,
-        messageClassification: MessageClassification.Informationsmeddelande,
-        emails: [{ value: recipientEmail }],
-        newEmail: '',
-        phoneNumbers: [],
-        newPhoneNumber: '',
-        messageAttachments: [],
-        messageBody: base64Decode(renderedHtml.htmlBase64),
-        messageBodyPlaintext: data.descriptionPlaintext,
-        attachUtredning: false,
-        existingAttachments: [],
-        addExisting: '',
-        newAttachments: [],
-        newItem: undefined,
-        headerReplyTo: '',
-        headerReferences: '',
-      };
-      if (isMEX()) {
-        await sendMessage(municipalityId, errand, messageData);
-      } else if (isPT() && municipalityId === '2260') {
-        // PT Ånge - do nothing, they handle sending themselves
-      } else if (isPT()) {
-        await sendDecisionMessage(municipalityId, errand);
-      } else {
-        throw new Error('Kontaktsätt saknas');
-      }
+      // Channel selection and sending is handled by the backend for both MEX and PT.
+      await sendDecisionMessage(
+        municipalityId,
+        errand,
+        base64Decode(renderedHtml.htmlBase64),
+        data.descriptionPlaintext
+      );
       await updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Beslutad);
-      if (ownerPartyId) {
-        const drafts = await getDraftAssets({
-          municipalityId,
-          partyId: ownerPartyId,
-          assetId: errand.errandNumber,
-          type: assetType,
-        });
-        const draftAssets = drafts?.data ?? [];
+      const drafts = await getDraftAssets({
+        municipalityId,
+        partyId: ownerPartyId,
+        errandId: String(errand.id),
+        type: assetType,
+      });
+      const draftAssets = drafts?.data ?? [];
+      if (data.outcome === DecisionOutcomes.Approval) {
         await Promise.all(draftAssets.map((a) => updateAsset(municipalityId, a.id, { status: 'ACTIVE' })));
+      } else {
+        await Promise.all(draftAssets.map((a) => deleteDraftAsset(municipalityId, a.id)));
       }
+      await refetchServices();
       await triggerPhaseChange();
       toastMessage(
         getToastOptions({
@@ -488,22 +482,32 @@ export const CasedataDecisionTab: FC<{
   useEffect(() => {
     if (!errand) return;
     setValue('errandId', errand.id);
+    setValue('errandCaseType', errand.caseType, { shouldDirty: false });
 
     if (existingDecision && existingDecision.decisionType === 'FINAL') {
       setValue('id', existingDecision.id!.toString(), { shouldDirty: false });
       setValue('description', existingDecision.description, { shouldDirty: false });
       setValue('outcome', existingDecision.decisionOutcome, { shouldDirty: false });
-      setValue('validFrom', dayjs(existingDecision.validFrom).format('YYYY-MM-DD'), { shouldDirty: false });
-      setValue('validTo', dayjs(existingDecision.validTo).format('YYYY-MM-DD'), { shouldDirty: false });
+      setValue('validFrom', existingDecision.validFrom ? dayjs(existingDecision.validFrom).format('YYYY-MM-DD') : '', {
+        shouldDirty: false,
+      });
+      setValue('validTo', existingDecision.validTo ? dayjs(existingDecision.validTo).format('YYYY-MM-DD') : '', {
+        shouldDirty: false,
+      });
 
       if (existingDecision.law && existingDecision.law.length > 0) {
         setValue('law', existingDecision.law, { shouldDirty: false });
       }
+
+      // Re-select the previously saved template once templates have loaded (see template fetch below).
+      pendingTemplateRestore.current = existingDecision.extraParameters?.decisionTemplate ?? null;
     } else {
       setValue('id', undefined, { shouldDirty: false });
       setValue('law', [], { shouldDirty: false });
+      pendingTemplateRestore.current = null;
     }
 
+    void trigger();
     props.setUnsaved(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
@@ -538,6 +542,16 @@ export const CasedataDecisionTab: FC<{
         // MEX: exclude the layout template, it's used for PDF rendering only
         const filtered = isMEX() ? templates.filter((t) => t.identifier !== 'mex.decision') : templates;
         setDecisionTemplates(filtered);
+
+        // Restore the previously saved template selection (set during form init on load).
+        if (pendingTemplateRestore.current) {
+          const savedTemplate = filtered.find((t) => t.identifier === pendingTemplateRestore.current);
+          if (savedTemplate) {
+            setSelectedTemplate(savedTemplate);
+            setValue('decisionTemplate', savedTemplate.name || savedTemplate.identifier, { shouldDirty: false });
+          }
+          pendingTemplateRestore.current = null;
+        }
       })
       .catch((e) => {
         if (templatesRequestId.current !== requestId) return;
@@ -577,7 +591,7 @@ export const CasedataDecisionTab: FC<{
       decisionDate: dayjs().format('YYYY-MM-DD'),
     };
 
-    if (outcome === 'APPROVAL') {
+    if (outcome === DecisionOutcomes.Approval) {
       parameters.permitFirstname = owner?.firstName || '';
       parameters.permitLastname = owner?.lastName || '';
       parameters.permitEndDate = formData.validTo ? dayjs(formData.validTo).format('YYYY-MM-DD') : '';
@@ -639,9 +653,30 @@ export const CasedataDecisionTab: FC<{
     );
   };
 
+  const existingDecisionPdf = useMemo(() => {
+    if (!errand) return undefined;
+    return getFinalDecisonWithHighestId(errand.decisions)?.attachments?.[0]?.file;
+  }, [errand]);
+
   if (!errand) {
     return null;
   }
+
+  const isApproval = outcome === DecisionOutcomes.Approval;
+  const showApprovedServices = isPT() && isApproval;
+  const showNoServicesInfo = isPT() && !!outcome && !isApproval;
+
+  const decisionIsReadOnly = isErrandLocked(errand) || isSent();
+  const previewDisabled = decisionIsReadOnly ? !existingDecisionPdf : !formState.isValid || !allowed;
+  const saveDisabled = decisionIsReadOnly || !formState.isValid || !allowed;
+  const sendDisabled =
+    isSaveAndSendLoading ||
+    decisionIsReadOnly ||
+    !formState.isValid ||
+    !validateErrandForDecision(errand) ||
+    !validateOwnerForSendingDecision(errand) ||
+    !validateAttachmentsForDecision(errand).valid ||
+    !allowed;
 
   return (
     <div className="w-full py-24 px-32 overflow-hidden">
@@ -652,13 +687,13 @@ export const CasedataDecisionTab: FC<{
           color="vattjom"
           inverted={formState.isValid && allowed}
           size="sm"
-          disabled={!formState.isValid || !allowed}
+          disabled={previewDisabled}
           onClick={getPdfPreview}
           loading={isPreviewLoading}
           loadingText="Hämtar PDF"
           rightIcon={<Download />}
         >
-          {isErrandLocked(errand) || isSent() ? 'Hämta PDF' : 'Förhandsgranska PDF'}
+          {decisionIsReadOnly ? 'Hämta PDF' : 'Förhandsgranska PDF'}
         </Button>
       </div>
       <div className="mt-24">
@@ -673,8 +708,12 @@ export const CasedataDecisionTab: FC<{
               data-cy="decision-outcome-select"
               size="sm"
               onChange={(e) => {
-                setValue('outcome', e.currentTarget.value, { shouldDirty: true });
-                trigger();
+                setValue('outcome', e.currentTarget.value, {
+                  shouldDirty: true,
+                  shouldTouch: true,
+                  shouldValidate: true,
+                });
+                void trigger();
               }}
               placeholder="Välj beslut"
               disabled={isErrandLocked(errand) || isSent()}
@@ -683,16 +722,16 @@ export const CasedataDecisionTab: FC<{
               <Select.Option data-cy="outcome-input-item" value={''}>
                 Välj utfall
               </Select.Option>
-              <Select.Option data-cy="outcome-input-item" value={'APPROVAL'}>
+              <Select.Option data-cy="outcome-input-item" value={DecisionOutcomes.Approval}>
                 Bifall
               </Select.Option>
-              <Select.Option data-cy="outcome-input-item" value={'REJECTION'}>
+              <Select.Option data-cy="outcome-input-item" value={DecisionOutcomes.Rejection}>
                 Avslag
               </Select.Option>
-              <Select.Option data-cy="outcome-input-item" value={'CANCELLATION'}>
+              <Select.Option data-cy="outcome-input-item" value={DecisionOutcomes.Cancellation}>
                 Ärendet avskrivs
               </Select.Option>
-              <Select.Option data-cy="outcome-input-item" value={'DISMISSAL'}>
+              <Select.Option data-cy="outcome-input-item" value={DecisionOutcomes.Dismissal}>
                 Ärendet avvisas
               </Select.Option>
             </Select>
@@ -759,69 +798,122 @@ export const CasedataDecisionTab: FC<{
               {errors.law && <FormErrorMessage className="text-error">{errors.law.message}</FormErrorMessage>}
             </FormControl>
 
-            <FormControl className="w-full">
-              <FormLabel>Beslut giltigt från</FormLabel>
-              <Input
-                type="date"
-                {...register('validFrom')}
-                size="sm"
-                disabled={isErrandLocked(errand) || isSent() || outcome !== 'APPROVAL'}
-                placeholder="Välj datum"
-                data-cy="validFrom-input"
-              />
-              {errors.validFrom && (
-                <FormErrorMessage className="text-error">{errors.validFrom.message}</FormErrorMessage>
-              )}
-            </FormControl>
+            {isPTErrand(errand) && (
+              <>
+                <FormControl className="w-full">
+                  <FormLabel>Beslut giltigt från</FormLabel>
+                  <Input
+                    type="date"
+                    {...register('validFrom')}
+                    size="sm"
+                    disabled={isErrandLocked(errand) || isSent() || outcome !== DecisionOutcomes.Approval}
+                    placeholder="Välj datum"
+                    data-cy="validFrom-input"
+                  />
+                  {errors.validFrom && (
+                    <FormErrorMessage className="text-error">{errors.validFrom.message}</FormErrorMessage>
+                  )}
+                </FormControl>
 
-            <FormControl className="w-full">
-              <FormLabel>Beslut giltigt till</FormLabel>
-              <Input
-                type="date"
-                {...register('validTo')}
-                size="sm"
-                disabled={isErrandLocked(errand) || isSent() || outcome !== 'APPROVAL'}
-                placeholder="Välj datum"
-                data-cy="validTo-input"
-              />
-              {errors.validTo && <FormErrorMessage className="text-error">{errors.validTo.message}</FormErrorMessage>}
-            </FormControl>
+                <FormControl className="w-full">
+                  <FormLabel>Beslut giltigt till</FormLabel>
+                  <Input
+                    type="date"
+                    {...register('validTo')}
+                    size="sm"
+                    disabled={isErrandLocked(errand) || isSent() || outcome !== DecisionOutcomes.Approval}
+                    placeholder="Välj datum"
+                    data-cy="validTo-input"
+                  />
+                  {errors.validTo && (
+                    <FormErrorMessage className="text-error">{errors.validTo.message}</FormErrorMessage>
+                  )}
+                </FormControl>
+              </>
+            )}
           </div>
         )}
 
         <Input data-cy="decision-description-input" type="hidden" {...register('description')} />
         <Input type="hidden" {...register('errandId')} />
 
+        <Disclosure variant="alt" data-cy="decision-text-disclosure" initalOpen className="mb-24">
+          <Disclosure.Header>
+            <Disclosure.Icon icon={<Gavel size={18} />} />
+            <Disclosure.Title>Beslutstext</Disclosure.Title>
+            <Disclosure.Button />
+          </Disclosure.Header>
+          <Disclosure.Content>
+            <div className={cx('h-[48rem] overflow-hidden')} data-cy="decision-richtext-wrapper">
+              <TextEditor
+                className={cx('mb-md h-[80%] max-w-[95.9rem]')}
+                readOnly={isErrandLocked(errand) || isSent()}
+                onChange={(e) => {
+                  setValue('description', e.target.value.markup ?? '', {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                  setValue('descriptionPlaintext', e.target.value.plainText ?? '', {
+                    shouldValidate: true,
+                  });
+                }}
+                value={{ markup: description, plainText: descriptionPlaintext }}
+              />
+            </div>
+            <div className="my-sm text-error">
+              {errors.description && formState.isDirty && (
+                <FormErrorMessage>{errors.description?.message}</FormErrorMessage>
+              )}
+            </div>
+          </Disclosure.Content>
+        </Disclosure>
+
+        {showApprovedServices && (
+          <div className="pb-20">
+            <Disclosure variant="alt" data-cy="decision-services-disclosure" initalOpen>
+              <Disclosure.Header>
+                <Disclosure.Icon icon={<HandHelping size={18} />} />
+                <Disclosure.Title>
+                  <span className="flex items-center gap-12">
+                    <span>Insatser som bifalls</span>
+                    <Badge rounded color="vattjom" counter={services.length} />
+                  </span>
+                </Disclosure.Title>
+                <Disclosure.Button />
+              </Disclosure.Header>
+              <Disclosure.Content>
+                <ServiceListComponent services={services} readOnly />
+              </Disclosure.Content>
+            </Disclosure>
+          </div>
+        )}
+        {showNoServicesInfo && (
+          <div className="pb-20">
+            <Disclosure variant="alt" data-cy="decision-no-services-disclosure" initalOpen>
+              <Disclosure.Header>
+                <Disclosure.Icon icon={<HandHelping size={18} />} />
+                <Disclosure.Title>Insatser</Disclosure.Title>
+                <Disclosure.Button />
+              </Disclosure.Header>
+              <Disclosure.Content>
+                <Alert type="info" data-cy="decision-services-info-alert">
+                  <Alert.Icon />
+                  <Alert.Content>
+                    <Alert.Content.Title>Inga insatser kommer att fattas</Alert.Content.Title>
+                    <Alert.Content.Description>
+                      Insatser tilldelas endast vid bifall. Med detta utfall registreras inga insatser på ärendet när
+                      beslutet skickas.
+                    </Alert.Content.Description>
+                  </Alert.Content>
+                </Alert>
+              </Disclosure.Content>
+            </Disclosure>
+          </div>
+        )}
+
         {!isMEX() && (
           <TemplatePdfPreview identifier={selectedTemplate?.identifier} parameters={buildTemplateParameters()} />
         )}
-
-        <div className={cx('h-[48rem] overflow-hidden')} data-cy="decision-richtext-wrapper">
-          <TextEditor
-            className={cx('mb-md h-[80%] max-w-[95.9rem]')}
-            readOnly={isErrandLocked(errand) || isSent()}
-            onChange={(e) => {
-              setValue('description', e.target.value.markup ?? '', {
-                shouldDirty: true,
-              });
-              setValue('descriptionPlaintext', e.target.value.plainText ?? '');
-              trigger('description');
-            }}
-            value={{ markup: description, plainText: descriptionPlaintext }}
-          />
-        </div>
-        <div className="my-sm text-error">
-          {errors.description && formState.isDirty && (
-            <FormErrorMessage>{errors.description?.message}</FormErrorMessage>
-          )}
-        </div>
-
-        {isPT() ? (
-          <div className="pb-20">
-            <h4 className="text-h6 mb-sm border-b">Här listas de insatser som bifalls</h4>
-            <ServiceListComponent services={services} readOnly />
-          </div>
-        ) : null}
 
         <div className="flex justify-start gap-md">
           <Button
@@ -832,39 +924,16 @@ export const CasedataDecisionTab: FC<{
             onClick={handleSubmit(onSubmit, onError)}
             loading={isLoading}
             loadingText="Sparar"
-            disabled={isErrandLocked(errand) || !allowed || isSent()}
+            disabled={saveDisabled}
           >
             Spara beslutstext
-          </Button>
-          <Button
-            data-cy="decision-pdf-preview-button"
-            color="vattjom"
-            inverted={formState.isValid && allowed}
-            size="md"
-            disabled={!formState.isValid || !allowed}
-            onClick={getPdfPreview}
-            loading={isPreviewLoading}
-            loadingText="Hämtar PDF"
-            rightIcon={<Download />}
-          >
-            {isErrandLocked(errand) || isSent() ? 'Hämta PDF' : 'Förhandsgranska PDF'}
           </Button>
           <Button
             data-cy="save-and-send-decision-button"
             variant="primary"
             color="vattjom"
             size="md"
-            disabled={
-              isSaveAndSendLoading ||
-              !formState.isValid ||
-              [ErrandStatus.Beslutad, ErrandStatus.BeslutVerkstallt, ErrandStatus.ArendeAvslutat].includes(
-                errand?.status?.statusType as ErrandStatus
-              ) ||
-              !validateErrandForDecision(errand) ||
-              !validateOwnerForSendingDecision(errand) ||
-              !validateAttachmentsForDecision(errand).valid ||
-              !allowed
-            }
+            disabled={sendDisabled}
             onClick={() => {
               if (existingContract && existingContract.status === 'DRAFT') {
                 setControlContractIsOpen(true);

@@ -4,10 +4,10 @@ import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
 import {
   generateMessageId,
+  sendDecisionForMex,
   sendDecisionToDigitalMail,
   sendDecisionToKatla,
   sendDecisionToMinaSidor,
-  sendDecisionToOpenE,
   sendEmail,
   sendSms,
   sendWebMessage,
@@ -24,7 +24,7 @@ import { Errand as ErrandDTO, MessageResponse as IMessageResponse } from '@/data
 import { EmailAttachment, EmailRequest, SmsRequest, WebMessageAttachment, WebMessageRequest } from '@/data-contracts/messaging/data-contracts';
 import { AgnosticMessageResponse, DecisionMessageDto, MessageClassification, MessageDto, MessageResponse, SmsDto } from '@/dtos/message.dto';
 import { HttpException } from '@/exceptions/HttpException';
-import { isPT } from '@/services/application.service';
+import { isMEX, isPT } from '@/services/application.service';
 import { logger } from '@/utils/logger';
 import { apiURL, base64Encode } from '@/utils/util';
 
@@ -44,12 +44,21 @@ export class MessageController {
   async decisionMessage(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
-    @Body() messageDto: { errandId: string },
+    @Body() messageDto: DecisionMessageDto,
   ): Promise<{ data: AgnosticMessageResponse; message: string }[]> {
     const baseURL = apiURL(this.SERVICE);
 
     const errandsUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
+
+    if (isMEX()) {
+      return [await sendDecisionForMex(municipalityId, req, errandData, messageDto.html ?? '', messageDto.plaintext ?? '')];
+    }
+
+    // PT Ånge (2260) sends decisions manually outside Draken.
+    if (municipalityId === '2260') {
+      return [];
+    }
 
     const decision = errandData.data?.decisions?.find(d => d.decisionType === 'FINAL');
     const pdf = decision?.attachments?.[0];
@@ -63,14 +72,10 @@ export class MessageController {
     }
 
     const minasidor_success = await sendDecisionToMinaSidor(baseURL, errandData.data.id!.toString(), req.user, pdf);
-    if (errandData.data.externalCaseId) {
-      const openE_success = await sendDecisionToOpenE(errandData.data, req.user, pdf);
-      return [minasidor_success, openE_success];
-    } else {
-      const katla_success = await sendDecisionToKatla(baseURL, errandData.data, req.user, pdf);
-      const digitalMail_success = await sendDecisionToDigitalMail(errandData.data, req.user, pdf);
-      return [minasidor_success, katla_success, digitalMail_success];
-    }
+    const katla_success = await sendDecisionToKatla(baseURL, errandData.data, req.user, pdf);
+    const digitalMail_success = await sendDecisionToDigitalMail(errandData.data, req.user, pdf);
+
+    return [minasidor_success, katla_success, digitalMail_success];
   }
 
   @Post('/casedata/:municipalityId/sms')
@@ -207,7 +212,7 @@ export class MessageController {
     @Req() req: RequestWithUser,
     @Param('errandId') errandId: string,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: IMessageResponse[],
+    @Res() _response: IMessageResponse[],
   ): Promise<{ data: IMessageResponse[]; message: string }> {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/messages`;
     const baseURL = apiURL(this.SERVICE);
@@ -227,7 +232,7 @@ export class MessageController {
     @Param('messageId') messageId: string,
     @Param('municipalityId') municipalityId: string,
     @Param('isViewed') isViewed: boolean,
-    @Res() response: IMessageResponse[],
+    @Res() _response: IMessageResponse[],
   ): Promise<{ data: IMessageResponse[]; message: string }> {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/viewed/${isViewed}`;
     const baseURL = apiURL(this.SERVICE);

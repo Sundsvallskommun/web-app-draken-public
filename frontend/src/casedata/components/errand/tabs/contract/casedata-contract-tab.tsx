@@ -22,6 +22,7 @@ import {
   defaultLagenhetsarrende,
   errandStakeholderToContractStakeholder,
   getErrandContract,
+  hasRecurringFee,
   isLeaseAgreement,
   leaseTypes,
   saveContract,
@@ -101,22 +102,40 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           otherwise: (schema) => schema,
         }),
       }),
-      invoicing: yup.object({
-        invoiceInterval: yup.mixed<string>().when('type', {
-          is: (type: string) => type === ContractType.LEASE_AGREEMENT,
-          then: (schema) =>
-            schema.oneOf(Object.keys(IntervalType), 'Välj intervall').required('Intervall måste väljas'),
-          otherwise: (schema) => schema,
-        }),
-
-        invoicedIn: yup.mixed<string>().when('type', {
-          is: (type: string) => type === ContractType.LEASE_AGREEMENT,
-          then: (schema) =>
-            schema
+      invoicing: yup.object().when(['type', 'leaseType', 'status'], {
+        is: (type: ContractType, leaseType: LeaseType, status: Status) =>
+          hasRecurringFee(type, leaseType) && status === Status.ACTIVE,
+        then: (schema) =>
+          schema.shape({
+            invoiceInterval: yup
+              .mixed<string>()
+              .oneOf(Object.keys(IntervalType), 'Välj intervall')
+              .required('Intervall måste väljas'),
+            invoicedIn: yup
+              .mixed<string>()
               .oneOf(Object.keys(InvoicedIn), 'Välj förskott eller efterskott')
               .required('Förskott eller efterskott måste väljas'),
-          otherwise: (schema) => schema,
-        }),
+          }),
+      }),
+      extraParameters: yup.array().when(['generateInvoice', 'status'], ([generateInvoice, status], schema) => {
+        if (status !== Status.ACTIVE) return schema;
+
+        const baseSchema = schema.of(
+          yup.object({
+            name: yup.string().required(),
+            parameters: yup.object(),
+          })
+        );
+
+        const hasReferens =
+          () => (extraParameters: { name: string; parameters: Record<string, unknown> }[] | undefined) =>
+            extraParameters?.some((s) => s.parameters?.markup) ?? false;
+
+        if (generateInvoice === 'true') {
+          return baseSchema.test('has-referens', 'Referens måste anges', hasReferens());
+        }
+
+        return schema;
       }),
       stakeholders: yup.array().when(['type', 'status'], ([type, status], schema) => {
         if (status !== Status.ACTIVE) return schema;
@@ -160,7 +179,6 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const errand = useCasedataStore((s) => s.errand);
   const user = useUserStore((s) => s.user);
-  const [referensError, setReferensError] = useState(false);
   const [loading, setIsLoading] = useState<string>();
   const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
   const [contractParties, setContractParties] = useState<UnifiedContractParty[]>([]);
@@ -245,15 +263,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     }
   };
 
-  const onSave = async (data: ContractData, section?: string) => {
-    if (section === 'billing' && data.generateInvoice === 'true') {
-      setReferensError(false);
-      const hasMarkup = (data.extraParameters ?? []).some((p) => p.parameters?.markup?.trim());
-      if (!hasMarkup) {
-        setReferensError(true);
-        return;
-      }
-    }
+  const onSave = async (data: ContractData) => {
     setIsLoading('Sparar avtal..');
     const isNewContract = !data.contractId;
 
@@ -319,7 +329,8 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           newParams = [...oldParams, errandIdExtraParameter];
         })
         .catch(() => {
-          newParams = [errandIdExtraParameter];
+          const oldParams = (contractForm.getValues().extraParameters ?? []).filter((p) => p.name !== 'errandId');
+          newParams = [...oldParams, errandIdExtraParameter];
           setExistingContract(undefined);
         })
         .finally(() => {
@@ -349,11 +360,13 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           <div className="flex">
             <div className="w-3/4" data-cy="contract-wrapper">
               <div>
-                <h2 className="text-h2-md flex items-center gap-12 justify-start">
-                  {contractTypes.find((ct) => ct.key === contractType)?.label}{' '}
-                  <span>{contractForm.getValues().contractId ? `(${contractForm.getValues().contractId})` : null}</span>
-                  <CasedataStatusLabelComponent status={contractForm.getValues().status} />
-                </h2>
+                <div className="flex flex-col">
+                  <div className="flex flex-row items-center gap-12">
+                    <h2 className="text-h2-sm">{contractTypes.find((ct) => ct.key === contractType)?.label}</h2>
+                    <CasedataStatusLabelComponent status={contractForm.getValues().status} />
+                  </div>
+                  <span>{contractForm.getValues().contractId ? `${contractForm.getValues().contractId}` : null}</span>
+                </div>
                 <p className="py-16">
                   Här fyller du i avtalsuppgifter för ärendet. Kom ihåg att granska uppgifterna noga så att allt är i
                   sin ordning inför signeringen. Notera att vissa uppgifter hämtas automatiskt från de uppgifter som
@@ -384,7 +397,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                       disabled={existingContract?.status === Status.ACTIVE}
                     >
                       {leaseTypes
-                        .filter((lt) => existingContract?.contractId || lt.key !== LeaseType.OTHER_FEE)
+                        .filter((lt) => existingContract?.status !== Status.ACTIVE && lt.key !== LeaseType.OTHER_FEE)
                         .map((lt) => (
                           <option key={lt.key} value={lt.key}>
                             {lt.label}
@@ -439,7 +452,6 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
               ) : null}
               <Input type="hidden" readOnly {...contractForm.register('contractId')} />
               <ContractForm
-                referensError={referensError}
                 changeBadgeColor={changeBadgeColor}
                 onSave={onSave}
                 existingContract={(existingContract as ContractData) || defaultKopeavtal}

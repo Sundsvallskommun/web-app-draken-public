@@ -4,7 +4,7 @@ import { Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { isLeaseAgreement, prettyContractRoles } from '@casedata/services/contract-service';
 import { Button, Checkbox, FormControl, FormLabel, Modal, Select } from '@sk-web-gui/react';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 interface ContractPartyModalProps {
   isOpen: boolean;
@@ -29,8 +29,12 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
   existingParties = [],
   isDraft = true,
 }) => {
-  const [selectedStakeholderId, setSelectedStakeholderId] = useState<string>('');
-  const [selectedRoles, setSelectedRoles] = useState<StakeholderRole[]>([]);
+  const [selectedStakeholderId, setSelectedStakeholderId] = useState<string>(
+    mode === 'edit' && existingParty ? existingParty.stakeholderId : ''
+  );
+  const [selectedRoles, setSelectedRoles] = useState<StakeholderRole[]>(
+    mode === 'edit' && existingParty ? existingParty.roles : []
+  );
 
   // Get available roles based on contract type and draft status
   const getAvailableRoles = (): StakeholderRole[] => {
@@ -51,19 +55,6 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
   const isBillingPartyTaken = existingParties.some(
     (p) => p.stakeholderId !== existingParty?.stakeholderId && p.roles.includes(StakeholderRole.PRIMARY_BILLING_PARTY)
   );
-
-  // Reset state when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      if (mode === 'edit' && existingParty) {
-        setSelectedStakeholderId(existingParty.stakeholderId);
-        setSelectedRoles(existingParty.roles);
-      } else {
-        setSelectedStakeholderId('');
-        setSelectedRoles([]);
-      }
-    }
-  }, [isOpen, mode, existingParty]);
 
   const handleRoleToggle = (role: StakeholderRole) => {
     setSelectedRoles((prev) => {
@@ -193,5 +184,3 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
     </Modal>
   );
 };
-
-export default ContractPartyModal;

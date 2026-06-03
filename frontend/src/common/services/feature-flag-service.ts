@@ -1,12 +1,13 @@
 import { User } from '@common/interfaces/user';
+import { appConfig } from '@config/appconfig';
 import { FeatureFlagDto } from 'src/data-contracts/backend/data-contracts';
 
 import { apiService } from './api-service';
-import { getApplicationEnvironment, isLOP, isMEX, isPT } from './application-service';
+import { isLOP } from './application-service';
 
-export const isAppealEnabled = () => isPT() && getApplicationEnvironment() === 'TEST';
+export const isAppealEnabled = () => appConfig.features.useAppeal;
 export const attestationEnabled = (user: User) => isLOP() && user.permissions?.canViewAttestations;
-export const contractsEnabled = () => isMEX() && getApplicationEnvironment() === 'TEST';
+export const contractsEnabled = () => appConfig.features.useContracts;
 
 export const getFeatureFlags = async () => {
   return await apiService
@@ -15,7 +16,9 @@ export const getFeatureFlags = async () => {
       return res;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching feature flags: ' + e);
+      if (process.env.NODE_ENV === 'production') {
+        console.error('Something went wrong when fetching feature flags: ' + e);
+      }
       throw e;
     });
 };

@@ -36,6 +36,7 @@ interface AppConfigFeatures {
   useClosingMessageCheckbox: boolean;
   useMultipleContactChannels: boolean;
   useClosedAsDefaultResolution: boolean;
+  useAppeal: boolean;
 }
 
 // JSON.parse prevents the minifier from folding placeholder comparisons at build time.
@@ -81,6 +82,7 @@ export const appConfig: AppConfig = {
     useClosingMessageCheckbox: envBool(process.env.NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX),
     useMultipleContactChannels: envBool(process.env.NEXT_PUBLIC_USE_MULTIPLE_CONTACT_CHANNELS),
     useClosedAsDefaultResolution: envBool(process.env.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION),
+    useAppeal: envBool(process.env.NEXT_PUBLIC_USE_APPEAL),
   },
 };
 

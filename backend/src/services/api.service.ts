@@ -21,7 +21,7 @@ class ApiService {
     this.instance.interceptors.request.use(
       async function (request) {
         if (request.url === apiURL('token')) {
-          return Promise.resolve(request);
+          return request;
         }
         const token = await apiTokenService.getToken();
         const defaultHeaders = {
@@ -37,7 +37,7 @@ class ApiService {
         }
         request.headers = { ...defaultHeaders, ...request.headers } as any;
         request.headers['Content-Type'] = request.headers['Content-Type'] || defaultHeaders['Content-Type'];
-        return Promise.resolve(request);
+        return request;
       },
       function (error) {
         return Promise.reject(error);
@@ -55,6 +55,12 @@ class ApiService {
           'Content-Type': 'application/json',
           'X-Request-Id': uuidv4(),
         };
+        // Rewerite location header to point to correct resource since the API response header
+        // contains an errouneous url - asset-drafts does not have an GET ../{id} endpoint.
+        // When this has been fixed, we can remove the rewrite.
+        if (response.headers.location && response.config.url?.includes('asset-drafts')) {
+          response.headers.location = response.headers.location.replace('/asset-drafts/', '/assets/');
+        }
         if (response.headers.location && !response.config.url?.includes('messaging')) {
           logger.info(`Response contained location header: ${response.headers.location}`);
           logger.info(`Base URL was: ${response.config.baseURL}`);
@@ -63,10 +69,10 @@ class ApiService {
             logger.error(`Base URL was: ${e.config?.baseURL}`);
             logger.error(`URL was: ${e.config?.url}`);
             logger.error(`Method was: ${e.config?.method}`);
-            return Promise.resolve(response);
+            return response;
           });
         }
-        return Promise.resolve(response);
+        return response;
       },
       function (error) {
         return Promise.reject(error);

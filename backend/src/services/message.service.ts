@@ -31,11 +31,12 @@ import {
   WebMessageAttachment,
   WebMessageRequest,
 } from '@/data-contracts/messaging/data-contracts';
+import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
-import { apiURL, base64ToByteArray } from '@/utils/util';
+import { apiURL, base64Encode, base64ToByteArray } from '@/utils/util';
 
 import ApiService, { ApiResponse } from './api.service';
-import { getOwnerStakeholder } from './stakeholder.service';
+import { getOwnerStakeholder, getOwnerStakeholderEmail } from './stakeholder.service';
 
 interface SmsMessage {
   party?: {
@@ -457,62 +458,6 @@ export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, us
     });
 };
 
-export const sendDecisionToOpenE = (errand: ErrandDTO, user: User, pdf: Attachment) => {
-  const url = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/webmessage`;
-  const apiService = new ApiService();
-
-  const attachments = [
-    {
-      base64Data: pdf.file,
-      fileName: `${pdf.name}.pdf`,
-      mimeType: pdf.mimeType,
-    } as WebMessageAttachment,
-  ];
-  const message: WebMessageRequest = {
-    party: {
-      partyId: getOwnerStakeholder(errand)?.personId,
-      externalReferences: [
-        {
-          key: 'flowInstanceId',
-          value: errand.externalCaseId,
-        },
-      ],
-    },
-    message: 'Beslut fattat i ärende',
-    attachments,
-  } as WebMessageRequest;
-
-  return apiService
-    .post<AgnosticMessageResponse, WebMessageRequest>({ url, data: message }, user)
-    .then(async (res: ApiResponse<AgnosticMessageResponse>) => {
-      return saveMessageOnErrand(
-        MUNICIPALITY_ID!,
-        errand,
-        {
-          message: message.message,
-          id: res.data.messageId,
-          messageType: 'WEBMESSAGE',
-          messageClassification: MessageClassification.Informationsmeddelande,
-          header_message_Id: '',
-          header_reply_to: '',
-          header_references: '',
-        },
-        user,
-      )
-        .then(async _ => {
-          return { data: res.data, message: `Message sent to OpenE` };
-        })
-        .catch(e => {
-          logger.error('Error when saving message id:', e);
-          return { data: res.data, message: `Message to OpenE sent but id could not be stored` };
-        });
-    })
-    .catch(e => {
-      logger.error('Error when sending message to OpenE:', e);
-      throw e;
-    });
-};
-
 export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: Attachment) => {
   const url = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/letter?async=false`;
   const apiService = new ApiService();
@@ -579,4 +524,55 @@ export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: At
       logger.error('Error when sending digital mail:', e);
       throw e;
     });
+};
+
+// Sends a MEX decision through a single channel, chosen the same way the frontend used to choose it:
+// webmessage for e-service errands, otherwise email to the owner. The decision body is rendered by
+// the frontend and passed in (html for email, plaintext for webmessage).
+export const sendDecisionForMex = async (
+  municipalityId: string,
+  req: RequestWithUser,
+  errandData: ApiResponse<ErrandDTO>,
+  html: string,
+  plaintext: string,
+): Promise<{ data: AgnosticMessageResponse; message: string }> => {
+  const errand = errandData.data;
+
+  if (errand.externalCaseId) {
+    const owner = getOwnerStakeholder(errand);
+    const message = {
+      party: {
+        ...(owner?.personId && { partyId: owner.personId }),
+        externalReferences: [{ key: 'flowInstanceId', value: errand.externalCaseId }],
+      },
+      message: plaintext,
+    } as WebMessageRequest;
+    return sendWebMessage(municipalityId, message, req, errandData);
+  }
+
+  const ownerEmail = getOwnerStakeholderEmail(errand);
+  if (ownerEmail) {
+    const cleanedBody = html.replace(/<p><br \/><\/p>/g, '');
+    const message = {
+      party: {
+        // Fake uuid since Messaging demands one
+        partyId: uuidv4(),
+      },
+      emailAddress: ownerEmail,
+      subject: `Ärende #${errand.errandNumber}`,
+      message: cleanedBody,
+      htmlMessage: base64Encode(cleanedBody),
+      sender: {
+        name: process.env.CASEDATA_SENDER,
+        address: process.env.CASEDATA_SENDER_EMAIL,
+        replyTo: process.env.CASEDATA_REPLY_TO,
+      },
+      headers: {
+        MESSAGE_ID: [generateMessageId()],
+      },
+    } as EmailRequest;
+    return sendEmail(municipalityId, message, req, errandData, MessageClassification.Informationsmeddelande);
+  }
+
+  throw new HttpException(400, 'Ärendeägaren har inga godkända kontaktsätt');
 };

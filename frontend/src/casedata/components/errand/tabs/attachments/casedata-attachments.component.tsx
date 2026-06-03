@@ -14,12 +14,12 @@ import {
 } from '@casedata/services/casedata-attachment-service';
 import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
-import { useCasedataStore, useConfigStore } from '@stores/index';
 import { isMEX } from '@common/services/application-service';
 import { mapAttachmentToUploadFile } from '@common/services/attachment-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FileUpload, PopupMenu, UploadFile, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore } from '@stores/index';
 import dayjs from 'dayjs';
 import { Eye, Pencil, Trash, Upload } from 'lucide-react';
 import { FC, Fragment, useEffect, useState } from 'react';
