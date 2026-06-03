@@ -491,7 +491,7 @@ export class SupportErrandController {
       const personNumberRes = await this.apiService
         .get<string>({ url: personNumberUrl }, req.user)
         .then(res => ({ data: `${res.data}` }))
-        .catch(e => ({ data: undefined, message: '404' }));
+        .catch(_e => ({ data: undefined, message: '404' }));
       customer.personNumber = personNumberRes.data;
     }
     const contacts: (SupportStakeholder & { personNumber?: string })[] =
@@ -510,7 +510,7 @@ export class SupportErrandController {
               contact.personNumber = res.data;
               return res;
             })
-            .catch(e => ({ data: undefined, message: '404' }));
+            .catch(_e => ({ data: undefined, message: '404' }));
         return withRetries(3, getPersonalNumber);
       } else {
         return Promise.resolve(true);
@@ -1080,7 +1080,7 @@ export class SupportErrandController {
         logger.error('Error when posting attachments for forwarded errand');
         throw e;
       });
-    } catch (error) {
+    } catch {
       return response.status(400).send('ATTACHMENTS_FAILED');
     }
 

@@ -184,5 +184,3 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
     </Modal>
   );
 };
-
-export default ContractPartyModal;

@@ -261,9 +261,6 @@ export const fetchContracts: (params?: ContractFilterParams) => Promise<PageCont
     });
 };
 
-// Keep for backwards compatibility
-export const fetchAllContracts = fetchContracts;
-
 export const saveContractToErrand = (municipalityId: string, contractId: string, errand: IErrand) => {
   const data: ExtraParameter[] = [
     {

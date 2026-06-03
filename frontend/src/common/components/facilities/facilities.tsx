@@ -29,7 +29,7 @@ import { useForm, UseFormSetValue } from 'react-hook-form';
 
 import { FacilityDetails } from './facilities-details';
 
-export const Facilities: FC<{
+const Facilities: FC<{
   setValue: UseFormSetValue<any>;
   setUnsaved: (unsaved: boolean) => void;
   facilities: FacilityDTO[];

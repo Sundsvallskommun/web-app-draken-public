@@ -105,7 +105,7 @@ export class CasedataNotesController {
     @Param('id') id: string,
     @Param('errandId') errandId: number,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<ResponseData> {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/notes/${id}`;
     const baseURL = apiURL(this.SERVICE);

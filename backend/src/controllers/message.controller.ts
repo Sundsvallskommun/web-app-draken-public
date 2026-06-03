@@ -202,7 +202,7 @@ export class MessageController {
     @Req() req: RequestWithUser,
     @Param('errandId') errandId: string,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: IMessageResponse[],
+    @Res() _response: IMessageResponse[],
   ): Promise<{ data: IMessageResponse[]; message: string }> {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/messages`;
     const baseURL = apiURL(this.SERVICE);
@@ -222,7 +222,7 @@ export class MessageController {
     @Param('messageId') messageId: string,
     @Param('municipalityId') municipalityId: string,
     @Param('isViewed') isViewed: boolean,
-    @Res() response: IMessageResponse[],
+    @Res() _response: IMessageResponse[],
   ): Promise<{ data: IMessageResponse[]; message: string }> {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/viewed/${isViewed}`;
     const baseURL = apiURL(this.SERVICE);

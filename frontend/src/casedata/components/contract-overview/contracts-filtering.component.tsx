@@ -251,5 +251,3 @@ export const ContractsFilteringComponent: FC = () => {
     </div>
   );
 };
-
-export default ContractsFilteringComponent;
