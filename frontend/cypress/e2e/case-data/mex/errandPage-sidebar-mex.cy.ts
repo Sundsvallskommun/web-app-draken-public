@@ -253,7 +253,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('exist').click();
         cy.get('[data-cy="basicInformation"]').should('exist');
         cy.get('[data-cy="export-button"]').should('exist').click();
-        cy.get('p').should('exist').contains('Detta ärende är inte avslutat. Vill du ändå exportera ärendet?');
+        cy.contains('Detta ärende är inte avslutat. Vill du ändå exportera ärendet?').should('exist');
       } else {
         // Export button should not exist when feature is disabled
         cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('exist');
