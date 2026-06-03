@@ -1,9 +1,10 @@
-import { execFile } from 'child_process';
-import { promisify } from 'node:util';
-import path from 'path';
 import fs from 'node:fs';
 import os from 'node:os';
+import { promisify } from 'node:util';
+
+import { execFile } from 'child_process';
 import { config } from 'dotenv';
+import path from 'path';
 config();
 
 // `execFile` (not `exec`) passes arguments without a shell, so the temp path and
