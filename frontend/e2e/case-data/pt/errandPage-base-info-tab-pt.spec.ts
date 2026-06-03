@@ -279,4 +279,49 @@ test.describe('Errand page', () => {
     expect(body.contactInformation[1].contactType).toBe('EMAIL');
     expect(body.contactInformation[1].value).toBe('test@example.com');
   });
+
+  test('keeps personId on the applicant when editing first and last name', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    const applicant = mockPTErrand_base.data.stakeholders.find((s) => s.roles.includes(Role.APPLICANT));
+    await mockRoute('**/errand/errandNumber/*', mockPTErrand_base);
+    await mockRoute(
+      `**/errands/${mockPTErrand_base.data.id}/stakeholders/${applicant?.id}`,
+      mockPTErrand_base,
+      { method: 'PATCH' }
+    );
+
+    await visit(page, dismissCookieConsent);
+
+    await expect(
+      page.locator('[data-cy="registered-applicants"] [data-cy="rendered-APPLICANT"]')
+    ).toBeVisible();
+    await page
+      .locator('[data-cy="registered-applicants"] [data-cy="edit-stakeholder-button"]')
+      .first()
+      .click();
+
+    await expect(page.locator('[data-cy="contact-firstName"]')).toHaveValue(applicant?.firstName!);
+    await expect(page.locator('[data-cy="contact-lastName"]')).toHaveValue(applicant?.lastName!);
+
+    await page.locator('[data-cy="contact-firstName"]').clear();
+    await page.locator('[data-cy="contact-firstName"]').fill('Annat Förnamn');
+    await page.locator('[data-cy="contact-lastName"]').clear();
+    await page.locator('[data-cy="contact-lastName"]').fill('Annat Efternamn');
+
+    await page.getByText('Ändra uppgifter').click();
+    await page.locator('[data-cy="save-and-continue-button"]').click();
+
+    const patchRequest = await page.waitForRequest(
+      (req) =>
+        req.url().includes(`/errands/${mockPTErrand_base.data.id}/stakeholders/${applicant?.id}`) &&
+        req.method() === 'PATCH'
+    );
+    const body = patchRequest.postDataJSON();
+    expect(body.firstName).toBe('Annat Förnamn');
+    expect(body.lastName).toBe('Annat Efternamn');
+    expect(body.personId).toBe(applicant?.personId);
+  });
 });

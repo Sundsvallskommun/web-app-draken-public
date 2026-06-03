@@ -15,6 +15,15 @@ import { mockRelations } from '../fixtures/mockRelations';
 import { mockPdfRender } from '../fixtures/mockDecisions';
 
 test.describe('Decisions tab', () => {
+  const mockFTErrand = {
+    data: {
+      ...mockPTErrand_base.data,
+      caseType: 'PARATRANSIT',
+      decisions: [],
+    },
+    message: 'success',
+  };
+
   test.beforeEach(async ({ page, mockRoute }) => {
     await mockRoute('**/schemas/*/latest', { data: { id: 'mock-schema-id', value: {} }, message: 'success' });
     await mockRoute('**/schemas/*/ui-schema', {
@@ -289,6 +298,67 @@ test.describe('Decisions tab', () => {
 
     await expect(page.getByText('Beslut måste anges')).toBeVisible();
     expect(updateDecisionRequestCount).toBe(0);
+  });
+
+  test('enables decision actions for FT approval without decision validity dates', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    await mockRoute('**/errand/errandNumber/*', mockFTErrand);
+    await visitErrand(page, dismissCookieConsent);
+
+    await page.locator('[data-cy="decision-outcome-select"]').selectOption('Bifall');
+    await page.locator('[data-cy="law-select"]').click();
+    await page.locator('[data-cy="law-select"]').getByText('1§ - Lag om färdtjänst').click();
+    await expect(page.locator('[data-cy="validFrom-input"]')).not.toBeVisible();
+    await expect(page.locator('[data-cy="validTo-input"]')).not.toBeVisible();
+    await page.locator('[data-cy="decision-richtext-wrapper"]').click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.type('Mock text');
+
+    await expect(page.locator('[data-cy="save-decision-button"]')).toBeEnabled();
+    await expect(page.locator('[data-cy="decision-pdf-preview-button"]')).toHaveCount(1);
+    await expect(page.locator('[data-cy="decision-pdf-preview-button"]')).toBeEnabled();
+    await expect(page.locator('[data-cy="save-and-send-decision-button"]')).toBeEnabled();
+  });
+
+  test('shows template dropdown after outcome selection when templates exist and renders preview', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    await visitErrand(page, dismissCookieConsent);
+    const mockTemplates = [
+      {
+        identifier: 'pt.test.template',
+        name: 'PT Testmall',
+        description: 'En PT testmall',
+        version: '1',
+        metadata: [
+          { key: 'templateType', value: 'Decision' },
+          { key: 'decision', value: 'REJECTION' },
+        ],
+        defaultValues: [],
+      },
+    ];
+    await mockRoute('**/templates?*', { data: mockTemplates, message: 'success' }, { method: 'GET' });
+    await mockRoute(
+      '**/render/pdf',
+      { data: { output: btoa('%PDF-mock') }, message: 'Decision PDF rendered' },
+      { method: 'POST' }
+    );
+
+    // Existing decision has APPROVAL — select a different outcome to trigger template fetch
+    await page.locator('[data-cy="decision-outcome-select"]').selectOption('Avslag');
+    await page.waitForResponse((resp) => /\/templates\?/.test(resp.url()) && resp.status() === 200);
+    await expect(page.locator('[data-cy="decisionTemplate-select"]')).toBeVisible();
+    await page.locator('[data-cy="decisionTemplate-select"]').selectOption({ label: 'PT Testmall' });
+    await page.waitForResponse((resp) => resp.url().includes('/render/pdf') && resp.status() === 200);
+    await expect(page.locator('[data-cy="decision-template-preview"]')).toBeVisible();
+    const previewContent = page.locator('[data-cy="decision-template-preview-content"]');
+    await expect(previewContent).toBeVisible();
+    await expect(previewContent).toHaveJSProperty('tagName', 'IFRAME');
   });
 
   test('shows validation error when dates are incomplete for approval', async ({ page, dismissCookieConsent }) => {

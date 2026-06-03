@@ -189,6 +189,167 @@ test.describe('Contract Overview page', () => {
     await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
   });
 
+  test.describe('Filter chips and clear filters', () => {
+    test('shows a chip when filtering by status', async ({ page, mockRoute }) => {
+      await navigateToContractOverview(page);
+      await page.locator('[data-cy="contract-status-filter"]').click();
+      await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
+      await page.locator('[data-cy="contract-status-filter-ACTIVE"]').click({ force: true });
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+      await expect(page.locator('[data-cy="tag-contract-status-ACTIVE"]')).toBeVisible();
+      await expect(page.locator('[data-cy="tag-contract-status-ACTIVE"]')).toContainText('Aktiv');
+    });
+
+    test('shows a chip when filtering by contract type', async ({ page, mockRoute }) => {
+      await navigateToContractOverview(page);
+      await page.locator('[data-cy="contract-type-filter"]').click();
+      await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
+      await page.locator('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+      await expect(page.locator('[data-cy="tag-contract-type-LEASE_AGREEMENT"]')).toBeVisible();
+      await expect(page.locator('[data-cy="tag-contract-type-LEASE_AGREEMENT"]')).toContainText('Arrende');
+    });
+
+    test('shows a chip when filtering by lease type', async ({ page, mockRoute }) => {
+      await navigateToContractOverview(page);
+      await page.locator('[data-cy="contract-lease-type-filter"]').click();
+      await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
+      await page.locator('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click({ force: true });
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+      await expect(page.locator('[data-cy="tag-lease-type-LAND_LEASE_RESIDENTIAL"]')).toBeVisible();
+      await expect(page.locator('[data-cy="tag-lease-type-LAND_LEASE_RESIDENTIAL"]')).toContainText('Bostadsarrende');
+    });
+
+    test('shows a chip when filtering by date period', async ({ page, mockRoute }) => {
+      await navigateToContractOverview(page);
+      await page.locator('[data-cy="contract-dates-filter"]').click();
+      await page.locator('[data-cy="contract-filter-startdate"]').fill('2024-01-01');
+      await page.locator('[data-cy="contract-filter-enddate"]').fill('2024-12-31');
+      await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
+      await page.locator('[data-cy="contract-dates-apply"]').click();
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+      await expect(page.locator('[data-cy="tag-contract-dates"]')).toBeVisible();
+    });
+
+    test('removes a status chip when clicking it', async ({ page, mockRoute }) => {
+      await navigateToContractOverview(page);
+      await page.locator('[data-cy="contract-status-filter"]').click();
+      await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
+      await page.locator('[data-cy="contract-status-filter-ACTIVE"]').click({ force: true });
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+      await expect(page.locator('[data-cy="tag-contract-status-ACTIVE"]')).toBeVisible();
+
+      await mockRoute('**/contracts?*', mockContractsList, { method: 'GET' }); // @getUnfilteredContracts
+      await page.locator('[data-cy="tag-contract-status-ACTIVE"]').click();
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+      await expect(page.locator('[data-cy="tag-contract-status-ACTIVE"]')).toHaveCount(0);
+    });
+
+    test('removes a contract type chip when clicking it', async ({ page, mockRoute }) => {
+      await navigateToContractOverview(page);
+      await page.locator('[data-cy="contract-type-filter"]').click();
+      await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
+      await page.locator('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+      await expect(page.locator('[data-cy="tag-contract-type-LEASE_AGREEMENT"]')).toBeVisible();
+
+      await mockRoute('**/contracts?*', mockContractsList, { method: 'GET' }); // @getUnfilteredContracts
+      await page.locator('[data-cy="tag-contract-type-LEASE_AGREEMENT"]').click();
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+      await expect(page.locator('[data-cy="tag-contract-type-LEASE_AGREEMENT"]')).toHaveCount(0);
+    });
+
+    test('removes date chip when clicking it', async ({ page, mockRoute }) => {
+      await navigateToContractOverview(page);
+      await page.locator('[data-cy="contract-dates-filter"]').click();
+      await page.locator('[data-cy="contract-filter-startdate"]').fill('2024-01-01');
+      await page.locator('[data-cy="contract-filter-enddate"]').fill('2024-12-31');
+      await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
+      await page.locator('[data-cy="contract-dates-apply"]').click();
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+      await expect(page.locator('[data-cy="tag-contract-dates"]')).toBeVisible();
+
+      await mockRoute('**/contracts?*', mockContractsList, { method: 'GET' }); // @getUnfilteredContracts
+      await page.locator('[data-cy="tag-contract-dates"]').click();
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+      await expect(page.locator('[data-cy="tag-contract-dates"]')).toHaveCount(0);
+    });
+
+    test('shows "Rensa alla" button when filters are active', async ({ page, mockRoute }) => {
+      await navigateToContractOverview(page);
+      await expect(page.locator('[data-cy="tag-contract-clearAll"]')).toHaveCount(0);
+
+      await page.locator('[data-cy="contract-status-filter"]').click();
+      await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
+      await page.locator('[data-cy="contract-status-filter-ACTIVE"]').click({ force: true });
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+
+      await expect(page.locator('[data-cy="tag-contract-clearAll"]')).toBeVisible();
+      await expect(page.locator('[data-cy="tag-contract-clearAll"]')).toContainText('Rensa alla');
+    });
+
+    test('clears all filters when clicking "Rensa alla"', async ({ page, mockRoute }) => {
+      await navigateToContractOverview(page);
+
+      // Apply status filter
+      await page.locator('[data-cy="contract-status-filter"]').click();
+      await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
+      await page.locator('[data-cy="contract-status-filter-ACTIVE"]').click({ force: true });
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+
+      // Apply contract type filter
+      await page.locator('[data-cy="contract-type-filter"]').click();
+      await page.locator('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+
+      // Both chips should exist
+      await expect(page.locator('[data-cy="tag-contract-status-ACTIVE"]')).toBeVisible();
+      await expect(page.locator('[data-cy="tag-contract-type-LEASE_AGREEMENT"]')).toBeVisible();
+
+      // Click "Rensa alla"
+      await mockRoute('**/contracts?*', mockContractsList, { method: 'GET' }); // @getUnfilteredContracts
+      await page.locator('[data-cy="tag-contract-clearAll"]').click();
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+
+      // All chips should be gone
+      await expect(page.locator('[data-cy="tag-contract-status-ACTIVE"]')).toHaveCount(0);
+      await expect(page.locator('[data-cy="tag-contract-type-LEASE_AGREEMENT"]')).toHaveCount(0);
+      await expect(page.locator('[data-cy="tag-contract-clearAll"]')).toHaveCount(0);
+    });
+
+    test('shows multiple chips for multiple filters', async ({ page, mockRoute }) => {
+      await navigateToContractOverview(page);
+
+      // Apply status filter
+      await page.locator('[data-cy="contract-status-filter"]').click();
+      await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
+      await page.locator('[data-cy="contract-status-filter-ACTIVE"]').click({ force: true });
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+
+      // Apply contract type filter
+      await page.locator('[data-cy="contract-type-filter"]').click();
+      await page.locator('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+
+      // Apply lease type filter
+      await page.locator('[data-cy="contract-lease-type-filter"]').click();
+      await page.locator('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click({ force: true });
+      await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+
+      // All three chips should be visible
+      await expect(page.locator('[data-cy="tag-contract-status-ACTIVE"]')).toBeVisible();
+      await expect(page.locator('[data-cy="tag-contract-type-LEASE_AGREEMENT"]')).toBeVisible();
+      await expect(page.locator('[data-cy="tag-lease-type-LAND_LEASE_RESIDENTIAL"]')).toBeVisible();
+      await expect(page.locator('[data-cy="tag-contract-clearAll"]')).toBeVisible();
+    });
+
+    test('does not show chips when no filters are active', async ({ page }) => {
+      await navigateToContractOverview(page);
+      await expect(page.locator('[data-cy="tag-contract-clearAll"]')).toHaveCount(0);
+      await expect(page.locator('.sk-chip')).toHaveCount(0);
+    });
+  });
+
   test.describe('Contract detail panel', () => {
     test.beforeEach(async ({ mockRoute }) => {
       // Intercept attachment requests to prevent 401 errors
@@ -393,6 +554,34 @@ test.describe('Contract Overview page', () => {
     });
 
     test.describe('Contract invoices (Fakturor)', () => {
+      test('displays next billing date from billing data collector', async ({ page, mockRoute }) => {
+        await mockRoute('**/contracts?*', mockContractDetailLeaseAgreement, { method: 'GET' }); // @getContracts
+        await mockRoute('**/billing/**/contracts/**/invoices*', mockContractInvoices, { method: 'GET' }); // @getContractInvoices
+        await mockRoute('**/billingdatacollector/*', '2026-06-01', { method: 'GET' }); // @getNextBillingDate
+        await navigateToContractOverview(page);
+
+        await page.locator('[data-cy="contract-row-0"]').click();
+        await page.locator('[data-cy="fakturor-disclosure"]').click();
+
+        await page.waitForResponse((resp) => resp.url().includes('/billingdatacollector/') && resp.status() === 200);
+
+        await expect(page.locator('[data-cy="next-billing-date"]')).toContainText('2026-06-01');
+      });
+
+      test('displays dash when next billing date fails to load', async ({ page, mockRoute }) => {
+        await mockRoute('**/contracts?*', mockContractDetailLeaseAgreement, { method: 'GET' }); // @getContracts
+        await mockRoute('**/billing/**/contracts/**/invoices*', mockContractInvoices, { method: 'GET' }); // @getContractInvoices
+        await mockRoute('**/billingdatacollector/*', { error: 'Server error' }, { method: 'GET', status: 500 }); // @getNextBillingDateFail
+        await navigateToContractOverview(page);
+
+        await page.locator('[data-cy="contract-row-0"]').click();
+        await page.locator('[data-cy="fakturor-disclosure"]').click();
+
+        await page.waitForResponse((resp) => resp.url().includes('/billingdatacollector/') && resp.status() === 500);
+
+        await expect(page.locator('[data-cy="next-billing-date"]')).toContainText('-');
+      });
+
       test('displays fakturor disclosure section', async ({ page, mockRoute }) => {
         await mockRoute('**/contracts?*', mockContractDetailLeaseAgreement, { method: 'GET' }); // @getContracts
         await mockRoute('**/billing/**/contracts/**/invoices*', mockContractInvoices, { method: 'GET' }); // @getContractInvoices
@@ -683,6 +872,57 @@ test.describe('Contract Overview page', () => {
         const contractIdParam = extraParams.find((p: { key: string }) => p.key === 'contractId');
         expect(contractIdParam).toBeDefined();
         expect(contractIdParam.values).toContain('2049-00010');
+      });
+
+      test('shows success toast and opens new errand in new tab after creation', async ({ page, mockRoute }) => {
+        await mockRoute('**/contracts?*', mockContractDetailLeaseAgreement, { method: 'GET' }); // @getContracts
+        await mockRoute('**/errands', mockCreatedErrandResponse, { method: 'POST' }); // @postErrand
+        await page.route(/2281\/errand\/999/, async (route) => {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(mockCreatedErrand),
+          });
+        }); // @getCreatedErrand
+        await mockRoute('**/errands/999/stakeholders', mockCreatedErrand, { method: 'PATCH' }); // @patchErrand
+        await mockRoute('**/errands/**/extraparameters', { data: [], message: 'ok' }, { method: 'PATCH' }); // @patchExtraParameters
+
+        // NOTE: Cypress stubbed window.open; here we record its calls via an init script
+        // so we can assert the new errand is opened in a new tab ('_blank') without
+        // actually navigating a popup to a non-existent page.
+        await page.addInitScript(() => {
+          (window as unknown as { __openCalls: { url: string; target: string }[] }).__openCalls = [];
+          window.open = ((url?: string | URL, target?: string) => {
+            (window as unknown as { __openCalls: { url: string; target: string }[] }).__openCalls.push({
+              url: String(url),
+              target: String(target),
+            });
+            return null;
+          }) as typeof window.open;
+        });
+
+        await navigateToContractOverview(page);
+
+        await page.locator('[data-cy="contract-row-0"]').click();
+        await page.locator('[data-cy="contract-detail-edit-button"]').click();
+
+        // Confirm the dialog
+        await page.getByText('Ja, skapa ärende').click();
+
+        // Wait for the extra parameters PATCH
+        await page.waitForResponse((resp) => resp.url().includes('/extraparameters') && resp.status() === 200);
+
+        // Success toast should be shown
+        await expect(page.getByText('Ärende skapat')).toBeVisible();
+
+        // Should open the new errand in a new tab
+        await expect
+          .poll(() =>
+            page.evaluate(
+              () => (window as unknown as { __openCalls: { url: string; target: string }[] }).__openCalls
+            )
+          )
+          .toContainEqual(expect.objectContaining({ url: expect.stringMatching(/\/arende\/MEX-2024-000999$/), target: '_blank' }));
       });
 
       test('shows success toast and navigates to new errand after creation', async ({ page, mockRoute }) => {

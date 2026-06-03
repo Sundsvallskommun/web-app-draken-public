@@ -493,6 +493,339 @@ test.describe('Errand page contracts tab', () => {
     expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSEE))).toBe(true);
   });
 
+  test('manages creating a new lease agreement with manual party selection', async ({ page, mockRoute, dismissCookieConsent }) => {
+    await visitErrandWithoutContract(page, mockRoute, dismissCookieConsent);
+    await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.LEASE_AGREEMENT);
+    await page.locator('[data-cy="contract-subtype-select"]').selectOption(LeaseType.LAND_LEASE_MISC);
+
+    // Verify parties table exists but is empty initially
+    await expect(page.locator('[data-cy="parties-table"]')).toBeVisible();
+    await expect(page.locator('[data-cy="parties-table"]')).toContainText('Inga parter tillagda');
+
+    // Add lessor via party modal
+    await page.locator('[data-cy="add-party-button"]').click();
+    await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2260');
+    await page.locator('[data-cy="party-modal-role-LESSOR"]').check({ force: true });
+    await page.locator('[data-cy="party-modal-save-button"]').click();
+
+    // Verify lessor was added
+    const lessorRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-0"]');
+    await expect(lessorRow).toBeVisible();
+    await expect(lessorRow.locator('[data-cy="party-0-name"]')).toContainText('Test Upplåtarsson');
+    await expect(lessorRow.locator('[data-cy="party-0-role"]')).toContainText('Upplåtare');
+
+    // Add lessee with billing role via party modal
+    await page.locator('[data-cy="add-party-button"]').click();
+    await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2280');
+    await page.locator('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+    await page.locator('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').check({ force: true });
+    await page.locator('[data-cy="party-modal-save-button"]').click();
+
+    // Verify lessee was added with both roles
+    const lesseeRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-1"]');
+    await expect(lesseeRow).toBeVisible();
+    await expect(lesseeRow.locator('[data-cy="party-1-name"]')).toContainText('Test Arrendatorsson');
+    await expect(lesseeRow.locator('[data-cy="party-1-role"]')).toContainText('Arrendator');
+    await expect(lesseeRow.locator('[data-cy="party-1-role"]')).toContainText('Fakturamottagare');
+
+    // Fill required fields before saving
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').click();
+    await page.locator('[data-cy="avtalstid-start"]').fill('2024-01-01');
+    await page.locator('[data-cy="all-notice-period"]').clear();
+    await page.locator('[data-cy="all-notice-period"]').fill('3');
+
+    // Save the contract
+    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
+
+    const postContractRequest = await page.waitForRequest(
+      (req) => req.url().includes('/contracts') && req.method() === 'POST'
+    );
+    const leaseAgreement: Contract = postContractRequest.postDataJSON();
+    expect(leaseAgreement.type).toBe(ContractType.LEASE_AGREEMENT);
+    expect(leaseAgreement.leaseType).toBe(LeaseType.LAND_LEASE_MISC);
+    const lessor = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSOR));
+    const lessee = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSEE));
+    expect(lessor).toBeTruthy();
+    expect(lessee).toBeTruthy();
+    expect(lessor.firstName).toBe('Test');
+    expect(lessor.lastName).toBe('Upplåtarsson');
+    expect(lessee.firstName).toBe('Test');
+    expect(lessee.lastName).toBe('Arrendatorsson');
+    // Lessee should also have PRIMARY_BILLING_PARTY role
+    expect(lessee.roles).toContain(StakeholderRole.PRIMARY_BILLING_PARTY);
+  });
+
+  test('manages creating a new purchase agreement with manual party selection', async ({ page, mockRoute, dismissCookieConsent }) => {
+    await visitErrandWithoutContract(page, mockRoute, dismissCookieConsent);
+
+    // Switch to PURCHASE_AGREEMENT
+    await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.PURCHASE_AGREEMENT);
+
+    // Verify parties table exists but is empty
+    await expect(page.locator('[data-cy="parties-table"]')).toBeVisible();
+    await expect(page.locator('[data-cy="parties-table"]')).toContainText('Inga parter tillagda');
+
+    // Add seller via party modal
+    await page.locator('[data-cy="add-party-button"]').click();
+    await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2290');
+    await page.locator('[data-cy="party-modal-role-SELLER"]').check({ force: true });
+    await page.locator('[data-cy="party-modal-save-button"]').click();
+
+    // Verify seller was added
+    const sellerRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-0"]');
+    await expect(sellerRow).toBeVisible();
+    await expect(sellerRow.locator('[data-cy="party-0-name"]')).toContainText('Daniella Testarsson');
+    await expect(sellerRow.locator('[data-cy="party-0-role"]')).toContainText('Säljare');
+
+    // Add buyer via party modal
+    await page.locator('[data-cy="add-party-button"]').click();
+    await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2106');
+    await page.locator('[data-cy="party-modal-role-BUYER"]').check({ force: true });
+    await page.locator('[data-cy="party-modal-save-button"]').click();
+
+    // Verify buyer was added
+    const buyerRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-1"]');
+    await expect(buyerRow).toBeVisible();
+    await expect(buyerRow.locator('[data-cy="party-1-name"]')).toContainText('Test Köparsson');
+    await expect(buyerRow.locator('[data-cy="party-1-role"]')).toContainText('Köpare');
+
+    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
+
+    const postContractRequest = await page.waitForRequest(
+      (req) => req.url().includes('/contracts') && req.method() === 'POST'
+    );
+    const purchaseAgreement: Contract = postContractRequest.postDataJSON();
+    expect(purchaseAgreement.type).toBe(ContractType.PURCHASE_AGREEMENT);
+    expect(purchaseAgreement.leaseType).toBeUndefined();
+    const seller = purchaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.SELLER));
+    const buyer = purchaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.BUYER));
+    expect(seller).toBeTruthy();
+    expect(buyer).toBeTruthy();
+    expect(seller.firstName).toBe('Daniella');
+    expect(seller.lastName).toBe('Testarsson');
+    expect(buyer.firstName).toBe('Test');
+    expect(buyer.lastName).toBe('Köparsson');
+  });
+
+  test('manages creating a new LAND_LEASE_PUBLIC contract with manual party selection', async ({ page, mockRoute, dismissCookieConsent }) => {
+    await visitErrandWithoutContract(page, mockRoute, dismissCookieConsent);
+
+    // Select the new contract type
+    await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.LAND_LEASE_PUBLIC);
+
+    // Verify NO lease subtype dropdown is shown (only for LEASE_AGREEMENT)
+    await expect(page.locator('[data-cy="contract-subtype-select"]')).not.toBeVisible();
+
+    // Verify parties table exists but is empty
+    await expect(page.locator('[data-cy="parties-table"]')).toBeVisible();
+    await expect(page.locator('[data-cy="parties-table"]')).toContainText('Inga parter tillagda');
+
+    // Add lessor via party modal
+    await page.locator('[data-cy="add-party-button"]').click();
+    await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2260');
+    await page.locator('[data-cy="party-modal-role-LESSOR"]').check({ force: true });
+    await page.locator('[data-cy="party-modal-save-button"]').click();
+
+    // Verify lessor was added
+    const lessorRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-0"]');
+    await expect(lessorRow).toBeVisible();
+    await expect(lessorRow.locator('[data-cy="party-0-name"]')).toContainText('Test Upplåtarsson');
+    await expect(lessorRow.locator('[data-cy="party-0-role"]')).toContainText('Upplåtare');
+
+    // Add lessee via party modal
+    await page.locator('[data-cy="add-party-button"]').click();
+    await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2280');
+    await page.locator('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+    await page.locator('[data-cy="party-modal-save-button"]').click();
+
+    // Verify lessee was added
+    const lesseeRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-1"]');
+    await expect(lesseeRow).toBeVisible();
+    await expect(lesseeRow.locator('[data-cy="party-1-name"]')).toContainText('Test Arrendatorsson');
+    await expect(lesseeRow.locator('[data-cy="party-1-role"]')).toContainText('Arrendator');
+
+    // Fill required fields before saving
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').click();
+    await page.locator('[data-cy="avtalstid-start"]').fill('2024-01-01');
+    await page.locator('[data-cy="all-notice-period"]').clear();
+    await page.locator('[data-cy="all-notice-period"]').fill('3');
+
+    // Save and verify contract type in request
+    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
+
+    const postContractRequest = await page.waitForRequest(
+      (req) => req.url().includes('/contracts') && req.method() === 'POST'
+    );
+    const contract: Contract = postContractRequest.postDataJSON();
+    expect(contract.type).toBe(ContractType.LAND_LEASE_PUBLIC);
+    expect(contract.leaseType).toBeUndefined();
+    expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSOR))).toBe(true);
+    expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSEE))).toBe(true);
+  });
+
+  test('manages creating a new SHORT_TERM_LEASE_AGREEMENT contract with manual party selection', async ({ page, mockRoute, dismissCookieConsent }) => {
+    await visitErrandWithoutContract(page, mockRoute, dismissCookieConsent);
+
+    // Select the new contract type
+    await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.SHORT_TERM_LEASE_AGREEMENT);
+
+    // Verify NO lease subtype dropdown is shown (only for LEASE_AGREEMENT)
+    await expect(page.locator('[data-cy="contract-subtype-select"]')).not.toBeVisible();
+
+    // Verify parties table exists but is empty
+    await expect(page.locator('[data-cy="parties-table"]')).toBeVisible();
+    await expect(page.locator('[data-cy="parties-table"]')).toContainText('Inga parter tillagda');
+
+    // Add lessor via party modal
+    await page.locator('[data-cy="add-party-button"]').click();
+    await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2260');
+    await page.locator('[data-cy="party-modal-role-LESSOR"]').check({ force: true });
+    await page.locator('[data-cy="party-modal-save-button"]').click();
+
+    // Verify lessor was added
+    const lessorRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-0"]');
+    await expect(lessorRow).toBeVisible();
+    await expect(lessorRow.locator('[data-cy="party-0-name"]')).toContainText('Test Upplåtarsson');
+    await expect(lessorRow.locator('[data-cy="party-0-role"]')).toContainText('Upplåtare');
+
+    // Add lessee via party modal
+    await page.locator('[data-cy="add-party-button"]').click();
+    await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2280');
+    await page.locator('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+    await page.locator('[data-cy="party-modal-save-button"]').click();
+
+    // Verify lessee was added
+    const lesseeRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-1"]');
+    await expect(lesseeRow).toBeVisible();
+    await expect(lesseeRow.locator('[data-cy="party-1-name"]')).toContainText('Test Arrendatorsson');
+    await expect(lesseeRow.locator('[data-cy="party-1-role"]')).toContainText('Arrendator');
+
+    // Fill required fields before saving
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').click();
+    await page.locator('[data-cy="avtalstid-start"]').fill('2024-01-01');
+    await page.locator('[data-cy="all-notice-period"]').clear();
+    await page.locator('[data-cy="all-notice-period"]').fill('3');
+
+    // Save and verify contract type in request
+    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
+
+    const postContractRequest = await page.waitForRequest(
+      (req) => req.url().includes('/contracts') && req.method() === 'POST'
+    );
+    const contract: Contract = postContractRequest.postDataJSON();
+    expect(contract.type).toBe(ContractType.SHORT_TERM_LEASE_AGREEMENT);
+    expect(contract.leaseType).toBeUndefined();
+    expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSOR))).toBe(true);
+    expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSEE))).toBe(true);
+  });
+
+  test.describe('Manual party selection with stakeholders without partyId', () => {
+    // Mock errand with a stakeholder that has no personalNumber/personId (manually added)
+    const mockMexErrandWithManualStakeholder = {
+      ...mockMexErrand_base,
+      data: {
+        ...mockMexErrand_base.data,
+        stakeholders: [
+          ...mockMexErrand_base.data.stakeholders,
+          {
+            id: 9999, // Has id but no personalNumber/personId
+            version: 1,
+            created: '2024-05-17T10:50:17.25221+02:00',
+            updated: '2024-05-17T10:50:17.252221+02:00',
+            type: 'PERSON',
+            // No personalNumber - manually added stakeholder
+            firstName: 'Manual',
+            lastName: 'Stakeholder',
+            roles: ['CONTACT_PERSON'],
+            addresses: [
+              {
+                addressCategory: 'POSTAL_ADDRESS',
+                street: 'Manual Street 1',
+                postalCode: '12345',
+                city: 'TestCity',
+                careOf: '',
+              },
+            ],
+            address: {
+              streetAddress: '',
+            },
+            contactInformation: [
+              {
+                contactType: 'EMAIL',
+                value: 'manual@example.com',
+              },
+            ],
+            extraParameters: {},
+          },
+        ],
+        extraParameters: mockMexErrand_base.data.extraParameters.filter((p) => p.key !== 'contractId'),
+      },
+    };
+
+    test('allows selecting stakeholders without partyId as billing parties', async ({ page, mockRoute, dismissCookieConsent }) => {
+      // Override the errand intercept for this test
+      await mockRoute('**/errand/101', mockMexErrandWithManualStakeholder, { method: 'GET' }); // @getErrandByIdManual
+      await mockRoute('**/errand/errandNumber/*', mockMexErrandWithManualStakeholder, { method: 'GET' }); // @getErrandManual
+      await page.goto(`arende/${mockMexErrand_base.data.id}`);
+      await page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200);
+      await dismissCookieConsent();
+      const tab = page.locator('.sk-tabs-list button').nth(4);
+      await expect(tab).toHaveText('Avtal');
+      await tab.click({ force: true });
+      await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.LEASE_AGREEMENT);
+
+      // Add lessor via party modal
+      await page.locator('[data-cy="add-party-button"]').click();
+      await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2260');
+      await page.locator('[data-cy="party-modal-role-LESSOR"]').check({ force: true });
+      await page.locator('[data-cy="party-modal-save-button"]').click();
+
+      // Add lessee (Test Arrendatorsson)
+      await page.locator('[data-cy="add-party-button"]').click();
+      await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2280');
+      await page.locator('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+      await page.locator('[data-cy="party-modal-save-button"]').click();
+
+      // Add manual stakeholder (without partyId) as lessee + billing party
+      await page.locator('[data-cy="add-party-button"]').click();
+      await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('9999');
+      await page.locator('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+      await page.locator('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').check({ force: true });
+      await page.locator('[data-cy="party-modal-save-button"]').click();
+
+      // Verify all parties were added
+      await expect(page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-0"]')).toBeVisible();
+      await expect(page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-1"]')).toBeVisible();
+      await expect(page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-2"]')).toBeVisible();
+
+      // Verify the manual stakeholder has billing role
+      await expect(page.locator('[data-cy="parties-table"]')).toContainText('Manual Stakeholder');
+      await expect(page.locator('[data-cy="parties-table"]')).toContainText('Fakturamottagare');
+
+      // Fill required fields before saving
+      await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').click();
+      await page.locator('[data-cy="avtalstid-start"]').fill('2024-01-01');
+      await page.locator('[data-cy="all-notice-period"]').clear();
+      await page.locator('[data-cy="all-notice-period"]').fill('3');
+
+      // Save the contract and verify the stakeholder is included with PRIMARY_BILLING_PARTY role
+      await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
+
+      const postContractRequest = await page.waitForRequest(
+        (req) => req.url().includes('/contracts') && req.method() === 'POST'
+      );
+      const contract: Contract = postContractRequest.postDataJSON();
+      const manualStakeholder = contract.stakeholders.find(
+        (s) => s.firstName === 'Manual' && s.lastName === 'Stakeholder'
+      );
+      expect(manualStakeholder).toBeTruthy();
+      expect(manualStakeholder.roles).toContain(StakeholderRole.LESSEE);
+      expect(manualStakeholder.roles).toContain(StakeholderRole.PRIMARY_BILLING_PARTY);
+      // The manual stakeholder should NOT have a meaningful partyId since it was added without personnummer
+      expect(manualStakeholder.partyId).toBeFalsy();
+    });
+  });
+
   test.describe('Non-DRAFT contract restrictions', () => {
     test.describe('ACTIVE contract', () => {
       const activeContractId = '2024-ACTIVE-001';
@@ -595,6 +928,23 @@ test.describe('Errand page contracts tab', () => {
 
         await expect(page.locator('[data-cy="update-contract-parties"]')).toBeVisible();
         await expect(page.locator('[data-cy="update-contract-parties"]')).toContainText('Uppdatera fakturamottagare');
+      });
+
+      test('does not allow removing parties for ACTIVE contracts but allows editing roles and adding billing party', async ({ page }) => {
+        await expect(page.locator('[data-cy="non-draft-warning-banner"]')).toBeVisible();
+
+        // For ACTIVE contracts, add party button should exist (for adding billing party)
+        await expect(page.locator('[data-cy="add-party-button"]')).toBeVisible();
+        // Remove button should not exist for non-DRAFT contracts
+        await expect(page.locator('[data-cy="party-0-remove-button"]')).toHaveCount(0);
+        // Edit button should still exist (for editing roles like billing party)
+        await expect(page.locator('[data-cy="party-0-edit-button"]')).toBeVisible();
+
+        // Opening the add party modal should only show Fakturamottagare role
+        await page.locator('[data-cy="add-party-button"]').click();
+        await expect(page.locator('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]')).toBeVisible();
+        await expect(page.locator('[data-cy="party-modal-role-LESSEE"]')).toHaveCount(0);
+        await expect(page.locator('[data-cy="party-modal-role-LESSOR"]')).toHaveCount(0);
       });
     });
 

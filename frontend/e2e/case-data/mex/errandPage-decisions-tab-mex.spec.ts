@@ -98,4 +98,46 @@ test.describe('Decisions tab', () => {
     await expect(page.locator('[data-cy="save-decision-button"]')).toBeEnabled();
     await expect(page.locator('[data-cy="save-and-send-decision-button"]')).toBeDisabled();
   });
+
+  test('disables decision actions if no decision is selected', async ({ page }) => {
+    await page.locator('[data-cy="decision-outcome-select"]').selectOption('Välj utfall');
+    await page.locator('[data-cy="decision-richtext-wrapper"] .ql-editor').clear();
+    await page.locator('[data-cy="decision-richtext-wrapper"] .ql-editor').type('Mock text', { delay: 100 });
+    await expect(page.getByText('Beslut måste anges')).toBeVisible();
+    await expect(page.locator('[data-cy="save-decision-button"]')).toBeDisabled();
+    await expect(page.locator('[data-cy="decision-pdf-preview-button"]')).toHaveCount(1);
+    await expect(page.locator('[data-cy="decision-pdf-preview-button"]')).toBeDisabled();
+    await expect(page.locator('[data-cy="save-and-send-decision-button"]')).toBeDisabled();
+  });
+
+  test('shows template dropdown after outcome selection and injects content into editor for MEX', async ({
+    page,
+    mockRoute,
+  }) => {
+    const mockTemplates = [
+      {
+        identifier: 'mex.test.template',
+        name: 'Testmall',
+        description: 'En testmall',
+        version: '1',
+        content: btoa('Test content from template'),
+        metadata: [
+          { key: 'templateType', value: 'Decision' },
+          { key: 'decision', value: 'REJECTION' },
+        ],
+        defaultValues: [],
+      },
+    ];
+    await mockRoute('**/templates?*', { data: mockTemplates, message: 'success' }, { method: 'GET' });
+
+    // Existing decision has APPROVAL — select a different outcome to trigger template fetch
+    await page.locator('[data-cy="decision-outcome-select"]').selectOption('Avslag');
+    await page.waitForResponse((resp) => /\/templates\?/.test(resp.url()) && resp.status() === 200);
+    await expect(page.locator('[data-cy="decisionTemplate-select"]')).toBeVisible();
+    await page.locator('[data-cy="decisionTemplate-select"]').selectOption({ label: 'Testmall' });
+    // MEX: template content is injected into text editor, no PDF preview
+    await expect(page.locator('[data-cy="decision-richtext-wrapper"]')).toContainText(
+      'Test content from template'
+    );
+  });
 });

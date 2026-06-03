@@ -452,6 +452,84 @@ test.describe('Errand page', () => {
     await expect(page.locator('[data-cy="contact-zipCode"]')).toHaveValue('');
   });
 
+  test('clears the organization number search field when clicking add manually button', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+    env,
+  }) => {
+    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
+      ...mockSupportErrand,
+      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+      stakeholders: [],
+      contact: [],
+      customer: [],
+    }, { method: 'GET' });
+    await page.goto('arende/KC-00000001');
+    await dismissCookieConsent();
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+
+    // Select enterprise mode
+    await page.locator('[data-cy="search-enterprise-form-PRIMARY"]').click();
+
+    // Type in search field without searching
+    await page.locator('[data-cy="contact-orgNumber-owner"]').fill(env.mockOrganizationNumber);
+
+    // Click add manually button
+    await page.locator('[data-cy="add-manually-button-owner"]').click();
+
+    // Verify modal opened and organization number is empty
+    await expect(page.locator('[data-cy="contact-organizationNumber"]')).toHaveValue('');
+
+    // Close modal
+    await page.locator('[data-cy="cancel-contact-button"]').click();
+
+    // Verify search field is cleared
+    await expect(page.locator('[data-cy="contact-orgNumber-owner"]')).toHaveValue('');
+
+    // Verify radio button still selected
+    await expect(page.locator('[data-cy="search-enterprise-form-PRIMARY"]')).toBeChecked();
+  });
+
+  test('clears the person number search field when clicking add manually button', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+    env,
+  }) => {
+    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
+      ...mockSupportErrand,
+      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+      stakeholders: [],
+      contact: [],
+      customer: [],
+    }, { method: 'GET' });
+    await page.goto('arende/KC-00000001');
+    await dismissCookieConsent();
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+
+    // Select person mode (should be default, but click to be explicit)
+    await page.locator('[data-cy="search-person-form-PRIMARY"]').click();
+
+    // Type in search field without searching
+    await page.locator('[data-cy="contact-personNumber-owner"]').fill(env.mockPersonNumber);
+
+    // Click add manually button
+    await page.locator('[data-cy="add-manually-button-owner"]').click();
+
+    // Verify modal opened and person number field is hidden (manual mode, person)
+    await expect(page.locator('[data-cy="contact-personNumber"]')).toHaveCount(0);
+
+    // Close modal
+    await page.locator('[data-cy="cancel-contact-button"]').click();
+
+    // Verify search field is cleared
+    await expect(page.locator('[data-cy="contact-personNumber-owner"]')).toHaveValue('');
+
+    // Verify radio button still selected
+    await expect(page.locator('[data-cy="search-person-form-PRIMARY"]')).toBeChecked();
+  });
+
   test('sends the correct applicant data for manually filled form, for a person', async ({
     page,
     mockRoute,
