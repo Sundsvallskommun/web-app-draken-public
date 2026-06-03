@@ -504,6 +504,11 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
   if (data.generateInvoice) {
     const feeDescription = getFeeDescription(data.type, data.leaseType);
     const yearlyNumber = Number.parseFloat((data.fees?.yearly ?? 0).toString());
+    // Index fields must be sent all-or-nothing (API rule fees.consistentIndexFields): only include
+    // them when indexation is on AND both indexYear and indexNumber are populated (> 0). Sending
+    // indexType/indexationRate alone (e.g. after fees was cleared on a type switch) is rejected.
+    const indexComplete =
+      data.indexAdjusted === 'true' && Number(data.fees?.indexYear) > 0 && Number(data.fees?.indexNumber) > 0;
     fees = {
       yearly: yearlyNumber,
       monthly: 0,
@@ -511,10 +516,12 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
       currency: 'SEK',
       // [0] = standardized fee description, [1] = optional supplementary avitext (appended below).
       additionalInformation: [feeDescription],
-      ...(data.indexAdjusted === 'true' && { indexYear: data.fees?.indexYear }),
-      ...(data.indexAdjusted === 'true' && { indexNumber: data.fees?.indexNumber }),
-      ...(data.indexAdjusted === 'true' && { indexationRate: data.fees?.indexationRate ?? 1 }),
-      ...(data.indexAdjusted === 'true' && { indexType: data.fees?.indexType ?? 'KPI 80' }),
+      ...(indexComplete && {
+        indexYear: data.fees?.indexYear,
+        indexNumber: data.fees?.indexNumber,
+        indexationRate: data.fees?.indexationRate ?? 1,
+        indexType: data.fees?.indexType ?? 'KPI 80',
+      }),
     };
     // Only include the supplementary avitext if it is non-blank (API rejects blank entries).
     const supplementaryInfo = data.fees?.additionalInformation?.[1]?.trim();

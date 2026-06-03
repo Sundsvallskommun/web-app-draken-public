@@ -159,63 +159,64 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
 
         return schema;
       }),
-      stakeholders: yup.array().when(['type', 'status', 'invoicing'], ([type, status, invoicing], schema) => {
-        const hasRole = (role: StakeholderRole) => (stakeholders: any[] | undefined) =>
-          stakeholders?.some((s) => s.roles?.includes(role)) ?? false;
+      stakeholders: yup
+        .array()
+        .when(['type', 'leaseType', 'status', 'invoicing'], ([type, leaseType, status, invoicing], schema) => {
+          const hasRole = (role: StakeholderRole) => (stakeholders: any[] | undefined) =>
+            stakeholders?.some((s) => s.roles?.includes(role)) ?? false;
 
-        // Mirrors the API rule: a billing party (Fakturamottagare) is required whenever invoicing is
-        // configured, regardless of contract status (DRAFT included).
-        const requireBillingParty = !!invoicing?.invoicedIn && !!invoicing?.invoiceInterval;
+          const requireBillingParty =
+            hasRecurringFee(type, leaseType) && !!invoicing?.invoicedIn && !!invoicing?.invoiceInterval;
 
-        if (status !== Status.ACTIVE) {
-          return requireBillingParty
-            ? schema.test(
-                'has-primary-billing-party',
-                'Fakturamottagare måste anges',
-                hasRole(StakeholderRole.PRIMARY_BILLING_PARTY)
-              )
-            : schema;
-        }
+          if (status !== Status.ACTIVE) {
+            return requireBillingParty
+              ? schema.test(
+                  'has-primary-billing-party',
+                  'Fakturamottagare måste anges',
+                  hasRole(StakeholderRole.PRIMARY_BILLING_PARTY)
+                )
+              : schema;
+          }
 
-        let baseSchema = schema.of(
-          yup.object({
-            roles: yup
-              .array()
-              .of(yup.string().oneOf(Object.keys(StakeholderRole)) as any)
-              .min(1, 'Minst en roll måste anges'),
-          })
-        );
-
-        if (requireBillingParty) {
-          baseSchema = baseSchema.test(
-            'has-primary-billing-party',
-            'Fakturamottagare måste anges',
-            hasRole(StakeholderRole.PRIMARY_BILLING_PARTY)
+          let baseSchema = schema.of(
+            yup.object({
+              roles: yup
+                .array()
+                .of(yup.string().oneOf(Object.keys(StakeholderRole)) as any)
+                .min(1, 'Minst en roll måste anges'),
+            })
           );
-        }
 
-        if (type === ContractType.PURCHASE_AGREEMENT) {
-          return baseSchema
-            .test(
-              'has-buyer-and-seller',
-              'Minst en köpare och en säljare måste anges',
-              hasRole(StakeholderRole.BUYER) && hasRole(StakeholderRole.SELLER)
-            )
-            .test('has-buyer', 'Minst en köpare måste anges', hasRole(StakeholderRole.BUYER))
-            .test('has-seller', 'Minst en säljare måste anges', hasRole(StakeholderRole.SELLER));
-        }
-        if (isLeaseAgreement(type)) {
-          return baseSchema
-            .test(
-              'has-lessor-and-lessee',
-              'Minst en upplåtare och en arrendator måste anges',
-              hasRole(StakeholderRole.LESSOR) && hasRole(StakeholderRole.LESSEE)
-            )
-            .test('has-lessor', 'Minst en upplåtare måste anges', hasRole(StakeholderRole.LESSOR))
-            .test('has-lessee', 'Minst en arrendator måste anges', hasRole(StakeholderRole.LESSEE));
-        }
-        return baseSchema.min(1, 'Minst en part måste anges');
-      }),
+          if (requireBillingParty) {
+            baseSchema = baseSchema.test(
+              'has-primary-billing-party',
+              'Fakturamottagare måste anges',
+              hasRole(StakeholderRole.PRIMARY_BILLING_PARTY)
+            );
+          }
+
+          if (type === ContractType.PURCHASE_AGREEMENT) {
+            return baseSchema
+              .test(
+                'has-buyer-and-seller',
+                'Minst en köpare och en säljare måste anges',
+                hasRole(StakeholderRole.BUYER) && hasRole(StakeholderRole.SELLER)
+              )
+              .test('has-buyer', 'Minst en köpare måste anges', hasRole(StakeholderRole.BUYER))
+              .test('has-seller', 'Minst en säljare måste anges', hasRole(StakeholderRole.SELLER));
+          }
+          if (isLeaseAgreement(type)) {
+            return baseSchema
+              .test(
+                'has-lessor-and-lessee',
+                'Minst en upplåtare och en arrendator måste anges',
+                hasRole(StakeholderRole.LESSOR) && hasRole(StakeholderRole.LESSEE)
+              )
+              .test('has-lessor', 'Minst en upplåtare måste anges', hasRole(StakeholderRole.LESSOR))
+              .test('has-lessee', 'Minst en arrendator måste anges', hasRole(StakeholderRole.LESSEE));
+          }
+          return baseSchema.min(1, 'Minst en part måste anges');
+        }),
     })
     .required();
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -357,7 +358,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
       });
   };
 
-  useEffect(() => {
+  const setErrandIdParameter = () => {
     if (errand) {
       const errandIdExtraParameter = {
         name: 'errandId',
@@ -386,6 +387,10 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           contractForm.setValue('extraParameters', newParams);
         });
     }
+  };
+
+  useEffect(() => {
+    setErrandIdParameter();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
@@ -396,6 +401,26 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     }
     contractForm.trigger('type');
   }, [contractType, contractForm]);
+
+  // API Validation differs by contract type, so we need to handle type changes
+  const handleContractTypeChange = (newType: ContractType) => {
+    if (newType === ContractType.PURCHASE_AGREEMENT) {
+      contractForm.setValue('invoicing', undefined);
+      contractForm.setValue('generateInvoice', 'false');
+    } else {
+      if (!contractForm.getValues('invoicing')) {
+        contractForm.setValue('invoicing', defaultLagenhetsarrende.invoicing);
+      }
+      if (!contractForm.getValues('notice')?.terms?.length) {
+        contractForm.setValue('notice', defaultLagenhetsarrende.notice);
+      }
+      if (!contractForm.getValues('extension')) {
+        contractForm.setValue('extension', defaultLagenhetsarrende.extension);
+      }
+      contractForm.setValue('generateInvoice', 'true');
+    }
+    contractForm.trigger(['invoicing', 'notice']);
+  };
 
   return (
     <FormProvider {...contractForm}>
@@ -427,7 +452,9 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                   <FormLabel>Välj avtalstyp</FormLabel>
                   <Select
                     data-cy="contract-type-select"
-                    {...contractForm.register('type')}
+                    {...contractForm.register('type', {
+                      onChange: (e) => handleContractTypeChange(e.target.value as ContractType),
+                    })}
                     disabled={existingContract?.status === Status.ACTIVE}
                   >
                     {contractTypes.map((t) => (
