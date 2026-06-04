@@ -81,8 +81,6 @@ const feeDescriptionByContractType: Partial<Record<ContractType, string>> = {
   [ContractType.LEASEHOLD]: 'Avgift, tomträttsavgäld',
 };
 
-// Standardized invoice fee description (additionalInformation[0]). Curated to satisfy the contract API
-// rule (each entry non-blank, max 30 chars). Source: screenshots/addinfo.png.
 export const getFeeDescription = (type: ContractType, leaseType?: LeaseType): string => {
   if (type === ContractType.LEASE_AGREEMENT && leaseType) {
     return feeDescriptionByLeaseType[leaseType] ?? 'Övrig avgift';
@@ -520,11 +518,6 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
         indexType: data.fees?.indexType ?? 'KPI 80',
       }),
     };
-    // Only include the supplementary avitext if it is non-blank (API rejects blank entries).
-    const supplementaryInfo = data.fees?.additionalInformation?.[1]?.trim();
-    if (supplementaryInfo) {
-      fees.additionalInformation?.push(supplementaryInfo);
-    }
   }
 
   // Strip personalNumber and stakeholderId from stakeholders before sending to API
@@ -582,12 +575,7 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
     indexAdjusted: hasIndexation ? 'true' : 'false',
     fees: {
       ...contract.fees,
-      additionalInformation: [
-        // [0] = standardized fee description (read-only display, regenerated from type/leaseType).
-        feeDescription,
-        // [1] = preserve the saved supplementary avitext so it round-trips back into the form on load.
-        contract.fees?.additionalInformation?.[1] ?? '',
-      ],
+      additionalInformation: [feeDescription],
     },
   };
   return lagenhetsarrende;

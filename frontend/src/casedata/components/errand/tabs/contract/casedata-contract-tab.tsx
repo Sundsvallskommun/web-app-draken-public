@@ -117,28 +117,6 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
               .required('Förskott eller efterskott måste väljas'),
           }),
       }),
-      fees: yup.object({
-        // Validates only the user-editable supplementary avitext (index 1). The auto-generated
-        // avitext (index 0) is intentionally not validated here pending the backend length decision.
-        additionalInformation: yup
-          .array()
-          .test(
-            'supplementary-non-blank',
-            'Kompletterande avitext får inte vara enbart blanksteg',
-            (additionalInformation) => {
-              const supplementary = additionalInformation?.[1];
-              return !supplementary || supplementary.trim().length > 0;
-            }
-          )
-          .test(
-            'supplementary-max-length',
-            'Kompletterande avitext får vara högst 30 tecken',
-            (additionalInformation) => {
-              const supplementary = additionalInformation?.[1];
-              return !supplementary || supplementary.trim().length <= 30;
-            }
-          ),
-      }),
       extraParameters: yup.array().when(['generateInvoice', 'status'], ([generateInvoice, status], schema) => {
         if (status !== Status.ACTIVE) return schema;
 

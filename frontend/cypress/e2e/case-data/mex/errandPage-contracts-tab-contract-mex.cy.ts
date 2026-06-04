@@ -336,7 +336,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="invoice-markup-input"]').should('exist').type('TEST markup');
 
       cy.get('[data-cy="fees-additional-information-0-input"]').should('exist');
-      cy.get('[data-cy="fees-additional-information-1-input"]').should('exist').type('Foobar');
 
       cy.get('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').should('exist').click();
       cy.get('[data-cy="avtalstid-start"]').should('exist').clear().type('2024-01-01');
@@ -356,7 +355,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           monthly: 0,
           yearly: 120,
           total: 120,
-          additionalInformation: ['Avgift, lägenhetsarrende', 'Foobar'],
+          additionalInformation: ['Avgift, lägenhetsarrende'],
         });
       });
     });
@@ -838,11 +837,6 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('[data-cy="invoice-markup-input"]').should('not.have.attr', 'readonly');
           cy.get('[data-cy="invoice-markup-input"]').clear().type('NEW-REF-456');
           cy.get('[data-cy="invoice-markup-input"]').should('have.value', 'NEW-REF-456');
-
-          // Kompletterande avitext should still be editable
-          cy.get('[data-cy="fees-additional-information-1-input"]').should('not.have.attr', 'readonly');
-          cy.get('[data-cy="fees-additional-information-1-input"]').clear().type('Extra info');
-          cy.get('[data-cy="fees-additional-information-1-input"]').should('have.value', 'Extra info');
         });
 
         it('does not allow removing parties for ACTIVE contracts but allows editing roles and adding billing party', () => {
