@@ -19,7 +19,6 @@ import './commands';
 import { mount } from 'cypress/react';
 import { GuiProvider } from '@sk-web-gui/react';
 import '@styles/tailwind.scss';
-import { AppWrapper } from '@contexts/app.context';
 
 // Augment the Cypress namespace to include type definitions for
 // your custom command.
@@ -36,11 +35,7 @@ declare global {
 Cypress.Commands.add('mount', (component, options = {}) => {
   // Wrap any parent components needed
   // ie: return mount(<MyProvider>{component}</MyProvider>, options)
-  const wrapped = (
-    <AppWrapper>
-      <GuiProvider>{component}</GuiProvider>
-    </AppWrapper>
-  );
+  const wrapped = <GuiProvider>{component}</GuiProvider>;
 
   return mount(wrapped, options);
 });

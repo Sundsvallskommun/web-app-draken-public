@@ -1,8 +1,8 @@
-import { UnifiedContractParty } from '@casedata/interfaces/contract-data';
+import { StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
 import { ContractType, StakeholderRole } from '@casedata/interfaces/contracts';
 import { Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
-import { isLeaseAgreement, prettyContractRoles } from '@casedata/services/contract-service';
+import { getContractStakeholderName, isLeaseAgreement, prettyContractRoles } from '@casedata/services/contract-service';
 import { Button, Checkbox, FormControl, FormLabel, Modal, Select } from '@sk-web-gui/react';
 import React, { useState } from 'react';
 
@@ -12,9 +12,9 @@ interface ContractPartyModalProps {
   onSave: (stakeholderId: string, roles: StakeholderRole[]) => void;
   mode: 'add' | 'edit';
   stakeholderOptions: CasedataOwnerOrContact[];
-  existingParty?: UnifiedContractParty;
+  existingParty?: StakeholderWithPersonnumber;
   contractType: ContractType;
-  existingParties?: UnifiedContractParty[];
+  existingParties?: StakeholderWithPersonnumber[];
   isDraft?: boolean;
 }
 
@@ -30,10 +30,10 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
   isDraft = true,
 }) => {
   const [selectedStakeholderId, setSelectedStakeholderId] = useState<string>(
-    mode === 'edit' && existingParty ? existingParty.stakeholderId : ''
+    mode === 'edit' && existingParty ? existingParty.stakeholderId ?? '' : ''
   );
   const [selectedRoles, setSelectedRoles] = useState<StakeholderRole[]>(
-    mode === 'edit' && existingParty ? existingParty.roles : []
+    mode === 'edit' && existingParty ? existingParty.roles ?? [] : []
   );
 
   // Get available roles based on contract type and draft status
@@ -53,7 +53,7 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
   const availableRoles = getAvailableRoles();
 
   const isBillingPartyTaken = existingParties.some(
-    (p) => p.stakeholderId !== existingParty?.stakeholderId && p.roles.includes(StakeholderRole.PRIMARY_BILLING_PARTY)
+    (p) => p !== existingParty && (p.roles ?? []).includes(StakeholderRole.PRIMARY_BILLING_PARTY)
   );
 
   const handleRoleToggle = (role: StakeholderRole) => {
@@ -66,8 +66,12 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
     });
   };
 
+  // In edit mode the parent identifies the party by index, so `selectedStakeholderId` is only required
+  // when adding a new party (to pick which errand stakeholder to add).
+  const canSave = (mode === 'edit' || !!selectedStakeholderId) && selectedRoles.length > 0;
+
   const handleSave = () => {
-    if (selectedStakeholderId && selectedRoles.length > 0) {
+    if (canSave) {
       onSave(selectedStakeholderId, selectedRoles);
       onClose();
     }
@@ -82,7 +86,7 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
   };
 
   // Helper to check if a stakeholder matches an existing party
-  const stakeholderMatchesParty = (s: CasedataOwnerOrContact, p: UnifiedContractParty): boolean => {
+  const stakeholderMatchesParty = (s: CasedataOwnerOrContact, p: StakeholderWithPersonnumber): boolean => {
     // Match by organization number for organizations
     if (s.stakeholderType === 'ORGANIZATION' && s.organizationNumber && p.organizationNumber) {
       return s.organizationNumber === p.organizationNumber;
@@ -94,7 +98,7 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
     // Fallback: match by name
     const stakeholderName =
       s.stakeholderType === 'ORGANIZATION' ? s.organizationName : `${s.firstName} ${s.lastName}`.trim();
-    return stakeholderName === p.name;
+    return stakeholderName === getContractStakeholderName(p);
   };
 
   // Filter stakeholder options for dropdown
@@ -137,7 +141,7 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
           ) : (
             <div>
               <FormLabel>Intressent</FormLabel>
-              <div className="font-bold">{existingParty?.name}</div>
+              <div className="font-bold">{existingParty ? getContractStakeholderName(existingParty) : ''}</div>
               <div className="text-sm text-gray-600">
                 {existingParty?.personalNumber || existingParty?.organizationNumber}
               </div>
@@ -172,17 +176,10 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
         <Button variant="secondary" onClick={onClose}>
           Avbryt
         </Button>
-        <Button
-          color="vattjom"
-          data-cy="party-modal-save-button"
-          disabled={!selectedStakeholderId || selectedRoles.length === 0}
-          onClick={handleSave}
-        >
+        <Button color="vattjom" data-cy="party-modal-save-button" disabled={!canSave} onClick={handleSave}>
           Lägg till
         </Button>
       </Modal.Footer>
     </Modal>
   );
 };
-
-export default ContractPartyModal;

@@ -26,7 +26,7 @@ export const AttestationValues = {
   ...AttestationDatesValues,
 };
 
-export const AttestationsFilteringComponent: FC<{
+const AttestationsFilteringComponent: FC<{
   ownerFilterHandler: (b: boolean) => void;
   ownerFilter?: boolean;
   administrators?: Admin[];

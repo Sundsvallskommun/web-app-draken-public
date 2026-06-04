@@ -129,7 +129,7 @@ export const SupportErrandComponent: FC = () => {
         setNotesCount(res);
       });
     }
-  }, [supportErrand, municipalityId]);
+  }, [supportErrand, municipalityId, setNotesCount]);
 
   const isReady = !isLoading && !!supportErrand?.id && !!supportMetadata;
 

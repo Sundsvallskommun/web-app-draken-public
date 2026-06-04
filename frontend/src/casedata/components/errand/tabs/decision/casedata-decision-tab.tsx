@@ -31,20 +31,14 @@ import {
   validateErrandForDecision,
   validateStatusForDecision,
 } from '@casedata/services/casedata-errand-service';
-import { sendDecisionMessage, sendMessage } from '@casedata/services/casedata-message-service';
-import {
-  getOwnerStakeholder,
-  validateOwnerForSendingDecision,
-  validateOwnerForSendingDecisionByEmail,
-  validateOwnerForSendingDecisionByLetter,
-} from '@casedata/services/casedata-stakeholder-service';
+import { sendDecisionMessage } from '@casedata/services/casedata-message-service';
+import { getOwnerStakeholder, validateOwnerForSendingDecision } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
 import { triggerErrandPhaseChange } from '@casedata/services/process-service';
 import TextEditor from '@common/components/dynamic-text-editor';
 import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
 import { TemplatePdfPreview } from '@common/components/template-preview/template-pdf-preview.component';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
-import { MessageClassification } from '@common/interfaces/message';
 import { Template } from '@common/interfaces/template';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
@@ -74,12 +68,9 @@ import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
 import { ServiceListComponent } from '../services/casedata-service-list.component';
 import { useErrandServices } from '../services/useErrandService';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
-
-export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
 
 export interface DecisionFormModel {
   id?: string;
@@ -167,6 +158,8 @@ export const CasedataDecisionTab: FC<{
   const [isTemplatesLoading, setIsTemplatesLoading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const templatesRequestId = useRef(0);
+  // Holds the saved template identifier to re-select once templates have been fetched on load.
+  const pendingTemplateRestore = useRef<string | null>(null);
 
   const sortedDec = useMemo(() => {
     if (!errand) return [];
@@ -304,11 +297,27 @@ export const CasedataDecisionTab: FC<{
       });
   };
 
+  // Persist the selected decision template so it can be re-selected when the page is reopened.
+  // Existing extraParameters are preserved (only relevant when updating an existing decision).
+  const withTemplateExtraParameters = (data: DecisionFormModel): DecisionFormModel => {
+    const baseExtraParameters = (data.id ? existingDecision?.extraParameters : undefined) ?? {};
+    const extraParameters: GenericExtraParameters = { ...baseExtraParameters };
+    if (selectedTemplate?.identifier) {
+      extraParameters.decisionTemplate = selectedTemplate.identifier;
+    } else {
+      delete extraParameters.decisionTemplate;
+    }
+    if (Object.keys(extraParameters).length === 0) {
+      return data;
+    }
+    return { ...data, extraParameters };
+  };
+
   const save = async (data: DecisionFormModel) => {
     if (!errand) return;
     try {
       const rendered = await renderPdf(errand, data, 'decision', services);
-      await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
+      await saveDecision(municipalityId, errand, withTemplateExtraParameters(data), 'FINAL', rendered.pdfBase64);
       setIsLoading(false);
       setError(undefined);
       props.setUnsaved(false);
@@ -350,57 +359,16 @@ export const CasedataDecisionTab: FC<{
       } as CreateStakeholderDto;
       setIsSaveAndSendLoading(true);
       const rendered = await renderPdf(errand, data, 'decision', services);
-      await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
+      await saveDecision(municipalityId, errand, withTemplateExtraParameters(data), 'FINAL', rendered.pdfBase64);
 
       const renderedHtml = await renderHtml(errand, data, 'decision');
-      const owner = getOwnerStakeholder(errand);
-      const recipientEmail = owner?.emails?.[0]?.value;
-      const contactMeans: ContactMeans = errand.externalCaseId
-        ? 'webmessage'
-        : validateOwnerForSendingDecisionByEmail(errand)
-        ? 'email'
-        : validateOwnerForSendingDecisionByLetter(errand)
-        ? 'digitalmail'
-        : false;
-      if (contactMeans === 'email' && !recipientEmail) {
-        throw new Error('Ingen e-postadress för mottagare hittades');
-      }
-      if (!contactMeans) {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendeägaren har inga godkända kontaktsätt',
-          status: 'error',
-        });
-        return;
-      }
-      const messageData: CasedataMessageTabFormModel = {
-        contactMeans,
-        messageClassification: MessageClassification.Informationsmeddelande,
-        emails: [{ value: recipientEmail }],
-        newEmail: '',
-        phoneNumbers: [],
-        newPhoneNumber: '',
-        messageAttachments: [],
-        messageBody: base64Decode(renderedHtml.htmlBase64),
-        messageBodyPlaintext: data.descriptionPlaintext,
-        attachUtredning: false,
-        existingAttachments: [],
-        addExisting: '',
-        newAttachments: [],
-        newItem: undefined,
-        headerReplyTo: '',
-        headerReferences: '',
-      };
-      if (isMEX()) {
-        await sendMessage(municipalityId, errand, messageData);
-      } else if (isPT() && municipalityId === '2260') {
-        // PT Ånge - do nothing, they handle sending themselves
-      } else if (isPT()) {
-        await sendDecisionMessage(municipalityId, errand);
-      } else {
-        throw new Error('Kontaktsätt saknas');
-      }
+      // Channel selection and sending is handled by the backend for both MEX and PT.
+      await sendDecisionMessage(
+        municipalityId,
+        errand,
+        base64Decode(renderedHtml.htmlBase64),
+        data.descriptionPlaintext
+      );
       await updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Beslutad);
       const drafts = await getDraftAssets({
         municipalityId,
@@ -530,9 +498,13 @@ export const CasedataDecisionTab: FC<{
       if (existingDecision.law && existingDecision.law.length > 0) {
         setValue('law', existingDecision.law, { shouldDirty: false });
       }
+
+      // Re-select the previously saved template once templates have loaded (see template fetch below).
+      pendingTemplateRestore.current = existingDecision.extraParameters?.decisionTemplate ?? null;
     } else {
       setValue('id', undefined, { shouldDirty: false });
       setValue('law', [], { shouldDirty: false });
+      pendingTemplateRestore.current = null;
     }
 
     void trigger();
@@ -570,6 +542,16 @@ export const CasedataDecisionTab: FC<{
         // MEX: exclude the layout template, it's used for PDF rendering only
         const filtered = isMEX() ? templates.filter((t) => t.identifier !== 'mex.decision') : templates;
         setDecisionTemplates(filtered);
+
+        // Restore the previously saved template selection (set during form init on load).
+        if (pendingTemplateRestore.current) {
+          const savedTemplate = filtered.find((t) => t.identifier === pendingTemplateRestore.current);
+          if (savedTemplate) {
+            setSelectedTemplate(savedTemplate);
+            setValue('decisionTemplate', savedTemplate.name || savedTemplate.identifier, { shouldDirty: false });
+          }
+          pendingTemplateRestore.current = null;
+        }
       })
       .catch((e) => {
         if (templatesRequestId.current !== requestId) return;
