@@ -1,4 +1,4 @@
-import { ContractData, StakeholderWithPersonnumber, UnifiedContractParty } from '@casedata/interfaces/contract-data';
+import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
 import {
   Address,
   AddressType,
@@ -585,35 +585,6 @@ export const getContractStakeholderName: (c: StakeholderWithPersonnumber) => str
   c.type === 'ASSOCIATION' || c.type === 'MUNICIPALITY' || c.type === 'ORGANIZATION'
     ? c.organizationName ?? ''
     : `${c.firstName} ${c.lastName}`;
-
-// Centralized converter: API stakeholder -> UnifiedContractParty
-let internalIdCounter = 0;
-export const contractStakeholderToUnifiedParty = (stakeholder: StakeholderWithPersonnumber): UnifiedContractParty => {
-  const name = getContractStakeholderName(stakeholder);
-  return {
-    stakeholderId: stakeholder.stakeholderId || stakeholder.partyId || `_internal-${++internalIdCounter}`,
-    name,
-    personalNumber: stakeholder.personalNumber,
-    organizationNumber: stakeholder.organizationNumber,
-    address: {
-      street: stakeholder.address?.streetAddress,
-      careOf: stakeholder.address?.careOf,
-      postalCode: stakeholder.address?.postalCode,
-      city: stakeholder.address?.town,
-    },
-    roles: stakeholder.roles || [],
-    type: stakeholder.type,
-    originalStakeholder: stakeholder,
-  };
-};
-
-// Centralized converter: UnifiedContractParty -> API stakeholder (for save)
-export const unifiedPartyToContractStakeholder = (party: UnifiedContractParty): StakeholderWithPersonnumber => {
-  return {
-    ...party.originalStakeholder,
-    roles: party.roles,
-  };
-};
 
 // Convert errand stakeholder to contract stakeholder format (for adding new parties)
 export const errandStakeholderToContractStakeholder = (
