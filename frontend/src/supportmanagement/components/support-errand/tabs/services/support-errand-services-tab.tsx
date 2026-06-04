@@ -1,8 +1,9 @@
 'use client';
 
 import { ServiceListComponent } from '@common/components/services/service-list.component';
+import { usePartyAssetServices } from '@common/hooks/use-asset-services';
 import { Badge, Button, Disclosure } from '@sk-web-gui/react';
-import { useServiceStore } from '@stores/index';
+import { useConfigStore } from '@stores/index';
 import { Eye, EyeOff } from 'lucide-react';
 import { FC, ReactNode, useMemo, useState } from 'react';
 
@@ -22,12 +23,15 @@ const renderServicesPanel = (
   return content;
 };
 
-export const SupportErrandServicesTab: FC = () => {
+export const SupportErrandServicesTab: FC<{ partyId: string }> = ({ partyId }) => {
   const [showFinished, setShowFinished] = useState(false);
 
-  const partyServices = useServiceStore((s) => s.partyServices);
-  const loading = partyServices === undefined;
-  const error = partyServices === null ? 'Det gick inte att hämta personens insatser' : null;
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const { partyServices, loading, error } = usePartyAssetServices({
+    municipalityId,
+    partyId,
+    assetTypes: KC_ASSET_TYPES,
+  });
 
   const visibleServices = useMemo(
     () => (showFinished ? partyServices : partyServices.filter((s) => s.status && ACTIVE_PARTY_STATUSES.has(s.status))),

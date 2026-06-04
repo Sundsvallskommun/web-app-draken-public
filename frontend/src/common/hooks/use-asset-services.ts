@@ -5,9 +5,9 @@ import {
   getErrandServiceAssets,
   getPartyServiceAssets,
   mapAssetsToServices,
+  Service,
 } from '@common/services/service-assets-service';
 import type { RJSFSchema } from '@rjsf/utils';
-import { useServiceStore } from '@stores/index';
 import { useCallback, useEffect, useState } from 'react';
 
 type AssetServicesArgs = {
@@ -28,7 +28,8 @@ const fetchAcrossTypes = async (
 };
 
 function useAssetServices({ municipalityId, partyId, errandId, assetTypes, schema = null, origin }: AssetServicesArgs) {
-  const { errandServices, setErrandServices, partyServices, setPartysServices } = useServiceStore();
+  const [errandServices, setErrandServices] = useState<Service[]>([]);
+  const [partyServices, setPartyServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
 
@@ -36,8 +37,11 @@ function useAssetServices({ municipalityId, partyId, errandId, assetTypes, schem
 
   const refetch = useCallback(async () => {
     if (!municipalityId || !partyId || assetTypes.length === 0) {
-      setErrandServices([]);
-      setPartysServices([]);
+      if (errandId) {
+        setErrandServices([]);
+      } else {
+        setPartyServices([]);
+      }
       setLoading(false);
       setError(undefined);
       return;
@@ -58,7 +62,7 @@ function useAssetServices({ municipalityId, partyId, errandId, assetTypes, schem
       if (errandId) {
         setErrandServices(await mapAssetsToServices(municipalityId, assets, schema ?? null));
       } else {
-        setPartysServices(await mapAssetsToServices(municipalityId, assets, schema ?? null));
+        setPartyServices(await mapAssetsToServices(municipalityId, assets, schema ?? null));
       }
     } catch (e: any) {
       setError(e?.message ?? (errandId ? 'Kunde inte hämta insatser' : 'Kunde inte hämta personens insatser'));

@@ -139,7 +139,11 @@ export const SupportTabsWrapper: FC<{
       },
       {
         label: 'Insatser',
-        content: supportErrand && <SupportErrandServicesTab />,
+        content: supportErrand && (
+          <SupportErrandServicesTab
+            partyId={supportErrand?.stakeholders?.find((s) => s.role === 'PRIMARY')?.externalId ?? ''}
+          />
+        ),
         disabled: false,
         visibleFor: appConfig.features.useServices && !!supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY'),
       },
@@ -174,9 +178,8 @@ export const SupportTabsWrapper: FC<{
   const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
-    setActiveTab(
-      tabs.filter((tab) => tab.visibleFor).findIndex((tab) => tab.visibleFor && tab.label === activeTabLabel) ?? 0
-    );
+    const index = tabs.filter((tab) => tab.visibleFor).findIndex((tab) => tab.label === activeTabLabel);
+    setActiveTab(index >= 0 ? index : 0);
   }, [activeTabLabel, tabs]);
 
   return (
@@ -189,7 +192,6 @@ export const SupportTabsWrapper: FC<{
             panelsClassName="border-t-1"
             current={activeTab}
             onTabChange={(e) => {
-              console.log('Tab changed', e);
               setActiveTabLabel(tabs.filter((tab) => tab.visibleFor)[e].label);
             }}
             size={'sm'}

@@ -8,7 +8,7 @@ import { useMemo } from 'react';
 
 import { KC_ASSET_TYPES } from '../support-errand/tabs/services/support-errand-services-tab';
 
-export const PartyAssetsSection: React.FC<{ partyId: string; name?: string }> = ({ partyId, name }) => {
+export const PartyAssetsSection: React.FC<{ partyId: string }> = ({ partyId }) => {
   const { setActiveTabLabel } = useSupportStore();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const { partyServices, loading, error } = usePartyAssetServices({
@@ -67,15 +67,6 @@ export const PartyAssetsSection: React.FC<{ partyId: string; name?: string }> = 
 
         {action()}
       </div>
-
-      {/* <PartyAssetsModal
-        assets={assets}
-        loading={loading}
-        error={error}
-        name={name ?? ''}
-        show={showModal}
-        onClose={() => setShowModal(false)}
-      /> */}
     </div>
   );
 };
