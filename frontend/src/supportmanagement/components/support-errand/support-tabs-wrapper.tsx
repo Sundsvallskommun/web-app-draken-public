@@ -158,7 +158,17 @@ export const SupportTabsWrapper: FC<{
         visibleFor: appConfig.features.useBilling,
       },
     ],
-    [appConfig.features, supportErrand]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      conversationMessageTree,
+      messageTree,
+      messages,
+      municipalityId,
+      props.setUnsavedFacility,
+      supportAttachments,
+      supportConversations,
+      supportErrand,
+    ]
   );
 
   const [activeTab, setActiveTab] = useState(0);

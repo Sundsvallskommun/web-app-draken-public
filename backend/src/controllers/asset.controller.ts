@@ -104,9 +104,7 @@ export class AssetController {
   }
 
   private async enrichWithErrandNumbers(user: RequestWithUser['user'], municipalityId: string, assets: EnrichedAsset[]): Promise<EnrichedAsset[]> {
-    const refs = assets
-      .filter(a => !!a.sourceErrandId)
-      .map(a => ({ id: a.sourceErrandId as string, namespace: a.sourceErrandNamespace }));
+    const refs = assets.filter(a => !!a.sourceErrandId).map(a => ({ id: a.sourceErrandId as string, namespace: a.sourceErrandNamespace }));
     if (refs.length === 0) return assets;
     const numbers = await fetchErrandNumbersByIds(municipalityId, refs, user);
     return assets.map(asset => ({

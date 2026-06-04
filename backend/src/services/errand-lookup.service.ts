@@ -34,11 +34,7 @@ export const fetchErrandNumberById = async (
   }
 };
 
-export const fetchErrandNumbersByIds = async (
-  municipalityId: string,
-  refs: ErrandLookupRef[],
-  user: User,
-): Promise<Map<string, string>> => {
+export const fetchErrandNumbersByIds = async (municipalityId: string, refs: ErrandLookupRef[], user: User): Promise<Map<string, string>> => {
   const uniqueByKey = new Map<string, ErrandLookupRef>();
   for (const ref of refs) {
     if (!ref?.id) continue;
