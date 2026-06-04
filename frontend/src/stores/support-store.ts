@@ -1,6 +1,5 @@
 import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
-import { Service } from '@common/services/service-assets-service';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   SupportErrand,
@@ -16,7 +15,6 @@ interface SupportState {
   stakeholderContacts: SupportStakeholderFormModel[];
   stakeholderCustomers: SupportStakeholderFormModel[];
   notifications: (SupportNotification | CaseDataNotification)[];
-  services: Service[];
   activeTabLabel?: string;
 }
 
@@ -27,7 +25,6 @@ interface SupportActions {
   setStakeholderContacts: (contacts: SupportStakeholderFormModel[]) => void;
   setStakeholderCustomers: (customers: SupportStakeholderFormModel[]) => void;
   setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) => void;
-  setServices: (services: Service[]) => void;
   setActiveTabLabel: (activeTabLabel: string) => void;
   reset: () => void;
 }
@@ -41,7 +38,6 @@ const initialState: SupportState = {
   stakeholderContacts: [],
   stakeholderCustomers: [],
   notifications: [],
-  services: [],
   activeTabLabel: 'Grundinformation',
 };
 
@@ -53,7 +49,6 @@ export const useSupportStore = create<SupportStore>((set) => ({
   setStakeholderContacts: (stakeholderContacts) => set({ stakeholderContacts }),
   setStakeholderCustomers: (stakeholderCustomers) => set({ stakeholderCustomers }),
   setNotifications: (notifications) => set({ notifications }),
-  setServices: (services) => set({ services }),
   setActiveTabLabel: (activeTabLabel) => set({ activeTabLabel }),
   reset: () => set(initialState),
 }));

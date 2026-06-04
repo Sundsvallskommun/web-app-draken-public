@@ -40,7 +40,7 @@ export const SupportTabsWrapper: FC<{
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
-  const { activeTabLabel, setActiveTabLabel, services } = useSupportStore();
+  const { activeTabLabel, setActiveTabLabel } = useSupportStore();
 
   useEffect(() => {
     if (methods?.getValues as unknown) {
@@ -183,8 +183,6 @@ export const SupportTabsWrapper: FC<{
     <>
       <div className="mb-xl">
         <WarnIfUnsavedChanges showWarning={unsavedChanges}>
-          <span>active tab label: {activeTabLabel} </span>
-          <span>{activeTab}</span>
           <Tabs
             className="border-1 rounded-12 bg-background-content pt-22 pl-5"
             tabslistClassName="border-0 border-red-500 -m-b-12 flex-wrap ml-10"

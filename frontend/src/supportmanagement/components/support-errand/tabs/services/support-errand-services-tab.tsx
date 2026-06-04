@@ -2,7 +2,7 @@
 
 import { ServiceListComponent } from '@common/components/services/service-list.component';
 import { Badge, Button, Disclosure } from '@sk-web-gui/react';
-import { useSupportStore } from '@stores/index';
+import { useServiceStore } from '@stores/index';
 import { Eye, EyeOff } from 'lucide-react';
 import { FC, ReactNode, useMemo, useState } from 'react';
 
@@ -25,7 +25,7 @@ const renderServicesPanel = (
 export const SupportErrandServicesTab: FC = () => {
   const [showFinished, setShowFinished] = useState(false);
 
-  const partyServices = useSupportStore((s) => s.services);
+  const partyServices = useServiceStore((s) => s.partyServices);
   const loading = partyServices === undefined;
   const error = partyServices === null ? 'Det gick inte att hämta personens insatser' : null;
 

@@ -11,18 +11,17 @@ import { KC_ASSET_TYPES } from '../support-errand/tabs/services/support-errand-s
 export const PartyAssetsSection: React.FC<{ partyId: string; name?: string }> = ({ partyId, name }) => {
   const { setActiveTabLabel } = useSupportStore();
   const municipalityId = useConfigStore((s) => s.municipalityId);
-  const {
-    services: assets,
-    loading,
-    error,
-  } = usePartyAssetServices({
+  const { partyServices, loading, error } = usePartyAssetServices({
     municipalityId,
     partyId,
     assetTypes: KC_ASSET_TYPES,
   });
 
-  const total = useMemo(() => assets?.length || 0, [assets]);
-  const activeCount = useMemo(() => assets?.filter((asset) => asset.status === 'ACTIVE')?.length || 0, [assets]);
+  const total = useMemo(() => partyServices?.length || 0, [partyServices]);
+  const activeCount = useMemo(
+    () => partyServices?.filter((asset) => asset.status === 'ACTIVE')?.length || 0,
+    [partyServices]
+  );
 
   const action = () => {
     if (loading) {

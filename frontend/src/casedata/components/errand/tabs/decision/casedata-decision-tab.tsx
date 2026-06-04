@@ -195,7 +195,7 @@ export const CasedataDecisionTab: FC<{
 
   // Template fetching is driven by outcome selection — see useEffect below after watch()
 
-  const { services: allServices, refetch: refetchServices } = useErrandAssetServices({
+  const { errandServices: allServices, refetch: refetchServices } = useErrandAssetServices({
     municipalityId,
     partyId: hasFtServices ? ownerPartyId ?? '' : '',
     errandId: hasFtServices ? String(errand?.id ?? '') : '',

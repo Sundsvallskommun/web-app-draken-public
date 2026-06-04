@@ -115,7 +115,7 @@ export const CasedataServicesTab: FC = () => {
     })();
   }, [municipalityId, assetType]);
 
-  const { services, loading, error, refetch } = useErrandAssetServices({
+  const { errandServices, loading, error, refetch } = useErrandAssetServices({
     municipalityId,
     partyId,
     errandId,
@@ -128,12 +128,12 @@ export const CasedataServicesTab: FC = () => {
     refetch();
   }, [errandStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const errandCasedataServices = useMemo(() => services.filter((s) => s.origin === 'CASEDATA'), [services]);
+  const errandCasedataServices = useMemo(() => errandServices.filter((s) => s.origin === 'CASEDATA'), [errandServices]);
   const errandCasedataIds = useMemo(() => errandCasedataServices.map((s) => s.id), [errandCasedataServices]);
   const [showFinishedPartyServices, setShowFinishedPartyServices] = useState(false);
   const ACTIVE_PARTY_STATUSES = useMemo(() => new Set(['ACTIVE', 'TEMPORARY']), []);
   const {
-    services: partyServices,
+    partyServices,
     loading: partyLoading,
     error: partyError,
   } = usePartyAssetServices({
