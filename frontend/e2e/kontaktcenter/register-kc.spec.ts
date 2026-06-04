@@ -18,6 +18,9 @@ import { mockRelations } from '../lop/fixtures/mockRelations';
 
 test.describe('register page', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
+    await page.context().addCookies([
+      { name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' },
+    ]);
     await mockRoute('**/administrators', mockAdmins, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
@@ -43,9 +46,11 @@ test.describe('register page', () => {
     await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, {
       method: 'GET',
     });
-    await page.goto('registrera');
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('newerrand') && resp.status() === 200),
+      page.goto('registrera'),
+    ]);
     await dismissCookieConsent();
-    await page.waitForResponse((resp) => resp.url().includes('newerrand') && resp.status() === 200);
   });
 
   test('displays the support errand part of the register form', async ({ page }) => {
@@ -79,7 +84,8 @@ test.describe('register page', () => {
     const typ = cat.types[0];
     await page.locator('[data-cy="category-input"]').selectOption(cat.displayName);
     await page.locator('[data-cy="type-input"]').selectOption(typ.displayName);
-    await page.locator('[data-cy="errand-description-richtext-wrapper"]').type('Mock description');
+    await page.locator('[data-cy="errand-description-richtext-wrapper"]').click();
+    await page.keyboard.type('Mock description');
 
     const [request] = await Promise.all([
       page.waitForRequest(
@@ -121,7 +127,8 @@ test.describe('register page', () => {
     const typ = cat.types[2];
     await page.locator('[data-cy="category-input"]').selectOption(cat.displayName);
     await page.locator('[data-cy="type-input"]').selectOption(typ.displayName);
-    await page.locator('[data-cy="errand-description-richtext-wrapper"]').type('Mock description');
+    await page.locator('[data-cy="errand-description-richtext-wrapper"]').click();
+    await page.keyboard.type('Mock description');
     await page.locator('[data-cy="contactReason-input"]').selectOption('E-tjänst saknas');
     await page.locator('[data-cy="show-contactReasonDescription-input"]').check({ force: true });
     await page.locator('[data-cy="contactReasonDescription-input"]').fill('Mock contact reason description');

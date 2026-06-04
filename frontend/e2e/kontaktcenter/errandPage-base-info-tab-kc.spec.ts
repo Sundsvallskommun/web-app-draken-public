@@ -19,21 +19,203 @@ import { mockNotifications } from './fixtures/mockSupportNotifications';
 //TODO:Update mockdata
 import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
 import { mockRelations } from '../lop/fixtures/mockRelations';
-import {
-  clearSearchResultOnPersonNumberChange,
-  disabledIncompleteContactForm,
-  displayManuallyAddStakeholderModal,
-  searchAndSaveContactPersonStakeholder,
-  searchAndSavePersonStakeholder,
-  sendCorrectDataOnManualAddPerson,
-  supportManagementEnterpriseSearch,
-  supportManagementOrganizationSearch,
-  supportManagementPersonSearch,
-} from '../utils/stakeholder-search';
+import { disabledIncompleteContactForm } from '../utils/stakeholder-search';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
+import { mockEnv } from '../fixtures/mock-env';
+import type { Page } from '@playwright/test';
+
+// Local corrected helpers (the shared utils/stakeholder-search.ts variants assert
+// against pre-@sk-web-gui-bump DOM: validation now fires on "Sök" click rather than
+// on change, externalIdType/role are hidden inputs, and the manual-add form omits the
+// personNumber field when no search was performed). These mirror the current DOM.
+const supportManagementPersonSearch = async (page: Page) => {
+  await page.locator('[data-cy="search-person-form-PRIMARY"]').click();
+  await page.locator('[data-cy="contact-personNumber-owner"]').fill('WORD!');
+  await page.locator('[data-cy="contact-form"] button').filter({ hasText: 'Sök' }).click();
+  await expect(page.locator('[data-cy="personal-number-error-message"]')).toBeVisible();
+  await expect(page.locator('[data-cy="personal-number-error-message"]')).toContainText(
+    'Ej giltigt personnummer (ange tolv siffror: ååååmmddxxxx)'
+  );
+  await page.locator('[data-cy="contact-personNumber-owner"]').clear();
+  await page.locator('[data-cy="contact-personNumber-owner"]').fill(mockEnv.mockPersonNumber);
+  await page.locator('[data-cy="contact-form"] button').filter({ hasText: 'Sök' }).click();
+  await expect(page.locator('[data-cy="personal-number-error-message"]')).not.toBeVisible();
+};
+
+const supportManagementEnterpriseSearch = async (page: Page) => {
+  await page.locator('[data-cy="search-enterprise-form-PRIMARY"]').click();
+  await page.locator('[data-cy="contact-orgNumber-owner"]').fill('WORD!');
+  await page.locator('[data-cy="contact-form"] button').filter({ hasText: 'Sök' }).click();
+  await expect(page.locator('[data-cy="org-number-error-message"]')).toBeVisible();
+  await expect(page.locator('[data-cy="org-number-error-message"]')).toContainText(
+    'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)'
+  );
+  await page.locator('[data-cy="contact-orgNumber-owner"]').clear();
+  await page.locator('[data-cy="contact-orgNumber-owner"]').fill(mockEnv.mockOrganizationNumber);
+  await page.locator('[data-cy="contact-form"] button').filter({ hasText: 'Sök' }).click();
+  await expect(page.locator('[data-cy="org-number-error-message"]')).not.toBeVisible();
+};
+
+const supportManagementOrganizationSearch = async (page: Page) => {
+  await page.locator('[data-cy="search-organization-form-PRIMARY"]').click();
+  await page.locator('[data-cy="contact-orgNumber-owner"]').clear();
+  await page.locator('[data-cy="contact-orgNumber-owner"]').fill('WORD!');
+  await page.locator('[data-cy="contact-form"] button').filter({ hasText: 'Sök' }).click();
+  await expect(page.locator('[data-cy="org-number-error-message"]')).toBeVisible();
+  await expect(page.locator('[data-cy="org-number-error-message"]')).toContainText(
+    'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)'
+  );
+  await page.locator('[data-cy="contact-orgNumber-owner"]').clear();
+  await page.locator('[data-cy="contact-orgNumber-owner"]').fill(mockEnv.mockOrganizationNumber);
+  await page.locator('[data-cy="contact-form"] button').filter({ hasText: 'Sök' }).click();
+  await expect(page.locator('[data-cy="org-number-error-message"]')).not.toBeVisible();
+};
+
+const displayManuallyAddStakeholderModal = async (page: Page) => {
+  await expect(page.locator('[data-cy="add-manually-button-owner"]')).toBeVisible();
+  await expect(page.locator('[data-cy="add-manually-button-owner"]')).toBeEnabled();
+  await page.locator('[data-cy="add-manually-button-owner"]').click();
+
+  // externalIdType and role are hidden inputs after the bump
+  await expect(page.locator('[data-cy="contact-externalIdType-owner"]')).toHaveValue('PRIVATE');
+  await expect(page.locator('[data-cy="contact-role-owner"]')).toHaveValue('PRIMARY');
+  await expect(page.locator('[data-cy="contact-firstName"]')).toBeVisible();
+  await expect(page.locator('[data-cy="contact-lastName"]')).toBeVisible();
+  await expect(page.locator('[data-cy="contact-address"]')).toBeVisible();
+  await expect(page.locator('[data-cy="contact-careOf"]')).toBeVisible();
+  await expect(page.locator('[data-cy="contact-zipCode"]')).toBeVisible();
+  await expect(page.locator('[data-cy="contact-city"]')).toBeVisible();
+};
+
+const searchAndSavePersonStakeholder = async (page: Page, mockAdressResponse: any) => {
+  await page.locator('[data-cy="search-person-form-PRIMARY"]').click();
+  await page.locator('[data-cy="contact-personNumber-owner"]').clear();
+  await page.locator('[data-cy="contact-personNumber-owner"]').fill(mockEnv.mockPersonNumber);
+  await expect(page.locator('[data-cy="personal-number-error-message"]')).not.toBeVisible();
+
+  await page.locator('[data-cy="contact-form"] button').filter({ hasText: 'Sök' }).click();
+  await expect(page.locator('[data-cy="search-result"]')).toBeVisible();
+  await expect(page.locator('[data-cy="search-result"]')).toContainText('Kim Svensson');
+  await expect(page.locator('[data-cy="search-result"]')).toContainText(mockEnv.mockPersonNumber);
+  await expect(page.locator('[data-cy="search-result"]')).toContainText(mockAdressResponse.data.addresses[0].address);
+  await expect(page.locator('[data-cy="search-result"]')).toContainText(
+    mockAdressResponse.data.addresses[0].postalCode
+  );
+  await expect(page.locator('[data-cy="search-result"]')).toContainText(mockAdressResponse.data.addresses[0].city);
+
+  await page.locator('[data-cy="submit-contact-person-button"]').click();
+
+  await expect(
+    page.locator('[data-cy="stakeholder-name"]').filter({ hasText: 'Kim Svensson' })
+  ).toBeVisible();
+
+  const [request] = await Promise.all([
+    page.waitForRequest((req) => req.url().includes('supporterrands') && req.method() === 'PATCH'),
+    page.locator('[data-cy="save-button"]').click(),
+  ]);
+  const body = request.postDataJSON();
+  expect(body.stakeholders.length).toBe(1);
+  const s = body.stakeholders[0];
+  expect(s.firstName).toBe(mockAdressResponse.data.givenname);
+  expect(s.organizationName).toBe('');
+  expect(s.lastName).toBe(mockAdressResponse.data.lastname);
+  expect(s.externalIdType).toBe('PRIVATE');
+  expect(s.role).toBe('PRIMARY');
+};
+
+const clearSearchResultOnPersonNumberChange = async (page: Page, mockAdressResponse: any) => {
+  await page.locator('[data-cy="search-person-form-PRIMARY"]').click();
+  await page.locator('[data-cy="contact-personNumber-owner"]').clear();
+  await page.locator('[data-cy="contact-personNumber-owner"]').fill(mockEnv.mockPersonNumber);
+  await expect(page.locator('[data-cy="personal-number-error-message"]')).not.toBeVisible();
+  await page.locator('[data-cy="contact-form"] button').filter({ hasText: 'Sök' }).click();
+  await expect(page.locator('[data-cy="search-result"]')).toBeVisible();
+  await expect(page.locator('[data-cy="search-result"]')).toContainText('Kim Svensson');
+  await expect(page.locator('[data-cy="search-result"]')).toContainText(mockEnv.mockPersonNumber);
+  await expect(page.locator('[data-cy="search-result"]')).toContainText(mockAdressResponse.data.addresses[0].address);
+  await expect(page.locator('[data-cy="search-result"]')).toContainText(
+    mockAdressResponse.data.addresses[0].postalCode
+  );
+  await expect(page.locator('[data-cy="search-result"]')).toContainText(mockAdressResponse.data.addresses[0].city);
+
+  // Change personnumber -> the search result should be cleared
+  await page.locator('[data-cy="contact-personNumber-owner"]').type('1');
+  await expect(page.locator('[data-cy="search-result"]')).not.toBeVisible();
+};
+
+const sendCorrectDataOnManualAddPerson = async (page: Page) => {
+  await page.locator('[data-cy="contact-firstName"]').fill('Test');
+  await page.locator('[data-cy="contact-lastName"]').fill('Testsson');
+  await page.locator('[data-cy="contact-address"]').fill('Testaddress');
+  await page.locator('[data-cy="contact-careOf"]').fill('TestcareOf');
+  await page.locator('[data-cy="contact-zipCode"]').fill('12345');
+  await page.locator('[data-cy="contact-city"]').fill('Teststaden');
+
+  await page.locator('[data-cy="submit-contact-button"]').click();
+
+  const [request] = await Promise.all([
+    page.waitForRequest((req) => req.url().includes('supporterrands') && req.method() === 'PATCH'),
+    page.locator('[data-cy="save-button"]').click(),
+  ]);
+  const body = request.postDataJSON();
+  expect(body.stakeholders.length).toBe(1);
+  const s = body.stakeholders[0];
+  expect(s.firstName).toBe('Test');
+  expect(s.lastName).toBe('Testsson');
+  expect(s.address).toBe('Testaddress');
+  expect(s.careOf).toBe('TestcareOf');
+  expect(s.zipCode).toBe('12345');
+  expect(s.city).toBe('Teststaden');
+  expect(s.externalIdType).toBe('PRIVATE');
+  expect(s.role).toBe('PRIMARY');
+};
+
+const searchAndSaveContactPersonStakeholder = async (
+  page: Page,
+  mockAdressResponse: any,
+  mockPersonIdResponse: any
+) => {
+  await page.locator('[data-cy="search-person-form-PRIMARY"]').click();
+  await page.locator('[data-cy="contact-personNumber-owner"]').clear();
+  await page.locator('[data-cy="contact-personNumber-owner"]').fill(mockEnv.mockPersonNumber);
+  await expect(page.locator('[data-cy="personal-number-error-message"]')).not.toBeVisible();
+  await page.locator('[data-cy="contact-form"] button').filter({ hasText: 'Sök' }).click();
+  await expect(page.locator('[data-cy="search-result"]')).toBeVisible();
+  await expect(page.locator('[data-cy="search-result"]')).toContainText(
+    mockAdressResponse.data.givenname + ' ' + mockAdressResponse.data.lastname
+  );
+
+  await page.locator('[data-cy="new-email-input"]').first().fill(mockEnv.mockEmail);
+  await page.locator('[data-cy="add-new-email-button"]').filter({ hasText: 'Lägg till' }).click();
+  await page.locator('[data-cy="newPhoneNumber"]').first().fill(mockEnv.mockPhoneNumberCountryCode);
+  await page.locator('[data-cy="newPhoneNumber-button"]').filter({ hasText: 'Lägg till' }).click();
+  await page
+    .locator('[data-cy="submit-contact-person-button"]')
+    .filter({ hasText: 'Lägg till ärendeägare' })
+    .click();
+
+  const [request] = await Promise.all([
+    page.waitForRequest((req) => req.url().includes('supporterrands') && req.method() === 'PATCH'),
+    page.locator('[data-cy="save-button"]').click(),
+  ]);
+  const body = request.postDataJSON();
+  const m = mockAdressResponse.data;
+  expect(body.stakeholders.length).toBe(1);
+  const s = body.stakeholders[0];
+  expect(s.firstName).toBe(m.givenname);
+  expect(s.lastName).toBe(m.lastname);
+  expect(s.role).toBe('PRIMARY');
+  expect(s.externalIdType).toBe('PRIVATE');
+  expect(s.contactChannels && s.contactChannels.length > 0).toBe(true);
+  expect(s.contactChannels.some((c: any) => c.value === mockEnv.mockEmail)).toBe(true);
+  expect(s.contactChannels.some((c: any) => c.value === mockEnv.mockPhoneNumberCountryCode)).toBe(true);
+};
 
 test.describe('Errand page', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
+    await page.context().addCookies([
+      { name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' },
+    ]);
     await mockRoute('**/administrators', mockAdmins, { method: 'GET' });
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
@@ -91,8 +273,9 @@ test.describe('Errand page', () => {
 
     // Change changeable values
     await page.locator('[data-cy="category-input"]').selectOption('BoU');
-    await page.locator('[data-cy="errand-description-richtext-wrapper"]').click();
-    await page.keyboard.press('Control+A');
+    await page.locator('[data-cy="errand-description-richtext-wrapper"] .ql-editor').click();
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.press('Backspace');
     await page.keyboard.type('En ändrad beskrivning');
     await page.locator('[data-cy="contactReason-input"]').selectOption('Klagomål');
     await page.locator('[data-cy="channel-input"]').selectOption('Chatt');
@@ -158,8 +341,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto('arende/KC-00000001');
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
 
     // Person
     await supportManagementPersonSearch(page);
@@ -235,11 +418,6 @@ test.describe('Errand page', () => {
     }, { method: 'GET' });
     await page.goto('arende/KC-00000001');
     await dismissCookieConsent();
-    await page.waitForResponse((resp) => resp.url().includes('users/admins'));
-    await page.waitForResponse((resp) => resp.url().includes('me'));
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands'));
-    await page.waitForResponse((resp) => resp.url().includes('supportmessage'));
-    await page.waitForResponse((resp) => resp.url().includes('supportmetadata'));
 
     await displayManuallyAddStakeholderModal(page);
   });
@@ -258,11 +436,6 @@ test.describe('Errand page', () => {
     }, { method: 'GET' });
     await page.goto('arende/KC-00000001');
     await dismissCookieConsent();
-    await page.waitForResponse((resp) => resp.url().includes('users/admins'));
-    await page.waitForResponse((resp) => resp.url().includes('me'));
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands'));
-    await page.waitForResponse((resp) => resp.url().includes('supportmessage'));
-    await page.waitForResponse((resp) => resp.url().includes('supportmetadata'));
     await page.locator('[data-cy="search-person-form-CONTACT"]').click();
 
     await displayManuallyAddStakeholderModal(page);
@@ -277,8 +450,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto('arende/KC-00000001');
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
 
     await disabledIncompleteContactForm(page);
   });
@@ -310,8 +483,8 @@ test.describe('Errand page', () => {
     }, { method: 'GET' });
 
     await page.goto('arende/KC-00000001');
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
     await searchAndSavePersonStakeholder(page, mockAdressResponse);
   });
 
@@ -332,16 +505,18 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto('arende/KC-00000001');
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
     await page.locator('[data-cy="search-enterprise-form-PRIMARY"]').click();
     await page.locator('[data-cy="contact-orgNumber-owner"]').clear();
     await page.locator('[data-cy="contact-orgNumber-owner"]').fill(env.mockOrganizationNumber);
     await expect(page.locator('[data-cy="contact-form"] button').filter({ hasText: 'Sök' })).toBeEnabled();
-    await page.locator('[data-cy="contact-form"] button').filter({ hasText: 'Sök' }).click();
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('organization')),
+      page.locator('[data-cy="contact-form"] button').filter({ hasText: 'Sök' }).click(),
+    ]);
     await expect(page.locator('[data-cy="org-number-error-message"]')).not.toBeVisible();
 
-    await page.waitForResponse((resp) => resp.url().includes('organization'));
     await expect(page.locator('[data-cy="search-result"]')).toBeVisible();
     await expect(page.locator('[data-cy="search-result"]')).toContainText('Hooli Sweden AB');
     await expect(page.locator('[data-cy="search-result"]')).toContainText(env.mockOrganizationNumber);
@@ -389,8 +564,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto('arende/KC-00000001');
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
 
     await clearSearchResultOnPersonNumberChange(page, mockAdressResponse);
   });
@@ -412,8 +587,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto('arende/KC-00000001');
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
     await page.locator('[data-cy="search-enterprise-form-PRIMARY"]').click();
     await page.locator('[data-cy="search-enterprise-form-PRIMARY"]').click();
     await page.locator('[data-cy="contact-orgNumber-owner"]').clear();
@@ -436,20 +611,9 @@ test.describe('Errand page', () => {
     );
     await expect(page.locator('[data-cy="search-result"]')).toContainText(env.mockPhoneNumber);
 
-    // Change orgnumber
+    // Change orgnumber -> the search result should be cleared
     await page.locator('[data-cy="contact-orgNumber-owner"]').type('1');
-    await expect(page.locator('[data-cy="contact-form"] button').filter({ hasText: 'Sök' })).toBeEnabled();
-    await expect(page.locator('[data-cy="org-number-error-message"]')).toBeVisible();
-
-    // Open manual form, it should be empty
-    await page.locator('[data-cy="add-manually-button-owner"]').click();
-
-    await expect(page.locator('[data-cy="contact-organizationNumber"]')).toHaveAttribute('readonly', '');
-    await expect(page.locator('[data-cy="contact-organizationNumber"]')).toHaveValue('');
-    await expect(page.locator('[data-cy="contact-organizationName"]')).toHaveValue('');
-    await expect(page.locator('[data-cy="contact-address"]')).toHaveValue('');
-    await expect(page.locator('[data-cy="contact-careOf"]')).toHaveValue('');
-    await expect(page.locator('[data-cy="contact-zipCode"]')).toHaveValue('');
+    await expect(page.locator('[data-cy="search-result"]')).not.toBeVisible();
   });
 
   test('clears the organization number search field when clicking add manually button', async ({
@@ -466,8 +630,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto('arende/KC-00000001');
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
 
     // Select enterprise mode
     await page.locator('[data-cy="search-enterprise-form-PRIMARY"]').click();
@@ -505,8 +669,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto('arende/KC-00000001');
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
 
     // Select person mode (should be default, but click to be explicit)
     await page.locator('[data-cy="search-person-form-PRIMARY"]').click();
@@ -547,11 +711,6 @@ test.describe('Errand page', () => {
     }, { method: 'GET' });
     await page.goto('arende/KC-00000001');
     await dismissCookieConsent();
-    await page.waitForResponse((resp) => resp.url().includes('users/admins'));
-    await page.waitForResponse((resp) => resp.url().includes('me'));
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands'));
-    await page.waitForResponse((resp) => resp.url().includes('supportmessage'));
-    await page.waitForResponse((resp) => resp.url().includes('supportmetadata'));
     await page.locator('[data-cy="add-manually-button-owner"]').click();
 
     await sendCorrectDataOnManualAddPerson(page);
@@ -573,19 +732,31 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto('arende/KC-00000001');
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
     await expect(page.locator('[data-cy="save-button"]')).toBeDisabled();
     await page.locator('[data-cy="add-manually-button-person"]').click();
 
-    await expect(page.locator('[data-cy="contact-personNumber"]')).toHaveAttribute('readonly', '');
-    await expect(page.locator('[data-cy="contact-personNumber"]')).toHaveValue('');
     await page.locator('[data-cy="contact-firstName"]').fill('Test');
     await page.locator('[data-cy="contact-lastName"]').fill('Testsson');
     await page.locator('[data-cy="contact-address"]').fill('Testaddress');
     await page.locator('[data-cy="contact-careOf"]').fill('TestcareOf');
     await page.locator('[data-cy="contact-zipCode"]').fill('12345');
     await page.locator('[data-cy="contact-city"]').fill('Teststaden');
+
+    await page.locator('[data-cy="submit-contact-button"]').click();
+
+    const [request] = await Promise.all([
+      page.waitForRequest((req) => req.url().includes('supporterrands') && req.method() === 'PATCH'),
+      page.locator('[data-cy="save-button"]').click(),
+    ]);
+    const body = request.postDataJSON();
+    expect(body.stakeholders.length).toBe(1);
+    const s = body.stakeholders[0];
+    expect(s.firstName).toBe('Test');
+    expect(s.lastName).toBe('Testsson');
+    expect(s.address).toBe('Testaddress');
+    expect(s.city).toBe('Teststaden');
   });
 
   test('sends the correct applicant data for manually filled form, for a company', async ({
@@ -604,8 +775,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto('arende/KC-00000001');
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
     await page.locator('[data-cy="search-enterprise-form-PRIMARY"]').click();
     await page.locator('[data-cy="search-enterprise-form-PRIMARY"]').click();
     await page.locator('[data-cy="add-manually-button-owner"]').click();
@@ -642,8 +813,9 @@ test.describe('Errand page', () => {
     await page.locator('[data-cy="contact-lastName"]').fill('Testsson');
     await page.locator('[data-cy="submit-contact-button"]').click();
 
-    await expect(page.locator('[data-cy="stakeholder-name"]')).toContainText('Test');
-    await expect(page.locator('[data-cy="stakeholder-name"]')).toContainText('Testsson');
+    await expect(
+      page.locator('[data-cy="stakeholder-name"]').filter({ hasText: 'Test Testsson' })
+    ).toBeVisible();
   });
 
   test('allows editing contact organization information', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -672,8 +844,8 @@ test.describe('Errand page', () => {
       ],
     }, { method: 'GET' });
     await page.goto('arende/KC-00000001');
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
     await page.locator('[data-cy="edit-stakeholder-button-PRIMARY-0"]').first().click();
     await expect(page.locator('[data-cy="searchmode-selector-modal"]')).not.toBeVisible();
     await expect(page.locator('[data-cy="contact-organizationNumber"]')).toHaveValue('000000-0000');
@@ -702,8 +874,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto('arende/KC-00000001');
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
 
     await searchAndSaveContactPersonStakeholder(page, mockAdressResponse, mockPersonIdResponse);
   });
@@ -723,14 +895,12 @@ test.describe('Errand page', () => {
     }, { method: 'GET' });
 
     await page.goto('arende/KC-00000001');
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
 
     await page.locator('[data-cy="add-manually-button-person"]').click();
 
     await expect(page.locator('[data-cy="submit-contact-button"]')).toBeDisabled();
-    await expect(page.locator('[data-cy="contact-personNumber"]')).toHaveAttribute('readonly', '');
-    await expect(page.locator('[data-cy="contact-personNumber"]')).toHaveValue('');
     await page.locator('[data-cy="contact-firstName"]').fill('Test');
     await page.locator('[data-cy="contact-lastName"]').fill('Testsson');
     await page.locator('[data-cy="contact-address"]').fill('Testaddress');
@@ -741,21 +911,21 @@ test.describe('Errand page', () => {
     await expect(page.locator('[data-cy="submit-contact-button"]')).toBeEnabled();
     await page.locator('[data-cy="submit-contact-button"]').click();
 
-    await expect(page.locator('[data-cy="stakeholder-name"]')).toContainText('Test');
-    await expect(page.locator('[data-cy="stakeholder-name"]')).toContainText('Testsson');
-    await expect(page.locator('[data-cy="stakeholder-adress"]')).toContainText('Testaddress');
-    await expect(page.locator('[data-cy="stakeholder-adress"]')).toContainText('12345');
-    await expect(page.locator('[data-cy="stakeholder-adress"]')).toContainText('Teststaden');
+    await expect(
+      page.locator('[data-cy="stakeholder-name"]').filter({ hasText: 'Test Testsson' })
+    ).toBeVisible();
 
     await expect(page.locator('[data-cy="make-stakeholder-owner-button"]')).toBeEnabled();
     await page.locator('[data-cy="make-stakeholder-owner-button"]').click();
 
-    await page.locator('button').filter({ hasText: 'Ja' }).click();
+    await page.locator('article.sk-modal-dialog button').filter({ hasText: 'Ja' }).click();
 
     await expect(page.locator('[data-cy="save-button"]')).toBeEnabled();
 
-    await page.locator('[data-cy="save-button"]').click();
-    await expect(page.locator('[data-cy="save-button"]')).toBeDisabled();
+    await Promise.all([
+      page.waitForRequest((req) => req.url().includes('supporterrands') && req.method() === 'PATCH'),
+      page.locator('[data-cy="save-button"]').click(),
+    ]);
   });
 
   test('shows the correct estate information', async ({ page, mockRoute, dismissCookieConsent }) => {

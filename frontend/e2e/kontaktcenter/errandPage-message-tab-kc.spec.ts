@@ -12,11 +12,13 @@ import {
 //TODO:Update mockdata
 import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
 import { mockRelations } from '../lop/fixtures/mockRelations';
-import { goToMessageTab, sendEmailWithAttachment, sendSmsMessage } from '../utils/messages';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
 
 test.describe('Message tab', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
+    await page.context().addCookies([
+      { name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' },
+    ]);
     await mockRoute('**/administrators', mockAdmins, { method: 'GET' });
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
@@ -45,7 +47,10 @@ test.describe('Message tab', () => {
     await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, {
       method: 'GET',
     });
-    await goToMessageTab(page);
+    await page.goto('arende/KC-00000001');
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await page.locator('.sk-cookie-consent-btn-wrapper').getByText('Godkänn alla').click();
+    await page.getByRole('tab', { name: /Meddelanden/ }).click();
   });
 
   test('views messages in inbox', async ({ page, mockRoute }) => {
@@ -81,10 +86,61 @@ test.describe('Message tab', () => {
   });
 
   test('sends sms', async ({ page }) => {
-    await sendSmsMessage(page);
+    await page.locator('[data-cy="new-message-button"]').click();
+
+    await expect(page.locator('[data-cy="message-channel-radio-button-group"]')).toBeVisible();
+    await expect(page.locator('[data-cy="useEmail-radiobutton-true"]')).toBeVisible();
+    await page.locator('[data-cy="useSms-radiobutton-true"]').check({ force: true });
+
+    await page.locator('[data-cy="decision-richtext-wrapper"]').first().click();
+    await page.keyboard.type('Mock message');
+
+    await page.locator('[data-cy="newPhoneNumber"]').first().clear();
+    await page.locator('[data-cy="newPhoneNumber"]').first().type('+46701740635', { delay: 100 });
+    await page.locator('[data-cy="newPhoneNumber-button"]').first().click({ force: true });
+
+    const [request] = await Promise.all([
+      page.waitForRequest((req) => req.url().includes('supportmessage') && req.method() === 'POST'),
+      page.locator('[data-cy="send-message-button"]').first().click(),
+    ]);
+
+    const postData = request.postData() ?? '';
+    expect(postData).toContain('sms');
+    expect(postData).toContain('Mock message');
+    expect(postData).toContain('+46701740635');
   });
 
   test('sends email with attachment', async ({ page }) => {
-    await sendEmailWithAttachment(page);
+    await page.locator('[data-cy="new-message-button"]').click();
+
+    await page.locator('[data-cy="decision-richtext-wrapper"]').first().click();
+    await page.keyboard.type('Mock message');
+
+    await expect(page.locator('[data-cy="message-channel-radio-button-group"]')).toBeVisible();
+    await page.locator('[data-cy="useEmail-radiobutton-true"]').check({ force: true });
+    await expect(page.locator('[data-cy="useSms-radiobutton-true"]')).toBeVisible();
+    await page.locator('[data-cy="new-email-input"]').first().clear();
+    await page.locator('[data-cy="new-email-input"]').first().type('test@example.com', { delay: 100 });
+    await page.locator('[data-cy="add-new-email-button"]').first().click({ force: true });
+
+    await page.locator('[data-cy="add-attachment-button"]').filter({ hasText: 'Bifoga fil' }).click();
+    await page.getByRole('button', { name: 'Bläddra' }).click();
+    await page.locator('input[type=file]').setInputFiles('e2e/kontaktcenter/files/empty-attachment.txt');
+    await expect(page.locator('.sk-form-error-message')).toContainText(
+      'Bilagan du försöker lägga till är tom. Försök igen.'
+    );
+    await page.getByRole('button', { name: 'Bläddra' }).click();
+    await page.locator('input[type=file]').setInputFiles('e2e/kontaktcenter/files/attachment.txt');
+    await page.locator('[data-cy="upload-button"]').filter({ hasText: 'Ladda upp' }).click();
+
+    const [request] = await Promise.all([
+      page.waitForRequest((req) => req.url().includes('supportmessage') && req.method() === 'POST'),
+      page.locator('[data-cy="send-message-button"]').first().click(),
+    ]);
+
+    const postData = request.postData() ?? '';
+    expect(postData).toContain('email');
+    expect(postData).toContain('Mock message');
+    expect(postData).toContain('attachment.txt');
   });
 });

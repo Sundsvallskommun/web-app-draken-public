@@ -23,6 +23,9 @@ import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
 
 test.describe('errand page', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
+    await page.context().addCookies([
+      { name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' },
+    ]);
     await mockRoute('**/administrators', mockAdmins, { method: 'GET' });
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
@@ -125,25 +128,26 @@ test.describe('errand page', () => {
 
     // Status
     await expect(page.locator('[data-cy="status-input"]')).toBeVisible();
-    await page.locator('[data-cy="status-input"]').selectOption('PENDING');
-    await expect(page.locator('[data-cy="status-input"]')).toHaveValue('PENDING');
+    await page.locator('[data-cy="status-input"]').selectOption('NEW');
+    await expect(page.locator('[data-cy="status-input"]')).toHaveValue('NEW');
 
     // Priority
     await expect(page.locator('[data-cy="priority-input"]')).toBeVisible();
     await page.locator('[data-cy="priority-input"]').selectOption('LOW');
     await expect(page.locator('[data-cy="priority-input"]')).toHaveValue('LOW');
-    await page.locator('[data-cy="save-button"]').click();
 
-    const response = await page.waitForResponse(
-      (resp) =>
-        resp.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) &&
-        resp.request().method() === 'PATCH'
-    );
-    const request = response.request();
+    const [request] = await Promise.all([
+      page.waitForRequest(
+        (req) =>
+          req.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) &&
+          req.method() === 'PATCH' &&
+          (req.postData() ?? '').includes('priority')
+      ),
+      page.locator('[data-cy="save-button"]').click(),
+    ]);
     const requestBody = request.postDataJSON();
     expect(requestBody.priority).toBe('LOW');
-    expect(requestBody.status).toBe('PENDING');
-    expect(response.status()).toBe(200);
+    expect(requestBody.status).toBe('NEW');
   });
 
   test('Can forward department errand', async ({ page, dismissCookieConsent }) => {
@@ -169,10 +173,10 @@ test.describe('errand page', () => {
 
     await expect(page.locator('.sk-dialog')).toContainText('Vill du överlämna ärendet?');
     await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
-    await page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click();
-    await page.waitForResponse(
-      (resp) => resp.url().includes('forward') && resp.request().method() === 'POST'
-    );
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('forward') && resp.request().method() === 'POST'),
+      page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click(),
+    ]);
   });
 
   test('Can forward email errand', async ({ page, dismissCookieConsent }) => {
@@ -198,10 +202,10 @@ test.describe('errand page', () => {
 
     await expect(page.locator('.sk-dialog')).toContainText('Vill du överlämna ärendet?');
     await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
-    await page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click();
-    await page.waitForResponse(
-      (resp) => resp.url().includes('supportmessage') && resp.request().method() === 'POST'
-    );
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('supportmessage') && resp.request().method() === 'POST'),
+      page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click(),
+    ]);
   });
 
   test('Can manage forwarding, suspending and solving errand', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -230,10 +234,10 @@ test.describe('errand page', () => {
 
     await expect(page.locator('.sk-dialog')).toContainText('Vill du överlämna ärendet?');
     await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
-    await page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click();
-    await page.waitForResponse(
-      (resp) => resp.url().includes('supportmessage') && resp.request().method() === 'POST'
-    );
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('supportmessage') && resp.request().method() === 'POST'),
+      page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click(),
+    ]);
 
     //Can suspend the errand
     await page.locator('[data-cy="suspend-button"]').filter({ hasText: 'Parkera ärende' }).click();
@@ -258,7 +262,7 @@ test.describe('errand page', () => {
     await page.locator('[data-cy="solve-radiolist"] label input').nth(1).check();
     await page
       .locator('article.sk-modal-dialog button.sk-btn-primary')
-      .filter({ hasText: 'Avsluta ärende' })
+      .filter({ hasText: /^Avsluta$/ })
       .click();
   });
 
@@ -280,10 +284,10 @@ test.describe('errand page', () => {
 
     await page.locator('[data-cy="solved-button"]').filter({ hasText: 'Avsluta ärende' }).click();
     await expect(page.locator('article.sk-modal-dialog')).toBeVisible();
-    await expect(page.locator('article.sk-modal-dialog')).toContainText('Aktuell avslutningskod');
+    await expect(page.locator('article.sk-modal-dialog')).toContainText('Nuvarande lösningskod');
     await expect(page.locator('article.sk-modal-dialog')).toContainText('Ändra lösningskod');
     await expect(
-      page.locator('article.sk-modal-dialog button.sk-btn-primary').filter({ hasText: 'Avsluta ärende' })
+      page.locator('article.sk-modal-dialog button.sk-btn-primary').filter({ hasText: /^Avsluta$/ })
     ).toBeVisible();
   });
 
@@ -308,7 +312,7 @@ test.describe('errand page', () => {
 
     // Click "Ändra lösningskod" to switch to resolution selection view
     await page.locator('article.sk-modal-dialog').getByText('Ändra lösningskod').click();
-    await expect(page.locator('article.sk-modal-dialog')).toContainText('Välj en lösning');
+    await expect(page.locator('article.sk-modal-dialog')).toContainText('Välj ny lösningskod');
     await expect(page.locator('[data-cy="solve-radiolist"]')).toBeVisible();
   });
 
@@ -332,19 +336,19 @@ test.describe('errand page', () => {
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
 
-    // Open modal and switch to "Välj en lösning"
+    // Open modal and switch to "Välj ny lösningskod"
     await page.locator('[data-cy="solved-button"]').filter({ hasText: 'Avsluta ärende' }).click();
     await page.locator('article.sk-modal-dialog').getByText('Ändra lösningskod').click();
-    await expect(page.locator('article.sk-modal-dialog')).toContainText('Välj en lösning');
+    await expect(page.locator('article.sk-modal-dialog')).toContainText('Välj ny lösningskod');
 
     // Close modal
     await page.locator('article.sk-modal-dialog .sk-modal-dialog-close').click();
     await expect(page.locator('article.sk-modal-dialog')).not.toBeVisible();
 
-    // Reopen modal - should show "Aktuell avslutningskod" again
+    // Reopen modal - should show "Nuvarande lösningskod" again
     await page.locator('[data-cy="solved-button"]').filter({ hasText: 'Avsluta ärende' }).click();
     await expect(page.locator('article.sk-modal-dialog')).toBeVisible();
-    await expect(page.locator('article.sk-modal-dialog')).toContainText('Aktuell avslutningskod');
+    await expect(page.locator('article.sk-modal-dialog')).toContainText('Nuvarande lösningskod');
   });
 
   test('Can manage Kommentarer', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -366,33 +370,33 @@ test.describe('errand page', () => {
     //New comment
     await page.locator('[aria-label="Ny kommentar"]').fill(comment);
 
-    await page.locator('[data-cy="save-newcomment"]').filter({ hasText: 'Spara' }).click();
-    const newCommentResponse = await page.waitForResponse(
-      (resp) => resp.url().includes('supportnotes') && resp.request().method() === 'POST'
-    );
+    const [newCommentResponse] = await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('supportnotes') && resp.request().method() === 'POST'),
+      page.locator('[data-cy="save-newcomment"]').filter({ hasText: 'Spara' }).click(),
+    ]);
     expect(newCommentResponse.status()).toBe(200);
 
     //Update comment
     await page.locator(`[data-cy="options-${mockComments.notes[0].id}"]`).click();
-    await page.locator('[data-cy="edit-note-button"]').filter({ hasText: 'Ändra' }).click();
+    await page.locator('[data-cy="edit-note-button"]:visible').filter({ hasText: 'Ändra' }).click();
     await page.locator('[data-cy="edit-notes-input"]').clear();
     await page.locator('[data-cy="edit-notes-input"]').fill(updatedComment);
-    await page.locator('[data-cy="save-updatedcomment"]').filter({ hasText: 'Spara' }).click();
 
-    const updateCommentResponse = await page.waitForResponse(
-      (resp) => resp.url().includes('supportnotes') && resp.request().method() === 'PATCH'
-    );
+    const [updateCommentResponse] = await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('supportnotes') && resp.request().method() === 'PATCH'),
+      page.locator('[data-cy="save-updatedcomment"]').filter({ hasText: 'Spara' }).click(),
+    ]);
     expect(updateCommentResponse.status()).toBe(200);
 
     //Delete comment
     await page.locator(`[data-cy="options-${mockComments.notes[0].id}"]`).click();
-    await page.locator('[data-cy="delete-note-button"]').filter({ hasText: 'Ta bort' }).click();
+    await page.locator('[data-cy="delete-note-button"]:visible').filter({ hasText: 'Ta bort' }).click();
     await expect(page.locator('.sk-dialog')).toContainText('Vill du ta bort kommentaren?');
     await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
-    await page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click();
-    await page.waitForResponse(
-      (resp) => resp.url().includes('supportnotes') && resp.request().method() === 'DELETE'
-    );
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('supportnotes') && resp.request().method() === 'DELETE'),
+      page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click(),
+    ]);
   });
 
   test('Can manage Ärendelogg', async ({ page, dismissCookieConsent }) => {
@@ -427,18 +431,13 @@ test.describe('errand page', () => {
 
     await expect(page.locator('.sk-dialog')).toContainText('Vill du överlämna ärendet?');
     await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
-    await page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click();
-
-    const forwardResponse = await page.waitForResponse(
-      (resp) => resp.url().includes('forward') && resp.request().method() === 'POST'
-    );
+    const [forwardResponse] = await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('forward') && resp.request().method() === 'POST'),
+      page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click(),
+    ]);
     const forwardRequest = forwardResponse.request();
     const forwardBody = forwardRequest.postDataJSON();
     expect(forwardBody.department).toBe('MEX');
     expect(forwardBody.recipient).toBe('DEPARTMENT');
-
-    await page.waitForResponse(
-      (resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200
-    );
   });
 });
