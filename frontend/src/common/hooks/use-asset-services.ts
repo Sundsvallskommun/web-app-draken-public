@@ -5,9 +5,9 @@ import {
   getErrandServiceAssets,
   getPartyServiceAssets,
   mapAssetsToServices,
-  Service,
 } from '@common/services/service-assets-service';
 import type { RJSFSchema } from '@rjsf/utils';
+import { useSupportStore } from '@stores/index';
 import { useCallback, useEffect, useState } from 'react';
 
 type AssetServicesArgs = {
@@ -27,15 +27,8 @@ const fetchAcrossTypes = async (
   return results.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
 };
 
-function useAssetServices({
-  municipalityId,
-  partyId,
-  errandId,
-  assetTypes,
-  schema = null,
-  origin,
-}: AssetServicesArgs) {
-  const [services, setServices] = useState<Service[]>([]);
+function useAssetServices({ municipalityId, partyId, errandId, assetTypes, schema = null, origin }: AssetServicesArgs) {
+  const { services, setServices } = useSupportStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>();
 
