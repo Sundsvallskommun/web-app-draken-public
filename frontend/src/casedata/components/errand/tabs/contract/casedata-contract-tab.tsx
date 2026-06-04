@@ -117,6 +117,28 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
               .required('Förskott eller efterskott måste väljas'),
           }),
       }),
+      fees: yup.object({
+        // Validates only the user-editable supplementary avitext (index 1). The auto-generated
+        // avitext (index 0) is intentionally not validated here pending the backend length decision.
+        additionalInformation: yup
+          .array()
+          .test(
+            'supplementary-non-blank',
+            'Kompletterande avitext får inte vara enbart blanksteg',
+            (additionalInformation) => {
+              const supplementary = additionalInformation?.[1];
+              return !supplementary || supplementary.trim().length > 0;
+            }
+          )
+          .test(
+            'supplementary-max-length',
+            'Kompletterande avitext får vara högst 30 tecken',
+            (additionalInformation) => {
+              const supplementary = additionalInformation?.[1];
+              return !supplementary || supplementary.trim().length <= 30;
+            }
+          ),
+      }),
       extraParameters: yup.array().when(['generateInvoice', 'status'], ([generateInvoice, status], schema) => {
         if (status !== Status.ACTIVE) return schema;
 
@@ -137,43 +159,64 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
 
         return schema;
       }),
-      stakeholders: yup.array().when(['type', 'status'], ([type, status], schema) => {
-        if (status !== Status.ACTIVE) return schema;
+      stakeholders: yup
+        .array()
+        .when(['type', 'leaseType', 'status', 'invoicing'], ([type, leaseType, status, invoicing], schema) => {
+          const hasRole = (role: StakeholderRole) => (stakeholders: any[] | undefined) =>
+            stakeholders?.some((s) => s.roles?.includes(role)) ?? false;
 
-        const baseSchema = schema.of(
-          yup.object({
-            roles: yup
-              .array()
-              .of(yup.string().oneOf(Object.keys(StakeholderRole)) as any)
-              .min(1, 'Minst en roll måste anges'),
-          })
-        );
+          const requireBillingParty =
+            hasRecurringFee(type, leaseType) && !!invoicing?.invoicedIn && !!invoicing?.invoiceInterval;
 
-        const hasRole = (role: StakeholderRole) => (stakeholders: any[] | undefined) =>
-          stakeholders?.some((s) => s.roles?.includes(role)) ?? false;
+          if (status !== Status.ACTIVE) {
+            return requireBillingParty
+              ? schema.test(
+                  'has-primary-billing-party',
+                  'Fakturamottagare måste anges',
+                  hasRole(StakeholderRole.PRIMARY_BILLING_PARTY)
+                )
+              : schema;
+          }
 
-        if (type === ContractType.PURCHASE_AGREEMENT) {
-          return baseSchema
-            .test(
-              'has-buyer-and-seller',
-              'Minst en köpare och en säljare måste anges',
-              hasRole(StakeholderRole.BUYER) && hasRole(StakeholderRole.SELLER)
-            )
-            .test('has-buyer', 'Minst en köpare måste anges', hasRole(StakeholderRole.BUYER))
-            .test('has-seller', 'Minst en säljare måste anges', hasRole(StakeholderRole.SELLER));
-        }
-        if (isLeaseAgreement(type)) {
-          return baseSchema
-            .test(
-              'has-lessor-and-lessee',
-              'Minst en upplåtare och en arrendator måste anges',
-              hasRole(StakeholderRole.LESSOR) && hasRole(StakeholderRole.LESSEE)
-            )
-            .test('has-lessor', 'Minst en upplåtare måste anges', hasRole(StakeholderRole.LESSOR))
-            .test('has-lessee', 'Minst en arrendator måste anges', hasRole(StakeholderRole.LESSEE));
-        }
-        return baseSchema.min(1, 'Minst en part måste anges');
-      }),
+          let baseSchema = schema.of(
+            yup.object({
+              roles: yup
+                .array()
+                .of(yup.string().oneOf(Object.keys(StakeholderRole)) as any)
+                .min(1, 'Minst en roll måste anges'),
+            })
+          );
+
+          if (requireBillingParty) {
+            baseSchema = baseSchema.test(
+              'has-primary-billing-party',
+              'Fakturamottagare måste anges',
+              hasRole(StakeholderRole.PRIMARY_BILLING_PARTY)
+            );
+          }
+
+          if (type === ContractType.PURCHASE_AGREEMENT) {
+            return baseSchema
+              .test(
+                'has-buyer-and-seller',
+                'Minst en köpare och en säljare måste anges',
+                hasRole(StakeholderRole.BUYER) && hasRole(StakeholderRole.SELLER)
+              )
+              .test('has-buyer', 'Minst en köpare måste anges', hasRole(StakeholderRole.BUYER))
+              .test('has-seller', 'Minst en säljare måste anges', hasRole(StakeholderRole.SELLER));
+          }
+          if (isLeaseAgreement(type)) {
+            return baseSchema
+              .test(
+                'has-lessor-and-lessee',
+                'Minst en upplåtare och en arrendator måste anges',
+                hasRole(StakeholderRole.LESSOR) && hasRole(StakeholderRole.LESSEE)
+              )
+              .test('has-lessor', 'Minst en upplåtare måste anges', hasRole(StakeholderRole.LESSOR))
+              .test('has-lessee', 'Minst en arrendator måste anges', hasRole(StakeholderRole.LESSEE));
+          }
+          return baseSchema.min(1, 'Minst en part måste anges');
+        }),
     })
     .required();
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -252,6 +295,13 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     mode: 'onSubmit',
   });
 
+  // Keep the validated form `stakeholders` field in sync with the party state, so yup validates the
+  // same data that onSave sends (otherwise role edits never reach validation → stale value → API 400).
+  useEffect(() => {
+    contractForm.setValue('stakeholders', contractParties.map(unifiedPartyToContractStakeholder));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contractParties]);
+
   const changeBadgeColor = (inId: string) => {
     let element = document.getElementById(inId);
     if (element !== null) {
@@ -308,7 +358,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
       });
   };
 
-  useEffect(() => {
+  const setErrandIdParameter = () => {
     if (errand) {
       const errandIdExtraParameter = {
         name: 'errandId',
@@ -337,6 +387,10 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           contractForm.setValue('extraParameters', newParams);
         });
     }
+  };
+
+  useEffect(() => {
+    setErrandIdParameter();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
@@ -347,6 +401,26 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     }
     contractForm.trigger('type');
   }, [contractType, contractForm]);
+
+  // API Validation differs by contract type, so we need to handle type changes
+  const handleContractTypeChange = (newType: ContractType) => {
+    if (newType === ContractType.PURCHASE_AGREEMENT) {
+      contractForm.setValue('invoicing', undefined);
+      contractForm.setValue('generateInvoice', 'false');
+    } else {
+      if (!contractForm.getValues('invoicing')) {
+        contractForm.setValue('invoicing', defaultLagenhetsarrende.invoicing);
+      }
+      if (!contractForm.getValues('notice')?.terms?.length) {
+        contractForm.setValue('notice', defaultLagenhetsarrende.notice);
+      }
+      if (!contractForm.getValues('extension')) {
+        contractForm.setValue('extension', defaultLagenhetsarrende.extension);
+      }
+      contractForm.setValue('generateInvoice', 'true');
+    }
+    contractForm.trigger(['invoicing', 'notice']);
+  };
 
   return (
     <FormProvider {...contractForm}>
@@ -378,7 +452,9 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                   <FormLabel>Välj avtalstyp</FormLabel>
                   <Select
                     data-cy="contract-type-select"
-                    {...contractForm.register('type')}
+                    {...contractForm.register('type', {
+                      onChange: (e) => handleContractTypeChange(e.target.value as ContractType),
+                    })}
                     disabled={existingContract?.status === Status.ACTIVE}
                   >
                     {contractTypes.map((t) => (

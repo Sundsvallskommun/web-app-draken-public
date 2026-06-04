@@ -1066,14 +1066,19 @@ export const ContractForm: FC<{
                     <FormControl className="flex-grow">
                       <FormLabel>Kompletterande avitext</FormLabel>
                       <Textarea
-                        maxLength={50}
-                        maxLengthWarningText="Maxlängd 50 tecken"
+                        maxLength={30}
+                        maxLengthWarningText="Maxlängd 30 tecken"
                         rows={3}
                         className="w-full"
                         readOnly={!isEditable('billing')}
                         {...register('fees.additionalInformation.1')}
                         data-cy="fees-additional-information-1-input"
                       ></Textarea>
+                      {(formState.errors?.fees?.additionalInformation as { message?: string })?.message ? (
+                        <FormErrorMessage>
+                          {(formState.errors?.fees?.additionalInformation as { message?: string })?.message}
+                        </FormErrorMessage>
+                      ) : null}
                     </FormControl>
                   </div>
                 </>

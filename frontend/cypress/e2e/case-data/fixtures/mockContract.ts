@@ -157,7 +157,7 @@ export const mockLeaseAgreement = {
       },
       {
         type: 'PERSON',
-        roles: ['LESSEE'],
+        roles: ['LESSEE', 'PRIMARY_BILLING_PARTY'],
         firstName: 'Bengt',
         lastName: 'Testarrendator',
         address: {
@@ -333,7 +333,7 @@ export const mockLandLeasePublic = {
       },
       {
         type: 'PERSON',
-        roles: ['LESSEE'],
+        roles: ['LESSEE', 'PRIMARY_BILLING_PARTY'],
         firstName: 'Bengt',
         lastName: 'Testarrendator',
         address: {
@@ -393,7 +393,7 @@ export const mockShortTermLeaseAgreement = {
       },
       {
         type: 'PERSON',
-        roles: ['LESSEE'],
+        roles: ['LESSEE', 'PRIMARY_BILLING_PARTY'],
         firstName: 'Bengt',
         lastName: 'Testarrendator',
         address: {

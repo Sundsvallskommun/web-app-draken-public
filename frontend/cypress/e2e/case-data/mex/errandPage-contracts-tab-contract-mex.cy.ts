@@ -15,6 +15,7 @@ import { onlyOn } from '@cypress/skip-test';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
 import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
 import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
+
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockAsset } from '../fixtures/mockAsset';
 import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
@@ -28,12 +29,12 @@ import {
 } from '../fixtures/mockEstateInfo';
 import { mockEstatePropertyByDesignation } from '../fixtures/mockEstatePropertyByDesignation';
 import { mockFeatureFlags } from '../fixtures/mockFeatureFlags';
+import { mockAssetEmpty, mockDraftAsset } from '../fixtures/mockFTAsset';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
-import { mockRelations } from '../fixtures/mockRelations';
-import { mockAssetEmpty, mockDraftAsset } from '../fixtures/mockFTAsset';
+import { mockRelations, mockResolvedRelations } from '../fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'MEX', () => {
   describe('Errand page contracts tab', () => {
@@ -44,6 +45,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/featureflags', []);
       cy.intercept('POST', '**/personid', mockPersonId);
       cy.intercept('POST', '**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders);
+      cy.intercept('GET', '**/templates?*', { data: [], message: 'success' }).as('getTemplates');
 
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
@@ -67,6 +69,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
       cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/resolvedrelations/**/**', mockResolvedRelations).as('getResolvedRelations');
+      cy.intercept('GET', '**/relations/referredfrom/**', mockRelations).as('getReferredfromRelations');
       cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
         'getConversations'
       );
@@ -352,10 +356,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           monthly: 0,
           yearly: 120,
           total: 120,
-          additionalInformation: [
-            'Avgift, lägenhetsarrende. AVTALSFASTIGHET 1:123, AVTALSFASTIGHET 2:456',
-            'Foobar',
-          ],
+          additionalInformation: ['Avgift, lägenhetsarrende', 'Foobar'],
         });
       });
     });
@@ -517,6 +518,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="add-party-button"]').click();
       cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist').select('2280');
       cy.get('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+      cy.get('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').check({ force: true });
       cy.get('[data-cy="party-modal-save-button"]').click();
 
       // Verify lessee was added
@@ -579,6 +581,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="add-party-button"]').click();
       cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist').select('2280');
       cy.get('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+      cy.get('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').check({ force: true });
       cy.get('[data-cy="party-modal-save-button"]').click();
 
       // Verify lessee was added

@@ -217,8 +217,6 @@ export interface Contract {
   indexTerms?: TermGroup[];
   propertyDesignations?: PropertyDesignation[];
   stakeholders?: Stakeholder[];
-  /** Duration */
-  duration?: Duration;
   /** Extension */
   extension?: Extension;
   /** Fees */
@@ -253,18 +251,6 @@ export interface Contract {
 export interface Crs {
   type?: CrsTypeEnum;
   properties?: Record<string, any>;
-}
-
-/** Duration */
-export interface Duration {
-  /**
-   * The lease duration value
-   * @format int32
-   * @min 0
-   */
-  leaseDuration: number;
-  /** The unit of the duration value */
-  unit: TimeUnit;
 }
 
 /** Extension */
@@ -345,7 +331,7 @@ export interface Fees {
    * @max 1
    */
   indexationRate?: number;
-  /** Additional information */
+  /** Additional information. Each entry must be non-blank and between 1 and 30 characters (used as invoice row descriptions). */
   additionalInformation?: string[];
 }
 
@@ -366,9 +352,9 @@ export type GeometryCollection = GeoJsonObject & {
 /** Invoicing details */
 export interface Invoicing {
   /** How often the lease is invoiced */
-  invoiceInterval?: IntervalType;
+  invoiceInterval: IntervalType;
   /** Invoiced in */
-  invoicedIn?: InvoicedIn;
+  invoicedIn: InvoicedIn;
 }
 
 /** Leasehold */
@@ -489,19 +475,43 @@ export interface Stakeholder {
   /** Type of stakeholder */
   type?: StakeholderType;
   roles?: StakeholderRole[];
-  /** Name of the organization */
+  /**
+   * Name of the organization
+   * @minLength 0
+   * @maxLength 255
+   */
   organizationName?: string;
-  /** Swedish organization number */
+  /**
+   * Swedish organization number
+   * @minLength 0
+   * @maxLength 255
+   */
   organizationNumber?: string;
-  /** Stakeholders first name */
+  /**
+   * Stakeholders first name
+   * @minLength 0
+   * @maxLength 255
+   */
   firstName?: string;
-  /** Stakeholders last name */
+  /**
+   * Stakeholders last name
+   * @minLength 0
+   * @maxLength 255
+   */
   lastName?: string;
   /** PartyId */
   partyId?: string;
-  /** Phone number for stakeholder */
+  /**
+   * Phone number for stakeholder
+   * @minLength 0
+   * @maxLength 255
+   */
   phoneNumber?: string;
-  /** Email adress for stakeholder */
+  /**
+   * Email adress for stakeholder
+   * @minLength 0
+   * @maxLength 255
+   */
   emailAddress?: string;
   /** Address for stakeholder */
   address?: Address;
@@ -609,11 +619,66 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  number?: boolean;
   string?: boolean;
   boolean?: boolean;
+  number?: boolean;
   embeddedValue?: boolean;
 }
+
+/** Partial contract payload used for PATCH. Only the fields present in the payload are applied to the existing contract. */
+export interface PatchContract {
+  /** A description of the contract */
+  description?: string;
+  /** External referenceId */
+  externalReferenceId?: string;
+  /** Type of lease */
+  leaseType?: LeaseType;
+  /** Object identity (from Lantmäteriet) */
+  objectIdentity?: string;
+  /** Contract status */
+  status?: Status;
+  /** Contract type */
+  type?: ContractType;
+  /** Type of leasehold */
+  leasehold?: Leasehold;
+  additionalTerms?: TermGroup[];
+  /** Extra parameters */
+  extraParameters?: ExtraParameterGroup[];
+  indexTerms?: TermGroup[];
+  propertyDesignations?: PropertyDesignation[];
+  stakeholders?: Stakeholder[];
+  /** Lease extension */
+  extension?: Extension;
+  /** Fee details */
+  fees?: Fees;
+  /** Invoicing details */
+  invoicing?: Invoicing;
+  /**
+   * Start date of the contract
+   * @format date
+   */
+  startDate?: string;
+  /**
+   * End date of the contract. Set when the contract is terminated
+   * @format date
+   */
+  endDate?: string;
+  /** Notice details */
+  notice?: Notice;
+  /** Current contract period */
+  currentPeriod?: Period;
+  /**
+   * Leased area (m2)
+   * @format int32
+   */
+  area?: number;
+  /** Whether the contract is signed by a witness */
+  signedByWitness?: boolean;
+  /** Part(s) of property covered by the lease. Described by GeoJSON using polygon(s) */
+  areaData?: FeatureCollection;
+}
+
+export type SpecificationContractEntity = any;
 
 export interface PageContract {
   /** @format int64 */

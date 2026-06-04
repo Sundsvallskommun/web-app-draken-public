@@ -7,6 +7,7 @@ import {
   Contract,
   ContractType,
   Fees,
+  IntervalType,
   InvoicedIn,
   LeaseType,
   PageContract,
@@ -61,6 +62,32 @@ export const getContractLabel = (contractType: ContractType, leaseType?: LeaseTy
     return leaseTypes.find((t) => t.key === leaseType)?.label ?? 'okänd typ';
   }
   return contractTypes.find((t) => t.key === contractType)?.label ?? 'okänd typ';
+};
+
+const feeDescriptionByLeaseType: Partial<Record<LeaseType, string>> = {
+  [LeaseType.SITE_LEASE_COMMERCIAL]: 'Avgift, anläggningsarrende',
+  [LeaseType.LAND_LEASE_RESIDENTIAL]: 'Avgift, bostadsarrende',
+  [LeaseType.LAND_LEASE_MISC]: 'Avgift, lägenhetsarrende',
+  [LeaseType.USUFRUCT_HUNTING]: 'Avgift, jaktarrende',
+  [LeaseType.USUFRUCT_FARMING]: 'Avgift, jordbruksarrende',
+  [LeaseType.USUFRUCT_MISC]: 'Avgift, nyttjanderätt',
+  [LeaseType.LAND_LEASE_LICENSE]: 'Avgift, markupplåtelse',
+  [LeaseType.OTHER_FEE]: 'Övrig avgift',
+};
+
+const feeDescriptionByContractType: Partial<Record<ContractType, string>> = {
+  [ContractType.LAND_LEASE_PUBLIC]: 'Avgift, allmän platsupplåtelse',
+  [ContractType.OBJECT_LEASE]: 'Avgift, hyra',
+  [ContractType.LEASEHOLD]: 'Avgift, tomträttsavgäld',
+};
+
+// Standardized invoice fee description (additionalInformation[0]). Curated to satisfy the contract API
+// rule (each entry non-blank, max 30 chars). Source: screenshots/addinfo.png.
+export const getFeeDescription = (type: ContractType, leaseType?: LeaseType): string => {
+  if (type === ContractType.LEASE_AGREEMENT && leaseType) {
+    return feeDescriptionByLeaseType[leaseType] ?? 'Övrig avgift';
+  }
+  return feeDescriptionByContractType[type] ?? 'Övrig avgift';
 };
 
 export const isLeaseAgreement = (contractType: ContractType) =>
@@ -127,7 +154,7 @@ export const defaultLagenhetsarrende: ContractData = {
   status: Status.DRAFT,
   propertyDesignations: [],
   stakeholders: [],
-  invoicing: { invoicedIn: InvoicedIn.ADVANCE },
+  invoicing: { invoicedIn: InvoicedIn.ADVANCE, invoiceInterval: IntervalType.YEARLY },
   notice: {
     terms: [
       {
@@ -205,7 +232,7 @@ export const fetchContract: (contractId: string) => Promise<ApiResponse<Contract
   }
   const url = `contracts/${contractId}`;
   return apiService
-    .get<ApiResponse<ContractData>>(url)
+    .get<ApiResponse<Contract>>(url)
     .then((res) => res.data)
     .catch((e) => {
       throw e;
@@ -471,25 +498,33 @@ export const contractToKopeavtal = (contract: Contract): ContractData => {
 export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
   console.log('transforming to contract: ', data);
   let fees: Fees | undefined = undefined;
-  const propertyDesignations = data.propertyDesignations ?? [];
   if (data.generateInvoice) {
-    const label = getContractLabel(data.type, data.leaseType);
+    const feeDescription = getFeeDescription(data.type, data.leaseType);
     const yearlyNumber = Number.parseFloat((data.fees?.yearly ?? 0).toString());
+    // Index fields must be sent all-or-nothing (API rule fees.consistentIndexFields): only include
+    // them when indexation is on AND both indexYear and indexNumber are populated (> 0). Sending
+    // indexType/indexationRate alone (e.g. after fees was cleared on a type switch) is rejected.
+    const indexComplete =
+      data.indexAdjusted === 'true' && Number(data.fees?.indexYear) > 0 && Number(data.fees?.indexNumber) > 0;
     fees = {
       yearly: yearlyNumber,
       monthly: 0,
       total: yearlyNumber,
       currency: 'SEK',
-      additionalInformation: [
-        `Avgift, ${label.toLocaleLowerCase()}. ` +
-          (propertyDesignations?.length > 0 ? `${propertyDesignations.map((p) => p.name).join(', ')}` : ''),
-        data.fees?.additionalInformation?.[1] ?? '',
-      ],
-      ...(data.indexAdjusted === 'true' && { indexYear: data.fees?.indexYear }),
-      ...(data.indexAdjusted === 'true' && { indexNumber: data.fees?.indexNumber }),
-      ...(data.indexAdjusted === 'true' && { indexationRate: data.fees?.indexationRate ?? 1 }),
-      ...(data.indexAdjusted === 'true' && { indexType: data.fees?.indexType ?? 'KPI 80' }),
+      // [0] = standardized fee description, [1] = optional supplementary avitext (appended below).
+      additionalInformation: [feeDescription],
+      ...(indexComplete && {
+        indexYear: data.fees?.indexYear,
+        indexNumber: data.fees?.indexNumber,
+        indexationRate: data.fees?.indexationRate ?? 1,
+        indexType: data.fees?.indexType ?? 'KPI 80',
+      }),
     };
+    // Only include the supplementary avitext if it is non-blank (API rejects blank entries).
+    const supplementaryInfo = data.fees?.additionalInformation?.[1]?.trim();
+    if (supplementaryInfo) {
+      fees.additionalInformation?.push(supplementaryInfo);
+    }
   }
 
   // Strip personalNumber and stakeholderId from stakeholders before sending to API
@@ -505,8 +540,8 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     },
     fees: fees,
     invoicing: {
-      invoicedIn: data.invoicing?.invoicedIn,
-      invoiceInterval: data.invoicing?.invoiceInterval,
+      invoicedIn: data.invoicing?.invoicedIn ?? InvoicedIn.ADVANCE,
+      invoiceInterval: data.invoicing?.invoiceInterval ?? IntervalType.YEARLY,
     },
     currentPeriod: data.currentPeriod,
     startDate: data.status === Status.ACTIVE ? data.startDate : data.currentPeriod?.startDate,
@@ -532,14 +567,13 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
 };
 
 export const contractToLagenhetsArrende = (contract: Contract): ContractData => {
-  const label = getContractLabel(contract.type, contract.leaseType);
+  const feeDescription = getFeeDescription(contract.type, contract.leaseType);
   const hasIndexation = !!(
     contract.fees?.indexType ||
     contract.fees?.indexYear ||
     contract.fees?.indexNumber ||
     contract.fees?.indexationRate
   );
-  const propertyDesignations = contract.propertyDesignations ?? [];
   const lagenhetsarrende: ContractData = {
     ...defaultLagenhetsarrende,
     ...contract,
@@ -549,9 +583,10 @@ export const contractToLagenhetsArrende = (contract: Contract): ContractData => 
     fees: {
       ...contract.fees,
       additionalInformation: [
-        `Avgift, ${label.toLocaleLowerCase()}. ` +
-          (propertyDesignations?.length > 0 ? `${propertyDesignations.map((p) => p.name).join(', ')}` : ''),
-        '',
+        // [0] = standardized fee description (read-only display, regenerated from type/leaseType).
+        feeDescription,
+        // [1] = preserve the saved supplementary avitext so it round-trips back into the form on load.
+        contract.fees?.additionalInformation?.[1] ?? '',
       ],
     },
   };
