@@ -74,10 +74,13 @@ test.describe('Errand details tab', () => {
   });
 
   const goToErrandInformationTab = async (page, dismissCookieConsent) => {
+    const errandResponse = page.waitForResponse(
+      (resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200
+    );
     await page.goto('arende/MEX-2024-000280');
+    await errandResponse;
     await dismissCookieConsent();
-    await page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200);
-    await page.getByRole('button', { name: 'Ärendeuppgifter' }).click();
+    await page.getByRole('tab', { name: 'Ärendeuppgifter' }).click();
 
     // Should exist on all MEX case types
     await expect(page.locator('[data-cy="caseMeaning-input"]')).toBeVisible();
@@ -178,9 +181,9 @@ test.describe('Errand details tab', () => {
     await page.locator('[data-cy="toDate-input"]').fill('2024-07-30');
     await page.locator('[data-cy="otherInformation-textarea"]').fill('Mock text 2');
 
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     const body = request.postDataJSON();
     checkExtraParameter(body, 'reason', 'Mock text 1');
     checkExtraParameter(body, 'fromDate', '2024-06-30');
@@ -207,9 +210,9 @@ test.describe('Errand details tab', () => {
     await page.locator('[data-cy="timetable-input"]').fill('2024-06-15');
     await page.locator('[data-cy="otherInformation-textarea"]').fill('Mock text 7');
 
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     const body = request.postDataJSON();
     checkExtraParameter(body, 'errandInformation', 'Mock text 1');
     checkExtraParameter(body, 'typeOfEstablishment', 'Mock text 2');
@@ -227,8 +230,9 @@ test.describe('Errand details tab', () => {
     await goToErrandInformationTab(page, dismissCookieConsent);
     await page.locator('[data-cy="reason-textarea"]').fill('Mock text 1');
     await page.locator('[data-cy="otherInformation-textarea"]').fill('Mock text 2');
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     const body = request.postDataJSON();
     checkExtraParameter(body, 'reason', 'Mock text 1');
     checkExtraParameter(body, 'otherInformation', 'Mock text 2');
@@ -258,8 +262,9 @@ test.describe('Errand details tab', () => {
     await expect(page.locator('[data-cy="water_sewage-radio-button-0"]')).toHaveValue('Ja');
     await page.locator('[data-cy="water_sewage-radio-button-0"]').check();
     await page.locator('[data-cy="otherInformation-textarea"]').fill('Mock text');
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     const body = request.postDataJSON();
     checkExtraParameter(body, 'location_1', 'Torget 1');
     checkExtraParameter(body, 'location_2', 'Torget 2');
@@ -284,8 +289,9 @@ test.describe('Errand details tab', () => {
     await mockRoute('**/errand/errandNumber/*', modifyField(mockMexErrand_base, { caseType: 'MEX_BUY_SMALL_HOUSE_PLOT' }), { method: 'GET' });
     await goToErrandInformationTab(page, dismissCookieConsent);
     await page.locator('[data-cy="otherInformation-textarea"]').fill('Mock text');
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     checkExtraParameter(request.postDataJSON(), 'otherInformation', 'Mock text');
   });
 
@@ -316,8 +322,9 @@ test.describe('Errand details tab', () => {
     await page.locator('[data-cy="account.bank-input"]').first().fill('Testbank');
     await page.locator('[data-cy="account.owner-input"]').first().fill('Test Testarsson');
     await page.locator('[data-cy="account.number-input"]').first().fill('1234567890');
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     const body = request.postDataJSON();
     checkExtraParameter(body, 'otherInformation', 'Mock text');
     checkExtraParameter(body, 'registrationAddressStatus', 'Nej jag är inte folkbokförd');
@@ -332,8 +339,9 @@ test.describe('Errand details tab', () => {
     await mockRoute('**/errand/errandNumber/*', modifyField(mockMexErrand_base, { caseType: 'MEX_UNAUTHORIZED_RESIDENCE' }), { method: 'GET' });
     await goToErrandInformationTab(page, dismissCookieConsent);
     await page.locator('[data-cy="otherInformation-textarea"]').fill('Mock text');
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     const body = request.postDataJSON();
     checkExtraParameter(body, 'otherInformation', 'Mock text');
     preventProcessExtraParameters(body);
@@ -343,8 +351,9 @@ test.describe('Errand details tab', () => {
     await mockRoute('**/errand/errandNumber/*', modifyField(mockMexErrand_base, { caseType: 'MEX_LAND_RIGHT' }), { method: 'GET' });
     await goToErrandInformationTab(page, dismissCookieConsent);
     await page.locator('[data-cy="otherInformation-textarea"]').fill('Mock text');
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     const body = request.postDataJSON();
     checkExtraParameter(body, 'otherInformation', 'Mock text');
     preventProcessExtraParameters(body);
@@ -360,8 +369,9 @@ test.describe('Errand details tab', () => {
     await page.locator('[data-cy="urgent-radio-button-0"]').check();
     await expect(page.locator('[data-cy="urgent-radio-button-1"]')).toHaveValue('Nej');
     await page.locator('[data-cy="otherInformation-textarea"]').fill('Mock text 2');
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     const body = request.postDataJSON();
     checkExtraParameter(body, 'sightingLocation', 'Mock text 1');
     checkExtraParameter(body, 'sightingTime', '2024-06-05T10:00');
@@ -374,8 +384,9 @@ test.describe('Errand details tab', () => {
     await mockRoute('**/errand/errandNumber/*', modifyField(mockMexErrand_base, { caseType: 'MEX_LAND_INSTRUCTION' }), { method: 'GET' });
     await goToErrandInformationTab(page, dismissCookieConsent);
     await page.locator('[data-cy="otherInformation-textarea"]').fill('Mock text');
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     const body = request.postDataJSON();
     checkExtraParameter(body, 'otherInformation', 'Mock text');
     preventProcessExtraParameters(body);
@@ -385,8 +396,9 @@ test.describe('Errand details tab', () => {
     await mockRoute('**/errand/errandNumber/*', modifyField(mockMexErrand_base, { caseType: 'MEX_OTHER' }), { method: 'GET' });
     await goToErrandInformationTab(page, dismissCookieConsent);
     await page.locator('[data-cy="otherInformation-textarea"]').fill('Mock text');
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     const body = request.postDataJSON();
     checkExtraParameter(body, 'otherInformation', 'Mock text');
     preventProcessExtraParameters(body);
@@ -397,8 +409,9 @@ test.describe('Errand details tab', () => {
     await mockRoute('**/errand/errandNumber/*', modifyField(mockMexErrand_base, { caseType: 'MEX_LAND_SURVEYING_OFFICE' }), { method: 'GET' });
     await goToErrandInformationTab(page, dismissCookieConsent);
     await page.locator('[data-cy="otherInformation-textarea"]').fill('Mock text');
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     preventProcessExtraParameters(request.postDataJSON());
   });
 
@@ -406,8 +419,9 @@ test.describe('Errand details tab', () => {
     await mockRoute('**/errand/errandNumber/*', modifyField(mockMexErrand_base, { caseType: 'MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE' }), { method: 'GET' });
     await goToErrandInformationTab(page, dismissCookieConsent);
     await page.locator('[data-cy="otherInformation-textarea"]').fill('Mock text');
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     const body = request.postDataJSON();
     checkExtraParameter(body, 'otherInformation', 'Mock text');
     preventProcessExtraParameters(body);
@@ -419,8 +433,9 @@ test.describe('Errand details tab', () => {
     await page.locator('[data-cy="invoiceNumber-input"]').fill('12345');
     await page.locator('[data-cy="invoiceRecipient-input"]').fill('Test Testarsson');
     await page.locator('[data-cy="otherInformation-textarea"]').fill('Mock text');
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     const body = request.postDataJSON();
     checkExtraParameter(body, 'invoiceNumber', '12345');
     checkExtraParameter(body, 'invoiceRecipient', 'Test Testarsson');
@@ -432,8 +447,9 @@ test.describe('Errand details tab', () => {
     await mockRoute('**/errand/errandNumber/*', modifyField(mockMexErrand_base, { caseType: 'MEX_REQUEST_FOR_PUBLIC_DOCUMENT' }), { method: 'GET' });
     await goToErrandInformationTab(page, dismissCookieConsent);
     await page.locator('[data-cy="otherInformation-textarea"]').fill('Mock text');
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     const body = request.postDataJSON();
     checkExtraParameter(body, 'otherInformation', 'Mock text');
     preventProcessExtraParameters(body);
@@ -450,8 +466,9 @@ test.describe('Errand details tab', () => {
     await page.locator('[data-cy="reason.other-textarea"]').fill('Mock text 1');
     await page.locator('[data-cy="fromDate-input"]').fill('2024-06-05');
     await page.locator('[data-cy="otherInformation-textarea"]').fill('Mock text 2');
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     const body = request.postDataJSON();
     checkExtraParameter(body, 'reason', 'Jag har flyttat');
     checkExtraParameter(body, 'reason.other', 'Mock text 1');
@@ -466,8 +483,9 @@ test.describe('Errand details tab', () => {
     await page.locator('[data-cy="reason-textarea"]').fill('Mock text 1');
     await page.locator('[data-cy="fromDate-input"]').fill('2024-06-05');
     await page.locator('[data-cy="otherInformation-textarea"]').fill('Mock text 2');
+    const requestPromise = page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
     await page.locator('[data-cy="save-and-continue-button"]').click();
-    const request = await page.waitForRequest((req) => req.url().includes('/extraparameters') && req.method() === 'PATCH');
+    const request = await requestPromise;
     const body = request.postDataJSON();
     checkExtraParameter(body, 'reason', 'Mock text 1');
     checkExtraParameter(body, 'fromDate', '2024-06-05');

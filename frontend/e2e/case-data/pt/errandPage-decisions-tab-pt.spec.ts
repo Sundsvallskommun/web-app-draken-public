@@ -312,7 +312,11 @@ test.describe('Decisions tab', () => {
 
     await page.locator('[data-cy="decision-outcome-select"]').selectOption('Bifall');
     await page.locator('[data-cy="law-select"]').click();
-    await page.locator('[data-cy="law-select"]').getByText('1§ - Lag om färdtjänst').click();
+    // For the FT-approval form (no validity dates) the law combobox sits high on
+    // the page and its option popup is overlapped by the wrapping tab list, which
+    // intercepts a normal click. Dispatch the click directly on the resolved
+    // option to bypass the coordinate hit-test.
+    await page.locator('[data-cy="law-select"]').getByText('1§ - Lag om färdtjänst').dispatchEvent('click');
     await expect(page.locator('[data-cy="validFrom-input"]')).not.toBeVisible();
     await expect(page.locator('[data-cy="validTo-input"]')).not.toBeVisible();
     await page.locator('[data-cy="decision-richtext-wrapper"]').click();

@@ -45,6 +45,8 @@ test.describe('errand page', () => {
     await mockRoute('**/namespace/errands/**/communication/conversations', mockConversations, { method: 'GET' });
     await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, { method: 'GET' });
     await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSupportErrand, { method: 'GET' });
+    // Actions (forward/suspend/solve) refetch the errand by id afterwards.
+    await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand, { method: 'GET' });
     await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}/admin`, mockSetAdminResponse, { method: 'PATCH' });
     await mockRoute(`**/supportmessage/2281/${mockSupportErrand.id}`, mockForwardSupportMessage, { method: 'POST' });
   });
@@ -75,11 +77,10 @@ test.describe('errand page', () => {
     await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
     await dismissCookieConsent();
 
-    await page.locator('[data-cy="self-assign-errand-button"]').click();
-
-    const response = await page.waitForResponse(
-      (resp) => resp.url().includes('/admin') && resp.request().method() === 'PATCH'
-    );
+    const [response] = await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('/admin') && resp.request().method() === 'PATCH'),
+      page.locator('[data-cy="self-assign-errand-button"]').click(),
+    ]);
     const responseBody = await response.json();
     expect(responseBody.assignedUserId).toBe('kctest');
     expect(response.status()).toBe(200);
@@ -93,11 +94,10 @@ test.describe('errand page', () => {
     await expect(page.locator('[data-cy="admin-input"]')).toBeVisible();
     await page.locator('[data-cy="admin-input"]').selectOption({ index: 1 });
     await expect(page.locator('[data-cy="admin-input"]')).toHaveValue(`${mockSupportAdminsResponse.data[1].displayName}`);
-    await page.locator('[data-cy="save-button"]').click();
-
-    const response = await page.waitForResponse(
-      (resp) => resp.url().includes('/admin') && resp.request().method() === 'PATCH'
-    );
+    const [response] = await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('/admin') && resp.request().method() === 'PATCH'),
+      page.locator('[data-cy="save-button"]').click(),
+    ]);
     const requestBody = response.request().postDataJSON();
     expect(requestBody).toEqual({
       assignedUserId: mockSupportAdminsResponse.data[1].name,
@@ -120,11 +120,16 @@ test.describe('errand page', () => {
     await expect(page.locator('[data-cy="priority-input"]')).toBeVisible();
     await page.locator('[data-cy="priority-input"]').selectOption('LOW');
     await expect(page.locator('[data-cy="priority-input"]')).toHaveValue('LOW');
-    await page.locator('[data-cy="save-button"]').click();
 
-    const response = await page.waitForResponse(
-      (resp) => resp.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) && resp.request().method() === 'PATCH'
-    );
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        (resp) =>
+          resp.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) &&
+          resp.request().method() === 'PATCH' &&
+          resp.request().postDataJSON()?.priority === 'LOW'
+      ),
+      page.locator('[data-cy="save-button"]').click(),
+    ]);
     const requestBody = response.request().postDataJSON();
     expect(requestBody.priority).toBe('LOW');
     expect(requestBody.status).toBe('PENDING');
@@ -140,29 +145,38 @@ test.describe('errand page', () => {
     await mockRoute(`**/supportmessage/2281/${mockSupportErrand.id}`, mockForwardSupportMessage, { method: 'POST' });
     await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
 
-    await expect(page.locator('article.sk-modal-dialog')).toBeVisible();
+    const forwardDialog = page.locator('article.sk-modal-dialog').last();
+    await expect(forwardDialog).toBeVisible();
 
-    await page.locator('.sk-modal-dialog [data-cy="new-email-input"]').fill('test@test.se');
-    await page.locator('.sk-modal-dialog [data-cy="add-new-email-button"]').click();
+    await forwardDialog.locator('[data-cy="new-email-input"]').fill('test@test.se');
+    await forwardDialog.locator('[data-cy="add-new-email-button"]').click();
 
-    await expect(page.locator('[data-cy="decision-richtext-wrapper"]')).toContainText('Hej,');
+    await expect(forwardDialog.locator('[data-cy="decision-richtext-wrapper"]')).toContainText('Hej,');
 
-    await page.locator('.sk-modal-dialog button.sk-btn-primary').filter({ hasText: 'Överlämna ärende' }).click();
+    await forwardDialog.locator('button.sk-btn-primary').filter({ hasText: 'Överlämna ärende' }).click();
 
-    await expect(page.locator('.sk-dialog')).toContainText('Vill du överlämna ärendet?');
-    await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
-    await page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click();
-    await page.waitForResponse(
-      (resp) => resp.url().includes('supportmessage') && resp.request().method() === 'POST'
-    );
+    const confirmDialog = page.locator('article.sk-modal-dialog').last();
+    await expect(confirmDialog).toContainText('Vill du överlämna ärendet?');
+    await expect(confirmDialog.locator('.sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
+    await Promise.all([
+      page.waitForResponse(
+        (resp) => resp.url().includes('supportmessage') && resp.request().method() === 'POST'
+      ),
+      confirmDialog.locator('.sk-btn-primary').filter({ hasText: 'Ja' }).click(),
+    ]);
 
     // Can suspend the errand
     await page.locator('[data-cy="suspend-button"]').filter({ hasText: 'Parkera ärende' }).click();
-    await expect(page.locator('.sk-modal-dialog')).toContainText('Parkera ärendet');
-    await page.locator('.sk-modal-dialog .sk-btn-primary').filter({ hasText: 'Parkera ärende' }).click();
+    const suspendDialog = page.locator('article.sk-modal-dialog').last();
+    await expect(suspendDialog).toContainText('Parkera ärendet');
+    await suspendDialog.locator('.sk-btn-primary').filter({ hasText: 'Parkera ärende' }).click();
+    // The errand refetches after suspending; wait for the dialog to close and the
+    // solve button to settle before interacting with it.
+    await expect(suspendDialog).toBeHidden();
+    await expect(page.locator('[data-cy="solved-button"]').filter({ hasText: 'Avsluta ärende' })).toBeEnabled();
 
     const solveLabels = [
-      { label: 'Avslutat', id: 'SOLVED' },
+      { label: 'Avslutat', id: 'CLOSED' },
       { label: 'Registrerat i annat system', id: 'REGISTERED_EXTERNAL_SYSTEM' },
       { label: 'Åter till chef', id: 'BACK_TO_MANAGER' },
       { label: 'Åter till HR', id: 'BACK_TO_HR' },
@@ -172,9 +186,14 @@ test.describe('errand page', () => {
     await page.locator('[data-cy="solved-button"]').filter({ hasText: 'Avsluta ärende' }).click();
     await expect(page.locator('article.sk-modal-dialog')).toContainText('Välj en lösning');
     await expect(page.locator('[data-cy="solve-radiolist"] label')).toHaveCount(solveLabels.length);
-    await expect(page.locator('[data-cy="solve-radiolist"] label input').nth(1)).toHaveValue(solveLabels[1].id);
-    await page.locator('[data-cy="solve-radiolist"] label input').nth(1).check();
-    await page.locator('article.sk-modal-dialog button.sk-btn-primary').filter({ hasText: 'Avsluta ärende' }).click();
+    // The radio order is no longer fixed; assert all expected resolutions exist
+    // and select one by value rather than by index.
+    for (const { id } of solveLabels) {
+      await expect(page.locator(`[data-cy="solve-radiolist"] label input[value="${id}"]`)).toHaveCount(1);
+    }
+    await page.locator('[data-cy="solve-radiolist"] label input[value="REGISTERED_EXTERNAL_SYSTEM"]').check();
+    // The modal footer submit button is labelled "Avsluta" (the trigger is "Avsluta ärendet").
+    await page.locator('article.sk-modal-dialog button.sk-btn-primary').filter({ hasText: /^Avsluta$/ }).click();
   });
 
   test('Resets suspendedFrom and suspendedTo when reactivating errand', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -191,11 +210,13 @@ test.describe('errand page', () => {
     await dismissCookieConsent();
 
     await page.locator('[data-cy="resume-button"]').click();
-    await page.getByRole('button', { name: 'Ja' }).click();
-
-    const response = await page.waitForResponse(
-      (resp) => resp.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) && resp.request().method() === 'PATCH'
-    );
+    const confirmDialog = page.locator('article.sk-modal-dialog').last();
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        (resp) => resp.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) && resp.request().method() === 'PATCH'
+      ),
+      confirmDialog.getByRole('button', { name: 'Ja' }).click(),
+    ]);
     expect(response.status()).toBe(200);
     const requestBody = response.request().postDataJSON();
     expect(requestBody.suspension).toBeDefined();
@@ -219,33 +240,38 @@ test.describe('errand page', () => {
 
     // New comment
     await page.locator('[aria-label="Ny kommentar"]').fill(comment);
-    await page.locator('[data-cy="save-newcomment"]').filter({ hasText: 'Spara' }).click();
-    const newCommentResponse = await page.waitForResponse(
-      (resp) => resp.url().includes('supportnotes') && resp.request().method() === 'POST'
-    );
+    const [newCommentResponse] = await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('supportnotes') && resp.request().method() === 'POST'),
+      page.locator('[data-cy="save-newcomment"]').filter({ hasText: 'Spara' }).click(),
+    ]);
     expect(newCommentResponse.status()).toBe(200);
 
-    // Update comment
+    // Update comment. Every note renders its own (hidden) options popup, so the
+    // edit/delete buttons exist multiple times; target the one in the open popup.
     await page.locator(`[data-cy="options-${mockComments.notes[0].id}"]`).click();
-    await page.locator('[data-cy="edit-note-button"]').filter({ hasText: 'Ändra' }).click();
+    await page.locator('[data-cy="edit-note-button"]:visible').filter({ hasText: 'Ändra' }).click();
     await page.locator('[data-cy="edit-notes-input"]').clear();
     await page.locator('[data-cy="edit-notes-input"]').fill(updatedComment);
-    await page.locator('[data-cy="save-updatedcomment"]').filter({ hasText: 'Spara' }).click();
-
-    const updateResponse = await page.waitForResponse(
-      (resp) => resp.url().includes('supportnotes') && resp.request().method() === 'PATCH'
-    );
+    const [updateResponse] = await Promise.all([
+      page.waitForResponse(
+        (resp) => resp.url().includes('supportnotes') && resp.request().method() === 'PATCH'
+      ),
+      page.locator('[data-cy="save-updatedcomment"]').filter({ hasText: 'Spara' }).click(),
+    ]);
     expect(updateResponse.status()).toBe(200);
 
     // Delete comment
     await page.locator(`[data-cy="options-${mockComments.notes[0].id}"]`).click();
-    await page.locator('[data-cy="delete-note-button"]').filter({ hasText: 'Ta bort' }).click();
-    await expect(page.locator('.sk-dialog')).toContainText('Vill du ta bort kommentaren?');
-    await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
-    await page.locator('.sk-dialog .sk-btn-primary').filter({ hasText: 'Ja' }).click();
-    await page.waitForResponse(
-      (resp) => resp.url().includes('supportnotes') && resp.request().method() === 'DELETE'
-    );
+    await page.locator('[data-cy="delete-note-button"]:visible').filter({ hasText: 'Ta bort' }).click();
+    const confirmDialog = page.locator('article.sk-modal-dialog').last();
+    await expect(confirmDialog).toContainText('Vill du ta bort kommentaren?');
+    await expect(confirmDialog.locator('.sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
+    await Promise.all([
+      page.waitForResponse(
+        (resp) => resp.url().includes('supportnotes') && resp.request().method() === 'DELETE'
+      ),
+      confirmDialog.locator('.sk-btn-primary').filter({ hasText: 'Ja' }).click(),
+    ]);
   });
 
   test('Can manage Ärendelogg', async ({ page, dismissCookieConsent }) => {

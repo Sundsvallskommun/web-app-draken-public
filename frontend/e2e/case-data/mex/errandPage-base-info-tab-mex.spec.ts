@@ -25,6 +25,17 @@ import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 
 test.describe('Errand page', () => {
+  // Several tests in this file reassign mockMexErrand_base.data.stakeholders to
+  // exercise specific stakeholder scenarios. mockMexErrand_base is a shared
+  // module singleton, so without cleanup those mutations leak to other spec
+  // files reusing the same Playwright worker (e.g. the contracts tab, whose
+  // party picker expects the original stakeholders). Snapshot the pristine data
+  // and restore it after every test.
+  const pristineMexErrandData = structuredClone(mockMexErrand_base.data);
+  test.afterEach(() => {
+    mockMexErrand_base.data = structuredClone(pristineMexErrandData);
+  });
+
   test.beforeEach(async ({ page, mockRoute }) => {
     await mockRoute('**/schemas/*/latest', { data: { id: 'mock-schema-id', value: {} }, message: 'success' }, { method: 'GET' });
     await mockRoute('**/messages/*', mockMessages, { method: 'GET' });
@@ -35,6 +46,10 @@ test.describe('Errand page', () => {
     await mockRoute('**/featureflags', [], { method: 'GET' });
     await mockRoute('**/parking-permits/', mockPermits, { method: 'GET' });
     await mockRoute('**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits, { method: 'GET' });
+    await page.route(/\/errand\/\d*/, async (route) => {
+      if (route.request().method() !== 'GET') { await route.fallback(); return; }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(mockMexErrand_base) });
+    }); // @getErrandById
     await mockRoute('**/errand/101/messages', mockMessages, { method: 'GET' });
     await page.route(/\/errand\/\d+\/attachments$/, async (route) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(mockAttachments) });
@@ -58,10 +73,6 @@ test.describe('Errand page', () => {
     await mockRoute('**/errands/*/facilities', mockMexErrand_base, { method: 'POST' });
 
     await mockRoute('**/errand/errandNumber/*', mockMexErrand_base, { method: 'GET' }); // @getErrand
-    await page.route(/\/errand\/\d*/, async (route) => {
-      if (route.request().method() !== 'GET') { await route.fallback(); return; }
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(mockMexErrand_base) });
-    }); // @getErrandById
     await mockRoute('**/schemas/FTErrandAssets/latest', mockJsonSchema, { method: 'GET' }); // @getJsonSchema
     await mockRoute('**/schemas/*/ui-schema', { data: { id: 'mock-ui-schema-id', value: {} }, message: 'success' }, { method: 'GET' }); // @getUiSchema
     await mockRoute('**/estateInfo/**1:1', mockEstateInfo11, { method: 'GET' }); // @getEstateInfo
@@ -102,7 +113,7 @@ test.describe('Errand page', () => {
     await expect(page.locator('[data-cy="channel-input"]')).toBeVisible();
     await expect(page.locator('[data-cy="channel-input"]')).toHaveValue(channel);
     await expect(page.locator('[data-cy="municipality-input"]')).toBeVisible();
-    await expect(page.locator('[data-cy="municipality-input"]').getByText('Sundsvall')).toBeVisible();
+    await expect(page.locator('[data-cy="municipality-input"]')).toContainText('Sundsvall');
     await expect(page.locator('[data-cy="casetype-input"]')).toBeVisible();
     await expect(page.locator('[data-cy="priority-input"]')).toBeVisible();
 
@@ -203,7 +214,7 @@ test.describe('Errand page', () => {
     // Intressent
     await page.locator('[data-cy="contact-personalNumber-person"]').clear();
     await page.locator('[data-cy="contact-personalNumber-person"]').fill(env.mockInvalidPersonNumber);
-    await expect(page.locator('[data-cy="contact-form"] button')).toBeVisible();
+    await expect(page.locator('[data-cy="contact-form"] button').first()).toBeVisible();
 
     await page.locator('[data-cy="contact-personalNumber-person"]').clear();
     await page.locator('[data-cy="contact-personalNumber-person"]').fill(env.mockInvalidPersonNumber);
@@ -226,12 +237,14 @@ test.describe('Errand page', () => {
     await visit(page, dismissCookieConsent);
     await page.waitForTimeout(500);
 
+    const otherParties = page.getByRole('region', { name: 'Övriga parter' });
     await expect(page.locator('[data-cy="contact-personalNumber-person"]')).toBeEnabled();
     await page.locator('[data-cy="contact-personalNumber-person"]').clear();
     await page.locator('[data-cy="contact-personalNumber-person"]').fill(env.mockPersonNumber);
-    await expect(page.getByText('Lägg till manuellt')).toBeVisible();
-    await page.locator('[data-cy="contact-form"] button').filter({ hasText: 'Sök' }).click();
-    await page.waitForResponse((resp) => resp.url().includes('/address') && resp.status() === 200);
+    await expect(otherParties.getByText('Lägg till manuellt')).toBeVisible();
+    const addressResponse = page.waitForResponse((resp) => resp.url().includes('/address') && resp.status() === 200);
+    await otherParties.getByRole('button', { name: 'Sök' }).click();
+    await addressResponse;
     await expect(page.locator('[data-cy="not-found-error-message"]')).toBeVisible();
     await expect(page.locator('[data-cy="not-found-error-message"]')).toContainText('Sökningen gav ingen träff');
   });
@@ -314,15 +327,18 @@ test.describe('Errand page', () => {
     // Save button disabled when no changes
     await expect(page.locator('[data-cy="save-and-continue-button"]')).toBeDisabled();
 
-    await expect(page.locator('[data-cy="channel-input"]')).toBeDisabled();
+    await expect(page.locator('[data-cy="channel-input"]')).toHaveAttribute('readonly');
     await page.locator('[data-cy="casetype-input"]').selectOption(CaseTypes.MEX.MEX_INVOICE);
     await page.locator('[data-cy="priority-input"]').selectOption('Hög');
 
-    await page.locator('[data-cy="save-and-continue-button"]').click();
-    const saveExtraParamsResponse = await page.waitForRequest(
+    const saveExtraParamsResponse = page.waitForRequest(
       (req) => req.url().includes('/extraparameters') && req.method() === 'PATCH'
     );
-    const saveExtraParamsBody = saveExtraParamsResponse.postDataJSON();
+    const patchErrandRequest = page.waitForRequest(
+      (req) => req.url().includes('/errands/') && req.method() === 'PATCH' && !req.url().includes('extraparameters')
+    );
+    await page.locator('[data-cy="save-and-continue-button"]').click();
+    const saveExtraParamsBody = (await saveExtraParamsResponse).postDataJSON();
     preventProcessExtraParameters(saveExtraParamsBody);
     expect(saveExtraParamsBody).toEqual([
       { key: 'dummyItem', values: ['dummyValue1', 'dummyValue2'] },
@@ -333,10 +349,7 @@ test.describe('Errand page', () => {
       { key: 'invoiceRecipient', values: [] },
       { key: 'otherInformation', values: [] },
     ]);
-    const patchErrandRequest = await page.waitForRequest(
-      (req) => req.url().includes('/errands/') && req.method() === 'PATCH' && !req.url().includes('extraparameters')
-    );
-    const patchErrandBody = patchErrandRequest.postDataJSON();
+    const patchErrandBody = (await patchErrandRequest).postDataJSON();
     expect(patchErrandBody.id).toBe('101');
     expect(patchErrandBody.caseType).toBe(CaseTypes.MEX.MEX_INVOICE);
     expect(patchErrandBody.priority).toBe('HIGH');
@@ -454,16 +467,16 @@ test.describe('Errand page', () => {
     await page.locator('[data-cy="roll-select"]').selectOption('Säljare');
 
     await page.getByRole('button', { name: 'Lägg till ärendeägare' }).click();
-    await page.locator('[data-cy="save-and-continue-button"]').click();
-    const saveExtraParamsRequest = await page.waitForRequest(
+    const saveExtraParamsRequest = page.waitForRequest(
       (req) => req.url().includes('/extraparameters') && req.method() === 'PATCH'
     );
-    preventProcessExtraParameters(saveExtraParamsRequest.postDataJSON());
-
-    const patchErrandRequest = await page.waitForRequest(
+    const patchErrandRequest = page.waitForRequest(
       (req) => req.url().includes('/errands/') && req.method() === 'PATCH' && !req.url().includes('extraparameters')
     );
-    const patchBody = patchErrandRequest.postDataJSON();
+    await page.locator('[data-cy="save-and-continue-button"]').click();
+    preventProcessExtraParameters((await saveExtraParamsRequest).postDataJSON());
+
+    const patchBody = (await patchErrandRequest).postDataJSON();
     const requestApplicant = patchBody.stakeholders.find((s: any) => s.roles.includes('APPLICANT'));
     expect(requestApplicant.contactInformation[0].contactType).toBe('PHONE');
     expect(requestApplicant.contactInformation[0].value).toBe(phonenumber_1);
@@ -595,7 +608,7 @@ test.describe('Errand page', () => {
     await page.getByRole('button', { name: 'Redigera uppgifter' }).click();
 
     await expect(page.locator('[data-cy="contact-manual-toggle"]')).not.toBeVisible();
-    await expect(page.locator('[data-cy="contact-personalNumber"]')).toHaveAttribute('readonly', 'readonly');
+    await expect(page.locator('[data-cy="contact-personalNumber"]')).toHaveAttribute('readonly');
     await expect(page.locator('[data-cy="contact-firstName"]')).toBeEnabled();
     await expect(page.locator('[data-cy="contact-firstName"]')).toHaveValue(contact[0].firstName);
     await expect(page.locator('[data-cy="contact-lastName"]')).toBeEnabled();
@@ -650,7 +663,7 @@ test.describe('Errand page', () => {
     await page.getByRole('button', { name: 'Redigera uppgifter' }).click();
 
     await expect(page.locator('[data-cy="contact-manual-toggle"]')).not.toBeVisible();
-    await expect(page.locator('[data-cy="contact-organizationName"]')).toHaveAttribute('readonly', 'readonly');
+    await expect(page.locator('[data-cy="contact-organizationName"]')).toHaveAttribute('readonly');
     await expect(page.locator('[data-cy="contact-firstName"]')).not.toBeVisible();
     await expect(page.locator('[data-cy="contact-lastName"]')).not.toBeVisible();
     await expect(page.locator('[data-cy="contact-street"]')).toBeEnabled();

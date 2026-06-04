@@ -67,8 +67,8 @@ test.describe('Contract Overview page', () => {
     const firstRow = page.locator('[data-cy="contracts-table"] tbody tr').first();
     await expect(firstRow.getByText('TESTKOMMUN TESTFASTIGHET 1:1')).toBeVisible();
     await expect(firstRow.getByText('Testdistrikt Norra')).toBeVisible();
-    await expect(firstRow.getByText('Arrende')).toBeVisible();
-    await expect(firstRow.getByText('Båtplats')).toBeVisible();
+    await expect(firstRow.getByText('Arrende', { exact: true })).toBeVisible();
+    await expect(firstRow.getByText('Lägenhetsarrende')).toBeVisible();
     await expect(firstRow.getByText('2049-00001')).toBeVisible();
     await expect(firstRow.getByText('101')).toBeVisible();
     await expect(firstRow.getByText('Test Kommun AB')).toBeVisible();
@@ -141,7 +141,7 @@ test.describe('Contract Overview page', () => {
   test('displays pagination controls', async ({ page }) => {
     await navigateToContractOverview(page);
     // Pagination controls are in the table footer area
-    await expect(page.getByText('Sida:')).toBeVisible();
+    await expect(page.getByText('Sida:', { exact: true })).toBeVisible();
     await expect(page.getByText('Rader per sida:')).toBeVisible();
     await expect(page.getByText('Radhöjd:')).toBeVisible();
     await expect(page.locator('input#pageSize')).toBeVisible();
@@ -150,10 +150,15 @@ test.describe('Contract Overview page', () => {
 
   test('can change rows per page', async ({ page, mockRoute }) => {
     await navigateToContractOverview(page);
+    await mockRoute('**/contracts?*', mockContractsList, { method: 'GET' }); // @getContractsNewLimit
+    const sizeRequest = page.waitForResponse(
+      (resp) => resp.url().includes('/contracts?') && resp.url().includes('size=24') && resp.status() === 200
+    );
     await page.locator('input#pageSize').clear();
     await page.locator('input#pageSize').fill('24');
-    await mockRoute('**/contracts?*', mockContractsList, { method: 'GET' }); // @getContractsNewLimit
-    await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.url().includes('limit=24') && resp.status() === 200);
+    // Page size is applied on blur / Enter
+    await page.locator('input#pageSize').press('Enter');
+    await sizeRequest;
   });
 
   test('can change row height', async ({ page }) => {
@@ -374,7 +379,9 @@ test.describe('Contract Overview page', () => {
       await page.locator('[data-cy="contract-row-0"]').click();
 
       // Header should show "Arrende" for lease agreement
-      await expect(page.locator('[data-cy="contract-detail-panel"]').getByText('Arrende')).toBeVisible();
+      await expect(
+        page.locator('[data-cy="contract-detail-panel"]').getByRole('heading', { name: 'Arrende', exact: true })
+      ).toBeVisible();
     });
 
     test('displays correct contract type in panel header for purchase agreement', async ({ page, mockRoute }) => {
@@ -384,7 +391,9 @@ test.describe('Contract Overview page', () => {
       await page.locator('[data-cy="contract-row-0"]').click();
 
       // Header should show "Köpeavtal" for purchase agreement
-      await expect(page.locator('[data-cy="contract-detail-panel"]').getByText('Köpeavtal')).toBeVisible();
+      await expect(
+        page.locator('[data-cy="contract-detail-panel"]').getByRole('heading', { name: 'Köpeavtal', exact: true })
+      ).toBeVisible();
     });
 
     test('displays parties disclosure with party tables for lease agreement', async ({ page, mockRoute }) => {
@@ -396,14 +405,13 @@ test.describe('Contract Overview page', () => {
       // Parties disclosure should be visible and initially open
       await expect(page.locator('[data-cy="parties-disclosure"]')).toBeVisible();
 
-      // Upplåtare table should show lessor
-      await expect(page.locator('[data-cy="Upplåtare-table"]')).toBeVisible();
-      await expect(page.locator('[data-cy="Upplåtare-table"]').getByText('Sundsvalls Kommun')).toBeVisible();
-
-      // Arrendatorer table should show lessees
-      await expect(page.locator('[data-cy="Arrendatorer-table"]')).toBeVisible();
-      await expect(page.locator('[data-cy="Arrendatorer-table"]').getByText('Anna Arrendator')).toBeVisible();
-      await expect(page.locator('[data-cy="Arrendatorer-table"]').getByText('Bengt Arrendator')).toBeVisible();
+      // Parties table shows lessor and lessees with their roles
+      const partiesTable = page.locator('[data-cy="parties-table"]');
+      await expect(partiesTable).toBeVisible();
+      await expect(partiesTable.getByText('Sundsvalls Kommun')).toBeVisible();
+      await expect(partiesTable.getByText('Upplåtare')).toBeVisible();
+      await expect(partiesTable.getByText('Anna Arrendator')).toBeVisible();
+      await expect(partiesTable.getByText('Bengt Arrendator')).toBeVisible();
     });
 
     test('displays parties disclosure with party tables for purchase agreement', async ({ page, mockRoute }) => {
@@ -415,13 +423,13 @@ test.describe('Contract Overview page', () => {
       // Parties disclosure should be visible
       await expect(page.locator('[data-cy="parties-disclosure"]')).toBeVisible();
 
-      // Säljare table should show seller
-      await expect(page.locator('[data-cy="Säljare-table"]')).toBeVisible();
-      await expect(page.locator('[data-cy="Säljare-table"]').getByText('Sundsvalls Kommun')).toBeVisible();
-
-      // Köpare table should show buyer
-      await expect(page.locator('[data-cy="Köpare-table"]')).toBeVisible();
-      await expect(page.locator('[data-cy="Köpare-table"]').getByText('Kalle Köpare')).toBeVisible();
+      // Parties table shows seller and buyer with their roles
+      const partiesTable = page.locator('[data-cy="parties-table"]');
+      await expect(partiesTable).toBeVisible();
+      await expect(partiesTable.getByText('Sundsvalls Kommun')).toBeVisible();
+      await expect(partiesTable.getByText('Säljare', { exact: true })).toBeVisible();
+      await expect(partiesTable.getByText('Kalle Köpare')).toBeVisible();
+      await expect(partiesTable.getByText('Köpare', { exact: true })).toBeVisible();
     });
 
     test('displays area disclosure with property designations', async ({ page, mockRoute }) => {
@@ -435,7 +443,7 @@ test.describe('Contract Overview page', () => {
       await page.locator('[data-cy="area-disclosure"]').click();
 
       // Property designations should be displayed
-      await expect(page.locator('[data-cy="property-designation-checkboxgroup"]')).toBeVisible();
+      await expect(page.locator('[data-cy="contract-property-designation-checkboxgroup"]')).toBeVisible();
     });
 
     test('displays avtalstid disclosure for lease agreement', async ({ page, mockRoute }) => {
@@ -542,7 +550,9 @@ test.describe('Contract Overview page', () => {
 
       // Click first row (lease agreement)
       await page.locator('[data-cy="contract-row-0"]').click();
-      await expect(page.locator('[data-cy="contract-detail-panel"]').getByText('Arrende')).toBeVisible();
+      await expect(
+        page.locator('[data-cy="contract-detail-panel"]').getByRole('heading', { name: 'Arrende', exact: true })
+      ).toBeVisible();
 
       // Close panel
       await page.locator('[data-cy="close-contract-detail-wrapper"]').click();
@@ -550,7 +560,9 @@ test.describe('Contract Overview page', () => {
 
       // Click third row (purchase agreement)
       await page.locator('[data-cy="contract-row-2"]').click();
-      await expect(page.locator('[data-cy="contract-detail-panel"]').getByText('Köpeavtal')).toBeVisible();
+      await expect(
+        page.locator('[data-cy="contract-detail-panel"]').getByRole('heading', { name: 'Köpeavtal', exact: true })
+      ).toBeVisible();
     });
 
     test.describe('Contract invoices (Fakturor)', () => {
@@ -563,7 +575,6 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-row-0"]').click();
         await page.locator('[data-cy="fakturor-disclosure"]').click();
 
-        await page.waitForResponse((resp) => resp.url().includes('/billingdatacollector/') && resp.status() === 200);
 
         await expect(page.locator('[data-cy="next-billing-date"]')).toContainText('2026-06-01');
       });
@@ -577,7 +588,6 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-row-0"]').click();
         await page.locator('[data-cy="fakturor-disclosure"]').click();
 
-        await page.waitForResponse((resp) => resp.url().includes('/billingdatacollector/') && resp.status() === 500);
 
         await expect(page.locator('[data-cy="next-billing-date"]')).toContainText('-');
       });
@@ -601,7 +611,6 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-row-0"]').click();
         await page.locator('[data-cy="fakturor-disclosure"]').click();
 
-        await page.waitForResponse((resp) => resp.url().includes('/invoices') && resp.status() === 200);
 
         // Invoices table should be visible
         await expect(page.locator('[data-cy="contract-invoices-table"]')).toBeVisible();
@@ -615,14 +624,13 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-row-0"]').click();
         await page.locator('[data-cy="fakturor-disclosure"]').click();
 
-        await page.waitForResponse((resp) => resp.url().includes('/invoices') && resp.status() === 200);
 
         // Check first invoice row
         await expect(page.locator('[data-cy="invoice-row-0"]')).toBeVisible();
         await expect(page.locator('[data-cy="invoice-status-0"]')).toContainText('Ny');
         await expect(page.locator('[data-cy="invoice-date-0"]')).toContainText('2024-01-15');
         await expect(page.locator('[data-cy="invoice-due-date-0"]')).toContainText('2024-02-15');
-        await expect(page.locator('[data-cy="invoice-number-0"]')).toContainText('-');
+        await expect(page.locator('[data-cy="invoice-amount-0"]')).toContainText('kr');
       });
 
       test('displays correct status labels with correct colors', async ({ page, mockRoute }) => {
@@ -633,7 +641,6 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-row-0"]').click();
         await page.locator('[data-cy="fakturor-disclosure"]').click();
 
-        await page.waitForResponse((resp) => resp.url().includes('/invoices') && resp.status() === 200);
 
         // Check status labels
         await expect(page.locator('[data-cy="invoice-status-0"]')).toContainText('Ny');
@@ -642,7 +649,7 @@ test.describe('Contract Overview page', () => {
         await expect(page.locator('[data-cy="invoice-status-3"]')).toContainText('Avslagen');
       });
 
-      test('displays download PDF button for each invoice', async ({ page, mockRoute }) => {
+      test('displays view detail button for each invoice', async ({ page, mockRoute }) => {
         await mockRoute('**/contracts?*', mockContractDetailLeaseAgreement, { method: 'GET' }); // @getContracts
         await mockRoute('**/billing/**/contracts/**/invoices*', mockContractInvoices, { method: 'GET' }); // @getContractInvoices
         await navigateToContractOverview(page);
@@ -650,14 +657,12 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-row-0"]').click();
         await page.locator('[data-cy="fakturor-disclosure"]').click();
 
-        await page.waitForResponse((resp) => resp.url().includes('/invoices') && resp.status() === 200);
-
-        // Check download buttons exist
-        await expect(page.locator('[data-cy="invoice-download-pdf-0"]')).toBeVisible();
-        await expect(page.locator('[data-cy="invoice-download-pdf-0"]')).toContainText('Hämta pdf');
-        await expect(page.locator('[data-cy="invoice-download-pdf-1"]')).toBeVisible();
-        await expect(page.locator('[data-cy="invoice-download-pdf-2"]')).toBeVisible();
-        await expect(page.locator('[data-cy="invoice-download-pdf-3"]')).toBeVisible();
+        // Check view detail buttons exist for each invoice
+        await expect(page.locator('[data-cy="invoice-detail-button-0"]')).toBeVisible();
+        await expect(page.locator('[data-cy="invoice-detail-button-0"]')).toContainText('Visa');
+        await expect(page.locator('[data-cy="invoice-detail-button-1"]')).toBeVisible();
+        await expect(page.locator('[data-cy="invoice-detail-button-2"]')).toBeVisible();
+        await expect(page.locator('[data-cy="invoice-detail-button-3"]')).toBeVisible();
       });
 
       test('displays empty state when no invoices exist', async ({ page, mockRoute }) => {
@@ -668,7 +673,6 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-row-0"]').click();
         await page.locator('[data-cy="fakturor-disclosure"]').click();
 
-        await page.waitForResponse((resp) => resp.url().includes('/invoices') && resp.status() === 200);
 
         // Empty state message should be visible
         await expect(page.locator('[data-cy="invoices-empty"]')).toBeVisible();
@@ -695,7 +699,6 @@ test.describe('Contract Overview page', () => {
         await expect(page.locator('[data-cy="invoices-loading"]')).toBeVisible();
 
         // Wait for loading to complete
-        await page.waitForResponse((resp) => resp.url().includes('/invoices') && resp.status() === 200);
 
         // Loading state should be gone and table visible
         await expect(page.locator('[data-cy="invoices-loading"]')).not.toBeVisible();
@@ -768,10 +771,11 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-detail-edit-button"]').click();
 
         // Confirmation dialog should appear
-        await expect(page.getByText('Ändra avtalsuppgifter')).toBeVisible();
-        await expect(page.getByText('Vill du skapa ett nytt ärende för avtal 2049-00010?')).toBeVisible();
-        await expect(page.getByText('Ja, skapa ärende')).toBeVisible();
-        await expect(page.getByText('Avbryt')).toBeVisible();
+        const dialog = page.locator('article.sk-modal-dialog');
+        await expect(dialog.locator('.sk-modal-dialog-header-title')).toHaveText('Ändra avtalsuppgifter');
+        await expect(dialog.getByText('Vill du skapa ett nytt ärende för avtal 2049-00010?')).toBeVisible();
+        await expect(page.locator('[data-cy="contract-detail-confirm-submit"]')).toBeVisible();
+        await expect(page.locator('[data-cy="contract-detail-confirm-cancel"]')).toBeVisible();
       });
 
       test('does not create errand when clicking Avbryt in confirmation dialog', async ({ page, mockRoute }) => {
@@ -789,7 +793,7 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-detail-edit-button"]').click();
 
         // Click cancel button
-        await page.getByText('Avbryt').click();
+        await page.locator('[data-cy="contract-detail-confirm-cancel"]').click();
 
         // Dialog should close
         await expect(page.getByText('Vill du skapa ett nytt ärende för avtal')).not.toBeVisible();
@@ -816,12 +820,12 @@ test.describe('Contract Overview page', () => {
 
         // Confirm the dialog
         const requestPromise = page.waitForRequest((req) => req.url().includes('/errands') && req.method() === 'POST');
-        await page.getByText('Ja, skapa ärende').click();
+        await page.locator('[data-cy="contract-detail-confirm-submit"]').click();
 
         // Wait for the POST request and verify the data
         const request = await requestPromise;
         const body = request.postDataJSON();
-        expect(body).toHaveProperty('caseType', 'MEX_OTHER');
+        expect(body).toHaveProperty('caseType', 'UPDATECONTRACT');
         expect(body).toHaveProperty('channel', 'WEB_UI');
         expect(body).toHaveProperty('phase', 'Aktualisering');
         expect(body).toHaveProperty('priority', 'MEDIUM');
@@ -864,7 +868,7 @@ test.describe('Contract Overview page', () => {
         const extraParamsRequestPromise = page.waitForRequest(
           (req) => req.url().includes('/extraparameters') && req.method() === 'PATCH'
         );
-        await page.getByText('Ja, skapa ärende').click();
+        await page.locator('[data-cy="contract-detail-confirm-submit"]').click();
 
         // Wait for extraParameters PATCH and verify contractId is included
         const extraParamsRequest = await extraParamsRequestPromise;
@@ -900,6 +904,10 @@ test.describe('Contract Overview page', () => {
             return null;
           }) as typeof window.open;
         });
+        // Reload so the init script (which overrides window.open) actually runs,
+        // since the contract overview is reached via client-side navigation.
+        await page.reload();
+        await page.waitForResponse((resp) => resp.url().includes('/errands') && resp.status() === 200);
 
         await navigateToContractOverview(page);
 
@@ -907,7 +915,7 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-detail-edit-button"]').click();
 
         // Confirm the dialog
-        await page.getByText('Ja, skapa ärende').click();
+        await page.locator('[data-cy="contract-detail-confirm-submit"]').click();
 
         // Wait for the extra parameters PATCH
         await page.waitForResponse((resp) => resp.url().includes('/extraparameters') && resp.status() === 200);
@@ -925,7 +933,7 @@ test.describe('Contract Overview page', () => {
           .toContainEqual(expect.objectContaining({ url: expect.stringMatching(/\/arende\/MEX-2024-000999$/), target: '_blank' }));
       });
 
-      test('shows success toast and navigates to new errand after creation', async ({ page, mockRoute }) => {
+      test('shows success toast and opens new errand after creation', async ({ page, mockRoute }) => {
         await mockRoute('**/contracts?*', mockContractDetailLeaseAgreement, { method: 'GET' }); // @getContracts
         await mockRoute('**/errands', mockCreatedErrandResponse, { method: 'POST' }); // @postErrand
         await page.route(/2281\/errand\/999/, async (route) => {
@@ -937,13 +945,28 @@ test.describe('Contract Overview page', () => {
         }); // @getCreatedErrand
         await mockRoute('**/errands/999/stakeholders', mockCreatedErrand, { method: 'PATCH' }); // @patchErrand
         await mockRoute('**/errands/**/extraparameters', { data: [], message: 'ok' }, { method: 'PATCH' }); // @patchExtraParameters
+
+        // The created errand is opened in a new tab via window.open; record the call.
+        await page.addInitScript(() => {
+          (window as unknown as { __openCalls: { url: string; target: string }[] }).__openCalls = [];
+          window.open = ((url?: string | URL, target?: string) => {
+            (window as unknown as { __openCalls: { url: string; target: string }[] }).__openCalls.push({
+              url: String(url),
+              target: String(target),
+            });
+            return null;
+          }) as typeof window.open;
+        });
+        await page.reload();
+        await page.waitForResponse((resp) => resp.url().includes('/errands') && resp.status() === 200);
+
         await navigateToContractOverview(page);
 
         await page.locator('[data-cy="contract-row-0"]').click();
         await page.locator('[data-cy="contract-detail-edit-button"]').click();
 
         // Confirm the dialog
-        await page.getByText('Ja, skapa ärende').click();
+        await page.locator('[data-cy="contract-detail-confirm-submit"]').click();
 
         // Wait for the extra parameters PATCH
         await page.waitForResponse((resp) => resp.url().includes('/extraparameters') && resp.status() === 200);
@@ -951,8 +974,14 @@ test.describe('Contract Overview page', () => {
         // Success toast should be shown
         await expect(page.getByText('Ärende skapat')).toBeVisible();
 
-        // Should navigate to the new errand page
-        await expect(page).toHaveURL(/\/arende\/MEX-2024-000999/);
+        // Should open the new errand
+        await expect
+          .poll(() =>
+            page.evaluate(
+              () => (window as unknown as { __openCalls: { url: string; target: string }[] }).__openCalls
+            )
+          )
+          .toContainEqual(expect.objectContaining({ url: expect.stringMatching(/\/arende\/MEX-2024-000999$/) }));
       });
 
       test('shows error toast when errand creation fails', async ({ page, mockRoute }) => {
@@ -964,9 +993,11 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-detail-edit-button"]').click();
 
         // Confirm the dialog
-        await page.getByText('Ja, skapa ärende').click();
-
-        await page.waitForResponse((resp) => resp.url().includes('/errands') && resp.status() === 500);
+        const failResponse = page.waitForResponse(
+          (resp) => resp.url().includes('/errands') && resp.request().method() === 'POST' && resp.status() === 500
+        );
+        await page.locator('[data-cy="contract-detail-confirm-submit"]').click();
+        await failResponse;
 
         // Error toast should be shown
         await expect(page.getByText('Något gick fel när ärendet skulle skapas')).toBeVisible();
@@ -993,7 +1024,7 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-detail-edit-button"]').click();
 
         // Confirm the dialog
-        await page.getByText('Ja, skapa ärende').click();
+        await page.locator('[data-cy="contract-detail-confirm-submit"]').click();
 
         // Button should show loading state
         await expect(page.locator('[data-cy="contract-detail-edit-button"]')).toContainText('Skapar ärende...');

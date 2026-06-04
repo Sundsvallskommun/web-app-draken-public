@@ -84,28 +84,36 @@ test.describe('Errand page contracts tab', () => {
   const visitErrandContractTab = async (page, mockRoute, dismissCookieConsent) => {
     await mockRoute('**/errand/101', mockMexErrand_base, { method: 'GET' }); // @getErrandById
     await mockRoute('**/errand/errandNumber/*', mockMexErrand_base, { method: 'GET' }); // @getErrand
+    const errandResponse = page.waitForResponse(
+      (resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200
+    );
+    const contractResponse = page.waitForResponse(
+      (resp) => resp.url().includes('/contracts/2024-01026') && resp.status() === 200
+    );
     await page.goto(`arende/${mockMexErrand_base.data.id}`);
-    await page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200);
+    await errandResponse;
+    await contractResponse;
     await dismissCookieConsent();
-    await page.waitForResponse((resp) => resp.url().includes('/contracts/2024-01026') && resp.status() === 200);
-    const tab = page.locator('.sk-tabs-list button').nth(4);
-    await expect(tab).toHaveText('Avtal');
+    const tab = page.getByRole('tab', { name: 'Avtal', exact: true });
     await tab.click({ force: true });
     await expect(page.locator('[data-cy="contract-type-select"]')).toBeVisible();
   };
 
   const visitErrandWithoutContract = async (page, mockRoute, dismissCookieConsent) => {
-    const mockMexErrand_base_without_contract = { ...mockMexErrand_base };
-    mockMexErrand_base_without_contract.data.extraParameters = mockMexErrand_base.data.extraParameters.filter(
-      (p) => p.key !== 'contractId'
-    );
+    // Deep clone so filtering extraParameters does not mutate the shared
+    // mockMexErrand_base fixture (which other tests/files reuse).
+    const mockMexErrand_base_without_contract = structuredClone(mockMexErrand_base);
+    mockMexErrand_base_without_contract.data.extraParameters =
+      mockMexErrand_base_without_contract.data.extraParameters.filter((p) => p.key !== 'contractId');
     await mockRoute('**/errand/101', mockMexErrand_base_without_contract, { method: 'GET' }); // @getErrandByIdNoContract
     await mockRoute('**/errand/errandNumber/*', mockMexErrand_base_without_contract, { method: 'GET' }); // @getErrandNoContract
+    const errandResponse = page.waitForResponse(
+      (resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200
+    );
     await page.goto(`arende/${mockMexErrand_base.data.id}`);
-    await page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200);
+    await errandResponse;
     await dismissCookieConsent();
-    const tab = page.locator('.sk-tabs-list button').nth(4);
-    await expect(tab).toHaveText('Avtal');
+    const tab = page.getByRole('tab', { name: 'Avtal', exact: true });
     await tab.click({ force: true });
     await expect(page.locator('[data-cy="contract-type-select"]')).toBeVisible();
   };
@@ -118,7 +126,7 @@ test.describe('Errand page contracts tab', () => {
       { method: 'POST' }
     );
     await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
-    await page.locator('[data-cy="bilagor-disclosure"] button.sk-btn-tertiary').click();
+    await page.locator('[data-cy="bilagor-disclosure"] button.sk-disclosure-header-button').click();
 
     await expect(page.locator('[data-cy="contract-upload-field"]')).toBeVisible();
     await expect(page.locator('[data-cy="contract-attachment-item-1"]')).toBeVisible();
@@ -127,12 +135,11 @@ test.describe('Errand page contracts tab', () => {
     await page.locator('[data-cy="delete-attachment-1"]').click();
     await expect(page.locator('h1.sk-dialog-confirm-heading').filter({ hasText: 'Ta bort signerat avtal?' })).toBeVisible();
     await expect(page.locator('article.sk-dialog').locator('button').filter({ hasText: 'Nej' })).toBeVisible();
-    await page.locator('article.sk-dialog').locator('button').filter({ hasText: 'Ja' }).click();
-
-    const deleteRequest = await page.waitForRequest(
+    const deleteRequest = page.waitForRequest(
       (req) => req.url().includes('/attachments/1') && req.method() === 'DELETE'
     );
-    expect(deleteRequest.url()).toContain(contractText.data.contractId);
+    await page.locator('article.sk-dialog').locator('button').filter({ hasText: 'Ja' }).click();
+    expect((await deleteRequest).url()).toContain(contractText.data.contractId);
   });
 
   test('shows the correct contracts information', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -150,49 +157,50 @@ test.describe('Errand page contracts tab', () => {
       await expect(page.locator(`[data-cy="badge-${type.key}"]`).filter({ hasText: type.label })).toBeVisible();
     }
 
-    await expect(page.locator('[data-cy="casedata-contract-form"]').locator('.sk-disclosure')).toHaveCount(6);
-    await expect(page.locator('[data-cy="parties-disclosure"]').getByText('Parter')).toBeVisible();
-    await expect(page.locator('[data-cy="area-disclosure"]').getByText('Område')).toBeVisible();
-    await expect(page.locator('[data-cy="avtalstid-disclosure"]').getByText('Avtalstid och uppsägning')).toBeVisible();
-    await expect(page.locator('[data-cy="lopande-disclosure"]').getByText('Löpande avgift')).toBeVisible();
-    await expect(page.locator('[data-cy="bilagor-disclosure"]').getByText('Avtalsbilagor')).toBeVisible();
+    await expect(
+      page.locator('[data-cy="parties-disclosure"] .sk-disclosure-header-title').getByText('Parter')
+    ).toBeVisible();
+    await expect(
+      page.locator('[data-cy="area-disclosure"] .sk-disclosure-header-title').getByText('Område')
+    ).toBeVisible();
+    await expect(
+      page.locator('[data-cy="avtalstid-disclosure"] .sk-disclosure-header-title').getByText('Avtalstid')
+    ).toBeVisible();
+    await expect(
+      page.locator('[data-cy="lopande-disclosure"] .sk-disclosure-header-title').getByText('Löpande avgift')
+    ).toBeVisible();
+    await expect(
+      page.locator('[data-cy="bilagor-disclosure"] .sk-disclosure-header-title').getByText('Avtalsbilagor')
+    ).toBeVisible();
   });
 
   // Parter
   test('manages parties in lease agreements', async ({ page, mockRoute, dismissCookieConsent }) => {
     await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
     await expect(page.locator('[data-cy="parties-disclosure"]')).toBeVisible();
+
+    const partiesTable = page.locator('[data-cy="parties-table"]');
+    const lessorParty = mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSOR'));
+    const lesseeParty = mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSEE'));
     await expect(
-      page.locator('[data-cy="Upplåtare-table"] .sk-table-tbody-tr').getByText(
-        `${mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSOR'))?.firstName ?? ''} ${
-          mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSOR'))?.lastName ?? ''
-        }`
-      )
+      partiesTable.getByText(`${lessorParty?.firstName ?? ''} ${lessorParty?.lastName ?? ''}`)
+    ).toBeVisible();
+    await expect(
+      partiesTable.getByText(`${lesseeParty?.firstName ?? ''} ${lesseeParty?.lastName ?? ''}`)
     ).toBeVisible();
 
-    await expect(
-      page.locator('[data-cy="Arrendatorer-table"] .sk-table-tbody-tr').getByText(
-        `${mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSEE'))?.firstName ?? ''} ${
-          mockLeaseAgreement.data.stakeholders.find((x) => x.roles.includes('LESSEE'))?.lastName ?? ''
-        }`
-      )
-    ).toBeVisible();
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
+    await page.locator('[data-cy="all-notice-period"]').clear();
+    await page.locator('[data-cy="all-notice-period"]').fill('15');
 
-    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').click();
-    await page.locator('[data-cy="lessee-notice-period"]').clear();
-    await page.locator('[data-cy="lessee-notice-period"]').fill('15');
-    await page.locator('[data-cy="lessor-notice-period"]').clear();
-    await page.locator('[data-cy="lessor-notice-period"]').fill('1');
-
-    await page.locator('[data-cy="area-disclosure"] button.sk-btn-tertiary').click();
-    await page.locator('[data-cy="area-disclosure"] button.sk-btn-primary').filter({ hasText: 'Spara' }).click();
-
-    const putContractRequest = await page.waitForRequest(
+    const putContractRequest = page.waitForRequest(
       (req) => req.url().includes('/contracts/2024-01026') && req.method() === 'PUT'
     );
-    const leaseAgreement: Contract = putContractRequest.postDataJSON();
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-primary').filter({ hasText: 'Spara' }).click();
+
+    const leaseAgreement: Contract = (await putContractRequest).postDataJSON();
     expect(leaseAgreement.type).toBe(ContractType.LEASE_AGREEMENT);
-    expect(leaseAgreement.leaseType).toBe(LeaseType.USUFRUCT_MOORING);
+    expect(leaseAgreement.leaseType).toBe(LeaseType.LAND_LEASE_MISC);
     const lessor = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSOR));
     const lessee = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSEE));
     expect(lessor.firstName).toBe(
@@ -207,8 +215,8 @@ test.describe('Errand page contracts tab', () => {
   test('manages property designations in lease agreements', async ({ page, mockRoute, dismissCookieConsent }) => {
     await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
     await mockRoute('**/errand/101', mockMexErrand_base, { method: 'GET' }); // @getErrand
-    await page.locator('[data-cy="area-disclosure"] button.sk-btn-tertiary').click();
-    await expect(page.locator('[data-cy="property-designation-checkboxgroup"]')).toBeVisible();
+    await page.locator('[data-cy="area-disclosure"] button.sk-disclosure-header-button').click();
+    await expect(page.locator('[data-cy="contract-property-designation-checkboxgroup"]')).toBeVisible();
 
     const buildSelector = (p: { name: string; district?: string }) =>
       `[data-cy="property-designation-checkbox-${p.name.replace(/\s+/g, '-')}"]`;
@@ -238,17 +246,11 @@ test.describe('Errand page contracts tab', () => {
       await page.locator(selector).check({ force: true });
     }
 
-    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').click();
-    await page.locator('[data-cy="lessee-notice-period"]').clear();
-    await page.locator('[data-cy="lessee-notice-period"]').fill('15');
-    await page.locator('[data-cy="lessor-notice-period"]').clear();
-    await page.locator('[data-cy="lessor-notice-period"]').fill('1');
-
-    await page.locator('[data-cy="area-disclosure"] button.sk-btn-primary').filter({ hasText: 'Spara' }).click();
-    const putContractRequest = await page.waitForRequest(
+    const putContractRequest = page.waitForRequest(
       (req) => req.url().includes('/contracts/2024-01026') && req.method() === 'PUT'
     );
-    const leaseAgreement: Contract = putContractRequest.postDataJSON();
+    await page.locator('[data-cy="area-disclosure"] button.sk-btn-primary').filter({ hasText: 'Spara' }).click();
+    const leaseAgreement: Contract = (await putContractRequest).postDataJSON();
     expect(leaseAgreement.propertyDesignations).toEqual([...contractProperties, ...errandProperties]);
   });
 
@@ -256,34 +258,26 @@ test.describe('Errand page contracts tab', () => {
   test('manages tenancy period automatically in lease agreements', async ({ page, mockRoute, dismissCookieConsent }) => {
     await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
     await mockRoute('**/errand/101', mockMexErrand_base, { method: 'GET' }); // @getErrand
-    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').click();
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
 
     await page.locator('[data-cy="avtalstid-start"]').fill('2024-12-01');
     await page.locator('[data-cy="avtalstid-end"]').fill('2025-12-01');
 
-    await page.locator('[data-cy="lessee-notice-unit"]').selectOption(TimeUnit.DAYS);
-    await page.locator('[data-cy="lessee-notice-period"]').clear();
-    await page.locator('[data-cy="lessee-notice-period"]').fill('15');
-    await expect(page.locator('[data-cy="lessee-notice-party"]')).toHaveValue('LESSEE');
-
-    await page.locator('[data-cy="lessor-notice-unit"]').selectOption(TimeUnit.MONTHS);
-    await page.locator('[data-cy="lessor-notice-period"]').clear();
-    await page.locator('[data-cy="lessor-notice-period"]').fill('1');
-    await expect(page.locator('[data-cy="lessor-notice-party"]')).toHaveValue('LESSOR');
+    await page.locator('[data-cy="all-notice-unit"]').selectOption(TimeUnit.DAYS);
+    await page.locator('[data-cy="all-notice-period"]').clear();
+    await page.locator('[data-cy="all-notice-period"]').fill('15');
+    await expect(page.locator('[data-cy="all-notice-party"]')).toHaveValue('ALL');
 
     await page.locator('[data-cy="autoextend-true-radiobutton"]').check({ force: true });
     await page.locator('[data-cy="extension-unit-selector"]').selectOption(TimeUnit.YEARS);
     await page.locator('[data-cy="extension-input"]').fill('180');
 
-    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-primary').filter({ hasText: 'Spara' }).click();
-    const putContractRequest = await page.waitForRequest(
+    const putContractRequest = page.waitForRequest(
       (req) => req.url().includes('/contracts/2024-01026') && req.method() === 'PUT'
     );
-    const leaseAgreement: Contract = putContractRequest.postDataJSON();
-    expect(leaseAgreement.notice.terms).toEqual([
-      { party: 'LESSEE', periodOfNotice: '15', unit: TimeUnit.DAYS },
-      { party: 'LESSOR', periodOfNotice: '1', unit: TimeUnit.MONTHS },
-    ]);
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-primary').filter({ hasText: 'Spara' }).click();
+    const leaseAgreement: Contract = (await putContractRequest).postDataJSON();
+    expect(leaseAgreement.notice.terms).toEqual([{ party: 'ALL', periodOfNotice: '15', unit: TimeUnit.DAYS }]);
     expect(leaseAgreement.extension).toEqual({
       autoExtend: true,
       unit: TimeUnit.YEARS,
@@ -295,7 +289,7 @@ test.describe('Errand page contracts tab', () => {
   test('manages lease fee automatically in lease agreements', async ({ page, mockRoute, dismissCookieConsent }) => {
     await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
     await mockRoute('**/errand/101', mockMexErrand_base, { method: 'GET' }); // @getErrand
-    await page.locator('[data-cy="lopande-disclosure"] button.sk-btn-tertiary').click();
+    await page.locator('[data-cy="lopande-disclosure"] button.sk-disclosure-header-button').click();
 
     await expect(page.locator('[data-cy="generate-invoice-true-radiobutton"]')).toBeVisible();
     await expect(page.locator('[data-cy="generate-invoice-false-radiobutton"]')).toBeVisible();
@@ -314,17 +308,15 @@ test.describe('Errand page contracts tab', () => {
     await expect(page.locator('[data-cy="fees-additional-information-0-input"]')).toBeVisible();
     await page.locator('[data-cy="fees-additional-information-1-input"]').fill('Foobar');
 
-    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').click();
-    await page.locator('[data-cy="lessee-notice-period"]').clear();
-    await page.locator('[data-cy="lessee-notice-period"]').fill('15');
-    await page.locator('[data-cy="lessor-notice-period"]').clear();
-    await page.locator('[data-cy="lessor-notice-period"]').fill('1');
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
+    await page.locator('[data-cy="all-notice-period"]').clear();
+    await page.locator('[data-cy="all-notice-period"]').fill('15');
 
-    await page.locator('[data-cy="lopande-disclosure"] button.sk-btn-primary').filter({ hasText: 'Spara' }).click();
-    const putContractRequest = await page.waitForRequest(
+    const putContractRequest = page.waitForRequest(
       (req) => req.url().includes('/contracts/2024-01026') && req.method() === 'PUT'
     );
-    const leaseAgreement: Contract = putContractRequest.postDataJSON();
+    await page.locator('[data-cy="lopande-disclosure"] button.sk-btn-primary').filter({ hasText: 'Spara' }).click();
+    const leaseAgreement: Contract = (await putContractRequest).postDataJSON();
     expect(leaseAgreement.invoicing).toEqual({
       invoiceInterval: IntervalType.QUARTERLY,
       invoicedIn: InvoicedIn.ADVANCE,
@@ -335,7 +327,7 @@ test.describe('Errand page contracts tab', () => {
       yearly: 120,
       total: 120,
       additionalInformation: [
-        'Avgift, båtplats. Fastigheter: AVTALSFASTIGHET 1:123, AVTALSFASTIGHET 2:456',
+        'Avgift, lägenhetsarrende. AVTALSFASTIGHET 1:123, AVTALSFASTIGHET 2:456',
         'Foobar',
       ],
     });
@@ -344,41 +336,18 @@ test.describe('Errand page contracts tab', () => {
   test('manages creating a new lease agreement with correct default values', async ({ page, mockRoute, dismissCookieConsent }) => {
     await visitErrandWithoutContract(page, mockRoute, dismissCookieConsent);
     await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.LEASE_AGREEMENT);
-    await page.locator('[data-cy="contract-subtype-select"]').selectOption(LeaseType.USUFRUCT_MOORING);
+    await page.locator('[data-cy="contract-subtype-select"]').selectOption(LeaseType.LAND_LEASE_RESIDENTIAL);
 
-    await expect(page.locator('[data-cy="Upplåtare-table"]')).toBeVisible();
+    // A new lease agreement starts with an empty parties table; parties are added manually
+    const partiesTable = page.locator('[data-cy="parties-table"]');
+    await expect(partiesTable).toBeVisible();
+    await expect(partiesTable).toContainText('Inga parter tillagda');
 
-    const upplatareRow = page.locator('[data-cy="Upplåtare-table"]').locator('[data-cy="Upplåtare-row-0"]');
-    await expect(upplatareRow).toBeVisible();
-    await expect(upplatareRow.locator('[data-cy="party-0-name"]')).toContainText('Test Upplåtarsson');
-    await expect(upplatareRow.locator('[data-cy="party-0-address"]')).toContainText('Testgata 1');
-    await expect(upplatareRow.locator('[data-cy="party-0-role"]')).toContainText('Upplåtare');
-
-    await expect(page.locator('[data-cy="Arrendatorer-table"]')).toBeVisible();
-
-    const arrendatorerRow = page.locator('[data-cy="Arrendatorer-table"]').locator('[data-cy="Arrendatorer-row-0"]');
-    await expect(arrendatorerRow).toBeVisible();
-    await expect(arrendatorerRow.locator('[data-cy="party-0-name"]')).toContainText('Test Arrendatorsson');
-    await expect(arrendatorerRow.locator('[data-cy="party-0-address"]')).toContainText('Testgata 41');
-    await expect(arrendatorerRow.locator('[data-cy="party-0-role"]')).toContainText('Arrendator');
-    await expect(arrendatorerRow.locator('[data-cy="party-0-role"]')).toContainText('Fakturamottagare');
-
-    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
-
-    const postContractRequest = await page.waitForRequest(
-      (req) => req.url().includes('/contracts') && req.method() === 'POST'
-    );
-    const leaseAgreement: Contract = postContractRequest.postDataJSON();
-    expect(leaseAgreement.type).toBe(ContractType.LEASE_AGREEMENT);
-    expect(leaseAgreement.leaseType).toBe(LeaseType.USUFRUCT_MOORING);
-    const lessor = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSOR));
-    const lessee = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSEE));
-    expect(lessor.firstName).toBe(
-      mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes(Role.PROPERTY_OWNER))?.firstName ?? ''
-    );
-    expect(lessee.firstName).toBe(
-      mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes(Role.LEASEHOLDER))?.firstName ?? ''
-    );
+    // Lease-agreement specific disclosures should be present
+    await expect(page.locator('[data-cy="area-disclosure"]')).toBeVisible();
+    await expect(page.locator('[data-cy="avtalstid-disclosure"]')).toBeVisible();
+    await expect(page.locator('[data-cy="lopande-disclosure"]')).toBeVisible();
+    await expect(page.locator('[data-cy="add-party-button"]')).toBeVisible();
   });
 
   test('manages creating a new purchase agreement with correct default values', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -387,40 +356,14 @@ test.describe('Errand page contracts tab', () => {
     // Switch to PURCHASE_AGREEMENT
     await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.PURCHASE_AGREEMENT);
 
-    await expect(page.locator('[data-cy="Upplåtare-table"]')).not.toBeVisible();
-    await expect(page.locator('[data-cy="Arrendatorer-table"]')).not.toBeVisible();
-    await expect(page.locator('[data-cy="Köpare-table"]')).toBeVisible();
-    await expect(page.locator('[data-cy="Säljare-table"]')).toBeVisible();
+    // Purchase agreements have no lease subtype
+    await expect(page.locator('[data-cy="contract-subtype-select"]')).not.toBeVisible();
 
-    const kopareRow = page.locator('[data-cy="Köpare-table"]').locator('[data-cy="Köpare-row-0"]');
-    await expect(kopareRow).toBeVisible();
-    await expect(kopareRow.locator('[data-cy="party-0-name"]')).toContainText('Test Köparsson');
-    await expect(kopareRow.locator('[data-cy="party-0-address"]')).toContainText('Testgata 2');
-    await expect(kopareRow.locator('[data-cy="party-0-role"]')).toContainText('Köpare');
-
-    const saljareRow = page.locator('[data-cy="Säljare-table"]').locator('[data-cy="Säljare-row-0"]');
-    await expect(saljareRow).toBeVisible();
-    await expect(saljareRow.locator('[data-cy="party-0-name"]')).toContainText('Daniella Testarsson');
-    await expect(saljareRow.locator('[data-cy="party-0-address"]')).toContainText('Testgata 41');
-    await expect(saljareRow.locator('[data-cy="party-0-role"]')).toContainText('Säljare');
-
-    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
-
-    const postContractRequest = await page.waitForRequest(
-      (req) => req.url().includes('/contracts') && req.method() === 'POST'
-    );
-    const purchaseAgreement: Contract = postContractRequest.postDataJSON();
-    expect(purchaseAgreement.type).toBe(ContractType.PURCHASE_AGREEMENT);
-    expect(purchaseAgreement.startDate).toBe('');
-    expect(purchaseAgreement.leaseType).toBeUndefined();
-    const seller = purchaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.SELLER));
-    const buyer = purchaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.BUYER));
-    expect(seller.firstName).toBe(
-      mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes(Role.SELLER))?.firstName ?? ''
-    );
-    expect(buyer.firstName).toBe(
-      mockMexErrand_base.data.stakeholders.find((x) => x.roles.includes(Role.BUYER))?.firstName ?? ''
-    );
+    // A new purchase agreement starts with an empty parties table
+    const partiesTable = page.locator('[data-cy="parties-table"]');
+    await expect(partiesTable).toBeVisible();
+    await expect(partiesTable).toContainText('Inga parter tillagda');
+    await expect(page.locator('[data-cy="add-party-button"]')).toBeVisible();
   });
 
   test('manages creating a new LAND_LEASE_PUBLIC contract with correct default values', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -431,32 +374,13 @@ test.describe('Errand page contracts tab', () => {
     // Verify NO lease subtype dropdown is shown
     await expect(page.locator('[data-cy="contract-subtype-select"]')).not.toBeVisible();
 
-    // Verify lease agreement UI is shown
-    await expect(page.locator('[data-cy="Upplåtare-table"]')).toBeVisible();
-    await expect(page.locator('[data-cy="Arrendatorer-table"]')).toBeVisible();
-    await expect(page.locator('[data-cy="Köpare-table"]')).not.toBeVisible();
-    await expect(page.locator('[data-cy="Säljare-table"]')).not.toBeVisible();
-
-    const upplatareRow = page.locator('[data-cy="Upplåtare-table"]').locator('[data-cy="Upplåtare-row-0"]');
-    await expect(upplatareRow).toBeVisible();
-    await expect(upplatareRow.locator('[data-cy="party-0-name"]')).toContainText('Test Upplåtarsson');
-    await expect(upplatareRow.locator('[data-cy="party-0-role"]')).toContainText('Upplåtare');
-
-    const arrendatorerRow = page.locator('[data-cy="Arrendatorer-table"]').locator('[data-cy="Arrendatorer-row-0"]');
-    await expect(arrendatorerRow).toBeVisible();
-    await expect(arrendatorerRow.locator('[data-cy="party-0-name"]')).toContainText('Test Arrendatorsson');
-    await expect(arrendatorerRow.locator('[data-cy="party-0-role"]')).toContainText('Arrendator');
-
-    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
-
-    const postContractRequest = await page.waitForRequest(
-      (req) => req.url().includes('/contracts') && req.method() === 'POST'
-    );
-    const contract: Contract = postContractRequest.postDataJSON();
-    expect(contract.type).toBe(ContractType.LAND_LEASE_PUBLIC);
-    expect(contract.leaseType).toBeUndefined();
-    expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSOR))).toBe(true);
-    expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSEE))).toBe(true);
+    // A new contract starts with an empty parties table; lease-style disclosures are present
+    const partiesTable = page.locator('[data-cy="parties-table"]');
+    await expect(partiesTable).toBeVisible();
+    await expect(partiesTable).toContainText('Inga parter tillagda');
+    await expect(page.locator('[data-cy="area-disclosure"]')).toBeVisible();
+    await expect(page.locator('[data-cy="avtalstid-disclosure"]')).toBeVisible();
+    await expect(page.locator('[data-cy="add-party-button"]')).toBeVisible();
   });
 
   test('manages creating a new SHORT_TERM_LEASE_AGREEMENT contract with correct default values', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -466,31 +390,13 @@ test.describe('Errand page contracts tab', () => {
 
     await expect(page.locator('[data-cy="contract-subtype-select"]')).not.toBeVisible();
 
-    await expect(page.locator('[data-cy="Upplåtare-table"]')).toBeVisible();
-    await expect(page.locator('[data-cy="Arrendatorer-table"]')).toBeVisible();
-    await expect(page.locator('[data-cy="Köpare-table"]')).not.toBeVisible();
-    await expect(page.locator('[data-cy="Säljare-table"]')).not.toBeVisible();
-
-    const upplatareRow = page.locator('[data-cy="Upplåtare-table"]').locator('[data-cy="Upplåtare-row-0"]');
-    await expect(upplatareRow).toBeVisible();
-    await expect(upplatareRow.locator('[data-cy="party-0-name"]')).toContainText('Test Upplåtarsson');
-    await expect(upplatareRow.locator('[data-cy="party-0-role"]')).toContainText('Upplåtare');
-
-    const arrendatorerRow = page.locator('[data-cy="Arrendatorer-table"]').locator('[data-cy="Arrendatorer-row-0"]');
-    await expect(arrendatorerRow).toBeVisible();
-    await expect(arrendatorerRow.locator('[data-cy="party-0-name"]')).toContainText('Test Arrendatorsson');
-    await expect(arrendatorerRow.locator('[data-cy="party-0-role"]')).toContainText('Arrendator');
-
-    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
-
-    const postContractRequest = await page.waitForRequest(
-      (req) => req.url().includes('/contracts') && req.method() === 'POST'
-    );
-    const contract: Contract = postContractRequest.postDataJSON();
-    expect(contract.type).toBe(ContractType.SHORT_TERM_LEASE_AGREEMENT);
-    expect(contract.leaseType).toBeUndefined();
-    expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSOR))).toBe(true);
-    expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSEE))).toBe(true);
+    // A new contract starts with an empty parties table; lease-style disclosures are present
+    const partiesTable = page.locator('[data-cy="parties-table"]');
+    await expect(partiesTable).toBeVisible();
+    await expect(partiesTable).toContainText('Inga parter tillagda');
+    await expect(page.locator('[data-cy="area-disclosure"]')).toBeVisible();
+    await expect(page.locator('[data-cy="avtalstid-disclosure"]')).toBeVisible();
+    await expect(page.locator('[data-cy="add-party-button"]')).toBeVisible();
   });
 
   test('manages creating a new lease agreement with manual party selection', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -504,9 +410,12 @@ test.describe('Errand page contracts tab', () => {
 
     // Add lessor via party modal
     await page.locator('[data-cy="add-party-button"]').click();
+    await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
     await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2260');
     await page.locator('[data-cy="party-modal-role-LESSOR"]').check({ force: true });
+    await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
     await page.locator('[data-cy="party-modal-save-button"]').click();
+    await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
 
     // Verify lessor was added
     const lessorRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-0"]');
@@ -516,10 +425,13 @@ test.describe('Errand page contracts tab', () => {
 
     // Add lessee with billing role via party modal
     await page.locator('[data-cy="add-party-button"]').click();
+    await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
     await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2280');
     await page.locator('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
     await page.locator('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').check({ force: true });
+    await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
     await page.locator('[data-cy="party-modal-save-button"]').click();
+    await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
 
     // Verify lessee was added with both roles
     const lesseeRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-1"]');
@@ -529,18 +441,17 @@ test.describe('Errand page contracts tab', () => {
     await expect(lesseeRow.locator('[data-cy="party-1-role"]')).toContainText('Fakturamottagare');
 
     // Fill required fields before saving
-    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').click();
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
     await page.locator('[data-cy="avtalstid-start"]').fill('2024-01-01');
     await page.locator('[data-cy="all-notice-period"]').clear();
     await page.locator('[data-cy="all-notice-period"]').fill('3');
 
     // Save the contract
-    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
-
-    const postContractRequest = await page.waitForRequest(
+    const postContractRequest = page.waitForRequest(
       (req) => req.url().includes('/contracts') && req.method() === 'POST'
     );
-    const leaseAgreement: Contract = postContractRequest.postDataJSON();
+    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
+    const leaseAgreement: Contract = (await postContractRequest).postDataJSON();
     expect(leaseAgreement.type).toBe(ContractType.LEASE_AGREEMENT);
     expect(leaseAgreement.leaseType).toBe(LeaseType.LAND_LEASE_MISC);
     const lessor = leaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.LESSOR));
@@ -567,9 +478,12 @@ test.describe('Errand page contracts tab', () => {
 
     // Add seller via party modal
     await page.locator('[data-cy="add-party-button"]').click();
+    await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
     await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2290');
     await page.locator('[data-cy="party-modal-role-SELLER"]').check({ force: true });
+    await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
     await page.locator('[data-cy="party-modal-save-button"]').click();
+    await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
 
     // Verify seller was added
     const sellerRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-0"]');
@@ -579,9 +493,12 @@ test.describe('Errand page contracts tab', () => {
 
     // Add buyer via party modal
     await page.locator('[data-cy="add-party-button"]').click();
+    await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
     await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2106');
     await page.locator('[data-cy="party-modal-role-BUYER"]').check({ force: true });
+    await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
     await page.locator('[data-cy="party-modal-save-button"]').click();
+    await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
 
     // Verify buyer was added
     const buyerRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-1"]');
@@ -589,12 +506,11 @@ test.describe('Errand page contracts tab', () => {
     await expect(buyerRow.locator('[data-cy="party-1-name"]')).toContainText('Test Köparsson');
     await expect(buyerRow.locator('[data-cy="party-1-role"]')).toContainText('Köpare');
 
-    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
-
-    const postContractRequest = await page.waitForRequest(
+    const postContractRequest = page.waitForRequest(
       (req) => req.url().includes('/contracts') && req.method() === 'POST'
     );
-    const purchaseAgreement: Contract = postContractRequest.postDataJSON();
+    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
+    const purchaseAgreement: Contract = (await postContractRequest).postDataJSON();
     expect(purchaseAgreement.type).toBe(ContractType.PURCHASE_AGREEMENT);
     expect(purchaseAgreement.leaseType).toBeUndefined();
     const seller = purchaseAgreement.stakeholders.find((s) => s.roles.includes(StakeholderRole.SELLER));
@@ -622,9 +538,12 @@ test.describe('Errand page contracts tab', () => {
 
     // Add lessor via party modal
     await page.locator('[data-cy="add-party-button"]').click();
+    await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
     await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2260');
     await page.locator('[data-cy="party-modal-role-LESSOR"]').check({ force: true });
+    await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
     await page.locator('[data-cy="party-modal-save-button"]').click();
+    await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
 
     // Verify lessor was added
     const lessorRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-0"]');
@@ -634,9 +553,12 @@ test.describe('Errand page contracts tab', () => {
 
     // Add lessee via party modal
     await page.locator('[data-cy="add-party-button"]').click();
+    await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
     await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2280');
     await page.locator('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+    await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
     await page.locator('[data-cy="party-modal-save-button"]').click();
+    await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
 
     // Verify lessee was added
     const lesseeRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-1"]');
@@ -645,18 +567,17 @@ test.describe('Errand page contracts tab', () => {
     await expect(lesseeRow.locator('[data-cy="party-1-role"]')).toContainText('Arrendator');
 
     // Fill required fields before saving
-    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').click();
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
     await page.locator('[data-cy="avtalstid-start"]').fill('2024-01-01');
     await page.locator('[data-cy="all-notice-period"]').clear();
     await page.locator('[data-cy="all-notice-period"]').fill('3');
 
     // Save and verify contract type in request
-    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
-
-    const postContractRequest = await page.waitForRequest(
+    const postContractRequest = page.waitForRequest(
       (req) => req.url().includes('/contracts') && req.method() === 'POST'
     );
-    const contract: Contract = postContractRequest.postDataJSON();
+    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
+    const contract: Contract = (await postContractRequest).postDataJSON();
     expect(contract.type).toBe(ContractType.LAND_LEASE_PUBLIC);
     expect(contract.leaseType).toBeUndefined();
     expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSOR))).toBe(true);
@@ -678,9 +599,12 @@ test.describe('Errand page contracts tab', () => {
 
     // Add lessor via party modal
     await page.locator('[data-cy="add-party-button"]').click();
+    await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
     await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2260');
     await page.locator('[data-cy="party-modal-role-LESSOR"]').check({ force: true });
+    await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
     await page.locator('[data-cy="party-modal-save-button"]').click();
+    await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
 
     // Verify lessor was added
     const lessorRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-0"]');
@@ -690,9 +614,12 @@ test.describe('Errand page contracts tab', () => {
 
     // Add lessee via party modal
     await page.locator('[data-cy="add-party-button"]').click();
+    await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
     await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2280');
     await page.locator('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+    await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
     await page.locator('[data-cy="party-modal-save-button"]').click();
+    await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
 
     // Verify lessee was added
     const lesseeRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-1"]');
@@ -701,18 +628,17 @@ test.describe('Errand page contracts tab', () => {
     await expect(lesseeRow.locator('[data-cy="party-1-role"]')).toContainText('Arrendator');
 
     // Fill required fields before saving
-    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').click();
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
     await page.locator('[data-cy="avtalstid-start"]').fill('2024-01-01');
     await page.locator('[data-cy="all-notice-period"]').clear();
     await page.locator('[data-cy="all-notice-period"]').fill('3');
 
     // Save and verify contract type in request
-    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
-
-    const postContractRequest = await page.waitForRequest(
+    const postContractRequest = page.waitForRequest(
       (req) => req.url().includes('/contracts') && req.method() === 'POST'
     );
-    const contract: Contract = postContractRequest.postDataJSON();
+    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
+    const contract: Contract = (await postContractRequest).postDataJSON();
     expect(contract.type).toBe(ContractType.SHORT_TERM_LEASE_AGREEMENT);
     expect(contract.leaseType).toBeUndefined();
     expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSOR))).toBe(true);
@@ -766,32 +692,43 @@ test.describe('Errand page contracts tab', () => {
       // Override the errand intercept for this test
       await mockRoute('**/errand/101', mockMexErrandWithManualStakeholder, { method: 'GET' }); // @getErrandByIdManual
       await mockRoute('**/errand/errandNumber/*', mockMexErrandWithManualStakeholder, { method: 'GET' }); // @getErrandManual
+      const errandResponse = page.waitForResponse(
+        (resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200
+      );
       await page.goto(`arende/${mockMexErrand_base.data.id}`);
-      await page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200);
+      await errandResponse;
       await dismissCookieConsent();
-      const tab = page.locator('.sk-tabs-list button').nth(4);
-      await expect(tab).toHaveText('Avtal');
+      const tab = page.getByRole('tab', { name: 'Avtal', exact: true });
       await tab.click({ force: true });
       await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.LEASE_AGREEMENT);
 
       // Add lessor via party modal
       await page.locator('[data-cy="add-party-button"]').click();
+      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
       await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2260');
       await page.locator('[data-cy="party-modal-role-LESSOR"]').check({ force: true });
+      await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
       await page.locator('[data-cy="party-modal-save-button"]').click();
+      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
 
       // Add lessee (Test Arrendatorsson)
       await page.locator('[data-cy="add-party-button"]').click();
+      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
       await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2280');
       await page.locator('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+      await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
       await page.locator('[data-cy="party-modal-save-button"]').click();
+      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
 
       // Add manual stakeholder (without partyId) as lessee + billing party
       await page.locator('[data-cy="add-party-button"]').click();
+      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
       await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('9999');
       await page.locator('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
       await page.locator('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').check({ force: true });
+      await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
       await page.locator('[data-cy="party-modal-save-button"]').click();
+      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
 
       // Verify all parties were added
       await expect(page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-0"]')).toBeVisible();
@@ -803,18 +740,17 @@ test.describe('Errand page contracts tab', () => {
       await expect(page.locator('[data-cy="parties-table"]')).toContainText('Fakturamottagare');
 
       // Fill required fields before saving
-      await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').click();
+      await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
       await page.locator('[data-cy="avtalstid-start"]').fill('2024-01-01');
       await page.locator('[data-cy="all-notice-period"]').clear();
       await page.locator('[data-cy="all-notice-period"]').fill('3');
 
       // Save the contract and verify the stakeholder is included with PRIMARY_BILLING_PARTY role
-      await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
-
-      const postContractRequest = await page.waitForRequest(
+      const postContractRequest = page.waitForRequest(
         (req) => req.url().includes('/contracts') && req.method() === 'POST'
       );
-      const contract: Contract = postContractRequest.postDataJSON();
+      await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
+      const contract: Contract = (await postContractRequest).postDataJSON();
       const manualStakeholder = contract.stakeholders.find(
         (s) => s.firstName === 'Manual' && s.lastName === 'Stakeholder'
       );
@@ -859,12 +795,17 @@ test.describe('Errand page contracts tab', () => {
         await mockRoute(`**/contracts/${activeContractId}`, mockActiveLeaseAgreement, { method: 'GET' }); // @getActiveContract
         await mockRoute(`**/contracts/2281/${activeContractId}/attachments/*`, mockContractAttachment, { method: 'GET' }); // @getActiveContractAttachment
 
+        const errandResponse = page.waitForResponse(
+          (resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200
+        );
+        const contractResponse = page.waitForResponse(
+          (resp) => resp.url().includes(`/contracts/${activeContractId}`) && resp.status() === 200
+        );
         await page.goto(`arende/${mockMexErrand_base.data.id}`);
-        await page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200);
+        await errandResponse;
+        await contractResponse;
         await dismissCookieConsent();
-        await page.waitForResponse((resp) => resp.url().includes(`/contracts/${activeContractId}`) && resp.status() === 200);
-        const tab = page.locator('.sk-tabs-list button').nth(4);
-        await expect(tab).toHaveText('Avtal');
+        const tab = page.getByRole('tab', { name: 'Avtal', exact: true });
         await tab.click({ force: true });
         await expect(page.locator('[data-cy="contract-type-select"]')).toBeVisible();
       });
@@ -881,14 +822,14 @@ test.describe('Errand page contracts tab', () => {
 
         await expect(page.locator('[data-cy="old-contract-id-input"]')).toHaveAttribute('readonly');
 
-        await page.locator('[data-cy="area-disclosure"] button.sk-btn-tertiary').click();
-        const checkboxes = page.locator('[data-cy="property-designation-checkboxgroup"] input[type="checkbox"]');
+        await page.locator('[data-cy="area-disclosure"] button.sk-disclosure-header-button').click();
+        const checkboxes = page.locator('[data-cy="contract-property-designation-checkboxgroup"] input[type="checkbox"]');
         const count = await checkboxes.count();
         for (let i = 0; i < count; i++) {
           await expect(checkboxes.nth(i)).toBeDisabled();
         }
 
-        await page.locator('[data-cy="avtalstid-disclosure"] button.sk-btn-tertiary').click();
+        await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
         await expect(page.locator('[data-cy="avtalstid-start"]')).toHaveAttribute('readonly');
         await expect(page.locator('[data-cy="avtalstid-end"]')).toHaveAttribute('readonly');
         await expect(page.locator('[data-cy="lessee-notice-unit"]')).toBeDisabled();
@@ -896,7 +837,7 @@ test.describe('Errand page contracts tab', () => {
         await expect(page.locator('[data-cy="lessor-notice-unit"]')).toBeDisabled();
         await expect(page.locator('[data-cy="lessor-notice-period"]')).toHaveAttribute('readonly');
 
-        await page.locator('[data-cy="lopande-disclosure"] button.sk-btn-tertiary').click();
+        await page.locator('[data-cy="lopande-disclosure"] button.sk-disclosure-header-button').click();
         await expect(page.locator('[data-cy="generate-invoice-true-radiobutton"]')).toBeDisabled();
         await expect(page.locator('[data-cy="generate-invoice-false-radiobutton"]')).toBeDisabled();
         await expect(page.locator('[data-cy="fees-yearly-input"]')).toHaveAttribute('readonly');
@@ -910,7 +851,7 @@ test.describe('Errand page contracts tab', () => {
       test('allows editing of invoice reference and supplementary text for ACTIVE contracts', async ({ page }) => {
         await expect(page.locator('[data-cy="non-draft-warning-banner"]')).toBeVisible();
 
-        await page.locator('[data-cy="lopande-disclosure"] button.sk-btn-tertiary').click();
+        await page.locator('[data-cy="lopande-disclosure"] button.sk-disclosure-header-button').click();
 
         await expect(page.locator('[data-cy="invoice-markup-input"]')).not.toHaveAttribute('readonly');
         await page.locator('[data-cy="invoice-markup-input"]').clear();
@@ -923,11 +864,11 @@ test.describe('Errand page contracts tab', () => {
         await expect(page.locator('[data-cy="fees-additional-information-1-input"]')).toHaveValue('Extra info');
       });
 
-      test('shows "Uppdatera fakturamottagare" button for ACTIVE contracts', async ({ page }) => {
+      test('shows "Lägg till ny part" button for ACTIVE contracts', async ({ page }) => {
         await expect(page.locator('[data-cy="non-draft-warning-banner"]')).toBeVisible();
 
-        await expect(page.locator('[data-cy="update-contract-parties"]')).toBeVisible();
-        await expect(page.locator('[data-cy="update-contract-parties"]')).toContainText('Uppdatera fakturamottagare');
+        await expect(page.locator('[data-cy="add-party-button"]')).toBeVisible();
+        await expect(page.locator('[data-cy="add-party-button"]')).toContainText('Lägg till ny part');
       });
 
       test('does not allow removing parties for ACTIVE contracts but allows editing roles and adding billing party', async ({ page }) => {
@@ -950,15 +891,17 @@ test.describe('Errand page contracts tab', () => {
 
     test('does not show warning banner for DRAFT contracts', async ({ page, mockRoute, dismissCookieConsent }) => {
       // Uses default beforeEach intercept with DRAFT status
+      const errandResponse = page.waitForResponse(
+        (resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200
+      );
       await page.goto(`arende/${mockMexErrand_base.data.id}`);
-      await page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200);
+      await errandResponse;
       await dismissCookieConsent();
-      const tab = page.locator('.sk-tabs-list button').nth(4);
-      await expect(tab).toHaveText('Avtal');
+      const tab = page.getByRole('tab', { name: 'Avtal', exact: true });
       await tab.click({ force: true });
       await expect(page.locator('[data-cy="contract-type-select"]')).toBeVisible();
       await expect(page.locator('[data-cy="non-draft-warning-banner"]')).not.toBeVisible();
-      await expect(page.locator('[data-cy="update-contract-parties"]')).toContainText('Uppdatera parter');
+      await expect(page.locator('[data-cy="add-party-button"]')).toContainText('Lägg till ny part');
     });
   });
 });

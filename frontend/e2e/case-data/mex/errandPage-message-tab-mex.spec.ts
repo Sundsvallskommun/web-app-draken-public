@@ -15,8 +15,23 @@ import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
 import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 
+const b64 = (s: string) => Buffer.from(s, 'utf-8').toString('base64');
+const mockMessageTemplates = {
+  data: [
+    { identifier: 'mex.email.default', name: 'E-postmall', content: b64('<p>E-postmall innehåll</p>') },
+    { identifier: 'mex.email.confirmation', name: 'E-postbekräftelse', content: b64('<p>Bekräftelse</p>') },
+    { identifier: 'mex.email.signature', name: 'E-postsignatur', content: b64('<p>Med vänliga hälsningar {{user}}</p>') },
+    { identifier: 'mex.sms.default', name: 'SMS-mall', content: b64('SMS-mall innehåll') },
+    { identifier: 'mex.sms.reminder', name: 'SMS-påminnelse', content: b64('SMS-påminnelse') },
+    { identifier: 'mex.sms.signature', name: 'SMS-signatur', content: b64('/ {{user}}') },
+    { identifier: 'internal.signature', name: 'Intern signatur', content: b64('/ {{user}}') },
+  ],
+  message: 'success',
+};
+
 test.describe('Message tab', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
+    await mockRoute('**/templates?**', mockMessageTemplates, { method: 'GET' });
     await mockRoute('**/schemas/*/latest', { data: { id: 'mock-schema-id', value: {} }, message: 'success' }, { method: 'GET' });
     await mockRoute('**/personid', mockPersonId, { method: 'POST' });
     await mockRoute('**/users/admins', mockAdmins, { method: 'GET' });
@@ -56,7 +71,7 @@ test.describe('Message tab', () => {
     await page.goto('arende/PRH-2022-000019');
     await page.waitForResponse((resp) => resp.url().includes('/errand/') && resp.status() === 200);
     await dismissCookieConsent();
-    await page.getByRole('button', { name: 'Meddelanden' }).click();
+    await page.getByRole('tab', { name: 'Meddelanden' }).click();
   };
 
   test('views messages in inbox', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -76,7 +91,7 @@ test.describe('Message tab', () => {
         await page.locator(`[data-cy="expand-message-button-${message.emailHeaders[0].values}"]`).click();
 
         if (message.direction === 'INBOUND') {
-          await expect(page.locator('[data-cy="respond-button"]')).toBeVisible();
+          await expect(node.locator('[data-cy="respond-button"]')).toBeVisible();
         }
 
         if (message.attachments?.length) {
@@ -87,8 +102,8 @@ test.describe('Message tab', () => {
           }
         }
 
-        await expect(page.locator('[data-cy="message-subject"]').getByText(message.subject)).toBeVisible();
-        await expect(page.locator('[data-cy="message-body"]').getByText(message.message)).toBeVisible();
+        await expect(page.locator('[data-cy="message-subject"]').getByText(message.subject).first()).toBeVisible();
+        await expect(page.locator('[data-cy="message-body"]').getByText(message.message).first()).toBeVisible();
 
         await page
           .locator('[data-cy="close-message-wrapper"]')
@@ -110,24 +125,25 @@ test.describe('Message tab', () => {
 
     await expect(page.locator('[data-cy="send-message-button"]')).toBeDisabled();
 
-    await page.locator('[data-cy="messageTemplate"]').nth(1).selectOption({ index: 1 });
-    await expect(page.locator('[data-cy="decision-richtext-wrapper"]')).toBeVisible();
+    await page.locator('[data-cy="messageTemplate"]').first().selectOption({ index: 1 });
+    await expect(page.locator('[data-cy="decision-richtext-wrapper"]:visible').first()).toBeVisible();
 
-    await page.locator('[data-cy="newPhoneNumber"]').nth(1).clear();
-    await page.locator('[data-cy="newPhoneNumber"]').nth(1).fill('1234abc890');
+    await page.locator('[data-cy="newPhoneNumber"]').first().clear();
+    await page.locator('[data-cy="newPhoneNumber"]').first().fill('1234abc890');
     await expect(page.locator('[data-cy="messagePhone-error"]').getByText('Ej giltigt telefonnummer')).toBeVisible();
 
-    await page.locator('[data-cy="newPhoneNumber"]').nth(1).clear();
-    await page.locator('[data-cy="newPhoneNumber"]').nth(1).fill('+46701740635');
+    await page.locator('[data-cy="newPhoneNumber"]').first().clear();
+    await page.locator('[data-cy="newPhoneNumber"]').first().fill('+46701740635');
     await expect(page.locator('[data-cy="messagePhone-error"]')).not.toBeVisible();
 
-    await page.locator('[data-cy="newPhoneNumber-button"]').nth(1).click({ force: true });
-    await page.locator('[data-cy="send-message-button"]').nth(1).click({ force: true });
+    await page.locator('[data-cy="newPhoneNumber-button"]').first().click({ force: true });
 
-    const sendSmsRequest = await page.waitForRequest(
+    const sendSmsRequestPromise = page.waitForRequest(
       (req) => req.url().includes('/sms') && req.method() === 'POST'
     );
-    const body = sendSmsRequest.postDataJSON();
+    await page.locator('[data-cy="send-message-button"]').first().click({ force: true });
+
+    const body = (await sendSmsRequestPromise).postDataJSON();
     expect(body.phonenumber).toBe('+46701740635');
   });
 
@@ -142,8 +158,11 @@ test.describe('Message tab', () => {
     await page.locator('[data-cy="useEmail-radiobutton-true"]').first().click({ force: true });
     await expect(page.locator('[data-cy="send-message-button"]')).toBeDisabled();
 
-    await expect(page.locator('.ql-editor')).toBeVisible();
-    await page.locator('[data-cy="decision-richtext-wrapper"]').first().locator('.ql-editor').fill('Mock message');
+    const emailEditor = page.locator('[data-cy="decision-richtext-wrapper"]:visible').first().locator('.ql-editor');
+    await expect(emailEditor).toBeVisible();
+    await emailEditor.click();
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.type('Mock message');
 
     const ownerEmail = mockMexErrand_base.data.stakeholders
       .find((stakeholder) => stakeholder.roles.includes('APPLICANT'))
@@ -171,13 +190,18 @@ test.describe('Message tab', () => {
 
     // Add new attachment
     await page.locator('input[type=file]').last().setInputFiles('e2e/case-data/files/attachment.txt');
-    await expect(page.locator('[data-cy="attachment-wrapper"] .sk-icon')).toBeVisible();
+    await expect(page.locator('[data-cy="attachment-wrapper"]').getByText('attachment.txt')).toBeVisible();
 
-    await page.locator('[data-cy="send-message-button"]').first().click({ force: true });
+    // Commit the uploaded attachment and close the modal
+    await page.locator('[data-cy="upload-button"]').click({ force: true });
+    await expect(page.getByText('Bifogade filer')).toBeVisible();
 
-    const sendEmailResponse = await page.waitForResponse(
+    const sendEmailResponsePromise = page.waitForResponse(
       (resp) => resp.url().includes('/email') && resp.request().method() === 'POST'
     );
+    await page.locator('[data-cy="send-message-button"]:visible').first().click();
+
+    const sendEmailResponse = await sendEmailResponsePromise;
     expect(sendEmailResponse.status()).toBe(200);
   });
 

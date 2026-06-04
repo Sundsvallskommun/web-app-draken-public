@@ -60,8 +60,8 @@ test.describe('Decisions tab', () => {
     await page.goto(`arende/${mockMexErrand_base.data.errandNumber}`);
     await page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200);
     await dismissCookieConsent();
-    const tab = page.locator('.sk-tabs-list button').nth(5);
-    await expect(tab).toHaveText('Beslut');
+    const tab = page.getByRole('tab', { name: 'Beslut', exact: true });
+    await expect(tab).toBeVisible();
     await tab.click({ force: true });
   });
 
@@ -95,7 +95,7 @@ test.describe('Decisions tab', () => {
     await page.locator('[data-cy="decision-richtext-wrapper"] .ql-editor').clear();
     await page.locator('[data-cy="decision-richtext-wrapper"] .ql-editor').type('Mock text', { delay: 100 });
     await expect(page.getByText('Beslut måste anges')).toBeVisible();
-    await expect(page.locator('[data-cy="save-decision-button"]')).toBeEnabled();
+    await expect(page.locator('[data-cy="save-decision-button"]')).toBeDisabled();
     await expect(page.locator('[data-cy="save-and-send-decision-button"]')).toBeDisabled();
   });
 

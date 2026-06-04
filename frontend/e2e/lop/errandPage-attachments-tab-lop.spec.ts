@@ -37,8 +37,12 @@ test.describe('Errand page support attachments tab', () => {
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
     await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
     await dismissCookieConsent();
-    await page.locator('.sk-tabs-list button').nth(3).click({ force: true });
-    await expect(page.locator('.sk-tabs-list button').nth(3)).toHaveText(`Bilagor (${mockSupportAttachments.length})`);
+    // The errand page now nests sub-tabs (e.g. "Ägande") inside the base-info
+    // panel, so `.sk-tabs-list button` is no longer positionally stable. Target
+    // the top-level "Bilagor" tab by its accessible role/name instead.
+    const bilagorTab = page.getByRole('tab', { name: `Bilagor (${mockSupportAttachments.length})` });
+    await bilagorTab.click({ force: true });
+    await expect(bilagorTab).toHaveText(`Bilagor (${mockSupportAttachments.length})`);
   });
 
   test('shows the correct attachment information', async ({ page }) => {
@@ -61,20 +65,42 @@ test.describe('Errand page support attachments tab', () => {
       );
       await expect(page.locator(`[data-cy="attachment-${attachment.id}"]`)).toBeVisible();
 
+      // A success toast from the previous iteration can overlap the options
+      // button; dismiss any open toasts before interacting.
+      const toastClose = page.locator('#react-toast .sk-snackbar-action');
+      while (await toastClose.count()) {
+        await toastClose.first().click({ force: true });
+        await expect(toastClose.first()).toBeHidden().catch(() => {});
+      }
+
       await page.locator(`[data-cy="attachment-${attachment.id}"] button[aria-label="Alternativ"]`).click();
-      await page.locator(`[data-cy="open-attachment-${attachment.id}"]`).filter({ hasText: 'Öppna' }).click();
-      await page.waitForResponse(
-        (resp) => resp.url().includes(`attachments/${attachment.id}`) && resp.request().method() === 'GET'
-      );
+      await Promise.all([
+        page.waitForResponse(
+          (resp) => resp.url().includes(`attachments/${attachment.id}`) && resp.request().method() === 'GET'
+        ),
+        page.locator(`[data-cy="open-attachment-${attachment.id}"]`).filter({ hasText: 'Öppna' }).click(),
+      ]);
       if (attachment.mimeType !== 'application/pdf') {
-        await expect(page.locator('img')).toBeVisible();
-        await page.locator('.sk-modal-dialog-close').click();
+        const previewDialog = page.locator('article.sk-modal-dialog').filter({ has: page.locator('img') });
+        await expect(previewDialog.locator('img').first()).toBeVisible();
+        await previewDialog.locator('.sk-modal-dialog-close').click();
+        // Wait for the preview modal and its overlay to finish their close
+        // transition so they no longer intercept pointer events on the options button.
+        await expect(previewDialog).toHaveCount(0);
+        await expect(page.locator('.sk-modal-overlay')).toHaveCount(0);
       }
 
       await page.locator(`[data-cy="attachment-${attachment.id}"] button[aria-label="Alternativ"]`).click();
       await page.locator(`[data-cy="delete-attachment-${attachment.id}"]`).filter({ hasText: 'Ta bort' }).click();
-      await expect(page.locator('.sk-modal-dialog button.sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
-      await page.locator('.sk-modal-dialog button.sk-btn-primary').filter({ hasText: 'Ja' }).click();
+      // The delete confirmation is a useConfirm dialog (role=dialog) named "Ta bort?".
+      const confirmDialog = page.getByRole('dialog', { name: /Ta bort\?/ }).last();
+      await expect(confirmDialog.getByRole('button', { name: 'Nej' })).toBeVisible();
+      await Promise.all([
+        page.waitForResponse(
+          (resp) => resp.url().includes(`attachments/${attachment.id}`) && resp.request().method() === 'DELETE'
+        ),
+        confirmDialog.getByRole('button', { name: 'Ja' }).click(),
+      ]);
     }
   });
 

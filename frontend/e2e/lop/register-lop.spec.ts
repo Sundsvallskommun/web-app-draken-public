@@ -18,10 +18,15 @@ import {
 
 test.describe('register page', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
+    await page.context().addCookies([
+      { name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' },
+    ]);
     await mockRoute('**/administrators', mockAdmins, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
-    await mockRoute('**/newerrand/2281', mockEmptySupportErrand, { method: 'POST' });
+    const newErrand = { ...mockEmptySupportErrand, errandNumber: 'LOP-24120103' };
+    await mockRoute('**/newerrand/2281', newErrand, { method: 'POST' });
+    await mockRoute(`**/supporterrands/errandnumber/${newErrand.errandNumber}`, newErrand, { method: 'GET' });
     await mockRoute(`**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand, { method: 'PATCH' });
     await mockRoute(`**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand, { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
@@ -58,8 +63,10 @@ test.describe('register page', () => {
   test('sends the correct data for new errand', async ({ page, mockRoute }) => {
     await mockRoute(`**/supporterrands/2281/${mockEmptySupportErrand.id}`, mockEmptySupportErrand, { method: 'GET' });
 
-    const labelCat = mockMetaData?.labels?.labelStructure?.[0];
-    const labelType = labelCat?.labels?.[0];
+    // Deep-copy so we do not mutate the shared metadata fixture (the live page
+    // re-reads it; deleting `labels` in place empties the type combobox).
+    const labelCat = JSON.parse(JSON.stringify(mockMetaData?.labels?.labelStructure?.[0]));
+    const labelType = JSON.parse(JSON.stringify(labelCat?.labels?.[0]));
     delete labelCat.labels;
     delete labelType.labels;
 
@@ -69,9 +76,10 @@ test.describe('register page', () => {
     expect(labelType?.displayName).toBeDefined();
 
     await page.locator('[data-cy="labelCategory-input"]').selectOption(labelCat!.displayName!);
-    await page.locator('[data-cy="labelType-input"]').click();
-    await page.locator('[data-cy="labelType-list"]').locator('*').filter({ hasText: labelType!.displayName! }).click();
-    await page.locator('[data-cy="errand-description-richtext-wrapper"]').fill('Mock description');
+    await page.locator('[data-cy="labelType-wrapper"]').click();
+    await page.getByRole('option', { name: labelType!.displayName!, exact: true }).click();
+    await page.locator('[data-cy="errand-description-richtext-wrapper"]').click();
+    await page.keyboard.type('Mock description');
 
     const [response] = await Promise.all([
       page.waitForResponse(

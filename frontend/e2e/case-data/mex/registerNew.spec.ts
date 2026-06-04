@@ -42,7 +42,7 @@ test.describe('Register errand', () => {
     await expect(page.locator('[data-cy="registerErrandHeading"] button').nth(1).filter({ hasText: 'Registrera' })).toBeVisible();
     await expect(page.locator('.sk-tabs .sk-tabs-list-item-button').nth(0).filter({ hasText: 'Grunduppgifter' })).toBeVisible();
     await expect(page.locator('[data-cy="channel-input"]')).toBeVisible();
-    await expect(page.locator('[data-cy="channel-input"]')).toBeDisabled();
+    await expect(page.locator('[data-cy="channel-input"]')).toBeEnabled();
     await expect(page.locator('[data-cy="municipality-input"]')).toBeVisible();
     await expect(page.locator('[data-cy="casetype-input"]')).toBeVisible();
     await expect(page.locator('[data-cy="priority-input"]')).toBeVisible();
@@ -52,7 +52,7 @@ test.describe('Register errand', () => {
   test('Manages select input and register', async ({ page, mockRoute }) => {
     await mockRoute('**/errands', mockMexErrand_base, { method: 'POST' }); // @postErrand
 
-    await expect(page.locator('[data-cy="municipality-input"]')).toBeDisabled();
+    await expect(page.locator('[data-cy="municipality-input"]')).toBeEnabled();
 
     const legacyKeys = Object.keys(MEXLegacyCaseType);
     const caseLabels = Object.entries(MEXCaseLabel).filter(([key]) => !legacyKeys.includes(key));
@@ -76,10 +76,22 @@ test.describe('Register errand', () => {
   test('Can cancel the process, going back to overview', async ({ page, mockRoute }) => {
     await mockRoute('**/errands*', mockErrands_base, { method: 'GET' }); // @getErrands
 
-    await expect(page.locator('[data-cy="registerErrandHeading"] button').nth(0).filter({ hasText: 'Avbryt' })).toBeVisible();
-    await page.locator('[data-cy="registerErrandHeading"] button').nth(0).filter({ hasText: 'Avbryt' }).click();
+    // The Avbryt button now closes the window instead of navigating; record the call.
+    await page.addInitScript(() => {
+      (window as any).__closeCalled = false;
+      window.close = () => {
+        (window as any).__closeCalled = true;
+      };
+    });
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
 
-    await page.waitForResponse((resp) => resp.url().includes('/errands') && resp.status() === 200);
-    await page.goto('oversikt');
+    const cancelButton = page
+      .locator('[data-cy="registerErrandHeading"] button')
+      .filter({ hasText: 'Avbryt' });
+    await expect(cancelButton).toBeVisible();
+    await cancelButton.click();
+
+    await expect.poll(() => page.evaluate(() => (window as any).__closeCalled)).toBe(true);
   });
 });

@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures/base.fixture';
+import type { Page } from '@playwright/test';
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
-import { goToMessageTab, sendEmailWithAttachment, sendSmsMessage } from '../utils/messages';
 import { mockConversationMessages, mockConversations } from './fixtures/mockConversations';
 import { mockMetaData } from './fixtures/mockMetadata';
 import { mockRelations } from './fixtures/mockRelations';
@@ -13,6 +13,82 @@ import {
   mockSupportErrandCommunication,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
+
+// Local navigation helper: the message tab is now a `tab` role with a count
+// suffix ("Meddelanden (n)") rather than a plain button named "Meddelanden".
+const goToMessageTab = async (page: Page, errandNumber: string) => {
+  await page.goto(`arende/${errandNumber}`);
+  await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+  await page.locator('.sk-cookie-consent-btn-wrapper').getByText('Godkänn alla').click();
+  await page.getByRole('tab', { name: /Meddelanden/ }).click();
+};
+
+// Local copies of the message-send helpers. The richtext editor is now a
+// contenteditable <div> (not fillable/clearable), so we click and type instead.
+const typeInRichtext = async (page: Page, text: string) => {
+  const editor = page.locator('[data-cy="decision-richtext-wrapper"]').first();
+  await editor.click();
+  await page.keyboard.press('ControlOrMeta+A');
+  await page.keyboard.press('Delete');
+  await page.keyboard.type(text);
+};
+
+const sendSmsMessage = async (page: Page) => {
+  await page.locator('[data-cy="new-message-button"]').click();
+
+  await expect(page.locator('[data-cy="message-channel-radio-button-group"]')).toBeVisible();
+  await expect(page.locator('[data-cy="useEmail-radiobutton-true"]')).toBeVisible();
+  await page.locator('[data-cy="useSms-radiobutton-true"]').check({ force: true });
+
+  await typeInRichtext(page, 'Mock message');
+
+  await page.locator('[data-cy="newPhoneNumber"]').first().clear();
+  await page.locator('[data-cy="newPhoneNumber"]').first().type('+46701740635', { delay: 100 });
+  await page.locator('[data-cy="newPhoneNumber-button"]').first().click({ force: true });
+
+  const [request] = await Promise.all([
+    page.waitForRequest((req) => req.url().includes('supportmessage') && req.method() === 'POST'),
+    page.locator('[data-cy="send-message-button"]').first().click(),
+  ]);
+
+  const postData = request.postData() ?? '';
+  expect(postData).toContain('sms');
+  expect(postData).toContain('Mock message');
+  expect(postData).toContain('+46701740635');
+};
+
+const sendEmailWithAttachment = async (page: Page) => {
+  await page.locator('[data-cy="new-message-button"]').click();
+
+  await typeInRichtext(page, 'Mock message');
+
+  await expect(page.locator('[data-cy="message-channel-radio-button-group"]')).toBeVisible();
+  await page.locator('[data-cy="useEmail-radiobutton-true"]').check({ force: true });
+  await expect(page.locator('[data-cy="useSms-radiobutton-true"]')).toBeVisible();
+  await page.locator('[data-cy="new-email-input"]').first().clear();
+  await page.locator('[data-cy="new-email-input"]').first().type('test@example.com', { delay: 100 });
+  await page.locator('[data-cy="add-new-email-button"]').first().click({ force: true });
+
+  await page.locator('[data-cy="add-attachment-button"]').filter({ hasText: 'Bifoga fil' }).click();
+  await page.getByRole('button', { name: 'Bläddra' }).click();
+  await page.locator('input[type=file]').setInputFiles('e2e/kontaktcenter/files/empty-attachment.txt');
+  await expect(page.locator('.sk-form-error-message')).toContainText(
+    'Bilagan du försöker lägga till är tom. Försök igen.'
+  );
+  await page.getByRole('button', { name: 'Bläddra' }).click();
+  await page.locator('input[type=file]').setInputFiles('e2e/kontaktcenter/files/attachment.txt');
+  await page.locator('[data-cy="upload-button"]').filter({ hasText: 'Ladda upp' }).click();
+
+  const [request] = await Promise.all([
+    page.waitForRequest((req) => req.url().includes('supportmessage') && req.method() === 'POST'),
+    page.locator('[data-cy="send-message-button"]').first().click(),
+  ]);
+
+  const postData = request.postData() ?? '';
+  expect(postData).toContain('email');
+  expect(postData).toContain('Mock message');
+  expect(postData).toContain('attachment.txt');
+};
 
 test.describe('Message tab', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
@@ -79,7 +155,7 @@ test.describe('Message tab', () => {
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
     await page.waitForResponse((resp) => resp.url().includes('supportmessage') && resp.url().includes('communication') && resp.status() === 200);
     await dismissCookieConsent();
-    await page.getByRole('button', { name: 'Meddelanden' }).click();
+    await page.getByRole('tab', { name: /Meddelanden/ }).click();
 
     await expect(page.locator('[data-cy="message-container"] .sk-avatar')).toHaveCount(
       mockMissingRootMessage.length + 1 + 2 * mockConversationMessages.data.length

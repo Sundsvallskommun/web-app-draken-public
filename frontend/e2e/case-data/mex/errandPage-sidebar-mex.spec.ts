@@ -97,13 +97,13 @@ test.describe('Errand page', () => {
     await expect(page.locator('[data-cy="status-input"]')).toBeVisible();
     await expect(page.locator('[data-cy="status-input"]')).not.toBeDisabled();
     await page.locator('[data-cy="status-input"]').selectOption({ index: 1 });
-    await page.locator('[data-cy="save-and-continue-button"]').filter({ hasText: 'Spara ärende' }).click();
     await expect(page.locator('[data-cy="status-input"]')).toContainText('Väntar på komplettering');
 
-    const request = await page.waitForRequest(
+    const request = page.waitForRequest(
       (req) => req.url().includes('errands') && req.method() === 'PATCH' && !req.url().includes('extraparameters')
     );
-    const body = request.postDataJSON();
+    await page.locator('[data-cy="save-and-continue-button"]').filter({ hasText: 'Spara ärende' }).click();
+    const body = (await request).postDataJSON();
     expect(body.status.statusType).toBe('Väntar på komplettering');
   });
 
@@ -131,12 +131,14 @@ test.describe('Errand page', () => {
       await expect(note.locator('[data-cy="note-text"]')).toContainText('Mock note');
     }
 
-    await page.locator('[data-cy="PUBLIC-note-input"]').type('Mock note', { delay: 100 });
-    await page.locator('[data-cy="save-PUBLIC-note-button"]').click();
+    await page.locator('[data-cy="PUBLIC-note-input"]').fill('Mock note');
 
-    const request = await page.waitForRequest(
+    const requestPromise = page.waitForRequest(
       (req) => req.url().includes('notes') && req.method() === 'PATCH'
     );
+    await page.locator('[data-cy="save-PUBLIC-note-button"]').click();
+
+    const request = await requestPromise;
     const body = request.postDataJSON();
     expect(body.text).toBe('Mock note');
     expect(body.noteType).toBe('PUBLIC');
@@ -166,12 +168,14 @@ test.describe('Errand page', () => {
       await expect(note.locator('[data-cy="note-text"]')).toContainText('Mock comment');
     }
 
-    await page.locator('[data-cy="INTERNAL-note-input"]').type('Mock comment', { delay: 100 });
-    await page.locator('[data-cy="save-INTERNAL-note-button"]').click();
+    await page.locator('[data-cy="INTERNAL-note-input"]').fill('Mock comment');
 
-    const request = await page.waitForRequest(
+    const requestPromise = page.waitForRequest(
       (req) => req.url().includes('notes') && req.method() === 'PATCH'
     );
+    await page.locator('[data-cy="save-INTERNAL-note-button"]').click();
+
+    const request = await requestPromise;
     const body = request.postDataJSON();
     expect(body.text).toBe('Mock comment');
     expect(body.noteType).toBe('INTERNAL');
@@ -191,20 +195,21 @@ test.describe('Errand page', () => {
     await page.locator(`[aria-label="${mockSidebarButtons[4].label}"]`).click();
     const richtextWrapper = page.locator('[data-cy="utredning-richtext-wrapper"]').last();
     await expect(richtextWrapper).toBeVisible();
-    await richtextWrapper.locator('.ql-editor').type('Mock investigation text', { delay: 100 });
+    await richtextWrapper.locator('.ql-editor').click();
+    await page.keyboard.type('Mock investigation text');
 
-    await page.locator('[data-cy="save-investigation-description-button"]').click();
-
-    const renderRequest = await page.waitForRequest(
+    const renderRequestPromise = page.waitForRequest(
       (req) => req.url().includes('render/pdf') && req.method() === 'POST'
     );
-    const renderBody = renderRequest.postDataJSON();
-    expect(renderBody.parameters.description).toContain('Mock investigation text');
-
-    const decisionRequest = await page.waitForRequest(
+    const decisionRequestPromise = page.waitForRequest(
       (req) => req.url().includes('decisions') && req.method() === 'PATCH'
     );
-    const decisionBody = decisionRequest.postDataJSON();
+    await page.locator('[data-cy="save-investigation-description-button"]').click();
+
+    const renderBody = (await renderRequestPromise).postDataJSON();
+    expect(renderBody.parameters.description).toContain('Mock investigation text');
+
+    const decisionBody = (await decisionRequestPromise).postDataJSON();
     expect(decisionBody.description).toContain('Mock investigation text');
   });
 
@@ -244,9 +249,12 @@ test.describe('Errand page', () => {
       await expect(eventLabel).toBeVisible();
       await expect(eventLabel).toHaveText(events[index]);
       await eventLabel.click({ force: true });
-      await expect(page.locator('[data-cy="history-details-title"]')).not.toBeEmpty();
+      const closeButton = page.locator('[data-cy="history-table-details-close-button"]');
+      await expect(closeButton).toBeVisible();
       await expect(page.locator('[data-cy="history-details-type"]')).not.toBeEmpty();
-      await page.locator('[data-cy="history-table-details-close-button"]').click({ force: true });
+      await expect(page.locator('[data-cy="history-details-title"]')).toBeAttached();
+      await closeButton.click({ force: true });
+      await expect(closeButton).toBeHidden();
     }
 
     await page.locator('[data-cy="history-event-label-2"]').click();

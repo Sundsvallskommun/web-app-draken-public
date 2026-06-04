@@ -28,7 +28,8 @@ test.describe('Invoice tab', () => {
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
     await mockRoute('**/supportmessage/2281/errands/*/communication', mockSupportErrandCommunication, { method: 'GET' });
     await mockRoute('**/billingrecords', {}, { method: 'POST' });
-    await mockRoute('**/organization', {
+    // The org-lookup endpoint posts to `organization/` (trailing slash); match both forms.
+    await mockRoute('**/organization/**', {
       data: {
         ...mockLegalEntityResponse.data,
         partyId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
@@ -48,7 +49,7 @@ test.describe('Invoice tab', () => {
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
     await page.waitForResponse((resp: any) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
     await dismissCookieConsent();
-    await page.getByRole('button', { name: 'Fakturering' }).click();
+    await page.getByRole('tab', { name: 'Fakturering' }).click();
   };
 
   test('saves an internal invoice correctly', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -227,8 +228,11 @@ test.describe('Invoice tab', () => {
       ];
     });
 
+    // The external-recipient organization lookup fires while the invoice tab
+    // loads, so register the listener before navigating to avoid a race.
+    const orgResponse = page.waitForResponse((resp: any) => resp.url().includes('organization'));
     await goToInvoiceTab(page, mockRoute, dismissCookieConsent, mockSupportErrand_billing);
-    await page.waitForResponse((resp: any) => resp.url().includes('organization'));
+    await orgResponse;
 
     const externalInvoiceType = invoiceSettings.invoiceTypes.find(
       (t) => (t.invoiceType = 'Extra löneutbetalning - Systemet')

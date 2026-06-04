@@ -10,7 +10,7 @@ import {
   sendCorrectDataOnManualAddPerson,
   supportManagementEmployeeSearch,
   supportManagementPersonSearch,
-} from '../utils/stakeholder-search';
+} from './stakeholder-helpers';
 import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
 import { mockConversationMessages, mockConversations } from './fixtures/mockConversations';
 import { mockEmployee } from './fixtures/mockEmployee';
@@ -60,13 +60,14 @@ test.describe('Errand page', () => {
     const errandCategory = mockSupportErrand.labels.find((l) => l.classification === 'CATEGORY');
     const errandType = mockSupportErrand.labels.find((l) => l.classification === 'TYPE');
     const errandSubtype = mockSupportErrand.labels.find((l) => l.classification === 'SUBTYPE');
-    await expect(page.locator('[data-cy="labelCategory-input"]').locator('*').filter({ hasText: errandCategory.displayName })).toBeVisible();
+    // labelCategory-input is a <select>; its options are hidden until opened, so
+    // assert the selected text via toContainText rather than option visibility.
+    await expect(page.locator('[data-cy="labelCategory-input"]')).toContainText(errandCategory.displayName);
     if (errandSubtype) {
       await expect(page.locator(`[data-cy="labelType-input"][placeholder="${errandSubtype.displayName}"]`)).toBeVisible();
     } else {
       await expect(page.locator(`[data-cy="labelType-input"][placeholder="${errandType.displayName}"]`)).toBeVisible();
     }
-    await expect(page.locator('.ql-editor').locator('*').filter({ hasText: 'En ärendebeskrivning' })).toBeVisible();
     await expect(page.locator('[data-cy="errand-description-richtext-wrapper"]')).toContainText('En ärendebeskrivning');
     await expect(page.locator('[data-cy="channel-input"]')).toContainText('Fysiskt möte');
     await expect(page.locator('[data-cy="save-button"]')).toContainText('Spara');
@@ -79,8 +80,14 @@ test.describe('Errand page', () => {
 
     // Change changeable values
     await page.locator('[data-cy="labelCategory-input"]').selectOption('Elnät/Servanet');
-    await page.locator('[data-cy="errand-description-richtext-wrapper"]').click();
-    await page.keyboard.press('Control+A');
+    // Wait for the editor to be populated with the original text before clearing,
+    // otherwise the select-all/delete can race the async content load.
+    const richtext = page.locator('[data-cy="errand-description-richtext-wrapper"]');
+    await expect(richtext).toContainText('En ärendebeskrivning');
+    await richtext.click();
+    await page.keyboard.press('ControlOrMeta+A');
+    await page.keyboard.press('Delete');
+    await expect(richtext).not.toContainText('En ärendebeskrivning');
     await page.keyboard.type('En ändrad beskrivning');
     await page.locator('[data-cy="channel-input"]').selectOption('Chatt');
 
@@ -93,7 +100,7 @@ test.describe('Errand page', () => {
 
     // Select missing value
     await page.locator('[data-cy="labelType-wrapper"]').click();
-    await page.locator('[data-cy="labelType-wrapper"]').locator('*').filter({ hasText: 'Nyanställning' }).click();
+    await page.getByRole('option', { name: 'Nyanställning', exact: true }).click();
     await expect(page.locator('[data-cy="save-button"]').filter({ hasText: 'Spara ärende' })).toBeEnabled();
 
     // Post form
@@ -152,8 +159,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
+    await dismissCookieConsent();
 
     // Person
     await supportManagementPersonSearch(page);
@@ -245,12 +252,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
     await dismissCookieConsent();
-    await page.waitForResponse((resp) => resp.url().includes('users/admins'));
-    await page.waitForResponse((resp) => resp.url().includes('me'));
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber'));
-    await page.waitForResponse((resp) => resp.url().includes('supportmessage'));
-    await page.waitForResponse((resp) => resp.url().includes('supportmetadata'));
 
     await displayManuallyAddStakeholderModal(page);
   });
@@ -264,12 +267,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
     await dismissCookieConsent();
-    await page.waitForResponse((resp) => resp.url().includes('users/admins'));
-    await page.waitForResponse((resp) => resp.url().includes('me'));
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber'));
-    await page.waitForResponse((resp) => resp.url().includes('supportmessage'));
-    await page.waitForResponse((resp) => resp.url().includes('supportmetadata'));
 
     await page.locator('[data-cy="search-person-form-CONTACT"]').click();
 
@@ -285,8 +284,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
+    await dismissCookieConsent();
 
     await disabledIncompleteContactForm(page);
   });
@@ -302,8 +301,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
+    await dismissCookieConsent();
 
     await searchAndSavePersonStakeholder(page, mockAdressResponse);
   });
@@ -318,8 +317,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
+    await dismissCookieConsent();
 
     await page.locator('[data-cy="search-employee-form-PRIMARY"]').click();
     await page.locator('[data-cy="contact-personNumber-owner"]').clear();
@@ -337,11 +336,12 @@ test.describe('Errand page', () => {
 
     // Submit it
     await page.locator('[data-cy="submit-contact-person-button"]').click();
-    await page.locator('[data-cy="save-button"]').click();
-
-    const response = await page.waitForResponse(
-      (resp) => resp.url().includes('supporterrands/2281/c9a96dcb') && resp.request().method() === 'PATCH'
-    );
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        (resp) => resp.url().includes('supporterrands/2281/c9a96dcb') && resp.request().method() === 'PATCH'
+      ),
+      page.locator('[data-cy="save-button"]').click(),
+    ]);
     const request = response.request();
     const requestBody = request.postDataJSON();
 
@@ -365,8 +365,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
+    await dismissCookieConsent();
 
     await clearSearchResultOnPersonNumberChange(page, mockAdressResponse);
   });
@@ -382,12 +382,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
     await dismissCookieConsent();
-    await page.waitForResponse((resp) => resp.url().includes('users/admins'));
-    await page.waitForResponse((resp) => resp.url().includes('me'));
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber'));
-    await page.waitForResponse((resp) => resp.url().includes('supportmessage'));
-    await page.waitForResponse((resp) => resp.url().includes('supportmetadata'));
 
     await page.locator('[data-cy="add-manually-button-owner"]').click();
 
@@ -404,12 +400,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
     await dismissCookieConsent();
-    await page.waitForResponse((resp) => resp.url().includes('users/admins'));
-    await page.waitForResponse((resp) => resp.url().includes('me'));
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber'));
-    await page.waitForResponse((resp) => resp.url().includes('supportmessage'));
-    await page.waitForResponse((resp) => resp.url().includes('supportmetadata'));
 
     await page.locator('[data-cy="search-employee-form-PRIMARY"]').click();
     await page.locator('[data-cy="add-manually-button-owner"]').click();
@@ -424,11 +416,12 @@ test.describe('Errand page', () => {
     // TODO Uncomment when city is added to the form
     // await page.locator('[data-cy="contact-city"]').fill('Teststaden');
     await page.locator('[data-cy="submit-contact-button"]').click();
-    await page.locator('[data-cy="save-button"]').click();
-
-    const response = await page.waitForResponse(
-      (resp) => resp.url().includes('supporterrands/2281/c9a96dcb') && resp.request().method() === 'PATCH'
-    );
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        (resp) => resp.url().includes('supporterrands/2281/c9a96dcb') && resp.request().method() === 'PATCH'
+      ),
+      page.locator('[data-cy="save-button"]').click(),
+    ]);
     const request = response.request();
     const requestBody = request.postDataJSON();
 
@@ -456,8 +449,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
+    await dismissCookieConsent();
 
     await page.locator('[data-cy="search-person-form-PRIMARY"]').click();
     await expect(page.locator('[data-cy="add-manually-button-person"]')).toBeEnabled();
@@ -472,11 +465,12 @@ test.describe('Errand page', () => {
     await page.locator('[data-cy="contact-zipCode"]').fill('12345');
     await page.locator('[data-cy="contact-city"]').fill('Teststaden');
     await page.locator('[data-cy="submit-contact-button"]').click();
-    await page.locator('[data-cy="save-button"]').click();
-
-    const response = await page.waitForResponse(
-      (resp) => resp.url().includes('supporterrands/2281/c9a96dcb') && resp.request().method() === 'PATCH'
-    );
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        (resp) => resp.url().includes('supporterrands/2281/c9a96dcb') && resp.request().method() === 'PATCH'
+      ),
+      page.locator('[data-cy="save-button"]').click(),
+    ]);
     const request = response.request();
     const requestBody = request.postDataJSON();
 
@@ -506,11 +500,12 @@ test.describe('Errand page', () => {
     await page.locator('[data-cy="contact-lastName"]').clear();
     await page.locator('[data-cy="contact-lastName"]').fill('Testsson');
     await page.locator('[data-cy="submit-contact-button"]').click();
-    await page.locator('[data-cy="save-button"]').click();
-
-    const response = await page.waitForResponse(
-      (resp) => resp.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) && resp.request().method() === 'PATCH'
-    );
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        (resp) => resp.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) && resp.request().method() === 'PATCH'
+      ),
+      page.locator('[data-cy="save-button"]').click(),
+    ]);
     const request = response.request();
     const requestBody = request.postDataJSON();
 
@@ -537,11 +532,12 @@ test.describe('Errand page', () => {
     await page.locator('[data-cy="contact-lastName"]').fill('Testsson');
     await page.locator('[data-cy="role-select"]').selectOption('MANAGER');
     await page.locator('[data-cy="submit-contact-button"]').click();
-    await page.locator('[data-cy="save-button"]').click();
-
-    const response = await page.waitForResponse(
-      (resp) => resp.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) && resp.request().method() === 'PATCH'
-    );
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        (resp) => resp.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) && resp.request().method() === 'PATCH'
+      ),
+      page.locator('[data-cy="save-button"]').click(),
+    ]);
     const request = response.request();
     const requestBody = request.postDataJSON();
 
@@ -564,8 +560,8 @@ test.describe('Errand page', () => {
       customer: [],
     }, { method: 'GET' });
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
-    await dismissCookieConsent();
     await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
+    await dismissCookieConsent();
 
     await searchAndSaveContactPersonStakeholder(page, mockAdressResponse, mockPersonIdResponse);
   });
