@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/**/*.cy.{ts,tsx}",
+    "cypress/e2e/**/*.cy.{ts,tsx}",
+    "cypress/support/**/*.{ts,tsx}"
+  ],
+  "project": ["src/**/*.{ts,tsx}", "cypress/**/*.{ts,tsx}"],
+  "ignore": [
+    "src/data-contracts/**"
+  ],
+  "ignoreDependencies": [
+    "sharp",
+    "swagger-typescript-api",
+    "@tailwindcss/forms",
+    "@tailwindcss/container-queries"
+  ],
+  "ignoreBinaries": [
+    "tsx"
+  ]
+}

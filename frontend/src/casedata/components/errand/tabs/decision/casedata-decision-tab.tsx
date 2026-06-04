@@ -30,13 +30,8 @@ import {
   validateErrandForDecision,
   validateStatusForDecision,
 } from '@casedata/services/casedata-errand-service';
-import { sendDecisionMessage, sendMessage } from '@casedata/services/casedata-message-service';
-import {
-  getOwnerStakeholder,
-  validateOwnerForSendingDecision,
-  validateOwnerForSendingDecisionByEmail,
-  validateOwnerForSendingDecisionByLetter,
-} from '@casedata/services/casedata-stakeholder-service';
+import { sendDecisionMessage } from '@casedata/services/casedata-message-service';
+import { getOwnerStakeholder, validateOwnerForSendingDecision } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
 import { triggerErrandPhaseChange } from '@casedata/services/process-service';
 import TextEditor from '@common/components/dynamic-text-editor';
@@ -45,7 +40,6 @@ import { ServiceListComponent } from '@common/components/services/service-list.c
 import { TemplatePdfPreview } from '@common/components/template-preview/template-pdf-preview.component';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { useErrandAssetServices } from '@common/hooks/use-asset-services';
-import { MessageClassification } from '@common/interfaces/message';
 import { Template } from '@common/interfaces/template';
 import { isMEX, isPT } from '@common/services/application-service';
 import { deleteDraftAsset, getDraftAssets, updateAsset } from '@common/services/asset-service';
@@ -71,15 +65,12 @@ import {
 } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';
-import { Download, SendHorizontal } from 'lucide-react';
+import { Download, Gavel, HandHelping, SendHorizontal } from 'lucide-react';
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
-
-export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
 
 export interface DecisionFormModel {
   id?: string;
@@ -167,6 +158,8 @@ export const CasedataDecisionTab: FC<{
   const [isTemplatesLoading, setIsTemplatesLoading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const templatesRequestId = useRef(0);
+  // Holds the saved template identifier to re-select once templates have been fetched on load.
+  const pendingTemplateRestore = useRef<string | null>(null);
 
   const sortedDec = useMemo(() => {
     if (!errand) return [];
@@ -202,7 +195,7 @@ export const CasedataDecisionTab: FC<{
 
   // Template fetching is driven by outcome selection — see useEffect below after watch()
 
-  const { services: allServices, refetch: refetchServices } = useErrandAssetServices({
+  const { errandServices: allServices, refetch: refetchServices } = useErrandAssetServices({
     municipalityId,
     partyId: hasFtServices ? ownerPartyId ?? '' : '',
     errandId: hasFtServices ? String(errand?.id ?? '') : '',
@@ -304,11 +297,27 @@ export const CasedataDecisionTab: FC<{
       });
   };
 
+  // Persist the selected decision template so it can be re-selected when the page is reopened.
+  // Existing extraParameters are preserved (only relevant when updating an existing decision).
+  const withTemplateExtraParameters = (data: DecisionFormModel): DecisionFormModel => {
+    const baseExtraParameters = (data.id ? existingDecision?.extraParameters : undefined) ?? {};
+    const extraParameters: GenericExtraParameters = { ...baseExtraParameters };
+    if (selectedTemplate?.identifier) {
+      extraParameters.decisionTemplate = selectedTemplate.identifier;
+    } else {
+      delete extraParameters.decisionTemplate;
+    }
+    if (Object.keys(extraParameters).length === 0) {
+      return data;
+    }
+    return { ...data, extraParameters };
+  };
+
   const save = async (data: DecisionFormModel) => {
     if (!errand) return;
     try {
       const rendered = await renderPdf(errand, data, 'decision', services);
-      await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
+      await saveDecision(municipalityId, errand, withTemplateExtraParameters(data), 'FINAL', rendered.pdfBase64);
       setIsLoading(false);
       setError(undefined);
       props.setUnsaved(false);
@@ -350,57 +359,16 @@ export const CasedataDecisionTab: FC<{
       } as CreateStakeholderDto;
       setIsSaveAndSendLoading(true);
       const rendered = await renderPdf(errand, data, 'decision', services);
-      await saveDecision(municipalityId, errand, data, 'FINAL', rendered.pdfBase64);
+      await saveDecision(municipalityId, errand, withTemplateExtraParameters(data), 'FINAL', rendered.pdfBase64);
 
       const renderedHtml = await renderHtml(errand, data, 'decision');
-      const owner = getOwnerStakeholder(errand);
-      const recipientEmail = owner?.emails?.[0]?.value;
-      const contactMeans: ContactMeans = errand.externalCaseId
-        ? 'webmessage'
-        : validateOwnerForSendingDecisionByEmail(errand)
-        ? 'email'
-        : validateOwnerForSendingDecisionByLetter(errand)
-        ? 'digitalmail'
-        : false;
-      if (contactMeans === 'email' && !recipientEmail) {
-        throw new Error('Ingen e-postadress för mottagare hittades');
-      }
-      if (!contactMeans) {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendeägaren har inga godkända kontaktsätt',
-          status: 'error',
-        });
-        return;
-      }
-      const messageData: CasedataMessageTabFormModel = {
-        contactMeans,
-        messageClassification: MessageClassification.Informationsmeddelande,
-        emails: [{ value: recipientEmail }],
-        newEmail: '',
-        phoneNumbers: [],
-        newPhoneNumber: '',
-        messageAttachments: [],
-        messageBody: base64Decode(renderedHtml.htmlBase64),
-        messageBodyPlaintext: data.descriptionPlaintext,
-        attachUtredning: false,
-        existingAttachments: [],
-        addExisting: '',
-        newAttachments: [],
-        newItem: undefined,
-        headerReplyTo: '',
-        headerReferences: '',
-      };
-      if (isMEX()) {
-        await sendMessage(municipalityId, errand, messageData);
-      } else if (isPT() && municipalityId === '2260') {
-        // PT Ånge - do nothing, they handle sending themselves
-      } else if (isPT()) {
-        await sendDecisionMessage(municipalityId, errand);
-      } else {
-        throw new Error('Kontaktsätt saknas');
-      }
+      // Channel selection and sending is handled by the backend for both MEX and PT.
+      await sendDecisionMessage(
+        municipalityId,
+        errand,
+        base64Decode(renderedHtml.htmlBase64),
+        data.descriptionPlaintext
+      );
       await updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Beslutad);
       const drafts = await getDraftAssets({
         municipalityId,
@@ -530,9 +498,13 @@ export const CasedataDecisionTab: FC<{
       if (existingDecision.law && existingDecision.law.length > 0) {
         setValue('law', existingDecision.law, { shouldDirty: false });
       }
+
+      // Re-select the previously saved template once templates have loaded (see template fetch below).
+      pendingTemplateRestore.current = existingDecision.extraParameters?.decisionTemplate ?? null;
     } else {
       setValue('id', undefined, { shouldDirty: false });
       setValue('law', [], { shouldDirty: false });
+      pendingTemplateRestore.current = null;
     }
 
     void trigger();
@@ -570,6 +542,16 @@ export const CasedataDecisionTab: FC<{
         // MEX: exclude the layout template, it's used for PDF rendering only
         const filtered = isMEX() ? templates.filter((t) => t.identifier !== 'mex.decision') : templates;
         setDecisionTemplates(filtered);
+
+        // Restore the previously saved template selection (set during form init on load).
+        if (pendingTemplateRestore.current) {
+          const savedTemplate = filtered.find((t) => t.identifier === pendingTemplateRestore.current);
+          if (savedTemplate) {
+            setSelectedTemplate(savedTemplate);
+            setValue('decisionTemplate', savedTemplate.name || savedTemplate.identifier, { shouldDirty: false });
+          }
+          pendingTemplateRestore.current = null;
+        }
       })
       .catch((e) => {
         if (templatesRequestId.current !== requestId) return;
@@ -855,36 +837,42 @@ export const CasedataDecisionTab: FC<{
         <Input data-cy="decision-description-input" type="hidden" {...register('description')} />
         <Input type="hidden" {...register('errandId')} />
 
-        {!isMEX() && (
-          <TemplatePdfPreview identifier={selectedTemplate?.identifier} parameters={buildTemplateParameters()} />
-        )}
-
-        <div className={cx('h-[48rem] overflow-hidden')} data-cy="decision-richtext-wrapper">
-          <TextEditor
-            className={cx('mb-md h-[80%] max-w-[95.9rem]')}
-            readOnly={isErrandLocked(errand) || isSent()}
-            onChange={(e) => {
-              setValue('description', e.target.value.markup ?? '', {
-                shouldDirty: true,
-                shouldValidate: true,
-              });
-              setValue('descriptionPlaintext', e.target.value.plainText ?? '', {
-                shouldValidate: true,
-              });
-            }}
-            value={{ markup: description, plainText: descriptionPlaintext }}
-          />
-        </div>
-        <div className="my-sm text-error">
-          {errors.description && formState.isDirty && (
-            <FormErrorMessage>{errors.description?.message}</FormErrorMessage>
-          )}
-        </div>
+        <Disclosure variant="alt" data-cy="decision-text-disclosure" initalOpen className="mb-24">
+          <Disclosure.Header>
+            <Disclosure.Icon icon={<Gavel size={18} />} />
+            <Disclosure.Title>Beslutstext</Disclosure.Title>
+            <Disclosure.Button />
+          </Disclosure.Header>
+          <Disclosure.Content>
+            <div className={cx('h-[48rem] overflow-hidden')} data-cy="decision-richtext-wrapper">
+              <TextEditor
+                className={cx('mb-md h-[80%] max-w-[95.9rem]')}
+                readOnly={isErrandLocked(errand) || isSent()}
+                onChange={(e) => {
+                  setValue('description', e.target.value.markup ?? '', {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                  setValue('descriptionPlaintext', e.target.value.plainText ?? '', {
+                    shouldValidate: true,
+                  });
+                }}
+                value={{ markup: description, plainText: descriptionPlaintext }}
+              />
+            </div>
+            <div className="my-sm text-error">
+              {errors.description && formState.isDirty && (
+                <FormErrorMessage>{errors.description?.message}</FormErrorMessage>
+              )}
+            </div>
+          </Disclosure.Content>
+        </Disclosure>
 
         {showApprovedServices && (
           <div className="pb-20">
             <Disclosure variant="alt" data-cy="decision-services-disclosure" initalOpen>
               <Disclosure.Header>
+                <Disclosure.Icon icon={<HandHelping size={18} />} />
                 <Disclosure.Title>
                   <span className="flex items-center gap-12">
                     <span>Insatser som bifalls</span>
@@ -901,17 +889,30 @@ export const CasedataDecisionTab: FC<{
         )}
         {showNoServicesInfo && (
           <div className="pb-20">
-            <Alert type="info" data-cy="decision-services-info-alert">
-              <Alert.Icon />
-              <Alert.Content>
-                <Alert.Content.Title>Inga insatser kommer att fattas</Alert.Content.Title>
-                <Alert.Content.Description>
-                  Insatser tilldelas endast vid bifall. Med detta utfall registreras inga insatser på ärendet när
-                  beslutet skickas.
-                </Alert.Content.Description>
-              </Alert.Content>
-            </Alert>
+            <Disclosure variant="alt" data-cy="decision-no-services-disclosure" initalOpen>
+              <Disclosure.Header>
+                <Disclosure.Icon icon={<HandHelping size={18} />} />
+                <Disclosure.Title>Insatser</Disclosure.Title>
+                <Disclosure.Button />
+              </Disclosure.Header>
+              <Disclosure.Content>
+                <Alert type="info" data-cy="decision-services-info-alert">
+                  <Alert.Icon />
+                  <Alert.Content>
+                    <Alert.Content.Title>Inga insatser kommer att fattas</Alert.Content.Title>
+                    <Alert.Content.Description>
+                      Insatser tilldelas endast vid bifall. Med detta utfall registreras inga insatser på ärendet när
+                      beslutet skickas.
+                    </Alert.Content.Description>
+                  </Alert.Content>
+                </Alert>
+              </Disclosure.Content>
+            </Disclosure>
           </div>
+        )}
+
+        {!isMEX() && (
+          <TemplatePdfPreview identifier={selectedTemplate?.identifier} parameters={buildTemplateParameters()} />
         )}
 
         <div className="flex justify-start gap-md">
@@ -926,19 +927,6 @@ export const CasedataDecisionTab: FC<{
             disabled={saveDisabled}
           >
             Spara beslutstext
-          </Button>
-          <Button
-            data-cy="decision-pdf-preview-button"
-            color="vattjom"
-            inverted={formState.isValid && allowed}
-            size="md"
-            disabled={previewDisabled}
-            onClick={getPdfPreview}
-            loading={isPreviewLoading}
-            loadingText="Hämtar PDF"
-            rightIcon={<Download />}
-          >
-            {decisionIsReadOnly ? 'Hämta PDF' : 'Förhandsgranska PDF'}
           </Button>
           <Button
             data-cy="save-and-send-decision-button"

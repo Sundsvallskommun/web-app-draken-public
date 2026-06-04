@@ -10,7 +10,7 @@ import {
   fetchInvestigationSkeleton,
   getProposedOrRecommendedDecision,
   getUtredningPhrases,
-  lawMapping,
+  lawMappingPT,
   renderPdf,
   saveDecision,
 } from '@casedata/services/casedata-decision-service';
@@ -305,7 +305,7 @@ export const CasedataInvestigationTab: FC<{
                     onChange={(e) => {
                       setValue(
                         'law',
-                        lawMapping.filter((law) => {
+                        lawMappingPT.filter((law) => {
                           return law.heading === e.target.value;
                         }),
                         { shouldDirty: true }
@@ -317,7 +317,7 @@ export const CasedataInvestigationTab: FC<{
                     value={getValues('law')?.[0] ? getValues('law')[0].heading : undefined}
                   >
                     <Select.Option value={''}>Välj lagrum</Select.Option>
-                    {lawMapping.map((law, index) => {
+                    {lawMappingPT.map((law, index) => {
                       return (
                         <Select.Option key={index} value={law.heading}>
                           {law.heading}
@@ -365,7 +365,6 @@ export const CasedataInvestigationTab: FC<{
               </>
             )}
           </div>
-          <TemplatePdfPreview identifier={previewTemplate.identifier} parameters={previewTemplate.parameters} />
           <Input type="hidden" {...register('id')} />
           <Input data-cy="utredning-description-input" type="hidden" {...register('description')} />
           <Input type="hidden" {...register('errandNumber')} />
@@ -410,6 +409,7 @@ export const CasedataInvestigationTab: FC<{
               </Disclosure>
             );
           })()}
+          <TemplatePdfPreview identifier={previewTemplate.identifier} parameters={previewTemplate.parameters} />
           <div className="flex justify-left gap-10">
             <Button
               data-cy="save-utredning-button"

@@ -26,8 +26,8 @@ export class ExportController {
   async exportErrands(
     @Req() req: RequestWithUser,
     @Body() data: (Errand & { caseLabel: string })[],
-    @Param('municipalityId') municipalityId: string,
-    @QueryParam('include') include: string,
+    @Param('municipalityId') _municipalityId: string,
+    @QueryParam('include') _include: string,
   ): Promise<any> {
     const renderRequest: RenderRequest = {
       identifier: 'sbk.errands.export',

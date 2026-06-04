@@ -1,13 +1,12 @@
 'use client';
 
 import { ServiceListComponent } from '@common/components/services/service-list.component';
-import { usePartyAssetServices } from '@common/hooks/use-asset-services';
 import { Badge, Button, Disclosure } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useServiceStore } from '@stores/index';
 import { Eye, EyeOff } from 'lucide-react';
 import { FC, ReactNode, useMemo, useState } from 'react';
 
-const KC_ASSET_TYPES = ['ParatransitPermitLocal', 'ParatransitPermitNational', 'PARKINGPERMIT'];
+export const KC_ASSET_TYPES = ['ParatransitPermitLocal', 'ParatransitPermitNational', 'PARKINGPERMIT'];
 const FT_ASSET_TYPES = new Set(['ParatransitPermitLocal', 'ParatransitPermitNational']);
 const PARKING_ASSET_TYPES = new Set(['PARKINGPERMIT']);
 const ACTIVE_PARTY_STATUSES = new Set(['ACTIVE', 'TEMPORARY']);
@@ -24,21 +23,11 @@ const renderServicesPanel = (
 };
 
 export const SupportErrandServicesTab: FC = () => {
-  const municipalityId = useConfigStore((s) => s.municipalityId);
-  const supportErrand = useSupportStore((s) => s.supportErrand);
   const [showFinished, setShowFinished] = useState(false);
 
-  const partyId = supportErrand?.stakeholders?.find((s) => s.role === 'PRIMARY')?.externalId ?? '';
-
-  const {
-    services: partyServices,
-    loading,
-    error,
-  } = usePartyAssetServices({
-    municipalityId,
-    partyId,
-    assetTypes: KC_ASSET_TYPES,
-  });
+  const partyServices = useServiceStore((s) => s.partyServices);
+  const loading = partyServices === undefined;
+  const error = partyServices === null ? 'Det gick inte att hämta personens insatser' : null;
 
   const visibleServices = useMemo(
     () => (showFinished ? partyServices : partyServices.filter((s) => s.status && ACTIVE_PARTY_STATUSES.has(s.status))),

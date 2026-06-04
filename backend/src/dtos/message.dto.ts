@@ -59,6 +59,16 @@ export class SmsDto {
 export class DecisionMessageDto {
   @IsString()
   errandId!: string;
+
+  // Pre-rendered decision body used by MEX (email uses html, webmessage uses plaintext).
+  // PT ignores these and attaches the saved decision PDF instead.
+  @IsString()
+  @IsOptional()
+  html?: string;
+
+  @IsString()
+  @IsOptional()
+  plaintext?: string;
 }
 
 export class MessageResponse implements IMessageResponse {

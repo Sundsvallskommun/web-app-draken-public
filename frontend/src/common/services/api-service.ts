@@ -15,9 +15,7 @@ export const handleError = (error: AxiosError<ApiResponse>) => {
   if (globalThis.window !== undefined) {
     if (error?.response?.status === 401 && !globalThis.window.location.pathname.includes('login')) {
       const basePath = process.env.NEXT_PUBLIC_BASEPATH || '';
-      globalThis.window.location.href = `${globalThis.window.location.origin}${basePath}/login?path=${globalThis.window.location.pathname}&failMessage=${
-        error.response.data.message
-      }`;
+      globalThis.window.location.href = `${globalThis.window.location.origin}${basePath}/login?path=${globalThis.window.location.pathname}&failMessage=${error.response.data.message}`;
     }
   }
 

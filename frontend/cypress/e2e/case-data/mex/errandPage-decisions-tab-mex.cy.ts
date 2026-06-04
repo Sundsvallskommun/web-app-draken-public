@@ -150,7 +150,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         .type('Mock text', { delay: 100 });
       cy.contains('Beslut måste anges').should('exist');
       cy.get('[data-cy="save-decision-button"]').should('exist').should('be.disabled');
-      cy.get('[data-cy="decision-pdf-preview-button"]').should('have.length', 2).should('be.disabled');
+      cy.get('[data-cy="decision-pdf-preview-button"]').should('have.length', 1).should('be.disabled');
       cy.get('[data-cy="save-and-send-decision-button"]').should('exist').should('be.disabled');
     });
   });

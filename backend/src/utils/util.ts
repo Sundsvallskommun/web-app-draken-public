@@ -69,7 +69,7 @@ export const toBase64: (data: File | Blob) => Promise<string> = data =>
   });
 
 export const withRetries: <T>(retries: number, func: () => Promise<T>) => Promise<T | boolean> = (retries, func) => {
-  return func().catch(e => {
+  return func().catch(_e => {
     if (retries > 0) {
       return withRetries(retries - 1, func);
     } else {
@@ -100,7 +100,7 @@ export const isValidUrl = (string: string) => {
   let url;
   try {
     url = new URL(string);
-  } catch (_) {
+  } catch {
     return false;
   }
   return url.protocol === 'http:' || url.protocol === 'https:';

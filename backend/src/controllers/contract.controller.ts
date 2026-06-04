@@ -38,7 +38,7 @@ export class CasedataContractsController {
   @Get('/contracts/:id')
   @OpenAPI({ summary: 'Fetch a contract' })
   @UseBefore(authMiddleware)
-  async fetch_contract(@Req() req: RequestWithUser, @Param('id') id: string, @Res() response: any): Promise<ResponseData> {
+  async fetch_contract(@Req() req: RequestWithUser, @Param('id') id: string, @Res() _response: any): Promise<ResponseData> {
     const url = `${MUNICIPALITY_ID}/contracts/${id}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<Contract>({ url, baseURL }, req.user);
@@ -71,7 +71,7 @@ export class CasedataContractsController {
       const isPersonNumber = luhnCheck(query);
       if (isPersonNumber) {
         const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${query}/guid`;
-        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(e => null);
+        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(_e => null);
       }
 
       let queryFilter = `(`;
@@ -190,7 +190,7 @@ export class CasedataContractsController {
     }
     const contractUrl = `${MUNICIPALITY_ID}/contracts/${id}`;
     const existingContract: Contract = (
-      await this.apiService.get<Contract>({ url: contractUrl, baseURL }, req.user).catch(e => {
+      await this.apiService.get<Contract>({ url: contractUrl, baseURL }, req.user).catch(_e => {
         throw 'Existing contract not found.';
       })
     ).data;
@@ -213,7 +213,7 @@ export class CasedataContractsController {
     @Req() req: RequestWithUser,
     @Param('contractId') contractId: string,
     @Param('attachmentId') attachmentId: number,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<ResponseData> {
     const url = `${MUNICIPALITY_ID}/contracts/${contractId}/attachments/${attachmentId}`;
     const baseURL = apiURL(this.SERVICE);

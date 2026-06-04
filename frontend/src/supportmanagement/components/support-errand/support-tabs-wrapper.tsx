@@ -17,7 +17,7 @@ import {
   groupByConversationIdSortedTree,
   MessageNode,
 } from '@supportmanagement/services/support-message-service';
-import { Dispatch, FC, ReactNode, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, FC, ReactNode, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
@@ -39,6 +39,8 @@ export const SupportTabsWrapper: FC<{
   const [unsavedChanges, setUnsavedChanges] = useState(false);
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
+
+  const { activeTabLabel, setActiveTabLabel } = useSupportStore();
 
   useEffect(() => {
     if (methods?.getValues as unknown) {
@@ -92,69 +94,90 @@ export const SupportTabsWrapper: FC<{
     content: ReactNode;
     disabled: boolean;
     visibleFor: boolean;
-  }[] = [
-    {
-      label: 'Grundinformation',
-      content: supportErrand && (
-        <SupportErrandBasicsTab
-          setUnsavedFacility={props.setUnsavedFacility}
-          errand={supportErrand}
-          setUnsaved={setUnsavedChanges}
-          update={update}
-        />
-      ),
-      disabled: false,
-      visibleFor: true,
-    },
-    {
-      label: 'Ärendeuppgifter',
-      content: supportErrand && <SupportErrandDetailsTab />,
-      disabled: false,
-      visibleFor: appConfig.features.useDetailsTab,
-    },
-    {
-      label: `Meddelanden (${countUnreadMessages(messages)})`,
-      content: supportErrand && (
-        <SupportMessagesTab
-          messages={messages}
-          messageTree={messageTree}
-          supportConversations={supportConversations}
-          conversationMessageTree={conversationMessageTree}
-          setUnsaved={setUnsavedChanges}
-          update={update}
-          municipalityId={municipalityId}
-        />
-      ),
-      disabled: false,
-      visibleFor: true,
-    },
-    {
-      label: `Bilagor (${countAttachment(supportAttachments ?? [])})`,
-      content: supportErrand && <SupportErrandAttachmentsTab update={update} />,
-      disabled: false,
-      visibleFor: true,
-    },
-    {
-      label: 'Insatser',
-      content: supportErrand && <SupportErrandServicesTab />,
-      disabled: false,
-      visibleFor: appConfig.features.useServices && !!supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY'),
-    },
-    {
-      label: 'Rekryteringsprocess',
-      content: supportErrand && <SupportErrandRecruitmentTab setUnsaved={setUnsavedChanges} update={update} />,
-      disabled: false,
-      visibleFor: appConfig.features.useRecruitment,
-    },
-    {
-      label: 'Fakturering',
-      content: supportErrand && (
-        <SupportErrandInvoiceTab errand={supportErrand} setUnsaved={setUnsavedChanges} update={update} />
-      ),
-      disabled: false,
-      visibleFor: appConfig.features.useBilling,
-    },
-  ];
+  }[] = useMemo(
+    () => [
+      {
+        label: 'Grundinformation',
+        content: supportErrand && (
+          <SupportErrandBasicsTab
+            setUnsavedFacility={props.setUnsavedFacility}
+            errand={supportErrand}
+            setUnsaved={setUnsavedChanges}
+            update={update}
+          />
+        ),
+        disabled: false,
+        visibleFor: true,
+      },
+      {
+        label: 'Ärendeuppgifter',
+        content: supportErrand && <SupportErrandDetailsTab />,
+        disabled: false,
+        visibleFor: appConfig.features.useDetailsTab,
+      },
+      {
+        label: `Meddelanden (${countUnreadMessages(messages)})`,
+        content: supportErrand && (
+          <SupportMessagesTab
+            messages={messages}
+            messageTree={messageTree}
+            supportConversations={supportConversations}
+            conversationMessageTree={conversationMessageTree}
+            setUnsaved={setUnsavedChanges}
+            update={update}
+            municipalityId={municipalityId}
+          />
+        ),
+        disabled: false,
+        visibleFor: true,
+      },
+      {
+        label: `Bilagor (${countAttachment(supportAttachments ?? [])})`,
+        content: supportErrand && <SupportErrandAttachmentsTab update={update} />,
+        disabled: false,
+        visibleFor: true,
+      },
+      {
+        label: 'Insatser',
+        content: supportErrand && <SupportErrandServicesTab />,
+        disabled: false,
+        visibleFor: appConfig.features.useServices && !!supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY'),
+      },
+      {
+        label: 'Rekryteringsprocess',
+        content: supportErrand && <SupportErrandRecruitmentTab setUnsaved={setUnsavedChanges} update={update} />,
+        disabled: false,
+        visibleFor: appConfig.features.useRecruitment,
+      },
+      {
+        label: 'Fakturering',
+        content: supportErrand && (
+          <SupportErrandInvoiceTab errand={supportErrand} setUnsaved={setUnsavedChanges} update={update} />
+        ),
+        disabled: false,
+        visibleFor: appConfig.features.useBilling,
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      conversationMessageTree,
+      messageTree,
+      messages,
+      municipalityId,
+      props.setUnsavedFacility,
+      supportAttachments,
+      supportConversations,
+      supportErrand,
+    ]
+  );
+
+  const [activeTab, setActiveTab] = useState(0);
+
+  useEffect(() => {
+    setActiveTab(
+      tabs.filter((tab) => tab.visibleFor).findIndex((tab) => tab.visibleFor && tab.label === activeTabLabel) ?? 0
+    );
+  }, [activeTabLabel, tabs]);
 
   return (
     <>
@@ -164,8 +187,11 @@ export const SupportTabsWrapper: FC<{
             className="border-1 rounded-12 bg-background-content pt-22 pl-5"
             tabslistClassName="border-0 border-red-500 -m-b-12 flex-wrap ml-10"
             panelsClassName="border-t-1"
-            current={0}
-            onTabChange={() => {}}
+            current={activeTab}
+            onTabChange={(e) => {
+              console.log('Tab changed', e);
+              setActiveTabLabel(tabs.filter((tab) => tab.visibleFor)[e].label);
+            }}
             size={'sm'}
           >
             {tabs

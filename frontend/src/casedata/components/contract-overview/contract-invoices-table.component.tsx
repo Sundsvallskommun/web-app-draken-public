@@ -178,5 +178,3 @@ export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({
     </div>
   );
 };
-
-export default ContractInvoicesTable;
