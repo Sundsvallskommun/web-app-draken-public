@@ -155,6 +155,12 @@ export const CasedataErrandComponent: FC = () => {
                                   : ''}
                               </h1>
                             </div>
+                            <div className="mb-12">
+                              <ReferredFromErrandInformation
+                                municipalityId={municipalityId}
+                                errandId={errand.id as unknown as string}
+                              />
+                            </div>
                             <div className="rounded-cards">
                               <div className="flex gap-x-32 gap-y-8 bg-background-color-mixin-1 rounded-button p-md border">
                                 <div className="pr-sm">
@@ -242,10 +248,6 @@ export const CasedataErrandComponent: FC = () => {
                                 )}
                               </div>
                             </div>
-                            <ReferredFromErrandInformation
-                              municipalityId={municipalityId}
-                              errandId={errand.id as unknown as string}
-                            />
                           </>
                         ) : errand ? (
                           <div data-cy="registerErrandHeading" className="flex justify-between items-center pt-8">

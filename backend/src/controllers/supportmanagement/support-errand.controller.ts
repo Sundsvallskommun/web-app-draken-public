@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { APPLICATION, CASEDATA_NAMESPACE, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { APPLICATION, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   AddressAddressCategoryEnum,
@@ -16,6 +16,7 @@ import {
   Stakeholder as CasedataStakeholderDTO,
   StakeholderTypeEnum as CasedataStakeholderDtoTypeEnum,
 } from '@/data-contracts/case-data/data-contracts';
+import { RelationPagedResponse } from '@/data-contracts/relations/data-contracts';
 import {
   ContactChannel,
   Errand as SupportErrand,
@@ -42,6 +43,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
+import { createConversation, sendConversationTextMessage } from '@/services/message.service';
 import { logger } from '@/utils/logger';
 import { apiURL, buildCategoryFilter, findLeafComponents, luhnCheck, removeUnreachablePaths, toOffsetDateTime, withRetries } from '@/utils/util';
 
@@ -351,7 +353,7 @@ class ForwardFormDto {
   @IsArray()
   emails!: { value: string }[];
   @IsString()
-  department!: 'MEX';
+  department!: string;
   @IsString()
   message!: string;
   @IsString()
@@ -989,7 +991,6 @@ export class SupportErrandController {
       caseType: MEXCaseType.MEX_FORWARDED_FROM_CONTACTSUNDSVALL as any,
       priority: existingSupportErrand.data.priority as unknown as CasedataErrandDtoPriorityEnum,
       channel: casedataChannel,
-      description: data?.message ? data?.message : existingSupportErrand.data.description,
       stakeholders: stakeholders,
       // TODO How to map facilities? How are property designations stored in SupportManagement?
       facilities: facilities,
@@ -1003,7 +1004,7 @@ export class SupportErrandController {
     };
     logger.info('Creating new errand in CaseData', caseDataErrand);
     const referredFrom = `REFERRED_FROM|${id};case;supportmanagement;${this.namespace}|`;
-    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands`;
+    const url = `${municipalityId}/${data.department}/errands`;
     const CASEDATA_SERVICE = apiServiceName('case-data');
     const baseURL = apiURL(CASEDATA_SERVICE);
     const errand: CasedataErrandDTO = await this.apiService
@@ -1051,7 +1052,7 @@ export class SupportErrandController {
       });
 
       const postedAttachments: Promise<CasedataErrandDTO>[] = attachmentDtos?.map(attachmentDto => {
-        const casedataAttachmentsUrl = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errand.id}/attachments`;
+        const casedataAttachmentsUrl = `${municipalityId}/${data.department}/errands/${errand.id}/attachments`;
         const casedataAttachmentsResponse = this.apiService
           .post<CasedataErrandDTO, CreateAttachmentDto>({ url: casedataAttachmentsUrl, baseURL, data: attachmentDto }, req.user)
           .then(res => res.data)
@@ -1068,6 +1069,25 @@ export class SupportErrandController {
       });
     } catch {
       return response.status(400).send('ATTACHMENTS_FAILED');
+    }
+
+    if (data?.messageBodyPlaintext?.trim()) {
+      try {
+        const relationsBaseURL = apiURL(apiServiceName('relations'));
+        const relationsUrl = `${municipalityId}/relations?filter=target.resourceId%3A%27${errand.id}%27`;
+        const relationsRes = await this.apiService.get<RelationPagedResponse>({ url: relationsUrl, baseURL: relationsBaseURL }, req.user);
+        const referredFromRelation = relationsRes.data.relations?.find(r => r.type === 'REFERRED_FROM');
+
+        if (referredFromRelation?.id) {
+          const conversation = await createConversation(errand.id!.toString(), req.user, 'INTERNAL', 'Överlämning', data.department!, [
+            referredFromRelation.id,
+          ]);
+
+          await sendConversationTextMessage(errand.id!.toString(), conversation.id, req.user, data.message ?? '', data.department!);
+        }
+      } catch (error) {
+        logger.error('Error when creating conversation message for forwarded errand:', error);
+      }
     }
 
     return response.status(200).send(errand);

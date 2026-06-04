@@ -31,20 +31,14 @@ import {
   validateErrandForDecision,
   validateStatusForDecision,
 } from '@casedata/services/casedata-errand-service';
-import { sendDecisionMessage, sendMessage } from '@casedata/services/casedata-message-service';
-import {
-  getOwnerStakeholder,
-  validateOwnerForSendingDecision,
-  validateOwnerForSendingDecisionByEmail,
-  validateOwnerForSendingDecisionByLetter,
-} from '@casedata/services/casedata-stakeholder-service';
+import { sendDecisionMessage } from '@casedata/services/casedata-message-service';
+import { getOwnerStakeholder, validateOwnerForSendingDecision } from '@casedata/services/casedata-stakeholder-service';
 import { getErrandContract } from '@casedata/services/contract-service';
 import { triggerErrandPhaseChange } from '@casedata/services/process-service';
 import TextEditor from '@common/components/dynamic-text-editor';
 import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
 import { TemplatePdfPreview } from '@common/components/template-preview/template-pdf-preview.component';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
-import { MessageClassification } from '@common/interfaces/message';
 import { Template } from '@common/interfaces/template';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
@@ -74,12 +68,9 @@ import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-import { CasedataMessageTabFormModel } from '../messages/message-composer.component';
 import { ServiceListComponent } from '../services/casedata-service-list.component';
 import { useErrandServices } from '../services/useErrandService';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
-
-export type ContactMeans = 'webmessage' | 'email' | 'digitalmail' | false;
 
 export interface DecisionFormModel {
   id?: string;
@@ -371,54 +362,13 @@ export const CasedataDecisionTab: FC<{
       await saveDecision(municipalityId, errand, withTemplateExtraParameters(data), 'FINAL', rendered.pdfBase64);
 
       const renderedHtml = await renderHtml(errand, data, 'decision');
-      const owner = getOwnerStakeholder(errand);
-      const recipientEmail = owner?.emails?.[0]?.value;
-      const contactMeans: ContactMeans = errand.externalCaseId
-        ? 'webmessage'
-        : validateOwnerForSendingDecisionByEmail(errand)
-        ? 'email'
-        : validateOwnerForSendingDecisionByLetter(errand)
-        ? 'digitalmail'
-        : false;
-      if (contactMeans === 'email' && !recipientEmail) {
-        throw new Error('Ingen e-postadress för mottagare hittades');
-      }
-      if (!contactMeans) {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: 'Ärendeägaren har inga godkända kontaktsätt',
-          status: 'error',
-        });
-        return;
-      }
-      const messageData: CasedataMessageTabFormModel = {
-        contactMeans,
-        messageClassification: MessageClassification.Informationsmeddelande,
-        emails: [{ value: recipientEmail }],
-        newEmail: '',
-        phoneNumbers: [],
-        newPhoneNumber: '',
-        messageAttachments: [],
-        messageBody: base64Decode(renderedHtml.htmlBase64),
-        messageBodyPlaintext: data.descriptionPlaintext,
-        attachUtredning: false,
-        existingAttachments: [],
-        addExisting: '',
-        newAttachments: [],
-        newItem: undefined,
-        headerReplyTo: '',
-        headerReferences: '',
-      };
-      if (isMEX()) {
-        await sendMessage(municipalityId, errand, messageData);
-      } else if (isPT() && municipalityId === '2260') {
-        // PT Ånge - do nothing, they handle sending themselves
-      } else if (isPT()) {
-        await sendDecisionMessage(municipalityId, errand);
-      } else {
-        throw new Error('Kontaktsätt saknas');
-      }
+      // Channel selection and sending is handled by the backend for both MEX and PT.
+      await sendDecisionMessage(
+        municipalityId,
+        errand,
+        base64Decode(renderedHtml.htmlBase64),
+        data.descriptionPlaintext
+      );
       await updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Beslutad);
       const drafts = await getDraftAssets({
         municipalityId,

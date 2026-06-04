@@ -1,7 +1,7 @@
 import { ContractForm } from '@casedata/components/errand/tabs/contract/contract-form';
 import { MEXCaseType } from '@casedata/interfaces/case-type';
 import { Channels } from '@casedata/interfaces/channels';
-import { ContractData, UnifiedContractParty } from '@casedata/interfaces/contract-data';
+import { ContractData } from '@casedata/interfaces/contract-data';
 import {
   Contract,
   ContractType,
@@ -20,7 +20,6 @@ import { getErrand, saveErrand } from '@casedata/services/casedata-errand-servic
 import { saveExtraParameters } from '@casedata/services/casedata-extra-parameters-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import {
-  contractStakeholderToUnifiedParty,
   contractToKopeavtal,
   contractToLagenhetsArrende,
   contractTypes,
@@ -140,11 +139,6 @@ export const ContractDetailForm: FC<{
       return contractToLagenhetsArrende(selectedContract);
     }
   }, [selectedContract]);
-
-  // Convert stakeholders to unified party format using centralized converter
-  const contractParties = useMemo<UnifiedContractParty[]>(() => {
-    return (selectedContract.stakeholders || []).map(contractStakeholderToUnifiedParty);
-  }, [selectedContract.stakeholders]);
 
   const formControls = useForm<ContractData>({
     defaultValues: contractData,
@@ -328,7 +322,6 @@ export const ContractDetailForm: FC<{
             <ContractForm
               readOnly={true}
               existingContract={contractData}
-              contractParties={contractParties}
               contractOveriewMode
               onSelectInvoice={onSelectInvoice}
             />

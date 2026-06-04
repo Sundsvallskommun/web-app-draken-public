@@ -1065,7 +1065,7 @@ export const forwardSupportErrand: (
     }
     await sendMessage(message);
     return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
-  } else if (data.recipient == 'DEPARTMENT' && data.department === 'MEX') {
+  } else if (data.recipient == 'DEPARTMENT' && data.department) {
     errand.stakeholders?.forEach((s) => {
       if (!s.firstName && !s.organizationName) {
         throw new Error('MISSING_NAME');
