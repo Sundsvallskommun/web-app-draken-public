@@ -76,22 +76,23 @@ jobs:
             build_cmd: yarn build:lop
             start_cmd: yarn start:lop
             env_file: .env.lop
+            # Flags mirror the canonical lop config (.env.lop-example); the
+            # earlier list had been copied from a casedata app and used the
+            # wrong categorization level and feature set.
             NEXT_PUBLIC_APPLICATION: LOP
             NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: true
-            NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION: true
-            NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE: true
-            NEXT_PUBLIC_USE_BUSINESS_CASE: true
-            NEXT_PUBLIC_USE_FACILITIES: true
-            NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION: true
-            NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER: true
+            NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: true
+            NEXT_PUBLIC_USE_BILLING: true
+            NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: true
             NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL: true
             NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL: true
-            NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS: true
             NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS: true
+            NEXT_PUBLIC_USE_DETAILS_TAB: true
             NEXT_PUBLIC_USE_ESCALATION: true
-            NEXT_PUBLIC_USE_MY_PAGES: true
-            NEXT_PUBLIC_USE_RELATIONS: true
-            NEXT_PUBLIC_USE_BILLING_RECORDS: true
+            NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX: true
+            NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION: true
+            NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: 30
+            NEXT_PUBLIC_INVOICE_BREAK_DATE: "2025-12-31"
 
     name: E2E ${{ matrix.app }} on ubuntu-latest
     steps:
@@ -148,6 +149,14 @@ jobs:
           NEXT_PUBLIC_USE_BILLING_RECORDS: ${{ matrix.NEXT_PUBLIC_USE_BILLING_RECORDS || '' }}
           NEXT_PUBLIC_USE_UI_BILLING: ${{ matrix.NEXT_PUBLIC_USE_UI_BILLING || '' }}
           NEXT_PUBLIC_USE_CONTRACTS: ${{ matrix.NEXT_PUBLIC_USE_CONTRACTS || '' }}
+          NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: ${{ matrix.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION || '' }}
+          NEXT_PUBLIC_USE_BILLING: ${{ matrix.NEXT_PUBLIC_USE_BILLING || '' }}
+          NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: ${{ matrix.NEXT_PUBLIC_USE_EMPLOYEE_SEARCH || '' }}
+          NEXT_PUBLIC_USE_DETAILS_TAB: ${{ matrix.NEXT_PUBLIC_USE_DETAILS_TAB || '' }}
+          NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX: ${{ matrix.NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX || '' }}
+          NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION: ${{ matrix.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION || '' }}
+          NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: ${{ matrix.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '' }}
+          NEXT_PUBLIC_INVOICE_BREAK_DATE: ${{ matrix.NEXT_PUBLIC_INVOICE_BREAK_DATE || '' }}
 
       - name: Start server
         run: ${{ matrix.start_cmd }} &
@@ -204,6 +213,14 @@ jobs:
           NEXT_PUBLIC_USE_BILLING_RECORDS: ${{ matrix.NEXT_PUBLIC_USE_BILLING_RECORDS || '' }}
           NEXT_PUBLIC_USE_UI_BILLING: ${{ matrix.NEXT_PUBLIC_USE_UI_BILLING || '' }}
           NEXT_PUBLIC_USE_CONTRACTS: ${{ matrix.NEXT_PUBLIC_USE_CONTRACTS || '' }}
+          NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: ${{ matrix.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION || '' }}
+          NEXT_PUBLIC_USE_BILLING: ${{ matrix.NEXT_PUBLIC_USE_BILLING || '' }}
+          NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: ${{ matrix.NEXT_PUBLIC_USE_EMPLOYEE_SEARCH || '' }}
+          NEXT_PUBLIC_USE_DETAILS_TAB: ${{ matrix.NEXT_PUBLIC_USE_DETAILS_TAB || '' }}
+          NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX: ${{ matrix.NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX || '' }}
+          NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION: ${{ matrix.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION || '' }}
+          NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: ${{ matrix.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '' }}
+          NEXT_PUBLIC_INVOICE_BREAK_DATE: ${{ matrix.NEXT_PUBLIC_INVOICE_BREAK_DATE || '' }}
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
