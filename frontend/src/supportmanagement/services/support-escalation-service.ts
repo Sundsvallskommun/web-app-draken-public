@@ -1,9 +1,6 @@
 import { TenantKey } from '@common/interfaces/tenant';
 import { isKA } from '@common/services/application-service';
-import {
-  buildEscalationEmailContent,
-  buildEscalationTextContent,
-} from '@supportmanagement/components/templates/escalation-template';
+import { buildEscalationEmailContent } from '@supportmanagement/components/templates/escalation-template';
 
 import { SupportErrand } from './support-errand-service';
 import { SupportMetadata } from './support-metadata-service';
@@ -14,11 +11,7 @@ export const getEscalationMessage: (
   user?: string
 ) => Promise<string> = async (e, version, user) => {
   const tenant: TenantKey = isKA() ? TenantKey.Ange : TenantKey.Sundsvall;
-  return version === 'EMAIL'
-    ? buildEscalationEmailContent(e as SupportErrand, user ?? '', tenant)
-    : version === 'DEPARTMENT'
-    ? buildEscalationTextContent(e as SupportErrand, user ?? '', tenant)
-    : ' ';
+  return version === 'EMAIL' ? buildEscalationEmailContent(e as SupportErrand, user ?? '', tenant) : ' ';
 };
 
 export const getEscalationEmails: (

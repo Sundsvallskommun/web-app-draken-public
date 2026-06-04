@@ -17,7 +17,7 @@ import dayjs from 'dayjs';
 import { isFTErrand, isFTNationalErrand, isPTErrand } from './casedata-errand-service';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
 
-export const lawMapping: Law[] = [
+export const lawMappingPT: Law[] = [
   {
     heading: '13 kap. 8 § trafikförordningen',
     sfs: 'Trafikförordningen (1998:1276)',
@@ -33,21 +33,31 @@ export const lawMapping: Law[] = [
 ];
 
 const lawMappingFT: Law[] = [
-  { heading: '1§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '1' },
-  { heading: '5§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '5' },
-  { heading: '6§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '6' },
-  { heading: '7§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '7' },
-  { heading: '8§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '8' },
-  { heading: '9§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '9' },
-  { heading: '10§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '10' },
-  { heading: '12§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '12' },
-  { heading: '13§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '13' },
-  { heading: '16§ - Lag om färdtjänst', sfs: 'Lag (1997:736)', chapter: '', article: '16' },
+  { heading: '1§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '1' },
+  { heading: '5§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '5' },
+  { heading: '6§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '6' },
+  { heading: '7§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '7' },
+  { heading: '8§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '8' },
+  { heading: '9§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '9' },
+  { heading: '10§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '10' },
+  { heading: '12§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '12' },
+  { heading: '13§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '13' },
+  { heading: '16§ - Lag om färdtjänst', sfs: 'Lag om färdtjänst (1997:736)', chapter: '', article: '16' },
+];
+
+const lawMappingRFT: Law[] = [
+  { heading: '1§ - Lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '1' },
+  { heading: '2§ - Lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '2' },
+  { heading: '3§ - Lag om riksfärdtjänst', sfs: 'Lag om riksfärdtjänst (1997:735)', chapter: '', article: '3' },
 ];
 
 export const getLawMapping = (errand: IErrand): Law[] => {
   if (isPT()) {
-    const baseLawMapping = isFTErrand(errand) ? lawMappingFT : lawMapping;
+    const baseLawMapping = isFTNationalErrand(errand)
+      ? lawMappingRFT
+      : isFTErrand(errand)
+      ? lawMappingFT
+      : lawMappingPT;
 
     const existingLaws =
       errand.decisions
@@ -116,7 +126,7 @@ export const saveDecision: (
   if (pdf) {
     const att: Attachment = {
       category: 'BESLUT',
-      name: `beslut-arende-${errand.errandNumber}`,
+      name: `beslut-arende-${errand.errandNumber}.pdf`,
       note: '',
       extension: 'pdf',
       mimeType: 'application/pdf',
@@ -305,6 +315,15 @@ export const mapServicesToTemplateParams = (services: Service[]): Record<string,
   });
 };
 
+// Heading per case-type family for sbk.investigation. Parking permit has no heading; the empty value
+// makes the template's conditional block render nothing (content-neutral for PT). National before FT:
+// FTNationalCaseTypes is a subset of FTCaseType.
+const getInvestigationDocumentTitle = (errand: IErrand): string => {
+  if (isFTNationalErrand(errand)) return 'Riksfärdtjänst';
+  if (isFTErrand(errand)) return 'Färdtjänst';
+  return '';
+};
+
 export const buildPdfTemplate: (
   errand: IErrand,
   formData: UtredningFormModel | DecisionFormModel,
@@ -328,12 +347,17 @@ export const buildPdfTemplate: (
   let identifier = `mex.decision`;
   let capacity = '';
 
+  // RPH cancellation uses the decision template even from the investigation tab.
+  const isRphCancellation = isPT() && !isFTErrand(errand) && !isFTNationalErrand(errand) && outcome === 'cancellation';
+
   if (isMEX()) {
     identifier = `mex.decision`;
+  } else if (isPT() && templateType === 'investigation' && !isRphCancellation) {
+    identifier = 'sbk.investigation';
   } else if (isPT() && isFTNationalErrand(errand)) {
-    identifier = templateType === 'investigation' ? 'sbk.rft.investigation' : `sbk.rft.decision.${outcome}`;
+    identifier = `sbk.rft.decision.${outcome}`;
   } else if (isPT() && isFTErrand(errand)) {
-    identifier = templateType === 'investigation' ? 'sbk.ft.investigation' : `sbk.ft.decision.${outcome}`;
+    identifier = `sbk.ft.decision.${outcome}`;
   } else if (isPT()) {
     const extraParametersCapacity = errand.extraParameters?.find(
       (parameter) => parameter.key === 'application.applicant.capacity'
@@ -378,6 +402,9 @@ export const buildPdfTemplate: (
     parameters['creationDate'] = dayjs(decision?.created).format('YYYY-MM-DD');
     parameters['disabilityReason'] =
       errand.extraParameters.find((p) => p.key === 'application.reason')?.values?.[0] ?? '';
+    if (identifier === 'sbk.investigation') {
+      parameters['documentTitle'] = getInvestigationDocumentTitle(errand);
+    }
   } else if (templateType === 'decision') {
     parameters['decisionText'] = wrapWithWordBreak(formData.description);
     parameters['decisionDate'] = dayjs(decision?.decidedAt).format('YYYY-MM-DD');

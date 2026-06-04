@@ -25,16 +25,10 @@ export default function GlobalError({
             padding: '24px',
           }}
         >
-          <h1 style={{ fontSize: '1.5rem', margin: 0 }}>
-            Ett oväntat fel uppstod
-          </h1>
-          <p style={{ color: '#555', margin: 0 }}>
-            Applikationen kunde inte laddas. Prova att ladda om sidan.
-          </p>
+          <h1 style={{ fontSize: '1.5rem', margin: 0 }}>Ett oväntat fel uppstod</h1>
+          <p style={{ color: '#555', margin: 0 }}>Applikationen kunde inte laddas. Prova att ladda om sidan.</p>
           {error.digest && (
-            <p style={{ color: '#999', fontSize: '0.875rem', margin: 0 }}>
-              Felreferens: {error.digest}
-            </p>
+            <p style={{ color: '#999', fontSize: '0.875rem', margin: 0 }}>Felreferens: {error.digest}</p>
           )}
           <button
             onClick={reset}

@@ -113,7 +113,7 @@ export class CaseDataAttachmentController {
     @Param('id') id: string,
     @Param('errandId') errandId: string,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<ResponseData> {
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments/${id}`;
     const baseURL = apiURL(this.SERVICE);
@@ -128,7 +128,7 @@ export class CaseDataAttachmentController {
     @Req() req: RequestWithUser,
     @Param('errandId') errandId: string,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<ResponseData> {
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments`;
     const baseURL = apiURL(this.SERVICE);
@@ -175,7 +175,7 @@ export class CaseDataAttachmentController {
     @Param('messageId') messageId: string,
     @Param('attachmentId') attachmentId: string,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<ResponseData> {
     if (!errandId) {
       throw Error('ErrandId not found');

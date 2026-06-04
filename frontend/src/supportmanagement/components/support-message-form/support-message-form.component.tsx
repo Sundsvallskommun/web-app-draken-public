@@ -49,6 +49,7 @@ import {
 } from '@supportmanagement/services/support-conversation-service';
 import {
   Channels,
+  ExternalIdType,
   getSupportErrandById,
   isSupportErrandLocked,
   setSupportErrandStatus,
@@ -530,7 +531,11 @@ export const SupportMessageForm: FC<{
               </RadioButton>
             )}
             {appConfig.features.useMyPages &&
-              getSupportOwnerStakeholder(supportErrand)?.personNumber &&
+              (getSupportOwnerStakeholder(supportErrand)?.personNumber ||
+                ([ExternalIdType.COMPANY, ExternalIdType.ENTERPRISE].includes(
+                  getSupportOwnerStakeholder(supportErrand)?.externalIdType as ExternalIdType
+                ) &&
+                  getSupportOwnerStakeholder(supportErrand)?.externalId)) &&
               (Channels as Record<string, string>)[supportErrand.channel!] !== Channels.ESERVICE_INTERNAL && (
                 <RadioButton
                   disabled={props.locked}
