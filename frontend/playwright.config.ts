@@ -7,7 +7,10 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? '50%' : 4,
+  // Tests mock all network and are wait-bound, so they parallelize safely even
+  // past the core count. '50%' on a 2-vCPU CI runner meant 1 worker (fully
+  // serial) — a fixed pool is several times faster.
+  workers: process.env.CI ? 4 : 4,
   reporter: process.env.CI ? 'html' : 'list',
   use: {
     baseURL,
