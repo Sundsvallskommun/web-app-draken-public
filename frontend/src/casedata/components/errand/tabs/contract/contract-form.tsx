@@ -1,6 +1,6 @@
 import { ContractInvoicesTable } from '@casedata/components/contract-overview/contract-invoices-table.component';
 import { MEXCaseType } from '@casedata/interfaces/case-type';
-import { ContractData, UnifiedContractParty } from '@casedata/interfaces/contract-data';
+import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
 import {
   ContractType,
   IntervalType,
@@ -14,6 +14,7 @@ import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { validateAction } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
 import {
+  getContractStakeholderName,
   getErrandPropertyInformation,
   hasRecurringFee,
   isLeaseAgreement,
@@ -50,20 +51,18 @@ export const ContractForm: FC<{
   onSave?: (data: ContractData) => Promise<void>;
   readOnly?: boolean;
   existingContract: ContractData;
-  contractParties: UnifiedContractParty[];
   contractStatus?: Status;
   contractOveriewMode?: boolean;
   errandStakeholders?: CasedataOwnerOrContact[];
   onAddParty?: (stakeholderId: string, roles: StakeholderRole[]) => void;
-  onEditPartyRoles?: (stakeholderId: string, newRoles: StakeholderRole[]) => void;
-  onRemoveParty?: (stakeholderId: string) => void;
+  onEditPartyRoles?: (index: number, newRoles: StakeholderRole[]) => void;
+  onRemoveParty?: (index: number) => void;
   onSelectInvoice?: (record: CBillingRecord) => void;
 }> = ({
   changeBadgeColor,
   onSave,
   readOnly = false,
   existingContract,
-  contractParties,
   contractStatus,
   contractOveriewMode = false,
   errandStakeholders,
@@ -79,11 +78,17 @@ export const ContractForm: FC<{
   const { register, setValue, handleSubmit, getValues, watch, formState, trigger } = useFormContext<ContractData>();
 
   const [loading, setLoading] = useState<boolean>(false);
-  const [updatingParties, setUpdatingParties] = useState<boolean>(false);
 
   const [isPartyModalOpen, setIsPartyModalOpen] = useState(false);
   const [partyModalMode, setPartyModalMode] = useState<'add' | 'edit'>('add');
-  const [editingParty, setEditingParty] = useState<UnifiedContractParty | undefined>(undefined);
+  const [editingIndex, setEditingIndex] = useState<number | undefined>(undefined);
+
+  // The RHF `stakeholders` field is the single source of truth for contract parties.
+  const watchedStakeholders = watch('stakeholders');
+  const stakeholders = useMemo(
+    () => (watchedStakeholders ?? []) as StakeholderWithPersonnumber[],
+    [watchedStakeholders]
+  );
 
   const contractType = watch().type;
 
@@ -102,17 +107,27 @@ export const ContractForm: FC<{
 
   const [ssnMap, setSsnMap] = useState<Record<string, string>>({});
 
+  // `watch('stakeholders')` returns a fresh array each render, so depend on a stable serialized key of
+  // the partyIds we need SSNs for — not the array reference — to avoid an effect/setSsnMap loop.
+  const ssnFetchKey = useMemo(
+    () =>
+      stakeholders
+        .filter((s) => s.type === 'PERSON' && s.partyId && !s.personalNumber)
+        .map((s) => s.partyId)
+        .join(','),
+    [stakeholders]
+  );
+
   useEffect(() => {
     let cancelled = false;
+    const partyIds = ssnFetchKey ? ssnFetchKey.split(',') : [];
 
     const fetchSSNs = async () => {
       const entries = await Promise.all(
-        contractParties
-          .filter((p) => p.type === 'PERSON' && p.originalStakeholder.partyId && !p.personalNumber)
-          .map(async (p) => {
-            const ssn = await getSSNFromPersonId(municipalityId, p.originalStakeholder.partyId!);
-            return [p.originalStakeholder.partyId!, ssn] as const;
-          })
+        partyIds.map(async (partyId) => {
+          const ssn = await getSSNFromPersonId(municipalityId, partyId);
+          return [partyId, ssn] as const;
+        })
       );
       if (!cancelled) setSsnMap(Object.fromEntries(entries));
     };
@@ -122,21 +137,21 @@ export const ContractForm: FC<{
     return () => {
       cancelled = true;
     };
-  }, [contractParties, municipalityId]);
+  }, [ssnFetchKey, municipalityId]);
 
   const partiesWithSSN = useMemo(
     () =>
-      contractParties.map((party) =>
-        party.type === 'PERSON' && party.originalStakeholder.partyId && !party.personalNumber
-          ? { ...party, personalNumber: ssnMap[party.originalStakeholder.partyId] ?? party.personalNumber }
-          : party
+      stakeholders.map((s) =>
+        s.type === 'PERSON' && s.partyId && !s.personalNumber
+          ? { ...s, personalNumber: ssnMap[s.partyId] ?? s.personalNumber }
+          : s
       ),
-    [contractParties, ssnMap]
+    [stakeholders, ssnMap]
   );
 
   const displayParties = useMemo(
-    () => (partiesWithSSN.length > 0 ? partiesWithSSN : contractParties),
-    [partiesWithSSN, contractParties]
+    () => (partiesWithSSN.length > 0 ? partiesWithSSN : stakeholders),
+    [partiesWithSSN, stakeholders]
   );
 
   const [kpiData, setKpiData] = useState<{ indexYear: number; indexNumber: number } | null>(null);
@@ -236,21 +251,21 @@ export const ContractForm: FC<{
 
   const handleOpenAddModal = () => {
     setPartyModalMode('add');
-    setEditingParty(undefined);
+    setEditingIndex(undefined);
     setIsPartyModalOpen(true);
   };
 
-  const handleOpenEditModal = (party: UnifiedContractParty) => {
+  const handleOpenEditModal = (index: number) => {
     setPartyModalMode('edit');
-    setEditingParty(party);
+    setEditingIndex(index);
     setIsPartyModalOpen(true);
   };
 
   const handleModalSave = (stakeholderId: string, roles: StakeholderRole[]) => {
     if (partyModalMode === 'add') {
       onAddParty?.(stakeholderId, roles);
-    } else {
-      onEditPartyRoles?.(stakeholderId, roles);
+    } else if (editingIndex != null) {
+      onEditPartyRoles?.(editingIndex, roles);
     }
   };
 
@@ -269,7 +284,7 @@ export const ContractForm: FC<{
               <Table.Row key={`party-row-${idx}`} data-cy={`party-row-${idx}`} className="relative">
                 <Table.Column className="flex flex-col items-start justify-center !gap-0" data-cy={`party-${idx}-name`}>
                   <div>
-                    <strong>{party.name}</strong>
+                    <strong>{getContractStakeholderName(party)}</strong>
                   </div>
                   <div>{party.personalNumber || party.organizationNumber}</div>
                 </Table.Column>
@@ -277,14 +292,14 @@ export const ContractForm: FC<{
                   className="flex flex-col items-start justify-center !gap-0"
                   data-cy={`party-${idx}-address`}
                 >
-                  {party.address.street && party.address.postalCode && party.address.city ? (
+                  {party.address?.streetAddress && party.address?.postalCode && party.address?.town ? (
                     <>
                       <div>
-                        <strong>{party.address.street}</strong>
+                        <strong>{party.address.streetAddress}</strong>
                       </div>
                       {party.address.careOf && <div>{party.address.careOf}</div>}
                       <div>
-                        {party.address.postalCode} {party.address.city}
+                        {party.address.postalCode} {party.address.town}
                       </div>
                     </>
                   ) : (
@@ -292,8 +307,8 @@ export const ContractForm: FC<{
                   )}
                 </Table.Column>
                 <Table.Column className="flex flex-col items-start justify-center !gap-0" data-cy={`party-${idx}-role`}>
-                  {party.roles.length > 0 ? (
-                    party.roles
+                  {(party.roles ?? []).length > 0 ? (
+                    (party.roles ?? [])
                       .filter((r) => r !== StakeholderRole.CONTACT_PERSON)
                       .map((role, roleIdx) => <div key={`role-${roleIdx}`}>{prettyContractRoles[role]}</div>)
                   ) : (
@@ -312,7 +327,7 @@ export const ContractForm: FC<{
                           <PopupMenu.Items>
                             <PopupMenu.Group>
                               <PopupMenu.Item>
-                                <Button leftIcon={<Pencil size={18} />} variant="ghost" data-cy={`party-${idx}-edit-button`} onClick={() => handleOpenEditModal(party)}>
+                                <Button leftIcon={<Pencil size={18} />} variant="ghost" data-cy={`party-${idx}-edit-button`} onClick={() => handleOpenEditModal(idx)}>
                                   Redigera roll
                                 </Button>
                               </PopupMenu.Item>
@@ -320,7 +335,7 @@ export const ContractForm: FC<{
                             {isDraft && (
                               <PopupMenu.Group>
                                 <PopupMenu.Item>
-                                  <Button leftIcon={<Trash size={18} />} variant="ghost" data-cy={`party-${idx}-remove-button`} onClick={() => onRemoveParty?.(party.stakeholderId)}>
+                                  <Button leftIcon={<Trash size={18} />} variant="ghost" data-cy={`party-${idx}-remove-button`} onClick={() => onRemoveParty?.(idx)}>
                                     Ta bort part
                                   </Button>
                                 </PopupMenu.Item>
@@ -336,7 +351,7 @@ export const ContractForm: FC<{
                         size="sm"
                         aria-label="Redigera roll"
                         data-cy={`party-${idx}-edit-button`}
-                        onClick={() => handleOpenEditModal(party)}
+                        onClick={() => handleOpenEditModal(idx)}
                       >
                         <Pencil size={18} />
                       </Button>
@@ -359,7 +374,7 @@ export const ContractForm: FC<{
                               )
                               .then((confirmed) => {
                                 if (confirmed) {
-                                  onRemoveParty?.(party.stakeholderId);
+                                  onRemoveParty?.(idx);
                                 }
                               });
                           }}
@@ -1062,20 +1077,6 @@ export const ContractForm: FC<{
                       ></Textarea>
                     </FormControl>
                   </div>
-                  <div className="flex gap-18 justify-start">
-                    <FormControl className="flex-grow">
-                      <FormLabel>Kompletterande avitext</FormLabel>
-                      <Textarea
-                        maxLength={50}
-                        maxLengthWarningText="Maxlängd 50 tecken"
-                        rows={3}
-                        className="w-full"
-                        readOnly={!isEditable('billing')}
-                        {...register('fees.additionalInformation.1')}
-                        data-cy="fees-additional-information-1-input"
-                      ></Textarea>
-                    </FormControl>
-                  </div>
                 </>
               ) : null}
               {saveButton()}
@@ -1129,9 +1130,9 @@ export const ContractForm: FC<{
           onSave={handleModalSave}
           mode={partyModalMode}
           stakeholderOptions={errandStakeholders ?? []}
-          existingParty={editingParty}
+          existingParty={editingIndex != null ? displayParties[editingIndex] : undefined}
           contractType={getValues().type}
-          existingParties={contractParties}
+          existingParties={displayParties}
           isDraft={isDraft}
         />
       )}

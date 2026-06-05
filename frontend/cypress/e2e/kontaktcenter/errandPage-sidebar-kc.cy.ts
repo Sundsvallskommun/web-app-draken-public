@@ -161,7 +161,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('.sk-modal-dialog [type="radio"]').eq(0).should('have.value', 'DEPARTMENT').check();
       cy.get('.sk-modal-dialog [data-cy="resolution-input"]').should('exist').select(0);
 
-      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').contains('Hej,');
+      cy.get('[data-cy="escalation-richtext-wrapper"]').should('exist').should('be.visible');
 
       cy.get('.sk-modal-dialog button.sk-btn-primary').should('exist').contains('Överlämna ärendet').click();
 
@@ -186,7 +186,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('.sk-modal-dialog [data-cy="new-email-input"]').should('exist').type('test@test.se');
       cy.get('.sk-modal-dialog [data-cy="add-new-email-button"]').should('exist').click();
 
-      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').contains('Hej,');
+      cy.get('[data-cy="escalation-richtext-wrapper"]').should('exist').contains('Hej,');
 
       cy.get('.sk-modal-dialog button.sk-btn-primary').should('exist').contains('Överlämna ärendet').click();
 
@@ -214,7 +214,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('.sk-modal-dialog [data-cy="new-email-input"]').should('exist').type('test@test.se');
       cy.get('.sk-modal-dialog [data-cy="add-new-email-button"]').should('exist').click();
 
-      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').contains('Hej,');
+      cy.get('[data-cy="escalation-richtext-wrapper"]').should('exist').contains('Hej,');
 
       cy.get('.sk-modal-dialog button.sk-btn-primary').should('exist').contains('Överlämna ärende').click();
 
@@ -390,7 +390,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get(`[data-cy="forward-button"]`).should('exist').contains('Överlämna ärendet').click();
       cy.get('.sk-modal-dialog [type="radio"]').eq(0).should('have.value', 'DEPARTMENT').check();
       cy.get('[data-cy="resolution-input"]').should('exist').select('Mark och exploatering (MEX)');
-      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').contains('Hej,');
+      cy.get('[data-cy="escalation-richtext-wrapper"]').should('exist').type('TEST');
 
       cy.get('.sk-modal-dialog button.sk-btn-primary').should('exist').contains('Överlämna ärende').click();
 
@@ -398,7 +398,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('.sk-dialog .sk-btn-secondary').contains('Nej').should('exist');
       cy.get('.sk-dialog .sk-btn-primary').contains('Ja').should('exist').click();
       cy.wait('@forwardToMex').then(({ request }) => {
-        expect(request.body.department).to.equal('MEX');
+        expect(request.body.department).to.equal('SBK_MEX');
         expect(request.body.recipient).to.equal('DEPARTMENT');
       });
       cy.wait('@getErrand');

@@ -6,7 +6,7 @@ export const APIS = [
   },
   {
     name: 'contract',
-    version: '7.0',
+    version: '9.0',
   },
   {
     name: 'citizen',

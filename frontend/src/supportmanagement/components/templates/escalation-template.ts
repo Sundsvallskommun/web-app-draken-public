@@ -41,10 +41,7 @@ const renderOtherContacts = (contacts: SupportStakeholderFormModel[] = []) => {
   const items = contacts
     .map((c) => {
       const info = extractContactInfo(c);
-      return `<p><b>Namn:</b> ${info.name}<br>
-<b>Adress:</b> ${info.adress}<br>
-<b>Telefonnummer:</b> ${info.phone}<br>
-<b>E-postadress:</b> ${info.email}</p>`;
+      return `<p><b>Namn:</b> ${info.name}<br><b>Adress:</b> ${info.adress}<br><b>Telefonnummer:</b> ${info.phone}<br><b>E-postadress:</b> ${info.email}</p>`;
     })
     .join('<br>');
   return `<br><p><b>Övriga kontaktuppgifter</b></p>${items}`;
@@ -146,27 +143,4 @@ export const buildEscalationEmailContent = (e: SupportErrand, user: string, tena
     cfg.phoneNumber +
     '</p>'
   );
-};
-
-export const buildEscalationTextContent = (e: SupportErrand, user: string, tenant: TenantKey): string => {
-  const cfg = TENANTS[tenant];
-
-  const department = cfg.departmentName(e);
-  const channel = maybe(e?.channel && (Channels as Record<string, string>)[e?.channel]);
-  const description = maybe(e?.description);
-  const subject = cfg.subjectResolver?.(e);
-  const introLine = 'Vi på ${department} har tagit emot ett ärende som vi behöver förmedla till er.'.replace(
-    '${department}',
-    department
-  );
-
-  const metaRows = cfg.showMetaRows
-    ? `<p><b>Inkom via:</b> ${channel}</p>${
-        subject ? `<p><b>Ämnesrad:</b> ${subject}</p>` : ''
-      }<p><b>Ärendet registrerades:</b> ${dayjs(e.created).format(
-        'YYYY-MM-DD HH:mm'
-      )}</p><p><b>Ärendenummer i Draken:</b> ${e.errandNumber}</p>`
-    : `<p><b>Inkom via:</b> ${channel}</p>`;
-
-  return '<p>Hej,</p><br><p>' + introLine + '</p><br>' + metaRows + '<br><p><b>Ärendebeskrivning</b></p>' + description;
 };
