@@ -8,6 +8,7 @@ import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   AddressAddressCategoryEnum,
+  AttachmentChannelEnum,
   ContactInformationContactTypeEnum,
   Errand as CasedataErrandDTO,
   ErrandChannelEnum as CasedataErrandDtoChannelEnum,
@@ -1061,6 +1062,7 @@ export class SupportErrandController {
           name: attachmentData.fileName!,
           note: '',
           errandNumber: errand.errandNumber!,
+          channel: AttachmentChannelEnum.WEB_UI,
         };
         return dto;
       });

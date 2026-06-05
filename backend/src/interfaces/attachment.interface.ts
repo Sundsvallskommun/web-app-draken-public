@@ -1,6 +1,6 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 
-import { Attachment as AttachmentDTO } from '@/data-contracts/case-data/data-contracts';
+import { Attachment as AttachmentDTO, AttachmentChannelEnum } from '@/data-contracts/case-data/data-contracts';
 
 import { GenericExtraParameters } from './extra-parameters.interface';
 
@@ -51,4 +51,7 @@ export class CreateAttachmentDto implements AttachmentDTO {
   note!: string;
   @IsString()
   errandNumber!: string;
+  @IsEnum(AttachmentChannelEnum)
+  @IsOptional()
+  channel?: AttachmentChannelEnum;
 }

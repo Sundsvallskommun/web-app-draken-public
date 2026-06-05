@@ -228,8 +228,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  causeAsProblem?: ThrowableProblem;
   detail?: string;
+  causeAsProblem?: ThrowableProblem;
 }
 
 export interface ThrowableProblem {
@@ -499,10 +499,7 @@ export interface Errand {
    * @maxLength 255
    */
   phase?: string;
-  /**
-   * The current status of the errand
-   * @maxLength 255
-   */
+  /** The current status of the errand */
   status?: Status;
   /** The statuses connected to the errand */
   statuses?: Status[];
@@ -587,9 +584,7 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  string?: boolean;
-  boolean?: boolean;
-  number?: boolean;
+  integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -601,11 +596,13 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  integralNumber?: boolean;
-  missingNode?: boolean;
   valueNode?: boolean;
   container?: boolean;
+  missingNode?: boolean;
   nodeType?: JsonNodeNodeTypeEnum;
+  number?: boolean;
+  string?: boolean;
+  boolean?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -1033,6 +1030,8 @@ export interface PatchErrand {
   labels?: string[];
   /** The current status of the errand */
   status?: Status;
+  /** Whether the errand is confidential or not */
+  confidential?: boolean;
 }
 
 export interface PatchDecision {
@@ -1087,9 +1086,9 @@ export interface PageErrand {
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  unpaged?: boolean;
   sort?: SortObject;
   paged?: boolean;
+  unpaged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
