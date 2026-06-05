@@ -142,9 +142,7 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
             <div>
               <FormLabel>Intressent</FormLabel>
               <div className="font-bold">{existingParty ? getContractStakeholderName(existingParty) : ''}</div>
-              <div className="text-sm text-gray-600">
-                {existingParty?.personalNumber || existingParty?.organizationNumber}
-              </div>
+              <div className="text-gray-600">{existingParty?.personalNumber || existingParty?.organizationNumber}</div>
             </div>
           )}
 
