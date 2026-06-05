@@ -41,6 +41,7 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import dayjs from 'dayjs';
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -62,13 +63,35 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           type !== ContractType.PURCHASE_AGREEMENT && status === Status.ACTIVE,
         then: (schema) =>
           schema.shape({
-            startDate: yup.string().required('Startdatum måste anges'),
+            startDate: yup.date().required('Startdatum måste anges'),
+            endDate: yup
+              .date()
+              .nullable()
+              .transform((value, original) => (original === '' ? null : value))
+              .min(yup.ref('startDate'), 'Slutdatum måste vara efter startdatum'),
+          }),
+        otherwise: (schema) =>
+          schema.shape({
+            startDate: yup
+              .date()
+              .nullable()
+              .transform((value, original) => (original === '' ? null : value)),
+            endDate: yup
+              .date()
+              .nullable()
+              .transform((value, original) => (original === '' ? null : value))
+              .min(yup.ref('startDate'), 'Slutdatum måste vara efter startdatum'),
           }),
       }),
+      endDate: yup
+        .date()
+        .nullable()
+        .transform((value, original) => (original === '' ? null : value)),
       notice: yup.object().when('type', {
         is: (type: ContractType) => type !== ContractType.PURCHASE_AGREEMENT,
         then: (schema) =>
           schema.shape({
+            noticeDate: yup.date().min(dayjs().startOf('day').toDate(), 'Datum kan inte vara i det förflutna'),
             terms: yup
               .array()
               .of(

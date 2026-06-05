@@ -24,6 +24,7 @@ import { getKpiIndex } from '@common/services/billing-data-collector-service';
 import {
   Button,
   Checkbox,
+  DatePicker,
   Disclosure,
   FormControl,
   FormErrorMessage,
@@ -45,6 +46,8 @@ import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
 
 import { ContractAttachments } from './contract-attachments';
 import { ContractPartyModal } from './contract-party-modal';
+
+const MAX_YEAR = 1000;
 
 export const ContractForm: FC<{
   changeBadgeColor?: (badgeId: string) => void;
@@ -552,11 +555,11 @@ export const ContractForm: FC<{
               <div className="flex gap-18 justify-start">
                 <FormControl id="startDate" className="w-full">
                   <FormLabel>Avtalets startdatum</FormLabel>
-                  <Input
-                    type="date"
+                  <DatePicker
                     readOnly={!isEditable('general')}
                     {...register('startDate')}
                     data-cy="avtalstid-start"
+                    max={dayjs().add(MAX_YEAR, 'year').format('YYYY-MM-DD')}
                   />
                 </FormControl>
               </div>
@@ -591,9 +594,8 @@ export const ContractForm: FC<{
               <div className="flex gap-18 justify-start">
                 <FormControl id="startDate" className="w-full">
                   <FormLabel>Startdatum</FormLabel>
-                  <Input
-                    type="date"
-                    min={dayjs().format('YYYY-MM-DD')}
+                  <DatePicker
+                    max={dayjs().add(MAX_YEAR, 'year').format('YYYY-MM-DD')}
                     readOnly
                     {...register('startDate')}
                     data-cy="avtalstid-startdatum"
@@ -609,9 +611,8 @@ export const ContractForm: FC<{
               <div className="flex gap-18 justify-start">
                 <FormControl id="currentPeriod.startDate" className="w-full">
                   <FormLabel>Avtalet gäller från</FormLabel>
-                  <Input
-                    type="date"
-                    min={dayjs().format('YYYY-MM-DD')}
+                  <DatePicker
+                    max={dayjs().add(MAX_YEAR, 'year').format('YYYY-MM-DD')}
                     readOnly={!isEditable('general')}
                     {...register('currentPeriod.startDate')}
                     data-cy="avtalstid-start"
@@ -624,17 +625,22 @@ export const ContractForm: FC<{
                 </FormControl>
                 <FormControl id="currentPeriod.endDate" className="w-full">
                   <FormLabel>Avtalet gäller till och med</FormLabel>
-                  <Input
-                    type="date"
+                  <DatePicker
                     min={
                       getValues().status === Status.ACTIVE
                         ? getValues().currentPeriod?.startDate
                         : dayjs().format('YYYY-MM-DD')
                     }
+                    max={dayjs().add(MAX_YEAR, 'year').format('YYYY-MM-DD')}
                     readOnly={!isEditable('general')}
                     {...register('currentPeriod.endDate')}
                     data-cy="avtalstid-end"
                   />
+                  {formState.errors.currentPeriod?.endDate && (
+                    <div className="my-sm text-error">
+                      <FormErrorMessage>{formState.errors.currentPeriod?.endDate?.message}</FormErrorMessage>
+                    </div>
+                  )}
                 </FormControl>
               </div>
               {getValues().notice?.terms?.some((t) => t.party === 'LESSOR') &&
@@ -835,37 +841,54 @@ export const ContractForm: FC<{
             <Disclosure.Button />
           </Disclosure.Header>
           <Disclosure.Content>
-            <div className="flex gap-18 justify-start">
-              <FormControl id="noticeDate" className="w-full">
-                <FormLabel>Uppsägningsdatum</FormLabel>
-                <Input
-                  type="date"
-                  readOnly={!isEditable('cancellation')}
-                  {...register('notice.noticeDate')}
-                  data-cy="notice-date"
-                />
-              </FormControl>
-              <FormControl id="endDate" className="w-full">
-                <FormLabel>Slutdatum</FormLabel>
-                <Input type="date" readOnly={!isEditable('cancellation')} {...register('endDate')} data-cy="endDate" />
-              </FormControl>
+            <div className="flex flex-col gap-24">
+              <div className="flex gap-18 justify-start">
+                <FormControl id="noticeDate" className="w-full">
+                  <FormLabel>Uppsägningsdatum</FormLabel>
+                  <DatePicker
+                    readOnly={!isEditable('cancellation')}
+                    {...register('notice.noticeDate')}
+                    data-cy="notice-date"
+                    max={dayjs().add(MAX_YEAR, 'year').format('YYYY-MM-DD')}
+                  />
+                  {formState.errors.notice?.noticeDate && (
+                    <div className="my-sm text-error">
+                      <FormErrorMessage>{formState.errors.notice?.noticeDate?.message}</FormErrorMessage>
+                    </div>
+                  )}
+                </FormControl>
+                <FormControl id="endDate" className="w-full">
+                  <FormLabel>Slutdatum</FormLabel>
+                  <DatePicker
+                    readOnly={!isEditable('cancellation')}
+                    {...register('endDate')}
+                    data-cy="endDate"
+                    max={dayjs().add(MAX_YEAR, 'year').format('YYYY-MM-DD')}
+                  />
+                  {formState.errors.endDate && (
+                    <div className="my-sm text-error">
+                      <FormErrorMessage>{formState.errors.endDate?.message}</FormErrorMessage>
+                    </div>
+                  )}
+                </FormControl>
+              </div>
+              <div className="flex gap-18 justify-start">
+                <FormControl id="noticeGivenBy" className="w-full">
+                  <FormLabel>Uppsagd av</FormLabel>
+                  <Select
+                    className="w-full"
+                    disabled={!isEditable('cancellation')}
+                    {...register('notice.noticeGivenBy')}
+                    data-cy="notice-given-by"
+                  >
+                    <Select.Option value="">Välj part</Select.Option>
+                    <Select.Option value={Party.LESSOR}>Upplåtare</Select.Option>
+                    <Select.Option value={Party.LESSEE}>Arrendator</Select.Option>
+                  </Select>
+                </FormControl>
+              </div>
+              {saveButton()}
             </div>
-            <div className="flex gap-18 justify-start">
-              <FormControl id="noticeGivenBy" className="w-full">
-                <FormLabel>Uppsagd av</FormLabel>
-                <Select
-                  className="w-full"
-                  disabled={!isEditable('cancellation')}
-                  {...register('notice.noticeGivenBy')}
-                  data-cy="notice-given-by"
-                >
-                  <Select.Option value="">Välj part</Select.Option>
-                  <Select.Option value={Party.LESSOR}>Upplåtare</Select.Option>
-                  <Select.Option value={Party.LESSEE}>Arrendator</Select.Option>
-                </Select>
-              </FormControl>
-            </div>
-            {saveButton()}
           </Disclosure.Content>
         </Disclosure>
       ) : null}
