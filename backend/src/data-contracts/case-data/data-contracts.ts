@@ -1087,6 +1087,7 @@ export interface PageableObject {
   /** @format int64 */
   offset?: number;
   sort?: SortObject;
+  unpaged?: boolean;
   paged?: boolean;
   unpaged?: boolean;
   /** @format int32 */
@@ -1097,8 +1098,8 @@ export interface PageableObject {
 
 export interface SortObject {
   empty?: boolean;
-  unsorted?: boolean;
   sorted?: boolean;
+  unsorted?: boolean;
 }
 
 export interface CommitMetadata {

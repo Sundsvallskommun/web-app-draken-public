@@ -833,6 +833,7 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 
@@ -1275,6 +1276,7 @@ export interface PageableObject {
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  unpaged?: boolean;
 }
 
 export interface SortObject {

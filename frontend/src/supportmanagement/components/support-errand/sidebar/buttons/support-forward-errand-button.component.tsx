@@ -197,7 +197,6 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
     if (element && !showFullDescription) {
       setIsDescriptionClamped(element.scrollHeight > element.clientHeight);
     }
-     
   }, [recipient, showModal, showFullDescription, supportErrand?.description]);
 
   const handleModal = () => {
