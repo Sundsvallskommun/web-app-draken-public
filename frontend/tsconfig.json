@@ -1,8 +1,14 @@
 {
   "compilerOptions": {
-    "types": ["@simonsmith/cypress-image-snapshot/types"],
+    "types": [
+      "@simonsmith/cypress-image-snapshot/types"
+    ],
     "target": "es6",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -17,17 +23,39 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@pages/*": ["src/pages/*"],
-      "@public/*": ["src/public/*"],
-      "@config/*": ["src/config/*"],
-      "@contexts/*": ["src/common/contexts/*"],
-      "@supportmanagement/*": ["src/supportmanagement/*"],
-      "@casedata/*": ["src/casedata/*"],
-      "@common/*": ["src/common/*"],
-      "@jestRoot/*": [".jest/*"],
-      "@styles/*": ["src/styles/*"],
-      "@cypress/*": ["cypress/*"],
-      "@stores/*": ["src/stores/*"]
+      "@pages/*": [
+        "src/pages/*"
+      ],
+      "@public/*": [
+        "src/public/*"
+      ],
+      "@config/*": [
+        "src/config/*"
+      ],
+      "@contexts/*": [
+        "src/common/contexts/*"
+      ],
+      "@supportmanagement/*": [
+        "src/supportmanagement/*"
+      ],
+      "@casedata/*": [
+        "src/casedata/*"
+      ],
+      "@common/*": [
+        "src/common/*"
+      ],
+      "@jestRoot/*": [
+        ".jest/*"
+      ],
+      "@styles/*": [
+        "src/styles/*"
+      ],
+      "@cypress/*": [
+        "cypress/*"
+      ],
+      "@stores/*": [
+        "src/stores/*"
+      ]
       // "@services/*": ["src/services/*"],
       // "@common/components/*": ["src/components/*"],
       // "@interfaces/*": ["src/interfaces/*"],
@@ -66,7 +94,11 @@
     ".next-ROB/dev/types/**/*.ts",
     ".next-IAF/dev/types/**/*.ts",
     ".next-SE/dev/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".next-BOU/types/**/*.ts",
+    ".next-BOU/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

@@ -161,7 +161,28 @@ export interface Label {
    * @pattern [A-Z0-9_]+
    */
   resourceName: string;
+  /**
+   * Indicates if the label is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
   labels?: Label[];
+  /** Free-form key/value data owned by the client. Stored and returned as-is by the service, which does not interpret the contents (apart from rejecting duplicate keys per label). Keys are conventions agreed between clients (e.g. 'escalationEmail'). */
+  attributes?: LabelAttribute[];
+}
+
+/** Label attribute model. Free-form key/value data owned by the client; not interpreted by the service. Keys are conventions agreed between clients (e.g. 'escalationEmail'). */
+export interface LabelAttribute {
+  /**
+   * Attribute key
+   * @minLength 1
+   */
+  key: string;
+  /**
+   * Attribute value
+   * @minLength 1
+   */
+  value: string;
 }
 
 /** Message exchange worker config model */
@@ -202,7 +223,7 @@ export interface EmailIntegration {
    * Number of days before incoming mail is rejected. Measured from when the errand was last touched. Rejection can only occur if status on errand equals 'inactiveStatus'.
    * @format int32
    */
-  daysOfInactivityBeforeReject?: number | string | null;
+  daysOfInactivityBeforeReject?: string | null;
   /** Status set on errand when email results in a new errand */
   statusForNew: string;
   /** Status on errand that will trigger a status change when email refers to an existing errand */
@@ -212,7 +233,7 @@ export interface EmailIntegration {
   /** Status of an inactive errand. This value relates to property 'daysOfInactivityBeforeReject'. If set to null, no rejection mail will be sent */
   inactiveStatus?: string | null;
   /** If true sender is added as stakeholder */
-  addSenderAsStakeholder?: boolean | string | null;
+  addSenderAsStakeholder?: string | null;
   /** Role set on stakeholder. */
   stakeholderRole?: string | null;
   /** Channel set on created errands */
@@ -259,11 +280,16 @@ export interface MessageExchangeSync {
 /** Filter on event type/subtype, used to limit which eventlog events trigger a notification */
 export interface EventFilter {
   /**
-   * Event type. Matches the eventlog EventType enum (CREATE, READ, UPDATE, DELETE, ACCESS, EXECUTE, CANCEL, DROP).
+   * Event type. Matches the eventlog EventType enum.
    * @minLength 1
+   * @pattern ^(CREATE|READ|UPDATE|DELETE|ACCESS|EXECUTE|CANCEL|DROP)$
    */
-  type: string;
-  /** Event subtype. If null, all subtypes of the given type match. */
+  type: EventFilterTypeEnum;
+  /**
+   * Event subtype. If null, all subtypes of the given type match.
+   * @minLength 0
+   * @maxLength 64
+   */
   subtype?: string;
 }
 
@@ -277,7 +303,8 @@ export interface Identifier {
   type: IdentifierTypeEnum;
   /**
    * Identifier value (AD-account name or partyId UUID)
-   * @minLength 1
+   * @minLength 0
+   * @maxLength 255
    */
   value: string;
 }
@@ -286,7 +313,11 @@ export interface Identifier {
 export interface NotificationChannel {
   /** Channel type */
   type: NotificationChannelTypeEnum;
-  /** Optional destination override (e.g. an alternative e-mail address or phone number). If omitted, the default destination derived from the subscriber's identifier is used. */
+  /**
+   * Optional destination override (e.g. an alternative e-mail address or phone number). If omitted, the default destination derived from the subscriber's identifier is used.
+   * @minLength 0
+   * @maxLength 255
+   */
   destination?: string;
 }
 
@@ -294,9 +325,13 @@ export interface NotificationChannel {
 export interface Subscriber {
   /** Unique identifier of the subscriber */
   id?: string;
-  /** Optional human-readable label. Useful when a person has several subscribers (e.g. one per role or purpose). */
+  /**
+   * Optional human-readable label. Useful when a person has several subscribers (e.g. one per role or purpose).
+   * @minLength 0
+   * @maxLength 255
+   */
   name?: string;
-  /** Identifier of the principal that ultimately receives notifications (AD-account or partyId). */
+  /** Identifier of the principal that ultimately receives notifications (AD-account or partyId). Immutable once created. */
   identifier?: Identifier;
   /** Channels the subscriber wants to receive notifications on. If empty, defaults to INTERNAL. */
   channels?: NotificationChannel[];
@@ -380,6 +415,11 @@ export interface Status {
    */
   sortOrder?: number | null;
   /**
+   * Indicates if the status is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
+  /**
    * Timestamp when the status was created
    * @format date-time
    */
@@ -407,6 +447,11 @@ export interface Role {
    * @format int32
    */
   sortOrder?: number | null;
+  /**
+   * Indicates if the role is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
   /**
    * Timestamp when the role was created
    * @format date-time
@@ -442,6 +487,11 @@ export interface Phase {
   /** Transitions from this phase */
   transitions?: PhaseTransition[];
   /**
+   * Indicates if the phase is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
+  /**
    * Timestamp when the phase was created
    * @format date-time
    */
@@ -468,6 +518,11 @@ export interface PhaseTransition {
   targetPhaseDisplayName?: string;
   /** Description of the transition */
   description?: string;
+  /**
+   * Indicates if the phase transition is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
 }
 
 /** ExternalIdType model */
@@ -486,6 +541,11 @@ export interface ExternalIdType {
    * @format int32
    */
   sortOrder?: number | null;
+  /**
+   * Indicates if the external ID type is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
   /**
    * Timestamp when the external id type was created
    * @format date-time
@@ -515,6 +575,11 @@ export interface ContactReason {
    */
   sortOrder?: number | null;
   /**
+   * Indicates if the contact reason is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
+  /**
    * Timestamp when the contact reason was created
    * @format date-time
    */
@@ -539,6 +604,11 @@ export interface Category {
    * @format int32
    */
   sortOrder?: number | null;
+  /**
+   * Indicates if the category is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
   /** @uniqueItems true */
   types?: Type[];
   /**
@@ -567,6 +637,11 @@ export interface Type {
    * @format email
    */
   escalationEmail?: string;
+  /**
+   * Indicates if the type is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
   /**
    * Timestamp when type was created
    * @format date-time
@@ -742,14 +817,10 @@ export interface JsonNode {
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
+  integralNumber?: boolean;
   missingNode?: boolean;
   valueNode?: boolean;
   container?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  bigInteger?: boolean;
-  /** @deprecated */
-  textual?: boolean;
-  integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -757,7 +828,11 @@ export interface JsonNode {
   long?: boolean;
   double?: boolean;
   bigDecimal?: boolean;
+  bigInteger?: boolean;
+  /** @deprecated */
+  textual?: boolean;
   binary?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 
@@ -1172,10 +1247,10 @@ export interface MetadataResponse {
 }
 
 export interface PageErrand {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1193,19 +1268,19 @@ export interface PageErrand {
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  unpaged?: boolean;
   sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 /** Revision model */
@@ -1343,10 +1418,10 @@ export interface EventMetaData {
 }
 
 export interface PageEvent {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Event[];
@@ -1450,10 +1525,10 @@ export interface Message {
 }
 
 export interface PageMessage {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Message[];
@@ -1499,6 +1574,22 @@ export interface ErrandAttachment {
 export interface CountResponse {
   /** @format int64 */
   count?: number;
+}
+
+/**
+ * Event type. Matches the eventlog EventType enum.
+ * @minLength 1
+ * @pattern ^(CREATE|READ|UPDATE|DELETE|ACCESS|EXECUTE|CANCEL|DROP)$
+ */
+export enum EventFilterTypeEnum {
+  CREATE = "CREATE",
+  READ = "READ",
+  UPDATE = "UPDATE",
+  DELETE = "DELETE",
+  ACCESS = "ACCESS",
+  EXECUTE = "EXECUTE",
+  CANCEL = "CANCEL",
+  DROP = "DROP",
 }
 
 /**

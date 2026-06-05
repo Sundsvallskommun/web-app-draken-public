@@ -34,7 +34,7 @@ export const APIS = [
   },
   {
     name: 'supportmanagement',
-    version: '14.0',
+    version: '14.7',
   },
   {
     name: 'billingpreprocessor',
