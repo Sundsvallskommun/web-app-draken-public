@@ -55,6 +55,8 @@ interface CasedataContractProps {
 }
 
 export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
+  const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
+
   let formSchema = yup
     .object({
       type: yup.string().required('Avtalstyp måste anges'),
@@ -91,7 +93,20 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
         is: (type: ContractType) => type !== ContractType.PURCHASE_AGREEMENT,
         then: (schema) =>
           schema.shape({
-            noticeDate: yup.date().min(dayjs().startOf('day').toDate(), 'Datum kan inte vara i det förflutna'),
+            noticeDate: yup
+              .date()
+              .nullable()
+              .transform((value, original) => (original === '' ? null : value))
+              .test('not-in-past', 'Datum kan inte vara i det förflutna', (value) => {
+                if (!value) return true;
+                const selected = dayjs(value).startOf('day');
+                // Keep an already-saved notice date valid even if it's now in the past; only a
+                // newly chosen past date is rejected. This avoids blocking re-saves of contracts
+                // that were cancelled earlier.
+                const original = existingContract?.notice?.noticeDate;
+                if (original && selected.isSame(dayjs(original).startOf('day'))) return true;
+                return !selected.isBefore(dayjs().startOf('day'));
+              }),
             terms: yup
               .array()
               .of(
@@ -222,7 +237,6 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
   const errand = useCasedataStore((s) => s.errand);
   const user = useUserStore((s) => s.user);
   const [loading, setIsLoading] = useState<string>();
-  const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
   const [allowed, setAllowed] = useState(false);

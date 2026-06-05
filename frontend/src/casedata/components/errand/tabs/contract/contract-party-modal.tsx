@@ -103,8 +103,7 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
   const filteredStakeholderOptions = stakeholderOptions
     .filter((s) => s.id && !s.roles.includes(Role.ADMINISTRATOR))
     .filter((s) => {
-      if (mode === 'add' && isDraft) {
-        // In add mode for DRAFT contracts, exclude stakeholders that are already parties
+      if (mode === 'add') {
         return !existingParties.some((p) => stakeholderMatchesParty(s, p));
       }
       return true;

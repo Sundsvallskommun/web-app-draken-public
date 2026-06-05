@@ -903,6 +903,89 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           });
         });
       });
+
+      describe('ACTIVE contract - party uniqueness', () => {
+        const uniqueContractId = '2024-ACTIVE-UNIQUE';
+
+        // A contract whose parties also exist as errand stakeholders (matched by name). "Lägg till ny part"
+        // must not offer a stakeholder that is already on the contract, so each party appears only once.
+        const mockActiveContractWithErrandParties = {
+          ...mockLeaseAgreement,
+          data: {
+            ...mockLeaseAgreement.data,
+            contractId: uniqueContractId,
+            status: 'ACTIVE',
+            stakeholders: [
+              { type: 'PERSON', roles: ['LESSOR'], firstName: 'Test', lastName: 'Upplåtarsson' },
+              {
+                type: 'PERSON',
+                roles: ['LESSEE', 'PRIMARY_BILLING_PARTY'],
+                firstName: 'Test',
+                lastName: 'Arrendatorsson',
+              },
+            ],
+            notice: {
+              terms: [
+                { party: 'LESSEE', periodOfNotice: 3, unit: 'MONTHS' },
+                { party: 'LESSOR', periodOfNotice: 3, unit: 'MONTHS' },
+              ],
+            },
+            invoicing: { invoiceInterval: 'YEARLY', invoicedIn: 'ADVANCE' },
+            extraParameters: [
+              { name: 'errandId', parameters: { errandId: '101' } },
+              { name: 'InvoiceInfo', parameters: { markup: 'REF123' } },
+            ],
+            generateInvoice: 'true',
+          },
+        };
+
+        const mockMexErrandWithUniqueContract = {
+          ...mockMexErrand_base,
+          data: {
+            ...mockMexErrand_base.data,
+            extraParameters: mockMexErrand_base.data.extraParameters.map((p) =>
+              p.key === 'contractId' ? { ...p, values: [uniqueContractId] } : p
+            ),
+          },
+        };
+
+        beforeEach(() => {
+          cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrandWithUniqueContract).as('getErrand');
+          cy.intercept('GET', `**/contracts/${uniqueContractId}`, mockActiveContractWithErrandParties).as(
+            'getUniqueContract'
+          );
+          cy.intercept('GET', `**/contracts/2281/${uniqueContractId}/attachments/*`, mockContractAttachment).as(
+            'getUniqueContractAttachment'
+          );
+
+          cy.visit(`/arende/${mockMexErrand_base.data.id}`);
+          cy.wait('@getErrand');
+          cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+          cy.wait('@getUniqueContract');
+          cy.get('.sk-tabs-list button').contains(`Avtal`).click({ force: true });
+          cy.get('[data-cy="contract-type-select"]').should('exist');
+        });
+
+        it('excludes parties already on the contract from the add-party dropdown', () => {
+          cy.get('[data-cy="non-draft-warning-banner"]').should('exist');
+
+          // Both contract parties are also errand stakeholders, so they render as parties.
+          cy.get('[data-cy="parties-disclosure"]').should('contain.text', 'Test Upplåtarsson');
+          cy.get('[data-cy="parties-disclosure"]').should('contain.text', 'Test Arrendatorsson');
+
+          cy.get('[data-cy="add-party-button"]').click();
+          cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist');
+
+          cy.get('[data-cy="party-modal-stakeholder-select"] option').then(($opts) => {
+            const labels = [...$opts].map((o) => o.textContent?.trim());
+            // Regression guard: stakeholders already on the contract must not be offered again.
+            expect(labels).to.not.include('Test Upplåtarsson');
+            expect(labels).to.not.include('Test Arrendatorsson');
+            // A stakeholder that is not yet a party must still be selectable.
+            expect(labels).to.include('Daniella Testarsson');
+          });
+        });
+      });
     });
   });
 });
