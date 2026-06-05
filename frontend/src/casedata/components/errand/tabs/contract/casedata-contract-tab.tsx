@@ -222,6 +222,27 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     props.setUnsaved(true);
   };
 
+  // A party still belongs on the contract only if it has at least one real contract role. CONTACT_PERSON
+  // is an implicit/hidden role that the role-modal never manages, so it doesn't keep a party alive on its own.
+  const hasContractRole = (party: StakeholderWithPersonnumber) =>
+    (party.roles ?? []).some((r) => r !== StakeholderRole.CONTACT_PERSON);
+
+  // Enforce a single fakturamottagare (PRIMARY_BILLING_PARTY) and drop parties left without any role.
+  // `changedIndex` is the party the user just added/edited; it wins ownership of the billing role, so the
+  // role is stripped from every other party. Parties with no contract role left are removed entirely.
+  const reconcileParties = (parties: StakeholderWithPersonnumber[], changedIndex: number) => {
+    const changed = parties[changedIndex];
+    const withSingleBilling =
+      changed && (changed.roles ?? []).includes(StakeholderRole.PRIMARY_BILLING_PARTY)
+        ? parties.map((party, i) =>
+            i === changedIndex
+              ? party
+              : { ...party, roles: (party.roles ?? []).filter((r) => r !== StakeholderRole.PRIMARY_BILLING_PARTY) }
+          )
+        : parties;
+    return withSingleBilling.filter(hasContractRole);
+  };
+
   // Handler to add a new party
   const handleAddParty = (stakeholderId: string, roles: StakeholderRole[]) => {
     const stakeholder = errand?.stakeholders?.find((s) => String(s.id) === stakeholderId);
@@ -229,14 +250,15 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
 
     const contractStakeholder = errandStakeholderToContractStakeholder(stakeholder, roles);
     const current = (contractForm.getValues('stakeholders') ?? []) as StakeholderWithPersonnumber[];
-    updateStakeholders([...current, contractStakeholder]);
+    const appended = [...current, contractStakeholder];
+    updateStakeholders(reconcileParties(appended, appended.length - 1));
   };
 
   // Handler to edit party roles
   const handleEditPartyRoles = (index: number, newRoles: StakeholderRole[]) => {
     const next = [...((contractForm.getValues('stakeholders') ?? []) as StakeholderWithPersonnumber[])];
     next[index] = { ...next[index], roles: newRoles };
-    updateStakeholders(next);
+    updateStakeholders(reconcileParties(next, index));
   };
 
   // Handler to remove a party
