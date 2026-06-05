@@ -33,7 +33,7 @@ import {
 } from '@/data-contracts/messaging/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
-import { apiURL, base64Encode, base64ToByteArray } from '@/utils/util';
+import { apiURL, base64Encode } from '@/utils/util';
 
 import ApiService, { ApiResponse } from './api.service';
 import { getOwnerStakeholder, getOwnerStakeholderEmail } from './stakeholder.service';
@@ -427,14 +427,15 @@ export const sendConversation = async (errandId: string, conversationId: string,
   const apiService = new ApiService();
   const url = `${SERVICE}/${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
 
+  // Reference the already-saved decision attachment by id (same mechanism as regular conversation
+  // messages) instead of uploading new bytes.
   const formData = new FormData();
   const messageObj = {
     createdBy: { type: 'adAccount', value: user.username },
     content: 'Beslut fattat i ärende',
+    ...(pdf.id && { attachmentIds: [pdf.id] }),
   };
   formData.append('message', JSON.stringify(messageObj));
-  const byteArray = base64ToByteArray(pdf.file!);
-  formData.append('attachments', new Blob([byteArray], { type: pdf.mimeType }), `${pdf.name}.pdf`);
 
   return await apiService.post<any, any>({ url, data: formData, headers: { 'Content-Type': 'multipart/form-data' } }, user);
 };
@@ -493,7 +494,7 @@ export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: At
       deliveryMode: 'ANY',
       contentType: DigitalMailAttachmentContentTypeEnum.ApplicationPdf,
       content: pdf.file,
-      filename: `${pdf.name}.pdf`,
+      filename: pdf.name,
     } as DigitalMailAttachment,
   ];
   const message: DigitalMailRequest = {
