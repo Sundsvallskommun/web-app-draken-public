@@ -9,7 +9,7 @@ import { useMemo } from 'react';
 import { KC_ASSET_TYPES } from '../support-errand/tabs/services/support-errand-services-tab';
 
 export const PartyAssetsSection: React.FC<{ partyId: string }> = ({ partyId }) => {
-  const { setActiveTabLabel } = useSupportStore();
+  const { setActiveTabKey } = useSupportStore();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const { partyServices, loading, error } = usePartyAssetServices({
     municipalityId,
@@ -45,7 +45,7 @@ export const PartyAssetsSection: React.FC<{ partyId: string }> = ({ partyId }) =
         color="vattjom"
         data-cy="show-assets-button"
         rightIcon={<Icon icon={<ArrowRight size={16} />} />}
-        onClick={() => setActiveTabLabel('Insatser')}
+        onClick={() => setActiveTabKey('services')}
       >
         Visa insatser
       </Button>

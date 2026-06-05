@@ -40,7 +40,7 @@ export const SupportTabsWrapper: FC<{
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
-  const { activeTabLabel, setActiveTabLabel } = useSupportStore();
+  const { activeTabKey, setActiveTabKey } = useSupportStore();
 
   useEffect(() => {
     if (methods?.getValues as unknown) {
@@ -90,6 +90,7 @@ export const SupportTabsWrapper: FC<{
   }, [supportErrand]);
 
   const tabs: {
+    key: string;
     label: string;
     content: ReactNode;
     disabled: boolean;
@@ -97,6 +98,7 @@ export const SupportTabsWrapper: FC<{
   }[] = useMemo(
     () => [
       {
+        key: 'basics',
         label: 'Grundinformation',
         content: supportErrand && (
           <SupportErrandBasicsTab
@@ -110,12 +112,14 @@ export const SupportTabsWrapper: FC<{
         visibleFor: true,
       },
       {
+        key: 'details',
         label: 'Ärendeuppgifter',
         content: supportErrand && <SupportErrandDetailsTab />,
         disabled: false,
         visibleFor: appConfig.features.useDetailsTab,
       },
       {
+        key: 'messages',
         label: `Meddelanden (${countUnreadMessages(messages)})`,
         content: supportErrand && (
           <SupportMessagesTab
@@ -132,12 +136,14 @@ export const SupportTabsWrapper: FC<{
         visibleFor: true,
       },
       {
+        key: 'attachments',
         label: `Bilagor (${countAttachment(supportAttachments ?? [])})`,
         content: supportErrand && <SupportErrandAttachmentsTab update={update} />,
         disabled: false,
         visibleFor: true,
       },
       {
+        key: 'services',
         label: 'Insatser',
         content: supportErrand && (
           <SupportErrandServicesTab
@@ -148,12 +154,14 @@ export const SupportTabsWrapper: FC<{
         visibleFor: appConfig.features.useServices && !!supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY'),
       },
       {
+        key: 'recruitment',
         label: 'Rekryteringsprocess',
         content: supportErrand && <SupportErrandRecruitmentTab setUnsaved={setUnsavedChanges} update={update} />,
         disabled: false,
         visibleFor: appConfig.features.useRecruitment,
       },
       {
+        key: 'invoice',
         label: 'Fakturering',
         content: supportErrand && (
           <SupportErrandInvoiceTab errand={supportErrand} setUnsaved={setUnsavedChanges} update={update} />
@@ -178,9 +186,9 @@ export const SupportTabsWrapper: FC<{
   const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
-    const index = tabs.filter((tab) => tab.visibleFor).findIndex((tab) => tab.label === activeTabLabel);
+    const index = tabs.filter((tab) => tab.visibleFor).findIndex((tab) => tab.key === activeTabKey);
     setActiveTab(index >= 0 ? index : 0);
-  }, [activeTabLabel, tabs]);
+  }, [activeTabKey, tabs]);
 
   return (
     <>
@@ -192,14 +200,14 @@ export const SupportTabsWrapper: FC<{
             panelsClassName="border-t-1"
             current={activeTab}
             onTabChange={(e) => {
-              setActiveTabLabel(tabs.filter((tab) => tab.visibleFor)[e].label);
+              setActiveTabKey(tabs.filter((tab) => tab.visibleFor)[e].key);
             }}
             size={'sm'}
           >
             {tabs
               .filter((tab) => tab.visibleFor)
               .map((tab, index) => (
-                <Tabs.Item key={tab.label}>
+                <Tabs.Item key={tab.key}>
                   <Tabs.Button disabled={tab.disabled} className={cx('text-base', index === 0 && 'ml-8')}>
                     {tab.label}
                   </Tabs.Button>
