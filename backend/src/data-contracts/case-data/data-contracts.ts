@@ -584,10 +584,6 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
@@ -600,9 +596,13 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  number?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -1030,6 +1030,8 @@ export interface PatchErrand {
   labels?: string[];
   /** The current status of the errand */
   status?: Status;
+  /** Whether the errand is confidential or not */
+  confidential?: boolean;
 }
 
 export interface PatchDecision {
@@ -1085,8 +1087,8 @@ export interface PageableObject {
   /** @format int64 */
   offset?: number;
   sort?: SortObject;
-  unpaged?: boolean;
   paged?: boolean;
+  unpaged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
@@ -1095,8 +1097,8 @@ export interface PageableObject {
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export interface CommitMetadata {
