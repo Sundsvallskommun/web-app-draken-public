@@ -121,38 +121,36 @@ export const ContractAttachments: FC<{
 
   return (
     <div className="my-16 flex flex-col gap-24 items-center">
-      {!readOnly && (
-        <FileUpload.Field
-          data-cy={`contract-upload-field`}
-          onChange={(e) => {
-            const files = e.target.value;
-            saveSignedContractAttachment(municipalityId, existingContract?.contractId ?? '', files, '')
-              .then((res) => {
-                if (!res) {
-                  throw new Error('Error saving attachment');
-                }
-                getErrand(municipalityId, errand!.id.toString()).then((res) => {
-                  setErrand(res.errand);
-                  loadFiles();
-                  toastMessage(
-                    getToastOptions({
-                      message: 'Bilagan/orna sparades',
-                      status: 'success',
-                    })
-                  );
-                });
-              })
-              .catch(() => {
-                toastMessage({
-                  position: 'bottom',
-                  closeable: false,
-                  message: 'Något gick fel när bilagan/orna sparades',
-                  status: 'error',
-                });
+      <FileUpload.Field
+        data-cy={`contract-upload-field`}
+        onChange={(e) => {
+          const files = e.target.value;
+          saveSignedContractAttachment(municipalityId, existingContract?.contractId ?? '', files, '')
+            .then((res) => {
+              if (!res) {
+                throw new Error('Error saving attachment');
+              }
+              getErrand(municipalityId, errand!.id.toString()).then((res) => {
+                setErrand(res.errand);
+                loadFiles();
+                toastMessage(
+                  getToastOptions({
+                    message: 'Bilagan/orna sparades',
+                    status: 'success',
+                  })
+                );
               });
-          }}
-        ></FileUpload.Field>
-      )}
+            })
+            .catch(() => {
+              toastMessage({
+                position: 'bottom',
+                closeable: false,
+                message: 'Något gick fel när bilagan/orna sparades',
+                status: 'error',
+              });
+            });
+        }}
+      ></FileUpload.Field>
       <div className="w-full flex flex-col gap-lg">
         <FileUpload.List isEdit={false}>
           {files?.map((file, i) => (
