@@ -101,19 +101,17 @@ export const ContractAttachments: FC<{
               Öppna
             </Button>
           </PopupMenu.Item>
-          {!readOnly && (
-            <PopupMenu.Item>
-              <Button
-                data-cy={`delete-attachment-${file.id}`}
-                leftIcon={<Trash />}
-                onClick={async () => {
-                  handleRemoveFile(file);
-                }}
-              >
-                Ta bort
-              </Button>
-            </PopupMenu.Item>
-          )}
+          <PopupMenu.Item>
+            <Button
+              data-cy={`delete-attachment-${file.id}`}
+              leftIcon={<Trash />}
+              onClick={async () => {
+                handleRemoveFile(file);
+              }}
+            >
+              Ta bort
+            </Button>
+          </PopupMenu.Item>
         </PopupMenu.Group>
       </PopupMenu.Items>
     </PopupMenu.Panel>
