@@ -8,7 +8,6 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { Role } from '@casedata/interfaces/role';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
-import { deleteDraftAsset, getDraftAssets, updateAsset } from '@casedata/services/asset-service';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import {
   fetchDecisionTemplates,
@@ -37,10 +36,13 @@ import { getErrandContract } from '@casedata/services/contract-service';
 import { triggerErrandPhaseChange } from '@casedata/services/process-service';
 import TextEditor from '@common/components/dynamic-text-editor';
 import { getLatestRjsfSchema } from '@common/components/json/utils/schema-utils';
+import { ServiceListComponent } from '@common/components/services/service-list.component';
 import { TemplatePdfPreview } from '@common/components/template-preview/template-pdf-preview.component';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
+import { useErrandAssetServices } from '@common/hooks/use-asset-services';
 import { Template } from '@common/interfaces/template';
 import { isMEX, isPT } from '@common/services/application-service';
+import { deleteDraftAsset, getDraftAssets, updateAsset } from '@common/services/asset-service';
 import { base64Decode } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -68,8 +70,6 @@ import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-import { ServiceListComponent } from '../services/casedata-service-list.component';
-import { useErrandServices } from '../services/useErrandService';
 import { SendDecisionDialogComponent } from './send-decision-dialog.component';
 
 export interface DecisionFormModel {
@@ -195,11 +195,11 @@ export const CasedataDecisionTab: FC<{
 
   // Template fetching is driven by outcome selection — see useEffect below after watch()
 
-  const { services: allServices, refetch: refetchServices } = useErrandServices({
+  const { errandServices: allServices, refetch: refetchServices } = useErrandAssetServices({
     municipalityId,
     partyId: hasFtServices ? ownerPartyId ?? '' : '',
     errandId: hasFtServices ? String(errand?.id ?? '') : '',
-    assetType: assetType,
+    assetTypes: [assetType],
     schema: serviceSchema,
   });
 

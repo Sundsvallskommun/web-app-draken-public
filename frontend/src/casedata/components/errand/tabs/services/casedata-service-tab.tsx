@@ -4,13 +4,15 @@ import { isErrandLocked, isFTNationalErrand } from '@casedata/services/casedata-
 import {
   createErrandServiceDraftAsset,
   deleteErrandServiceDraftAsset,
-  getErrandServiceAssetById,
   updateErrandServiceAsset,
 } from '@casedata/services/casedata-service-assets-service';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { ServicesObjectFieldTemplate } from '@common/components/json/fields/services-object-field-template.componant';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
+import { ServiceListComponent } from '@common/components/services/service-list.component';
+import { useErrandAssetServices, usePartyAssetServices } from '@common/hooks/use-asset-services';
+import { getErrandServiceAssetById } from '@common/services/service-assets-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import {
@@ -28,9 +30,6 @@ import {
 import { useCasedataStore, useConfigStore } from '@stores/index';
 import { Eye, EyeOff } from 'lucide-react';
 import { ChangeEvent, FC, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
-
-import { ServiceListComponent } from './casedata-service-list.component';
-import { useErrandServices, usePartyServices } from './useErrandService';
 
 type DateErrors = { startDate?: string; endDate?: string };
 
@@ -92,9 +91,13 @@ export const CasedataServicesTab: FC = () => {
   const [validityType, setValidityType] = useState<'tillsvidare' | 'tidsbegränsat'>('tillsvidare');
   const [dateErrors, setDateErrors] = useState<{ startDate?: string; endDate?: string }>({});
   const [editDateErrors, setEditDateErrors] = useState<{ startDate?: string; endDate?: string }>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const toast = useSnackbar();
 
   const assetType = errand && isFTNationalErrand(errand) ? 'ParatransitPermitNational' : 'ParatransitPermitLocal';
+  const assetTypes = useMemo(() => [assetType], [assetType]);
   const errandId = String(errand?.id ?? '');
   const partyId = errand ? getOwnerStakeholder(errand)?.personId ?? '' : '';
   const serviceAssetParams = useMemo(
@@ -112,11 +115,11 @@ export const CasedataServicesTab: FC = () => {
     })();
   }, [municipalityId, assetType]);
 
-  const { services, loading, error, refetch } = useErrandServices({
+  const { errandServices, loading, error, refetch } = useErrandAssetServices({
     municipalityId,
     partyId,
     errandId,
-    assetType,
+    assetTypes,
     schema,
   });
 
@@ -125,18 +128,18 @@ export const CasedataServicesTab: FC = () => {
     refetch();
   }, [errandStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const errandCasedataServices = useMemo(() => services.filter((s) => s.origin === 'CASEDATA'), [services]);
+  const errandCasedataServices = useMemo(() => errandServices.filter((s) => s.origin === 'CASEDATA'), [errandServices]);
   const errandCasedataIds = useMemo(() => errandCasedataServices.map((s) => s.id), [errandCasedataServices]);
   const [showFinishedPartyServices, setShowFinishedPartyServices] = useState(false);
   const ACTIVE_PARTY_STATUSES = useMemo(() => new Set(['ACTIVE', 'TEMPORARY']), []);
   const {
-    services: partyServices,
+    partyServices,
     loading: partyLoading,
     error: partyError,
-  } = usePartyServices({
+  } = usePartyAssetServices({
     municipalityId,
     partyId,
-    assetType,
+    assetTypes,
     schema,
     excludeIds: errandCasedataIds,
   });
@@ -157,6 +160,7 @@ export const CasedataServicesTab: FC = () => {
 
   const removeService = useCallback(
     async (assetId: string) => {
+      setDeletingId(assetId);
       try {
         const removed = await deleteErrandServiceDraftAsset(serviceAssetParams, assetId);
         if (!removed) {
@@ -170,6 +174,8 @@ export const CasedataServicesTab: FC = () => {
         toast(
           getToastOptions({ message: e?.message ?? 'Något gick fel när insatsen skulle tas bort.', status: 'error' })
         );
+      } finally {
+        setDeletingId(null);
       }
     },
     [serviceAssetParams, refetch, toast]
@@ -187,6 +193,7 @@ export const CasedataServicesTab: FC = () => {
         validTo: validityType === 'tidsbegränsat' ? endDate || undefined : undefined,
         validityType,
       };
+      setSubmitting(true);
       try {
         await createErrandServiceDraftAsset(serviceAssetParams, enrichedPayload, schema, schemaId);
         toast(getToastOptions({ message: 'Ny insats tillagd.', status: 'success' }));
@@ -200,6 +207,8 @@ export const CasedataServicesTab: FC = () => {
         toast(
           getToastOptions({ message: e?.message ?? 'Något gick fel när insatsen skulle sparas.', status: 'error' })
         );
+      } finally {
+        setSubmitting(false);
       }
     },
     [
@@ -268,6 +277,7 @@ export const CasedataServicesTab: FC = () => {
     setEditEndDate('');
     setEditValidityType('tillsvidare');
     setEditDateErrors({});
+    setEditSubmitting(false);
   }, []);
 
   const handleEditSubmit = useCallback(
@@ -277,6 +287,7 @@ export const CasedataServicesTab: FC = () => {
       setEditDateErrors(errors);
       if (Object.keys(errors).length > 0) return;
       const { validFrom: _vf, validTo: _vt, validityType: _vty, ...jsonValue } = payload ?? {};
+      setEditSubmitting(true);
       try {
         const tillsvidare = editValidityType === 'tillsvidare';
         const { draftedActiveAsset } = await updateErrandServiceAsset(serviceAssetParams, editingId, {
@@ -297,6 +308,8 @@ export const CasedataServicesTab: FC = () => {
         toast(
           getToastOptions({ message: e?.message ?? 'Något gick fel när insatsen skulle uppdateras.', status: 'error' })
         );
+      } finally {
+        setEditSubmitting(false);
       }
     },
     [
@@ -331,6 +344,7 @@ export const CasedataServicesTab: FC = () => {
               onChange={(fd) => setFormData(fd)}
               onSubmit={handleSubmit}
               objectFieldTemplate={ServicesObjectFieldTemplate}
+              submitButtonOptions={{ loading: submitting, disabled: submitting }}
               extraContent={
                 <div className="flex flex-col gap-16 mt-16">
                   <FormControl>
@@ -415,6 +429,7 @@ export const CasedataServicesTab: FC = () => {
                 onRemove={removeService}
                 onEdit={startEdit}
                 readOnly={errand ? isErrandLocked(errand) : false}
+                removingId={deletingId}
               />
             )}
           </Disclosure.Content>
@@ -454,6 +469,7 @@ export const CasedataServicesTab: FC = () => {
                   readOnly
                   emptyMessage="Personen har inga övriga insatser"
                   currentErrandId={errandId}
+                  sourceErrandLinkHref={(s) => (s.sourceErrandNumber ? `/arende/${s.sourceErrandNumber}` : undefined)}
                 />
               </>
             )}
@@ -471,7 +487,12 @@ export const CasedataServicesTab: FC = () => {
               onChange={(fd) => setEditFormData(fd)}
               onSubmit={handleEditSubmit}
               objectFieldTemplate={ServicesObjectFieldTemplate}
-              submitButtonOptions={{ label: 'Spara', leadingIcon: false }}
+              submitButtonOptions={{
+                label: 'Spara',
+                leadingIcon: false,
+                loading: editSubmitting,
+                disabled: editSubmitting,
+              }}
               extraContent={
                 <div className="flex flex-col gap-16 mt-16">
                   <FormControl>

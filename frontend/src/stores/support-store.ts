@@ -15,6 +15,7 @@ interface SupportState {
   stakeholderContacts: SupportStakeholderFormModel[];
   stakeholderCustomers: SupportStakeholderFormModel[];
   notifications: (SupportNotification | CaseDataNotification)[];
+  activeTabKey?: string;
 }
 
 interface SupportActions {
@@ -24,6 +25,7 @@ interface SupportActions {
   setStakeholderContacts: (contacts: SupportStakeholderFormModel[]) => void;
   setStakeholderCustomers: (customers: SupportStakeholderFormModel[]) => void;
   setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) => void;
+  setActiveTabKey: (activeTabKey: string) => void;
   reset: () => void;
 }
 
@@ -36,6 +38,7 @@ const initialState: SupportState = {
   stakeholderContacts: [],
   stakeholderCustomers: [],
   notifications: [],
+  activeTabKey: 'basics',
 };
 
 export const useSupportStore = create<SupportStore>((set) => ({
@@ -46,5 +49,6 @@ export const useSupportStore = create<SupportStore>((set) => ({
   setStakeholderContacts: (stakeholderContacts) => set({ stakeholderContacts }),
   setStakeholderCustomers: (stakeholderCustomers) => set({ stakeholderCustomers }),
   setNotifications: (notifications) => set({ notifications }),
+  setActiveTabKey: (activeTabKey) => set({ activeTabKey }),
   reset: () => set(initialState),
 }));

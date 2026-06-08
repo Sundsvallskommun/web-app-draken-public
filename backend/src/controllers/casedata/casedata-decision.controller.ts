@@ -7,7 +7,13 @@ import { Body, Controller, Get, HttpCode, Param, Patch, Put, Req, Res, UseBefore
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { apiServiceName } from '@/config/api-config';
-import { Decision, DecisionDecisionOutcomeEnum, DecisionDecisionTypeEnum } from '@/data-contracts/case-data/data-contracts';
+import {
+  Attachment,
+  AttachmentChannelEnum,
+  Decision,
+  DecisionDecisionOutcomeEnum,
+  DecisionDecisionTypeEnum,
+} from '@/data-contracts/case-data/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { DecisionDTO } from '@/interfaces/decision.interface';
 import { User } from '@/interfaces/users.interface';
@@ -20,6 +26,16 @@ import { ResponseData } from './casedata-notes.controller';
 export class CaseDataDecisionsController {
   private apiService = new ApiService();
   SERVICE = apiServiceName('case-data');
+
+  // Decision PDFs are attached embedded in the Decision object (not via the
+  // /attachments endpoint), so the channel must be set here. Only fill it when
+  // missing, to avoid overwriting an existing channel on already-saved attachments.
+  ensureAttachmentChannel(attachments?: Attachment[]): Attachment[] | undefined {
+    return attachments?.map(attachment => ({
+      ...attachment,
+      channel: attachment.channel ?? AttachmentChannelEnum.WEB_UI,
+    }));
+  }
 
   async isUnsigning(municipalityId: string, errandid: string, decision: Decision, user: User) {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandid}/decisions/${decision.id}`;
@@ -43,7 +59,7 @@ export class CaseDataDecisionsController {
       throw new HttpException(403, 'Forbidden');
     }
     const patchData: Decision = {
-      attachments: decisionData.attachments,
+      attachments: this.ensureAttachmentChannel(decisionData.attachments),
       decisionType: decisionData.decisionType as unknown as DecisionDecisionTypeEnum,
       decisionOutcome: decisionData.decisionOutcome as unknown as DecisionDecisionOutcomeEnum,
       description: decisionData.description,
@@ -84,7 +100,11 @@ export class CaseDataDecisionsController {
     if (await this.isUnsigning(municipalityId, errandId.toString(), decisionData, req.user)) {
       throw new HttpException(400, 'Cannot unsign a signed decision');
     }
-    await this.apiService.put<any, Decision>({ url, baseURL, data: decisionData }, req.user).catch(e => {
+    const putData: Decision = {
+      ...decisionData,
+      attachments: this.ensureAttachmentChannel(decisionData.attachments),
+    };
+    await this.apiService.put<any, Decision>({ url, baseURL, data: putData }, req.user).catch(e => {
       logger.error(`Error when putting decision: ${e}`);
       throw e;
     });

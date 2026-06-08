@@ -5,6 +5,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
+import { ErrandAttachmentChannelEnum } from '@/data-contracts/supportmanagement/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
@@ -103,6 +104,7 @@ export class SupportAttachmentController {
     const data = new FormData();
     if (files && files.length > 0) {
       data.append(`errandAttachment`, files[0].buffer, { filename: files[0].originalname });
+      data.append('channel', ErrandAttachmentChannelEnum.WEB_UI);
     } else {
       logger.error('Trying to save attachment without name or data');
       throw new Error('File missing');

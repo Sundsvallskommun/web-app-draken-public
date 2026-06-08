@@ -39,7 +39,7 @@ type SchemaFormProps = {
   onSubmit?: (payload: any, e: IChangeEvent) => void;
   objectFieldTemplate?: ComponentType<any>;
   disabled?: boolean;
-  submitButtonOptions?: { label?: string; leadingIcon?: boolean };
+  submitButtonOptions?: { label?: string; leadingIcon?: boolean; loading?: boolean; disabled?: boolean };
   extraContent?: React.ReactNode;
 };
 

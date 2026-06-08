@@ -1,6 +1,6 @@
-import { AssetStatus, assetStatusLabels } from '@casedata/interfaces/asset';
-import { canDeleteErrandServiceAsset, Service } from '@casedata/services/casedata-service-assets-service';
+import { AssetStatus, assetStatusLabels, assetTypeLabels } from '@common/interfaces/asset';
 import sanitized from '@common/services/sanitizer-service';
+import { canDeleteErrandServiceAsset, Service } from '@common/services/service-assets-service';
 import { Button, Label } from '@sk-web-gui/react';
 import { Car, Cog, ExternalLink, ListChecks, Pencil, PlusCircle } from 'lucide-react';
 import NextLink from 'next/link';
@@ -51,19 +51,86 @@ const Section: FC<{ icon?: ReactNode; label: string; children: ReactNode }> = ({
   </div>
 );
 
+type ServiceTitleRenderer = (service: Service) => string;
+type ServiceBodyRenderer = FC<{ service: Service }>;
+
+const FtBody: ServiceBodyRenderer = ({ service }) => (
+  <>
+    <Section icon={<Car size={14} />} label="Färdsätt">
+      <Chips items={service?.transportMode} emptyText="Inget valt färdsätt" />
+    </Section>
+    <Section icon={<Cog size={14} />} label="Hjälpmedel">
+      <Chips items={service?.aids} emptyText="Inga valda hjälpmedel" />
+    </Section>
+    <Section icon={<PlusCircle size={14} />} label="Tillägg">
+      <Chips items={service?.addon} emptyText="Inga valda tillägg" />
+    </Section>
+  </>
+);
+
+const ftTitle: ServiceTitleRenderer = (service) =>
+  `${service.restyp.join(', ')}${service.isWinterService ? ' (Vinterfärdtjänst)' : ''}`;
+
+type ServiceRenderer = {
+  title: ServiceTitleRenderer;
+  body?: ServiceBodyRenderer;
+};
+
+const FT_RENDERER: ServiceRenderer = { title: ftTitle, body: FtBody };
+
+const ParkingPermitBody: ServiceBodyRenderer = ({ service }) => (
+  <Section label="Kortnummer">
+    <span className="text-base text-dark-primary">{service.assetId ?? '—'}</span>
+  </Section>
+);
+
+const PARKING_PERMIT_RENDERER: ServiceRenderer = {
+  title: () => assetTypeLabels.PARKINGPERMIT,
+  body: ParkingPermitBody,
+};
+
+const renderers: Record<string, ServiceRenderer> = {
+  ParatransitPermitLocal: FT_RENDERER,
+  ParatransitPermitNational: FT_RENDERER,
+  PARKINGPERMIT: PARKING_PERMIT_RENDERER,
+};
+
+const defaultRenderer: ServiceRenderer = {
+  title: (service) => service.assetType ?? 'Insats',
+};
+
+const resolveRenderer = (service: Service): ServiceRenderer =>
+  (service.assetType && renderers[service.assetType]) || defaultRenderer;
+
 interface Props {
   service: Service;
   onRemove?: (id: string) => void;
   onEdit?: (id: string) => void;
   readOnly?: boolean;
   currentErrandId?: string;
+  sourceErrandLinkHref?: (service: Service) => string | undefined;
+  isRemoving?: boolean;
 }
 
-export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly, currentErrandId }) => {
+export const ServiceListItem: FC<Props> = ({
+  service,
+  onRemove,
+  onEdit,
+  readOnly,
+  currentErrandId,
+  sourceErrandLinkHref,
+  isRemoving,
+}) => {
   const canRemove = canDeleteErrandServiceAsset(service);
-  const showSourceErrandLink =
-    readOnly && !!service.sourceErrandNumber && (!currentErrandId || service.sourceErrandId !== currentErrandId);
+  const linkHref =
+    readOnly && (!currentErrandId || service.sourceErrandId !== currentErrandId)
+      ? sourceErrandLinkHref?.(service)
+      : undefined;
+  const showSourceErrandLink = !!linkHref && !!service.sourceErrandNumber;
   const showFooter = !readOnly && (onEdit || onRemove);
+  const renderer = resolveRenderer(service);
+  const title = renderer.title(service);
+  const Body = renderer.body;
   const buildValidityText = (): string => {
     if (service?.validTo) return `${service.issued} – ${service.validTo}`;
     if (service?.issued) return `fr.o.m. ${service.issued}`;
@@ -83,10 +150,7 @@ export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-16 flex-wrap">
             <div className="flex-1 min-w-0">
-              <div className="text-base font-bold text-dark-primary">
-                {service.restyp.join(', ')}
-                {service.isWinterService ? ' (Vinterfärdtjänst)' : ''}
-              </div>
+              <div className="text-base font-bold text-dark-primary">{title}</div>
               {service.status && (
                 <div className="mt-8">
                   <Label rounded inverted color={statusColor(service.status)}>
@@ -106,15 +170,7 @@ export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly
       </div>
 
       <div className="flex flex-col gap-20 p-20">
-        <Section icon={<Car size={14} />} label="Färdsätt">
-          <Chips items={service?.transportMode} emptyText="Inget valt färdsätt" />
-        </Section>
-        <Section icon={<Cog size={14} />} label="Hjälpmedel">
-          <Chips items={service?.aids} emptyText="Inga valda hjälpmedel" />
-        </Section>
-        <Section icon={<PlusCircle size={14} />} label="Tillägg">
-          <Chips items={service?.addon} emptyText="Inga valda tillägg" />
-        </Section>
+        {Body && <Body service={service} />}
 
         {service?.comment && (
           <Section label="Kommentar">
@@ -128,7 +184,7 @@ export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly
         {showSourceErrandLink && (
           <div className="text-md">
             <NextLink
-              href={`/arende/${service.sourceErrandNumber}`}
+              href={linkHref!}
               className="inline-flex items-center gap-4 text-vattjom-link hover:underline"
               data-cy="service-source-errand-link"
             >
@@ -150,12 +206,20 @@ export const ServiceListItem: FC<Props> = ({ service, onRemove, onEdit, readOnly
                 variant="secondary"
                 leftIcon={<Pencil size={16} />}
                 onClick={() => onEdit(service.id)}
+                disabled={!!isRemoving}
               >
                 Redigera insats
               </Button>
             )}
             {onRemove && canRemove && (
-              <Button data-cy="remove-service-button" size="sm" color="vattjom" onClick={() => onRemove(service.id)}>
+              <Button
+                data-cy="remove-service-button"
+                size="sm"
+                color="vattjom"
+                onClick={() => onRemove(service.id)}
+                loading={!!isRemoving}
+                disabled={!!isRemoving}
+              >
                 Ta bort insats
               </Button>
             )}

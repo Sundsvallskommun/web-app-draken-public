@@ -52,10 +52,6 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
 
   const availableRoles = getAvailableRoles();
 
-  const isBillingPartyTaken = existingParties.some(
-    (p) => p !== existingParty && (p.roles ?? []).includes(StakeholderRole.PRIMARY_BILLING_PARTY)
-  );
-
   const handleRoleToggle = (role: StakeholderRole) => {
     setSelectedRoles((prev) => {
       if (prev.includes(role)) {
@@ -66,9 +62,10 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
     });
   };
 
-  // In edit mode the parent identifies the party by index, so `selectedStakeholderId` is only required
-  // when adding a new party (to pick which errand stakeholder to add).
-  const canSave = (mode === 'edit' || !!selectedStakeholderId) && selectedRoles.length > 0;
+  // In edit mode the save button stays enabled even with no roles selected: clearing every role is
+  // how a user removes an existing party (the parent drops zero-role parties when saving). In add
+  // mode a stakeholder and at least one role are still required to create a meaningful party.
+  const canSave = mode === 'edit' || (!!selectedStakeholderId && selectedRoles.length > 0);
 
   const handleSave = () => {
     if (canSave) {
@@ -106,8 +103,7 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
   const filteredStakeholderOptions = stakeholderOptions
     .filter((s) => s.id && !s.roles.includes(Role.ADMINISTRATOR))
     .filter((s) => {
-      if (mode === 'add' && isDraft) {
-        // In add mode for DRAFT contracts, exclude stakeholders that are already parties
+      if (mode === 'add') {
         return !existingParties.some((p) => stakeholderMatchesParty(s, p));
       }
       return true;
@@ -142,32 +138,23 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
             <div>
               <FormLabel>Intressent</FormLabel>
               <div className="font-bold">{existingParty ? getContractStakeholderName(existingParty) : ''}</div>
-              <div className="text-sm text-gray-600">
-                {existingParty?.personalNumber || existingParty?.organizationNumber}
-              </div>
+              <div className="text-gray-600">{existingParty?.personalNumber || existingParty?.organizationNumber}</div>
             </div>
           )}
 
           <FormControl>
             <FormLabel>{mode === 'add' ? 'Välj roll' : 'Byt eller lägg till roll'}</FormLabel>
             <div className="flex flex-col gap-12">
-              {availableRoles.map((role) => {
-                const disabled =
-                  role === StakeholderRole.PRIMARY_BILLING_PARTY &&
-                  isBillingPartyTaken &&
-                  !selectedRoles.includes(role);
-                return (
-                  <Checkbox
-                    key={role}
-                    data-cy={`party-modal-role-${role}`}
-                    checked={selectedRoles.includes(role)}
-                    disabled={disabled}
-                    onChange={() => handleRoleToggle(role)}
-                  >
-                    {prettyContractRoles[role] || role}
-                  </Checkbox>
-                );
-              })}
+              {availableRoles.map((role) => (
+                <Checkbox
+                  key={role}
+                  data-cy={`party-modal-role-${role}`}
+                  checked={selectedRoles.includes(role)}
+                  onChange={() => handleRoleToggle(role)}
+                >
+                  {prettyContractRoles[role] || role}
+                </Checkbox>
+              ))}
             </div>
           </FormControl>
         </div>

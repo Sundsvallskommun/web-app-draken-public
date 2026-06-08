@@ -9,7 +9,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
+import { AttachmentChannelEnum, Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
@@ -46,6 +46,7 @@ export class CaseDataAttachmentController {
       name: attachmentData.name,
       note: attachmentData.note,
       errandNumber: attachmentData.errandNumber,
+      channel: AttachmentChannelEnum.WEB_UI,
     };
     const response = await this.apiService.post<ErrandDTO, CreateAttachmentDto>({ url, baseURL, data }, req.user).catch(e => {
       logger.error('Attachment post error:', e);
