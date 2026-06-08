@@ -15,6 +15,7 @@
 
 # --- Personnummer- / organisationsnummer-träffar ---
 000000-0000
+556677-8899
 111111-2222
 112233-5555
 234567-0000

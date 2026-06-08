@@ -1,0 +1,313 @@
+/// <reference types="cypress" />
+
+import { onlyOn } from '@cypress/skip-test';
+import { mockAttachmentsPT } from 'cypress/e2e/case-data/fixtures/mockAttachments';
+import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
+import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
+import { mockPhrases } from 'cypress/e2e/case-data/fixtures/mockPhrases';
+import dayjs from 'dayjs';
+
+import { mockAdmins } from '../fixtures/mockAdmins';
+import { mockAsset } from '../fixtures/mockAsset';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
+import { mockPdfRender } from '../fixtures/mockDecisions';
+import { mockMe } from '../fixtures/mockMe';
+import { mockMessages } from '../fixtures/mockMessages';
+import { mockPermits } from '../fixtures/mockPermits';
+import { mockPTErrand_base } from '../fixtures/mockPtErrand';
+import { mockRelations } from '../fixtures/mockRelations';
+
+onlyOn(Cypress.env('application_name') === 'PT', () => {
+  describe('Decisions tab', () => {
+    const mockFTErrand = {
+      data: {
+        ...mockPTErrand_base.data,
+        caseType: 'PARATRANSIT',
+        decisions: [],
+      },
+      message: 'success',
+    };
+
+    beforeEach(() => {
+      cy.intercept('GET', '**/schemas/*/latest', { data: { id: 'mock-schema-id', value: {} }, message: 'success' });
+      cy.intercept('GET', '**/schemas/*/ui-schema', {
+        data: { id: 'mock-ui-schema-id', value: {} },
+        message: 'success',
+      }).as('getUiSchema');
+      cy.intercept('GET', '**/messages/*', mockMessages);
+      cy.intercept('POST', '**/phrases', mockPhrases);
+      cy.intercept('GET', '**/users/admins', mockAdmins);
+      cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/featureflags', []);
+      cy.intercept('POST', '**/personid', mockPersonId);
+      cy.intercept('GET', '**/parking-permits/', mockPermits);
+      cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
+      cy.intercept('GET', /\/errand\/\d*/, mockPTErrand_base).as('getErrandById');
+      cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachmentsPT).as('getErrandAttachments');
+      cy.intercept('PATCH', '**/errands/*/decisions', { data: 'ok', message: 'ok' }).as('createDecision');
+      cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
+      cy.intercept('GET', '**/errand/errandNumber/*', mockPTErrand_base).as('getErrand');
+      cy.intercept('POST', '**/templates/phrases*', mockPhrases).as('getPhrases');
+      cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
+      cy.intercept('GET', '**/assets?partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&type=PARKINGPERMIT', mockAsset);
+      cy.intercept('GET', '**/assets?**', {}).as('getAssets');
+      cy.intercept('GET', '**/contracts/2024-01026', mockPTErrand_base).as('getContract');
+      cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
+
+      cy.intercept('GET', '**/errand/errandNumber/*', mockPTErrand_base).as('getErrand');
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
+      );
+      cy.intercept('PATCH', '**/errands/**/extraparameters', {});
+      cy.intercept('POST', '**/render/pdf', mockPdfRender).as('postRenderPdf');
+      cy.intercept('GET', '**/templates?*', { data: [], message: 'success' }).as('getTemplates');
+      cy.intercept('GET', '**/errand-services?**', { data: [], message: 'success' }).as('getErrandServices');
+      cy.intercept('POST', '**/render', {
+        data: { output: btoa('<p>Rendered template</p>') },
+        message: 'Decision HTML rendered',
+      }).as('renderTemplate');
+    });
+
+    const visitErrand = () => {
+      cy.visit(`/arende/${mockPTErrand_base.data.errandNumber}`);
+      cy.wait('@getErrand');
+      cy.get('.sk-cookie-consent-btn-wrapper').should('exist').contains('Godkänn alla').click();
+      cy.get('.sk-tabs-list button').contains('Beslut').should('have.text', 'Beslut').click({ force: true });
+    };
+
+    it('displays the correct fields', () => {
+      visitErrand();
+      cy.get('[data-cy="decision-outcome-select"]').should('exist');
+      cy.get('[data-cy="law-select"]')
+        .should('exist')
+        .should('contain.text', '13 kap. 8§ Parkeringstillstånd för rörelsehindrade');
+      cy.get('[data-cy="validFrom-input"]').should('exist');
+      cy.get('[data-cy="validTo-input"]').should('exist');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist');
+    });
+
+    it('creates new decision if errand has none, then updates existing', () => {
+      const errandWithoutDecisions = { ...mockPTErrand_base, data: { ...mockPTErrand_base.data, decisions: [] } };
+      cy.intercept('GET', '**/errand/errandNumber/*', errandWithoutDecisions).as('getErrand');
+      visitErrand();
+      cy.get('.sk-tabs-list button').contains('Beslut').should('have.text', 'Beslut').click({ force: true });
+
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Avslag');
+      cy.get('[data-cy="law-select"]').should('exist').click();
+      cy.get('[data-cy="law-select"]').contains('13 kap. 8 § trafikförordningen').should('exist').click();
+      cy.get('[data-cy="validFrom-input"]').should('exist').should('be.disabled');
+      cy.get('[data-cy="validTo-input"]').should('exist').should('be.disabled');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
+      cy.get('[data-cy="save-decision-button"]').should('exist').click();
+      cy.intercept('GET', `**/errand/${mockPTErrand_base.data.id}`, mockPTErrand_base).as('getErrandWithDecisions');
+      cy.get('button').should('exist').contains('Ja').click();
+
+      cy.wait('@createDecision').should(({ request }) => {
+        expect(request.body.id).to.be.undefined;
+        expect(request.body.description).to.contain('Mock text');
+        expect(request.body.decisionType).to.equal('FINAL');
+        expect(request.body.decisionOutcome).to.equal('REJECTION');
+        expect(request.body.decidedBy).to.deep.equal({
+          type: 'PERSON',
+          firstName: 'My',
+          lastName: 'Testsson',
+          adAccount: 'kctest',
+          roles: ['ADMINISTRATOR'],
+          addresses: [],
+          contactInformation: [],
+          extraParameters: {},
+        });
+        expect(request.body.law).to.deep.equal([
+          {
+            heading: '13 kap. 8 § trafikförordningen',
+            sfs: 'Trafikförordningen (1998:1276)',
+            chapter: '13',
+            article: '8',
+          },
+        ]);
+      });
+      cy.wait('@getErrandWithDecisions');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
+      cy.get('[data-cy="save-decision-button"]').should('exist').click();
+      cy.intercept(
+        'PUT',
+        `**/decisions/${mockPTErrand_base.data.decisions.find((d) => d.decisionType === 'FINAL')?.id}`,
+        mockPTErrand_base
+      ).as('updateDecision');
+      cy.get('button').should('exist').contains('Ja').click();
+      cy.wait('@updateDecision').should(({ request }) => {
+        expect(request.body.id).to.equal(1);
+      });
+    });
+
+    it('can edit decision fields for rejection', () => {
+      cy.intercept('GET', '**/errand/errandNumber/*', mockPTErrand_base).as('getErrand');
+      visitErrand();
+      cy.intercept('POST', '**/render/pdf', mockPdfRender).as('postRenderPdf');
+      cy.intercept(
+        'PUT',
+        `**/decisions/${mockPTErrand_base.data.decisions.find((d) => d.decisionType === 'FINAL')?.id}`,
+        mockPTErrand_base
+      ).as('updateDecision');
+
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Avslag');
+      cy.get('[data-cy="validFrom-input"]').should('exist').should('be.disabled');
+      cy.get('[data-cy="validTo-input"]').should('exist').should('be.disabled');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
+      cy.get('[data-cy="save-decision-button"]').should('exist').click();
+      cy.get('button').should('exist').contains('Ja').click();
+
+      cy.wait('@updateDecision').should(({ request }) => {
+        expect(request.body.id).to.equal(1);
+        expect(request.body.description).to.contain('Mock text');
+        expect(request.body.decisionType).to.equal('FINAL');
+        expect(request.body.decisionOutcome).to.equal('REJECTION');
+        expect(request.body.decidedBy).to.deep.equal({
+          type: 'PERSON',
+          firstName: 'My',
+          lastName: 'Testsson',
+          adAccount: 'kctest',
+          roles: ['ADMINISTRATOR'],
+          addresses: [],
+          contactInformation: [],
+          extraParameters: {},
+        });
+        expect(request.body.law).to.deep.equal([
+          {
+            heading: '13 kap. 8§ Parkeringstillstånd för rörelsehindrade',
+            sfs: 'Trafikförordningen (1998:1276)',
+            chapter: '13',
+            article: '8',
+          },
+        ]);
+      });
+    });
+
+    it('can edit decision fields for approval', () => {
+      visitErrand();
+      cy.intercept('POST', '**/render/pdf', mockPTErrand_base).as('postRenderPdf');
+      cy.intercept(
+        'PUT',
+        `**/decisions/${mockPTErrand_base.data.decisions.find((d) => d.decisionType === 'FINAL')?.id}`,
+        mockPTErrand_base
+      ).as('updateDecision');
+
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Bifall');
+      cy.get('[data-cy="law-select"]').should('exist');
+      cy.get('[data-cy="validFrom-input"]').should('exist').clear().type('2024-07-11');
+      cy.get('[data-cy="validTo-input"]').should('exist').clear().type('2024-08-11');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
+      cy.get('[data-cy="save-decision-button"]').should('exist').click();
+      cy.get('button').should('exist').contains('Ja').click();
+
+      cy.wait('@updateDecision').should(({ request }) => {
+        expect(request.body.id).to.equal(1);
+        expect(request.body.description).to.contain('Mock text');
+        expect(request.body.decisionType).to.equal('FINAL');
+        expect(request.body.decisionOutcome).to.equal('APPROVAL');
+        expect(request.body.decidedBy).to.deep.equal({
+          type: 'PERSON',
+          firstName: 'My',
+          lastName: 'Testsson',
+          adAccount: 'kctest',
+          roles: ['ADMINISTRATOR'],
+          addresses: [],
+          contactInformation: [],
+          extraParameters: {},
+        });
+        expect(request.body.validFrom).to.equal(dayjs('2024-07-11').startOf('day').toISOString());
+        expect(request.body.validTo).to.equal(dayjs('2024-08-11').endOf('day').toISOString());
+        expect(request.body.law).to.deep.equal([
+          {
+            heading: '13 kap. 8§ Parkeringstillstånd för rörelsehindrade',
+            sfs: 'Trafikförordningen (1998:1276)',
+            chapter: '13',
+            article: '8',
+          },
+        ]);
+      });
+    });
+
+    it('shows validation error when no decision is selected', () => {
+      visitErrand();
+      cy.intercept('PUT', '**/decisions/**').as('updateDecision');
+
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Välj utfall');
+      cy.get('[data-cy="validFrom-input"]').should('exist').should('be.disabled');
+      cy.get('[data-cy="validTo-input"]').should('exist').should('be.disabled');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
+      cy.get('[data-cy="save-decision-button"]').should('exist').should('be.disabled');
+
+      cy.contains('Beslut måste anges').should('exist');
+      cy.get('@updateDecision.all').should('have.length', 0);
+    });
+
+    it('enables decision actions for FT approval without decision validity dates', () => {
+      cy.intercept('GET', '**/errand/errandNumber/*', mockFTErrand).as('getErrand');
+      visitErrand();
+
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Bifall');
+      cy.get('[data-cy="law-select"]').should('exist').click();
+      cy.get('[data-cy="law-select"]').contains('1§ - Lag om färdtjänst').should('exist').click();
+      cy.get('[data-cy="validFrom-input"]').should('not.exist');
+      cy.get('[data-cy="validTo-input"]').should('not.exist');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
+
+      cy.get('[data-cy="save-decision-button"]').should('exist').should('not.be.disabled');
+      cy.get('[data-cy="decision-pdf-preview-button"]').should('have.length', 1).should('not.be.disabled');
+      cy.get('[data-cy="save-and-send-decision-button"]').should('exist').should('not.be.disabled');
+    });
+
+    it('shows template dropdown after outcome selection when templates exist and renders preview', () => {
+      visitErrand();
+      const mockTemplates = [
+        {
+          identifier: 'pt.test.template',
+          name: 'PT Testmall',
+          description: 'En PT testmall',
+          version: '1',
+          metadata: [
+            { key: 'templateType', value: 'Decision' },
+            { key: 'decision', value: 'REJECTION' },
+          ],
+          defaultValues: [],
+        },
+      ];
+      cy.intercept('GET', '**/templates?*', { data: mockTemplates, message: 'success' }).as('getDecisionTemplates');
+      cy.intercept('POST', '**/render/pdf', {
+        data: { output: btoa('%PDF-mock') },
+        message: 'Decision PDF rendered',
+      }).as('renderTemplatePdf');
+
+      // Existing decision has APPROVAL — select a different outcome to trigger template fetch
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Avslag');
+      cy.wait('@getDecisionTemplates');
+      cy.get('[data-cy="decisionTemplate-select"]').should('exist');
+      cy.get('[data-cy="decisionTemplate-select"]').select('PT Testmall');
+      cy.wait('@renderTemplatePdf');
+      cy.get('[data-cy="decision-template-preview"]').should('exist');
+      cy.get('[data-cy="decision-template-preview-content"]').should('exist').and('have.prop', 'tagName', 'IFRAME');
+    });
+
+    it('shows validation error when dates are incomplete for approval', () => {
+      visitErrand();
+      cy.intercept('PUT', '**/decisions/**').as('updateDecision');
+
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Bifall');
+      cy.get('[data-cy="law-select"]').should('exist');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist').clear().type('Mock text');
+
+      cy.get('[data-cy="validFrom-input"]').should('exist').clear();
+      cy.get('[data-cy="validTo-input"]').should('exist').clear().type('2024-08-11');
+      cy.get('[data-cy="save-decision-button"]').should('exist').should('be.disabled');
+
+      cy.contains('Giltigt datum måste anges').should('exist');
+      cy.get('@updateDecision.all').should('have.length', 0);
+    });
+  });
+});

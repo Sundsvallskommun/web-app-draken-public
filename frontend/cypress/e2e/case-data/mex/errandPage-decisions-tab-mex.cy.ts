@@ -1,0 +1,157 @@
+/// <reference types="cypress" />
+
+import { onlyOn } from '@cypress/skip-test';
+import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
+import { mockHistory } from 'cypress/e2e/case-data/fixtures/mockHistory';
+import { mockPersonId } from 'cypress/e2e/case-data/fixtures/mockPersonId';
+import { mockPhrases } from 'cypress/e2e/case-data/fixtures/mockPhrases';
+
+import { mockAdmins } from '../fixtures/mockAdmins';
+import { mockAsset } from '../fixtures/mockAsset';
+import { mockContractAttachment, mockLeaseAgreement, mockPurchaseAgreement } from '../fixtures/mockContract';
+import { mockConversationMessages,mockConversations } from '../fixtures/mockConversations';
+import {
+  mockEstateInfo11,
+  mockEstateInfo12,
+  mockSingleEstateByPropertyDesignation11,
+  mockSingleEstateByPropertyDesignation12,
+} from '../fixtures/mockEstateInfo';
+import { mockFeatureFlags } from '../fixtures/mockFeatureFlags';
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
+import { mockMe } from '../fixtures/mockMe';
+import { mockMessages } from '../fixtures/mockMessages';
+import { mockMexErrand_base } from '../fixtures/mockMexErrand';
+import { mockPermits } from '../fixtures/mockPermits';
+import { mockRelations } from '../fixtures/mockRelations';
+
+const DECISION_TAB_INDEX = 6;
+
+onlyOn(Cypress.env('application_name') === 'MEX', () => {
+  describe('Decisions tab', () => {
+    beforeEach(() => {
+      cy.intercept('GET', '**/schemas/*/latest', { data: { id: 'mock-schema-id', value: {} }, message: 'success' });
+      cy.intercept('GET', '**/messages/*', mockMessages);
+      cy.intercept('POST', '**/phrases', mockPhrases);
+      cy.intercept('GET', '**/users/admins', mockAdmins);
+      cy.intercept('GET', '**/me', mockMe);
+      cy.intercept('GET', '**/featureflags', []);
+      cy.intercept('POST', '**/personid', mockPersonId);
+      cy.intercept('GET', '**/parking-permits/', mockPermits);
+      cy.intercept('GET', '**/parking-permits/?personId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc', mockPermits);
+      cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
+      cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
+      cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
+      cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
+      cy.intercept('GET', '**/contract/**', mockPurchaseAgreement).as('getContract');
+      cy.intercept('POST', '**/templates/phrases*', mockPhrases).as('getPhrases');
+      cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
+      cy.intercept('GET', '**/assets?partyId=aaaaaaa-bbbb-aaaa-bbbb-aaaabbbbcccc&type=PARKINGPERMIT', mockAsset);
+      cy.intercept('GET', /\/errand\/\d+\/messages$/, mockMessages);
+
+      cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
+      cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
+        'getContractAttachment'
+      );
+
+      cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
+      cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
+      cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
+        'getConversations'
+      );
+      cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
+        'getConversationMessages'
+      );
+      cy.intercept('GET', '**/assets**', mockAsset).as('getAssets');
+      cy.intercept('GET', '**/schemas/FTErrandAssets/latest', mockJsonSchema).as('getJsonSchema');
+      cy.intercept('GET', '**/schemas/*/ui-schema', {
+        data: { id: 'mock-ui-schema-id', value: {} },
+        message: 'success',
+      }).as('getUiSchema');
+      cy.intercept('GET', '**/estateInfo/**1:1', mockEstateInfo11).as('getEstateInfo');
+      cy.intercept('GET', '**/estateInfo/**1:2', mockEstateInfo12).as('getEstateInfo');
+      cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:1', mockSingleEstateByPropertyDesignation11).as(
+        'getEstateInfo'
+      );
+      cy.intercept('GET', '**/singleEstateByPropertyDesignation/**1:2', mockSingleEstateByPropertyDesignation12).as(
+        'getEstateInfo'
+      );
+      cy.intercept('GET', '**/featureflags', mockFeatureFlags).as('getFeatureFlags');
+      cy.intercept('GET', '**/templates?*', { data: [], message: 'success' }).as('getTemplates');
+      cy.intercept('POST', '**/render', {
+        data: { output: btoa('<p>Rendered template</p>') },
+        message: 'Decision HTML rendered',
+      }).as('renderTemplate');
+
+      cy.visit(`/arende/${mockMexErrand_base.data.errandNumber}`);
+      cy.wait('@getErrand');
+      cy.get('.sk-cookie-consent-btn-wrapper').should('exist').contains('Godkänn alla').click();
+      cy.get('.sk-tabs-list button').eq(DECISION_TAB_INDEX).should('have.text', 'Beslut').click({ force: true });
+    });
+
+    it('displays the correct fields', () => {
+      cy.get('[data-cy="decision-outcome-select"]').should('exist');
+      cy.get('[data-cy="validFrom-input"]').should('not.exist');
+      cy.get('[data-cy="validTo-input"]').should('not.exist');
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('exist');
+    });
+
+    it('can edit decision fields', () => {
+      cy.intercept('POST', '**/render/pdf', mockMexErrand_base).as('postRenderPdf');
+      cy.intercept('PUT', `**/decisions/${mockMexErrand_base.data.decisions[0].id}`, mockMexErrand_base).as(
+        'updateDecision'
+      );
+
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select(2);
+      cy.get('[data-cy="decision-richtext-wrapper"] .ql-editor')
+        .should('exist')
+        .clear()
+        .type('Mock text', { delay: 100 });
+      cy.get('[data-cy="save-decision-button"]').should('exist').click();
+      cy.get('button').should('exist').contains('Ja').click();
+
+      cy.wait('@updateDecision').should(({ request }) => {
+        expect(request.body.description).to.contain('Mock text');
+        expect(request.body.decisionType).to.equal('FINAL');
+      });
+    });
+
+    it('shows template dropdown after outcome selection and injects content into editor for MEX', () => {
+      const mockTemplates = [
+        {
+          identifier: 'mex.test.template',
+          name: 'Testmall',
+          description: 'En testmall',
+          version: '1',
+          content: btoa('Test content from template'),
+          metadata: [
+            { key: 'templateType', value: 'Decision' },
+            { key: 'decision', value: 'REJECTION' },
+          ],
+          defaultValues: [],
+        },
+      ];
+      cy.intercept('GET', '**/templates?*', { data: mockTemplates, message: 'success' }).as('getDecisionTemplates');
+
+      // Existing decision has APPROVAL — select a different outcome to trigger template fetch
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Avslag');
+      cy.wait('@getDecisionTemplates');
+      cy.get('[data-cy="decisionTemplate-select"]').should('exist');
+      cy.get('[data-cy="decisionTemplate-select"]').select('Testmall');
+      // MEX: template content is injected into text editor, no PDF preview
+      cy.get('[data-cy="decision-richtext-wrapper"]').should('contain.text', 'Test content from template');
+    });
+
+    it('disables decision actions if no decision is selected', () => {
+      cy.get('[data-cy="decision-outcome-select"]').should('exist').select('Välj utfall');
+      cy.get('[data-cy="decision-richtext-wrapper"] .ql-editor')
+        .should('exist')
+        .clear()
+        .type('Mock text', { delay: 100 });
+      cy.contains('Beslut måste anges').should('exist');
+      cy.get('[data-cy="save-decision-button"]').should('exist').should('be.disabled');
+      cy.get('[data-cy="decision-pdf-preview-button"]').should('have.length', 1).should('be.disabled');
+      cy.get('[data-cy="save-and-send-decision-button"]').should('exist').should('be.disabled');
+    });
+  });
+});
