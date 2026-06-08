@@ -14,6 +14,7 @@ import { logger } from '@utils/logger';
 import { Body, Controller, Delete, Get, Param, Patch, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
+import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Asset, AssetCreateRequest, AssetUpdateRequest, DraftAssetUpdateRequest, Status } from '@/data-contracts/partyassets/data-contracts';
 import { apiURL } from '@/utils/util';
@@ -26,6 +27,7 @@ interface ResponseData<T> {
 type EnrichedAsset = Asset & {
   sourceErrandId?: string;
   sourceErrandNumber?: string;
+  sourceErrandNamespace?: string;
 };
 
 @Controller()
@@ -98,13 +100,13 @@ export class AssetController {
       }
     }
 
-    return { ...res.data, sourceErrandId: errandId };
+    return { ...res.data, sourceErrandId: errandId, sourceErrandNamespace: errandId ? CASEDATA_NAMESPACE : undefined };
   }
 
   private async enrichWithErrandNumbers(user: RequestWithUser['user'], municipalityId: string, assets: EnrichedAsset[]): Promise<EnrichedAsset[]> {
-    const errandIds = assets.map(a => a.sourceErrandId).filter((id): id is string => !!id);
-    if (errandIds.length === 0) return assets;
-    const numbers = await fetchErrandNumbersByIds(municipalityId, errandIds, user);
+    const refs = assets.filter(a => !!a.sourceErrandId).map(a => ({ id: a.sourceErrandId as string, namespace: a.sourceErrandNamespace }));
+    if (refs.length === 0) return assets;
+    const numbers = await fetchErrandNumbersByIds(municipalityId, refs, user);
     return assets.map(asset => ({
       ...asset,
       sourceErrandNumber: asset.sourceErrandId ? numbers.get(asset.sourceErrandId) : undefined,
@@ -122,24 +124,34 @@ export class AssetController {
     if (assets.length === 0) return [];
 
     if (errandId) {
+      // All callers that pass errandId here are casedata-side endpoints, so the errand lives in CASEDATA_NAMESPACE.
       const [errandAssetIds, errandNumber] = await Promise.all([
         findAssetIdsForErrand(municipalityId, errandId, req.user),
-        fetchErrandNumberById(municipalityId, errandId, req.user),
+        fetchErrandNumberById(municipalityId, errandId, req.user, CASEDATA_NAMESPACE),
       ]);
       return assets
         .filter(asset => asset.id && errandAssetIds.has(asset.id))
-        .map(asset => ({ ...asset, sourceErrandId: errandId, sourceErrandNumber: errandNumber }));
+        .map(asset => ({
+          ...asset,
+          sourceErrandId: errandId,
+          sourceErrandNumber: errandNumber,
+          sourceErrandNamespace: CASEDATA_NAMESPACE,
+        }));
     }
 
-    const sourceErrandIdByAssetId = await findSourceErrandsForAssets(
+    const sourceErrandByAssetId = await findSourceErrandsForAssets(
       municipalityId,
       assets.map(asset => asset.id).filter((id): id is string => !!id),
       req.user,
     );
-    const enriched: EnrichedAsset[] = assets.map(asset => ({
-      ...asset,
-      sourceErrandId: asset.id ? sourceErrandIdByAssetId.get(asset.id) : undefined,
-    }));
+    const enriched: EnrichedAsset[] = assets.map(asset => {
+      const ref = asset.id ? sourceErrandByAssetId.get(asset.id) : undefined;
+      return {
+        ...asset,
+        sourceErrandId: ref?.id,
+        sourceErrandNamespace: ref?.namespace,
+      };
+    });
     return this.enrichWithErrandNumbers(req.user, municipalityId, enriched);
   }
 
@@ -221,9 +233,19 @@ export class AssetController {
     const url = `${this.PARTYASSETS_SERVICE}/${municipalityId}/assets/${encodeURIComponent(id)}`;
     const res = await this.apiService.get<Asset>({ url }, req.user);
     try {
-      const sourceErrandId = await findSourceErrandIdForAsset(municipalityId, id, req.user);
-      const sourceErrandNumber = sourceErrandId ? await fetchErrandNumberById(municipalityId, sourceErrandId, req.user) : undefined;
-      return { data: { ...res.data, sourceErrandId, sourceErrandNumber }, message: 'success' };
+      const sourceErrand = await findSourceErrandIdForAsset(municipalityId, id, req.user);
+      const sourceErrandNumber = sourceErrand
+        ? await fetchErrandNumberById(municipalityId, sourceErrand.id, req.user, sourceErrand.namespace)
+        : undefined;
+      return {
+        data: {
+          ...res.data,
+          sourceErrandId: sourceErrand?.id,
+          sourceErrandNumber,
+          sourceErrandNamespace: sourceErrand?.namespace,
+        },
+        message: 'success',
+      };
     } catch (e) {
       logger.error(`Asset ${id} was fetched, but source errand enrichment failed: `, e);
       return { data: res.data, message: 'success' };

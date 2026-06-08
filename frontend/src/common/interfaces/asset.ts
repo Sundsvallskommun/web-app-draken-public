@@ -31,6 +31,7 @@ export interface Asset {
   jsonParameters?: JsonParameter[];
   sourceErrandId?: string;
   sourceErrandNumber?: string;
+  sourceErrandNamespace?: string;
 }
 
 export interface AssetUpdateRequest {

@@ -13,6 +13,7 @@ import { Info, Users } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
 
+import { PartyAssetsSection } from './partyassets-section.component';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
 
 interface SupportContactsProps {
@@ -318,6 +319,11 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
             </div>
           </div>
         </div>
+        {appConfig.features.useServices &&
+        contact.externalId &&
+        supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY' && s.externalId === contact.externalId) ? (
+          <PartyAssetsSection partyId={contact.externalId} />
+        ) : null}
       </div>
     );
   };

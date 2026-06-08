@@ -1,4 +1,4 @@
-import { assetStatusLabels, assetTypeLabels } from '@casedata/interfaces/asset';
+import { assetStatusLabels, assetTypeLabels } from '@common/interfaces/asset';
 import { AutoTable, AutoTableHeader } from '@sk-web-gui/react';
 import { useCasedataStore } from '@stores/index';
 

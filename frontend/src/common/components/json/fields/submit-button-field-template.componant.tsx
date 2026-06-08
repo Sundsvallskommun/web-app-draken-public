@@ -8,6 +8,8 @@ interface SubmitButtonOptions {
   color?: string;
   className?: string;
   leadingIcon?: boolean | string;
+  loading?: boolean;
+  disabled?: boolean;
 }
 
 export function SubmitButtonFieldTemplate(props: SubmitButtonProps<any, any, any>) {
@@ -19,6 +21,8 @@ export function SubmitButtonFieldTemplate(props: SubmitButtonProps<any, any, any
   const variant = buttonOptions.variant || 'primary';
   const className = buttonOptions.className || 'mt-[3.2rem]';
   const leadingIcon = buttonOptions.leadingIcon !== false;
+  const loading = buttonOptions.loading === true;
+  const disabled = buttonOptions.disabled === true || loading;
 
   return (
     <div className={className}>
@@ -27,6 +31,8 @@ export function SubmitButtonFieldTemplate(props: SubmitButtonProps<any, any, any
         data-cy="schema-submit-button"
         variant={variant as any}
         leftIcon={leadingIcon ? <Plus /> : undefined}
+        loading={loading}
+        disabled={disabled}
       >
         {label}
       </Button>
