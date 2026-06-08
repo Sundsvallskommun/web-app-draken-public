@@ -854,6 +854,136 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.get('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').should('exist');
           cy.get('[data-cy="party-modal-role-LESSEE"]').should('not.exist');
           cy.get('[data-cy="party-modal-role-LESSOR"]').should('not.exist');
+
+          // The billing role must be selectable even though Bengt Testarrendator already holds it:
+          // adding a new fakturamottagare transfers the role away from the previous holder.
+          cy.get('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').should('not.be.disabled');
+          cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist').select('2260');
+          cy.get('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').check({ force: true });
+          cy.get('[data-cy="party-modal-save-button"]').click();
+
+          // The new party (row 2) is now the fakturamottagare; the previous holder (Bengt, row 1)
+          // keeps Arrendator but loses Fakturamottagare.
+          cy.get('[data-cy="party-2-name"]').should('contain.text', 'Test Upplåtarsson');
+          cy.get('[data-cy="party-2-role"]').should('contain.text', 'Fakturamottagare');
+          cy.get('[data-cy="party-1-name"]').should('contain.text', 'Bengt Testarrendator');
+          cy.get('[data-cy="party-1-role"]').should('contain.text', 'Arrendator');
+          cy.get('[data-cy="party-1-role"]').should('not.contain.text', 'Fakturamottagare');
+
+          // Editing an existing party down to zero roles must keep the save button enabled (clearing
+          // every role is how a party gets removed on save). Cancel afterwards to preserve state.
+          cy.get('[data-cy="party-2-edit-button"]').click();
+          cy.get('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').should('be.checked');
+          cy.get('[data-cy="party-modal-save-button"]').should('not.be.disabled');
+          cy.get('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').uncheck({ force: true });
+          cy.get('[data-cy="party-modal-save-button"]').should('not.be.disabled');
+          cy.contains('button', 'Avbryt').click();
+
+          // Saving persists the transferred fakturamottagare to the contract.
+          cy.intercept('PUT', '**/contracts/2024-ACTIVE-001', { data: mockActiveLeaseAgreement.data }).as(
+            'putActiveContract'
+          );
+          cy.get('[data-cy="parties-disclosure"]').find('[data-cy="save-contract-button"]').should('exist').click();
+
+          cy.wait('@putActiveContract').should(({ request }) => {
+            const contract: Contract = request.body;
+            const billingParties = contract.stakeholders.filter((s: Stakeholder) =>
+              s.roles.includes(StakeholderRole.PRIMARY_BILLING_PARTY)
+            );
+            expect(billingParties).to.have.length(1);
+            expect(billingParties[0].firstName).to.equal('Test');
+            expect(billingParties[0].lastName).to.equal('Upplåtarsson');
+
+            const bengt = contract.stakeholders.find((s: Stakeholder) => s.lastName === 'Testarrendator');
+            expect(bengt).to.exist;
+            expect(bengt.roles).to.include(StakeholderRole.LESSEE);
+            expect(bengt.roles).to.not.include(StakeholderRole.PRIMARY_BILLING_PARTY);
+
+            expect(contract.stakeholders.some((s: Stakeholder) => s.roles.includes(StakeholderRole.LESSOR))).to.be.true;
+          });
+        });
+      });
+
+      describe('ACTIVE contract - party uniqueness', () => {
+        const uniqueContractId = '2024-ACTIVE-UNIQUE';
+
+        // A contract whose parties also exist as errand stakeholders (matched by name). "Lägg till ny part"
+        // must not offer a stakeholder that is already on the contract, so each party appears only once.
+        const mockActiveContractWithErrandParties = {
+          ...mockLeaseAgreement,
+          data: {
+            ...mockLeaseAgreement.data,
+            contractId: uniqueContractId,
+            status: 'ACTIVE',
+            stakeholders: [
+              { type: 'PERSON', roles: ['LESSOR'], firstName: 'Test', lastName: 'Upplåtarsson' },
+              {
+                type: 'PERSON',
+                roles: ['LESSEE', 'PRIMARY_BILLING_PARTY'],
+                firstName: 'Test',
+                lastName: 'Arrendatorsson',
+              },
+            ],
+            notice: {
+              terms: [
+                { party: 'LESSEE', periodOfNotice: 3, unit: 'MONTHS' },
+                { party: 'LESSOR', periodOfNotice: 3, unit: 'MONTHS' },
+              ],
+            },
+            invoicing: { invoiceInterval: 'YEARLY', invoicedIn: 'ADVANCE' },
+            extraParameters: [
+              { name: 'errandId', parameters: { errandId: '101' } },
+              { name: 'InvoiceInfo', parameters: { markup: 'REF123' } },
+            ],
+            generateInvoice: 'true',
+          },
+        };
+
+        const mockMexErrandWithUniqueContract = {
+          ...mockMexErrand_base,
+          data: {
+            ...mockMexErrand_base.data,
+            extraParameters: mockMexErrand_base.data.extraParameters.map((p) =>
+              p.key === 'contractId' ? { ...p, values: [uniqueContractId] } : p
+            ),
+          },
+        };
+
+        beforeEach(() => {
+          cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrandWithUniqueContract).as('getErrand');
+          cy.intercept('GET', `**/contracts/${uniqueContractId}`, mockActiveContractWithErrandParties).as(
+            'getUniqueContract'
+          );
+          cy.intercept('GET', `**/contracts/2281/${uniqueContractId}/attachments/*`, mockContractAttachment).as(
+            'getUniqueContractAttachment'
+          );
+
+          cy.visit(`/arende/${mockMexErrand_base.data.id}`);
+          cy.wait('@getErrand');
+          cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+          cy.wait('@getUniqueContract');
+          cy.get('.sk-tabs-list button').contains(`Avtal`).click({ force: true });
+          cy.get('[data-cy="contract-type-select"]').should('exist');
+        });
+
+        it('excludes parties already on the contract from the add-party dropdown', () => {
+          cy.get('[data-cy="non-draft-warning-banner"]').should('exist');
+
+          // Both contract parties are also errand stakeholders, so they render as parties.
+          cy.get('[data-cy="parties-disclosure"]').should('contain.text', 'Test Upplåtarsson');
+          cy.get('[data-cy="parties-disclosure"]').should('contain.text', 'Test Arrendatorsson');
+
+          cy.get('[data-cy="add-party-button"]').click();
+          cy.get('[data-cy="party-modal-stakeholder-select"]').should('exist');
+
+          cy.get('[data-cy="party-modal-stakeholder-select"] option').then(($opts) => {
+            const labels = [...$opts].map((o) => o.textContent?.trim());
+            // Regression guard: stakeholders already on the contract must not be offered again.
+            expect(labels).to.not.include('Test Upplåtarsson');
+            expect(labels).to.not.include('Test Arrendatorsson');
+            // A stakeholder that is not yet a party must still be selectable.
+            expect(labels).to.include('Daniella Testarsson');
+          });
         });
       });
     });
