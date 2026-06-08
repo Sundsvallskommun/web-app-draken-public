@@ -319,7 +319,8 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
             </div>
           </div>
         </div>
-        {contact.externalId &&
+        {appConfig.features.useServices &&
+        contact.externalId &&
         supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY' && s.externalId === contact.externalId) ? (
           <PartyAssetsSection partyId={contact.externalId} />
         ) : null}
