@@ -14,6 +14,7 @@ import {
 } from '@casedata/services/casedata-attachment-service';
 import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
+import { getAttachmentChannelLabel } from '@common/interfaces/attachment-channel';
 import { isMEX } from '@common/services/application-service';
 import { mapAttachmentToUploadFile } from '@common/services/attachment-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
@@ -230,9 +231,13 @@ export const CasedataAttachments: FC = () => {
                 index={i}
                 isEdit={editIndex === i}
                 nameProps={{
-                  description: `Uppladdad: ${dayjs(file?.meta?.created as string).format('YYYY-MM-DD HH:mm')}${
-                    file.meta.isValidAttachment ? '' : ' (ogiltig fil)'
-                  }`,
+                  description: (
+                    <>
+                      <b>Uppladdad:</b> {dayjs(file?.meta?.created as string).format('YYYY-MM-DD HH:mm')}
+                      {file.meta.isValidAttachment ? '' : ' (ogiltig fil)'} <b>Kanal:</b>{' '}
+                      {getAttachmentChannelLabel(file.meta.channel as string | undefined)}
+                    </>
+                  ) as unknown as string,
                 }}
                 categoryProps={{
                   categories: isMEX() ? MEXAllAttachmentLabels : PTAttachmentLabels,

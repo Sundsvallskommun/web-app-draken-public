@@ -51,8 +51,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  causeAsProblem?: ThrowableProblem;
   detail?: string;
+  causeAsProblem?: ThrowableProblem;
 }
 
 export interface ThrowableProblem {
@@ -817,10 +817,11 @@ export interface JsonNode {
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  integralNumber?: boolean;
-  missingNode?: boolean;
   valueNode?: boolean;
   container?: boolean;
+  missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -1269,6 +1270,7 @@ export interface PageableObject {
   /** @format int64 */
   offset?: number;
   sort?: SortObject;
+  unpaged?: boolean;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
