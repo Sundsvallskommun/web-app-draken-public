@@ -265,6 +265,7 @@ export enum Resolution {
   RECRUITED_MORE = 'RECRUITED_MORE',
   CANCELLED = 'CANCELLED',
   SECURE_APPBOX = 'SECURE_APPBOX',
+  BACK_TO_CONTACT_SUNDSVALL = 'BACK_TO_CONTACT_SUNDSVALL',
 }
 
 export enum ResolutionLabelLOP {
@@ -304,6 +305,11 @@ export enum ResolutionLabelROB {
   RECRUITED_FEWER = 'Rekryterat färre',
   RECRUITED_MORE = 'Rekryterat fler',
   CANCELLED = 'Avbruten',
+}
+
+export enum ResolutionLabelBOU {
+  SOLVED = 'Löst',
+  BACK_TO_CONTACT_SUNDSVALL = 'Åter till Kontakt Sundsvall',
 }
 export interface SupportStakeholderFormModel extends SupportStakeholder {
   stakeholderType: SupportStakeholderType;
@@ -1059,7 +1065,7 @@ export const forwardSupportErrand: (
     }
     await sendMessage(message);
     return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
-  } else if (data.recipient == 'DEPARTMENT' && data.department === 'MEX') {
+  } else if (data.recipient == 'DEPARTMENT' && data.department) {
     errand.stakeholders?.forEach((s) => {
       if (!s.firstName && !s.organizationName) {
         throw new Error('MISSING_NAME');

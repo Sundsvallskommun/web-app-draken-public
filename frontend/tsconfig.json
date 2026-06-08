@@ -68,7 +68,9 @@
     ".next-ROB/dev/types/**/*.ts",
     ".next-IAF/dev/types/**/*.ts",
     ".next-SE/dev/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".next-BOU/types/**/*.ts",
+    ".next-BOU/dev/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }
