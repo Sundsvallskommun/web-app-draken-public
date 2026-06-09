@@ -161,16 +161,14 @@ export const CasedataDecisionTab: FC<{
   // Holds the saved template identifier to re-select once templates have been fetched on load.
   const pendingTemplateRestore = useRef<string | null>(null);
 
-  const sortedDec = useMemo(() => {
-    if (!errand) return [];
-    return [...errand.decisions].sort(
-      (a, b) => new Date(b.updated ?? 0).getTime() - new Date(a.updated ?? 0).getTime()
-    );
-  }, [errand]);
-
+  // The decision tab always operates on the FINAL decision. Picking the most-recently-updated
+  // decision of any type would, for errands that also have a PROPOSED (utredning) decision such as
+  // MEX, sometimes resolve to that PROPOSED decision — leaving the form id empty so saving created a
+  // new FINAL decision (and a duplicate beslut attachment) instead of updating the existing one.
+  // Use the same FINAL lookup as the preview PDF so the form id and preview stay in sync.
   const existingDecision = useMemo(() => {
-    return sortedDec.length !== 0 ? sortedDec[0] : undefined;
-  }, [sortedDec]);
+    return errand ? getFinalDecisonWithHighestId(errand.decisions) : undefined;
+  }, [errand]);
 
   const initialLawValues = useMemo(() => {
     if (existingDecision?.decisionType === 'FINAL' && existingDecision.law?.length > 0) {
