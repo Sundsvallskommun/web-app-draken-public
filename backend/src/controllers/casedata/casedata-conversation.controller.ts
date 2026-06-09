@@ -70,7 +70,7 @@ export class CaseDataConversationController {
           viewed = 'true';
         }
 
-        if (msg?.createdBy?.type === 'AD_ACCOUNT') {
+        if (msg?.createdBy?.type === 'adAccount') {
           if (msg?.createdBy?.value === req.user.username) {
             firstName = req.user.firstName;
             lastName = req.user.lastName;
@@ -84,7 +84,7 @@ export class CaseDataConversationController {
           }
         }
 
-        if (msg?.createdBy?.type === 'PARTY_ID') {
+        if (msg?.createdBy?.type === 'partyId') {
           const adAccountUrl = `${this.CITIZEN_SERVICE}/${municipalityId}/${msg?.createdBy?.value}`;
           const res = await this.apiService.get<any>({ url: adAccountUrl }, req.user);
           firstName = res.data.givenname;
