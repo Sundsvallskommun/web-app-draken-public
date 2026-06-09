@@ -136,11 +136,9 @@ export const CasedataInvestigationTab: FC<{
 
       if (isFTErrand(props.errand)) {
         data.outcome = DecisionOutcomes.Approval;
-        await saveDecision(municipalityId, props.errand, data, 'PROPOSED');
-      } else {
-        const rendered = await renderPdf(errand!, data, 'investigation');
-        await saveDecision(municipalityId, props.errand, data, 'PROPOSED', rendered.pdfBase64);
       }
+      const rendered = await renderPdf(errand!, data, 'investigation');
+      await saveDecision(municipalityId, props.errand, data, 'PROPOSED', rendered.pdfBase64);
 
       setIsLoading(false);
       setError(false);

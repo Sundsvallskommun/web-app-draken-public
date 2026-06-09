@@ -126,7 +126,7 @@ export const saveDecision: (
   if (pdf) {
     const att: Attachment = {
       category: 'BESLUT',
-      name: `beslut-arende-${errand.errandNumber}.pdf`,
+      name: `${decisionType === 'PROPOSED' ? 'utredning' : 'beslut'}-arende-${errand.errandNumber}.pdf`,
       note: '',
       extension: 'pdf',
       mimeType: 'application/pdf',
