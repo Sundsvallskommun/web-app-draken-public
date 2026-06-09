@@ -246,15 +246,23 @@ test.describe('Errand page', () => {
 
     for (let index = 0; index < events.length; index++) {
       const eventLabel = page.locator(`[data-cy="history-event-label-${index}"]`);
-      await expect(eventLabel).toBeVisible();
       await expect(eventLabel).toHaveText(events[index]);
       await eventLabel.click({ force: true });
+
       const closeButton = page.locator('[data-cy="history-table-details-close-button"]');
+      // Opening the details modal is async (the change is fetched first). Some change types
+      // (e.g. stakeholder changes) intentionally have an empty title, so assert the element is
+      // attached rather than non-empty.
       await expect(closeButton).toBeVisible();
       await expect(page.locator('[data-cy="history-details-type"]')).not.toBeEmpty();
       await expect(page.locator('[data-cy="history-details-title"]')).toBeAttached();
-      await closeButton.click({ force: true });
-      await expect(closeButton).toBeHidden();
+
+      // The fetch re-runs when the selected index resets, which can briefly re-open the modal
+      // right after closing it; retry the close until it stays closed.
+      await expect(async () => {
+        await closeButton.click({ force: true });
+        await expect(closeButton).toBeHidden({ timeout: 1000 });
+      }).toPass();
     }
 
     await page.locator('[data-cy="history-event-label-2"]').click();

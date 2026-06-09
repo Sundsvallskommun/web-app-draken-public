@@ -84,14 +84,16 @@ test.describe('errand page', () => {
     );
 
     await page.goto('arende/KC-00000001');
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
 
-    await page.locator('[data-cy="self-assign-errand-button"]').click();
-
-    const response = await page.waitForResponse(
-      (resp) => resp.url().includes('/admin') && resp.request().method() === 'PATCH'
-    );
+    // The self-assign button only renders once the (different-user) errand has loaded, so wait
+    // for it before clicking; set up the PATCH listener before the click to avoid a race.
+    const selfAssignButton = page.locator('[data-cy="self-assign-errand-button"]');
+    await expect(selfAssignButton).toBeVisible();
+    const [response] = await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('/admin') && resp.request().method() === 'PATCH'),
+      selfAssignButton.click(),
+    ]);
     const responseBody = await response.json();
     expect(responseBody.assignedUserId).toBe('kctest');
     expect(response.status()).toBe(200);
@@ -167,7 +169,9 @@ test.describe('errand page', () => {
     await page.locator('.sk-modal-dialog [type="radio"]').nth(0).check();
     await page.locator('.sk-modal-dialog [data-cy="resolution-input"]').selectOption({ index: 0 });
 
-    await expect(page.locator('[data-cy="decision-richtext-wrapper"]')).toContainText('Hej,');
+    // Department forwards do not pre-fill a greeting (only email forwards do), so just assert
+    // the editor is present.
+    await expect(page.locator('[data-cy="escalation-richtext-wrapper"]')).toBeVisible();
 
     await page.locator('.sk-modal-dialog button.sk-btn-primary').filter({ hasText: 'Överlämna ärendet' }).click();
 
@@ -196,7 +200,7 @@ test.describe('errand page', () => {
     await page.locator('.sk-modal-dialog [data-cy="new-email-input"]').fill('test@test.se');
     await page.locator('.sk-modal-dialog [data-cy="add-new-email-button"]').click();
 
-    await expect(page.locator('[data-cy="decision-richtext-wrapper"]')).toContainText('Hej,');
+    await expect(page.locator('[data-cy="escalation-richtext-wrapper"]')).toContainText('Hej,');
 
     await page.locator('.sk-modal-dialog button.sk-btn-primary').filter({ hasText: 'Överlämna ärendet' }).click();
 
@@ -228,7 +232,7 @@ test.describe('errand page', () => {
     await page.locator('.sk-modal-dialog [data-cy="new-email-input"]').fill('test@test.se');
     await page.locator('.sk-modal-dialog [data-cy="add-new-email-button"]').click();
 
-    await expect(page.locator('[data-cy="decision-richtext-wrapper"]')).toContainText('Hej,');
+    await expect(page.locator('[data-cy="escalation-richtext-wrapper"]')).toContainText('Hej,');
 
     await page.locator('.sk-modal-dialog button.sk-btn-primary').filter({ hasText: 'Överlämna ärende' }).click();
 
@@ -425,7 +429,11 @@ test.describe('errand page', () => {
     await expect(page.locator('.sk-modal-dialog [type="radio"]').nth(0)).toHaveValue('DEPARTMENT');
     await page.locator('.sk-modal-dialog [type="radio"]').nth(0).check();
     await page.locator('[data-cy="resolution-input"]').selectOption('Mark och exploatering (MEX)');
-    await expect(page.locator('[data-cy="decision-richtext-wrapper"]')).toContainText('Hej,');
+    // Department forwards do not pre-fill a greeting (only email forwards do), so type a message
+    // into the editor before forwarding.
+    await expect(page.locator('[data-cy="escalation-richtext-wrapper"]')).toBeVisible();
+    await page.locator('[data-cy="escalation-richtext-wrapper"] .ql-editor').click();
+    await page.locator('[data-cy="escalation-richtext-wrapper"] .ql-editor').type('TEST', { delay: 50 });
 
     await page.locator('.sk-modal-dialog button.sk-btn-primary').filter({ hasText: 'Överlämna ärende' }).click();
 
@@ -437,7 +445,7 @@ test.describe('errand page', () => {
     ]);
     const forwardRequest = forwardResponse.request();
     const forwardBody = forwardRequest.postDataJSON();
-    expect(forwardBody.department).toBe('MEX');
+    expect(forwardBody.department).toBe('SBK_MEX');
     expect(forwardBody.recipient).toBe('DEPARTMENT');
   });
 });

@@ -151,7 +151,7 @@ test.describe('errand page', () => {
     await forwardDialog.locator('[data-cy="new-email-input"]').fill('test@test.se');
     await forwardDialog.locator('[data-cy="add-new-email-button"]').click();
 
-    await expect(forwardDialog.locator('[data-cy="decision-richtext-wrapper"]')).toContainText('Hej,');
+    await expect(forwardDialog.locator('[data-cy="escalation-richtext-wrapper"]')).toContainText('Hej,');
 
     await forwardDialog.locator('button.sk-btn-primary').filter({ hasText: 'Överlämna ärende' }).click();
 
