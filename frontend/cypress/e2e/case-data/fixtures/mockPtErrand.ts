@@ -5,8 +5,7 @@ import { Role } from '@casedata/interfaces/role';
 import { mockFinalDecision, mockProposedDecision, mockRecommendedDecision } from './mockDecisions';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 
-// This person number is for test purposes, from the Swedish Tax Agency
-export const MOCK_PERSON_NUMBER = '199001162396';
+export const MOCK_PERSON_NUMBER = Cypress.env('mockPtPersonNumber');
 
 export const mockPTErrand_base: { data: ApiErrand; message: string } = {
   data: {

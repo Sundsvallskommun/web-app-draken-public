@@ -1,0 +1,440 @@
+import { ContractType, LeaseType } from '@casedata/interfaces/contracts';
+
+export const mockPurchaseAgreement = {
+  data: {
+    contractId: '2024-01026',
+    externalReferenceId: '1021',
+    landLeaseType: 'LEASEHOLD',
+    municipalityId: '2281',
+    status: 'DRAFT',
+    type: 'PURCHASE_AGREEMENT',
+    stakeholders: [
+      {
+        type: 'PERSON',
+        roles: ['BUYER'],
+        firstName: 'Test',
+        lastName: 'Köparsson',
+        address: {
+          type: 'POSTAL_ADDRESS',
+          streetAddress: 'Testvägen 1',
+          postalCode: '12234',
+          town: 'Sundsvall',
+          country: '',
+          attention: '',
+        },
+      },
+      {
+        type: 'PERSON',
+        roles: ['SELLER'],
+        firstName: 'Daniella',
+        lastName: 'Testarsson',
+        address: {
+          type: 'POSTAL_ADDRESS',
+          streetAddress: 'Testvägen 12',
+          postalCode: '',
+          town: 'Sundsvall',
+          country: '',
+          attention: '',
+        },
+      },
+    ],
+    indexTerms: [
+      {
+        header: 'Överlåtelseförklaring',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Köpeskilling och betalning',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Tillträde',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Markföroreningar',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Skog',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Förpliktelser',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Utgifter och kostnader',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Fastighetsbildning',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Övriga villkor',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+    ],
+  },
+  message: 'success',
+};
+
+export const mockLeaseAgreement = {
+  data: {
+    contractId: '2024-01026',
+    externalReferenceId: '1021',
+    municipalityId: '2281',
+    status: 'DRAFT',
+    type: ContractType.LEASE_AGREEMENT,
+    leaseType: LeaseType.LAND_LEASE_MISC,
+    propertyDesignations: [
+      { name: 'AVTALSFASTIGHET 1:123', district: 'Låtsasdistrikt' },
+      { name: 'AVTALSFASTIGHET 2:456', district: 'Låtsasdistrikt' },
+    ],
+    currentPeriod: { startDate: '2024-01-01' },
+    notice: { terms: [{ party: 'ALL', periodOfNotice: 3, unit: 'MONTHS' }] },
+    stakeholders: [
+      {
+        type: 'PERSON',
+        roles: ['LESSOR'],
+        firstName: 'Anna',
+        lastName: 'Testarlund',
+        address: {
+          type: 'POSTAL_ADDRESS',
+          streetAddress: 'Testvägen 13',
+          careOf: '',
+          postalCode: '12345',
+          town: 'Sundsvall',
+          country: '',
+          attention: '',
+        },
+      },
+      {
+        type: 'PERSON',
+        roles: ['LESSEE', 'PRIMARY_BILLING_PARTY'],
+        firstName: 'Bengt',
+        lastName: 'Testarrendator',
+        address: {
+          type: 'POSTAL_ADDRESS',
+          streetAddress: 'Testvägen 13',
+          careOf: '',
+          postalCode: '12345',
+          town: 'Sundsvall',
+          country: '',
+          attention: '',
+        },
+      },
+    ],
+    indexTerms: [
+      {
+        header: 'Område och upplåtelse',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Ändamål',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Arrendetid och uppsägning',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Arrendeavgift',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Bygglov och tillstånd',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Överlåtelse och underupplåtelse',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Inskrivning',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Skick och skötsel',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Ledningar',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Kostnader',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Markföroreningar',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Arrendets upphörande och återställning av området',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+      {
+        header: 'Skada och ansvar',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+    ],
+    attachmentMetaData: [
+      {
+        id: 1,
+        category: 'CONTRACT',
+        filename: 'mock-contract.pdf',
+        mimeType: 'application/pdf',
+        note: '',
+      },
+    ],
+  },
+  message: 'success',
+};
+
+export const mockLandLeasePublic = {
+  data: {
+    contractId: '2024-01027',
+    externalReferenceId: '1021',
+    municipalityId: '2281',
+    status: 'DRAFT',
+    type: ContractType.LAND_LEASE_PUBLIC,
+    propertyDesignations: [
+      { name: 'AVTALSFASTIGHET 1:123', district: 'Låtsasdistrikt' },
+      { name: 'AVTALSFASTIGHET 2:456', district: 'Låtsasdistrikt' },
+    ],
+    notice: { terms: [] },
+    stakeholders: [
+      {
+        type: 'PERSON',
+        roles: ['LESSOR'],
+        firstName: 'Anna',
+        lastName: 'Testarlund',
+        address: {
+          type: 'POSTAL_ADDRESS',
+          streetAddress: 'Testvägen 13',
+          careOf: '',
+          postalCode: '12345',
+          town: 'Sundsvall',
+          country: '',
+          attention: '',
+        },
+      },
+      {
+        type: 'PERSON',
+        roles: ['LESSEE', 'PRIMARY_BILLING_PARTY'],
+        firstName: 'Bengt',
+        lastName: 'Testarrendator',
+        address: {
+          type: 'POSTAL_ADDRESS',
+          streetAddress: 'Testvägen 13',
+          careOf: '',
+          postalCode: '12345',
+          town: 'Sundsvall',
+          country: '',
+          attention: '',
+        },
+      },
+    ],
+    indexTerms: [
+      {
+        header: 'Område och upplåtelse',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+    ],
+    attachmentMetaData: [],
+  },
+  message: 'success',
+};
+
+export const mockShortTermLeaseAgreement = {
+  data: {
+    contractId: '2024-01028',
+    externalReferenceId: '1021',
+    municipalityId: '2281',
+    status: 'DRAFT',
+    type: ContractType.SHORT_TERM_LEASE_AGREEMENT,
+    propertyDesignations: [
+      { name: 'AVTALSFASTIGHET 1:123', district: 'Låtsasdistrikt' },
+      { name: 'AVTALSFASTIGHET 2:456', district: 'Låtsasdistrikt' },
+    ],
+    notice: { terms: [] },
+    stakeholders: [
+      {
+        type: 'PERSON',
+        roles: ['LESSOR'],
+        firstName: 'Anna',
+        lastName: 'Testarlund',
+        address: {
+          type: 'POSTAL_ADDRESS',
+          streetAddress: 'Testvägen 13',
+          careOf: '',
+          postalCode: '12345',
+          town: 'Sundsvall',
+          country: '',
+          attention: '',
+        },
+      },
+      {
+        type: 'PERSON',
+        roles: ['LESSEE', 'PRIMARY_BILLING_PARTY'],
+        firstName: 'Bengt',
+        lastName: 'Testarrendator',
+        address: {
+          type: 'POSTAL_ADDRESS',
+          streetAddress: 'Testvägen 13',
+          careOf: '',
+          postalCode: '12345',
+          town: 'Sundsvall',
+          country: '',
+          attention: '',
+        },
+      },
+    ],
+    indexTerms: [
+      {
+        header: 'Område och upplåtelse',
+        terms: [
+          {
+            description: 'content',
+            term: '',
+          },
+        ],
+      },
+    ],
+    attachmentMetaData: [],
+  },
+  message: 'success',
+};
+
+export const mockContractAttachment = {
+  data: {
+    attachmentData: {
+      content: 'JVBERi0xLjcKJeLjz9MKO==',
+    },
+    metadata: {
+      id: 1,
+      category: 'CONTRACT',
+      filename: 'mock-contract.pdf',
+      mimeType: 'application/pdf',
+      note: '',
+    },
+  },
+  message: 'success',
+};

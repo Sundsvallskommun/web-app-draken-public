@@ -1,0 +1,68 @@
+# PII-allowlist för pre-commit-grinden (se .husky/pre-commit).
+#
+# Kända, ofarliga värden som förekommer i e2e-testfixtures (frontend/e2e/**):
+#   - fejkade personnummer i mockdata
+#   - publika organisationsnummer (t.ex. Sundsvalls kommun, aktiebolag)
+#   - fejkade/partiella telefonnummer
+#   - falska träffar: substrängar av test-ärendenummer/datum som regexen råkar matcha
+#
+# Auto-genererade API-klienter under **/data-contracts/** undantas redan per sökväg
+# i hooken (de regenereras, handredigeras aldrig), så deras exempelvärden listas inte här.
+#
+# Format: ett token per rad, exakt som scannern fångar det (se regexar i .husky/pre-commit).
+# Rader som börjar med # och tomma rader ignoreras. Lägg till nya testnummer här
+# när fixtures utökas — då slipper du --no-verify.
+
+# --- Personnummer- / organisationsnummer-träffar ---
+000000-0000
+556677-8899
+111111-2222
+112233-5555
+196407201653
+197311194612
+199001012385
+199001012386
+199001162396
+199909092380
+# Publika organisationsnummer
+212000-2411
+556026-9986
+556026-9987
+# Falsk träff: test-ärendenummer (20240515-8152) som matchar personnummer-regexen
+20240515-8152
+623696-2571
+357248-4270
+293241-3460
+234567-0000
+
+# --- Telefonnummer-träffar ---
+0701740605
+0701740635
+0701740636
++46701740605
++46701740635
++46701740636
+# Falska träffar: substrängar av test-ärendenummer/datum som telefon-regexen plockar
+015-0000000
+016-0000000
+022-000001
+022-000008
+022-000019
+023-000283
+024-000266
+024-000275
+024-000280
+024-000298
+024-000302
+024-000306
+024-000312
+024-000351
+024-000999
+035-5353-40
+0230222-18
+0230303-77
+0154174-55
+0240515-81
+0693747921
+012176624
+086721413

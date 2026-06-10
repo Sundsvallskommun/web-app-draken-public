@@ -73,7 +73,18 @@
     "cypress:headless:pt": "dotenv -e .env.pt -- cross-env ELECTRON_EXTRA_LAUNCH_ARGS=--disable-gpu-sandbox cypress run",
     "cypress:headless:msva": "dotenv -e .env.msva -- cross-env ELECTRON_EXTRA_LAUNCH_ARGS=--disable-gpu-sandbox cypress run",
     "cypress:headless:rob": "dotenv -e .env.rob -- cross-env ELECTRON_EXTRA_LAUNCH_ARGS=--disable-gpu-sandbox cypress run",
-    "cypress:headless:se": "dotenv -e .env.se -- cross-env ELECTRON_EXTRA_LAUNCH_ARGS=--disable-gpu-sandbox cypress run"
+    "cypress:headless:se": "dotenv -e .env.se -- cross-env ELECTRON_EXTRA_LAUNCH_ARGS=--disable-gpu-sandbox cypress run",
+    "test:e2e": "npx playwright test",
+    "test:e2e:mex": "dotenv -e .env.mex -- npx playwright test --project=mex",
+    "test:e2e:pt": "dotenv -e .env.pt -- npx playwright test --project=pt",
+    "test:e2e:kc": "dotenv -e .env.kc -- npx playwright test --project=kc",
+    "test:e2e:lop": "dotenv -e .env.lop -- npx playwright test --project=lop",
+    "test:e2e:ui:mex": "dotenv -e .env.mex -- npx playwright test --project=mex --ui",
+    "test:e2e:ui:pt": "dotenv -e .env.pt -- npx playwright test --project=pt --ui",
+    "test:e2e:ui:kc": "dotenv -e .env.kc -- npx playwright test --project=kc --ui",
+    "test:e2e:ui:lop": "dotenv -e .env.lop -- npx playwright test --project=lop --ui",
+    "test:e2e:report": "npx playwright show-report",
+    "test": "jest --watch"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -115,7 +126,10 @@
   "devDependencies": {
     "@cypress/code-coverage": "^4.0.1",
     "@cypress/skip-test": "^2.6.1",
+    "@playwright/test": "^1.58.2",
     "@simonsmith/cypress-image-snapshot": "^10.0.3",
+    "@testing-library/jest-dom": "^5.16.4",
+    "@testing-library/react": "14.0.0",
     "@types/node": "^20.3.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

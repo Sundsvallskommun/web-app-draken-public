@@ -170,7 +170,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('[data-cy="stakeholder-name"]').contains('Kim Svensson').should('exist');
       cy.get('[data-cy="stakeholder-email"]').contains('a@example.com').should('exist');
-      cy.get('[data-cy="stakeholder-phone"]').contains('070000000').should('exist');
+      cy.get('[data-cy="stakeholder-phone"]').contains(Cypress.env('mockSecondaryPhoneNumber')).should('exist');
       cy.get('[data-cy="stakeholder-adress"]').contains('NORRMALMSGATAN 4').should('exist');
 
       cy.get('[data-cy="stakeholder-name"]').contains('Mormor Svensson').should('exist');
@@ -180,7 +180,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
 
       cy.get('[data-cy="stakeholder-name"]').contains('Kompis Svensson').should('exist');
       cy.get('[data-cy="stakeholder-email"]').contains('c@example.com').should('exist');
-      cy.get('[data-cy="stakeholder-phone"]').contains('070111111').should('exist');
+      cy.get('[data-cy="stakeholder-phone"]').contains(Cypress.env('mockPhoneNumber')).should('exist');
       cy.get('[data-cy="stakeholder-adress"]').contains('NORRMALMSGATAN 6').should('exist');
 
       cy.get('[data-cy="add-customer-button"]').should('not.exist');
@@ -614,7 +614,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
             country: 'SWEDEN',
             contactChannels: [
               { type: 'Email', value: 'a@example.com' },
-              { type: 'Phone', value: '070000000' },
+              { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
             ],
           },
         ],

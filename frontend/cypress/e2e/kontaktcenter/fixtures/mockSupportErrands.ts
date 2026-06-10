@@ -35,7 +35,7 @@ export const mockSupportErrand = {
       country: 'SWEDEN',
       contactChannels: [
         { type: 'Email', value: 'a@example.com' },
-        { type: 'Phone', value: '070000000' },
+        { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
       ],
     },
     {
@@ -60,7 +60,7 @@ export const mockSupportErrand = {
       country: 'SWEDEN',
       contactChannels: [
         { type: 'Email', value: 'c@example.com' },
-        { type: 'Phone', value: '070111111' },
+        { type: 'Phone', value: Cypress.env('mockPhoneNumber') },
       ],
     },
   ],
@@ -100,7 +100,7 @@ export const mockDifferentUserSupportErrand = {
       country: 'SWEDEN',
       contactChannels: [
         { type: 'Email', value: 'a@example.com' },
-        { type: 'Phone', value: '070000000' },
+        { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
       ],
     },
     {
@@ -125,7 +125,7 @@ export const mockDifferentUserSupportErrand = {
       country: 'SWEDEN',
       contactChannels: [
         { type: 'Email', value: 'c@example.com' },
-        { type: 'Phone', value: '070111111' },
+        { type: 'Phone', value: Cypress.env('mockPhoneNumber') },
       ],
     },
   ],
@@ -226,7 +226,7 @@ export const mockSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -274,7 +274,7 @@ export const mockSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -322,7 +322,7 @@ export const mockSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -373,7 +373,7 @@ export const mockSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -442,7 +442,7 @@ export const mockOngoingSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -490,7 +490,7 @@ export const mockOngoingSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -541,7 +541,7 @@ export const mockOngoingSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -613,7 +613,7 @@ export const mockSuspendedSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -664,7 +664,7 @@ export const mockSuspendedSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -754,7 +754,7 @@ export const mockSolvedSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -802,7 +802,7 @@ export const mockSolvedSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -853,7 +853,7 @@ export const mockSolvedSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -922,7 +922,7 @@ export const mockFilteredCategoryErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -973,7 +973,7 @@ export const mockFilteredCategoryErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -1041,7 +1041,7 @@ export const mockFilteredPrioErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -1109,7 +1109,7 @@ export const mockFilterDateErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -1156,7 +1156,7 @@ export const mockFilterDateErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -1203,7 +1203,7 @@ export const mockFilterDateErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -1272,7 +1272,7 @@ export const mockFilterAdminErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -1322,7 +1322,7 @@ export const mockFilterAdminErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -1390,7 +1390,7 @@ export const mockFilterChannelErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],
@@ -1440,7 +1440,7 @@ export const mockFilterChannelErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
           ],
         },
       ],

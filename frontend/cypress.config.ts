@@ -20,6 +20,8 @@ export default defineConfig({
       mockInvalidPersonNumber: '199001012386',
       // The value below is a non existing test person number for testing validation, it is not a real person number
       mockNonexistentPersonNumber: '199909092380',
+      // The value below is a test person number from Skatteverket used by the PT errand fixture, it is not a real person number
+      mockPtPersonNumber: '199001162396',
       // The value below is an organization number for testing validation, it is not a organization number
       mockOrganizationNumber: '556026-9986',
       mockInvalidOrganizationNumber: '556026-9987',
@@ -31,6 +33,9 @@ export default defineConfig({
       mockPhoneNumber: '0701740635',
       // The value below is a test phone number from Post- och telestyrelsen, it is not a real phone number
       mockPhoneNumberCountryCode: '+46701740635',
+      // A second test phone number from Post- och telestyrelsen, it is not a real phone number. Distinct
+      // from mockPhoneNumber so two stakeholders in the same view don't share a number.
+      mockSecondaryPhoneNumber: '0701740636',
       // The value below is a test username, it is not a real username
       mockAdUsername: 'abc01abc',
     },
