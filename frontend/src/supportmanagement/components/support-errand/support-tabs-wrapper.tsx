@@ -144,7 +144,7 @@ export const SupportTabsWrapper: FC<{
       },
       {
         key: 'services',
-        label: 'Insatser',
+        label: 'Beslut och dokument',
         content: supportErrand && (
           <SupportErrandServicesTab
             partyId={supportErrand?.stakeholders?.find((s) => s.role === 'PRIMARY')?.externalId ?? ''}
