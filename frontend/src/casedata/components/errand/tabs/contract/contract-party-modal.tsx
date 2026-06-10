@@ -1,15 +1,15 @@
 import { StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
-import { ContractType, StakeholderRole } from '@casedata/interfaces/contracts';
+import { Address, ContractType, StakeholderRole } from '@casedata/interfaces/contracts';
 import { Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { getContractStakeholderName, isLeaseAgreement, prettyContractRoles } from '@casedata/services/contract-service';
-import { Button, Checkbox, FormControl, FormLabel, Modal, Select } from '@sk-web-gui/react';
+import { Button, Checkbox, FormControl, FormLabel, Input, Modal, Select } from '@sk-web-gui/react';
 import React, { useState } from 'react';
 
 interface ContractPartyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (stakeholderId: string, roles: StakeholderRole[]) => void;
+  onSave: (stakeholderId: string, roles: StakeholderRole[], address?: Address) => void;
   mode: 'add' | 'edit';
   stakeholderOptions: CasedataOwnerOrContact[];
   existingParty?: StakeholderWithPersonnumber;
@@ -35,6 +35,8 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
   const [selectedRoles, setSelectedRoles] = useState<StakeholderRole[]>(
     mode === 'edit' && existingParty ? existingParty.roles ?? [] : []
   );
+  // Address is editable in edit mode only; in add mode the parent copies it from the errand stakeholder.
+  const [address, setAddress] = useState<Address>(() => existingParty?.address ?? {});
 
   // Get available roles based on contract type and draft status
   const getAvailableRoles = (): StakeholderRole[] => {
@@ -69,7 +71,7 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
 
   const handleSave = () => {
     if (canSave) {
-      onSave(selectedStakeholderId, selectedRoles);
+      onSave(selectedStakeholderId, selectedRoles, mode === 'edit' ? address : undefined);
       onClose();
     }
   };
@@ -113,7 +115,7 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
     <Modal
       show={isOpen}
       onClose={onClose}
-      label={mode === 'add' ? 'Lägg till ny part' : 'Redigera roll'}
+      label={mode === 'add' ? 'Lägg till ny part' : 'Redigera part'}
       className="w-full max-w-prose"
     >
       <Modal.Content>
@@ -157,6 +159,40 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
               ))}
             </div>
           </FormControl>
+
+          {mode === 'edit' && (
+            <FormControl>
+              <FormLabel>Adress</FormLabel>
+              <div className="flex flex-col gap-12">
+                <Input
+                  data-cy="party-modal-street"
+                  placeholder="Gatuadress"
+                  value={address.streetAddress ?? ''}
+                  onChange={(e) => setAddress((a) => ({ ...a, streetAddress: e.target.value }))}
+                />
+                <Input
+                  data-cy="party-modal-careof"
+                  placeholder="c/o"
+                  value={address.careOf ?? ''}
+                  onChange={(e) => setAddress((a) => ({ ...a, careOf: e.target.value }))}
+                />
+                <div className="flex gap-12">
+                  <Input
+                    data-cy="party-modal-postalcode"
+                    placeholder="Postnummer"
+                    value={address.postalCode ?? ''}
+                    onChange={(e) => setAddress((a) => ({ ...a, postalCode: e.target.value }))}
+                  />
+                  <Input
+                    data-cy="party-modal-town"
+                    placeholder="Ort"
+                    value={address.town ?? ''}
+                    onChange={(e) => setAddress((a) => ({ ...a, town: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </FormControl>
+          )}
         </div>
       </Modal.Content>
       <Modal.Footer>
@@ -164,7 +200,7 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
           Avbryt
         </Button>
         <Button color="vattjom" data-cy="party-modal-save-button" disabled={!canSave} onClick={handleSave}>
-          Lägg till
+          {mode === 'add' ? 'Lägg till' : 'Spara'}
         </Button>
       </Modal.Footer>
     </Modal>

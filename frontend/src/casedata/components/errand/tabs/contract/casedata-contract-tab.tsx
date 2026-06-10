@@ -1,6 +1,7 @@
 import { CasedataStatusLabelComponent } from '@casedata/components/contract-overview/contracts-table.component';
 import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
 import {
+  Address,
   Contract,
   ContractType,
   ExtraParameterGroup,
@@ -291,10 +292,10 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     updateStakeholders(reconcileParties(appended, appended.length - 1));
   };
 
-  // Handler to edit party roles
-  const handleEditPartyRoles = (index: number, newRoles: StakeholderRole[]) => {
+  // Handler to edit party roles and/or address
+  const handleEditParty = (index: number, newRoles: StakeholderRole[], address?: Address) => {
     const next = [...((contractForm.getValues('stakeholders') ?? []) as StakeholderWithPersonnumber[])];
-    next[index] = { ...next[index], roles: newRoles };
+    next[index] = { ...next[index], roles: newRoles, ...(address ? { address } : {}) };
     updateStakeholders(reconcileParties(next, index));
   };
 
@@ -529,7 +530,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                 contractStatus={existingContract?.status}
                 errandStakeholders={errand?.stakeholders}
                 onAddParty={handleAddParty}
-                onEditPartyRoles={handleEditPartyRoles}
+                onEditParty={handleEditParty}
                 onRemoveParty={handleRemoveParty}
               />
             </div>
