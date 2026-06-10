@@ -82,9 +82,10 @@ export const SupportContactSearchField: FC<SupportSearchFieldProps> = ({
             return;
           }
           if (!isArray(res)) {
-            if (searchMode === 'person' || searchMode === 'employee') {
-              form.setValue(`externalId`, res.personId, { shouldDirty: true });
-            }
+            // searchOrganization returns the organization's partyId (a UUID) as personId, so capture
+            // it as externalId for organizations/enterprises too — not only for person/employee
+            // searches. externalId must always be the UUID partyId, never the organization number.
+            form.setValue(`externalId`, res.personId, { shouldDirty: true });
             form.setValue(`firstName`, res.firstName, { shouldDirty: true });
             form.setValue(`lastName`, res.lastName, { shouldDirty: true });
             form.setValue(`organizationName`, res.organizationName, {

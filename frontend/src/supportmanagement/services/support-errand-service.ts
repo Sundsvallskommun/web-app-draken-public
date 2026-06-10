@@ -645,6 +645,11 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
           title: s.parameters?.find((p) => p.key === 'title')?.values?.[0],
           referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values?.[0],
           department: s.parameters?.find((p) => p.key === 'department')?.values?.[0],
+          // Organization number lives in parameters now (externalId is the UUID partyId). Fall back
+          // to externalId for legacy stakeholders that were saved before the org number was split out.
+          organizationNumber:
+            s.parameters?.find((p) => p.key === 'organizationNumber')?.values?.[0] ||
+            (s.externalIdType === 'COMPANY' ? s.externalId : undefined),
           newRole: 'PRIMARY',
           internalId: uuidv4(),
           emails: (s.contactChannels ?? [])
@@ -667,6 +672,11 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
           title: s.parameters?.find((p) => p.key === 'title')?.values?.[0],
           referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values?.[0],
           department: s.parameters?.find((p) => p.key === 'department')?.values?.[0],
+          // Organization number lives in parameters now (externalId is the UUID partyId). Fall back
+          // to externalId for legacy stakeholders that were saved before the org number was split out.
+          organizationNumber:
+            s.parameters?.find((p) => p.key === 'organizationNumber')?.values?.[0] ||
+            (s.externalIdType === 'COMPANY' ? s.externalId : undefined),
           newRole: s.role as string,
           internalId: uuidv4(),
           emails: (s.contactChannels ?? [])

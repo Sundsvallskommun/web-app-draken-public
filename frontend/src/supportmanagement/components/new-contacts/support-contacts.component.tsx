@@ -226,11 +226,11 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
                     </p>
                     <p
                       className={`my-xs mt-0 flex flex-col text-small ${
-                        contact.externalId || contact.organizationNumber ? null : 'text-dark-disabled'
+                        contact.organizationNumber ? null : 'text-dark-disabled'
                       }`}
                       data-cy={`stakeholder-ssn`}
                     >
-                      {contact.externalId || contact.organizationNumber || '(organisationsnummer saknas)'}
+                      {contact.organizationNumber || '(organisationsnummer saknas)'}
                     </p>
                   </>
                 ) : (
