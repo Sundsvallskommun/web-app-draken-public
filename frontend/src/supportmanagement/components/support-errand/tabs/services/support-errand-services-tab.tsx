@@ -5,7 +5,7 @@ import { usePartyAssetServices } from '@common/hooks/use-asset-services';
 import { Service } from '@common/services/service-assets-service';
 import { Badge, Disclosure, Tabs } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
-import { FC, ReactNode, useMemo, useState } from 'react';
+import { FC, ReactNode, useMemo } from 'react';
 
 export const KC_ASSET_TYPES = ['ParatransitPermitLocal', 'ParatransitPermitNational', 'PARKINGPERMIT'];
 const FT_ASSET_TYPES = new Set(['ParatransitPermitLocal', 'ParatransitPermitNational']);
