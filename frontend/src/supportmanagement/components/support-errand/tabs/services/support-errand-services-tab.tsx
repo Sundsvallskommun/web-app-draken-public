@@ -24,8 +24,6 @@ const renderServicesPanel = (
 };
 
 export const SupportErrandServicesTab: FC<{ partyId: string }> = ({ partyId }) => {
-  const [showFinished, setShowFinished] = useState(false);
-
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const { partyServices, loading, error } = usePartyAssetServices({
     municipalityId,
@@ -99,30 +97,28 @@ export const SupportErrandServicesTab: FC<{ partyId: string }> = ({ partyId }) =
           loading,
           error,
           'Hämtar personens insatser…',
-          <>
-            <Tabs size={'sm'}>
-              <Tabs.Item>
-                <Tabs.Button>Aktiva</Tabs.Button>
-                <Tabs.Content>
-                  {disclosures({
-                    pts: parkingServices.filter((s) => s.status && ACTIVE_PARTY_STATUSES.has(s.status)),
-                    fts: ftServices.filter((s) => s.status && ACTIVE_PARTY_STATUSES.has(s.status)),
-                    emptyLabel: 'aktiva',
-                  })}
-                </Tabs.Content>
-              </Tabs.Item>
-              <Tabs.Item>
-                <Tabs.Button>Avslutade</Tabs.Button>
-                <Tabs.Content>
-                  {disclosures({
-                    pts: parkingServices.filter((s) => s.status && !ACTIVE_PARTY_STATUSES.has(s.status)),
-                    fts: ftServices.filter((s) => s.status && !ACTIVE_PARTY_STATUSES.has(s.status)),
-                    emptyLabel: 'avslutade',
-                  })}
-                </Tabs.Content>
-              </Tabs.Item>
-            </Tabs>
-          </>
+          <Tabs size={'sm'}>
+            <Tabs.Item>
+              <Tabs.Button>Aktiva</Tabs.Button>
+              <Tabs.Content>
+                {disclosures({
+                  pts: parkingServices.filter((s) => s.status && ACTIVE_PARTY_STATUSES.has(s.status)),
+                  fts: ftServices.filter((s) => s.status && ACTIVE_PARTY_STATUSES.has(s.status)),
+                  emptyLabel: 'aktiva',
+                })}
+              </Tabs.Content>
+            </Tabs.Item>
+            <Tabs.Item>
+              <Tabs.Button>Avslutade</Tabs.Button>
+              <Tabs.Content>
+                {disclosures({
+                  pts: parkingServices.filter((s) => s.status && !ACTIVE_PARTY_STATUSES.has(s.status)),
+                  fts: ftServices.filter((s) => s.status && !ACTIVE_PARTY_STATUSES.has(s.status)),
+                  emptyLabel: 'avslutade',
+                })}
+              </Tabs.Content>
+            </Tabs.Item>
+          </Tabs>
         )}
       </div>
     </div>
