@@ -6,7 +6,7 @@ import { useConfigStore, useSupportStore } from '@stores/index';
 import { ArrowRight, ListChecks } from 'lucide-react';
 import { useMemo } from 'react';
 
-import { KC_ASSET_TYPES } from '../support-errand/tabs/services/support-errand-services-tab';
+import { ACTIVE_PARTY_STATUSES, KC_ASSET_TYPES } from '../support-errand/tabs/services/support-errand-services-tab';
 
 export const PartyAssetsSection: React.FC<{ partyId: string }> = ({ partyId }) => {
   const { setActiveTabKey } = useSupportStore();
@@ -19,7 +19,7 @@ export const PartyAssetsSection: React.FC<{ partyId: string }> = ({ partyId }) =
 
   const total = useMemo(() => partyServices?.length || 0, [partyServices]);
   const activeCount = useMemo(
-    () => partyServices?.filter((asset) => asset.status === 'ACTIVE')?.length || 0,
+    () => partyServices?.filter((s) => s.status && ACTIVE_PARTY_STATUSES.has(s.status))?.length || 0,
     [partyServices]
   );
 
@@ -30,12 +30,12 @@ export const PartyAssetsSection: React.FC<{ partyId: string }> = ({ partyId }) =
     if (error) {
       return (
         <span className="text-small text-error" role="alert">
-          Insatserna kunde inte hämtas
+          Beslut och dokument kunde inte hämtas
         </span>
       );
     }
     if (total === 0) {
-      return <span className="text-small text-dark-secondary italic">Inga insatser</span>;
+      return <span className="text-small text-dark-secondary italic">Inga beslut och dokument</span>;
     }
     return (
       <Button
@@ -47,7 +47,7 @@ export const PartyAssetsSection: React.FC<{ partyId: string }> = ({ partyId }) =
         rightIcon={<Icon icon={<ArrowRight size={16} />} />}
         onClick={() => setActiveTabKey('services')}
       >
-        Visa insatser
+        Visa beslut och dokument
       </Button>
     );
   };
@@ -57,7 +57,7 @@ export const PartyAssetsSection: React.FC<{ partyId: string }> = ({ partyId }) =
       <div className="flex items-center justify-between gap-12 flex-wrap">
         <div className="flex items-center gap-8">
           <Icon icon={<ListChecks name="list-checks" size={18} />} />
-          <span className="font-semibold">Insatser</span>
+          <span className="font-semibold">Beslut och dokument</span>
           {!loading && !error && total > 0 && (
             <span className="text-small text-dark-secondary">
               {activeCount} aktiva · {total} totalt
