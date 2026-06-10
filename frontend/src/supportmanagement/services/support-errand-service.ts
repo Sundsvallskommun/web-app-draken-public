@@ -620,7 +620,7 @@ export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand)
 // and fall back to externalId for legacy COMPANY stakeholders saved before the org number was split out.
 const getStakeholderOrganizationNumber = (s: SupportStakeholder): string | undefined =>
   s.parameters?.find((p) => p.key === 'organizationNumber')?.values?.[0] ||
-  (s.externalIdType === 'COMPANY' ? s.externalId : undefined);
+  (s.externalIdType === ExternalIdType.COMPANY ? s.externalId : undefined);
 
 export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => SupportErrand = (e) => {
   try {

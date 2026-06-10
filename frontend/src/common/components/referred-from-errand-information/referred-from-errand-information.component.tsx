@@ -2,7 +2,7 @@ import { prettyTime } from '@common/services/helper-service';
 import { getReferredFromErrands, ReferredFromErrandResponse } from '@common/services/relations-service';
 import sanitized from '@common/services/sanitizer-service';
 import { Button } from '@sk-web-gui/button';
-import { Channels } from '@supportmanagement/services/support-errand-service';
+import { Channels, ExternalIdType } from '@supportmanagement/services/support-errand-service';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 
@@ -80,9 +80,9 @@ export const ReferredFromErrandInformation: FC<Props> = ({ municipalityId, erran
               <div key={index} className="flex flex-col gap-8">
                 <span className="font-bold text-small">{stakeholder.roleDisplayName}</span>
                 <span className="text-small">
-                  {stakeholder.externalIdType === 'COMPANY'
+                  {stakeholder.externalIdType === ExternalIdType.COMPANY
                     ? `${stakeholder.organizationName}, ${stakeholder.organizationNumber}`
-                    : stakeholder.externalIdType === 'PRIVATE'
+                    : stakeholder.externalIdType === ExternalIdType.PRIVATE
                     ? `${stakeholder.firstName} ${stakeholder.lastName}, ${stakeholder.personNumber}`
                     : 'Okänd part'}
                 </span>
