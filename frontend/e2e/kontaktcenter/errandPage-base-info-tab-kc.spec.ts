@@ -847,7 +847,7 @@ test.describe('Errand page', () => {
       id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
       stakeholders: [
         {
-          externalId: '000000-0000',
+          externalId: '556026-9986',
           externalIdType: 'COMPANY',
           role: 'PRIMARY',
           organizationName: 'Testbolaget',
@@ -868,7 +868,7 @@ test.describe('Errand page', () => {
     await dismissCookieConsent();
     await page.locator('[data-cy="edit-stakeholder-button-PRIMARY-0"]').first().click();
     await expect(page.locator('[data-cy="searchmode-selector-modal"]')).not.toBeVisible();
-    await expect(page.locator('[data-cy="contact-organizationNumber"]')).toHaveValue('000000-0000');
+    await expect(page.locator('[data-cy="contact-organizationNumber"]')).toHaveValue('556026-9986');
     await expect(page.locator('[data-cy="contact-organizationName"]')).toHaveValue('Testbolaget');
     await page.locator('[data-cy="contact-organizationName"]').clear();
     await page.locator('[data-cy="contact-organizationName"]').fill('Test');
