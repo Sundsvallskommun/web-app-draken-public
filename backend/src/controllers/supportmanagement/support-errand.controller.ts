@@ -886,10 +886,19 @@ export class SupportErrandController {
       //   return response.status(400).send('Missing required contact channels for stakeholder');
       // }
       if (s.externalIdType === ExternalIdType.COMPANY) {
-        const organizationNumberFromLegalEntity = s.externalId
-          ? await this.organizationService.getOrganizationNumberByPartyId(municipalityId, s.externalId, req.user)
-          : '';
-        const organizationNumber = formatOrgNr(organizationNumberFromLegalEntity, OrgNumberFormat.DASH);
+        // Prefer the organization number persisted as a stakeholder parameter (written on save).
+        // Fall back to a Legal Entity lookup by partyId, and degrade gracefully on failure instead
+        // of aborting the whole forward (e.g. for not-yet-migrated legacy organizations).
+        const organizationNumberFromParameter = s.parameters?.find(p => p.key === 'organizationNumber')?.values?.[0] ?? '';
+        const organizationNumberSource =
+          organizationNumberFromParameter ||
+          (s.externalId
+            ? await this.organizationService.getOrganizationNumberByPartyId(municipalityId, s.externalId, req.user).catch(e => {
+                logger.error(`Error fetching organization number for partyId ${s.externalId}: `, e);
+                return '';
+              })
+            : '');
+        const organizationNumber = formatOrgNr(organizationNumberSource, OrgNumberFormat.DASH);
         stakeholders.push({
           type: CasedataStakeholderDtoTypeEnum.ORGANIZATION,
           roles: [s.role === 'PRIMARY' ? Role.APPLICANT : Role.CONTACT_PERSON],
