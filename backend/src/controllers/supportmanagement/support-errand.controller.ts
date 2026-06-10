@@ -45,8 +45,19 @@ import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { createConversation, sendConversationTextMessage } from '@/services/message.service';
+import { OrganizationService } from '@/services/organization.service';
 import { logger } from '@/utils/logger';
-import { apiURL, buildCategoryFilter, findLeafComponents, luhnCheck, removeUnreachablePaths, toOffsetDateTime, withRetries } from '@/utils/util';
+import {
+  apiURL,
+  buildCategoryFilter,
+  findLeafComponents,
+  formatOrgNr,
+  luhnCheck,
+  OrgNumberFormat,
+  removeUnreachablePaths,
+  toOffsetDateTime,
+  withRetries,
+} from '@/utils/util';
 
 export enum CustomerType {
   PRIVATE,
@@ -405,6 +416,7 @@ const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
 @UseBefore(hasPermissions(['canEditSupportManagement']))
 export class SupportErrandController {
   private apiService = new ApiService();
+  private organizationService = new OrganizationService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   SERVICE = apiServiceName('supportmanagement');
   CITIZEN_SERVICE = apiServiceName('citizen');
@@ -440,10 +452,16 @@ export class SupportErrandController {
       const query = this.sanitizeQuery(queryRaw);
       const qPhone = this.stripPhoneNoise(query);
 
-      let guidRes: { data?: string } | null = null;
-      if (luhnCheck(queryRaw)) {
-        const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${queryRaw}/guid`;
-        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(() => null);
+      const normalizedIdentifier = queryRaw.replace(/\D/g, '');
+      let partyId = '';
+      if (normalizedIdentifier.length === 10 && luhnCheck(normalizedIdentifier) && Number(normalizedIdentifier[2]) > 1) {
+        partyId = await this.organizationService.getPartyIdByOrganizationNumber(MUNICIPALITY_ID!, normalizedIdentifier, req.user).catch(() => '');
+      } else if ((normalizedIdentifier.length === 10 || normalizedIdentifier.length === 12) && luhnCheck(normalizedIdentifier)) {
+        const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${normalizedIdentifier}/guid`;
+        partyId = await this.apiService
+          .get<string>({ url: guidUrl }, req.user)
+          .then(response => response.data)
+          .catch(() => '');
       }
 
       let queryFilter = '(';
@@ -459,9 +477,8 @@ export class SupportErrandController {
       queryFilter += ` or exists(stakeholders.organizationName~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.externalId~'*${query}*')`;
       queryFilter += ` or exists(parameters.values~'*${query}*')`;
-      if (guidRes?.data) {
-        const g = this.sanitizeQuery(guidRes.data);
-        queryFilter += ` or exists(stakeholders.externalId~'*${g}*')`;
+      if (partyId) {
+        queryFilter += ` or exists(stakeholders.externalId~'*${this.sanitizeQuery(partyId)}*')`;
       }
       queryFilter += ')';
       filterList.push(queryFilter);
@@ -852,7 +869,7 @@ export class SupportErrandController {
     }
 
     const stakeholders: CasedataStakeholderDTO[] = [];
-    (existingSupportErrand.data.stakeholders ?? []).forEach((s: SupportStakeholder) => {
+    for (const s of existingSupportErrand.data.stakeholders ?? []) {
       if (!s.firstName && !s.organizationName) {
         console.error('Missing required fields for stakeholder');
         logger.error('Missing required fields for stakeholder');
@@ -869,6 +886,10 @@ export class SupportErrandController {
       //   return response.status(400).send('Missing required contact channels for stakeholder');
       // }
       if (s.externalIdType === ExternalIdType.COMPANY) {
+        const organizationNumberFromLegalEntity = s.externalId
+          ? await this.organizationService.getOrganizationNumberByPartyId(municipalityId, s.externalId, req.user)
+          : '';
+        const organizationNumber = formatOrgNr(organizationNumberFromLegalEntity, OrgNumberFormat.DASH);
         stakeholders.push({
           type: CasedataStakeholderDtoTypeEnum.ORGANIZATION,
           roles: [s.role === 'PRIMARY' ? Role.APPLICANT : Role.CONTACT_PERSON],
@@ -904,7 +925,8 @@ export class SupportErrandController {
           firstName: '',
           lastName: '',
           organizationName: s.organizationName,
-          organizationNumber: s.externalId,
+          ...(s.externalId && { personId: s.externalId }),
+          ...(organizationNumber && { organizationNumber }),
         });
       } else {
         stakeholders.push({
@@ -944,7 +966,7 @@ export class SupportErrandController {
           ...(s.externalId && { personId: s.externalId ? s.externalId : '' }),
         });
       }
-    });
+    }
     const supportChannel: SupportManagementChannels =
       SupportManagementChannels[existingSupportErrand.data.channel as keyof typeof SupportManagementChannels];
     let casedataChannel: CasedataErrandDtoChannelEnum;

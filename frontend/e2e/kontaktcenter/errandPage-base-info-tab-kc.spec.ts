@@ -546,6 +546,26 @@ test.describe('Errand page', () => {
     );
 
     await expect(page.locator('[data-cy="save-button"]')).toBeEnabled();
+
+    const patchRequestPromise = page.waitForRequest(
+      (request) => request.url().includes('/supporterrands/2281/') && request.method() === 'PATCH'
+    );
+    await page.locator('[data-cy="save-button"]').click();
+    const patchPayload = (await patchRequestPromise).postDataJSON();
+    const organizationStakeholder = patchPayload.stakeholders.find(
+      (stakeholder: { externalIdType?: string }) => stakeholder.externalIdType === 'COMPANY'
+    );
+
+    expect(organizationStakeholder).toMatchObject({
+      externalId: mockOrganizationResponse.data.partyId,
+      externalIdType: 'COMPANY',
+      parameters: expect.arrayContaining([
+        expect.objectContaining({
+          key: 'organizationNumber',
+          values: [env.mockOrganizationNumber],
+        }),
+      ]),
+    });
   });
 
   test('clears the search result when personnumber changes', async ({
