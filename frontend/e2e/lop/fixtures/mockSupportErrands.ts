@@ -1,3 +1,5 @@
+import { mockEnv } from '../../fixtures/mock-env';
+
 export const modifyField: (
   base: { [key: string]: any },
   obj: { [key: string]: any }
@@ -64,7 +66,7 @@ export const mockSupportErrand = {
       country: 'SWEDEN',
       contactChannels: [
         { type: 'Email', value: 'a@example.com' },
-        { type: 'Phone', value: '070000000' },
+        { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
       ],
       parameters: [
         {
@@ -103,7 +105,7 @@ export const mockSupportErrand = {
       country: 'SWEDEN',
       contactChannels: [
         { type: 'Email', value: 'c@example.com' },
-        { type: 'Phone', value: '070111111' },
+        { type: 'Phone', value: mockEnv.mockPhoneNumber },
       ],
     },
   ],
@@ -164,7 +166,7 @@ export const mockDifferentUserSupportErrand = {
       country: 'SWEDEN',
       contactChannels: [
         { type: 'Email', value: 'a@example.com' },
-        { type: 'Phone', value: '070000000' },
+        { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
       ],
     },
     {
@@ -189,7 +191,7 @@ export const mockDifferentUserSupportErrand = {
       country: 'SWEDEN',
       contactChannels: [
         { type: 'Email', value: 'c@example.com' },
-        { type: 'Phone', value: '070111111' },
+        { type: 'Phone', value: mockEnv.mockPhoneNumber },
       ],
     },
   ],
@@ -337,7 +339,7 @@ export const mockSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -411,7 +413,7 @@ export const mockSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -485,7 +487,7 @@ export const mockSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -562,7 +564,7 @@ export const mockSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -657,7 +659,7 @@ export const mockOngoingSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -731,7 +733,7 @@ export const mockOngoingSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -808,7 +810,7 @@ export const mockOngoingSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -906,7 +908,7 @@ export const mockSuspendedSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -983,7 +985,7 @@ export const mockSuspendedSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -1099,7 +1101,7 @@ export const mockSolvedSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -1173,7 +1175,7 @@ export const mockSolvedSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -1250,7 +1252,7 @@ export const mockSolvedSupportErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -1345,7 +1347,7 @@ export const mockFilteredCategoryErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -1422,7 +1424,7 @@ export const mockFilteredCategoryErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -1516,7 +1518,7 @@ export const mockFilteredPrioErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -1610,7 +1612,7 @@ export const mockFilterDateErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -1683,7 +1685,7 @@ export const mockFilterDateErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -1756,7 +1758,7 @@ export const mockFilterDateErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -1851,7 +1853,7 @@ export const mockFilterAdminErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -1927,7 +1929,7 @@ export const mockFilterAdminErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -2021,7 +2023,7 @@ export const mockFilterChannelErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
@@ -2097,7 +2099,7 @@ export const mockFilterChannelErrands = {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],

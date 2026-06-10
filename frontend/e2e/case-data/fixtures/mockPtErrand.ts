@@ -6,8 +6,7 @@ import { mockFinalDecision, mockProposedDecision, mockRecommendedDecision } from
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { mockEnv } from '../../fixtures/mock-env';
 
-// This person number is for test purposes, from the Swedish Tax Agency
-export const MOCK_PERSON_NUMBER = '199001162396';
+export const MOCK_PERSON_NUMBER = mockEnv.mockPtPersonNumber;
 
 export const mockPTErrand_base: { data: ApiErrand; message: string } = {
   data: {

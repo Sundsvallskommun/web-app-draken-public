@@ -360,7 +360,7 @@ test.describe('Errand page', () => {
     await dismissCookieConsent();
     await expect(page.locator('[data-cy="stakeholder-name"]').filter({ hasText: 'Kim Svensson' })).toBeVisible();
     await expect(page.locator('[data-cy="stakeholder-email"]').filter({ hasText: 'a@example.com' })).toBeVisible();
-    await expect(page.locator('[data-cy="stakeholder-phone"]').filter({ hasText: '070000000' })).toBeVisible();
+    await expect(page.locator('[data-cy="stakeholder-phone"]').filter({ hasText: mockEnv.mockSecondaryPhoneNumber })).toBeVisible();
     await expect(
       page.locator('[data-cy="stakeholder-adress"]').filter({ hasText: 'NORRMALMSGATAN 4' })
     ).toBeVisible();
@@ -376,7 +376,7 @@ test.describe('Errand page', () => {
 
     await expect(page.locator('[data-cy="stakeholder-name"]').filter({ hasText: 'Kompis Svensson' })).toBeVisible();
     await expect(page.locator('[data-cy="stakeholder-email"]').filter({ hasText: 'c@example.com' })).toBeVisible();
-    await expect(page.locator('[data-cy="stakeholder-phone"]').filter({ hasText: '070111111' })).toBeVisible();
+    await expect(page.locator('[data-cy="stakeholder-phone"]').filter({ hasText: mockEnv.mockPhoneNumber })).toBeVisible();
     await expect(
       page.locator('[data-cy="stakeholder-adress"]').filter({ hasText: 'NORRMALMSGATAN 6' })
     ).toBeVisible();
@@ -838,7 +838,7 @@ test.describe('Errand page', () => {
           country: 'SWEDEN',
           contactChannels: [
             { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: '070000000' },
+            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
           ],
         },
       ],
