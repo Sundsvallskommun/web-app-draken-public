@@ -1,7 +1,7 @@
 import FileUpload, { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-import { getAttachmentChannelLabel } from '@common/interfaces/attachment-channel';
+import { getAttachmentChannelLabel, isKnownAttachmentChannel } from '@common/interfaces/attachment-channel';
 import { isKC } from '@common/services/application-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -478,9 +478,11 @@ export const SupportErrandAttachmentsTab: FC<{
                           'YYYY-MM-DD HH:mm'
                         )}
                       </span>{' '}
-                      <span>
-                        <b>Kanal: </b> {getAttachmentChannelLabel(attachment?.channel as string | undefined)}
-                      </span>
+                      {isKnownAttachmentChannel(attachment?.channel as string | undefined) && (
+                        <span>
+                          <b>Kanal: </b> {getAttachmentChannelLabel(attachment?.channel as string | undefined)}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

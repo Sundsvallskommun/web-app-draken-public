@@ -22,3 +22,9 @@ export const getAttachmentChannelLabel = (channel?: string): string => {
   }
   return AttachmentChannelLabels[channel as keyof typeof AttachmentChannelLabels] ?? UNKNOWN_ATTACHMENT_CHANNEL_LABEL;
 };
+
+/**
+ * Whether the channel maps to a known display label. Used to hide the channel from the UI
+ * entirely (rather than showing "Okänd") when it is missing or not a known value.
+ */
+export const isKnownAttachmentChannel = (channel?: string): boolean => !!channel && channel in AttachmentChannelLabels;
