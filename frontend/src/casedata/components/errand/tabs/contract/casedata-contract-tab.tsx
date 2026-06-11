@@ -1,6 +1,7 @@
 import { CasedataStatusLabelComponent } from '@casedata/components/contract-overview/contracts-table.component';
-import { ContractData, UnifiedContractParty } from '@casedata/interfaces/contract-data';
+import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
 import {
+  Address,
   Contract,
   ContractType,
   ExtraParameterGroup,
@@ -14,7 +15,6 @@ import {
 } from '@casedata/interfaces/contracts';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import {
-  contractStakeholderToUnifiedParty,
   contractToKopeavtal,
   contractToLagenhetsArrende,
   contractTypes,
@@ -27,7 +27,6 @@ import {
   leaseTypes,
   saveContract,
   saveContractToErrand,
-  unifiedPartyToContractStakeholder,
 } from '@casedata/services/contract-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -43,7 +42,8 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
-import { Dispatch, FC, SetStateAction, useCallback, useEffect, useState } from 'react';
+import dayjs from 'dayjs';
+import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
@@ -56,6 +56,8 @@ interface CasedataContractProps {
 }
 
 export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
+  const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
+
   let formSchema = yup
     .object({
       type: yup.string().required('Avtalstyp måste anges'),
@@ -64,13 +66,48 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           type !== ContractType.PURCHASE_AGREEMENT && status === Status.ACTIVE,
         then: (schema) =>
           schema.shape({
-            startDate: yup.string().required('Startdatum måste anges'),
+            startDate: yup.date().required('Startdatum måste anges'),
+            endDate: yup
+              .date()
+              .nullable()
+              .transform((value, original) => (original === '' ? null : value))
+              .min(yup.ref('startDate'), 'Slutdatum måste vara efter startdatum'),
+          }),
+        otherwise: (schema) =>
+          schema.shape({
+            startDate: yup
+              .date()
+              .nullable()
+              .transform((value, original) => (original === '' ? null : value)),
+            endDate: yup
+              .date()
+              .nullable()
+              .transform((value, original) => (original === '' ? null : value))
+              .min(yup.ref('startDate'), 'Slutdatum måste vara efter startdatum'),
           }),
       }),
+      endDate: yup
+        .date()
+        .nullable()
+        .transform((value, original) => (original === '' ? null : value))
+        .test('not-in-past', 'Datum kan inte vara i det förflutna', (value) => {
+          if (!value) return true;
+          const selected = dayjs(value).startOf('day');
+          // Keep an already-saved endDate valid even if it's now in the past; only a
+          // newly chosen past date is rejected. This avoids blocking re-saves of contracts
+          // that were terminated earlier.
+          const original = existingContract?.endDate;
+          if (original && selected.isSame(dayjs(original).startOf('day'))) return true;
+          return !selected.isBefore(dayjs().startOf('day'));
+        }),
       notice: yup.object().when('type', {
         is: (type: ContractType) => type !== ContractType.PURCHASE_AGREEMENT,
         then: (schema) =>
           schema.shape({
+            noticeDate: yup
+              .date()
+              .nullable()
+              .transform((value, original) => (original === '' ? null : value)),
             terms: yup
               .array()
               .of(
@@ -137,51 +174,70 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
 
         return schema;
       }),
-      stakeholders: yup.array().when(['type', 'status'], ([type, status], schema) => {
-        if (status !== Status.ACTIVE) return schema;
+      stakeholders: yup
+        .array()
+        .when(['type', 'leaseType', 'status', 'invoicing'], ([type, leaseType, status, invoicing], schema) => {
+          const hasRole = (role: StakeholderRole) => (stakeholders: any[] | undefined) =>
+            stakeholders?.some((s) => s.roles?.includes(role)) ?? false;
 
-        const baseSchema = schema.of(
-          yup.object({
-            roles: yup
-              .array()
-              .of(yup.string().oneOf(Object.keys(StakeholderRole)) as any)
-              .min(1, 'Minst en roll måste anges'),
-          })
-        );
+          const requireBillingParty =
+            hasRecurringFee(type, leaseType) && !!invoicing?.invoicedIn && !!invoicing?.invoiceInterval;
 
-        const hasRole = (role: StakeholderRole) => (stakeholders: any[] | undefined) =>
-          stakeholders?.some((s) => s.roles?.includes(role)) ?? false;
+          if (status !== Status.ACTIVE) {
+            return requireBillingParty
+              ? schema.test(
+                  'has-primary-billing-party',
+                  'Fakturamottagare måste anges',
+                  hasRole(StakeholderRole.PRIMARY_BILLING_PARTY)
+                )
+              : schema;
+          }
 
-        if (type === ContractType.PURCHASE_AGREEMENT) {
-          return baseSchema
-            .test(
-              'has-buyer-and-seller',
-              'Minst en köpare och en säljare måste anges',
-              hasRole(StakeholderRole.BUYER) && hasRole(StakeholderRole.SELLER)
-            )
-            .test('has-buyer', 'Minst en köpare måste anges', hasRole(StakeholderRole.BUYER))
-            .test('has-seller', 'Minst en säljare måste anges', hasRole(StakeholderRole.SELLER));
-        }
-        if (isLeaseAgreement(type)) {
-          return baseSchema
-            .test(
-              'has-lessor-and-lessee',
-              'Minst en upplåtare och en arrendator måste anges',
-              hasRole(StakeholderRole.LESSOR) && hasRole(StakeholderRole.LESSEE)
-            )
-            .test('has-lessor', 'Minst en upplåtare måste anges', hasRole(StakeholderRole.LESSOR))
-            .test('has-lessee', 'Minst en arrendator måste anges', hasRole(StakeholderRole.LESSEE));
-        }
-        return baseSchema.min(1, 'Minst en part måste anges');
-      }),
+          let baseSchema = schema.of(
+            yup.object({
+              roles: yup
+                .array()
+                .of(yup.string().oneOf(Object.keys(StakeholderRole)) as any)
+                .min(1, 'Minst en roll måste anges'),
+            })
+          );
+
+          if (requireBillingParty) {
+            baseSchema = baseSchema.test(
+              'has-primary-billing-party',
+              'Fakturamottagare måste anges',
+              hasRole(StakeholderRole.PRIMARY_BILLING_PARTY)
+            );
+          }
+
+          if (type === ContractType.PURCHASE_AGREEMENT) {
+            return baseSchema
+              .test(
+                'has-buyer-and-seller',
+                'Minst en köpare och en säljare måste anges',
+                hasRole(StakeholderRole.BUYER) && hasRole(StakeholderRole.SELLER)
+              )
+              .test('has-buyer', 'Minst en köpare måste anges', hasRole(StakeholderRole.BUYER))
+              .test('has-seller', 'Minst en säljare måste anges', hasRole(StakeholderRole.SELLER));
+          }
+          if (isLeaseAgreement(type)) {
+            return baseSchema
+              .test(
+                'has-lessor-and-lessee',
+                'Minst en upplåtare och en arrendator måste anges',
+                hasRole(StakeholderRole.LESSOR) && hasRole(StakeholderRole.LESSEE)
+              )
+              .test('has-lessor', 'Minst en upplåtare måste anges', hasRole(StakeholderRole.LESSOR))
+              .test('has-lessee', 'Minst en arrendator måste anges', hasRole(StakeholderRole.LESSEE));
+          }
+          return baseSchema.min(1, 'Minst en part måste anges');
+        }),
     })
     .required();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const errand = useCasedataStore((s) => s.errand);
   const user = useUserStore((s) => s.user);
   const [loading, setIsLoading] = useState<string>();
-  const [existingContract, setExistingContract] = useState<ContractData | undefined>(undefined);
-  const [contractParties, setContractParties] = useState<UnifiedContractParty[]>([]);
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
   const [allowed, setAllowed] = useState(false);
@@ -190,67 +246,66 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     setAllowed(_a);
   }, [user, errand]);
 
-  // Handler to add a new party
-  const handleAddParty = useCallback(
-    (stakeholderId: string, roles: StakeholderRole[]) => {
-      const stakeholder = errand?.stakeholders?.find((s) => String(s.id) === stakeholderId);
-      if (!stakeholder) return;
-
-      const contractStakeholder = errandStakeholderToContractStakeholder(stakeholder, roles);
-      const newParty = contractStakeholderToUnifiedParty(contractStakeholder);
-
-      setContractParties((prev) => [...prev, newParty]);
-      props.setUnsaved(true);
-    },
-    [errand?.stakeholders, props]
-  );
-
-  // Handler to edit party roles
-  const handleEditPartyRoles = useCallback(
-    (stakeholderId: string, newRoles: StakeholderRole[]) => {
-      setContractParties((prev) =>
-        prev.map((party) => {
-          if (party.stakeholderId === stakeholderId) {
-            return {
-              ...party,
-              roles: newRoles,
-              originalStakeholder: {
-                ...party.originalStakeholder,
-                roles: newRoles,
-              },
-            };
-          }
-          return party;
-        })
-      );
-      props.setUnsaved(true);
-    },
-    [props]
-  );
-
-  // Handler to remove a party
-  const handleRemoveParty = useCallback(
-    (stakeholderId: string) => {
-      setContractParties((prev) => prev.filter((party) => party.stakeholderId !== stakeholderId));
-      props.setUnsaved(true);
-    },
-    [props]
-  );
-
-  // Load parties from contract stakeholders
-  useEffect(() => {
-    if (existingContract?.stakeholders) {
-      const parties = existingContract.stakeholders.map(contractStakeholderToUnifiedParty);
-      setContractParties(parties);
-    }
-  }, [existingContract]);
-
   const contractForm = useForm<ContractData>({
     resolver: yupResolver(formSchema) as unknown as Resolver<ContractData>,
     defaultValues:
       existingContract?.type === ContractType.PURCHASE_AGREEMENT ? defaultKopeavtal : defaultLagenhetsarrende,
     mode: 'onSubmit',
   });
+
+  // The RHF `stakeholders` field is the single source of truth for contract parties; the handlers below
+  // mutate it directly. Population happens via `contractForm.reset(res)` on load and after save.
+  const updateStakeholders = (next: StakeholderWithPersonnumber[]) => {
+    contractForm.setValue('stakeholders', next as ContractData['stakeholders']);
+    props.setUnsaved(true);
+  };
+
+  // A party still belongs on the contract only if it has at least one real contract role. CONTACT_PERSON
+  // is an implicit/hidden role that the role-modal never manages, so it doesn't keep a party alive on its own.
+  const hasContractRole = (party: StakeholderWithPersonnumber) =>
+    (party.roles ?? []).some((r) => r !== StakeholderRole.CONTACT_PERSON);
+
+  // Enforce a single fakturamottagare (PRIMARY_BILLING_PARTY) and drop parties left without any role.
+  // `changedIndex` is the party the user just added/edited; it wins ownership of the billing role, so the
+  // role is stripped from every other party. Parties with no contract role left are removed entirely.
+  const reconcileParties = (parties: StakeholderWithPersonnumber[], changedIndex: number) => {
+    const changed = parties[changedIndex];
+    const withSingleBilling =
+      changed && (changed.roles ?? []).includes(StakeholderRole.PRIMARY_BILLING_PARTY)
+        ? parties.map((party, i) =>
+            i === changedIndex
+              ? party
+              : { ...party, roles: (party.roles ?? []).filter((r) => r !== StakeholderRole.PRIMARY_BILLING_PARTY) }
+          )
+        : parties;
+    return withSingleBilling.filter(hasContractRole);
+  };
+
+  // Handler to add a new party
+  const handleAddParty = (stakeholderId: string, roles: StakeholderRole[]) => {
+    const stakeholder = errand?.stakeholders?.find((s) => String(s.id) === stakeholderId);
+    if (!stakeholder) return;
+
+    const contractStakeholder = errandStakeholderToContractStakeholder(stakeholder, roles);
+    const current = (contractForm.getValues('stakeholders') ?? []) as StakeholderWithPersonnumber[];
+    const appended = [...current, contractStakeholder];
+    updateStakeholders(reconcileParties(appended, appended.length - 1));
+  };
+
+  // Handler to edit party roles and/or address
+  const handleEditParty = (index: number, newRoles: StakeholderRole[], address?: Address) => {
+    const next = [...((contractForm.getValues('stakeholders') ?? []) as StakeholderWithPersonnumber[])];
+    next[index] = { ...next[index], roles: newRoles, ...(address ? { address } : {}) };
+    updateStakeholders(reconcileParties(next, index));
+  };
+
+  // Handler to remove a party
+  const handleRemoveParty = (index: number) => {
+    const next = ((contractForm.getValues('stakeholders') ?? []) as StakeholderWithPersonnumber[]).filter(
+      (_, i) => i !== index
+    );
+    updateStakeholders(next);
+  };
 
   const changeBadgeColor = (inId: string) => {
     let element = document.getElementById(inId);
@@ -267,16 +322,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     setIsLoading('Sparar avtal..');
     const isNewContract = !data.contractId;
 
-    // Convert unified parties back to contract stakeholders
-    const stakeholders = contractParties.map(unifiedPartyToContractStakeholder);
-
-    // Set stakeholders directly on contract data
-    const dataToSave: ContractData = {
-      ...data,
-      stakeholders,
-    };
-
-    return saveContract(dataToSave)
+    return saveContract(data)
       .then(async (res: Contract) => {
         // Only save to errand if this is a new contract
         if (isNewContract && res.contractId) {
@@ -308,7 +354,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
       });
   };
 
-  useEffect(() => {
+  const setErrandIdParameter = () => {
     if (errand) {
       const errandIdExtraParameter = {
         name: 'errandId',
@@ -337,6 +383,10 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
           contractForm.setValue('extraParameters', newParams);
         });
     }
+  };
+
+  useEffect(() => {
+    setErrandIdParameter();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
@@ -347,6 +397,26 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     }
     contractForm.trigger('type');
   }, [contractType, contractForm]);
+
+  // API Validation differs by contract type, so we need to handle type changes
+  const handleContractTypeChange = (newType: ContractType) => {
+    if (newType === ContractType.PURCHASE_AGREEMENT) {
+      contractForm.setValue('invoicing', undefined);
+      contractForm.setValue('generateInvoice', 'false');
+    } else {
+      if (!contractForm.getValues('invoicing')) {
+        contractForm.setValue('invoicing', defaultLagenhetsarrende.invoicing);
+      }
+      if (!contractForm.getValues('notice')?.terms?.length) {
+        contractForm.setValue('notice', defaultLagenhetsarrende.notice);
+      }
+      if (!contractForm.getValues('extension')) {
+        contractForm.setValue('extension', defaultLagenhetsarrende.extension);
+      }
+      contractForm.setValue('generateInvoice', 'true');
+    }
+    contractForm.trigger(['invoicing', 'notice']);
+  };
 
   return (
     <FormProvider {...contractForm}>
@@ -378,7 +448,9 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                   <FormLabel>Välj avtalstyp</FormLabel>
                   <Select
                     data-cy="contract-type-select"
-                    {...contractForm.register('type')}
+                    {...contractForm.register('type', {
+                      onChange: (e) => handleContractTypeChange(e.target.value as ContractType),
+                    })}
                     disabled={existingContract?.status === Status.ACTIVE}
                   >
                     {contractTypes.map((t) => (
@@ -455,11 +527,10 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                 changeBadgeColor={changeBadgeColor}
                 onSave={onSave}
                 existingContract={(existingContract as ContractData) || defaultKopeavtal}
-                contractParties={contractParties}
                 contractStatus={existingContract?.status}
                 errandStakeholders={errand?.stakeholders}
                 onAddParty={handleAddParty}
-                onEditPartyRoles={handleEditPartyRoles}
+                onEditParty={handleEditParty}
                 onRemoveParty={handleRemoveParty}
               />
             </div>

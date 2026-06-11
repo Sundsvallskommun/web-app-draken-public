@@ -265,6 +265,7 @@ export enum Resolution {
   RECRUITED_MORE = 'RECRUITED_MORE',
   CANCELLED = 'CANCELLED',
   SECURE_APPBOX = 'SECURE_APPBOX',
+  BACK_TO_CONTACT_SUNDSVALL = 'BACK_TO_CONTACT_SUNDSVALL',
 }
 
 export enum ResolutionLabelLOP {
@@ -304,6 +305,11 @@ export enum ResolutionLabelROB {
   RECRUITED_FEWER = 'Rekryterat färre',
   RECRUITED_MORE = 'Rekryterat fler',
   CANCELLED = 'Avbruten',
+}
+
+export enum ResolutionLabelBOU {
+  SOLVED = 'Löst',
+  BACK_TO_CONTACT_SUNDSVALL = 'Åter till Kontakt Sundsvall',
 }
 export interface SupportStakeholderFormModel extends SupportStakeholder {
   stakeholderType: SupportStakeholderType;
@@ -610,6 +616,12 @@ export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand)
   return false;
 };
 
+// Resolve a stakeholder's organization number: prefer the dedicated parameter (written on save),
+// and fall back to externalId for legacy COMPANY stakeholders saved before the org number was split out.
+const getStakeholderOrganizationNumber = (s: SupportStakeholder): string | undefined =>
+  s.parameters?.find((p) => p.key === 'organizationNumber')?.values?.[0] ||
+  (s.externalIdType === ExternalIdType.COMPANY ? s.externalId : undefined);
+
 export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => SupportErrand = (e) => {
   try {
     const ierrand: SupportErrand = {
@@ -639,6 +651,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
           title: s.parameters?.find((p) => p.key === 'title')?.values?.[0],
           referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values?.[0],
           department: s.parameters?.find((p) => p.key === 'department')?.values?.[0],
+          organizationNumber: getStakeholderOrganizationNumber(s),
           newRole: 'PRIMARY',
           internalId: uuidv4(),
           emails: (s.contactChannels ?? [])
@@ -661,6 +674,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
           title: s.parameters?.find((p) => p.key === 'title')?.values?.[0],
           referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values?.[0],
           department: s.parameters?.find((p) => p.key === 'department')?.values?.[0],
+          organizationNumber: getStakeholderOrganizationNumber(s),
           newRole: s.role as string,
           internalId: uuidv4(),
           emails: (s.contactChannels ?? [])
@@ -1059,7 +1073,7 @@ export const forwardSupportErrand: (
     }
     await sendMessage(message);
     return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
-  } else if (data.recipient == 'DEPARTMENT' && data.department === 'MEX') {
+  } else if (data.recipient == 'DEPARTMENT' && data.department) {
     errand.stakeholders?.forEach((s) => {
       if (!s.firstName && !s.organizationName) {
         throw new Error('MISSING_NAME');

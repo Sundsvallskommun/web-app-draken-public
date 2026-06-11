@@ -1,7 +1,7 @@
-import { Asset } from '@casedata/interfaces/asset';
 import { ErrandsData, IErrand } from '@casedata/interfaces/errand';
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { MessageNode } from '@casedata/services/casedata-message-service';
+import { Asset } from '@common/interfaces/asset';
 import { create } from 'zustand';
 
 interface CasedataState {

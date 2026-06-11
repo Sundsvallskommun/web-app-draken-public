@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "types": ["@simonsmith/cypress-image-snapshot/types"],
+    "types": ["node", "@simonsmith/cypress-image-snapshot/types"],
     "target": "es6",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
@@ -27,6 +27,7 @@
       "@jestRoot/*": [".jest/*"],
       "@styles/*": ["src/styles/*"],
       "@cypress/*": ["cypress/*"],
+      "@e2e/*": ["e2e/*"],
       "@stores/*": ["src/stores/*"]
       // "@services/*": ["src/services/*"],
       // "@common/components/*": ["src/components/*"],
@@ -42,6 +43,7 @@
   "include": [
     "src/**/*.{ts,tsx}",
     "cypress/**/*.{ts,tsx}",
+    "e2e/**/*.{ts,tsx}",
     "next-env.d.ts",
     "node_modules/dayjs/plugin/utc.d.ts",
     "src/common/components/localization-provider",
@@ -66,7 +68,9 @@
     ".next-ROB/dev/types/**/*.ts",
     ".next-IAF/dev/types/**/*.ts",
     ".next-SE/dev/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".next-BOU/types/**/*.ts",
+    ".next-BOU/dev/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }

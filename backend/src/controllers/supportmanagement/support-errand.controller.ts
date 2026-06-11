@@ -4,10 +4,11 @@ import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { CASEDATA_NAMESPACE, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { APPLICATION, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   AddressAddressCategoryEnum,
+  AttachmentChannelEnum,
   ContactInformationContactTypeEnum,
   Errand as CasedataErrandDTO,
   ErrandChannelEnum as CasedataErrandDtoChannelEnum,
@@ -16,6 +17,7 @@ import {
   Stakeholder as CasedataStakeholderDTO,
   StakeholderTypeEnum as CasedataStakeholderDtoTypeEnum,
 } from '@/data-contracts/case-data/data-contracts';
+import { RelationPagedResponse } from '@/data-contracts/relations/data-contracts';
 import {
   ContactChannel,
   Errand as SupportErrand,
@@ -42,9 +44,20 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { isIK, isKA, isKC, isLOP, isMSVA, isROB, isSE } from '@/services/application.service';
+import { createConversation, sendConversationTextMessage } from '@/services/message.service';
+import { OrganizationService } from '@/services/organization.service';
 import { logger } from '@/utils/logger';
-import { apiURL, buildCategoryFilter, findLeafComponents, luhnCheck, removeUnreachablePaths, toOffsetDateTime, withRetries } from '@/utils/util';
+import {
+  apiURL,
+  buildCategoryFilter,
+  findLeafComponents,
+  formatOrgNr,
+  luhnCheck,
+  OrgNumberFormat,
+  removeUnreachablePaths,
+  toOffsetDateTime,
+  withRetries,
+} from '@/utils/util';
 
 export enum CustomerType {
   PRIVATE,
@@ -352,7 +365,7 @@ class ForwardFormDto {
   @IsArray()
   emails!: { value: string }[];
   @IsString()
-  department!: 'MEX';
+  department!: string;
   @IsString()
   message!: string;
   @IsString()
@@ -363,10 +376,47 @@ export enum SupportStakeholderRole {
   PRIMARY = 'PRIMARY',
   CONTACT = 'CONTACT',
 }
+
+type LabelSpec = { category: string; type: string; subType?: string };
+
+interface NewErrandDefaults {
+  classification: { category: string; type: string };
+  labels?: LabelSpec;
+}
+
+// Default classification and labels applied to a new empty errand, per application (drake).
+// Applications without a `labels` entry get no default labels.
+const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
+  KC: { classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' } },
+  KA: {
+    classification: { category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER' },
+    labels: { category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER', subType: 'ADMINISTRATION/CONTACT_CENTER/GENERAL' },
+  },
+  LOP: {
+    classification: { category: 'SALARY', type: 'SALARY.UNCATEGORIZED' },
+    labels: { category: 'SALARY', type: 'SALARY/UNCATEGORIZED', subType: 'SALARY/UNCATEGORIZED/UNCATEGORIZED' },
+  },
+  IK: {
+    classification: { category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER.UNCATEGORIZED' },
+    labels: { category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER/UNCATEGORIZED' },
+  },
+  MSVA: { classification: { category: 'MSVA', type: 'MSVA.UNCATEGORIZED' } },
+  ROB: { classification: { category: 'COMPLETE_RECRUITMENT', type: 'COMPLETE_RECRUITMENT.RETAKE' } },
+  SE: {
+    classification: { category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' },
+    labels: { category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' },
+  },
+  BOU: {
+    classification: { category: 'BOU', type: 'BOU/UNCATEGORIZED' },
+    labels: { category: 'BOU', type: 'BOU/UNCATEGORIZED' },
+  },
+};
+
 @Controller()
 @UseBefore(hasPermissions(['canEditSupportManagement']))
 export class SupportErrandController {
   private apiService = new ApiService();
+  private organizationService = new OrganizationService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   SERVICE = apiServiceName('supportmanagement');
   CITIZEN_SERVICE = apiServiceName('citizen');
@@ -402,10 +452,16 @@ export class SupportErrandController {
       const query = this.sanitizeQuery(queryRaw);
       const qPhone = this.stripPhoneNoise(query);
 
-      let guidRes: { data?: string } | null = null;
-      if (luhnCheck(queryRaw)) {
-        const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${queryRaw}/guid`;
-        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(() => null);
+      const normalizedIdentifier = queryRaw.replace(/\D/g, '');
+      let partyId = '';
+      if (normalizedIdentifier.length === 10 && luhnCheck(normalizedIdentifier) && Number(normalizedIdentifier[2]) > 1) {
+        partyId = await this.organizationService.getPartyIdByOrganizationNumber(MUNICIPALITY_ID!, normalizedIdentifier, req.user).catch(() => '');
+      } else if ((normalizedIdentifier.length === 10 || normalizedIdentifier.length === 12) && luhnCheck(normalizedIdentifier)) {
+        const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${normalizedIdentifier}/guid`;
+        partyId = await this.apiService
+          .get<string>({ url: guidUrl }, req.user)
+          .then(response => response.data)
+          .catch(() => '');
       }
 
       let queryFilter = '(';
@@ -421,9 +477,8 @@ export class SupportErrandController {
       queryFilter += ` or exists(stakeholders.organizationName~'*${query}*')`;
       queryFilter += ` or exists(stakeholders.externalId~'*${query}*')`;
       queryFilter += ` or exists(parameters.values~'*${query}*')`;
-      if (guidRes?.data) {
-        const g = this.sanitizeQuery(guidRes.data);
-        queryFilter += ` or exists(stakeholders.externalId~'*${g}*')`;
+      if (partyId) {
+        queryFilter += ` or exists(stakeholders.externalId~'*${this.sanitizeQuery(partyId)}*')`;
       }
       queryFilter += ')';
       filterList.push(queryFilter);
@@ -491,7 +546,7 @@ export class SupportErrandController {
       const personNumberRes = await this.apiService
         .get<string>({ url: personNumberUrl }, req.user)
         .then(res => ({ data: `${res.data}` }))
-        .catch(e => ({ data: undefined, message: '404' }));
+        .catch(_e => ({ data: undefined, message: '404' }));
       customer.personNumber = personNumberRes.data;
     }
     const contacts: (SupportStakeholder & { personNumber?: string })[] =
@@ -510,7 +565,7 @@ export class SupportErrandController {
               contact.personNumber = res.data;
               return res;
             })
-            .catch(e => ({ data: undefined, message: '404' }));
+            .catch(_e => ({ data: undefined, message: '404' }));
         return withRetries(3, getPersonalNumber);
       } else {
         return Promise.resolve(true);
@@ -698,64 +753,15 @@ export class SupportErrandController {
 
     const url = `${municipalityId}/${this.namespace}/errands`;
     const baseURL = apiURL(this.SERVICE);
+    const errandDefaults = NEW_ERRAND_DEFAULTS[APPLICATION ?? ''];
     const body: Partial<SupportErrandDto> = {
       reporterUserId: req.user.username,
       assignedUserId: req.user.username,
-      classification: isKC()
-        ? {
-            category: 'CONTACT_SUNDSVALL',
-            type: 'UNCATEGORIZED',
-          }
-        : isKA()
-          ? {
-              category: 'ADMINISTRATION',
-              type: 'ADMINISTRATION/CONTACT_CENTER',
-            }
-          : isLOP()
-            ? {
-                category: 'SALARY',
-                type: 'SALARY.UNCATEGORIZED',
-              }
-            : isIK()
-              ? {
-                  category: 'KSK_SERVICE_CENTER',
-                  type: 'KSK_SERVICE_CENTER.UNCATEGORIZED',
-                }
-              : isMSVA()
-                ? {
-                    category: 'MSVA',
-                    type: 'MSVA.UNCATEGORIZED',
-                  }
-                : isROB()
-                  ? {
-                      category: 'COMPLETE_RECRUITMENT',
-                      type: 'COMPLETE_RECRUITMENT.RETAKE',
-                    }
-                  : isSE()
-                    ? {
-                        category: 'UNCATEGORIZED',
-                        type: 'UNCATEGORIZED/UNCATEGORISED',
-                      }
-                    : {
-                        category: 'CONTACT_SUNDSVALL',
-                        type: 'UNCATEGORIZED',
-                      },
-      labels: isLOP()
-        ? getDefaultLabels({ category: 'SALARY', type: 'SALARY/UNCATEGORIZED', subType: 'SALARY/UNCATEGORIZED/UNCATEGORIZED' })
-        : isIK()
-          ? getDefaultLabels({ category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER/UNCATEGORIZED' })
-          : isKA()
-            ? getDefaultLabels({
-                category: 'ADMINISTRATION',
-                type: 'ADMINISTRATION/CONTACT_CENTER',
-                subType: 'ADMINISTRATION/CONTACT_CENTER/GENERAL',
-              })
-            : isSE()
-              ? getDefaultLabels({ category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' })
-              : [],
-      priority: 'MEDIUM' as SupportPriority,
+      classification: errandDefaults?.classification,
+      labels: errandDefaults?.labels ? getDefaultLabels(errandDefaults.labels) : [],
+      priority: SupportPriority.MEDIUM,
       status: Status.NEW,
-      channel: 'PHONE',
+      channel: ContactChannelType.PHONE,
       title: 'Empty errand',
     };
     console.log('Creating new empty errand with body', body);
@@ -863,7 +869,7 @@ export class SupportErrandController {
     }
 
     const stakeholders: CasedataStakeholderDTO[] = [];
-    (existingSupportErrand.data.stakeholders ?? []).forEach((s: SupportStakeholder) => {
+    for (const s of existingSupportErrand.data.stakeholders ?? []) {
       if (!s.firstName && !s.organizationName) {
         console.error('Missing required fields for stakeholder');
         logger.error('Missing required fields for stakeholder');
@@ -880,6 +886,19 @@ export class SupportErrandController {
       //   return response.status(400).send('Missing required contact channels for stakeholder');
       // }
       if (s.externalIdType === ExternalIdType.COMPANY) {
+        // Prefer the organization number persisted as a stakeholder parameter (written on save).
+        // Fall back to a Legal Entity lookup by partyId, and degrade gracefully on failure instead
+        // of aborting the whole forward (e.g. for not-yet-migrated legacy organizations).
+        const organizationNumberFromParameter = s.parameters?.find(p => p.key === 'organizationNumber')?.values?.[0] ?? '';
+        const organizationNumberSource =
+          organizationNumberFromParameter ||
+          (s.externalId
+            ? await this.organizationService.getOrganizationNumberByPartyId(municipalityId, s.externalId, req.user).catch(e => {
+                logger.error(`Error fetching organization number for partyId ${s.externalId}: `, e);
+                return '';
+              })
+            : '');
+        const organizationNumber = formatOrgNr(organizationNumberSource, OrgNumberFormat.DASH);
         stakeholders.push({
           type: CasedataStakeholderDtoTypeEnum.ORGANIZATION,
           roles: [s.role === 'PRIMARY' ? Role.APPLICANT : Role.CONTACT_PERSON],
@@ -915,7 +934,8 @@ export class SupportErrandController {
           firstName: '',
           lastName: '',
           organizationName: s.organizationName,
-          organizationNumber: s.externalId,
+          ...(s.externalId && { personId: s.externalId }),
+          ...(organizationNumber && { organizationNumber }),
         });
       } else {
         stakeholders.push({
@@ -955,7 +975,7 @@ export class SupportErrandController {
           ...(s.externalId && { personId: s.externalId ? s.externalId : '' }),
         });
       }
-    });
+    }
     const supportChannel: SupportManagementChannels =
       SupportManagementChannels[existingSupportErrand.data.channel as keyof typeof SupportManagementChannels];
     let casedataChannel: CasedataErrandDtoChannelEnum;
@@ -1003,7 +1023,6 @@ export class SupportErrandController {
       caseType: MEXCaseType.MEX_FORWARDED_FROM_CONTACTSUNDSVALL as any,
       priority: existingSupportErrand.data.priority as unknown as CasedataErrandDtoPriorityEnum,
       channel: casedataChannel,
-      description: data?.message ? data?.message : existingSupportErrand.data.description,
       stakeholders: stakeholders,
       // TODO How to map facilities? How are property designations stored in SupportManagement?
       facilities: facilities,
@@ -1017,7 +1036,7 @@ export class SupportErrandController {
     };
     logger.info('Creating new errand in CaseData', caseDataErrand);
     const referredFrom = `REFERRED_FROM|${id};case;supportmanagement;${this.namespace}|`;
-    const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands`;
+    const url = `${municipalityId}/${data.department}/errands`;
     const CASEDATA_SERVICE = apiServiceName('case-data');
     const baseURL = apiURL(CASEDATA_SERVICE);
     const errand: CasedataErrandDTO = await this.apiService
@@ -1060,12 +1079,13 @@ export class SupportErrandController {
           name: attachmentData.fileName!,
           note: '',
           errandNumber: errand.errandNumber!,
+          channel: AttachmentChannelEnum.WEB_UI,
         };
         return dto;
       });
 
       const postedAttachments: Promise<CasedataErrandDTO>[] = attachmentDtos?.map(attachmentDto => {
-        const casedataAttachmentsUrl = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errand.id}/attachments`;
+        const casedataAttachmentsUrl = `${municipalityId}/${data.department}/errands/${errand.id}/attachments`;
         const casedataAttachmentsResponse = this.apiService
           .post<CasedataErrandDTO, CreateAttachmentDto>({ url: casedataAttachmentsUrl, baseURL, data: attachmentDto }, req.user)
           .then(res => res.data)
@@ -1080,8 +1100,27 @@ export class SupportErrandController {
         logger.error('Error when posting attachments for forwarded errand');
         throw e;
       });
-    } catch (error) {
+    } catch {
       return response.status(400).send('ATTACHMENTS_FAILED');
+    }
+
+    if (data?.messageBodyPlaintext?.trim()) {
+      try {
+        const relationsBaseURL = apiURL(apiServiceName('relations'));
+        const relationsUrl = `${municipalityId}/relations?filter=target.resourceId%3A%27${errand.id}%27`;
+        const relationsRes = await this.apiService.get<RelationPagedResponse>({ url: relationsUrl, baseURL: relationsBaseURL }, req.user);
+        const referredFromRelation = relationsRes.data.relations?.find(r => r.type === 'REFERRED_FROM');
+
+        if (referredFromRelation?.id) {
+          const conversation = await createConversation(errand.id!.toString(), req.user, 'INTERNAL', 'Överlämning', data.department!, [
+            referredFromRelation.id,
+          ]);
+
+          await sendConversationTextMessage(errand.id!.toString(), conversation.id, req.user, data.message ?? '', data.department!);
+        }
+      } catch (error) {
+        logger.error('Error when creating conversation message for forwarded errand:', error);
+      }
     }
 
     return response.status(200).send(errand);

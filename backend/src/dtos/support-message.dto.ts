@@ -16,11 +16,6 @@ export interface SupportAttachment {
   mimeType: string;
 }
 
-interface ResponseData {
-  data: any;
-  message: string;
-}
-
 export interface SingleSupportAttachment {
   errandAttachmentHeader: {
     id: string;

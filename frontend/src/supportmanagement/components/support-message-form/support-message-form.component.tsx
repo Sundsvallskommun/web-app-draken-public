@@ -518,7 +518,7 @@ export const SupportMessageForm: FC<{
                 E-tjänst (extern)
               </RadioButton>
             ) : null}
-            {appConfig.features.useStakeholderRelations && (
+            {appConfig.features.useRelations && (
               <RadioButton
                 disabled={props.locked}
                 data-cy="useDraken-radiobutton-true"

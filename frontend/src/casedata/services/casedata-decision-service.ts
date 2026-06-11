@@ -5,12 +5,12 @@ import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
 import { Decision, DecisionOutcome, DecisionOutcomes, DecisionType } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
-import { Service } from '@casedata/services/casedata-service-assets-service';
 import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { Render, Template, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
+import { Service } from '@common/services/service-assets-service';
 import { TemplateApiResponse } from '@supportmanagement/services/message-template-service';
 import dayjs from 'dayjs';
 
@@ -126,7 +126,7 @@ export const saveDecision: (
   if (pdf) {
     const att: Attachment = {
       category: 'BESLUT',
-      name: `beslut-arende-${errand.errandNumber}.pdf`,
+      name: `${decisionType === 'PROPOSED' ? 'utredning' : 'beslut'}-arende-${errand.errandNumber}.pdf`,
       note: '',
       extension: 'pdf',
       mimeType: 'application/pdf',

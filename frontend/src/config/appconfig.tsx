@@ -36,6 +36,7 @@ interface AppConfigFeatures {
   useClosingMessageCheckbox: boolean;
   useMultipleContactChannels: boolean;
   useClosedAsDefaultResolution: boolean;
+  useServices: boolean;
   useAppeal: boolean;
 }
 
@@ -82,6 +83,7 @@ export const appConfig: AppConfig = {
     useClosingMessageCheckbox: envBool(process.env.NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX),
     useMultipleContactChannels: envBool(process.env.NEXT_PUBLIC_USE_MULTIPLE_CONTACT_CHANNELS),
     useClosedAsDefaultResolution: envBool(process.env.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION),
+    useServices: envBool(process.env.NEXT_PUBLIC_USE_SERVICES),
     useAppeal: envBool(process.env.NEXT_PUBLIC_USE_APPEAL),
   },
 };

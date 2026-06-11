@@ -31,11 +31,12 @@ import {
   WebMessageAttachment,
   WebMessageRequest,
 } from '@/data-contracts/messaging/data-contracts';
+import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
-import { apiURL, base64ToByteArray } from '@/utils/util';
+import { apiURL, base64Encode } from '@/utils/util';
 
 import ApiService, { ApiResponse } from './api.service';
-import { getOwnerStakeholder } from './stakeholder.service';
+import { getOwnerStakeholder, getOwnerStakeholderEmail } from './stakeholder.service';
 
 interface SmsMessage {
   party?: {
@@ -382,32 +383,59 @@ export const setMessageViewed = (municipalityId: string, errandId: number, messa
   return apiService.put<any, any>({ url }, user);
 };
 
-export const createConversation = async (errandId: string, user: User, converastionType: string, topic: string) => {
+export const createConversation = async (
+  errandId: string,
+  user: User,
+  converastionType: string,
+  topic: string,
+  namespace: string,
+  relationIds?: string[],
+) => {
   const apiService = new ApiService();
   const baseURL = apiURL(SERVICE);
-  const url = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations`;
-  const body = {
+  const url = `${MUNICIPALITY_ID}/${namespace}/errands/${errandId}/communication/conversations`;
+  const body: Record<string, unknown> = {
     topic: topic,
     type: converastionType,
   };
+
+  if (relationIds?.length) {
+    body.relationIds = relationIds;
+  }
 
   const res = await apiService.post<any, any>({ url, baseURL, data: body }, user);
 
   return res.data;
 };
 
-export const sendConversation = async (errandId: string, conversationId: string, user: User, pdf: Attachment) => {
+export const sendConversationTextMessage = async (errandId: string, conversationId: string, user: User, content: string, namespace: string) => {
   const apiService = new ApiService();
-  const url = `${SERVICE}/${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
+  const baseURL = apiURL(SERVICE);
+  const url = `${MUNICIPALITY_ID}/${namespace}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
 
   const formData = new FormData();
   const messageObj = {
     createdBy: { type: 'adAccount', value: user.username },
-    content: 'Beslut fattat i ärende',
+    content: content,
   };
   formData.append('message', JSON.stringify(messageObj));
-  const byteArray = base64ToByteArray(pdf.file!);
-  formData.append('attachments', new Blob([byteArray], { type: pdf.mimeType }), `${pdf.name}.pdf`);
+
+  return await apiService.post<any, any>({ url, baseURL, data: formData, headers: { 'Content-Type': 'multipart/form-data' } }, user);
+};
+
+export const sendConversation = async (errandId: string, conversationId: string, user: User, pdf: Attachment) => {
+  const apiService = new ApiService();
+  const url = `${SERVICE}/${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
+
+  // Reference the already-saved decision attachment by id (same mechanism as regular conversation
+  // messages) instead of uploading new bytes.
+  const formData = new FormData();
+  const messageObj = {
+    createdBy: { type: 'adAccount', value: user.username },
+    content: 'Beslut fattat i ärende',
+    ...(pdf.id && { attachmentIds: [pdf.id] }),
+  };
+  formData.append('message', JSON.stringify(messageObj));
 
   return await apiService.post<any, any>({ url, data: formData, headers: { 'Content-Type': 'multipart/form-data' } }, user);
 };
@@ -420,7 +448,7 @@ export const sendDecisionToMinaSidor = async (baseURL: string, errandId: string,
   externalConversation = conversationRes.data.find(c => c.type === 'EXTERNAL');
 
   if (externalConversation === undefined) {
-    externalConversation = await createConversation(errandId, user, 'EXTERNAL', 'Mina sidor');
+    externalConversation = await createConversation(errandId, user, 'EXTERNAL', 'Mina sidor', CASEDATA_NAMESPACE!);
   }
   return sendConversation(errandId, externalConversation!.id!, user, pdf)
     .then(async res => {
@@ -445,7 +473,7 @@ export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, us
   relationlessConversation = conversationRes.data.find(c => c.relationIds?.length === 0 && c.type !== 'EXTERNAL');
 
   if (relationlessConversation === undefined) {
-    relationlessConversation = await createConversation(errand.id!.toString(), user, 'INTERNAL', errand.errandNumber!);
+    relationlessConversation = await createConversation(errand.id!.toString(), user, 'INTERNAL', errand.errandNumber!, CASEDATA_NAMESPACE!);
   }
   return sendConversation(errand.id!.toString(), relationlessConversation!.id!, user, pdf)
     .then(async res => {
@@ -466,7 +494,7 @@ export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: At
       deliveryMode: 'ANY',
       contentType: DigitalMailAttachmentContentTypeEnum.ApplicationPdf,
       content: pdf.file,
-      filename: `${pdf.name}.pdf`,
+      filename: pdf.name,
     } as DigitalMailAttachment,
   ];
   const message: DigitalMailRequest = {
@@ -523,4 +551,55 @@ export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: At
       logger.error('Error when sending digital mail:', e);
       throw e;
     });
+};
+
+// Sends a MEX decision through a single channel, chosen the same way the frontend used to choose it:
+// webmessage for e-service errands, otherwise email to the owner. The decision body is rendered by
+// the frontend and passed in (html for email, plaintext for webmessage).
+export const sendDecisionForMex = async (
+  municipalityId: string,
+  req: RequestWithUser,
+  errandData: ApiResponse<ErrandDTO>,
+  html: string,
+  plaintext: string,
+): Promise<{ data: AgnosticMessageResponse; message: string }> => {
+  const errand = errandData.data;
+
+  if (errand.externalCaseId) {
+    const owner = getOwnerStakeholder(errand);
+    const message = {
+      party: {
+        ...(owner?.personId && { partyId: owner.personId }),
+        externalReferences: [{ key: 'flowInstanceId', value: errand.externalCaseId }],
+      },
+      message: plaintext,
+    } as WebMessageRequest;
+    return sendWebMessage(municipalityId, message, req, errandData);
+  }
+
+  const ownerEmail = getOwnerStakeholderEmail(errand);
+  if (ownerEmail) {
+    const cleanedBody = html.replace(/<p><br \/><\/p>/g, '');
+    const message = {
+      party: {
+        // Fake uuid since Messaging demands one
+        partyId: uuidv4(),
+      },
+      emailAddress: ownerEmail,
+      subject: `Ärende #${errand.errandNumber}`,
+      message: cleanedBody,
+      htmlMessage: base64Encode(cleanedBody),
+      sender: {
+        name: process.env.CASEDATA_SENDER,
+        address: process.env.CASEDATA_SENDER_EMAIL,
+        replyTo: process.env.CASEDATA_REPLY_TO,
+      },
+      headers: {
+        MESSAGE_ID: [generateMessageId()],
+      },
+    } as EmailRequest;
+    return sendEmail(municipalityId, message, req, errandData, MessageClassification.Informationsmeddelande);
+  }
+
+  throw new HttpException(400, 'Ärendeägaren har inga godkända kontaktsätt');
 };

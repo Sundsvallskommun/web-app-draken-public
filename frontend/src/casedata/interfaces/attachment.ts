@@ -80,6 +80,7 @@ export enum PTAttachmentLabels {
 
 export interface Attachment {
   id?: string;
+  channel?: string;
   attachmentId?: string;
   version?: number;
   created?: string;

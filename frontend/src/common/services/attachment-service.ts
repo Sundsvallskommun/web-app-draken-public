@@ -32,6 +32,7 @@ export function mapAttachmentToUploadFile<TExtraMeta extends object = object>(
       version: attachment.version,
       created: attachment.created,
       updated: attachment.updated,
+      channel: attachment?.channel,
       ...((attachment.extraParameters ?? {}) as TExtraMeta),
       isValidAttachment: validAttachment(attachment),
     },

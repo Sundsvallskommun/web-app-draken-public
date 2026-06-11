@@ -13,6 +13,7 @@ import { Info, Users } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
 
+import { PartyAssetsSection } from './partyassets-section.component';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
 
 interface SupportContactsProps {
@@ -225,11 +226,11 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
                     </p>
                     <p
                       className={`my-xs mt-0 flex flex-col text-small ${
-                        contact.externalId || contact.organizationNumber ? null : 'text-dark-disabled'
+                        contact.organizationNumber ? null : 'text-dark-disabled'
                       }`}
                       data-cy={`stakeholder-ssn`}
                     >
-                      {contact.externalId || contact.organizationNumber || '(organisationsnummer saknas)'}
+                      {contact.organizationNumber || '(organisationsnummer saknas)'}
                     </p>
                   </>
                 ) : (
@@ -318,6 +319,11 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
             </div>
           </div>
         </div>
+        {appConfig.features.useServices &&
+        contact.externalId &&
+        supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY' && s.externalId === contact.externalId) ? (
+          <PartyAssetsSection partyId={contact.externalId} />
+        ) : null}
       </div>
     );
   };

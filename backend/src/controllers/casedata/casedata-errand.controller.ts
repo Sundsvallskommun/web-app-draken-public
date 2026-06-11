@@ -20,6 +20,7 @@ import {
   PageErrand as PageErrandDTO,
   PatchErrand as PatchErrandDTO,
   Stakeholder as StakeholderDTO,
+  StakeholderTypeEnum,
 } from '@/data-contracts/case-data/data-contracts';
 
 import { apiURL, luhnCheck, withRetries } from '../../utils/util';
@@ -45,18 +46,18 @@ export class CaseDataErrandController {
     const applicant: (StakeholderDTO & { personalNumber?: string }) | undefined = errandData.stakeholders?.find(s =>
       s.roles.includes(Role.APPLICANT),
     );
-    if (applicant && applicant.personId) {
+    if (applicant?.type === StakeholderTypeEnum.PERSON && applicant.personId) {
       const personNumberUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${applicant.personId}/personnumber`;
       const personNumberRes = await this.apiService
         .get<string>({ url: personNumberUrl }, req.user)
         .then(res => ({ data: `${res.data}` }))
-        .catch(e => ({ data: undefined, message: '404' }));
+        .catch(_e => ({ data: undefined, message: '404' }));
       applicant.personalNumber = personNumberRes.data;
     }
     const fellowApplicants: (StakeholderDTO & { personalNumber?: string })[] =
       errandData.stakeholders?.filter(s => s.roles.includes(Role.FELLOW_APPLICANT) || s.roles.includes(Role.CONTACT_PERSON)) || [];
     const fellowApplicantsPromises = fellowApplicants.map(fa => {
-      if (fa && fa.personId) {
+      if (fa.type === StakeholderTypeEnum.PERSON && fa.personId) {
         const personNumberUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${fa.personId}/personnumber`;
         const getPersonalNumber = () =>
           this.apiService
@@ -65,7 +66,7 @@ export class CaseDataErrandController {
               fa.personalNumber = res.data;
               return res;
             })
-            .catch(e => ({ data: undefined, message: '404' }));
+            .catch(_e => ({ data: undefined, message: '404' }));
         return withRetries(3, getPersonalNumber);
       } else {
         return Promise.resolve(true);
@@ -139,7 +140,7 @@ export class CaseDataErrandController {
       const isPersonNumber = luhnCheck(query);
       if (isPersonNumber) {
         const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${query}/guid`;
-        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(e => null);
+        guidRes = await this.apiService.get<string>({ url: guidUrl }, req.user).catch(_e => null);
       }
       let queryFilter = `(`;
       queryFilter += `exists(stakeholders.firstName~'*${query}*')`;
@@ -292,7 +293,7 @@ export class CaseDataErrandController {
         const stakeholderPatchPromises =
           errandApiData.stakeholders
             ?.filter(s => !s.id)
-            .map(async (stakeholder, idx) => {
+            .map(async (stakeholder, _idx) => {
               const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandApiData.id}/stakeholders`;
               const baseURL = apiURL(this.SERVICE);
               const patchStakeholder = () =>
@@ -307,7 +308,7 @@ export class CaseDataErrandController {
         const stakeholderPutPromises =
           errandApiData.stakeholders
             ?.filter(s => s.id)
-            .map(async (stakeholder, idx) => {
+            .map(async (stakeholder, _idx) => {
               const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandApiData.id}/stakeholders/${stakeholder.id}`;
               const baseURL = apiURL(this.SERVICE);
               const putStakeholder = () =>
@@ -318,7 +319,7 @@ export class CaseDataErrandController {
                 });
               return withRetries(0, putStakeholder);
             }) || [];
-        return Promise.all([...stakeholderPatchPromises, ...stakeholderPutPromises]).then(res => errandPatchResponse);
+        return Promise.all([...stakeholderPatchPromises, ...stakeholderPutPromises]).then(_res => errandPatchResponse);
       })
       .catch(e => {
         logger.error('Something went wrong when patching errand');

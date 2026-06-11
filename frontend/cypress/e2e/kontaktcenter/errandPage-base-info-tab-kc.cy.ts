@@ -170,7 +170,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.get('[data-cy="stakeholder-name"]').contains('Kim Svensson').should('exist');
       cy.get('[data-cy="stakeholder-email"]').contains('a@example.com').should('exist');
-      cy.get('[data-cy="stakeholder-phone"]').contains('070000000').should('exist');
+      cy.get('[data-cy="stakeholder-phone"]').contains(Cypress.env('mockSecondaryPhoneNumber')).should('exist');
       cy.get('[data-cy="stakeholder-adress"]').contains('NORRMALMSGATAN 4').should('exist');
 
       cy.get('[data-cy="stakeholder-name"]').contains('Mormor Svensson').should('exist');
@@ -180,7 +180,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
 
       cy.get('[data-cy="stakeholder-name"]').contains('Kompis Svensson').should('exist');
       cy.get('[data-cy="stakeholder-email"]').contains('c@example.com').should('exist');
-      cy.get('[data-cy="stakeholder-phone"]').contains('070111111').should('exist');
+      cy.get('[data-cy="stakeholder-phone"]').contains(Cypress.env('mockPhoneNumber')).should('exist');
       cy.get('[data-cy="stakeholder-adress"]').contains('NORRMALMSGATAN 6').should('exist');
 
       cy.get('[data-cy="add-customer-button"]').should('not.exist');
@@ -603,7 +603,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
         stakeholders: [
           {
-            externalId: '000000-0000',
+            externalId: '556026-9986',
             externalIdType: 'COMPANY',
             role: 'PRIMARY',
             organizationName: 'Testbolaget',
@@ -614,7 +614,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
             country: 'SWEDEN',
             contactChannels: [
               { type: 'Email', value: 'a@example.com' },
-              { type: 'Phone', value: '070000000' },
+              { type: 'Phone', value: Cypress.env('mockSecondaryPhoneNumber') },
             ],
           },
         ],
@@ -624,7 +624,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.wait('@getErrandWithOrganizationStakeholder');
       cy.get('[data-cy="edit-stakeholder-button-PRIMARY-0"]').first().click();
       cy.get('[data-cy="searchmode-selector-modal"]').should('not.exist');
-      cy.get('[data-cy="contact-organizationNumber"]').should('exist').and('have.value', '000000-0000');
+      cy.get('[data-cy="contact-organizationNumber"]').should('exist').and('have.value', '556026-9986');
       cy.get('[data-cy="contact-organizationName"]').should('exist').and('have.value', 'Testbolaget');
       cy.get('[data-cy="contact-organizationName"]').clear().type('Test');
       cy.get('[data-cy="contact-lastName"]').should('not.exist');

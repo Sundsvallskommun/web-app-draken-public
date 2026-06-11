@@ -13,10 +13,12 @@ import {
   Stakeholder as SupportStakeholder,
 } from '@/data-contracts/supportmanagement/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
+import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
+import { OrganizationService } from '@/services/organization.service';
 import { logger } from '@/utils/logger';
-import { apiURL } from '@/utils/util';
+import { apiURL, formatOrgNr, OrgNumberFormat } from '@/utils/util';
 
 interface ReferredFromStakeholder {
   externalId: string;
@@ -52,6 +54,7 @@ export interface ReferredFromErrandResponse {
 @Controller()
 export class RelationsController {
   private apiService = new ApiService();
+  private organizationService = new OrganizationService();
   private SERVICE = apiServiceName('relations');
   private CASEDATA_SERVICE = apiServiceName('case-data');
   private SUPPORTMANAGEMENT_SERVICE = apiServiceName('supportmanagement');
@@ -262,15 +265,23 @@ export class RelationsController {
     return Promise.all(
       stakeholders.map(async stakeholder => {
         const shouldFetchPersonNumber =
-          stakeholder.externalId && (stakeholder.externalIdType === 'PRIVATE' || stakeholder.externalIdType === 'EMPLOYEE');
+          stakeholder.externalId && (stakeholder.externalIdType === ExternalIdType.PRIVATE || stakeholder.externalIdType === ExternalIdType.EMPLOYEE);
 
         const personNumber = shouldFetchPersonNumber ? await this.fetchPersonNumber(municipalityId, stakeholder.externalId!, user) : '';
+        const organizationNumberFromLegalEntity =
+          stakeholder.externalId && stakeholder.externalIdType === ExternalIdType.COMPANY
+            ? await this.organizationService.getOrganizationNumberByPartyId(municipalityId, stakeholder.externalId, user).catch(e => {
+                logger.error(`Error fetching organization number for partyId ${stakeholder.externalId}: `, e);
+                return '';
+              })
+            : '';
+        const organizationNumber = formatOrgNr(organizationNumberFromLegalEntity, OrgNumberFormat.DASH) ?? '';
 
         return {
           externalId: stakeholder.externalId ?? '',
           externalIdType: stakeholder.externalIdType ?? '',
           personNumber,
-          organizationNumber: stakeholder.externalIdType === 'COMPANY' ? (stakeholder.externalId ?? '') : '',
+          organizationNumber,
           role: stakeholder.role ?? '',
           roleDisplayName: this.resolveRoleDisplayName(stakeholder.role ?? '', roles),
           firstName: stakeholder.firstName ?? '',

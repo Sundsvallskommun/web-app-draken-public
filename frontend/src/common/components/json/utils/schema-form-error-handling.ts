@@ -25,7 +25,7 @@ const hasFormat = (e: RJSFValidationError): e is RJSFValidationError & { params:
   return !!p && typeof (p as FormatParams).format === 'string';
 };
 
-export function createJsonErrorTransformer(schema: RJSFSchema) {
+function createJsonErrorTransformer(schema: RJSFSchema) {
   return (errors: RJSFValidationError[]): RJSFValidationError[] =>
     errors.map((e) => {
       // Extract field name from property path (e.g., ".type" -> "type")
