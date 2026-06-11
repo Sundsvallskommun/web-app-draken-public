@@ -125,7 +125,14 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
     mode: 'onChange',
   });
 
-  const { recipient, message, messageBodyPlaintext } = watch();
+  const { recipient, message, messageBodyPlaintext, emails, department } = watch();
+
+  const isForwardDisabled =
+    isLoading ||
+    disabled ||
+    recipient === '' ||
+    (recipient === 'EMAIL' && (emails?.length === 0 || !messageBodyPlaintext?.trim())) ||
+    (recipient === 'DEPARTMENT' && !department);
 
   const handleForwardErrand = (data: ForwardFormProps) => {
     setIsLoading(true);
@@ -470,12 +477,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
               <Button
                 variant="primary"
                 color="vattjom"
-                disabled={
-                  isLoading ||
-                  !formState.isValid ||
-                  (recipient === 'EMAIL' && getValues('emails').length === 0) ||
-                  disabled
-                }
+                disabled={isForwardDisabled}
                 loading={isLoading}
                 loadingText="Vidarebefordrar ärende"
                 onClick={() => {
