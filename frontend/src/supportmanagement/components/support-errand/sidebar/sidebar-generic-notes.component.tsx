@@ -19,7 +19,7 @@ import {
 } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { ErrandNotesTabFormModel, GenericNote } from '@supportmanagement/interfaces/genericNote';
-import { getSupportErrandById } from '@supportmanagement/services/support-errand-service';
+import { ExternalIdType, getSupportErrandById } from '@supportmanagement/services/support-errand-service';
 import {
   deleteSupportNote,
   getSupportNotes,
@@ -192,7 +192,7 @@ export const SidebarGenericNotes: FC<{
 
   useEffect(() => {
     const primaryStakeholder = supportErrand?.customer?.find((x) => x.role === 'PRIMARY');
-    if (primaryStakeholder?.externalIdType === 'PRIVATE' && primaryStakeholder?.externalId) {
+    if (primaryStakeholder?.externalIdType === ExternalIdType.PRIVATE && primaryStakeholder?.externalId) {
       setValue('partyId', primaryStakeholder?.externalId);
     } else {
       setValue('partyId', '');

@@ -603,7 +603,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
         id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
         stakeholders: [
           {
-            externalId: '000000-0000',
+            externalId: '556026-9986',
             externalIdType: 'COMPANY',
             role: 'PRIMARY',
             organizationName: 'Testbolaget',
@@ -624,7 +624,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.wait('@getErrandWithOrganizationStakeholder');
       cy.get('[data-cy="edit-stakeholder-button-PRIMARY-0"]').first().click();
       cy.get('[data-cy="searchmode-selector-modal"]').should('not.exist');
-      cy.get('[data-cy="contact-organizationNumber"]').should('exist').and('have.value', '000000-0000');
+      cy.get('[data-cy="contact-organizationNumber"]').should('exist').and('have.value', '556026-9986');
       cy.get('[data-cy="contact-organizationName"]').should('exist').and('have.value', 'Testbolaget');
       cy.get('[data-cy="contact-organizationName"]').clear().type('Test');
       cy.get('[data-cy="contact-lastName"]').should('not.exist');

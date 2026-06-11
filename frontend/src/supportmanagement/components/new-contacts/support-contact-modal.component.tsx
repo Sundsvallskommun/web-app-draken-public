@@ -196,7 +196,7 @@ export const SupportContactModal: FC<SupportContactModalProps> = ({
                     form.formState.errors.personNumber ? 'border-2 border-error' : null,
                     'read-only:bg-gray-lighter read-only:cursor-not-allowed'
                   )}
-                  {...form.register(`externalId`)}
+                  {...form.register(`organizationNumber`)}
                 />
 
                 {form.formState.errors && form.formState.errors.personNumber && (

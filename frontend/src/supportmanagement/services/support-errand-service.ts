@@ -616,6 +616,12 @@ export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand)
   return false;
 };
 
+// Resolve a stakeholder's organization number: prefer the dedicated parameter (written on save),
+// and fall back to externalId for legacy COMPANY stakeholders saved before the org number was split out.
+const getStakeholderOrganizationNumber = (s: SupportStakeholder): string | undefined =>
+  s.parameters?.find((p) => p.key === 'organizationNumber')?.values?.[0] ||
+  (s.externalIdType === ExternalIdType.COMPANY ? s.externalId : undefined);
+
 export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => SupportErrand = (e) => {
   try {
     const ierrand: SupportErrand = {
@@ -645,6 +651,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
           title: s.parameters?.find((p) => p.key === 'title')?.values?.[0],
           referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values?.[0],
           department: s.parameters?.find((p) => p.key === 'department')?.values?.[0],
+          organizationNumber: getStakeholderOrganizationNumber(s),
           newRole: 'PRIMARY',
           internalId: uuidv4(),
           emails: (s.contactChannels ?? [])
@@ -667,6 +674,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
           title: s.parameters?.find((p) => p.key === 'title')?.values?.[0],
           referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values?.[0],
           department: s.parameters?.find((p) => p.key === 'department')?.values?.[0],
+          organizationNumber: getStakeholderOrganizationNumber(s),
           newRole: s.role as string,
           internalId: uuidv4(),
           emails: (s.contactChannels ?? [])
