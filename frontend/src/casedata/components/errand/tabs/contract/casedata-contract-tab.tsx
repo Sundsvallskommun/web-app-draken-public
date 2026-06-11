@@ -1,6 +1,7 @@
 import { CasedataStatusLabelComponent } from '@casedata/components/contract-overview/contracts-table.component';
 import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
 import {
+  Address,
   Contract,
   ContractType,
   ExtraParameterGroup,
@@ -88,7 +89,17 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
       endDate: yup
         .date()
         .nullable()
-        .transform((value, original) => (original === '' ? null : value)),
+        .transform((value, original) => (original === '' ? null : value))
+        .test('not-in-past', 'Datum kan inte vara i det förflutna', (value) => {
+          if (!value) return true;
+          const selected = dayjs(value).startOf('day');
+          // Keep an already-saved endDate valid even if it's now in the past; only a
+          // newly chosen past date is rejected. This avoids blocking re-saves of contracts
+          // that were terminated earlier.
+          const original = existingContract?.endDate;
+          if (original && selected.isSame(dayjs(original).startOf('day'))) return true;
+          return !selected.isBefore(dayjs().startOf('day'));
+        }),
       notice: yup.object().when('type', {
         is: (type: ContractType) => type !== ContractType.PURCHASE_AGREEMENT,
         then: (schema) =>
@@ -96,17 +107,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
             noticeDate: yup
               .date()
               .nullable()
-              .transform((value, original) => (original === '' ? null : value))
-              .test('not-in-past', 'Datum kan inte vara i det förflutna', (value) => {
-                if (!value) return true;
-                const selected = dayjs(value).startOf('day');
-                // Keep an already-saved notice date valid even if it's now in the past; only a
-                // newly chosen past date is rejected. This avoids blocking re-saves of contracts
-                // that were cancelled earlier.
-                const original = existingContract?.notice?.noticeDate;
-                if (original && selected.isSame(dayjs(original).startOf('day'))) return true;
-                return !selected.isBefore(dayjs().startOf('day'));
-              }),
+              .transform((value, original) => (original === '' ? null : value)),
             terms: yup
               .array()
               .of(
@@ -291,10 +292,10 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
     updateStakeholders(reconcileParties(appended, appended.length - 1));
   };
 
-  // Handler to edit party roles
-  const handleEditPartyRoles = (index: number, newRoles: StakeholderRole[]) => {
+  // Handler to edit party roles and/or address
+  const handleEditParty = (index: number, newRoles: StakeholderRole[], address?: Address) => {
     const next = [...((contractForm.getValues('stakeholders') ?? []) as StakeholderWithPersonnumber[])];
-    next[index] = { ...next[index], roles: newRoles };
+    next[index] = { ...next[index], roles: newRoles, ...(address ? { address } : {}) };
     updateStakeholders(reconcileParties(next, index));
   };
 
@@ -529,7 +530,7 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
                 contractStatus={existingContract?.status}
                 errandStakeholders={errand?.stakeholders}
                 onAddParty={handleAddParty}
-                onEditPartyRoles={handleEditPartyRoles}
+                onEditParty={handleEditParty}
                 onRemoveParty={handleRemoveParty}
               />
             </div>

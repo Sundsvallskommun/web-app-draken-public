@@ -2,6 +2,7 @@ import { ContractInvoicesTable } from '@casedata/components/contract-overview/co
 import { MEXCaseType } from '@casedata/interfaces/case-type';
 import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
 import {
+  Address,
   ContractType,
   IntervalType,
   InvoicedIn,
@@ -58,7 +59,7 @@ export const ContractForm: FC<{
   contractOveriewMode?: boolean;
   errandStakeholders?: CasedataOwnerOrContact[];
   onAddParty?: (stakeholderId: string, roles: StakeholderRole[]) => void;
-  onEditPartyRoles?: (index: number, newRoles: StakeholderRole[]) => void;
+  onEditParty?: (index: number, newRoles: StakeholderRole[], address?: Address) => void;
   onRemoveParty?: (index: number) => void;
   onSelectInvoice?: (record: CBillingRecord) => void;
 }> = ({
@@ -70,7 +71,7 @@ export const ContractForm: FC<{
   contractOveriewMode = false,
   errandStakeholders,
   onAddParty,
-  onEditPartyRoles,
+  onEditParty,
   onRemoveParty,
   onSelectInvoice,
 }) => {
@@ -264,11 +265,11 @@ export const ContractForm: FC<{
     setIsPartyModalOpen(true);
   };
 
-  const handleModalSave = (stakeholderId: string, roles: StakeholderRole[]) => {
+  const handleModalSave = (stakeholderId: string, roles: StakeholderRole[], address?: Address) => {
     if (partyModalMode === 'add') {
       onAddParty?.(stakeholderId, roles);
     } else if (editingIndex != null) {
-      onEditPartyRoles?.(editingIndex, roles);
+      onEditParty?.(editingIndex, roles, address);
     }
   };
 
