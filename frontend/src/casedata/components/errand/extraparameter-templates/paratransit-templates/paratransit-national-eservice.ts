@@ -25,7 +25,7 @@ export const nationalEservice_UppgiftFieldTemplate: UppgiftField[] = notificatio
           value: '',
           label: 'Resor',
           description:
-            'Fritext från e-tjänsten: vilken kommun och ort resan sker från och till, samt datum eller månad.',
+            'Ange vilken kommun och vilken ort du ska åka från och till. Ange även vilket datum resan ska ske. Vet du inte exakt datum anger du månad.',
           formField: {
             type: 'textarea',
           },
