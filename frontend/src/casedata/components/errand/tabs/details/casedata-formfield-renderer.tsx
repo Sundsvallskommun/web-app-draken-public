@@ -11,6 +11,7 @@ import {
   Combobox,
   cx,
   FormControl,
+  FormHelperText,
   FormLabel,
   Input,
   RadioButton,
@@ -201,7 +202,7 @@ export const CasedataFormFieldRenderer: FC<Props> = ({ detail, idx, form, errand
     return (
       <div key={`${detail.field}-${idx}`} className="w-full mt-lg">
         {detail.label && <FormLabel className="mb-md">{detail.label}</FormLabel>}
-        {detail.description && <p className="text-sm text-gray-600 mb-md">{detail.description}</p>}
+        {detail.description && <p className="mb-md text-small text-dark-secondary">{detail.description}</p>}
         <RepeatableFieldGroup
           groupName={groupConfig.groupName}
           basePath={groupConfig.basePath}
@@ -242,6 +243,10 @@ export const CasedataFormFieldRenderer: FC<Props> = ({ detail, idx, form, errand
       {!detail.field.includes('account.') && detail.label !== '' ? (
         <FormLabel className="mt-lg">{detail.label}</FormLabel>
       ) : null}
+
+      {detail.description && (
+        <FormHelperText className="m-0 mb-sm p-0 text-small text-dark-secondary">{detail.description}</FormHelperText>
+      )}
 
       {(detail.formField.type === 'text' ||
         detail.formField.type === 'date' ||
