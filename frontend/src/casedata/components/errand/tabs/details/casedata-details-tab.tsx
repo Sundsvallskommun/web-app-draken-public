@@ -151,12 +151,12 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const sections: { label: string; icon: IconName }[] = [
     { label: 'Övergripande', icon: 'text' },
     { label: 'Datum', icon: 'calendar' },
-    { label: 'Uppsägning', icon: 'file-signature' },
+    { label: 'Uppsägning', icon: 'file-pen' },
     { label: 'Köpa & sälja', icon: 'wallet' },
     { label: 'Vägbidrag', icon: 'helping-hand' },
-    { label: 'Yttre omständigheter', icon: 'clipboard-signature' },
+    { label: 'Yttre omständigheter', icon: 'clipboard-pen' },
     { label: 'Personlig information', icon: 'person-standing' },
-    { label: 'Medicinskt utlåtande', icon: 'clipboard-signature' },
+    { label: 'Medicinskt utlåtande', icon: 'clipboard-pen' },
   ];
 
   return (
