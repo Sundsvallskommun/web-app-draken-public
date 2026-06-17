@@ -13,6 +13,7 @@ import {
   SAML_IDP_PUBLIC_CERT,
   SAML_ISSUER,
   SAML_LOGOUT_CALLBACK_URL,
+  SAML_LOGOUT_URL,
   SAML_PRIVATE_KEY,
   SAML_PUBLIC_KEY,
   SAML_SUCCESS_REDIRECT,
@@ -75,7 +76,7 @@ const samlStrategy = new Strategy(
     digestAlgorithm: 'sha256',
     // maxAssertionAgeMs: 2592000000,
     // authnRequestBinding: 'HTTP-POST',
-    //logoutUrl: 'http://194.71.24.30/sso',
+    logoutUrl: SAML_LOGOUT_URL!,
     logoutCallbackUrl: SAML_LOGOUT_CALLBACK_URL!,
     acceptedClockSkewMs: -1,
     wantAuthnResponseSigned: false,
@@ -131,6 +132,10 @@ const samlStrategy = new Strategy(
         groups: appGroups,
         role: getRole(appGroups),
         permissions: getPermissions(appGroups),
+        // Persist SAML identity so SP-initiated Single Logout can build a valid LogoutRequest
+        nameID: profile.nameID,
+        nameIDFormat: profile.nameIDFormat,
+        sessionIndex: profile.sessionIndex,
       };
 
       logger.info(`Found user: ${JSON.stringify(findUser)}`);
@@ -266,12 +271,30 @@ class App {
         if (typeof req.query.successRedirect === 'string' && isValidUrl(req.query.successRedirect) && isValidOrigin(req.query.successRedirect)) {
           successRedirect = req.query.successRedirect;
         }
-        samlStrategy.logout(req as any, () => {
-          req.logout(err => {
-            if (err) {
-              return next(err);
+        // SP-initiated SAML Single Logout: build the IDP LogoutRequest (needs req.user), then always
+        // destroy the local session, then redirect the browser to the IDP logout endpoint so the IDP
+        // session is terminated as well. The local session is torn down here rather than relying on
+        // the IDP returning to /saml/logout/callback, since some IDPs redirect straight to RelayState.
+        samlStrategy.logout(req as any, (err, url) => {
+          if (err || !url) {
+            // Fallback: IDP logout URL could not be generated, log out locally only.
+            logger.error('Failed to generate SAML logout URL, falling back to local logout', err);
+            return req.logout(logoutErr => {
+              if (logoutErr) {
+                return next(logoutErr);
+              }
+              res.redirect(successRedirect as string);
+            });
+          }
+          const parsed = new URL(url);
+          // Pass the frontend redirect target through RelayState so /saml/logout/callback (if the IDP
+          // posts a LogoutResponse there) returns the user to the right place.
+          parsed.searchParams.set('RelayState', successRedirect as string);
+          req.logout(logoutErr => {
+            if (logoutErr) {
+              return next(logoutErr);
             }
-            res.redirect(successRedirect as string);
+            res.redirect(parsed.toString());
           });
         });
       },
