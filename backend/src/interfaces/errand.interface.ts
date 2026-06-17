@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 
 import {
   Decision as DecisionDTO,
@@ -88,6 +88,9 @@ export class CreateErrandDto implements ErrandDTO {
   @IsString()
   @IsOptional()
   applicationReceived?: string;
+  @IsBoolean()
+  @IsOptional()
+  confidential?: boolean;
 }
 
 export class CPatchErrandDto implements IPatchErrandDTO {
@@ -153,4 +156,7 @@ export class CPatchErrandDto implements IPatchErrandDTO {
   @IsString()
   @IsOptional()
   applicationReceived?: string;
+  @IsBoolean()
+  @IsOptional()
+  confidential?: boolean;
 }
