@@ -1,3 +1,4 @@
+import { Channels } from '@casedata/interfaces/channels';
 import { IErrand } from '@casedata/interfaces/errand';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import {
@@ -70,8 +71,18 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   };
 
   useEffect(() => {
+    const mappedFields: UppgiftField[] = (errand ? extraParametersToUppgiftMapper(errand) : undefined) || baseDetails;
+
+    // Medicinskt utlåtande visas som egen sektion endast när ärendet kommit in via
+    // katla-färdtjänsten (Channels.ESERVICE_KATLA). För övriga kanaler flyttas de
+    // medicinska fälten in under Yttre omständigheter (externa fält först, sedan
+    // medicinska enligt mallens ordning) och ingen separat medicinsk sektion visas.
     const uppgifterFields: UppgiftField[] =
-      (errand ? extraParametersToUppgiftMapper(errand) : undefined) || baseDetails;
+      errand?.channel === Channels.ESERVICE_KATLA
+        ? mappedFields
+        : mappedFields.map((f) =>
+            f.section === 'Medicinskt utlåtande' ? { ...f, section: 'Yttre omständigheter' } : f
+          );
 
     setFields(uppgifterFields ?? []);
     setRealEstates(errand?.facilities ?? []);
