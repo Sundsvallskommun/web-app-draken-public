@@ -69,7 +69,7 @@ export const exportSingleErrand: (
         key: ep.field,
         displayName: ep.label,
         values: Array.isArray(ep.value) ? ep.value : [ep.value],
-        label: getExtraParametersLabels(errand.caseType)?.[ep.field] || '',
+        label: getExtraParametersLabels(errand.caseType, errand.channel)?.[ep.field] || '',
       })),
   };
 

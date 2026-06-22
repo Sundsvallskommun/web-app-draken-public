@@ -17,6 +17,7 @@ import { mexSellLandToTheMunicipality_UppgiftFieldTemplate } from '@casedata/com
 import { mexSquarePlace_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-square-place';
 import { mexTerminationOfLease_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-termination-of-lease';
 import { changeApplication_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-change-application';
+import { nationalEservice_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-national-eservice';
 import { notification_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification';
 import { notificationBusCard_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-bus-card';
 import { notificationChange_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-change';
@@ -29,6 +30,8 @@ import { parkingPermitAppeal_UppgiftFieldTemplate } from '@casedata/components/e
 import { lostParkingPermit_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-lost-parking-permit';
 import { parkingPermit_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-parkingpermit';
 import { parkingPermitRenewal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-renewal';
+import { CaseType } from '@casedata/interfaces/case-type';
+import { Channels } from '@casedata/interfaces/channels';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { apiService } from '@common/services/api-service';
@@ -194,14 +197,19 @@ const template: ExtraParametersObject = {
   MEX_BUY_LAND_FROM_THE_MUNICIPALITY: mexBuyLandFromTheMunicipality_UppgiftFieldTemplate,
 };
 
-export const getExtraParametersLabels = (caseType: string): { [key: string]: string } => {
-  return (template as Record<string, any>)[caseType]?.reduce(
-    (acc: Record<string, string>, field: { field: string; label: string }) => {
-      acc[field.field] = field.label;
-      return acc;
-    },
-    {} as Record<string, string>
-  );
+// Nationella riksfärdtjänstansökningar (PARATRANSIT_NATIONAL) som kommit in via e-tjänsten
+// använder en fritextvariant av mallen i stället för den strukturerade reslistan.
+const isNationalEserviceErrand = (caseType: string, channel?: string): boolean =>
+  caseType === CaseType.PARATRANSIT_NATIONAL && channel === Channels.ESERVICE;
+
+export const getExtraParametersLabels = (caseType: string, channel?: string): { [key: string]: string } => {
+  const labelTemplate = isNationalEserviceErrand(caseType, channel)
+    ? nationalEservice_UppgiftFieldTemplate
+    : (template as Record<string, any>)[caseType];
+  return labelTemplate?.reduce((acc: Record<string, string>, field: { field: string; label: string }) => {
+    acc[field.field] = field.label;
+    return acc;
+  }, {} as Record<string, string>);
 };
 
 export const extraParametersToUppgiftMapper: (errand: IErrand) => UppgiftField[] = (errand) => {
@@ -216,7 +224,9 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => UppgiftField[]
 
   const caseType = errand.caseType;
   const resolvedCaseType = caseTypeTemplateAlias[caseType] ?? caseType;
-  const caseTypeTemplate = (template[resolvedCaseType] as UppgiftField[]) || baseDetails;
+  const caseTypeTemplate = isNationalEserviceErrand(caseType, errand.channel)
+    ? nationalEservice_UppgiftFieldTemplate
+    : (template[resolvedCaseType] as UppgiftField[]) || baseDetails;
 
   obj[caseType] = caseTypeTemplate?.map((field) => ({ ...field })) || [];
 
