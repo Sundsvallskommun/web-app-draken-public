@@ -185,16 +185,33 @@ export const countAllMessages = (tree: MessageNode[]): number => {
   return c;
 };
 
+type MessageViewedValue = boolean | string | undefined;
+
+export const isMessageViewed = (message: { viewed?: MessageViewedValue }): boolean => {
+  return message.viewed === true || message.viewed === 'true';
+};
+
 export const countUnreadMessages = (tree: MessageNode[]): number => {
   if (!tree) {
     return 0;
   }
   let c = 0;
-  c += tree.filter((node) => !node.viewed).length;
+  c += tree.filter((node) => !isMessageViewed(node)).length;
   tree.forEach((root) => {
     c += countUnreadMessages(root.children ?? []);
   });
   return c;
+};
+
+export const markConversationMessageViewed = (tree: MessageNode[], selectedMessage: MessageNode): MessageNode[] => {
+  return tree.map((node) => ({
+    ...node,
+    viewed:
+      node.conversationId === selectedMessage.conversationId && node.messageId === selectedMessage.messageId
+        ? 'true'
+        : node.viewed,
+    children: node.children ? markConversationMessageViewed(node.children, selectedMessage) : node.children,
+  }));
 };
 
 export interface MessageNode extends MessageResponse {

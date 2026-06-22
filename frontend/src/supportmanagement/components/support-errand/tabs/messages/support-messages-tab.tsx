@@ -3,7 +3,12 @@ import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-g
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportCommunicationType } from '@supportmanagement/services/support-communication-types';
 import { isSupportErrandLocked, Status, validateAction } from '@supportmanagement/services/support-errand-service';
-import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
+import {
+  isMessageViewed,
+  Message,
+  MessageNode,
+  setMessageViewStatus,
+} from '@supportmanagement/services/support-message-service';
 import { Mail } from 'lucide-react';
 import { FC, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +21,7 @@ export const SupportMessagesTab: FC<{
   messageTree: Message[];
   supportConversations: Message[];
   conversationMessageTree: Message[];
+  markConversationMessageViewed: (message: MessageNode) => void;
   setUnsaved: (unsaved: boolean) => void;
   update: () => void;
   municipalityId: string;
@@ -43,9 +49,10 @@ export const SupportMessagesTab: FC<{
 
   const onSelect = (message: Message) => {
     if (message.conversationId && message.conversationId !== '') {
-      console.warn('Not implemented');
-      props.update();
-    } else if (!message.viewed && supportErrand?.assignedUserId === user.username) {
+      if (!isMessageViewed(message)) {
+        props.markConversationMessageViewed(message);
+      }
+    } else if (!isMessageViewed(message) && supportErrand?.assignedUserId === user.username) {
       setMessageViewStatus(supportErrand!.id!, municipalityId, message.communicationID, true).then(() => {
         props.update();
       });

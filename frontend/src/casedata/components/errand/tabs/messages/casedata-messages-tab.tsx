@@ -1,6 +1,12 @@
 import { Channels } from '@casedata/interfaces/channels';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import { fetchMessagesWithTree, MessageNode, setMessageViewStatus } from '@casedata/services/casedata-message-service';
+import {
+  fetchMessagesWithTree,
+  isMessageViewed,
+  markConversationMessageViewed,
+  MessageNode,
+  setMessageViewStatus,
+} from '@casedata/services/casedata-message-service';
 import { CasedataMessageType, isCasedataWebMessageType } from '@casedata/services/casedata-message-types';
 import { Button, Divider, FormLabel, Select, useSnackbar } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
@@ -23,6 +29,8 @@ export const CasedataMessagesTab: FC<{
   const setMessageTree = useCasedataStore((s) => s.setMessageTree);
   const conversation = useCasedataStore((s) => s.conversation);
   const conversationTree = useCasedataStore((s) => s.conversationTree);
+  const setConversation = useCasedataStore((s) => s.setConversation);
+  const setConversationTree = useCasedataStore((s) => s.setConversationTree);
   const user = useUserStore((s) => s.user);
   const [selectedMessage, setSelectedMessage] = useState<MessageNode>();
   const [showMessageComposer, setShowMessageComposer] = useState<boolean>(false);
@@ -43,7 +51,8 @@ export const CasedataMessagesTab: FC<{
 
   const setMessageViewed = (msg: MessageNode) => {
     if (msg.conversationId) {
-      console.warn('Not implemented');
+      setConversation(markConversationMessageViewed(conversation ?? [], msg));
+      setConversationTree(markConversationMessageViewed(conversationTree ?? [], msg));
       return;
     }
     if (!errand) return;
@@ -187,8 +196,10 @@ export const CasedataMessagesTab: FC<{
         {combinedMessages?.length ? (
           <MessageTreeComponent
             nodes={sortedMessages ?? []}
-            onSelect={(msg: MessageResponse) => {
-              setMessageViewed(msg);
+            onSelect={(msg: MessageNode) => {
+              if (!isMessageViewed(msg)) {
+                setMessageViewed(msg);
+              }
               setSelectedMessage(msg);
             }}
             setShowMessageComposer={setShowMessageComposer}

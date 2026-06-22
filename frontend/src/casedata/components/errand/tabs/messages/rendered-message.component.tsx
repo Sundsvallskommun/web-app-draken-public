@@ -3,7 +3,7 @@ import { Role } from '@casedata/interfaces/role';
 import { messageAttachment } from '@casedata/services/casedata-attachment-service';
 import { getConversationAttachment } from '@casedata/services/casedata-conversation-service';
 import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
-import { MessageNode } from '@casedata/services/casedata-message-service';
+import { isMessageViewed, MessageNode } from '@casedata/services/casedata-message-service';
 import {
   CasedataMessageType,
   isCasedataReplyableMessageType,
@@ -75,6 +75,7 @@ export const RenderedMessage: FC<{
   const [expanded, setExpanded] = useState<boolean>(false);
   const channelPresentation = getChannelPresentation(message.messageType, errand?.channel === Channels.ESERVICE_KATLA);
   const ChannelIcon = channelPresentation?.Icon;
+  const viewed = isMessageViewed(message);
 
   useEffect(() => {
     const _a = errand ? validateAction(errand, user) : false;
@@ -178,7 +179,7 @@ export const RenderedMessage: FC<{
           <div className="flex gap-8">
             <span
               className={cx(
-                message.viewed ? 'bg-gray-200' : `bg-vattjom-surface-primary`,
+                viewed ? 'bg-gray-200' : `bg-vattjom-surface-primary`,
                 `self-center w-12 h-12 my-xs rounded-full flex items-center justify-center text-lg`
               )}
             ></span>
@@ -199,7 +200,7 @@ export const RenderedMessage: FC<{
 
         <div className="pl-xl flex justify-between items-start">
           <p
-            className={cx(`my-0 text-primary`, message.viewed ? 'font-normal' : 'font-bold')}
+            className={cx(`my-0 text-primary`, viewed ? 'font-normal' : 'font-bold')}
             data-cy="message-subject"
             dangerouslySetInnerHTML={{
               __html: sanitized(message.subject || ''),
