@@ -1,10 +1,10 @@
-import { expect,test } from '../../fixtures/base.fixture';
+import { expect, test } from '../../fixtures/base.fixture';
 import { mockAddress } from '../fixtures/mockAddress';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockAsset } from '../fixtures/mockAsset';
 import { mockAttachments } from '../fixtures/mockAttachments';
 import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
-import { mockConversationMessages,mockConversations } from '../fixtures/mockConversations';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 import { mockHistory } from '../fixtures/mockHistory';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
@@ -16,6 +16,7 @@ import { mockPersonId } from '../fixtures/mockPersonId';
 import { mockRelations } from '../fixtures/mockRelations';
 
 const b64 = (s: string) => Buffer.from(s, 'utf-8').toString('base64');
+const errandMessagesRoute = /\/errand\/\d+\/messages$/;
 const mockMessageTemplates = {
   data: [
     { identifier: 'mex.email.default', name: 'E-postmall', content: b64('<p>E-postmall innehåll</p>') },
@@ -85,7 +86,7 @@ test.describe('Message tab', () => {
     await mockRoute('**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders, { method: 'POST' });
     await mockRoute('**/contracts/2024-01026', mockLeaseAgreement, { method: 'GET' }); // @getContract
     await mockRoute('**/contracts/2281/2024-01026/attachments/1', mockContractAttachment, { method: 'GET' }); // @getContractAttachment
-    await page.route(/\/errand\/\d+\/messages$/, async (route) => {
+    await page.route(errandMessagesRoute, async (route) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(mockMessages) });
     });
 
@@ -153,6 +154,14 @@ test.describe('Message tab', () => {
     mockRoute,
     dismissCookieConsent,
   }) => {
+    await page.unroute(errandMessagesRoute);
+    await page.route(errandMessagesRoute, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: [], message: 'success' }),
+      });
+    });
     await page.unroute('**/namespace/errands/**/communication/conversations');
     await page.unroute('**/errands/**/communication/conversations/*/messages');
     await mockRoute('**/namespace/errands/**/communication/conversations', mockUnreadConversation, { method: 'GET' });
