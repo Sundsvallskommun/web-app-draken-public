@@ -93,6 +93,15 @@ test.describe('Contract Overview page', () => {
     await expect(page.locator('[data-cy="contract-lease-type-filter"]')).toBeVisible();
     await expect(page.locator('[data-cy="contract-dates-filter"]')).toBeVisible();
     await expect(page.locator('[data-cy="contract-status-filter"]')).toBeVisible();
+    await page.locator('[data-cy="contract-status-filter"]').click();
+    const statusFilterOptions = await page
+      .locator('[data-cy^="contract-status-filter-"]')
+      .evaluateAll((statuses) => statuses.map((status) => status.getAttribute('data-cy')));
+    expect(statusFilterOptions).toEqual([
+      'contract-status-filter-ACTIVE',
+      'contract-status-filter-DRAFT',
+      'contract-status-filter-TERMINATED',
+    ]);
   });
 
   test('can use the search field', async ({ page, mockRoute }) => {

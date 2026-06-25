@@ -1,17 +1,18 @@
 /// <reference types="cypress" />
 
 import { onlyOn } from '@cypress/skip-test';
+
 import { mockNotifications } from '../../../../cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockContractAttachment } from '../fixtures/mockContract';
 import {
-  mockContractsList,
-  mockContractsListEmpty,
-  mockContractsListFiltered,
   mockContractDetailLeaseAgreement,
   mockContractDetailPurchaseAgreement,
   mockContractInvoices,
   mockContractInvoicesEmpty,
+  mockContractsList,
+  mockContractsListEmpty,
+  mockContractsListFiltered,
 } from '../fixtures/mockContractsList';
 import { mockErrands_base } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
@@ -98,6 +99,14 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.get('[data-cy="contract-lease-type-filter"]').should('exist');
       cy.get('[data-cy="contract-dates-filter"]').should('exist');
       cy.get('[data-cy="contract-status-filter"]').should('exist');
+      cy.get('[data-cy="contract-status-filter"]').click();
+      cy.get('[data-cy^="contract-status-filter-"]').then(($statuses) => {
+        expect([...$statuses].map((status) => status.getAttribute('data-cy'))).to.deep.equal([
+          'contract-status-filter-ACTIVE',
+          'contract-status-filter-DRAFT',
+          'contract-status-filter-TERMINATED',
+        ]);
+      });
     });
 
     it('can use the search field', () => {

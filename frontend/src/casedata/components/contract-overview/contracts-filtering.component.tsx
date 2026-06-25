@@ -25,8 +25,8 @@ export const ContractFilterValues: ContractFilter = {
 };
 
 export const statusOptions = [
-  { label: 'Utkast', value: Status.DRAFT },
   { label: 'Aktiv', value: Status.ACTIVE },
+  { label: 'Utkast', value: Status.DRAFT },
   { label: 'Avslutad', value: Status.TERMINATED },
 ];
 
