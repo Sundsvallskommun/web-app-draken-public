@@ -14,6 +14,29 @@ import { ContractsFilterTags } from './contracts-filter-tags.component';
 import { ContractFilter, ContractFilterValues, ContractsFilteringComponent } from './contracts-filtering.component';
 import { ContractsTable, ContractTableForm } from './contracts-table.component';
 
+const contractFilterToObject = (filter: ContractFilter): { [key: string]: string } => {
+  const fObj: { [key: string]: string } = {};
+  if (filter.query?.trim()) {
+    fObj['query'] = filter.query.trim();
+  }
+  if (filter.status && filter.status.length > 0) {
+    fObj['status'] = filter.status.join(',');
+  }
+  if (filter.contractType && filter.contractType.length > 0) {
+    fObj['contractType'] = filter.contractType.join(',');
+  }
+  if (filter.leaseType && filter.leaseType.length > 0) {
+    fObj['leaseType'] = filter.leaseType.join(',');
+  }
+  if (filter.startdate?.trim()) {
+    fObj['startDate'] = filter.startdate.trim();
+  }
+  if (filter.enddate?.trim()) {
+    fObj['endDate'] = filter.enddate.trim();
+  }
+  return fObj;
+};
+
 export const ContractOverview: FC = () => {
   const filterForm = useForm<ContractFilter>({ defaultValues: ContractFilterValues });
   const { watch: watchFilter } = filterForm;
@@ -37,7 +60,9 @@ export const ContractOverview: FC = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<CBillingRecord | null>(null);
   const [contractsResponse, setContractsResponse] = useState<PageContract | null>(null);
 
-  const [filterObject, setFilterObject] = useState<{ [key: string]: string }>({});
+  const [filterObject, setFilterObject] = useState<{ [key: string]: string }>(() =>
+    contractFilterToObject(ContractFilterValues)
+  );
 
   const handleRowClick = (contract: Contract) => {
     setSelectedContract(contract);
@@ -61,26 +86,16 @@ export const ContractOverview: FC = () => {
 
   useDebounceEffect(
     () => {
-      const fObj: { [key: string]: string } = {};
-      if (queryFilter?.trim()) {
-        fObj['query'] = queryFilter.trim();
-      }
-      if (statusFilter && statusFilter.length > 0) {
-        fObj['status'] = statusFilter.join(',');
-      }
-      if (contractTypeFilter && contractTypeFilter.length > 0) {
-        fObj['contractType'] = contractTypeFilter.join(',');
-      }
-      if (leaseTypeFilter && leaseTypeFilter.length > 0) {
-        fObj['leaseType'] = leaseTypeFilter.join(',');
-      }
-      if (startdate?.trim()) {
-        fObj['startDate'] = startdate.trim();
-      }
-      if (enddate?.trim()) {
-        fObj['endDate'] = enddate.trim();
-      }
-      setFilterObject(fObj);
+      setFilterObject(
+        contractFilterToObject({
+          query: queryFilter,
+          status: statusFilter,
+          contractType: contractTypeFilter,
+          leaseType: leaseTypeFilter,
+          startdate,
+          enddate,
+        })
+      );
     },
     200,
     [queryFilter, statusFilter, contractTypeFilter, leaseTypeFilter, startdate, enddate]
