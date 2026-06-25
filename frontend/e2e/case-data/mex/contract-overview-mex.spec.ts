@@ -1,15 +1,15 @@
-import { test, expect } from '../../fixtures/base.fixture';
+import { expect, test } from '../../fixtures/base.fixture';
 import { mockNotifications } from '../../kontaktcenter/fixtures/mockSupportNotifications';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockContractAttachment } from '../fixtures/mockContract';
 import {
-  mockContractsList,
-  mockContractsListEmpty,
-  mockContractsListFiltered,
   mockContractDetailLeaseAgreement,
   mockContractDetailPurchaseAgreement,
   mockContractInvoices,
   mockContractInvoicesEmpty,
+  mockContractsList,
+  mockContractsListEmpty,
+  mockContractsListFiltered,
 } from '../fixtures/mockContractsList';
 import { mockErrands_base } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
@@ -36,6 +36,14 @@ test.describe('Contract Overview page', () => {
     await page.getByRole('button', { name: 'Avtalsöversikt' }).click();
     await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
     await expect(page.locator('h1').filter({ hasText: 'Alla avtal' })).toBeVisible();
+  });
+
+  test('fetches only active contracts by default', async ({ page }) => {
+    await page.getByRole('button', { name: 'Avtalsöversikt' }).click();
+    const response = await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
+    expect(response.url()).toContain('status=ACTIVE');
+    await page.locator('[data-cy="contract-status-filter"]').click();
+    await expect(page.locator('[data-cy="contract-status-filter-ACTIVE"]')).toBeChecked();
   });
 
   test('displays the contracts table with correct headers', async ({ page }) => {
@@ -91,9 +99,16 @@ test.describe('Contract Overview page', () => {
     await navigateToContractOverview(page);
     await page.locator('[data-cy="contract-query-filter"]').fill('BALDER');
     await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-    await page.locator('[data-cy="contract-query-filter"]').locator('..').locator('button').filter({ hasText: 'Sök' }).click();
+    await page
+      .locator('[data-cy="contract-query-filter"]')
+      .locator('..')
+      .locator('button')
+      .filter({ hasText: 'Sök' })
+      .click();
     await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
-    await expect(page.locator('[data-cy="contracts-table"] tbody tr')).toHaveCount(mockContractsListFiltered.content?.length);
+    await expect(page.locator('[data-cy="contracts-table"] tbody tr')).toHaveCount(
+      mockContractsListFiltered.content?.length
+    );
   });
 
   test('can filter by contract type', async ({ page, mockRoute }) => {
@@ -116,7 +131,7 @@ test.describe('Contract Overview page', () => {
     await navigateToContractOverview(page);
     await page.locator('[data-cy="contract-status-filter"]').click();
     await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-    await page.locator('[data-cy="contract-status-filter-ACTIVE"]').click({ force: true });
+    await page.locator('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
     await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
   });
 
@@ -194,15 +209,38 @@ test.describe('Contract Overview page', () => {
     await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
   });
 
+  test('can sort by property designation and district', async ({ page, mockRoute }) => {
+    await navigateToContractOverview(page);
+    await mockRoute('**/contracts?*', mockContractsList, { method: 'GET' });
+
+    const propertyDesignationRequest = page.waitForResponse(
+      (resp) =>
+        resp.url().includes('/contracts?') &&
+        resp.url().includes('sortBy=propertyDesignations.name') &&
+        resp.status() === 200
+    );
+    await page.locator('[data-cy="contracts-table"] th').filter({ hasText: 'Fastighetsbeteckning' }).click();
+    await propertyDesignationRequest;
+
+    const districtRequest = page.waitForResponse(
+      (resp) =>
+        resp.url().includes('/contracts?') &&
+        resp.url().includes('sortBy=propertyDesignations.district') &&
+        resp.status() === 200
+    );
+    await page.locator('[data-cy="contracts-table"] th').filter({ hasText: 'Distrikt' }).click();
+    await districtRequest;
+  });
+
   test.describe('Filter chips and clear filters', () => {
     test('shows a chip when filtering by status', async ({ page, mockRoute }) => {
       await navigateToContractOverview(page);
       await page.locator('[data-cy="contract-status-filter"]').click();
       await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-      await page.locator('[data-cy="contract-status-filter-ACTIVE"]').click({ force: true });
+      await page.locator('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
-      await expect(page.locator('[data-cy="tag-contract-status-ACTIVE"]')).toBeVisible();
-      await expect(page.locator('[data-cy="tag-contract-status-ACTIVE"]')).toContainText('Aktiv');
+      await expect(page.locator('[data-cy="tag-contract-status-DRAFT"]')).toBeVisible();
+      await expect(page.locator('[data-cy="tag-contract-status-DRAFT"]')).toContainText('Utkast');
     });
 
     test('shows a chip when filtering by contract type', async ({ page, mockRoute }) => {
@@ -240,14 +278,14 @@ test.describe('Contract Overview page', () => {
       await navigateToContractOverview(page);
       await page.locator('[data-cy="contract-status-filter"]').click();
       await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-      await page.locator('[data-cy="contract-status-filter-ACTIVE"]').click({ force: true });
+      await page.locator('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
-      await expect(page.locator('[data-cy="tag-contract-status-ACTIVE"]')).toBeVisible();
+      await expect(page.locator('[data-cy="tag-contract-status-DRAFT"]')).toBeVisible();
 
       await mockRoute('**/contracts?*', mockContractsList, { method: 'GET' }); // @getUnfilteredContracts
-      await page.locator('[data-cy="tag-contract-status-ACTIVE"]').click();
+      await page.locator('[data-cy="tag-contract-status-DRAFT"]').click();
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
-      await expect(page.locator('[data-cy="tag-contract-status-ACTIVE"]')).toHaveCount(0);
+      await expect(page.locator('[data-cy="tag-contract-status-DRAFT"]')).toHaveCount(0);
     });
 
     test('removes a contract type chip when clicking it', async ({ page, mockRoute }) => {
@@ -286,7 +324,7 @@ test.describe('Contract Overview page', () => {
 
       await page.locator('[data-cy="contract-status-filter"]').click();
       await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-      await page.locator('[data-cy="contract-status-filter-ACTIVE"]').click({ force: true });
+      await page.locator('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
 
       await expect(page.locator('[data-cy="tag-contract-clearAll"]')).toBeVisible();
@@ -299,7 +337,7 @@ test.describe('Contract Overview page', () => {
       // Apply status filter
       await page.locator('[data-cy="contract-status-filter"]').click();
       await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-      await page.locator('[data-cy="contract-status-filter-ACTIVE"]').click({ force: true });
+      await page.locator('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
 
       // Apply contract type filter
@@ -308,7 +346,7 @@ test.describe('Contract Overview page', () => {
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
 
       // Both chips should exist
-      await expect(page.locator('[data-cy="tag-contract-status-ACTIVE"]')).toBeVisible();
+      await expect(page.locator('[data-cy="tag-contract-status-DRAFT"]')).toBeVisible();
       await expect(page.locator('[data-cy="tag-contract-type-LEASE_AGREEMENT"]')).toBeVisible();
 
       // Click "Rensa alla"
@@ -317,7 +355,7 @@ test.describe('Contract Overview page', () => {
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
 
       // All chips should be gone
-      await expect(page.locator('[data-cy="tag-contract-status-ACTIVE"]')).toHaveCount(0);
+      await expect(page.locator('[data-cy="tag-contract-status-DRAFT"]')).toHaveCount(0);
       await expect(page.locator('[data-cy="tag-contract-type-LEASE_AGREEMENT"]')).toHaveCount(0);
       await expect(page.locator('[data-cy="tag-contract-clearAll"]')).toHaveCount(0);
     });
@@ -328,7 +366,7 @@ test.describe('Contract Overview page', () => {
       // Apply status filter
       await page.locator('[data-cy="contract-status-filter"]').click();
       await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-      await page.locator('[data-cy="contract-status-filter-ACTIVE"]').click({ force: true });
+      await page.locator('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
 
       // Apply contract type filter
@@ -342,13 +380,13 @@ test.describe('Contract Overview page', () => {
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
 
       // All three chips should be visible
-      await expect(page.locator('[data-cy="tag-contract-status-ACTIVE"]')).toBeVisible();
+      await expect(page.locator('[data-cy="tag-contract-status-DRAFT"]')).toBeVisible();
       await expect(page.locator('[data-cy="tag-contract-type-LEASE_AGREEMENT"]')).toBeVisible();
       await expect(page.locator('[data-cy="tag-lease-type-LAND_LEASE_RESIDENTIAL"]')).toBeVisible();
       await expect(page.locator('[data-cy="tag-contract-clearAll"]')).toBeVisible();
     });
 
-    test('does not show chips when no filters are active', async ({ page }) => {
+    test('does not show chips when only the default active status filter is applied', async ({ page }) => {
       await navigateToContractOverview(page);
       await expect(page.locator('[data-cy="tag-contract-clearAll"]')).toHaveCount(0);
       await expect(page.locator('.sk-chip')).toHaveCount(0);
@@ -575,7 +613,6 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-row-0"]').click();
         await page.locator('[data-cy="fakturor-disclosure"]').click();
 
-
         await expect(page.locator('[data-cy="next-billing-date"]')).toContainText('2026-06-01');
       });
 
@@ -587,7 +624,6 @@ test.describe('Contract Overview page', () => {
 
         await page.locator('[data-cy="contract-row-0"]').click();
         await page.locator('[data-cy="fakturor-disclosure"]').click();
-
 
         await expect(page.locator('[data-cy="next-billing-date"]')).toContainText('-');
       });
@@ -611,7 +647,6 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-row-0"]').click();
         await page.locator('[data-cy="fakturor-disclosure"]').click();
 
-
         // Invoices table should be visible
         await expect(page.locator('[data-cy="contract-invoices-table"]')).toBeVisible();
       });
@@ -623,7 +658,6 @@ test.describe('Contract Overview page', () => {
 
         await page.locator('[data-cy="contract-row-0"]').click();
         await page.locator('[data-cy="fakturor-disclosure"]').click();
-
 
         // Check first invoice row
         await expect(page.locator('[data-cy="invoice-row-0"]')).toBeVisible();
@@ -640,7 +674,6 @@ test.describe('Contract Overview page', () => {
 
         await page.locator('[data-cy="contract-row-0"]').click();
         await page.locator('[data-cy="fakturor-disclosure"]').click();
-
 
         // Check status labels
         await expect(page.locator('[data-cy="invoice-status-0"]')).toContainText('Ny');
@@ -672,7 +705,6 @@ test.describe('Contract Overview page', () => {
 
         await page.locator('[data-cy="contract-row-0"]').click();
         await page.locator('[data-cy="fakturor-disclosure"]').click();
-
 
         // Empty state message should be visible
         await expect(page.locator('[data-cy="invoices-empty"]')).toBeVisible();
@@ -926,11 +958,11 @@ test.describe('Contract Overview page', () => {
         // Should open the new errand in a new tab
         await expect
           .poll(() =>
-            page.evaluate(
-              () => (window as unknown as { __openCalls: { url: string; target: string }[] }).__openCalls
-            )
+            page.evaluate(() => (window as unknown as { __openCalls: { url: string; target: string }[] }).__openCalls)
           )
-          .toContainEqual(expect.objectContaining({ url: expect.stringMatching(/\/arende\/MEX-2024-000999$/), target: '_blank' }));
+          .toContainEqual(
+            expect.objectContaining({ url: expect.stringMatching(/\/arende\/MEX-2024-000999$/), target: '_blank' })
+          );
       });
 
       test('shows success toast and opens new errand after creation', async ({ page, mockRoute }) => {
@@ -977,9 +1009,7 @@ test.describe('Contract Overview page', () => {
         // Should open the new errand
         await expect
           .poll(() =>
-            page.evaluate(
-              () => (window as unknown as { __openCalls: { url: string; target: string }[] }).__openCalls
-            )
+            page.evaluate(() => (window as unknown as { __openCalls: { url: string; target: string }[] }).__openCalls)
           )
           .toContainEqual(expect.objectContaining({ url: expect.stringMatching(/\/arende\/MEX-2024-000999$/) }));
       });

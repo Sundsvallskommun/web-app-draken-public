@@ -17,7 +17,7 @@ export interface ContractFilter {
 
 export const ContractFilterValues: ContractFilter = {
   query: '',
-  status: [],
+  status: [Status.ACTIVE],
   contractType: [],
   leaseType: [],
   startdate: '',
