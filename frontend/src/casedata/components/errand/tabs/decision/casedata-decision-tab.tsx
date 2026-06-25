@@ -53,6 +53,7 @@ import {
   Button,
   Combobox,
   cx,
+  DatePicker,
   Dialog,
   Disclosure,
   FormControl,
@@ -800,11 +801,12 @@ export const CasedataDecisionTab: FC<{
               <>
                 <FormControl className="w-full">
                   <FormLabel>Beslut giltigt från</FormLabel>
-                  <Input
+                  <DatePicker
                     type="date"
                     {...register('validFrom')}
                     size="sm"
                     disabled={isErrandLocked(errand) || isSent() || outcome !== DecisionOutcomes.Approval}
+                    invalid={!!errors.validFrom}
                     placeholder="Välj datum"
                     data-cy="validFrom-input"
                   />
@@ -815,11 +817,12 @@ export const CasedataDecisionTab: FC<{
 
                 <FormControl className="w-full">
                   <FormLabel>Beslut giltigt till</FormLabel>
-                  <Input
+                  <DatePicker
                     type="date"
                     {...register('validTo')}
                     size="sm"
                     disabled={isErrandLocked(errand) || isSent() || outcome !== DecisionOutcomes.Approval}
+                    invalid={!!errors.validTo}
                     placeholder="Välj datum"
                     data-cy="validTo-input"
                   />
