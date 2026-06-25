@@ -124,7 +124,7 @@ test.describe('Contract Overview page', () => {
     await navigateToContractOverview(page);
     await page.locator('[data-cy="contract-type-filter"]').click();
     await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-    await page.locator('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+    await page.locator('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click();
     await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
   });
 
@@ -132,7 +132,7 @@ test.describe('Contract Overview page', () => {
     await navigateToContractOverview(page);
     await page.locator('[data-cy="contract-lease-type-filter"]').click();
     await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-    await page.locator('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click({ force: true });
+    await page.locator('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click();
     await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
   });
 
@@ -140,7 +140,7 @@ test.describe('Contract Overview page', () => {
     await navigateToContractOverview(page);
     await page.locator('[data-cy="contract-status-filter"]').click();
     await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-    await page.locator('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
+    await page.locator('[data-cy="contract-status-filter-DRAFT"]').click();
     await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
   });
 
@@ -229,7 +229,8 @@ test.describe('Contract Overview page', () => {
         resp.status() === 200
     );
     await page.locator('[data-cy="contracts-table"] th').filter({ hasText: 'Fastighetsbeteckning' }).click();
-    await propertyDesignationRequest;
+    const propertyDesignationResponse = await propertyDesignationRequest;
+    expect(propertyDesignationResponse.url()).toContain('sortBy=propertyDesignations.name');
 
     const districtRequest = page.waitForResponse(
       (resp) =>
@@ -238,7 +239,8 @@ test.describe('Contract Overview page', () => {
         resp.status() === 200
     );
     await page.locator('[data-cy="contracts-table"] th').filter({ hasText: 'Distrikt' }).click();
-    await districtRequest;
+    const districtResponse = await districtRequest;
+    expect(districtResponse.url()).toContain('sortBy=propertyDesignations.district');
   });
 
   test.describe('Filter chips and clear filters', () => {
@@ -246,7 +248,7 @@ test.describe('Contract Overview page', () => {
       await navigateToContractOverview(page);
       await page.locator('[data-cy="contract-status-filter"]').click();
       await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-      await page.locator('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
+      await page.locator('[data-cy="contract-status-filter-DRAFT"]').click();
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
       await expect(page.locator('[data-cy="tag-contract-status-DRAFT"]')).toBeVisible();
       await expect(page.locator('[data-cy="tag-contract-status-DRAFT"]')).toContainText('Utkast');
@@ -256,7 +258,7 @@ test.describe('Contract Overview page', () => {
       await navigateToContractOverview(page);
       await page.locator('[data-cy="contract-type-filter"]').click();
       await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-      await page.locator('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+      await page.locator('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click();
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
       await expect(page.locator('[data-cy="tag-contract-type-LEASE_AGREEMENT"]')).toBeVisible();
       await expect(page.locator('[data-cy="tag-contract-type-LEASE_AGREEMENT"]')).toContainText('Arrende');
@@ -266,7 +268,7 @@ test.describe('Contract Overview page', () => {
       await navigateToContractOverview(page);
       await page.locator('[data-cy="contract-lease-type-filter"]').click();
       await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-      await page.locator('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click({ force: true });
+      await page.locator('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click();
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
       await expect(page.locator('[data-cy="tag-lease-type-LAND_LEASE_RESIDENTIAL"]')).toBeVisible();
       await expect(page.locator('[data-cy="tag-lease-type-LAND_LEASE_RESIDENTIAL"]')).toContainText('Bostadsarrende');
@@ -287,7 +289,7 @@ test.describe('Contract Overview page', () => {
       await navigateToContractOverview(page);
       await page.locator('[data-cy="contract-status-filter"]').click();
       await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-      await page.locator('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
+      await page.locator('[data-cy="contract-status-filter-DRAFT"]').click();
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
       await expect(page.locator('[data-cy="tag-contract-status-DRAFT"]')).toBeVisible();
 
@@ -301,7 +303,7 @@ test.describe('Contract Overview page', () => {
       await navigateToContractOverview(page);
       await page.locator('[data-cy="contract-type-filter"]').click();
       await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-      await page.locator('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+      await page.locator('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click();
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
       await expect(page.locator('[data-cy="tag-contract-type-LEASE_AGREEMENT"]')).toBeVisible();
 
@@ -333,7 +335,7 @@ test.describe('Contract Overview page', () => {
 
       await page.locator('[data-cy="contract-status-filter"]').click();
       await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-      await page.locator('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
+      await page.locator('[data-cy="contract-status-filter-DRAFT"]').click();
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
 
       await expect(page.locator('[data-cy="tag-contract-clearAll"]')).toBeVisible();
@@ -346,12 +348,12 @@ test.describe('Contract Overview page', () => {
       // Apply status filter
       await page.locator('[data-cy="contract-status-filter"]').click();
       await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-      await page.locator('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
+      await page.locator('[data-cy="contract-status-filter-DRAFT"]').click();
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
 
       // Apply contract type filter
       await page.locator('[data-cy="contract-type-filter"]').click();
-      await page.locator('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+      await page.locator('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click();
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
 
       // Both chips should exist
@@ -375,17 +377,17 @@ test.describe('Contract Overview page', () => {
       // Apply status filter
       await page.locator('[data-cy="contract-status-filter"]').click();
       await mockRoute('**/contracts?*', mockContractsListFiltered, { method: 'GET' }); // @getFilteredContracts
-      await page.locator('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
+      await page.locator('[data-cy="contract-status-filter-DRAFT"]').click();
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
 
       // Apply contract type filter
       await page.locator('[data-cy="contract-type-filter"]').click();
-      await page.locator('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+      await page.locator('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click();
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
 
       // Apply lease type filter
       await page.locator('[data-cy="contract-lease-type-filter"]').click();
-      await page.locator('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click({ force: true });
+      await page.locator('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click();
       await page.waitForResponse((resp) => resp.url().includes('/contracts?') && resp.status() === 200);
 
       // All three chips should be visible

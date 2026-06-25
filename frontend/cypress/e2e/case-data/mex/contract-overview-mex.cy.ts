@@ -122,7 +122,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       navigateToContractOverview();
       cy.get('[data-cy="contract-type-filter"]').click();
       cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
-      cy.get('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+      cy.get('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click();
       cy.wait('@getFilteredContracts');
     });
 
@@ -130,7 +130,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       navigateToContractOverview();
       cy.get('[data-cy="contract-lease-type-filter"]').click();
       cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
-      cy.get('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click({ force: true });
+      cy.get('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click();
       cy.wait('@getFilteredContracts');
     });
 
@@ -138,7 +138,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       navigateToContractOverview();
       cy.get('[data-cy="contract-status-filter"]').click();
       cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
-      cy.get('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
+      cy.get('[data-cy="contract-status-filter-DRAFT"]').click();
       cy.wait('@getFilteredContracts');
     });
 
@@ -239,7 +239,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         navigateToContractOverview();
         cy.get('[data-cy="contract-status-filter"]').click();
         cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
-        cy.get('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
+        cy.get('[data-cy="contract-status-filter-DRAFT"]').click();
         cy.wait('@getFilteredContracts');
         cy.get('[data-cy="tag-contract-status-DRAFT"]').should('exist').and('contain.text', 'Utkast');
       });
@@ -248,7 +248,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         navigateToContractOverview();
         cy.get('[data-cy="contract-type-filter"]').click();
         cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
-        cy.get('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+        cy.get('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click();
         cy.wait('@getFilteredContracts');
         cy.get('[data-cy="tag-contract-type-LEASE_AGREEMENT"]').should('exist').and('contain.text', 'Arrende');
       });
@@ -257,7 +257,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         navigateToContractOverview();
         cy.get('[data-cy="contract-lease-type-filter"]').click();
         cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
-        cy.get('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click({ force: true });
+        cy.get('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click();
         cy.wait('@getFilteredContracts');
         cy.get('[data-cy="tag-lease-type-LAND_LEASE_RESIDENTIAL"]')
           .should('exist')
@@ -279,7 +279,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         navigateToContractOverview();
         cy.get('[data-cy="contract-status-filter"]').click();
         cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
-        cy.get('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
+        cy.get('[data-cy="contract-status-filter-DRAFT"]').click();
         cy.wait('@getFilteredContracts');
         cy.get('[data-cy="tag-contract-status-DRAFT"]').should('exist');
 
@@ -293,7 +293,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         navigateToContractOverview();
         cy.get('[data-cy="contract-type-filter"]').click();
         cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
-        cy.get('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+        cy.get('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click();
         cy.wait('@getFilteredContracts');
         cy.get('[data-cy="tag-contract-type-LEASE_AGREEMENT"]').should('exist');
 
@@ -325,7 +325,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
         cy.get('[data-cy="contract-status-filter"]').click();
         cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
-        cy.get('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
+        cy.get('[data-cy="contract-status-filter-DRAFT"]').click();
         cy.wait('@getFilteredContracts');
 
         cy.get('[data-cy="tag-contract-clearAll"]').should('exist').and('contain.text', 'Rensa alla');
@@ -337,13 +337,13 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         // Apply status filter
         cy.get('[data-cy="contract-status-filter"]').click();
         cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
-        cy.get('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
+        cy.get('[data-cy="contract-status-filter-DRAFT"]').click();
         cy.wait('@getFilteredContracts');
 
         // Apply contract type filter
         cy.get('[data-cy="contract-type-filter"]').click();
         cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts2');
-        cy.get('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+        cy.get('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click();
         cy.wait('@getFilteredContracts2');
 
         // Both chips should exist
@@ -367,19 +367,19 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         // Apply status filter
         cy.get('[data-cy="contract-status-filter"]').click();
         cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts');
-        cy.get('[data-cy="contract-status-filter-DRAFT"]').click({ force: true });
+        cy.get('[data-cy="contract-status-filter-DRAFT"]').click();
         cy.wait('@getFilteredContracts');
 
         // Apply contract type filter
         cy.get('[data-cy="contract-type-filter"]').click();
         cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts2');
-        cy.get('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click({ force: true });
+        cy.get('[data-cy="contract-type-filter-LEASE_AGREEMENT"]').click();
         cy.wait('@getFilteredContracts2');
 
         // Apply lease type filter
         cy.get('[data-cy="contract-lease-type-filter"]').click();
         cy.intercept('GET', '**/contracts?*', mockContractsListFiltered).as('getFilteredContracts3');
-        cy.get('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click({ force: true });
+        cy.get('[data-cy="contract-lease-type-filter-LAND_LEASE_RESIDENTIAL"]').click();
         cy.wait('@getFilteredContracts3');
 
         // All three chips should be visible
