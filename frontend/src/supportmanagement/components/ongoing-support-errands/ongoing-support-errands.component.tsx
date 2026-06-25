@@ -1,4 +1,3 @@
-import { ErrandsData } from '@casedata/interfaces/errand';
 import { attestationEnabled } from '@common/services/feature-flag-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useBillingStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
@@ -31,7 +30,7 @@ export interface TableForm {
   pageSize: number;
 }
 
-export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
+export const OngoingSupportErrands: FC = () => {
   const filterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const {
     watch: watchFilter,
