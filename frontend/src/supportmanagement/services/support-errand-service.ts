@@ -1045,6 +1045,14 @@ export const forwardSupportErrand: (
     throw 'No message found. Cannot forward errand without message.';
   }
 
+  // The errand is closed when it's forwarded. If it has no handler (e.g. forwarded directly
+  // from status NEW), assign the current user so the errand always has a responsible person.
+  const assignSelfIfUnassigned = async () => {
+    if (!errand.assignedUserId) {
+      await setSupportErrandAdmin(errand.id!, municipalityId, user.username, undefined, user.username);
+    }
+  };
+
   let attachmentId = [] as string[];
   for (const att of supportAttachment) {
     attachmentId.push(att.id);
@@ -1072,6 +1080,7 @@ export const forwardSupportErrand: (
       message.senderName = 'Kontakt  Sundsvall';
     }
     await sendMessage(message);
+    await assignSelfIfUnassigned();
     return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
   } else if (data.recipient == 'DEPARTMENT' && data.department) {
     errand.stakeholders?.forEach((s) => {
@@ -1083,7 +1092,8 @@ export const forwardSupportErrand: (
     delete data.newEmail;
     return apiService
       .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id!}/forward`, data)
-      .then(() => {
+      .then(async () => {
+        await assignSelfIfUnassigned();
         return closeSupportErrand(errand.id!, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
       })
       .catch((e: AxiosError) => {
