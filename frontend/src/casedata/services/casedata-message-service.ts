@@ -8,6 +8,11 @@ import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX } from '@common/services/application-service';
 import { base64Decode } from '@common/services/helper-service';
+import {
+  countUnreadMessages,
+  isMessageViewed,
+  markConversationMessageViewed as markConversationMessageViewedCommon,
+} from '@common/services/message-view-status-service';
 import { toBase64 } from '@common/utils/toBase64';
 import { UploadFile } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
@@ -185,16 +190,10 @@ export const countAllMessages = (tree: MessageNode[]): number => {
   return c;
 };
 
-export const countUnreadMessages = (tree: MessageNode[]): number => {
-  if (!tree) {
-    return 0;
-  }
-  let c = 0;
-  c += tree.filter((node) => !node.viewed).length;
-  tree.forEach((root) => {
-    c += countUnreadMessages(root.children ?? []);
-  });
-  return c;
+export { countUnreadMessages, isMessageViewed };
+
+export const markConversationMessageViewed = (tree: MessageNode[], selectedMessage: MessageNode): MessageNode[] => {
+  return markConversationMessageViewedCommon(tree, selectedMessage, 'true');
 };
 
 export interface MessageNode extends MessageResponse {

@@ -15,6 +15,7 @@ import {
   countUnreadMessages,
   fetchSupportMessages,
   groupByConversationIdSortedTree,
+  markConversationMessageViewed,
   MessageNode,
 } from '@supportmanagement/services/support-message-service';
 import { Dispatch, FC, ReactNode, SetStateAction, useEffect, useMemo, useState } from 'react';
@@ -120,13 +121,17 @@ export const SupportTabsWrapper: FC<{
       },
       {
         key: 'messages',
-        label: `Meddelanden (${countUnreadMessages(messages)})`,
+        label: `Meddelanden (${countUnreadMessages([...(messages ?? []), ...(supportConversations ?? [])])})`,
         content: supportErrand && (
           <SupportMessagesTab
             messages={messages}
             messageTree={messageTree}
             supportConversations={supportConversations}
             conversationMessageTree={conversationMessageTree}
+            markConversationMessageViewed={(message) => {
+              setSupportConversations(markConversationMessageViewed(supportConversations, message));
+              setConversationMessageTree(markConversationMessageViewed(conversationMessageTree, message));
+            }}
             setUnsaved={setUnsavedChanges}
             update={update}
             municipalityId={municipalityId}

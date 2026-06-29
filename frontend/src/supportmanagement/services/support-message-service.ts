@@ -1,4 +1,9 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
+import {
+  countUnreadMessages,
+  isMessageViewed,
+  markConversationMessageViewed as markConversationMessageViewedCommon,
+} from '@common/services/message-view-status-service';
 import sanitized from '@common/services/sanitizer-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
@@ -41,7 +46,7 @@ export interface Message {
   subject: string;
   sender: string;
   target: string;
-  viewed: boolean;
+  viewed: boolean | string;
   emailHeaders: Record<string, string[]>;
   conversationId?: string;
   messageId?: string;
@@ -363,14 +368,8 @@ export const countAllMessages = (tree: MessageNode[]): number => {
   return c;
 };
 
-export const countUnreadMessages = (tree: MessageNode[]): number => {
-  if (!tree) {
-    return 0;
-  }
-  let c = 0;
-  c += tree.filter((node) => !node.viewed).length;
-  tree.forEach((root) => {
-    c += countUnreadMessages(root.children ?? []);
-  });
-  return c;
+export { countUnreadMessages, isMessageViewed };
+
+export const markConversationMessageViewed = (tree: MessageNode[], selectedMessage: MessageNode): MessageNode[] => {
+  return markConversationMessageViewedCommon(tree, selectedMessage, true);
 };
