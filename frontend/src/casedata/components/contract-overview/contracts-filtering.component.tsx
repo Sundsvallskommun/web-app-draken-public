@@ -17,7 +17,7 @@ export interface ContractFilter {
 
 export const ContractFilterValues: ContractFilter = {
   query: '',
-  status: [],
+  status: [Status.ACTIVE],
   contractType: [],
   leaseType: [],
   startdate: '',
@@ -25,8 +25,8 @@ export const ContractFilterValues: ContractFilter = {
 };
 
 export const statusOptions = [
-  { label: 'Utkast', value: Status.DRAFT },
   { label: 'Aktiv', value: Status.ACTIVE },
+  { label: 'Utkast', value: Status.DRAFT },
   { label: 'Avslutad', value: Status.TERMINATED },
 ];
 
