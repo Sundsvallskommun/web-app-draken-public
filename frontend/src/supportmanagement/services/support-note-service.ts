@@ -1,4 +1,5 @@
 import { apiService } from '@common/services/api-service';
+import { NoteType } from '@supportmanagement/interfaces/genericNote';
 
 export interface SupportNoteDto {
   context: string;
@@ -111,4 +112,12 @@ export const deleteSupportNote: (errandId: string, municipalityId: string, noteI
       console.error('Something went wrong when deleting note');
       throw e;
     });
+};
+
+export const noteIsComment = (noteType: NoteType): boolean => {
+  return noteType === 'INTERNAL';
+};
+
+export const noteIsTjansteanteckning = (noteType: NoteType): boolean => {
+  return noteType === 'PUBLIC';
 };
