@@ -120,6 +120,7 @@ export enum Channels {
   SOCIAL_MEDIA = 'Sociala medier',
   ESERVICE = 'E-tjänst',
   ESERVICE_INTERNAL = 'E-tjänst (intern)',
+  WEB_UI = 'Draken webbgränssnitt',
 }
 
 export const municipalityIds = [
