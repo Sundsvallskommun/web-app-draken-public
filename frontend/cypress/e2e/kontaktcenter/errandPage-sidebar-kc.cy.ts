@@ -378,6 +378,19 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('[data-cy="history-table-details-close-button"]').should('exist').contains('Stäng').click();
     });
 
+    it('manages Exports', () => {
+      cy.visit('/arende/KC-00000001');
+      cy.wait('@getErrand');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+
+      cy.get(`[aria-label="${mockSidebarButtons[3].label}"]`).should('exist').click();
+      cy.get('[data-cy="basicInformation"]').should('exist');
+      cy.get('[data-cy="errandInformation"]').should('exist');
+      cy.get('[data-cy="attachments"]').should('exist');
+      cy.get('[data-cy="export-button"]').should('exist').click();
+      cy.get('p').should('exist').contains('Detta ärende är inte avslutat. Vill du ändå exportera ärendet?');
+    });
+
     it('Can manage Vidarebefodra', () => {
       cy.intercept('GET', `**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand);
       cy.intercept('POST', `**/supporterrands/2281/${mockSupportErrand.id}/forward`, mockForwardSupportErrandToMEX).as(
