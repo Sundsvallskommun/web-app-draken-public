@@ -416,6 +416,21 @@ test.describe('errand page', () => {
     await page.locator('[data-cy="history-table-details-close-button"]').filter({ hasText: 'Stäng' }).click();
   });
 
+  test('manages Exports', async ({ page, dismissCookieConsent }) => {
+    await page.goto('arende/KC-00000001');
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
+
+    await page.locator(`[aria-label="${mockSidebarButtons[3].label}"]`).click();
+    await expect(page.locator('[data-cy="basicInformation"]')).toBeVisible();
+    await expect(page.locator('[data-cy="errandInformation"]')).toBeVisible();
+    await expect(page.locator('[data-cy="attachments"]')).toBeVisible();
+    await page.locator('[data-cy="export-button"]').click();
+    await expect(page.locator('.sk-dialog')).toContainText(
+      'Detta ärende är inte avslutat. Vill du ändå exportera ärendet?'
+    );
+  });
+
   test('Can manage Vidarebefodra', async ({ page, mockRoute, dismissCookieConsent }) => {
     await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand, { method: 'GET' });
     await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}/forward`, mockForwardSupportErrandToMEX, {

@@ -4,6 +4,7 @@ import { Sidebar, SidebarButtonKey } from '../../../../common/components/sidebar
 import { SidebarComments } from './sidebar-comments.component';
 import { SidebarHistory } from './sidebar-history.component';
 import { SidebarInfo } from './sidebar-info.component';
+import { SidebarSupportExport } from './sidebar-support-export.component';
 
 export const SidebarWrapper: FC<{
   setUnsavedFacility?: Dispatch<SetStateAction<boolean>>;
@@ -32,6 +33,12 @@ export const SidebarWrapper: FC<{
       key: 'history',
       icon: 'history',
       component: <SidebarHistory />,
+    },
+    {
+      label: 'Exportera ärende',
+      key: 'supportexport',
+      icon: 'file-output',
+      component: <SidebarSupportExport />,
     },
   ];
 
