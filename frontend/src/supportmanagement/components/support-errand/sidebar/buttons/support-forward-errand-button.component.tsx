@@ -2,13 +2,13 @@
 
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import TextEditor from '@common/components/dynamic-text-editor';
-import { PriorityComponent } from '@common/components/priority/priority.component';
-import { deepFlattenToObject, prettyTime } from '@common/services/helper-service';
+import { deepFlattenToObject } from '@common/services/helper-service';
 import sanitized from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
+  Alert,
   Button,
   cx,
   Divider,
@@ -19,24 +19,25 @@ import {
   Modal,
   RadioButton,
   Select,
+  Spinner,
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
-  Channels,
-  findPriorityLabelForPriorityKey,
   forwardSupportErrand,
-  getLabelCategory,
-  getLabelType,
   getSupportErrandById,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getEscalationEmails, getEscalationMessage } from '@supportmanagement/services/support-escalation-service';
-import { ChevronDown, ChevronUp, Forward } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Forward } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
+
+import { ForwardErrandSummary } from './forward-errand-summary.component';
+import { HandoverReview } from './handover/handover-review.component';
+import { MEX_DEPARTMENT_VALUE, useSupportHandover } from './handover/use-support-handover';
 
 const yupForwardForm = yup.object().shape(
   {
@@ -98,10 +99,8 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
   const errandFormControls: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [showFullDescription, setShowFullDescription] = useState(false);
-  const [isDescriptionClamped, setIsDescriptionClamped] = useState(false);
-  const descriptionRef = useRef<HTMLSpanElement>(null);
   const toastMessage = useSnackbar();
+  const handover = useSupportHandover({ errandId: supportErrand?.id, sourceMunicipalityId: municipalityId });
 
   const {
     register,
@@ -126,6 +125,26 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
   });
 
   const { recipient, message, messageBodyPlaintext, emails, department } = watch();
+
+  // Routing: under "Draken" the target dropdown lists MEX (the existing casedata forward) plus the
+  // supportmanagement namespaces. MEX keeps the old flow; any other namespace uses the new handover.
+  const handoverTarget =
+    appConfig.features.useHandover && recipient === 'DEPARTMENT' && department !== MEX_DEPARTMENT_VALUE
+      ? handover.handoverTargets.find((target) => target.namespace === department)
+      : undefined;
+  const isHandover = !!handoverTarget;
+  const isMexTarget = recipient === 'DEPARTMENT' && department === MEX_DEPARTMENT_VALUE;
+
+  // Selecting a target namespace immediately fetches the preview and advances to step 2 – no extra
+  // "Nästa" click. Cached previews are reused, so switching back and forth keeps earlier choices.
+  useEffect(() => {
+    if (handoverTarget) {
+      handover.runPreview(handoverTarget);
+    } else {
+      handover.setStep(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [department]);
 
   const isForwardDisabled =
     isLoading ||
@@ -173,6 +192,17 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
       });
   };
 
+  // Mirrors the MEX forward success: toast, close the modal, refresh the (now closed) source errand
+  // and close the tab. No in-modal confirmation view.
+  const handleHandoverSuccess = () => {
+    toastMessage(getToastOptions({ message: 'Ärendet överlämnades', status: 'success' }));
+    setShowModal(false);
+    getSupportErrandById(supportErrand!.id!, municipalityId).then((res) => setSupportErrand(res.errand));
+    setTimeout(() => {
+      window.close();
+    }, 2000);
+  };
+
   useEffect(() => {
     if (!appConfig.features.useDepartmentEscalation) {
       setValue('recipient', 'EMAIL');
@@ -199,17 +229,9 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recipient, showModal]);
 
-  useEffect(() => {
-    const element = descriptionRef.current;
-    if (element && !showFullDescription) {
-      setIsDescriptionClamped(element.scrollHeight > element.clientHeight);
-    }
-  }, [recipient, showModal, showFullDescription, supportErrand?.description]);
-
   const handleModal = () => {
     setShowModal(!showModal);
-    setShowFullDescription(false);
-    setIsDescriptionClamped(false);
+    handover.reset();
     reset({
       recipient: !appConfig.features.useDepartmentEscalation ? 'EMAIL' : '',
       emails: [],
@@ -306,138 +328,20 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                     {...register('department')}
                   >
                     <Select.Option value="SBK_MEX">Mark och exploatering (MEX)</Select.Option>
+                    {appConfig.features.useHandover &&
+                      handover.handoverTargets.map((target) => (
+                        <Select.Option key={target.namespace} value={target.namespace}>
+                          {target.displayName || target.namespace}
+                        </Select.Option>
+                      ))}
                   </Select>
                 </FormControl>
               ) : null}
               {recipient !== '' && <Divider />}
-              {recipient === 'DEPARTMENT' ? (
+              {isMexTarget ? (
                 <>
                   <h4 className="text-h4-md py-12">Uppgifter från ärendet som överlämnas</h4>
-                  <div className="flex flex-row gap-80">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-small">Ärendetyp</span>
-                      <span className="text-small">
-                        {appConfig.features.useThreeLevelCategorization
-                          ? `${getLabelCategory(supportErrand!, supportMetadata!)?.displayName || ''}${
-                              getLabelType(supportErrand!)?.displayName
-                                ? ` - ${getLabelType(supportErrand!)?.displayName}`
-                                : ''
-                            }`
-                          : supportMetadata?.categories
-                              ?.find((c) => c.name === supportErrand?.category)
-                              ?.types?.find((t) => t.name === supportErrand?.type)?.displayName || supportErrand?.type}
-                      </span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-bold text-small">Ärendenummer</span>
-                      <span className="text-small">{supportErrand?.errandNumber}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-bold text-small">Prioritet</span>
-                      <div className="flex text-small items-center gap-4">
-                        <PriorityComponent priority={findPriorityLabelForPriorityKey(supportErrand?.priority || '')} />
-                      </div>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-bold text-small">Inkom via</span>
-                      <span className="text-small">{Channels[supportErrand?.channel as keyof typeof Channels]}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-bold text-small">Registrerat</span>
-                      <span className="text-small">{prettyTime(supportErrand?.created || '')}</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-bold text-small">Ärendebeskrivning</span>
-                    <span
-                      ref={descriptionRef}
-                      className={`text-small ${showFullDescription ? '' : 'line-clamp-3'}`}
-                      dangerouslySetInnerHTML={{ __html: sanitized(supportErrand?.description || '') }}
-                    />
-                  </div>
-                  {supportErrand?.description && (isDescriptionClamped || showFullDescription) && (
-                    <Button
-                      size="sm"
-                      className="w-fit"
-                      variant="tertiary"
-                      rightIcon={showFullDescription ? <ChevronUp /> : <ChevronDown />}
-                      onClick={() => setShowFullDescription(!showFullDescription)}
-                    >
-                      {showFullDescription ? 'Visa mindre' : 'Visa mer'}
-                    </Button>
-                  )}
-
-                  <span className="font-bold text-small">Parter</span>
-                  <div className="flex flex-col gap-24 mb-12">
-                    {supportErrand?.customer?.map((stakeholder, index) => {
-                      const role = supportMetadata?.roles?.find((r) => r.name === stakeholder.role)?.displayName;
-                      const name =
-                        stakeholder.stakeholderType === 'ORGANIZATION'
-                          ? `${stakeholder.organizationName || ''}`
-                          : `${stakeholder.firstName || ''} ${stakeholder.lastName || ''}`;
-                      const idNumber =
-                        stakeholder.stakeholderType === 'ORGANIZATION'
-                          ? stakeholder.organizationNumber || stakeholder.externalId
-                          : stakeholder.personNumber;
-                      return (
-                        <div key={`customer-${index}`} className="flex flex-col gap-4">
-                          <span className="text-small">
-                            {name}
-                            {idNumber ? `, ${idNumber}` : ''} ({role || stakeholder.role})
-                          </span>
-                          {stakeholder.address && (
-                            <span className="text-small">
-                              {stakeholder.address} {stakeholder.zipCode} {stakeholder.city}
-                            </span>
-                          )}
-                          {stakeholder.emails?.map((email, idx) => (
-                            <span key={`email-${idx}`} className="text-small">
-                              {email.value}
-                            </span>
-                          ))}
-                          {stakeholder.phoneNumbers?.map((phone, idx) => (
-                            <span key={`phone-${idx}`} className="text-small">
-                              {phone.value}
-                            </span>
-                          ))}
-                        </div>
-                      );
-                    })}
-                    {supportErrand?.contacts?.map((stakeholder, index) => {
-                      const role = supportMetadata?.roles?.find((r) => r.name === stakeholder.role)?.displayName;
-                      const name =
-                        stakeholder.stakeholderType === 'ORGANIZATION'
-                          ? `${stakeholder.organizationName || ''}`
-                          : `${stakeholder.firstName || ''} ${stakeholder.lastName || ''}`;
-                      const idNumber =
-                        stakeholder.stakeholderType === 'ORGANIZATION'
-                          ? stakeholder.organizationNumber || stakeholder.externalId
-                          : stakeholder.personNumber;
-                      return (
-                        <div key={`contact-${index}`} className="flex flex-col gap-4">
-                          <span className="text-small">
-                            {name}
-                            {idNumber ? `, ${idNumber}` : ''} ({role || stakeholder.role})
-                          </span>
-                          {stakeholder.address && (
-                            <span className="text-small">
-                              {stakeholder.address} {stakeholder.zipCode} {stakeholder.city}
-                            </span>
-                          )}
-                          {stakeholder.emails?.map((email, idx) => (
-                            <span key={`email-${idx}`} className="text-small">
-                              {email.value}
-                            </span>
-                          ))}
-                          {stakeholder.phoneNumbers?.map((phone, idx) => (
-                            <span key={`phone-${idx}`} className="text-small">
-                              {phone.value}
-                            </span>
-                          ))}
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <ForwardErrandSummary errand={supportErrand} metadata={supportMetadata} />
 
                   <Divider />
                   <h4 className="text-h4-md mt-12">Meddelande</h4>
@@ -447,7 +351,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                 <h4 className="text-h4-md mt-12">Meddelande*</h4>
               ) : null}
 
-              {recipient !== '' && (
+              {(recipient === 'EMAIL' || isMexTarget) && (
                 <FormControl id="comment" className="w-full" required>
                   <Input data-cy="message-body-input" type="hidden" {...register('message')} />
                   <div data-cy="escalation-richtext-wrapper">
@@ -469,29 +373,112 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                   )}
                 </FormControl>
               )}
+
+              {isHandover && (
+                <>
+                  {handover.step === 1 && handover.previewLoading && (
+                    <div className="flex items-center gap-8 mt-12" data-cy="handover-preview-loading">
+                      <Spinner size={2} /> Hämtar förslag…
+                    </div>
+                  )}
+                  {handover.step === 1 && handover.previewError && (
+                    <Alert type="error" className="mt-12" data-cy="handover-preview-error">
+                      <Alert.Icon />
+                      <Alert.Content>
+                        <Alert.Content.Description>{handover.previewError}</Alert.Content.Description>
+                      </Alert.Content>
+                    </Alert>
+                  )}
+                  {handover.step === 2 && <HandoverReview handover={handover} supportErrand={supportErrand!} />}
+                  {handover.step === 2 && handover.handoverError && (
+                    <Alert type="error" className="mt-12" data-cy="handover-error">
+                      <Alert.Icon />
+                      <Alert.Content>
+                        <Alert.Content.Description>{handover.handoverError}</Alert.Content.Description>
+                      </Alert.Content>
+                    </Alert>
+                  )}
+                </>
+              )}
             </Modal.Content>
             <Modal.Footer className="flex flex-row">
-              <Button variant="secondary" onClick={() => setShowModal(false)}>
-                Avbryt
-              </Button>
-              <Button
-                variant="primary"
-                color="vattjom"
-                disabled={isForwardDisabled}
-                loading={isLoading}
-                loadingText="Vidarebefordrar ärende"
-                onClick={() => {
-                  confirm
-                    .showConfirmation('Överlämna ärendet', 'Vill du överlämna ärendet?', 'Ja', 'Nej', 'info', 'info')
-                    .then((confirmed) => {
-                      if (confirmed) {
-                        handleForwardErrand(getValues());
-                      }
-                    });
-                }}
-              >
-                Överlämna ärendet
-              </Button>
+              {isHandover ? (
+                <>
+                  {handover.step === 1 && (
+                    <Button variant="secondary" onClick={() => handleModal()}>
+                      Avbryt
+                    </Button>
+                  )}
+                  {handover.step === 2 && (
+                    <>
+                      <Button variant="secondary" onClick={() => handleModal()}>
+                        Avbryt
+                      </Button>
+                      <Button
+                        variant="primary"
+                        color="vattjom"
+                        data-cy="handover-submit-button"
+                        loading={handover.handoverLoading}
+                        loadingText="Överlämnar ärende"
+                        disabled={handover.handoverLoading || !handover.requiredMappingsAnswered}
+                        onClick={() => {
+                          confirm
+                            .showConfirmation(
+                              'Överlämna ärendet',
+                              'Vill du överlämna ärendet?',
+                              'Ja',
+                              'Nej',
+                              'info',
+                              'info'
+                            )
+                            .then((confirmed) => {
+                              if (confirmed && handoverTarget) {
+                                handover.runHandover(handoverTarget).then((result) => {
+                                  if (result) {
+                                    handleHandoverSuccess();
+                                  }
+                                });
+                              }
+                            });
+                        }}
+                      >
+                        Överlämna ärendet
+                      </Button>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Button variant="secondary" onClick={() => setShowModal(false)}>
+                    Avbryt
+                  </Button>
+                  <Button
+                    variant="primary"
+                    color="vattjom"
+                    disabled={isForwardDisabled}
+                    loading={isLoading}
+                    loadingText="Vidarebefordrar ärende"
+                    onClick={() => {
+                      confirm
+                        .showConfirmation(
+                          'Överlämna ärendet',
+                          'Vill du överlämna ärendet?',
+                          'Ja',
+                          'Nej',
+                          'info',
+                          'info'
+                        )
+                        .then((confirmed) => {
+                          if (confirmed) {
+                            handleForwardErrand(getValues());
+                          }
+                        });
+                    }}
+                  >
+                    Överlämna ärendet
+                  </Button>
+                </>
+              )}
             </Modal.Footer>
           </>
         )}

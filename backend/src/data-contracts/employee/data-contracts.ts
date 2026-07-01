@@ -231,3 +231,53 @@ export interface ReferenceNumberCompany {
   /** @format int32 */
   companyId?: number;
 }
+
+export interface UserProfile {
+  /** @format uuid */
+  userId?: string;
+  /** @format uuid */
+  personId?: string;
+  personNumber?: string | null;
+  givenname?: string | null;
+  lastname?: string | null;
+  workMobile?: string | null;
+  workPhone?: string | null;
+  /** @format int32 */
+  companyId?: number;
+  company?: string | null;
+  title?: string | null;
+  /** @format uuid */
+  managerPersonId?: string;
+  managerCode?: string | null;
+  /**
+   * @format date
+   * @example "2023-01-01"
+   */
+  hireDate?: string;
+  /**
+   * @format date
+   * @example "2023-01-01"
+   */
+  retiredate?: string | null;
+  /** @format int32 */
+  orgId?: number;
+  orgName?: string | null;
+  /** @format int32 */
+  topOrgId?: number;
+  topOrgName?: string | null;
+  isExternal?: boolean;
+  loginname?: string | null;
+  displayname?: string | null;
+  emailAddress?: string | null;
+  /** @format int32 */
+  accountTypeId?: number;
+  accountType?: string | null;
+  /** @format int32 */
+  mcId?: number;
+  municipalityId?: string | null;
+  isActive?: boolean;
+  /** @format date-time */
+  createdDT?: string;
+  /** @format date-time */
+  updatedDT?: string;
+}

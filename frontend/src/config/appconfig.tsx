@@ -38,6 +38,7 @@ interface AppConfigFeatures {
   useClosedAsDefaultResolution: boolean;
   useServices: boolean;
   useAppeal: boolean;
+  useHandover: boolean;
 }
 
 // JSON.parse prevents the minifier from folding placeholder comparisons at build time.
@@ -85,6 +86,7 @@ export const appConfig: AppConfig = {
     useClosedAsDefaultResolution: envBool(process.env.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION),
     useServices: envBool(process.env.NEXT_PUBLIC_USE_SERVICES),
     useAppeal: envBool(process.env.NEXT_PUBLIC_USE_APPEAL),
+    useHandover: envBool(process.env.NEXT_PUBLIC_USE_HANDOVER),
   },
 };
 

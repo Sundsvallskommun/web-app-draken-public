@@ -1,3 +1,4 @@
+import { ReferredFromErrandInformation } from '@common/components/referred-from-errand-information/referred-from-errand-information.component';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
@@ -179,6 +180,11 @@ export const SupportErrandComponent: FC = () => {
                         </div>
                       )}
                     </div>
+                    {!supportErrandIsEmpty(supportErrand!) && (
+                      <div className="mt-16">
+                        <ReferredFromErrandInformation municipalityId={municipalityId} errandId={supportErrand!.id!} />
+                      </div>
+                    )}
                   </div>
                 </section>
 
