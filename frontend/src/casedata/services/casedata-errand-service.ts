@@ -45,7 +45,7 @@ import { useCallback, useEffect } from 'react';
 import { ApiResponse, apiService } from '../../common/services/api-service';
 import { saveErrandNote } from './casedata-errand-notes-service';
 import { extraParametersToUppgiftMapper } from './casedata-extra-parameters-service';
-import { phaseChangeInProgress } from './process-service';
+import { getUiPhase, phaseChangeInProgress } from './process-service';
 
 export const municipalityIds = [
   { label: 'Sundsvall', id: '2281' },
@@ -813,6 +813,101 @@ export const validateAction: (errand: IErrand, user: User) => boolean = (errand,
 
 export const isErrandAdmin: (errand: IErrand, user: User) => boolean = (errand, user) => {
   return user.username.toLocaleLowerCase() === errand?.administrator?.adAccount?.toLocaleLowerCase();
+};
+
+/**
+ * The two distinct ways a casedata errand can be closed. See `.claude/CLOSE_ERRAND_LOGIC.md`.
+ * - `Complete`: normal workflow completion fired from the final phase (`phaseAction = COMPLETE`,
+ *   `triggerErrandPhaseChange`). Surfaced by the PhaseChanger as "Avsluta ärende".
+ * - `Abort`: early termination before the process is finished (`phaseAction = CANCEL`,
+ *   `cancelErrandPhaseChange`), requires a reason note. Surfaced by the sidebar "Avsluta ärendet".
+ * - `None`: no close affordance applies (e.g. already closed, or mid-workflow with no abort offered).
+ */
+export enum ErrandCloseMode {
+  Complete = 'COMPLETE',
+  Abort = 'ABORT',
+  None = 'NONE',
+}
+
+/**
+ * Single source of truth for *which* close affordance applies to an errand, based on drake +
+ * phase/status.
+ */
+export const getErrandCloseMode: (errand: IErrand) => ErrandCloseMode = (errand) => {
+  if (!errand || isErrandClosed(errand)) {
+    return ErrandCloseMode.None;
+  }
+
+  const status = errand.status?.statusType as ErrandStatus;
+
+  // Normal completion is offered from the final phase: MEX at the `uppfoljning` phase,
+  // PT once the decision has been carried out (`Beslut verkställt`).
+  const completeFromFinalPhase =
+    (isPT() && status === ErrandStatus.BeslutVerkstallt) || errand.phase === ErrandPhase.uppfoljning;
+  if (completeFromFinalPhase) {
+    return ErrandCloseMode.Complete;
+  }
+
+  // The sidebar early-abort affordance is hidden once the errand reaches the verkställa/uppföljning
+  // phases (where completion takes over) or has only been assigned (`Tilldelat`).
+  const abortAvailable =
+    getUiPhase(errand) !== UiPhase.slutfor &&
+    errand.phase !== ErrandPhase.verkstalla &&
+    errand.phase !== ErrandPhase.uppfoljning &&
+    status !== ErrandStatus.Tilldelat;
+
+  return abortAvailable ? ErrandCloseMode.Abort : ErrandCloseMode.None;
+};
+
+/**
+ * Whether the current user may invoke the given close affordance right now. Folds together the
+ * lock/admin/permission checks that live inline in the PhaseChanger and sidebar `disabled`
+ * expressions, including the MEX/PT exceptions.
+ *
+ * MEX intentionally differs from the pre-refactor behaviour on the Complete path: at the
+ * `uppfoljning` phase the "Avsluta ärende" button is the *only* close affordance (the sidebar abort
+ * is hidden once `getErrandCloseMode` returns `Complete`), so a locked MEX errand's Complete button
+ * is deliberately left enabled where the old inline logic would have disabled it (DRAKEN-4480).
+ */
+export const canCloseErrand: (errand: IErrand, user: User, mode: ErrandCloseMode) => boolean = (errand, user, mode) => {
+  if (!errand || !user) {
+    return false;
+  }
+
+  if (phaseChangeInProgress(errand)) {
+    return false;
+  }
+
+  const status = errand.status?.statusType as ErrandStatus;
+
+  if (mode === ErrandCloseMode.Complete) {
+    // A locked errand still allows completion in the drake-specific terminal states:
+    // PT at `Beslut verkställt`, and MEX in any state other than already-closed. Since the
+    // PhaseChanger never renders this button once `status === ArendeAvslutat`, the MEX clause
+    // effectively bypasses the lock entirely for MEX — intentional, see the note above.
+    const lockBlocksCompletion =
+      isErrandLocked(errand) &&
+      !(isPT() && status === ErrandStatus.BeslutVerkstallt) &&
+      !(isMEX() && status !== ErrandStatus.ArendeAvslutat);
+    return !lockBlocksCompletion && validateAction(errand, user);
+  }
+
+  if (mode === ErrandCloseMode.Abort) {
+    // DRAKEN-4480: MEX may abort regardless of phase/lock; other drakar require the user to be the
+    // assigned administrator, the errand to be unlocked, and to be in an active handling phase.
+    if (isMEX()) {
+      return true;
+    }
+    const uiPhase = getUiPhase(errand);
+    const inAbortablePhase =
+      uiPhase === UiPhase.granskning ||
+      uiPhase === UiPhase.utredning ||
+      uiPhase === UiPhase.beslut ||
+      uiPhase === UiPhase.uppfoljning;
+    return inAbortablePhase && isErrandAdmin(errand, user) && !isErrandLocked(errand);
+  }
+
+  return false;
 };
 
 export const setErrandStatus = async (
