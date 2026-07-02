@@ -4,9 +4,9 @@ import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import {
+  canCloseErrand,
+  ErrandCloseMode,
   getErrand,
-  isErrandLocked,
-  validateAction,
   validateErrandForDecision,
   validateExtraParametersForDecision,
   validateStakeholdersForDecision,
@@ -20,7 +20,7 @@ import { Button, FormErrorMessage, Spinner, useSnackbar } from '@sk-web-gui/reac
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { ArrowRight } from 'lucide-react';
 import { IconName } from 'lucide-react/dynamic';
-import { JSX, useEffect, useMemo, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 
 import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
@@ -36,10 +36,6 @@ export const PhaseChanger = () => {
   const [phaseDialogOpen, setPhaseDialogOpen] = useState(false);
   const toastMessage = useSnackbar();
   const { pollDisplayPhase } = useDisplayPhasePoller();
-  const allowed = useMemo(() => {
-    if (!errand) return false;
-    return validateAction(errand, user);
-  }, [user, errand]);
 
   const {
     handleSubmit,
@@ -234,11 +230,7 @@ export const PhaseChanger = () => {
     <>
       <Button
         variant="primary"
-        disabled={
-          (isErrandLocked(errand) && !(isPT() && errand.status?.statusType === ErrandStatus.BeslutVerkstallt)) ||
-          !allowed ||
-          phaseChangeText.disabled
-        }
+        disabled={!canCloseErrand(errand, user, ErrandCloseMode.Complete) || phaseChangeText.disabled}
         color="vattjom"
         loadingText="Sparar"
         loading={isLoading}

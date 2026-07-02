@@ -7,7 +7,15 @@ import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 import { saveErrandNote } from '@casedata/services/casedata-errand-notes-service';
-import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import {
+  canCloseErrand,
+  ErrandCloseMode,
+  getErrand,
+  getErrandCloseMode,
+  isErrandAdmin,
+  isErrandLocked,
+  validateAction,
+} from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { cancelErrandPhaseChange, phaseChangeInProgress } from '@casedata/services/process-service';
 import { isAppealEnabled } from '@common/services/feature-flag-service';
@@ -132,7 +140,7 @@ export const SidebarInfo: React.FC<{}> = () => {
 
     const publicNoteValue = getValues('publicNote');
 
-    if (publicNoteValue?.length === 0 || typeof publicNoteValue === undefined) {
+    if (!publicNoteValue) {
       createNote = false;
       setCauseIsEmpty(true);
     }
@@ -358,34 +366,22 @@ export const SidebarInfo: React.FC<{}> = () => {
           />
         ) : null}
 
-        {uiPhase !== UiPhase.slutfor &&
-          errand.phase !== ErrandPhase.verkstalla &&
-          errand.phase !== ErrandPhase.uppfoljning &&
-          errand?.status?.statusType !== ErrandStatus.Tilldelat && (
-            <>
-              <Button
-                className="mt-16"
-                color="primary"
-                variant="secondary"
-                onClick={() => {
-                  setDialogIsOpen(true);
-                  setCauseIsEmpty(false);
-                }}
-                disabled={
-                  !(
-                    uiPhase === UiPhase.granskning ||
-                    uiPhase === UiPhase.utredning ||
-                    uiPhase === UiPhase.beslut ||
-                    uiPhase === UiPhase.uppfoljning
-                  ) ||
-                  !isErrandAdmin(errand, user) ||
-                  isErrandLocked(errand)
-                }
-              >
-                Avsluta ärendet
-              </Button>
-            </>
-          )}
+        {getErrandCloseMode(errand) === ErrandCloseMode.Abort && (
+          <>
+            <Button
+              className="mt-16"
+              color="primary"
+              variant="secondary"
+              onClick={() => {
+                setDialogIsOpen(true);
+                setCauseIsEmpty(false);
+              }}
+              disabled={!canCloseErrand(errand, user, ErrandCloseMode.Abort)}
+            >
+              Avsluta ärendet
+            </Button>
+          </>
+        )}
         <Dialog show={dialogIsOpen} className="w-[36rem]">
           <Dialog.Content className="flex flex-col items-center text-center">
             <ArchiveX className="text-vattjom-surface-primary" size={32} />
