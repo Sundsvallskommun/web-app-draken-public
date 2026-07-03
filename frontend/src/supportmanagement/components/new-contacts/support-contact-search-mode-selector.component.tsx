@@ -97,22 +97,24 @@ export const SupportContactSearchModeSelector: FC<SupportContactSearchModeSelect
               Anställd
             </RadioButton>
           ) : null}
-          <RadioButton
-            data-cy={`search-person-${inName}-${contact.role}`}
-            size="sm"
-            className="mr-sm"
-            name={`stakeholderType-${id}-${inName}`}
-            id={`searchPerson-${id}-${inName}`}
-            value={'PERSON'}
-            checked={searchMode === 'person'}
-            onChange={() => {
-              setSearchMode('person');
-              form.setValue(`externalIdType`, ExternalIdType.PRIVATE);
-              clearFields('PERSON');
-            }}
-          >
-            Privat
-          </RadioButton>
+          {!appConfig.features.useEmployeeSearchOnly ? (
+            <RadioButton
+              data-cy={`search-person-${inName}-${contact.role}`}
+              size="sm"
+              className="mr-sm"
+              name={`stakeholderType-${id}-${inName}`}
+              id={`searchPerson-${id}-${inName}`}
+              value={'PERSON'}
+              checked={searchMode === 'person'}
+              onChange={() => {
+                setSearchMode('person');
+                form.setValue(`externalIdType`, ExternalIdType.PRIVATE);
+                clearFields('PERSON');
+              }}
+            >
+              Privat
+            </RadioButton>
+          ) : null}
 
           {appConfig.features.useOrganizationStakeholders ? (
             <>
