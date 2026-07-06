@@ -19,6 +19,7 @@ export type SidebarButtonKey =
   | 'todo'
   | 'investigation'
   | 'export'
+  | 'supportexport'
   | undefined;
 
 export const Sidebar: FC<{
