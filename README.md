@@ -29,7 +29,7 @@ För KS (Kontakt Sundsvall):
 | API               | Version |
 | ----------------- | ------: |
 | CaseData          |   12.10 |
-| SupportManagement |    14.7 |
+| SupportManagement |    14.9 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -63,7 +63,7 @@ För LOP (Lön och pension):
 
 | API                 | Version |
 | ------------------- | ------: |
-| SupportManagement   |    14.7 |
+| SupportManagement   |    14.9 |
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
 | Templating          |     2.1 |
@@ -81,14 +81,14 @@ För ROB (Rekrytering och bemanning):
 | Employee            |     2.0 |
 | LegalEntity         |     2.0 |
 | SimulatorServer     |     2.0 |
-| SupportManagement   |    14.7 |
+| SupportManagement   |    14.9 |
 | Templating          |     2.1 |
 
 För KA (Kontakt Ånge):
 
 | API                 | Version |
 | ------------------- | ------: |
-| SupportManagement   |    14.7 |
+| SupportManagement   |    14.9 |
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
 | Templating          |     2.1 |
@@ -100,7 +100,7 @@ För IK (Intern kundtjänst):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    14.7 |
+| SupportManagement |    14.9 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -112,7 +112,7 @@ För MSVA (MittSverige Vatten & avfall):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    14.7 |
+| SupportManagement |    14.9 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -124,7 +124,7 @@ För SE (Servicecenter Ekonomi):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    14.7 |
+| SupportManagement |    14.9 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -136,7 +136,20 @@ För BOU (Barn- och utbildningsförvaltningen):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    14.7 |
+| SupportManagement |    14.9 |
+| Citizen           |     3.0 |
+| ActiveDirectory   |     2.0 |
+| Templating        |     2.1 |
+| LegalEntity       |     2.0 |
+| Employee          |     2.0 |
+| Relations         |     1.1 |
+| SimulatorServer   |     2.0 |
+
+För LOK (Lokalplanering):
+
+| API               | Version |
+| ----------------- | ------: |
+| SupportManagement |    14.9 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -172,7 +185,7 @@ yarn install
 
 3. Skapa .env-filer
 
-**Tillgängliga drakar:** `kc`, `ka`, `mex`, `pt`, `rob`, `lop`, `ik`, `msva`, `se`, `bou`
+**Tillgängliga drakar:** `kc`, `ka`, `mex`, `pt`, `rob`, `lop`, `ik`, `msva`, `se`, `bou`, `lok`
 
 ### Skapa alla env-filer på en gång
 
@@ -188,7 +201,8 @@ cp .env.lop-example .env.lop && \
 cp .env.ik-example .env.ik && \
 cp .env.msva-example .env.msva && \
 cp .env.se-example .env.se && \
-cp .env.bou-example .env.bou
+cp .env.bou-example .env.bou && \
+cp .env.lok-example .env.lok
 ```
 
 Backend (kör från `backend/`):
@@ -203,7 +217,8 @@ cp .env.lop.example.local .env.lop.development.local && \
 cp .env.ik.example.local .env.ik.development.local && \
 cp .env.msva.example.local .env.msva.development.local && \
 cp .env.se.example.local .env.se.development.local && \
-cp .env.bou.example.local .env.bou.development.local
+cp .env.bou.example.local .env.bou.development.local && \
+cp .env.lok.example.local .env.lok.development.local
 ```
 
 ### Skapa för enskild drake

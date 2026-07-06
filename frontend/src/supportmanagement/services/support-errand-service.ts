@@ -266,6 +266,10 @@ export enum Resolution {
   CANCELLED = 'CANCELLED',
   SECURE_APPBOX = 'SECURE_APPBOX',
   BACK_TO_CONTACT_SUNDSVALL = 'BACK_TO_CONTACT_SUNDSVALL',
+  FORWARDED_TO_DRAKFASTIGHETER = 'FORWARDED_TO_DRAKFASTIGHETER',
+  FORWARDED_TO_EXTERNAL_LANDLORD = 'FORWARDED_TO_EXTERNAL_LANDLORD',
+  FORWARDED_TO_INTERNAL_CONTRACTOR = 'FORWARDED_TO_INTERNAL_CONTRACTOR',
+  FORWARDED_TO_EXTERNAL_CONTRACTOR = 'FORWARDED_TO_EXTERNAL_CONTRACTOR',
 }
 
 export enum ResolutionLabelLOP {
@@ -310,6 +314,14 @@ export enum ResolutionLabelROB {
 export enum ResolutionLabelBOU {
   SOLVED = 'Löst',
   BACK_TO_CONTACT_SUNDSVALL = 'Åter till Kontakt Sundsvall',
+}
+
+export enum ResolutionLabelLOK {
+  SOLVED = 'Löst av VoF/IAF Lokalplanering',
+  FORWARDED_TO_DRAKFASTIGHETER = 'Vidarebefordrat till Drakfastigheter',
+  FORWARDED_TO_EXTERNAL_LANDLORD = 'Vidarebefordrat till extern hyresvärd',
+  FORWARDED_TO_INTERNAL_CONTRACTOR = 'Vidarebefordrat till intern entreprenör',
+  FORWARDED_TO_EXTERNAL_CONTRACTOR = 'Vidarebefordrat till extern entreprenör',
 }
 export interface SupportStakeholderFormModel extends SupportStakeholder {
   stakeholderType: SupportStakeholderType;

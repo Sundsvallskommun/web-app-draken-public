@@ -1,4 +1,4 @@
-import { isBOU, isIK, isKA, isLOP, isROB, isSE } from '@common/services/application-service';
+import { isBOU, isIK, isKA, isLOK, isLOP, isROB, isSE } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
@@ -12,6 +12,7 @@ import {
   ResolutionLabelIK,
   ResolutionLabelKA,
   ResolutionLabelKS,
+  ResolutionLabelLOK,
   ResolutionLabelLOP,
   ResolutionLabelROB,
   setSupportErrandStatus,
@@ -33,6 +34,7 @@ const getResolutionLabels = (): Record<string, string> => {
   if (isKA()) return ResolutionLabelKA;
   if (isROB()) return ResolutionLabelROB;
   if (isBOU()) return ResolutionLabelBOU;
+  if (isLOK()) return ResolutionLabelLOK;
   return ResolutionLabelKS;
 };
 

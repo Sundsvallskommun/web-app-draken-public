@@ -23,4 +23,6 @@ export const isSE = () => APP === 'SE';
 
 export const isBOU = () => APP === 'BOU';
 
+export const isLOK = () => APP === 'LOK';
+
 export const getApplicationEnvironment = () => (ENV === 'TEST' ? 'TEST' : null);

@@ -410,6 +410,10 @@ const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
     classification: { category: 'BOU', type: 'BOU/UNCATEGORIZED' },
     labels: { category: 'BOU', type: 'BOU/UNCATEGORIZED' },
   },
+  LOK: {
+    classification: { category: 'IAF', type: 'IAF/WORK_AND_LIVELIHOOD' },
+    labels: { category: 'IAF', type: 'IAF/WORK_AND_LIVELIHOOD' },
+  },
 };
 
 @Controller()
