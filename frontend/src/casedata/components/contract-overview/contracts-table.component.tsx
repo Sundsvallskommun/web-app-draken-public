@@ -89,8 +89,8 @@ export const contractTableLabels = [
   { label: 'Undertyp', sortable: true, column: 'leaseType' },
   { label: 'Avtals-id', sortable: true, column: 'id' },
   { label: 'Parter', sortable: false, column: 'stakeholders' },
-  { label: 'Avtalsperiod', sortable: true, column: 'end' },
-  { label: 'Uppsägningsdatum', sortable: false, column: '' },
+  { label: 'Avtalsperiod', sortable: true, column: 'endDate' },
+  { label: 'Uppsägningsdatum', sortable: true, column: 'noticeDate' },
   { label: '', sortable: false, column: '' },
 ];
 
