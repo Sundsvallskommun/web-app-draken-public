@@ -5,6 +5,7 @@ import { CaseStatusLabelComponent } from '@common/components/case-status-label/c
 import { Relation } from '@common/data-contracts/relations/data-contracts';
 import {
   CaseStatusResponse,
+  findOperationUsingNamespace,
   getStatusesUsingOrganizationNumber,
   getStatusesUsingPartyId,
 } from '@common/services/casestatus-service';
@@ -27,7 +28,7 @@ const caseTypeLabel = (errand: CaseStatusResponse) =>
 
 const formatDate = (date?: string) => (date ? dayjs(date).format('YYYY-MM-DD, HH:mm') : '-');
 
-type SortColumn = 'status' | 'caseType' | 'firstSubmitted' | 'lastStatusChange';
+type SortColumn = 'status' | 'caseType' | 'errandNumber' | 'operation' | 'lastStatusChange';
 
 const PAGE_SIZE = 20;
 
@@ -42,7 +43,7 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
   const [error, setError] = useState(false);
   const [relations, setRelations] = useState<Relation[]>([]);
   const [query, setQuery] = useState('');
-  const [sortColumn, setSortColumn] = useState<SortColumn>('firstSubmitted');
+  const [sortColumn, setSortColumn] = useState<SortColumn>('lastStatusChange');
   const [sortOrder, setSortOrder] = useState<SortMode>(SortMode.DESC);
   const [busyCaseId, setBusyCaseId] = useState<string>();
   const [page, setPage] = useState(0);
@@ -121,6 +122,7 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
   const sortValue = (errand: CaseStatusResponse, column: SortColumn) => {
     if (column === 'caseType') return caseTypeLabel(errand).toLowerCase();
     if (column === 'status') return (errand.externalStatus ?? errand.status ?? '').toLowerCase();
+    if (column === 'operation') return findOperationUsingNamespace(errand.namespace ?? '').toLowerCase();
     return errand[column] ?? '';
   };
 
@@ -139,7 +141,13 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
     .filter((errand) => {
       if (!query) return true;
       const q = query.toLowerCase();
-      return [errand.errandNumber, caseTypeLabel(errand), errand.externalStatus, errand.status]
+      return [
+        errand.errandNumber,
+        caseTypeLabel(errand),
+        errand.externalStatus,
+        errand.status,
+        findOperationUsingNamespace(errand.namespace ?? ''),
+      ]
         .filter(Boolean)
         .some((value) => value!.toLowerCase().includes(q));
     })
@@ -157,7 +165,8 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
   const headers: { label: string; column: SortColumn }[] = [
     { label: 'Status', column: 'status' },
     { label: 'Ärendetyp', column: 'caseType' },
-    { label: 'Registrerades', column: 'firstSubmitted' },
+    { label: 'Ärendenummer', column: 'errandNumber' },
+    { label: 'Verksamhet', column: 'operation' },
     { label: 'Senaste aktivitet', column: 'lastStatusChange' },
   ];
 
@@ -250,8 +259,9 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
                       <Table.Column className="w-[20rem]">
                         <div className="break-words font-bold">{caseTypeLabel(errand)}</div>
                       </Table.Column>
-                      <Table.Column className="w-[16rem] whitespace-nowrap">
-                        {formatDate(errand.firstSubmitted)}
+                      <Table.Column className="w-[15rem] whitespace-nowrap">{errand.errandNumber ?? '-'}</Table.Column>
+                      <Table.Column className="w-[11rem] whitespace-nowrap">
+                        {findOperationUsingNamespace(errand.namespace ?? '')}
                       </Table.Column>
                       <Table.Column className="w-[16rem] whitespace-nowrap">
                         {formatDate(errand.lastStatusChange)}
