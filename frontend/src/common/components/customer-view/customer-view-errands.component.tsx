@@ -142,10 +142,11 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({ partyId, org
 
   return (
     <div className="py-24" data-cy="customer-view-errands">
-      <div className="flex justify-end">
+      <div>
+        <p className="text-label-small">Sök i listan</p>
         <SearchField
-          size="md"
-          placeholder="Sök i listan"
+          className="w-full max-w-[52rem]"
+          placeholder="Sök på ärendetyp, status eller ärendenummer"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onReset={() => setQuery('')}
