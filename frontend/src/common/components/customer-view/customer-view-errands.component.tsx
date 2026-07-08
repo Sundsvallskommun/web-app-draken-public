@@ -235,12 +235,7 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
                         </span>
                       </Table.HeaderColumn>
                       <Table.Column className="w-[20rem]">
-                        <div
-                          className="whitespace-nowrap overflow-hidden text-ellipsis table-caption font-bold hover:whitespace-normal hover:break-words"
-                          title={caseTypeLabel(errand)}
-                        >
-                          {caseTypeLabel(errand)}
-                        </div>
+                        <div className="break-words font-bold">{caseTypeLabel(errand)}</div>
                       </Table.Column>
                       <Table.Column className="w-[16rem] whitespace-nowrap">
                         {formatDate(errand.firstSubmitted)}
