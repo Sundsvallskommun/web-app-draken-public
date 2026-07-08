@@ -229,7 +229,7 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
                   const statusText = errand.externalStatus ?? errand.status ?? '';
                   return (
                     <Table.Row key={errand.caseId}>
-                      <Table.HeaderColumn scope="row" className="w-[14rem] overflow-hidden">
+                      <Table.HeaderColumn scope="row" className="w-[20rem]">
                         <span title={statusText}>
                           <CaseStatusLabelComponent externalStatus={statusText} />
                         </span>
