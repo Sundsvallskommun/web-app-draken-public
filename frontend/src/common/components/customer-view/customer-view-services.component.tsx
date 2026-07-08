@@ -139,18 +139,16 @@ export const CustomerViewServices: FC<CustomerViewServicesProps> = ({ partyId, a
                     <FileCheck size={20} className="text-dark-secondary" />
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className="flex items-center gap-12 flex-wrap">
-                      <span className="text-base font-bold text-dark-primary">{serviceTitle(service)}</span>
-                      {service.status ? (
-                        <Label rounded inverted color={serviceStatusColor(service.status)}>
-                          {statusLabel(service.status)}
-                        </Label>
-                      ) : null}
-                    </span>
+                    <span className="block text-base font-bold text-dark-primary">{serviceTitle(service)}</span>
                     {service.issued ? (
                       <span className="block text-small text-dark-secondary">Senaste beslut: {service.issued}</span>
                     ) : null}
                   </span>
+                  {service.status ? (
+                    <Label rounded inverted color={serviceStatusColor(service.status)} className="shrink-0">
+                      {statusLabel(service.status)}
+                    </Label>
+                  ) : null}
                   <ChevronRight size={20} className="shrink-0 text-dark-secondary" />
                 </button>
               ))
