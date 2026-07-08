@@ -10,7 +10,19 @@ import {
   getStatusesUsingPartyId,
 } from '@common/services/casestatus-service';
 import { createRelation, deleteRelation, getResolvedRelations } from '@common/services/relations-service';
-import { Button, Icon, Pagination, SearchField, Select, SortMode, Spinner, Table, useConfirm } from '@sk-web-gui/react';
+import {
+  Button,
+  FormControl,
+  FormLabel,
+  Icon,
+  Pagination,
+  SearchField,
+  Select,
+  SortMode,
+  Spinner,
+  Table,
+  useConfirm,
+} from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
 import dayjs from 'dayjs';
 import { Link2, Link2Off, Mail } from 'lucide-react';
@@ -182,9 +194,11 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
     <div className="py-24" data-cy="customer-view-errands">
       <div className="flex flex-wrap items-end gap-16">
         {sourceErrandId ? (
-          <div>
-            <p className="text-label-small">Visa</p>
+          <FormControl>
+            <FormLabel>Visa</FormLabel>
             <Select
+              size="md"
+              className="w-[20rem]"
               value={relationFilter}
               onChange={(e) => {
                 setRelationFilter(e.currentTarget.value as 'all' | 'related');
@@ -195,11 +209,12 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
               <Select.Option value="all">Alla ärenden</Select.Option>
               <Select.Option value="related">Relaterade</Select.Option>
             </Select>
-          </div>
+          </FormControl>
         ) : null}
-        <div className="flex-1 min-w-[24rem] max-w-[52rem]">
-          <p className="text-label-small">Sök i listan</p>
+        <FormControl className="flex-1 min-w-[24rem] max-w-[52rem]">
+          <FormLabel>Sök i listan</FormLabel>
           <SearchField
+            size="md"
             className="w-full"
             placeholder="Sök på ärendetyp, status eller ärendenummer"
             value={query}
@@ -214,7 +229,7 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
             showSearchButton={false}
             data-cy="customer-view-errands-search"
           />
-        </div>
+        </FormControl>
       </div>
       {error ? (
         <p className="text-error mt-24" role="alert">
