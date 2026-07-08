@@ -1,6 +1,7 @@
 'use client';
 
 import { StakeholderCardContact } from '@common/components/stakeholder-card/stakeholder-card.component';
+import { CaseStatusResponse } from '@common/services/casestatus-service';
 import { Modal, Tabs } from '@sk-web-gui/react';
 import { FC } from 'react';
 
@@ -16,6 +17,7 @@ interface CustomerViewModalProps {
   organizationNumber?: string;
   sourceErrandId?: string;
   assetTypes?: string[];
+  onOpenMessage?: (errand: CaseStatusResponse) => void;
 }
 
 export const CustomerViewModal: FC<CustomerViewModalProps> = ({
@@ -26,6 +28,7 @@ export const CustomerViewModal: FC<CustomerViewModalProps> = ({
   organizationNumber,
   sourceErrandId,
   assetTypes = [],
+  onOpenMessage,
 }) => {
   return (
     <Modal show={show} onClose={onClose} label="Kundbild" className="w-[96rem]" data-cy="customer-view-modal">
@@ -48,6 +51,14 @@ export const CustomerViewModal: FC<CustomerViewModalProps> = ({
                   partyId={partyId}
                   organizationNumber={organizationNumber}
                   sourceErrandId={sourceErrandId}
+                  onOpenMessage={
+                    onOpenMessage
+                      ? (errand) => {
+                          onClose();
+                          onOpenMessage(errand);
+                        }
+                      : undefined
+                  }
                 />
               </Tabs.Content>
             </Tabs.Item>

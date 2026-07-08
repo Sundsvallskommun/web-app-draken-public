@@ -2,7 +2,11 @@
 
 import { StakeholderCardContact } from '@common/components/stakeholder-card/stakeholder-card.component';
 import { usePartyAssetServices } from '@common/hooks/use-asset-services';
-import { getStatusesUsingOrganizationNumber, getStatusesUsingPartyId } from '@common/services/casestatus-service';
+import {
+  CaseStatusResponse,
+  getStatusesUsingOrganizationNumber,
+  getStatusesUsingPartyId,
+} from '@common/services/casestatus-service';
 import { Button, Icon, Spinner } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
 import { ArrowRight, FileText, ListChecks } from 'lucide-react';
@@ -17,6 +21,7 @@ interface CustomerViewFooterProps {
   assetTypes?: string[];
   activeStatuses?: string[];
   sourceErrandId?: string;
+  onOpenMessage?: (errand: CaseStatusResponse) => void;
 }
 
 export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
@@ -26,6 +31,7 @@ export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
   assetTypes = [],
   activeStatuses = [],
   sourceErrandId,
+  onOpenMessage,
 }) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const [showModal, setShowModal] = useState(false);
@@ -112,6 +118,7 @@ export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
         organizationNumber={organizationNumber}
         sourceErrandId={sourceErrandId}
         assetTypes={assetTypes}
+        onOpenMessage={onOpenMessage}
       />
     </div>
   );

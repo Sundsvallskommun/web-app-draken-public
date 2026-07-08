@@ -9,7 +9,7 @@ import {
   getStatusesUsingPartyId,
 } from '@common/services/casestatus-service';
 import { createRelation, deleteRelation, getResolvedRelations } from '@common/services/relations-service';
-import { Button, Icon, Pagination, SearchField, SortMode, Spinner, Table } from '@sk-web-gui/react';
+import { Button, Icon, Pagination, SearchField, Select, SortMode, Spinner, Table } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
 import dayjs from 'dayjs';
 import { Link2, Link2Off } from 'lucide-react';
@@ -19,6 +19,7 @@ interface CustomerViewErrandsProps {
   partyId: string;
   organizationNumber?: string;
   sourceErrandId?: string;
+  onOpenMessage?: (errand: CaseStatusResponse) => void;
 }
 
 const caseTypeLabel = (errand: CaseStatusResponse) =>
@@ -30,7 +31,12 @@ type SortColumn = 'status' | 'caseType' | 'firstSubmitted' | 'lastStatusChange';
 
 const PAGE_SIZE = 20;
 
-export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({ partyId, organizationNumber, sourceErrandId }) => {
+export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
+  partyId,
+  organizationNumber,
+  sourceErrandId,
+  onOpenMessage,
+}) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const [errands, setErrands] = useState<CaseStatusResponse[]>();
   const [error, setError] = useState(false);
@@ -40,6 +46,7 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({ partyId, org
   const [sortOrder, setSortOrder] = useState<SortMode>(SortMode.DESC);
   const [busyCaseId, setBusyCaseId] = useState<string>();
   const [page, setPage] = useState(0);
+  const [relationFilter, setRelationFilter] = useState<'all' | 'related'>('all');
 
   useEffect(() => {
     let active = true;
@@ -115,6 +122,7 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({ partyId, org
   };
 
   const filtered = (errands ?? [])
+    .filter((errand) => relationFilter === 'all' || !!relationFor(errand))
     .filter((errand) => {
       if (!query) return true;
       const q = query.toLowerCase();
@@ -150,23 +158,41 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({ partyId, org
 
   return (
     <div className="py-24" data-cy="customer-view-errands">
-      <div>
-        <p className="text-label-small">Sök i listan</p>
-        <SearchField
-          className="w-full max-w-[52rem]"
-          placeholder="Sök på ärendetyp, status eller ärendenummer"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setPage(0);
-          }}
-          onReset={() => {
-            setQuery('');
-            setPage(0);
-          }}
-          showSearchButton={false}
-          data-cy="customer-view-errands-search"
-        />
+      <div className="flex flex-wrap items-end gap-16">
+        {sourceErrandId ? (
+          <div>
+            <p className="text-label-small">Visa</p>
+            <Select
+              value={relationFilter}
+              onChange={(e) => {
+                setRelationFilter(e.currentTarget.value as 'all' | 'related');
+                setPage(0);
+              }}
+              data-cy="customer-view-errands-relation-filter"
+            >
+              <Select.Option value="all">Alla ärenden</Select.Option>
+              <Select.Option value="related">Relaterade</Select.Option>
+            </Select>
+          </div>
+        ) : null}
+        <div className="flex-1 min-w-[24rem] max-w-[52rem]">
+          <p className="text-label-small">Sök i listan</p>
+          <SearchField
+            className="w-full"
+            placeholder="Sök på ärendetyp, status eller ärendenummer"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(0);
+            }}
+            onReset={() => {
+              setQuery('');
+              setPage(0);
+            }}
+            showSearchButton={false}
+            data-cy="customer-view-errands-search"
+          />
+        </div>
       </div>
       {error ? (
         <p className="text-error mt-24" role="alert">
@@ -210,7 +236,7 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({ partyId, org
                       </Table.HeaderColumn>
                       <Table.Column className="w-[20rem]">
                         <div
-                          className="whitespace-nowrap overflow-hidden text-ellipsis table-caption font-bold"
+                          className="whitespace-nowrap overflow-hidden text-ellipsis table-caption font-bold hover:whitespace-normal hover:break-words"
                           title={caseTypeLabel(errand)}
                         >
                           {caseTypeLabel(errand)}
@@ -224,16 +250,44 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({ partyId, org
                       </Table.Column>
                       {sourceErrandId ? (
                         <Table.Column className="justify-end">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            disabled={busyCaseId === errand.caseId}
-                            data-cy={`customer-view-${linked ? 'unrelate' : 'relate'}-${errand.caseId}`}
-                            leftIcon={<Icon icon={linked ? <Link2Off size={16} /> : <Link2 size={16} />} />}
-                            onClick={() => (linked ? handleUnrelate(errand) : handleRelate(errand))}
-                          >
-                            {linked ? 'Ta bort relation' : 'Relatera'}
-                          </Button>
+                          {linked ? (
+                            <div className="flex items-center gap-8">
+                              {onOpenMessage ? (
+                                <Button
+                                  size="sm"
+                                  variant="primary"
+                                  color="vattjom"
+                                  data-cy={`customer-view-message-${errand.caseId}`}
+                                  onClick={() => onOpenMessage(errand)}
+                                >
+                                  Skicka meddelande
+                                </Button>
+                              ) : null}
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                iconButton
+                                aria-label="Ta bort relation"
+                                title="Ta bort relation"
+                                disabled={busyCaseId === errand.caseId}
+                                data-cy={`customer-view-unrelate-${errand.caseId}`}
+                                onClick={() => handleUnrelate(errand)}
+                              >
+                                <Icon icon={<Link2Off size={16} />} />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              disabled={busyCaseId === errand.caseId}
+                              data-cy={`customer-view-relate-${errand.caseId}`}
+                              leftIcon={<Icon icon={<Link2 size={16} />} />}
+                              onClick={() => handleRelate(errand)}
+                            >
+                              Relatera
+                            </Button>
+                          )}
                         </Table.Column>
                       ) : null}
                     </Table.Row>

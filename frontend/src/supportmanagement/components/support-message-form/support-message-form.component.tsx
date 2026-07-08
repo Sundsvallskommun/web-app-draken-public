@@ -141,6 +141,8 @@ export const SupportMessageForm: FC<{
   locked?: boolean;
   prefillPhone?: string;
   prefillEmail?: string;
+  prefillContactMeans?: MessageContactMeans;
+  prefillRelationId?: string;
   showMessageForm: boolean;
   message: Message;
   setShowMessageForm: Dispatch<SetStateAction<boolean>>;
@@ -454,6 +456,16 @@ export const SupportMessageForm: FC<{
     getAllRelatedErrands(municipalityId, supportErrand.id!).then(setRelationErrands);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.showMessageForm]);
+
+  useEffect(() => {
+    if (props.showMessageForm && props.prefillContactMeans) {
+      setValue('contactMeans', props.prefillContactMeans);
+      if (props.prefillRelationId) {
+        setSelectedRelationId(props.prefillRelationId);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.showMessageForm, props.prefillContactMeans, props.prefillRelationId]);
 
   useEffect(() => {
     if (contactMeans === 'draken' && relationErrands.length > 0 && !selectedRelationId) {

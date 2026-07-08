@@ -210,6 +210,13 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
           assetTypes={appConfig.features.useServices ? KC_ASSET_TYPES : []}
           activeStatuses={appConfig.features.useServices ? [...ACTIVE_PARTY_STATUSES] : []}
           sourceErrandId={supportErrand?.id}
+          onOpenMessage={(relatedErrand) => {
+            window.dispatchEvent(
+              new CustomEvent('openMessage', {
+                detail: { contactMeans: 'draken', relationCaseId: relatedErrand.caseId },
+              })
+            );
+          }}
         />
       );
     }
