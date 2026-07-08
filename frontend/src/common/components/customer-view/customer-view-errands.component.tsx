@@ -9,7 +9,7 @@ import {
   getStatusesUsingPartyId,
 } from '@common/services/casestatus-service';
 import { createRelation, deleteRelation, getResolvedRelations } from '@common/services/relations-service';
-import { Button, Icon, SearchField, SortMode, Spinner, Table } from '@sk-web-gui/react';
+import { Button, Icon, Pagination, SearchField, SortMode, Spinner, Table } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
 import dayjs from 'dayjs';
 import { Link2, Link2Off } from 'lucide-react';
@@ -28,6 +28,8 @@ const formatDate = (date?: string) => (date ? dayjs(date).format('YYYY-MM-DD, HH
 
 type SortColumn = 'status' | 'caseType' | 'firstSubmitted' | 'lastStatusChange';
 
+const PAGE_SIZE = 20;
+
 export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({ partyId, organizationNumber, sourceErrandId }) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const [errands, setErrands] = useState<CaseStatusResponse[]>();
@@ -37,6 +39,7 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({ partyId, org
   const [sortColumn, setSortColumn] = useState<SortColumn>('firstSubmitted');
   const [sortOrder, setSortOrder] = useState<SortMode>(SortMode.DESC);
   const [busyCaseId, setBusyCaseId] = useState<string>();
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -108,6 +111,7 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({ partyId, org
       setSortColumn(column);
       setSortOrder(SortMode.ASC);
     }
+    setPage(0);
   };
 
   const filtered = (errands ?? [])
@@ -124,6 +128,10 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({ partyId, org
       const order = aValue.localeCompare(bValue);
       return sortOrder === SortMode.ASC ? order : -order;
     });
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const safePage = Math.min(page, Math.max(totalPages - 1, 0));
+  const paged = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
   const headers: { label: string; column: SortColumn }[] = [
     { label: 'Status', column: 'status' },
@@ -148,8 +156,14 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({ partyId, org
           className="w-full max-w-[52rem]"
           placeholder="Sök på ärendetyp, status eller ärendenummer"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onReset={() => setQuery('')}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(0);
+          }}
+          onReset={() => {
+            setQuery('');
+            setPage(0);
+          }}
           showSearchButton={false}
           data-cy="customer-view-errands-search"
         />
@@ -161,7 +175,7 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({ partyId, org
       ) : (
         <>
           <p className="mt-24 mb-8 text-small" data-cy="customer-view-errands-count">
-            Visar {filtered.length} ärenden
+            Visar {paged.length} av {filtered.length} ärenden
           </p>
           {filtered.length > 0 ? (
             <Table background data-cy="customer-view-errands-table">
@@ -184,7 +198,7 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({ partyId, org
                 ) : null}
               </Table.Header>
               <Table.Body>
-                {filtered.map((errand) => {
+                {paged.map((errand) => {
                   const linked = !!relationFor(errand);
                   const statusText = errand.externalStatus ?? errand.status ?? '';
                   return (
@@ -226,6 +240,24 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({ partyId, org
                   );
                 })}
               </Table.Body>
+              {totalPages > 1 ? (
+                <Table.Footer>
+                  <div className="sk-table-paginationwrapper">
+                    <Pagination
+                      showFirst
+                      showLast
+                      pagesBefore={1}
+                      pagesAfter={1}
+                      showConstantPages={true}
+                      fitContainer
+                      pages={totalPages}
+                      activePage={safePage + 1}
+                      changePage={(newPage) => setPage(newPage - 1)}
+                      data-cy="customer-view-errands-pagination"
+                    />
+                  </div>
+                </Table.Footer>
+              ) : null}
             </Table>
           ) : (
             <p data-cy="customer-view-errands-empty">Inga ärenden hittades</p>
