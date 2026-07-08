@@ -110,6 +110,7 @@ export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
           partyId={partyId}
           organizationNumber={organizationNumber}
           sourceErrandId={sourceErrandId}
+          assetTypes={assetTypes}
         />
       </div>
     </div>

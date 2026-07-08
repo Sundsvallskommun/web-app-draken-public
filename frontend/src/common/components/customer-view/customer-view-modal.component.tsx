@@ -6,6 +6,7 @@ import { FC } from 'react';
 
 import { CustomerViewContactDetails } from './customer-view-contact-details.component';
 import { CustomerViewErrands } from './customer-view-errands.component';
+import { CustomerViewServices } from './customer-view-services.component';
 
 interface CustomerViewModalProps {
   show: boolean;
@@ -14,6 +15,7 @@ interface CustomerViewModalProps {
   partyId: string;
   organizationNumber?: string;
   sourceErrandId?: string;
+  assetTypes?: string[];
 }
 
 export const CustomerViewModal: FC<CustomerViewModalProps> = ({
@@ -23,6 +25,7 @@ export const CustomerViewModal: FC<CustomerViewModalProps> = ({
   partyId,
   organizationNumber,
   sourceErrandId,
+  assetTypes = [],
 }) => {
   return (
     <Modal show={show} onClose={onClose} label="Kundbild" className="w-[96rem]" data-cy="customer-view-modal">
@@ -48,6 +51,14 @@ export const CustomerViewModal: FC<CustomerViewModalProps> = ({
                 />
               </Tabs.Content>
             </Tabs.Item>
+            {assetTypes.length > 0 ? (
+              <Tabs.Item>
+                <Tabs.Button data-cy="customer-view-tab-services">Beslut och dokument</Tabs.Button>
+                <Tabs.Content>
+                  <CustomerViewServices partyId={partyId} assetTypes={assetTypes} />
+                </Tabs.Content>
+              </Tabs.Item>
+            ) : null}
           </Tabs>
         ) : null}
       </Modal.Content>
