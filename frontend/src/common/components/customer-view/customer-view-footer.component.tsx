@@ -103,16 +103,16 @@ export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
         >
           Visa kundbild
         </Button>
-        <CustomerViewModal
-          show={showModal}
-          onClose={() => setShowModal(false)}
-          contact={contact}
-          partyId={partyId}
-          organizationNumber={organizationNumber}
-          sourceErrandId={sourceErrandId}
-          assetTypes={assetTypes}
-        />
       </div>
+      <CustomerViewModal
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        contact={contact}
+        partyId={partyId}
+        organizationNumber={organizationNumber}
+        sourceErrandId={sourceErrandId}
+        assetTypes={assetTypes}
+      />
     </div>
   );
 };
