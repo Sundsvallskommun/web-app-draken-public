@@ -102,6 +102,10 @@ const defaultRenderer: ServiceRenderer = {
 const resolveRenderer = (service: Service): ServiceRenderer =>
   (service.assetType && renderers[service.assetType]) || defaultRenderer;
 
+export const resolveServiceTitle = (service: Service): string => resolveRenderer(service).title(service);
+
+export const serviceStatusColor = statusColor;
+
 interface Props {
   service: Service;
   onRemove?: (id: string) => void;

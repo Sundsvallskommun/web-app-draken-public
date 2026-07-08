@@ -1,10 +1,14 @@
 'use client';
 
-import { ServiceListItem } from '@common/components/services/service-item.component';
+import {
+  resolveServiceTitle,
+  ServiceListItem,
+  serviceStatusColor,
+} from '@common/components/services/service-item.component';
 import { usePartyAssetServices } from '@common/hooks/use-asset-services';
-import { assetTypeLabels } from '@common/interfaces/asset';
+import { assetStatusLabels } from '@common/interfaces/asset';
 import { Service } from '@common/services/service-assets-service';
-import { Button, Icon, Spinner } from '@sk-web-gui/react';
+import { Button, FormControl, FormLabel, Icon, Label, Select, Spinner } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
 import { ArrowLeft, ChevronRight, FileCheck } from 'lucide-react';
 import { FC, useState } from 'react';
@@ -14,14 +18,23 @@ interface CustomerViewServicesProps {
   assetTypes: string[];
 }
 
-const serviceTitle = (service: Service) =>
-  (service.assetType && (assetTypeLabels as Record<string, string>)[service.assetType]) ||
-  service.assetType ||
-  'Insats';
+const assetTypeDisplay: Record<string, string> = {
+  ParatransitPermitLocal: 'Färdtjänst',
+  ParatransitPermitNational: 'Riksfärdtjänst',
+  PARKINGPERMIT: 'Parkeringstillstånd',
+};
+
+const typeLabel = (assetType?: string) => (assetType && assetTypeDisplay[assetType]) || assetType || 'Insats';
+
+const statusLabel = (status: string) => (assetStatusLabels as Record<string, string>)[status] ?? status;
+
+const serviceTitle = (service: Service) => resolveServiceTitle(service) || typeLabel(service.assetType);
 
 export const CustomerViewServices: FC<CustomerViewServicesProps> = ({ partyId, assetTypes }) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const [selected, setSelected] = useState<Service>();
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const { partyServices, loading, error } = usePartyAssetServices({ municipalityId, partyId, assetTypes });
 
   if (loading) {
@@ -59,31 +72,91 @@ export const CustomerViewServices: FC<CustomerViewServicesProps> = ({ partyId, a
     );
   }
 
+  const statusOptions = [...new Set(partyServices.map((s) => s.status).filter(Boolean))] as string[];
+  const typeOptions = [...new Set(partyServices.map((s) => s.assetType).filter(Boolean))] as string[];
+  const filtered = partyServices.filter(
+    (s) => (statusFilter === 'all' || s.status === statusFilter) && (typeFilter === 'all' || s.assetType === typeFilter)
+  );
+
   return (
-    <div className="py-24 flex flex-col gap-12" data-cy="customer-view-services">
+    <div className="py-24" data-cy="customer-view-services">
       {partyServices.length === 0 ? (
         <p data-cy="customer-view-services-empty">Personen har inga beslut och dokument</p>
       ) : (
-        partyServices.map((service) => (
-          <button
-            key={service.id}
-            type="button"
-            className="w-full flex items-center gap-16 p-16 rounded-cards border border-divider bg-background-content text-left hover:bg-vattjom-background-100"
-            onClick={() => setSelected(service)}
-            data-cy={`customer-view-service-${service.id}`}
-          >
-            <span className="p-12 bg-vattjom-background-300 rounded-lg flex items-center justify-center shrink-0">
-              <FileCheck size={20} className="text-dark-secondary" />
-            </span>
-            <span className="flex-1 min-w-0">
-              <span className="block text-base font-bold text-dark-primary">{serviceTitle(service)}</span>
-              {service.issued ? (
-                <span className="block text-small text-dark-secondary">Senaste beslut: {service.issued}</span>
-              ) : null}
-            </span>
-            <ChevronRight size={20} className="shrink-0 text-dark-secondary" />
-          </button>
-        ))
+        <>
+          <div className="flex flex-wrap items-end gap-16">
+            <FormControl>
+              <FormLabel>Typ</FormLabel>
+              <Select
+                size="md"
+                className="w-[24rem]"
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.currentTarget.value)}
+                data-cy="customer-view-services-type-filter"
+              >
+                <Select.Option value="all">Alla typer</Select.Option>
+                {typeOptions.map((type) => (
+                  <Select.Option key={type} value={type}>
+                    {typeLabel(type)}
+                  </Select.Option>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl>
+              <FormLabel>Status</FormLabel>
+              <Select
+                size="md"
+                className="w-[20rem]"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.currentTarget.value)}
+                data-cy="customer-view-services-status-filter"
+              >
+                <Select.Option value="all">Alla statusar</Select.Option>
+                {statusOptions.map((status) => (
+                  <Select.Option key={status} value={status}>
+                    {statusLabel(status)}
+                  </Select.Option>
+                ))}
+              </Select>
+            </FormControl>
+          </div>
+          <p className="mt-24 mb-8 text-small" data-cy="customer-view-services-count">
+            Visar {filtered.length} av {partyServices.length} beslut och dokument
+          </p>
+          <div className="flex flex-col gap-12">
+            {filtered.length === 0 ? (
+              <p data-cy="customer-view-services-empty">Inga beslut och dokument matchar filtret</p>
+            ) : (
+              filtered.map((service) => (
+                <button
+                  key={service.id}
+                  type="button"
+                  className="w-full flex items-center gap-16 p-16 rounded-cards border border-divider bg-background-content text-left hover:bg-vattjom-background-100"
+                  onClick={() => setSelected(service)}
+                  data-cy={`customer-view-service-${service.id}`}
+                >
+                  <span className="p-12 bg-vattjom-background-300 rounded-lg flex items-center justify-center shrink-0">
+                    <FileCheck size={20} className="text-dark-secondary" />
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="flex items-center gap-12 flex-wrap">
+                      <span className="text-base font-bold text-dark-primary">{serviceTitle(service)}</span>
+                      {service.status ? (
+                        <Label rounded inverted color={serviceStatusColor(service.status)}>
+                          {statusLabel(service.status)}
+                        </Label>
+                      ) : null}
+                    </span>
+                    {service.issued ? (
+                      <span className="block text-small text-dark-secondary">Senaste beslut: {service.issued}</span>
+                    ) : null}
+                  </span>
+                  <ChevronRight size={20} className="shrink-0 text-dark-secondary" />
+                </button>
+              ))
+            )}
+          </div>
+        </>
       )}
     </div>
   );
