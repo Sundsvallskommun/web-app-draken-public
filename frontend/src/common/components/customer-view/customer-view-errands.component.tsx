@@ -185,16 +185,28 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({ partyId, org
               <Table.Body>
                 {filtered.map((errand) => {
                   const linked = !!relationFor(errand);
+                  const statusText = errand.externalStatus ?? errand.status ?? '';
                   return (
                     <Table.Row key={errand.caseId}>
-                      <Table.HeaderColumn scope="row">
-                        <CaseStatusLabelComponent externalStatus={errand.externalStatus ?? errand.status ?? ''} />
+                      <Table.HeaderColumn scope="row" className="w-[14rem] overflow-hidden">
+                        <span title={statusText}>
+                          <CaseStatusLabelComponent externalStatus={statusText} />
+                        </span>
                       </Table.HeaderColumn>
-                      <Table.Column>
-                        <span className="font-bold">{caseTypeLabel(errand)}</span>
+                      <Table.Column className="w-[20rem]">
+                        <div
+                          className="whitespace-nowrap overflow-hidden text-ellipsis table-caption font-bold"
+                          title={caseTypeLabel(errand)}
+                        >
+                          {caseTypeLabel(errand)}
+                        </div>
                       </Table.Column>
-                      <Table.Column>{formatDate(errand.firstSubmitted)}</Table.Column>
-                      <Table.Column>{formatDate(errand.lastStatusChange)}</Table.Column>
+                      <Table.Column className="w-[16rem] whitespace-nowrap">
+                        {formatDate(errand.firstSubmitted)}
+                      </Table.Column>
+                      <Table.Column className="w-[16rem] whitespace-nowrap">
+                        {formatDate(errand.lastStatusChange)}
+                      </Table.Column>
                       {sourceErrandId ? (
                         <Table.Column className="justify-end">
                           <Button
