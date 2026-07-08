@@ -226,114 +226,118 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
             Visar {paged.length} av {filtered.length} ärenden
           </p>
           {filtered.length > 0 ? (
-            <Table background data-cy="customer-view-errands-table">
-              <Table.Header>
-                {headers.map((header) => (
-                  <Table.HeaderColumn key={header.column}>
-                    <Table.SortButton
-                      isActive={sortColumn === header.column}
-                      sortOrder={sortOrder}
-                      onClick={() => handleSort(header.column)}
-                    >
-                      {header.label}
-                    </Table.SortButton>
-                  </Table.HeaderColumn>
-                ))}
-                {sourceErrandId ? (
-                  <Table.HeaderColumn>
-                    <span className="sr-only">Relatera</span>
-                  </Table.HeaderColumn>
-                ) : null}
-              </Table.Header>
-              <Table.Body>
-                {paged.map((errand) => {
-                  const linked = !!relationFor(errand);
-                  const statusText = errand.externalStatus ?? errand.status ?? '';
-                  return (
-                    <Table.Row key={errand.caseId}>
-                      <Table.HeaderColumn scope="row" className="w-[20rem]">
-                        <span title={statusText}>
-                          <CaseStatusLabelComponent externalStatus={statusText} />
-                        </span>
-                      </Table.HeaderColumn>
-                      <Table.Column className="w-[20rem]">
-                        <div className="break-words font-bold">{caseTypeLabel(errand)}</div>
-                      </Table.Column>
-                      <Table.Column className="w-[15rem] whitespace-nowrap">{errand.errandNumber ?? '-'}</Table.Column>
-                      <Table.Column className="w-[11rem] whitespace-nowrap">
-                        {findOperationUsingNamespace(errand.namespace ?? '')}
-                      </Table.Column>
-                      <Table.Column className="w-[16rem] whitespace-nowrap">
-                        {formatDate(errand.lastStatusChange)}
-                      </Table.Column>
-                      {sourceErrandId ? (
-                        <Table.Column className="justify-end">
-                          {linked ? (
-                            <div className="flex items-center gap-8">
-                              {onOpenMessage ? (
+            <div className="overflow-x-auto">
+              <Table background data-cy="customer-view-errands-table">
+                <Table.Header>
+                  {headers.map((header) => (
+                    <Table.HeaderColumn key={header.column}>
+                      <Table.SortButton
+                        isActive={sortColumn === header.column}
+                        sortOrder={sortOrder}
+                        onClick={() => handleSort(header.column)}
+                      >
+                        {header.label}
+                      </Table.SortButton>
+                    </Table.HeaderColumn>
+                  ))}
+                  {sourceErrandId ? (
+                    <Table.HeaderColumn>
+                      <span className="sr-only">Relatera</span>
+                    </Table.HeaderColumn>
+                  ) : null}
+                </Table.Header>
+                <Table.Body>
+                  {paged.map((errand) => {
+                    const linked = !!relationFor(errand);
+                    const statusText = errand.externalStatus ?? errand.status ?? '';
+                    return (
+                      <Table.Row key={errand.caseId}>
+                        <Table.HeaderColumn scope="row" className="w-[16rem]">
+                          <span title={statusText}>
+                            <CaseStatusLabelComponent externalStatus={statusText} />
+                          </span>
+                        </Table.HeaderColumn>
+                        <Table.Column className="w-[18rem]">
+                          <div className="break-words font-bold">{caseTypeLabel(errand)}</div>
+                        </Table.Column>
+                        <Table.Column className="w-[13rem] whitespace-nowrap">
+                          {errand.errandNumber ?? '-'}
+                        </Table.Column>
+                        <Table.Column className="w-[9rem] whitespace-nowrap">
+                          {findOperationUsingNamespace(errand.namespace ?? '')}
+                        </Table.Column>
+                        <Table.Column className="w-[14rem] whitespace-nowrap">
+                          {formatDate(errand.lastStatusChange)}
+                        </Table.Column>
+                        {sourceErrandId ? (
+                          <Table.Column className="justify-end">
+                            {linked ? (
+                              <div className="flex items-center gap-8">
+                                {onOpenMessage ? (
+                                  <Button
+                                    size="sm"
+                                    variant="primary"
+                                    color="vattjom"
+                                    iconButton
+                                    aria-label="Skicka meddelande"
+                                    title="Skicka meddelande"
+                                    data-cy={`customer-view-message-${errand.caseId}`}
+                                    onClick={() => onOpenMessage(errand)}
+                                  >
+                                    <Icon icon={<Mail size={16} />} />
+                                  </Button>
+                                ) : null}
                                 <Button
                                   size="sm"
-                                  variant="primary"
-                                  color="vattjom"
+                                  variant="secondary"
                                   iconButton
-                                  aria-label="Skicka meddelande"
-                                  title="Skicka meddelande"
-                                  data-cy={`customer-view-message-${errand.caseId}`}
-                                  onClick={() => onOpenMessage(errand)}
+                                  aria-label="Ta bort relation"
+                                  title="Ta bort relation"
+                                  disabled={busyCaseId === errand.caseId}
+                                  data-cy={`customer-view-unrelate-${errand.caseId}`}
+                                  onClick={() => handleUnrelate(errand)}
                                 >
-                                  <Icon icon={<Mail size={16} />} />
+                                  <Icon icon={<Link2Off size={16} />} />
                                 </Button>
-                              ) : null}
+                              </div>
+                            ) : (
                               <Button
                                 size="sm"
                                 variant="secondary"
-                                iconButton
-                                aria-label="Ta bort relation"
-                                title="Ta bort relation"
                                 disabled={busyCaseId === errand.caseId}
-                                data-cy={`customer-view-unrelate-${errand.caseId}`}
-                                onClick={() => handleUnrelate(errand)}
+                                data-cy={`customer-view-relate-${errand.caseId}`}
+                                leftIcon={<Icon icon={<Link2 size={16} />} />}
+                                onClick={() => handleRelate(errand)}
                               >
-                                <Icon icon={<Link2Off size={16} />} />
+                                Relatera
                               </Button>
-                            </div>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              disabled={busyCaseId === errand.caseId}
-                              data-cy={`customer-view-relate-${errand.caseId}`}
-                              leftIcon={<Icon icon={<Link2 size={16} />} />}
-                              onClick={() => handleRelate(errand)}
-                            >
-                              Relatera
-                            </Button>
-                          )}
-                        </Table.Column>
-                      ) : null}
-                    </Table.Row>
-                  );
-                })}
-              </Table.Body>
-              {totalPages > 1 ? (
-                <Table.Footer>
-                  <div className="sk-table-paginationwrapper">
-                    <Pagination
-                      showFirst
-                      showLast
-                      pagesBefore={1}
-                      pagesAfter={1}
-                      showConstantPages={true}
-                      fitContainer
-                      pages={totalPages}
-                      activePage={safePage + 1}
-                      changePage={(newPage) => setPage(newPage - 1)}
-                      data-cy="customer-view-errands-pagination"
-                    />
-                  </div>
-                </Table.Footer>
-              ) : null}
-            </Table>
+                            )}
+                          </Table.Column>
+                        ) : null}
+                      </Table.Row>
+                    );
+                  })}
+                </Table.Body>
+                {totalPages > 1 ? (
+                  <Table.Footer>
+                    <div className="sk-table-paginationwrapper">
+                      <Pagination
+                        showFirst
+                        showLast
+                        pagesBefore={1}
+                        pagesAfter={1}
+                        showConstantPages={true}
+                        fitContainer
+                        pages={totalPages}
+                        activePage={safePage + 1}
+                        changePage={(newPage) => setPage(newPage - 1)}
+                        data-cy="customer-view-errands-pagination"
+                      />
+                    </div>
+                  </Table.Footer>
+                ) : null}
+              </Table>
+            </div>
           ) : (
             <p data-cy="customer-view-errands-empty">Inga ärenden hittades</p>
           )}
