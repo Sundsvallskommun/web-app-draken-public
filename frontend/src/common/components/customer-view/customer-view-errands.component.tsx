@@ -9,10 +9,10 @@ import {
   getStatusesUsingPartyId,
 } from '@common/services/casestatus-service';
 import { createRelation, deleteRelation, getResolvedRelations } from '@common/services/relations-service';
-import { Button, Icon, Pagination, SearchField, Select, SortMode, Spinner, Table } from '@sk-web-gui/react';
+import { Button, Icon, Pagination, SearchField, Select, SortMode, Spinner, Table, useConfirm } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
 import dayjs from 'dayjs';
-import { Link2, Link2Off } from 'lucide-react';
+import { Link2, Link2Off, Mail } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 
 interface CustomerViewErrandsProps {
@@ -47,6 +47,7 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
   const [busyCaseId, setBusyCaseId] = useState<string>();
   const [page, setPage] = useState(0);
   const [relationFilter, setRelationFilter] = useState<'all' | 'related'>('all');
+  const removeRelationConfirm = useConfirm();
 
   useEffect(() => {
     let active = true;
@@ -98,11 +99,23 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
   const handleUnrelate = (errand: CaseStatusResponse) => {
     const relation = relationFor(errand);
     if (!relation?.id) return;
-    setBusyCaseId(errand.caseId);
-    deleteRelation(municipalityId, relation.id)
-      .then(() => refreshRelations())
-      .catch((e) => console.error('Failed to delete relation:', e))
-      .finally(() => setBusyCaseId(undefined));
+    removeRelationConfirm
+      .showConfirmation(
+        'Ta bort relation?',
+        `Relationen till ärende ${errand.errandNumber ?? ''} kommer att tas bort. Vill du fortsätta?`,
+        'Ja',
+        'Nej',
+        'info',
+        'info'
+      )
+      .then((confirmed) => {
+        if (!confirmed) return;
+        setBusyCaseId(errand.caseId);
+        deleteRelation(municipalityId, relation.id!)
+          .then(() => refreshRelations())
+          .catch((e) => console.error('Failed to delete relation:', e))
+          .finally(() => setBusyCaseId(undefined));
+      });
   };
 
   const sortValue = (errand: CaseStatusResponse, column: SortColumn) => {
@@ -252,10 +265,13 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
                                   size="sm"
                                   variant="primary"
                                   color="vattjom"
+                                  iconButton
+                                  aria-label="Skicka meddelande"
+                                  title="Skicka meddelande"
                                   data-cy={`customer-view-message-${errand.caseId}`}
                                   onClick={() => onOpenMessage(errand)}
                                 >
-                                  Skicka meddelande
+                                  <Icon icon={<Mail size={16} />} />
                                 </Button>
                               ) : null}
                               <Button
