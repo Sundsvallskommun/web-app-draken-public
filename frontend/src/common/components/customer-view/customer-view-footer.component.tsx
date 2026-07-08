@@ -16,6 +16,7 @@ interface CustomerViewFooterProps {
   contact: StakeholderCardContact;
   assetTypes?: string[];
   activeStatuses?: string[];
+  sourceErrandId?: string;
 }
 
 export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
@@ -24,6 +25,7 @@ export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
   contact,
   assetTypes = [],
   activeStatuses = [],
+  sourceErrandId,
 }) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const [showModal, setShowModal] = useState(false);
@@ -101,7 +103,14 @@ export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
         >
           Visa kundbild
         </Button>
-        <CustomerViewModal show={showModal} onClose={() => setShowModal(false)} contact={contact} />
+        <CustomerViewModal
+          show={showModal}
+          onClose={() => setShowModal(false)}
+          contact={contact}
+          partyId={partyId}
+          organizationNumber={organizationNumber}
+          sourceErrandId={sourceErrandId}
+        />
       </div>
     </div>
   );

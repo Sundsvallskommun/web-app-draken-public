@@ -209,6 +209,7 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
           contact={toStakeholderCardContact(contact)}
           assetTypes={appConfig.features.useServices ? KC_ASSET_TYPES : []}
           activeStatuses={appConfig.features.useServices ? [...ACTIVE_PARTY_STATUSES] : []}
+          sourceErrandId={supportErrand?.id}
         />
       );
     }
