@@ -42,6 +42,10 @@ export const CustomerViewModal: FC<CustomerViewModalProps> = ({
         <h1 className="text-h2-md my-0" data-cy="customer-view-name">
           {contact.name}
         </h1>
+        <p className="mt-8 mb-0 text-md text-dark-secondary" data-cy="customer-view-description">
+          Kundbilden visar en samlad bild av den valda personen: kontaktuppgifter, ärenden samt beslut och dokument.
+          Allt innehåll och all sökning nedan avser enbart denna person.
+        </p>
         {show ? (
           <Tabs size="sm" className="mt-16">
             <Tabs.Item>
