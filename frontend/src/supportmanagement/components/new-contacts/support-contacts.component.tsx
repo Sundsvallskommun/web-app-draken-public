@@ -1,9 +1,11 @@
+import { CustomerViewFooter } from '@common/components/customer-view/customer-view-footer.component';
 import { StakeholderCard, StakeholderCardAction } from '@common/components/stakeholder-card/stakeholder-card.component';
 import { appConfig } from '@config/appconfig';
 import { Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { useMetadataStore, useSupportStore } from '@stores/index';
 import {
   emptyContact,
+  ExternalIdType,
   isSupportErrandLocked,
   SupportErrand,
   SupportStakeholderFormModel,
@@ -16,6 +18,7 @@ import { Info, Users } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
 
+import { ACTIVE_PARTY_STATUSES, KC_ASSET_TYPES } from '../support-errand/tabs/services/support-errand-services-tab';
 import { PartyAssetsSection } from './partyassets-section.component';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
 
@@ -185,15 +188,34 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
         onAddPhone={() => setSelectedContact(contact)}
         onAddEmail={() => setSelectedContact(contact)}
         addDisabled={locked}
-        footer={
-          appConfig.features.useServices &&
-          contact.externalId &&
-          supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY' && s.externalId === contact.externalId) ? (
-            <PartyAssetsSection partyId={contact.externalId} />
-          ) : null
-        }
+        footer={renderCardFooter(contact)}
       />
     );
+  };
+
+  const renderCardFooter = (contact: SupportStakeholderFormModel) => {
+    const isOwner =
+      contact.externalId &&
+      supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY' && s.externalId === contact.externalId);
+    if (!isOwner) return null;
+
+    if (appConfig.features.useCustomerView) {
+      return (
+        <CustomerViewFooter
+          partyId={contact.externalId!}
+          organizationNumber={
+            contact.externalIdType === ExternalIdType.COMPANY ? contact.organizationNumber : undefined
+          }
+          contact={toStakeholderCardContact(contact)}
+          assetTypes={appConfig.features.useServices ? KC_ASSET_TYPES : []}
+          activeStatuses={appConfig.features.useServices ? [...ACTIVE_PARTY_STATUSES] : []}
+        />
+      );
+    }
+    if (appConfig.features.useServices) {
+      return <PartyAssetsSection partyId={contact.externalId!} />;
+    }
+    return null;
   };
 
   const addStakeholder = (stakeholder: SupportStakeholderFormModel) => {
