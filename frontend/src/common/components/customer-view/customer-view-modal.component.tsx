@@ -31,7 +31,13 @@ export const CustomerViewModal: FC<CustomerViewModalProps> = ({
   onOpenMessage,
 }) => {
   return (
-    <Modal show={show} onClose={onClose} label="Kundbild" className="w-[96rem]" data-cy="customer-view-modal">
+    <Modal
+      show={show}
+      onClose={onClose}
+      label="Kundbild"
+      className="w-[120rem] max-w-[calc(100vw-4rem)]"
+      data-cy="customer-view-modal"
+    >
       <Modal.Content>
         <h1 className="text-h2-md my-0" data-cy="customer-view-name">
           {contact.name}
