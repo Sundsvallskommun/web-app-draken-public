@@ -194,15 +194,12 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
   };
 
   const renderCardFooter = (contact: SupportStakeholderFormModel) => {
-    const isOwner =
-      contact.externalId &&
-      supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY' && s.externalId === contact.externalId);
-    if (!isOwner) return null;
+    if (!contact.externalId) return null;
 
     if (appConfig.features.useCustomerView) {
       return (
         <CustomerViewFooter
-          partyId={contact.externalId!}
+          partyId={contact.externalId}
           organizationNumber={
             contact.externalIdType === ExternalIdType.COMPANY ? contact.organizationNumber : undefined
           }
@@ -220,8 +217,11 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
         />
       );
     }
-    if (appConfig.features.useServices) {
-      return <PartyAssetsSection partyId={contact.externalId!} />;
+    const isOwner = supportErrand?.stakeholders?.some(
+      (s) => s.role === 'PRIMARY' && s.externalId === contact.externalId
+    );
+    if (isOwner && appConfig.features.useServices) {
+      return <PartyAssetsSection partyId={contact.externalId} />;
     }
     return null;
   };
