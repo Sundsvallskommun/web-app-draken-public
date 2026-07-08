@@ -7,9 +7,10 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
-import { getStakeholderRelation } from '@casedata/services/casedata-stakeholder-service';
+import { getStakeholderRelation, toStakeholderCardContact } from '@casedata/services/casedata-stakeholder-service';
+import { StakeholderCard, StakeholderCardAction } from '@common/components/stakeholder-card/stakeholder-card.component';
 import { appConfig } from '@config/appconfig';
-import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
+import { Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { useCasedataStore } from '@stores/index';
 import { Info, User, Users } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
@@ -28,9 +29,8 @@ export const CasedataContactsComponent: FC<CasedataContactsProps> = (props) => {
   const errand = useCasedataStore((s) => s.errand);
   const deleteConfirm = useConfirm();
   const updateConfirm = useConfirm();
-  const avatarColorArray = ['vattjom', 'juniskar', 'gronsta', 'bjornstigen'];
   const isStakeholderModificationLocked = (stakeholder: CasedataOwnerOrContact) =>
-    (errand ? (errand ? isErrandLocked(errand) : false) : false) ||
+    (errand ? isErrandLocked(errand) : false) ||
     (errand?.channel === Channels.ESERVICE_KATLA && stakeholder.roles.includes(Role.APPLICANT));
 
   useEffect(() => {
@@ -100,13 +100,73 @@ export const CasedataContactsComponent: FC<CasedataContactsProps> = (props) => {
   const renderContact = (contact: CasedataOwnerOrContact, index: number, label: string) => {
     if (contact.removed) return null;
     const stakeholderModificationLocked = isStakeholderModificationLocked(contact);
+    const errandLocked = errand ? isErrandLocked(errand) : false;
+    const relation = getStakeholderRelation(contact);
+
+    const actions: StakeholderCardAction[] = [
+      {
+        label: 'Redigera uppgifter',
+        dataCy: 'edit-stakeholder-button',
+        disabled: errandLocked,
+        onClick: () => setSelectedContact(contact),
+      },
+      ...(!stakeholderModificationLocked
+        ? [
+            {
+              label: 'Ta bort',
+              dataCy: 'delete-stakeholder-button',
+              onClick: () => {
+                deleteConfirm
+                  .showConfirmation(
+                    'Ta bort?',
+                    `Vill du ta bort denna ${label?.toLowerCase() || 'intressent'}?`,
+                    'Ja',
+                    'Nej',
+                    'info',
+                    'info'
+                  )
+                  .then((confirmed) => {
+                    if (confirmed) {
+                      onRemoveContact(contact.id);
+                    }
+                  });
+              },
+            },
+          ]
+        : []),
+      ...(!contact.roles.includes(Role.APPLICANT) && !stakeholdersFields.some((s) => s.roles.includes(Role.APPLICANT))
+        ? [
+            {
+              label: 'Gör till ärendeägare',
+              dataCy: 'make-stakeholder-owner-button',
+              disabled: stakeholderModificationLocked,
+              onClick: () => {
+                updateConfirm
+                  .showConfirmation(
+                    'Gör till ärendeägare?',
+                    'Vill du göra denna ärendeintressent till ärendeägare?',
+                    'Ja',
+                    'Nej',
+                    'info',
+                    'info'
+                  )
+                  .then((confirmed) => {
+                    if (confirmed) {
+                      onMakeOwner(contact);
+                    }
+                  });
+              },
+            },
+          ]
+        : []),
+    ];
 
     return (
       <div className="w-full" key={`rendered-${contact.id || contact.clientId || index}`}>
         {selectedContact && isMatchingSelectedContact(selectedContact, contact) && (
           <SimplifiedContactForm
             key={`form-${contact.id || contact.clientId || index}`}
-            disabled={errand ? isErrandLocked(errand) : false}
+            disabled={errandLocked}
             setUnsaved={props.setUnsaved}
             contact={contact}
             label={`${label.toLowerCase()}`}
@@ -138,162 +198,20 @@ export const CasedataContactsComponent: FC<CasedataContactsProps> = (props) => {
           />
         )}
 
-        <div
-          key={`rendered-${contact.id}-${contact.roles[0]}-${index}`}
-          data-cy={`rendered-${contact.roles[0]}`}
-          className="bg-background-content border rounded-button "
-        >
-          <div className="bg-vattjom-background-200 px-16 py-8 flex justify-between rounded-t-button">
-            <div className="font-bold text-small">
-              {getStakeholderRelation(contact)
-                ? (MEXRelation as Record<string, string>)[getStakeholderRelation(contact) ?? ''] ||
-                  (PTRelation as Record<string, string>)[getStakeholderRelation(contact) ?? '']
-                : label}
-            </div>
-            <div className="flex flex-wrap gap-16 text-small">
-              <Button
-                disabled={errand ? isErrandLocked(errand) : false}
-                data-cy="edit-stakeholder-button"
-                variant="link"
-                className="text-body"
-                onClick={() => {
-                  setSelectedContact(contact);
-                }}
-              >
-                Redigera uppgifter
-              </Button>
-              {!stakeholderModificationLocked && (
-                <Button
-                  data-cy="delete-stakeholder-button"
-                  variant="link"
-                  className="text-body"
-                  onClick={() => {
-                    return deleteConfirm
-                      .showConfirmation(
-                        'Ta bort?',
-                        `Vill du ta bort denna ${label?.toLowerCase() || 'intressent'}?`,
-                        'Ja',
-                        'Nej',
-                        'info',
-                        'info'
-                      )
-                      .then((confirmed) => {
-                        if (confirmed) {
-                          onRemoveContact(contact.id);
-                        }
-                      });
-                  }}
-                >
-                  Ta bort
-                </Button>
-              )}
-
-              {!contact.roles.includes(Role.APPLICANT) &&
-              !stakeholdersFields.some((s) => s.roles.includes(Role.APPLICANT)) ? (
-                <Button
-                  disabled={stakeholderModificationLocked}
-                  data-cy="make-stakeholder-owner-button"
-                  variant="link"
-                  className="text-body"
-                  onClick={() => {
-                    return updateConfirm
-                      .showConfirmation(
-                        'Gör till ärendeägare?',
-                        'Vill du göra denna ärendeintressent till ärendeägare?',
-                        'Ja',
-                        'Nej',
-                        'info',
-                        'info'
-                      )
-                      .then((confirmed) => {
-                        if (confirmed) {
-                          onMakeOwner(contact);
-                        }
-                      });
-                  }}
-                >
-                  Gör till ärendeägare
-                </Button>
-              ) : null}
-            </div>
-          </div>
-          <div className="md:flex md:gap-24 px-16 py-12">
-            <div className="md:w-1/3 flex gap-8 items-center break-all">
-              <Avatar
-                rounded
-                color={(avatarColorArray[index % 4] as 'vattjom') || 'juniskar' || 'gronsta' || 'bjornstigen'}
-                size={'sm'}
-                initials={
-                  contact.stakeholderType === 'PERSON' ? contact.firstName?.[0] : (contact.organizationName ?? '')[0]
-                }
-              />
-              <div>
-                {contact.stakeholderType === 'PERSON' && (contact.firstName || contact.lastName) ? (
-                  <p className="my-xs mt-0 text-small" data-cy={`stakeholder-name`}>
-                    <strong>{`${contact.firstName} ${contact.lastName}`}</strong>
-                  </p>
-                ) : contact.stakeholderType === 'ORGANIZATION' && contact.organizationName ? (
-                  <p className="my-xs mt-0 text-small" data-cy={`stakeholder-name`}>
-                    <strong>{`${contact.organizationName}`}</strong>
-                  </p>
-                ) : null}
-
-                {contact.stakeholderType === 'PERSON' && contact.personalNumber ? (
-                  <p className="my-xs mt-0 flex flex-col text-small" data-cy={`stakeholder-ssn`}>
-                    {contact.personalNumber}
-                  </p>
-                ) : contact.stakeholderType === 'ORGANIZATION' && contact.organizationNumber ? (
-                  <p className="my-xs mt-0 flex flex-col text-small" data-cy={`stakeholder-ssn`}>
-                    {contact.organizationNumber}
-                  </p>
-                ) : (
-                  <p className="my-xs mt-0 flex flex-col text-small text-dark-disabled" data-cy={`stakeholder-ssn`}>
-                    (person/orgnummer saknas)
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="md:w-1/3 md:mt-0 mt-md break-all">
-              {contact.street || contact.zip || contact.city ? (
-                <p className="my-xs mt-0 text-small" data-cy={`stakeholder-adress`}>
-                  {`${contact.street} ${contact.zip} ${contact.city}`}
-                </p>
-              ) : (
-                <p className="my-xs mt-0 text-small text-dark-disabled">(adress saknas)</p>
-              )}
-            </div>
-            <div className="md:w-1/3 md:mt-0 mt-md text-small">
-              <p data-cy={`stakeholder-phone`}>
-                {contact.phoneNumbers?.map((n) => n.value).join(', ') || (
-                  <Button
-                    disabled={errand ? isErrandLocked(errand) : false}
-                    color="vattjom"
-                    variant="link"
-                    onClick={() => {
-                      setSelectedContact(contact);
-                    }}
-                  >
-                    Lägg till telefonummer
-                  </Button>
-                )}
-              </p>
-              <p data-cy={`stakeholder-phone`}>
-                {contact.emails?.map((n) => n.value).join(', ') || (
-                  <Button
-                    disabled={errand ? isErrandLocked(errand) : false}
-                    color="vattjom"
-                    variant="link"
-                    onClick={() => {
-                      setSelectedContact(contact);
-                    }}
-                  >
-                    Lägg till e-post
-                  </Button>
-                )}
-              </p>
-            </div>
-          </div>
-        </div>
+        <StakeholderCard
+          dataCy={`rendered-${contact.roles[0]}`}
+          header={
+            relation
+              ? (MEXRelation as Record<string, string>)[relation] || (PTRelation as Record<string, string>)[relation]
+              : label
+          }
+          contact={toStakeholderCardContact(contact)}
+          actions={actions}
+          index={index}
+          onAddPhone={() => setSelectedContact(contact)}
+          onAddEmail={() => setSelectedContact(contact)}
+          addDisabled={errandLocked}
+        />
       </div>
     );
   };

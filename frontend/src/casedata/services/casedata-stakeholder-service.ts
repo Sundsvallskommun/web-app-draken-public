@@ -7,6 +7,7 @@ import {
   Stakeholder,
   StakeholderType,
 } from '@casedata/interfaces/stakeholder';
+import { StakeholderCardContact } from '@common/components/stakeholder-card/stakeholder-card.component';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { formatOrgNr, latestBy, OrgNumberFormat } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
@@ -252,6 +253,19 @@ export const stakeholder2Contact: (s: Stakeholder) => CasedataOwnerOrContact = (
     primaryContact: s.extraParameters?.primaryContact === 'true',
     messageAllowed: s.extraParameters?.messageAllowed === 'true',
     extraInformation: s.extraParameters?.extraInformation ?? '',
+  };
+};
+
+export const toStakeholderCardContact: (c: CasedataOwnerOrContact) => StakeholderCardContact = (c) => {
+  const isPerson = c.stakeholderType === 'PERSON';
+  return {
+    name: isPerson ? (c.firstName || c.lastName ? `${c.firstName} ${c.lastName}` : '') : c.organizationName ?? '',
+    initials: isPerson ? c.firstName?.[0] : c.organizationName?.[0],
+    partyNumber: isPerson ? c.personalNumber : c.organizationNumber,
+    partyNumberPlaceholder: '(person/orgnummer saknas)',
+    address: c.street || c.zip || c.city ? `${c.street} ${c.zip} ${c.city}` : undefined,
+    phoneNumbers: c.phoneNumbers?.map((n) => n.value) ?? [],
+    emails: c.emails?.map((n) => n.value) ?? [],
   };
 };
 

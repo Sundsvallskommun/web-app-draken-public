@@ -1,3 +1,4 @@
+import { StakeholderCardContact } from '@common/components/stakeholder-card/stakeholder-card.component';
 import { Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Admin } from '@common/services/user-service';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
@@ -63,6 +64,39 @@ export const primaryStakeholderNameorEmail = (errand: SupportErrand) => {
     if (emailChannel?.value) return emailChannel.value;
   }
   return '';
+};
+
+const stakeholderParameter = (c: SupportStakeholderFormModel, ...keys: string[]) =>
+  c.parameters?.find((param) => keys.includes(param.key))?.values?.[0] || null;
+
+export const toStakeholderCardContact: (c: SupportStakeholderFormModel) => StakeholderCardContact = (c) => {
+  const isOrganization = c.externalIdType === ExternalIdType.COMPANY;
+  return {
+    name: isOrganization
+      ? c.organizationName ?? ''
+      : `${c.firstName ? c.firstName : ''} ${c.lastName ? c.lastName : ''}`.trim(),
+    initials: c.firstName?.[0] || c.organizationName?.[0],
+    partyNumber: isOrganization ? c.organizationNumber : c.personNumber,
+    partyNumberPlaceholder: isOrganization ? '(organisationsnummer saknas)' : '(personnummer saknas)',
+    identityDetails: isOrganization
+      ? []
+      : [
+          { value: c.title || stakeholderParameter(c, 'title'), dataCy: 'stakeholder-title' },
+          {
+            value: c.administrationName || stakeholderParameter(c, 'administrationName'),
+            dataCy: 'stakeholder-administrationName',
+          },
+          { value: c.department || stakeholderParameter(c, 'department'), dataCy: 'stakeholder-department' },
+          {
+            value: c.referenceNumber || stakeholderParameter(c, 'referenceNumber'),
+            dataCy: 'stakeholder-referenceNumber',
+          },
+        ],
+    address: c.address || c.zipCode || c.city ? `${c.address} ${c.zipCode} ${c.city || ''}` : undefined,
+    phoneNumbers: c.phoneNumbers?.map((n) => n.value) ?? [],
+    emails: c.emails?.map((n) => n.value) ?? [],
+    username: c.username || stakeholderParameter(c, 'username', 'userId') || undefined,
+  };
 };
 
 export const mapExternalIdTypeToStakeholderType = (c: SupportStakeholderFormModel | SupportStakeholder) =>
