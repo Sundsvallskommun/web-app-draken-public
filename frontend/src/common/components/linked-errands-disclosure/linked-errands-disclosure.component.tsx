@@ -183,114 +183,139 @@ export const LinkedErrandsDisclosure: FC<{
         <Disclosure.Button />
       </Disclosure.Header>
       <Disclosure.Content>
-        <h2 className="pt-[1.2rem] text-h2-md">Relationer skapade från detta ärende</h2>
-        <p className="my-[2.4rem]">Här visas alla ärenden som detta ärende har kopplats till.</p>
-        {isLoadingRelations ? (
-          <div className="flex justify-center items-center h-[5rem]">
-            <Spinner />
-          </div>
-        ) : resolvedSourceStatuses.length > 0 ? (
-          <RelationsToTable
-            errands={resolvedSourceStatuses}
-            linkedStates={relations}
-            handleLinkClick={(id) => handleLinkClick(id)}
-            title=""
-            dataCy="relations-overview-table"
-          />
-        ) : (
-          <p className="text-dark-secondary" data-cy="relations-overview-empty">
-            Inga relationer har skapats från detta ärende.
-          </p>
-        )}
-
-        <h2 className="pt-[2.4rem] text-h2-md">Koppla ärenden</h2>
-        <p className="my-[2.4rem]">
-          Sök på ärendenummer, personnummer, organisationsnummer, telefonnummer, e-postadress eller fastighetsbeteckning
-          för att hitta ärenden att koppla.
-        </p>
-        <p className="text-label-small">Sök ärende</p>
-        <SearchField
-          className="w-[52rem] mb-[2.4rem]"
-          placeholder="Sök på t.ex. ärendenummer eller personnummer"
-          value={query}
-          onSearch={(e) => performSearch(e)}
-          onReset={() => resetSearch()}
-          searchLabel={searching ? 'Söker' : 'Sök'}
-          onChange={(e) => {
-            setQuery(e.target.value);
-          }}
-          data-cy="linked-errands-search"
-        />
-
-        {searching ? (
-          <div className="flex justify-center items-center h-[5rem]">
-            <Spinner />
-          </div>
-        ) : hasSearched ? (
-          searchedErrands.length > 0 ? (
-            <>
-              <div className="flex flex-wrap items-end justify-between gap-16">
-                <div>
-                  <p className="text-label-small">Visa</p>
-                  <Select
-                    value={statusFilter}
-                    onChange={(e) => {
-                      setStatusFilter(e.currentTarget.value as 'all' | 'ongoing' | 'closed');
-                      setResultPage(0);
-                    }}
-                    data-cy="linked-errands-status-filter"
-                  >
-                    <Select.Option value="all">Alla</Select.Option>
-                    <Select.Option value="ongoing">Pågående</Select.Option>
-                    <Select.Option value="closed">Avslutade</Select.Option>
-                  </Select>
-                </div>
-                <p className="mb-8 text-small" data-cy="linked-errands-search-count">
-                  Visar {pagedResults.length} av {filteredResults.length} träffar
-                </p>
+        <Disclosure variant="alt" initalOpen data-cy="relations-overview-disclosure">
+          <Disclosure.Header>
+            <Disclosure.Title>Relationer skapade från detta ärende</Disclosure.Title>
+            <Disclosure.Button />
+          </Disclosure.Header>
+          <Disclosure.Content>
+            <p className="mb-[1.2rem]">Här visas alla ärenden som detta ärende har kopplats till.</p>
+            {isLoadingRelations ? (
+              <div className="flex justify-center items-center h-[5rem]">
+                <Spinner />
               </div>
+            ) : resolvedSourceStatuses.length > 0 ? (
               <RelationsToTable
-                errands={pagedResults}
+                errands={resolvedSourceStatuses}
                 linkedStates={relations}
                 handleLinkClick={(id) => handleLinkClick(id)}
                 title=""
-                dataCy="searchresults-table"
+                dataCy="relations-overview-table"
               />
-              {totalResultPages > 1 ? (
-                <div className="sk-table-paginationwrapper mt-16">
-                  <Pagination
-                    showFirst
-                    showLast
-                    pagesBefore={1}
-                    pagesAfter={1}
-                    showConstantPages={true}
-                    fitContainer
-                    pages={totalResultPages}
-                    activePage={safeResultPage + 1}
-                    changePage={(newPage) => setResultPage(newPage - 1)}
-                    data-cy="linked-errands-search-pagination"
-                  />
-                </div>
-              ) : null}
-            </>
-          ) : (
-            <p data-cy="linked-errands-search-empty">Inga ärenden hittades för sökningen.</p>
-          )
-        ) : null}
+            ) : (
+              <p className="text-dark-secondary" data-cy="relations-overview-empty">
+                Inga relationer har skapats från detta ärende.
+              </p>
+            )}
+          </Disclosure.Content>
+        </Disclosure>
 
-        <h2 className="py-[2.4rem] text-h2-md">Kopplingar skapade till detta ärende</h2>
-        <p className="mb-[1.2rem]">Här visas ärenden som andra ärenden har kopplat till detta ärende.</p>
-        {isLoadingFromErrands ? (
-          <div className="flex justify-center items-center h-[5rem]">
-            <Spinner />
-          </div>
-        ) : relationFromErrands.length > 0 ? (
-          <RelationsFromTable errands={relationFromErrands} title="" dataCy="ongoingerrands-table" />
-        ) : (
-          <p className="text-dark-secondary" data-cy="relations-from-empty">
-            Inga andra ärenden har kopplats till detta ärende.
-          </p>
-        )}
+        <div className="mt-16">
+          <Disclosure variant="alt" initalOpen data-cy="link-errands-disclosure">
+            <Disclosure.Header>
+              <Disclosure.Title>Koppla ärenden</Disclosure.Title>
+              <Disclosure.Button />
+            </Disclosure.Header>
+            <Disclosure.Content>
+              <p className="mb-[2.4rem]">
+                Sök på ärendenummer, personnummer, organisationsnummer, telefonnummer, e-postadress eller
+                fastighetsbeteckning för att hitta ärenden att koppla.
+              </p>
+              <p className="text-label-small">Sök ärende</p>
+              <SearchField
+                className="w-[52rem] mb-[2.4rem]"
+                placeholder="Sök på t.ex. ärendenummer eller personnummer"
+                value={query}
+                onSearch={(e) => performSearch(e)}
+                onReset={() => resetSearch()}
+                searchLabel={searching ? 'Söker' : 'Sök'}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                }}
+                data-cy="linked-errands-search"
+              />
+
+              {searching ? (
+                <div className="flex justify-center items-center h-[5rem]">
+                  <Spinner />
+                </div>
+              ) : hasSearched ? (
+                searchedErrands.length > 0 ? (
+                  <>
+                    <div className="flex flex-wrap items-end justify-between gap-16">
+                      <div>
+                        <p className="text-label-small">Visa</p>
+                        <Select
+                          value={statusFilter}
+                          onChange={(e) => {
+                            setStatusFilter(e.currentTarget.value as 'all' | 'ongoing' | 'closed');
+                            setResultPage(0);
+                          }}
+                          data-cy="linked-errands-status-filter"
+                        >
+                          <Select.Option value="all">Alla</Select.Option>
+                          <Select.Option value="ongoing">Pågående</Select.Option>
+                          <Select.Option value="closed">Avslutade</Select.Option>
+                        </Select>
+                      </div>
+                      <p className="mb-8 text-small" data-cy="linked-errands-search-count">
+                        Visar {pagedResults.length} av {filteredResults.length} träffar
+                      </p>
+                    </div>
+                    <RelationsToTable
+                      errands={pagedResults}
+                      linkedStates={relations}
+                      handleLinkClick={(id) => handleLinkClick(id)}
+                      title=""
+                      dataCy="searchresults-table"
+                    />
+                    {totalResultPages > 1 ? (
+                      <div className="sk-table-paginationwrapper mt-16">
+                        <Pagination
+                          showFirst
+                          showLast
+                          pagesBefore={1}
+                          pagesAfter={1}
+                          showConstantPages={true}
+                          fitContainer
+                          pages={totalResultPages}
+                          activePage={safeResultPage + 1}
+                          changePage={(newPage) => setResultPage(newPage - 1)}
+                          data-cy="linked-errands-search-pagination"
+                        />
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <p data-cy="linked-errands-search-empty">Inga ärenden hittades för sökningen.</p>
+                )
+              ) : null}
+            </Disclosure.Content>
+          </Disclosure>
+        </div>
+
+        <div className="mt-16">
+          <Disclosure variant="alt" initalOpen data-cy="relations-from-disclosure">
+            <Disclosure.Header>
+              <Disclosure.Title>Kopplingar skapade till detta ärende</Disclosure.Title>
+              <Disclosure.Button />
+            </Disclosure.Header>
+            <Disclosure.Content>
+              <p className="mb-[1.2rem]">Här visas ärenden som andra ärenden har kopplat till detta ärende.</p>
+              {isLoadingFromErrands ? (
+                <div className="flex justify-center items-center h-[5rem]">
+                  <Spinner />
+                </div>
+              ) : relationFromErrands.length > 0 ? (
+                <RelationsFromTable errands={relationFromErrands} title="" dataCy="ongoingerrands-table" />
+              ) : (
+                <p className="text-dark-secondary" data-cy="relations-from-empty">
+                  Inga andra ärenden har kopplats till detta ärende.
+                </p>
+              )}
+            </Disclosure.Content>
+          </Disclosure>
+        </div>
       </Disclosure.Content>
     </Disclosure>
   );
