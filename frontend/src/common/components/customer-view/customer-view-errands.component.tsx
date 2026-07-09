@@ -147,6 +147,7 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
           <div>
             <p className="text-label-small">Visa</p>
             <Select
+              size="md"
               value={relationFilter}
               onChange={(e) => {
                 setRelationFilter(e.currentTarget.value as 'all' | 'related');
@@ -162,6 +163,7 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
         <div className="flex-1 min-w-[24rem] max-w-[52rem]">
           <p className="text-label-small">Sök i listan</p>
           <SearchField
+            size="md"
             className="w-full"
             placeholder="Sök på ärendetyp, status eller ärendenummer"
             value={query}

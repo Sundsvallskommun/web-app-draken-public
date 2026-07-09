@@ -249,7 +249,8 @@ export const LinkedErrandsDisclosure: FC<{
               </p>
               <p className="text-label-small">Sök ärende</p>
               <SearchField
-                className="w-[52rem] mb-[2.4rem]"
+                size="md"
+                className="w-[52rem] max-w-full mb-[2.4rem]"
                 placeholder="Sök på t.ex. ärendenummer eller personnummer"
                 value={query}
                 onSearch={(e) => performSearch(e)}
@@ -272,6 +273,7 @@ export const LinkedErrandsDisclosure: FC<{
                       <div>
                         <p className="text-label-small">Visa</p>
                         <Select
+                          size="md"
                           value={statusFilter}
                           onChange={(e) => {
                             setStatusFilter(e.currentTarget.value as 'all' | 'ongoing' | 'closed');
