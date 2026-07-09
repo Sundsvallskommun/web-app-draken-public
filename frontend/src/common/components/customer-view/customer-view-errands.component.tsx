@@ -1,7 +1,7 @@
 'use client';
 
 import { CaseLabels } from '@casedata/interfaces/case-label';
-import { CaseStatusLabelComponent } from '@common/components/case-status-label/case-status-label.component';
+import { RelationErrandCard } from '@common/components/linked-errands-disclosure/relation-errand-card.component';
 import { Relation } from '@common/data-contracts/relations/data-contracts';
 import {
   CaseStatusResponse,
@@ -10,22 +10,8 @@ import {
   getStatusesUsingPartyId,
 } from '@common/services/casestatus-service';
 import { createRelation, deleteRelation, getResolvedRelations } from '@common/services/relations-service';
-import {
-  Button,
-  FormControl,
-  FormLabel,
-  Icon,
-  Pagination,
-  SearchField,
-  Select,
-  SortMode,
-  Spinner,
-  Table,
-  useConfirm,
-} from '@sk-web-gui/react';
+import { Pagination, SearchField, Select, Spinner, useConfirm } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
-import dayjs from 'dayjs';
-import { Link2, Link2Off, Mail } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 
 interface CustomerViewErrandsProps {
@@ -37,10 +23,6 @@ interface CustomerViewErrandsProps {
 
 const caseTypeLabel = (errand: CaseStatusResponse) =>
   (CaseLabels.ALL as Record<string, string>)[errand.caseType ?? ''] ?? errand.caseType ?? '';
-
-const formatDate = (date?: string) => (date ? dayjs(date).format('YYYY-MM-DD, HH:mm') : '-');
-
-type SortColumn = 'status' | 'caseType' | 'errandNumber' | 'operation' | 'lastStatusChange';
 
 const PAGE_SIZE = 20;
 
@@ -55,8 +37,6 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
   const [error, setError] = useState(false);
   const [relations, setRelations] = useState<Relation[]>([]);
   const [query, setQuery] = useState('');
-  const [sortColumn, setSortColumn] = useState<SortColumn>('lastStatusChange');
-  const [sortOrder, setSortOrder] = useState<SortMode>(SortMode.DESC);
   const [busyCaseId, setBusyCaseId] = useState<string>();
   const [page, setPage] = useState(0);
   const [relationFilter, setRelationFilter] = useState<'all' | 'related'>('all');
@@ -131,23 +111,6 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
       });
   };
 
-  const sortValue = (errand: CaseStatusResponse, column: SortColumn) => {
-    if (column === 'caseType') return caseTypeLabel(errand).toLowerCase();
-    if (column === 'status') return (errand.externalStatus ?? errand.status ?? '').toLowerCase();
-    if (column === 'operation') return findOperationUsingNamespace(errand.namespace ?? '').toLowerCase();
-    return errand[column] ?? '';
-  };
-
-  const handleSort = (column: SortColumn) => {
-    if (sortColumn === column) {
-      setSortOrder(sortOrder === SortMode.ASC ? SortMode.DESC : SortMode.ASC);
-    } else {
-      setSortColumn(column);
-      setSortOrder(SortMode.ASC);
-    }
-    setPage(0);
-  };
-
   const filtered = (errands ?? [])
     .filter((errand) => relationFilter === 'all' || !!relationFor(errand))
     .filter((errand) => {
@@ -163,24 +126,11 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
         .filter(Boolean)
         .some((value) => value!.toLowerCase().includes(q));
     })
-    .sort((a, b) => {
-      const aValue = sortValue(a, sortColumn);
-      const bValue = sortValue(b, sortColumn);
-      const order = aValue.localeCompare(bValue);
-      return sortOrder === SortMode.ASC ? order : -order;
-    });
+    .sort((a, b) => (b.lastStatusChange ?? '').localeCompare(a.lastStatusChange ?? ''));
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const safePage = Math.min(page, Math.max(totalPages - 1, 0));
   const paged = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
-
-  const headers: { label: string; column: SortColumn }[] = [
-    { label: 'Status', column: 'status' },
-    { label: 'Ärendetyp', column: 'caseType' },
-    { label: 'Ärendenummer', column: 'errandNumber' },
-    { label: 'Verksamhet', column: 'operation' },
-    { label: 'Senaste aktivitet', column: 'lastStatusChange' },
-  ];
 
   if (errands === undefined) {
     return (
@@ -194,11 +144,9 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
     <div className="py-24" data-cy="customer-view-errands">
       <div className="flex flex-wrap items-end gap-16">
         {sourceErrandId ? (
-          <FormControl>
-            <FormLabel>Visa</FormLabel>
+          <div>
+            <p className="text-label-small">Visa</p>
             <Select
-              size="md"
-              className="w-[20rem]"
               value={relationFilter}
               onChange={(e) => {
                 setRelationFilter(e.currentTarget.value as 'all' | 'related');
@@ -209,12 +157,11 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
               <Select.Option value="all">Alla ärenden</Select.Option>
               <Select.Option value="related">Relaterade</Select.Option>
             </Select>
-          </FormControl>
+          </div>
         ) : null}
-        <FormControl className="flex-1 min-w-[24rem] max-w-[52rem]">
-          <FormLabel>Sök i listan</FormLabel>
+        <div className="flex-1 min-w-[24rem] max-w-[52rem]">
+          <p className="text-label-small">Sök i listan</p>
           <SearchField
-            size="md"
             className="w-full"
             placeholder="Sök på ärendetyp, status eller ärendenummer"
             value={query}
@@ -229,7 +176,7 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
             showSearchButton={false}
             data-cy="customer-view-errands-search"
           />
-        </FormControl>
+        </div>
       </div>
       {error ? (
         <p className="text-error mt-24" role="alert">
@@ -241,118 +188,41 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
             Visar {paged.length} av {filtered.length} ärenden
           </p>
           {filtered.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table background data-cy="customer-view-errands-table">
-                <Table.Header>
-                  {headers.map((header) => (
-                    <Table.HeaderColumn key={header.column}>
-                      <Table.SortButton
-                        isActive={sortColumn === header.column}
-                        sortOrder={sortOrder}
-                        onClick={() => handleSort(header.column)}
-                      >
-                        {header.label}
-                      </Table.SortButton>
-                    </Table.HeaderColumn>
-                  ))}
-                  {sourceErrandId ? (
-                    <Table.HeaderColumn>
-                      <span className="sr-only">Relatera</span>
-                    </Table.HeaderColumn>
-                  ) : null}
-                </Table.Header>
-                <Table.Body>
-                  {paged.map((errand) => {
-                    const linked = !!relationFor(errand);
-                    const statusText = errand.externalStatus ?? errand.status ?? '';
-                    return (
-                      <Table.Row key={errand.caseId}>
-                        <Table.HeaderColumn scope="row" className="w-[16rem]">
-                          <span title={statusText}>
-                            <CaseStatusLabelComponent externalStatus={statusText} />
-                          </span>
-                        </Table.HeaderColumn>
-                        <Table.Column className="w-[18rem]">
-                          <div className="break-words font-bold">{caseTypeLabel(errand)}</div>
-                        </Table.Column>
-                        <Table.Column className="w-[13rem] whitespace-nowrap">
-                          {errand.errandNumber ?? '-'}
-                        </Table.Column>
-                        <Table.Column className="w-[9rem] whitespace-nowrap">
-                          {findOperationUsingNamespace(errand.namespace ?? '')}
-                        </Table.Column>
-                        <Table.Column className="w-[14rem] whitespace-nowrap">
-                          {formatDate(errand.lastStatusChange)}
-                        </Table.Column>
-                        {sourceErrandId ? (
-                          <Table.Column className="justify-end">
-                            {linked ? (
-                              <div className="flex items-center gap-8">
-                                {onOpenMessage ? (
-                                  <Button
-                                    size="sm"
-                                    variant="primary"
-                                    color="vattjom"
-                                    iconButton
-                                    aria-label="Skicka meddelande"
-                                    title="Skicka meddelande"
-                                    data-cy={`customer-view-message-${errand.caseId}`}
-                                    onClick={() => onOpenMessage(errand)}
-                                  >
-                                    <Icon icon={<Mail size={16} />} />
-                                  </Button>
-                                ) : null}
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  iconButton
-                                  aria-label="Ta bort relation"
-                                  title="Ta bort relation"
-                                  disabled={busyCaseId === errand.caseId}
-                                  data-cy={`customer-view-unrelate-${errand.caseId}`}
-                                  onClick={() => handleUnrelate(errand)}
-                                >
-                                  <Icon icon={<Link2Off size={16} />} />
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                disabled={busyCaseId === errand.caseId}
-                                data-cy={`customer-view-relate-${errand.caseId}`}
-                                leftIcon={<Icon icon={<Link2 size={16} />} />}
-                                onClick={() => handleRelate(errand)}
-                              >
-                                Relatera
-                              </Button>
-                            )}
-                          </Table.Column>
-                        ) : null}
-                      </Table.Row>
-                    );
-                  })}
-                </Table.Body>
-                {totalPages > 1 ? (
-                  <Table.Footer>
-                    <div className="sk-table-paginationwrapper">
-                      <Pagination
-                        showFirst
-                        showLast
-                        pagesBefore={1}
-                        pagesAfter={1}
-                        showConstantPages={true}
-                        fitContainer
-                        pages={totalPages}
-                        activePage={safePage + 1}
-                        changePage={(newPage) => setPage(newPage - 1)}
-                        data-cy="customer-view-errands-pagination"
-                      />
-                    </div>
-                  </Table.Footer>
-                ) : null}
-              </Table>
-            </div>
+            <>
+              <div className="flex flex-col gap-12" data-cy="customer-view-errands-list">
+                {paged.map((errand) => {
+                  const linked = !!relationFor(errand);
+                  return (
+                    <RelationErrandCard
+                      key={errand.caseId}
+                      errand={errand}
+                      linked={linked}
+                      actionsDisabled={busyCaseId === errand.caseId}
+                      onToggleLink={
+                        sourceErrandId ? () => (linked ? handleUnrelate(errand) : handleRelate(errand)) : undefined
+                      }
+                      onOpenMessage={linked && onOpenMessage ? () => onOpenMessage(errand) : undefined}
+                    />
+                  );
+                })}
+              </div>
+              {totalPages > 1 ? (
+                <div className="sk-table-paginationwrapper mt-16">
+                  <Pagination
+                    showFirst
+                    showLast
+                    pagesBefore={1}
+                    pagesAfter={1}
+                    showConstantPages={true}
+                    fitContainer
+                    pages={totalPages}
+                    activePage={safePage + 1}
+                    changePage={(newPage) => setPage(newPage - 1)}
+                    data-cy="customer-view-errands-pagination"
+                  />
+                </div>
+              ) : null}
+            </>
           ) : (
             <p data-cy="customer-view-errands-empty">Inga ärenden hittades</p>
           )}

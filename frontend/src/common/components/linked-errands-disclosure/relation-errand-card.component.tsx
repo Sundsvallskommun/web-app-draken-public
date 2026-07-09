@@ -4,6 +4,7 @@ import { CaseLabels } from '@casedata/interfaces/case-label';
 import { CaseStatusLabelComponent } from '@common/components/case-status-label/case-status-label.component';
 import { CaseStatusResponse, findOperationUsingNamespace } from '@common/services/casestatus-service';
 import { Button, Icon } from '@sk-web-gui/react';
+import dayjs from 'dayjs';
 import { ChevronDown, Link2, Link2Off, Mail } from 'lucide-react';
 import { FC, useState } from 'react';
 
@@ -12,12 +13,19 @@ interface RelationErrandCardProps {
   linked?: boolean;
   onToggleLink?: () => void;
   onOpenMessage?: () => void;
+  actionsDisabled?: boolean;
 }
 
 const caseTypeLabel = (errand: CaseStatusResponse) =>
   (CaseLabels.ALL as Record<string, string>)[errand.caseType ?? ''] ?? errand.caseType ?? '';
 
-export const RelationErrandCard: FC<RelationErrandCardProps> = ({ errand, linked, onToggleLink, onOpenMessage }) => {
+export const RelationErrandCard: FC<RelationErrandCardProps> = ({
+  errand,
+  linked,
+  onToggleLink,
+  onOpenMessage,
+  actionsDisabled,
+}) => {
   const [expanded, setExpanded] = useState(false);
   const statusText = errand.externalStatus ?? errand.status ?? '';
 
@@ -51,6 +59,12 @@ export const RelationErrandCard: FC<RelationErrandCardProps> = ({ errand, linked
               <span className="font-bold">Verksamhet: </span>
               {findOperationUsingNamespace(errand.namespace ?? '')}
             </div>
+            {errand.lastStatusChange ? (
+              <div>
+                <span className="font-bold">Senaste aktivitet: </span>
+                {dayjs(errand.lastStatusChange).format('YYYY-MM-DD, HH:mm')}
+              </div>
+            ) : null}
           </div>
           {onToggleLink || (linked && onOpenMessage) ? (
             <div className="flex flex-wrap gap-8">
@@ -59,6 +73,7 @@ export const RelationErrandCard: FC<RelationErrandCardProps> = ({ errand, linked
                   size="sm"
                   variant="primary"
                   color="vattjom"
+                  disabled={actionsDisabled}
                   leftIcon={<Icon icon={<Mail size={16} />} />}
                   onClick={onOpenMessage}
                   data-cy={`relation-card-message-${errand.caseId}`}
@@ -71,6 +86,7 @@ export const RelationErrandCard: FC<RelationErrandCardProps> = ({ errand, linked
                   size="sm"
                   variant={linked ? 'secondary' : 'primary'}
                   color="primary"
+                  disabled={actionsDisabled}
                   leftIcon={<Icon icon={linked ? <Link2Off size={16} /> : <Link2 size={16} />} />}
                   onClick={onToggleLink}
                   data-cy={`relation-card-link-${errand.caseId}`}
