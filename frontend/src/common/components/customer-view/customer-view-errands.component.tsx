@@ -10,7 +10,7 @@ import {
   getStatusesUsingPartyId,
 } from '@common/services/casestatus-service';
 import { createRelation, deleteRelation, getResolvedRelations } from '@common/services/relations-service';
-import { Pagination, SearchField, Select, Spinner, useConfirm } from '@sk-web-gui/react';
+import { Checkbox, Pagination, SearchField, Spinner, useConfirm } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
 import { FC, useEffect, useState } from 'react';
 
@@ -39,7 +39,8 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
   const [query, setQuery] = useState('');
   const [busyCaseId, setBusyCaseId] = useState<string>();
   const [page, setPage] = useState(0);
-  const [relationFilter, setRelationFilter] = useState<'all' | 'related'>('all');
+  const [showOnlyRelated, setShowOnlyRelated] = useState(false);
+  const [includeClosed, setIncludeClosed] = useState(false);
   const removeRelationConfirm = useConfirm();
 
   useEffect(() => {
@@ -80,6 +81,8 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
   const relationFor = (errand: CaseStatusResponse) =>
     relations.find((relation) => relation.target.resourceId === errand.caseId);
 
+  const isClosed = (errand: CaseStatusResponse) => errand.status === 'Klart' || errand.externalStatus === 'Avslutat';
+
   const handleRelate = (errand: CaseStatusResponse) => {
     if (!sourceErrandId || !errand.caseId) return;
     setBusyCaseId(errand.caseId);
@@ -112,7 +115,8 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
   };
 
   const filtered = (errands ?? [])
-    .filter((errand) => relationFilter === 'all' || !!relationFor(errand))
+    .filter((errand) => includeClosed || !isClosed(errand))
+    .filter((errand) => !showOnlyRelated || !!relationFor(errand))
     .filter((errand) => {
       if (!query) return true;
       const q = query.toLowerCase();
@@ -142,42 +146,51 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
 
   return (
     <div className="py-24" data-cy="customer-view-errands">
-      <div className="flex flex-wrap items-end gap-16">
-        {sourceErrandId ? (
-          <div>
-            <p className="text-label-small">Visa</p>
-            <Select
-              size="md"
-              value={relationFilter}
-              onChange={(e) => {
-                setRelationFilter(e.currentTarget.value as 'all' | 'related');
+      <div className="flex flex-wrap items-start gap-16">
+        <div className="flex flex-wrap gap-16 pt-32">
+          <Checkbox
+            checked={includeClosed}
+            onChange={(event) => {
+              setIncludeClosed(event.currentTarget.checked);
+              setPage(0);
+            }}
+            data-cy="customer-view-errands-include-closed-filter"
+          >
+            Inkludera avslutade ärenden
+          </Checkbox>
+          {sourceErrandId ? (
+            <Checkbox
+              checked={showOnlyRelated}
+              onChange={(event) => {
+                setShowOnlyRelated(event.currentTarget.checked);
                 setPage(0);
               }}
-              data-cy="customer-view-errands-relation-filter"
+              data-cy="customer-view-errands-related-filter"
             >
-              <Select.Option value="all">Alla ärenden</Select.Option>
-              <Select.Option value="related">Relaterade</Select.Option>
-            </Select>
-          </div>
-        ) : null}
+              Visa endast relaterade
+            </Checkbox>
+          ) : null}
+        </div>
         <div className="flex-1 min-w-[24rem] max-w-[52rem]">
           <p className="text-label-small">Sök i listan</p>
-          <SearchField
-            size="md"
-            className="w-full"
-            placeholder="Sök på ärendetyp, status eller ärendenummer"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setPage(0);
-            }}
-            onReset={() => {
-              setQuery('');
-              setPage(0);
-            }}
-            showSearchButton={false}
-            data-cy="customer-view-errands-search"
-          />
+          <div className="max-w-[52rem]">
+            <SearchField
+              size="md"
+              className="w-full"
+              placeholder="Sök på ärendetyp, status eller ärendenummer"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(0);
+              }}
+              onReset={() => {
+                setQuery('');
+                setPage(0);
+              }}
+              showSearchButton={false}
+              data-cy="customer-view-errands-search"
+            />
+          </div>
         </div>
       </div>
       {error ? (

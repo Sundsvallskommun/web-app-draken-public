@@ -71,10 +71,9 @@ const stakeholderParameter = (c: SupportStakeholderFormModel, ...keys: string[])
 
 export const toStakeholderCardContact: (c: SupportStakeholderFormModel) => StakeholderCardContact = (c) => {
   const isOrganization = c.externalIdType === ExternalIdType.COMPANY;
+  const name = isOrganization ? c.organizationName ?? '' : `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim();
   return {
-    name: isOrganization
-      ? c.organizationName ?? ''
-      : `${c.firstName ? c.firstName : ''} ${c.lastName ? c.lastName : ''}`.trim(),
+    name,
     initials: c.firstName?.[0] || c.organizationName?.[0],
     partyNumber: isOrganization ? c.organizationNumber : c.personNumber,
     partyNumberPlaceholder: isOrganization ? '(organisationsnummer saknas)' : '(personnummer saknas)',

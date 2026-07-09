@@ -92,6 +92,10 @@ export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
 
   const activeStatusSet = new Set(activeStatuses);
   const activeServicesCount = partyServices?.filter((s) => s.status && activeStatusSet.has(s.status)).length ?? 0;
+  let errandCountContent = `${errandCount} ärenden`;
+  if (errandError) {
+    errandCountContent = '– ärenden';
+  }
 
   return (
     <div className="pt-12 pb-20 px-16 border-t-1" data-cy="customer-view-footer">
@@ -100,12 +104,10 @@ export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
           <span className="flex items-center gap-8">
             <Icon icon={<FileText size={18} />} />
             <span className="text-small" data-cy="customer-view-errand-count">
-              {errandError ? (
-                '– ärenden'
-              ) : errandCount === undefined ? (
+              {errandCount === undefined && !errandError ? (
                 <Spinner size={2} aria-label="Hämtar ärenden" />
               ) : (
-                `${errandCount} ärenden`
+                errandCountContent
               )}
             </span>
           </span>

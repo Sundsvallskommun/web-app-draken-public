@@ -157,7 +157,7 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
         actions={actions}
         index={index}
         editForm={
-          selectedContact && selectedContact.internalId === contact.internalId ? (
+          selectedContact?.internalId === contact.internalId ? (
             <SupportSimplifiedContactForm
               disabled={locked}
               setUnsaved={props.setUnsaved}

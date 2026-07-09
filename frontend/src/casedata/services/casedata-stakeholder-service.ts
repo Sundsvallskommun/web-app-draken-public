@@ -258,8 +258,9 @@ export const stakeholder2Contact: (s: Stakeholder) => CasedataOwnerOrContact = (
 
 export const toStakeholderCardContact: (c: CasedataOwnerOrContact) => StakeholderCardContact = (c) => {
   const isPerson = c.stakeholderType === 'PERSON';
+  const name = isPerson ? `${c.firstName ?? ''} ${c.lastName ?? ''}`.trim() : c.organizationName ?? '';
   return {
-    name: isPerson ? (c.firstName || c.lastName ? `${c.firstName} ${c.lastName}` : '') : c.organizationName ?? '',
+    name,
     initials: isPerson ? c.firstName?.[0] : c.organizationName?.[0],
     partyNumber: isPerson ? c.personalNumber : c.organizationNumber,
     partyNumberPlaceholder: '(person/orgnummer saknas)',
