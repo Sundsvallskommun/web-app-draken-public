@@ -151,7 +151,11 @@ export const SupportTabsWrapper: FC<{
           />
         ),
         disabled: false,
-        visibleFor: appConfig.features.useServices && !!supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY'),
+        // Beslut och dokument bor i kundbilden när useCustomerView är på; fliken finns kvar för appar utan kundbild
+        visibleFor:
+          appConfig.features.useServices &&
+          !appConfig.features.useCustomerView &&
+          !!supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY'),
       },
       {
         key: 'recruitment',
