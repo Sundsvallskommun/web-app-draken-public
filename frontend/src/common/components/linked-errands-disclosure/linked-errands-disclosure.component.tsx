@@ -1,6 +1,5 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { RelationsFromTable } from '@common/components/linked-errands-disclosure/relation-tables/relations-from-table.component';
-import { RelationsToTable } from '@common/components/linked-errands-disclosure/relation-tables/relations-to-table.component';
+import { RelationErrandCard } from '@common/components/linked-errands-disclosure/relation-errand-card.component';
 import { Relation } from '@common/data-contracts/relations/data-contracts';
 import {
   isValidOrgNumber,
@@ -16,7 +15,7 @@ import {
 } from '@common/services/casestatus-service';
 import { createRelation, deleteRelation, getResolvedRelations } from '@common/services/relations-service';
 import { appConfig } from '@config/appconfig';
-import { Disclosure, Pagination, SearchField, Select, Spinner } from '@sk-web-gui/react';
+import { Disclosure, Pagination, SearchField, Select, Spinner, useConfirm } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
 import {
   getSupportErrands,
@@ -44,6 +43,7 @@ export const LinkedErrandsDisclosure: FC<{
   const [resolvedSourceStatuses, setResolvedSourceStatuses] = useState<CaseStatusResponse[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | 'ongoing' | 'closed'>('all');
   const [resultPage, setResultPage] = useState(0);
+  const removeRelationConfirm = useConfirm();
 
   const sortOrder = 'ASC';
   const errandId = errand.id?.toString();
@@ -59,17 +59,39 @@ export const LinkedErrandsDisclosure: FC<{
     setResolvedSourceStatuses(caseStatuses);
   };
 
-  const handleLinkClick = (id: string) => {
-    if (relations.some((relation) => relation.target.resourceId === id)) {
-      deleteRelation(municipalityId, relations.find((relation) => relation.target.resourceId === id)!.id!)
-        .then(() => refreshSourceRelations())
-        .catch((e) => console.error('Failed to delete relation:', e));
+  const isLinked = (e: CaseStatusResponse) => relations.some((relation) => relation.target.resourceId === e.caseId);
+
+  const handleToggleLink = (targetErrand: CaseStatusResponse) => {
+    const relation = relations.find((r) => r.target.resourceId === targetErrand.caseId);
+    if (relation?.id) {
+      removeRelationConfirm
+        .showConfirmation(
+          'Ta bort relation?',
+          `Relationen till ärende ${targetErrand.errandNumber ?? ''} kommer att tas bort. Vill du fortsätta?`,
+          'Ja',
+          'Nej',
+          'info',
+          'info'
+        )
+        .then((confirmed) => {
+          if (!confirmed) return;
+          deleteRelation(municipalityId, relation.id!)
+            .then(() => refreshSourceRelations())
+            .catch((e) => console.error('Failed to delete relation:', e));
+        });
     } else {
-      const targetErrand = [...resolvedSourceStatuses, ...searchedErrands].find((e) => e.caseId === id);
-      createRelation(municipalityId, errandId!, targetErrand!)
+      createRelation(municipalityId, errandId!, targetErrand)
         .then(() => refreshSourceRelations())
         .catch((e) => console.error('Failed to create relation:', e));
     }
+  };
+
+  const openMessageFor = (targetErrand: CaseStatusResponse) => {
+    window.dispatchEvent(
+      new CustomEvent('openMessage', {
+        detail: { contactMeans: 'draken', relationCaseId: targetErrand.caseId },
+      })
+    );
   };
 
   // Sökningen kräver en specifik identifierare innan träffar visas. Personnummer och
@@ -195,13 +217,17 @@ export const LinkedErrandsDisclosure: FC<{
                 <Spinner />
               </div>
             ) : resolvedSourceStatuses.length > 0 ? (
-              <RelationsToTable
-                errands={resolvedSourceStatuses}
-                linkedStates={relations}
-                handleLinkClick={(id) => handleLinkClick(id)}
-                title=""
-                dataCy="relations-overview-table"
-              />
+              <div className="flex flex-col gap-12" data-cy="relations-overview-list">
+                {resolvedSourceStatuses.map((relatedErrand) => (
+                  <RelationErrandCard
+                    key={relatedErrand.caseId}
+                    errand={relatedErrand}
+                    linked
+                    onToggleLink={() => handleToggleLink(relatedErrand)}
+                    onOpenMessage={appConfig.isSupportManagement ? () => openMessageFor(relatedErrand) : undefined}
+                  />
+                ))}
+              </div>
             ) : (
               <p className="text-dark-secondary" data-cy="relations-overview-empty">
                 Inga relationer har skapats från detta ärende.
@@ -262,13 +288,21 @@ export const LinkedErrandsDisclosure: FC<{
                         Visar {pagedResults.length} av {filteredResults.length} träffar
                       </p>
                     </div>
-                    <RelationsToTable
-                      errands={pagedResults}
-                      linkedStates={relations}
-                      handleLinkClick={(id) => handleLinkClick(id)}
-                      title=""
-                      dataCy="searchresults-table"
-                    />
+                    <div className="flex flex-col gap-12 mt-16" data-cy="searchresults-list">
+                      {pagedResults.map((foundErrand) => (
+                        <RelationErrandCard
+                          key={foundErrand.caseId}
+                          errand={foundErrand}
+                          linked={isLinked(foundErrand)}
+                          onToggleLink={() => handleToggleLink(foundErrand)}
+                          onOpenMessage={
+                            appConfig.isSupportManagement && isLinked(foundErrand)
+                              ? () => openMessageFor(foundErrand)
+                              : undefined
+                          }
+                        />
+                      ))}
+                    </div>
                     {totalResultPages > 1 ? (
                       <div className="sk-table-paginationwrapper mt-16">
                         <Pagination
@@ -307,7 +341,11 @@ export const LinkedErrandsDisclosure: FC<{
                   <Spinner />
                 </div>
               ) : relationFromErrands.length > 0 ? (
-                <RelationsFromTable errands={relationFromErrands} title="" dataCy="ongoingerrands-table" />
+                <div className="flex flex-col gap-12" data-cy="relations-from-list">
+                  {relationFromErrands.map((fromErrand) => (
+                    <RelationErrandCard key={fromErrand.caseId} errand={fromErrand} />
+                  ))}
+                </div>
               ) : (
                 <p className="text-dark-secondary" data-cy="relations-from-empty">
                   Inga andra ärenden har kopplats till detta ärende.
