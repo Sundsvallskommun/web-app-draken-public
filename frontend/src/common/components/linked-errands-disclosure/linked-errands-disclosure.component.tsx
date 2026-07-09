@@ -1,55 +1,58 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { RelationsFromTable } from '@common/components/linked-errands-disclosure/relation-tables/relations-from-table.component';
+import { RelationsToTable } from '@common/components/linked-errands-disclosure/relation-tables/relations-to-table.component';
 import { Relation } from '@common/data-contracts/relations/data-contracts';
+import {
+  isValidOrgNumber,
+  isValidPersonalNumber,
+  searchOrganization,
+  searchPerson,
+} from '@common/services/adress-service';
 import {
   CaseStatusResponse,
   getErrandStatus,
   getStatusesUsingOrganizationNumber,
   getStatusesUsingPartyId,
 } from '@common/services/casestatus-service';
-import { sortBy } from '@common/services/helper-service';
 import { createRelation, deleteRelation, getResolvedRelations } from '@common/services/relations-service';
 import { appConfig } from '@config/appconfig';
-import { Disclosure, SearchField, Spinner } from '@sk-web-gui/react';
+import { Disclosure, Pagination, SearchField, Select, Spinner } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
-import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
-import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
+import {
+  getSupportErrands,
+  SupportErrand,
+  supportErrandIsEmpty,
+} from '@supportmanagement/services/support-errand-service';
 import { Link2 } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 
-import { RelationsToTable } from './relation-tables/relations-to-table.component';
+const RESULT_PAGE_SIZE = 20;
+const SUPPORT_SEARCH_SIZE = 10;
 
 export const LinkedErrandsDisclosure: FC<{
   errand: SupportErrand | IErrand;
 }> = ({ errand }) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
-  const [isLoadingToErrands, setIsLoadingToErrands] = useState<boolean>(false);
+  const [isLoadingRelations, setIsLoadingRelations] = useState<boolean>(false);
   const [isLoadingFromErrands, setIsLoadingFromErrands] = useState<boolean>(false);
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [relations, setRelations] = useState<Relation[]>([]);
   const [searchedErrands, setSearchedErrands] = useState<CaseStatusResponse[]>([]);
-  const [relationToErrands, setRelationToErrands] = useState<CaseStatusResponse[]>([]);
   const [relationFromErrands, setRelationFromErrands] = useState<CaseStatusResponse[]>([]);
   const [resolvedSourceStatuses, setResolvedSourceStatuses] = useState<CaseStatusResponse[]>([]);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'ongoing' | 'closed'>('all');
+  const [resultPage, setResultPage] = useState(0);
 
   const sortOrder = 'ASC';
-
-  // Derived state
-  const resolvedOtherErrands = resolvedSourceStatuses.filter(
-    (status) => !relationToErrands.some((relErrand) => relErrand.caseId === status.caseId)
-  );
-  const ongoingErrands = relationToErrands.filter(
-    (errand) => errand.status !== 'Klart' && !resolvedOtherErrands.some((other) => other.caseId === errand.caseId)
-  );
-  const closedErrands = relationToErrands.filter((errand) => errand.status === 'Klart');
+  const errandId = errand.id?.toString();
 
   const refreshSourceRelations = async () => {
     const { relations: updatedRelations, caseStatuses } = await getResolvedRelations(
       'source',
       municipalityId,
-      errand.id!.toString(),
+      errandId!,
       sortOrder
     );
     setRelations(updatedRelations);
@@ -62,59 +65,81 @@ export const LinkedErrandsDisclosure: FC<{
         .then(() => refreshSourceRelations())
         .catch((e) => console.error('Failed to delete relation:', e));
     } else {
-      const targetErrand = [...relationToErrands, ...searchedErrands].find((errand) => errand.caseId === id);
-      createRelation(municipalityId, errand.id!.toString(), targetErrand!)
+      const targetErrand = [...resolvedSourceStatuses, ...searchedErrands].find((e) => e.caseId === id);
+      createRelation(municipalityId, errandId!, targetErrand!)
         .then(() => refreshSourceRelations())
         .catch((e) => console.error('Failed to create relation:', e));
     }
   };
 
-  useEffect(() => {
-    const fetchErrands = async () => {
-      try {
-        setIsLoadingToErrands(true);
-
-        await refreshSourceRelations();
-
-        if (appConfig.features.useStakeholderRelations) {
-          let relatedPerson: {
-            id: string;
-            type: string;
-          } = { id: '', type: '' };
-
-          if (appConfig.isSupportManagement) {
-            const supportStakeholder = getSupportOwnerStakeholder(errand as SupportErrand);
-            if (!supportStakeholder) {
-              setIsLoadingToErrands(false);
-              return;
-            }
-            relatedPerson.id = supportStakeholder?.externalId ?? '';
-            relatedPerson.type = supportStakeholder?.stakeholderType ?? '';
-          }
-          if (appConfig.isCaseData) {
-            const caseDataStakeholder = getOwnerStakeholder(errand as IErrand);
-            if (!caseDataStakeholder) {
-              setIsLoadingToErrands(false);
-              return;
-            }
-            relatedPerson.id = caseDataStakeholder?.personId || caseDataStakeholder?.organizationNumber || '';
-            relatedPerson.type = caseDataStakeholder.stakeholderType;
-          }
-
-          const fetchedErrands =
-            relatedPerson.type === 'PERSON'
-              ? await getStatusesUsingPartyId(municipalityId, relatedPerson.id)
-              : await getStatusesUsingOrganizationNumber(municipalityId, relatedPerson.id);
-          setRelationToErrands(sortBy(fetchedErrands, 'status'));
+  // Sökningen kräver en specifik identifierare innan träffar visas. Personnummer och
+  // organisationsnummer slås upp till partyId och ger personens/organisationens alla ärenden.
+  // Övriga söktermer går mot casestatus (ärendenummer/fastighet) och, i supportmanagement,
+  // mot ärendesöket (telefon, e-post, namn) vars träffar kanoniseras via casestatus per
+  // ärendenummer så att status, namespace och ärendetyp alltid kommer från samma källa.
+  const performSearch = async (rawQuery: string) => {
+    const trimmed = rawQuery.trim();
+    if (!trimmed) return;
+    setSearching(true);
+    try {
+      let results: CaseStatusResponse[] = [];
+      if (isValidPersonalNumber(trimmed)) {
+        const person = await searchPerson(trimmed).catch(() => undefined);
+        results = person?.personId ? await getStatusesUsingPartyId(municipalityId, person.personId) : [];
+      } else if (isValidOrgNumber(trimmed)) {
+        const organization = await searchOrganization(trimmed).catch(() => undefined);
+        results = organization ? await getStatusesUsingOrganizationNumber(municipalityId, trimmed).catch(() => []) : [];
+      } else {
+        const statusHits: CaseStatusResponse[] = await getErrandStatus(municipalityId, trimmed).catch(() => []);
+        let supportHits: CaseStatusResponse[] = [];
+        if (appConfig.isSupportManagement) {
+          const supportErrands = await getSupportErrands(municipalityId, 0, SUPPORT_SEARCH_SIZE, {
+            query: trimmed,
+          }).catch(() => ({ errands: [] as SupportErrand[], labels: [] }));
+          const alreadyFound = new Set(statusHits.map((s) => s.errandNumber));
+          const lookups = await Promise.allSettled(
+            supportErrands.errands
+              .filter((e) => e.errandNumber && !alreadyFound.has(e.errandNumber))
+              .map((e) => getErrandStatus(municipalityId, e.errandNumber!))
+          );
+          supportHits = lookups.flatMap((res) => (res.status === 'fulfilled' ? res.value : []));
         }
-        setIsLoadingToErrands(false);
+        const seen = new Set<string>();
+        results = [...statusHits, ...supportHits].filter((e) => {
+          if (!e.caseId || seen.has(e.caseId)) return false;
+          seen.add(e.caseId);
+          return true;
+        });
+      }
+      setSearchedErrands(results.filter((e) => e.caseId !== errandId));
+      setHasSearched(true);
+      setStatusFilter('all');
+      setResultPage(0);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const resetSearch = () => {
+    setQuery('');
+    setSearchedErrands([]);
+    setHasSearched(false);
+    setResultPage(0);
+  };
+
+  useEffect(() => {
+    const fetchRelations = async () => {
+      try {
+        setIsLoadingRelations(true);
+        await refreshSourceRelations();
       } catch (error) {
-        console.error('Error fetching errands or relations:', error);
-        setIsLoadingToErrands(false);
+        console.error('Error fetching relations:', error);
+      } finally {
+        setIsLoadingRelations(false);
       }
     };
 
-    fetchErrands();
+    fetchRelations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
 
@@ -122,7 +147,7 @@ export const LinkedErrandsDisclosure: FC<{
     const fetchErrands = async () => {
       try {
         setIsLoadingFromErrands(true);
-        const { caseStatuses } = await getResolvedRelations('target', municipalityId, errand.id!.toString(), sortOrder);
+        const { caseStatuses } = await getResolvedRelations('target', municipalityId, errandId!, sortOrder);
         setRelationFromErrands(caseStatuses);
         setIsLoadingFromErrands(false);
       } catch (error) {
@@ -134,6 +159,17 @@ export const LinkedErrandsDisclosure: FC<{
     fetchErrands();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
+
+  const isClosed = (e: CaseStatusResponse) => e.status === 'Klart' || e.externalStatus === 'Avslutat';
+  const filteredResults = searchedErrands.filter((e) =>
+    statusFilter === 'all' ? true : statusFilter === 'closed' ? isClosed(e) : !isClosed(e)
+  );
+  const totalResultPages = Math.ceil(filteredResults.length / RESULT_PAGE_SIZE);
+  const safeResultPage = Math.min(resultPage, Math.max(totalResultPages - 1, 0));
+  const pagedResults = filteredResults.slice(
+    safeResultPage * RESULT_PAGE_SIZE,
+    (safeResultPage + 1) * RESULT_PAGE_SIZE
+  );
 
   return (
     <Disclosure
@@ -147,75 +183,101 @@ export const LinkedErrandsDisclosure: FC<{
         <Disclosure.Button />
       </Disclosure.Header>
       <Disclosure.Content>
-        <h2 className="pt-[1.2rem] text-h2-md">Kopplingar skapade från detta ärende</h2>
-        <p className="my-[2.4rem]">Nedan väljer du vilket ärende du vill länka med detta ärende.</p>
-
-        {isLoadingToErrands ? (
+        <h2 className="pt-[1.2rem] text-h2-md">Relationer skapade från detta ärende</h2>
+        <p className="my-[2.4rem]">Här visas alla ärenden som detta ärende har kopplats till.</p>
+        {isLoadingRelations ? (
           <div className="flex justify-center items-center h-[5rem]">
             <Spinner />
           </div>
+        ) : resolvedSourceStatuses.length > 0 ? (
+          <RelationsToTable
+            errands={resolvedSourceStatuses}
+            linkedStates={relations}
+            handleLinkClick={(id) => handleLinkClick(id)}
+            title=""
+            dataCy="relations-overview-table"
+          />
         ) : (
-          <>
-            <p className="text-label-small">Sök ärende</p>
-            <SearchField
-              className="w-[52rem] mb-[2.4rem]"
-              placeholder="Sök på ett specifikt ärendenummer eller fastighet"
-              value={query}
-              onSearch={(e) => {
-                setSearching(true);
-                getErrandStatus(municipalityId, e).then((res) => {
-                  setSearching(false);
-                  setSearchedErrands(res);
-                });
-              }}
-              onReset={() => {
-                setSearching(false);
-                setQuery('');
-                setSearchedErrands([]);
-              }}
-              searchLabel={searching ? 'Söker' : 'Sök'}
-              onChange={(e) => {
-                setQuery(e.target.value);
-              }}
-            />
+          <p className="text-dark-secondary" data-cy="relations-overview-empty">
+            Inga relationer har skapats från detta ärende.
+          </p>
+        )}
 
-            {searchedErrands.length > 0 && (
+        <h2 className="pt-[2.4rem] text-h2-md">Koppla ärenden</h2>
+        <p className="my-[2.4rem]">
+          Sök på ärendenummer, personnummer, organisationsnummer, telefonnummer, e-postadress eller fastighetsbeteckning
+          för att hitta ärenden att koppla.
+        </p>
+        <p className="text-label-small">Sök ärende</p>
+        <SearchField
+          className="w-[52rem] mb-[2.4rem]"
+          placeholder="Sök på t.ex. ärendenummer eller personnummer"
+          value={query}
+          onSearch={(e) => performSearch(e)}
+          onReset={() => resetSearch()}
+          searchLabel={searching ? 'Söker' : 'Sök'}
+          onChange={(e) => {
+            setQuery(e.target.value);
+          }}
+          data-cy="linked-errands-search"
+        />
+
+        {searching ? (
+          <div className="flex justify-center items-center h-[5rem]">
+            <Spinner />
+          </div>
+        ) : hasSearched ? (
+          searchedErrands.length > 0 ? (
+            <>
+              <div className="flex flex-wrap items-end justify-between gap-16">
+                <div>
+                  <p className="text-label-small">Visa</p>
+                  <Select
+                    value={statusFilter}
+                    onChange={(e) => {
+                      setStatusFilter(e.currentTarget.value as 'all' | 'ongoing' | 'closed');
+                      setResultPage(0);
+                    }}
+                    data-cy="linked-errands-status-filter"
+                  >
+                    <Select.Option value="all">Alla</Select.Option>
+                    <Select.Option value="ongoing">Pågående</Select.Option>
+                    <Select.Option value="closed">Avslutade</Select.Option>
+                  </Select>
+                </div>
+                <p className="mb-8 text-small" data-cy="linked-errands-search-count">
+                  Visar {pagedResults.length} av {filteredResults.length} träffar
+                </p>
+              </div>
               <RelationsToTable
-                errands={searchedErrands}
+                errands={pagedResults}
                 linkedStates={relations}
-                handleLinkClick={(index) => handleLinkClick(index)}
+                handleLinkClick={(id) => handleLinkClick(id)}
                 title=""
                 dataCy="searchresults-table"
               />
-            )}
-            {appConfig.features.useStakeholderRelations && (
-              <>
-                <RelationsToTable
-                  errands={ongoingErrands}
-                  linkedStates={relations}
-                  handleLinkClick={(index) => handleLinkClick(index)}
-                  title="Pågående"
-                  dataCy="ongoingerrands-table"
-                />
+              {totalResultPages > 1 ? (
+                <div className="sk-table-paginationwrapper mt-16">
+                  <Pagination
+                    showFirst
+                    showLast
+                    pagesBefore={1}
+                    pagesAfter={1}
+                    showConstantPages={true}
+                    fitContainer
+                    pages={totalResultPages}
+                    activePage={safeResultPage + 1}
+                    changePage={(newPage) => setResultPage(newPage - 1)}
+                    data-cy="linked-errands-search-pagination"
+                  />
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <p data-cy="linked-errands-search-empty">Inga ärenden hittades för sökningen.</p>
+          )
+        ) : null}
 
-                <RelationsToTable
-                  errands={closedErrands}
-                  linkedStates={relations}
-                  handleLinkClick={(index) => handleLinkClick(index)}
-                  title="Avslutade"
-                  dataCy="closederrands-table"
-                />
-              </>
-            )}
-            <RelationsToTable
-              errands={resolvedOtherErrands}
-              linkedStates={relations}
-              handleLinkClick={(index) => handleLinkClick(index)}
-              title="Kopplingar till annan ärendeägare"
-              dataCy="othererrands-table"
-            />
-          </>
-        )}
         <h2 className="py-[2.4rem] text-h2-md">Kopplingar skapade till detta ärende</h2>
         <p className="mb-[1.2rem]">Nedan kan du se ärenden kopplade till detta ärende.</p>
         {isLoadingFromErrands ? (

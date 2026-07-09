@@ -7,9 +7,10 @@ import {
   getStatusesUsingOrganizationNumber,
   getStatusesUsingPartyId,
 } from '@common/services/casestatus-service';
+import { getResolvedRelations } from '@common/services/relations-service';
 import { Button, Icon, Spinner } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
-import { ArrowRight, FileText, ListChecks } from 'lucide-react';
+import { ArrowRight, FileText, Link2, ListChecks } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 
 import { CustomerViewModal } from './customer-view-modal.component';
@@ -35,8 +36,9 @@ export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
 }) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const [showModal, setShowModal] = useState(false);
-  const [errandCount, setErrandCount] = useState<number>();
+  const [partyStatuses, setPartyStatuses] = useState<CaseStatusResponse[]>();
   const [errandError, setErrandError] = useState(false);
+  const [relationCount, setRelationCount] = useState<number>();
 
   const { partyServices, loading: servicesLoading } = usePartyAssetServices({
     municipalityId,
@@ -50,15 +52,15 @@ export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
       ? getStatusesUsingOrganizationNumber(municipalityId, organizationNumber)
       : getStatusesUsingPartyId(municipalityId, partyId);
     fetchStatuses
-      .then((statuses) => {
+      .then((statuses: CaseStatusResponse[]) => {
         if (active) {
-          setErrandCount(statuses.length);
+          setPartyStatuses(statuses);
           setErrandError(false);
         }
       })
       .catch(() => {
         if (active) {
-          setErrandCount(undefined);
+          setPartyStatuses(undefined);
           setErrandError(true);
         }
       });
@@ -66,6 +68,27 @@ export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
       active = false;
     };
   }, [municipalityId, partyId, organizationNumber]);
+
+  // Relationer tillhör ärendet, inte personen — räknaren visar hur många av det
+  // aktuella ärendets relationer som pekar på något av personens ärenden.
+  useEffect(() => {
+    let active = true;
+    if (!sourceErrandId || !partyStatuses) return;
+    getResolvedRelations('source', municipalityId, sourceErrandId, 'ASC')
+      .then(({ relations }) => {
+        if (!active) return;
+        const partyCaseIds = new Set(partyStatuses.map((s) => s.caseId).filter(Boolean));
+        setRelationCount(relations.filter((r) => partyCaseIds.has(r.target.resourceId)).length);
+      })
+      .catch(() => {
+        if (active) setRelationCount(undefined);
+      });
+    return () => {
+      active = false;
+    };
+  }, [municipalityId, sourceErrandId, partyStatuses]);
+
+  const errandCount = partyStatuses?.length;
 
   const activeStatusSet = new Set(activeStatuses);
   const activeServicesCount = partyServices?.filter((s) => s.status && activeStatusSet.has(s.status)).length ?? 0;
@@ -95,6 +118,14 @@ export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
                 ) : (
                   `${activeServicesCount} aktiva tjänster`
                 )}
+              </span>
+            </span>
+          )}
+          {relationCount !== undefined && (
+            <span className="flex items-center gap-8">
+              <Icon icon={<Link2 size={18} />} />
+              <span className="text-small" data-cy="customer-view-relation-count">
+                {relationCount === 1 ? '1 relation' : `${relationCount} relationer`}
               </span>
             </span>
           )}
