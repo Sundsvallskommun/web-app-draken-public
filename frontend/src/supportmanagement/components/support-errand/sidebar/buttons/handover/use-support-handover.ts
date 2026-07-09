@@ -7,6 +7,7 @@ import {
   Label,
   NamespaceConfig,
 } from '@common/data-contracts/supportmanagement/data-contracts';
+import { appConfig } from '@config/appconfig';
 import { Resolution, Status } from '@supportmanagement/services/support-errand-service';
 import {
   executeHandover,
@@ -16,7 +17,7 @@ import {
   HandoverError,
 } from '@supportmanagement/services/support-handover-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 export type HandoverStep = 1 | 2;
@@ -53,6 +54,9 @@ interface UseSupportHandoverArgs {
   errandId?: string;
   sourceMunicipalityId: string;
   sourceNamespace?: string;
+  /** Only load target namespaces while this is true (e.g. the modal is open) – avoids a request on
+   * every errand mount and in apps that never open the handover. */
+  active?: boolean;
 }
 
 /**
@@ -60,7 +64,12 @@ interface UseSupportHandoverArgs {
  * fetching/caching the preview, holding the user's mapping choices and executing the handover with a
  * stable idempotency key. UI rendering lives in the presentational components.
  */
-export const useSupportHandover = ({ errandId, sourceMunicipalityId, sourceNamespace }: UseSupportHandoverArgs) => {
+export const useSupportHandover = ({
+  errandId,
+  sourceMunicipalityId,
+  sourceNamespace,
+  active,
+}: UseSupportHandoverArgs) => {
   const [namespaceConfigs, setNamespaceConfigs] = useState<NamespaceConfig[]>([]);
   const [step, setStep] = useState<HandoverStep>(1);
 
@@ -75,6 +84,8 @@ export const useSupportHandover = ({ errandId, sourceMunicipalityId, sourceNames
   const [metadataCache, setMetadataCache] = useState<Record<string, SupportMetadata>>({});
   // The namespace currently being previewed – drives the categorization model (see below).
   const [selectedNamespace, setSelectedNamespace] = useState<string>('');
+  // Mirror of the selected namespace for async guards (the state value is stale inside promise callbacks).
+  const selectedNamespaceRef = useRef<string>('');
 
   // Mapping selections
   const [mappingCategory, setMappingCategory] = useState<string>('');
@@ -96,10 +107,10 @@ export const useSupportHandover = ({ errandId, sourceMunicipalityId, sourceNames
   const [handoverError, setHandoverError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    if (sourceMunicipalityId) {
+    if (active && appConfig.features.useHandover && sourceMunicipalityId) {
       getNamespaceConfigs(sourceMunicipalityId).then(setNamespaceConfigs);
     }
-  }, [sourceMunicipalityId]);
+  }, [active, sourceMunicipalityId]);
 
   /** Target namespaces the errand can be handed over to (excluding the source namespace). */
   const handoverTargets = useMemo(
@@ -119,7 +130,13 @@ export const useSupportHandover = ({ errandId, sourceMunicipalityId, sourceNames
     setMappingContactReason(mappingRequired?.contactReason?.suggested ?? '');
   }, []);
 
-  /** Resets the mapping/preview state without dropping the cache (used when leaving the modal). */
+  /**
+   * Clears the handover session state – choices, preview, errors, message and the per-target preview
+   * and idempotency-key caches. Called when the modal is opened/closed so each session starts fresh.
+   * (The namespace-config and per-namespace metadata caches are kept; they are not errand-specific.)
+   * The preview cache survives step 1↔2 navigation because reset runs only on open/close, not on
+   * navigation.
+   */
   const reset = useCallback(() => {
     setStep(1);
     setPreview(undefined);
@@ -131,6 +148,7 @@ export const useSupportHandover = ({ errandId, sourceMunicipalityId, sourceNames
     setMessageBodyPlaintext('');
     setThreeLevelLabels([]);
     setSelectedNamespace('');
+    selectedNamespaceRef.current = '';
   }, []);
 
   /** Fetches (or reuses a cached) preview for the given target and advances to step 2. */
@@ -141,17 +159,21 @@ export const useSupportHandover = ({ errandId, sourceMunicipalityId, sourceNames
       }
       const namespace = target.namespace;
       setSelectedNamespace(namespace);
+      selectedNamespaceRef.current = namespace;
       setPreviewError(undefined);
 
       // Load the target namespace metadata (cached) – used for display names (two-level) and the
-      // label tree (three-level classification).
+      // label tree (three-level classification). Fetched in parallel with the preview (not awaited).
       const cachedMetadata = metadataCache[namespace];
       if (cachedMetadata) {
         setTargetMetadata(cachedMetadata);
       } else {
         getNamespaceMetadata(sourceMunicipalityId, namespace).then((metadata) => {
           setMetadataCache((prev) => ({ ...prev, [namespace]: metadata }));
-          setTargetMetadata(metadata);
+          // Ignore a result that resolved after the user switched to another target.
+          if (selectedNamespaceRef.current === namespace) {
+            setTargetMetadata(metadata);
+          }
         });
       }
 

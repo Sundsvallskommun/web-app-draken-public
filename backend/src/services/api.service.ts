@@ -136,15 +136,15 @@ class ApiService {
     return this.request<T>({ ...config, method: 'POST' }, user);
   }
 
-  public async patch<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
+  public async patch<T, D>(config: ApiRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
     return this.request<T>({ ...config, method: 'PATCH' }, user);
   }
 
-  public async put<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
+  public async put<T, D>(config: ApiRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
     return this.request<T>({ ...config, method: 'PUT' }, user);
   }
 
-  public async delete<T>(config: AxiosRequestConfig, user: User): Promise<ApiResponse<T>> {
+  public async delete<T>(config: ApiRequestConfig, user: User): Promise<ApiResponse<T>> {
     return this.request<T>({ ...config, method: 'DELETE' }, user);
   }
 }

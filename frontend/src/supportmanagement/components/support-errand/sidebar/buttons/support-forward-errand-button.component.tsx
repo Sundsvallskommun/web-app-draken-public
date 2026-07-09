@@ -100,7 +100,11 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const toastMessage = useSnackbar();
-  const handover = useSupportHandover({ errandId: supportErrand?.id, sourceMunicipalityId: municipalityId });
+  const handover = useSupportHandover({
+    errandId: supportErrand?.id,
+    sourceMunicipalityId: municipalityId,
+    active: showModal,
+  });
 
   const {
     register,

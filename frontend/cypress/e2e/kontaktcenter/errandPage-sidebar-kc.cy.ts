@@ -30,6 +30,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse);
       cy.intercept('GET', '**/me', mockMe);
       cy.intercept('GET', '**/featureflags', []);
+      cy.intercept('GET', '**/supportnamespaceconfigs/**', []);
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments).as(
         'getAttachments'
       );
