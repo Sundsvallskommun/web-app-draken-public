@@ -279,13 +279,17 @@ export const LinkedErrandsDisclosure: FC<{
         ) : null}
 
         <h2 className="py-[2.4rem] text-h2-md">Kopplingar skapade till detta ärende</h2>
-        <p className="mb-[1.2rem]">Nedan kan du se ärenden kopplade till detta ärende.</p>
+        <p className="mb-[1.2rem]">Här visas ärenden som andra ärenden har kopplat till detta ärende.</p>
         {isLoadingFromErrands ? (
           <div className="flex justify-center items-center h-[5rem]">
             <Spinner />
           </div>
+        ) : relationFromErrands.length > 0 ? (
+          <RelationsFromTable errands={relationFromErrands} title="" dataCy="ongoingerrands-table" />
         ) : (
-          <RelationsFromTable errands={relationFromErrands} title="Ärenden" dataCy="ongoingerrands-table" />
+          <p className="text-dark-secondary" data-cy="relations-from-empty">
+            Inga andra ärenden har kopplats till detta ärende.
+          </p>
         )}
       </Disclosure.Content>
     </Disclosure>
