@@ -94,7 +94,7 @@ test.describe('Errand page contracts tab', () => {
     await errandResponse;
     await contractResponse;
     await dismissCookieConsent();
-    const tab = page.getByRole('tab', { name: 'Avtal', exact: true });
+    const tab = page.getByRole('tab', { name: 'Faktura', exact: true });
     await tab.click({ force: true });
     await expect(page.locator('[data-cy="contract-type-select"]')).toBeVisible();
   };
@@ -113,7 +113,7 @@ test.describe('Errand page contracts tab', () => {
     await page.goto(`arende/${mockMexErrand_base.data.id}`);
     await errandResponse;
     await dismissCookieConsent();
-    const tab = page.getByRole('tab', { name: 'Avtal', exact: true });
+    const tab = page.getByRole('tab', { name: 'Faktura', exact: true });
     await tab.click({ force: true });
     await expect(page.locator('[data-cy="contract-type-select"]')).toBeVisible();
   };
@@ -700,7 +700,7 @@ test.describe('Errand page contracts tab', () => {
       await page.goto(`arende/${mockMexErrand_base.data.id}`);
       await errandResponse;
       await dismissCookieConsent();
-      const tab = page.getByRole('tab', { name: 'Avtal', exact: true });
+      const tab = page.getByRole('tab', { name: 'Faktura', exact: true });
       await tab.click({ force: true });
       await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.LEASE_AGREEMENT);
 
@@ -807,7 +807,7 @@ test.describe('Errand page contracts tab', () => {
         await errandResponse;
         await contractResponse;
         await dismissCookieConsent();
-        const tab = page.getByRole('tab', { name: 'Avtal', exact: true });
+        const tab = page.getByRole('tab', { name: 'Faktura', exact: true });
         await tab.click({ force: true });
         await expect(page.locator('[data-cy="contract-type-select"]')).toBeVisible();
       });
@@ -946,7 +946,7 @@ test.describe('Errand page contracts tab', () => {
         await errandResponse;
         await contractResponse;
         await dismissCookieConsent();
-        const tab = page.getByRole('tab', { name: 'Avtal', exact: true });
+        const tab = page.getByRole('tab', { name: 'Faktura', exact: true });
         await tab.click({ force: true });
         await expect(page.locator('[data-cy="contract-type-select"]')).toBeVisible();
       });
@@ -980,7 +980,7 @@ test.describe('Errand page contracts tab', () => {
       await page.goto(`arende/${mockMexErrand_base.data.id}`);
       await errandResponse;
       await dismissCookieConsent();
-      const tab = page.getByRole('tab', { name: 'Avtal', exact: true });
+      const tab = page.getByRole('tab', { name: 'Faktura', exact: true });
       await tab.click({ force: true });
       await expect(page.locator('[data-cy="contract-type-select"]')).toBeVisible();
       await expect(page.locator('[data-cy="non-draft-warning-banner"]')).not.toBeVisible();
