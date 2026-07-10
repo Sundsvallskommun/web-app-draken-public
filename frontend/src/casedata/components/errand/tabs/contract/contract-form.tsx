@@ -405,6 +405,7 @@ export const ContractForm: FC<{
           )}
         </Table.Body>
       </Table>
+      <small>Kom ihåg att ange fakturaadress.</small>
       {!readOnly && onAddParty && (
         <div className="mt-12">
           <Button size="sm" variant="secondary" data-cy="add-party-button" onClick={handleOpenAddModal}>
@@ -462,7 +463,7 @@ export const ContractForm: FC<{
                   readOnly={!isEditable('general')}
                   {...register('externalReferenceId')}
                 />
-                <small>Om det finns ett äldre avtal, ange dess ID ovan.</small>
+                <small>Om detta avtal ersätter ett tidigare avtal, ange tidigare avtalsnummer.</small>
               </FormControl>
             </div>
             {saveButton()}
@@ -596,20 +597,23 @@ export const ContractForm: FC<{
           <Disclosure.Content>
             <div className="flex flex-col gap-24">
               <div className="flex gap-18 justify-start">
-                <FormControl id="startDate" className="w-full">
-                  <FormLabel>Startdatum</FormLabel>
-                  <DatePicker
-                    max={dayjs().add(MAX_YEAR, 'year').format('YYYY-MM-DD')}
-                    readOnly
-                    {...register('startDate')}
-                    data-cy="avtalstid-startdatum"
-                  />
-                  {formState.errors.startDate && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>{formState.errors.startDate?.message}</FormErrorMessage>
-                    </div>
-                  )}
-                </FormControl>
+                <div className="flex flex-col gap-12 w-full">
+                  <FormControl id="startDate" className="w-full">
+                    <FormLabel>Startdatum</FormLabel>
+                    <DatePicker
+                      max={dayjs().add(MAX_YEAR, 'year').format('YYYY-MM-DD')}
+                      readOnly
+                      {...register('startDate')}
+                      data-cy="avtalstid-startdatum"
+                    />
+                    {formState.errors.startDate && (
+                      <div className="my-sm text-error">
+                        <FormErrorMessage>{formState.errors.startDate?.message}</FormErrorMessage>
+                      </div>
+                    )}
+                  </FormControl>
+                  <small>För nya avtal blir startdatum automatiskt samma som &quot;Avtalet gäller från&quot;.</small>
+                </div>
                 <div className="w-full"></div>
               </div>
               <div className="flex gap-18 justify-start">
@@ -1104,6 +1108,7 @@ export const ContractForm: FC<{
                       ></Textarea>
                     </FormControl>
                   </div>
+                  <small>Fastighet behöver inte anges, hämtas automatisk från ärendeuppgifter.</small>
                 </>
               ) : null}
               {saveButton()}
