@@ -2,7 +2,6 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { getStatusLabel, useErrands } from '@casedata/services/casedata-errand-service';
 import { ExportButton } from '@common/components/export-button/export-button.component';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { appConfig } from '@config/appconfig';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { useRouter } from 'next/navigation';
@@ -277,7 +276,7 @@ export const OngoingCaseDataErrands: FC = () => {
                 {sidebarLabel || 'Ärenden'}
                 {sidebarLabel === 'Avslutade ärenden' ? ' : ' + (closedErrands ?? '') : null}
               </h1>
-              {appConfig.features.useErrandExport && <ExportButton errands={errands} municipalityId={municipalityId} />}
+              <ExportButton errands={errands} municipalityId={municipalityId} />
             </div>
             <div>
               <FormProvider {...tableForm}>

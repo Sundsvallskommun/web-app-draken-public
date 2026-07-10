@@ -19,20 +19,25 @@ export class ExportController {
   private apiService = new ApiService();
   SERVICE = apiServiceName('case-data');
   TEMPLATING_SERVICE = apiServiceName('templating');
+  // Both templates are generic (the heading comes from the applicationName parameter), so MEX and PT
+  // share them. Names kept as-is to avoid re-registering the existing templates in the Templating service.
+  EXPORT_LIST_IDENTIFIER = 'sbk.errands.export';
+  EXPORT_SINGLE_IDENTIFIER = 'sbk.singleerrand.export';
 
   @Post('/:municipalityId/export')
   @OpenAPI({ summary: 'Export list of errands' })
   @UseBefore(authMiddleware)
   async exportErrands(
     @Req() req: RequestWithUser,
-    @Body() data: (Errand & { caseLabel: string })[],
+    @Body() data: { applicationName: string; errands: (Errand & { caseLabel: string })[] },
     @Param('municipalityId') _municipalityId: string,
     @QueryParam('include') _include: string,
   ): Promise<any> {
     const renderRequest: RenderRequest = {
-      identifier: 'sbk.errands.export',
+      identifier: this.EXPORT_LIST_IDENTIFIER,
       parameters: {
-        errands: data.map(e => ({
+        applicationName: data.applicationName,
+        errands: data.errands.map(e => ({
           errandNumber: e.errandNumber,
           caseType: e.caseLabel,
           status: e.status?.statusType,
@@ -53,7 +58,7 @@ export class ExportController {
   @UseBefore(authMiddleware)
   async exportSingleErrand(
     @Req() req: RequestWithUser,
-    @Body() data: Errand & { administratorName: string; caseLabel: string; attachments: any[] },
+    @Body() data: Errand & { administratorName: string; applicationName: string; caseLabel: string; attachments: any[] },
     @Param('municipalityId') municipalityId: string,
     @QueryParam('include') include: string,
   ): Promise<any> {
@@ -126,10 +131,11 @@ export class ExportController {
     }
 
     const renderRequest: RenderRequest = {
-      identifier: 'sbk.singleerrand.export',
+      identifier: this.EXPORT_SINGLE_IDENTIFIER,
       parameters: {
         errand: {
           errandNumber: data.errandNumber,
+          applicationName: data.applicationName,
           ...(basicInformation && { basicInformation }),
           messages,
           notes,
