@@ -50,15 +50,15 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       }).as('executeHandover');
     });
 
-    it('hands over the errand to another namespace and opens the new errand', () => {
+    it('hands over the errand to another namespace and closes the modal', () => {
       cy.visit('/arende/KC-00000001');
       cy.wait('@getErrand');
-      cy.wait('@getNamespaceConfigs');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
-      // Step 1 – open modal, choose "Draken" and pick the target namespace (where MEX is also listed).
+      // Step 1 – open modal (this loads the target namespaces), choose "Draken" and pick the target.
       cy.get(`[data-cy="forward-button"]`).should('exist').contains('Överlämna ärendet').click();
       cy.get(`article.sk-modal-dialog`).should('exist');
+      cy.wait('@getNamespaceConfigs');
       cy.get('.sk-modal-dialog [type="radio"]').eq(0).should('have.value', 'DEPARTMENT').check();
       // Selecting the namespace triggers the preview automatically (no "Nästa" click).
       cy.get('.sk-modal-dialog [data-cy="resolution-input"]').should('exist').select('ROB');

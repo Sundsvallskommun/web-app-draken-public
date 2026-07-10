@@ -46,7 +46,7 @@ test.describe('errand handover to another namespace', () => {
     });
   });
 
-  test('hands over the errand to another namespace and opens the new errand', async ({ page, dismissCookieConsent }) => {
+  test('hands over the errand to another namespace and closes the modal', async ({ page, dismissCookieConsent }) => {
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();

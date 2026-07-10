@@ -72,6 +72,7 @@ jobs:
             NEXT_PUBLIC_USE_ESCALATION: true
             NEXT_PUBLIC_USE_MY_PAGES: true
             NEXT_PUBLIC_USE_RELATIONS: true
+            NEXT_PUBLIC_USE_HANDOVER: true
           - app: lop
             build_cmd: yarn build:lop
             start_cmd: yarn start:lop
@@ -157,6 +158,7 @@ jobs:
           NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION: ${{ matrix.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION || '' }}
           NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: ${{ matrix.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '' }}
           NEXT_PUBLIC_INVOICE_BREAK_DATE: ${{ matrix.NEXT_PUBLIC_INVOICE_BREAK_DATE || '' }}
+          NEXT_PUBLIC_USE_HANDOVER: ${{ matrix.NEXT_PUBLIC_USE_HANDOVER || '' }}
 
       - name: Start server
         run: ${{ matrix.start_cmd }} &
