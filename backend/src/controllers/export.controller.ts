@@ -31,9 +31,6 @@ export class ExportController {
   ): Promise<any> {
     const renderRequest: RenderRequest = {
       identifier: 'sbk.errands.export',
-      // The templating /render/pdf API expects a parameters map, but the generated templating 2.1
-      // contract mistypes `parameters` as string (cf. TemplateSelector.parameters – an object map –
-      // used against the same endpoint). Cast to the declared type; drop this once the contract is fixed.
       parameters: {
         errands: data.map(e => ({
           errandNumber: e.errandNumber,
@@ -41,7 +38,7 @@ export class ExportController {
           status: e.status?.statusType,
           created: e.created,
         })),
-      } as unknown as RenderRequest['parameters'],
+      },
     };
 
     const url = `${this.TEMPLATING_SERVICE}/${MUNICIPALITY_ID}/render/pdf`;
@@ -130,7 +127,6 @@ export class ExportController {
 
     const renderRequest: RenderRequest = {
       identifier: 'sbk.singleerrand.export',
-      // See note above: the generated templating 2.1 contract mistypes `parameters` as string.
       parameters: {
         errand: {
           errandNumber: data.errandNumber,
@@ -140,7 +136,7 @@ export class ExportController {
           decisions,
           extraParameters,
         },
-      } as unknown as RenderRequest['parameters'],
+      },
     };
 
     const url = `${this.TEMPLATING_SERVICE}/${MUNICIPALITY_ID}/render/pdf`;
