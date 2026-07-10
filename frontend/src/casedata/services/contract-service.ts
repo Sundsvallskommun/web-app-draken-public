@@ -396,6 +396,11 @@ export const prettyContractRoles: { [key: string]: string } = {
   PRIMARY_BILLING_PARTY: 'Fakturamottagare',
 };
 
+// A party is an invoice recipient ("fakturamottagare") if it carries the PRIMARY_BILLING_PARTY role.
+// Used to hide invoice recipients from the party listings in the contract overview ("avtalsöversikt").
+export const isBillingParty = (stakeholder: { roles?: ContractStakeholderRole[] }): boolean =>
+  (stakeholder.roles ?? []).includes(ContractStakeholderRole.PRIMARY_BILLING_PARTY);
+
 export const prettyPaymentPeriods: {
   [key in 'yearly' | 'byYear' | 'byLease' | 'indexAdjustedFee' | 'prepaid']: string;
 } = {

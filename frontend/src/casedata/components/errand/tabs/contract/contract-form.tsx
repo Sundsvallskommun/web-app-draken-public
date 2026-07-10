@@ -18,6 +18,7 @@ import {
   getContractStakeholderName,
   getErrandPropertyInformation,
   hasRecurringFee,
+  isBillingParty,
   isLeaseAgreement,
   prettyContractRoles,
 } from '@casedata/services/contract-service';
@@ -153,10 +154,12 @@ export const ContractForm: FC<{
     [stakeholders, ssnMap]
   );
 
-  const displayParties = useMemo(
-    () => (partiesWithSSN.length > 0 ? partiesWithSSN : stakeholders),
-    [partiesWithSSN, stakeholders]
-  );
+  const displayParties = useMemo(() => {
+    const parties = partiesWithSSN.length > 0 ? partiesWithSSN : stakeholders;
+    // In the contract overview ("avtalsöversikt") the invoice recipient ("fakturamottagare")
+    // should not be listed among the contract parties.
+    return contractOveriewMode ? parties.filter((party) => !isBillingParty(party)) : parties;
+  }, [partiesWithSSN, stakeholders, contractOveriewMode]);
 
   const [kpiData, setKpiData] = useState<{ indexYear: number; indexNumber: number } | null>(null);
 

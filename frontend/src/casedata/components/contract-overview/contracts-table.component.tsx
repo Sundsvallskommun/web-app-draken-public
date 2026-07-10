@@ -1,5 +1,5 @@
 import { Contract, ContractType, Stakeholder, StakeholderType } from '@casedata/interfaces/contracts';
-import { contractTypes, leaseTypes } from '@casedata/services/contract-service';
+import { contractTypes, isBillingParty, leaseTypes } from '@casedata/services/contract-service';
 import { Button, Input, Label, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
@@ -146,7 +146,12 @@ export const ContractsTable: FC<{
         .join(', ') || '-';
     const districts = contract.propertyDesignations?.map((p) => p.district).filter(Boolean);
     const uniqueDistricts = [...new Set(districts)].join(', ') || '-';
-    const partyNames = contract.stakeholders?.map(getStakeholderName).filter(Boolean) || [];
+    // Hide invoice recipients ("fakturamottagare") from the party listing in the overview.
+    const partyNames =
+      contract.stakeholders
+        ?.filter((stakeholder) => !isBillingParty(stakeholder))
+        .map(getStakeholderName)
+        .filter(Boolean) || [];
     const parties =
       partyNames.length > 0 ? (
         <div className="whitespace-nowrap">
