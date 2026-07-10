@@ -1,4 +1,6 @@
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { ConfidentialExportAlert } from '@common/components/confidential-export-alert/confidential-export-alert.component';
+import { ExportConfirmationContent } from '@common/components/export-confirmation-content/export-confirmation-content.component';
 import { downloadPdf, exportSingleErrand } from '@common/services/export-service';
 import { Button, Checkbox, FormControl, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore } from '@stores/index';
@@ -36,6 +38,11 @@ export const SidebarExport: React.FC = () => {
   const isErrandNotClosed = () => {
     return errand.status.statusType !== ErrandStatus.ArendeAvslutat;
   };
+
+  const isConfidential = !!errand.confidential;
+
+  const confidentialNotice =
+    'Detta ärende är sekretessmarkerat. Exporten kan innehålla sekretessbelagda uppgifter – det är ditt ansvar att maskera de delar som omfattas av sekretess efter export. ';
 
   const handleSubmit = () => {
     setIsExportLoading(true);
@@ -78,6 +85,10 @@ export const SidebarExport: React.FC = () => {
         <span className="text-base md:text-large xl:text-lead font-semibold">Exportera ärende</span>
       </div>
 
+      {isConfidential ? (
+        <ConfidentialExportAlert className="mb-16">{confidentialNotice}</ConfidentialExportAlert>
+      ) : null}
+
       <FormControl className="w-full">
         <Checkbox {...register('basicInformation')} key="basicInformation" data-cy="basicInformation">
           Inkludera grunduppgifter
@@ -95,15 +106,17 @@ export const SidebarExport: React.FC = () => {
         <Button
           onClick={async () => {
             const confirmed = await exportConfirm.showConfirmation(
-              'Exportera ärende?',
-              `${
-                isErrandNotClosed()
-                  ? 'Detta ärende är inte avslutat. Vill du ändå exportera ärendet?'
-                  : 'Vill du exportera ärendet?'
-              }`,
+              isConfidential ? 'Exportera sekretessmarkerat ärende?' : 'Exportera ärende?',
+              <ExportConfirmationContent
+                confidential={isConfidential}
+                notClosed={isErrandNotClosed()}
+                confidentialNotice={confidentialNotice}
+                notClosedNotice="Detta ärende är inte avslutat. Vill du ändå exportera ärendet?"
+                question="Vill du exportera ärendet?"
+              />,
               'Ja',
               'Nej',
-              'info'
+              isConfidential ? 'warning' : 'info'
             );
             if (confirmed) {
               handleSubmit();

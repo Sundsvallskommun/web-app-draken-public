@@ -236,7 +236,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     it('Can use export', () => {
       if (appConfig.features.useErrandExport) {
         cy.get('[data-cy="export-button"]').should('exist').click();
-        cy.get('p').should('exist').contains('Det finns ärenden som inte är avslutade. Vill du ändå exportera listan?');
+        cy.contains('Det finns ärenden som inte är avslutade. Vill du ändå exportera listan?').should('exist');
       } else {
         // Export button should not exist when feature is disabled
         cy.get('[data-cy="export-button"]').should('exist');

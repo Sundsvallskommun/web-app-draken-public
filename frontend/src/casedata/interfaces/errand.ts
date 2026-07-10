@@ -42,6 +42,8 @@ export interface ApiErrand {
   };
   notifications?: Notification[];
   relatesTo?: RelatedErrand[];
+  /** Whether the errand is confidential or not */
+  confidential?: boolean;
 }
 
 export interface ApiPagingData {
@@ -107,6 +109,8 @@ export interface IErrand {
   notifications?: Notification[];
   relatesTo?: RelatedErrand[];
   publicNote?: string;
+  /** Whether the errand is confidential or not */
+  confidential?: boolean;
 }
 
 export interface ErrandsData extends Data {
@@ -160,4 +164,5 @@ export interface RegisterErrandData {
     suspendedTo?: string;
   };
   relatesTo?: RelatedErrand[];
+  confidential?: boolean;
 }

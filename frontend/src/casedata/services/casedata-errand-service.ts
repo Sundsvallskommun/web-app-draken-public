@@ -276,6 +276,7 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
 
       notifications: e.notifications,
       relatesTo: e.relatesTo,
+      confidential: e.confidential ?? false,
     };
     return ierrand;
   } catch (err) {
@@ -621,6 +622,7 @@ const createApiErrandData: (data: Partial<IErrand>) => Partial<RegisterErrandDat
     ...(data.status && { status: data.status }),
     ...(data.statuses && { statuses: data.statuses }),
     ...(data.phase && { phase: data.phase }),
+    ...(data.confidential !== undefined && { confidential: data.confidential }),
     stakeholders: stakeholders,
   };
   return e;

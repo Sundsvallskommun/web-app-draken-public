@@ -909,6 +909,8 @@ export interface Errand {
   updatedBy?: string;
   /** Suspension information */
   suspension?: Suspension;
+  /** Whether the errand is confidential or not */
+  confidential?: boolean;
   /** Extra parameters for the errand */
   extraParameters?: ExtraParameter[];
   /**

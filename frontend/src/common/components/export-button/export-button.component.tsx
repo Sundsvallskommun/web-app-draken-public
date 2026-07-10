@@ -1,5 +1,6 @@
 import { ErrandsData } from '@casedata/interfaces/errand';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
+import { ExportConfirmationContent } from '@common/components/export-confirmation-content/export-confirmation-content.component';
 import { downloadPdf, exportErrands } from '@common/services/export-service';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
@@ -19,6 +20,10 @@ export const ExportButton: FC<ExportButtonProps> = (props) => {
 
   const isErrandNotClosed = () => {
     return errands.errands.some((errand) => errand.status.statusType !== ErrandStatus.ArendeAvslutat);
+  };
+
+  const hasConfidential = () => {
+    return errands.errands.some((errand) => errand.confidential);
   };
 
   const handleExportErrands = () => {
@@ -48,16 +53,23 @@ export const ExportButton: FC<ExportButtonProps> = (props) => {
       loadingText="Exporterar..."
       leftIcon={<Download />}
       onClick={async () => {
+        const confidential = hasConfidential();
+        const notClosed = isErrandNotClosed();
+        const confidentialNotice =
+          'Listan innehåller sekretessmarkerade ärenden. Exporten kan innehålla sekretessbelagda uppgifter – det är ditt ansvar att maskera de delar som omfattas av sekretess efter export.';
         const confirmed = await exportConfirm.showConfirmation(
-          'Exportera listan?',
-          `${
-            isErrandNotClosed()
-              ? 'Det finns ärenden som inte är avslutade. Vill du ändå exportera listan?'
-              : 'Vill du exportera listan?'
-          }`,
+          confidential ? 'Exportera lista med sekretess?' : 'Exportera listan?',
+          <ExportConfirmationContent
+            confidential={confidential}
+            notClosed={notClosed}
+            confidentialTitle="Sekretessmarkerade ärenden"
+            confidentialNotice={confidentialNotice}
+            notClosedNotice="Det finns ärenden som inte är avslutade. Vill du ändå exportera listan?"
+            question="Vill du exportera listan?"
+          />,
           'Ja',
           'Nej',
-          'info'
+          confidential ? 'warning' : 'info'
         );
         if (confirmed) {
           handleExportErrands();

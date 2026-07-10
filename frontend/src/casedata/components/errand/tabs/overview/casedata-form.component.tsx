@@ -7,9 +7,19 @@ import { Stakeholder } from '@casedata/interfaces/stakeholder';
 import { defaultMunicipality, getCaseLabels, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { LinkedErrandsDisclosure } from '@common/components/linked-errands-disclosure/linked-errands-disclosure.component';
 import { appConfig } from '@config/appconfig';
-import { cx, Disclosure, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
+import {
+  Checkbox,
+  cx,
+  Disclosure,
+  FormControl,
+  FormErrorMessage,
+  FormLabel,
+  Input,
+  Label,
+  Select,
+} from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
-import { CircleAlert } from 'lucide-react';
+import { CircleAlert, Lock } from 'lucide-react';
 import { Dispatch, FC, SetStateAction, useEffect } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
@@ -49,6 +59,7 @@ const CasedataForm: FC<CasedataFormProps> = ({
       setValue('priority', errand.priority);
       setValue('status', errand.status);
       setValue('phase', errand.phase);
+      setValue('confidential', errand.confidential ?? false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [errand]);
@@ -73,7 +84,7 @@ const CasedataForm: FC<CasedataFormProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formState.isValid]);
 
-  const { caseType, priority } = watch();
+  const { caseType, priority, confidential } = watch();
   const caseTypesHiddenFromRegistation = Object.keys(CaseTypesHiddenFromRegistration);
 
   return (
@@ -236,6 +247,35 @@ const CasedataForm: FC<CasedataFormProps> = ({
                       <FormErrorMessage>{'errors.priority?.message'}</FormErrorMessage>
                     </div>
                   )}
+                </FormControl>
+              </div>
+
+              <div className="flex flex-col gap-sm mb-lg">
+                <FormControl id="confidential">
+                  <div className="flex items-center gap-md flex-wrap">
+                    <Checkbox
+                      {...register('confidential')}
+                      disabled={errand ? isErrandLocked(errand) : false}
+                      data-cy="confidential-input"
+                    >
+                      Sekretessbelägg ärendet
+                    </Checkbox>
+                    {confidential ? (
+                      <Label
+                        rounded
+                        inverted
+                        color="error"
+                        className="inline-flex items-center gap-xs"
+                        data-cy="confidential-label"
+                      >
+                        <Lock size={14} /> Sekretess
+                      </Label>
+                    ) : null}
+                  </div>
+                  <p className="text-small text-dark-secondary mt-xs">
+                    Markerar hela ärendet som sekretessbelagt. Vid export visas en varning – det är handläggarens ansvar
+                    att maskera de uppgifter som omfattas av sekretess i det exporterade dokumentet.
+                  </p>
                 </FormControl>
               </div>
             </div>
