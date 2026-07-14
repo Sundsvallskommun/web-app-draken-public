@@ -9,7 +9,6 @@ export interface AppConfig {
 }
 
 interface AppConfigFeatures {
-  useErrandExport: boolean;
   useThreeLevelCategorization: boolean;
   useTwoLevelCategorization: boolean;
   useExplanationOfTheCause: boolean;
@@ -57,7 +56,6 @@ export const appConfig: AppConfig = {
   isSupportManagement: envBool(process.env.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT),
   reopenSupportErrandLimit: process.env.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '30',
   features: {
-    useErrandExport: envBool(process.env.NEXT_PUBLIC_USE_ERRAND_EXPORT),
     useThreeLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION),
     useTwoLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION),
     useExplanationOfTheCause: envBool(process.env.NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE),

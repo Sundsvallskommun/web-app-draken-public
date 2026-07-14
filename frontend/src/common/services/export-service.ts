@@ -1,11 +1,13 @@
-import { MEXCaseLabel } from '@casedata/interfaces/case-label';
+import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
 import { IErrand } from '@casedata/interfaces/errand';
 import {
   extraParametersToUppgiftMapper,
   getExtraParametersLabels,
+  getUppgiftDisplayValues,
 } from '@casedata/services/casedata-extra-parameters-service';
 import { Render } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { appConfig } from '@config/appconfig';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 
 interface SupportExportOptions {
@@ -48,10 +50,10 @@ export const exportErrands: (
       mimeType: attachment.mimeType,
       file: '',
     })),
-    caseLabel: (MEXCaseLabel as Record<string, string>)[errand.caseType],
+    caseLabel: getLabelFromCaseType(errand.caseType),
   }));
 
-  return renderPdf(url, preparedErrands, includeParameters);
+  return renderPdf(url, { applicationName: appConfig.applicationName, errands: preparedErrands }, includeParameters);
 };
 
 export const exportSingleErrand: (
@@ -68,19 +70,20 @@ export const exportSingleErrand: (
 
   const preparedErrand = {
     ...errand,
+    applicationName: appConfig.applicationName,
     attachments: errand.attachments.map((attachment) => ({
       name: attachment.name,
       mimeType: attachment.mimeType,
       file: '',
     })),
-    caseLabel: (MEXCaseLabel as Record<string, string>)[errand.caseType],
+    caseLabel: getLabelFromCaseType(errand.caseType),
     extraParameters: mappedParams
       .filter((ep): ep is NonNullable<typeof ep> => ep != null)
       .map((ep) => ({
         id: ep.field,
         key: ep.field,
         displayName: ep.label,
-        values: Array.isArray(ep.value) ? ep.value : [ep.value],
+        values: getUppgiftDisplayValues(ep),
         label: getExtraParametersLabels(errand.caseType, errand.channel)?.[ep.field] || '',
       })),
   };

@@ -1,5 +1,4 @@
 import { test, expect } from '../../fixtures/base.fixture';
-import { appConfig } from '../../../src/config/appconfig';
 import { mockAddress } from '../fixtures/mockAddress';
 import { mockAttachments } from '../fixtures/mockAttachments';
 import { mockHistory } from '../fixtures/mockHistory';
@@ -275,13 +274,9 @@ test.describe('Errand page', () => {
   });
 
   test('manages Exports', async ({ page }) => {
-    if (appConfig.features.useErrandExport) {
-      await page.locator(`[aria-label="${mockSidebarButtons[6].label}"]`).click();
-      await expect(page.locator('[data-cy="basicInformation"]')).toBeVisible();
-      await page.locator('[data-cy="export-button"]').click();
-      await expect(page.locator('p').filter({ hasText: 'Detta ärende är inte avslutat' })).toBeVisible();
-    } else {
-      await expect(page.locator(`[aria-label="${mockSidebarButtons[6].label}"]`)).toBeVisible();
-    }
+    await page.locator(`[aria-label="${mockSidebarButtons[6].label}"]`).click();
+    await expect(page.locator('[data-cy="basicInformation"]')).toBeVisible();
+    await page.locator('[data-cy="export-button"]').click();
+    await expect(page.locator('p').filter({ hasText: 'Detta ärende är inte avslutat' })).toBeVisible();
   });
 });

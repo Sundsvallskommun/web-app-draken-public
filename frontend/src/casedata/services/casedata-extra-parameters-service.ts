@@ -212,6 +212,19 @@ export const getExtraParametersLabels = (caseType: string, channel?: string): { 
   }, {} as Record<string, string>);
 };
 
+// Resolve the human-readable value(s) for an UppgiftField. Fields backed by options
+// (radio/select/checkbox/combobox) store a code (e.g. 'DRIVER', 'true'), so map it to the
+// option label ('Förare', 'Ja'). Free-text fields have no options and keep their raw value.
+export const getUppgiftDisplayValues = (field: UppgiftField): string[] => {
+  const rawValues = Array.isArray(field.value) ? field.value : [field.value];
+  const formField = field.formField;
+  const options = 'options' in formField && Array.isArray(formField.options) ? formField.options : undefined;
+  if (!options) {
+    return rawValues;
+  }
+  return rawValues.map((value) => options.find((option) => option.value === value)?.label ?? value);
+};
+
 export const extraParametersToUppgiftMapper: (errand: IErrand) => UppgiftField[] = (errand) => {
   // Create base template encompassing all case types
   const obj: Partial<ExtraParametersObject> = { ...template };

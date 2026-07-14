@@ -2,7 +2,6 @@ import { test, expect } from '../../fixtures/base.fixture';
 import { mockNotifications } from '../../kontaktcenter/fixtures/mockSupportNotifications';
 import { CaseLabels } from '../../../src/casedata/interfaces/case-label';
 import { ErrandStatus } from '../../../src/casedata/interfaces/errand-status';
-import { appConfig } from '../../../src/config/appconfig';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
 import { emptyMockErrands, mockErrands_base, mockFilterErrandsByProperty } from '../fixtures/mockErrands';
@@ -262,13 +261,8 @@ test.describe('Overview page', () => {
   });
 
   test('Can use export', async ({ page }) => {
-    if (appConfig.features.useErrandExport) {
-      await expect(page.locator('[data-cy="export-button"]')).toBeVisible();
-      await page.locator('[data-cy="export-button"]').click();
-      await expect(page.locator('p').filter({ hasText: 'Det finns ärenden som inte är avslutade. Vill du ändå exportera listan?' })).toBeVisible();
-    } else {
-      // Export button should not be visible when feature is disabled
-      await expect(page.locator('[data-cy="export-button"]')).toHaveCount(0);
-    }
+    await expect(page.locator('[data-cy="export-button"]')).toBeVisible();
+    await page.locator('[data-cy="export-button"]').click();
+    await expect(page.locator('p').filter({ hasText: 'Det finns ärenden som inte är avslutade. Vill du ändå exportera listan?' })).toBeVisible();
   });
 });
