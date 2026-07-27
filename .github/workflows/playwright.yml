@@ -106,7 +106,10 @@ jobs:
           cache-dependency-path: frontend/yarn.lock
 
       - name: Install dependencies
-        run: yarn --frozen-lockfile --silent --network-timeout 1000000
+        # --ignore-scripts: skip dependency lifecycle scripts (supply-chain hardening).
+        # Safe here: Playwright browsers are installed explicitly in the next step, so no
+        # postinstall is relied upon. (Cypress's binary-fetching postinstall is unused here.)
+        run: yarn --frozen-lockfile --silent --network-timeout 1000000 --ignore-scripts
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

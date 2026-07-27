@@ -28,7 +28,11 @@ jobs:
           cache-dependency-path: backend/yarn.lock
 
       - name: Install dependencies
-        run: yarn --frozen-lockfile --silent
+        # --ignore-scripts disables dependency lifecycle (postinstall) scripts, a
+        # supply-chain hardening measure. Safe here: the only postinstall scripts in
+        # the tree are @swc/core's (native binary comes from optionalDependencies; the
+        # script is just a load-check/WASM fallback) and @scarf/scarf's (telemetry).
+        run: yarn --frozen-lockfile --silent --ignore-scripts
 
       - name: Type check tests
         run: yarn type-check:test
