@@ -106,13 +106,10 @@ jobs:
           cache-dependency-path: frontend/yarn.lock
 
       - name: Install dependencies
-        # --ignore-scripts: skip dependency lifecycle scripts (supply-chain hardening).
-        # Safe here: Playwright browsers are installed explicitly in the next step, so no
-        # postinstall is relied upon. (Cypress's binary-fetching postinstall is unused here.)
         run: yarn --frozen-lockfile --silent --network-timeout 1000000 --ignore-scripts
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: yarn playwright install --with-deps chromium
 
       - name: Build
         run: ${{ matrix.build_cmd }}
@@ -175,10 +172,10 @@ jobs:
           HEALTH_PASSWORD: ""
 
       - name: Wait for server
-        run: npx wait-on http://localhost:3000 --timeout 60000
+        run: timeout 60 bash -c 'until curl -sfo /dev/null http://localhost:3000; do sleep 2; done'
 
       - name: Run Playwright tests
-        run: npx playwright test --project=${{ matrix.app }}
+        run: yarn playwright test --project=${{ matrix.app }}
         env:
           NEXT_PUBLIC_APPLICATION: ${{ matrix.NEXT_PUBLIC_APPLICATION }}
           NEXT_PUBLIC_APP_NAME: "Draken"
