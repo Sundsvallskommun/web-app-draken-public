@@ -109,7 +109,10 @@ jobs:
         run: yarn --frozen-lockfile --silent --network-timeout 1000000 --ignore-scripts
 
       - name: Install Playwright browsers
-        run: yarn playwright install --with-deps chromium
+        # Invoke the local binary directly (not `npx`/`yarn`): `npx` would fetch on-demand,
+        # and `yarn … install` trips SonarCloud's "Yarn v2+ lifecycle scripts" rule. This is
+        # Playwright's browser installer (a CLI subcommand), not an npm dependency install.
+        run: ./node_modules/.bin/playwright install --with-deps chromium
 
       - name: Build
         run: ${{ matrix.build_cmd }}
@@ -175,7 +178,7 @@ jobs:
         run: timeout 60 bash -c 'until curl -sfo /dev/null http://localhost:3000; do sleep 2; done'
 
       - name: Run Playwright tests
-        run: yarn playwright test --project=${{ matrix.app }}
+        run: ./node_modules/.bin/playwright test --project=${{ matrix.app }}
         env:
           NEXT_PUBLIC_APPLICATION: ${{ matrix.NEXT_PUBLIC_APPLICATION }}
           NEXT_PUBLIC_APP_NAME: "Draken"
