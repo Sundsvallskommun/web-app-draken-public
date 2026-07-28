@@ -2,7 +2,12 @@
   "name": "web-app-draken",
   "private": true,
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "type-check": "yarn --cwd frontend type-check && yarn --cwd backend type-check",
+    "lint": "yarn --cwd frontend lint && yarn --cwd backend lint",
+    "knip": "yarn --cwd frontend knip && yarn --cwd backend knip",
+    "format": "yarn --cwd frontend format && yarn --cwd backend format",
+    "verify": "yarn type-check && yarn lint && yarn knip"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",
