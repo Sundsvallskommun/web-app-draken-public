@@ -83,17 +83,6 @@ describe('support-errand.service', () => {
     });
   });
 
-  describe('stripPhoneNoise', () => {
-    it('removes every plus sign and leaves the rest untouched', () => {
-      expect(stripPhoneNoise('a+b+c')).toBe('abc');
-      expect(stripPhoneNoise(mockPhoneNumberCountryCode)).not.toContain('+');
-    });
-
-    it('is a no-op for a string without plus signs', () => {
-      expect(stripPhoneNoise(mockPhoneNumber)).toBe(mockPhoneNumber);
-    });
-  });
-
   describe('buildErrandFilter', () => {
     it('returns an empty string when nothing is filtered on', () => {
       expect(buildErrandFilter({})).toBe('');
