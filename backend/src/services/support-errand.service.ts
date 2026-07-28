@@ -71,8 +71,6 @@ export const sanitizeQuery = (s?: string): string => {
   return (s ?? '').normalize('NFKC').replace(SAFE_CHARS_REGEX, '').replace(/\s+/g, ' ').trim();
 };
 
-export const stripPhoneNoise = (s: string): string => s.replace(/\+/g, '');
-
 export interface ErrandFilterInput {
   /** Raw free-text query. Sanitized here; callers pass it through untouched. */
   query?: string;
@@ -109,8 +107,10 @@ export const buildErrandFilter = (input: ErrandFilterInput): string => {
   const filterList: string[] = [];
 
   if (queryRaw) {
+    // sanitizeQuery already drops '+' (it is outside SAFE_CHARS_REGEX), and the clauses below are
+    // *contains* matches - so a query of '+46701740635' searches for '46701740635', which still
+    // matches a stored '+46701740635'. No separate phone-number normalisation is needed.
     const query = sanitizeQuery(queryRaw);
-    const qPhone = stripPhoneNoise(query);
 
     let queryFilter = '(';
     queryFilter += `description~'*${query}*'`;
@@ -121,7 +121,7 @@ export const buildErrandFilter = (input: ErrandFilterInput): string => {
     queryFilter += ` or exists(stakeholders.address~'*${query}*')`;
     queryFilter += ` or exists(stakeholders.zipCode~'*${query}*')`;
     queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query}*' and stakeholders.contactChannels.type~'${ContactChannelType.EMAIL}')`;
-    queryFilter += ` or exists(stakeholders.contactChannels.value~'*${qPhone}*' and stakeholders.contactChannels.type~'${ContactChannelType.PHONE}')`;
+    queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query}*' and stakeholders.contactChannels.type~'${ContactChannelType.PHONE}')`;
     queryFilter += ` or exists(stakeholders.organizationName~'*${query}*')`;
     queryFilter += ` or exists(stakeholders.externalId~'*${query}*')`;
     queryFilter += ` or exists(parameters.values~'*${query}*')`;

@@ -13,7 +13,6 @@ import {
   NEW_ERRAND_DEFAULTS,
   resolveDefaultLabels,
   sanitizeQuery,
-  stripPhoneNoise,
   toAttachmentDto,
   toCasedataChannel,
   toCasedataStakeholder,
@@ -126,13 +125,14 @@ describe('support-errand.service', () => {
       expect(filter).not.toContain("~'*'");
     });
 
-    it('uses the plus-stripped query for the phone clause', () => {
-      // sanitizeQuery already drops '+' (it is outside the safe-character set), so the
-      // phone and email clauses currently always carry the same value.
+    it('drops the country-code plus so the contains-match still finds a stored +46 number', () => {
+      // sanitizeQuery removes '+', leaving '46701740635'. The clause is a *contains* match, so it
+      // matches a stored '+46701740635' as well as a stored '46701740635'.
       const stripped = mockPhoneNumberCountryCode.replace('+', '');
       const filter = buildErrandFilter({ query: mockPhoneNumberCountryCode });
       expect(filter).toContain(`stakeholders.contactChannels.value~'*${stripped}*' and stakeholders.contactChannels.type~'PHONE'`);
       expect(filter).toContain(`stakeholders.contactChannels.value~'*${stripped}*' and stakeholders.contactChannels.type~'EMAIL'`);
+      expect(filter).not.toContain('+');
     });
 
     it('appends an externalId clause when a party id was resolved', () => {

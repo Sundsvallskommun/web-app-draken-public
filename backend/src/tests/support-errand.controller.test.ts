@@ -290,13 +290,21 @@ describe('SupportErrandController', () => {
 
       await controller.countErrands(mockReq(), ...countArgs({ status: 'NEW' }), MUNICIPALITY_ID, res);
 
-      // Known quirk: buildErrandFilter already returns a leading '&', so the URL contains '?&filter='.
       expect(api.get).toHaveBeenCalledWith(
-        { url: `${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/errands/count?&filter=(status:'NEW')` },
+        { url: `${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/errands/count?filter=(status:'NEW')` },
         expect.anything(),
       );
       expect(res.statusCode).toBe(200);
       expect(res.body).toBe(42);
+    });
+
+    it('omits the query string entirely when nothing is filtered on', async () => {
+      const { controller, api } = makeController();
+      api.get.mockResolvedValue({ data: 0, message: 'success' });
+
+      await controller.countErrands(mockReq(), ...countArgs(), MUNICIPALITY_ID, mockRes());
+
+      expect(api.get).toHaveBeenCalledWith({ url: `${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/errands/count` }, expect.anything());
     });
   });
 
@@ -469,6 +477,34 @@ describe('SupportErrandController', () => {
 
       expect(api.get).not.toHaveBeenCalled();
       expect(result).toEqual({ data: {}, message: 'success' });
+    });
+
+    it('does not mutate the errand or its stakeholders', async () => {
+      const { controller, api } = makeController();
+      api.get.mockResolvedValue({ data: mockPersonNumber, message: 'success' });
+      const stakeholder = { role: 'PRIMARY', externalId: mockCitizenPartyId, externalIdType: ExternalIdType.PRIVATE };
+      const errand = errandWith([stakeholder]);
+
+      const result = await controller.preparedErrandResponse(errand, mockReq());
+
+      expect(stakeholder).not.toHaveProperty('personNumber');
+      expect(errand.stakeholders![0]).not.toHaveProperty('personNumber');
+      expect(result.data).not.toBe(errand);
+      expect((result.data.stakeholders![0] as { personNumber?: string }).personNumber).toBe(mockPersonNumber);
+    });
+
+    it('leaves stakeholders that are neither the first PRIMARY nor a contact untouched', async () => {
+      const { controller, api } = makeController();
+      api.get.mockResolvedValue({ data: mockPersonNumber, message: 'success' });
+      const errand = errandWith([
+        { role: 'PRIMARY', externalId: mockCitizenPartyId, externalIdType: ExternalIdType.PRIVATE },
+        { role: 'PRIMARY', externalId: mockSecondaryCitizenPartyId, externalIdType: ExternalIdType.PRIVATE },
+      ]);
+
+      const result = await controller.preparedErrandResponse(errand, mockReq());
+
+      expect(api.get).toHaveBeenCalledTimes(1);
+      expect((result.data.stakeholders![1] as { personNumber?: string }).personNumber).toBeUndefined();
     });
   });
 

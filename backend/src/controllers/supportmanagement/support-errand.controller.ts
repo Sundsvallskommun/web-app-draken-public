@@ -78,7 +78,7 @@ export enum StatusLabel {
 export enum Resolution {
   INFORMED = 'INFORMED',
   ESCALATED = 'ESCALATED',
-  CONNECTED = 'CONNNECTED',
+  CONNECTED = 'CONNECTED',
 }
 
 export enum ResolutionLabel {
@@ -420,47 +420,53 @@ export class SupportErrandController {
     return formatOrgNr(organizationNumberSource, OrgNumberFormat.DASH);
   }
 
+  /** A citizen party id can be resolved to a personal number only for these stakeholder types. */
+  private hasResolvablePersonNumber(s: SupportStakeholder): boolean {
+    return !!s.externalId && (s.externalIdType === ExternalIdType.PRIVATE || s.externalIdType === ExternalIdType.EMPLOYEE);
+  }
+
+  /**
+   * Enriches an errand's stakeholders with their personal numbers, resolved from the citizen service.
+   * Returns new objects - neither the errand nor its stakeholders are mutated. A failed lookup leaves
+   * the stakeholder without a personNumber rather than failing the whole response.
+   */
   preparedErrandResponse = async (errandData: SupportErrand, req: any) => {
-    const customer: (SupportStakeholder & { personNumber?: string }) | undefined = errandData.stakeholders?.find(
-      s => s.role === SupportStakeholderRole.PRIMARY,
-    );
-    if (
-      customer &&
-      customer.externalId &&
-      (customer.externalIdType === ExternalIdType.PRIVATE || customer.externalIdType === ExternalIdType.EMPLOYEE)
-    ) {
-      const personNumberUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${customer.externalId}/personnumber`;
-      const personNumberRes = await this.apiService
-        .get<string>({ url: personNumberUrl }, req.user)
-        .then(res => ({ data: `${res.data}` }))
-        .catch(_e => ({ data: undefined, message: '404' }));
-      customer.personNumber = personNumberRes.data;
+    const stakeholders = errandData.stakeholders;
+    if (!stakeholders?.length) {
+      return { data: errandData, message: 'success' };
     }
-    const contacts: (SupportStakeholder & { personNumber?: string })[] =
-      errandData.stakeholders?.filter(s => s.role !== SupportStakeholderRole.PRIMARY) || [];
-    const contactsPromises = contacts.map(contact => {
-      if (
-        contact &&
-        contact.externalId &&
-        (contact.externalIdType === ExternalIdType.PRIVATE || contact.externalIdType === ExternalIdType.EMPLOYEE)
-      ) {
-        const personNumberUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${contact.externalId}/personnumber`;
-        const getPersonalNumber = () =>
-          this.apiService
-            .get<string>({ url: personNumberUrl }, req.user)
-            .then(res => {
-              contact.personNumber = res.data;
-              return res;
-            })
-            .catch(_e => ({ data: undefined, message: '404' }));
-        return withRetries(3, getPersonalNumber);
-      } else {
-        return Promise.resolve(true);
-      }
-    });
-    await Promise.all(contactsPromises);
-    const resToSend = { data: errandData, message: 'success' };
-    return resToSend;
+
+    const personNumberOf = (s: SupportStakeholder) =>
+      this.apiService.get<string>({ url: `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${s.externalId}/personnumber` }, req.user);
+
+    // The first PRIMARY stakeholder is the customer; every non-PRIMARY one is a contact. Any further
+    // PRIMARY stakeholders are neither, and are passed through untouched.
+    const customerIndex = stakeholders.findIndex(s => s.role === SupportStakeholderRole.PRIMARY);
+
+    const enriched = await Promise.all(
+      stakeholders.map(async (s, i): Promise<SupportStakeholder & { personNumber?: string }> => {
+        const isCustomer = i === customerIndex;
+        const isContact = s.role !== SupportStakeholderRole.PRIMARY;
+        if ((!isCustomer && !isContact) || !this.hasResolvablePersonNumber(s)) {
+          return s;
+        }
+        if (isCustomer) {
+          // NOTE the asymmetry with the contact branch below: the customer's personNumber is
+          // stringified, a contact's is passed through as the citizen service returned it (a
+          // number). Pre-existing behaviour the frontend relies on - do not "tidy" without checking.
+          const res = await personNumberOf(s)
+            .then(r => ({ data: `${r.data}` }))
+            .catch(_e => ({ data: undefined }));
+          return res.data === undefined ? s : { ...s, personNumber: res.data };
+        }
+        // Contacts are retried, since a whole page of them is resolved at once.
+        const res = await withRetries(3, () => personNumberOf(s).catch(_e => ({ data: undefined, message: '404' })));
+        const personNumber = typeof res === 'object' && res !== null ? (res as { data?: string }).data : undefined;
+        return personNumber === undefined ? s : { ...s, personNumber };
+      }),
+    );
+
+    return { data: { ...errandData, stakeholders: enriched }, message: 'success' };
   };
 
   @Get('/supporterrands/errandnumber/:errandNumber')
@@ -600,7 +606,10 @@ export class SupportErrandController {
       start,
       end,
     });
-    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/count?${filter}`;
+    // buildErrandFilter returns a fragment that starts with '&' so it can be appended to the paged
+    // errands URL; here it is the only query parameter, so drop the separator.
+    const queryString = filter.replace(/^&/, '');
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/count${queryString ? `?${queryString}` : ''}`;
     const res = await this.apiService.get<PageErrand>({ url }, req.user);
     const data = res.data;
     return response.status(200).send(data);
@@ -638,7 +647,6 @@ export class SupportErrandController {
       channel: ContactChannelType.PHONE,
       title: 'Empty errand',
     };
-    console.log('Creating new empty errand with body', body);
     const res = await this.apiService.post<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when initiating support errand');
       logger.error(e);
@@ -653,7 +661,6 @@ export class SupportErrandController {
   }
 
   @Patch('/supporterrands/:municipalityId/:id')
-  @HttpCode(201)
   @OpenAPI({ summary: 'Update a support errand' })
   @UseBefore(authMiddleware, validationMiddleware(SupportErrandDto, 'body'))
   async updateSupportErrand(
@@ -670,10 +677,7 @@ export class SupportErrandController {
     }
     const url = `${municipalityId}/${this.namespace}/errands/${id}`;
     const baseURL = apiURL(this.SERVICE);
-    const body: Partial<SupportErrandDto> = {
-      ...data,
-      ...(data.assignedUserId && { assignedUserId: data.assignedUserId }),
-    };
+    const body: Partial<SupportErrandDto> = { ...data };
     const res = await this.apiService.patch<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when registering support errand');
       logger.error(e);
@@ -683,7 +687,6 @@ export class SupportErrandController {
   }
 
   @Patch('/supporterrands/:municipalityId/:id/admin')
-  @HttpCode(201)
   @OpenAPI({ summary: 'Set user as admin for support errand' })
   @UseBefore(authMiddleware, validationMiddleware(SupportErrandDto, 'body'))
   async becomeAdminForSupportErrand(
@@ -713,7 +716,6 @@ export class SupportErrandController {
   }
 
   @Post('/supporterrands/:municipalityId/:id/forward')
-  @HttpCode(201)
   @OpenAPI({ summary: 'Forward a support errand' })
   @UseBefore(authMiddleware, validationMiddleware(ForwardFormDto, 'body'))
   async forwardSupportErrand(
@@ -735,12 +737,8 @@ export class SupportErrandController {
     }
     const supportErrandUrl = `${municipalityId}/${this.namespace}/errands/${id}`;
     const supportBaseURL = apiURL(this.SERVICE);
+    // A missing errand surfaces as a thrown HttpException(404) from ApiService, not a falsy result.
     const existingSupportErrand = await this.apiService.get<SupportErrand>({ url: supportErrandUrl, baseURL: supportBaseURL }, req.user);
-    if (!existingSupportErrand) {
-      console.error('No errand found with id', id);
-      logger.error('No errand found with id', id);
-      return response.status(404).send('No errand found with id');
-    }
 
     const stakeholders: CasedataStakeholderDTO[] = [];
     for (const s of existingSupportErrand.data.stakeholders ?? []) {
