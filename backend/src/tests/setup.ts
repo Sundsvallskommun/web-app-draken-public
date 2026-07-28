@@ -23,3 +23,14 @@ process.env.SUPERADMIN_GROUP = process.env.SUPERADMIN_GROUP ?? 'draken_superadmi
 // authorizeGroups() splits AUTHORIZED_GROUPS at call time; seed it so tests that
 // exercise authorization have a known allow-list.
 process.env.AUTHORIZED_GROUPS = process.env.AUTHORIZED_GROUPS ?? 'draken_users,draken_developers';
+
+// config/index.ts destructures process.env into module-level consts at IMPORT time, and
+// controllers read them when constructed. Seed the ones the support-errand controller
+// builds its URLs from, so tests see stable, non-undefined values. Tests assert against
+// these through mockMunicipalityId/mockSupportNamespace in helpers/mock-data.ts - keep
+// the two in sync.
+process.env.MUNICIPALITY_ID = process.env.MUNICIPALITY_ID ?? '2281';
+process.env.SUPPORTMANAGEMENT_NAMESPACE = process.env.SUPPORTMANAGEMENT_NAMESPACE ?? 'CONTACTCENTER';
+
+// apiURL() prefixes relative urls with API_BASE_URL; without it they start with 'undefined/'.
+process.env.API_BASE_URL = process.env.API_BASE_URL ?? 'https://api.test.local';
