@@ -2,6 +2,8 @@ import { Errand as ErrandDTO, Stakeholder as StakeholderDTO } from '@/data-contr
 import { Role } from '@/interfaces/role';
 import { getLastUpdatedAdministrator, getOwnerStakeholder, getOwnerStakeholderEmail } from '@/services/stakeholder.service';
 
+import { mockEmail, mockPhoneNumber } from './helpers/mock-data';
+
 const stakeholder = (overrides: Partial<StakeholderDTO> = {}): StakeholderDTO =>
   ({ roles: [], contactInformation: [], ...overrides }) as StakeholderDTO;
 
@@ -29,17 +31,17 @@ describe('stakeholder.service', () => {
       const applicant = stakeholder({
         roles: [Role.APPLICANT],
         contactInformation: [
-          { contactType: 'PHONE', value: '070-0000000' },
-          { contactType: 'EMAIL', value: 'owner@example.se' },
+          { contactType: 'PHONE', value: mockPhoneNumber },
+          { contactType: 'EMAIL', value: mockEmail },
         ],
       } as Partial<StakeholderDTO>);
-      expect(getOwnerStakeholderEmail(errandWith([applicant]))).toBe('owner@example.se');
+      expect(getOwnerStakeholderEmail(errandWith([applicant]))).toBe(mockEmail);
     });
 
     it('returns undefined when the applicant has no email', () => {
       const applicant = stakeholder({
         roles: [Role.APPLICANT],
-        contactInformation: [{ contactType: 'PHONE', value: '070-0000000' }],
+        contactInformation: [{ contactType: 'PHONE', value: mockPhoneNumber }],
       } as Partial<StakeholderDTO>);
       expect(getOwnerStakeholderEmail(errandWith([applicant]))).toBeUndefined();
     });

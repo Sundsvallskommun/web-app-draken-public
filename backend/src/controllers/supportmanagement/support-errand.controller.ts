@@ -1,21 +1,14 @@
 import { Type as TypeTransformer } from 'class-transformer';
 import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
-import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { APPLICATION, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
-  AddressAddressCategoryEnum,
-  AttachmentChannelEnum,
-  ContactInformationContactTypeEnum,
   Errand as CasedataErrandDTO,
-  ErrandChannelEnum as CasedataErrandDtoChannelEnum,
   ErrandPriorityEnum as CasedataErrandDtoPriorityEnum,
-  Facility as FacilityDTO,
   Stakeholder as CasedataStakeholderDTO,
-  StakeholderTypeEnum as CasedataStakeholderDtoTypeEnum,
 } from '@/data-contracts/case-data/data-contracts';
 import { RelationPagedResponse } from '@/data-contracts/relations/data-contracts';
 import {
@@ -37,27 +30,28 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import { MEXCaseType } from '@/interfaces/case-type.interface';
 import { ErrandStatus } from '@/interfaces/errand-status.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
-import { Role } from '@/interfaces/role';
 import { ContactChannelType } from '@/interfaces/support-contactchannel';
-import { SupportManagementChannels } from '@/interfaces/supportmanagement-channel.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { createConversation, sendConversationTextMessage } from '@/services/message.service';
 import { OrganizationService } from '@/services/organization.service';
-import { logger } from '@/utils/logger';
 import {
-  apiURL,
-  buildCategoryFilter,
-  findLeafComponents,
-  formatOrgNr,
-  luhnCheck,
-  OrgNumberFormat,
-  removeUnreachablePaths,
-  toOffsetDateTime,
-  withRetries,
-} from '@/utils/util';
+  buildErrandFilter,
+  ErrandFilterInput,
+  getNewErrandDefaults,
+  resolveDefaultLabels,
+  SupportStakeholderRole,
+  toAttachmentDto,
+  toCasedataChannel,
+  toCasedataStakeholder,
+  toFacilities,
+} from '@/services/support-errand.service';
+import { logger } from '@/utils/logger';
+import { apiURL, formatOrgNr, luhnCheck, OrgNumberFormat, withRetries } from '@/utils/util';
+
+export { SupportStakeholderRole };
 
 export enum CustomerType {
   PRIVATE,
@@ -84,7 +78,7 @@ export enum StatusLabel {
 export enum Resolution {
   INFORMED = 'INFORMED',
   ESCALATED = 'ESCALATED',
-  CONNECTED = 'CONNNECTED',
+  CONNECTED = 'CONNECTED',
 }
 
 export enum ResolutionLabel {
@@ -372,50 +366,6 @@ class ForwardFormDto {
   messageBodyPlaintext!: string;
 }
 
-export enum SupportStakeholderRole {
-  PRIMARY = 'PRIMARY',
-  CONTACT = 'CONTACT',
-}
-
-type LabelSpec = { category: string; type: string; subType?: string };
-
-interface NewErrandDefaults {
-  classification: { category: string; type: string };
-  labels?: LabelSpec;
-}
-
-// Default classification and labels applied to a new empty errand, per application (drake).
-// Applications without a `labels` entry get no default labels.
-const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
-  KC: { classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' } },
-  KA: {
-    classification: { category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER' },
-    labels: { category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER', subType: 'ADMINISTRATION/CONTACT_CENTER/GENERAL' },
-  },
-  LOP: {
-    classification: { category: 'SALARY', type: 'SALARY.UNCATEGORIZED' },
-    labels: { category: 'SALARY', type: 'SALARY/UNCATEGORIZED', subType: 'SALARY/UNCATEGORIZED/UNCATEGORIZED' },
-  },
-  IK: {
-    classification: { category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER.UNCATEGORIZED' },
-    labels: { category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER/UNCATEGORIZED' },
-  },
-  MSVA: { classification: { category: 'MSVA', type: 'MSVA.UNCATEGORIZED' } },
-  ROB: { classification: { category: 'COMPLETE_RECRUITMENT', type: 'COMPLETE_RECRUITMENT.RETAKE' } },
-  SE: {
-    classification: { category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' },
-    labels: { category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' },
-  },
-  BOU: {
-    classification: { category: 'BOU', type: 'BOU/UNCATEGORIZED' },
-    labels: { category: 'BOU', type: 'BOU/UNCATEGORIZED' },
-  },
-  LOK: {
-    classification: { category: 'IAF', type: 'IAF/WORK_AND_LIVELIHOOD' },
-    labels: { category: 'IAF', type: 'IAF/WORK_AND_LIVELIHOOD' },
-  },
-};
-
 @Controller()
 @UseBefore(hasPermissions(['canEditSupportManagement']))
 export class SupportErrandController {
@@ -425,159 +375,98 @@ export class SupportErrandController {
   SERVICE = apiServiceName('supportmanagement');
   CITIZEN_SERVICE = apiServiceName('citizen');
 
-  // Accepted query parameters
-  SAFE_CHARS_REGEX = /[^\p{L}\p{N}\s.\-_,:]/gu;
-
-  sanitizeQuery = (s?: string): string => {
-    return (s ?? '').normalize('NFKC').replace(this.SAFE_CHARS_REGEX, '').replace(/\s+/g, ' ').trim();
-  };
-
-  stripPhoneNoise = (s: string): string => s.replace(/\+/g, '');
-
-  private async buildErrandFilter(
-    req: RequestWithUser,
-    queryRaw?: string,
-    stakeholders?: string,
-    priority?: string,
-    category?: string,
-    type?: string,
-    labelCategory?: string,
-    labelType?: string,
-    labelSubType?: string,
-    channel?: string,
-    status?: string,
-    resolution?: string,
-    start?: string,
-    end?: string,
-  ): Promise<string> {
-    const filterList: string[] = [];
-
-    if (queryRaw) {
-      const query = this.sanitizeQuery(queryRaw);
-      const qPhone = this.stripPhoneNoise(query);
-
-      const normalizedIdentifier = queryRaw.replace(/\D/g, '');
-      let partyId = '';
-      if (normalizedIdentifier.length === 10 && luhnCheck(normalizedIdentifier) && Number(normalizedIdentifier[2]) > 1) {
-        partyId = await this.organizationService.getPartyIdByOrganizationNumber(MUNICIPALITY_ID!, normalizedIdentifier, req.user).catch(() => '');
-      } else if ((normalizedIdentifier.length === 10 || normalizedIdentifier.length === 12) && luhnCheck(normalizedIdentifier)) {
-        const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${normalizedIdentifier}/guid`;
-        partyId = await this.apiService
-          .get<string>({ url: guidUrl }, req.user)
-          .then(response => response.data)
-          .catch(() => '');
-      }
-
-      let queryFilter = '(';
-      queryFilter += `description~'*${query}*'`;
-      queryFilter += ` or title~'*${query}*'`;
-      queryFilter += ` or errandNumber~'*${query}*'`;
-      queryFilter += ` or exists(stakeholders.firstName~'*${query}*')`;
-      queryFilter += ` or exists(stakeholders.lastName~'*${query}*')`;
-      queryFilter += ` or exists(stakeholders.address~'*${query}*')`;
-      queryFilter += ` or exists(stakeholders.zipCode~'*${query}*')`;
-      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${query}*' and stakeholders.contactChannels.type~'${ContactChannelType.EMAIL}')`;
-      queryFilter += ` or exists(stakeholders.contactChannels.value~'*${qPhone}*' and stakeholders.contactChannels.type~'${ContactChannelType.PHONE}')`;
-      queryFilter += ` or exists(stakeholders.organizationName~'*${query}*')`;
-      queryFilter += ` or exists(stakeholders.externalId~'*${query}*')`;
-      queryFilter += ` or exists(parameters.values~'*${query}*')`;
-      if (partyId) {
-        queryFilter += ` or exists(stakeholders.externalId~'*${this.sanitizeQuery(partyId)}*')`;
-      }
-      queryFilter += ')';
-      filterList.push(queryFilter);
+  /**
+   * Resolves a free-text query that looks like an organization or personal number into a party id,
+   * so that errands can also be matched on `stakeholders.externalId`. Returns '' when the query is
+   * not an identifier or the lookup fails - a failed lookup must not fail the search itself.
+   */
+  private async resolveQueryPartyId(req: RequestWithUser, queryRaw?: string): Promise<string> {
+    if (!queryRaw) return '';
+    const normalizedIdentifier = queryRaw.replace(/\D/g, '');
+    if (normalizedIdentifier.length === 10 && luhnCheck(normalizedIdentifier) && Number(normalizedIdentifier[2]) > 1) {
+      return this.organizationService.getPartyIdByOrganizationNumber(MUNICIPALITY_ID!, normalizedIdentifier, req.user).catch(() => '');
     }
-
-    if (stakeholders) {
-      filterList.push(`(assignedUserId:'${stakeholders}' or (assignedUserId is null and reporterUserId:'${stakeholders}' ))`);
+    if ((normalizedIdentifier.length === 10 || normalizedIdentifier.length === 12) && luhnCheck(normalizedIdentifier)) {
+      const guidUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${normalizedIdentifier}/guid`;
+      return this.apiService
+        .get<string>({ url: guidUrl }, req.user)
+        .then(response => response.data)
+        .catch(() => '');
     }
-    if (priority) {
-      const ss = priority.split(',').map(s => `priority:'${s}'`);
-      filterList.push(`(${ss.join(' or ')})`);
-    }
-    if (category) {
-      const ss = category.split(',').map(s => `category:'${s}'`);
-      filterList.push(`(${ss.join(' or ')})`);
-    }
-    if (type) {
-      const ss = type.split(',').map(s => `type:'${s}'`);
-      filterList.push(`(${ss.join(' or ')})`);
-    }
-    if (labelCategory || labelType || labelSubType) {
-      const labelCategoryList = labelCategory?.split(',');
-      const labelTypeList = labelType?.split(',');
-      const labelSubTypeList = labelSubType?.split(',');
-
-      const cleanPath = removeUnreachablePaths([labelCategoryList, labelTypeList, labelSubTypeList]);
-
-      const leaves = findLeafComponents(cleanPath);
-
-      const searchString = buildCategoryFilter([...leaves]);
-      if (searchString) filterList.push(searchString);
-    }
-    if (channel) {
-      filterList.push(`channel:'${channel}'`);
-    }
-    if (status) {
-      const ss = status.split(',').map(s => `status:'${s}'`);
-      filterList.push(`(${ss.join(' or ')})`);
-    }
-    if (resolution) {
-      filterList.push(`resolution:'${resolution}'`);
-    }
-    if (start) {
-      const s = toOffsetDateTime(dayjs(start).startOf('day'));
-      filterList.push(`created>'${s}'`);
-    }
-    if (end) {
-      const e = toOffsetDateTime(dayjs(end).endOf('day'));
-      filterList.push(`created<'${e}'`);
-    }
-
-    return filterList.length > 0 ? `&filter=${filterList.join(' and ')}` : '';
+    return '';
   }
 
+  private async buildFilterForRequest(req: RequestWithUser, input: ErrandFilterInput): Promise<string> {
+    const partyId = await this.resolveQueryPartyId(req, input.query);
+    return buildErrandFilter({ ...input, partyId });
+  }
+
+  /**
+   * Resolves the organization number for a COMPANY stakeholder when forwarding an errand.
+   * Prefers the organization number persisted as a stakeholder parameter (written on save), falls
+   * back to a Legal Entity lookup by partyId, and degrades gracefully on failure instead of
+   * aborting the whole forward (e.g. for not-yet-migrated legacy organizations).
+   */
+  private async resolveStakeholderOrgNumber(s: SupportStakeholder, municipalityId: string, req: RequestWithUser): Promise<string | undefined> {
+    const organizationNumberFromParameter = s.parameters?.find(p => p.key === 'organizationNumber')?.values?.[0] ?? '';
+    const organizationNumberSource =
+      organizationNumberFromParameter ||
+      (s.externalId
+        ? await this.organizationService.getOrganizationNumberByPartyId(municipalityId, s.externalId, req.user).catch(e => {
+            logger.error(`Error fetching organization number for partyId ${s.externalId}: `, e);
+            return '';
+          })
+        : '');
+    return formatOrgNr(organizationNumberSource, OrgNumberFormat.DASH);
+  }
+
+  /** A citizen party id can be resolved to a personal number only for these stakeholder types. */
+  private hasResolvablePersonNumber(s: SupportStakeholder): boolean {
+    return !!s.externalId && (s.externalIdType === ExternalIdType.PRIVATE || s.externalIdType === ExternalIdType.EMPLOYEE);
+  }
+
+  /**
+   * Enriches an errand's stakeholders with their personal numbers, resolved from the citizen service.
+   * Returns new objects - neither the errand nor its stakeholders are mutated. A failed lookup leaves
+   * the stakeholder without a personNumber rather than failing the whole response.
+   */
   preparedErrandResponse = async (errandData: SupportErrand, req: any) => {
-    const customer: (SupportStakeholder & { personNumber?: string }) | undefined = errandData.stakeholders?.find(
-      s => s.role === SupportStakeholderRole.PRIMARY,
-    );
-    if (
-      customer &&
-      customer.externalId &&
-      (customer.externalIdType === ExternalIdType.PRIVATE || customer.externalIdType === ExternalIdType.EMPLOYEE)
-    ) {
-      const personNumberUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${customer.externalId}/personnumber`;
-      const personNumberRes = await this.apiService
-        .get<string>({ url: personNumberUrl }, req.user)
-        .then(res => ({ data: `${res.data}` }))
-        .catch(_e => ({ data: undefined, message: '404' }));
-      customer.personNumber = personNumberRes.data;
+    const stakeholders = errandData.stakeholders;
+    if (!stakeholders?.length) {
+      return { data: errandData, message: 'success' };
     }
-    const contacts: (SupportStakeholder & { personNumber?: string })[] =
-      errandData.stakeholders?.filter(s => s.role !== SupportStakeholderRole.PRIMARY) || [];
-    const contactsPromises = contacts.map(contact => {
-      if (
-        contact &&
-        contact.externalId &&
-        (contact.externalIdType === ExternalIdType.PRIVATE || contact.externalIdType === ExternalIdType.EMPLOYEE)
-      ) {
-        const personNumberUrl = `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${contact.externalId}/personnumber`;
-        const getPersonalNumber = () =>
-          this.apiService
-            .get<string>({ url: personNumberUrl }, req.user)
-            .then(res => {
-              contact.personNumber = res.data;
-              return res;
-            })
-            .catch(_e => ({ data: undefined, message: '404' }));
-        return withRetries(3, getPersonalNumber);
-      } else {
-        return Promise.resolve(true);
-      }
-    });
-    await Promise.all(contactsPromises);
-    const resToSend = { data: errandData, message: 'success' };
-    return resToSend;
+
+    const personNumberOf = (s: SupportStakeholder) =>
+      this.apiService.get<string>({ url: `${this.CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${s.externalId}/personnumber` }, req.user);
+
+    // The first PRIMARY stakeholder is the customer; every non-PRIMARY one is a contact. Any further
+    // PRIMARY stakeholders are neither, and are passed through untouched.
+    const customerIndex = stakeholders.findIndex(s => s.role === SupportStakeholderRole.PRIMARY);
+
+    const enriched = await Promise.all(
+      stakeholders.map(async (s, i): Promise<SupportStakeholder & { personNumber?: string }> => {
+        const isCustomer = i === customerIndex;
+        const isContact = s.role !== SupportStakeholderRole.PRIMARY;
+        if ((!isCustomer && !isContact) || !this.hasResolvablePersonNumber(s)) {
+          return s;
+        }
+        if (isCustomer) {
+          // NOTE the asymmetry with the contact branch below: the customer's personNumber is
+          // stringified, a contact's is passed through as the citizen service returned it (a
+          // number). Pre-existing behaviour the frontend relies on - do not "tidy" without checking.
+          const res = await personNumberOf(s)
+            .then(r => ({ data: `${r.data}` }))
+            .catch(_e => ({ data: undefined }));
+          return res.data === undefined ? s : { ...s, personNumber: res.data };
+        }
+        // Contacts are retried, since a whole page of them is resolved at once.
+        const res = await withRetries(3, () => personNumberOf(s).catch(_e => ({ data: undefined, message: '404' })));
+        const personNumber = typeof res === 'object' && res !== null ? (res as { data?: string }).data : undefined;
+        return personNumber === undefined ? s : { ...s, personNumber };
+      }),
+    );
+
+    return { data: { ...errandData, stakeholders: enriched }, message: 'success' };
   };
 
   @Get('/supporterrands/errandnumber/:errandNumber')
@@ -650,8 +539,7 @@ export class SupportErrandController {
       return response.status(400).send('Municipality id missing');
     }
 
-    const filter = await this.buildErrandFilter(
-      req,
+    const filter = await this.buildFilterForRequest(req, {
       query,
       stakeholders,
       priority,
@@ -665,7 +553,7 @@ export class SupportErrandController {
       resolution,
       start,
       end,
-    );
+    });
     let url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands?page=${page || 0}&size=${size || 8}`;
     url += filter;
     if (sort) {
@@ -703,8 +591,7 @@ export class SupportErrandController {
       return response.status(400).send('Municipality id missing');
     }
 
-    const filter = await this.buildErrandFilter(
-      req,
+    const filter = await this.buildFilterForRequest(req, {
       query,
       stakeholders,
       priority,
@@ -718,8 +605,11 @@ export class SupportErrandController {
       resolution,
       start,
       end,
-    );
-    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/count?${filter}`;
+    });
+    // buildErrandFilter returns a fragment that starts with '&' so it can be appended to the paged
+    // errands URL; here it is the only query parameter, so drop the separator.
+    const queryString = filter.replace(/^&/, '');
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/count${queryString ? `?${queryString}` : ''}`;
     const res = await this.apiService.get<PageErrand>({ url }, req.user);
     const data = res.data;
     return response.status(200).send(data);
@@ -743,32 +633,20 @@ export class SupportErrandController {
     // Fetch metadata for labels for new errand
     const metadataUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata/labels`;
     const metadataRes = await this.apiService.get<{ labelStructure: Label[] }>({ url: metadataUrl }, req.user);
-    const getDefaultLabels = (names: { category: string; type: string; subType?: string }) => {
-      const categorybject = metadataRes.data.labelStructure?.find(l => l.resourcePath === names.category);
-      if (!categorybject) return [];
-      if (!names.type) return [categorybject];
-      const typeObject = categorybject.labels?.find(l => l.resourcePath === names.type);
-      if (!typeObject) return [categorybject];
-      if (!names.subType) return [categorybject, typeObject];
-      const subTypeObject = typeObject.labels?.find(l => l.resourcePath === names.subType);
-      if (!subTypeObject) return [categorybject, typeObject];
-      return [categorybject, typeObject, subTypeObject];
-    };
 
     const url = `${municipalityId}/${this.namespace}/errands`;
     const baseURL = apiURL(this.SERVICE);
-    const errandDefaults = NEW_ERRAND_DEFAULTS[APPLICATION ?? ''];
+    const errandDefaults = getNewErrandDefaults(APPLICATION);
     const body: Partial<SupportErrandDto> = {
       reporterUserId: req.user.username,
       assignedUserId: req.user.username,
       classification: errandDefaults?.classification,
-      labels: errandDefaults?.labels ? getDefaultLabels(errandDefaults.labels) : [],
+      labels: errandDefaults?.labels ? resolveDefaultLabels(metadataRes.data.labelStructure, errandDefaults.labels) : [],
       priority: SupportPriority.MEDIUM,
       status: Status.NEW,
       channel: ContactChannelType.PHONE,
       title: 'Empty errand',
     };
-    console.log('Creating new empty errand with body', body);
     const res = await this.apiService.post<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when initiating support errand');
       logger.error(e);
@@ -783,7 +661,6 @@ export class SupportErrandController {
   }
 
   @Patch('/supporterrands/:municipalityId/:id')
-  @HttpCode(201)
   @OpenAPI({ summary: 'Update a support errand' })
   @UseBefore(authMiddleware, validationMiddleware(SupportErrandDto, 'body'))
   async updateSupportErrand(
@@ -800,10 +677,7 @@ export class SupportErrandController {
     }
     const url = `${municipalityId}/${this.namespace}/errands/${id}`;
     const baseURL = apiURL(this.SERVICE);
-    const body: Partial<SupportErrandDto> = {
-      ...data,
-      ...(data.assignedUserId && { assignedUserId: data.assignedUserId }),
-    };
+    const body: Partial<SupportErrandDto> = { ...data };
     const res = await this.apiService.patch<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when registering support errand');
       logger.error(e);
@@ -813,7 +687,6 @@ export class SupportErrandController {
   }
 
   @Patch('/supporterrands/:municipalityId/:id/admin')
-  @HttpCode(201)
   @OpenAPI({ summary: 'Set user as admin for support errand' })
   @UseBefore(authMiddleware, validationMiddleware(SupportErrandDto, 'body'))
   async becomeAdminForSupportErrand(
@@ -843,7 +716,6 @@ export class SupportErrandController {
   }
 
   @Post('/supporterrands/:municipalityId/:id/forward')
-  @HttpCode(201)
   @OpenAPI({ summary: 'Forward a support errand' })
   @UseBefore(authMiddleware, validationMiddleware(ForwardFormDto, 'body'))
   async forwardSupportErrand(
@@ -865,12 +737,8 @@ export class SupportErrandController {
     }
     const supportErrandUrl = `${municipalityId}/${this.namespace}/errands/${id}`;
     const supportBaseURL = apiURL(this.SERVICE);
+    // A missing errand surfaces as a thrown HttpException(404) from ApiService, not a falsy result.
     const existingSupportErrand = await this.apiService.get<SupportErrand>({ url: supportErrandUrl, baseURL: supportBaseURL }, req.user);
-    if (!existingSupportErrand) {
-      console.error('No errand found with id', id);
-      logger.error('No errand found with id', id);
-      return response.status(404).send('No errand found with id');
-    }
 
     const stakeholders: CasedataStakeholderDTO[] = [];
     for (const s of existingSupportErrand.data.stakeholders ?? []) {
@@ -889,147 +757,18 @@ export class SupportErrandController {
       //   logger.error('Missing required contact channels for stakeholder');
       //   return response.status(400).send('Missing required contact channels for stakeholder');
       // }
-      if (s.externalIdType === ExternalIdType.COMPANY) {
-        // Prefer the organization number persisted as a stakeholder parameter (written on save).
-        // Fall back to a Legal Entity lookup by partyId, and degrade gracefully on failure instead
-        // of aborting the whole forward (e.g. for not-yet-migrated legacy organizations).
-        const organizationNumberFromParameter = s.parameters?.find(p => p.key === 'organizationNumber')?.values?.[0] ?? '';
-        const organizationNumberSource =
-          organizationNumberFromParameter ||
-          (s.externalId
-            ? await this.organizationService.getOrganizationNumberByPartyId(municipalityId, s.externalId, req.user).catch(e => {
-                logger.error(`Error fetching organization number for partyId ${s.externalId}: `, e);
-                return '';
-              })
-            : '');
-        const organizationNumber = formatOrgNr(organizationNumberSource, OrgNumberFormat.DASH);
-        stakeholders.push({
-          type: CasedataStakeholderDtoTypeEnum.ORGANIZATION,
-          roles: [s.role === 'PRIMARY' ? Role.APPLICANT : Role.CONTACT_PERSON],
-          addresses: s.address
-            ? [
-                {
-                  addressCategory: AddressAddressCategoryEnum.POSTAL_ADDRESS,
-                  street: s.address,
-                  postalCode: s.zipCode || '',
-                  city: s.city || '',
-                  careOf: s.careOf || '',
-                },
-              ]
-            : [],
-          contactInformation:
-            (s.contactChannels?.length ?? 0) > 0
-              ? (s.contactChannels ?? [])
-                  .map(c =>
-                    c.type === ContactChannelType.PHONE
-                      ? {
-                          contactType: ContactInformationContactTypeEnum.PHONE,
-                          value: c.value,
-                        }
-                      : c.type === ContactChannelType.EMAIL
-                        ? {
-                            contactType: ContactInformationContactTypeEnum.EMAIL,
-                            value: c.value,
-                          }
-                        : null,
-                  )
-                  .filter((x): x is NonNullable<typeof x> => x !== null)
-              : [],
-          firstName: '',
-          lastName: '',
-          organizationName: s.organizationName,
-          ...(s.externalId && { personId: s.externalId }),
-          ...(organizationNumber && { organizationNumber }),
-        });
-      } else {
-        stakeholders.push({
-          type: CasedataStakeholderDtoTypeEnum.PERSON,
-          roles: [s.role === 'PRIMARY' ? Role.APPLICANT : Role.CONTACT_PERSON],
-          addresses: s.address
-            ? [
-                {
-                  addressCategory: AddressAddressCategoryEnum.POSTAL_ADDRESS,
-                  street: s.address,
-                  postalCode: s.zipCode || '',
-                  city: s.city || '',
-                  careOf: s.careOf || '',
-                },
-              ]
-            : [],
-          contactInformation:
-            (s.contactChannels?.length ?? 0) > 0
-              ? (s.contactChannels ?? [])
-                  .map(c =>
-                    c.type === ContactChannelType.PHONE
-                      ? {
-                          contactType: ContactInformationContactTypeEnum.PHONE,
-                          value: c.value,
-                        }
-                      : c.type === ContactChannelType.EMAIL || c.type === ContactChannelType.EMAIL
-                        ? {
-                            contactType: ContactInformationContactTypeEnum.EMAIL,
-                            value: c.value,
-                          }
-                        : null,
-                  )
-                  .filter((x): x is NonNullable<typeof x> => x !== null)
-              : [],
-          firstName: s.firstName,
-          lastName: s.lastName ? s.lastName : '',
-          ...(s.externalId && { personId: s.externalId ? s.externalId : '' }),
-        });
-      }
+      const organizationNumber =
+        s.externalIdType === ExternalIdType.COMPANY ? await this.resolveStakeholderOrgNumber(s, municipalityId, req) : undefined;
+      stakeholders.push(toCasedataStakeholder(s, organizationNumber));
     }
-    const supportChannel: SupportManagementChannels =
-      SupportManagementChannels[existingSupportErrand.data.channel as keyof typeof SupportManagementChannels];
-    let casedataChannel: CasedataErrandDtoChannelEnum;
-    switch (supportChannel) {
-      case SupportManagementChannels.CHAT:
-        // TODO Missing matching channel in CaseData
-        casedataChannel = CasedataErrandDtoChannelEnum.WEB_UI;
-        break;
-      case SupportManagementChannels.EMAIL:
-        casedataChannel = CasedataErrandDtoChannelEnum.EMAIL;
-        break;
-      case SupportManagementChannels.IN_PERSON:
-        // TODO Missing matching channel in CaseData
-        casedataChannel = CasedataErrandDtoChannelEnum.WEB_UI;
-        break;
-      case SupportManagementChannels.SOCIAL_MEDIA:
-        // TODO Missing matching channel in CaseData
-        casedataChannel = CasedataErrandDtoChannelEnum.WEB_UI;
-        break;
-      case SupportManagementChannels.PHONE:
-        // TODO Missing matching channel in CaseData
-        casedataChannel = CasedataErrandDtoChannelEnum.MOBILE;
-        break;
-      case SupportManagementChannels.WEB_UI:
-        casedataChannel = CasedataErrandDtoChannelEnum.WEB_UI;
-        break;
-      case SupportManagementChannels.ESERVICE:
-        casedataChannel = CasedataErrandDtoChannelEnum.ESERVICE;
-        break;
-      default:
-        casedataChannel = CasedataErrandDtoChannelEnum.EMAIL;
-    }
-    const facilities = [] as FacilityDTO[];
-    const estates = (existingSupportErrand.data.parameters ?? []).filter(obj => obj.key === 'propertyDesignation')[0]?.values;
-
-    estates?.forEach(facility => {
-      facilities.push({
-        address: {
-          propertyDesignation: facility,
-        },
-      });
-    });
 
     const caseDataErrand: Partial<CasedataErrandDTO> = {
       caseType: MEXCaseType.MEX_FORWARDED_FROM_CONTACTSUNDSVALL as any,
       priority: existingSupportErrand.data.priority as unknown as CasedataErrandDtoPriorityEnum,
-      channel: casedataChannel,
+      channel: toCasedataChannel(existingSupportErrand.data.channel),
       stakeholders: stakeholders,
       // TODO How to map facilities? How are property designations stored in SupportManagement?
-      facilities: facilities,
+      facilities: toFacilities(existingSupportErrand.data.parameters),
       statuses: [
         {
           statusType: ErrandStatus.ArendeInkommit,
@@ -1072,21 +811,9 @@ export class SupportErrandController {
         return filesData;
       });
       const attachments = await Promise.all(attachmentsPromises);
-      const attachmentDtos: CreateAttachmentDto[] = attachments?.map(attachmentData => {
-        const binaryString = Array.from(new Uint8Array(attachmentData.fileData), v => String.fromCharCode(v)).join('');
-        const b64 = Buffer.from(binaryString, 'binary').toString('base64');
-        const dto: CreateAttachmentDto = {
-          file: b64,
-          category: 'OTHER',
-          extension: attachmentData.fileName!.split('.').pop()!,
-          mimeType: attachmentData.mimeType!,
-          name: attachmentData.fileName!,
-          note: '',
-          errandNumber: errand.errandNumber!,
-          channel: AttachmentChannelEnum.WEB_UI,
-        };
-        return dto;
-      });
+      const attachmentDtos: CreateAttachmentDto[] = attachments?.map(attachmentData =>
+        toAttachmentDto(attachmentData, attachmentData.fileData, errand.errandNumber!),
+      );
 
       const postedAttachments: Promise<CasedataErrandDTO>[] = attachmentDtos?.map(attachmentDto => {
         const casedataAttachmentsUrl = `${municipalityId}/${data.department}/errands/${errand.id}/attachments`;

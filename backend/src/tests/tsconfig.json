@@ -7,8 +7,9 @@
   "compilerOptions": {
     "noEmit": true
   },
-  // Override the inherited exclude (base excludes src/tests) and scope includes to
-  // the tests plus the ambient Vitest globals declaration.
-  "include": ["./**/*.ts", "../types/vitest.d.ts"],
+  // Override the inherited exclude (base excludes src/tests) and scope includes to the
+  // tests plus the project's ambient declarations (Vitest globals, the Express/session
+  // augmentations that the middlewares and controllers under test depend on).
+  "include": ["./**/*.ts", "../types/*.d.ts"],
   "exclude": []
 }
