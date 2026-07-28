@@ -33,6 +33,11 @@ describe('errand.service', () => {
       });
     });
 
+    it('passes statuses through under the statuses key', () => {
+      const statuses = [{ statusType: 'Under granskning', description: 'Granskning', created: '2026-01-01T00:00:00Z' }];
+      expect(makeErrandApiData(input({ statuses } as Partial<CreateErrandDto>), '1')).toEqual({ id: 1, statuses });
+    });
+
     it('drops falsy/absent optional fields', () => {
       const result = makeErrandApiData(input({ caseType: 'PARKING', description: '' } as Partial<CreateErrandDto>), '1');
       expect(result).toEqual({ id: 1, caseType: 'PARKING' });

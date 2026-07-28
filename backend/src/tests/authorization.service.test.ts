@@ -1,10 +1,6 @@
 import { defaultPermissions, getPermissions, getRole } from '@/services/authorization.service';
 
-// These AD group names are the ones seeded in tests/setup.ts (DEVELOPER_GROUP etc.).
-// With APPLICATION=KC (a non PT/MEX drake) they map to the support-management roles.
-const DEVELOPER_GROUP = 'draken_developers';
-const ADMIN_GROUP = 'draken_admins';
-const SUPERADMIN_GROUP = 'draken_superadmins';
+import { MOCK_ADMIN_GROUP, MOCK_DEVELOPER_GROUP, MOCK_SUPERADMIN_GROUP } from './helpers/mock-data';
 
 describe('authorization.service', () => {
   describe('defaultPermissions', () => {
@@ -60,7 +56,7 @@ describe('authorization.service', () => {
 
   describe('getPermissions (external AD groups)', () => {
     it('resolves an AD group through roleADMapping before collecting permissions', () => {
-      expect(getPermissions([DEVELOPER_GROUP])).toEqual({
+      expect(getPermissions([MOCK_DEVELOPER_GROUP])).toEqual({
         canEditCasedata: false,
         canEditSupportManagement: true,
         canViewAttestations: true,
@@ -71,13 +67,13 @@ describe('authorization.service', () => {
 
   describe('getRole', () => {
     it('maps a single AD group directly to its internal role', () => {
-      expect(getRole([DEVELOPER_GROUP])).toBe('draken_developer');
+      expect(getRole([MOCK_DEVELOPER_GROUP])).toBe('draken_developer');
     });
 
     it('resolves to the role with the lowest RoleOrderEnum index when several groups are present', () => {
       // getRole sorts matched roles by RoleOrderEnum ascending and takes the first;
       // draken_developer has index 0, so it wins over admin/superadmin here.
-      expect(getRole([ADMIN_GROUP, SUPERADMIN_GROUP, DEVELOPER_GROUP])).toBe('draken_developer');
+      expect(getRole([MOCK_ADMIN_GROUP, MOCK_SUPERADMIN_GROUP, MOCK_DEVELOPER_GROUP])).toBe('draken_developer');
     });
   });
 });
