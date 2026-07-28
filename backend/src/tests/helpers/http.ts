@@ -29,7 +29,8 @@ export interface MockResponse {
   body?: unknown;
 }
 
-/** Chainable express response double: `status()` returns itself, `send()` records and returns the payload. */
+/** Chainable express response double: both `status()` and `send()` return the response, as express does.
+ *  Read the recorded payload off `res.body` rather than the return value of the handler. */
 export const mockRes = (): MockResponse => {
   const res: MockResponse = {
     status: vi.fn((code: number) => {
@@ -38,7 +39,7 @@ export const mockRes = (): MockResponse => {
     }),
     send: vi.fn((body: unknown) => {
       res.body = body;
-      return body;
+      return res;
     }),
   };
   return res;
