@@ -78,6 +78,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/party/*/statuses', mockStakeholderStatus).as('getStakeholderStatuses');
       cy.intercept('GET', '**/2281/*/statuses', mockStakeholderStatus).as('getOrganizationStakeholderStatuses');
       cy.intercept('GET', '**/supportnotifications/2281', mockNotifications).as('getSupportNotifications');
+      cy.intercept('GET', '**/party-services*', { data: [] }).as('getPartyServices');
     });
 
     it('shows the correct base errand information', () => {
