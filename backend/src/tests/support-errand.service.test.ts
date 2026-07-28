@@ -22,6 +22,7 @@ import {
 
 import {
   mockAdUsername,
+  mockAttachmentId,
   mockCareOf,
   mockCasedataErrandNumber,
   mockCity,
@@ -85,7 +86,8 @@ describe('support-errand.service', () => {
 
   describe('stripPhoneNoise', () => {
     it('removes every plus sign and leaves the rest untouched', () => {
-      expect(stripPhoneNoise(mockPhoneNumberCountryCode)).toBe(mockPhoneNumberCountryCode.replace('+', ''));
+      expect(stripPhoneNoise('a+b+c')).toBe('abc');
+      expect(stripPhoneNoise(mockPhoneNumberCountryCode)).not.toContain('+');
     });
 
     it('is a no-op for a string without plus signs', () => {
@@ -212,9 +214,9 @@ describe('support-errand.service', () => {
     });
 
     it('leaves labels undefined for the drakes that configure none', () => {
-      expect(getNewErrandDefaults('KC')?.labels).toBeUndefined();
-      expect(getNewErrandDefaults('MSVA')?.labels).toBeUndefined();
-      expect(getNewErrandDefaults('ROB')?.labels).toBeUndefined();
+      expect(getNewErrandDefaults('KC')).toEqual({ classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' } });
+      expect(getNewErrandDefaults('MSVA')).toEqual({ classification: { category: 'MSVA', type: 'MSVA.UNCATEGORIZED' } });
+      expect(getNewErrandDefaults('ROB')).toEqual({ classification: { category: 'COMPLETE_RECRUITMENT', type: 'COMPLETE_RECRUITMENT.RETAKE' } });
     });
 
     it('returns undefined for an unknown or missing application', () => {
@@ -399,7 +401,7 @@ describe('support-errand.service', () => {
   });
 
   describe('toAttachmentDto', () => {
-    const attachment = (fileName: string): ErrandAttachment => ({ id: '1', fileName, mimeType: mockMimeType }) as ErrandAttachment;
+    const attachment = (fileName: string): ErrandAttachment => ({ id: mockAttachmentId, fileName, mimeType: mockMimeType }) as ErrandAttachment;
 
     it('base64-encodes the file data', () => {
       const fileData = new Uint8Array(Buffer.from(mockFileContent)).buffer;

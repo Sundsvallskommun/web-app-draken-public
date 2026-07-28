@@ -3,7 +3,7 @@ import { SupportErrandController } from '@/controllers/supportmanagement/support
 import { Errand as SupportErrand } from '@/data-contracts/supportmanagement/data-contracts';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 
-import { mockReq, mockRes, mockUser } from './helpers/http';
+import { mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
 import {
   mockAdUsername,
   mockAttachmentId,
@@ -137,17 +137,20 @@ describe('SupportErrandController', () => {
       const req = mockReq();
 
       const calls = [
-        () => controller.errand(req, mockSupportErrandId, '', mockRes()),
-        () => controller.errands(req, ...errandsArgs(), '', mockRes()),
-        () => controller.countErrands(req, ...countArgs(), '', mockRes()),
-        () => controller.registerSupportErrand(req, '', mockRes()),
-        () => controller.updateSupportErrand(req, mockSupportErrandId, '', {}, mockRes()),
-        () => controller.becomeAdminForSupportErrand(req, mockSupportErrandId, '', {}, mockRes()),
-        () => controller.forwardSupportErrand(req, mockSupportErrandId, '', {}, mockRes()),
+        (res: MockResponse) => controller.errand(req, mockSupportErrandId, '', res),
+        (res: MockResponse) => controller.errands(req, ...errandsArgs(), '', res),
+        (res: MockResponse) => controller.countErrands(req, ...countArgs(), '', res),
+        (res: MockResponse) => controller.registerSupportErrand(req, '', res),
+        (res: MockResponse) => controller.updateSupportErrand(req, mockSupportErrandId, '', {}, res),
+        (res: MockResponse) => controller.becomeAdminForSupportErrand(req, mockSupportErrandId, '', {}, res),
+        (res: MockResponse) => controller.forwardSupportErrand(req, mockSupportErrandId, '', {}, res),
       ];
 
       for (const call of calls) {
-        await expect(call()).resolves.toBe('Municipality id missing');
+        const res = mockRes();
+        await call(res);
+        expect(res.statusCode).toBe(400);
+        expect(res.body).toBe('Municipality id missing');
       }
       expect(api.get).not.toHaveBeenCalled();
       expect(api.post).not.toHaveBeenCalled();
@@ -417,9 +420,10 @@ describe('SupportErrandController', () => {
       api.get.mockResolvedValue({ data: mockPersonNumber, message: 'success' });
       const errand = errandWith([{ role: 'PRIMARY', externalId: mockCitizenPartyId, externalIdType: ExternalIdType.EMPLOYEE }]);
 
-      await controller.preparedErrandResponse(errand, mockReq());
+      const result = await controller.preparedErrandResponse(errand, mockReq());
 
-      expect(api.get).toHaveBeenCalledTimes(1);
+      expect(api.get).toHaveBeenCalledWith({ url: `${CITIZEN_SERVICE}/${MUNICIPALITY_ID}/${mockCitizenPartyId}/personnumber` }, expect.anything());
+      expect((result.data.stakeholders![0] as { personNumber?: string }).personNumber).toBe(mockPersonNumber);
     });
 
     it('skips company and enterprise stakeholders', async () => {
@@ -494,10 +498,12 @@ describe('SupportErrandController', () => {
 
     it('rejects a missing errand id with 400', async () => {
       const { controller, api } = makeController();
+      const res = mockRes();
 
-      const result = await controller.forwardSupportErrand(mockReq(), '', MUNICIPALITY_ID, forwardBody, mockRes());
+      await controller.forwardSupportErrand(mockReq(), '', MUNICIPALITY_ID, forwardBody, res);
 
-      expect(result).toBe('Errand id missing');
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toBe('Errand id missing');
       expect(api.get).not.toHaveBeenCalled();
     });
 
@@ -506,9 +512,9 @@ describe('SupportErrandController', () => {
       routeGets(api, supportErrand({ stakeholders: [{ role: 'PRIMARY', externalIdType: ExternalIdType.PRIVATE }] }));
       const res = mockRes();
 
-      const result = await controller.forwardSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, forwardBody, res);
+      await controller.forwardSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, forwardBody, res);
 
-      expect(result).toBe('Missing required fields for stakeholder');
+      expect(res.body).toBe('Missing required fields for stakeholder');
       expect(res.statusCode).toBe(400);
       expect(api.post).not.toHaveBeenCalled();
     });
@@ -608,7 +614,7 @@ describe('SupportErrandController', () => {
       await controller.forwardSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, forwardBody, mockRes());
 
       const attachmentPost = api.post.mock.calls.find(([config]) => config.url.includes('/attachments'));
-      expect(attachmentPost![0].url).toBe(`${MUNICIPALITY_ID}/${mockDepartment}/errands/99/attachments`);
+      expect(attachmentPost![0].url).toBe(`${MUNICIPALITY_ID}/${mockDepartment}/errands/${mockCasedataErrandId}/attachments`);
       expect(attachmentPost![0].data).toMatchObject({
         name: mockFileName,
         extension: 'pdf',
@@ -626,9 +632,9 @@ describe('SupportErrandController', () => {
       });
       const res = mockRes();
 
-      const result = await controller.forwardSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, forwardBody, res);
+      await controller.forwardSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, forwardBody, res);
 
-      expect(result).toBe('ATTACHMENTS_FAILED');
+      expect(res.body).toBe('ATTACHMENTS_FAILED');
       expect(res.statusCode).toBe(400);
     });
 

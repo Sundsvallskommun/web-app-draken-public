@@ -3,11 +3,12 @@
   "private": true,
   "scripts": {
     "prepare": "husky",
-    "type-check": "yarn --cwd frontend type-check && yarn --cwd backend type-check",
+    "type-check": "yarn --cwd frontend type-check && yarn --cwd backend type-check && yarn --cwd backend type-check:test",
     "lint": "yarn --cwd frontend lint && yarn --cwd backend lint",
     "knip": "yarn --cwd frontend knip && yarn --cwd backend knip",
     "format": "yarn --cwd frontend format && yarn --cwd backend format",
-    "verify": "yarn type-check && yarn lint && yarn knip"
+    "test": "yarn --cwd backend test",
+    "verify": "yarn type-check && yarn lint && yarn knip && yarn test"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",

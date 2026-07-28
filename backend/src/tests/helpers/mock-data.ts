@@ -72,15 +72,11 @@ export const mockFileContent = 'Hej';
 export const mockPropertyDesignation = 'SUNDSVALL BÖLE 1:1';
 export const mockSecondaryPropertyDesignation = 'SUNDSVALL HAGA 2:3';
 
-// These two must match the values seeded in src/tests/setup.ts, which bootstraps them as
-// env vars before @/config snapshots process.env at import time.
+// The values below are seeded as env vars by src/tests/setup.ts before any module loads
+// (@/config snapshots process.env at import time), and are imported by the tests that
+// assert against them, so the two cannot drift.
 export const mockMunicipalityId = '2281';
 export const mockSupportNamespace = 'CONTACTCENTER';
-
-// Shared identifiers for backend tests. setup.ts seeds these as env vars before
-// any module loads, and tests assert against the same values — import from here
-// instead of re-declaring so the two can't drift.
-
 export const MOCK_DEVELOPER_GROUP = 'draken_developers';
 export const MOCK_ADMIN_GROUP = 'draken_admins';
 export const MOCK_SUPERADMIN_GROUP = 'draken_superadmins';
