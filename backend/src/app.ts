@@ -216,8 +216,14 @@ class App {
         store: this.sessionStore,
         cookie: {
           path: BASE_URL_PREFIX,
-          httpOnly: true,
-          secure: NODE_ENV === 'production',
+          httpOnly: true, // XSS protection; independent of TLS
+          // The app is served over https in both TEST and production (only the IdP is http, and the
+          // session cookie is scoped to the app domain — it never travels to the IdP), so Secure is
+          // correct in every deployed env. Off only for local dev: a non-production build, or a
+          // local production build served over http://localhost (signalled by ENVIRONMENT=LOCAL).
+          secure: this.env === 'production' && process.env.ENVIRONMENT !== 'LOCAL',
+          // Frontend + backend are same-origin (foobar.domain.com + foobar.domain.com/api), so Lax
+          // works everywhere; the cross-site IdP callback doesn't need the cookie sent.
           sameSite: 'lax',
         },
       }),
@@ -337,6 +343,7 @@ class App {
 
       passport.authenticate('saml', (err: Error | null, user: Express.User | false | null) => {
         if (err) {
+          logger.warn(`SAML login callback failed: ${err.name}: ${err.message}`);
           const queries = new URLSearchParams(failureRedirect.searchParams);
           if (err?.name) {
             queries.append('failMessage', err.name);
