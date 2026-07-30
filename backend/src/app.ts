@@ -225,6 +225,7 @@ class App {
           // Frontend + backend are same-origin (foobar.domain.com + foobar.domain.com/api), so Lax
           // works everywhere; the cross-site IdP callback doesn't need the cookie sent.
           sameSite: 'lax',
+          maxAge: 12 * 60 * 60 * 1000,
         },
       }),
     );
