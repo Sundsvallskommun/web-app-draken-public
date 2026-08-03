@@ -216,14 +216,8 @@ class App {
         store: this.sessionStore,
         cookie: {
           path: BASE_URL_PREFIX,
-          httpOnly: true, // XSS protection; independent of TLS
-          // The app is served over https in both TEST and production (only the IdP is http, and the
-          // session cookie is scoped to the app domain — it never travels to the IdP), so Secure is
-          // correct in every deployed env. Off only for local dev: a non-production build, or a
-          // local production build served over http://localhost (signalled by ENVIRONMENT=LOCAL).
+          httpOnly: true,
           secure: this.env === 'production' && process.env.ENVIRONMENT !== 'LOCAL',
-          // Frontend + backend are same-origin (foobar.domain.com + foobar.domain.com/api), so Lax
-          // works everywhere; the cross-site IdP callback doesn't need the cookie sent.
           sameSite: 'lax',
           maxAge: 12 * 60 * 60 * 1000,
         },
