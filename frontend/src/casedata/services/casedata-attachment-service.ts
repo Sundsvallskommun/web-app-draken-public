@@ -1,11 +1,11 @@
 import {
-  Attachment,
   MEXAllAttachmentLabels,
   MEXAttachmentCategory,
   MEXAttachmentLabels,
   MEXLegacyAttachmentLabels,
   PTAttachmentCategory,
   PTAttachmentLabels,
+  SingleCasedataAttachment,
 } from '@casedata/interfaces/attachment';
 import { PTCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
@@ -13,6 +13,7 @@ import { imageMimeTypes } from '@common/components/file-upload/file-upload.compo
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { UploadFile } from '@sk-web-gui/react';
+import { Attachment } from 'src/data-contracts/backend/data-contracts';
 
 export const MAX_FILE_SIZE_MB = 50;
 
@@ -104,23 +105,10 @@ export const getPTAttachmentKey: (label: string) => PTAttachmentCategory | undef
   }
 };
 
-export const getAttachmentLabel = (attachment: Attachment) =>
+export const getAttachmentLabel = (category: string) =>
   isMEX()
-    ? (MEXAttachmentLabels as Record<string, string>)[attachment?.category] || 'Okänt'
-    : (PTAttachmentLabels as Record<string, string>)[attachment?.category] || 'Okänt';
-
-export const getImageAspect: (attachment: Attachment) => number | undefined = (attachment) =>
-  attachment?.category === 'PASSPORT_PHOTO'
-    ? 3 / 4
-    : attachment?.category === 'MEDICAL_CONFIRMATION'
-    ? undefined
-    : attachment?.category === 'SIGNATURE'
-    ? 4 / 1
-    : attachment?.category === 'POLICE_REPORT'
-    ? undefined
-    : attachment?.category === 'UNKNOWN'
-    ? undefined
-    : undefined;
+    ? (MEXAttachmentLabels as Record<string, string>)[category] || 'Okänt'
+    : (PTAttachmentLabels as Record<string, string>)[category] || 'Okänt';
 
 const uniquePTAttachments: PTAttachmentCategory[] = ['PASSPORT_PHOTO', 'SIGNATURE'];
 
@@ -257,14 +245,13 @@ export const sendAttachments = (
       note: '',
       extension,
       mimeType: extension === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type,
-      file: '',
     };
 
     const formData = new FormData();
     formData.append('files', fileItem, fileItem.name);
     formData.append('category', obj.category);
     formData.append('name', obj.name);
-    formData.append('note', obj.note);
+    formData.append('note', obj.note ?? '');
     formData.append('extension', obj.extension || '');
     formData.append('mimeType', obj.mimeType);
     formData.append('errandNumber', errandNumber);
@@ -287,7 +274,7 @@ export const sendAttachments = (
 };
 
 export const deleteAttachment = (municipalityId: string, errandId: number, attachment: UploadFile) => {
-  if (!attachment.id) {
+  if (!attachment?.id) {
     console.error('No id found, cannot continue.');
     return;
   }
@@ -307,18 +294,24 @@ export const deleteAttachment = (municipalityId: string, errandId: number, attac
 export const fetchAttachment: (
   municipalityId: string,
   errandId: number,
-  attachmentId: string
-) => Promise<ApiResponse<Attachment>> = (municipalityId, errandId, attachmentId) => {
-  if (!attachmentId) {
-    console.error('No attachment id found, cannot fetch. Returning.');
+  attachment: Attachment
+) => Promise<SingleCasedataAttachment> = (municipalityId, errandId, attachment) => {
+  if (!attachment.id) {
+    return Promise.reject(new Error('No attachment id found, cannot fetch.'));
   }
 
-  const url = `casedata/${municipalityId}/errands/${errandId}/attachments/${attachmentId}`;
+  const url = `casedata/${municipalityId}/errands/${errandId}/attachments/${attachment.id}`;
   return apiService
-    .get<ApiResponse<Attachment>>(url)
-    .then((res) => res.data)
+    .get<string>(url)
+    .then((res) => {
+      const att: SingleCasedataAttachment = {
+        errandAttachmentHeader: attachment,
+        base64EncodedString: res.data,
+      };
+      return att;
+    })
     .catch((e) => {
-      console.error('Something went wrong when fetching attachment: ', attachmentId);
+      console.error('Something went wrong when fetching attachment');
       throw e;
     });
 };

@@ -753,7 +753,7 @@ export const MessageComposer: FC<{
                     {(errand?.attachments ?? [])
                       .filter((a) => !fields.map((f) => (f as Attachment).name).includes(a.name))
                       .map((att, idx) => {
-                        const label = `${getAttachmentLabel(att)}: ${att.name}`;
+                        const label = `${getAttachmentLabel(att.category)}: ${att.name}`;
                         return (
                           <Select.Option
                             value={att.name}
@@ -775,7 +775,7 @@ export const MessageComposer: FC<{
                       e.preventDefault();
                       if (addExisting) {
                         const att = (errand?.attachments ?? []).find((a) => a.name === addExisting);
-                        if (att) append({ ...att, attachmentId: att.id });
+                        if (att) append({ ...att });
                         setValue(`addExisting`, '' as any);
                       }
                     }}
@@ -804,7 +804,7 @@ export const MessageComposer: FC<{
                             remove(k);
                           }}
                         >
-                          {getAttachmentLabel(att)}: {att.name}
+                          {getAttachmentLabel(att.category)}: {att.name}
                         </Chip>
                       </div>
                     );

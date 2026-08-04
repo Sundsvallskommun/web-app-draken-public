@@ -19,9 +19,6 @@ export class Attachment implements AttachmentDTO {
   extension!: string;
   @IsString()
   mimeType!: string;
-  @IsString()
-  @IsOptional()
-  file?: string;
   @IsNumber()
   @IsOptional()
   version?: number;
@@ -33,12 +30,24 @@ export class Attachment implements AttachmentDTO {
   updated?: string;
   @IsOptional()
   extraParameters?: GenericExtraParameters;
+  @IsString()
+  @IsOptional()
+  municipalityId?: string;
+  @IsNumber()
+  @IsOptional()
+  errandId?: number;
+  @IsString()
+  @IsOptional()
+  namespace?: string;
+  @IsEnum(AttachmentChannelEnum)
+  @IsOptional()
+  channel?: AttachmentChannelEnum;
+  @IsString()
+  @IsOptional()
+  hash?: string;
 }
 
 export class CreateAttachmentDto implements AttachmentDTO {
-  @IsString()
-  @IsOptional()
-  file?: string;
   @IsString()
   category!: string;
   @IsString()

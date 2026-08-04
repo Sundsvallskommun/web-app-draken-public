@@ -47,6 +47,7 @@
     "generate:contracts:kc": "dotenv -e .env.kc npx tsx ./src/swagger-typescript-api.ts",
     "generate:contracts:ka": "dotenv -e .env.ka npx tsx ./src/swagger-typescript-api.ts",
     "generate:contracts:mex": "dotenv -e .env.mex npx tsx ./src/swagger-typescript-api.ts",
+    "generate:contracts:pt": "dotenv -e .env.pt npx tsx ./src/swagger-typescript-api.ts",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "lint:strict": "eslint src/ --max-warnings=0 --cache --cache-location node_modules/.cache/eslint/",

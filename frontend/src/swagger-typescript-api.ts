@@ -29,9 +29,11 @@ const main = async () => {
     specPath,
     `${process.env.NEXT_PUBLIC_API_URL}/swagger.json`,
   ]);
+  console.log(`Downloaded backend swagger spec to ${specPath}`);
+  const generatorCli = path.resolve(process.cwd(), 'node_modules/swagger-typescript-api/dist/cli.js');
 
-  const { stdout, stderr } = await execFileAsync('npx', [
-    'swagger-typescript-api',
+  const { stdout, stderr } = await execFileAsync(process.execPath, [
+    generatorCli,
     'generate',
     '--path',
     specPath,
@@ -42,6 +44,7 @@ const main = async () => {
     '--extract-enums',
   ]);
 
+  console.log(`Generated backend api-docs to ${PATH_TO_OUTPUT_DIR}/backend`);
   if (stdout) console.log(`Data-contract-generator: ${stdout}`);
   if (stderr) console.log(`stderr: ${stderr}`);
 };

@@ -1,5 +1,4 @@
 import { CasedataFormModel } from '@casedata/components/errand/tabs/overview/casedata-form.component';
-import { Attachment } from '@casedata/interfaces/attachment';
 import { CaseLabels, FTCaseLabel, MEXCaseLabel, PTCaseLabel } from '@casedata/interfaces/case-label';
 import {
   CaseTypes,
@@ -23,11 +22,7 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 import { All, ApiPriority, Priority } from '@casedata/interfaces/priority';
 import { Role } from '@casedata/interfaces/role';
-import {
-  fetchErrandAttachments,
-  MAX_FILE_SIZE_MB,
-  validateAttachmentsForDecision,
-} from '@casedata/services/casedata-attachment-service';
+import { fetchErrandAttachments, validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import {
   getLastUpdatedAdministrator,
   makeStakeholdersList,
@@ -600,14 +595,6 @@ export const useErrands = (
   return errands;
 };
 
-export const blobToBase64: (blobl: Blob) => Promise<string> = (blob) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(blob);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
-
 const createApiErrandData: (data: Partial<IErrand>) => Partial<RegisterErrandData> = (data) => {
   const stakeholders = makeStakeholdersList(data);
   const e: Partial<RegisterErrandData> = {
@@ -677,52 +664,6 @@ export const saveErrand: (data: Partial<IErrand> & { municipalityId: string }) =
           console.error('Something went wrong when creating errand');
           return Promise.reject(result);
         });
-};
-
-export const saveCroppedImage = async (
-  municipalityId: string,
-  errandId: number,
-  attachment: Attachment,
-  _blob: Blob
-) => {
-  if (!attachment?.id) {
-    throw 'No attachment id found. Cannot save attachment without id.';
-  }
-  if (_blob.size / 1024 / 1024 > MAX_FILE_SIZE_MB) {
-    throw new Error('MAX_SIZE');
-  }
-  const blob64 = await blobToBase64(_blob);
-  const obj: Attachment = {
-    category: attachment.category,
-    name: attachment.name,
-    note: '',
-    extension: attachment.name.split('.').pop() ?? '',
-    mimeType: attachment.mimeType,
-    file: blob64.split(',')[1],
-  };
-  const buf = Buffer.from(obj.file, 'base64');
-  const blob = new Blob([buf], { type: obj.mimeType });
-
-  // Building form data
-  const formData = new FormData();
-  formData.append(`files`, blob, obj.name);
-  formData.append(`category`, obj.category);
-  formData.append(`name`, obj.name);
-  formData.append(`note`, obj.note);
-  formData.append(`extension`, obj.extension);
-  formData.append(`mimeType`, obj.mimeType);
-  const url = `casedata/${municipalityId}/errands/${errandId}/attachments/${attachment.id}`;
-  return apiService
-    .put<boolean, FormData>(url, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    .then((res) => {
-      return res;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when creating attachment ', obj.category);
-      throw e;
-    });
 };
 
 export const updateErrandStatus = async (municipalityId: string, id: string, status: ErrandStatus) => {

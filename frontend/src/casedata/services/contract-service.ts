@@ -650,7 +650,7 @@ export const fetchSignedContractAttachment: (
 export const saveSignedContractAttachment = (
   municipalityId: string,
   contractId: string,
-  attachment: { id: string; file: File }[],
+  attachment: UploadFile[],
   note: string
 ) => {
   const attachmentPromise = attachment.map(async (attachment) => {

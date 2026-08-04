@@ -8,7 +8,7 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { Role } from '@casedata/interfaces/role';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
-import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
+import { fetchAttachment, validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import {
   fetchDecisionTemplates,
   getFinalDecisonWithHighestId,
@@ -418,11 +418,13 @@ export const CasedataDecisionTab: FC<{
     if (!decision) {
       throw new Error('Inget beslut hittades');
     }
-    const pdfBase64 = decision.attachments?.[0]?.file;
-    if (!pdfBase64) {
+    const attachment = decision.attachments?.[0];
+    if (!attachment) {
       throw new Error('Ingen PDF hittades');
     }
-    downloadPdf(pdfBase64);
+    // The decision only carries attachment metadata, so the content is fetched separately.
+    const fetched = await fetchAttachment(municipalityId, errand.id, attachment);
+    downloadPdf(fetched.base64EncodedString);
   };
 
   const renderAndDownloadPdf = async () => {
@@ -654,7 +656,7 @@ export const CasedataDecisionTab: FC<{
 
   const existingDecisionPdf = useMemo(() => {
     if (!errand) return undefined;
-    return getFinalDecisonWithHighestId(errand.decisions)?.attachments?.[0]?.file;
+    return getFinalDecisonWithHighestId(errand.decisions)?.attachments?.[0];
   }, [errand]);
 
   if (!errand) {

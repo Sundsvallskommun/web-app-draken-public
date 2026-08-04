@@ -36,6 +36,7 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import { apiURL, base64Encode } from '@/utils/util';
 
 import ApiService, { ApiResponse } from './api.service';
+import { getAttachmentAsBase64 } from './casedata-attachment.service';
 import { getOwnerStakeholder, getOwnerStakeholderEmail } from './stakeholder.service';
 
 interface SmsMessage {
@@ -485,15 +486,20 @@ export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, us
     });
 };
 
-export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: Attachment) => {
+export const sendDecisionToDigitalMail = async (errand: ErrandDTO, user: User, pdf: Attachment) => {
   const url = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/letter?async=false`;
   const apiService = new ApiService();
+
+  if (!pdf.id) {
+    throw new Error('Decision attachment is missing id, cannot fetch attachment content');
+  }
+  const content = await getAttachmentAsBase64(MUNICIPALITY_ID!, errand.id!, pdf.id, user);
 
   const attachments = [
     {
       deliveryMode: 'ANY',
       contentType: DigitalMailAttachmentContentTypeEnum.ApplicationPdf,
-      content: pdf.file,
+      content,
       filename: pdf.name,
     } as DigitalMailAttachment,
   ];

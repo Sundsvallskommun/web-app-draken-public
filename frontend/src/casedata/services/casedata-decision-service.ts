@@ -122,15 +122,19 @@ export const saveDecision: (
   decisionType: DecisionType,
   pdf?: string
 ) => Promise<boolean> = (municipalityId, errand, formData, decisionType, pdf) => {
-  const atts = [];
+  const atts: Attachment[] = [];
   if (pdf) {
+    // FIXME: CaseData 13.0 dropped the inline base64 `file` field from Attachment, and the
+    // decision endpoints only accept metadata. The rendered PDF therefore no longer reaches
+    // CaseData, which leaves decision.attachments[0] without content — the attachment the
+    // decision message channels (Mina sidor, Katla, digital mail) send. Needs an agreed
+    // upload path before the Beslut flow works end to end again.
     const att: Attachment = {
       category: 'BESLUT',
       name: `${decisionType === 'PROPOSED' ? 'utredning' : 'beslut'}-arende-${errand.errandNumber}.pdf`,
       note: '',
       extension: 'pdf',
       mimeType: 'application/pdf',
-      file: pdf,
     };
     atts.push(att);
   }

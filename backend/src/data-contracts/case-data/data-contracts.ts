@@ -338,8 +338,8 @@ export interface Attachment {
   extension?: string;
   /** MIME type of the attachment */
   mimeType?: string;
-  /** Base64 encoded file content */
-  file?: string;
+  /** SHA-256 hash (hex encoded) of the attachment's raw content */
+  hash?: string;
   /** Additional parameters for the attachment */
   extraParameters?: Record<string, string>;
 }
@@ -584,6 +584,10 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
+  missingNode?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
@@ -596,10 +600,6 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
@@ -911,6 +911,8 @@ export interface ConversationAttachment {
   fileSize?: number;
   /** Mime type of the file */
   mimeType?: string;
+  /** Hash of the file content */
+  hash?: string;
   /**
    * The attachment created date
    * @format date-time
@@ -1078,22 +1080,21 @@ export interface PageErrand {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  sort?: SortObject;
   pageable?: PageableObject;
+  sort?: SortObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  sort?: SortObject;
-  unpaged?: boolean;
   paged?: boolean;
-  unpaged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
@@ -1230,8 +1231,8 @@ export interface PageMessage {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  sort?: SortObject;
   pageable?: PageableObject;
+  sort?: SortObject;
   empty?: boolean;
 }
 
@@ -1249,8 +1250,8 @@ export interface PageDecision {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  sort?: SortObject;
   pageable?: PageableObject;
+  sort?: SortObject;
   empty?: boolean;
 }
 

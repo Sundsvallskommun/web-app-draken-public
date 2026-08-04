@@ -1,5 +1,6 @@
 /* eslint-disable */
 /* tslint:disable */
+// @ts-nocheck
 /*
  * ---------------------------------------------------------------
  * ## THIS FILE WAS GENERATED VIA SWAGGER-TYPESCRIPT-API        ##
@@ -9,249 +10,124 @@
  * ---------------------------------------------------------------
  */
 
-export interface Status {
-  /**
-   * The type of status
-   * @minLength 0
-   * @maxLength 255
-   * @example "Ärende inkommit"
-   */
-  statusType?: string;
-  /**
-   * Description of the status
-   * @minLength 0
-   * @maxLength 255
-   * @example "Ärende har kommit in från e-tjänsten."
-   */
-  description?: string;
-  /**
-   * The date and time when the status was recorded
-   * @format date-time
-   * @example "2023-01-01T12:00:00Z"
-   */
-  dateTime?: string;
+/** ConversationType model */
+export enum ConversationType {
+  INTERNAL = "INTERNAL",
+  EXTERNAL = "EXTERNAL",
 }
 
-export interface Problem {
-  /** @format uri */
-  instance?: string;
-  /** @format uri */
-  type?: string;
-  parameters?: Record<string, object>;
-  status?: StatusType;
-  title?: string;
-  detail?: string;
+export enum Header {
+  IN_REPLY_TO = "IN_REPLY_TO",
+  REFERENCES = "REFERENCES",
+  MESSAGE_ID = "MESSAGE_ID",
+  AUTO_SUBMITTED = "AUTO_SUBMITTED",
+  RETURN_PATH = "RETURN_PATH",
+  CONTENT_TYPE = "CONTENT_TYPE",
 }
 
-export interface StatusType {
-  /** @format int32 */
-  statusCode?: number;
-  reasonPhrase?: string;
+/** Message classification */
+export enum Classification {
+  INFORMATION = "INFORMATION",
+  COMPLETION_REQUEST = "COMPLETION_REQUEST",
+  OBTAIN_OPINION = "OBTAIN_OPINION",
+  INTERNAL_COMMUNICATION = "INTERNAL_COMMUNICATION",
+  OTHER = "OTHER",
 }
 
-export interface ConstraintViolationProblem {
-  cause?: ThrowableProblem;
-  stackTrace?: {
-    classLoaderName?: string;
-    moduleName?: string;
-    moduleVersion?: string;
-    methodName?: string;
-    fileName?: string;
-    /** @format int32 */
-    lineNumber?: number;
-    className?: string;
-    nativeMethod?: boolean;
-  }[];
-  /** @format uri */
-  type?: string;
-  status?: StatusType;
-  violations?: Violation[];
-  title?: string;
-  message?: string;
-  /** @format uri */
-  instance?: string;
-  parameters?: Record<string, object>;
-  detail?: string;
-  suppressed?: {
-    stackTrace?: {
-      classLoaderName?: string;
-      moduleName?: string;
-      moduleVersion?: string;
-      methodName?: string;
-      fileName?: string;
-      /** @format int32 */
-      lineNumber?: number;
-      className?: string;
-      nativeMethod?: boolean;
-    }[];
-    message?: string;
-    localizedMessage?: string;
-  }[];
-  localizedMessage?: string;
+export enum NoteType {
+  INTERNAL = "INTERNAL",
+  PUBLIC = "PUBLIC",
 }
 
-export interface ThrowableProblem {
-  cause?: ThrowableProblem;
-  stackTrace?: {
-    classLoaderName?: string;
-    moduleName?: string;
-    moduleVersion?: string;
-    methodName?: string;
-    fileName?: string;
-    /** @format int32 */
-    lineNumber?: number;
-    className?: string;
-    nativeMethod?: boolean;
-  }[];
-  message?: string;
-  /** @format uri */
-  instance?: string;
-  /** @format uri */
-  type?: string;
-  parameters?: Record<string, object>;
-  status?: StatusType;
-  title?: string;
-  detail?: string;
-  suppressed?: {
-    stackTrace?: {
-      classLoaderName?: string;
-      moduleName?: string;
-      moduleVersion?: string;
-      methodName?: string;
-      fileName?: string;
-      /** @format int32 */
-      lineNumber?: number;
-      className?: string;
-      nativeMethod?: boolean;
-    }[];
-    message?: string;
-    localizedMessage?: string;
-  }[];
-  localizedMessage?: string;
-}
-
-export interface Violation {
-  field?: string;
-  message?: string;
-}
-
-/** A stakeholder may have one or more addresses. For example, one POSTAL_ADDRESS and another INVOICE_ADDRESS. */
 export interface Address {
-  /**
-   * Category of the address
-   * @example "RESIDENTIAL"
-   */
+  /** Category of the address */
   addressCategory?: AddressAddressCategoryEnum;
   /**
    * Street name
    * @minLength 0
    * @maxLength 255
-   * @example "Testvägen"
    */
   street?: string;
   /**
    * House number
    * @minLength 0
    * @maxLength 255
-   * @example "18"
    */
   houseNumber?: string;
   /**
    * Postal code
    * @minLength 0
    * @maxLength 255
-   * @example "123 45"
    */
   postalCode?: string;
   /**
    * City name
    * @minLength 0
    * @maxLength 255
-   * @example "Sundsvall"
    */
   city?: string;
   /**
    * Country name
    * @minLength 0
    * @maxLength 255
-   * @example "Sverige"
    */
   country?: string;
   /**
    * Care of (c/o)
    * @minLength 0
    * @maxLength 255
-   * @example "Test Testorsson"
    */
   careOf?: string;
   /**
    * Attention to
    * @minLength 0
    * @maxLength 255
-   * @example "Test Testorsson"
    */
   attention?: string;
   /**
    * Property designation
    * @minLength 0
    * @maxLength 255
-   * @example "SUNDSVALL LJUSTA 7:2"
    */
   propertyDesignation?: string;
   /**
    * Apartment number
    * @minLength 0
    * @maxLength 255
-   * @example "LGH 1001"
    */
   apartmentNumber?: string;
-  /**
-   * Indicates if the address is within a zoning plan area
-   * @example true
-   */
+  /** Indicates if the address is within a zoning plan area */
   isZoningPlanArea?: boolean;
   /**
    * Invoice marking, only in combination with addressCategory: INVOICE_ADDRESS
    * @minLength 0
    * @maxLength 255
-   * @example "1234567890"
    */
   invoiceMarking?: string;
   /** The location of the address */
   location?: Coordinates;
 }
 
-/** The contact information of the stakeholder */
 export interface ContactInformation {
-  /**
-   * The type of contact information
-   * @example "EMAIL"
-   */
+  /** The type of contact information */
   contactType?: ContactInformationContactTypeEnum;
   /**
    * The value of the contact information
    * @minLength 0
    * @maxLength 255
-   * @example "someEmail@sundsvall.se@"
    */
   value?: string;
 }
 
-/**
- * The location of the address
- * @example {"latitude":62.3908,"longitude":17.3069}
- */
 export interface Coordinates {
   /**
    * Decimal Degrees (DD)
    * @format double
-   * @example 62.390205
    */
   latitude?: number;
   /**
    * Decimal Degrees (DD)
    * @format double
-   * @example 17.306616
    */
   longitude?: number;
 }
@@ -260,54 +136,37 @@ export interface Stakeholder {
   /**
    * The unique identifier of the stakeholder
    * @format int64
-   * @example 1
    */
   id?: number;
   /**
    * The version of the stakeholder
    * @format int32
-   * @example 1
    */
   version?: number;
-  /**
-   * The municipality ID
-   * @example "2281"
-   */
+  /** The municipality ID */
   municipalityId?: string;
-  /**
-   * Namespace
-   * @example "my.namespace"
-   */
+  /** Namespace */
   namespace?: string;
-  /**
-   * The type of stakeholder
-   * @example "PERSON"
-   */
+  /** The type of stakeholder */
   type: StakeholderTypeEnum;
   /**
    * The first name of the stakeholder
    * @minLength 0
    * @maxLength 255
-   * @example "Test"
    */
   firstName?: string;
   /**
    * The last name of the stakeholder
    * @minLength 0
    * @maxLength 255
-   * @example "Testorsson"
    */
   lastName?: string;
-  /**
-   * The person ID of the stakeholder
-   * @example "3ed5bc30-6308-4fd5-a5a7-78d7f96f4438"
-   */
+  /** The person ID of the stakeholder */
   personId?: string;
   /**
    * The organization name of the stakeholder
    * @minLength 0
    * @maxLength 255
-   * @example "Sundsvalls testfabrik"
    */
   organizationName?: string;
   /**
@@ -315,21 +174,18 @@ export interface Stakeholder {
    * @minLength 0
    * @maxLength 13
    * @pattern ^((18|19|20|21)\d{6}|\d{6})-(\d{4})$
-   * @example "19901010-1234"
    */
   organizationNumber?: string;
   /**
    * The authorized signatory of the stakeholder
    * @minLength 0
    * @maxLength 255
-   * @example "Test Testorsson"
    */
   authorizedSignatory?: string;
   /**
    * The AD-account of the stakeholder
    * @minLength 0
    * @maxLength 36
-   * @example "user"
    */
   adAccount?: string;
   /** A stakeholder can have one or more roles. */
@@ -338,168 +194,153 @@ export interface Stakeholder {
   addresses?: Address[];
   /** The contact information of the stakeholder */
   contactInformation?: ContactInformation[];
-  /**
-   * Additional parameters for the stakeholder
-   * @example {"key1":"value1","key2":"value2"}
-   */
+  /** Additional parameters for the stakeholder */
   extraParameters?: Record<string, string>;
   /**
    * The timestamp when the stakeholder was created
    * @format date-time
-   * @example "2023-01-01T12:00:00Z"
    */
   created?: string;
   /**
    * The timestamp when the stakeholder was last updated
    * @format date-time
-   * @example "2023-01-02T12:00:00Z"
    */
   updated?: string;
+}
+
+export interface Problem {
+  /** @format uri */
+  instance?: string;
+  /** @format uri */
+  type?: string;
+  title?: string;
+  detail?: string;
+  /** @format int32 */
+  status?: number;
+}
+
+export interface ConstraintViolationProblem {
+  /** @format uri */
+  type?: string;
+  /** @format int32 */
+  status?: number;
+  violations?: Violation[];
+  title?: string;
+  /** @format uri */
+  instance?: string;
+  detail?: string;
+  causeAsProblem?: ThrowableProblem;
+}
+
+export interface ThrowableProblem {
+  /** @format uri */
+  type?: string;
+  title?: string;
+  /** @format int32 */
+  status?: number;
+  detail?: string;
+  /** @format uri */
+  instance?: string;
+  causeAsProblem?: any;
+}
+
+export interface Violation {
+  field?: string;
+  message?: string;
 }
 
 export interface Facility {
   /**
    * The id of the facility
    * @format int64
-   * @example 1
    */
   id?: number;
   /**
    * The version of the facility
    * @format int32
-   * @example 1
    */
   version?: number;
-  /**
-   * The municipality ID
-   * @example "2281"
-   */
+  /** The municipality ID */
   municipalityId?: string;
-  /**
-   * Namespace
-   * @example "my.namespace"
-   */
+  /** Namespace */
   namespace?: string;
   /**
    * Description of the facility
    * @minLength 0
    * @maxLength 255
-   * @example "En fritextbeskrivning av facility."
    */
   description?: string;
-  /** A stakeholder may have one or more addresses. For example, one POSTAL_ADDRESS and another INVOICE_ADDRESS. */
+  /** The address of the facility */
   address?: Address;
   /**
    * The name on the sign
    * @minLength 0
    * @maxLength 255
-   * @example "Sundsvalls testfabrik"
    */
   facilityCollectionName?: string;
-  /**
-   * Is this the main facility for the case?
-   * @example true
-   */
+  /** Is this the main facility for the case? */
   mainFacility?: boolean;
-  /**
-   * Type of the facility
-   * @example "INDUSTRIAL"
-   */
+  /** Type of the facility */
   facilityType?: string;
   /**
    * Date and time when the facility was created
    * @format date-time
-   * @example "2023-10-01T12:00:00Z"
    */
   created?: string;
   /**
    * Date and time when the facility was last updated
    * @format date-time
-   * @example "2023-10-02T12:00:00Z"
    */
   updated?: string;
-  /**
-   * Extra parameters
-   * @example {"key1":"value1","key2":"value2"}
-   */
+  /** Extra parameters */
   extraParameters?: Record<string, string>;
 }
 
-/** List of attachments related to the decision */
 export interface Attachment {
   /**
    * The id of the attachment
    * @format int64
-   * @example 1
    */
   id?: number;
   /**
    * The version of the attachment
    * @format int32
-   * @example 1
    */
   version?: number;
-  /**
-   * The municipality ID
-   * @example "2281"
-   */
+  /** The municipality ID */
   municipalityId?: string;
   /**
-   * Namespace
-   * @example "my.namespace"
+   * Errand id associated with the attachment
+   * @format int64
    */
+  errandId?: number;
+  /** Namespace */
   namespace?: string;
   /**
    * The date when this attachment was created
    * @format date-time
-   * @example "2023-10-01T12:00:00Z"
    */
   created?: string;
   /**
    * The date when this attachment was last updated
    * @format date-time
-   * @example "2023-10-02T12:00:00Z"
    */
   updated?: string;
-  /**
-   * Category of the attachment
-   * @example "DOCUMENT"
-   */
+  /** Category of the attachment */
   category?: string;
-  /**
-   * Name of the attachment
-   * @example "Test Document"
-   */
+  /** Channel through which the attachment was received */
+  channel?: AttachmentChannelEnum;
+  /** Name of the attachment */
   name?: string;
-  /**
-   * Note about the attachment
-   * @example "This is a test document."
-   */
+  /** Note about the attachment */
   note?: string;
-  /**
-   * File extension of the attachment
-   * @example "pdf"
-   */
+  /** File extension of the attachment */
   extension?: string;
-  /**
-   * MIME type of the attachment
-   * @example "application/pdf"
-   */
+  /** MIME type of the attachment */
   mimeType?: string;
-  /**
-   * Base64 encoded file content
-   * @example "dGVzdCBjb250ZW50"
-   */
-  file?: string;
-  /**
-   * Errand number associated with the attachment
-   * @example "ERR123456"
-   */
-  errandNumber?: string;
-  /**
-   * Additional parameters for the attachment
-   * @example {"key1":"value1","key2":"value2"}
-   */
+  /** SHA-256 hash (hex encoded) of the attachment's raw content */
+  hash?: string;
+  /** Additional parameters for the attachment */
   extraParameters?: Record<string, string>;
 }
 
@@ -507,398 +348,194 @@ export interface Decision {
   /**
    * The id of the decision
    * @format int64
-   * @example 1
    */
   id?: number;
   /**
    * The version of the decision
    * @format int32
-   * @example 1
    */
   version?: number;
-  /**
-   * The municipality ID
-   * @example "2281"
-   */
+  /** The municipality ID */
   municipalityId?: string;
-  /**
-   * Namespace
-   * @example "my.namespace"
-   */
+  /** Namespace */
   namespace?: string;
   /**
-   * Type of the decision
-   * @example "APPROVAL"
+   * The id of the errand
+   * @format int64
    */
+  errandId?: number;
+  /** Errand number */
+  errandNumber?: string;
+  /** Type of the decision */
   decisionType?: DecisionDecisionTypeEnum;
-  /**
-   * Outcome of the decision
-   * @example "GRANTED"
-   */
+  /** Outcome of the decision */
   decisionOutcome?: DecisionDecisionOutcomeEnum;
   /**
    * Description of the decision
    * @minLength 0
    * @maxLength 100000
-   * @example "This decision approves the application."
    */
   description?: string;
   /** List of laws related to the decision */
   law?: Law[];
+  /** Stakeholder who made the decision */
   decidedBy?: Stakeholder;
   /**
    * Date and time when the decision was made
    * @format date-time
-   * @example "2023-10-01T12:00:00Z"
    */
   decidedAt?: string;
   /**
    * Date and time when the decision becomes valid
    * @format date-time
-   * @example "2023-10-01T12:00:00Z"
    */
   validFrom?: string;
   /**
    * Date and time when the decision expires
    * @format date-time
-   * @example "2024-10-01T12:00:00Z"
    */
   validTo?: string;
   /** List of attachments related to the decision */
   attachments?: Attachment[];
-  /**
-   * Additional parameters for the decision
-   * @example {"key1":"value1","key2":"value2"}
-   */
+  /** Additional parameters for the decision */
   extraParameters?: Record<string, string>;
   /**
    * Date and time when the decision was created
    * @format date-time
-   * @example "2023-10-01T12:00:00Z"
    */
   created?: string;
   /**
    * Date and time when the decision was last updated
    * @format date-time
-   * @example "2023-10-02T12:00:00Z"
    */
   updated?: string;
 }
 
-/** List of laws related to the decision */
 export interface Law {
   /**
    * Heading of the law
    * @minLength 0
    * @maxLength 255
-   * @example "Building Act"
    */
   heading?: string;
   /**
    * Swedish Code of Statutes (SFS)
    * @minLength 0
    * @maxLength 255
-   * @example "SFS 2010:900"
    */
   sfs?: string;
   /**
    * Chapter of the law
    * @minLength 0
    * @maxLength 255
-   * @example "3"
    */
   chapter?: string;
   /**
    * Article of the law
    * @minLength 0
    * @maxLength 255
-   * @example "1"
    */
   article?: string;
 }
 
-export interface Appeal {
-  /**
-   * The id of the appeal
-   * @format int64
-   * @example 1
-   */
-  id?: number;
-  /**
-   * The version of the appeal.
-   * @format int32
-   * @example 1
-   */
-  version?: number;
-  /**
-   * The municipality ID
-   * @example "2281"
-   */
-  municipalityId?: string;
-  /**
-   * Namespace
-   * @example "my.namespace"
-   */
-  namespace?: string;
-  /**
-   * Description of the appeal
-   * @minLength 0
-   * @maxLength 100000
-   * @example "Some description of the appeal."
-   */
-  description?: string;
-  /**
-   * The date when this appeal was first registered (timestamp from e-service, mail or letter)
-   * @format date-time
-   */
-  registeredAt?: string;
-  /**
-   * The date when the decision or corresponding that this appeal concerns was sent out
-   * @format date-time
-   */
-  appealConcernCommunicatedAt?: string;
-  /**
-   * Current status for this appeal. Values [NEW, REJECTED, SENT_TO_COURT, COMPLETED]
-   * @default "NEW"
-   */
-  status?: string;
-  /**
-   * Status of whether measures have been taken within statutory time limits. Values: [NOT_CONDUCTED, NOT_RELEVANT, APPROVED, REJECTED]
-   * @default "NOT_CONDUCTED"
-   */
-  timelinessReview?: string;
-  /**
-   * Id for decision that is appealed
-   * @format int64
-   */
-  decisionId?: number | null;
-  /**
-   * The date when this appeal was created
-   * @format date-time
-   * @example "2023-10-01T12:00:00Z"
-   */
-  created?: string;
-  /**
-   * The date when this appeal was last updated
-   * @format date-time
-   * @example "2023-10-02T12:00:00Z"
-   */
-  updated?: string;
-}
-
-export interface Notification {
-  /**
-   * Unique identifier for the notification
-   * @example "123e4567-e89b-12d3-a456-426614174000"
-   */
-  id?: string;
-  /**
-   * The municipality ID
-   * @example "2281"
-   */
-  municipalityId?: string;
-  /**
-   * Namespace
-   * @example "my.namespace"
-   */
-  namespace?: string;
-  /**
-   * Timestamp when the notification was created
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  created?: string;
-  /**
-   * Timestamp when the notification was last modified
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  modified?: string;
-  /**
-   * Name of the owner of the notification
-   * @example "Test Testorsson"
-   */
-  ownerFullName?: string;
-  /**
-   * Owner id of the notification
-   * @example "AD01"
-   */
-  ownerId: string;
-  /**
-   * User who created the notification
-   * @example "TestUser"
-   */
-  createdBy?: string;
-  /**
-   * Full name of the user who created the notification
-   * @example "Test Testorsson"
-   */
-  createdByFullName?: string;
-  /**
-   * Type of the notification
-   * @example "CREATE"
-   */
-  type: string;
-  /**
-   * Description of the notification
-   * @example "Some description of the notification"
-   */
-  description: string;
-  /**
-   * Content of the notification
-   * @example "Some content of the notification"
-   */
-  content?: string;
-  /**
-   * Timestamp when the notification expires
-   * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
-   */
-  expires?: string;
-  /**
-   * Acknowledged status of the notification
-   * @example true
-   */
-  acknowledged?: boolean;
-  /**
-   * Acknowledged status of the notification
-   * @example true
-   */
-  globalAcknowledged?: boolean;
-  /**
-   * Errand id of the notification
-   * @format int64
-   * @example 1234
-   */
-  errandId: number;
-  /**
-   * Errand number of the notification
-   * @example "PRH-2022-000001"
-   */
-  errandNumber?: string;
-  /**
-   * Sub type of the notification
-   * @example "PHASE_CHANGE"
-   */
-  subtype?: string;
+export interface CaseType {
+  /** The case type */
+  type?: string;
+  /** The display name of the case type */
+  displayName?: string;
+  /** Whether errands of this case type should start/update a process */
+  startProcess?: boolean;
 }
 
 export interface Errand {
   /**
    * The id of the errand
    * @format int64
-   * @example 1
    */
   id?: number;
   /**
    * The version of the errand
    * @format int32
-   * @example 1
    */
   version?: number;
-  /**
-   * Errand number
-   * @example "PRH-2022-000001"
-   */
+  /** Errand number */
   errandNumber?: string;
-  /**
-   * The municipality ID
-   * @example "2281"
-   */
+  /** The municipality ID */
   municipalityId?: string;
-  /**
-   * Namespace
-   * @example "my.namespace"
-   */
+  /** Namespace */
   namespace?: string;
   /**
    * Case ID from the client
    * @minLength 0
    * @maxLength 255
-   * @example "caa230c6-abb4-4592-ad9a-34e263c2787b"
    */
   externalCaseId?: string;
-  /**
-   * Type of the case
-   * @example "BUILDING_PERMIT"
-   */
+  /** Type of the case */
   caseType?: string;
-  /**
-   * How the errand was created
-   * @example "EMAIL"
-   */
+  /** How the errand was created */
   channel?: ErrandChannelEnum;
   /**
    * Priority of the errand
    * @default "MEDIUM"
-   * @example "HIGH"
    */
   priority?: ErrandPriorityEnum;
-  /**
-   * Description of the errand
-   * @minLength 0
-   * @maxLength 8192
-   * @example "Some description of the case."
-   */
+  /** Description of the errand */
   description?: string;
   /**
    * Additions to the case title. Right now only applicable to cases of CaseType: NYBYGGNAD_ANSOKAN_OM_BYGGLOV.
    * @minLength 0
    * @maxLength 255
-   * @example "Eldstad/rökkanal, Skylt"
    */
   caseTitleAddition?: string;
   /**
    * Diary number
    * @minLength 0
    * @maxLength 255
-   * @example "DIA123456"
    */
   diaryNumber?: string;
   /**
    * Phase of the errand
    * @minLength 0
    * @maxLength 255
-   * @example "Aktualisering"
    */
   phase?: string;
+  /** The current status of the errand */
+  status?: Status;
   /** The statuses connected to the errand */
   statuses?: Status[];
   /**
    * Start date for the business
    * @format date
-   * @example "2022-01-01"
    */
   startDate?: string;
   /**
    * End date of the business if it is time-limited
    * @format date
-   * @example "2022-06-01"
    */
   endDate?: string;
   /**
    * The time the application was received
    * @format date-time
-   * @example "2023-10-01T12:00:00Z"
    */
   applicationReceived?: string;
-  /**
-   * Process-ID from ProcessEngine
-   * @example "c3cb9123-4ed2-11ed-ac7c-0242ac110003"
-   */
+  /** Process-ID from ProcessEngine */
   processId?: string;
   /** The applicant and other stakeholders connected to the errand */
   stakeholders?: Stakeholder[];
   /** The facilities connected to the errand */
   facilities?: Facility[];
+  /** List of notifications connected to this errand */
+  notifications?: Notification[];
   /** The decisions connected to the errand */
   decisions?: Decision[];
-  /** The appeals connected to the errand */
-  appeals?: Appeal[];
   /** The notes connected to the errand */
   notes?: Note[];
   /** Messages connected to this errand. Get message information from Message-API */
   messageIds?: string[];
+  /** List of labels for the errand */
+  labels?: string[];
+  /** Other errands related to the errand */
+  relatesTo?: RelatedErrand[];
   /** The client who created the errand. WSO2-username */
   createdByClient?: string;
   /** The most recent client who updated the errand. WSO2-username */
@@ -909,25 +546,31 @@ export interface Errand {
   updatedBy?: string;
   /** Suspension information */
   suspension?: Suspension;
+  /** Whether the errand is confidential or not */
+  confidential?: boolean;
   /** Extra parameters for the errand */
   extraParameters?: ExtraParameter[];
+  /** JSON parameters for the errand */
+  jsonParameters?: JsonParameter[];
   /**
    * Date and time when the errand was created
    * @format date-time
-   * @example "2023-10-01T12:00:00Z"
    */
   created?: string;
   /**
    * Date and time when the errand was last updated
    * @format date-time
-   * @example "2023-10-02T12:00:00Z"
    */
   updated?: string;
 }
 
-/** Extra parameters for the errand */
 export interface ExtraParameter {
-  /** Parameter key */
+  /** Parameter id */
+  id?: string;
+  /**
+   * Parameter key
+   * @minLength 1
+   */
   key: string;
   /** Parameter display name */
   displayName?: string;
@@ -935,56 +578,86 @@ export interface ExtraParameter {
   values?: string[];
 }
 
-/** The notes connected to the errand */
+export interface JsonNode {
+  empty?: boolean;
+  array?: boolean;
+  null?: boolean;
+  object?: boolean;
+  float?: boolean;
+  missingNode?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
+  pojo?: boolean;
+  floatingPointNumber?: boolean;
+  short?: boolean;
+  int?: boolean;
+  long?: boolean;
+  double?: boolean;
+  bigDecimal?: boolean;
+  bigInteger?: boolean;
+  /** @deprecated */
+  textual?: boolean;
+  binary?: boolean;
+  number?: boolean;
+  string?: boolean;
+  boolean?: boolean;
+  embeddedValue?: boolean;
+}
+
+export interface JsonParameter {
+  /**
+   * Parameter key
+   * @minLength 1
+   */
+  key: string;
+  /** JSON structure value */
+  value: JsonNode;
+  /**
+   * ID referencing a schema in the json-schema service
+   * @minLength 1
+   */
+  schemaId: string;
+}
+
 export interface Note {
   /**
    * The unique identifier of the note
    * @format int64
-   * @example 1
    */
   id?: number;
   /**
    * The version of the note
    * @format int32
-   * @example 1
    */
   version?: number;
-  /**
-   * The municipality ID
-   * @example "2281"
-   */
+  /** The municipality ID */
   municipalityId?: string;
-  /**
-   * Namespace
-   * @example "my.namespace"
-   */
+  /** Namespace */
   namespace?: string;
   /**
    * The title of the note
    * @minLength 0
    * @maxLength 255
-   * @example "Motivering till bifall"
    */
   title?: string;
   /**
    * The content of the note
    * @minLength 0
    * @maxLength 10000
-   * @example "Den sökande har rätt till parkeringstillstånd eftersom alla kriterier uppfylls."
    */
   text?: string;
   /**
    * AD-account for the user who created the note
    * @minLength 0
    * @maxLength 36
-   * @example "user"
    */
   createdBy?: string;
   /**
    * AD-account for the user who last modified the note
    * @minLength 0
    * @maxLength 36
-   * @example "user"
    */
   updatedBy?: string;
   /** The type of note */
@@ -994,173 +667,309 @@ export interface Note {
   /**
    * The timestamp when the note was created
    * @format date-time
-   * @example "2023-01-01T12:00:00Z"
    */
   created?: string;
   /**
    * The timestamp when the note was last updated
    * @format date-time
-   * @example "2023-01-02T12:00:00Z"
    */
   updated?: string;
 }
 
-/**
- * The type of note
- * @example "INTERNAL"
- */
-export enum NoteType {
-  INTERNAL = 'INTERNAL',
-  PUBLIC = 'PUBLIC',
+export interface Notification {
+  /** Unique identifier for the notification */
+  id?: string;
+  /** The municipality ID */
+  municipalityId?: string;
+  /** Namespace */
+  namespace?: string;
+  /**
+   * Timestamp when the notification was created
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * Timestamp when the notification was last modified
+   * @format date-time
+   */
+  modified?: string;
+  /** Name of the owner of the notification */
+  ownerFullName?: string;
+  /**
+   * Owner id of the notification
+   * @minLength 1
+   */
+  ownerId: string;
+  /** User who created the notification */
+  createdBy?: string;
+  /** Full name of the user who created the notification */
+  createdByFullName?: string;
+  /**
+   * Type of the notification
+   * @minLength 1
+   */
+  type: string;
+  /** Sub type of the notification */
+  subType?: string;
+  /**
+   * Description of the notification
+   * @minLength 1
+   */
+  description: string;
+  /** Content of the notification */
+  content?: string;
+  /**
+   * Timestamp when the notification expires
+   * @format date-time
+   */
+  expires?: string;
+  /** Acknowledged status of the notification */
+  acknowledged?: boolean;
+  /** Acknowledged status of the notification (global level). I.e. this notification is acknowledged by anyone. */
+  globalAcknowledged?: boolean;
+  /**
+   * Errand id of the notification
+   * @format int64
+   */
+  errandId?: number;
+  /** Errand number of the notification */
+  errandNumber?: string;
 }
 
-/** Suspension information */
+/** Related errand for errand */
+export interface RelatedErrand {
+  /**
+   * Errand id
+   * @format int64
+   */
+  errandId?: number;
+  /** Errand number */
+  errandNumber: string;
+  /** Relation reason */
+  relationReason?: string;
+}
+
+export interface Status {
+  /**
+   * The type of status
+   * @minLength 0
+   * @maxLength 255
+   */
+  statusType: string;
+  /**
+   * Description of the status
+   * @minLength 0
+   * @maxLength 255
+   */
+  description?: string;
+  /**
+   * The date and time when the status was created
+   * @format date-time
+   */
+  created?: string;
+}
+
 export interface Suspension {
   /**
    * Timestamp when the suspension wears off
    * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
    */
   suspendedTo?: string;
   /**
    * Timestamp when the suspension started
    * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
    */
   suspendedFrom?: string;
 }
 
-/** Message classification */
-export enum Classification {
-  INFORMATION = 'INFORMATION',
-  COMPLETION_REQUEST = 'COMPLETION_REQUEST',
-  OBTAIN_OPINION = 'OBTAIN_OPINION',
-  INTERNAL_COMMUNICATION = 'INTERNAL_COMMUNICATION',
-  OTHER = 'OTHER',
-}
-
-/** List of email headers on the message */
 export interface EmailHeader {
   /** An email header */
   header?: Header;
-  /**
-   * The value of the email header
-   * @example "[<this-is-a-test@domain.com>]"
-   */
+  /** The value of the email header */
   values?: string[];
-}
-
-/**
- * An email header
- * @example "MESSAGE_ID"
- */
-export enum Header {
-  IN_REPLY_TO = 'IN_REPLY_TO',
-  REFERENCES = 'REFERENCES',
-  MESSAGE_ID = 'MESSAGE_ID',
 }
 
 /** MessageResponse */
 export interface MessageAttachment {
   /**
    * The attachment (file) content as a BASE64-encoded string
-   * @example "aGVsbG8gd29ybGQK"
+   * @minLength 1
    */
   content: string;
   /**
    * The attachment filename
-   * @example "test.txt"
+   * @minLength 1
    */
   name: string;
-  /**
-   * The attachment content type
-   * @example "text/plain"
-   */
+  /** The attachment content type */
   contentType?: string;
 }
 
 export interface MessageRequest {
-  /**
-   * The message ID
-   * @example "12"
-   */
+  /** The message ID */
   messageId?: string;
-  /**
-   * The errand number
-   * @example "PRH-2022-000001"
-   */
-  errandNumber?: string;
-  /**
-   * If the message is inbound or outbound from the perspective of case-data/e-service.
-   * @example "INBOUND"
-   */
+  /** If the message is inbound or outbound from the perspective of case-data/e-service. */
   direction?: MessageRequestDirectionEnum;
-  /**
-   * The E-service ID that the message was created in
-   * @example "12"
-   */
+  /** The E-service ID that the message was created in */
   familyId?: string;
-  /**
-   * OpenE caseID
-   * @example "12"
-   */
+  /** OpenE caseID */
   externalCaseId?: string;
-  /**
-   * The message
-   * @example "Hello world"
-   */
+  /** The message */
   message?: string;
-  /**
-   * The time the message was sent
-   * @example "2020-01-01 12:00:00"
-   */
+  /** The message in HTML format */
+  htmlMessage?: string;
+  /** The time the message was sent */
   sent?: string;
-  /**
-   * The email-subject of the message
-   * @example "Hello world"
-   */
+  /** The email-subject of the message */
   subject?: string;
-  /**
-   * The username of the user that sent the message
-   * @example "username"
-   */
+  /** The username of the user that sent the message */
   username?: string;
-  /**
-   * The first name of the user that sent the message
-   * @example "Kalle"
-   */
+  /** The first name of the user that sent the message */
   firstName?: string;
-  /**
-   * The last name of the user that sent the message
-   * @example "Anka"
-   */
+  /** The last name of the user that sent the message */
   lastName?: string;
-  /**
-   * The message was delivered by
-   * @example "EMAIL"
-   */
+  /** The message was delivered by */
   messageType?: string;
-  /**
-   * The mobile number of the recipient
-   * @example "+46701234567"
-   */
+  /** The mobile number of the recipient */
   mobileNumber?: string;
-  /**
-   * The email of the user that sent the message
-   * @example "kalle.anka@ankeborg.se"
-   */
+  /** The email of the user that sent the message */
   email?: string;
-  /**
-   * The user ID of the user that sent the message
-   * @example "12"
-   */
+  /** List of email recipients */
+  recipients?: string[];
+  /** List of CC email recipients */
+  ccRecipients?: string[];
+  /** The user ID of the user that sent the message */
   userId?: string;
-  /** Message classification */
+  /** The classification of the message */
   classification?: Classification;
-  /** List of attachmentRequests on the message */
-  attachmentRequests?: MessageAttachment[];
+  /** List of attachments on the message */
+  attachments?: MessageAttachment[];
   /** List of email headers on the message */
   emailHeaders?: EmailHeader[];
+  /** Is message internal */
+  internal?: boolean;
+}
+
+/** Conversation model */
+export interface Conversation {
+  /** Conversation ID */
+  id?: string;
+  /**
+   * The message-exchange topic
+   * @minLength 1
+   */
+  topic: string;
+  /** The conversation type */
+  type: ConversationType;
+  relationIds?: string[];
+  participants?: Identifier[];
+  metadata?: KeyValues[];
+}
+
+/** Identifier model */
+export interface Identifier {
+  /**
+   * The conversation identifier type
+   * @pattern ^(adAccount|partyId)$
+   */
+  type?: string;
+  /**
+   * The conversation identifier value
+   * @minLength 1
+   */
+  value: string;
+}
+
+/** KeyValues model */
+export interface KeyValues {
+  /** The key */
+  key?: string;
+  values?: string[];
+}
+
+/** Readby model */
+export interface ReadBy {
+  /** The identifier of the person who read the message. */
+  identifier?: Identifier;
+  /**
+   * The timestamp when the message was read.
+   * @format date-time
+   */
+  readAt?: string;
+}
+
+/** ConversationAttachment model */
+export interface ConversationAttachment {
+  /** ConversationAttachment ID */
+  id?: string;
+  /** Name of the file */
+  fileName?: string;
+  /**
+   * Size of the file in bytes
+   * @format int32
+   */
+  fileSize?: number;
+  /** Mime type of the file */
+  mimeType?: string;
+  /** Hash of the file content */
+  hash?: string;
+  /**
+   * The attachment created date
+   * @format date-time
+   */
+  created?: string;
+}
+
+/** Message model */
+export interface Message {
+  /** Message ID */
+  id?: string;
+  /** The ID of the replied message */
+  inReplyToMessageId?: string;
+  /**
+   * The timestamp when the message was created.
+   * @format date-time
+   */
+  created?: string;
+  /** The participant who created the message. */
+  createdBy?: Identifier;
+  /**
+   * The content of the message.
+   * @minLength 1
+   */
+  content: string;
+  readBy?: ReadBy[];
+  attachments?: ConversationAttachment[];
+  attachmentIds?: number[];
+  /** Type of message (user or system created) */
+  type?: MessageTypeEnum;
+}
+
+export interface PatchNotification {
+  /** Unique identifier for the notification */
+  id?: string;
+  /**
+   * The Errand Id
+   * @format int64
+   */
+  errandId: number;
+  /** Owner id of the notification */
+  ownerId?: string;
+  /** Type of the notification */
+  type?: string;
+  /** Description of the notification */
+  description?: string;
+  /** Content of the notification */
+  content?: string;
+  /**
+   * Timestamp when the notification expires
+   * @format date-time
+   */
+  expires?: string;
+  /** Acknowledged status of the notification */
+  acknowledged?: boolean;
+  /** Acknowledged status of the notification (global level). I.e. this notification is acknowledged by anyone. */
+  globalAcknowledged?: boolean;
 }
 
 export interface PatchErrand {
@@ -1168,45 +977,30 @@ export interface PatchErrand {
    * Case ID from the client.
    * @minLength 0
    * @maxLength 255
-   * @example "caa230c6-abb4-4592-ad9a-34e263c2787b"
    */
   externalCaseId?: string;
-  /**
-   * The type of case
-   * @example "PARKING_PERMIT"
-   */
-  caseType?: PatchErrandCaseTypeEnum;
-  /**
-   * The priority of the case
-   * @example "MEDIUM"
-   */
+  /** The type of case */
+  caseType?: string;
+  /** The priority of the case */
   priority?: PatchErrandPriorityEnum;
-  /**
-   * Description of the case
-   * @minLength 0
-   * @maxLength 255
-   * @example "Some description of the case."
-   */
+  /** Description of the case */
   description?: string;
   /**
    * Additions to the case title. Right now only applicable to cases of CaseType: NYBYGGNAD_ANSOKAN_OM_BYGGLOV.
    * @minLength 0
    * @maxLength 255
-   * @example "Eldstad/rökkanal, Skylt"
    */
   caseTitleAddition?: string;
   /**
    * Diary number of the case
    * @minLength 0
    * @maxLength 255
-   * @example "D123456"
    */
   diaryNumber?: string;
   /**
    * Phase of the case
    * @minLength 0
    * @maxLength 255
-   * @example "Aktualisering"
    */
   phase?: string;
   /** The facilities in the case */
@@ -1214,13 +1008,11 @@ export interface PatchErrand {
   /**
    * Start date for the business.
    * @format date
-   * @example "2022-01-01"
    */
   startDate?: string;
   /**
    * End date of the business if it is time-limited.
    * @format date
-   * @example "2022-06-01"
    */
   endDate?: string;
   /** Suspension information */
@@ -1228,113 +1020,50 @@ export interface PatchErrand {
   /**
    * The time the application was received.
    * @format date-time
-   * @example "2022-01-01T12:00:00Z"
    */
   applicationReceived?: string;
   /** Extra parameters for the errand */
   extraParameters?: ExtraParameter[];
+  /** JSON parameters for the errand */
+  jsonParameters?: JsonParameter[];
+  /** Other errands related to the errand */
+  relatesTo?: RelatedErrand[];
+  /** List of labels for the errand */
+  labels?: string[];
+  /** The current status of the errand */
+  status?: Status;
+  /** Whether the errand is confidential or not */
+  confidential?: boolean;
 }
 
 export interface PatchDecision {
-  /**
-   * The type of decision
-   * @example "APPROVAL"
-   */
+  /** The type of decision */
   decisionType?: PatchDecisionDecisionTypeEnum;
-  /**
-   * The outcome of the decision
-   * @example "GRANTED"
-   */
+  /** The outcome of the decision */
   decisionOutcome?: PatchDecisionDecisionOutcomeEnum;
   /**
    * Description of the decision
    * @minLength 0
    * @maxLength 1000
-   * @example "The application has been approved."
    */
   description?: string;
   /**
    * The date and time when the decision was made
    * @format date-time
-   * @example "2023-10-01T12:00:00Z"
    */
   decidedAt?: string;
   /**
    * The date and time when the decision becomes valid
    * @format date-time
-   * @example "2023-10-01T12:00:00Z"
    */
   validFrom?: string;
   /**
    * The date and time when the decision expires
    * @format date-time
-   * @example "2023-12-31T12:00:00Z"
    */
   validTo?: string;
-  /**
-   * Additional parameters for the decision
-   * @example {"key1":"value1","key2":"value2"}
-   */
+  /** Additional parameters for the decision */
   extraParameters?: Record<string, string>;
-}
-
-export interface PatchAppeal {
-  /**
-   * Description of the appeal
-   * @minLength 0
-   * @maxLength 100000
-   * @example "The decision is not correct"
-   */
-  description?: string;
-  /**
-   * Current status for this appeal. Values [NEW, REJECTED, SENT_TO_COURT, COMPLETED]
-   * @default "NEW"
-   */
-  status?: string;
-  /**
-   * Status of whether measures have been taken within statutory time limits. Values: [NOT_CONDUCTED, NOT_RELEVANT, APPROVED, REJECTED]
-   * @default "NOT_CONDUCTED"
-   */
-  timelinessReview?: string;
-}
-
-export interface GetParkingPermit {
-  /**
-   * The permit number of the artefact
-   * @example "PARK123456"
-   */
-  artefactPermitNumber?: string;
-  /**
-   * The status of the artefact permit
-   * @example "ACTIVE"
-   */
-  artefactPermitStatus?: string;
-  /**
-   * The ID of the associated errand
-   * @format int64
-   * @example 1
-   */
-  errandId?: number;
-  errandDecision?: Decision;
-}
-
-/** List of attachments on the message */
-export interface AttachmentResponse {
-  /**
-   * The attachment ID
-   * @example "aGVsbG8gd29ybGQK"
-   */
-  attachmentId: string;
-  /**
-   * The attachment filename
-   * @example "test.txt"
-   */
-  name: string;
-  /**
-   * The attachment content type
-   * @example "text/plain"
-   */
-  contentType?: string;
 }
 
 export interface PageErrand {
@@ -1342,197 +1071,302 @@ export interface PageErrand {
   totalPages?: number;
   /** @format int64 */
   totalElements?: number;
-  pageable?: PageableObject;
   /** @format int32 */
   size?: number;
   content?: Errand[];
   /** @format int32 */
   number?: number;
-  sort?: SortObject[];
-  /** @format int32 */
-  numberOfElements?: number;
   first?: boolean;
   last?: boolean;
+  /** @format int32 */
+  numberOfElements?: number;
+  pageable?: PageableObject;
+  sort?: SortObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
+  /** @format int64 */
+  offset?: number;
+  paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  paged?: boolean;
-  /** @format int64 */
-  offset?: number;
-  sort?: SortObject[];
+  sort?: SortObject;
   unpaged?: boolean;
 }
 
 export interface SortObject {
-  direction?: string;
-  nullHandling?: string;
-  ascending?: boolean;
+  empty?: boolean;
+  sorted?: boolean;
+  unsorted?: boolean;
+}
+
+export interface CommitMetadata {
+  author?: string;
+  commitDateInstant?: string;
+  /** @format double */
+  id?: number;
+  properties?: any[];
+  commitDate?: string;
+}
+
+export interface ElementChangesItem {
+  elementChangeType?: string;
+  /** @format int32 */
+  index?: number;
+  value?: any;
+}
+
+export interface EntryChangesItem {
+  entryChangeType?: string;
+  value?: string;
+  key?: string;
+}
+
+export interface GlobalId {
+  /** @format int32 */
+  cdoId?: number;
+  entity?: string;
+  valueObject?: string;
+  fragment?: string;
+  ownerId?: OwnerId;
+}
+
+export interface History {
+  changeType?: string;
+  commitMetadata?: CommitMetadata;
+  globalId?: GlobalId;
   property?: string;
-  ignoreCase?: boolean;
+  propertyChangeType?: string;
+  entryChanges?: EntryChangesItem[];
+  left?: any;
+  right?: any;
+  elementChanges?: ElementChangesItem[];
 }
 
-/**
- * Category of the address
- * @example "RESIDENTIAL"
- */
+export interface OwnerId {
+  /** @format int32 */
+  cdoId?: number;
+  entity?: string;
+}
+
+export interface AttachmentResponse {
+  /** The attachment ID */
+  attachmentId: string;
+  /** The attachment filename */
+  name: string;
+  /** The attachment content type */
+  contentType?: string;
+}
+
+export interface MessageResponse {
+  /** The message ID */
+  messageId?: string;
+  /**
+   * The errand ID
+   * @format int64
+   */
+  errandId?: number;
+  /** The municipality ID */
+  municipalityId?: string;
+  /** Namespace */
+  namespace?: string;
+  /** If the message is inbound or outbound from the perspective of case-data/e-service. */
+  direction?: MessageResponseDirectionEnum;
+  /** The E-service ID that the message was created in */
+  familyId?: string;
+  /** OpenE caseID */
+  externalCaseId?: string;
+  /** The message */
+  message?: string;
+  /** The message in HTML format */
+  htmlMessage?: string;
+  /** The time the message was sent */
+  sent?: string;
+  /** The email-subject of the message */
+  subject?: string;
+  /** The username of the user that sent the message */
+  username?: string;
+  /** The first name of the user that sent the message */
+  firstName?: string;
+  /** The last name of the user that sent the message */
+  lastName?: string;
+  /** The message was delivered by */
+  messageType?: string;
+  /** The mobile number of the recipient */
+  mobileNumber?: string;
+  /** The recipients of the message, if email */
+  recipients?: string[];
+  /** The CC recipients of the message, if email */
+  ccRecipients?: string[];
+  /** The email of the user that sent the message */
+  email?: string;
+  /** The user ID of the user that sent the message */
+  userId?: string;
+  /** Signal if the message has been viewed or not */
+  viewed?: boolean;
+  /** The classification of the message */
+  classification?: Classification;
+  /** List of attachments on the message */
+  attachments?: AttachmentResponse[];
+  /** List of email headers on the message */
+  emailHeaders?: EmailHeader[];
+  /** Is message internal */
+  internal?: boolean;
+}
+
+export interface PageMessage {
+  /** @format int32 */
+  totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
+  /** @format int32 */
+  size?: number;
+  content?: Message[];
+  /** @format int32 */
+  number?: number;
+  first?: boolean;
+  last?: boolean;
+  /** @format int32 */
+  numberOfElements?: number;
+  pageable?: PageableObject;
+  sort?: SortObject;
+  empty?: boolean;
+}
+
+export interface PageDecision {
+  /** @format int32 */
+  totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
+  /** @format int32 */
+  size?: number;
+  content?: Decision[];
+  /** @format int32 */
+  number?: number;
+  first?: boolean;
+  last?: boolean;
+  /** @format int32 */
+  numberOfElements?: number;
+  pageable?: PageableObject;
+  sort?: SortObject;
+  empty?: boolean;
+}
+
+/** Category of the address */
 export enum AddressAddressCategoryEnum {
-  POSTAL_ADDRESS = 'POSTAL_ADDRESS',
-  INVOICE_ADDRESS = 'INVOICE_ADDRESS',
-  VISITING_ADDRESS = 'VISITING_ADDRESS',
+  POSTAL_ADDRESS = "POSTAL_ADDRESS",
+  INVOICE_ADDRESS = "INVOICE_ADDRESS",
+  VISITING_ADDRESS = "VISITING_ADDRESS",
 }
 
-/**
- * The type of contact information
- * @example "EMAIL"
- */
+/** The type of contact information */
 export enum ContactInformationContactTypeEnum {
-  CELLPHONE = 'CELLPHONE',
-  PHONE = 'PHONE',
-  EMAIL = 'EMAIL',
+  CELLPHONE = "CELLPHONE",
+  PHONE = "PHONE",
+  EMAIL = "EMAIL",
 }
 
-/**
- * The type of stakeholder
- * @example "PERSON"
- */
+/** The type of stakeholder */
 export enum StakeholderTypeEnum {
-  PERSON = 'PERSON',
-  ORGANIZATION = 'ORGANIZATION',
+  PERSON = "PERSON",
+  ORGANIZATION = "ORGANIZATION",
 }
 
-/**
- * Type of the decision
- * @example "APPROVAL"
- */
+/** Channel through which the attachment was received */
+export enum AttachmentChannelEnum {
+  EMAIL = "EMAIL",
+  ESERVICE = "ESERVICE",
+  WEB_UI = "WEB_UI",
+  MY_PAGES = "MY_PAGES",
+}
+
+/** Type of the decision */
 export enum DecisionDecisionTypeEnum {
-  RECOMMENDED = 'RECOMMENDED',
-  PROPOSED = 'PROPOSED',
-  FINAL = 'FINAL',
+  RECOMMENDED = "RECOMMENDED",
+  PROPOSED = "PROPOSED",
+  FINAL = "FINAL",
 }
 
-/**
- * Outcome of the decision
- * @example "GRANTED"
- */
+/** Outcome of the decision */
 export enum DecisionDecisionOutcomeEnum {
-  APPROVAL = 'APPROVAL',
-  REJECTION = 'REJECTION',
-  DISMISSAL = 'DISMISSAL',
-  CANCELLATION = 'CANCELLATION',
+  APPROVAL = "APPROVAL",
+  REJECTION = "REJECTION",
+  DISMISSAL = "DISMISSAL",
+  CANCELLATION = "CANCELLATION",
 }
 
-/**
- * How the errand was created
- * @example "EMAIL"
- */
+/** How the errand was created */
 export enum ErrandChannelEnum {
-  ESERVICE = 'ESERVICE',
-  EMAIL = 'EMAIL',
-  WEB_UI = 'WEB_UI',
-  MOBILE = 'MOBILE',
-  SYSTEM = 'SYSTEM',
+  ESERVICE = "ESERVICE",
+  ESERVICE_KATLA = "ESERVICE_KATLA",
+  EMAIL = "EMAIL",
+  WEB_UI = "WEB_UI",
+  MOBILE = "MOBILE",
+  SYSTEM = "SYSTEM",
+  MY_PAGES = "MY_PAGES",
 }
 
 /**
  * Priority of the errand
  * @default "MEDIUM"
- * @example "HIGH"
  */
 export enum ErrandPriorityEnum {
-  HIGH = 'HIGH',
-  MEDIUM = 'MEDIUM',
-  LOW = 'LOW',
+  HIGH = "HIGH",
+  MEDIUM = "MEDIUM",
+  LOW = "LOW",
 }
 
-/**
- * If the message is inbound or outbound from the perspective of case-data/e-service.
- * @example "INBOUND"
- */
+export enum JsonNodeNodeTypeEnum {
+  ARRAY = "ARRAY",
+  BINARY = "BINARY",
+  BOOLEAN = "BOOLEAN",
+  MISSING = "MISSING",
+  NULL = "NULL",
+  NUMBER = "NUMBER",
+  OBJECT = "OBJECT",
+  POJO = "POJO",
+  STRING = "STRING",
+}
+
+/** If the message is inbound or outbound from the perspective of case-data/e-service. */
 export enum MessageRequestDirectionEnum {
-  INBOUND = 'INBOUND',
-  OUTBOUND = 'OUTBOUND',
+  INBOUND = "INBOUND",
+  OUTBOUND = "OUTBOUND",
 }
 
-/**
- * The type of case
- * @example "PARKING_PERMIT"
- */
-export enum PatchErrandCaseTypeEnum {
-  NYBYGGNAD_ANSOKAN_OM_BYGGLOV = 'NYBYGGNAD_ANSOKAN_OM_BYGGLOV',
-  ANMALAN_ATTEFALL = 'ANMALAN_ATTEFALL',
-  REGISTRERING_AV_LIVSMEDEL = 'REGISTRERING_AV_LIVSMEDEL',
-  ANMALAN_INSTALLATION_VARMEPUMP = 'ANMALAN_INSTALLATION_VARMEPUMP',
-  ANSOKAN_TILLSTAND_VARMEPUMP = 'ANSOKAN_TILLSTAND_VARMEPUMP',
-  ANSOKAN_OM_TILLSTAND_ENSKILT_AVLOPP = 'ANSOKAN_OM_TILLSTAND_ENSKILT_AVLOPP',
-  ANMALAN_INSTALLATION_ENSKILT_AVLOPP_UTAN_WC = 'ANMALAN_INSTALLATION_ENSKILT_AVLOPP_UTAN_WC',
-  ANMALAN_ANDRING_AVLOPPSANLAGGNING = 'ANMALAN_ANDRING_AVLOPPSANLAGGNING',
-  ANMALAN_ANDRING_AVLOPPSANORDNING = 'ANMALAN_ANDRING_AVLOPPSANORDNING',
-  ANMALAN_HALSOSKYDDSVERKSAMHET = 'ANMALAN_HALSOSKYDDSVERKSAMHET',
-  PARKING_PERMIT = 'PARKING_PERMIT',
-  PARKING_PERMIT_RENEWAL = 'PARKING_PERMIT_RENEWAL',
-  LOST_PARKING_PERMIT = 'LOST_PARKING_PERMIT',
-  MEX_LEASE_REQUEST = 'MEX_LEASE_REQUEST',
-  MEX_BUY_LAND_FROM_THE_MUNICIPALITY = 'MEX_BUY_LAND_FROM_THE_MUNICIPALITY',
-  MEX_SELL_LAND_TO_THE_MUNICIPALITY = 'MEX_SELL_LAND_TO_THE_MUNICIPALITY',
-  MEX_APPLICATION_SQUARE_PLACE = 'MEX_APPLICATION_SQUARE_PLACE',
-  MEX_BUY_SMALL_HOUSE_PLOT = 'MEX_BUY_SMALL_HOUSE_PLOT',
-  MEX_APPLICATION_FOR_ROAD_ALLOWANCE = 'MEX_APPLICATION_FOR_ROAD_ALLOWANCE',
-  MEX_UNAUTHORIZED_RESIDENCE = 'MEX_UNAUTHORIZED_RESIDENCE',
-  MEX_LAND_RIGHT = 'MEX_LAND_RIGHT',
-  MEX_EARLY_DIALOG_PLAN_NOTIFICATION = 'MEX_EARLY_DIALOG_PLAN_NOTIFICATION',
-  MEX_PROTECTIVE_HUNTING = 'MEX_PROTECTIVE_HUNTING',
-  MEX_LAND_INSTRUCTION = 'MEX_LAND_INSTRUCTION',
-  MEX_OTHER = 'MEX_OTHER',
-  MEX_LAND_SURVEYING_OFFICE = 'MEX_LAND_SURVEYING_OFFICE',
-  MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE = 'MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE',
-  MEX_INVOICE = 'MEX_INVOICE',
-  MEX_REQUEST_FOR_PUBLIC_DOCUMENT = 'MEX_REQUEST_FOR_PUBLIC_DOCUMENT',
-  MEX_TERMINATION_OF_LEASE = 'MEX_TERMINATION_OF_LEASE',
-  MEX_TERMINATION_OF_HUNTING_LEASE = 'MEX_TERMINATION_OF_HUNTING_LEASE',
-  MEX_FORWARDED_FROM_CONTACTSUNDSVALL = 'MEX_FORWARDED_FROM_CONTACTSUNDSVALL',
+/** Type of message (user or system created) */
+export enum MessageTypeEnum {
+  USER_CREATED = "USER_CREATED",
+  SYSTEM_CREATED = "SYSTEM_CREATED",
 }
 
-/**
- * The priority of the case
- * @example "MEDIUM"
- */
+/** The priority of the case */
 export enum PatchErrandPriorityEnum {
-  HIGH = 'HIGH',
-  MEDIUM = 'MEDIUM',
-  LOW = 'LOW',
+  HIGH = "HIGH",
+  MEDIUM = "MEDIUM",
+  LOW = "LOW",
 }
 
-/**
- * The type of decision
- * @example "APPROVAL"
- */
+/** The type of decision */
 export enum PatchDecisionDecisionTypeEnum {
-  RECOMMENDED = 'RECOMMENDED',
-  PROPOSED = 'PROPOSED',
-  FINAL = 'FINAL',
+  RECOMMENDED = "RECOMMENDED",
+  PROPOSED = "PROPOSED",
+  FINAL = "FINAL",
 }
 
-/**
- * The outcome of the decision
- * @example "GRANTED"
- */
+/** The outcome of the decision */
 export enum PatchDecisionDecisionOutcomeEnum {
-  APPROVAL = 'APPROVAL',
-  REJECTION = 'REJECTION',
-  DISMISSAL = 'DISMISSAL',
-  CANCELLATION = 'CANCELLATION',
+  APPROVAL = "APPROVAL",
+  REJECTION = "REJECTION",
+  DISMISSAL = "DISMISSAL",
+  CANCELLATION = "CANCELLATION",
 }
 
-/**
- * If the message is inbound or outbound from the perspective of case-data/e-service.
- * @example "INBOUND"
- */
+/** If the message is inbound or outbound from the perspective of case-data/e-service. */
 export enum MessageResponseDirectionEnum {
-  INBOUND = 'INBOUND',
-  OUTBOUND = 'OUTBOUND',
+  INBOUND = "INBOUND",
+  OUTBOUND = "OUTBOUND",
 }
