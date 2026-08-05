@@ -1,7 +1,7 @@
 import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
-import { isKC, isROB } from '@common/services/application-service';
+import { isKC, isLOK, isROB } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
@@ -13,7 +13,7 @@ import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
-import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
+import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 
 import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
@@ -121,6 +121,18 @@ export enum Channels {
   ESERVICE = 'E-tjänst',
   ESERVICE_INTERNAL = 'E-tjänst (intern)',
 }
+
+// The channels a user can choose from when registering an errand.
+// LOK is limited to phone, email and internal e-service.
+const LOK_SELECTABLE_CHANNELS: (keyof typeof Channels)[] = ['PHONE', 'EMAIL', 'ESERVICE_INTERNAL'];
+
+export const getSelectableChannels = (): [string, string][] => {
+  const entries = Object.entries(Channels) as [string, string][];
+  if (isLOK()) {
+    return entries.filter(([key]) => LOK_SELECTABLE_CHANNELS.includes(key as keyof typeof Channels));
+  }
+  return entries;
+};
 
 export const municipalityIds = [
   { label: 'Sundsvall', id: '2281' },
@@ -633,6 +645,25 @@ export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand)
 const getStakeholderOrganizationNumber = (s: SupportStakeholder): string | undefined =>
   s.parameters?.find((p) => p.key === 'organizationNumber')?.values?.[0] ||
   (s.externalIdType === ExternalIdType.COMPANY ? s.externalId : undefined);
+
+// Read the first value of an errand parameter by key.
+export const getErrandParameterValue = (parameters: CParameter[] | undefined, key: string): string =>
+  parameters?.find((parameter) => parameter.key === key)?.values?.[0] ?? '';
+
+// Set (or replace) an errand parameter by key while keeping the other parameters intact.
+// An empty value removes the parameter so we don't persist blank entries.
+export const upsertErrandParameter = (
+  parameters: CParameter[] = [],
+  key: string,
+  value: string,
+  displayName?: string
+): CParameter[] => {
+  const otherParameters = parameters.filter((parameter) => parameter.key !== key);
+  if (!value?.trim()) {
+    return otherParameters;
+  }
+  return [...otherParameters, { key, displayName, values: [value] }];
+};
 
 export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => SupportErrand = (e) => {
   try {
