@@ -8,7 +8,10 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { Role } from '@casedata/interfaces/role';
 import { CreateStakeholderDto } from '@casedata/interfaces/stakeholder';
-import { fetchAttachment, validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
+import {
+  fetchDecisionAttachment,
+  validateAttachmentsForDecision,
+} from '@casedata/services/casedata-attachment-service';
 import {
   fetchDecisionTemplates,
   getFinalDecisonWithHighestId,
@@ -422,8 +425,9 @@ export const CasedataDecisionTab: FC<{
     if (!attachment) {
       throw new Error('Ingen PDF hittades');
     }
-    // The decision only carries attachment metadata, so the content is fetched separately.
-    const fetched = await fetchAttachment(municipalityId, errand.id, attachment);
+    // The decision only carries attachment metadata, so the content is fetched separately from the
+    // dedicated decision-attachment endpoint.
+    const fetched = await fetchDecisionAttachment(municipalityId, errand.id, decision.id!, attachment);
     downloadPdf(fetched.base64EncodedString);
   };
 

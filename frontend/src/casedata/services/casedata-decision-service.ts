@@ -1,6 +1,5 @@
 import { UtredningFormModel } from '@casedata/components/errand/sidebar/sidebar-utredning.component';
 import { DecisionFormModel } from '@casedata/components/errand/tabs/decision/casedata-decision-tab';
-import { Attachment } from '@casedata/interfaces/attachment';
 import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
 import { Decision, DecisionOutcome, DecisionOutcomes, DecisionType } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
@@ -14,7 +13,8 @@ import { Service } from '@common/services/service-assets-service';
 import { TemplateApiResponse } from '@supportmanagement/services/message-template-service';
 import dayjs from 'dayjs';
 
-import { isFTErrand, isFTNationalErrand, isPTErrand } from './casedata-errand-service';
+import { deleteDecisionAttachment, sendDecisionAttachment } from './casedata-attachment-service';
+import { getErrand, isFTErrand, isFTNationalErrand, isPTErrand } from './casedata-errand-service';
 import { getOwnerStakeholder } from './casedata-stakeholder-service';
 
 export const lawMappingPT: Law[] = [
@@ -121,23 +121,7 @@ export const saveDecision: (
   formData: UtredningFormModel | DecisionFormModel,
   decisionType: DecisionType,
   pdf?: string
-) => Promise<boolean> = (municipalityId, errand, formData, decisionType, pdf) => {
-  const atts: Attachment[] = [];
-  if (pdf) {
-    // FIXME: CaseData 13.0 dropped the inline base64 `file` field from Attachment, and the
-    // decision endpoints only accept metadata. The rendered PDF therefore no longer reaches
-    // CaseData, which leaves decision.attachments[0] without content — the attachment the
-    // decision message channels (Mina sidor, Katla, digital mail) send. Needs an agreed
-    // upload path before the Beslut flow works end to end again.
-    const att: Attachment = {
-      category: 'BESLUT',
-      name: `${decisionType === 'PROPOSED' ? 'utredning' : 'beslut'}-arende-${errand.errandNumber}.pdf`,
-      note: '',
-      extension: 'pdf',
-      mimeType: 'application/pdf',
-    };
-    atts.push(att);
-  }
+) => Promise<boolean> = async (municipalityId, errand, formData, decisionType, pdf) => {
   const { adAccount, addresses, contactInformation, extraParameters, firstName, lastName, roles, type } =
     errand.administrator;
   const decidedBy: CreateStakeholderDto = {
@@ -151,6 +135,9 @@ export const saveDecision: (
     type,
   };
 
+  // Attachments are managed through the dedicated decision-attachment endpoint, so the decision
+  // payload itself must not carry them (CaseData 13.0 rejects that). The rendered PDF is uploaded
+  // as a binary attachment once the decision exists.
   const obj: Decision = {
     ...(formData.id && { id: parseInt(formData.id, 10) }),
     decisionType,
@@ -167,19 +154,55 @@ export const saveDecision: (
         : '',
     decidedAt: dayjs().toISOString(),
     decidedBy: decidedBy,
-    attachments: atts,
     ...(formData.extraParameters && { extraParameters: formData.extraParameters }),
   };
-  const apiCall = obj.id
-    ? apiService.put<boolean, Decision>(`${municipalityId}/errands/${errand.id}/decisions/${obj.id}`, obj)
-    : apiService.patch<boolean, Decision>(`${municipalityId}/errands/${errand.id}/decisions`, obj);
-  return apiCall
-    .then((res) => {
-      return true;
-    })
-    .catch((e) => {
-      throw new Error('Något gick fel när informationen skulle sparas');
-    });
+
+  try {
+    const isUpdate = !!obj.id;
+    if (isUpdate) {
+      await apiService.put<boolean, Decision>(`${municipalityId}/errands/${errand.id}/decisions/${obj.id}`, obj);
+    } else {
+      await apiService.patch<boolean, Decision>(`${municipalityId}/errands/${errand.id}/decisions`, obj);
+    }
+
+    if (pdf) {
+      // The create endpoint doesn't return the new decision id, so re-fetch and take the just-saved
+      // decision (highest id for its type). On update the id is already known.
+      let decisionId = obj.id;
+      if (!decisionId) {
+        const refreshed = await getErrand(municipalityId, errand.id.toString());
+        const savedDecision =
+          decisionType === 'PROPOSED'
+            ? getProposedDecisonWithHighestId(refreshed.errand.decisions)
+            : getFinalDecisonWithHighestId(refreshed.errand.decisions);
+        decisionId = savedDecision?.id;
+      }
+      if (!decisionId) {
+        throw new Error('Kunde inte hitta beslutet som sparades');
+      }
+      const resolvedDecisionId = decisionId;
+
+      // Replace semantics: a re-saved decision keeps exactly one current PDF, so remove any existing
+      // decision attachment before uploading the freshly rendered one.
+      if (isUpdate) {
+        const existingAttachments = errand.decisions.find((d) => d.id === resolvedDecisionId)?.attachments ?? [];
+        await Promise.all(
+          existingAttachments
+            .filter((attachment) => attachment.id)
+            .map((attachment) =>
+              deleteDecisionAttachment(municipalityId, errand.id, resolvedDecisionId, attachment.id!)
+            )
+        );
+      }
+
+      const name = `${decisionType === 'PROPOSED' ? 'utredning' : 'beslut'}-arende-${errand.errandNumber}.pdf`;
+      await sendDecisionAttachment(municipalityId, errand.id, resolvedDecisionId, pdf, name, errand.errandNumber);
+    }
+
+    return true;
+  } catch (e) {
+    throw new Error('Något gick fel när informationen skulle sparas');
+  }
 };
 
 export const getProposedDecisonWithHighestId: (ds: Decision[]) => Decision | undefined = (ds) =>

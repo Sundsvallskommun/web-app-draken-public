@@ -284,6 +284,22 @@ export const handleErrandResponse: (res: ApiErrand[], municipalityId: string) =>
   return errands;
 };
 
+// Decision attachments live under a separate CaseData sub-resource, so they are not returned by the
+// errand attachments endpoint. Merge them into the errand's attachment list (tagged with their
+// decisionId) so they still show in the attachments tab, the way they did before the split.
+const mergeDecisionAttachments = (
+  errand: IErrand,
+  errandAttachments: IErrand['attachments']
+): IErrand['attachments'] => {
+  const decisionAttachments = (errand.decisions ?? []).flatMap((decision) =>
+    (decision.attachments ?? []).map((attachment) => ({
+      ...attachment,
+      decisionId: attachment.decisionId ?? decision.id,
+    }))
+  );
+  return [...errandAttachments, ...decisionAttachments];
+};
+
 export const getErrand: (municipalityId: string, id: string) => Promise<{ errand: IErrand; error?: string }> = (
   municipalityId,
   id
@@ -298,7 +314,7 @@ export const getErrand: (municipalityId: string, id: string) => Promise<{ errand
       if (errandAttachments.message === 'error') {
         error = 'Ärendets bilagor kunde inte hämtas';
       }
-      errand.attachments = errandAttachments.data;
+      errand.attachments = mergeDecisionAttachments(errand, errandAttachments.data);
       return { errand, ...(error && { error }) };
     })
     .catch(
@@ -324,7 +340,7 @@ export const getErrandByErrandNumber: (
       if (errandAttachments.message === 'error') {
         error = 'Ärendets bilagor kunde inte hämtas';
       }
-      errand.attachments = errandAttachments.data;
+      errand.attachments = mergeDecisionAttachments(errand, errandAttachments.data);
       return { errand, ...(error && { error }) };
     })
     .catch(

@@ -8,8 +8,11 @@ import {
 } from '@casedata/interfaces/attachment';
 import {
   deleteAttachment,
+  deleteDecisionAttachment,
   editAttachment,
+  editDecisionAttachment,
   fetchAttachment,
+  fetchDecisionAttachment,
   onlyOneAllowed,
 } from '@casedata/services/casedata-attachment-service';
 import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
@@ -154,7 +157,12 @@ export const CasedataAttachments: FC = () => {
         if (!isMounted.current) break;
         const batch = missing.slice(i, i + batchSize);
         const results = await Promise.allSettled(
-          batch.map((a) => fetchAttachment(municipalityId, errand.id, a).then((res) => [a.id, res] as const))
+          batch.map((a) =>
+            (a.decisionId
+              ? fetchDecisionAttachment(municipalityId, errand.id, a.decisionId, a)
+              : fetchAttachment(municipalityId, errand.id, a)
+            ).then((res) => [a.id, res] as const)
+          )
         );
         if (!isMounted.current) break;
 
@@ -236,7 +244,11 @@ export const CasedataAttachments: FC = () => {
     }
     setModalFetching(true);
     try {
-      const data = await fetchAttachment(municipalityId, errand!.id, attachment);
+      // Decision attachments are fetched from the decision sub-resource, errand attachments from the
+      // errand endpoint.
+      const data = attachment.decisionId
+        ? await fetchDecisionAttachment(municipalityId, errand!.id, attachment.decisionId, attachment)
+        : await fetchAttachment(municipalityId, errand!.id, attachment);
       const attachmentId = attachment.id;
       if (attachmentId) {
         setAttachmentContents((prev) => ({ ...prev, [attachmentId]: data.base64EncodedString }));
@@ -273,7 +285,12 @@ export const CasedataAttachments: FC = () => {
       const saved = await saveErrand();
       if (!saved) return;
 
-      await deleteAttachment(municipalityId, errand!.id, attachment);
+      const decisionId = attachment.meta?.decisionId as number | undefined;
+      if (decisionId && attachment.id) {
+        await deleteDecisionAttachment(municipalityId, errand!.id, decisionId, Number(attachment.id));
+      } else {
+        await deleteAttachment(municipalityId, errand!.id, attachment);
+      }
       const res = await getErrand(municipalityId, errand!.id.toString());
       setErrand(res.errand);
       toastMessage(
@@ -358,13 +375,25 @@ export const CasedataAttachments: FC = () => {
                       if (!singleAttachment?.id) {
                         return;
                       }
-                      editAttachment(
-                        municipalityId,
-                        errand!.id.toString(),
-                        singleAttachment?.id,
-                        `${singleAttachment?.meta.name}.${singleAttachment?.meta.ending}`,
-                        singleAttachment?.meta.category ?? ''
-                      );
+                      const decisionId = singleAttachment?.meta?.decisionId as number | undefined;
+                      if (decisionId) {
+                        editDecisionAttachment(
+                          municipalityId,
+                          errand!.id.toString(),
+                          decisionId,
+                          singleAttachment?.id,
+                          `${singleAttachment?.meta.name}.${singleAttachment?.meta.ending}`,
+                          singleAttachment?.meta.category ?? ''
+                        );
+                      } else {
+                        editAttachment(
+                          municipalityId,
+                          errand!.id.toString(),
+                          singleAttachment?.id,
+                          `${singleAttachment?.meta.name}.${singleAttachment?.meta.ending}`,
+                          singleAttachment?.meta.category ?? ''
+                        );
+                      }
                       setEditIndex(null);
                     },
                     onEditCancel: () => {

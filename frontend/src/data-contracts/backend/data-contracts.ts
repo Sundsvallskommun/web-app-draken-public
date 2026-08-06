@@ -193,6 +193,8 @@ export interface Attachment {
   extraParameters?: any;
   municipalityId?: string;
   errandId?: number;
+  /** Decision id associated with the attachment, null for attachments belonging directly to the errand */
+  decisionId?: number;
   namespace?: string;
   channel?: AttachmentChannelEnum;
   hash?: string;

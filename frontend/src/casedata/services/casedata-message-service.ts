@@ -1,6 +1,10 @@
 import { CasedataMessageTabFormModel } from '@casedata/components/errand/tabs/messages/message-composer.component';
 import { IErrand } from '@casedata/interfaces/errand';
-import { fetchAttachment, sendAttachments } from '@casedata/services/casedata-attachment-service';
+import {
+  fetchAttachment,
+  fetchDecisionAttachment,
+  sendAttachments,
+} from '@casedata/services/casedata-attachment-service';
 import { CasedataMessageType } from '@casedata/services/casedata-message-types';
 import { Message, MessageStatus } from '@common/interfaces/message';
 import { Render, TemplateSelector } from '@common/interfaces/template';
@@ -67,7 +71,9 @@ export const sendMessage: (
       if (!existingAttachment.id) {
         throw new Error('Existing attachment does not have an id');
       }
-      const fetched = await fetchAttachment(municipalityId, errand.id, existingAttachment);
+      const fetched = existingAttachment.decisionId
+        ? await fetchDecisionAttachment(municipalityId, errand.id, existingAttachment.decisionId, existingAttachment)
+        : await fetchAttachment(municipalityId, errand.id, existingAttachment);
       return base64ToFile(fetched.base64EncodedString, existingAttachment.name, existingAttachment.mimeType);
     });
 

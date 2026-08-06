@@ -12,6 +12,11 @@ import { mockPersonId } from '../fixtures/mockPersonId';
 
 const [imageAttachment, pdfAttachment] = mockAttachments.data;
 
+// Decision attachments live on the errand's decisions and are merged into the attachment list, so
+// they count towards the tab badge and the rendered rows alongside the errand attachments.
+const decisionAttachmentCount = mockMexErrand_base.data.decisions.flatMap((d) => d.attachments ?? []).length;
+const totalAttachmentCount = mockAttachments.data.length + decisionAttachmentCount;
+
 const attachmentContent: Record<number, string> = {
   [imageAttachment.id]: mockJpegBase64,
   [pdfAttachment.id]: mockPdfBase64,
@@ -133,13 +138,13 @@ test.describe('Errand page attachments tab', () => {
     await page.waitForResponse((resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200);
     await dismissCookieConsent();
     const attachmentsTab = page.getByRole('tab', { name: /^Bilagor/ });
-    await expect(attachmentsTab).toHaveText(`Bilagor (${mockAttachments.data.length})`);
+    await expect(attachmentsTab).toHaveText(`Bilagor (${totalAttachmentCount})`);
     await attachmentsTab.click();
   });
 
   test('lists the errand attachments', async ({ page }) => {
     const rows = page.locator('[data-cy="casedataAttachments-list"] li.sk-form-file-upload-list-item');
-    await expect(rows).toHaveCount(mockAttachments.data.length);
+    await expect(rows).toHaveCount(totalAttachmentCount);
     await expect(rows.nth(0)).toContainText(imageAttachment.name);
     await expect(rows.nth(1)).toContainText(pdfAttachment.name);
     // Both fixtures carry a hash, so neither may be marked as invalid.

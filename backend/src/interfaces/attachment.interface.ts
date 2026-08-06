@@ -36,6 +36,9 @@ export class Attachment implements AttachmentDTO {
   @IsNumber()
   @IsOptional()
   errandId?: number;
+  @IsNumber()
+  @IsOptional()
+  decisionId?: number;
   @IsString()
   @IsOptional()
   namespace?: string;

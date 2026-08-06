@@ -314,6 +314,11 @@ export interface Attachment {
    * @format int64
    */
   errandId?: number;
+  /**
+   * Decision id associated with the attachment, null for attachments belonging directly to the errand
+   * @format int64
+   */
+  decisionId?: number;
   /** Namespace */
   namespace?: string;
   /**
@@ -395,7 +400,7 @@ export interface Decision {
    * @format date-time
    */
   validTo?: string;
-  /** List of attachments related to the decision */
+  /** List of attachments related to the decision. Attachments are managed through the decision attachment endpoints and sending them in this payload is rejected */
   attachments?: Attachment[];
   /** Additional parameters for the decision */
   extraParameters?: Record<string, string>;
@@ -584,11 +589,8 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  missingNode?: boolean;
   valueNode?: boolean;
   container?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -600,9 +602,12 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  number?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  missingNode?: boolean;
+  integralNumber?: boolean;
   string?: boolean;
   boolean?: boolean;
+  number?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -1080,21 +1085,21 @@ export interface PageErrand {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  unpaged?: boolean;
+  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
-  unpaged?: boolean;
 }
 
 export interface SortObject {
@@ -1231,8 +1236,8 @@ export interface PageMessage {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1250,8 +1255,8 @@ export interface PageDecision {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 

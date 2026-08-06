@@ -132,9 +132,9 @@ export interface PageScheduledBilling {
   content?: ScheduledBilling[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
+  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
