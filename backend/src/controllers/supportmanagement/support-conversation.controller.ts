@@ -61,17 +61,18 @@ export class SupportConversationController {
         if (msg.type === 'SYSTEM_CREATED') return;
         let sender = undefined;
         let direction = undefined;
-        let viewed = undefined;
+        let viewed = false;
 
         const isReadByCurrentUser = Array.isArray(msg.readBy) && msg.readBy.some((reader: any) => reader.identifier.value === req.user.username);
         if (isReadByCurrentUser) {
-          viewed = 'true';
+          viewed = true;
         }
 
         if (msg?.createdBy?.type === 'adAccount') {
           if (msg?.createdBy?.value === req.user.username) {
             sender = req.user.firstName + ' ' + req.user.lastName;
             direction = 'OUTBOUND';
+            viewed = true;
           } else {
             const adAccountUrl = `${this.EMPLOYEE_SERVICE}/${municipalityId}/portalpersondata/PERSONAL/${msg?.createdBy?.value}`;
             const res = await this.apiService.get<PortalPersonData>({ url: adAccountUrl }, req.user);

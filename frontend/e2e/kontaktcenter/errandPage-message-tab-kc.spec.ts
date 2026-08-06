@@ -1,7 +1,11 @@
-import { test, expect } from '../fixtures/base.fixture';
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
+import { expect,test } from '../fixtures/base.fixture';
+//TODO:Update mockdata
+import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
+import { mockRelations } from '../lop/fixtures/mockRelations';
 import { mockMetaData } from './fixtures/mockMetadata';
+import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import {
   mockSupportAttachments,
@@ -9,10 +13,45 @@ import {
   mockSupportErrandCommunication,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
-//TODO:Update mockdata
-import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
-import { mockRelations } from '../lop/fixtures/mockRelations';
-import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
+
+const mockUnreadSupportConversation = {
+  data: {
+    data: [
+      {
+        id: 'support-conversation',
+        topic: 'Överlämning',
+        type: 'INTERNAL',
+        relationIds: ['bd835475-cbc2-4b92-979d-8bc18bd75385'],
+      },
+    ],
+    message: 'success',
+  },
+  message: 'success',
+};
+
+const mockUnreadSupportConversationMessages = {
+  data: [
+    {
+      conversationId: 'support-conversation',
+      communicationID: 'support-conversation-message',
+      messageId: 'support-conversation-message',
+      errandNumber: mockSupportErrand.errandNumber,
+      sent: '2026-06-09T15:18:00.000Z',
+      messageBody: '<p>Överlämning</p>',
+      communicationAttachments: [],
+      communicationType: 'DRAKEN',
+      subject: 'Överlämning',
+      sender: 'Edwin Molina',
+      direction: 'INBOUND',
+      viewed: false,
+      emailHeaders: {},
+      target: 'Draken',
+      recipients: [],
+      ccRecipients: [],
+    },
+  ],
+  message: 'success',
+};
 
 test.describe('Message tab', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
@@ -83,6 +122,31 @@ test.describe('Message tab', () => {
         }
       }
     }
+  });
+
+  test('counts unread conversation messages and marks them read locally', async ({ page, mockRoute }) => {
+    await page.unroute('**/supportmessage/2281/errands/*/communication');
+    await page.unroute('**/namespace/errands/**/communication/conversations');
+    await page.unroute('**/errands/**/communication/conversations/*/messages');
+    await mockRoute('**/supportmessage/2281/errands/*/communication', [], { method: 'GET' });
+    await mockRoute('**/namespace/errands/**/communication/conversations', mockUnreadSupportConversation, {
+      method: 'GET',
+    });
+    await mockRoute('**/errands/**/communication/conversations/*/messages', mockUnreadSupportConversationMessages, {
+      method: 'GET',
+    });
+
+    await page.reload();
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await page.getByRole('tab', { name: /Meddelanden/ }).click();
+
+    await expect(page.getByRole('tab', { name: 'Meddelanden (1)' })).toBeVisible();
+    await expect(page.locator('[data-cy="message-support-conversation-message"] span.bg-vattjom-surface-primary')).toBeVisible();
+
+    await page.locator('[data-cy="message-support-conversation-message"] button.sk-btn-ghost').click();
+
+    await expect(page.getByRole('tab', { name: 'Meddelanden (0)' })).toBeVisible();
+    await expect(page.locator('[data-cy="message-support-conversation-message"] span.bg-gray-200')).toBeVisible();
   });
 
   test('sends sms', async ({ page }) => {

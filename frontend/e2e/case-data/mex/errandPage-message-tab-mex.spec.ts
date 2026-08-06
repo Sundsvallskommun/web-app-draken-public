@@ -1,21 +1,22 @@
-import { test, expect } from '../../fixtures/base.fixture';
-import { mockMessageRenderRequest, mockMessages } from '../fixtures/mockMessages';
-import { mockPersonId } from '../fixtures/mockPersonId';
-import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockMe } from '../fixtures/mockMe';
-import { mockPermits } from '../fixtures/mockPermits';
-import { mockMexErrand_base } from '../fixtures/mockMexErrand';
-import { mockAttachments } from '../fixtures/mockAttachments';
-import { mockHistory } from '../fixtures/mockHistory';
+import { expect, test } from '../../fixtures/base.fixture';
 import { mockAddress } from '../fixtures/mockAddress';
+import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockAsset } from '../fixtures/mockAsset';
-import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
-import { mockRelations } from '../fixtures/mockRelations';
-import { mockJsonSchema } from '../fixtures/mockJsonSchema';
+import { mockAttachments } from '../fixtures/mockAttachments';
 import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
+import { mockHistory } from '../fixtures/mockHistory';
+import { mockJsonSchema } from '../fixtures/mockJsonSchema';
+import { mockMe } from '../fixtures/mockMe';
+import { mockMessageRenderRequest, mockMessages } from '../fixtures/mockMessages';
+import { mockMexErrand_base } from '../fixtures/mockMexErrand';
+import { mockPermits } from '../fixtures/mockPermits';
+import { mockPersonId } from '../fixtures/mockPersonId';
+import { mockRelations } from '../fixtures/mockRelations';
 
 const b64 = (s: string) => Buffer.from(s, 'utf-8').toString('base64');
+const errandMessagesRoute = /\/errand\/\d+\/messages$/;
 const mockMessageTemplates = {
   data: [
     { identifier: 'mex.email.default', name: 'E-postmall', content: b64('<p>E-postmall innehåll</p>') },
@@ -25,6 +26,40 @@ const mockMessageTemplates = {
     { identifier: 'mex.sms.reminder', name: 'SMS-påminnelse', content: b64('SMS-påminnelse') },
     { identifier: 'mex.sms.signature', name: 'SMS-signatur', content: b64('/ {{user}}') },
     { identifier: 'internal.signature', name: 'Intern signatur', content: b64('/ {{user}}') },
+  ],
+  message: 'success',
+};
+
+const mockUnreadConversation = {
+  data: {
+    data: [
+      {
+        id: 'abababab-ed21-4b30-9e0c-1252c878153f',
+        topic: 'Överlämning',
+        type: 'INTERNAL',
+        relationIds: ['bd835475-cbc2-4b92-979d-8bc18bd75385'],
+      },
+    ],
+    message: 'success',
+  },
+  message: 'success',
+};
+
+const mockUnreadConversationMessages = {
+  data: [
+    {
+      conversationId: 'abababab-ed21-4b30-9e0c-1252c878153f',
+      messageId: 'unread-conversation-message',
+      sent: '2026-06-09T15:12:00.000Z',
+      message: '<p>Överlämning</p>',
+      attachments: [],
+      messageType: 'DRAKEN',
+      subject: 'Överlämning',
+      firstName: 'Kaltron',
+      lastName: 'Rexhaj',
+      direction: 'INBOUND',
+      viewed: false,
+    },
   ],
   message: 'success',
 };
@@ -51,7 +86,7 @@ test.describe('Message tab', () => {
     await mockRoute('**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders, { method: 'POST' });
     await mockRoute('**/contracts/2024-01026', mockLeaseAgreement, { method: 'GET' }); // @getContract
     await mockRoute('**/contracts/2281/2024-01026/attachments/1', mockContractAttachment, { method: 'GET' }); // @getContractAttachment
-    await page.route(/\/errand\/\d+\/messages$/, async (route) => {
+    await page.route(errandMessagesRoute, async (route) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(mockMessages) });
     });
 
@@ -112,6 +147,37 @@ test.describe('Message tab', () => {
           .click({ force: true });
       }
     }
+  });
+
+  test('counts unread conversation messages and marks them read locally', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    await page.unroute(errandMessagesRoute);
+    await page.route(errandMessagesRoute, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ data: [], message: 'success' }),
+      });
+    });
+    await page.unroute('**/namespace/errands/**/communication/conversations');
+    await page.unroute('**/errands/**/communication/conversations/*/messages');
+    await mockRoute('**/namespace/errands/**/communication/conversations', mockUnreadConversation, { method: 'GET' });
+    await mockRoute('**/errands/**/communication/conversations/*/messages', mockUnreadConversationMessages, {
+      method: 'GET',
+    });
+
+    await goToMessageTab(page, dismissCookieConsent);
+
+    await expect(page.getByRole('tab', { name: 'Meddelanden (1)' })).toBeVisible();
+    await expect(page.locator('[data-cy="node-unread-conversation-message"] span.bg-vattjom-surface-primary')).toBeVisible();
+
+    await page.locator('[data-cy="expand-message-button-unread-conversation-message"]').click();
+
+    await expect(page.getByRole('tab', { name: 'Meddelanden (0)' })).toBeVisible();
+    await expect(page.locator('[data-cy="node-unread-conversation-message"] span.bg-gray-200')).toBeVisible();
   });
 
   test('sends sms with template', async ({ page, mockRoute, dismissCookieConsent }) => {

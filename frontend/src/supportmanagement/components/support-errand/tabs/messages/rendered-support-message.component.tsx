@@ -11,6 +11,7 @@ import { getSupportConversationAttachment } from '@supportmanagement/services/su
 import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
 import {
   getMessageAttachment,
+  isMessageViewed,
   Message,
   MessageNode,
   setMessageViewStatus,
@@ -63,6 +64,7 @@ export const RenderedSupportMessage: FC<{
   const [expanded, setExpanded] = useState(false);
   const channelPresentation = communicationChannelPresentation[message.communicationType];
   const ChannelIcon = channelPresentation?.Icon;
+  const viewed = isMessageViewed(message);
 
   const allowed = useMemo(() => validateAction(supportErrand, user), [user, supportErrand]);
 
@@ -112,7 +114,7 @@ export const RenderedSupportMessage: FC<{
   }
 
   useEffect(() => {
-    if (!message.viewed && supportErrand.assignedUserId === user.username) {
+    if (!viewed && supportErrand.assignedUserId === user.username) {
       expanded &&
         isInViewport(document.querySelector(`.message-${message.communicationID}`)!) &&
         setMessageViewStatus(supportErrand.id!, municipalityId, message.communicationID, true).then(() => {
@@ -181,7 +183,7 @@ export const RenderedSupportMessage: FC<{
           <div className="flex gap-8">
             <span
               className={cx(
-                message.viewed ? 'bg-gray-200' : `bg-vattjom-surface-primary`,
+                viewed ? 'bg-gray-200' : `bg-vattjom-surface-primary`,
                 `self-center w-12 h-12 my-xs rounded-full flex items-center justify-center text-lg`
               )}
             ></span>
@@ -200,7 +202,7 @@ export const RenderedSupportMessage: FC<{
         </div>
         <div className="pl-xl flex justify-between items-start">
           <p
-            className={cx(`my-0 text-primary`, message.viewed ? 'font-normal' : 'font-bold')}
+            className={cx(`my-0 text-primary`, viewed ? 'font-normal' : 'font-bold')}
             dangerouslySetInnerHTML={{
               __html: sanitized(message.subject || ''),
             }}
