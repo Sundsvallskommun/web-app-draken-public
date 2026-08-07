@@ -291,13 +291,14 @@ const mergeDecisionAttachments = (
   errand: IErrand,
   errandAttachments: IErrand['attachments']
 ): IErrand['attachments'] => {
+  const baseAttachments = Array.isArray(errandAttachments) ? errandAttachments : [];
   const decisionAttachments = (errand.decisions ?? []).flatMap((decision) =>
     (decision.attachments ?? []).map((attachment) => ({
       ...attachment,
       decisionId: attachment.decisionId ?? decision.id,
     }))
   );
-  return [...errandAttachments, ...decisionAttachments];
+  return [...baseAttachments, ...decisionAttachments];
 };
 
 export const getErrand: (municipalityId: string, id: string) => Promise<{ errand: IErrand; error?: string }> = (
