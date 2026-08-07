@@ -553,6 +553,22 @@ export interface Label {
    */
   resourceName: string;
   labels?: Label[];
+  /** Free-form key/value data owned by the client. Keys are conventions agreed between clients (e.g. 'escalationEmail'). */
+  attributes?: LabelAttribute[];
+}
+
+/** Label attribute model. Free-form key/value data owned by the client; keys are conventions agreed between clients (e.g. 'escalationEmail'). */
+export interface LabelAttribute {
+  /**
+   * Attribute key
+   * @minLength 1
+   */
+  key: string;
+  /**
+   * Attribute value
+   * @minLength 1
+   */
+  value: string;
 }
 
 /** Email integration config model */
