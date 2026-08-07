@@ -10,25 +10,26 @@ import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
-// Kontakt Sundsvall is the only drake allowed to see errands across namespaces. Every other
-// drake is limited to its own namespace(s), read from the environment.
-const CONTACTSUNDSVALL_NAMESPACE = 'CONTACTSUNDSVALL';
-const ownNamespaces: string[] = [CASEDATA_NAMESPACE, SUPPORTMANAGEMENT_NAMESPACE].filter((namespace): namespace is string => !!namespace);
-const isContactSundsvall = ownNamespaces.includes(CONTACTSUNDSVALL_NAMESPACE);
+// Casestatus visibility is decided per request from the session permission canViewOtherNamespaces
+// (granted at login for the Kontakt Sundsvall drake) — never from the environment. With the
+// permission a user sees errands from the allowed namespaces/systems; without it, only errands within
+// the drake's own namespace.
 
-// Broad, cross-namespace filter kept for Kontakt Sundsvall (unchanged behavior).
+// Broad filter: the namespaces/systems Kontakt Sundsvall is allowed to see.
 const broadAllowedNamespaces: string[] = ['SBK_MEX', 'SBK_PARKING_PERMIT', 'CONTACTSUNDSVALL'];
 const broadAllowedSystems: string[] = ['OPEN_E_PLATFORM', 'BYGGR'];
 const broadCaseIsAllowed = (c: CaseStatusResponse) =>
   (!!c.namespace && broadAllowedNamespaces.includes(c.namespace)) ||
   (typeof c.namespace === 'undefined' && !!c.system && broadAllowedSystems.includes(c.system));
 
-// Limited filter for all other drakar: only errands within the drake's own namespace.
+// Limited filter: only errands within the drake's own namespace(s).
+const ownNamespaces: string[] = [CASEDATA_NAMESPACE, SUPPORTMANAGEMENT_NAMESPACE].filter((namespace): namespace is string => !!namespace);
 const ownNamespaceOnly = (c: CaseStatusResponse) => !!c.namespace && ownNamespaces.includes(c.namespace);
 
-// Automatic listing (by owner party-/organization number) uses the broad filter for Kontakt
-// Sundsvall and the own-namespace filter for every other drake.
-const caseIsAllowed = isContactSundsvall ? broadCaseIsAllowed : ownNamespaceOnly;
+// Shared visibility filter used by every casestatus endpoint: the broad allowed-list for users with
+// the canViewOtherNamespaces permission, otherwise the drake's own namespace only.
+const filterVisibleCases = (cases: CaseStatusResponse[], canViewOtherNamespaces: boolean): CaseStatusResponse[] =>
+  cases.filter(canViewOtherNamespaces ? broadCaseIsAllowed : ownNamespaceOnly);
 
 @Controller()
 export class CaseStatusController {
@@ -36,6 +37,8 @@ export class CaseStatusController {
 
   private SERVICE = apiServiceName('casestatus');
 
+  // Errands tied to a person (partyId) are filtered by the caller's canViewOtherNamespaces permission:
+  // the allowed namespaces/systems with it, the drake's own namespace without it.
   @Get('/:municipalityId/party/:partyId/statuses')
   @OpenAPI({ summary: 'Get all statuses connected to a partyId' })
   @UseBefore(authMiddleware)
@@ -50,9 +53,11 @@ export class CaseStatusController {
       logger.error('Error when fetching relations: ', e);
       throw e;
     });
-    return { data: res.data.filter(caseIsAllowed), message: 'success' };
+    return { data: filterVisibleCases(res.data, req.user.permissions.canViewOtherNamespaces), message: 'success' };
   }
 
+  // Same as the partyId lookup: errands tied to an organization number are filtered by the caller's
+  // canViewOtherNamespaces permission.
   @Get('/:municipalityId/:organizationNumber/statuses')
   @OpenAPI({ summary: 'Get all statuses connected to a organizationNumber' })
   @UseBefore(authMiddleware)
@@ -67,7 +72,7 @@ export class CaseStatusController {
       logger.error('Error when fetching relations: ', e);
       throw e;
     });
-    return { data: res.data.filter(caseIsAllowed), message: 'success' };
+    return { data: filterVisibleCases(res.data, req.user.permissions.canViewOtherNamespaces), message: 'success' };
   }
 
   @Get('/:municipalityId/errands/statuses/:query')
@@ -89,9 +94,8 @@ export class CaseStatusController {
       logger.error('Error when fetching relations: ', e);
       throw e;
     });
-    // Manual search stays unfiltered for Kontakt Sundsvall; every other drake may only find and
-    // link errands within its own namespace.
+    // Manual search is filtered by the same canViewOtherNamespaces permission as the lookups above.
     const combined: CaseStatusResponse[] = [...resErrandNumber.data, ...resPropertyDesignation.data];
-    return { data: isContactSundsvall ? combined : combined.filter(ownNamespaceOnly), message: 'success' };
+    return { data: filterVisibleCases(combined, req.user.permissions.canViewOtherNamespaces), message: 'success' };
   }
 }

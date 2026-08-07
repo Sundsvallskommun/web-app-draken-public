@@ -43,6 +43,7 @@ import swaggerUi from 'swagger-ui-express';
 
 import { HttpException } from './exceptions/HttpException';
 import { Profile } from './interfaces/profile.interface';
+import { isContactSundsvall } from './services/application.service';
 import { authorizeGroups, getPermissions, getRole } from './services/authorization.service';
 import { additionalConverters } from './utils/custom-validation-classes';
 import { isValidOrigin } from './utils/isValidateOrigin';
@@ -130,7 +131,13 @@ const samlStrategy = new Strategy(
         email: email,
         groups: appGroups,
         role: getRole(appGroups),
-        permissions: getPermissions(appGroups),
+        // Cross-namespace casestatus access is granted here, at login, and carried in the session
+        // cookie — only Kontakt Sundsvall (the KC drake) grants it. Endpoints check the permission,
+        // never the environment, so access can never leak from a namespace/env misconfiguration.
+        permissions: {
+          ...getPermissions(appGroups),
+          canViewOtherNamespaces: isContactSundsvall(),
+        },
       };
 
       logger.info(`Found user: ${JSON.stringify(findUser)}`);

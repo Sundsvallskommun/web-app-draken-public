@@ -18,6 +18,7 @@ export const defaultPermissions: () => Permissions = () => ({
   canEditSupportManagement: false,
   canViewAttestations: false,
   canEditAttestations: false,
+  canViewOtherNamespaces: false,
 });
 
 enum RoleOrderEnum {
