@@ -1,5 +1,5 @@
 import { Contract, ContractType, Stakeholder, StakeholderType } from '@casedata/interfaces/contracts';
-import { contractTypes, isBillingParty, leaseTypes } from '@casedata/services/contract-service';
+import { contractTypes, isOnlyBillingParty, leaseTypes } from '@casedata/services/contract-service';
 import { Button, Input, Label, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
@@ -146,10 +146,11 @@ export const ContractsTable: FC<{
         .join(', ') || '-';
     const districts = contract.propertyDesignations?.map((p) => p.district).filter(Boolean);
     const uniqueDistricts = [...new Set(districts)].join(', ') || '-';
-    // Hide invoice recipients ("fakturamottagare") from the party listing in the overview.
+    // Hide parties whose only role is invoice recipient ("fakturamottagare") from the overview.
+    // A party that is also another role (e.g. leaseholder) is kept and shown on its contract row.
     const partyNames =
       contract.stakeholders
-        ?.filter((stakeholder) => !isBillingParty(stakeholder))
+        ?.filter((stakeholder) => !isOnlyBillingParty(stakeholder))
         .map(getStakeholderName)
         .filter(Boolean) || [];
     const parties =
