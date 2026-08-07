@@ -230,6 +230,20 @@ export const isErrandLocked: (errand: IErrand | CasedataFormModel) => boolean = 
   }
 };
 
+// Sending messages must remain possible after a decision has been made or executed
+// (e.g. "Beslut verkställt"), and is only blocked once the errand reaches a closed/terminal
+// status (see closedStatuses) or while a phase change is in progress. This is intentionally
+// more permissive than isErrandLocked, which also locks the errand for editing after a decision.
+export const isMessagesLocked: (errand: IErrand | CasedataFormModel) => boolean = (errand) => {
+  if (errand?.status && typeof errand?.status === 'object') {
+    return (
+      closedStatuses.includes(errand?.status?.statusType as ErrandStatus) || phaseChangeInProgress(errand as IErrand)
+    );
+  } else {
+    return closedStatuses.includes(errand?.status as ErrandStatus);
+  }
+};
+
 export const emptyErrand: Partial<IErrand> = {
   caseType: '',
   channel: Channels.WEB_UI,

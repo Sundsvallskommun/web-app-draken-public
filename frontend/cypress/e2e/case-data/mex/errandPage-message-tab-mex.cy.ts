@@ -312,6 +312,36 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       });
     });
 
+    // Regression guard: sending messages must stay possible after a decision has been
+    // made/executed ("Beslut verkställt") and only be locked once the errand reaches a
+    // closed status ("Ärende avslutat"). This guards isMessagesLocked in
+    // casedata-errand-service so the post-decision message lock does not reappear.
+    const errandWithStatus = (statusType: string) => ({
+      ...mockMexErrand_base,
+      data: {
+        ...mockMexErrand_base.data,
+        status: { ...mockMexErrand_base.data.status, statusType },
+      },
+    });
+
+    it('keeps message buttons enabled after a decision (status "Beslut verkställt")', () => {
+      cy.intercept('GET', /\/errand\/\d*/, errandWithStatus('Beslut verkställt')).as('getErrandById');
+
+      goToMessageTab();
+
+      cy.get('[data-cy="new-message-button"]').first().should('be.enabled');
+      cy.get('[data-cy="sidebar-new-message-button"]').first().should('be.enabled');
+    });
+
+    it('locks message buttons once the errand is closed (status "Ärende avslutat")', () => {
+      cy.intercept('GET', /\/errand\/\d*/, errandWithStatus('Ärende avslutat')).as('getErrandById');
+
+      goToMessageTab();
+
+      cy.get('[data-cy="new-message-button"]').first().should('be.disabled');
+      cy.get('[data-cy="sidebar-new-message-button"]').first().should('be.disabled');
+    });
+
     // FIXME Is it possible to reply to a webmessage by webmessage in MEX?
     // it.only('answers inbound webmessage message by webmessage', () => {
     //   cy.intercept('PUT', `**/messages/*/viewed/*`, mockMessages);

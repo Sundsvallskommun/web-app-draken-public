@@ -236,4 +236,49 @@ test.describe('Message tab', () => {
       }
     }
   });
+
+  // Regression guard: sending messages must stay possible after a decision has been
+  // made/executed ("Beslut verkställt") and only be locked once the errand reaches a
+  // closed status ("Ärende avslutat"). This guards isMessagesLocked in
+  // casedata-errand-service so the post-decision message lock does not reappear.
+  const routeErrandWithStatus = async (page, statusType: string) => {
+    const errand = {
+      ...mockMexErrand_base,
+      data: {
+        ...mockMexErrand_base.data,
+        status: { ...mockMexErrand_base.data.status, statusType },
+      },
+    };
+    await page.route(/\/errand\/\d*/, async (route) => {
+      if (route.request().method() !== 'GET') {
+        await route.fallback();
+        return;
+      }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(errand) });
+    });
+  };
+
+  test('keeps message buttons enabled after a decision (status "Beslut verkställt")', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await routeErrandWithStatus(page, 'Beslut verkställt');
+
+    await goToMessageTab(page, dismissCookieConsent);
+
+    await expect(page.locator('[data-cy="new-message-button"]').first()).toBeEnabled();
+    await expect(page.locator('[data-cy="sidebar-new-message-button"]').first()).toBeEnabled();
+  });
+
+  test('locks message buttons once the errand is closed (status "Ärende avslutat")', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await routeErrandWithStatus(page, 'Ärende avslutat');
+
+    await goToMessageTab(page, dismissCookieConsent);
+
+    await expect(page.locator('[data-cy="new-message-button"]').first()).toBeDisabled();
+    await expect(page.locator('[data-cy="sidebar-new-message-button"]').first()).toBeDisabled();
+  });
 });

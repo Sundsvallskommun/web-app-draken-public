@@ -1,5 +1,5 @@
 import { Channels } from '@casedata/interfaces/channels';
-import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import { isMessagesLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { fetchMessagesWithTree, MessageNode, setMessageViewStatus } from '@casedata/services/casedata-message-service';
 import { CasedataMessageType, isCasedataWebMessageType } from '@casedata/services/casedata-message-types';
 import { Button, Divider, FormLabel, Select, useSnackbar } from '@sk-web-gui/react';
@@ -126,11 +126,11 @@ export const CasedataMessagesTab: FC<{
           </div>
           <Button
             type="button"
-            disabled={(errand ? isErrandLocked(errand) : false) || !allowed}
+            disabled={(errand ? isMessagesLocked(errand) : false) || !allowed}
             size="sm"
             variant="primary"
             color="vattjom"
-            inverted={!((errand ? isErrandLocked(errand) : false) || !allowed)}
+            inverted={!((errand ? isMessagesLocked(errand) : false) || !allowed)}
             rightIcon={<Mail size={18} />}
             onClick={() => {
               setSelectedMessage(undefined);
