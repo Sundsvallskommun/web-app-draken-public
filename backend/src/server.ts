@@ -34,6 +34,7 @@ import { SupportConversationController } from './controllers/supportmanagement/s
 import { SupportErrandController } from './controllers/supportmanagement/support-errand.controller';
 import { SupportExportController } from './controllers/supportmanagement/support-export.controller';
 import { SupportFacilitiesController } from './controllers/supportmanagement/support-facilities.controller';
+import { SupportHandoverController } from './controllers/supportmanagement/support-handover.controller';
 import { SupportHistoryController } from './controllers/supportmanagement/support-history.controller';
 import { SupportMessageController } from './controllers/supportmanagement/support-message.controller';
 import { SupportMetadataController } from './controllers/supportmanagement/support-metadata.controller';
@@ -72,6 +73,7 @@ validateEnv();
       SupportErrandController,
       SupportExportController,
       SupportFacilitiesController,
+      SupportHandoverController,
       SupportHistoryController,
       SupportMessageController,
       SupportMetadataController,

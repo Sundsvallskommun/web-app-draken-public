@@ -188,11 +188,6 @@ export interface AttachmentMetadata {
 
 /** Contract */
 export interface Contract {
-  /**
-   * Version for contract
-   * @format int32
-   */
-  version?: number;
   /** Contract id */
   contractId?: string;
   /** A description of the contract */
@@ -582,50 +577,6 @@ export interface AttachmentData {
   content?: string;
 }
 
-export interface Change {
-  type?: ChangeTypeEnum;
-  path?: string;
-  oldValue?: JsonNode;
-  newValue?: JsonNode;
-}
-
-export interface Diff {
-  /** @format int32 */
-  oldVersion?: number;
-  /** @format int32 */
-  newVersion?: number;
-  changes?: Change[];
-  availableVersions?: number[];
-}
-
-export interface JsonNode {
-  empty?: boolean;
-  array?: boolean;
-  null?: boolean;
-  object?: boolean;
-  float?: boolean;
-  integralNumber?: boolean;
-  pojo?: boolean;
-  floatingPointNumber?: boolean;
-  short?: boolean;
-  int?: boolean;
-  long?: boolean;
-  double?: boolean;
-  bigDecimal?: boolean;
-  bigInteger?: boolean;
-  /** @deprecated */
-  textual?: boolean;
-  binary?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  string?: boolean;
-  boolean?: boolean;
-  number?: boolean;
-  embeddedValue?: boolean;
-}
-
 /** Partial contract payload used for PATCH. Only the fields present in the payload are applied to the existing contract. */
 export interface PatchContract {
   /** A description of the contract */
@@ -721,22 +672,4 @@ export interface SortObject {
 export enum CrsTypeEnum {
   Name = "name",
   Link = "link",
-}
-
-export enum ChangeTypeEnum {
-  ADDITION = "ADDITION",
-  REMOVAL = "REMOVAL",
-  MODIFICATION = "MODIFICATION",
-}
-
-export enum JsonNodeNodeTypeEnum {
-  ARRAY = "ARRAY",
-  BINARY = "BINARY",
-  BOOLEAN = "BOOLEAN",
-  MISSING = "MISSING",
-  NULL = "NULL",
-  NUMBER = "NUMBER",
-  OBJECT = "OBJECT",
-  POJO = "POJO",
-  STRING = "STRING",
 }
