@@ -258,6 +258,10 @@ export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata)
   return allSubTypesFlattened.find((t) => t?.resourcePath === name);
 };
 
+export const getLabelCategoryFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
+  return metadata?.labels?.labelStructure?.find((category) => category?.resourcePath === name);
+};
+
 export enum Resolution {
   SOLVED = 'SOLVED',
   REFERRED_VIA_EXCHANGE = 'REFERRED_VIA_EXCHANGE',

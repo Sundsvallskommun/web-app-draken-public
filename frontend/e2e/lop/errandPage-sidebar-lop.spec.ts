@@ -19,6 +19,7 @@ import { mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage'
 import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
 import { mockConversations, mockConversationMessages } from './fixtures/mockConversations';
 import { mockRelations } from './fixtures/mockRelations';
+import { mockEnv } from '../fixtures/mock-env';
 
 test.describe('errand page', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
@@ -147,6 +148,9 @@ test.describe('errand page', () => {
 
     const forwardDialog = page.locator('article.sk-modal-dialog').last();
     await expect(forwardDialog).toBeVisible();
+
+    // Escalation email is auto-populated from the errand's label (SUBTYPE escalationEmail attribute)
+    await expect(forwardDialog.locator('[data-cy="email-tag-0"]')).toContainText(mockEnv.mockEmail);
 
     await forwardDialog.locator('[data-cy="new-email-input"]').fill('test@test.se');
     await forwardDialog.locator('[data-cy="add-new-email-button"]').click();
