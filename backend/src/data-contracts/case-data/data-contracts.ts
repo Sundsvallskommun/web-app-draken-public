@@ -314,6 +314,11 @@ export interface Attachment {
    * @format int64
    */
   errandId?: number;
+  /**
+   * Decision id associated with the attachment, null for attachments belonging directly to the errand
+   * @format int64
+   */
+  decisionId?: number;
   /** Namespace */
   namespace?: string;
   /**
@@ -338,8 +343,8 @@ export interface Attachment {
   extension?: string;
   /** MIME type of the attachment */
   mimeType?: string;
-  /** Base64 encoded file content */
-  file?: string;
+  /** SHA-256 hash (hex encoded) of the attachment's raw content */
+  hash?: string;
   /** Additional parameters for the attachment */
   extraParameters?: Record<string, string>;
 }
@@ -395,7 +400,7 @@ export interface Decision {
    * @format date-time
    */
   validTo?: string;
-  /** List of attachments related to the decision */
+  /** List of attachments related to the decision. Attachments are managed through the decision attachment endpoints and sending them in this payload is rejected */
   attachments?: Attachment[];
   /** Additional parameters for the decision */
   extraParameters?: Record<string, string>;
@@ -603,6 +608,7 @@ export interface JsonNode {
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
+  number?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -911,6 +917,8 @@ export interface ConversationAttachment {
   fileSize?: number;
   /** Mime type of the file */
   mimeType?: string;
+  /** Hash of the file content */
+  hash?: string;
   /**
    * The attachment created date
    * @format date-time
@@ -1086,8 +1094,8 @@ export interface PageErrand {
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  sort?: SortObject;
   unpaged?: boolean;
+  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;

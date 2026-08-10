@@ -18,6 +18,20 @@ export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & { propagateClien
 
 const apiTokenService = new ApiTokenService();
 
+/**
+ * Render a request body for the error log. Multipart requests carry a form-data
+ * stream rather than a string, so it can only be described, not excerpted.
+ */
+const describeRequestBody = (data: unknown): string => {
+  if (typeof data === 'string') {
+    return data.slice(0, 1500);
+  }
+  if (data === undefined || data === null) {
+    return '';
+  }
+  return `[${data.constructor?.name ?? typeof data} body, not logged]`;
+};
+
 class ApiService {
   private instance: AxiosInstance;
   constructor() {
@@ -102,7 +116,7 @@ class ApiService {
         logger.error(`ERROR: API request failed with status: ${error.response?.status}`);
         logger.error(`Error details: ${JSON.stringify(error.response!.data)}`);
         logger.error(`Error url: ${error.response!.config.baseURL || ''}/${error.response!.config.url}`);
-        logger.error(`Error data: ${error.response!.config.data?.slice(0, 1500)}`);
+        logger.error(`Error data: ${describeRequestBody(error.response!.config.data)}`);
         logger.error(`Error method: ${error.response!.config.method}`);
         logger.error(`Error headers: ${error.response!.config.headers}`);
         throw new HttpException(404, 'Not found');
@@ -110,7 +124,7 @@ class ApiService {
         logger.error(`ERROR: API request failed with status: ${error.response?.status}`);
         logger.error(`Error details: ${JSON.stringify(error.response!.data)}`);
         logger.error(`Error url: ${error.response!.config.baseURL || ''}/${error.response!.config.url}`);
-        logger.error(`Error data: ${error.response!.config.data?.slice(0, 1500)}`);
+        logger.error(`Error data: ${describeRequestBody(error.response!.config.data)}`);
         logger.error(`Error method: ${error.response!.config.method}`);
         logger.error(`Error headers: ${error.response!.config.headers}`);
         // Opt-in: surface upstream client errors (4xx) so callers can show the real message in

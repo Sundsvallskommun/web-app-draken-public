@@ -187,15 +187,20 @@ export interface Attachment {
   note?: string;
   extension: string;
   mimeType: string;
-  file?: string;
   version?: number;
   created?: string;
   updated?: string;
   extraParameters?: any;
+  municipalityId?: string;
+  errandId?: number;
+  /** Decision id associated with the attachment, null for attachments belonging directly to the errand */
+  decisionId?: number;
+  namespace?: string;
+  channel?: AttachmentChannelEnum;
+  hash?: string;
 }
 
 export interface CreateAttachmentDto {
-  file?: string;
   category: string;
   extension: string;
   mimeType: string;
@@ -668,6 +673,13 @@ export enum ExtraParametersDtoConsentViewTransportationServiceDetailsEnum {
 export enum ExtraParametersDtoApplicationRenewalChangedCircumstancesEnum {
   Y = "Y",
   N = "N",
+}
+
+export enum AttachmentChannelEnum {
+  EMAIL = "EMAIL",
+  ESERVICE = "ESERVICE",
+  WEB_UI = "WEB_UI",
+  MY_PAGES = "MY_PAGES",
 }
 
 export enum CreateAttachmentDtoChannelEnum {

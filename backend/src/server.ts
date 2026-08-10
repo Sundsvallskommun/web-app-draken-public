@@ -12,6 +12,7 @@ import { BillingDataCollectorController } from './controllers/billingdatacollect
 import { CaseDataAttachmentController } from './controllers/casedata/casedata-attachment.controller';
 import { CaseDataConversationController } from './controllers/casedata/casedata-conversation.controller';
 import { CaseDataDecisionsController } from './controllers/casedata/casedata-decision.controller';
+import { CaseDataDecisionAttachmentController } from './controllers/casedata/casedata-decision-attachment.controller';
 import { CaseDataErrandController } from './controllers/casedata/casedata-errand.controller';
 import { caseDataFacilitiesController } from './controllers/casedata/casedata-facilities.controller';
 import { CaseDataHistoryController } from './controllers/casedata/casedata-history.controller';
@@ -57,6 +58,7 @@ validateEnv();
       BillingDataCollectorController,
       CaseDataAttachmentController,
       CasedataContractsController,
+      CaseDataDecisionAttachmentController,
       CaseDataDecisionsController,
       CaseDataErrandController,
       caseDataFacilitiesController,

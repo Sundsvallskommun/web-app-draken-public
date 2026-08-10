@@ -223,6 +223,58 @@ export interface MessageExchangeIntegration {
   modified?: string;
 }
 
+export interface JsonNode {
+  empty?: boolean;
+  array?: boolean;
+  null?: boolean;
+  object?: boolean;
+  float?: boolean;
+  number?: boolean;
+  string?: boolean;
+  boolean?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
+  missingNode?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  pojo?: boolean;
+  floatingPointNumber?: boolean;
+  short?: boolean;
+  int?: boolean;
+  long?: boolean;
+  double?: boolean;
+  bigDecimal?: boolean;
+  bigInteger?: boolean;
+  /** @deprecated */
+  textual?: boolean;
+  binary?: boolean;
+  embeddedValue?: boolean;
+}
+
+/** JSON Parameter model */
+export interface JsonParameter {
+  /**
+   * Parameter key/name
+   * @minLength 1
+   */
+  key: string;
+  /**
+   * JSON structure value
+   * @example {"firstName":"Joe","lastName":"Doe"}
+   */
+  value: JsonNode;
+  /**
+   * ID referencing a schema in the json-schema service
+   * @minLength 1
+   */
+  schemaId: string;
+  /**
+   * Optimistic locking version of the JSON parameter
+   * @format int64
+   */
+  version?: number;
+}
+
 /** Email integration config model */
 export interface EmailIntegration {
   /** If set to true emails will be fetched */
@@ -767,6 +819,11 @@ export interface Errand {
    * @format date-time
    */
   touched?: string;
+  /**
+   * Optimistic locking version of the errand
+   * @format int64
+   */
+  version?: number;
 }
 
 /** Errand action model */
@@ -828,53 +885,6 @@ export interface ExternalTag {
   value?: string;
 }
 
-export interface JsonNode {
-  empty?: boolean;
-  array?: boolean;
-  null?: boolean;
-  object?: boolean;
-  float?: boolean;
-  number?: boolean;
-  string?: boolean;
-  boolean?: boolean;
-  pojo?: boolean;
-  floatingPointNumber?: boolean;
-  short?: boolean;
-  int?: boolean;
-  long?: boolean;
-  double?: boolean;
-  bigDecimal?: boolean;
-  bigInteger?: boolean;
-  /** @deprecated */
-  textual?: boolean;
-  binary?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  integralNumber?: boolean;
-  embeddedValue?: boolean;
-}
-
-/** JSON Parameter model */
-export interface JsonParameter {
-  /**
-   * Parameter key/name
-   * @minLength 1
-   */
-  key: string;
-  /**
-   * JSON structure value
-   * @example {"firstName":"Joe","lastName":"Doe"}
-   */
-  value: JsonNode;
-  /**
-   * ID referencing a schema in the json-schema service
-   * @minLength 1
-   */
-  schemaId: string;
-}
-
 export interface Notification {
   /** Unique identifier for the notification */
   id?: string;
@@ -932,6 +942,11 @@ export interface Parameter {
   group?: string;
   /** Parameter values. Each value can have a maximum length of 3000 characters */
   values?: string[];
+  /**
+   * Optimistic locking version of the parameter
+   * @format int64
+   */
+  version?: number;
 }
 
 /** Stakeholder model */
@@ -1468,6 +1483,12 @@ export interface MessageRequest {
   attachmentIds?: string[];
 }
 
+/** MarkAsReadRequest model */
+export interface MarkAsReadRequest {
+  /** @minItems 1 */
+  messageIds: string[];
+}
+
 /** UpdateErrandNoteRequest model */
 export interface UpdateErrandNoteRequest {
   /**
@@ -1548,29 +1569,29 @@ export interface PageSubscriberNotification {
   number?: number;
   first?: boolean;
   last?: boolean;
-  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
-  unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export interface SubscriberNotification {
@@ -1909,6 +1930,8 @@ export interface Attachment {
   fileSize?: number;
   /** Mime type of the file */
   mimeType?: string;
+  /** Hash of the file content */
+  hash?: string;
   /**
    * The attachment created date
    * @format date-time
@@ -1967,6 +1990,49 @@ export interface ReadBy {
   readAt?: string;
 }
 
+/** Read-by statistics for a conversation */
+export interface ConversationReadByCount {
+  /**
+   * The unique identifier of the conversation
+   * @example "2af1002e-008f-4bdc-924b-daaae31f1118"
+   */
+  conversationId?: string;
+  /**
+   * Total number of messages in the conversation
+   * @format int32
+   */
+  messageCount?: number;
+  /** Per-identifier read count */
+  readByCount?: ReadByCountEntry[];
+  /** Per-part read count */
+  readByPartCount?: PartReadByCountEntry[];
+}
+
+/** Read count for a specific part */
+export interface PartReadByCountEntry {
+  /**
+   * The part that read the messages
+   * @example "KC-23010001"
+   */
+  part?: string;
+  /**
+   * Number of messages read by this part
+   * @format int32
+   */
+  count?: number;
+}
+
+/** Read count for a specific identifier */
+export interface ReadByCountEntry {
+  /** The identifier that read the messages */
+  identifier?: Identifier;
+  /**
+   * Number of messages read by this identifier
+   * @format int32
+   */
+  count?: number;
+}
+
 /** ErrandAttachment model */
 export interface ErrandAttachment {
   /** Unique identifier for the attachment */
@@ -1989,6 +2055,18 @@ export interface ErrandAttachment {
 export interface CountResponse {
   /** @format int64 */
   count?: number;
+}
+
+export enum JsonNodeNodeTypeEnum {
+  ARRAY = "ARRAY",
+  BINARY = "BINARY",
+  BOOLEAN = "BOOLEAN",
+  MISSING = "MISSING",
+  NULL = "NULL",
+  NUMBER = "NUMBER",
+  OBJECT = "OBJECT",
+  POJO = "POJO",
+  STRING = "STRING",
 }
 
 /**
@@ -2028,18 +2106,6 @@ export enum NotificationChannelTypeEnum {
 export enum SubscriptionTargetTypeEnum {
   ERRAND = "ERRAND",
   NAMESPACE = "NAMESPACE",
-}
-
-export enum JsonNodeNodeTypeEnum {
-  ARRAY = "ARRAY",
-  BINARY = "BINARY",
-  BOOLEAN = "BOOLEAN",
-  MISSING = "MISSING",
-  NULL = "NULL",
-  NUMBER = "NUMBER",
-  OBJECT = "OBJECT",
-  POJO = "POJO",
-  STRING = "STRING",
 }
 
 /** If the communication is inbound or outbound from the perspective of case-data/e-service. */

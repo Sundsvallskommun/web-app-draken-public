@@ -12,7 +12,7 @@ import { getUserInfo } from '@common/services/user-service';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import dayjs from 'dayjs';
 
-import { fetchAttachment, getAttachmentLabel } from './casedata-attachment-service';
+import { fetchErrandAttachments, getAttachmentLabel } from './casedata-attachment-service';
 import { fetchDecision, getDecisionLabel } from './casedata-decision-service';
 import { fetchNote } from './casedata-errand-notes-service';
 import { fetchMessage } from './casedata-message-service';
@@ -293,18 +293,26 @@ export const fetchChangeData: (
               return data;
             })
             .catch(genericFailedFetch);
-        case 'attachments':
-          return fetchAttachment(municipalityId, errandId, c.elementChanges?.[0].value.cdoId.toString())
+        case 'attachments': {
+          // Only metadata is needed here, so the attachment list is used rather than
+          // fetching the (binary) content of the single attachment.
+          const attachmentId = Number(c.elementChanges?.[0].value.cdoId);
+          return fetchErrandAttachments(municipalityId, errandId)
             .then((res) => {
+              const attachment = res.data.find((a) => a.id === attachmentId);
+              if (!attachment) {
+                return genericFailedFetch();
+              }
               const data: GenericChangeData = {
                 type: 'Ny bilaga',
-                title: getAttachmentLabel(res.data) ?? '',
-                content: `<p>Filnamn: ${res.data.name}</p>`,
-                date: res.data.updated ?? '',
+                title: getAttachmentLabel(attachment.category) ?? '',
+                content: `<p>Filnamn: ${attachment.name}</p>`,
+                date: attachment.updated ?? '',
               };
               return data;
             })
             .catch(genericFailedFetch);
+        }
         case 'decisions':
           return fetchDecision(c.elementChanges?.[0].value.cdoId.toString())
             .then((res) => {

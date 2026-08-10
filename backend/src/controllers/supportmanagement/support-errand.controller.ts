@@ -1,6 +1,7 @@
 import { Type as TypeTransformer } from 'class-transformer';
 import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import dayjs from 'dayjs';
+import FormData from 'form-data';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
@@ -1071,12 +1072,10 @@ export class SupportErrandController {
           }));
         return filesData;
       });
+
       const attachments = await Promise.all(attachmentsPromises);
-      const attachmentDtos: CreateAttachmentDto[] = attachments?.map(attachmentData => {
-        const binaryString = Array.from(new Uint8Array(attachmentData.fileData), v => String.fromCharCode(v)).join('');
-        const b64 = Buffer.from(binaryString, 'binary').toString('base64');
-        const dto: CreateAttachmentDto = {
-          file: b64,
+      const attachmentDtos: FormData[] = attachments?.map(attachmentData => {
+        const metadata: CreateAttachmentDto = {
           category: 'OTHER',
           extension: attachmentData.fileName!.split('.').pop()!,
           mimeType: attachmentData.mimeType!,
@@ -1085,13 +1084,33 @@ export class SupportErrandController {
           errandNumber: errand.errandNumber!,
           channel: AttachmentChannelEnum.WEB_UI,
         };
-        return dto;
+        const data = new FormData();
+        if (attachmentData?.fileData) {
+          data.append('file', Buffer.from(attachmentData.fileData), {
+            filename: attachmentData.fileName ?? '',
+            contentType: attachmentData.mimeType,
+          });
+          data.append('attachment', JSON.stringify(metadata));
+        } else {
+          logger.error('Trying to save attachment without name or data');
+          throw new Error('File missing');
+        }
+
+        return data;
       });
 
-      const postedAttachments: Promise<CasedataErrandDTO>[] = attachmentDtos?.map(attachmentDto => {
+      const postedAttachments: Promise<CasedataErrandDTO>[] = attachmentDtos?.map(attachmentFormData => {
         const casedataAttachmentsUrl = `${municipalityId}/${data.department}/errands/${errand.id}/attachments`;
         const casedataAttachmentsResponse = this.apiService
-          .post<CasedataErrandDTO, CreateAttachmentDto>({ url: casedataAttachmentsUrl, baseURL, data: attachmentDto }, req.user)
+          .post<CasedataErrandDTO, FormData>(
+            {
+              url: casedataAttachmentsUrl,
+              baseURL,
+              data: attachmentFormData,
+              headers: { 'Content-Type': attachmentFormData.getHeaders()['content-type'] },
+            },
+            req.user,
+          )
           .then(res => res.data)
           .catch(e => {
             logger.error('Error when posting attachments for forwarded errand:', e);
@@ -1100,11 +1119,11 @@ export class SupportErrandController {
         return casedataAttachmentsResponse;
       });
       await Promise.all(postedAttachments).catch(e => {
-        console.error('Error when posting attachments for forwarded errand');
         logger.error('Error when posting attachments for forwarded errand');
         throw e;
       });
-    } catch {
+    } catch (e) {
+      logger.error('Error when copying attachments to forwarded errand:', e);
       return response.status(400).send('ATTACHMENTS_FAILED');
     }
 

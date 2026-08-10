@@ -77,6 +77,36 @@ export interface EmploymentV2 {
   employmentId?: number;
 }
 
+export interface EndedEmploymentEvent {
+  title?: string | null;
+  /** @format int32 */
+  orgId?: number;
+  orgName?: string | null;
+  /** @format int32 */
+  topOrgId?: number;
+  topOrgName?: string | null;
+  /** @format int32 */
+  benefitGroupId?: number;
+  /**
+   * @format date
+   * @example "2023-01-01"
+   */
+  hireDate?: string;
+  /**
+   * @format date
+   * @example "2023-01-01"
+   */
+  retireDate?: string;
+  eventType?: string | null;
+  eventInfo?: string | null;
+  /** @format int32 */
+  companyId?: number;
+  companyName?: string | null;
+  /** @format int32 */
+  empId?: number | null;
+  businessKey?: string | null;
+}
+
 export interface Manager {
   /** @format uuid */
   personId?: string;

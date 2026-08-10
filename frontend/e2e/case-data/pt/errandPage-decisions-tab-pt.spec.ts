@@ -86,6 +86,10 @@ test.describe('Decisions tab', () => {
     await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages);
     await mockRoute('**/errands/**/extraparameters', {}, { method: 'PATCH' });
     await mockRoute('**/render/pdf', mockPdfRender, { method: 'POST' });
+    // The rendered decision PDF is uploaded as a binary attachment to the dedicated decision-attachment
+    // endpoint after the decision is saved; a re-save first removes the previous one.
+    await mockRoute('**/decisions/*/attachments', { data: 'ok', message: 'ok' }, { method: 'POST' }); // @postDecisionAttachment
+    await mockRoute('**/decisions/*/attachments/*', { data: 'ok', message: 'ok' }, { method: 'DELETE' }); // @deleteDecisionAttachment
   });
 
   const visitErrand = async (page: import('@playwright/test').Page, dismissCookieConsent: () => Promise<void>) => {

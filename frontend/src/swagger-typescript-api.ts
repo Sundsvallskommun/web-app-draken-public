@@ -29,6 +29,7 @@ const main = async () => {
     specPath,
     `${process.env.NEXT_PUBLIC_API_URL}/swagger.json`,
   ]);
+  console.log(`Downloaded backend swagger spec to ${specPath}`);
 
   // Run the generator's JS entrypoint directly with the current Node binary
   // instead of going through `npx`. On Windows `npx` is a `.cmd` shim that
@@ -49,6 +50,7 @@ const main = async () => {
     '--extract-enums',
   ]);
 
+  console.log(`Generated backend api-docs to ${PATH_TO_OUTPUT_DIR}/backend`);
   if (stdout) console.log(`Data-contract-generator: ${stdout}`);
   if (stderr) console.log(`stderr: ${stderr}`);
 };
