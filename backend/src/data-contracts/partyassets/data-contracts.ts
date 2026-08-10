@@ -124,6 +124,9 @@ export interface JsonNode {
   missingNode?: boolean;
   nodeType?: JsonNodeNodeTypeEnum;
   integralNumber?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  missingNode?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;

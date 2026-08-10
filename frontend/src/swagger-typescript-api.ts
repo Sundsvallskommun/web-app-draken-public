@@ -30,6 +30,12 @@ const main = async () => {
     `${process.env.NEXT_PUBLIC_API_URL}/swagger.json`,
   ]);
   console.log(`Downloaded backend swagger spec to ${specPath}`);
+
+  // Run the generator's JS entrypoint directly with the current Node binary
+  // instead of going through `npx`. On Windows `npx` is a `.cmd` shim that
+  // `execFile` can't spawn without a shell, and recent Node refuses to spawn
+  // `.cmd`/`.bat` without `shell: true` for security. Invoking the CLI via
+  // `process.execPath` is fully cross-platform and keeps `shell: false`.
   const generatorCli = path.resolve(process.cwd(), 'node_modules/swagger-typescript-api/dist/cli.js');
 
   const { stdout, stderr } = await execFileAsync(process.execPath, [

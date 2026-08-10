@@ -589,9 +589,11 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
+  integralNumber?: boolean;
   valueNode?: boolean;
   container?: boolean;
   pojo?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   floatingPointNumber?: boolean;
   short?: boolean;
   int?: boolean;
@@ -602,9 +604,8 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   missingNode?: boolean;
-  integralNumber?: boolean;
+  number?: boolean;
   string?: boolean;
   boolean?: boolean;
   number?: boolean;
@@ -1072,10 +1073,10 @@ export interface PatchDecision {
 }
 
 export interface PageErrand {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1104,8 +1105,8 @@ export interface PageableObject {
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export interface CommitMetadata {
@@ -1223,10 +1224,10 @@ export interface MessageResponse {
 }
 
 export interface PageMessage {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Message[];
@@ -1242,10 +1243,10 @@ export interface PageMessage {
 }
 
 export interface PageDecision {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Decision[];

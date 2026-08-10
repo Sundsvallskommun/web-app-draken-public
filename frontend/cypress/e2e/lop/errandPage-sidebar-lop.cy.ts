@@ -154,6 +154,9 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
 
       cy.get(`article.sk-modal-dialog`).should('exist');
 
+      // Escalation email is auto-populated from the errand's label (SUBTYPE escalationEmail attribute)
+      cy.get('.sk-modal-dialog [data-cy="email-tag-0"]').should('contain', Cypress.env('mockEmail'));
+
       cy.get('.sk-modal-dialog [data-cy="new-email-input"]').should('exist').type('test@test.se');
       cy.get('.sk-modal-dialog [data-cy="add-new-email-button"]').should('exist').click();
 

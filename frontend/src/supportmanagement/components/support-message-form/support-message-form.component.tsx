@@ -610,7 +610,7 @@ export const SupportMessageForm: FC<{
           </RadioButton>
         </RadioButton.Group>
       </div>
-      {templates && (contactMeans === 'email' || contactMeans === 'sms') && (
+      {getTemplateOptions(templates, contactMeans).length > 0 && (
         <FormControl className="w-full my-12" size="sm" id="messageTemplate">
           <FormLabel>Välj meddelandemall</FormLabel>
           <Select

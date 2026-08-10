@@ -61,15 +61,26 @@ export class RelationsController {
   private CASESTATUS_SERVICE = apiServiceName('casestatus');
   private CITIZEN_SERVICE = apiServiceName('citizen');
 
+  // The relations service returns service names in varying formats ('support-management',
+  // 'SUPPORT_MANAGEMENT', 'supportmanagement', 'case-data', 'casedata'). Normalise to our canonical
+  // values so comparisons/routing work regardless of which system created the relation.
+  private normalizeService(service?: string): string {
+    const normalized = (service ?? '').toLowerCase().replace(/[-_]/g, '');
+    if (normalized === 'supportmanagement') return 'supportmanagement';
+    if (normalized === 'casedata') return 'case-data';
+    return service ?? '';
+  }
+
   private async fetchErrandNumber(municipalityId: string, resource: ResourceIdentifier, user: any): Promise<string> {
     const { service, namespace, resourceId } = resource;
     let url: string;
     let baseURL: string;
 
-    if (service === 'case-data' || service === 'casedata') {
+    const normalizedService = this.normalizeService(service);
+    if (normalizedService === 'case-data') {
       url = `${municipalityId}/${namespace}/errands/${resourceId}`;
       baseURL = apiURL(this.CASEDATA_SERVICE);
-    } else if (service === 'supportmanagement') {
+    } else if (normalizedService === 'supportmanagement') {
       url = `${municipalityId}/${namespace}/errands/${resourceId}`;
       baseURL = apiURL(this.SUPPORTMANAGEMENT_SERVICE);
     } else {
@@ -315,8 +326,11 @@ export class RelationsController {
       throw e;
     });
 
+    // REFERRED_FROM is created by the MEX forward; HANDOVER by the supportmanagement -> supportmanagement
+    // handover. Both should surface the source errand's info on the new errand.
     const referredFromRelations = (res.data.relations ?? []).filter(
-      relation => relation.type === 'REFERRED_FROM' && relation.source.service === 'supportmanagement',
+      relation =>
+        (relation.type === 'REFERRED_FROM' || relation.type === 'HANDOVER') && this.normalizeService(relation.source.service) === 'supportmanagement',
     );
 
     if (referredFromRelations.length === 0) {

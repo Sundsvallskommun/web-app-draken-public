@@ -35,6 +35,7 @@ export interface JsonNode {
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
+  number?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -159,13 +160,17 @@ export interface PageJsonSchema {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
