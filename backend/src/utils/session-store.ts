@@ -5,7 +5,7 @@ import createFileStore from 'session-file-store';
 import { logger } from './logger';
 import { getRedisClient } from './redis';
 
-const SESSION_TTL = 4 * 24 * 60 * 60;
+const SESSION_TTL = 12 * 60 * 60;
 
 export async function createSessionStore(): Promise<session.Store> {
   const redisClient = await getRedisClient();

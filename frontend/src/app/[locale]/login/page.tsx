@@ -49,7 +49,7 @@ const Login: FC = () => {
     });
     url.search = queries.toString();
 
-    router.push(url.toString());
+    window.location.assign(url.toString());
   };
 
   useEffect(() => {
