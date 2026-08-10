@@ -33,8 +33,8 @@ export const APIS = [
     version: '13.0',
   },
   {
-    name: 'supportmanagement',
-    version: '14.9',
+    name: 'supportmanagementsprint',
+    version: '14.14',
   },
   {
     name: 'billingpreprocessor',
@@ -74,7 +74,14 @@ export const APIS = [
   },
 ];
 
+// Temporary routing for the Support Management development sprint.
+// Remove this alias and rename the APIS entry when the sprint API is retired.
+const API_SERVICE_ALIASES: Readonly<Record<string, string>> = {
+  supportmanagement: 'supportmanagementsprint',
+};
+
 export function apiServiceName(name: string): string {
-  const api = APIS.find(a => a.name === name);
+  const resolvedName = API_SERVICE_ALIASES[name] ?? name;
+  const api = APIS.find(a => a.name === resolvedName);
   return api ? `${api.name}/${api.version}` : name;
 }

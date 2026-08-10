@@ -1,0 +1,2809 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Arkitekturbeskrivning för uppdelad utredning, JSON Parameters och sektionsbaserad behörighet i Support Management."
+    />
+    <title>Uppdelad utredning i Support Management</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #122334;
+        --muted: #536579;
+        --line: #c9d5df;
+        --line-strong: #91a6b8;
+        --paper: #f4f7f9;
+        --surface: #ffffff;
+        --surface-blue: #eef7fb;
+        --blue: #006a8b;
+        --blue-dark: #064c66;
+        --green: #16734a;
+        --green-soft: #e8f6ef;
+        --amber: #9a5b00;
+        --amber-soft: #fff4d8;
+        --red: #a52b2b;
+        --red-soft: #fff0ef;
+        --purple: #6541a5;
+        --purple-soft: #f3effb;
+        --shadow: 0 12px 36px rgb(18 35 52 / 9%);
+        --radius: 16px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        overflow-x: hidden;
+        background: var(--paper);
+        color: var(--ink);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        line-height: 1.55;
+      }
+
+      a {
+        color: var(--blue-dark);
+      }
+
+      button {
+        font: inherit;
+      }
+
+      code,
+      pre {
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      }
+
+      .page-header {
+        overflow: hidden;
+        position: relative;
+        background:
+          radial-gradient(
+            circle at 90% 5%,
+            rgb(45 158 185 / 35%),
+            transparent 34%
+          ),
+          linear-gradient(135deg, #072f43, #005c79 64%, #007b91);
+        color: white;
+      }
+
+      .page-header::after {
+        position: absolute;
+        inset: auto -8% -90px 34%;
+        height: 190px;
+        border: 1px solid rgb(255 255 255 / 20%);
+        border-radius: 50%;
+        content: "";
+        transform: rotate(-5deg);
+      }
+
+      .header-inner,
+      main,
+      .source-footer {
+        width: min(1180px, calc(100% - 40px));
+        margin-inline: auto;
+      }
+
+      .header-inner {
+        position: relative;
+        z-index: 1;
+        padding: 62px 0 54px;
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        color: #b9edf5;
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      p {
+        margin-top: 0;
+        overflow-wrap: anywhere;
+      }
+
+      h1 {
+        max-width: 850px;
+        margin-bottom: 18px;
+        font-size: clamp(2.25rem, 5vw, 4.5rem);
+        line-height: 1.02;
+        letter-spacing: -0.045em;
+      }
+
+      .lead {
+        max-width: 830px;
+        margin-bottom: 26px;
+        color: #e3f7fa;
+        font-size: clamp(1.05rem, 2vw, 1.35rem);
+      }
+
+      .hero-tags,
+      .legend,
+      .persona-switch,
+      .section-switch {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+      }
+
+      .hero-tag {
+        padding: 7px 11px;
+        border: 1px solid rgb(255 255 255 / 32%);
+        border-radius: 999px;
+        background: rgb(0 0 0 / 12%);
+        font-size: 0.84rem;
+        font-weight: 700;
+      }
+
+      .toc {
+        position: sticky;
+        z-index: 10;
+        top: 0;
+        border-bottom: 1px solid var(--line);
+        background: rgb(255 255 255 / 94%);
+        backdrop-filter: blur(14px);
+      }
+
+      .toc-inner {
+        display: flex;
+        width: min(1180px, calc(100% - 40px));
+        margin-inline: auto;
+        gap: 4px;
+        overflow-x: auto;
+        scrollbar-width: thin;
+      }
+
+      .toc a {
+        flex: 0 0 auto;
+        padding: 14px 12px;
+        color: var(--muted);
+        font-size: 0.85rem;
+        font-weight: 750;
+        text-decoration: none;
+      }
+
+      .toc a:hover,
+      .toc a:focus-visible {
+        color: var(--blue-dark);
+        text-decoration: underline;
+        text-underline-offset: 5px;
+      }
+
+      main {
+        padding: 40px 0 72px;
+      }
+
+      section {
+        margin-bottom: 56px;
+        scroll-margin-top: 74px;
+      }
+
+      .section-heading {
+        display: grid;
+        grid-template-columns: 56px minmax(0, 1fr);
+        align-items: start;
+        margin-bottom: 22px;
+        gap: 14px;
+      }
+
+      .section-number {
+        display: grid;
+        width: 46px;
+        height: 46px;
+        place-items: center;
+        border: 1px solid #9bc4d1;
+        border-radius: 50%;
+        background: var(--surface-blue);
+        color: var(--blue-dark);
+        font-weight: 850;
+      }
+
+      h2 {
+        margin-bottom: 5px;
+        font-size: clamp(1.7rem, 3vw, 2.35rem);
+        line-height: 1.15;
+        letter-spacing: -0.025em;
+      }
+
+      h3 {
+        margin-bottom: 10px;
+        font-size: 1.1rem;
+        line-height: 1.3;
+      }
+
+      .section-intro {
+        max-width: 850px;
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .card {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+
+      .summary-grid,
+      .two-column,
+      .three-column {
+        display: grid;
+        gap: 18px;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .two-column {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .three-column {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .summary-card {
+        min-height: 174px;
+        padding: 20px;
+      }
+
+      .summary-card .kicker {
+        margin-bottom: 12px;
+        color: var(--blue-dark);
+        font-size: 0.76rem;
+        font-weight: 850;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .summary-card p,
+      .plain-card p {
+        margin-bottom: 0;
+        color: var(--muted);
+      }
+
+      .plain-card {
+        padding: 22px;
+      }
+
+      .decision {
+        margin-top: 18px;
+        padding: 20px 22px;
+        border: 1px solid #83bdcc;
+        border-left: 5px solid var(--blue);
+        border-radius: 10px;
+        background: var(--surface-blue);
+      }
+
+      .decision strong {
+        color: var(--blue-dark);
+      }
+
+      figure {
+        margin: 0;
+      }
+
+      figcaption {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      .architecture-figure {
+        padding: 24px;
+      }
+
+      .architecture-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+        gap: 10px;
+      }
+
+      .architecture-title h3 {
+        margin: 0;
+      }
+
+      .status-mark {
+        padding: 5px 9px;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        font-weight: 800;
+      }
+
+      .status-current {
+        background: var(--amber-soft);
+        color: var(--amber);
+      }
+
+      .status-target {
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .current-flow {
+        display: grid;
+        grid-template-columns:
+          minmax(230px, 0.9fr) 56px minmax(300px, 1.3fr)
+          56px minmax(220px, 0.85fr);
+        align-items: center;
+        gap: 8px;
+      }
+
+      .system-box,
+      .data-box {
+        min-width: 0;
+        padding: 16px;
+        border: 1px solid var(--line-strong);
+        border-radius: 12px;
+        background: #fbfdfe;
+      }
+
+      .system-box h4,
+      .data-box h4 {
+        margin: 0 0 9px;
+        font-size: 0.98rem;
+      }
+
+      .system-box p,
+      .data-box p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      .errand-box {
+        border: 2px solid var(--blue);
+        background: var(--surface-blue);
+      }
+
+      .field-list {
+        display: grid;
+        margin: 12px 0 0;
+        padding: 0;
+        gap: 6px;
+        list-style: none;
+      }
+
+      .field-list li {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 10px;
+        border: 1px solid #c7dce4;
+        border-radius: 8px;
+        background: white;
+        gap: 12px;
+        font-size: 0.84rem;
+      }
+
+      .field-list .highlight-field {
+        border-color: #5d9caf;
+        background: #dff1f6;
+        color: #06465c;
+        font-weight: 800;
+      }
+
+      .field-type {
+        color: var(--muted);
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.74rem;
+        font-weight: 500;
+      }
+
+      .flow-arrow {
+        position: relative;
+        height: 2px;
+        background: var(--line-strong);
+      }
+
+      .flow-arrow::after {
+        position: absolute;
+        top: 50%;
+        right: -1px;
+        width: 9px;
+        height: 9px;
+        border-top: 2px solid var(--line-strong);
+        border-right: 2px solid var(--line-strong);
+        content: "";
+        transform: translateY(-50%) rotate(45deg);
+      }
+
+      .mini-stack {
+        display: grid;
+        gap: 9px;
+      }
+
+      .mini-box {
+        padding: 11px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: white;
+        font-size: 0.81rem;
+      }
+
+      .mini-box strong {
+        display: block;
+        margin-bottom: 2px;
+      }
+
+      .risk-note {
+        display: flex;
+        margin-top: 18px;
+        padding: 15px 16px;
+        border: 1px solid #f0b4af;
+        border-radius: 10px;
+        background: var(--red-soft);
+        color: #702020;
+        gap: 12px;
+      }
+
+      .risk-note .symbol {
+        flex: 0 0 auto;
+        font-size: 1.25rem;
+        font-weight: 900;
+      }
+
+      .risk-note p {
+        margin: 0;
+      }
+
+      .code-card {
+        overflow: hidden;
+        border: 1px solid #234155;
+        border-radius: 13px;
+        background: #0d2230;
+        color: #d8edf3;
+      }
+
+      .code-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        border-bottom: 1px solid #315064;
+        background: #173344;
+        color: #a9dbe6;
+        font-size: 0.78rem;
+        font-weight: 750;
+      }
+
+      pre {
+        margin: 0;
+        padding: 18px;
+        overflow: auto;
+        font-size: 0.79rem;
+        line-height: 1.55;
+        tab-size: 2;
+      }
+
+      .json-key {
+        color: #9fd9ef;
+      }
+
+      .json-string {
+        color: #bde59f;
+      }
+
+      .json-number {
+        color: #ffd28d;
+      }
+
+      .property-table,
+      .matrix,
+      .check-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        background: white;
+        box-shadow: var(--shadow);
+      }
+
+      th,
+      td {
+        padding: 13px 15px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: #eaf1f5;
+        color: #284354;
+        font-size: 0.79rem;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      td {
+        color: #334b5c;
+        font-size: 0.9rem;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .mono {
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.82em;
+      }
+
+      .target-flow {
+        display: grid;
+        grid-template-columns:
+          minmax(170px, 0.85fr) 54px minmax(310px, 1.35fr)
+          54px minmax(190px, 0.9fr);
+        align-items: stretch;
+        gap: 8px;
+      }
+
+      .source-stack,
+      .destination-stack {
+        display: grid;
+        align-content: center;
+        gap: 10px;
+      }
+
+      .auth-box {
+        display: grid;
+        place-items: center;
+        border: 2px solid var(--green);
+        background: var(--green-soft);
+        text-align: center;
+      }
+
+      .auth-formula {
+        width: 100%;
+        margin-top: 13px;
+        padding: 12px;
+        border: 1px dashed #75ac91;
+        border-radius: 9px;
+        background: rgb(255 255 255 / 70%);
+        color: #14593d;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.78rem;
+        text-align: left;
+      }
+
+      .ownership-card {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .ownership-card::before {
+        display: block;
+        height: 5px;
+        background: var(--blue);
+        content: "";
+      }
+
+      .ownership-card:nth-child(2)::before {
+        background: var(--purple);
+      }
+
+      .ownership-card:nth-child(3)::before {
+        background: var(--green);
+      }
+
+      .ownership-card .content {
+        padding: 20px;
+      }
+
+      .ownership-card ul,
+      .step-card ul,
+      .plain-list {
+        margin: 12px 0 0;
+        padding-left: 20px;
+        color: var(--muted);
+      }
+
+      .ownership-card li,
+      .step-card li,
+      .plain-list li {
+        margin: 5px 0;
+      }
+
+      .simulator {
+        overflow: hidden;
+      }
+
+      .simulator-controls {
+        padding: 20px 22px;
+        border-bottom: 1px solid var(--line);
+        background: #f8fbfc;
+      }
+
+      .control-group + .control-group {
+        margin-top: 16px;
+      }
+
+      .control-label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .choice-button {
+        padding: 8px 12px;
+        border: 1px solid var(--line-strong);
+        border-radius: 9px;
+        background: white;
+        color: #294454;
+        cursor: pointer;
+        font-size: 0.84rem;
+        font-weight: 750;
+      }
+
+      .choice-button:hover,
+      .choice-button:focus-visible {
+        border-color: var(--blue);
+        outline: 3px solid rgb(0 106 139 / 15%);
+      }
+
+      .choice-button[aria-pressed="true"] {
+        border-color: var(--blue-dark);
+        background: var(--blue-dark);
+        color: white;
+      }
+
+      .simulator-body {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        min-height: 440px;
+      }
+
+      .mock-app {
+        padding: 22px;
+        border-right: 1px solid var(--line);
+        background: #edf3f6;
+      }
+
+      .app-window {
+        overflow: hidden;
+        min-height: 390px;
+        border: 1px solid #b8c9d5;
+        border-radius: 12px;
+        background: white;
+        box-shadow: 0 10px 24px rgb(18 35 52 / 8%);
+      }
+
+      .app-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 13px 16px;
+        background: #073f57;
+        color: white;
+      }
+
+      .app-bar strong {
+        font-size: 0.9rem;
+      }
+
+      .case-access {
+        padding: 4px 8px;
+        border: 1px solid rgb(255 255 255 / 35%);
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 800;
+      }
+
+      .app-tabs {
+        display: flex;
+        overflow-x: auto;
+        border-bottom: 1px solid var(--line);
+        background: #f8fbfc;
+      }
+
+      .app-tab {
+        min-width: 145px;
+        padding: 13px 12px 10px;
+        border: 0;
+        border-right: 1px solid var(--line);
+        border-bottom: 3px solid transparent;
+        background: transparent;
+        color: #355064;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .app-tab[aria-selected="true"] {
+        border-bottom-color: var(--blue);
+        background: white;
+        color: var(--blue-dark);
+      }
+
+      .app-tab:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      .tab-name {
+        display: block;
+        font-size: 0.82rem;
+        font-weight: 800;
+      }
+
+      .tab-capability {
+        display: block;
+        margin-top: 3px;
+        font-size: 0.69rem;
+      }
+
+      .app-content {
+        padding: 18px;
+      }
+
+      .content-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        gap: 10px;
+      }
+
+      .content-header h4 {
+        margin: 0;
+      }
+
+      .capability-badge {
+        padding: 5px 8px;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        font-weight: 850;
+      }
+
+      .capability-rw {
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .capability-r {
+        background: var(--amber-soft);
+        color: var(--amber);
+      }
+
+      .capability-none {
+        background: var(--red-soft);
+        color: var(--red);
+      }
+
+      .fake-form {
+        display: grid;
+        gap: 12px;
+      }
+
+      .fake-field {
+        display: grid;
+        gap: 6px;
+      }
+
+      .fake-field span {
+        color: #41596a;
+        font-size: 0.74rem;
+        font-weight: 750;
+      }
+
+      .fake-input {
+        min-height: 39px;
+        padding: 10px;
+        border: 1px solid #aebfcb;
+        border-radius: 7px;
+        background: white;
+        color: #4c6170;
+        font-size: 0.78rem;
+      }
+
+      .fake-input.large {
+        min-height: 80px;
+      }
+
+      .fake-input.readonly {
+        background: #edf1f3;
+      }
+
+      .fake-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 2px;
+      }
+
+      .save-button {
+        padding: 9px 15px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--blue-dark);
+        color: white;
+        font-weight: 800;
+      }
+
+      .save-button:disabled {
+        background: #b6c2c9;
+        color: #526572;
+      }
+
+      .decision-panel {
+        padding: 22px;
+        background: white;
+      }
+
+      .persona-description {
+        min-height: 54px;
+        margin-bottom: 16px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .decision-list {
+        display: grid;
+        margin: 0;
+        padding: 0;
+        gap: 10px;
+        list-style: none;
+      }
+
+      .decision-row {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr) auto;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        gap: 9px;
+      }
+
+      .decision-index {
+        display: grid;
+        width: 24px;
+        height: 24px;
+        place-items: center;
+        border-radius: 50%;
+        background: #e7eff3;
+        color: #345060;
+        font-size: 0.7rem;
+        font-weight: 850;
+      }
+
+      .decision-name {
+        font-size: 0.78rem;
+        font-weight: 750;
+      }
+
+      .decision-result {
+        font-size: 0.72rem;
+        font-weight: 900;
+      }
+
+      .result-allow {
+        color: var(--green);
+      }
+
+      .result-limit {
+        color: var(--amber);
+      }
+
+      .result-deny {
+        color: var(--red);
+      }
+
+      .http-decisions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: 16px;
+        gap: 10px;
+      }
+
+      .http-result {
+        padding: 11px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: #f8fafb;
+      }
+
+      .http-method {
+        display: block;
+        color: var(--muted);
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 0.7rem;
+      }
+
+      .http-status {
+        display: block;
+        margin-top: 3px;
+        font-size: 0.9rem;
+        font-weight: 900;
+      }
+
+      .bypass-map {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .bypass-item {
+        position: relative;
+        padding: 16px 13px;
+        border: 1px solid #e4a5a1;
+        border-radius: 11px;
+        background: var(--red-soft);
+        text-align: center;
+      }
+
+      .bypass-item::after {
+        position: absolute;
+        top: 50%;
+        right: -10px;
+        z-index: 2;
+        color: #b75750;
+        content: "→";
+        font-weight: 900;
+        transform: translateY(-50%);
+      }
+
+      .bypass-item:last-child::after {
+        display: none;
+      }
+
+      .bypass-item strong {
+        display: block;
+        margin-bottom: 5px;
+        color: #74231e;
+        font-size: 0.84rem;
+      }
+
+      .bypass-item span {
+        color: #87413c;
+        font-size: 0.76rem;
+      }
+
+      .secure-route {
+        margin-top: 16px;
+        padding: 16px;
+        border: 1px solid #91c1a7;
+        border-radius: 11px;
+        background: var(--green-soft);
+        color: #185a3e;
+        text-align: center;
+        font-weight: 800;
+      }
+
+      .timeline {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .timeline::before {
+        position: absolute;
+        top: 21px;
+        right: 7%;
+        left: 7%;
+        z-index: 0;
+        height: 2px;
+        background: #9fb4c1;
+        content: "";
+      }
+
+      .step-card {
+        position: relative;
+        z-index: 1;
+        padding-top: 0;
+      }
+
+      .step-number {
+        display: grid;
+        width: 44px;
+        height: 44px;
+        margin: 0 auto 13px;
+        place-items: center;
+        border: 2px solid var(--blue);
+        border-radius: 50%;
+        background: white;
+        color: var(--blue-dark);
+        font-weight: 900;
+      }
+
+      .step-content {
+        min-height: 198px;
+        padding: 15px;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: white;
+      }
+
+      .step-content h3 {
+        font-size: 0.9rem;
+      }
+
+      .step-content p,
+      .step-content li {
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+
+      .acceptance-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .acceptance-card {
+        padding: 20px;
+      }
+
+      .acceptance-card h3 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .acceptance-card h3::before {
+        display: grid;
+        width: 25px;
+        height: 25px;
+        flex: 0 0 auto;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--green-soft);
+        color: var(--green);
+        content: "✓";
+        font-size: 0.78rem;
+        font-weight: 900;
+      }
+
+      .acceptance-card ul {
+        margin: 0;
+        padding-left: 21px;
+        color: var(--muted);
+      }
+
+      .acceptance-card li {
+        margin: 7px 0;
+      }
+
+      .source-footer {
+        padding: 30px 0 54px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .source-footer h2 {
+        color: var(--ink);
+        font-size: 1.15rem;
+      }
+
+      .source-footer ul {
+        padding-left: 20px;
+      }
+
+      .source-footer li {
+        margin: 7px 0;
+      }
+
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      @media (max-width: 980px) {
+        .summary-grid,
+        .three-column {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .current-flow,
+        .target-flow {
+          grid-template-columns: 1fr;
+        }
+
+        .flow-arrow {
+          width: 2px;
+          height: 35px;
+          margin-inline: auto;
+        }
+
+        .flow-arrow::after {
+          top: auto;
+          right: 50%;
+          bottom: -1px;
+          transform: translateX(50%) rotate(135deg);
+        }
+
+        .simulator-body {
+          grid-template-columns: 1fr;
+        }
+
+        .mock-app {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .bypass-map {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .bypass-item::after {
+          display: none;
+        }
+
+        .timeline {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          row-gap: 24px;
+        }
+
+        .timeline::before {
+          display: none;
+        }
+      }
+
+      @media (max-width: 680px) {
+        .header-inner,
+        main,
+        .source-footer,
+        .toc-inner {
+          width: min(1180px, calc(100% - 24px));
+        }
+
+        .header-inner {
+          padding: 42px 0 38px;
+        }
+
+        main {
+          padding-top: 28px;
+        }
+
+        .summary-grid,
+        .two-column,
+        .three-column,
+        .acceptance-grid,
+        .timeline,
+        .bypass-map {
+          grid-template-columns: 1fr;
+        }
+
+        .section-heading {
+          grid-template-columns: 42px minmax(0, 1fr);
+          gap: 9px;
+        }
+
+        .section-number {
+          width: 36px;
+          height: 36px;
+        }
+
+        .architecture-figure,
+        .simulator-controls,
+        .mock-app,
+        .decision-panel {
+          padding: 16px;
+        }
+
+        .architecture-title {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .http-decisions {
+          grid-template-columns: 1fr;
+        }
+
+        .app-tab {
+          min-width: 128px;
+        }
+
+        th,
+        td {
+          padding: 10px 11px;
+        }
+      }
+
+      @media print {
+        .toc,
+        .simulator-controls {
+          display: none;
+        }
+
+        body {
+          background: white;
+        }
+
+        .card,
+        .table-wrap {
+          break-inside: avoid;
+          box-shadow: none;
+        }
+
+        section {
+          break-before: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page-header">
+      <div class="header-inner">
+        <p class="eyebrow">Tekniskt beslutsunderlag</p>
+        <h1>Uppdelad utredning i Support Management</h1>
+        <p class="lead">
+          Hur tre separata utredningsdelar kan lagras som JSON Parameters,
+          redigeras parallellt och skyddas med rättigheter på både ärende- och
+          sektionsnivå.
+        </p>
+        <div class="hero-tags" aria-label="Dokumentets avgränsningar">
+          <span class="hero-tag"
+            >Verifierat: Draken + Support Management 14.14</span
+          >
+          <span class="hero-tag">Formdefinition: JsonSchema + UI Schema</span>
+          <span class="hero-tag">Mål: tre dynamiska sektioner</span>
+          <span class="hero-tag">Säkerhet: deny by default</span>
+          <span class="hero-tag">Samtidighet: version per JSON Parameter</span>
+        </div>
+      </div>
+    </header>
+
+    <nav class="toc" aria-label="Innehåll">
+      <div class="toc-inner">
+        <a href="#rekommendation">Rekommendation</a>
+        <a href="#nulage">Nuläge</a>
+        <a href="#jsonparameters">JSON Parameters</a>
+        <a href="#schemalagring">Schema + UI</a>
+        <a href="#malbild">Målbild</a>
+        <a href="#rattigheter">Rättigheter</a>
+        <a href="#sakerhetsflode">Validering</a>
+        <a href="#genomforande">Genomförande</a>
+      </div>
+    </nav>
+
+    <main>
+      <section id="rekommendation">
+        <div class="section-heading">
+          <div class="section-number">1</div>
+          <div>
+            <h2>Rekommendation i korthet</h2>
+            <p class="section-intro">
+              Behåll ärendet generellt. Låt JSON Parameters äga formulärdata,
+              AccessMapper äga gruppregler och Support Management verkställa
+              beslutet vid varje läsning och skrivning.
+            </p>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <article class="card summary-card">
+            <p class="kicker">1 · Instansdata</p>
+            <h3>En parameter per del</h3>
+            <p>
+              Varje utredningsdel får egen <span class="mono">key</span>,
+              <span class="mono">schemaId</span>, data och version.
+            </p>
+          </article>
+          <article class="card summary-card">
+            <p class="kicker">2 · Konfiguration</p>
+            <h3>Serverägd sektionsdefinition</h3>
+            <p>
+              Definitionen anger titel, ordning, schema och stabil resursnyckel
+              för behörighetskontroll.
+            </p>
+          </article>
+          <article class="card summary-card">
+            <p class="kicker">3 · Policy</p>
+            <h3>Separat AccessMapper-typ</h3>
+            <p>
+              Använd exempelvis <span class="mono">errandSection</span>. Blanda
+              inte sektionsrättigheter med labels.
+            </p>
+          </article>
+          <article class="card summary-card">
+            <p class="kicker">4 · Verkställighet</p>
+            <h3>Backend kontrollerar alltid</h3>
+            <p>
+              Frontend visar capabilities, men varje GET, PUT och DELETE
+              auktoriseras på nytt av backend.
+            </p>
+          </article>
+        </div>
+
+        <div class="decision">
+          <strong>Föreslaget beslut:</strong> inför inte
+          <span class="mono">investigationPart1</span>,
+          <span class="mono">investigationPart2</span> och
+          <span class="mono">investigationPart3</span> som nya fasta fält på
+          <span class="mono">Errand</span>. Återanvänd den generella JSON
+          Parameter-mekanismen och lägg endast till den minsta generella skarven
+          som behövs: en sektionsdefinition och en nyckelbaserad
+          behörighetskontroll.
+        </div>
+      </section>
+
+      <section id="nulage">
+        <div class="section-heading">
+          <div class="section-number">2</div>
+          <div>
+            <h2>Så ser ett ärende ut idag</h2>
+            <p class="section-intro">
+              I Draken hämtas JSON Parameters fortfarande som en lista i hela
+              ärendet och visas skrivskyddat under ”Ärendeuppgifter”. Support
+              Management 14.14 har dessutom fått dedikerade GET-, PUT- och
+              DELETE-endpoints per parameter-key, men Drakens BFF använder dem
+              ännu inte.
+            </p>
+          </div>
+        </div>
+
+        <figure class="card architecture-figure">
+          <div class="architecture-title">
+            <h3>Figur 1 · Nuvarande data- och presentationsflöde</h3>
+            <span class="status-mark status-current">Nuläge</span>
+          </div>
+          <div class="current-flow">
+            <div class="system-box">
+              <h4>Draken / BFF</h4>
+              <p>
+                Hämtar och uppdaterar fortfarande hela ärendet via Support
+                Managements generella ärendeendpoint.
+              </p>
+              <div class="mini-stack" style="margin-top: 12px">
+                <div class="mini-box">
+                  <strong>Grundinformation</strong>
+                  Vanlig redigerbar ärendetabb
+                </div>
+                <div class="mini-box">
+                  <strong>Ärendeuppgifter</strong>
+                  Renderar <span class="mono">jsonParameters[]</span> med
+                  JSON-schema
+                </div>
+              </div>
+            </div>
+            <div class="flow-arrow" aria-hidden="true"></div>
+            <div class="data-box errand-box">
+              <h4>Errand</h4>
+              <p>Gemensamt ärendeobjekt i Support Management</p>
+              <ul class="field-list">
+                <li>
+                  <span>id, errandNumber, title</span
+                  ><span class="field-type">core</span>
+                </li>
+                <li>
+                  <span>status, priority, phases</span
+                  ><span class="field-type">workflow</span>
+                </li>
+                <li>
+                  <span>stakeholders, assignedUserId</span
+                  ><span class="field-type">actors</span>
+                </li>
+                <li>
+                  <span>classification, labels</span
+                  ><span class="field-type">taxonomy</span>
+                </li>
+                <li>
+                  <span>parameters[]</span
+                  ><span class="field-type">string values</span>
+                </li>
+                <li class="highlight-field">
+                  <span>jsonParameters[]</span
+                  ><span class="field-type">schema + JSON</span>
+                </li>
+                <li>
+                  <span>actions, notifications</span
+                  ><span class="field-type">automation</span>
+                </li>
+              </ul>
+            </div>
+            <div class="flow-arrow" aria-hidden="true"></div>
+            <div class="system-box">
+              <h4>Relaterade tjänster</h4>
+              <div class="mini-stack">
+                <div class="mini-box">
+                  <strong>JSON Schema</strong>
+                  Lagrar versionssatt JSON Schema och ett separat UI Schema;
+                  Draken hämtar båda
+                </div>
+                <div class="mini-box">
+                  <strong>AccessMapper</strong>
+                  Mappar idag label-sökvägar till LR, R eller RW på hela ärendet
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="risk-note">
+            <div class="symbol" aria-hidden="true">!</div>
+            <p>
+              <strong>Nuvarande säkerhetsgräns är ärendet.</strong> Eftersom
+              <span class="mono">jsonParameters[]</span> ingår i hela
+              ärendesvaret och kan följa med i den generella uppdateringen finns
+              ännu ingen isolerad läs-/skrivgräns per parameter.
+            </p>
+          </div>
+          <figcaption>
+            14.14 ger en bra grund för separat sparning och konfliktkontroll,
+            men rättighetsgränsen är fortfarande hela ärendet och de generella
+            ärendevägarna kan fortfarande exponera samma JSON-data.
+          </figcaption>
+        </figure>
+
+        <div class="two-column" style="margin-top: 18px">
+          <div class="code-card">
+            <div class="code-title">
+              <span>Förenklad Errand i Draken</span
+              ><span>nuvarande presentationsväg</span>
+            </div>
+            <pre aria-label="Förenklat JSON-exempel på nuvarande ärende"><code>{
+  <span class="json-key">"id"</span>: <span class="json-string">"f3f8…"</span>,
+  <span class="json-key">"errandNumber"</span>: <span class="json-string">"IAF-2026-1042"</span>,
+  <span class="json-key">"status"</span>: <span class="json-string">"UNDER_INVESTIGATION"</span>,
+  <span class="json-key">"labels"</span>: [
+    { <span class="json-key">"resourcePath"</span>: <span class="json-string">"IAF/DEVIATION/MEDICATION"</span> }
+  ],
+  <span class="json-key">"parameters"</span>: [
+    { <span class="json-key">"key"</span>: <span class="json-string">"source"</span>, <span class="json-key">"values"</span>: [<span class="json-string">"E-tjänst"</span>] }
+  ],
+  <span class="json-key">"jsonParameters"</span>: [
+    {
+      <span class="json-key">"key"</span>: <span class="json-string">"caseData"</span>,
+      <span class="json-key">"schemaId"</span>: <span class="json-string">"2281_iaf-case-data_1.0"</span>,
+      <span class="json-key">"value"</span>: { <span class="json-key">"reportedEvent"</span>: <span class="json-string">"…"</span> }
+    }
+  ]
+}</code></pre>
+          </div>
+
+          <div class="card plain-card">
+            <h3>Vad Draken gör med datat</h3>
+            <ul class="plain-list">
+              <li>
+                Det incheckade kontraktet har <span class="mono">key</span>,
+                <span class="mono">schemaId</span> och
+                <span class="mono">value</span>, men ännu inte 14.14-fältet
+                <span class="mono">version</span>.
+              </li>
+              <li>
+                BFF-modellen accepterar
+                <span class="mono">jsonParameters[]</span> i samma DTO som
+                övriga ärendefält.
+              </li>
+              <li>
+                Generell PATCH vidarebefordrar inkommande ärendedata utan
+                <span class="mono">If-Match</span>.
+              </li>
+              <li>
+                Frontend hämtar JSON Schema och UI Schema via BFF och renderar
+                parametern skrivskyddat med RJSF.
+              </li>
+              <li>
+                Om UI Schema saknas låter Draken formulärkomponenten skapa en
+                standardlayout.
+              </li>
+              <li>
+                Labels används för klassificering och ärendets nuvarande
+                accessberäkning.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card plain-card" style="margin-top: 18px">
+          <div class="architecture-title">
+            <h3>
+              Kodgranskning · vad Support Management 14.14 faktiskt ger oss
+            </h3>
+            <span class="status-mark status-current"
+              >Verifierat 2026-08-10</span
+            >
+          </div>
+          <div class="table-wrap">
+            <table class="property-table">
+              <thead>
+                <tr>
+                  <th>Förmåga</th>
+                  <th>Status i 14.14</th>
+                  <th>Konsekvens för lösningen</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>GET / PUT / DELETE per JSON Parameter-key</td>
+                  <td>Finns</td>
+                  <td>
+                    Återanvänd endpoints; skapa inte en parallell lagringsväg.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Egen databasversion och ETag per parameter</td>
+                  <td>Finns</td>
+                  <td>
+                    Två olika keys kan sparas utan att ersätta varandras värden.
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="mono">If-Match</span> vid PUT / DELETE</td>
+                  <td>Valfri</td>
+                  <td>
+                    Draken måste alltid skicka ETag; för stark garanti bör SM
+                    kräva den vid ändring.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Validering mot angivet JSON Schema i per-key PUT</td>
+                  <td>Saknas</td>
+                  <td>
+                    Den generella Errand-valideraren används inte av den nya
+                    resursen och behöver återanvändas.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Rättighet per parameter / utredningsdel</td>
+                  <td>Saknas</td>
+                  <td>
+                    GET använder R/RW och PUT/DELETE RW för hela ärendet;
+                    sektionskontrollen återstår.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Revision / event från per-key-endpoint</td>
+                  <td>Inte explicit implementerat</td>
+                  <td>
+                    Audit och historik måste kompletteras och testas innan
+                    skyddad data används.
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    Unik databasregel för
+                    <span class="mono">(errandId, key)</span>
+                  </td>
+                  <td>Saknas</td>
+                  <td>
+                    Föräldraradens lås serialiserar skrivning, men databasen bör
+                    också skydda invarianten.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="jsonparameters">
+        <div class="section-heading">
+          <div class="section-number">3</div>
+          <div>
+            <h2>Hur JSON Parameters används för tre delar</h2>
+            <p class="section-intro">
+              Varje del blir ett självständigt dokument. Schemat äger formens
+              struktur, parametern äger användarens data och parameter-versionen
+              kan skydda mot överskrivning när klienten använder ETag och
+              <span class="mono">If-Match</span>.
+            </p>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="property-table">
+            <thead>
+              <tr>
+                <th>JSON Parameter</th>
+                <th>Exempel på schema</th>
+                <th>Ansvar</th>
+                <th>Samtidighet</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono">investigation.cause-analysis</td>
+                <td class="mono">2281_iaf-cause-analysis_1.0</td>
+                <td>Orsaker och bidragande faktorer</td>
+                <td>Egen version / ETag</td>
+              </tr>
+              <tr>
+                <td class="mono">investigation.impact-assessment</td>
+                <td class="mono">2281_iaf-impact-assessment_1.0</td>
+                <td>Konsekvens och riskbedömning</td>
+                <td>Egen version / ETag</td>
+              </tr>
+              <tr>
+                <td class="mono">investigation.measures</td>
+                <td class="mono">2281_iaf-measures_1.0</td>
+                <td>Åtgärder, ansvar och uppföljning</td>
+                <td>Egen version / ETag</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="two-column" style="margin-top: 18px">
+          <div class="code-card">
+            <div class="code-title">
+              <span>Instansdata på ärendet</span><span>lagras</span>
+            </div>
+            <pre><code>{
+  <span class="json-key">"key"</span>: <span class="json-string">"investigation.cause-analysis"</span>,
+  <span class="json-key">"schemaId"</span>: <span class="json-string">"2281_iaf-cause-analysis_1.0"</span>,
+  <span class="json-key">"value"</span>: {
+    <span class="json-key">"primaryCause"</span>: <span class="json-string">"Bristande rutin"</span>,
+    <span class="json-key">"contributingFactors"</span>: [<span class="json-string">"…"</span>]
+  },
+  <span class="json-key">"version"</span>: <span class="json-number">4</span>
+}</code></pre>
+          </div>
+          <div class="code-card">
+            <div class="code-title">
+              <span>Sektionsdefinition</span
+              ><span>serverägd konfiguration</span>
+            </div>
+            <pre><code>{
+  <span class="json-key">"key"</span>: <span class="json-string">"investigation.cause-analysis"</span>,
+  <span class="json-key">"title"</span>: <span class="json-string">"Orsaksanalys"</span>,
+  <span class="json-key">"schemaId"</span>: <span class="json-string">"2281_iaf-cause-analysis_1.0"</span>,
+  <span class="json-key">"accessResource"</span>:
+    <span class="json-string">"DEVIATION/INVESTIGATION/CAUSE_ANALYSIS"</span>,
+  <span class="json-key">"order"</span>: <span class="json-number">10</span>
+}</code></pre>
+          </div>
+        </div>
+
+        <div class="three-column" style="margin-top: 18px">
+          <article class="card ownership-card">
+            <div class="content">
+              <h3>JsonSchema-tjänsten äger</h3>
+              <ul>
+                <li>fält och datatyper</li>
+                <li>obligatoriska värden</li>
+                <li>domänvalidering</li>
+                <li>versionerad formulärstruktur</li>
+                <li>UI Schema för RJSF-layout</li>
+              </ul>
+            </div>
+          </article>
+          <article class="card ownership-card">
+            <div class="content">
+              <h3>Support Management äger</h3>
+              <ul>
+                <li>sparad instansdata</li>
+                <li>parameter-key och schema-ID</li>
+                <li>version / ETag per parameter</li>
+                <li>dedikerade per-key-endpoints</li>
+              </ul>
+            </div>
+          </article>
+          <article class="card ownership-card">
+            <div class="content">
+              <h3>AccessMapper äger</h3>
+              <ul>
+                <li>AD-grupp → resurs</li>
+                <li>nivå R eller RW</li>
+                <li>namespace och kommun</li>
+                <li>centralt administrerad policy</li>
+              </ul>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="schemalagring">
+        <div class="section-heading">
+          <div class="section-number">3b</div>
+          <div>
+            <h2>Hur JSON Schema och UI Schema lagras</h2>
+            <p class="section-intro">
+              JsonSchema-tjänsten är rätt ägare för formdefinitionerna. Den ska
+              däremot inte bära rättigheter, workflowstatus eller användarens
+              ifyllda utredningsdata.
+            </p>
+          </div>
+        </div>
+
+        <figure class="card architecture-figure">
+          <div class="architecture-title">
+            <h3>Figur 2 · Logisk referens och fysisk lagring</h3>
+            <span class="status-mark status-current"
+              >Nuvarande implementation</span
+            >
+          </div>
+          <div class="current-flow">
+            <div class="system-box">
+              <h4>Support Management</h4>
+              <p>
+                En rad per <span class="mono">errandId + key</span> med
+                JSON-värde, schema-ID och version.
+              </p>
+              <div class="mini-box" style="margin-top: 12px">
+                <strong>json_parameter</strong>
+                <span class="mono">key · schema_id · value · version</span>
+              </div>
+            </div>
+            <div class="flow-arrow" aria-hidden="true"></div>
+            <div class="system-box">
+              <h4>JsonSchema / MariaDB</h4>
+              <p>
+                <span class="mono">schemaId</span> är en logisk referens till en
+                exakt, kommunsspecifik schemaversion.
+              </p>
+              <div class="mini-stack" style="margin-top: 12px">
+                <div class="mini-box">
+                  <strong>json_schema</strong>
+                  <span class="mono">2281_iaf-cause-analysis_1.0</span>
+                </div>
+                <div class="mini-box">
+                  <strong>ui_schema</strong>
+                  En-till-en via <span class="mono">json_schema_id</span>
+                </div>
+              </div>
+            </div>
+            <div class="flow-arrow" aria-hidden="true"></div>
+            <div class="system-box">
+              <h4>Draken / RJSF</h4>
+              <p>
+                Hämtar båda resurserna separat och kombinerar dem med
+                parameterns sparade <span class="mono">value</span>.
+              </p>
+              <div class="mini-stack" style="margin-top: 12px">
+                <div class="mini-box">
+                  <strong>JSON Schema</strong>fält, typer och validering
+                </div>
+                <div class="mini-box">
+                  <strong>UI Schema</strong>widgets, ordning, rader och
+                  sektioner
+                </div>
+              </div>
+            </div>
+          </div>
+          <figcaption>
+            Kopplingen mellan SM och JsonSchema är ett schema-ID i data, inte en
+            databas-foreign-key mellan tjänsterna. Rättighetsbeslutet får därför
+            inte härledas från klientstyrt schema-ID utan från serverägd
+            sektionskonfiguration.
+          </figcaption>
+        </figure>
+
+        <div class="two-column" style="margin-top: 18px">
+          <article class="card plain-card">
+            <h3>Versionsregler i JsonSchema</h3>
+            <ul class="plain-list">
+              <li>
+                ID skapas som
+                <span class="mono">municipalityId_name_version</span> och
+                normaliseras till gemener.
+              </li>
+              <li>
+                JSON Schema skapas med POST; en befintlig version ersätts inte.
+              </li>
+              <li>
+                En lägre version får inte skapas efter att en högre version
+                finns.
+              </li>
+              <li>
+                UI Schema är exakt ett per JSON-schemaversion och kan ersättas
+                med PUT.
+              </li>
+              <li>
+                UI Schema har inget eget versionsnummer eller ETag; samtidiga
+                uppdateringar är i praktiken last-write-wins.
+              </li>
+            </ul>
+          </article>
+          <article class="card plain-card">
+            <h3>Konsekvens för tre utredningsdelar</h3>
+            <ul class="plain-list">
+              <li>
+                Skapa ett JSON Schema och ett UI Schema per del och version.
+              </li>
+              <li>Lagra exakt schema-ID på motsvarande JSON Parameter.</li>
+              <li>
+                Använd en namngivningskonvention som inkluderar domän/namespace;
+                tjänsten isolerar bara per kommun.
+              </li>
+              <li>
+                Versionssätt JSON Schema när en UI-förändring måste vara
+                reproducerbar för äldre ärenden.
+              </li>
+              <li>
+                Lagra aldrig R/RW, AD-grupper eller workflowlås i UI Schema.
+              </li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="decision" style="margin-top: 18px">
+          <strong>Scopebeslut:</strong> JsonSchema-tjänsten ingår i lösningen
+          som katalog, validerare och presentationskälla. Den ingår inte som
+          policy-store. Sektionsrättigheter ska fortsatt ägas av AccessMapper
+          och verkställas av Support Management.
+        </div>
+      </section>
+
+      <section id="malbild">
+        <div class="section-heading">
+          <div class="section-number">4</div>
+          <div>
+            <h2>Föreslagen målbild</h2>
+            <p class="section-intro">
+              Ett anrop måste passera två oberoende säkerhetsgränser: åtkomst
+              till ärendet och åtkomst till den efterfrågade sektionen. Den mest
+              begränsande nivån vinner.
+            </p>
+          </div>
+        </div>
+
+        <figure class="card architecture-figure">
+          <div class="architecture-title">
+            <h3>Figur 3 · Tvåstegsauktorisering</h3>
+            <span class="status-mark status-target">Målbild</span>
+          </div>
+          <div class="target-flow">
+            <div class="source-stack">
+              <div class="system-box">
+                <h4>Betrodd identitet</h4>
+                <p>
+                  AD-konto från autentiserad token eller betrodd gateway-header
+                </p>
+              </div>
+              <div class="system-box">
+                <h4>AccessMapper</h4>
+                <p>
+                  <span class="mono">label/accessScope</span> för ärendet och
+                  <span class="mono">errandSection</span> för delen
+                </p>
+              </div>
+              <div class="system-box">
+                <h4>Sektionsdefinition</h4>
+                <p>Mappar URL-nyckel till schema och accessresurs</p>
+              </div>
+            </div>
+            <div class="flow-arrow" aria-hidden="true"></div>
+            <div class="system-box auth-box">
+              <div>
+                <h4>Support Management Authorization</h4>
+                <p>Fattar ett nytt beslut vid varje operation</p>
+                <div class="auth-formula">
+                  canRead = caseAccess ≥ R ∧ sectionAccess ≥ R<br />
+                  canWrite = caseAccess = RW ∧ sectionAccess = RW<br />
+                  no match / servicefel = DENY
+                </div>
+              </div>
+            </div>
+            <div class="flow-arrow" aria-hidden="true"></div>
+            <div class="destination-stack">
+              <div class="system-box">
+                <h4>GET section</h4>
+                <p>Returnerar data endast efter READ-beslut</p>
+              </div>
+              <div class="system-box">
+                <h4>PUT section</h4>
+                <p>
+                  Mål: spara endast efter WRITE, JSON-schema och obligatorisk
+                  If-Match
+                </p>
+              </div>
+              <div class="system-box">
+                <h4>Manifest</h4>
+                <p>Returnerar beräknade capabilities för frontend</p>
+              </div>
+            </div>
+          </div>
+          <figcaption>
+            Capabilities i frontend är endast presentation. Det auktoritativa
+            beslutet sker på nytt i Support Management när data hämtas eller
+            ändras.
+          </figcaption>
+        </figure>
+
+        <div class="code-card" style="margin-top: 18px">
+          <div class="code-title">
+            <span>Exempel: AccessMapper-policy</span
+            ><span>lagras centralt, inte på ärendet</span>
+          </div>
+          <pre><code>{
+  <span class="json-key">"group"</span>: <span class="json-string">"&lt;AD-GROUP-GUID&gt;"</span>,
+  <span class="json-key">"accessByType"</span>: [
+    {
+      <span class="json-key">"type"</span>: <span class="json-string">"errandSection"</span>,
+      <span class="json-key">"access"</span>: [
+        {
+          <span class="json-key">"pattern"</span>: <span class="json-string">"DEVIATION/INVESTIGATION/CAUSE_ANALYSIS"</span>,
+          <span class="json-key">"accessLevel"</span>: <span class="json-string">"RW"</span>
+        },
+        {
+          <span class="json-key">"pattern"</span>: <span class="json-string">"DEVIATION/INVESTIGATION/IMPACT_ASSESSMENT"</span>,
+          <span class="json-key">"accessLevel"</span>: <span class="json-string">"R"</span>
+        }
+      ]
+    }
+  ]
+}</code></pre>
+        </div>
+      </section>
+
+      <section id="rattigheter">
+        <div class="section-heading">
+          <div class="section-number">5</div>
+          <div>
+            <h2>Se hur rättigheterna slår igenom</h2>
+            <p class="section-intro">
+              Välj en användare och en utredningsdel. Exemplet visar både hur
+              Draken bör presentera delen och vilket beslut backend ska fatta
+              för GET respektive PUT.
+            </p>
+          </div>
+        </div>
+
+        <div class="card simulator" id="access-simulator">
+          <div class="simulator-controls">
+            <div class="control-group">
+              <span class="control-label">Aktuell användare</span>
+              <div
+                class="persona-switch"
+                role="group"
+                aria-label="Välj användare"
+              >
+                <button
+                  class="choice-button"
+                  type="button"
+                  data-persona="coordinator"
+                  aria-pressed="true"
+                >
+                  Samordnare
+                </button>
+                <button
+                  class="choice-button"
+                  type="button"
+                  data-persona="investigator-a"
+                  aria-pressed="false"
+                >
+                  Utredare A
+                </button>
+                <button
+                  class="choice-button"
+                  type="button"
+                  data-persona="investigator-b"
+                  aria-pressed="false"
+                >
+                  Utredare B
+                </button>
+                <button
+                  class="choice-button"
+                  type="button"
+                  data-persona="reader"
+                  aria-pressed="false"
+                >
+                  Läsare
+                </button>
+                <button
+                  class="choice-button"
+                  type="button"
+                  data-persona="unauthorized"
+                  aria-pressed="false"
+                >
+                  Obehörig
+                </button>
+              </div>
+            </div>
+            <div class="control-group">
+              <span class="control-label">Aktuell utredningsdel</span>
+              <div
+                class="section-switch"
+                role="group"
+                aria-label="Välj utredningsdel"
+              >
+                <button
+                  class="choice-button"
+                  type="button"
+                  data-section="cause"
+                  aria-pressed="true"
+                >
+                  Orsaksanalys
+                </button>
+                <button
+                  class="choice-button"
+                  type="button"
+                  data-section="impact"
+                  aria-pressed="false"
+                >
+                  Konsekvensbedömning
+                </button>
+                <button
+                  class="choice-button"
+                  type="button"
+                  data-section="measures"
+                  aria-pressed="false"
+                >
+                  Åtgärder
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="simulator-body">
+            <div class="mock-app">
+              <div class="app-window">
+                <div class="app-bar">
+                  <strong>IAF-2026-1042 · Avvikelse</strong>
+                  <span class="case-access" id="case-access">Ärende: RW</span>
+                </div>
+                <div
+                  class="app-tabs"
+                  role="tablist"
+                  aria-label="Utredningsdelar"
+                >
+                  <button
+                    class="app-tab"
+                    type="button"
+                    role="tab"
+                    data-app-section="cause"
+                    aria-selected="true"
+                  >
+                    <span class="tab-name">Orsaksanalys</span>
+                    <span class="tab-capability">Läsa &amp; skriva</span>
+                  </button>
+                  <button
+                    class="app-tab"
+                    type="button"
+                    role="tab"
+                    data-app-section="impact"
+                    aria-selected="false"
+                  >
+                    <span class="tab-name">Konsekvens</span>
+                    <span class="tab-capability">Läsa &amp; skriva</span>
+                  </button>
+                  <button
+                    class="app-tab"
+                    type="button"
+                    role="tab"
+                    data-app-section="measures"
+                    aria-selected="false"
+                  >
+                    <span class="tab-name">Åtgärder</span>
+                    <span class="tab-capability">Läsa &amp; skriva</span>
+                  </button>
+                </div>
+                <div class="app-content">
+                  <div class="content-header">
+                    <h4 id="mock-section-title">Orsaksanalys</h4>
+                    <span
+                      class="capability-badge capability-rw"
+                      id="mock-capability"
+                      >READ + WRITE</span
+                    >
+                  </div>
+                  <div
+                    class="fake-form"
+                    id="fake-form"
+                    aria-label="Exempelformulär"
+                  >
+                    <label class="fake-field">
+                      <span>Sammanfattning</span>
+                      <span class="fake-input" id="fake-summary"
+                        >Bristande rutin vid överlämning</span
+                      >
+                    </label>
+                    <label class="fake-field">
+                      <span>Analys</span>
+                      <span class="fake-input large" id="fake-analysis"
+                        >Beskrivning av bakomliggande faktorer…</span
+                      >
+                    </label>
+                    <div class="fake-actions">
+                      <button
+                        class="save-button"
+                        id="save-button"
+                        type="button"
+                      >
+                        Spara delen
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <aside class="decision-panel" aria-live="polite">
+              <h3 id="persona-name">Samordnare</h3>
+              <p class="persona-description" id="persona-description">
+                Har RW på ärendet och samtliga utredningsdelar.
+              </p>
+              <ol class="decision-list">
+                <li class="decision-row">
+                  <span class="decision-index">1</span>
+                  <span class="decision-name">Betrodd identitet</span>
+                  <span
+                    class="decision-result result-allow"
+                    id="identity-result"
+                    >OK</span
+                  >
+                </li>
+                <li class="decision-row">
+                  <span class="decision-index">2</span>
+                  <span class="decision-name">Åtkomst till ärendet</span>
+                  <span class="decision-result result-allow" id="case-result"
+                    >RW</span
+                  >
+                </li>
+                <li class="decision-row">
+                  <span class="decision-index">3</span>
+                  <span class="decision-name">Åtkomst till sektionen</span>
+                  <span class="decision-result result-allow" id="section-result"
+                    >RW</span
+                  >
+                </li>
+                <li class="decision-row">
+                  <span class="decision-index">4</span>
+                  <span class="decision-name">Effektiv capability</span>
+                  <span
+                    class="decision-result result-allow"
+                    id="effective-result"
+                    >READ + WRITE</span
+                  >
+                </li>
+              </ol>
+              <div class="http-decisions">
+                <div class="http-result">
+                  <span class="http-method">GET /json-parameters/{key}</span>
+                  <span class="http-status result-allow" id="get-result"
+                    >200 · ALLOW</span
+                  >
+                </div>
+                <div class="http-result">
+                  <span class="http-method">PUT /json-parameters/{key}</span>
+                  <span class="http-status result-allow" id="put-result"
+                    >200 · ALLOW</span
+                  >
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+
+        <div class="table-wrap" style="margin-top: 18px">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th>Användare</th>
+                <th>Ärende</th>
+                <th>Orsaksanalys</th>
+                <th>Konsekvens</th>
+                <th>Åtgärder</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Samordnare</td>
+                <td>RW</td>
+                <td>RW</td>
+                <td>RW</td>
+                <td>RW</td>
+              </tr>
+              <tr>
+                <td>Utredare A</td>
+                <td>RW</td>
+                <td>RW</td>
+                <td>R</td>
+                <td>–</td>
+              </tr>
+              <tr>
+                <td>Utredare B</td>
+                <td>RW</td>
+                <td>R</td>
+                <td>RW</td>
+                <td>–</td>
+              </tr>
+              <tr>
+                <td>Läsare</td>
+                <td>R</td>
+                <td>R</td>
+                <td>R</td>
+                <td>R</td>
+              </tr>
+              <tr>
+                <td>Obehörig</td>
+                <td>–</td>
+                <td>–</td>
+                <td>–</td>
+                <td>–</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="sakerhetsflode">
+        <div class="section-heading">
+          <div class="section-number">6</div>
+          <div>
+            <h2>Så förhindras alternativa åtkomstvägar</h2>
+            <p class="section-intro">
+              En ny säker endpoint hjälper inte om samma data fortfarande kan
+              läsas eller skrivas genom hela ärendet, historik, export eller
+              överlämning.
+            </p>
+          </div>
+        </div>
+
+        <figure class="card architecture-figure">
+          <div class="architecture-title">
+            <h3>Figur 4 · Vägar som måste stängas eller filtreras</h3>
+            <span class="status-mark status-current">Säkerhetskrav</span>
+          </div>
+          <div class="bypass-map">
+            <div class="bypass-item">
+              <strong>GET Errand</strong
+              ><span>Får inte läcka alla JSON-värden</span>
+            </div>
+            <div class="bypass-item">
+              <strong>PATCH Errand</strong
+              ><span>Får inte ändra skyddade delar</span>
+            </div>
+            <div class="bypass-item">
+              <strong>Historik</strong
+              ><span>Måste filtrera snapshots och diffar</span>
+            </div>
+            <div class="bypass-item">
+              <strong>Export / handover</strong
+              ><span>Måste auktorisera varje del</span>
+            </div>
+            <div class="bypass-item">
+              <strong>Events / automation</strong
+              ><span>Får inte exponera skyddat innehåll</span>
+            </div>
+          </div>
+          <div class="secure-route">
+            Befintlig väg i 14.14:
+            <span class="mono">/errands/{id}/json-parameters/{key}</span><br />
+            Mål: case access → section access → JSON-schema → obligatorisk
+            If-Match → audit
+          </div>
+          <figcaption>
+            Det säkraste alternativet är att skyddade JSON Parameters endast
+            exponeras genom dedikerade, nyckelbaserade endpoints. Övriga
+            ärendevyer returnerar metadata eller redan behörighetsfiltrerade
+            värden.
+          </figcaption>
+        </figure>
+
+        <div class="two-column" style="margin-top: 18px">
+          <article class="card plain-card">
+            <h3>Kontroller vid läsning</h3>
+            <ol class="plain-list">
+              <li>Hämta användaridentitet från betrodd kontext.</li>
+              <li>Kontrollera kommun, namespace och ärendet.</li>
+              <li>Slå upp sektionen från URL-nyckeln.</li>
+              <li>Slå upp serverägd accessresurs.</li>
+              <li>Kräv R eller RW från AccessMapper.</li>
+              <li>Returnera inte värdet vid nekad access.</li>
+            </ol>
+          </article>
+          <article class="card plain-card">
+            <h3>Ytterligare kontroller vid skrivning</h3>
+            <ol class="plain-list">
+              <li>Kräv RW på både ärende och sektion.</li>
+              <li>Kontrollera eventuell workflowlåsning.</li>
+              <li>Kräv att schema hör till sektionens nyckel.</li>
+              <li>Validera data mot JSON-schemat.</li>
+              <li>Kräv korrekt If-Match för just parametern.</li>
+              <li>Auditlogga vem, sektion, tid och revision.</li>
+            </ol>
+          </article>
+        </div>
+
+        <div class="decision" style="margin-top: 18px">
+          <strong>Deny by default:</strong> okänd sektionsnyckel, saknad
+          AccessMapper-regel, otillgänglig AccessMapper eller en schemaidentitet
+          som inte hör till sektionen ska aldrig falla tillbaka till generell RW
+          på ärendet.
+        </div>
+      </section>
+
+      <section id="genomforande">
+        <div class="section-heading">
+          <div class="section-number">7</div>
+          <div>
+            <h2>Minsta reviewbara genomförande</h2>
+            <p class="section-intro">
+              Bygg endast den generalitet som de tre riktiga sektionerna kräver.
+              Behåll en tydlig förlängningspunkt för andra verksamheter, utan
+              att skapa ett abstrakt resurssystem i förväg.
+            </p>
+          </div>
+        </div>
+
+        <div class="timeline" aria-label="Föreslagen införandeordning">
+          <article class="step-card">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h3>Definiera layout</h3>
+              <p>
+                Tre keys, titlar, versionssatta JSON/UI-scheman och
+                accessresurser för IAF.
+              </p>
+            </div>
+          </article>
+          <article class="step-card">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h3>Konfigurera AccessMapper</h3>
+              <p>
+                Ny typ <span class="mono">errandSection</span> och R/RW per
+                AD-grupp.
+              </p>
+            </div>
+          </article>
+          <article class="step-card">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h3>Central auktorisering</h3>
+              <p>En kanonisk backendfunktion för case + section + operation.</p>
+            </div>
+          </article>
+          <article class="step-card">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <h3>Fördjupa befintliga endpoints</h3>
+              <p>
+                Återanvänd GET/PUT/DELETE per key; lägg till schema-validering,
+                audit, databasunikhet och obligatorisk If-Match.
+              </p>
+            </div>
+          </article>
+          <article class="step-card">
+            <div class="step-number">5</div>
+            <div class="step-content">
+              <h3>Stäng bypassvägar</h3>
+              <p>
+                Filtrera eller ta bort JSON-data från generisk GET, PATCH,
+                export och historik.
+              </p>
+            </div>
+          </article>
+          <article class="step-card">
+            <div class="step-number">6</div>
+            <div class="step-content">
+              <h3>Bygg Draken-vyn</h3>
+              <p>
+                Manifest, capabilities, tre undertabbar och separat spara per
+                parameter.
+              </p>
+            </div>
+          </article>
+        </div>
+
+        <div class="acceptance-grid" style="margin-top: 28px">
+          <article class="card acceptance-card">
+            <h3>Acceptanskriterier</h3>
+            <ul>
+              <li>
+                En användare utan READ kan inte läsa data via någon endpoint
+                eller export.
+              </li>
+              <li>
+                En användare med R men utan RW kan inte ändra delen, även med
+                manuellt API-anrop.
+              </li>
+              <li>
+                Två användare kan spara olika keys utan att skriva över
+                varandra.
+              </li>
+              <li>
+                Konflikt på samma key ger 412/409 och bevarar båda användarnas
+                osparade arbete.
+              </li>
+              <li>
+                Klienten kan inte byta schema eller accessresurs för att kringgå
+                kontrollen.
+              </li>
+            </ul>
+          </article>
+          <article class="card acceptance-card">
+            <h3>Tester som skyddar beteendet</h3>
+            <ul>
+              <li>
+                Behörighetsmatris för R, RW och ingen match på alla tre
+                sektioner.
+              </li>
+              <li>
+                Integrationstest för GET, PUT, DELETE, full Errand, historik och
+                handover.
+              </li>
+              <li>
+                Test av AccessMapper-fel: skyddade delar ska neka åtkomst.
+              </li>
+              <li>
+                Test av cacheinvalidering när en användares behörighet dras in.
+              </li>
+              <li>Samtidighetstest för olika keys och samma key.</li>
+            </ul>
+          </article>
+          <article class="card acceptance-card">
+            <h3>Det som inte behöver ändras</h3>
+            <ul>
+              <li>Errand behöver inga IAF-specifika fält.</li>
+              <li>
+                JsonSchema fortsätter beskriva och validera data samt lagra UI
+                Schema för presentation.
+              </li>
+              <li>
+                Labels kan fortsätta klassificera ärendet och styra åtkomst till
+                hela ärendet.
+              </li>
+              <li>
+                Andra namespaces kan ligga kvar på nuvarande presentation bakom
+                feature flag.
+              </li>
+            </ul>
+          </article>
+          <article class="card acceptance-card">
+            <h3>Risk och återställning</h3>
+            <ul>
+              <li>Inför målbilden per namespace/layout bakom feature flag.</li>
+              <li>
+                Behåll JSON Parameter-datat oförändrat; ingen stor datamigrering
+                krävs.
+              </li>
+              <li>
+                Vid rollback stängs den nya layouten, medan parametrarna ligger
+                kvar.
+              </li>
+              <li>
+                Kort eller explicit invaliderad accesscache krävs för snabb
+                återkallelse.
+              </li>
+            </ul>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="source-footer">
+      <h2>Källor och kodanknytning</h2>
+      <p>
+        Nulägesbeskrivningen bygger på Draken-repot samt Support Management
+        14.14, JsonSchema och AccessMapper som kodgranskades den 10 augusti
+        2026.
+      </p>
+      <ul>
+        <li>
+          <span class="mono">backend/src/config/api-config.ts</span> —
+          utvecklingsbranchen routar till SupportManagementSprint 14.14.
+        </li>
+        <li>
+          <span class="mono"
+            >backend/src/data-contracts/supportmanagement/data-contracts.ts</span
+          >
+          — incheckat Draken-kontrakt; sprintens api-docs gav 404 vid
+          granskningen.
+        </li>
+        <li>
+          <span class="mono"
+            >backend/src/controllers/supportmanagement/support-errand.controller.ts</span
+          >
+          — generell ärende-PATCH och BFF DTO.
+        </li>
+        <li>
+          <span class="mono"
+            >backend/src/controllers/jsonschema.controller.ts</span
+          >
+          — BFF-läsning av JSON Schema och UI Schema.
+        </li>
+        <li>
+          <span class="mono"
+            >frontend/src/supportmanagement/components/support-errand/tabs/support-errand-details-tab.tsx</span
+          >
+          — JSON Parameters visas idag under Ärendeuppgifter.
+        </li>
+        <li>
+          <a
+            href="https://github.com/Sundsvallskommun/api-service-support-management/blob/69c2df4e88eded3138f74188cba6efb42d18813f/src/main/java/se/sundsvall/supportmanagement/service/ErrandJsonParameterService.java"
+            >Support Management: per-key JSON Parameter service</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://github.com/Sundsvallskommun/api-service-support-management/blob/69c2df4e88eded3138f74188cba6efb42d18813f/src/main/java/se/sundsvall/supportmanagement/api/ErrandJsonParameterResource.java"
+            >Support Management: per-key API, ETag och valfri If-Match</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://github.com/Sundsvallskommun/api-service-json-schema/blob/afd97daeb770d66d759c622de01183b4ed7cf7da/src/main/java/se/sundsvall/jsonschema/integration/db/model/JsonSchemaEntity.java"
+            >JsonSchema: versionssatt JSON Schema-entitet</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://github.com/Sundsvallskommun/api-service-json-schema/blob/afd97daeb770d66d759c622de01183b4ed7cf7da/src/main/java/se/sundsvall/jsonschema/integration/db/model/UiSchemaEntity.java"
+            >JsonSchema: en-till-en UI Schema-entitet</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://github.com/Sundsvallskommun/api-service-access-mapper/blob/87c3ca16e57bd25ca9544a28055810f80883acc8/src/main/java/se/sundsvall/accessmapper/api/model/AccessType.java"
+            >AccessMapper: generisk access-typ</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://github.com/Sundsvallskommun/api-service-access-mapper/blob/87c3ca16e57bd25ca9544a28055810f80883acc8/src/main/java/se/sundsvall/accessmapper/api/model/Access.java"
+            >AccessMapper: pattern och accessLevel</a
+          >
+        </li>
+      </ul>
+    </footer>
+
+    <script>
+      (() => {
+        const root = document.getElementById("access-simulator");
+        if (!root) return;
+
+        const sections = {
+          cause: {
+            title: "Orsaksanalys",
+            summary: "Bristande rutin vid överlämning",
+            analysis: "Beskrivning av bakomliggande faktorer…",
+          },
+          impact: {
+            title: "Konsekvensbedömning",
+            summary: "Måttlig påverkan",
+            analysis: "Bedömning av konsekvens och sannolikhet…",
+          },
+          measures: {
+            title: "Åtgärder",
+            summary: "Revidera och förankra rutin",
+            analysis: "Planerade åtgärder, ansvarig och datum…",
+          },
+        };
+
+        const personas = {
+          coordinator: {
+            name: "Samordnare",
+            description: "Har RW på ärendet och samtliga utredningsdelar.",
+            authenticated: true,
+            caseAccess: "RW",
+            sections: { cause: "RW", impact: "RW", measures: "RW" },
+          },
+          "investigator-a": {
+            name: "Utredare A",
+            description:
+              "Arbetar i orsaksanalysen, kan läsa konsekvensbedömningen och saknar åtkomst till åtgärder.",
+            authenticated: true,
+            caseAccess: "RW",
+            sections: { cause: "RW", impact: "R", measures: "NONE" },
+          },
+          "investigator-b": {
+            name: "Utredare B",
+            description:
+              "Arbetar parallellt i konsekvensbedömningen och kan läsa orsaksanalysen.",
+            authenticated: true,
+            caseAccess: "RW",
+            sections: { cause: "R", impact: "RW", measures: "NONE" },
+          },
+          reader: {
+            name: "Läsare",
+            description:
+              "Har läsrättighet till ärendet och alla tre delar, men får inte spara förändringar.",
+            authenticated: true,
+            caseAccess: "R",
+            sections: { cause: "R", impact: "R", measures: "R" },
+          },
+          unauthorized: {
+            name: "Obehörig",
+            description:
+              "Saknar åtkomst till själva ärendet. Sektionsrättigheter kan därför aldrig ge åtkomst.",
+            authenticated: true,
+            caseAccess: "NONE",
+            sections: { cause: "NONE", impact: "NONE", measures: "NONE" },
+          },
+        };
+
+        let activePersona = "coordinator";
+        let activeSection = "cause";
+
+        const byId = (id) => document.getElementById(id);
+        const personaButtons = [...root.querySelectorAll("[data-persona]")];
+        const sectionButtons = [...root.querySelectorAll("[data-section]")];
+        const appTabs = [...root.querySelectorAll("[data-app-section]")];
+
+        const effectiveAccess = (persona, sectionKey) => {
+          if (
+            !persona.authenticated ||
+            persona.caseAccess === "NONE" ||
+            persona.caseAccess === "LR"
+          )
+            return "NONE";
+          const sectionAccess = persona.sections[sectionKey] || "NONE";
+          if (sectionAccess === "NONE") return "NONE";
+          if (persona.caseAccess === "R" || sectionAccess === "R") return "R";
+          return "RW";
+        };
+
+        const capabilityText = (level) => {
+          if (level === "RW") return "Läsa & skriva";
+          if (level === "R") return "Endast läsa";
+          return "Dold / nekad";
+        };
+
+        const resultClass = (level) => {
+          if (level === "RW") return "result-allow";
+          if (level === "R") return "result-limit";
+          return "result-deny";
+        };
+
+        const setResult = (element, text, level) => {
+          element.textContent = text;
+          element.classList.remove(
+            "result-allow",
+            "result-limit",
+            "result-deny",
+          );
+          element.classList.add(resultClass(level));
+        };
+
+        const render = () => {
+          const persona = personas[activePersona];
+          const section = sections[activeSection];
+          const effective = effectiveAccess(persona, activeSection);
+
+          personaButtons.forEach((button) =>
+            button.setAttribute(
+              "aria-pressed",
+              String(button.dataset.persona === activePersona),
+            ),
+          );
+          sectionButtons.forEach((button) =>
+            button.setAttribute(
+              "aria-pressed",
+              String(button.dataset.section === activeSection),
+            ),
+          );
+
+          appTabs.forEach((tab) => {
+            const key = tab.dataset.appSection;
+            const level = effectiveAccess(persona, key);
+            tab.setAttribute("aria-selected", String(key === activeSection));
+            tab.disabled = level === "NONE";
+            const capability = tab.querySelector(".tab-capability");
+            if (capability) capability.textContent = capabilityText(level);
+          });
+
+          byId("case-access").textContent =
+            `Ärende: ${persona.caseAccess === "NONE" ? "NEKAD" : persona.caseAccess}`;
+          byId("persona-name").textContent = persona.name;
+          byId("persona-description").textContent = persona.description;
+          byId("mock-section-title").textContent = section.title;
+          byId("fake-summary").textContent =
+            effective === "NONE" ? "Innehåll visas inte" : section.summary;
+          byId("fake-analysis").textContent =
+            effective === "NONE"
+              ? "Backend returnerar inte sektionsdata."
+              : section.analysis;
+
+          const badge = byId("mock-capability");
+          badge.textContent =
+            effective === "RW"
+              ? "READ + WRITE"
+              : effective === "R"
+                ? "READ ONLY"
+                : "NO ACCESS";
+          badge.classList.remove(
+            "capability-rw",
+            "capability-r",
+            "capability-none",
+          );
+          badge.classList.add(
+            effective === "RW"
+              ? "capability-rw"
+              : effective === "R"
+                ? "capability-r"
+                : "capability-none",
+          );
+
+          const inputs = [byId("fake-summary"), byId("fake-analysis")];
+          inputs.forEach((input) =>
+            input.classList.toggle("readonly", effective !== "RW"),
+          );
+          byId("save-button").disabled = effective !== "RW";
+
+          setResult(
+            byId("identity-result"),
+            persona.authenticated ? "OK" : "NEKAD",
+            persona.authenticated ? "RW" : "NONE",
+          );
+          setResult(
+            byId("case-result"),
+            persona.caseAccess === "NONE" ? "NEKAD" : persona.caseAccess,
+            persona.caseAccess,
+          );
+          setResult(
+            byId("section-result"),
+            persona.sections[activeSection] === "NONE"
+              ? "INGEN MATCH"
+              : persona.sections[activeSection],
+            persona.sections[activeSection],
+          );
+          setResult(
+            byId("effective-result"),
+            effective === "RW"
+              ? "READ + WRITE"
+              : effective === "R"
+                ? "READ"
+                : "DENY",
+            effective,
+          );
+          setResult(
+            byId("get-result"),
+            effective === "NONE" ? "403/404 · DENY" : "200 · ALLOW",
+            effective === "NONE" ? "NONE" : "RW",
+          );
+          setResult(
+            byId("put-result"),
+            effective === "RW" ? "200 · ALLOW" : "403 · DENY",
+            effective === "RW" ? "RW" : "NONE",
+          );
+        };
+
+        personaButtons.forEach((button) => {
+          button.addEventListener("click", () => {
+            activePersona = button.dataset.persona;
+            render();
+          });
+        });
+
+        const selectSection = (key) => {
+          activeSection = key;
+          render();
+        };
+
+        sectionButtons.forEach((button) =>
+          button.addEventListener("click", () =>
+            selectSection(button.dataset.section),
+          ),
+        );
+        appTabs.forEach((button) =>
+          button.addEventListener("click", () =>
+            selectSection(button.dataset.appSection),
+          ),
+        );
+
+        render();
+      })();
+    </script>
+  </body>
+</html>
