@@ -1,5 +1,6 @@
 import { Type as TypeTransformer } from 'class-transformer';
 import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import FormData from 'form-data';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
@@ -25,7 +26,6 @@ import {
   Stakeholder as SupportStakeholder,
   Suspension,
 } from '@/data-contracts/supportmanagement/data-contracts';
-import { CreateAttachmentDto } from '@/interfaces/attachment.interface';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { MEXCaseType } from '@/interfaces/case-type.interface';
 import { ErrandStatus } from '@/interfaces/errand-status.interface';
@@ -810,15 +810,24 @@ export class SupportErrandController {
           }));
         return filesData;
       });
+
       const attachments = await Promise.all(attachmentsPromises);
-      const attachmentDtos: CreateAttachmentDto[] = attachments?.map(attachmentData =>
+      const attachmentDtos: FormData[] = attachments?.map(attachmentData =>
         toAttachmentDto(attachmentData, attachmentData.fileData, errand.errandNumber!),
       );
 
-      const postedAttachments: Promise<CasedataErrandDTO>[] = attachmentDtos?.map(attachmentDto => {
+      const postedAttachments: Promise<CasedataErrandDTO>[] = attachmentDtos?.map(attachmentFormData => {
         const casedataAttachmentsUrl = `${municipalityId}/${data.department}/errands/${errand.id}/attachments`;
         const casedataAttachmentsResponse = this.apiService
-          .post<CasedataErrandDTO, CreateAttachmentDto>({ url: casedataAttachmentsUrl, baseURL, data: attachmentDto }, req.user)
+          .post<CasedataErrandDTO, FormData>(
+            {
+              url: casedataAttachmentsUrl,
+              baseURL,
+              data: attachmentFormData,
+              headers: { 'Content-Type': attachmentFormData.getHeaders()['content-type'] },
+            },
+            req.user,
+          )
           .then(res => res.data)
           .catch(e => {
             logger.error('Error when posting attachments for forwarded errand:', e);
@@ -827,11 +836,11 @@ export class SupportErrandController {
         return casedataAttachmentsResponse;
       });
       await Promise.all(postedAttachments).catch(e => {
-        console.error('Error when posting attachments for forwarded errand');
         logger.error('Error when posting attachments for forwarded errand');
         throw e;
       });
-    } catch {
+    } catch (e) {
+      logger.error('Error when copying attachments to forwarded errand:', e);
       return response.status(400).send('ATTACHMENTS_FAILED');
     }
 

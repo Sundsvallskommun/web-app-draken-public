@@ -1,8 +1,19 @@
-import { test, expect } from '../fixtures/base.fixture';
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
-import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
+import { mockResolvedRelations } from '../case-data/fixtures/mockRelations';
+import { expect, test } from '../fixtures/base.fixture';
+import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
+//TODO: Update mockdata
+//TODO: Update mockdata
+import { mockRelations } from '../lop/fixtures/mockRelations';
+import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
+import { mockComments } from './fixtures/mockComments';
+import { mockForwardSupportErrandToMEX, mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
 import { mockMetaData } from './fixtures/mockMetadata';
+import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
+import { mockSidebarButtons } from './fixtures/mockSidebarButtons';
+import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
+import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import {
   mockDifferentUserSupportErrand,
   mockEmptySupportErrand,
@@ -10,17 +21,7 @@ import {
   mockSupportErrand,
   mockSupportMessages,
 } from './fixtures/mockSupportErrands';
-import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
-import { mockSidebarButtons } from './fixtures/mockSidebarButtons';
-import { mockComments } from './fixtures/mockComments';
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
-import { mockForwardSupportErrandToMEX, mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
-import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
-//TODO: Update mockdata
-import { mockRelations } from '../lop/fixtures/mockRelations';
-import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
-import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
-import { mockResolvedRelations } from '../case-data/fixtures/mockRelations';
 
 test.describe('errand page', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
@@ -29,6 +30,7 @@ test.describe('errand page', () => {
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
+    await mockRoute('**/supportnamespaceconfigs/**', [], { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments/*', mockSupportAttachments[0], { method: 'GET' });
     await mockRoute(`**/supportmessage/2281/errands/${mockSupportErrand.id}/communication`, mockSupportMessages, {

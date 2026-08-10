@@ -72,9 +72,9 @@ export class MessageController {
       ];
     }
 
-    const minasidor_success = await sendDecisionToMinaSidor(baseURL, errandData.data.id!.toString(), req.user, pdf);
-    const katla_success = await sendDecisionToKatla(baseURL, errandData.data, req.user, pdf);
-    const digitalMail_success = await sendDecisionToDigitalMail(errandData.data, req.user, pdf);
+    const minasidor_success = await sendDecisionToMinaSidor(baseURL, errandData.data.id!.toString(), req.user, pdf, decision!.id!);
+    const katla_success = await sendDecisionToKatla(baseURL, errandData.data, req.user, pdf, decision!.id!);
+    const digitalMail_success = await sendDecisionToDigitalMail(errandData.data, req.user, pdf, decision!.id!);
 
     return [minasidor_success, katla_success, digitalMail_success, emailSuccess];
   }

@@ -65,12 +65,12 @@ export class ExportController {
     const templateStakeholder = (s: Stakeholder) => {
       const extra = s as Stakeholder & { street: string; zip: string; city: string; phoneNumbers: { value: string }[]; emails: { value: string }[] };
       return {
-        name: s.organizationName ?? s.firstName + ' ' + s.lastName,
+        name: s.organizationName || `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim(),
         street: extra.street,
         zip: extra.zip,
         city: extra.city,
-        email: extra.emails?.map(v => v.value).join(', ') ?? 'E-post saknas',
-        phone: extra.phoneNumbers?.map(v => v.value).join(', ') ?? 'Telefonnummer saknas',
+        email: extra.emails?.map(v => v.value).join(', ') || 'E-post saknas',
+        phone: extra.phoneNumbers?.map(v => v.value).join(', ') || 'Telefonnummer saknas',
       };
     };
 

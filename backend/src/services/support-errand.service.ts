@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import FormData from 'form-data';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
@@ -26,10 +27,10 @@ import { Role } from '@/interfaces/role';
 import { ContactChannelType } from '@/interfaces/support-contactchannel';
 import { SupportManagementChannels } from '@/interfaces/supportmanagement-channel.interface';
 import { User } from '@/interfaces/users.interface';
+import { logger } from '@/utils/logger';
 import { apiURL, buildCategoryFilter, findLeafComponents, removeUnreachablePaths, toOffsetDateTime } from '@/utils/util';
 
 import ApiService from './api.service';
-
 const SERVICE = apiServiceName('supportmanagement');
 const namespace = SUPPORTMANAGEMENT_NAMESPACE;
 
@@ -330,17 +331,41 @@ export const toFacilities = (parameters?: Parameter[]): FacilityDTO[] => {
 };
 
 /** Base64-encodes a fetched attachment into the CaseData attachment payload. */
-export const toAttachmentDto = (attachment: ErrandAttachment, fileData: ArrayBuffer, errandNumber: string): CreateAttachmentDto => {
-  const binaryString = Array.from(new Uint8Array(fileData), v => String.fromCharCode(v)).join('');
-  const b64 = Buffer.from(binaryString, 'binary').toString('base64');
-  return {
-    file: b64,
+export const toAttachmentDto = (attachmentData: ErrandAttachment, fileData: ArrayBuffer, errandNumber: string): FormData => {
+  // const binaryString = Array.from(new Uint8Array(fileData), v => String.fromCharCode(v)).join('');
+  // const b64 = Buffer.from(binaryString, 'binary').toString('base64');
+  // return {
+  //   file: b64,
+  //   category: 'OTHER',
+  //   extension: attachment.fileName!.split('.').pop()!,
+  //   mimeType: attachment.mimeType!,
+  //   name: attachment.fileName!,
+  //   note: '',
+  //   errandNumber,
+  //   channel: AttachmentChannelEnum.WEB_UI,
+  // };
+  const metadata: CreateAttachmentDto = {
     category: 'OTHER',
-    extension: attachment.fileName!.split('.').pop()!,
-    mimeType: attachment.mimeType!,
-    name: attachment.fileName!,
+    extension: attachmentData.fileName!.split('.').pop()!,
+    mimeType: attachmentData.mimeType!,
+    name: attachmentData.fileName!,
     note: '',
-    errandNumber,
+    errandNumber: errandNumber!,
     channel: AttachmentChannelEnum.WEB_UI,
   };
+
+  const data = new FormData();
+
+  if (fileData) {
+    data.append('file', Buffer.from(fileData), {
+      filename: attachmentData.fileName ?? '',
+      contentType: attachmentData.mimeType,
+    });
+    data.append('attachment', JSON.stringify(metadata));
+  } else {
+    logger.error('Trying to save attachment without name or data');
+    throw new Error('File missing');
+  }
+
+  return data;
 };

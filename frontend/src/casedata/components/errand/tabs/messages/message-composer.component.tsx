@@ -7,7 +7,7 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Role } from '@casedata/interfaces/role';
 import { ACCEPTED_UPLOAD_FILETYPES, getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
 import { getOrCreateConversationId, sendConversationMessage } from '@casedata/services/casedata-conversation-service';
-import { isErrandLocked, setErrandStatus, validateAction } from '@casedata/services/casedata-errand-service';
+import { isMessagesLocked, setErrandStatus, validateAction } from '@casedata/services/casedata-errand-service';
 import { buildCasedataReplyContext } from '@casedata/services/casedata-message-reply-context-service';
 import {
   MessageNode,
@@ -684,7 +684,7 @@ export const MessageComposer: FC<{
               <FormControl id="messageEmail" className="w-full">
                 <CommonNestedEmailArrayV2
                   errand={errand!}
-                  disabled={errand ? isErrandLocked(errand) : false}
+                  disabled={errand ? isMessagesLocked(errand) : false}
                   data-cy="email-input"
                   key={`nested-email-array`}
                   {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}
@@ -701,7 +701,7 @@ export const MessageComposer: FC<{
             <>
               <FormControl id="phoneNumbers" className="w-full mb-16">
                 <CommonNestedPhoneArrayV2
-                  disabled={errand ? isErrandLocked(errand) : false}
+                  disabled={errand ? isMessagesLocked(errand) : false}
                   data-cy="newPhoneNumber"
                   required
                   error={!!formState.errors.phoneNumbers}
@@ -753,7 +753,7 @@ export const MessageComposer: FC<{
                     {(errand?.attachments ?? [])
                       .filter((a) => !fields.map((f) => (f as Attachment).name).includes(a.name))
                       .map((att, idx) => {
-                        const label = `${getAttachmentLabel(att)}: ${att.name}`;
+                        const label = `${getAttachmentLabel(att.category)}: ${att.name}`;
                         return (
                           <Select.Option
                             value={att.name}
@@ -775,7 +775,7 @@ export const MessageComposer: FC<{
                       e.preventDefault();
                       if (addExisting) {
                         const att = (errand?.attachments ?? []).find((a) => a.name === addExisting);
-                        if (att) append({ ...att, attachmentId: att.id });
+                        if (att) append({ ...att });
                         setValue(`addExisting`, '' as any);
                       }
                     }}
@@ -804,7 +804,7 @@ export const MessageComposer: FC<{
                             remove(k);
                           }}
                         >
-                          {getAttachmentLabel(att)}: {att.name}
+                          {getAttachmentLabel(att.category)}: {att.name}
                         </Chip>
                       </div>
                     );
