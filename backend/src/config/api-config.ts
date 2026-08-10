@@ -77,7 +77,7 @@ export const APIS = [
 // Temporary routing for the Support Management development sprint.
 // Remove this alias and rename the APIS entry when the sprint API is retired.
 const API_SERVICE_ALIASES: Readonly<Record<string, string>> = {
-  supportmanagement: 'supportmanagementsprint',
+  supportmanagement: 'supportmanagement-sprint',
 };
 
 export function apiServiceName(name: string): string {
