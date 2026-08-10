@@ -392,30 +392,35 @@ describe('support-errand.service', () => {
   describe('toAttachmentDto', () => {
     const attachment = (fileName: string): ErrandAttachment => ({ id: mockAttachmentId, fileName, mimeType: mockMimeType }) as ErrandAttachment;
 
-    it('base64-encodes the file data', () => {
+    it('appends the raw file bytes as the "file" part (not base64-encoded)', () => {
       const fileData = new Uint8Array(Buffer.from(mockFileContent)).buffer;
-      expect(toAttachmentDto(attachment(mockFileName), fileData, mockCasedataErrandNumber).file).toBe(
-        Buffer.from(mockFileContent).toString('base64'),
-      );
+      const body = toAttachmentDto(attachment(mockFileName), fileData, mockCasedataErrandNumber).getBuffer().toString();
+      expect(body).toContain(`name="file"; filename="${mockFileName}"`);
+      expect(body).toContain(mockFileContent);
+      expect(body).not.toContain(Buffer.from(mockFileContent).toString('base64'));
     });
 
     it('takes the extension from the last dot-separated segment', () => {
-      const fileData = new Uint8Array([]).buffer;
-      expect(toAttachmentDto(attachment(mockMultiDotFileName), fileData, mockCasedataErrandNumber).extension).toBe('pdf');
+      const fileData = new Uint8Array(Buffer.from(mockFileContent)).buffer;
+      const body = toAttachmentDto(attachment(mockMultiDotFileName), fileData, mockCasedataErrandNumber).getBuffer().toString();
+      expect(body).toContain('"extension":"pdf"');
     });
 
-    it('fills in the fixed category and channel and threads the errand number through', () => {
-      const fileData = new Uint8Array([]).buffer;
-      expect(toAttachmentDto(attachment(mockFileName), fileData, mockCasedataErrandNumber)).toEqual({
-        file: '',
-        category: 'OTHER',
-        extension: 'pdf',
-        mimeType: mockMimeType,
-        name: mockFileName,
-        note: '',
-        errandNumber: mockCasedataErrandNumber,
-        channel: 'WEB_UI',
-      });
+    it('serialises the fixed category and channel and threads the errand number through in the "attachment" part', () => {
+      const fileData = new Uint8Array(Buffer.from(mockFileContent)).buffer;
+      const body = toAttachmentDto(attachment(mockFileName), fileData, mockCasedataErrandNumber).getBuffer().toString();
+      expect(body).toContain('name="attachment"');
+      expect(body).toContain(
+        JSON.stringify({
+          category: 'OTHER',
+          extension: 'pdf',
+          mimeType: mockMimeType,
+          name: mockFileName,
+          note: '',
+          errandNumber: mockCasedataErrandNumber,
+          channel: 'WEB_UI',
+        }),
+      );
     });
   });
 });

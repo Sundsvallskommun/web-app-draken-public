@@ -651,12 +651,21 @@ describe('SupportErrandController', () => {
 
       const attachmentPost = api.post.mock.calls.find(([config]) => config.url.includes('/attachments'));
       expect(attachmentPost![0].url).toBe(`${MUNICIPALITY_ID}/${mockDepartment}/errands/${mockCasedataErrandId}/attachments`);
-      expect(attachmentPost![0].data).toMatchObject({
-        name: mockFileName,
-        extension: 'pdf',
-        errandNumber: mockCasedataErrandNumber,
-        file: Buffer.from(mockFileContent).toString('base64'),
-      });
+      const attachmentBody = attachmentPost![0].data.getBuffer().toString();
+      expect(attachmentBody).toContain(`name="file"; filename="${mockFileName}"`);
+      expect(attachmentBody).toContain(mockFileContent);
+      expect(attachmentBody).not.toContain(Buffer.from(mockFileContent).toString('base64'));
+      expect(attachmentBody).toContain(
+        JSON.stringify({
+          category: 'OTHER',
+          extension: 'pdf',
+          mimeType: mockMimeType,
+          name: mockFileName,
+          note: '',
+          errandNumber: mockCasedataErrandNumber,
+          channel: 'WEB_UI',
+        }),
+      );
     });
 
     it('responds 400 ATTACHMENTS_FAILED when an attachment cannot be copied', async () => {
