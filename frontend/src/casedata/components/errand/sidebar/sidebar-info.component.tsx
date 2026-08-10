@@ -7,7 +7,13 @@ import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
 import { saveErrandNote } from '@casedata/services/casedata-errand-notes-service';
-import { getErrand, isErrandAdmin, isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import {
+  getErrand,
+  isErrandAdmin,
+  isErrandLocked,
+  isMessagesLocked,
+  validateAction,
+} from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { cancelErrandPhaseChange, phaseChangeInProgress } from '@casedata/services/process-service';
 import { isAppealEnabled } from '@common/services/feature-flag-service';
@@ -336,7 +342,7 @@ export const SidebarInfo: React.FC<{}> = () => {
                 color="vattjom"
                 data-cy="sidebar-new-message-button"
                 variant="secondary"
-                disabled={isErrandLocked(errand) || !allowed}
+                disabled={isMessagesLocked(errand) || !allowed}
                 onClick={() => {
                   setShowMessageComposer(true);
                 }}

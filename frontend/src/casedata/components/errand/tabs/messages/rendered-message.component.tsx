@@ -2,7 +2,7 @@ import { Channels } from '@casedata/interfaces/channels';
 import { Role } from '@casedata/interfaces/role';
 import { messageAttachment } from '@casedata/services/casedata-attachment-service';
 import { getConversationAttachment } from '@casedata/services/casedata-conversation-service';
-import { isErrandLocked, validateAction } from '@casedata/services/casedata-errand-service';
+import { isMessagesLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { MessageNode } from '@casedata/services/casedata-message-service';
 import {
   CasedataMessageType,
@@ -211,7 +211,7 @@ export const RenderedMessage: FC<{
               className="self-start"
               color="vattjom"
               data-cy="respond-button"
-              disabled={(errand ? isErrandLocked(errand) : false) || !allowed}
+              disabled={(errand ? isMessagesLocked(errand) : false) || !allowed}
               size="sm"
               variant="primary"
               onClick={() => {
