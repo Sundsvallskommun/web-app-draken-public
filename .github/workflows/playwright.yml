@@ -71,6 +71,7 @@ jobs:
             NEXT_PUBLIC_USE_ESCALATION: true
             NEXT_PUBLIC_USE_MY_PAGES: true
             NEXT_PUBLIC_USE_RELATIONS: true
+            NEXT_PUBLIC_USE_HANDOVER: true
           - app: lop
             build_cmd: yarn build:lop
             start_cmd: yarn start:lop
@@ -106,10 +107,13 @@ jobs:
           cache-dependency-path: frontend/yarn.lock
 
       - name: Install dependencies
-        run: yarn --frozen-lockfile --silent --network-timeout 1000000
+        run: yarn --frozen-lockfile --silent --network-timeout 1000000 --ignore-scripts
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        # Invoke the local binary directly (not `npx`/`yarn`): `npx` would fetch on-demand,
+        # and `yarn … install` trips SonarCloud's "Yarn v2+ lifecycle scripts" rule. This is
+        # Playwright's browser installer (a CLI subcommand), not an npm dependency install.
+        run: ./node_modules/.bin/playwright install --with-deps chromium
 
       - name: Build
         run: ${{ matrix.build_cmd }}
@@ -155,6 +159,7 @@ jobs:
           NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION: ${{ matrix.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION || '' }}
           NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: ${{ matrix.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '' }}
           NEXT_PUBLIC_INVOICE_BREAK_DATE: ${{ matrix.NEXT_PUBLIC_INVOICE_BREAK_DATE || '' }}
+          NEXT_PUBLIC_USE_HANDOVER: ${{ matrix.NEXT_PUBLIC_USE_HANDOVER || '' }}
 
       - name: Start server
         run: ${{ matrix.start_cmd }} &
@@ -172,10 +177,10 @@ jobs:
           HEALTH_PASSWORD: ""
 
       - name: Wait for server
-        run: npx wait-on http://localhost:3000 --timeout 60000
+        run: timeout 60 bash -c 'until curl -sfo /dev/null http://localhost:3000; do sleep 2; done'
 
       - name: Run Playwright tests
-        run: npx playwright test --project=${{ matrix.app }}
+        run: ./node_modules/.bin/playwright test --project=${{ matrix.app }}
         env:
           NEXT_PUBLIC_APPLICATION: ${{ matrix.NEXT_PUBLIC_APPLICATION }}
           NEXT_PUBLIC_APP_NAME: "Draken"

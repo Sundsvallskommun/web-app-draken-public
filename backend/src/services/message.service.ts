@@ -3,6 +3,7 @@ import { Role } from '@interfaces/role';
 import { User } from '@interfaces/users.interface';
 import { logger } from '@utils/logger';
 import dayjs from 'dayjs';
+import NodeFormData from 'form-data';
 import { v4 as uuidv4 } from 'uuid';
 
 import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
@@ -37,6 +38,7 @@ import { FTCaseType, MEXCaseType, PTCaseType } from '@/interfaces/case-type.inte
 import { apiURL, base64Encode } from '@/utils/util';
 
 import ApiService, { ApiResponse } from './api.service';
+import { getDecisionAttachmentAsBase64 } from './casedata-attachment.service';
 import { getOwnerStakeholder, getOwnerStakeholderEmail } from './stakeholder.service';
 
 interface SmsMessage {
@@ -424,24 +426,28 @@ export const sendConversationTextMessage = async (errandId: string, conversation
   return await apiService.post<any, any>({ url, baseURL, data: formData, headers: { 'Content-Type': 'multipart/form-data' } }, user);
 };
 
-export const sendConversation = async (errandId: string, conversationId: string, user: User, pdf: Attachment) => {
+export const sendConversation = async (errandId: string, conversationId: string, user: User, pdf: Attachment, decisionId: number) => {
   const apiService = new ApiService();
   const url = `${SERVICE}/${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
 
-  // Reference the already-saved decision attachment by id (same mechanism as regular conversation
-  // messages) instead of uploading new bytes.
-  const formData = new FormData();
+  // The conversation message's `attachmentIds` only resolves *errand* attachments, so the decision
+  // PDF (a decision-scoped attachment) has to be uploaded as new bytes on the `attachments` part.
+  const formData = new NodeFormData();
   const messageObj = {
     createdBy: { type: 'adAccount', value: user.username },
     content: 'Beslut fattat i ärende',
-    ...(pdf.id && { attachmentIds: [pdf.id] }),
   };
   formData.append('message', JSON.stringify(messageObj));
 
-  return await apiService.post<any, any>({ url, data: formData, headers: { 'Content-Type': 'multipart/form-data' } }, user);
+  if (pdf.id) {
+    const content = await getDecisionAttachmentAsBase64(MUNICIPALITY_ID!, errandId, decisionId, pdf.id, user);
+    formData.append('attachments', Buffer.from(content, 'base64'), { filename: pdf.name, contentType: pdf.mimeType });
+  }
+
+  return await apiService.post<any, any>({ url, data: formData, headers: { 'Content-Type': formData.getHeaders()['content-type'] } }, user);
 };
 
-export const sendDecisionToMinaSidor = async (baseURL: string, errandId: string, user: User, pdf: Attachment) => {
+export const sendDecisionToMinaSidor = async (baseURL: string, errandId: string, user: User, pdf: Attachment, decisionId: number) => {
   const apiService = new ApiService();
   const conversationUrl = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations`;
   const conversationRes = await apiService.get<Conversation[]>({ url: conversationUrl, baseURL }, user);
@@ -451,7 +457,7 @@ export const sendDecisionToMinaSidor = async (baseURL: string, errandId: string,
   if (externalConversation === undefined) {
     externalConversation = await createConversation(errandId, user, 'EXTERNAL', 'Mina sidor', CASEDATA_NAMESPACE!);
   }
-  return sendConversation(errandId, externalConversation!.id!, user, pdf)
+  return sendConversation(errandId, externalConversation!.id!, user, pdf, decisionId)
     .then(async res => {
       return { data: { ...res.data, messageId: externalConversation!.id }, message: `Message sent to Mina sidor` };
     })
@@ -461,7 +467,7 @@ export const sendDecisionToMinaSidor = async (baseURL: string, errandId: string,
     });
 };
 
-export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, user: User, pdf: Attachment) => {
+export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, user: User, pdf: Attachment, decisionId: number) => {
   if (errand.channel !== 'ESERVICE_KATLA') {
     return { data: { messageId: 'Non Katla errand' }, message: `Non Katla errand` };
   }
@@ -476,7 +482,7 @@ export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, us
   if (relationlessConversation === undefined) {
     relationlessConversation = await createConversation(errand.id!.toString(), user, 'INTERNAL', errand.errandNumber!, CASEDATA_NAMESPACE!);
   }
-  return sendConversation(errand.id!.toString(), relationlessConversation!.id!, user, pdf)
+  return sendConversation(errand.id!.toString(), relationlessConversation!.id!, user, pdf, decisionId)
     .then(async res => {
       return { data: { ...res.data, messageId: relationlessConversation!.id }, message: `Message sent to Katla` };
     })
@@ -497,15 +503,20 @@ export const decisionMessageSubject = (errand: ErrandDTO) => {
   return 'Beslutsmeddelande';
 };
 
-export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: Attachment) => {
+export const sendDecisionToDigitalMail = async (errand: ErrandDTO, user: User, pdf: Attachment, decisionId: number) => {
   const url = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/letter?async=false`;
   const apiService = new ApiService();
+
+  if (!pdf.id) {
+    throw new Error('Decision attachment is missing id, cannot fetch attachment content');
+  }
+  const content = await getDecisionAttachmentAsBase64(MUNICIPALITY_ID!, errand.id!, decisionId, pdf.id, user);
 
   const attachments = [
     {
       deliveryMode: 'ANY',
       contentType: DigitalMailAttachmentContentTypeEnum.ApplicationPdf,
-      content: pdf.file,
+      content,
       filename: pdf.name,
     } as DigitalMailAttachment,
   ];

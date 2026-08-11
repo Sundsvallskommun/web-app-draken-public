@@ -74,27 +74,27 @@ För LOP (Lön och pension):
 
 För ROB (Rekrytering och bemanning):
 
-| API                 | Version |
-| ------------------- | ------: |
-| ActiveDirectory     |     2.0 |
-| Citizen             |     3.0 |
-| Employee            |     2.0 |
-| LegalEntity         |     2.0 |
-| SimulatorServer     |     2.0 |
-| SupportManagement   |    14.9 |
-| Templating          |     2.1 |
+| API               | Version |
+| ----------------- | ------: |
+| ActiveDirectory   |     2.0 |
+| Citizen           |     3.0 |
+| Employee          |     2.0 |
+| LegalEntity       |     2.0 |
+| SimulatorServer   |     2.0 |
+| SupportManagement |    14.9 |
+| Templating        |     2.1 |
 
 För KA (Kontakt Ånge):
 
-| API                 | Version |
-| ------------------- | ------: |
-| SupportManagement   |    14.9 |
-| Citizen             |     3.0 |
-| ActiveDirectory     |     2.0 |
-| Templating          |     2.1 |
-| LegalEntity         |     2.0 |
-| Employee            |     2.0 |
-| SimulatorServer     |     2.0 |
+| API               | Version |
+| ----------------- | ------: |
+| SupportManagement |    14.9 |
+| Citizen           |     3.0 |
+| ActiveDirectory   |     2.0 |
+| Templating        |     2.1 |
+| LegalEntity       |     2.0 |
+| Employee          |     2.0 |
+| SimulatorServer   |     2.0 |
 
 För IK (Intern kundtjänst):
 
@@ -262,6 +262,27 @@ Frontend (kör från `frontend/`):
 ```bash
 yarn dev:{drake}
 # Exempel: yarn dev:se
+```
+
+### Tester
+
+**Backend** (Vitest, kör från `backend/`):
+
+```bash
+yarn test           # Kör enhetstesterna en gång
+yarn test:watch     # Watch-läge
+yarn test:coverage  # Med täckningsrapport (v8)
+yarn type-check:test # Typkontroll av testerna
+```
+
+Testerna ligger i `backend/src/tests/` (`*.service.test.ts`).
+
+**Frontend** (kör från `frontend/`):
+
+```bash
+yarn cypress:{drake}            # Cypress E2E, interaktivt (öppnar Cypress)
+yarn cypress:headless:{drake}   # Cypress E2E, headless (för CI)
+yarn test:e2e:{drake}          # Playwright E2E (drake: mex | pt | kc | lop)
 ```
 
 ### Feature-flaggor

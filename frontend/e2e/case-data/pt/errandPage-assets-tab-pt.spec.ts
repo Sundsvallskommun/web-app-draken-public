@@ -532,5 +532,17 @@ test.describe('Errand page Insatser tab', () => {
       await expect(page.locator('[data-cy="edit-service-button"]')).toHaveCount(0);
       await expect(page.locator('[data-cy="remove-service-button"]')).toHaveCount(0);
     });
+
+    // Regression guard: a decided errand (status "Beslutad") is locked for editing but not
+    // closed, so sending messages must stay possible. Guards isMessagesLocked in
+    // casedata-errand-service so the post-decision message lock does not reappear. Reuses the
+    // proven locked-errand load (visitInsatserTab) and just switches to the messages tab.
+    test('keeps the message buttons enabled', async ({ page, mockRoute, dismissCookieConsent }) => {
+      await visitInsatserTab(page, mockRoute, dismissCookieConsent, mockDraftAsset);
+      await page.locator('.sk-tabs-list button').filter({ hasText: 'Meddelanden' }).click({ force: true });
+
+      await expect(page.locator('[data-cy="new-message-button"]').first()).toBeEnabled();
+      await expect(page.locator('[data-cy="sidebar-new-message-button"]').first()).toBeEnabled();
+    });
   });
 });

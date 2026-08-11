@@ -45,6 +45,24 @@ function warnMissingEnv(spec: EnvSpec): void {
 
 const s = (type: 'str' | 'port' | 'url' = 'str') => ({ type });
 
+const EXAMPLE_SECRET = 'foobar'; // shipped in .env.*.example.local
+const RECOMMENDED_SECRET_LENGTH = 32; // ~256-bit when base64/hex
+
+function validateSecretStrength(): void {
+  // Enforce only in deployed envs (TEST/prod run NODE_ENV=production); local dev may keep the template value.
+  if (process.env.NODE_ENV !== 'production') {
+    return;
+  }
+  const secret = (process.env.SECRET_KEY ?? '').trim();
+  if (secret === EXAMPLE_SECRET) {
+    console.error('\nInsecure SECRET_KEY: it is the shipped example value; set a strong unique secret.\n');
+    process.exit(1);
+  }
+  if (secret.length < RECOMMENDED_SECRET_LENGTH) {
+    console.warn(`⚠️  SECRET_KEY is shorter than the recommended ${RECOMMENDED_SECRET_LENGTH} characters.`);
+  }
+}
+
 const validateEnv = () => {
   const commonSpec: EnvSpec = {
     NODE_ENV: s(),
@@ -92,6 +110,8 @@ const validateEnv = () => {
       SUPPORTMANAGEMENT_SENDER_SMS: s(),
     });
   }
+
+  validateSecretStrength();
 };
 
 export default validateEnv;

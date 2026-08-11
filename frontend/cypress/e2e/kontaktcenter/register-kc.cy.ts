@@ -16,6 +16,7 @@ import {
 //TODO:Update mockdata
 import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
 import { mockRelations } from '../lop/fixtures/mockRelations';
+import { mockResolvedRelations } from '../case-data/fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('register page', () => {
@@ -36,6 +37,9 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments).as(
         'getAttachments'
       );
+      cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments/*', mockSupportAttachments[0]).as(
+        'getAttachment'
+      );
       cy.intercept('GET', '**/supportmessage/2281/errands/*/communication', mockSupportMessages).as('getMessages');
       cy.intercept('GET', '**/supportnotes/2281/*', mockSupportNotes).as('getNotes');
       cy.intercept('POST', `**/personid`, mockPersonIdResponse).as('getPersonId');
@@ -47,6 +51,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse);
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
       cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/resolvedrelations/**/**', mockResolvedRelations).as('getResolvedRelations');
       cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
         'getConversations'
       );

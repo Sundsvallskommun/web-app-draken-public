@@ -314,6 +314,11 @@ export interface Attachment {
    * @format int64
    */
   errandId?: number;
+  /**
+   * Decision id associated with the attachment, null for attachments belonging directly to the errand
+   * @format int64
+   */
+  decisionId?: number;
   /** Namespace */
   namespace?: string;
   /**
@@ -338,8 +343,8 @@ export interface Attachment {
   extension?: string;
   /** MIME type of the attachment */
   mimeType?: string;
-  /** Base64 encoded file content */
-  file?: string;
+  /** SHA-256 hash (hex encoded) of the attachment's raw content */
+  hash?: string;
   /** Additional parameters for the attachment */
   extraParameters?: Record<string, string>;
 }
@@ -395,7 +400,7 @@ export interface Decision {
    * @format date-time
    */
   validTo?: string;
-  /** List of attachments related to the decision */
+  /** List of attachments related to the decision. Attachments are managed through the decision attachment endpoints and sending them in this payload is rejected */
   attachments?: Attachment[];
   /** Additional parameters for the decision */
   extraParameters?: Record<string, string>;
@@ -585,7 +590,10 @@ export interface JsonNode {
   object?: boolean;
   float?: boolean;
   integralNumber?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
   pojo?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   floatingPointNumber?: boolean;
   short?: boolean;
   int?: boolean;
@@ -596,13 +604,11 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
   missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
+  number?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -911,6 +917,8 @@ export interface ConversationAttachment {
   fileSize?: number;
   /** Mime type of the file */
   mimeType?: string;
+  /** Hash of the file content */
+  hash?: string;
   /**
    * The attachment created date
    * @format date-time
@@ -1065,10 +1073,10 @@ export interface PatchDecision {
 }
 
 export interface PageErrand {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1086,10 +1094,9 @@ export interface PageErrand {
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  unpaged?: boolean;
   sort?: SortObject;
-  unpaged?: boolean;
   paged?: boolean;
-  unpaged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
@@ -1098,8 +1105,8 @@ export interface PageableObject {
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export interface CommitMetadata {
@@ -1217,10 +1224,10 @@ export interface MessageResponse {
 }
 
 export interface PageMessage {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Message[];
@@ -1236,10 +1243,10 @@ export interface PageMessage {
 }
 
 export interface PageDecision {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Decision[];
