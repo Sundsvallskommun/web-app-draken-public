@@ -118,7 +118,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.wait('@getErrand');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
       cy.wait('@getContract');
-      cy.get('.sk-tabs-list button').contains(`Avtal`).click({ force: true });
+      cy.get('.sk-tabs-list button').contains(`Faktura`).click({ force: true });
       cy.get('[data-cy="contract-type-select"]').should('exist');
     };
 
@@ -132,7 +132,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.visit(`/arende/${mockMexErrand_base.data.id}`);
       cy.wait('@getErrandNoContract');
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-      cy.get('.sk-tabs-list button').contains(`Avtal`).click({ force: true });
+      cy.get('.sk-tabs-list button').contains(`Faktura`).click({ force: true });
       cy.get('[data-cy="contract-type-select"]').should('exist');
     };
 
@@ -661,7 +661,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
         cy.visit(`/arende/${mockMexErrand_base.data.id}`);
         cy.wait('@getErrandManual');
         cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
-        cy.get('.sk-tabs-list button').contains(`Avtal`).click({ force: true });
+        cy.get('.sk-tabs-list button').contains(`Faktura`).click({ force: true });
         cy.get('[data-cy="contract-type-select"]').should('exist').select(ContractType.LEASE_AGREEMENT);
 
         // Add lessor via party modal
@@ -782,7 +782,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.wait('@getErrand');
           cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
           cy.wait('@getActiveContract');
-          cy.get('.sk-tabs-list button').contains(`Avtal`).click({ force: true });
+          cy.get('.sk-tabs-list button').contains(`Faktura`).click({ force: true });
           cy.get('[data-cy="contract-type-select"]').should('exist');
         });
 
@@ -962,7 +962,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
           cy.wait('@getErrand');
           cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
           cy.wait('@getUniqueContract');
-          cy.get('.sk-tabs-list button').contains(`Avtal`).click({ force: true });
+          cy.get('.sk-tabs-list button').contains(`Faktura`).click({ force: true });
           cy.get('[data-cy="contract-type-select"]').should('exist');
         });
 

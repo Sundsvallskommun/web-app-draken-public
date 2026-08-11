@@ -19,6 +19,7 @@ import { mockNotifications } from './fixtures/mockSupportNotifications';
 //TODO:Update mockdata
 import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
 import { mockRelations } from '../lop/fixtures/mockRelations';
+import { mockResolvedRelations } from '../case-data/fixtures/mockRelations';
 import { disabledIncompleteContactForm } from '../utils/stakeholder-search';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
 import { mockEnv } from '../fixtures/mock-env';
@@ -105,9 +106,7 @@ const searchAndSavePersonStakeholder = async (page: Page, mockAdressResponse: an
 
   await page.locator('[data-cy="submit-contact-person-button"]').click();
 
-  await expect(
-    page.locator('[data-cy="stakeholder-name"]').filter({ hasText: 'Kim Svensson' })
-  ).toBeVisible();
+  await expect(page.locator('[data-cy="stakeholder-name"]').filter({ hasText: 'Kim Svensson' })).toBeVisible();
 
   const [request] = await Promise.all([
     page.waitForRequest((req) => req.url().includes('supporterrands') && req.method() === 'PATCH'),
@@ -189,10 +188,7 @@ const searchAndSaveContactPersonStakeholder = async (
   await page.locator('[data-cy="add-new-email-button"]').filter({ hasText: 'Lägg till' }).click();
   await page.locator('[data-cy="newPhoneNumber"]').first().fill(mockEnv.mockPhoneNumberCountryCode);
   await page.locator('[data-cy="newPhoneNumber-button"]').filter({ hasText: 'Lägg till' }).click();
-  await page
-    .locator('[data-cy="submit-contact-person-button"]')
-    .filter({ hasText: 'Lägg till ärendeägare' })
-    .click();
+  await page.locator('[data-cy="submit-contact-person-button"]').filter({ hasText: 'Lägg till ärendeägare' }).click();
 
   const [request] = await Promise.all([
     page.waitForRequest((req) => req.url().includes('supporterrands') && req.method() === 'PATCH'),
@@ -213,9 +209,7 @@ const searchAndSaveContactPersonStakeholder = async (
 
 test.describe('Errand page', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
-    await page.context().addCookies([
-      { name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' },
-    ]);
+    await page.context().addCookies([{ name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' }]);
     await mockRoute('**/administrators', mockAdmins, { method: 'GET' });
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
@@ -227,6 +221,7 @@ test.describe('Errand page', () => {
       method: 'GET',
     });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
+    await mockRoute('**/supportattachments/2281/errands/*/attachments/*', mockSupportAttachments[0], { method: 'GET' });
     await mockRoute('**/supportmessage/2281/errands/*/communication', mockSupportMessages, { method: 'GET' });
     await mockRoute('**/supportnotes/2281/*', mockSupportNotes, { method: 'GET' });
     await mockRoute('**/supportmetadata/2281', mockMetaData, { method: 'GET' });
@@ -240,6 +235,8 @@ test.describe('Errand page', () => {
     });
     await mockRoute('**/sourcerelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/targetrelations/**/**', mockRelations, { method: 'GET' });
+    await mockRoute('**/resolvedrelations/**/**', mockResolvedRelations, { method: 'GET' });
+    await mockRoute('**/relations/referredfrom/**', mockRelations, { method: 'GET' });
     await mockRoute('**/namespace/errands/**/communication/conversations', mockConversations, { method: 'GET' });
     await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, {
       method: 'GET',
@@ -247,6 +244,7 @@ test.describe('Errand page', () => {
     await mockRoute('**/party/*/statuses', mockStakeholderStatus, { method: 'GET' });
     await mockRoute('**/2281/*/statuses', mockStakeholderStatus, { method: 'GET' });
     await mockRoute('**/supportnotifications/2281', mockNotifications, { method: 'GET' });
+    await mockRoute('**/party-services*', { data: [] }, { method: 'GET' });
   });
 
   test('shows the correct base errand information', async ({ page, dismissCookieConsent }) => {
@@ -304,13 +302,17 @@ test.describe('Errand page', () => {
 
     // Post form
     await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand, { method: 'PATCH' });
-    await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/2281/${mockSupportErrand.id}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
 
     const [request] = await Promise.all([
       page.waitForRequest(
@@ -333,13 +335,17 @@ test.describe('Errand page', () => {
     mockRoute,
     dismissCookieConsent,
   }) => {
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
@@ -360,26 +366,24 @@ test.describe('Errand page', () => {
     await dismissCookieConsent();
     await expect(page.locator('[data-cy="stakeholder-name"]').filter({ hasText: 'Kim Svensson' })).toBeVisible();
     await expect(page.locator('[data-cy="stakeholder-email"]').filter({ hasText: 'a@example.com' })).toBeVisible();
-    await expect(page.locator('[data-cy="stakeholder-phone"]').filter({ hasText: mockEnv.mockSecondaryPhoneNumber })).toBeVisible();
     await expect(
-      page.locator('[data-cy="stakeholder-adress"]').filter({ hasText: 'NORRMALMSGATAN 4' })
+      page.locator('[data-cy="stakeholder-phone"]').filter({ hasText: mockEnv.mockSecondaryPhoneNumber })
     ).toBeVisible();
+    await expect(page.locator('[data-cy="stakeholder-adress"]').filter({ hasText: 'NORRMALMSGATAN 4' })).toBeVisible();
 
     await expect(page.locator('[data-cy="stakeholder-name"]').filter({ hasText: 'Mormor Svensson' })).toBeVisible();
     await expect(page.locator('[data-cy="stakeholder-email"]').filter({ hasText: 'b@example.com' })).toBeVisible();
     await expect(
       page.locator('[data-cy="stakeholder-phone"]').filter({ hasText: 'Lägg till telefonnummer' })
     ).toBeVisible();
-    await expect(
-      page.locator('[data-cy="stakeholder-adress"]').filter({ hasText: 'NORRMALMSGATAN 5' })
-    ).toBeVisible();
+    await expect(page.locator('[data-cy="stakeholder-adress"]').filter({ hasText: 'NORRMALMSGATAN 5' })).toBeVisible();
 
     await expect(page.locator('[data-cy="stakeholder-name"]').filter({ hasText: 'Kompis Svensson' })).toBeVisible();
     await expect(page.locator('[data-cy="stakeholder-email"]').filter({ hasText: 'c@example.com' })).toBeVisible();
-    await expect(page.locator('[data-cy="stakeholder-phone"]').filter({ hasText: mockEnv.mockPhoneNumber })).toBeVisible();
     await expect(
-      page.locator('[data-cy="stakeholder-adress"]').filter({ hasText: 'NORRMALMSGATAN 6' })
+      page.locator('[data-cy="stakeholder-phone"]').filter({ hasText: mockEnv.mockPhoneNumber })
     ).toBeVisible();
+    await expect(page.locator('[data-cy="stakeholder-adress"]').filter({ hasText: 'NORRMALMSGATAN 6' })).toBeVisible();
 
     await expect(page.locator('[data-cy="add-customer-button"]')).not.toBeVisible();
     await expect(page.locator('[data-cy="add-manually-button-person"]')).toBeVisible();
@@ -390,13 +394,17 @@ test.describe('Errand page', () => {
     mockRoute,
     dismissCookieConsent,
   }) => {
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
@@ -409,13 +417,17 @@ test.describe('Errand page', () => {
     mockRoute,
     dismissCookieConsent,
   }) => {
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
     await page.goto('arende/KC-00000001');
     await dismissCookieConsent();
 
@@ -427,13 +439,17 @@ test.describe('Errand page', () => {
     mockRoute,
     dismissCookieConsent,
   }) => {
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
     await page.goto('arende/KC-00000001');
     await dismissCookieConsent();
     await page.locator('[data-cy="search-person-form-CONTACT"]').click();
@@ -442,13 +458,17 @@ test.describe('Errand page', () => {
   });
 
   test('disables incomplete contact form', async ({ page, mockRoute, dismissCookieConsent }) => {
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
@@ -456,31 +476,39 @@ test.describe('Errand page', () => {
     await disabledIncompleteContactForm(page);
   });
 
-  test('shows search result and sends correct data for a person', async ({
-    page,
-    mockRoute,
-    dismissCookieConsent,
-  }) => {
-    await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-    }, { method: 'PATCH' });
+  test('shows search result and sends correct data for a person', async ({ page, mockRoute, dismissCookieConsent }) => {
+    await mockRoute(
+      '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+      },
+      { method: 'PATCH' }
+    );
 
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
 
-    await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/2281/${mockSupportErrand.id}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
 
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
@@ -497,13 +525,17 @@ test.describe('Errand page', () => {
     await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand, {
       method: 'PATCH',
     });
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
@@ -568,21 +600,21 @@ test.describe('Errand page', () => {
     });
   });
 
-  test('clears the search result when personnumber changes', async ({
-    page,
-    mockRoute,
-    dismissCookieConsent,
-  }) => {
+  test('clears the search result when personnumber changes', async ({ page, mockRoute, dismissCookieConsent }) => {
     await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand, {
       method: 'PATCH',
     });
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
@@ -590,22 +622,21 @@ test.describe('Errand page', () => {
     await clearSearchResultOnPersonNumberChange(page, mockAdressResponse);
   });
 
-  test('clears the search result when orgnumber changes', async ({
-    page,
-    mockRoute,
-    dismissCookieConsent,
-    env,
-  }) => {
+  test('clears the search result when orgnumber changes', async ({ page, mockRoute, dismissCookieConsent, env }) => {
     await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand, {
       method: 'PATCH',
     });
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
@@ -642,13 +673,17 @@ test.describe('Errand page', () => {
     dismissCookieConsent,
     env,
   }) => {
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
@@ -681,13 +716,17 @@ test.describe('Errand page', () => {
     dismissCookieConsent,
     env,
   }) => {
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
@@ -722,13 +761,17 @@ test.describe('Errand page', () => {
     await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand, {
       method: 'PATCH',
     });
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
     await page.goto('arende/KC-00000001');
     await dismissCookieConsent();
     await page.locator('[data-cy="add-manually-button-owner"]').click();
@@ -744,13 +787,17 @@ test.describe('Errand page', () => {
     await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand, {
       method: 'PATCH',
     });
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
@@ -787,13 +834,17 @@ test.describe('Errand page', () => {
     await mockRoute('**/supporterrands/2281/3f0e57b2-2876-4cb8-000-537b5805be27', mockSupportErrand, {
       method: 'PATCH',
     });
-    await mockRoute('**/supporterrands/errandnumber/KC-00000001', {
-      ...mockSupportErrand,
-      id: '3f0e57b2-2876-4cb8-000-537b5805be27',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      '**/supporterrands/errandnumber/KC-00000001',
+      {
+        ...mockSupportErrand,
+        id: '3f0e57b2-2876-4cb8-000-537b5805be27',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
@@ -833,36 +884,38 @@ test.describe('Errand page', () => {
     await page.locator('[data-cy="contact-lastName"]').fill('Testsson');
     await page.locator('[data-cy="submit-contact-button"]').click();
 
-    await expect(
-      page.locator('[data-cy="stakeholder-name"]').filter({ hasText: 'Test Testsson' })
-    ).toBeVisible();
+    await expect(page.locator('[data-cy="stakeholder-name"]').filter({ hasText: 'Test Testsson' })).toBeVisible();
   });
 
   test('allows editing contact organization information', async ({ page, mockRoute, dismissCookieConsent }) => {
     await mockRoute('**/supporterrands/2281/3f0e57b2-2876-4cb8-000-537b5805be27', mockSupportErrand, {
       method: 'PATCH',
     });
-    await mockRoute('**/supporterrands/errandnumber/KC-00000001', {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [
-        {
-          externalId: '556026-9986',
-          externalIdType: 'COMPANY',
-          role: 'PRIMARY',
-          organizationName: 'Testbolaget',
-          firstName: '',
-          lastName: '',
-          address: 'NORRMALMSGATAN 4',
-          zipCode: '851 85',
-          country: 'SWEDEN',
-          contactChannels: [
-            { type: 'Email', value: 'a@example.com' },
-            { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
-          ],
-        },
-      ],
-    }, { method: 'GET' });
+    await mockRoute(
+      '**/supporterrands/errandnumber/KC-00000001',
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [
+          {
+            externalId: '556026-9986',
+            externalIdType: 'COMPANY',
+            role: 'PRIMARY',
+            organizationName: 'Testbolaget',
+            firstName: '',
+            lastName: '',
+            address: 'NORRMALMSGATAN 4',
+            zipCode: '851 85',
+            country: 'SWEDEN',
+            contactChannels: [
+              { type: 'Email', value: 'a@example.com' },
+              { type: 'Phone', value: mockEnv.mockSecondaryPhoneNumber },
+            ],
+          },
+        ],
+      },
+      { method: 'GET' }
+    );
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
@@ -878,21 +931,21 @@ test.describe('Errand page', () => {
     await expect(page.locator('[data-cy="stakeholder-name"]')).toContainText('Test');
   });
 
-  test('sends the correct applicant data for filled out form', async ({
-    page,
-    mockRoute,
-    dismissCookieConsent,
-  }) => {
+  test('sends the correct applicant data for filled out form', async ({ page, mockRoute, dismissCookieConsent }) => {
     await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand, {
       method: 'PATCH',
     });
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await dismissCookieConsent();
@@ -901,18 +954,26 @@ test.describe('Errand page', () => {
   });
 
   test('make contact to errande owner', async ({ page, mockRoute, dismissCookieConsent }) => {
-    await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin', {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-    }, { method: 'PATCH' });
+    await mockRoute(
+      '**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490/admin',
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+      },
+      { method: 'PATCH' }
+    );
 
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
+    );
 
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
@@ -931,9 +992,7 @@ test.describe('Errand page', () => {
     await expect(page.locator('[data-cy="submit-contact-button"]')).toBeEnabled();
     await page.locator('[data-cy="submit-contact-button"]').click();
 
-    await expect(
-      page.locator('[data-cy="stakeholder-name"]').filter({ hasText: 'Test Testsson' })
-    ).toBeVisible();
+    await expect(page.locator('[data-cy="stakeholder-name"]').filter({ hasText: 'Test Testsson' })).toBeVisible();
 
     await expect(page.locator('[data-cy="make-stakeholder-owner-button"]')).toBeEnabled();
     await page.locator('[data-cy="make-stakeholder-owner-button"]').click();
@@ -964,18 +1023,20 @@ test.describe('Errand page', () => {
       method: 'GET',
     });
     await page.goto('arende/KC-00000001');
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
-      ...mockSupportErrand,
-      id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      stakeholders: [],
-      contact: [],
-      customer: [],
-    }, { method: 'GET' });
     await mockRoute(
-      '**/supporterrands/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      patchFacility,
-      { method: 'PATCH' }
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      {
+        ...mockSupportErrand,
+        id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+        stakeholders: [],
+        contact: [],
+        customer: [],
+      },
+      { method: 'GET' }
     );
+    await mockRoute('**/supporterrands/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', patchFacility, {
+      method: 'PATCH',
+    });
     await mockRoute('**/estateByPropertyDesignation/Balder%201', mockFacilitiesData, { method: 'GET' });
     await dismissCookieConsent();
 
@@ -998,19 +1059,28 @@ test.describe('Errand page', () => {
     await expect(page.locator('[data-cy="facility-table"]')).toContainText('Testgatan 1');
     await expect(page.locator('[data-cy="facility-table"]')).toContainText('Testdistrikt 1');
 
-    // Save
-    await page
-      .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')
-      .filter({ hasText: 'Spara ärende' })
-      .click();
-    await page.waitForResponse((resp) => resp.url().includes('saveFacilities'));
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    // Save — set the response waiter up before the click (waitForResponse only
+    // catches responses that arrive after it starts listening; the mocked
+    // saveFacilities response can land before a post-click await registers).
+    await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('saveFacilities') && resp.status() === 200),
+      page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').filter({ hasText: 'Spara ärende' }).click(),
+    ]);
+    await page.waitForResponse(
+      (resp) => resp.url().includes('supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490') && resp.status() === 200
+    );
+    // The post-save errand refetch settles the form; the auto-retrying assertion waits for it.
     await expect(
       page.locator('[data-cy="manage-sidebar"] [data-cy="save-button"]').filter({ hasText: 'Spara ärende' })
     ).toBeDisabled();
 
     // Remove
-    await page.locator('[data-cy="facility-table"]').filter({ hasText: 'Ta bort' }).locator('button').filter({ hasText: 'Ta bort' }).click();
+    await page
+      .locator('[data-cy="facility-table"]')
+      .filter({ hasText: 'Ta bort' })
+      .locator('button')
+      .filter({ hasText: 'Ta bort' })
+      .click();
     await expect(page.locator('[data-cy="facility-table"]')).toContainText('Inga fastigheter tillagda');
     await page
       .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')

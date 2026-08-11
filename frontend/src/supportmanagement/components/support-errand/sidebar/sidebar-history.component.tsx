@@ -10,6 +10,7 @@ import {
   ResolutionLabelIK,
   ResolutionLabelKA,
   ResolutionLabelKS,
+  ResolutionLabelLOK,
   ResolutionLabelLOP,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportErrandEvents } from '@supportmanagement/services/support-history-service';
@@ -56,6 +57,7 @@ export const SidebarHistory: React.FC<{}> = () => {
       ...Object.entries(ResolutionLabelKA),
       ...Object.entries(ResolutionLabelLOP),
       ...Object.entries(ResolutionLabelIK),
+      ...Object.entries(ResolutionLabelLOK),
       ...Object.entries(ResolutionLabelBOU),
     ].forEach((e) => {
       _km[e[0]] = e[1];

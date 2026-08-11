@@ -14,6 +14,7 @@ import {
   getErrandCloseMode,
   isErrandAdmin,
   isErrandLocked,
+  isMessagesLocked,
   validateAction,
 } from '@casedata/services/casedata-errand-service';
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
@@ -344,7 +345,7 @@ export const SidebarInfo: React.FC<{}> = () => {
                 color="vattjom"
                 data-cy="sidebar-new-message-button"
                 variant="secondary"
-                disabled={isErrandLocked(errand) || !allowed}
+                disabled={isMessagesLocked(errand) || !allowed}
                 onClick={() => {
                   setShowMessageComposer(true);
                 }}

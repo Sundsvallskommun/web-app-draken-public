@@ -51,8 +51,9 @@ export class MessageController {
     const errandsUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
 
+    let emailSuccess = { data: { messageId: '' }, message: 'Not sent by email' };
     if (isMEX()) {
-      return [await sendDecisionForMex(municipalityId, req, errandData, messageDto.html ?? '', messageDto.plaintext ?? '')];
+      emailSuccess = await sendDecisionForMex(municipalityId, req, errandData, messageDto.html ?? '', messageDto.plaintext ?? '');
     }
 
     // PT Ånge (2260) sends decisions manually outside Draken.
@@ -71,11 +72,11 @@ export class MessageController {
       ];
     }
 
-    const minasidor_success = await sendDecisionToMinaSidor(baseURL, errandData.data.id!.toString(), req.user, pdf);
-    const katla_success = await sendDecisionToKatla(baseURL, errandData.data, req.user, pdf);
-    const digitalMail_success = await sendDecisionToDigitalMail(errandData.data, req.user, pdf);
+    const minasidor_success = await sendDecisionToMinaSidor(baseURL, errandData.data.id!.toString(), req.user, pdf, decision!.id!);
+    const katla_success = await sendDecisionToKatla(baseURL, errandData.data, req.user, pdf, decision!.id!);
+    const digitalMail_success = await sendDecisionToDigitalMail(errandData.data, req.user, pdf, decision!.id!);
 
-    return [minasidor_success, katla_success, digitalMail_success];
+    return [minasidor_success, katla_success, digitalMail_success, emailSuccess];
   }
 
   @Post('/casedata/:municipalityId/sms')

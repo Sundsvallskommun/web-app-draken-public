@@ -1,6 +1,6 @@
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, FormControl, FormLabel, Input, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
+import { Button, DatePicker, FormControl, FormLabel, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import { getSupportErrandById, setSuspension, Status } from '@supportmanagement/services/support-errand-service';
 import dayjs from 'dayjs';
@@ -86,7 +86,7 @@ export const SupportSuspendErrandButtonComponent: React.FC<{ disabled: boolean }
             <Modal.Content>
               <FormControl id="email" className="w-full" required>
                 <FormLabel className="text-small">Sätt en påminnelse för när ärendet ska återupptas</FormLabel>
-                <Input
+                <DatePicker
                   data-cy="date-input"
                   type="date"
                   min={dayjs().format('YYYY-MM-DD')}

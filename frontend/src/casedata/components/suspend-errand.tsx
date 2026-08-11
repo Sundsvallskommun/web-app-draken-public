@@ -2,7 +2,7 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { getErrand, isErrandLocked, setErrandStatus } from '@casedata/services/casedata-errand-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, FormControl, FormLabel, Input, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
+import { Button, DatePicker, FormControl, FormLabel, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';
 import { CirclePause } from 'lucide-react';
@@ -103,7 +103,7 @@ export const SuspendErrandComponent: React.FC<{ disabled: boolean }> = ({ disabl
             <Modal.Content>
               <FormControl id="email" className="w-full" required>
                 <FormLabel className="text-small">Sätt en påminnelse för när ärendet ska återupptas</FormLabel>
-                <Input
+                <DatePicker
                   data-cy="date-input"
                   type="date"
                   min={dayjs().format('YYYY-MM-DD')}

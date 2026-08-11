@@ -9,7 +9,9 @@ export default defineConfig({
   retries: 0,
   e2e: {
     supportFile: 'cypress/support/e2e.ts',
-    baseUrl: `http://localhost:${process.env.PORT || '3000'}${process.env.NEXT_PUBLIC_BASEPATH || ''}`,
+    baseUrl: `http://${process.env.DOMAIN_NAME || 'localhost'}:${process.env.PORT || '3000'}${
+      process.env.NEXT_PUBLIC_BASEPATH || ''
+    }`,
     env: {
       apiUrl: `${process.env.NEXT_PUBLIC_API_URL}`,
       application_name: `${process.env.NEXT_PUBLIC_APPLICATION}`,

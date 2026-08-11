@@ -1,5 +1,5 @@
-import { Attachment } from '@casedata/interfaces/attachment';
 import { UploadFile } from '@sk-web-gui/react';
+import { Attachment } from 'src/data-contracts/backend/data-contracts';
 
 export function base64ToFile(base64: string, fileName: string, mimeType: string): File {
   try {
@@ -13,15 +13,17 @@ export function base64ToFile(base64: string, fileName: string, mimeType: string)
 export function mapAttachmentToUploadFile<TExtraMeta extends object = object>(
   attachment: Attachment
 ): UploadFile<TExtraMeta> {
-  let file: File;
-  if (!attachment.file) {
-    file = new File([], `${attachment.name}`, { type: attachment.mimeType });
-  } else {
-    file = base64ToFile(attachment.file, `${attachment.name}`, attachment.mimeType);
+  if (!attachment?.id) {
+    throw new Error('Attachment must have an id to be mapped to UploadFile');
   }
+  // Attachment content is fetched separately, so the metadata alone maps to an empty File.
+  // Callers that have fetched the content replace this with base64ToFile.
+  const file = new File([], `${attachment.name}`, {
+    type: attachment.mimeType,
+  });
 
   const a: UploadFile<TExtraMeta> = {
-    id: attachment.id?.toString() ?? crypto.randomUUID(),
+    id: attachment.id.toString(),
     file,
     meta: {
       name: attachment.name.replace(/\.[^/.]+$/, ''),
@@ -32,7 +34,8 @@ export function mapAttachmentToUploadFile<TExtraMeta extends object = object>(
       version: attachment.version,
       created: attachment.created,
       updated: attachment.updated,
-      channel: attachment?.channel,
+      channel: attachment.channel,
+      decisionId: attachment.decisionId,
       ...((attachment.extraParameters ?? {}) as TExtraMeta),
       isValidAttachment: validAttachment(attachment),
     },
@@ -41,5 +44,5 @@ export function mapAttachmentToUploadFile<TExtraMeta extends object = object>(
 }
 
 export function validAttachment(attachment: Attachment): boolean {
-  return !!attachment.file;
+  return !!attachment.hash;
 }

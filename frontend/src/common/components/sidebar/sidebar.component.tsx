@@ -19,6 +19,7 @@ export type SidebarButtonKey =
   | 'todo'
   | 'investigation'
   | 'export'
+  | 'supportexport'
   | undefined;
 
 export const Sidebar: FC<{
@@ -83,7 +84,7 @@ export const Sidebar: FC<{
         style={{ marginTop: `-${scrolled}px` }}
       >
         {buttons.map((b, idx) =>
-          (isPT() && b.key === 'guides') || (!appConfig.features.useErrandExport && b.key === 'export') ? null : (
+          isPT() && b.key === 'guides' ? null : (
             <SidebarTooltip key={`sidebartooltip-${idx}`} open={hover === b.key}>
               {b.label}
             </SidebarTooltip>
@@ -99,8 +100,7 @@ export const Sidebar: FC<{
       >
         <div role="none" className="flex flex-col pt-18 lg:pt-32 gap-12 pb-12 items-center w-full px-8 overflow-hidden">
           {buttons.map((b, idx) =>
-            (isPT() && (b.key === 'guides' || b.key === 'investigation')) ||
-            (!appConfig.features.useErrandExport && b.key === 'export') ? null : (
+            isPT() && (b.key === 'guides' || b.key === 'investigation') ? null : (
               <div key={`sidebarkey-${idx}`} className="relative w-full flex justify-center" role="none">
                 <Button
                   role="menuitem"

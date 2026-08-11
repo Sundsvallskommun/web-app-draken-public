@@ -1,14 +1,17 @@
 import TextEditor from '@common/components/dynamic-text-editor';
 import { ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
+import { isLOK } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, cx, FormControl, FormErrorMessage, FormLabel, Select, Textarea } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
 import {
-  Channels,
   ContactChannelType,
+  getErrandParameterValue,
+  getSelectableChannels,
   isSupportErrandLocked,
   SupportErrand,
   supportErrandIsEmpty,
+  upsertErrandParameter,
 } from '@supportmanagement/services/support-errand-service';
 import { FC, useLayoutEffect, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
@@ -36,6 +39,7 @@ export const SupportErrandBasicsAboutForm: FC<{
     register,
     watch,
     setValue,
+    getValues,
     formState: { errors },
   } = formControls;
 
@@ -102,6 +106,30 @@ export const SupportErrandBasicsAboutForm: FC<{
         </FormControl>
       </div>
 
+      {isLOK() ? (
+        <div className="flex my-24 gap-xl">
+          <FormControl id="object" className="w-full">
+            <FormLabel>Objekt/fastighet</FormLabel>
+            <Textarea
+              value={getErrandParameterValue(watch('parameters'), 'object')}
+              onChange={(e) => {
+                setValue(
+                  'parameters',
+                  upsertErrandParameter(getValues('parameters'), 'object', e.target.value, 'Objekt/fastighet'),
+                  { shouldDirty: true }
+                );
+              }}
+              disabled={isSupportErrandLocked(supportErrand)}
+              data-cy="object-input"
+              className="block w-full text-[1.6rem] h-full"
+              placeholder="Ange objekt eller fastighet"
+              rows={3}
+              id="object"
+            />
+          </FormControl>
+        </div>
+      ) : null}
+
       <div className="flex gap-24">
         {appConfig.features.useReasonForContact ? (
           <div className="flex gap-xl w-1/2">
@@ -151,7 +179,7 @@ export const SupportErrandBasicsAboutForm: FC<{
               variant="primary"
               size="md"
             >
-              {Object.entries(Channels).map((c: [string, string]) => {
+              {getSelectableChannels().map((c: [string, string]) => {
                 const id = c[0];
                 const label = c[1];
                 return (

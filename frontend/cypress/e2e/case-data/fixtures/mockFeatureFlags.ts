@@ -45,11 +45,6 @@ export const mockFeatureFlags = [
     enabled: true,
   },
   {
-    name: 'useErrandExport',
-    value: 'true',
-    enabled: true,
-  },
-  {
     name: 'useUiPhases',
     value: 'true',
     enabled: true,

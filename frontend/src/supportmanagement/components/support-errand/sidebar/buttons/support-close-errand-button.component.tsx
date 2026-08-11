@@ -1,4 +1,4 @@
-import { isBOU, isIK, isKA, isLOP, isROB, isSE } from '@common/services/application-service';
+import { isBOU, isIK, isKA, isLOK, isLOP, isROB, isSE } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
@@ -12,8 +12,10 @@ import {
   ResolutionLabelIK,
   ResolutionLabelKA,
   ResolutionLabelKS,
+  ResolutionLabelLOK,
   ResolutionLabelLOP,
   ResolutionLabelROB,
+  setSupportErrandAdmin,
   setSupportErrandStatus,
   Status,
   SupportErrand,
@@ -33,6 +35,7 @@ const getResolutionLabels = (): Record<string, string> => {
   if (isKA()) return ResolutionLabelKA;
   if (isROB()) return ResolutionLabelROB;
   if (isBOU()) return ResolutionLabelBOU;
+  if (isLOK()) return ResolutionLabelLOK;
   return ResolutionLabelKS;
 };
 
@@ -47,6 +50,7 @@ const getDefaultResolution = (errand: SupportErrand | undefined): Resolution => 
 };
 
 export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+  const user = useUserStore((s) => s.user);
   const administrators = useUserStore((s) => s.administrators);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
@@ -70,11 +74,26 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
     });
   };
 
+  // When an errand is closed without a handler (e.g. directly from status NEW), the user who
+  // closes it becomes the handler so the errand has a responsible person. Returns the resulting
+  // assigned user (the existing handler if one is already set).
+  const ensureHandlerAssigned = async (errandId: string): Promise<string | undefined> => {
+    if (supportErrand?.assignedUserId) return supportErrand.assignedUserId;
+    const currentAdmin = administrators.find((a) => a.adAccount === user.username);
+    if (currentAdmin) {
+      await setSupportErrandAdmin(errandId, municipalityId, currentAdmin.adAccount, undefined, currentAdmin.adAccount);
+      return currentAdmin.adAccount;
+    }
+    return undefined;
+  };
+
   const handleCloseErrand = async (resolution: Resolution, msg: boolean) => {
     if (!supportErrand?.id) return;
     const errandId = supportErrand.id;
     setIsLoading(true);
+    let assignedUserId: string | undefined;
     try {
+      assignedUserId = await ensureHandlerAssigned(errandId);
       await closeSupportErrand(errandId, municipalityId, resolution);
     } catch (e) {
       console.error('Failed to close support errand', e);
@@ -85,7 +104,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
 
     if (msg) {
       try {
-        const admin = administrators.find((a) => a.adAccount === supportErrand.assignedUserId);
+        const admin = administrators.find((a) => a.adAccount === assignedUserId);
         const adminName = getAdminName(admin!);
         await sendClosingMessage(adminName, supportErrand, municipalityId);
       } catch (e) {
@@ -186,6 +205,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
               leftIcon={<Check />}
               onClick={async () => {
                 try {
+                  await ensureHandlerAssigned(supportErrand.id ?? '');
                   await setSupportErrandStatus(supportErrand.id ?? '', municipalityId, Status.SOLVED);
                   window.close();
                 } catch (e) {

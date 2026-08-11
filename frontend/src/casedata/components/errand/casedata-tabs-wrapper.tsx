@@ -282,7 +282,7 @@ export const CasedataTabsWrapper: React.FC = () => {
     ...(appConfig.features.useContracts
       ? [
           {
-            label: 'Avtal',
+            label: 'Faktura',
             content: <CasedataContractTab setUnsaved={setUnsavedContract} update={() => {}} />,
             disabled: false,
             visibleFor:
