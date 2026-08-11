@@ -28,7 +28,9 @@ jobs:
           cache-dependency-path: backend/yarn.lock
 
       - name: Install dependencies
-        run: yarn --frozen-lockfile --silent
+        # --ignore-scripts: skip dependency lifecycle scripts (supply-chain hardening).
+        # Safe here: this job only lints/format-checks; no script-installed binaries needed.
+        run: yarn --frozen-lockfile --silent --ignore-scripts
 
       - name: Run eslint (strict)
         run: yarn lint:strict
@@ -56,7 +58,9 @@ jobs:
           cache-dependency-path: frontend/yarn.lock
 
       - name: Install dependencies
-        run: yarn --frozen-lockfile --silent
+        # --ignore-scripts: skip dependency lifecycle scripts (supply-chain hardening).
+        # Safe here: this job only lints/format-checks; no script-installed binaries needed.
+        run: yarn --frozen-lockfile --silent --ignore-scripts
 
       - name: Run eslint (strict)
         run: yarn lint:strict

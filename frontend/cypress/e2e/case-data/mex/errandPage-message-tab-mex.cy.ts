@@ -10,7 +10,7 @@ import { mockHistory } from '../fixtures/mockHistory';
 import { mockAddress } from '../fixtures/mockAddress';
 import { mockAsset } from '../fixtures/mockAsset';
 import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
-import { mockRelations } from '../fixtures/mockRelations';
+import { mockRelations, mockResolvedRelations } from '../fixtures/mockRelations';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
 import {
@@ -35,6 +35,7 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', '**/errands/*/history', mockHistory).as('getHistory');
       cy.intercept('POST', '**/address', mockAddress).as('postAddress');
       cy.intercept('POST', '**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders);
+      cy.intercept('GET', '**/templates?*', { data: [], message: 'success' }).as('getTemplates');
       cy.intercept('GET', '**/contracts/2024-01026', mockLeaseAgreement).as('getContract');
       cy.intercept('GET', '**/contracts/2281/2024-01026/attachments/1', mockContractAttachment).as(
         'getContractAttachment'
@@ -43,6 +44,8 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
 
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
       cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/resolvedrelations/**/**', mockResolvedRelations).as('getResolvedRelations');
+      cy.intercept('GET', '**/relations/referredfrom/**', mockRelations).as('getReferredfromRelations');
       cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
         'getConversations'
       );
