@@ -9,7 +9,6 @@ export interface AppConfig {
 }
 
 interface AppConfigFeatures {
-  useErrandExport: boolean;
   useThreeLevelCategorization: boolean;
   useTwoLevelCategorization: boolean;
   useExplanationOfTheCause: boolean;
@@ -22,6 +21,7 @@ interface AppConfigFeatures {
   useDepartmentEscalation: boolean;
   useEmployeeSearch: boolean;
   useOrganizationStakeholders: boolean;
+  useEmployeeSearchOnly: boolean;
   useRecruitment: boolean;
   useEmailContactChannel: boolean;
   useSmsContactChannel: boolean;
@@ -38,6 +38,7 @@ interface AppConfigFeatures {
   useClosedAsDefaultResolution: boolean;
   useServices: boolean;
   useAppeal: boolean;
+  useHandover: boolean;
 }
 
 // JSON.parse prevents the minifier from folding placeholder comparisons at build time.
@@ -56,7 +57,6 @@ export const appConfig: AppConfig = {
   isSupportManagement: envBool(process.env.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT),
   reopenSupportErrandLimit: process.env.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '30',
   features: {
-    useErrandExport: envBool(process.env.NEXT_PUBLIC_USE_ERRAND_EXPORT),
     useThreeLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION),
     useTwoLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION),
     useExplanationOfTheCause: envBool(process.env.NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE),
@@ -69,6 +69,7 @@ export const appConfig: AppConfig = {
     useDepartmentEscalation: envBool(process.env.NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION),
     useEmployeeSearch: envBool(process.env.NEXT_PUBLIC_USE_EMPLOYEE_SEARCH),
     useOrganizationStakeholders: envBool(process.env.NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER),
+    useEmployeeSearchOnly: envBool(process.env.NEXT_PUBLIC_USE_EMPLOYEE_SEARCH_ONLY),
     useRecruitment: envBool(process.env.NEXT_PUBLIC_USE_RECRUITMENT),
     useEmailContactChannel: envBool(process.env.NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL),
     useSmsContactChannel: envBool(process.env.NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL),
@@ -85,6 +86,7 @@ export const appConfig: AppConfig = {
     useClosedAsDefaultResolution: envBool(process.env.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION),
     useServices: envBool(process.env.NEXT_PUBLIC_USE_SERVICES),
     useAppeal: envBool(process.env.NEXT_PUBLIC_USE_APPEAL),
+    useHandover: envBool(process.env.NEXT_PUBLIC_USE_HANDOVER),
   },
 };
 

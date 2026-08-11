@@ -41,6 +41,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
       cy.intercept('GET', /\/errand\/\d*/, mockMexErrand_base).as('getErrandById');
       cy.intercept('GET', /\/errand\/\d+\/attachments$/, mockAttachments).as('getErrandAttachments');
       cy.intercept('PATCH', '**/errands/*', { data: 'ok', message: 'ok' }).as('patchErrand');
+      // The rendered decision PDF is uploaded as a binary attachment to the dedicated decision-attachment
+      // endpoint after the decision is saved; a re-save first removes the previous one.
+      cy.intercept('POST', '**/decisions/*/attachments', { data: 'ok', message: 'ok' }).as('postDecisionAttachment');
+      cy.intercept('DELETE', '**/decisions/*/attachments/*', { data: 'ok', message: 'ok' }).as('deleteDecisionAttachment');
       cy.intercept('GET', '**/errand/errandNumber/*', mockMexErrand_base).as('getErrand');
       cy.intercept('GET', '**/contract/**', mockPurchaseAgreement).as('getContract');
       cy.intercept('POST', '**/templates/phrases*', mockPhrases).as('getPhrases');

@@ -65,6 +65,10 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
       );
       cy.intercept('PATCH', '**/errands/**/extraparameters', {});
       cy.intercept('POST', '**/render/pdf', mockPdfRender).as('postRenderPdf');
+      // The rendered decision PDF is uploaded as a binary attachment to the dedicated decision-attachment
+      // endpoint after the decision is saved; a re-save first removes the previous one.
+      cy.intercept('POST', '**/decisions/*/attachments', { data: 'ok', message: 'ok' }).as('postDecisionAttachment');
+      cy.intercept('DELETE', '**/decisions/*/attachments/*', { data: 'ok', message: 'ok' }).as('deleteDecisionAttachment');
       cy.intercept('GET', '**/templates?*', { data: [], message: 'success' }).as('getTemplates');
       cy.intercept('GET', '**/errand-services?**', { data: [], message: 'success' }).as('getErrandServices');
       cy.intercept('POST', '**/render', {

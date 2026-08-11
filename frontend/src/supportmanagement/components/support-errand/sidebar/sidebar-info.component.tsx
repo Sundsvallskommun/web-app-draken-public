@@ -308,6 +308,18 @@ export const SidebarInfo: FC<{
       case Resolution.BACK_TO_CONTACT_SUNDSVALL: {
         return solutionComponent('Felskickat', 'skickade tillbaka ärendet till Kontakt Sundsvall.', 'check');
       }
+      case Resolution.FORWARDED_TO_DRAKFASTIGHETER: {
+        return solutionComponent('Vidarebefordrat', 'vidarebefordrade ärendet till Drakfastigheter.', 'split');
+      }
+      case Resolution.FORWARDED_TO_EXTERNAL_LANDLORD: {
+        return solutionComponent('Vidarebefordrat', 'vidarebefordrade ärendet till extern hyresvärd.', 'split');
+      }
+      case Resolution.FORWARDED_TO_INTERNAL_CONTRACTOR: {
+        return solutionComponent('Vidarebefordrat', 'vidarebefordrade ärendet till intern entreprenör.', 'split');
+      }
+      case Resolution.FORWARDED_TO_EXTERNAL_CONTRACTOR: {
+        return solutionComponent('Vidarebefordrat', 'vidarebefordrade ärendet till extern entreprenör.', 'split');
+      }
     }
   };
 

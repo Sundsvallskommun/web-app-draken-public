@@ -21,14 +21,18 @@ const getLeaseTypeLabel = (value: string): string => {
 export const ContractsFilterTags: FC = () => {
   const { watch, setValue, reset } = useFormContext<ContractFilter>();
 
-  const statuses = watch('status');
+  const statuses = watch('status') ?? [];
   const contractTypeValues = watch('contractType');
   const leaseTypeValues = watch('leaseType');
   const startdate = watch('startdate');
   const enddate = watch('enddate');
+  const defaultStatuses = ContractFilterValues.status;
+  const hasDefaultStatuses =
+    statuses.length === defaultStatuses.length && defaultStatuses.every((status) => statuses.includes(status));
+  const hasStatusFilterChanged = !hasDefaultStatuses;
 
   const hasTags =
-    statuses.length > 0 || contractTypeValues.length > 0 || leaseTypeValues.length > 0 || startdate || enddate;
+    hasStatusFilterChanged || contractTypeValues.length > 0 || leaseTypeValues.length > 0 || startdate || enddate;
 
   const handleRemoveStatus = (value: string) => {
     setValue(
@@ -66,15 +70,16 @@ export const ContractsFilterTags: FC = () => {
 
   return (
     <div className="flex gap-8 flex-wrap justify-start">
-      {statuses.map((status, index) => (
-        <Chip
-          data-cy={`tag-contract-status-${status}`}
-          key={`contractStatus-${index}`}
-          onClick={() => handleRemoveStatus(status)}
-        >
-          {getStatusLabel(status)}
-        </Chip>
-      ))}
+      {hasStatusFilterChanged &&
+        statuses.map((status, index) => (
+          <Chip
+            data-cy={`tag-contract-status-${status}`}
+            key={`contractStatus-${index}`}
+            onClick={() => handleRemoveStatus(status)}
+          >
+            {getStatusLabel(status)}
+          </Chip>
+        ))}
 
       {contractTypeValues.map((type, index) => (
         <Chip

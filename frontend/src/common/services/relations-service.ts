@@ -82,6 +82,16 @@ interface ResolvedRelationsResponse {
 
 const ALLOWED_SERVICES = ['supportmanagement', 'case-data'];
 
+// The relations service returns service names in varying formats ('support-management',
+// 'SUPPORT_MANAGEMENT', 'supportmanagement', 'case-data', 'casedata'). Normalise to our canonical
+// values so filtering works regardless of which system created the relation.
+const normalizeService = (service?: string): string => {
+  const normalized = (service ?? '').toLowerCase().replace(/[-_]/g, '');
+  if (normalized === 'supportmanagement') return 'supportmanagement';
+  if (normalized === 'casedata') return 'case-data';
+  return service ?? '';
+};
+
 export const getAllRelatedErrands = async (
   municipalityId: string,
   resourceId: string
@@ -94,7 +104,7 @@ export const getAllRelatedErrands = async (
   const allStatuses = [...sourceResult.caseStatuses, ...targetResult.caseStatuses];
 
   const fromSource: RelationWithErrandNumber[] = sourceResult.relations
-    .filter((relation) => ALLOWED_SERVICES.includes(relation.target.service))
+    .filter((relation) => ALLOWED_SERVICES.includes(normalizeService(relation.target.service)))
     .map((relation) => {
       const otherResourceId = relation.target.resourceId;
       const status = allStatuses.find((s) => s.caseId === otherResourceId);
@@ -106,7 +116,7 @@ export const getAllRelatedErrands = async (
     });
 
   const fromTarget: RelationWithErrandNumber[] = targetResult.relations
-    .filter((relation) => ALLOWED_SERVICES.includes(relation.source.service))
+    .filter((relation) => ALLOWED_SERVICES.includes(normalizeService(relation.source.service)))
     .map((relation) => {
       const otherResourceId = relation.source.resourceId;
       const status = allStatuses.find((s) => s.caseId === otherResourceId);

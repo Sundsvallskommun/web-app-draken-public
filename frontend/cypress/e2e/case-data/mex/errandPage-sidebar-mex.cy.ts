@@ -1,6 +1,5 @@
 /// <reference types="cypress" />
 
-import { appConfig } from '@config/appconfig';
 import { onlyOn } from '@cypress/skip-test';
 import { mockAddress } from 'cypress/e2e/case-data/fixtures/mockAddress';
 import { mockAttachments } from 'cypress/e2e/case-data/fixtures/mockAttachments';
@@ -249,15 +248,10 @@ onlyOn(Cypress.env('application_name') === 'MEX', () => {
     });
 
     it('manages Exports', () => {
-      if (appConfig.features.useErrandExport) {
-        cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('exist').click();
-        cy.get('[data-cy="basicInformation"]').should('exist');
-        cy.get('[data-cy="export-button"]').should('exist').click();
-        cy.get('p').should('exist').contains('Detta ärende är inte avslutat. Vill du ändå exportera ärendet?');
-      } else {
-        // Export button should not exist when feature is disabled
-        cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('exist');
-      }
+      cy.get(`[aria-label="${mockSidebarButtons[6].label}"]`).should('exist').click();
+      cy.get('[data-cy="basicInformation"]').should('exist');
+      cy.get('[data-cy="export-button"]').should('exist').click();
+      cy.get('p').should('exist').contains('Detta ärende är inte avslutat. Vill du ändå exportera ärendet?');
     });
   });
 });

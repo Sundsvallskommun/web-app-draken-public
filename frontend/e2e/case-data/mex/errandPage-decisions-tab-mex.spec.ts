@@ -34,6 +34,10 @@ test.describe('Decisions tab', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(mockAttachments) });
     }); // @getErrandAttachments
     await mockRoute('**/errands/*', { data: 'ok', message: 'ok' }, { method: 'PATCH' }); // @patchErrand
+    // The rendered decision PDF is uploaded as a binary attachment to the dedicated decision-attachment
+    // endpoint after the decision is saved; a re-save first removes the previous one.
+    await mockRoute('**/decisions/*/attachments', { data: 'ok', message: 'ok' }, { method: 'POST' }); // @postDecisionAttachment
+    await mockRoute('**/decisions/*/attachments/*', { data: 'ok', message: 'ok' }, { method: 'DELETE' }); // @deleteDecisionAttachment
     await mockRoute('**/errand/errandNumber/*', mockMexErrand_base, { method: 'GET' }); // @getErrand
     await mockRoute('**/contract/**', mockPurchaseAgreement, { method: 'GET' }); // @getContract
     await mockRoute('**/templates/phrases*', mockPhrases, { method: 'POST' }); // @getPhrases

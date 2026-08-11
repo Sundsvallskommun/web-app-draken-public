@@ -12,6 +12,7 @@ import { BillingDataCollectorController } from './controllers/billingdatacollect
 import { CaseDataAttachmentController } from './controllers/casedata/casedata-attachment.controller';
 import { CaseDataConversationController } from './controllers/casedata/casedata-conversation.controller';
 import { CaseDataDecisionsController } from './controllers/casedata/casedata-decision.controller';
+import { CaseDataDecisionAttachmentController } from './controllers/casedata/casedata-decision-attachment.controller';
 import { CaseDataErrandController } from './controllers/casedata/casedata-errand.controller';
 import { caseDataFacilitiesController } from './controllers/casedata/casedata-facilities.controller';
 import { CaseDataHistoryController } from './controllers/casedata/casedata-history.controller';
@@ -32,7 +33,9 @@ import { RelationsController } from './controllers/relations.controller';
 import { SupportAttachmentController } from './controllers/supportmanagement/support-attachment.controller';
 import { SupportConversationController } from './controllers/supportmanagement/support-conversation.controller';
 import { SupportErrandController } from './controllers/supportmanagement/support-errand.controller';
+import { SupportExportController } from './controllers/supportmanagement/support-export.controller';
 import { SupportFacilitiesController } from './controllers/supportmanagement/support-facilities.controller';
+import { SupportHandoverController } from './controllers/supportmanagement/support-handover.controller';
 import { SupportHistoryController } from './controllers/supportmanagement/support-history.controller';
 import { SupportMessageController } from './controllers/supportmanagement/support-message.controller';
 import { SupportMetadataController } from './controllers/supportmanagement/support-metadata.controller';
@@ -55,6 +58,7 @@ validateEnv();
       BillingDataCollectorController,
       CaseDataAttachmentController,
       CasedataContractsController,
+      CaseDataDecisionAttachmentController,
       CaseDataDecisionsController,
       CaseDataErrandController,
       caseDataFacilitiesController,
@@ -69,7 +73,9 @@ validateEnv();
       MessageController,
       SupportAttachmentController,
       SupportErrandController,
+      SupportExportController,
       SupportFacilitiesController,
+      SupportHandoverController,
       SupportHistoryController,
       SupportMessageController,
       SupportMetadataController,

@@ -33,19 +33,31 @@ const get = <T>(url: string) => axios.get<T>(`${process.env.NEXT_PUBLIC_API_URL}
 
 const post = <T, U>(url: string, data: U, customOptions: { [key: string]: any } = {}) => {
   return axios
-    .post<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, data, { ...options, ...customOptions })
+    .post<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, data, {
+      ...options,
+      ...customOptions,
+      headers: { ...options.headers, ...customOptions.headers },
+    })
     .catch(handleError);
 };
 
 const patch = <T, U>(url: string, data: U, customOptions: { [key: string]: any } = {}) => {
   return axios
-    .patch<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, data, { ...options, ...customOptions })
+    .patch<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, data, {
+      ...options,
+      ...customOptions,
+      headers: { ...options.headers, ...customOptions.headers },
+    })
     .catch(handleError);
 };
 
 const put = <T, U>(url: string, data: U, customOptions: { [key: string]: any } = {}) => {
   return axios
-    .put<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, data, { ...options, ...customOptions })
+    .put<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, data, {
+      ...options,
+      ...customOptions,
+      headers: { ...options.headers, ...customOptions.headers },
+    })
     .catch(handleError);
 };
 

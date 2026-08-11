@@ -1,14 +1,17 @@
 import { CasedataMessageTabFormModel } from '@casedata/components/errand/tabs/messages/message-composer.component';
-import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
-import { sendAttachments } from '@casedata/services/casedata-attachment-service';
+import {
+  fetchAttachment,
+  fetchDecisionAttachment,
+  sendAttachments,
+} from '@casedata/services/casedata-attachment-service';
 import { CasedataMessageType } from '@casedata/services/casedata-message-types';
 import { Message, MessageStatus } from '@common/interfaces/message';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX } from '@common/services/application-service';
+import { base64ToFile } from '@common/services/attachment-service';
 import { base64Decode } from '@common/services/helper-service';
-import { toBase64 } from '@common/utils/toBase64';
 import { UploadFile } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
@@ -50,45 +53,41 @@ export const sendMessage: (
   const targets = data.contactMeans === 'webmessage' ? [{ value: '' }] : [...data.emails];
   const msgPromises = targets.map(async (target) => {
     const messageFormData = new FormData();
-    const newAttachmentPromises: Promise<{ attachment: Attachment; blob: Blob }>[] = data.messageAttachments?.map(
-      async (f) => {
-        const fileItem = f.file![0];
-        const fileData = await toBase64(fileItem);
-        const attachment: Attachment = {
-          category: 'MESSAGE_ATTACHMENT',
-          name: fileItem.name,
-          note: '',
-          extension: fileItem.name.split('.').pop() ?? '',
-          // msg files not handled properly by the browser, so we need to set the mime type manually
-          mimeType: fileItem.name.split('.').pop() === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type,
-          file: fileData,
-        };
-        const buf = Buffer.from(attachment.file, 'base64');
-        const blob = new Blob([buf], { type: attachment.mimeType });
-        return Promise.resolve({ attachment, blob });
+
+    // Newly picked files are already in hand; only the mime type needs correcting, since
+    // the browser does not detect msg files properly.
+    (data.messageAttachments ?? []).forEach((f) => {
+      const fileItem = f.file?.[0];
+      if (!fileItem) {
+        return;
       }
-    ) || [
-      new Promise((resolve) => resolve({ attachment: null as unknown as Attachment, blob: null as unknown as Blob })),
-    ];
-    return Promise.allSettled(newAttachmentPromises)
-      .then((r) => {
-        r.forEach((r) => {
-          if (r.status === 'fulfilled') {
-            const attachment = r.value.attachment;
-            const blob = r.value.blob;
-            messageFormData.append(`files`, blob, attachment.name);
+      const mimeType = fileItem.name.split('.').pop() === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type;
+      messageFormData.append(`files`, new Blob([fileItem], { type: mimeType }), fileItem.name);
+    });
+
+    // Attachments already on the errand carry metadata only, so their content has to
+    // be fetched one by one before it can be attached to the message.
+    const existingAttachmentPromises = (data.existingAttachments ?? []).map(async (existingAttachment) => {
+      if (!existingAttachment.id) {
+        throw new Error('Existing attachment does not have an id');
+      }
+      const fetched = existingAttachment.decisionId
+        ? await fetchDecisionAttachment(municipalityId, errand.id, existingAttachment.decisionId, existingAttachment)
+        : await fetchAttachment(municipalityId, errand.id, existingAttachment);
+      return base64ToFile(fetched.base64EncodedString, existingAttachment.name, existingAttachment.mimeType);
+    });
+
+    return Promise.allSettled(existingAttachmentPromises)
+      .then((results) => {
+        results.forEach((result) => {
+          if (result.status === 'fulfilled') {
+            messageFormData.append(`files`, result.value, result.value.name);
           } else {
-            console.error(`Error: attachment could not be processed for the following reason: ${r.reason}`);
+            console.error(`Error: attachment could not be processed for the following reason: ${result.reason}`);
           }
         });
       })
       .then(() => {
-        data.existingAttachments?.forEach((attachment) => {
-          const buf = Buffer.from(attachment.file, 'base64');
-          const blob = new Blob([buf], { type: attachment.mimeType });
-          messageFormData.append(`files`, blob, attachment.name);
-        });
-
         messageFormData.append('email', Object(target).value);
         messageFormData.append('contactMeans', data.contactMeans);
         messageFormData.append('subject', `Ärende #${errand.errandNumber}`);

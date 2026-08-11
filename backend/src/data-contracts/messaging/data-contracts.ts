@@ -508,11 +508,13 @@ export interface EmailRequest {
   /** Party */
   party?: EmailRequestParty;
   /**
-   * Recipient e-mail address
+   * Recipient e-mail address. Deprecated, use 'recipients' instead
+   * @deprecated
    * @format email
-   * @minLength 1
    */
-  emailAddress: string;
+  emailAddress?: string;
+  recipients?: string[];
+  cc?: string[];
   /**
    * E-mail subject
    * @minLength 1
