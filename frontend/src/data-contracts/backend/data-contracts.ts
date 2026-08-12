@@ -440,6 +440,7 @@ export interface CParameter {
   displayName?: string;
   group?: string;
   values?: any[];
+  version?: number;
 }
 
 export interface CContactChannel {

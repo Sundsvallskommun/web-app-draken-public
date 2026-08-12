@@ -1,6 +1,6 @@
 import TextEditor from '@common/components/dynamic-text-editor';
 import { ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
-import { isLOK } from '@common/services/application-service';
+import { isIAF, isLOK } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, cx, FormControl, FormErrorMessage, FormLabel, Select, Textarea } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
@@ -17,6 +17,7 @@ import { FC, useLayoutEffect, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
+import { IafLabelCategorization } from './iaf-label-categorization.component';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
 
@@ -68,9 +69,13 @@ export const SupportErrandBasicsAboutForm: FC<{
       ) : null}
 
       {appConfig.features.useThreeLevelCategorization ? (
-        <div className="w-full flex gap-20">
-          <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
-        </div>
+        isIAF() && !appConfig.features.useInvestigation ? (
+          <IafLabelCategorization supportMetadata={supportMetadata} disabled={isSupportErrandLocked(supportErrand)} />
+        ) : !isIAF() ? (
+          <div className="w-full flex gap-20">
+            <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
+          </div>
+        ) : null
       ) : null}
 
       {appConfig.features.useBusinessCase ? (

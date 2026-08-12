@@ -18,7 +18,7 @@ import { getSupportMetadata } from '@supportmanagement/services/support-metadata
 import dayjs from 'dayjs';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import utc from 'dayjs/plugin/utc';
-import { ReactNode, useEffect, useMemo, useSyncExternalStore } from 'react';
+import { ReactNode, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 dayjs.extend(utc);
 dayjs.locale('sv');
@@ -45,14 +45,22 @@ interface ClientApplicationProps {
   children: ReactNode;
 }
 
+function isInvestigationSchemaLabRoute(): boolean {
+  return globalThis.window?.location.pathname.endsWith('/schema-lab/utredning') ?? false;
+}
+
 function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false
   );
+  const schemaLabRoute = isInvestigationSchemaLabRoute();
+  const [featureFlagsReady, setFeatureFlagsReady] = useState(schemaLabRoute);
 
   useEffect(() => {
+    if (schemaLabRoute) return;
+
     const municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '';
     useConfigStore.getState().setMunicipalityId(municipalityId);
 
@@ -66,24 +74,27 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
       .then((res) => {
         applyRuntimeFeatureFlags(res.data);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setFeatureFlagsReady(true));
 
     getAdminUsers()
       .then((data) => {
         useUserStore.getState().setAdministrators(data);
       })
       .catch(() => {});
-  }, []);
+  }, [schemaLabRoute]);
 
   useEffect(() => {
+    if (schemaLabRoute || !featureFlagsReady) return;
+
     if (appConfig.isSupportManagement && process.env.NEXT_PUBLIC_MUNICIPALITY_ID) {
       getSupportMetadata(process.env.NEXT_PUBLIC_MUNICIPALITY_ID).then((res) => {
         useMetadataStore.getState().setSupportMetadata(res.metadata);
       });
     }
-  }, []);
+  }, [featureFlagsReady, schemaLabRoute]);
 
-  if (!mounted) {
+  if (!mounted || !featureFlagsReady) {
     return null;
   }
 

@@ -17,9 +17,11 @@ import {
   groupByConversationIdSortedTree,
   MessageNode,
 } from '@supportmanagement/services/support-message-service';
-import { Dispatch, FC, ReactNode, SetStateAction, useEffect, useMemo, useState } from 'react';
-import { useFormContext, UseFormReturn } from 'react-hook-form';
+import { Dispatch, FC, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
+import { useFormContext, UseFormReturn, useFormState } from 'react-hook-form';
 
+import type { InvestigationDocumentKey } from '../../investigation/investigation-document';
+import { SupportErrandInvestigationTab } from '../../investigation/support-errand-investigation-tab';
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
 import { SupportErrandServicesTab } from './tabs/services/support-errand-services-tab';
 import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-tab';
@@ -36,20 +38,19 @@ export const SupportTabsWrapper: FC<{
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
 
-  const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const [tabUnsavedChanges, setTabUnsavedChanges] = useState(false);
+  const [investigationDirty, setInvestigationDirty] = useState<Partial<Record<InvestigationDocumentKey, boolean>>>({});
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
+  const { isDirty: isErrandDirty } = useFormState({ control: methods.control });
 
   const { activeTabKey, setActiveTabKey } = useSupportStore();
 
-  useEffect(() => {
-    if (methods?.getValues as unknown) {
-      // Need to define these variables for validation/dirty check to work??
-      const _ = Object.keys(methods.formState.dirtyFields).length;
-      const __ = methods.formState.isDirty;
-      setUnsavedChanges(Object.keys(methods.formState.dirtyFields).length === 0 ? false : methods.formState.isDirty);
-    }
-  }, [methods]);
+  const unsavedChanges = isErrandDirty || tabUnsavedChanges || Object.values(investigationDirty).some(Boolean);
+
+  const setInvestigationDocumentDirty = useCallback((key: InvestigationDocumentKey, isDirty: boolean) => {
+    setInvestigationDirty((current) => (current[key] === isDirty ? current : { ...current, [key]: isDirty }));
+  }, []);
 
   const getMessagesAndConversations = () => {
     getSupportAttachments(supportErrand!.id!, municipalityId).then(setSupportAttachments);
@@ -104,7 +105,7 @@ export const SupportTabsWrapper: FC<{
           <SupportErrandBasicsTab
             setUnsavedFacility={props.setUnsavedFacility}
             errand={supportErrand}
-            setUnsaved={setUnsavedChanges}
+            setUnsaved={setTabUnsavedChanges}
             update={update}
           />
         ),
@@ -119,6 +120,13 @@ export const SupportTabsWrapper: FC<{
         visibleFor: appConfig.features.useDetailsTab,
       },
       {
+        key: 'investigation',
+        label: 'Utredning',
+        content: supportErrand && <SupportErrandInvestigationTab onDirtyChange={setInvestigationDocumentDirty} />,
+        disabled: false,
+        visibleFor: appConfig.features.useInvestigation,
+      },
+      {
         key: 'messages',
         label: `Meddelanden (${countUnreadMessages(messages)})`,
         content: supportErrand && (
@@ -127,7 +135,7 @@ export const SupportTabsWrapper: FC<{
             messageTree={messageTree}
             supportConversations={supportConversations}
             conversationMessageTree={conversationMessageTree}
-            setUnsaved={setUnsavedChanges}
+            setUnsaved={setTabUnsavedChanges}
             update={update}
             municipalityId={municipalityId}
           />
@@ -156,7 +164,7 @@ export const SupportTabsWrapper: FC<{
       {
         key: 'recruitment',
         label: 'Rekryteringsprocess',
-        content: supportErrand && <SupportErrandRecruitmentTab setUnsaved={setUnsavedChanges} update={update} />,
+        content: supportErrand && <SupportErrandRecruitmentTab setUnsaved={setTabUnsavedChanges} update={update} />,
         disabled: false,
         visibleFor: appConfig.features.useRecruitment,
       },
@@ -164,7 +172,7 @@ export const SupportTabsWrapper: FC<{
         key: 'invoice',
         label: 'Fakturering',
         content: supportErrand && (
-          <SupportErrandInvoiceTab errand={supportErrand} setUnsaved={setUnsavedChanges} update={update} />
+          <SupportErrandInvoiceTab errand={supportErrand} setUnsaved={setTabUnsavedChanges} update={update} />
         ),
         disabled: false,
         visibleFor: appConfig.features.useBilling,
@@ -180,6 +188,7 @@ export const SupportTabsWrapper: FC<{
       supportAttachments,
       supportConversations,
       supportErrand,
+      setInvestigationDocumentDirty,
     ]
   );
 
