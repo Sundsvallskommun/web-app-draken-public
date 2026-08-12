@@ -50,7 +50,9 @@ export class MessageController {
     const errandsUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
 
-    let emailSuccess = { data: { messageId: '' }, message: 'Not sent by email' };
+    // PT never sends by email; the placeholder keeps a truthy messageId so the frontend's
+    // "every channel returned a messageId" check still passes. MEX overrides it with a real send.
+    let emailSuccess = { data: { messageId: 'Not sent by email for PT' }, message: 'Not sent by email for PT' };
     if (isMEX()) {
       emailSuccess = await sendDecisionForMex(municipalityId, req, errandData, messageDto.html ?? '', messageDto.plaintext ?? '');
     }
