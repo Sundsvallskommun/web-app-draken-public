@@ -2,7 +2,7 @@
 @use 'tailwindcss/components';
 @use 'tailwindcss/utilities';
 
- @use './raleway.scss';
+@use './raleway.scss';
 
 // @import "https://cdn.jsdelivr.net/npm/@tailwindcss/typography@0.4.x/dist/typography.min.css";
 
@@ -70,11 +70,114 @@ main.container {
   font-size: 16px;
 }
 
-[data-cy="decision-richtext-wrapper"] .ql-editor {
+[data-cy='decision-richtext-wrapper'] .ql-editor {
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
+// RJSF can render editors inside narrow disclosures. Keep Quill within the
+// field boundary, and make its visible frame and writing area fill the height
+// configured on the TextEditor root.
+.schema-text-editor {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+
+  .ql-toolbar.ql-snow {
+    box-sizing: border-box;
+    height: auto;
+    min-height: 4rem;
+    flex-wrap: wrap;
+    align-content: center;
+    gap: 0.4rem 0;
+    padding: 0.4rem;
+
+    .ql-formats {
+      min-width: 0;
+      max-width: 100%;
+      flex-wrap: wrap;
+      margin-right: 0.4rem;
+    }
+
+    .ql-divider {
+      margin-right: 0.4rem;
+    }
+
+    .tooltip-container {
+      max-width: calc(100vw - 3.2rem);
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  .ql-container.ql-snow {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .ql-container.ql-snow,
+  .ql-editor {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .ql-editor {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}
+
+.schema-radio-option,
+.schema-checkbox-option {
+  height: auto;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.schema-form-label {
+  overflow-wrap: anywhere;
+}
+
+// Disclosure titles are flex children next to a fixed-size toggle button.
+// min-width: auto would otherwise let long/spaced headings push that button
+// outside the schema form even when the page itself does not scroll.
+.rjsf .sk-disclosure-header {
+  min-width: 0;
+  max-width: 100%;
+
+  .sk-disclosure-header-title {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .sk-disclosure-header-button {
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 47.99rem) {
+  // Desktop disclosure indentation consumes too much of a 320 px viewport.
+  // Keep the hierarchy in the header while letting form content use the full
+  // inner boundary on mobile.
+  .schema-boundary-disclosure > .sk-disclosure-body {
+    margin-right: 0 !important;
+    padding-right: 0 !important;
+
+    &[data-has-icon='true'] {
+      margin-left: 0 !important;
+    }
+  }
+}
+
 .wrapping-list-item .sk-form-file-upload-list-item-innerwrapper {
- @apply flex-wrap
+  @apply flex-wrap;
 }

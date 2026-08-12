@@ -1,0 +1,691 @@
+{
+  "name": "utredning-enhetschef",
+  "version": "1.0",
+  "value": {
+    "$id": "https://schemas.sundsvall.se/2281/utredning-enhetschef/1.0",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Utredning enhetschef",
+    "description": "Utredningsuppgifter som dokumenteras av enhetschef för IAF- och VOF-ärenden.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["legalBases"],
+    "properties": {
+      "legalBases": {
+        "title": "Vilket eller vilka lagrum gäller för avvikelsen?",
+        "description": "Välj ett eller två lagrum. För ett inkommet missförhållande förväljs SOL och LSS av Draken och värdet är skrivskyddat.",
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 2,
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "HSL",
+              "title": "HSL – Hälso- och sjukvårdslagen"
+            },
+            {
+              "const": "LSS",
+              "title": "LSS – Lagen om stöd och service till vissa funktionshindrade"
+            },
+            {
+              "const": "SOL",
+              "title": "SoL – Socialtjänstlagen"
+            }
+          ]
+        }
+      },
+      "investigationTemplate": {
+        "title": "Utredningsmall",
+        "description": "Vald mall är presentationsmetadata. Utredningstexten är den formella uppgiften.",
+        "type": "string",
+        "oneOf": [
+          {
+            "const": "sol_lss",
+            "title": "SOL/LSS utredning"
+          },
+          {
+            "const": "hsl",
+            "title": "HSL Utredning"
+          },
+          {
+            "const": "sol_lss_hsl",
+            "title": "SOL/LSS/HSL utredning"
+          }
+        ]
+      },
+      "investigationText": {
+        "title": "Utredningstext",
+        "description": "Beskriv utredningens innehåll.",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "causeAreas": {
+        "title": "Orsak till avvikelse",
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "communication_information",
+              "title": "Kommunikation och information"
+            },
+            {
+              "const": "environment_organization",
+              "title": "Omgivning och organisation"
+            },
+            {
+              "const": "procedures_routines_guidelines",
+              "title": "Procedurer, rutiner och riktlinjer"
+            },
+            {
+              "const": "technology_equipment",
+              "title": "Teknik, utrustning och apparatur"
+            }
+          ]
+        }
+      },
+      "riskAssessmentHsl": {
+        "title": "Riskbedömning HSL",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["assessedWith", "probability", "severity", "calculatedRiskValue"],
+        "x-calculation": {
+          "formula": "probability * severity",
+          "inputs": ["probability", "severity"],
+          "result": "calculatedRiskValue",
+          "minimum": 1,
+          "maximum": 16,
+          "analysisThreshold": 4
+        },
+        "properties": {
+          "assessedWith": {
+            "title": "Legitimerad personal som medverkat i bedömningen",
+            "description": "Ange för- och efternamn.",
+            "type": "string",
+            "minLength": 1
+          },
+          "probability": {
+            "$ref": "#/$defs/probability"
+          },
+          "severity": {
+            "$ref": "#/$defs/severity"
+          },
+          "calculatedRiskValue": {
+            "title": "Uträknat riskvärde",
+            "description": "Beräknas som sannolikhet multiplicerat med allvarlighetsgrad.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 16,
+            "readOnly": true
+          }
+        },
+        "$ref": "#/$defs/riskValueConsistency"
+      },
+      "riskAssessmentSolLss": {
+        "title": "Riskbedömning SOL/LSS",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["probability", "severity", "calculatedRiskValue"],
+        "x-calculation": {
+          "formula": "probability * severity",
+          "inputs": ["probability", "severity"],
+          "result": "calculatedRiskValue",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "properties": {
+          "probability": {
+            "$ref": "#/$defs/probability"
+          },
+          "severity": {
+            "$ref": "#/$defs/severity"
+          },
+          "calculatedRiskValue": {
+            "title": "Uträknat riskvärde",
+            "description": "Beräknas som sannolikhet multiplicerat med allvarlighetsgrad.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 16,
+            "readOnly": true
+          }
+        },
+        "$ref": "#/$defs/riskValueConsistency"
+      },
+      "suspectedMisconduct": {
+        "title": "Jag som enhetschef anser att avvikelsen är ett misstänkt missförhållande",
+        "type": "string",
+        "oneOf": [
+          {
+            "const": "yes",
+            "title": "Ja"
+          },
+          {
+            "const": "no",
+            "title": "Nej"
+          }
+        ]
+      }
+    },
+    "$defs": {
+      "riskValueConsistency": {
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "probability": {
+                  "const": 1
+                },
+                "severity": {
+                  "const": 1
+                }
+              },
+              "required": ["probability", "severity"]
+            },
+            "then": {
+              "properties": {
+                "calculatedRiskValue": {
+                  "const": 1
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "probability": {
+                  "const": 1
+                },
+                "severity": {
+                  "const": 2
+                }
+              },
+              "required": ["probability", "severity"]
+            },
+            "then": {
+              "properties": {
+                "calculatedRiskValue": {
+                  "const": 2
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "probability": {
+                  "const": 1
+                },
+                "severity": {
+                  "const": 3
+                }
+              },
+              "required": ["probability", "severity"]
+            },
+            "then": {
+              "properties": {
+                "calculatedRiskValue": {
+                  "const": 3
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "probability": {
+                  "const": 1
+                },
+                "severity": {
+                  "const": 4
+                }
+              },
+              "required": ["probability", "severity"]
+            },
+            "then": {
+              "properties": {
+                "calculatedRiskValue": {
+                  "const": 4
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "probability": {
+                  "const": 2
+                },
+                "severity": {
+                  "const": 1
+                }
+              },
+              "required": ["probability", "severity"]
+            },
+            "then": {
+              "properties": {
+                "calculatedRiskValue": {
+                  "const": 2
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "probability": {
+                  "const": 2
+                },
+                "severity": {
+                  "const": 2
+                }
+              },
+              "required": ["probability", "severity"]
+            },
+            "then": {
+              "properties": {
+                "calculatedRiskValue": {
+                  "const": 4
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "probability": {
+                  "const": 2
+                },
+                "severity": {
+                  "const": 3
+                }
+              },
+              "required": ["probability", "severity"]
+            },
+            "then": {
+              "properties": {
+                "calculatedRiskValue": {
+                  "const": 6
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "probability": {
+                  "const": 2
+                },
+                "severity": {
+                  "const": 4
+                }
+              },
+              "required": ["probability", "severity"]
+            },
+            "then": {
+              "properties": {
+                "calculatedRiskValue": {
+                  "const": 8
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "probability": {
+                  "const": 3
+                },
+                "severity": {
+                  "const": 1
+                }
+              },
+              "required": ["probability", "severity"]
+            },
+            "then": {
+              "properties": {
+                "calculatedRiskValue": {
+                  "const": 3
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "probability": {
+                  "const": 3
+                },
+                "severity": {
+                  "const": 2
+                }
+              },
+              "required": ["probability", "severity"]
+            },
+            "then": {
+              "properties": {
+                "calculatedRiskValue": {
+                  "const": 6
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "probability": {
+                  "const": 3
+                },
+                "severity": {
+                  "const": 3
+                }
+              },
+              "required": ["probability", "severity"]
+            },
+            "then": {
+              "properties": {
+                "calculatedRiskValue": {
+                  "const": 9
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "probability": {
+                  "const": 3
+                },
+                "severity": {
+                  "const": 4
+                }
+              },
+              "required": ["probability", "severity"]
+            },
+            "then": {
+              "properties": {
+                "calculatedRiskValue": {
+                  "const": 12
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "probability": {
+                  "const": 4
+                },
+                "severity": {
+                  "const": 1
+                }
+              },
+              "required": ["probability", "severity"]
+            },
+            "then": {
+              "properties": {
+                "calculatedRiskValue": {
+                  "const": 4
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "probability": {
+                  "const": 4
+                },
+                "severity": {
+                  "const": 2
+                }
+              },
+              "required": ["probability", "severity"]
+            },
+            "then": {
+              "properties": {
+                "calculatedRiskValue": {
+                  "const": 8
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "probability": {
+                  "const": 4
+                },
+                "severity": {
+                  "const": 3
+                }
+              },
+              "required": ["probability", "severity"]
+            },
+            "then": {
+              "properties": {
+                "calculatedRiskValue": {
+                  "const": 12
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "probability": {
+                  "const": 4
+                },
+                "severity": {
+                  "const": 4
+                }
+              },
+              "required": ["probability", "severity"]
+            },
+            "then": {
+              "properties": {
+                "calculatedRiskValue": {
+                  "const": 16
+                }
+              }
+            }
+          }
+        ]
+      },
+      "probability": {
+        "title": "Sannolikhet för inträffande",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 4,
+        "oneOf": [
+          {
+            "const": 1,
+            "title": "1 – Mycket liten, kan inträffa 1 gång/år"
+          },
+          {
+            "const": 2,
+            "title": "2 – Liten, kan inträffa varje månad"
+          },
+          {
+            "const": 3,
+            "title": "3 – Stor, kan inträffa varje vecka"
+          },
+          {
+            "const": 4,
+            "title": "4 – Mycket stor, kan inträffa dagligen"
+          }
+        ]
+      },
+      "severity": {
+        "title": "Avvikelsens allvarlighetsgrad",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 4,
+        "oneOf": [
+          {
+            "const": 1,
+            "title": "1 – Mindre: obehag eller obetydlig skada"
+          },
+          {
+            "const": 2,
+            "title": "2 – Måttlig: övergående skada eller funktionsnedsättning, ökat vårdbehov"
+          },
+          {
+            "const": 3,
+            "title": "3 – Betydande: bestående måttlig funktionsnedsättning"
+          },
+          {
+            "const": 4,
+            "title": "4 – Katastrofal: dödsfall, livshotande eller bestående stor funktionsnedsättning"
+          }
+        ]
+      }
+    },
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "legalBases": {
+              "contains": {
+                "const": "HSL"
+              }
+            }
+          },
+          "required": ["legalBases"]
+        },
+        "then": {
+          "properties": {
+            "riskAssessmentHsl": true
+          },
+          "required": ["riskAssessmentHsl"]
+        },
+        "else": {
+          "not": {
+            "required": ["riskAssessmentHsl"]
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "legalBases": {
+              "contains": {
+                "enum": ["SOL", "LSS"]
+              }
+            }
+          },
+          "required": ["legalBases"]
+        },
+        "then": {
+          "properties": {
+            "riskAssessmentSolLss": true,
+            "suspectedMisconduct": true
+          },
+          "required": ["riskAssessmentSolLss"]
+        },
+        "else": {
+          "allOf": [
+            {
+              "not": {
+                "required": ["riskAssessmentSolLss"]
+              }
+            },
+            {
+              "not": {
+                "required": ["suspectedMisconduct"]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "legalBases": {
+              "allOf": [
+                {
+                  "contains": {
+                    "const": "HSL"
+                  }
+                },
+                {
+                  "not": {
+                    "contains": {
+                      "enum": ["SOL", "LSS"]
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "required": ["legalBases"]
+        },
+        "then": {
+          "properties": {
+            "investigationTemplate": {
+              "const": "hsl"
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "legalBases": {
+              "allOf": [
+                {
+                  "contains": {
+                    "enum": ["SOL", "LSS"]
+                  }
+                },
+                {
+                  "not": {
+                    "contains": {
+                      "const": "HSL"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "required": ["legalBases"]
+        },
+        "then": {
+          "properties": {
+            "investigationTemplate": {
+              "const": "sol_lss"
+            }
+          }
+        }
+      },
+      {
+        "if": {
+          "properties": {
+            "legalBases": {
+              "allOf": [
+                {
+                  "contains": {
+                    "const": "HSL"
+                  }
+                },
+                {
+                  "contains": {
+                    "enum": ["SOL", "LSS"]
+                  }
+                }
+              ]
+            }
+          },
+          "required": ["legalBases"]
+        },
+        "then": {
+          "properties": {
+            "investigationTemplate": true
+          }
+        }
+      }
+    ]
+  },
+  "description": "WSO2 request body for version 1.0 of the unit manager investigation schema"
+}

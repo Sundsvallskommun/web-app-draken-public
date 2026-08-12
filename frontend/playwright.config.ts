@@ -45,6 +45,16 @@ export default defineConfig({
       testDir: './e2e/lop',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'iaf-schema-lab',
+      testDir: './e2e/schema-lab',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'iaf',
+      testDir: './e2e/iaf',
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
   // No webServer config — start the dev server manually before running tests:
   //   yarn dev:mex   (then yarn test:e2e:mex in another terminal)

@@ -1,5 +1,5 @@
 import sanitized from '@common/services/sanitizer-service';
-import type { FieldTemplateProps } from '@rjsf/utils';
+import { descriptionId, errorId, type FieldTemplateProps, titleId } from '@rjsf/utils';
 import { FormControl, FormErrorMessage, FormLabel } from '@sk-web-gui/react';
 
 export function FieldTemplate(props: FieldTemplateProps) {
@@ -27,7 +27,7 @@ export function FieldTemplate(props: FieldTemplateProps) {
     const marginClass = position === 'above' ? 'mb-2' : 'mt-2';
     return (
       <div
-        id={`${id}-desc`}
+        id={descriptionId(id)}
         className={`text-xs text-muted-foreground ${marginClass} [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4`}
         dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
       />
@@ -35,9 +35,9 @@ export function FieldTemplate(props: FieldTemplateProps) {
   };
 
   return (
-    <FormControl className={formControlClassName} invalid={hasError}>
+    <FormControl className={`${formControlClassName} min-w-0 max-w-full`} invalid={hasError}>
       {displayLabel && !hideLabel && (
-        <FormLabel htmlFor={id}>
+        <FormLabel id={titleId(id)} htmlFor={id} className="schema-form-label max-w-full whitespace-normal">
           {label}
           {required ? ' *' : ''}
         </FormLabel>
@@ -49,7 +49,11 @@ export function FieldTemplate(props: FieldTemplateProps) {
 
       {descriptionBelow && renderDescription('below')}
 
-      {hasError && <FormErrorMessage className="text-error">{rawErrors[0]}</FormErrorMessage>}
+      {hasError && (
+        <FormErrorMessage id={errorId(id)} className="text-error">
+          {rawErrors[0]}
+        </FormErrorMessage>
+      )}
 
       {help}
     </FormControl>

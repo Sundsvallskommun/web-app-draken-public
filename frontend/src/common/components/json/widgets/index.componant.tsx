@@ -1,3 +1,6 @@
+import type { RegistryWidgetsType } from '@rjsf/utils';
+
+import { CheckboxGroupWidget } from './checkbox-group-widget.componant';
 import { CheckboxWidget } from './checkbox-widget.componant';
 import { ComboboxWidget } from './combobox-widget.componant';
 import { DateWidget } from './date-widget.componant';
@@ -12,11 +15,12 @@ const baseWidgets = {
   SelectWidget,
   RadiobuttonWidget,
   CheckboxWidget,
+  CheckboxGroupWidget,
   DateWidget,
   ComboboxWidget,
   TexteditorWidget,
   TextareaWidget,
-};
+} satisfies RegistryWidgetsType;
 
 export const jsonWidgets = {
   ...baseWidgets,
@@ -27,8 +31,11 @@ export const jsonWidgets = {
   radio: baseWidgets.RadiobuttonWidget,
   radiobutton: baseWidgets.RadiobuttonWidget,
   checkbox: baseWidgets.CheckboxWidget,
+  checkboxes: baseWidgets.CheckboxGroupWidget,
+  checkboxGroup: baseWidgets.CheckboxGroupWidget,
+  'checkbox-group': baseWidgets.CheckboxGroupWidget,
   date: baseWidgets.DateWidget,
   combobox: baseWidgets.ComboboxWidget,
   texteditor: baseWidgets.TexteditorWidget,
   textarea: baseWidgets.TextareaWidget,
-};
+} satisfies RegistryWidgetsType;

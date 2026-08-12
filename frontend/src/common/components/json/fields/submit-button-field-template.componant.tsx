@@ -19,7 +19,7 @@ export function SubmitButtonFieldTemplate(props: SubmitButtonProps<any, any, any
 
   const label = buttonOptions.label || 'Lägg till';
   const variant = buttonOptions.variant || 'primary';
-  const className = buttonOptions.className || 'mt-[3.2rem]';
+  const className = buttonOptions.className || 'mt-[3.2rem] min-w-0 max-w-full';
   const leadingIcon = buttonOptions.leadingIcon !== false;
   const loading = buttonOptions.loading === true;
   const disabled = buttonOptions.disabled === true || loading;
@@ -28,6 +28,7 @@ export function SubmitButtonFieldTemplate(props: SubmitButtonProps<any, any, any
     <div className={className}>
       <Button
         type="submit"
+        className="h-auto max-w-full whitespace-normal"
         data-cy="schema-submit-button"
         variant={variant as any}
         leftIcon={leadingIcon ? <Plus /> : undefined}
