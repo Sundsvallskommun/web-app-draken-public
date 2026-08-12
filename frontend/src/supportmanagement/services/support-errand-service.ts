@@ -1,7 +1,7 @@
 import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
-import { isKC, isLOK, isROB } from '@common/services/application-service';
+import { isIAF, isKC, isLOK, isROB } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
@@ -17,8 +17,8 @@ import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-co
 import { v4 as uuidv4 } from 'uuid';
 
 import { saveSupportAttachments, SupportAttachment } from './support-attachment-service';
+import { findLabelByClassification } from './support-label-classification-service';
 import { MessageRequest, sendMessage } from './support-message-service';
-import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 export interface Customer {
@@ -77,6 +77,8 @@ export interface SupportErrand extends ApiSupportErrand {
   category: string;
   type: string;
   subType: string;
+  labels?: Label[];
+  classificationHasSubTypes?: boolean;
   customer: SupportStakeholderFormModel[];
   contacts: SupportStakeholderFormModel[];
 }
@@ -228,35 +230,16 @@ export const findAttestationStatusKeyForAttestationStatusLabel = (attestationSta
 export const findAttestationStatusLabelForAttestationStatusKey = (attestationStatusLabel: string) =>
   Object.entries(AttestationStatusLabel).find((e: [string, string]) => e[0] === attestationStatusLabel)?.[1];
 
-export const getLabelCategory = (errand: SupportErrand, metadata: SupportMetadata) =>
-  errand.labels?.length !== 0
-    ? errand.labels?.find((label) => label.classification === 'CATEGORY')
-    : metadata?.labels?.labelStructure?.find((c) => errand.classification?.category === c.resourceName);
-
-export const getLabelType = (errand: SupportErrand) => {
-  return errand.labels?.find((label) => label.classification === 'TYPE');
-};
-
-export const getLabelSubType = (errand: SupportErrand) => {
-  return errand.labels?.find((label) => label.classification === 'SUBTYPE');
-};
-
-export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
-  const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
-  return allTypesFlattened.find((t) => t?.resourcePath === name);
-};
-
-export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
-  const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
-  const allSubTypesFlattened = allTypesFlattened
-    .filter((l) => l?.labels && l.labels.length > 0)
-    .flatMap((l) => l.labels ?? []) as Label[];
-  return allSubTypesFlattened.find((t) => t?.resourcePath === name);
-};
-
-export const getLabelCategoryFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
-  return metadata?.labels?.labelStructure?.find((category) => category?.resourcePath === name);
-};
+export {
+  getErrandTypeLabel,
+  getLabelCategory,
+  getLabelCategoryFromName,
+  getLabelSubType,
+  getLabelSubTypeFromName,
+  getLabelType,
+  getLabelTypeFromDisplayName,
+  getLabelTypeFromName,
+} from './support-label-classification-service';
 
 export enum Resolution {
   SOLVED = 'SOLVED',
@@ -382,6 +365,8 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   priority: 'MEDIUM',
   category: '',
   type: '',
+  subType: '',
+  classificationHasSubTypes: false,
   labels: [],
   contactReason: '',
   contactReasonDescription: undefined,
@@ -673,7 +658,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       type: (e.classification?.type === 'NONE' ? '' : e.classification?.type) || '',
       subType:
         (appConfig.features.useThreeLevelCategorization
-          ? e.labels?.find((l) => l.classification === 'SUBTYPE')?.resourcePath
+          ? findLabelByClassification(e.labels, isIAF() ? 'TYPE' : 'SUBTYPE')?.resourcePath
           : undefined) || '',
       contactReason: e.contactReason,
       contactReasonDescription: e.contactReasonDescription,

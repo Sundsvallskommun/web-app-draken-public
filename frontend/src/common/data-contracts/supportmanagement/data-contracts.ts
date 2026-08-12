@@ -1142,6 +1142,8 @@ export interface Parameter {
   group?: string;
   /** Parameter values. Each value can have a maximum length of 2000 characters */
   values?: string[];
+  /** Optimistic locking version of the parameter */
+  version?: number;
 }
 
 /** JSON Parameter model */
