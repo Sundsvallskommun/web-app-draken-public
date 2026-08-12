@@ -50,7 +50,7 @@ export class MessageController {
     const errandsUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
 
-    let emailSuccess = { data: { messageId: '' }, message: 'Not sent by email' };
+    let emailSuccess = { data: { messageId: 'Not sent by email' }, message: 'Not sent by email' };
     if (isMEX()) {
       emailSuccess = await sendDecisionForMex(municipalityId, req, errandData, messageDto.html ?? '', messageDto.plaintext ?? '');
     }
