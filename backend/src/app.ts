@@ -366,6 +366,7 @@ class App {
         origin: ORIGIN,
         credentials: CREDENTIALS,
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+        exposedHeaders: ['ETag'],
       },
       controllers: controllers,
       defaultErrorHandler: false,

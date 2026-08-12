@@ -1,5 +1,5 @@
 import { Type as TypeTransformer } from 'class-transformer';
-import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import dayjs from 'dayjs';
 import FormData from 'form-data';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
@@ -118,6 +118,9 @@ export class CParameter implements Parameter {
   @IsArray()
   @IsOptional()
   values!: string[];
+  @IsNumber()
+  @IsOptional()
+  version?: number;
 }
 
 export class CContactChannel implements ContactChannel {
@@ -127,15 +130,6 @@ export class CContactChannel implements ContactChannel {
   @IsString()
   @IsOptional()
   value?: string;
-}
-
-export class CJsonParameter {
-  @IsString()
-  key!: string;
-  @IsOptional()
-  value: any;
-  @IsString()
-  schemaId!: string;
 }
 
 export class CSupportStakeholder implements SupportStakeholder {
@@ -288,11 +282,6 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @ValidateNested({ each: true })
   @TypeTransformer(() => CParameter)
   parameters!: Parameter[];
-  @IsArray()
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @TypeTransformer(() => CJsonParameter)
-  jsonParameters?: CJsonParameter[];
   @TypeTransformer(() => Classification)
   @ValidateNested()
   @IsObject()
