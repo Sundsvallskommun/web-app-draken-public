@@ -123,6 +123,19 @@ export class CParameter implements Parameter {
   version?: number;
 }
 
+const withoutParameterVersion = (parameter: Parameter): Parameter => {
+  const writableParameter = { ...parameter };
+  delete writableParameter.version;
+  return writableParameter;
+};
+
+export const buildSupportErrandUpdateBody = (data: Partial<SupportErrandDto>): Partial<SupportErrandDto> => ({
+  ...data,
+  ...(data.parameters !== undefined && {
+    parameters: data.parameters.map(withoutParameterVersion),
+  }),
+});
+
 export class CContactChannel implements ContactChannel {
   @IsString()
   @IsOptional()
@@ -790,10 +803,7 @@ export class SupportErrandController {
     }
     const url = `${municipalityId}/${this.namespace}/errands/${id}`;
     const baseURL = apiURL(this.SERVICE);
-    const body: Partial<SupportErrandDto> = {
-      ...data,
-      ...(data.assignedUserId && { assignedUserId: data.assignedUserId }),
-    };
+    const body = buildSupportErrandUpdateBody(data);
     const res = await this.apiService.patch<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when registering support errand');
       logger.error(e);

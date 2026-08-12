@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 
-import { SupportErrandDto } from './support-errand.controller';
+import { buildSupportErrandUpdateBody, SupportErrandDto } from './support-errand.controller';
 
 describe('SupportErrandDto write boundary', () => {
   it('accepts the optimistic locking version returned on existing parameters', async () => {
@@ -26,6 +26,32 @@ describe('SupportErrandDto write boundary', () => {
     const validationErrors = await validate(payload, { whitelist: true, forbidNonWhitelisted: true });
 
     assert.deepEqual(validationErrors, []);
+  });
+
+  it('omits read-only parameter versions from the Support Management update body', () => {
+    const updateBody = buildSupportErrandUpdateBody({
+      title: 'Categorized errand',
+      parameters: [
+        {
+          key: 'eventType',
+          values: ['DEVIATION'],
+          version: 1,
+        },
+        {
+          key: 'eventConcerns',
+          values: ['PERSON'],
+          version: 2,
+        },
+      ],
+    });
+
+    assert.deepEqual(updateBody, {
+      title: 'Categorized errand',
+      parameters: [
+        { key: 'eventType', values: ['DEVIATION'] },
+        { key: 'eventConcerns', values: ['PERSON'] },
+      ],
+    });
   });
 
   it('rejects jsonParameters so the generic errand PATCH cannot overwrite document arrays', async () => {
