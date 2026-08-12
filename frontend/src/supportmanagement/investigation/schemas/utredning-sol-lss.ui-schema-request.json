@@ -1,0 +1,160 @@
+{
+  "value": {
+    "ui:options": {
+      "showSectionCompletion": false
+    },
+    "ui:order": [
+      "legalBases",
+      "occurredDate",
+      "reportReceivedDate",
+      "eventTypes",
+      "investigationTemplate",
+      "eventDescription",
+      "causeAreas",
+      "primaryUnderlyingCauses",
+      "individualNotified",
+      "representativeNotified",
+      "conversationDocumentation",
+      "documentedInRecord",
+      "documentationMotivation",
+      "requiresPoliceReport",
+      "proposedMisconductDegree",
+      "proposalMotivation"
+    ],
+    "ui:sections": [
+      {
+        "id": "categorization",
+        "title": "Kategorisering",
+        "icon": "menu",
+        "defaultOpen": true,
+        "fields": ["legalBases"]
+      },
+      {
+        "id": "event-information",
+        "title": "Information om händelsen",
+        "icon": "info",
+        "defaultOpen": true,
+        "fields": [
+          "occurredDate",
+          "reportReceivedDate",
+          "eventTypes",
+          "investigationTemplate",
+          "eventDescription",
+          "causeAreas",
+          "primaryUnderlyingCauses",
+          "individualNotified",
+          "representativeNotified",
+          "conversationDocumentation",
+          "documentedInRecord",
+          "documentationMotivation",
+          "requiresPoliceReport"
+        ]
+      },
+      {
+        "id": "assessment-and-decision-proposal",
+        "title": "Bedömning och förslag till beslut",
+        "icon": "file-text",
+        "fields": ["proposedMisconductDegree", "proposalMotivation"]
+      }
+    ],
+    "ui:rows": [
+      {
+        "fields": ["occurredDate", "reportReceivedDate"],
+        "gap": "gap-24"
+      }
+    ],
+    "legalBases": {
+      "ui:widget": "ComboboxWidget",
+      "ui:readonly": true,
+      "ui:options": {
+        "multiple": true,
+        "className": "w-full max-w-[40rem]"
+      }
+    },
+    "occurredDate": {
+      "ui:widget": "DateWidget"
+    },
+    "reportReceivedDate": {
+      "ui:widget": "DateWidget"
+    },
+    "eventTypes": {
+      "ui:widget": "checkboxes",
+      "ui:options": {
+        "multiple": true,
+        "placeholder": "Välj en eller flera händelsetyper",
+        "className": "w-full max-w-[48rem]"
+      }
+    },
+    "investigationTemplate": {
+      "ui:widget": "select",
+      "ui:placeholder": "Välj utredningsmall",
+      "ui:options": {
+        "className": "w-full max-w-[40rem]"
+      }
+    },
+    "eventDescription": {
+      "ui:widget": "TexteditorWidget",
+      "ui:options": {
+        "className": "w-full min-h-[30rem]",
+        "disableToolbar": false
+      }
+    },
+    "causeAreas": {
+      "ui:widget": "checkboxes",
+      "ui:options": {
+        "multiple": true,
+        "placeholder": "Välj en eller flera orsaksområden",
+        "className": "w-full max-w-[48rem]"
+      }
+    },
+    "primaryUnderlyingCauses": {
+      "ui:widget": "ComboboxWidget",
+      "ui:options": {
+        "multiple": true,
+        "placeholder": "Välj en eller flera bakomliggande orsaker",
+        "className": "w-full max-w-[48rem]"
+      }
+    },
+    "individualNotified": {
+      "ui:widget": "RadiobuttonWidget"
+    },
+    "representativeNotified": {
+      "ui:widget": "RadiobuttonWidget"
+    },
+    "conversationDocumentation": {
+      "ui:widget": "TexteditorWidget",
+      "ui:options": {
+        "className": "w-full min-h-[18rem]",
+        "disableToolbar": false
+      }
+    },
+    "documentedInRecord": {
+      "ui:widget": "RadiobuttonWidget"
+    },
+    "documentationMotivation": {
+      "ui:widget": "TexteditorWidget",
+      "ui:options": {
+        "className": "w-full min-h-[14rem]",
+        "disableToolbar": false
+      }
+    },
+    "requiresPoliceReport": {
+      "ui:widget": "RadiobuttonWidget"
+    },
+    "proposedMisconductDegree": {
+      "ui:widget": "select",
+      "ui:placeholder": "Välj klassificering",
+      "ui:options": {
+        "className": "w-full max-w-[48rem]"
+      }
+    },
+    "proposalMotivation": {
+      "ui:widget": "TexteditorWidget",
+      "ui:options": {
+        "className": "w-full min-h-[18rem]",
+        "disableToolbar": false
+      }
+    }
+  },
+  "description": "UI schema for version 1.0 of Utredning SOL/LSS in Draken"
+}

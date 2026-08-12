@@ -63,11 +63,14 @@
     "test:e2e:pt": "dotenv -e .env.pt -- playwright test --project=pt",
     "test:e2e:kc": "dotenv -e .env.kc -- playwright test --project=kc",
     "test:e2e:lop": "dotenv -e .env.lop -- playwright test --project=lop",
+    "test:e2e:iaf": "dotenv -e .env.iaf -- playwright test --project=iaf",
+    "test:e2e:iaf-schema-lab": "dotenv -e .env.iaf -- playwright test --project=iaf-schema-lab",
     "test:e2e:ui:mex": "dotenv -e .env.mex -- playwright test --project=mex --ui",
     "test:e2e:ui:pt": "dotenv -e .env.pt -- playwright test --project=pt --ui",
     "test:e2e:ui:kc": "dotenv -e .env.kc -- playwright test --project=kc --ui",
     "test:e2e:ui:lop": "dotenv -e .env.lop -- playwright test --project=lop --ui",
     "test:e2e:report": "playwright show-report",
+    "test:investigation-schemas": "node --test src/supportmanagement/investigation/schemas/investigation-schemas.contract.test.mjs",
     "test": "jest --watch"
   },
   "dependencies": {
