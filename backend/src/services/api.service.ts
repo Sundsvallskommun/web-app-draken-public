@@ -2,6 +2,7 @@ import { HttpException } from '@exceptions/HttpException';
 import { User } from '@interfaces/users.interface';
 import { logger } from '@utils/logger';
 import { apiURL } from '@utils/util';
+import type { AxiosResponseHeaders, RawAxiosResponseHeaders } from 'axios';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -10,11 +11,15 @@ import ApiTokenService from './api-token.service';
 export class ApiResponse<T> {
   data!: T;
   message!: string;
+  headers?: AxiosResponseHeaders | RawAxiosResponseHeaders;
 }
 
 // Extends AxiosRequestConfig with an opt-in flag. When `propagateClientError` is true, upstream
 // 4xx responses are re-thrown with their original status and message instead of a generic 500.
-export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & { propagateClientError?: boolean };
+export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & {
+  includeResponseHeaders?: boolean;
+  propagateClientError?: boolean;
+};
 
 const apiTokenService = new ApiTokenService();
 
@@ -98,7 +103,7 @@ class ApiService {
     );
   }
   private async request<T>(config: ApiRequestConfig, user: User): Promise<ApiResponse<T>> {
-    const { propagateClientError, ...axiosConfig } = config;
+    const { includeResponseHeaders, propagateClientError, ...axiosConfig } = config;
     const defaultParams = {};
     const preparedConfig: AxiosRequestConfig = {
       ...axiosConfig,
@@ -110,7 +115,7 @@ class ApiService {
     };
     try {
       const res = await this.instance(preparedConfig);
-      return { data: res.data, message: 'success' };
+      return includeResponseHeaders ? { data: res.data, message: 'success', headers: res.headers } : { data: res.data, message: 'success' };
     } catch (error: unknown | AxiosError) {
       if (axios.isAxiosError(error) && (error as AxiosError).response?.status === 404) {
         logger.error(`ERROR: API request failed with status: ${error.response?.status}`);

@@ -128,20 +128,6 @@ export class CContactChannel implements ContactChannel {
   value?: string;
 }
 
-export class CJsonParameter {
-  @IsString()
-  key!: string;
-  @IsOptional()
-  value: any;
-  @IsString()
-  schemaId!: string;
-  // Optimistic locking version, set by SupportManagement. Accepted here because the frontend echoes
-  // fetched errands back, but stripped before we forward (SupportManagement rejects it on update).
-  @IsNumber()
-  @IsOptional()
-  version?: number;
-}
-
 export class CSupportStakeholder implements SupportStakeholder {
   @IsString()
   @IsOptional()
@@ -292,11 +278,6 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @ValidateNested({ each: true })
   @TypeTransformer(() => CParameter)
   parameters!: Parameter[];
-  @IsArray()
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @TypeTransformer(() => CJsonParameter)
-  jsonParameters?: CJsonParameter[];
   @TypeTransformer(() => Classification)
   @ValidateNested()
   @IsObject()
