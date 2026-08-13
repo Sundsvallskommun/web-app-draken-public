@@ -32,6 +32,7 @@ import {
   Errand as SupportErrand,
   ErrandAction,
   ErrandAttachment,
+  ErrandPhase,
   ExternalTag,
   Label,
   Labels as SupportLabels,
@@ -529,6 +530,23 @@ export class CNotification implements Notification {
   @IsOptional()
   errandNumber?: string;
 }
+export class CErrandPhase implements ErrandPhase {
+  @IsString()
+  @IsOptional()
+  phaseId?: string;
+  @IsString()
+  @IsOptional()
+  name?: string;
+  @IsString()
+  @IsOptional()
+  displayName?: string;
+  @IsString()
+  @IsOptional()
+  started?: string;
+  @IsString()
+  @IsOptional()
+  ended?: string;
+}
 export class SupportErrandDto implements Partial<SupportErrand> {
   @IsString()
   @IsOptional()
@@ -627,6 +645,14 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @ValidateNested({ each: true })
   @TypeTransformer(() => CErrandAction)
   actions?: CErrandAction[];
+  @IsString()
+  @IsOptional()
+  activePhaseId?: string;
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CErrandPhase)
+  phases?: CErrandPhase[];
 }
 
 class ForwardFormDto {

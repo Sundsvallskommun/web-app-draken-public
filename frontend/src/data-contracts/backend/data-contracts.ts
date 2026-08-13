@@ -193,7 +193,6 @@ export interface Attachment {
   extraParameters?: any;
   municipalityId?: string;
   errandId?: number;
-  /** Decision id associated with the attachment, null for attachments belonging directly to the errand */
   decisionId?: number;
   namespace?: string;
   channel?: AttachmentChannelEnum;
@@ -507,6 +506,14 @@ export interface CNotification {
   errandNumber?: string;
 }
 
+export interface CErrandPhase {
+  phaseId?: string;
+  name?: string;
+  displayName?: string;
+  started?: string;
+  ended?: string;
+}
+
 export interface SupportErrandDto {
   id?: string;
   errandNumber?: string;
@@ -536,6 +543,8 @@ export interface SupportErrandDto {
   touched?: string;
   version?: number;
   actions?: CErrandAction[];
+  activePhaseId?: string;
+  phases?: CErrandPhase[];
 }
 
 export interface ForwardFormDto {
@@ -544,6 +553,25 @@ export interface ForwardFormDto {
   department: string;
   message: string;
   messageBodyPlaintext: string;
+}
+
+export interface HandoverPreviewDto {
+  targetNamespace: string;
+  targetMunicipalityId: string;
+}
+
+export interface HandoverTargetDto {
+  namespace: string;
+  municipalityId?: string;
+}
+
+export interface HandoverErrandDto {
+  target: HandoverTargetDto;
+  mapping: object;
+  overrides?: object;
+  include?: object;
+  sourceHandling?: object;
+  message?: string;
 }
 
 export interface SupportMessageDto {
@@ -584,6 +612,119 @@ export interface CCommunication {
   ccRecipients?: string[];
   emailHeaders?: string;
   communicationAttachments: CCommunicationAttachment[];
+}
+
+export interface Type {
+  name: string;
+  displayName?: string;
+  escalationEmail?: string;
+  deprecated?: boolean;
+  created?: string;
+  modified?: string;
+}
+
+export interface Category {
+  id?: string;
+  name?: string;
+  displayName?: string;
+  sortOrder?: number;
+  deprecated?: boolean;
+  types?: Type[];
+  created?: string;
+  modified?: string;
+}
+
+export interface ExternalIdType {
+  id?: string;
+  name: string;
+  displayName?: string;
+  sortOrder?: number;
+  deprecated?: boolean;
+  created?: string;
+  modified?: string;
+}
+
+export interface LabelAttribute {
+  key: string;
+  value: string;
+}
+
+export interface Label {
+  id?: string;
+  classification: string;
+  displayName?: string;
+  resourcePath?: string;
+  resourceName: string;
+  deprecated?: boolean;
+  labels?: Label[];
+  attributes?: LabelAttribute[];
+}
+
+export interface Labels {
+  labelStructure?: Label[];
+}
+
+export interface Status {
+  id?: string;
+  name: string;
+  displayName?: string;
+  externalDisplayName?: string;
+  sortOrder?: number;
+  deprecated?: boolean;
+  created?: string;
+  modified?: string;
+}
+
+export interface Role {
+  id?: string;
+  name: string;
+  displayName?: string;
+  sortOrder?: number;
+  deprecated?: boolean;
+  created?: string;
+  modified?: string;
+}
+
+export interface ContactReason {
+  id?: string;
+  reason: string;
+  displayName?: string;
+  sortOrder?: number;
+  deprecated?: boolean;
+  created?: string;
+  modified?: string;
+}
+
+export interface PhaseTransition {
+  id?: string;
+  targetPhaseId: string;
+  targetPhaseName?: string;
+  targetPhaseDisplayName?: string;
+  description?: string;
+  deprecated?: boolean;
+}
+
+export interface Phase {
+  id?: string;
+  name: string;
+  displayName?: string;
+  description?: string;
+  phaseOrder?: number;
+  allowedStatuses?: string[];
+  transitions?: PhaseTransition[];
+  deprecated?: boolean;
+  created?: string;
+  modified?: string;
+}
+
+export interface MetadataResponse {
+  categories?: Category[];
+  externalIdTypes?: ExternalIdType[];
+  labels?: Labels;
+  statuses?: Status[];
+  roles?: Role[];
+  contactReasons?: ContactReason[];
+  phases?: Phase[];
 }
 
 export interface SupportNoteDto {
