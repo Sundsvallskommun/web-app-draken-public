@@ -11,7 +11,7 @@ interface SupportErrandLabelSource {
 export const findLabelByClassification = (
   labels: readonly Label[] | undefined,
   classification: string
-): Label | undefined => labels?.find((label) => label.classification.toUpperCase() === classification.toUpperCase());
+): Label | undefined => labels?.find((label) => label.classification?.toUpperCase() === classification.toUpperCase());
 
 const flattenLabelTree = (labels: readonly Label[] | undefined): Label[] =>
   (labels ?? []).flatMap((label) => [label, ...flattenLabelTree(label.labels)]);

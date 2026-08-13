@@ -194,17 +194,26 @@ export function getInvestigationRenderingSchema(
 ): RJSFSchema {
   if (documentKey !== 'utredning-enhetschef') return schema;
 
-  const templateSchema = schema.properties?.investigationTemplate;
-  if (!isRecord(templateSchema) || !Array.isArray(templateSchema.oneOf)) return schema;
+  const properties = { ...schema.properties };
+  const { hasHsl, hasSolOrLss } = getManagerLegalBaseFlags(formData);
+  if (!hasHsl) delete properties.riskAssessmentHsl;
+  if (!hasSolOrLss) {
+    delete properties.riskAssessmentSolLss;
+    delete properties.suspectedMisconduct;
+  }
+
+  const templateSchema = properties.investigationTemplate;
+  if (!isRecord(templateSchema) || !Array.isArray(templateSchema.oneOf)) {
+    return { ...schema, properties };
+  }
 
   const allowedTemplates = new Set<unknown>(getAllowedManagerTemplates(formData));
   if (allowedTemplates.size === 0) {
-    const propertiesWithoutTemplate = { ...schema.properties };
-    delete propertiesWithoutTemplate.investigationTemplate;
+    delete properties.investigationTemplate;
 
     return {
       ...schema,
-      properties: propertiesWithoutTemplate,
+      properties,
     };
   }
 
@@ -215,7 +224,7 @@ export function getInvestigationRenderingSchema(
   return {
     ...schema,
     properties: {
-      ...schema.properties,
+      ...properties,
       investigationTemplate: {
         ...templateSchema,
         oneOf: filteredOptions,

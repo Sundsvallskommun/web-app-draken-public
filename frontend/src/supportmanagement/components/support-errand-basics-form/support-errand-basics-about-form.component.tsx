@@ -4,6 +4,7 @@ import { isIAF, isLOK } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, cx, FormControl, FormErrorMessage, FormLabel, Select, Textarea } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
+import { investigationOwnsSupportErrandClassification } from '@supportmanagement/investigation/investigation-classification-ownership';
 import {
   ContactChannelType,
   getErrandParameterValue,
@@ -69,7 +70,7 @@ export const SupportErrandBasicsAboutForm: FC<{
       ) : null}
 
       {appConfig.features.useThreeLevelCategorization ? (
-        isIAF() && !appConfig.features.useInvestigation ? (
+        isIAF() && !investigationOwnsSupportErrandClassification() ? (
           <IafLabelCategorization supportMetadata={supportMetadata} disabled={isSupportErrandLocked(supportErrand)} />
         ) : !isIAF() ? (
           <div className="w-full flex gap-20">

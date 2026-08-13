@@ -27,7 +27,7 @@
         "title": "Kategorisering",
         "icon": "menu",
         "defaultOpen": true,
-        "fields": ["legalBases"]
+        "fields": ["legalBases", "$external:errandClassification"]
       },
       {
         "id": "event-information",
@@ -156,5 +156,5 @@
       }
     }
   },
-  "description": "UI schema for version 1.0 of Utredning SOL/LSS in Draken"
+  "description": "UI schema for version 1.1 of Utredning SOL/LSS in Draken"
 }

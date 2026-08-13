@@ -20,6 +20,7 @@
         "defaultOpen": true,
         "fields": [
           "legalBases",
+          "$external:errandClassification",
           "investigationTemplate",
           "investigationText",
           "causeAreas",
@@ -99,5 +100,5 @@
       "ui:widget": "RadiobuttonWidget"
     }
   },
-  "description": "UI schema for version 1.0 of Utredning enhetschef in Draken"
+  "description": "UI schema for version 1.1 of Utredning enhetschef in Draken"
 }

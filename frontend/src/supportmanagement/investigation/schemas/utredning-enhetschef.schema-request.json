@@ -1,14 +1,21 @@
 {
   "name": "utredning-enhetschef",
-  "version": "1.0",
+  "version": "1.1",
   "value": {
-    "$id": "https://schemas.sundsvall.se/2281/utredning-enhetschef/1.0",
+    "$id": "https://schemas.sundsvall.se/2281/utredning-enhetschef/1.1",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Utredning enhetschef",
     "description": "Utredningsuppgifter som dokumenteras av enhetschef för IAF- och VOF-ärenden.",
     "type": "object",
     "additionalProperties": false,
     "required": ["legalBases"],
+    "x-draken-external-fields": {
+      "errandClassification": {
+        "kind": "supportManagementLabelClassification",
+        "legalBasesPointer": "/legalBases",
+        "required": true
+      }
+    },
     "properties": {
       "legalBases": {
         "title": "Vilket eller vilka lagrum gäller för avvikelsen?",
@@ -687,5 +694,5 @@
       }
     ]
   },
-  "description": "WSO2 request body for version 1.0 of the unit manager investigation schema"
+  "description": "WSO2 request body for version 1.1 of the unit manager investigation schema"
 }

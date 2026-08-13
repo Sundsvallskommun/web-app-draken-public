@@ -21,7 +21,7 @@ interface InvestigationSchemaFormPanelProps {
   formData: InvestigationFormData;
   savedAt?: string;
   notice?: InvestigationLabNotice;
-  beforeForm?: ReactNode;
+  externalFields?: Readonly<Record<string, ReactNode>>;
   onChange: (formData: InvestigationFormData) => void;
   onSaveDraft: () => void;
   onValidatedSave: (formData: InvestigationFormData) => void;
@@ -50,7 +50,7 @@ export function InvestigationSchemaFormPanel({
   formData,
   savedAt,
   notice,
-  beforeForm,
+  externalFields,
   onChange,
   onSaveDraft,
   onValidatedSave,
@@ -103,8 +103,6 @@ export function InvestigationSchemaFormPanel({
 
       {notice && <LabAlert notice={notice} />}
 
-      {beforeForm}
-
       {!access.canWrite && (
         <Alert type="info" className="mb-24">
           <Alert.Icon />
@@ -141,6 +139,7 @@ export function InvestigationSchemaFormPanel({
         onChange={onChange}
         onSubmit={onValidatedSave}
         readonly={!access.canWrite}
+        externalFields={externalFields}
         submitButtonOptions={{ label: 'Validera och spara lokalt', leadingIcon: false }}
         extraContent={
           access.canWrite ? (

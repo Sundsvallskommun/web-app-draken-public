@@ -10,6 +10,7 @@ import {
 import { FlaskConical } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD } from '../investigation-classification';
 import { normalizeInvestigationFormData } from '../investigation-form-data';
 import { InvestigationLabelClassificationPanel } from './investigation-label-classification-panel.component';
 import { InvestigationSchemaFormPanel } from './investigation-schema-form-panel.component';
@@ -193,19 +194,23 @@ export function InvestigationSchemaLab() {
 
   const managerLabelCatalog = useMemo(() => getManagerLabelCatalog(drafts['utredning-enhetschef']), [drafts]);
 
-  const updateLabelClassification = (value: LabelClassificationSelection) => {
-    const normalizedValue = normalizeLabelClassification(managerLabelCatalog, value);
+  const updateLabelClassification = (
+    schemaKey: InvestigationSchemaKey,
+    catalog: LabelClassificationCatalog,
+    value: LabelClassificationSelection
+  ) => {
+    const normalizedValue = normalizeLabelClassification(catalog, value);
     setLabelClassification(normalizedValue);
     setLabelClassificationNotice(undefined);
 
     try {
       const timestamp = saveLabelClassificationDraft(window.localStorage, normalizedValue);
       setLabelClassificationSavedAt(timestamp);
-      setNotices((currentNotices) => ({ ...currentNotices, 'utredning-enhetschef': undefined }));
+      setNotices((currentNotices) => ({ ...currentNotices, [schemaKey]: undefined }));
     } catch {
       setNotices((currentNotices) => ({
         ...currentNotices,
-        'utredning-enhetschef': {
+        [schemaKey]: {
           type: 'error',
           message: 'Labelmocken kunde inte sparas lokalt. Kontrollera webbläsarens lagringsinställningar.',
         },
@@ -382,6 +387,12 @@ export function InvestigationSchemaLab() {
         >
           {investigationSchemaDefinitions.map((definition) => {
             const access = getInvestigationSchemaAccess(role, definition.key);
+            const classificationCatalog =
+              definition.key === 'utredning-enhetschef'
+                ? managerLabelCatalog
+                : definition.key === 'utredning-sol-lss'
+                ? IAF_VOF_LABEL_CLASSIFICATION_CATALOGS[IAF_VOF_LABEL_CLASSIFICATION_GROUP.SOL_LSS]
+                : undefined;
 
             return (
               <Tabs.Item key={definition.key}>
@@ -393,17 +404,24 @@ export function InvestigationSchemaLab() {
                     formData={drafts[definition.key]}
                     savedAt={savedAt[definition.key]}
                     notice={notices[definition.key]}
-                    beforeForm={
-                      definition.key === 'utredning-enhetschef' ? (
-                        <InvestigationLabelClassificationPanel
-                          catalog={managerLabelCatalog}
-                          value={labelClassification}
-                          canWrite={access.canWrite}
-                          savedAt={labelClassificationSavedAt}
-                          notice={labelClassificationNotice}
-                          onChange={updateLabelClassification}
-                        />
-                      ) : undefined
+                    externalFields={
+                      classificationCatalog
+                        ? {
+                            [INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD]: (
+                              <InvestigationLabelClassificationPanel
+                                headingId={`${definition.key}-label-classification-heading`}
+                                catalog={classificationCatalog}
+                                value={labelClassification}
+                                canWrite={access.canWrite}
+                                savedAt={labelClassificationSavedAt}
+                                notice={labelClassificationNotice}
+                                onChange={(value) =>
+                                  updateLabelClassification(definition.key, classificationCatalog, value)
+                                }
+                              />
+                            ),
+                          }
+                        : undefined
                     }
                     onChange={(formData) => updateDraft(definition.key, formData)}
                     onSaveDraft={() =>
