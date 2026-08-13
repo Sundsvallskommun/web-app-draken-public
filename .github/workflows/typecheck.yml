@@ -33,6 +33,9 @@ jobs:
       - name: Run type check
         run: yarn type-check
 
+      - name: Run support investigation contract tests
+        run: yarn test:support-investigation
+
   typecheck-frontend:
     permissions:
       contents: read
@@ -57,3 +60,6 @@ jobs:
 
       - name: Run type check
         run: yarn type-check
+
+      - name: Run investigation schema contracts
+        run: yarn test:investigation-schemas

@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [mex, pt, kc, lop]
+        app: [mex, pt, kc, lop, iaf, iaf-schema-lab]
         include:
           - app: mex
             build_cmd: yarn build:mex
@@ -93,6 +93,33 @@ jobs:
             NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION: true
             NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: 30
             NEXT_PUBLIC_INVOICE_BREAK_DATE: "2025-12-31"
+          - app: iaf
+            build_cmd: yarn build:iaf
+            start_cmd: yarn start:iaf
+            NEXT_PUBLIC_APPLICATION: IAF
+            NEXT_PUBLIC_APPLICATION_NAME: "Avvikelse IAF"
+            NEXT_PUBLIC_API_URL: http://localhost:3001/iaf
+            NEXT_PUBLIC_BASEPATH: /iaf
+            NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: true
+            NEXT_PUBLIC_USE_DETAILS_TAB: true
+            NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: true
+            NEXT_PUBLIC_USE_UI_PHASES: true
+            NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: true
+            NEXT_PUBLIC_USE_INVESTIGATION: true
+          - app: iaf-schema-lab
+            build_cmd: yarn build:iaf
+            # Schema-labben är avsiktligt development-only och exponeras inte av produktionsservern.
+            start_cmd: yarn dev:iaf
+            NEXT_PUBLIC_APPLICATION: IAF
+            NEXT_PUBLIC_APPLICATION_NAME: "Avvikelse IAF"
+            NEXT_PUBLIC_API_URL: http://localhost:3001/iaf
+            NEXT_PUBLIC_BASEPATH: /iaf
+            NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: true
+            NEXT_PUBLIC_USE_DETAILS_TAB: true
+            NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: true
+            NEXT_PUBLIC_USE_UI_PHASES: true
+            NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: true
+            NEXT_PUBLIC_USE_INVESTIGATION: true
 
     name: E2E ${{ matrix.app }} on ubuntu-latest
     steps:
@@ -117,10 +144,12 @@ jobs:
         env:
           NEXT_PUBLIC_APPLICATION: ${{ matrix.NEXT_PUBLIC_APPLICATION }}
           NEXT_PUBLIC_APP_NAME: "Draken"
-          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+          NEXT_PUBLIC_APPLICATION_NAME: ${{ matrix.NEXT_PUBLIC_APPLICATION_NAME || 'Draken' }}
+          NEXT_PUBLIC_API_URL: ${{ matrix.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api' }}
           DOMAIN_NAME: localhost
           BASE_PATH: ""
           NEXT_PUBLIC_BASE_PATH: ""
+          NEXT_PUBLIC_BASEPATH: ${{ matrix.NEXT_PUBLIC_BASEPATH || '' }}
           NEXT_PUBLIC_MUNICIPALITY_ID: 2281
           NEXT_PUBLIC_ENVIRONMENT: TEST
           HEALTH_AUTH: false
@@ -157,16 +186,19 @@ jobs:
           NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: ${{ matrix.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '' }}
           NEXT_PUBLIC_INVOICE_BREAK_DATE: ${{ matrix.NEXT_PUBLIC_INVOICE_BREAK_DATE || '' }}
           NEXT_PUBLIC_USE_HANDOVER: ${{ matrix.NEXT_PUBLIC_USE_HANDOVER || '' }}
+          NEXT_PUBLIC_USE_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_INVESTIGATION || '' }}
 
       - name: Start server
         run: ${{ matrix.start_cmd }} &
         env:
           NEXT_PUBLIC_APPLICATION: ${{ matrix.NEXT_PUBLIC_APPLICATION }}
           NEXT_PUBLIC_APP_NAME: "Draken"
-          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+          NEXT_PUBLIC_APPLICATION_NAME: ${{ matrix.NEXT_PUBLIC_APPLICATION_NAME || 'Draken' }}
+          NEXT_PUBLIC_API_URL: ${{ matrix.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api' }}
           DOMAIN_NAME: localhost
           BASE_PATH: ""
           NEXT_PUBLIC_BASE_PATH: ""
+          NEXT_PUBLIC_BASEPATH: ${{ matrix.NEXT_PUBLIC_BASEPATH || '' }}
           NEXT_PUBLIC_MUNICIPALITY_ID: 2281
           NEXT_PUBLIC_ENVIRONMENT: TEST
           HEALTH_AUTH: false
@@ -174,17 +206,19 @@ jobs:
           HEALTH_PASSWORD: ""
 
       - name: Wait for server
-        run: npx wait-on http://localhost:3000 --timeout 60000
+        run: npx wait-on http://localhost:3000${{ matrix.NEXT_PUBLIC_BASEPATH || '' }} --timeout 60000
 
       - name: Run Playwright tests
         run: npx playwright test --project=${{ matrix.app }}
         env:
           NEXT_PUBLIC_APPLICATION: ${{ matrix.NEXT_PUBLIC_APPLICATION }}
           NEXT_PUBLIC_APP_NAME: "Draken"
-          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+          NEXT_PUBLIC_APPLICATION_NAME: ${{ matrix.NEXT_PUBLIC_APPLICATION_NAME || 'Draken' }}
+          NEXT_PUBLIC_API_URL: ${{ matrix.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api' }}
           DOMAIN_NAME: localhost
           BASE_PATH: ""
           NEXT_PUBLIC_BASE_PATH: ""
+          NEXT_PUBLIC_BASEPATH: ${{ matrix.NEXT_PUBLIC_BASEPATH || '' }}
           NEXT_PUBLIC_MUNICIPALITY_ID: 2281
           NEXT_PUBLIC_ENVIRONMENT: TEST
           HEALTH_AUTH: false
@@ -220,6 +254,7 @@ jobs:
           NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION: ${{ matrix.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION || '' }}
           NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: ${{ matrix.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '' }}
           NEXT_PUBLIC_INVOICE_BREAK_DATE: ${{ matrix.NEXT_PUBLIC_INVOICE_BREAK_DATE || '' }}
+          NEXT_PUBLIC_USE_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_INVESTIGATION || '' }}
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
