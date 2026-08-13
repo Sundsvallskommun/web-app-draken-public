@@ -10,6 +10,7 @@ import {
 import { formatInvestigationLabTimestamp } from './investigation-schema-lab-time';
 
 interface InvestigationLabelClassificationPanelProps {
+  headingId: string;
   catalog: LabelClassificationCatalog;
   value: LabelClassificationSelection;
   canWrite: boolean;
@@ -19,6 +20,7 @@ interface InvestigationLabelClassificationPanelProps {
 }
 
 export function InvestigationLabelClassificationPanel({
+  headingId,
   catalog,
   value,
   canWrite,
@@ -29,20 +31,20 @@ export function InvestigationLabelClassificationPanel({
   return (
     <section
       className="mb-32 min-w-0 max-w-full rounded-12 border-1 border-vattjom-surface-primary bg-vattjom-background-100 p-16 sm:p-20"
-      aria-labelledby="investigation-label-classification-heading"
+      aria-labelledby={headingId}
       data-cy="investigation-label-classification"
     >
-      <div className="mb-16 flex flex-wrap items-center gap-8">
-        <h3 id="investigation-label-classification-heading" className="text-h4-md">
+      <div className="mb-16 flex min-w-0 max-w-full flex-wrap items-center gap-8">
+        <h4 id={headingId} className="min-w-0 max-w-full break-words text-h4-md">
           Ärendeklassificering
-        </h3>
-        <Label rounded inverted color="vattjom">
+        </h4>
+        <Label rounded inverted color="vattjom" className="max-w-full break-words whitespace-normal">
           SupportManagement-labels
         </Label>
       </div>
       <p className="mb-16 text-small">
-        Avvikelsetyp och detaljerad typ av avvikelse tillhör ärendets labels och sparas därför separat från utredningens
-        JSON. Tillgängliga alternativ styrs av valda lagrum i formuläret.
+        Schemat placerar kontrollen här och valda lagrum styr vilka alternativ som visas. Avvikelsetyp och detaljerad
+        typ tillhör fortfarande ärendets SupportManagement-labels och ingår därför inte i utredningens JSON.
       </p>
       {notice && (
         <div role="status" aria-live="polite">

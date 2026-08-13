@@ -175,7 +175,7 @@ test('updates risks and label choices when the manager changes legal bases', asy
   const hsl = legalBases.getByLabel(/^HSL –/u);
   const lss = legalBases.getByLabel(/^LSS –/u);
   const sol = legalBases.getByLabel(/^SoL –/u);
-  const typeSelect = page.locator('[data-cy="label-classification-type"]');
+  const typeSelect = activePanel.locator('[data-cy="label-classification-type"]');
   const templateSelect = page.locator(`#${managerIdPrefix}_investigationTemplate`);
 
   await expect(lss).toBeDisabled();
@@ -190,7 +190,7 @@ test('updates risks and label choices when the manager changes legal bases', asy
   await expect(page.locator(`#${managerIdPrefix}_suspectedMisconduct`)).toBeVisible();
   await expect(typeSelect.locator('option[value="hsl_fall"]')).toHaveCount(0);
   await expect(typeSelect).toHaveValue('');
-  await expect(page.locator('[data-cy="label-classification-notice"]')).toContainText(
+  await expect(activePanel.locator('[data-cy="label-classification-notice"]')).toContainText(
     'ärendeklassificering passade inte längre valda lagrum'
   );
 
@@ -321,11 +321,12 @@ test('calculates risk values and restores a locally saved draft after reload', a
 });
 
 test('keeps SupportManagement labels separate from investigation JSON', async ({ page }) => {
-  const typeSelect = page.locator('[data-cy="label-classification-type"]');
-  const subtypeSelect = page.locator('[data-cy="label-classification-subtype"]');
+  const activePanel = page.locator('[role="tabpanel"]:visible');
+  const typeSelect = activePanel.locator('[data-cy="label-classification-type"]');
+  const subtypeSelect = activePanel.locator('[data-cy="label-classification-subtype"]');
 
-  await expect(page.getByLabel('Avvikelsetyp')).toBeVisible();
-  await expect(page.getByLabel('Detaljerad typ av avvikelse')).toBeVisible();
+  await expect(activePanel.getByLabel('Avvikelsetyp')).toBeVisible();
+  await expect(activePanel.getByLabel('Detaljerad typ av avvikelse')).toBeVisible();
   await expect(typeSelect.locator('option').first()).toHaveText('Välj ärendekategori');
   await expect(typeSelect).toHaveValue('hsl_fall');
   await typeSelect.selectOption('hsl_lakemedel');
@@ -355,7 +356,7 @@ test('sanitizes legacy label fields and ignores malformed local timestamps', asy
       'draken:investigation-schema-lab:utredning-enhetschef',
       JSON.stringify({
         schemaKey: 'utredning-enhetschef',
-        schemaVersion: '1.0',
+        schemaVersion: '1.1',
         savedAt: '2026-08-11T10:00:00.000Z',
         formData: {
           legalBases: ['HSL'],

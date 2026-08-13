@@ -2,11 +2,14 @@ export type {
   IafLabelClassificationBinding,
   IafLabelClassificationModel,
   IafLabelClassificationUpdate,
+  PersistedIafLabelClassificationState,
 } from './iaf-supportmanagement-label-classification';
 export {
   applyIafLabelClassificationSelection,
   createIafLabelClassificationModel,
   getIafLabelClassificationSelection,
+  getPersistedIafLabelClassificationState,
+  IAF_LEGAL_BASE,
 } from './iaf-supportmanagement-label-classification';
 export type { IafVofLabelClassificationGroup } from './iaf-vof-label-classification.mock';
 export {

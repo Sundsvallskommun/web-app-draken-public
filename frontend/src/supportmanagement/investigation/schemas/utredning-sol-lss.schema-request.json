@@ -1,14 +1,21 @@
 {
   "name": "utredning-sol-lss",
-  "version": "1.0",
+  "version": "1.1",
   "value": {
-    "$id": "https://schemas.sundsvall.se/2281/utredning-sol-lss/1.0",
+    "$id": "https://schemas.sundsvall.se/2281/utredning-sol-lss/1.1",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Utredning SOL/LSS",
     "description": "SOL/LSS-utredning för IAF- och VOF-ärenden. Åtgärder, handlingsplan och interna arbetsanteckningar lagras inte i detta dokument.",
     "type": "object",
     "additionalProperties": false,
     "required": ["legalBases"],
+    "x-draken-external-fields": {
+      "errandClassification": {
+        "kind": "supportManagementLabelClassification",
+        "legalBasesPointer": "/legalBases",
+        "required": true
+      }
+    },
     "properties": {
       "legalBases": {
         "title": "Lagrum",
@@ -229,5 +236,5 @@
       }
     }
   },
-  "description": "WSO2 request body for version 1.0 of the SOL/LSS investigation schema"
+  "description": "WSO2 request body for version 1.1 of the SOL/LSS investigation schema"
 }

@@ -15,7 +15,7 @@ import type {
 } from '@rjsf/utils';
 import { customizeValidator } from '@rjsf/validator-ajv8';
 import Ajv2020 from 'ajv/dist/2020';
-import { ComponentType, useCallback, useMemo, useState } from 'react';
+import { ComponentType, ReactNode, useCallback, useMemo, useState } from 'react';
 
 import createJsonErrorTransformer from '../utils/schema-form-error-handling';
 
@@ -50,6 +50,7 @@ type SchemaFormProps = {
   readonly?: boolean;
   submitButtonOptions?: { label?: string; leadingIcon?: boolean; loading?: boolean; disabled?: boolean };
   extraContent?: React.ReactNode;
+  externalFields?: Readonly<Record<string, ReactNode>>;
 };
 
 const hasType = (p: AnyProp | undefined, t: string) =>
@@ -109,6 +110,7 @@ export default function SchemaForm({
   readonly,
   submitButtonOptions,
   extraContent,
+  externalFields,
 }: SchemaFormProps) {
   const [localData, setLocalData] = useState<any>({});
   const data = formData ?? localData;
@@ -139,8 +141,8 @@ export default function SchemaForm({
 
   // Send original schema via formContext so ObjectFieldTemplate can read if/then conditions
   const formContext = useMemo(
-    () => ({ originalSchema: schema, submitButtonOptions, idPrefix }),
-    [idPrefix, schema, submitButtonOptions]
+    () => ({ originalSchema: schema, submitButtonOptions, idPrefix, externalFields }),
+    [externalFields, idPrefix, schema, submitButtonOptions]
   );
 
   const templates: NonNullable<FormProps['templates']> = {

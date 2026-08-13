@@ -11,16 +11,22 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const artifacts = [
   {
     name: 'utredning-enhetschef',
+    version: '1.1',
+    hasErrandClassification: true,
     schemaFile: 'utredning-enhetschef.schema-request.json',
     uiSchemaFile: 'utredning-enhetschef.ui-schema-request.json',
   },
   {
     name: 'utredning-sol-lss',
+    version: '1.1',
+    hasErrandClassification: true,
     schemaFile: 'utredning-sol-lss.schema-request.json',
     uiSchemaFile: 'utredning-sol-lss.ui-schema-request.json',
   },
   {
     name: 'utredning-hsl',
+    version: '1.0',
+    hasErrandClassification: false,
     schemaFile: 'utredning-hsl.schema-request.json',
     uiSchemaFile: 'utredning-hsl.ui-schema-request.json',
   },
@@ -67,6 +73,22 @@ function collectPropertyNames(schema, result = []) {
   return result;
 }
 
+function collectObjectKeys(value, result = new Set()) {
+  if (!value || typeof value !== 'object') return result;
+
+  if (Array.isArray(value)) {
+    for (const item of value) collectObjectKeys(item, result);
+    return result;
+  }
+
+  for (const [key, nestedValue] of Object.entries(value)) {
+    result.add(key);
+    collectObjectKeys(nestedValue, result);
+  }
+
+  return result;
+}
+
 const fixtures = readJson('fixtures/investigation-schema-cases.json');
 
 test('WSO2 request artifacts have the expected envelope and matching schema names', () => {
@@ -77,11 +99,11 @@ test('WSO2 request artifacts have the expected envelope and matching schema name
     assert.deepEqual(Object.keys(schemaRequest).sort(), ['description', 'name', 'value', 'version']);
     assert.deepEqual(Object.keys(uiSchemaRequest).sort(), ['description', 'value']);
     assert.equal(schemaRequest.name, artifact.name);
-    assert.equal(schemaRequest.version, '1.0');
+    assert.equal(schemaRequest.version, artifact.version);
     assert.equal(schemaRequest.value.$schema, 'https://json-schema.org/draft/2020-12/schema');
     assert.equal(schemaRequest.value.type, 'object');
     assert.equal(schemaRequest.value.additionalProperties, false);
-    assert.match(schemaRequest.value.$id, new RegExp(`/2281/${artifact.name}/1\\.0$`, 'u'));
+    assert.equal(schemaRequest.value.$id, `https://schemas.sundsvall.se/2281/${artifact.name}/${artifact.version}`);
   }
 });
 
@@ -91,7 +113,9 @@ test('UI schemas group every root field once and disable unsaved section complet
     const uiSchema = readJson(artifact.uiSchemaFile).value;
     const propertyNames = Object.keys(schema.properties);
     const orderedFields = uiSchema['ui:order'];
-    const sectionFields = uiSchema['ui:sections'].flatMap((section) => section.fields);
+    const sectionFields = uiSchema['ui:sections']
+      .flatMap((section) => section.fields)
+      .filter((fieldName) => !fieldName.startsWith('$external:'));
 
     assert.equal(uiSchema['ui:options'].showSectionCompletion, false);
     assert.deepEqual(new Set(orderedFields), new Set(propertyNames));
@@ -115,15 +139,61 @@ test('schemas contain investigation data only, without action plans or working n
   }
 });
 
-test('deviation labels stay outside the investigation schema artifacts', () => {
-  assert.doesNotMatch(JSON.stringify(fixtures), /deviation(?:Type|Subtype)/u);
+test('schemas declare errand classification externally only where it is edited', () => {
+  const expectedDeclaration = {
+    kind: 'supportManagementLabelClassification',
+    legalBasesPointer: '/legalBases',
+    required: true,
+  };
 
   for (const artifact of artifacts) {
-    const schemaRequest = readJson(artifact.schemaFile);
-    const uiSchemaRequest = readJson(artifact.uiSchemaFile);
+    const schema = readJson(artifact.schemaFile).value;
+    const uiSchema = readJson(artifact.uiSchemaFile).value;
+    const externalFields = uiSchema['ui:sections']
+      .flatMap((section) => section.fields)
+      .filter((fieldName) => fieldName.startsWith('$external:'));
 
-    assert.doesNotMatch(JSON.stringify(schemaRequest), /deviation(?:Type|Subtype)/u);
-    assert.doesNotMatch(JSON.stringify(uiSchemaRequest), /deviation(?:Type|Subtype)/u);
+    if (artifact.hasErrandClassification) {
+      assert.deepEqual(schema['x-draken-external-fields'], {
+        errandClassification: expectedDeclaration,
+      });
+      assert.deepEqual(externalFields, ['$external:errandClassification']);
+    } else {
+      assert.equal(schema['x-draken-external-fields'], undefined);
+      assert.deepEqual(externalFields, []);
+    }
+  }
+});
+
+test('errand classification values stay outside investigation JSON properties and fixtures', () => {
+  const classificationValueFields = [
+    'category',
+    'classification',
+    'deviationSubtype',
+    'deviationType',
+    'errandClassification',
+    'labels',
+    'subType',
+    'type',
+  ];
+  const fixtureKeys = new Set();
+
+  collectObjectKeys(fixtures, fixtureKeys);
+
+  for (const fieldName of classificationValueFields) {
+    assert.equal(fixtureKeys.has(fieldName), false, `fixtures contain errand classification field ${fieldName}`);
+  }
+
+  for (const artifact of artifacts) {
+    const propertyNames = new Set(collectPropertyNames(readJson(artifact.schemaFile).value));
+
+    for (const fieldName of classificationValueFields) {
+      assert.equal(
+        propertyNames.has(fieldName),
+        false,
+        `${artifact.name} persists errand classification field ${fieldName}`
+      );
+    }
   }
 });
 
@@ -272,10 +342,7 @@ test('HSL requires Public 360 always and IVO case number only for a positive IVO
     true,
     ajv.errorsText(validate.errors)
   );
-  assert.equal(
-    validate({ ivoNotification: 'no', ivoCaseNumber: 'IVO-stale', public360CaseNumber: 'P360-1' }),
-    false
-  );
+  assert.equal(validate({ ivoNotification: 'no', ivoCaseNumber: 'IVO-stale', public360CaseNumber: 'P360-1' }), false);
   assert.equal(validate({ ivoNotification: 'yes', public360CaseNumber: 'P360-1' }), false);
   assert.equal(
     validate({ ivoNotification: 'yes', ivoCaseNumber: 'IVO-1', public360CaseNumber: 'P360-1' }),

@@ -41,7 +41,10 @@ interface SectionDefinition {
 interface FormContext {
   originalSchema?: RJSFSchema;
   idPrefix?: string;
+  externalFields?: Readonly<Record<string, ReactNode>>;
 }
+
+const externalFieldPrefix = '$external:';
 
 function hasOwn(value: object, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(value, key);
@@ -242,16 +245,58 @@ function resolveFieldOrder(rawOrder: unknown, propertyNames: string[]): string[]
   return resolvedOrder;
 }
 
+function insertExternalFieldsInSectionOrder(
+  orderedPropertyNames: readonly string[],
+  sectionFieldNames: readonly string[]
+): string[] {
+  const sectionFields = new Set(sectionFieldNames);
+  const resolvedOrder = orderedPropertyNames.filter((fieldName) => sectionFields.has(fieldName));
+
+  for (const fieldName of sectionFieldNames) {
+    if (!fieldName.startsWith(externalFieldPrefix) || resolvedOrder.includes(fieldName)) continue;
+
+    const declaredIndex = sectionFieldNames.indexOf(fieldName);
+    const precedingField = sectionFieldNames
+      .slice(0, declaredIndex)
+      .reverse()
+      .find((candidate) => resolvedOrder.includes(candidate));
+    const followingField = sectionFieldNames
+      .slice(declaredIndex + 1)
+      .find((candidate) => resolvedOrder.includes(candidate));
+
+    if (precedingField) {
+      resolvedOrder.splice(resolvedOrder.lastIndexOf(precedingField) + 1, 0, fieldName);
+    } else if (followingField) {
+      resolvedOrder.splice(resolvedOrder.indexOf(followingField), 0, fieldName);
+    } else {
+      resolvedOrder.push(fieldName);
+    }
+  }
+
+  return resolvedOrder;
+}
+
 function renderFields(
   fieldNames: string[],
   properties: ObjectFieldTemplateProps['properties'],
   visibleFields: Set<string>,
   rows: RowDefinition[],
   rowFieldNames: Set<string>,
-  renderedRows: Set<string>
+  renderedRows: Set<string>,
+  externalFields: Readonly<Record<string, ReactNode>>
 ) {
   return fieldNames.map((fieldName) => {
     if (!visibleFields.has(fieldName)) return null;
+
+    if (fieldName.startsWith(externalFieldPrefix)) {
+      const externalFieldName = fieldName.slice(externalFieldPrefix.length);
+      const externalField = externalFields[externalFieldName];
+      return externalField ? (
+        <div key={fieldName} className="min-w-0 max-w-full" data-cy={`schema-external-field-${externalFieldName}`}>
+          {externalField}
+        </div>
+      ) : null;
+    }
 
     const row = rows.find((r) => r.fields[0] === fieldName);
     if (row) {
@@ -296,6 +341,7 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
     props;
 
   const ctx = formContext as FormContext | undefined;
+  const externalFields = ctx?.externalFields ?? {};
   const originalSchema = ctx?.originalSchema;
   const conditionalFields = originalSchema
     ? getConditionalFields(originalSchema)
@@ -321,12 +367,15 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
       visibleFields.add(prop.name);
     }
   }
+  for (const externalFieldName of Object.keys(externalFields)) {
+    visibleFields.add(`${externalFieldPrefix}${externalFieldName}`);
+  }
 
   if (sections.length === 0) {
     const renderedRows = new Set<string>();
     const renderedFields = (
       <div className="flex min-w-0 max-w-full flex-col gap-32">
-        {renderFields(order, properties, visibleFields, rows, rowFieldNames, renderedRows)}
+        {renderFields(order, properties, visibleFields, rows, rowFieldNames, renderedRows, externalFields)}
       </div>
     );
 
@@ -356,7 +405,9 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
   return (
     <div className="flex min-w-0 max-w-full flex-col gap-32">
       {sections.map((section) => {
-        const sectionFieldsInOrder = order.filter((f) => section.fields.includes(f) && visibleFields.has(f));
+        const sectionFieldsInOrder = insertExternalFieldsInSectionOrder(order, section.fields).filter((fieldName) =>
+          visibleFields.has(fieldName)
+        );
         if (sectionFieldsInOrder.length === 0) return null;
 
         return (
@@ -368,7 +419,15 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
             showCompletionControl={showCompletionControl}
           >
             <div className="flex min-w-0 max-w-full flex-col gap-32 py-16">
-              {renderFields(sectionFieldsInOrder, properties, visibleFields, rows, rowFieldNames, renderedRows)}
+              {renderFields(
+                sectionFieldsInOrder,
+                properties,
+                visibleFields,
+                rows,
+                rowFieldNames,
+                renderedRows,
+                externalFields
+              )}
             </div>
           </SectionDisclosure>
         );
@@ -376,7 +435,15 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
 
       {unsectionedFields.length > 0 && (
         <div className="flex min-w-0 max-w-full flex-col gap-32">
-          {renderFields(unsectionedFields, properties, visibleFields, rows, rowFieldNames, renderedRows)}
+          {renderFields(
+            unsectionedFields,
+            properties,
+            visibleFields,
+            rows,
+            rowFieldNames,
+            renderedRows,
+            externalFields
+          )}
         </div>
       )}
     </div>
