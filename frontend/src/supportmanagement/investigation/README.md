@@ -31,14 +31,18 @@ prefixet `draken:investigation-schema-lab:`. Inga ärenden eller scheman läses 
 - JSON Schema äger datatyper, obligatoriska fält, stabila koder, villkor och validering.
 - UI Schema äger ordning, accordions, widgets och layout.
 - `common/components/json` äger återanvändbar rendering, inte IAF-specifika fält.
-- `label-classification/` äger den fristående labelväljaren och adaptern mellan Support Managements labelträd och
-  Drakens formulärvärden.
+- `label-classification/` äger labelväljaren och adaptern mellan Support Managements labelträd och Drakens
+  formulärvärden.
 - `schema-lab/` äger exempeldataadapter, mockad `canRead`/`canWrite`, riskvärdesberäkning och separerad lokal lagring.
 
-Avvikelsetyp och underkategori renderas högst upp i enhetschefsfliken men ägs av SupportManagement-labels. De ingår
-inte i RJSF-formulärdata eller något av de tre JSON-schemana. I det riktiga ärendeflödet uppdateras ärendets labels
-och sparas med den ordinarie knappen `Spara ärende`. Labbens fristående exempelvärde sparas i en egen
-localStorage-post.
+Enhetschefs- och SOL/LSS-schemana deklarerar det externa fältet `errandClassification`. UI-schemat placerar fältet
+direkt efter `legalBases`, så att avvikelsetyp och underkategori visas i rätt formulärsektion och filtreras av valda
+lagrum. Deklarationen styr placering och koppling, men de valda värdena och deras UUID:n ägs fortfarande av
+SupportManagement-labels. De lagras inte i utredningsdokumentets RJSF-formulärdata eller JSON Parameter.
+
+En vanlig avvikelse kategoriseras i enhetschefsutredningen. När ärendets `eventType` är `MISSFORHALLANDE` ägs
+redigeringen i stället av SOL/LSS-utredningen; lagrummen SOL och LSS är då förvalda och skrivskyddade. Regeln ger
+ett enda redigeringsställe, även om samma externa fält kan deklareras av båda schematyperna.
 
 ## Riktigt ärendeflöde
 
@@ -46,6 +50,15 @@ Feature-flaggen `useInvestigation` visar huvudtabben `Utredning`. Varje dokument
 allowlistade BFF-route och kan inte skrivas genom den generiska ärende-PATCH:en. Ett befintligt dokument laddar sitt
 exakta `schemaId`; ett nytt dokument hämtar senaste schema och fryser det ID:t vid första sparningen. `ETag` och
 `If-Match` används för att upptäcka samtidiga ändringar, och lokala formulärvärden behålls vid konflikt.
+
+`Spara utredning` samordnar sparningen av utredningsdokumentet med en smal PATCH av ärendets klassificeringslabels.
+Dokumentet sparas först och label-PATCH:en skickar endast klassificering och labelreferenser. Operationerna är inte
+atomiska. Om dokumentet har sparats men label-PATCH:en misslyckas visas det uttryckligen som ett delvis fel; formuläret
+behåller klassificeringen och nästa försök upprepar endast label-PATCH:en.
+
+Label-PATCH:en skickar ärendeversionen som laddades tillsammans med formuläret. BFF:en läser den aktuella versionen,
+avvisar en inaktuell klient med konflikt och vidarebefordrar samma version som `If-Match`. Efter en lyckad sparning
+ersätts klientens version med den version som läses tillbaka från Support Management.
 
 När flaggen är avstängd ligger kategoriseringen kvar under `Grundinformation` och utredningsparametrarna visas
 skrivskyddade under `Ärendeuppgifter`. Det ger en direkt rollback utan datamigrering. Nuvarande skrivbehörighet är den
@@ -58,6 +71,14 @@ Okända fält tas bort, liksom villkorsstyrda värden som inte längre gäller (
 Åtgärder, handlingsplan, arbetsanteckningar, rapportgenerering och slutligt beslut ingår avsiktligt inte i dessa tre
 utredningsdokument. De hör till senare workflow-steg. Katlas inkommande ärendedata förblir en separat skrivskyddad
 JSON Parameter.
+
+De lokala artefakterna för `utredning-enhetschef` och `utredning-sol-lss` är version 1.1 och deklarerar
+`errandClassification`; `utredning-hsl` ligger kvar på version 1.0. För redan bundna manager- och SOL/LSS-dokument
+med schema till och med version 1.0 injicerar runtime samma externa placering som en bakåtkompatibel fallback.
+Ägarskapet bestäms dock centralt av IAF:s utredningsfeature, inte av en enskild schemadeklaration. Om även ett nyare
+schema saknar deklarationen behåller därför utredningen klassificeringen, placerar den i en säker standardsektion och
+visar en varning i stället för att skapa dubbla eller saknade redigeringsvägar.
+Artefakterna i repot är publiceringsunderlag och innebär inte i sig att någon schemaversion har publicerats.
 
 ## Verifiering
 

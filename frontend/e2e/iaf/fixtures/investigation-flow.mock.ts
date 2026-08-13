@@ -45,20 +45,36 @@ interface PutTrace {
   body: unknown;
 }
 
+interface ClassificationPatchTrace {
+  headers: Record<string, string>;
+  body: unknown;
+}
+
 export interface IafApiTrace {
   exactSchemaIds: string[];
   latestSchemaNames: string[];
   documentGets: InvestigationKey[];
   puts: PutTrace[];
+  classificationPatches: ClassificationPatchTrace[];
+  errandPatches: unknown[];
+  writes: Array<'document' | 'classification'>;
 }
 
 export interface IafApiScenario {
   canEdit?: boolean;
   errandStatus?: string;
+  eventType?: 'AVVIKELSE' | 'MISSFORHALLANDE';
   documents?: Partial<Record<InvestigationKey, InvestigationDocument>>;
   featureFlags?: Array<{ name: string; enabled: boolean; value?: string }>;
   putResult?: 'success' | 'conflict';
+  classificationPatchResult?: 'success' | 'bad-request' | 'conflict' | 'server-error' | 'server-error-once';
+  classificationDeclarationMissingFor?: InvestigationKey;
+  classificationSlotMisplacedFor?: InvestigationKey;
   schemaFailureFor?: InvestigationKey;
+  classification?: { category: string; type: string };
+  labels?: MockLabel[];
+  labelStructure?: MockLabel[];
+  omitLabelResourcePaths?: boolean;
 }
 
 const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
@@ -80,8 +96,8 @@ const validValues: Record<InvestigationKey, JsonObject> = {
 };
 
 export const latestSchemaIds: Record<InvestigationKey, string> = {
-  'utredning-enhetschef': '2281_utredning-enhetschef_1.0',
-  'utredning-sol-lss': '2281_utredning-sol-lss_1.0',
+  'utredning-enhetschef': '2281_utredning-enhetschef_1.1',
+  'utredning-sol-lss': '2281_utredning-sol-lss_1.1',
   'utredning-hsl': '2281_utredning-hsl_1.0',
 };
 
@@ -107,6 +123,206 @@ export const allExistingInvestigationDocuments = (): Record<InvestigationKey, In
     ])
   ) as Record<InvestigationKey, InvestigationDocument>;
 
+export interface MockLabel {
+  id: string;
+  classification: string;
+  displayName: string;
+  resourceName: string;
+  resourcePath?: string;
+  labels?: MockLabel[];
+}
+
+export const iafLabelFixture = {
+  namespace: 'HEALTHCAREDEVIATIONIAF',
+  provision: {
+    hsl: { id: 'provision-hsl-id', resourcePath: 'PROVISION/HSL' },
+    sol: { id: 'provision-sol-id', resourcePath: 'PROVISION/SOL' },
+    lss: { id: 'provision-lss-id', resourcePath: 'PROVISION/LSS' },
+  },
+  reportType: {
+    deviation: { id: 'report-type-deviation-id', resourcePath: 'REPORT_TYPE/DEVIATION' },
+    misconduct: { id: 'report-type-misconduct-id', resourcePath: 'REPORT_TYPE/ABUSE' },
+  },
+  classification: {
+    hslOwner: { id: 'category-hsl-owner-id', resourcePath: 'CATEGORY/HSL' },
+    rehab: {
+      id: 'category-hsl-rehab-id',
+      displayName: 'Rehab',
+      resourcePath: 'CATEGORY/HSL/REHAB',
+    },
+    missedAssessment: {
+      id: 'type-hsl-rehab-assessment-id',
+      displayName: 'Utebliven bedömning/behandling',
+      resourcePath: 'CATEGORY/HSL/REHAB/ASSESSMENT_TREATMENT_NOT_PERFORMED',
+    },
+    medication: {
+      id: 'category-hsl-medication-id',
+      displayName: 'Läkemedelshantering',
+      resourcePath: 'CATEGORY/HSL/MEDICATION',
+    },
+    incorrectAdministration: {
+      id: 'type-hsl-medication-administration-id',
+      displayName: 'Felaktig administrering',
+      resourcePath: 'CATEGORY/HSL/MEDICATION/INCORRECT_ADMINISTRATION',
+    },
+    solLssOwner: { id: 'category-sol-lss-owner-id', resourcePath: 'CATEGORY/SOL_LSS' },
+    legalCertainty: {
+      id: 'category-sol-lss-legal-certainty-id',
+      displayName: 'Brister i rättssäkerhet vid handläggning och genomförande',
+      resourcePath: 'CATEGORY/SOL_LSS/LEGAL_CERTAINTY',
+    },
+    deficientHandling: {
+      id: 'type-sol-lss-legal-certainty-handling-id',
+      displayName: 'Brister vid handläggning',
+      resourcePath: 'CATEGORY/SOL_LSS/LEGAL_CERTAINTY/DEFICIENT_HANDLING',
+    },
+    executionDeficiency: {
+      id: 'category-sol-lss-execution-id',
+      displayName: 'Brister i utförandet av insatser',
+      resourcePath: 'CATEGORY/SOL_LSS/EXECUTION_DEFICIENCY',
+    },
+    supportNotProvided: {
+      id: 'type-sol-lss-execution-support-id',
+      displayName: 'Beviljad insats har inte utförts',
+      resourcePath: 'CATEGORY/SOL_LSS/EXECUTION_DEFICIENCY/SUPPORT_NOT_PROVIDED',
+    },
+  },
+} as const;
+
+const label = (
+  id: string,
+  classification: string,
+  displayName: string,
+  resourceName: string,
+  resourcePath: string,
+  labels?: MockLabel[]
+): MockLabel => ({ id, classification, displayName, resourceName, resourcePath, labels });
+
+const provisionHsl = label(
+  iafLabelFixture.provision.hsl.id,
+  'PROVISION',
+  'HSL',
+  'HSL',
+  iafLabelFixture.provision.hsl.resourcePath
+);
+const provisionSol = label(
+  iafLabelFixture.provision.sol.id,
+  'PROVISION',
+  'SoL',
+  'SOL',
+  iafLabelFixture.provision.sol.resourcePath
+);
+const provisionLss = label(
+  iafLabelFixture.provision.lss.id,
+  'PROVISION',
+  'LSS',
+  'LSS',
+  iafLabelFixture.provision.lss.resourcePath
+);
+const reportDeviation = label(
+  iafLabelFixture.reportType.deviation.id,
+  'REPORT_TYPE',
+  'Avvikelse',
+  'DEVIATION',
+  iafLabelFixture.reportType.deviation.resourcePath
+);
+const reportMisconduct = label(
+  iafLabelFixture.reportType.misconduct.id,
+  'REPORT_TYPE',
+  'Missförhållande',
+  'ABUSE',
+  iafLabelFixture.reportType.misconduct.resourcePath
+);
+const missedAssessment = label(
+  iafLabelFixture.classification.missedAssessment.id,
+  'TYPE',
+  iafLabelFixture.classification.missedAssessment.displayName,
+  'ASSESSMENT_TREATMENT_NOT_PERFORMED',
+  iafLabelFixture.classification.missedAssessment.resourcePath
+);
+const rehab = label(
+  iafLabelFixture.classification.rehab.id,
+  'CATEGORY',
+  iafLabelFixture.classification.rehab.displayName,
+  'REHAB',
+  iafLabelFixture.classification.rehab.resourcePath,
+  [missedAssessment]
+);
+const incorrectAdministration = label(
+  iafLabelFixture.classification.incorrectAdministration.id,
+  'TYPE',
+  iafLabelFixture.classification.incorrectAdministration.displayName,
+  'INCORRECT_ADMINISTRATION',
+  iafLabelFixture.classification.incorrectAdministration.resourcePath
+);
+const medication = label(
+  iafLabelFixture.classification.medication.id,
+  'CATEGORY',
+  iafLabelFixture.classification.medication.displayName,
+  'MEDICATION',
+  iafLabelFixture.classification.medication.resourcePath,
+  [incorrectAdministration]
+);
+const hslOwner = label(
+  iafLabelFixture.classification.hslOwner.id,
+  'PROVISION_CATEGORY',
+  'HSL',
+  'HSL',
+  iafLabelFixture.classification.hslOwner.resourcePath,
+  [rehab, medication]
+);
+const deficientHandling = label(
+  iafLabelFixture.classification.deficientHandling.id,
+  'TYPE',
+  iafLabelFixture.classification.deficientHandling.displayName,
+  'DEFICIENT_HANDLING',
+  iafLabelFixture.classification.deficientHandling.resourcePath
+);
+const legalCertainty = label(
+  iafLabelFixture.classification.legalCertainty.id,
+  'CATEGORY',
+  iafLabelFixture.classification.legalCertainty.displayName,
+  'LEGAL_CERTAINTY',
+  iafLabelFixture.classification.legalCertainty.resourcePath,
+  [deficientHandling]
+);
+const supportNotProvided = label(
+  iafLabelFixture.classification.supportNotProvided.id,
+  'TYPE',
+  iafLabelFixture.classification.supportNotProvided.displayName,
+  'SUPPORT_NOT_PROVIDED',
+  iafLabelFixture.classification.supportNotProvided.resourcePath
+);
+const executionDeficiency = label(
+  iafLabelFixture.classification.executionDeficiency.id,
+  'CATEGORY',
+  iafLabelFixture.classification.executionDeficiency.displayName,
+  'EXECUTION_DEFICIENCY',
+  iafLabelFixture.classification.executionDeficiency.resourcePath,
+  [supportNotProvided]
+);
+const solLssOwner = label(
+  iafLabelFixture.classification.solLssOwner.id,
+  'PROVISION_CATEGORY',
+  'SoL/LSS',
+  'SOL_LSS',
+  iafLabelFixture.classification.solLssOwner.resourcePath,
+  [legalCertainty, executionDeficiency]
+);
+
+const labelStructure: MockLabel[] = [
+  label('provision-root-id', 'PROVISION_ROOT', 'Lagrum', 'PROVISION', 'PROVISION', [
+    provisionHsl,
+    provisionSol,
+    provisionLss,
+  ]),
+  label('category-root-id', 'CATEGORY_ROOT', 'Kategori', 'CATEGORY', 'CATEGORY', [hslOwner, solLssOwner]),
+  label('report-type-root-id', 'REPORT_TYPE_ROOT', 'Rapporttyp', 'REPORT_TYPE', 'REPORT_TYPE', [
+    reportDeviation,
+    reportMisconduct,
+  ]),
+];
+
 const metadata = {
   categories: [],
   types: [],
@@ -114,69 +330,35 @@ const metadata = {
     { name: 'ONGOING', displayName: 'Pågående' },
     { name: 'SOLVED', displayName: 'Avslutat' },
   ],
-  labels: {
-    labelStructure: [
-      {
-        id: 'category-root',
-        classification: 'CATEGORY_ROOT',
-        displayName: 'Kategori',
-        resourceName: 'CATEGORY',
-        resourcePath: 'CATEGORY',
-        labels: [
-          {
-            id: 'vof-owner',
-            classification: 'PROVISION_CATEGORY',
-            displayName: 'Vård och omsorg',
-            resourceName: 'VOF',
-            resourcePath: 'CATEGORY/VOF',
-            labels: [
-              {
-                id: 'medicine-category',
-                classification: 'CATEGORY',
-                displayName: 'Läkemedel',
-                resourceName: 'MEDICINE',
-                resourcePath: 'CATEGORY/VOF/MEDICINE',
-                labels: [
-                  {
-                    id: 'medicine-administration-type',
-                    classification: 'TYPE',
-                    displayName: 'Felaktig administrering',
-                    resourceName: 'INCORRECT_ADMINISTRATION',
-                    resourcePath: 'CATEGORY/VOF/MEDICINE/INCORRECT_ADMINISTRATION',
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
+  labels: { labelStructure },
 };
 
-const selectedLabels = [
-  {
-    id: 'vof-owner',
-    classification: 'PROVISION_CATEGORY',
-    displayName: 'Vård och omsorg',
-    resourceName: 'VOF',
-    resourcePath: 'CATEGORY/VOF',
-  },
-  {
-    id: 'medicine-category',
-    classification: 'CATEGORY',
-    displayName: 'Läkemedel',
-    resourceName: 'MEDICINE',
-    resourcePath: 'CATEGORY/VOF/MEDICINE',
-  },
-  {
-    id: 'medicine-administration-type',
-    classification: 'TYPE',
-    displayName: 'Felaktig administrering',
-    resourceName: 'INCORRECT_ADMINISTRATION',
-    resourcePath: 'CATEGORY/VOF/MEDICINE/INCORRECT_ADMINISTRATION',
-  },
-];
+const withoutChildren = ({ labels: _labels, ...selectedLabel }: MockLabel): MockLabel => selectedLabel;
+
+const withoutResourcePaths = (labels: readonly MockLabel[]): MockLabel[] =>
+  labels.map(({ resourcePath: _resourcePath, labels: children, ...currentLabel }) => ({
+    ...currentLabel,
+    ...(children ? { labels: withoutResourcePaths(children) } : {}),
+  }));
+
+const deviationLabels = [provisionHsl, reportDeviation, hslOwner, rehab, missedAssessment].map(withoutChildren);
+const misconductLabels = [
+  provisionSol,
+  provisionLss,
+  reportMisconduct,
+  solLssOwner,
+  legalCertainty,
+  deficientHandling,
+].map(withoutChildren);
+
+const allLabelsById = new Map<string, MockLabel>();
+const collectLabels = (labels: readonly MockLabel[]) => {
+  labels.forEach((currentLabel) => {
+    allLabelsById.set(currentLabel.id, withoutChildren(currentLabel));
+    if (currentLabel.labels) collectLabels(currentLabel.labels);
+  });
+};
+collectLabels(labelStructure);
 
 const katlaParameter = {
   key: 'katla-iaf-report',
@@ -221,15 +403,121 @@ const requestBody = (request: Request): unknown => {
 const fulfillJson = (route: Route, json: unknown, status = 200, headers?: Record<string, string>) =>
   route.fulfill({ status, json, headers });
 
+const schemaVersionFromId = (schemaId: string): string => schemaId.split('_').at(-1) ?? '';
+
+const isLegacySchemaVersion = (version: string): boolean => {
+  const [major = Number.NaN, minor = Number.NaN] = version.split('.').map(Number);
+  return major < 1 || (major === 1 && minor <= 0);
+};
+
+const schemaValueForId = (request: SchemaRequest, schemaId: string): JsonObject => {
+  const value = structuredClone(request.value);
+  const version = schemaVersionFromId(schemaId) || request.version;
+  const publishedId = value.$id;
+  value.$id =
+    typeof publishedId === 'string'
+      ? `${publishedId.slice(0, publishedId.lastIndexOf('/') + 1)}${version}`
+      : `https://schemas.sundsvall.se/${municipalityId}/${request.name}/${version}`;
+
+  if (isLegacySchemaVersion(version)) delete value['x-draken-external-fields'];
+  return value;
+};
+
+const uiSchemaValueForId = (request: UiSchemaRequest, schemaId: string): JsonObject => {
+  const value = structuredClone(request.value);
+  if (!isLegacySchemaVersion(schemaVersionFromId(schemaId))) return value;
+
+  const sections = value['ui:sections'];
+  if (Array.isArray(sections)) {
+    value['ui:sections'] = sections.map((section) => {
+      if (!section || typeof section !== 'object' || Array.isArray(section)) return section;
+      const fields = (section as JsonObject).fields;
+      return {
+        ...(section as JsonObject),
+        fields: Array.isArray(fields)
+          ? fields.filter((field) => typeof field !== 'string' || !field.startsWith('$external:'))
+          : fields,
+      };
+    });
+  }
+  return value;
+};
+
+interface ClassificationPatchBody {
+  expectedVersion: number;
+  classification: { category: string; type: string };
+  categoryLabels: Array<{ id: string }>;
+}
+
+const hasOnlyKeys = (value: JsonObject, keys: readonly string[]): boolean =>
+  Object.keys(value).length === keys.length && keys.every((key) => key in value);
+
+const isClassificationPatchBody = (body: unknown): body is ClassificationPatchBody => {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return false;
+  const value = body as JsonObject;
+  if (!hasOnlyKeys(value, ['expectedVersion', 'classification', 'categoryLabels'])) return false;
+  if (!value.classification || typeof value.classification !== 'object' || Array.isArray(value.classification)) {
+    return false;
+  }
+
+  const classification = value.classification as JsonObject;
+  return (
+    Number.isSafeInteger(value.expectedVersion) &&
+    (value.expectedVersion as number) >= 0 &&
+    hasOnlyKeys(classification, ['category', 'type']) &&
+    typeof classification.category === 'string' &&
+    typeof classification.type === 'string' &&
+    Array.isArray(value.categoryLabels) &&
+    value.categoryLabels.every(
+      (labelReference) =>
+        Boolean(labelReference) &&
+        typeof labelReference === 'object' &&
+        !Array.isArray(labelReference) &&
+        hasOnlyKeys(labelReference as JsonObject, ['id']) &&
+        typeof (labelReference as JsonObject).id === 'string'
+    )
+  );
+};
+
 export async function installIafApiMock(page: Page, scenario: IafApiScenario = {}): Promise<IafApiTrace> {
   const documents: Partial<Record<InvestigationKey, InvestigationDocument>> = structuredClone(
     scenario.documents ?? { 'utredning-enhetschef': existingManagerDocument() }
   );
+  const eventType = scenario.eventType ?? 'AVVIKELSE';
+  let errandClassification: { category: string; type: string } = structuredClone(
+    scenario.classification ??
+      (eventType === 'MISSFORHALLANDE'
+        ? {
+            category: scenario.omitLabelResourcePaths
+              ? 'SOL_LSS'
+              : iafLabelFixture.classification.solLssOwner.resourcePath,
+            type: scenario.omitLabelResourcePaths
+              ? 'LEGAL_CERTAINTY'
+              : iafLabelFixture.classification.legalCertainty.resourcePath,
+          }
+        : {
+            category: scenario.omitLabelResourcePaths ? 'HSL' : iafLabelFixture.classification.hslOwner.resourcePath,
+            type: scenario.omitLabelResourcePaths ? 'REHAB' : iafLabelFixture.classification.rehab.resourcePath,
+          })
+  );
+  let errandLabels: MockLabel[] = structuredClone(
+    scenario.labels ??
+      (scenario.omitLabelResourcePaths
+        ? withoutResourcePaths(eventType === 'MISSFORHALLANDE' ? misconductLabels : deviationLabels)
+        : eventType === 'MISSFORHALLANDE'
+        ? misconductLabels
+        : deviationLabels)
+  );
+  let classificationPatchAttempts = 0;
+  let errandVersion = 7;
   const trace: IafApiTrace = {
     exactSchemaIds: [],
     latestSchemaNames: [],
     documentGets: [],
     puts: [],
+    classificationPatches: [],
+    errandPatches: [],
+    writes: [],
   };
 
   const buildErrand = () => ({
@@ -245,13 +533,11 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     reporterUserId: 'iaf.reporter',
     created: '2026-08-01T10:00:00.000+02:00',
     modified: '2026-08-12T09:00:00.000+02:00',
-    classification: {
-      category: 'CATEGORY/VOF',
-      type: 'CATEGORY/VOF/MEDICINE',
-    },
-    labels: selectedLabels,
+    version: errandVersion,
+    classification: structuredClone(errandClassification),
+    labels: structuredClone(errandLabels),
     actions: [],
-    parameters: [],
+    parameters: [{ key: 'eventType', displayName: 'Rapporttyp', values: [eventType] }],
     stakeholders: [
       {
         externalId: 'reporter-id',
@@ -310,7 +596,84 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     }
 
     if (method === 'GET' && path.endsWith(`/supportmetadata/${municipalityId}`)) {
-      await fulfillJson(route, metadata);
+      await fulfillJson(route, {
+        ...metadata,
+        labels: {
+          labelStructure:
+            scenario.labelStructure ??
+            (scenario.omitLabelResourcePaths ? withoutResourcePaths(labelStructure) : labelStructure),
+        },
+      });
+      return;
+    }
+
+    if (method === 'PATCH' && path.endsWith(`/supporterrands/${municipalityId}/${errandId}/classification`)) {
+      const body = requestBody(request);
+      classificationPatchAttempts += 1;
+      trace.classificationPatches.push({ headers: request.headers(), body });
+      trace.writes.push('classification');
+
+      if (scenario.classificationPatchResult === 'bad-request') {
+        await fulfillJson(route, { message: 'Klassificeringen kunde inte valideras.' }, 400);
+        return;
+      }
+      if (scenario.classificationPatchResult === 'conflict') {
+        await fulfillJson(route, { message: 'Ärendets klassificering har ändrats sedan den laddades.' }, 409);
+        return;
+      }
+      if (
+        scenario.classificationPatchResult === 'server-error' ||
+        (scenario.classificationPatchResult === 'server-error-once' && classificationPatchAttempts === 1)
+      ) {
+        await fulfillJson(route, { message: 'Support Management kunde inte spara klassificeringen.' }, 500);
+        return;
+      }
+      if (!isClassificationPatchBody(body)) {
+        await fulfillJson(route, { message: 'Invalid classification body' }, 400);
+        return;
+      }
+      if (body.expectedVersion !== errandVersion) {
+        await fulfillJson(route, { message: 'Ärendets klassificering har ändrats sedan den laddades.' }, 409);
+        return;
+      }
+
+      const resolvedCategoryLabels = body.categoryLabels.map(({ id }) => allLabelsById.get(id));
+      if (resolvedCategoryLabels.some((resolvedLabel) => !resolvedLabel)) {
+        await fulfillJson(route, { message: 'Unknown label id' }, 400);
+        return;
+      }
+
+      errandClassification = structuredClone(body.classification);
+      errandLabels = [
+        ...errandLabels.filter(({ resourcePath }) => !resourcePath?.toUpperCase().startsWith('CATEGORY/')),
+        ...resolvedCategoryLabels.map((resolvedLabel) => structuredClone(resolvedLabel!)),
+      ];
+      errandVersion += 1;
+      await fulfillJson(route, buildErrand());
+      return;
+    }
+
+    if (method === 'PATCH' && path.endsWith(`/supporterrands/${municipalityId}/${errandId}`)) {
+      const body = requestBody(request);
+      trace.errandPatches.push(body);
+      if (body && typeof body === 'object' && !Array.isArray(body)) {
+        if ('classification' in body && body.classification && typeof body.classification === 'object') {
+          errandClassification = structuredClone(body.classification as { category: string; type: string });
+        }
+        if ('labels' in body && Array.isArray(body.labels)) {
+          const labelIds = body.labels
+            .map((candidate) =>
+              candidate && typeof candidate === 'object' && 'id' in candidate ? String(candidate.id) : undefined
+            )
+            .filter((id): id is string => Boolean(id));
+          errandLabels = labelIds
+            .map((id) => allLabelsById.get(id))
+            .filter((candidate): candidate is MockLabel => Boolean(candidate))
+            .map((candidate) => structuredClone(candidate));
+        }
+      }
+      errandVersion += 1;
+      await fulfillJson(route, buildErrand());
       return;
     }
 
@@ -350,6 +713,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
       if (method === 'PUT') {
         const body = requestBody(request);
         trace.puts.push({ key, headers: request.headers(), body });
+        trace.writes.push('document');
 
         if (scenario.putResult === 'conflict') {
           await fulfillJson(route, { message: 'Utredningen har en nyare version.' }, 412);
@@ -403,13 +767,17 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
       }
 
       const schemaRequest = schemaRequests[name];
+      const schemaValue = schemaValueForId(schemaRequest, latestSchemaIds[name]);
+      if (scenario.classificationDeclarationMissingFor === name) {
+        delete schemaValue['x-draken-external-fields'];
+      }
       await fulfillJson(
         route,
         apiResponse({
           id: latestSchemaIds[name],
           name,
           version: schemaRequest.version,
-          value: schemaRequest.value,
+          value: schemaValue,
           description: schemaRequest.description,
         })
       );
@@ -430,11 +798,27 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         return;
       }
 
+      const uiSchemaValue = uiSchemaValueForId(uiSchemaRequests[key], schemaId);
+      if (scenario.classificationSlotMisplacedFor === key && Array.isArray(uiSchemaValue['ui:sections'])) {
+        uiSchemaValue['ui:sections'] = uiSchemaValue['ui:sections'].map((section, index) => {
+          if (!section || typeof section !== 'object' || Array.isArray(section)) return section;
+          const fields = (section as JsonObject).fields;
+          if (!Array.isArray(fields)) return section;
+          const fieldsWithoutClassification = fields.filter(
+            (field) => field !== '$external:errandClassification'
+          );
+          return {
+            ...(section as JsonObject),
+            fields: index === 0 ? ['$external:errandClassification', ...fieldsWithoutClassification] : fieldsWithoutClassification,
+          };
+        });
+      }
+
       await fulfillJson(
         route,
         apiResponse({
           id: schemaId,
-          value: uiSchemaRequests[key].value,
+          value: uiSchemaValue,
           description: uiSchemaRequests[key].description,
         })
       );
@@ -462,13 +846,18 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
       }
 
       const schemaRequest = schemaRequests[key];
+      const version = schemaVersionFromId(schemaId) || schemaRequest.version;
+      const schemaValue = schemaValueForId(schemaRequest, schemaId);
+      if (scenario.classificationDeclarationMissingFor === key) {
+        delete schemaValue['x-draken-external-fields'];
+      }
       await fulfillJson(
         route,
         apiResponse({
           id: schemaId,
           name: key,
-          version: schemaId.split('_').at(-1) ?? schemaRequest.version,
-          value: schemaRequest.value,
+          version,
+          value: schemaValue,
           description: schemaRequest.description,
         })
       );
