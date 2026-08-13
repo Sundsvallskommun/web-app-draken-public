@@ -17,6 +17,7 @@ import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-co
 import { v4 as uuidv4 } from 'uuid';
 
 import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
+import { buildSupportErrandUpdateData } from './support-errand-update-data';
 import { findLabelByClassification } from './support-label-classification-service';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { saveSupportNote } from './support-note-service';
@@ -67,6 +68,7 @@ export type ExternalTags = Array<{ key: string; value: string }>;
 
 export interface ApiSupportErrand extends SupportErrandDto {
   id?: string;
+  version?: number;
   created?: string;
   modified?: string;
   touched?: string;
@@ -658,7 +660,10 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       type: (e.classification?.type === 'NONE' ? '' : e.classification?.type) || '',
       subType:
         (appConfig.features.useThreeLevelCategorization
-          ? findLabelByClassification(e.labels, isIAF() ? 'TYPE' : 'SUBTYPE')?.resourcePath
+          ? (() => {
+              const subTypeLabel = findLabelByClassification(e.labels, isIAF() ? 'TYPE' : 'SUBTYPE');
+              return subTypeLabel?.resourcePath || subTypeLabel?.resourceName;
+            })()
           : undefined) || '',
       contactReason: e.contactReason,
       contactReasonDescription: e.contactReasonDescription,
@@ -843,47 +848,7 @@ export const updateSupportErrand: (
   }
 
   const stakeholders = buildStakeholdersList(formdata);
-
-  const data: Partial<SupportErrandDto> = {
-    ...(formdata.title && { title: formdata.title }),
-    ...(formdata.priority && {
-      priority: formdata.priority,
-    }),
-    ...(formdata.category &&
-      formdata.type && {
-        classification: {
-          category: formdata.category,
-          type: formdata.type,
-        },
-      }),
-    labels: (formdata.labels ?? []).map((label): Label => ({ ...label, labels: undefined })),
-    ...(formdata.contactReason && { contactReason: formdata.contactReason }),
-    ...(typeof formdata.contactReasonDescription !== 'undefined' && {
-      contactReasonDescription: formdata.contactReasonDescription,
-    }),
-    businessRelated: !!formdata.businessRelated,
-    ...(formdata.status && { status: formdata.status }),
-    ...(formdata.status && {
-      suspension: {
-        suspendedFrom: undefined,
-        suspendedTo: undefined,
-      },
-    }),
-    ...(formdata.resolution && { resolution: formdata.resolution }),
-    ...(formdata.escalationEmail && { escalationEmail: formdata.escalationEmail }),
-    ...(formdata.channel && { channel: formdata.channel }),
-    ...(formdata.description && { description: formdata.description }),
-    ...(formdata.assignedUserId && { assignedUserId: formdata.assignedUserId }),
-    ...{ stakeholders: stakeholders },
-    externalTags: (formdata.externalTags || []).filter((t) => t.key !== 'caseId'),
-    parameters: formdata.parameters || [],
-  };
-  if (formdata.caseId) {
-    data.externalTags!.push({
-      key: 'caseId',
-      value: formdata.caseId,
-    });
-  }
+  const data = buildSupportErrandUpdateData(formdata, stakeholders);
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${formdata.id}`, data)

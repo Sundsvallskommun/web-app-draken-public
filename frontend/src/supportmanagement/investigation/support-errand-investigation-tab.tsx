@@ -1,8 +1,7 @@
 'use client';
 
 import { Tabs } from '@sk-web-gui/react';
-import { useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
-import { IafLabelCategorization } from '@supportmanagement/components/support-errand-basics-form/iaf-label-categorization.component';
+import { useSupportStore, useUserStore } from '@stores/index';
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
 import { useCallback, useMemo, useState } from 'react';
 
@@ -17,7 +16,6 @@ interface SupportErrandInvestigationTabProps {
 export function SupportErrandInvestigationTab({ onDirtyChange }: SupportErrandInvestigationTabProps) {
   const [activeTab, setActiveTab] = useState(0);
   const supportErrand = useSupportStore((state) => state.supportErrand);
-  const supportMetadata = useMetadataStore((state) => state.supportMetadata);
   const canEditSupportManagement = useUserStore((state) => state.user.permissions.canEditSupportManagement);
   const readonly = !supportErrand || isSupportErrandLocked(supportErrand) || !canEditSupportManagement;
 
@@ -69,16 +67,6 @@ export function SupportErrandInvestigationTab({ onDirtyChange }: SupportErrandIn
           <Tabs.Item key={definition.key}>
             <Tabs.Button data-cy={`${definition.key}-tab`}>{definition.tabLabel}</Tabs.Button>
             <Tabs.Content className="min-w-0 max-w-full">
-              {definition.key === 'utredning-enhetschef' && (
-                <div className="mx-16 mt-24 border-b-1 px-0 pb-32 sm:mx-24 md:mx-32">
-                  <IafLabelCategorization supportMetadata={supportMetadata} disabled={readonly} />
-                  {!readonly && (
-                    <p className="mt-16 text-small text-dark-secondary">
-                      Kategoriseringen sparas separat med knappen Spara ärende i panelen Handläggning.
-                    </p>
-                  )}
-                </div>
-              )}
               <SupportInvestigationDocument
                 definition={definition}
                 readonly={readonly}
