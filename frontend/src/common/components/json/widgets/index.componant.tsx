@@ -9,6 +9,7 @@ import { TexteditorWidget } from './richtext-widget.componant';
 import { SelectWidget } from './select-widget.componant';
 import { TextWidget } from './text-widget.componant';
 import { TextareaWidget } from './textarea-widget.componant';
+import { TimeWidget } from './time-widget.componant';
 
 const baseWidgets = {
   TextWidget,
@@ -17,6 +18,9 @@ const baseWidgets = {
   CheckboxWidget,
   CheckboxGroupWidget,
   DateWidget,
+  // Namnet TimeWidget ersätter även RJSF:s inbyggda widget för `format: "time"`, som annars renderar
+  // en ostilad HTML-input utanför designsystemet.
+  TimeWidget,
   ComboboxWidget,
   TexteditorWidget,
   TextareaWidget,
@@ -35,6 +39,7 @@ export const jsonWidgets = {
   checkboxGroup: baseWidgets.CheckboxGroupWidget,
   'checkbox-group': baseWidgets.CheckboxGroupWidget,
   date: baseWidgets.DateWidget,
+  time: baseWidgets.TimeWidget,
   combobox: baseWidgets.ComboboxWidget,
   texteditor: baseWidgets.TexteditorWidget,
   textarea: baseWidgets.TextareaWidget,
