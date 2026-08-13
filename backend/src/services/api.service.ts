@@ -125,7 +125,7 @@ class ApiService {
         logger.error(`Error method: ${error.response!.config.method}`);
         logger.error(`Error headers: ${error.response!.config.headers}`);
         throw new HttpException(404, 'Not found');
-      } else if (axios.isAxiosError(error) && (error as AxiosError).response?.data) {
+      } else if (axios.isAxiosError(error) && (error as AxiosError).response) {
         logger.error(`ERROR: API request failed with status: ${error.response?.status}`);
         logger.error(`Error details: ${JSON.stringify(error.response!.data)}`);
         logger.error(`Error url: ${error.response!.config.baseURL || ''}/${error.response!.config.url}`);
@@ -136,8 +136,16 @@ class ApiService {
         // context instead of an opaque 500. Server/network errors still become 500 below.
         const status = error.response!.status;
         if (propagateClientError && status >= 400 && status < 500) {
-          const data = error.response!.data as { detail?: string; message?: string; title?: string };
-          const message = (typeof data === 'object' && (data.detail || data.message || data.title)) || 'Request failed';
+          const data = error.response!.data;
+          const message =
+            typeof data === 'object' && data !== null
+              ? (data as { detail?: string; message?: string; title?: string }).detail ||
+                (data as { detail?: string; message?: string; title?: string }).message ||
+                (data as { detail?: string; message?: string; title?: string }).title ||
+                'Request failed'
+              : typeof data === 'string' && data.trim()
+                ? data
+                : 'Request failed';
           throw new HttpException(status, message);
         }
       } else {

@@ -99,4 +99,57 @@ describe('ApiService', () => {
       );
     });
   }
+
+  it('preserves an upstream client-error status when the response body is empty', async () => {
+    mock.method(ApiTokenService.prototype, 'getToken', async () => 'test-token');
+    const adapter: AxiosAdapter = async config => {
+      throw new AxiosError('Upstream request failed', undefined, config, undefined, {
+        config,
+        data: undefined,
+        headers: {},
+        status: 400,
+        statusText: 'Bad Request',
+      });
+    };
+    const service = new ApiService();
+
+    await assert.rejects(
+      service.patch<{ saved: boolean }, { value: string }>(
+        {
+          adapter,
+          data: { value: 'new' },
+          propagateClientError: true,
+          url: 'token',
+        },
+        user,
+      ),
+      (error: unknown) => error instanceof Error && 'status' in error && error.status === 400 && error.message === 'Request failed',
+    );
+  });
+
+  it('preserves an empty upstream client error from a GET readback', async () => {
+    mock.method(ApiTokenService.prototype, 'getToken', async () => 'test-token');
+    const adapter: AxiosAdapter = async config => {
+      throw new AxiosError('Upstream request failed', undefined, config, undefined, {
+        config,
+        data: undefined,
+        headers: {},
+        status: 403,
+        statusText: 'Forbidden',
+      });
+    };
+    const service = new ApiService();
+
+    await assert.rejects(
+      service.get<{ saved: boolean }>(
+        {
+          adapter,
+          propagateClientError: true,
+          url: 'token',
+        },
+        user,
+      ),
+      (error: unknown) => error instanceof Error && 'status' in error && error.status === 403 && error.message === 'Request failed',
+    );
+  });
 });
