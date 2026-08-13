@@ -1,9 +1,16 @@
 'use client';
 
+import {
+  findPlaceNode,
+  getPlaceNodes,
+  getPlacePresentation,
+  type PlacePresentation,
+} from '@common/components/json/utils/place-structure';
 import { getUserEmployments, UserEmploymentDTO } from '@common/services/employee-service';
 import { getOrgLeafNodes, OrgLeafNodeDTO } from '@common/services/organization-service';
 import type { FieldProps } from '@rjsf/utils';
 import { Button, Combobox, FormControl, FormLabel } from '@sk-web-gui/react';
+import { useMetadataStore } from '@stores/index';
 import { Check, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -11,6 +18,8 @@ interface FacilityInfo {
   orgId?: number;
   orgName?: string;
   parentOrgId?: number;
+  /** Skrivs av web-app-katla-sm: förälderns namn i platsstrukturen. Se place-structure.ts. */
+  parentOrgName?: string;
   manager?: {
     personId?: string;
     givenname?: string;
@@ -27,6 +36,31 @@ export function FacilitySearchField(props: FieldProps) {
   const className = (uiOptions.className as string) || 'w-full';
 
   const facilityInfo = formData as FacilityInfo | undefined;
+
+  // Katla väljer plats ur labelstrukturen och skriver bara namnen, medan den här appens egen sökning
+  // skriver orgId ur organisationsträdet. Strukturen måste därför slås upp för att veta vilket namn som
+  // är anläggning och vilket som är avdelning.
+  const supportMetadata = useMetadataStore((state) => state.supportMetadata);
+  const placeNodes = useMemo(
+    () => getPlaceNodes(supportMetadata?.labels?.labelStructure),
+    [supportMetadata?.labels?.labelStructure]
+  );
+  const selectedPlaceNode = useMemo(
+    () => findPlaceNode(placeNodes, facilityInfo?.orgName, facilityInfo?.parentOrgName),
+    [placeNodes, facilityInfo?.orgName, facilityInfo?.parentOrgName]
+  );
+  const placePresentation = useMemo<PlacePresentation | undefined>(() => {
+    if (selectedPlaceNode) return getPlacePresentation(selectedPlaceNode);
+    if (!facilityInfo?.orgName) return undefined;
+
+    // Utan träff i strukturen går nivåerna inte att avgöra. Namnen visas då kvalificerade med föräldern
+    // i stället för att en gissad avdelning presenteras som fakta.
+    return {
+      place: facilityInfo.parentOrgName
+        ? `${facilityInfo.parentOrgName} ${facilityInfo.orgName}`
+        : facilityInfo.orgName,
+    };
+  }, [facilityInfo?.orgName, facilityInfo?.parentOrgName, selectedPlaceNode]);
 
   const employmentsLoadedRef = useRef(false);
   const autoSelectedRef = useRef(false);
@@ -120,7 +154,9 @@ export function FacilitySearchField(props: FieldProps) {
     return leafNodes.filter((n) => n.orgName.toLowerCase().includes(searchLower));
   }, [leafNodes, searchValue]);
 
-  const hasSelection = !!facilityInfo?.orgId;
+  // Ett val ur platsstrukturen har inget orgId om noden inte råkar vara användarens egen anställning,
+  // så namnet är det som avgör att en plats faktiskt är vald.
+  const hasSelection = !!facilityInfo?.orgName || !!facilityInfo?.orgId;
 
   const isReadonly = disabled || readonly;
 
@@ -134,7 +170,7 @@ export function FacilitySearchField(props: FieldProps) {
           <Combobox
             id={id}
             className="w-full"
-            value={hasSelection ? String(facilityInfo.orgId) : ''}
+            value={facilityInfo?.orgId ? String(facilityInfo.orgId) : ''}
             onChange={handleSelectOrg}
           >
             <Combobox.Input
@@ -160,8 +196,15 @@ export function FacilitySearchField(props: FieldProps) {
           </div>
           <div className="p-[1rem]">
             <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <p className="text-[1.6rem] font-semibold">{facilityInfo.orgName}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-[1.6rem] font-semibold break-words" data-cy="facility-name">
+                  {placePresentation?.place}
+                </p>
+                {placePresentation?.department && (
+                  <p className="text-small text-text-secondary break-words" data-cy="facility-department">
+                    <span className="font-semibold">Avdelning:</span> {placePresentation.department}
+                  </p>
+                )}
               </div>
 
               <div className="flex gap-8 items-center">
