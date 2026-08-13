@@ -1,10 +1,6 @@
 import { Badge, cx } from '@sk-web-gui/react';
 import { FC } from 'react';
 
-// Horizontal step: number badge with the label to its right. The label is only rendered for the
-// current phase and its immediate neighbours (see `showLabel` in the wrapper), which keeps the row
-// compact; the remaining phases show just their badge. The label still truncates with an ellipsis
-// as a last resort on very narrow screens.
 export const SupportUiPhaseComponent: FC<{
   number: number;
   phase: string;
