@@ -27,7 +27,7 @@ const normalizeName = (value: string | undefined): string => (value ?? '').trim(
 
 const labelName = (label: Label): string => label.displayName || label.resourceName;
 
-const isSameLabel = (left: Label | undefined, right: Label | undefined): boolean => {
+export const isSameLabel = (left: Label | undefined, right: Label | undefined): boolean => {
   if (!left || !right) return false;
   if (left.id && right.id) return left.id === right.id;
   if (left.resourcePath && right.resourcePath) return left.resourcePath === right.resourcePath;
@@ -58,10 +58,12 @@ export const getPlaceNodes = (labelStructure: readonly Label[] | undefined): Pla
   return nodes;
 };
 
-const placeName = (node: PlaceNode): string => labelName(node.label);
+export const hasSubPlaces = (node: PlaceNode): boolean => (node.label.labels?.length ?? 0) > 0;
+
+export const placeName = (node: PlaceNode): string => labelName(node.label);
 
 /** Föräldern inom platsstrukturen. Roten räknas inte som förälder. */
-const placeParentName = (node: PlaceNode): string | undefined => {
+export const placeParentName = (node: PlaceNode): string | undefined => {
   const parent = node.path[node.path.length - 2];
   return parent && !isSameLabel(parent, node.path[0]) ? labelName(parent) : undefined;
 };
@@ -105,3 +107,37 @@ export const findPlaceNode = (
   const withParent = matches.filter((node) => normalizeName(placeParentName(node)) === wantedParent);
   return withParent.length === 1 ? withParent[0] : undefined;
 };
+
+export const placeKey = (node: PlaceNode): string => node.label.resourcePath ?? node.path.map(labelName).join('/');
+
+export const findPlaceNodeByKey = (nodes: readonly PlaceNode[], key: string): PlaceNode | undefined =>
+  nodes.find((node) => placeKey(node) === key);
+
+/** Sökindexet innehåller samtliga användarnivåer 3–7 men inte den tekniska roten på nivå 2. */
+const placeSearchText = (node: PlaceNode): string =>
+  node.path
+    .slice(1, DEPARTMENT_LEVEL - PLACE_STRUCTURE_ROOT_LEVEL + 1)
+    .map(labelName)
+    .join(' ');
+
+/** Sökord får ligga på olika nivåer i strukturen och behöver därför inte stå direkt efter varandra. */
+export const matchesPlaceSearch = (node: PlaceNode, query: string): boolean => {
+  const searchableText = normalizeName(placeSearchText(node));
+  const terms = normalizeName(query).split(' ').filter(Boolean);
+  return terms.every((term) => searchableText.includes(term));
+};
+
+/** Närmaste föräldern inom platsstrukturen. Den tekniska roten returneras aldrig som valbar plats. */
+export const getParentPlaceNode = (nodes: readonly PlaceNode[], node: PlaceNode): PlaceNode | undefined => {
+  const parentLabel = node.path.at(-2);
+  if (!parentLabel || isSameLabel(parentLabel, node.path[0])) return undefined;
+
+  return nodes.find((candidate) => isSameLabel(candidate.label, parentLabel));
+};
+
+/** Direkta barn till en nod, som PlaceNode så att de bär med sig hela sin väg */
+export const getSubPlaceNodes = (nodes: readonly PlaceNode[], parent: PlaceNode): PlaceNode[] =>
+  nodes.filter((node) => node.path.length === parent.path.length + 1 && isSameLabel(node.path.at(-2), parent.label));
+
+export const isDescendantOrSelf = (node: PlaceNode, ancestor: PlaceNode): boolean =>
+  node.path.some((label) => isSameLabel(label, ancestor.label));

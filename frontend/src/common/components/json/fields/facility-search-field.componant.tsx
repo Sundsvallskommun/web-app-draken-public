@@ -2,107 +2,148 @@
 
 import {
   findPlaceNode,
+  findPlaceNodeByKey,
+  getParentPlaceNode,
   getPlaceNodes,
   getPlacePresentation,
-  type PlacePresentation,
+  getSubPlaceNodes,
+  hasSubPlaces,
+  isDescendantOrSelf,
+  isSameLabel,
+  matchesPlaceSearch,
+  placeKey,
+  placeName,
+  type PlaceNode,
+  placeParentName,
 } from '@common/components/json/utils/place-structure';
-import { getUserEmployments, UserEmploymentDTO } from '@common/services/employee-service';
-import { getOrgLeafNodes, OrgLeafNodeDTO } from '@common/services/organization-service';
-import type { FieldProps } from '@rjsf/utils';
-import { Button, Combobox, FormControl, FormLabel } from '@sk-web-gui/react';
+import { getUserEmployments, OrgManagerDTO, UserEmploymentDTO } from '@common/services/employee-service';
+import { ariaDescribedByIds, type FieldProps } from '@rjsf/utils';
+import { Button, Combobox, FormControl, FormLabel, RadioButton } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
-import { Check, X } from 'lucide-react';
+import { Pen } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+/** Fler underenheter än så blir en ohanterlig radioknappsgrupp — då används sökning istället */
+const MAX_RADIO_SUB_PLACES = 6;
+
+/**
+ * Platsvalet delas med web-app-katla-sm och måste skrivas likadant där: `orgName` är den valda noden i
+ * platsstrukturen och `parentOrgName` dess förälder. `orgId` och `manager` finns bara när valet ligger
+ * inom användarens egen anställning, eftersom labelstrukturen i sig inte bär organisationsdata.
+ */
 interface FacilityInfo {
   orgId?: number;
   orgName?: string;
-  parentOrgId?: number;
-  /** Skrivs av web-app-katla-sm: förälderns namn i platsstrukturen. Se place-structure.ts. */
   parentOrgName?: string;
-  manager?: {
-    personId?: string;
-    givenname?: string;
-    lastname?: string;
-    emailAddress?: string;
-  };
+  manager?: OrgManagerDTO;
 }
 
 export function FacilitySearchField(props: FieldProps) {
-  const { idSchema, formData, disabled, readonly, onChange, uiSchema } = props;
+  const { idSchema, formData, disabled, readonly, required, rawErrors, onBlur, onChange, onFocus, uiSchema } = props;
   const id = idSchema.$id;
+  const searchLabelId = `${id}__search-label`;
+  const subPlaceLabelId = `${id}__sub-place-label`;
+  const describedBy = ariaDescribedByIds(id);
+  const invalid = Boolean(rawErrors?.length);
 
   const uiOptions = (uiSchema?.['ui:options'] || {}) as Record<string, unknown>;
   const className = (uiOptions.className as string) || 'w-full';
 
   const facilityInfo = formData as FacilityInfo | undefined;
+  const { orgName, parentOrgName } = facilityInfo ?? {};
 
-  // Katla väljer plats ur labelstrukturen och skriver bara namnen, medan den här appens egen sökning
-  // skriver orgId ur organisationsträdet. Strukturen måste därför slås upp för att veta vilket namn som
-  // är anläggning och vilket som är avdelning.
+  // Platsvalet styrs av labelstrukturen, inte av organisationsträdet: strukturen är det som
+  // rättighetsstyr ärendet i Support Management, och den är också det enda som kan avgöra vilket av de
+  // sparade namnen som är anläggning respektive avdelning.
   const supportMetadata = useMetadataStore((state) => state.supportMetadata);
   const placeNodes = useMemo(
     () => getPlaceNodes(supportMetadata?.labels?.labelStructure),
     [supportMetadata?.labels?.labelStructure]
   );
-  const selectedPlaceNode = useMemo(
-    () => findPlaceNode(placeNodes, facilityInfo?.orgName, facilityInfo?.parentOrgName),
-    [placeNodes, facilityInfo?.orgName, facilityInfo?.parentOrgName]
+  const selectablePlaceNodes = useMemo(() => placeNodes.filter((node) => !hasSubPlaces(node)), [placeNodes]);
+
+  const [placeSearchValue, setPlaceSearchValue] = useState('');
+  const employmentMatchRef = useRef<{ node: PlaceNode; employment: UserEmploymentDTO } | null>(null);
+  const prefillDoneRef = useRef(false);
+
+  const isEditable = !disabled && !readonly;
+
+  const selectedNode = useMemo(
+    () => findPlaceNode(placeNodes, orgName, parentOrgName),
+    [placeNodes, orgName, parentOrgName]
   );
-  const placePresentation = useMemo<PlacePresentation | undefined>(() => {
-    if (selectedPlaceNode) return getPlacePresentation(selectedPlaceNode);
-    if (!facilityInfo?.orgName) return undefined;
+  const selectedPlacePresentation = useMemo(() => {
+    if (selectedNode) return getPlacePresentation(selectedNode);
+    if (!orgName) return undefined;
 
     // Utan träff i strukturen går nivåerna inte att avgöra. Namnen visas då kvalificerade med föräldern
     // i stället för att en gissad avdelning presenteras som fakta.
     return {
-      place: facilityInfo.parentOrgName
-        ? `${facilityInfo.parentOrgName} ${facilityInfo.orgName}`
-        : facilityInfo.orgName,
+      place: parentOrgName ? `${parentOrgName} ${orgName}` : orgName,
+      department: undefined,
     };
-  }, [facilityInfo?.orgName, facilityInfo?.parentOrgName, selectedPlaceNode]);
+  }, [orgName, parentOrgName, selectedNode]);
 
-  const employmentsLoadedRef = useRef(false);
-  const autoSelectedRef = useRef(false);
+  const filteredSelectablePlaceNodes = useMemo(
+    () => selectablePlaceNodes.filter((node) => matchesPlaceSearch(node, placeSearchValue)),
+    [placeSearchValue, selectablePlaceNodes]
+  );
+  const subPlaceParentNode = useMemo(() => {
+    if (!selectedNode) return undefined;
+    if (hasSubPlaces(selectedNode)) return selectedNode;
+    return selectedPlacePresentation?.department ? getParentPlaceNode(placeNodes, selectedNode) : undefined;
+  }, [placeNodes, selectedNode, selectedPlacePresentation?.department]);
+  const subPlaceNodes = useMemo(
+    () => (subPlaceParentNode ? getSubPlaceNodes(placeNodes, subPlaceParentNode) : []),
+    [placeNodes, subPlaceParentNode]
+  );
+  const mustChooseSubPlace = Boolean(selectedNode && hasSubPlaces(selectedNode));
+  const showSubPlaceChoice =
+    mustChooseSubPlace || Boolean(selectedPlacePresentation?.department && subPlaceNodes.length > 1);
+  const selectedSubPlaceKey = useMemo(
+    () =>
+      selectedNode && subPlaceNodes.some((node) => isSameLabel(node.label, selectedNode.label))
+        ? placeKey(selectedNode)
+        : '',
+    [selectedNode, subPlaceNodes]
+  );
 
-  const [searchValue, setSearchValue] = useState('');
-  const [isConfirmed, setIsConfirmed] = useState(false);
-  const [topOrgId, setTopOrgId] = useState<number | null>(null);
-  const [leafNodes, setLeafNodes] = useState<OrgLeafNodeDTO[]>([]);
-  const [isLoadingLeafNodes, setIsLoadingLeafNodes] = useState(false);
+  const selectPlace = useCallback(
+    (node: PlaceNode) => {
+      const match = employmentMatchRef.current;
+      const isEmploymentPlace = !!match && isSameLabel(node.label, match.node.label);
+      const withinEmploymentBranch = !!match && isDescendantOrSelf(node, match.node);
 
-  const selectFacility = useCallback(
-    (employment: UserEmploymentDTO) => {
       onChange({
-        orgId: employment.orgId,
-        orgName: employment.orgName,
-        manager: employment.manager
-          ? {
-              personId: employment.manager.personId ?? undefined,
-              givenname: employment.manager.givenname ?? undefined,
-              lastname: employment.manager.lastname ?? undefined,
-              emailAddress: employment.manager.emailAddress ?? undefined,
-            }
-          : undefined,
+        orgId: isEmploymentPlace ? match.employment.orgId : undefined,
+        orgName: placeName(node),
+        parentOrgName: placeParentName(node),
+        manager: withinEmploymentBranch ? match.employment.manager : undefined,
       });
     },
     [onChange]
   );
 
+  // Förpopulera från användarens anställning. Anställningen används bara för att hitta rätt nod i
+  // labelstrukturen — har noden underenheter måste användaren själv välja en av dem.
   useEffect(() => {
-    if (disabled || readonly || employmentsLoadedRef.current) return;
+    if (!isEditable || prefillDoneRef.current || placeNodes.length === 0) return;
+    if (orgName) {
+      prefillDoneRef.current = true;
+      return;
+    }
 
-    const loadEmployments = async () => {
+    prefillDoneRef.current = true;
+
+    const prefillFromEmployment = async () => {
       try {
         const employments = await getUserEmployments();
-        employmentsLoadedRef.current = true;
-
-        if (employments.length > 0) {
-          setTopOrgId(employments[0].topOrgId ?? null);
-
-          if (!autoSelectedRef.current && !formData?.orgId) {
-            autoSelectedRef.current = true;
-            selectFacility(employments[0]);
+        for (const employment of employments) {
+          const node = findPlaceNode(placeNodes, employment.orgName);
+          if (node) {
+            employmentMatchRef.current = { node, employment };
+            selectPlace(node);
+            return;
           }
         }
       } catch (error) {
@@ -110,139 +151,193 @@ export function FacilitySearchField(props: FieldProps) {
       }
     };
 
-    loadEmployments();
-  }, [disabled, readonly, formData?.orgId, selectFacility]);
+    void prefillFromEmployment();
+  }, [isEditable, placeNodes, orgName, selectPlace]);
 
-  const handleRemove = useCallback(async () => {
-    onChange(undefined);
-    setSearchValue('');
-    setIsConfirmed(false);
-
-    if (topOrgId) {
-      setIsLoadingLeafNodes(true);
-      try {
-        const nodes = await getOrgLeafNodes(topOrgId);
-        setLeafNodes(nodes);
-      } catch (error) {
-        console.error('Failed to load leaf nodes:', error);
-      } finally {
-        setIsLoadingLeafNodes(false);
-      }
-    }
-  }, [onChange, topOrgId]);
-
-  const handleSelectOrg = useCallback(
-    (e: { target: { value: unknown } }) => {
-      const selectedOrgId = Number(e.target.value);
-      const selectedNode = leafNodes.find((n) => n.orgId === selectedOrgId);
-
-      if (selectedNode) {
-        onChange({
-          orgId: selectedNode.orgId,
-          orgName: selectedNode.orgName,
-          parentOrgId: selectedNode.parentId,
-        });
-        setSearchValue('');
+  const handleSelectPlace = useCallback(
+    (key: string) => {
+      const node = findPlaceNodeByKey(placeNodes, key);
+      if (node) {
+        selectPlace(node);
       }
     },
-    [leafNodes, onChange]
+    [placeNodes, selectPlace]
   );
 
-  const filteredLeafNodes = useMemo(() => {
-    if (!searchValue.trim()) return leafNodes;
-    const searchLower = searchValue.toLowerCase();
-    return leafNodes.filter((n) => n.orgName.toLowerCase().includes(searchLower));
-  }, [leafNodes, searchValue]);
+  const handleChangePlace = useCallback(() => {
+    onChange(undefined);
+    setPlaceSearchValue('');
+  }, [onChange]);
 
-  // Ett val ur platsstrukturen har inget orgId om noden inte råkar vara användarens egen anställning,
-  // så namnet är det som avgör att en plats faktiskt är vald.
-  const hasSelection = !!facilityInfo?.orgName || !!facilityInfo?.orgId;
+  const sectionTitle = <h2 className="text-xl font-bold mb-6">Mer information om platsen</h2>;
 
-  const isReadonly = disabled || readonly;
+  if (!supportMetadata) {
+    return (
+      <div className={className}>
+        {sectionTitle}
+        <p className="text-text-secondary">Laddar...</p>
+      </div>
+    );
+  }
+
+  if (placeNodes.length === 0) {
+    return (
+      <div className={className}>
+        {sectionTitle}
+        <p className="text-error" data-cy="facility-structure-missing">
+          Platsstrukturen kunde inte laddas. Ladda om sidan eller kontakta administratör.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className={className}>
-      <h2 className="text-xl font-bold mb-6">Mer information om platsen</h2>
+      {sectionTitle}
 
-      {!isReadonly && (
-        <FormControl disabled={hasSelection || isLoadingLeafNodes} className="w-full">
-          <FormLabel className="font-bold">Lägg till plats där avvikelsen inträffat</FormLabel>
+      {!selectedPlacePresentation && isEditable && (
+        <FormControl disabled={!isEditable} invalid={invalid} required={required} className="w-full">
+          <FormLabel id={searchLabelId} htmlFor={id} className="font-bold">
+            Lägg till plats där avvikelsen inträffat
+          </FormLabel>
           <Combobox
-            id={id}
+            id={`${id}__combobox`}
             className="w-full"
-            value={facilityInfo?.orgId ? String(facilityInfo.orgId) : ''}
-            onChange={handleSelectOrg}
+            size="lg"
+            value=""
+            autofilter={false}
+            aria-labelledby={searchLabelId}
+            aria-describedby={describedBy}
+            onChangeSearch={(e) => setPlaceSearchValue(e.target.value)}
+            onChange={(e: { target: { value: unknown } }) => handleSelectPlace(String(e.target.value))}
+            data-cy="facility-search"
           >
             <Combobox.Input
-              placeholder={isLoadingLeafNodes ? 'Laddar...' : 'Sök organisation...'}
+              id={id}
+              placeholder="Sök plats"
               className="w-full"
-              value={hasSelection ? facilityInfo.orgName || '' : undefined}
+              disabled={!isEditable}
+              required={required}
+              aria-labelledby={searchLabelId}
+              aria-describedby={describedBy}
+              aria-invalid={invalid}
+              onBlur={() => onBlur(id, formData)}
+              onFocus={() => onFocus(id, formData)}
             />
-            <Combobox.List>
-              {filteredLeafNodes.map((node) => (
-                <Combobox.Option key={node.orgId} value={String(node.orgId)}>
-                  {node.orgName}
-                </Combobox.Option>
-              ))}
+            <Combobox.List style={{ maxHeight: '32rem' }}>
+              {filteredSelectablePlaceNodes.map((node) => {
+                const presentation = getPlacePresentation(node);
+                const optionText = presentation.department
+                  ? `${presentation.place} — Avdelning: ${presentation.department}`
+                  : presentation.place;
+
+                return (
+                  <Combobox.Option
+                    key={placeKey(node)}
+                    value={placeKey(node)}
+                    style={{
+                      alignItems: 'flex-start',
+                      lineHeight: 1.4,
+                      overflowWrap: 'anywhere',
+                      paddingBlock: '0.75rem',
+                      whiteSpace: 'normal',
+                    }}
+                  >
+                    {optionText}
+                  </Combobox.Option>
+                );
+              })}
             </Combobox.List>
           </Combobox>
+          <span className="text-small text-text-secondary mt-4">
+            Sök på anläggning, avdelning eller någon överordnad organisationsnivå.
+          </span>
         </FormControl>
       )}
 
-      {hasSelection && (
-        <div className="border-1 rounded-12 bg-background-content w-full mt-16">
-          <div className="rounded-t-12 bg-vattjom-background-200 h-[4rem] flex items-center">
-            <strong className="px-[1rem]">Plats där händelsen inträffat</strong>
+      {selectedPlacePresentation && (
+        <div className="border-1 rounded-12 bg-background-content w-full mt-16" data-cy="facility-card">
+          <div className="rounded-t-12 bg-vattjom-background-200 px-16 py-12">
+            <strong>Plats där avvikelsen inträffat</strong>
           </div>
-          <div className="p-[1rem]">
-            <div className="flex justify-between items-start">
-              <div className="flex-1 min-w-0">
+          <div className="p-16">
+            <div className="flex flex-col gap-16">
+              <div className="min-w-0">
                 <p className="text-[1.6rem] font-semibold break-words" data-cy="facility-name">
-                  {placePresentation?.place}
+                  {selectedPlacePresentation.place}
                 </p>
-                {placePresentation?.department && (
+                {selectedPlacePresentation.department && (
                   <p className="text-small text-text-secondary break-words" data-cy="facility-department">
-                    <span className="font-semibold">Avdelning:</span> {placePresentation.department}
+                    <span className="font-semibold">Avdelning:</span> {selectedPlacePresentation.department}
                   </p>
                 )}
               </div>
 
-              <div className="flex gap-8 items-center">
-                {disabled || readonly || isConfirmed ? (
-                  <>
-                    <span className="flex items-center gap-4 text-gronsta-surface-primary">
-                      <Check size={16} />
-                      Bekräftat
+              {showSubPlaceChoice && subPlaceParentNode && selectedNode ? (
+                <FormControl disabled={!isEditable} required={mustChooseSubPlace} className="w-full">
+                  <FormLabel id={subPlaceLabelId} className="font-bold">
+                    Välj enhet inom {placeName(subPlaceParentNode)}
+                  </FormLabel>
+                  {subPlaceNodes.length <= MAX_RADIO_SUB_PLACES ? (
+                    <RadioButton.Group aria-labelledby={subPlaceLabelId} data-cy="facility-sub-place-options">
+                      {subPlaceNodes.map((node) => (
+                        <RadioButton
+                          key={placeKey(node)}
+                          name="facility-sub-place"
+                          value={placeKey(node)}
+                          checked={isSameLabel(node.label, selectedNode.label)}
+                          disabled={!isEditable}
+                          onChange={(e) => handleSelectPlace(e.target.value)}
+                        >
+                          {placeName(node)}
+                        </RadioButton>
+                      ))}
+                    </RadioButton.Group>
+                  ) : (
+                    <Combobox
+                      className="w-full"
+                      value={selectedSubPlaceKey}
+                      aria-labelledby={subPlaceLabelId}
+                      onChange={(e: { target: { value: unknown } }) => handleSelectPlace(String(e.target.value))}
+                      data-cy="facility-sub-place-options"
+                    >
+                      <Combobox.Input placeholder="Sök plats" className="w-full" />
+                      <Combobox.List style={{ maxHeight: '32rem' }}>
+                        {subPlaceNodes.map((node) => (
+                          <Combobox.Option
+                            key={placeKey(node)}
+                            value={placeKey(node)}
+                            style={{ overflowWrap: 'anywhere', whiteSpace: 'normal' }}
+                          >
+                            {placeName(node)}
+                          </Combobox.Option>
+                        ))}
+                      </Combobox.List>
+                    </Combobox>
+                  )}
+                  {mustChooseSubPlace && (
+                    <span className="text-small mt-4" data-cy="facility-sub-place-required">
+                      Du behöver välja en enhet för att platsen ska bli komplett.
                     </span>
-                    {!disabled && !readonly && (
-                      <Button type="button" variant="tertiary" size="sm" onClick={() => setIsConfirmed(false)}>
-                        Ändra
-                      </Button>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      type="button"
-                      variant="primary"
-                      size="sm"
-                      leftIcon={<Check size={16} />}
-                      onClick={() => setIsConfirmed(true)}
-                    >
-                      Bekräfta
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      leftIcon={<X size={16} />}
-                      onClick={handleRemove}
-                    >
-                      Ta bort
-                    </Button>
-                  </>
-                )}
-              </div>
+                  )}
+                </FormControl>
+              ) : null}
+
+              {isEditable && (
+                <div className="flex flex-wrap border-t-1 border-divider pt-12">
+                  <Button
+                    type="button"
+                    variant="tertiary"
+                    color="vattjom"
+                    size="sm"
+                    leftIcon={<Pen size={16} aria-hidden="true" />}
+                    onClick={handleChangePlace}
+                    data-cy="facility-change-button"
+                  >
+                    Ändra plats
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
