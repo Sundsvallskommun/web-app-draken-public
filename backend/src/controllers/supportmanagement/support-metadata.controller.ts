@@ -23,13 +23,6 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
 
-// Concrete, decorated classes mirroring the generated MetadataResponse tree. They exist so
-// `class-validator-jsonschema` emits component schemas into the backend swagger.json, which is
-// what the frontend contract generator (`generate:contracts`) reads. Without them the metadata
-// response (incl. Phase) is absent from the spec and cannot be generated on the frontend.
-// Pattern follows address.controller: a class `implements` its generated interface (aliased with
-// an `I` prefix to avoid the name collision) + @ValidateNested/@Type for nesting.
-
 class Type implements IType {
   @IsString()
   name!: string;

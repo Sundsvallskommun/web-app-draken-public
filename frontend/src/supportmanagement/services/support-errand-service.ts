@@ -865,9 +865,6 @@ export const updateSupportErrand: (
     });
 };
 
-// Persists the errand's active phase (a metadata Phase.id) via a targeted PATCH. Used by the
-// phase handler's "Nästa fas" button; kept separate from updateSupportErrand which also handles
-// notes/attachments/the full form model.
 export const updateSupportErrandPhase: (municipalityId: string, id: string, activePhaseId: string) => Promise<void> = (
   municipalityId,
   id,
