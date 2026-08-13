@@ -6,7 +6,6 @@ import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThe
 import { useCasedataStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
-import { SupportUiPhaseWrapper } from '@supportmanagement/components/support-errand/ui-phase/ui-phase-wrapper';
 import { ExternalLink, Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
@@ -92,9 +91,13 @@ export default function Layout({ title, children }: { title: string; children: R
     </div>
   );
 
-  const phaseHandler = appConfig.isSupportManagement ? <SupportUiPhaseWrapper /> : <UiPhaseWrapper />;
+  // CaseData renders the phase handler in the header; SupportManagement renders it in the errand
+  // body (above the errand information) — see support-errand.component.tsx.
+  const phaseHandler = <UiPhaseWrapper />;
   const showPhaseHandler =
-    appConfig.features.useUiPhases && (pathName === '/registrera' || pathName.includes('arende'));
+    appConfig.isCaseData &&
+    appConfig.features.useUiPhases &&
+    (pathName === '/registrera' || pathName.includes('arende'));
 
   return (
     <>
