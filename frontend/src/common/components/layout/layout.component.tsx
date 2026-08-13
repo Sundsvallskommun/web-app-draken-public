@@ -6,6 +6,7 @@ import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThe
 import { useCasedataStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
+import { SupportUiPhaseWrapper } from '@supportmanagement/components/support-errand/ui-phase/ui-phase-wrapper';
 import { ExternalLink, Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
@@ -91,6 +92,10 @@ export default function Layout({ title, children }: { title: string; children: R
     </div>
   );
 
+  const phaseHandler = appConfig.isSupportManagement ? <SupportUiPhaseWrapper /> : <UiPhaseWrapper />;
+  const showPhaseHandler =
+    appConfig.features.useUiPhases && (pathName === '/registrera' || pathName.includes('arende'));
+
   return (
     <>
       <div className="relative z-[15] bg-background-content">
@@ -150,19 +155,9 @@ export default function Layout({ title, children }: { title: string; children: R
               </PopupMenu.Panel>
             </PopupMenu>
           }
-          bottomContent={
-            appConfig.features.useUiPhases &&
-            !isMinLargeDevice &&
-            (pathName === '/registrera' || pathName.includes('arende')) ? (
-              <UiPhaseWrapper />
-            ) : null
-          }
+          bottomContent={showPhaseHandler && !isMinLargeDevice ? phaseHandler : null}
         >
-          {appConfig.features.useUiPhases &&
-          isMinLargeDevice &&
-          (pathName === '/registrera' || pathName.includes('arende')) ? (
-            <UiPhaseWrapper />
-          ) : null}
+          {showPhaseHandler && isMinLargeDevice ? phaseHandler : null}
         </PageHeader>
       </div>
 
