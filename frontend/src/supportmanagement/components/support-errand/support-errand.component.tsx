@@ -23,6 +23,7 @@ import { MessagePortal } from './sidebar/message-portal.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { supportErrandFormSchema } from './support-errand-form-schema';
 import { SupportTabsWrapper } from './support-tabs-wrapper';
+import { SupportUiPhaseWrapper } from './ui-phase/ui-phase-wrapper';
 
 export const SupportErrandComponent: FC = () => {
   const params = useParams<{ errandNumber?: string }>();
@@ -148,6 +149,13 @@ export const SupportErrandComponent: FC = () => {
               }}
             >
               <div className="flex-grow w-full max-w-screen-lg">
+                {appConfig.features.useUiPhases && (
+                  <section className="bg-transparent pt-24">
+                    <div className="container m-auto pl-0 pr-24 md:pr-40">
+                      <SupportUiPhaseWrapper />
+                    </div>
+                  </section>
+                )}
                 <section className="bg-transparent pt-24 pb-4">
                   <div className="container m-auto pl-0 pr-24 md:pr-40">
                     <div className="w-full flex flex-wrap flex-col justify-between gap-24">
