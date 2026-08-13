@@ -12,7 +12,8 @@
 // assignment below. Everything that touches config is therefore imported dynamically.
 
 import session from 'express-session';
-import request from 'supertest';
+
+import { startServer, TestServer } from './helpers/server';
 
 vi.mock('@/services/api.service', () => {
   const stub = vi.fn(async () => ({ data: {} }));
@@ -28,7 +29,7 @@ vi.mock('@/services/api.service', () => {
 });
 
 describe('default-deny auth (swagger)', () => {
-  let server: import('express').Application;
+  let server: TestServer;
   const prefix = process.env.BASE_URL_PREFIX ?? '';
 
   beforeAll(async () => {
@@ -37,11 +38,13 @@ describe('default-deny auth (swagger)', () => {
     const { default: App } = await import('@/app');
     const { CONTROLLERS } = await import('@/controllers');
 
-    server = new App(CONTROLLERS, new session.MemoryStore()).getServer();
+    server = await startServer(new App(CONTROLLERS, new session.MemoryStore()).getServer());
   });
 
+  afterAll(() => server.close());
+
   it('mounts swagger at all (guards the rest of this suite from passing vacuously)', async () => {
-    const response = await request(server).get(`${prefix}/api-docs/`);
+    const response = await server.request('get', `${prefix}/api-docs/`);
 
     expect(response.status).toBe(200);
   });
@@ -53,14 +56,14 @@ describe('default-deny auth (swagger)', () => {
     ['a static bundle', '/api-docs/swagger-ui-bundle.js'],
     ['the raw spec', '/swagger.json'],
   ])('serves %s without a session', async (_label, path) => {
-    const response = await request(server).get(`${prefix}${path}`);
+    const response = await server.request('get', `${prefix}${path}`);
 
     expect(response.status).not.toBe(401);
   });
 
   it('does not open sibling paths that merely share a prefix', async () => {
     // '/api-docs' is prefix-matched, so the match must stop at a segment boundary.
-    const response = await request(server).get(`${prefix}/api-docsomething`);
+    const response = await server.request('get', `${prefix}/api-docsomething`);
 
     expect(response.status).toBe(401);
   });

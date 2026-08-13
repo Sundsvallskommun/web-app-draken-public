@@ -9,12 +9,12 @@
 // intent; this one covers behaviour.
 
 import session from 'express-session';
-import request from 'supertest';
 
 import { BASE_URL_PREFIX } from '@/config';
 import { PUBLIC_PATHS } from '@/config/public-paths';
 
 import { collectRegisteredRoutes, toConcretePath } from './helpers/routes';
+import { startServer, TestServer } from './helpers/server';
 
 // Controllers construct an ApiService at module load and handlers call out over the network.
 // No authenticated route should reach its handler, but stub the transport so a regression
@@ -33,23 +33,22 @@ vi.mock('@/services/api.service', () => {
 });
 
 describe('default-deny auth (runtime)', () => {
-  let server: import('express').Application;
+  let server: TestServer;
 
   beforeAll(async () => {
     const { default: App } = await import('@/app');
     const { CONTROLLERS } = await import('@/controllers');
 
-    server = new App(CONTROLLERS, new session.MemoryStore()).getServer();
+    server = await startServer(new App(CONTROLLERS, new session.MemoryStore()).getServer());
   });
+
+  afterAll(() => server.close());
 
   const routes = collectRegisteredRoutes();
   const protectedRoutes = routes.filter(route => !PUBLIC_PATHS.includes(route.path));
   const publicRoutes = routes.filter(route => PUBLIC_PATHS.includes(route.path));
 
-  const send = (httpMethod: string, path: string) => {
-    const url = `${BASE_URL_PREFIX}${toConcretePath(path)}`;
-    return (request(server) as unknown as Record<string, (u: string) => request.Test>)[httpMethod](url);
-  };
+  const send = (httpMethod: string, path: string) => server.request(httpMethod, `${BASE_URL_PREFIX}${toConcretePath(path)}`);
 
   it('enumerates the routes it is about to probe', () => {
     expect(protectedRoutes.length).toBeGreaterThan(0);
@@ -80,7 +79,7 @@ describe('default-deny auth (runtime)', () => {
   });
 
   it('denies an unknown path under the prefix rather than falling through', async () => {
-    const response = await request(server).get(`${BASE_URL_PREFIX}/definitely-not-a-route`);
+    const response = await server.request('get', `${BASE_URL_PREFIX}/definitely-not-a-route`);
 
     expect(response.status).toBe(401);
   });
