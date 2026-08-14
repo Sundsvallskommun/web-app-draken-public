@@ -16,6 +16,7 @@ import { mockConversationMessages, mockConversations } from '../lop/fixtures/moc
 import { mockRelations } from '../lop/fixtures/mockRelations';
 import { goToMessageTab, sendEmailWithAttachment, sendSmsMessage } from '../utils/messages-cy';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
+import { mockResolvedRelations } from '../case-data/fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('Message tab', () => {
@@ -31,6 +32,9 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
       cy.intercept('GET', '**/supportnotes/2281/*', mockSupportNotes).as('getNotes');
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments);
+      cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments/*', mockSupportAttachments[0]).as(
+        'getAttachment'
+      );
       cy.intercept('GET', '**/supportmessage/2281/errands/*/communication', mockSupportErrandCommunication).as(
         'getMessages'
       );
@@ -41,6 +45,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       ).as('sendMessage');
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
       cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/resolvedrelations/**/**', mockResolvedRelations).as('getResolvedRelations');
       cy.intercept('GET', '**/party/*/statuses', mockStakeholderStatus).as('getStakeholderStatuses');
       cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
         'getConversations'
@@ -48,6 +53,8 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/errands/**/communication/conversations/*/messages', mockConversationMessages).as(
         'getConversationMessages'
       );
+      cy.intercept('GET', '**/party-services*', { data: [] }).as('getPartyServices');
+      cy.intercept('GET', '**/templates?*', { data: [], message: 'success' }).as('getTemplates');
       goToMessageTab();
     });
 

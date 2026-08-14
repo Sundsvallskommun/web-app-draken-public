@@ -1,7 +1,9 @@
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
-import { expect,test } from '../fixtures/base.fixture';
+import { mockResolvedRelations } from '../case-data/fixtures/mockRelations';
+import { expect, test } from '../fixtures/base.fixture';
 import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
+//TODO: Update mockdata
 //TODO: Update mockdata
 import { mockRelations } from '../lop/fixtures/mockRelations';
 import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
@@ -23,20 +25,17 @@ import { mockSupportHistory } from './fixtures/mockSupportHistory';
 
 test.describe('errand page', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
-    await page.context().addCookies([
-      { name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' },
-    ]);
+    await page.context().addCookies([{ name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' }]);
     await mockRoute('**/administrators', mockAdmins, { method: 'GET' });
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
     await mockRoute('**/supportnamespaceconfigs/**', [], { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
-    await mockRoute(
-      `**/supportmessage/2281/errands/${mockSupportErrand.id}/communication`,
-      mockSupportMessages,
-      { method: 'GET' }
-    );
+    await mockRoute('**/supportattachments/2281/errands/*/attachments/*', mockSupportAttachments[0], { method: 'GET' });
+    await mockRoute(`**/supportmessage/2281/errands/${mockSupportErrand.id}/communication`, mockSupportMessages, {
+      method: 'GET',
+    });
     await mockRoute(`**/supportnotes/2281/${mockSupportErrand.id}`, mockComments, { method: 'GET' });
     await mockRoute(`**/supportnotes/2281/${mockSupportErrand.id}`, mockComments, { method: 'POST' });
     await mockRoute(`**/supporthistory/2281/${mockSupportErrand.id}`, mockSupportHistory, { method: 'GET' });
@@ -49,6 +48,7 @@ test.describe('errand page', () => {
     });
     await mockRoute('**/sourcerelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/targetrelations/**/**', mockRelations, { method: 'GET' });
+    await mockRoute('**/resolvedrelations/**/**', mockResolvedRelations, { method: 'GET' });
     await mockRoute('**/namespace/errands/**/communication/conversations', mockConversations, { method: 'GET' });
     await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, {
       method: 'GET',
@@ -57,13 +57,17 @@ test.describe('errand page', () => {
     await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSupportErrand, {
       method: 'GET',
     });
+    await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}`, mockSupportErrand, {
+      method: 'GET',
+    });
     await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}/admin`, mockSetAdminResponse, { method: 'PATCH' });
     await mockRoute(`**/supportmessage/2281/${mockSupportErrand.id}`, mockForwardSupportMessage, { method: 'POST' });
+    await mockRoute('**/party-services*', { data: [] }, { method: 'GET' });
   });
 
   test('shows the correct base errand and sidebar main buttons', async ({ page, dismissCookieConsent }) => {
     await page.goto('arende/KC-00000001');
-    await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
     await dismissCookieConsent();
 
     await expect(page.locator('[data-cy="manage-sidebar"]')).toBeVisible();
@@ -110,11 +114,12 @@ test.describe('errand page', () => {
     await expect(page.locator('[data-cy="admin-input"]')).toHaveValue(
       `${mockSupportAdminsResponse.data[1].displayName}`
     );
-    await page.locator('[data-cy="save-button"]').click();
-
-    const response = await page.waitForResponse(
-      (resp) => resp.url().includes('/admin') && resp.request().method() === 'PATCH'
-    );
+    // Set up the response listener before the click — waitForResponse only catches responses that
+    // arrive after it starts listening, so clicking first races the (mocked, near-instant) PATCH.
+    const [response] = await Promise.all([
+      page.waitForResponse((resp) => resp.url().includes('/admin') && resp.request().method() === 'PATCH'),
+      page.locator('[data-cy="save-button"]').click(),
+    ]);
     const request = response.request();
     const requestBody = request.postDataJSON();
     expect(requestBody).toEqual({
@@ -410,9 +415,7 @@ test.describe('errand page', () => {
     await dismissCookieConsent();
 
     await page.locator(`[aria-label="${mockSidebarButtons[2].label}"]`).click();
-    await expect(page.locator('[data-cy="history-log"] div.sk-avatar')).toHaveCount(
-      mockSupportHistory.totalElements
-    );
+    await expect(page.locator('[data-cy="history-log"] div.sk-avatar')).toHaveCount(mockSupportHistory.totalElements);
     await page.locator('[data-cy="history-log"] div button').first().click();
     await page.locator('[data-cy="history-table-details-close-button"]').filter({ hasText: 'Stäng' }).click();
   });

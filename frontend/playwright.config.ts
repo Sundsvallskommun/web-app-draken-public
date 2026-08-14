@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const baseURL = `http://localhost:${process.env.PORT || '3000'}${process.env.NEXT_PUBLIC_BASEPATH || ''}/`;
+const baseURL = `http://${process.env.DOMAIN_NAME || 'localhost'}:${process.env.PORT || '3000'}${
+  process.env.NEXT_PUBLIC_BASEPATH || ''
+}/`;
 
 export default defineConfig({
   testDir: './e2e',

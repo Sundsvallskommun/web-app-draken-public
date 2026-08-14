@@ -27,6 +27,7 @@ import { notificationRenewal_UppgiftFieldTemplate } from '@casedata/components/e
 import { notificationRiak_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-riak';
 import { reassessmentApplication_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-reassessment-application';
 import { parkingPermitAppeal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-appeal';
+import { documentationErrand_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-documentation-errand';
 import { lostParkingPermit_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-lost-parking-permit';
 import { parkingPermit_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-parkingpermit';
 import { parkingPermitRenewal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-renewal';
@@ -189,6 +190,7 @@ const template: ExtraParametersObject = {
   LOST_PARKING_PERMIT: lostParkingPermit_UppgiftFieldTemplate,
   PARKING_PERMIT_RENEWAL: parkingPermitRenewal_UppgiftFieldTemplate,
   APPEAL: parkingPermitAppeal_UppgiftFieldTemplate,
+  DOCUMENTATION_ERRAND: documentationErrand_UppgiftFieldTemplate,
 
   //Legacy: needed to view templates regarding extraparameters for old casetypes that has been expired.
   MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE:

@@ -451,6 +451,7 @@ export interface CJsonParameter {
   key: string;
   value?: any;
   schemaId: string;
+  version?: number;
 }
 
 export interface CSupportStakeholder {
@@ -540,6 +541,7 @@ export interface SupportErrandDto {
   created?: string;
   modified?: string;
   touched?: string;
+  version?: number;
   actions?: CErrandAction[];
   activePhaseId?: string;
   phases?: CErrandPhase[];

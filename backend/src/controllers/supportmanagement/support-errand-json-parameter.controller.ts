@@ -61,13 +61,9 @@ const requireInvestigationKey = (key: string): InvestigationJsonParameterKey => 
 
 @Controller()
 export class SupportErrandJsonParameterController {
-  private readonly apiService: ApiService;
+  private apiService = new ApiService();
   private readonly namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private readonly service = apiServiceName('supportmanagement');
-
-  constructor(apiService = new ApiService()) {
-    this.apiService = apiService;
-  }
 
   @Get('/supporterrands/:municipalityId/:errandId/json-parameters/:key')
   @OpenAPI({ summary: 'Read one JSON parameter from a support errand' })
