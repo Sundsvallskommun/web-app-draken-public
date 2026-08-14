@@ -3,12 +3,14 @@ export enum PTCaseLabel {
   PARKING_PERMIT_RENEWAL = 'Förnyat parkeringstillstånd',
   LOST_PARKING_PERMIT = 'Borttappat parkeringstillstånd',
   APPEAL = 'Överklagan',
+  DOCUMENTATION_ERRAND = 'Dokumentationsärende',
 }
 export const PTCaseShortLabel: Partial<Record<keyof typeof PTCaseLabel, string>> = {
   PARKING_PERMIT: 'Nytt p-tillstånd',
   PARKING_PERMIT_RENEWAL: 'Förnyelse p-tillstånd',
   LOST_PARKING_PERMIT: 'Borttappat p-tillstånd',
   APPEAL: 'Överklagan p-tillstånd',
+  DOCUMENTATION_ERRAND: 'Dokumentationsärende',
 };
 
 export enum FTCaseLabel {
