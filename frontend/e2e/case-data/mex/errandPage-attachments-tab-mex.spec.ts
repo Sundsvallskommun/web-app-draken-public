@@ -1,14 +1,15 @@
-import { test, expect } from '../../fixtures/base.fixture';
+import { expect,test } from '../../fixtures/base.fixture';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockJpegBase64, mockPdfBase64 } from '../fixtures/mockAttachmentContent';
+import { mockCropJpegBase64, mockJpegBase64, mockPdfBase64 } from '../fixtures/mockAttachmentContent';
 import { mockAttachments } from '../fixtures/mockAttachments';
-import { mockLeaseAgreement, mockContractAttachment } from '../fixtures/mockContract';
+import { mockContractAttachment,mockLeaseAgreement } from '../fixtures/mockContract';
 import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 import { mockHistory } from '../fixtures/mockHistory';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockPersonId } from '../fixtures/mockPersonId';
+import { mockRelations, mockResolvedRelations } from '../fixtures/mockRelations';
 
 const [imageAttachment, pdfAttachment] = mockAttachments.data;
 
@@ -17,10 +18,9 @@ const [imageAttachment, pdfAttachment] = mockAttachments.data;
 const decisionAttachmentCount = mockMexErrand_base.data.decisions.flatMap((d) => d.attachments ?? []).length;
 const totalAttachmentCount = mockAttachments.data.length + decisionAttachmentCount;
 
-const attachmentContent: Record<number, string> = {
-  [imageAttachment.id]: mockJpegBase64,
-  [pdfAttachment.id]: mockPdfBase64,
-};
+// Reassigned per test, so the cropping tests can serve a larger image without affecting the
+// preview and download tests that assert the 1x1 fixture byte for byte.
+let attachmentContent: Record<number, string>;
 
 const attachmentIdFromUrl = (url: string) => Number(new URL(url).pathname.split('/').pop());
 
@@ -31,15 +31,41 @@ test.describe('Errand page attachments tab', () => {
   // separately from the rest of the body, so neither the file bytes nor Content-Length are
   // visible to Playwright — only the part headers and the plain fields can be asserted here.
   let uploadedRequests: { body: string; contentType: string }[];
+  // Ids passed to the delete endpoint, in request order.
+  let deletedIds: number[];
+  // Writes against the attachment collection in the order they happened. Cropping replaces an
+  // attachment by uploading the new version before deleting the old one, and that order is the
+  // whole point — a failed upload must never leave the errand without the original.
+  let writeSequence: ('upload' | 'delete')[];
+  // Let a single test make the upload or the delete fail without redefining the route.
+  let uploadStatus: number;
+  let deleteStatus: number;
 
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
     contentRequests = [];
     uploadedRequests = [];
+    deletedIds = [];
+    writeSequence = [];
+    uploadStatus = 201;
+    deleteStatus = 200;
+    attachmentContent = {
+      [imageAttachment.id]: mockJpegBase64,
+      [pdfAttachment.id]: mockPdfBase64,
+    };
 
     await mockRoute('**/messages/MEX-2024-000280*', mockMessages, { method: 'GET' });
     await mockRoute('**/users/admins', mockAdmins, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
+    // Left unmocked these reach a real backend. A 401 from any call sends handleError to the
+    // login page, which fails every test in this file for a reason unrelated to attachments.
+    await mockRoute('**/casedatanotifications/*', [], { method: 'GET' });
+    await mockRoute('**/relations/referredfrom/*', mockRelations, { method: 'GET' });
+    await mockRoute('**/resolvedrelations/**/**', mockResolvedRelations, { method: 'GET' });
+    await mockRoute('**/communication/conversations', [], { method: 'GET' });
+    await mockRoute('**/templates?**', [], { method: 'GET' });
+    await mockRoute('**/singleEstateByPropertyDesignation/*1:1', mockEstateInfo11, { method: 'GET' });
+    await mockRoute('**/singleEstateByPropertyDesignation/*1:2', mockEstateInfo12, { method: 'GET' });
     await mockRoute('**/personid', mockPersonId, { method: 'POST' });
     await mockRoute('**/errands/*', { data: 'ok', message: 'ok' }, { method: 'PATCH' }); // @patchErrand
     await mockRoute('**/errands/*/extraparameters', { data: 'ok', message: 'ok' }, { method: 'PATCH' });
@@ -107,7 +133,17 @@ test.describe('Errand page attachments tab', () => {
         await route.fulfill({ status: 200, contentType: 'text/plain', body: attachmentContent[id] ?? '' });
         return;
       }
-      if (method === 'PATCH' || method === 'DELETE') {
+      if (method === 'DELETE') {
+        deletedIds.push(id);
+        writeSequence.push('delete');
+        await route.fulfill({
+          status: deleteStatus,
+          contentType: 'application/json',
+          body: JSON.stringify(deleteStatus >= 400 ? { message: 'failed' } : { data: 'ok', message: 'ok' }),
+        });
+        return;
+      }
+      if (method === 'PATCH') {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -127,8 +163,17 @@ test.describe('Errand page attachments tab', () => {
         body: route.request().postDataBuffer()?.toString('latin1') ?? '',
         contentType: route.request().headers()['content-type'] ?? '',
       });
+      writeSequence.push('upload');
+      if (uploadStatus >= 400) {
+        await route.fulfill({
+          status: uploadStatus,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'Attachment could not be created' }),
+        });
+        return;
+      }
       await route.fulfill({
-        status: 201,
+        status: uploadStatus,
         contentType: 'application/json',
         body: JSON.stringify({ data: mockMexErrand_base.data, message: 'Attachment created' }),
       });
@@ -225,5 +270,100 @@ test.describe('Errand page attachments tab', () => {
     expect(upload.body).toContain('name="files"; filename="testpdf.pdf"');
     expect(upload.body).toContain('name="mimeType"');
     expect(upload.body).toContain('application/pdf');
+  });
+
+  test.describe('cropping', () => {
+    test.beforeEach(() => {
+      // Serve the 400x300 fixture instead: the modal refetches the content when the attachment
+      // is opened, so this is what the cropper receives.
+      attachmentContent[imageAttachment.id] = mockCropJpegBase64;
+    });
+
+    // Opens the image preview and switches it into crop mode.
+    const startCropping = async (page: import('@playwright/test').Page) => {
+      const imageRow = page
+        .locator('[data-cy="casedataAttachments-list"] li.sk-form-file-upload-list-item')
+        .filter({ hasText: imageAttachment.name });
+      await imageRow.getByRole('button', { name: 'Öppna' }).click();
+      await page.locator('[data-cy="crop-attachment-button"]').click();
+    };
+
+    // The selection is preseeded to the whole image on load, so a crop can be saved without
+    // dragging first.
+    const saveCrop = async (page: import('@playwright/test').Page) => {
+      await page.locator('[data-cy="crop-save-button"]').click();
+      await page.locator('[data-cy="crop-confirm-save-button"]').click();
+    };
+
+    // The snackbar renders its message twice, once visually and once for screen readers, so the
+    // assertion has to name the visible element.
+    const toast = (page: import('@playwright/test').Page, message: string) =>
+      page.locator('.sk-snackbar-text').filter({ hasText: message });
+
+    test('offers cropping for image attachments', async ({ page }) => {
+      const imageRow = page
+        .locator('[data-cy="casedataAttachments-list"] li.sk-form-file-upload-list-item')
+        .filter({ hasText: imageAttachment.name });
+      await imageRow.getByRole('button', { name: 'Öppna' }).click();
+
+      await expect(page.locator('[data-cy="crop-attachment-button"]')).toBeVisible();
+      await page.locator('[data-cy="crop-attachment-button"]').click();
+
+      // Crop mode replaces the preview with the cropper and its rotation control.
+      await expect(page.locator('[data-cy="crop-rotate-input"]')).toBeVisible();
+      await expect(page.locator('.ReactCrop')).toBeVisible();
+      await expect(page.getByText(`Beskär ${imageAttachment.name}`)).toBeVisible();
+    });
+
+    test('uploads the cropped version before deleting the original', async ({ page }) => {
+      await startCropping(page);
+      await saveCrop(page);
+
+      await expect(toast(page, 'Bilagan beskars och sparades')).toBeVisible();
+
+      // The ordering is the safety property: the replacement exists on the server before the
+      // original is removed, so a failed upload can never lose the file.
+      expect(writeSequence).toEqual(['upload', 'delete']);
+      expect(deletedIds).toEqual([imageAttachment.id]);
+
+      expect(uploadedRequests).toHaveLength(1);
+      const [upload] = uploadedRequests;
+      expect(upload.contentType).toContain('multipart/form-data');
+      // Name, extension and mime type must agree, otherwise the stored bytes and the file name
+      // describe different formats.
+      expect(upload.body).toContain(`name="files"; filename="${imageAttachment.name}"`);
+      expect(upload.body).toContain(imageAttachment.mimeType);
+      expect(upload.body).toContain(imageAttachment.extension);
+      // The category is carried over from the attachment being replaced.
+      expect(upload.body).toContain(imageAttachment.category);
+    });
+
+    test('keeps the original when the cropped upload fails', async ({ page }) => {
+      uploadStatus = 500;
+
+      await startCropping(page);
+      await saveCrop(page);
+
+      await expect(toast(page, 'Något gick fel när den beskurna bilagan sparades')).toBeVisible();
+
+      // Nothing may be deleted when the replacement never made it to the server.
+      expect(deletedIds).toEqual([]);
+      expect(writeSequence).not.toContain('delete');
+      // sendAttachments retries three times before giving up.
+      expect(uploadedRequests).toHaveLength(4);
+    });
+
+    test('warns when the original could not be removed', async ({ page }) => {
+      deleteStatus = 500;
+
+      await startCropping(page);
+      await saveCrop(page);
+
+      // The errand is left with both copies, which the handler has to resolve manually.
+      await expect(
+        toast(page, 'Den beskurna bilagan sparades, men originalet kunde inte tas bort. Ta bort det manuellt.')
+      ).toBeVisible();
+      expect(writeSequence).toEqual(['upload', 'delete']);
+    });
   });
 });

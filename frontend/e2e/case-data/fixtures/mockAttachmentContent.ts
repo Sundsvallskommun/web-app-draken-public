@@ -11,5 +11,12 @@ import { readFileSync } from 'fs';
  */
 export const mockJpegBase64 = readFileSync('e2e/case-data/files/testimage.jpg').toString('base64');
 
+/**
+ * A 400x300 JPEG for the cropping tests. testimage.jpg is 1x1, which leaves nothing to select:
+ * the crop rectangle collapses and the export fails before it reaches the canvas. Kept separate
+ * so the preview and download tests can keep asserting the 1x1 file byte for byte.
+ */
+export const mockCropJpegBase64 = readFileSync('e2e/case-data/files/testimage-crop.jpg').toString('base64');
+
 /** The same PDF that the upload tests send, so a download can be verified byte for byte. */
 export const mockPdfBase64 = readFileSync('e2e/case-data/files/testpdf.pdf').toString('base64');

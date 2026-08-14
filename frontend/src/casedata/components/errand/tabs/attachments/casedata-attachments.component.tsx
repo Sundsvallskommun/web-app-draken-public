@@ -13,10 +13,14 @@ import {
   editDecisionAttachment,
   fetchAttachment,
   fetchDecisionAttachment,
+  MAX_FILE_SIZE_MB,
   onlyOneAllowed,
+  replaceAttachmentFile,
 } from '@casedata/services/casedata-attachment-service';
 import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
+import { isCroppableImage } from '@common/components/image-cropper/crop-geometry';
+import { CroppedImage } from '@common/components/image-cropper/crop-image';
 import { getAttachmentChannelLabel, isKnownAttachmentChannel } from '@common/interfaces/attachment-channel';
 import { isMEX } from '@common/services/application-service';
 import { base64ToFile, mapAttachmentToUploadFile } from '@common/services/attachment-service';
@@ -49,6 +53,7 @@ export const CasedataAttachments: FC = () => {
   const [attachmentTypeExists, setAttachmentTypeExists] = useState<boolean>(false);
   const [modalFetching, setModalFetching] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isCropping, setIsCropping] = useState<boolean>(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [originalFile, setOriginalFile] = useState<UploadFile | null>(null);
 
@@ -76,6 +81,7 @@ export const CasedataAttachments: FC = () => {
           status: 'error',
         });
       });
+    setIsCropping(false);
     setIsOpen(false);
     setTimeout(() => setModalAttachment(undefined), 250);
   };
@@ -309,6 +315,76 @@ export const CasedataAttachments: FC = () => {
     }
   };
 
+  const cropHeader = modalAttachment?.errandAttachmentHeader;
+  const canCrop =
+    !!errand &&
+    !isErrandLocked(errand) &&
+    !!cropHeader &&
+    !cropHeader.decisionId &&
+    isCroppableImage(cropHeader.mimeType);
+
+  const handleCropSave = async (result: CroppedImage) => {
+    if (!cropHeader?.id || !errand) {
+      return;
+    }
+    const replacedId = cropHeader.id;
+
+    try {
+      const saved = await saveErrand();
+      if (!saved) return;
+
+      const baseName = cropHeader.name.replace(/\.[^/.]+$/, '');
+      const file = new File([result.blob], `${baseName}.${result.extension}`, { type: result.mimeType });
+
+      const { originalRemoved } = await replaceAttachmentFile(
+        municipalityId,
+        errand.id,
+        errand.errandNumber,
+        cropHeader,
+        file
+      );
+
+      // The replaced attachment is gone, so its cached content is dropped from both the content
+      // map and the requested set. Leaving it in the ref would pin the removed id forever.
+      requestedContentIds.current.delete(replacedId);
+      setAttachmentContents((prev) => {
+        const next = { ...prev };
+        delete next[replacedId];
+        return next;
+      });
+
+      if (originalRemoved) {
+        toastMessage(getToastOptions({ message: 'Bilagan beskars och sparades', status: 'success' }));
+      } else {
+        // The handler has to act on this one, so it stays until dismissed rather than
+        // auto-hiding like the success toast.
+        toastMessage({
+          position: 'bottom',
+          closeable: true,
+          message: 'Den beskurna bilagan sparades, men originalet kunde inte tas bort. Ta bort det manuellt.',
+          status: 'warning',
+        });
+      }
+
+      closeModal();
+    } catch (e) {
+      const message =
+        e instanceof Error && e.message === 'MAX_SIZE'
+          ? `Den beskurna bilden överskrider maximal storlek (${MAX_FILE_SIZE_MB} Mb)`
+          : e instanceof Error && e.message === 'CANVAS_EMPTY'
+          ? 'Bilden kunde inte beskäras'
+          : 'Något gick fel när den beskurna bilagan sparades';
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message,
+        status: 'error',
+      });
+      // Rethrown so the cropper can clear its own saving state and stay open for a retry.
+      throw e;
+    }
+  };
+
   return (
     <FormProvider {...methods}>
       <div className="w-full py-24 px-32">
@@ -482,7 +558,11 @@ export const CasedataAttachments: FC = () => {
         isOpen={isOpen}
         modalFetching={modalFetching}
         modalAttachment={modalAttachment}
+        isCropping={isCropping}
+        canCrop={canCrop}
         onClose={closeModal}
+        onToggleCrop={() => setIsCropping((cropping) => !cropping)}
+        onCropSave={handleCropSave}
       />
     </FormProvider>
   );
