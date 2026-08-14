@@ -1,5 +1,5 @@
 import { Type as TypeTransformer } from 'class-transformer';
-import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import FormData from 'form-data';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
@@ -111,6 +111,10 @@ export class CParameter implements Parameter {
   @IsArray()
   @IsOptional()
   values!: string[];
+  // Optimistic locking version, set by SupportManagement and sent back untouched on update
+  @IsNumber()
+  @IsOptional()
+  version?: number;
 }
 
 export class CContactChannel implements ContactChannel {
@@ -129,6 +133,10 @@ export class CJsonParameter {
   value: any;
   @IsString()
   schemaId!: string;
+  // Optimistic locking version, set by SupportManagement and sent back untouched on update
+  @IsNumber()
+  @IsOptional()
+  version?: number;
 }
 
 export class CSupportStakeholder implements SupportStakeholder {
@@ -346,6 +354,10 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @IsOptional()
   @IsString()
   touched?: string;
+  // Optimistic locking version, set by SupportManagement and sent back untouched on update
+  @IsNumber()
+  @IsOptional()
+  version?: number;
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
