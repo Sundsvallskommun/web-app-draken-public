@@ -62,9 +62,11 @@
     "lint:fix": "npm run lint -- --fix",
     "lint:strict": "eslint src/ --max-warnings=0 --cache --cache-location node_modules/.cache/eslint/",
     "format:check": "prettier --check \"src/**/*.ts\"",
-    "test:api-config": "node --require ts-node/register/files --test src/config/api-config.test.ts",
-    "test:support-investigation": "dotenv -e .env.iaf.development.local -- node --require ts-node/register/files --require tsconfig-paths/register --test src/controllers/supportmanagement/support-errand-json-parameter.controller.test.ts src/controllers/supportmanagement/support-errand.controller.test.ts src/services/api.service.test.ts",
     "type-check": "tsc --pretty --noEmit",
+    "type-check:test": "tsc -p src/tests/tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "knip": "knip",
     "knip:production": "knip --production",
     "deploy:prod": "npm run build && pm2 start ecosystem.config.js --only prod",
@@ -138,6 +140,9 @@
     "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^6.0.2",
-    "typescript-eslint": "^8.57.2"
+    "typescript-eslint": "^8.57.2",
+    "unplugin-swc": "^1.5.7",
+    "vitest": "^4.1.9",
+    "@vitest/coverage-v8": "^4.1.9"
   }
 }

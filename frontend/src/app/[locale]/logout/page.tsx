@@ -1,11 +1,8 @@
 'use client';
 
 import { appURL } from '@common/utils/app-url';
-import { useRouter } from 'next/navigation';
 import { FC, useEffect } from 'react';
 const Logout: FC = () => {
-  const router = useRouter();
-
   useEffect(() => {
     localStorage.clear();
     sessionStorage.clear();
@@ -14,8 +11,7 @@ const Logout: FC = () => {
       successRedirect: `${appURL()}/login?loggedout`,
     });
 
-    router.push(`${process.env.NEXT_PUBLIC_API_URL}/saml/logout?${query.toString()}`);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    window.location.assign(`${process.env.NEXT_PUBLIC_API_URL}/saml/logout?${query.toString()}`);
   }, []);
 
   return <></>;
