@@ -92,6 +92,14 @@ export default function Layout({ title, children }: { title: string; children: R
     </div>
   );
 
+  // CaseData renders the phase handler in the header; SupportManagement renders it in the errand
+  // body (above the errand information) — see support-errand.component.tsx.
+  const phaseHandler = <UiPhaseWrapper />;
+  const showPhaseHandler =
+    appConfig.isCaseData &&
+    appConfig.features.useUiPhases &&
+    (pathName === '/registrera' || pathName.includes('arende'));
+
   return (
     <>
       <div className="relative z-[15] bg-background-content">
@@ -151,19 +159,9 @@ export default function Layout({ title, children }: { title: string; children: R
               </PopupMenu.Panel>
             </PopupMenu>
           }
-          bottomContent={
-            appConfig.features.useUiPhases &&
-            !isMinLargeDevice &&
-            (pathName === '/registrera' || pathName.includes('arende')) ? (
-              <UiPhaseWrapper />
-            ) : null
-          }
+          bottomContent={showPhaseHandler && !isMinLargeDevice ? phaseHandler : null}
         >
-          {appConfig.features.useUiPhases &&
-          isMinLargeDevice &&
-          (pathName === '/registrera' || pathName.includes('arende')) ? (
-            <UiPhaseWrapper />
-          ) : null}
+          {showPhaseHandler && isMinLargeDevice ? phaseHandler : null}
         </PageHeader>
       </div>
 

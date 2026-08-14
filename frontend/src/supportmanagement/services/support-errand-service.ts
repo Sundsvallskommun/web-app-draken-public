@@ -613,6 +613,7 @@ export const getSupportErrandByErrandNumber: (
 
 export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand) => {
   if (!errand) {
+    console.warn('supportErrandIsEmpty: errand is undefined or null');
     return true;
   } else if (
     !errand?.id ||
@@ -622,8 +623,10 @@ export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand)
     errand?.category === '' ||
     errand?.type === ''
   ) {
+    console.warn('supportErrandIsEmpty: errand is missing required fields', errand);
     return true;
   }
+  console.warn('supportErrandIsEmpty: errand is valid', errand);
   return false;
 };
 
@@ -861,6 +864,19 @@ export const updateSupportErrand: (
       throw e;
     });
 };
+
+export const updateSupportErrandPhase: (municipalityId: string, id: string, activePhaseId: string) => Promise<void> = (
+  municipalityId,
+  id,
+  activePhaseId
+) =>
+  apiService
+    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${id}`, { activePhaseId })
+    .then(() => undefined)
+    .catch((e) => {
+      console.error('Something went wrong when updating errand phase');
+      throw e;
+    });
 
 export const getStatus: (errand: SupportErrand) => Status = (errand) => errand.status as Status;
 
