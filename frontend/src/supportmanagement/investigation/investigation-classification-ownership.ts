@@ -1,4 +1,4 @@
-import { isIAF } from '@common/services/application-service';
+import { isIAFOrVOF } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 
 /**
@@ -9,4 +9,4 @@ import { appConfig } from '@config/appconfig';
  * generic errand form if a schema is temporarily missing that declaration.
  */
 export const investigationOwnsSupportErrandClassification = (): boolean =>
-  isIAF() && appConfig.features.useInvestigation;
+  isIAFOrVOF() && appConfig.features.useInvestigation;

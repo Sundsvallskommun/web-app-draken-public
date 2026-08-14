@@ -1,5 +1,6 @@
 import { ReferredFromErrandInformation } from '@common/components/referred-from-errand-information/referred-from-errand-information.component';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
+import { isIAFOrVOF } from '@common/services/application-service';
 import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -167,7 +168,7 @@ export const SupportErrandComponent: FC = () => {
                               : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
                                   ?.displayName}
                           </h1>
-                          {process.env.NEXT_PUBLIC_APPLICATION === 'IAF' && <SupportErrandSummary />}
+                          {isIAFOrVOF() && <SupportErrandSummary />}
                         </>
                       ) : (
                         <div className="flex justify-between items-center pt-8">

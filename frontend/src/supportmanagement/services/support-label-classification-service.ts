@@ -1,5 +1,5 @@
 import type { Classification, Label } from '@common/data-contracts/supportmanagement/data-contracts';
-import { isIAF } from '@common/services/application-service';
+import { isIAFOrVOF } from '@common/services/application-service';
 
 import type { SupportMetadata } from './support-metadata-service';
 
@@ -28,7 +28,7 @@ export const getLabelCategory = (
     return selectedCategory;
   }
 
-  const categoryResource = isIAF() ? errand?.classification?.type : errand?.classification?.category;
+  const categoryResource = isIAFOrVOF() ? errand?.classification?.type : errand?.classification?.category;
   return flattenLabelTree(metadata?.labels?.labelStructure).find(
     (label) => label.classification.toUpperCase() === 'CATEGORY' && matchesResource(label, categoryResource)
   );
@@ -43,7 +43,7 @@ export const getLabelSubType = (errand: SupportErrandLabelSource | undefined): L
 export const getErrandTypeLabel = (
   errand: SupportErrandLabelSource | undefined,
   metadata?: SupportMetadata
-): Label | undefined => (isIAF() ? getLabelCategory(errand, metadata) : getLabelType(errand));
+): Label | undefined => (isIAFOrVOF() ? getLabelCategory(errand, metadata) : getLabelType(errand));
 
 export const getLabelTypeFromDisplayName = (displayName: string, metadata: SupportMetadata): Label[] =>
   flattenLabelTree(metadata?.labels?.labelStructure).filter(

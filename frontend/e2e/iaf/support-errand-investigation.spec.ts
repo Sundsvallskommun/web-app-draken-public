@@ -17,7 +17,10 @@ const solLssKey = 'utredning-sol-lss';
 const managerProbabilityGroup = `#${managerKey}_riskAssessmentHsl_probability`;
 const classificationFieldSelector = '[data-cy="schema-external-field-errandClassification"]';
 
-test.skip(process.env.NEXT_PUBLIC_APPLICATION !== 'IAF', 'Det riktiga utredningsflödet körs med IAF-profilen.');
+test.skip(
+  !['IAF', 'VOF'].includes(process.env.NEXT_PUBLIC_APPLICATION ?? ''),
+  'Det riktiga utredningsflödet körs med IAF/VOF-profilen.'
+);
 
 async function visitErrand(page: Page, dismissCookieConsent: () => Promise<void>) {
   const errandResponse = page.waitForResponse(
@@ -33,7 +36,34 @@ async function openInvestigation(page: Page) {
   await expect(page.locator('[data-cy="support-investigation-tab"]')).toBeVisible();
 }
 
-test.describe('IAF:s riktiga utredningsflöde', () => {
+test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
+  test('visar klassificeringen endast i utredningen när utredningsfeaturen äger den', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installIafApiMock(page, {
+      documents: { [managerKey]: existingManagerDocument() },
+      featureFlags: [
+        { name: 'isSupportManagement', enabled: true },
+        { name: 'useDetailsTab', enabled: true },
+        { name: 'useTwoLevelCategorization', enabled: true },
+        { name: 'useThreeLevelCategorization', enabled: true },
+        { name: 'useInvestigation', enabled: true },
+      ],
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await page.getByRole('tab', { name: 'Grundinformation', exact: true }).click();
+
+    const basics = page.locator('[role="tabpanel"]:visible');
+    await expect(basics.locator('[data-cy="category-input"]')).toHaveCount(0);
+    await expect(basics.locator('[data-cy="type-input"]')).toHaveCount(0);
+    await expect(basics.locator('[data-cy="iaf-label-categorization"]')).toHaveCount(0);
+
+    await openInvestigation(page);
+    await expect(page.locator(classificationFieldSelector)).toHaveCount(1);
+  });
+
   test('visar tre dokumentflikar och låser ett befintligt dokument till dess exakta schemaversion', async ({
     page,
     dismissCookieConsent,
