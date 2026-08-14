@@ -63,12 +63,14 @@ export const SupportErrandBasicsAboutForm: FC<{
         </FormControl>
       ) : null}
 
+      {/* FIXME complicated logic for selecting categorization. Should be simplified. */}
       {appConfig.features.useTwoLevelCategorization && !investigationOwnsSupportErrandClassification() ? (
         <div className="flex gap-24">
           <TwoLevelCategorization />
         </div>
       ) : null}
 
+      {/* FIXME Same as above */}
       {appConfig.features.useThreeLevelCategorization ? (
         isIAFOrVOF() && !investigationOwnsSupportErrandClassification() ? (
           <IafLabelCategorization supportMetadata={supportMetadata} disabled={isSupportErrandLocked(supportErrand)} />
