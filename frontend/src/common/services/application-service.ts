@@ -25,6 +25,6 @@ export const isBOU = () => APP === 'BOU';
 
 export const isLOK = () => APP === 'LOK';
 
-export const isIAF = () => APP === 'IAF';
+export const isIAFOrVOF = () => APP === 'IAF' || APP === 'VOF';
 
 export const getApplicationEnvironment = () => (ENV === 'TEST' ? 'TEST' : null);

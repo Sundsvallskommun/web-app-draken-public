@@ -1,7 +1,7 @@
 import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
-import { isIAF, isKC, isLOK, isROB } from '@common/services/application-service';
+import { isIAFOrVOF, isKC, isLOK, isROB } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
@@ -664,7 +664,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       subType:
         (appConfig.features.useThreeLevelCategorization
           ? (() => {
-              const subTypeLabel = findLabelByClassification(e.labels, isIAF() ? 'TYPE' : 'SUBTYPE');
+              const subTypeLabel = findLabelByClassification(e.labels, isIAFOrVOF() ? 'TYPE' : 'SUBTYPE');
               return subTypeLabel?.resourcePath || subTypeLabel?.resourceName;
             })()
           : undefined) || '',

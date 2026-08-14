@@ -1,6 +1,6 @@
 import TextEditor from '@common/components/dynamic-text-editor';
 import { ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
-import { isIAF, isLOK } from '@common/services/application-service';
+import { isIAFOrVOF, isLOK } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, cx, FormControl, FormErrorMessage, FormLabel, Select, Textarea } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
@@ -63,16 +63,16 @@ export const SupportErrandBasicsAboutForm: FC<{
         </FormControl>
       ) : null}
 
-      {appConfig.features.useTwoLevelCategorization ? (
+      {appConfig.features.useTwoLevelCategorization && !investigationOwnsSupportErrandClassification() ? (
         <div className="flex gap-24">
           <TwoLevelCategorization />
         </div>
       ) : null}
 
       {appConfig.features.useThreeLevelCategorization ? (
-        isIAF() && !investigationOwnsSupportErrandClassification() ? (
+        isIAFOrVOF() && !investigationOwnsSupportErrandClassification() ? (
           <IafLabelCategorization supportMetadata={supportMetadata} disabled={isSupportErrandLocked(supportErrand)} />
-        ) : !isIAF() ? (
+        ) : !isIAFOrVOF() ? (
           <div className="w-full flex gap-20">
             <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
           </div>

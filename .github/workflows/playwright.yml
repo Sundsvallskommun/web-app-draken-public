@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [mex, pt, kc, lop, iaf, iaf-schema-lab]
+        app: [mex, pt, kc, lop, iaf, vof, iaf-schema-lab]
         include:
           - app: mex
             build_cmd: yarn build:mex
@@ -100,6 +100,19 @@ jobs:
             NEXT_PUBLIC_APPLICATION_NAME: "Avvikelse IAF"
             NEXT_PUBLIC_API_URL: http://localhost:3001/iaf
             NEXT_PUBLIC_BASEPATH: /iaf
+            NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: true
+            NEXT_PUBLIC_USE_DETAILS_TAB: true
+            NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: true
+            NEXT_PUBLIC_USE_UI_PHASES: true
+            NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: true
+            NEXT_PUBLIC_USE_INVESTIGATION: true
+          - app: vof
+            build_cmd: yarn build:vof
+            start_cmd: yarn start:vof
+            NEXT_PUBLIC_APPLICATION: VOF
+            NEXT_PUBLIC_APPLICATION_NAME: "Avvikelse VOF"
+            NEXT_PUBLIC_API_URL: http://localhost:3001/vof
+            NEXT_PUBLIC_BASEPATH: /vof
             NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: true
             NEXT_PUBLIC_USE_DETAILS_TAB: true
             NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: true
