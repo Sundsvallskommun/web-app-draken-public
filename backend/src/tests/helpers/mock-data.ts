@@ -1,7 +1,7 @@
-// Shared test values for the backend unit tests, mirroring the `env` block in
-// frontend/cypress.config.ts. Tests must not hardcode person numbers, organization
-// numbers, phone numbers or party ids - import them from here instead, so there is a
-// single place to check that no production-like identifier ever enters the repo.
+// Shared test values for the backend unit tests. Tests must not hardcode person
+// numbers, organization numbers, phone numbers or party ids - import them from here
+// instead, so there is a single place to check that no production-like identifier
+// ever enters the repo.
 
 // IMPORTANT
 // The value below is a test person number from Skatteverket, it is not a real person number
