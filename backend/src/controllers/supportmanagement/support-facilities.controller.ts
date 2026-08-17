@@ -7,6 +7,7 @@ import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
+import { stripParameterVersions } from '@/services/support-errand.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
@@ -14,6 +15,8 @@ type Parameters = {
   key: string;
   displayName: string;
   values: string[];
+  // Optimistic locking version, returned by SupportManagement but rejected when sent back on update
+  version?: number;
 }[];
 
 interface FacilitiesPayload {
@@ -58,8 +61,8 @@ export class SupportFacilitiesController {
       return response.status(404).send('No parameters found for errand with id');
     }
 
-    const filteredParameters = existingParameters.filter(
-      p => p.key !== PROPERTY_DESIGNATION_KEY && p.key !== DISTRICT_NAME_KEY && p.key !== STREET_KEY,
+    const filteredParameters = stripParameterVersions(
+      existingParameters.filter(p => p.key !== PROPERTY_DESIGNATION_KEY && p.key !== DISTRICT_NAME_KEY && p.key !== STREET_KEY),
     );
 
     const newParameters: Parameters = [

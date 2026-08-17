@@ -13,6 +13,8 @@ import {
   NEW_ERRAND_DEFAULTS,
   resolveDefaultLabels,
   sanitizeQuery,
+  stripErrandVersions,
+  stripParameterVersions,
   toAttachmentDto,
   toCasedataChannel,
   toCasedataStakeholder,
@@ -40,6 +42,7 @@ import {
   mockPropertyDesignation,
   mockSecondaryPropertyDesignation,
   mockStreet,
+  mockSupportErrandId,
   mockZipCode,
 } from './helpers/mock-data';
 
@@ -386,6 +389,48 @@ describe('support-errand.service', () => {
       expect(toFacilities([{ key: 'other', values: ['x'] }] as Parameter[])).toEqual([]);
       expect(toFacilities([{ key: 'propertyDesignation' }] as Parameter[])).toEqual([]);
       expect(toFacilities(undefined)).toEqual([]);
+    });
+  });
+
+  describe('stripErrandVersions', () => {
+    // SupportManagement returns `version` on reads but answers "must be null" when it is sent back.
+    it('removes the version from the errand and all parameter lists it carries', () => {
+      const errand = {
+        id: mockSupportErrandId,
+        version: 3,
+        parameters: [{ key: 'propertyDesignation', values: [mockPropertyDesignation], version: 1 }],
+        jsonParameters: [{ key: 'form', value: {}, schemaId: 'schema', version: 2 }],
+        stakeholders: [{ firstName: mockFirstName, parameters: [{ key: 'username', values: [mockAdUsername], version: 4 }] }],
+      };
+      expect(stripErrandVersions(errand)).toEqual({
+        id: mockSupportErrandId,
+        parameters: [{ key: 'propertyDesignation', values: [mockPropertyDesignation] }],
+        jsonParameters: [{ key: 'form', value: {}, schemaId: 'schema' }],
+        stakeholders: [{ firstName: mockFirstName, parameters: [{ key: 'username', values: [mockAdUsername] }] }],
+      });
+    });
+
+    it('leaves absent lists absent instead of introducing empty ones', () => {
+      expect(stripErrandVersions({ id: mockSupportErrandId, version: 1 })).toEqual({ id: mockSupportErrandId });
+    });
+
+    it('does not mutate the input', () => {
+      const errand = { parameters: [{ key: 'street', values: [mockStreet], version: 1 }], version: 2 };
+      stripErrandVersions(errand);
+      expect(errand).toEqual({ parameters: [{ key: 'street', values: [mockStreet], version: 1 }], version: 2 });
+    });
+  });
+
+  describe('stripParameterVersions', () => {
+    it('removes the version from every parameter while keeping the rest intact', () => {
+      const parameters = [
+        { key: 'street', displayName: 'Adress', values: [mockStreet], version: 1 },
+        { key: 'other', displayName: 'Annat', values: [] },
+      ];
+      expect(stripParameterVersions(parameters)).toEqual([
+        { key: 'street', displayName: 'Adress', values: [mockStreet] },
+        { key: 'other', displayName: 'Annat', values: [] },
+      ]);
     });
   });
 
