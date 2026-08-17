@@ -330,6 +330,39 @@ export const toFacilities = (parameters?: Parameter[]): FacilityDTO[] => {
   return (estates ?? []).map(facility => ({ address: { propertyDesignation: facility } }));
 };
 
+// SupportManagement owns the optimistic locking `version` on errands and parameters: it is returned on
+// reads but rejected with "must be null" when sent back on update. The frontend echoes fetched errands
+// straight back, so strip the field from everything we forward.
+type Versioned = { version?: number };
+
+type VersionedErrand = Versioned & {
+  parameters?: Versioned[];
+  jsonParameters?: Versioned[];
+  stakeholders?: { parameters?: Versioned[] }[];
+};
+
+const withoutVersion = <T extends Versioned>(item: T): Omit<T, 'version'> => {
+  const { version: _version, ...itemWithoutVersion } = item;
+  return itemWithoutVersion;
+};
+
+/** Removes the server-managed `version` from a list of errand, stakeholder or JSON parameters. */
+export const stripParameterVersions = <T extends Versioned>(parameters: T[]): Omit<T, 'version'>[] => parameters.map(withoutVersion);
+
+/** Removes the server-managed `version` from an errand and all parameters it carries. */
+export const stripErrandVersions = <T extends VersionedErrand>(errand: T): T =>
+  ({
+    ...withoutVersion(errand),
+    ...(errand.parameters && { parameters: stripParameterVersions(errand.parameters) }),
+    ...(errand.jsonParameters && { jsonParameters: stripParameterVersions(errand.jsonParameters) }),
+    ...(errand.stakeholders && {
+      stakeholders: errand.stakeholders.map(stakeholder => ({
+        ...stakeholder,
+        ...(stakeholder.parameters && { parameters: stripParameterVersions(stakeholder.parameters) }),
+      })),
+    }),
+  }) as T;
+
 /** Base64-encodes a fetched attachment into the CaseData attachment payload. */
 export const toAttachmentDto = (attachmentData: ErrandAttachment, fileData: ArrayBuffer, errandNumber: string): FormData => {
   // const binaryString = Array.from(new Uint8Array(fileData), v => String.fromCharCode(v)).join('');
