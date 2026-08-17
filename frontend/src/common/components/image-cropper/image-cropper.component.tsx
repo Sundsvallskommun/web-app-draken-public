@@ -3,7 +3,7 @@ import 'react-image-crop/dist/ReactCrop.css';
 import { Button, cx, FormErrorMessage } from '@sk-web-gui/react';
 import { ArrowLeft, Check, CircleX } from 'lucide-react';
 import { FC, SyntheticEvent, useRef, useState } from 'react';
-import ReactCrop, { centerCrop, convertToPixelCrop, Crop, makeAspectCrop, PixelCrop } from 'react-image-crop';
+import ReactCrop, { centerCrop, convertToPixelCrop, Crop, makeAspectCrop } from 'react-image-crop';
 
 import { cropImage, CroppedImage } from './crop-image';
 
@@ -52,7 +52,6 @@ export const ImageCropper: FC<ImageCropperProps> = ({
 }) => {
   const imgRef = useRef<HTMLImageElement>(null);
   const [crop, setCrop] = useState<Crop>();
-  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const [rotate, setRotate] = useState(0);
   const [confirming, setConfirming] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -60,35 +59,40 @@ export const ImageCropper: FC<ImageCropperProps> = ({
 
   const onImageLoad = (e: SyntheticEvent<HTMLImageElement>) => {
     const { width, height } = e.currentTarget;
-    const initialCrop = centerAspectCrop(width, height, aspect ?? width / height);
-    setCrop(initialCrop);
-    // onComplete only fires once the user drags, so the pixel crop is seeded here as well.
-    // Otherwise saving the preselected full-image crop straight away would fail.
-    setCompletedCrop(convertToPixelCrop(initialCrop, width, height));
+    setCrop(centerAspectCrop(width, height, aspect ?? width / height));
   };
 
   const handleSave = async () => {
     setError(undefined);
 
-    if (!imgRef.current || !completedCrop?.width || !completedCrop?.height) {
+    const image = imgRef.current;
+    // Only the percent crop stays in step with the rendered image, so the pixel crop is derived
+    // here instead of being held in state. A modal or window resize between selecting and saving
+    // would otherwise apply coordinates from the old layout to the new image size.
+    const pixelCrop = image && crop ? convertToPixelCrop(crop, image.width, image.height) : undefined;
+
+    if (!image || !pixelCrop?.width || !pixelCrop?.height) {
       setError('Markera ett område att beskära');
       setConfirming(false);
       return;
     }
 
     setIsSaving(true);
+
+    let result: CroppedImage;
     try {
-      // The blob is produced here rather than kept in state, so it always reflects the
-      // selection as it looks at the moment of saving.
-      const result = await cropImage(
-        imgRef.current,
-        { crop: completedCrop, rotate, scale: IMAGE_SCALE },
-        { mimeType, extension }
-      );
-      await onSave(result);
+      result = await cropImage(image, { crop: pixelCrop, rotate, scale: IMAGE_SCALE }, { mimeType, extension });
     } catch (e) {
-      setError('Bilden kunde inte sparas. Försök igen.');
+      setError('Bilden kunde inte beskäras. Försök igen.');
       setConfirming(false);
+      setIsSaving(false);
+      return;
+    }
+
+    try {
+      // Saving belongs to the parent, and so does reporting why it failed. Rendering an error
+      // here as well would show the user two messages for the same failure.
+      await onSave(result);
     } finally {
       setIsSaving(false);
     }
@@ -122,7 +126,6 @@ export const ImageCropper: FC<ImageCropperProps> = ({
           <ReactCrop
             crop={crop}
             onChange={(_, percentCrop) => setCrop(percentCrop)}
-            onComplete={(c) => setCompletedCrop(c)}
             ruleOfThirds={true}
             aspect={aspect}
           >

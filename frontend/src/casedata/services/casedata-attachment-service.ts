@@ -236,7 +236,11 @@ export const sendAttachments = (
   municipalityId: string,
   errandId: number,
   errandNumber: string,
-  attachmentData: UploadFile[]
+  attachmentData: UploadFile[],
+  // Creating an attachment is not idempotent: a response lost after the server committed makes a
+  // retry create a second copy. Callers that delete something on success can pass 0 to trade
+  // automatic recovery for never producing a silent duplicate.
+  retries = 3
 ) => {
   const attachmentPromises = attachmentData.map(async (attachment) => {
     const fileItem = attachment.file;
@@ -258,7 +262,7 @@ export const sendAttachments = (
     const obj: Attachment = {
       category: attachment.meta.category,
       name: `${attachment.meta.name}.${attachment.meta.ending}`,
-      note: '',
+      note: (attachment.meta.note as string) ?? '',
       extension,
       mimeType: extension === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type,
     };
@@ -283,7 +287,7 @@ export const sendAttachments = (
           throw e;
         });
 
-    return withRetries(3, postAttachment);
+    return withRetries(retries, postAttachment);
   });
 
   return Promise.all(attachmentPromises).then(() => true);
@@ -340,6 +344,9 @@ export const replaceAttachmentFile = async (
     throw new Error('MAX_SIZE');
   }
 
+  // Category, name and note carry over, but the replacement is a new row: it gets a new id and
+  // created timestamp, the backend forces channel to WEB_UI, and extraParameters has no field on
+  // CreateAttachmentDto. Preserving those needs a content-replacing endpoint upstream.
   const original = mapAttachmentToUploadFile(attachment);
   const replacement: UploadFile = {
     // The id is assigned by the backend when the attachment is created.
@@ -348,13 +355,17 @@ export const replaceAttachmentFile = async (
     meta: { ...original.meta, ending: file.name.split('.').pop() ?? original.meta.ending },
   };
 
-  await sendAttachments(municipalityId, errandId, errandNumber, [replacement]);
+  // No retries here. Retrying the upload risks a second copy if the first request committed but
+  // its response was lost, and the original is deleted right after, so a silent duplicate would
+  // be left behind with nothing to compare against. A visible failure the user can repeat is the
+  // safer trade. The cropper keeps the selection, so retrying costs one click.
+  await sendAttachments(municipalityId, errandId, errandNumber, [replacement], 0);
 
   try {
     await deleteAttachment(municipalityId, errandId, original);
     return { originalRemoved: true };
   } catch (e) {
-    console.error('Replacement attachment created but the original could not be removed ', attachment.id);
+    console.error('Replacement attachment created but the original could not be removed ', attachment.id, e);
     return { originalRemoved: false };
   }
 };

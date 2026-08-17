@@ -1,8 +1,8 @@
-import { expect,test } from '../../fixtures/base.fixture';
+import { expect, test } from '../../fixtures/base.fixture';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockCropJpegBase64, mockJpegBase64, mockPdfBase64 } from '../fixtures/mockAttachmentContent';
 import { mockAttachments } from '../fixtures/mockAttachments';
-import { mockContractAttachment,mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
 import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 import { mockHistory } from '../fixtures/mockHistory';
 import { mockMe } from '../fixtures/mockMe';
@@ -197,7 +197,9 @@ test.describe('Errand page attachments tab', () => {
   });
 
   test('renders a preview for image attachments only', async ({ page }) => {
-    const imageRow = page.locator('[data-cy="casedataAttachments-list"] li.sk-form-file-upload-list-item').filter({ hasText: imageAttachment.name });
+    const imageRow = page
+      .locator('[data-cy="casedataAttachments-list"] li.sk-form-file-upload-list-item')
+      .filter({ hasText: imageAttachment.name });
     const preview = imageRow.locator('.sk-form-file-upload-list-item-icon img');
 
     await expect(preview).toHaveAttribute('src', `data:${imageAttachment.mimeType};base64,${mockJpegBase64}`);
@@ -205,13 +207,17 @@ test.describe('Errand page attachments tab', () => {
     await expect.poll(() => preview.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
 
     // The pdf row shows an icon instead of a preview, and its content is never fetched.
-    const pdfRow = page.locator('[data-cy="casedataAttachments-list"] li.sk-form-file-upload-list-item').filter({ hasText: pdfAttachment.name });
+    const pdfRow = page
+      .locator('[data-cy="casedataAttachments-list"] li.sk-form-file-upload-list-item')
+      .filter({ hasText: pdfAttachment.name });
     await expect(pdfRow.locator('.sk-form-file-upload-list-item-icon img')).toHaveCount(0);
     expect(contentRequests).toEqual([imageAttachment.id]);
   });
 
   test('opens an image attachment in a modal', async ({ page }) => {
-    const imageRow = page.locator('[data-cy="casedataAttachments-list"] li.sk-form-file-upload-list-item').filter({ hasText: imageAttachment.name });
+    const imageRow = page
+      .locator('[data-cy="casedataAttachments-list"] li.sk-form-file-upload-list-item')
+      .filter({ hasText: imageAttachment.name });
     await imageRow.getByRole('button', { name: 'Öppna' }).click();
 
     const modalImage = page.locator('.sk-modal-dialog img');
@@ -221,7 +227,9 @@ test.describe('Errand page attachments tab', () => {
   });
 
   test('downloads a pdf attachment with intact content', async ({ page }) => {
-    const pdfRow = page.locator('[data-cy="casedataAttachments-list"] li.sk-form-file-upload-list-item').filter({ hasText: pdfAttachment.name });
+    const pdfRow = page
+      .locator('[data-cy="casedataAttachments-list"] li.sk-form-file-upload-list-item')
+      .filter({ hasText: pdfAttachment.name });
     const downloadPromise = page.waitForEvent('download');
     await pdfRow.getByRole('button', { name: 'Öppna' }).click();
     const download = await downloadPromise;
@@ -349,8 +357,9 @@ test.describe('Errand page attachments tab', () => {
       // Nothing may be deleted when the replacement never made it to the server.
       expect(deletedIds).toEqual([]);
       expect(writeSequence).not.toContain('delete');
-      // sendAttachments retries three times before giving up.
-      expect(uploadedRequests).toHaveLength(4);
+      // Exactly one attempt: the replace path opts out of sendAttachments' retries, because a
+      // retried upload can leave a duplicate behind when only the response was lost.
+      expect(uploadedRequests).toHaveLength(1);
     });
 
     test('warns when the original could not be removed', async ({ page }) => {

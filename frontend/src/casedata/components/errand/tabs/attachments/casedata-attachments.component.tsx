@@ -47,6 +47,13 @@ const defaultAttachmentInformation: CasedataAttachmentFormModel = {
   newFiles: [],
 };
 
+// Sentinel errors thrown by the crop and replace steps, mapped to what the handler should read.
+const cropSaveErrorMessages: Record<string, string> = {
+  MAX_SIZE: `Den beskurna bilden överskrider maximal storlek (${MAX_FILE_SIZE_MB} Mb)`,
+  CANVAS_EMPTY: 'Bilden kunde inte beskäras',
+};
+const defaultCropSaveErrorMessage = 'Något gick fel när den beskurna bilagan sparades';
+
 export const CasedataAttachments: FC = () => {
   const [modalAttachment, setModalAttachment] = useState<SingleCasedataAttachment | undefined>();
   const [addAttachmentWindowIsOpen, setAddAttachmentWindowIsOpen] = useState<boolean>(false);
@@ -368,20 +375,14 @@ export const CasedataAttachments: FC = () => {
 
       closeModal();
     } catch (e) {
-      const message =
-        e instanceof Error && e.message === 'MAX_SIZE'
-          ? `Den beskurna bilden överskrider maximal storlek (${MAX_FILE_SIZE_MB} Mb)`
-          : e instanceof Error && e.message === 'CANVAS_EMPTY'
-          ? 'Bilden kunde inte beskäras'
-          : 'Något gick fel när den beskurna bilagan sparades';
+      // Reported here rather than rethrown: the cropper leaves saving failures to its caller, so
+      // rethrowing would surface the same failure twice.
       toastMessage({
         position: 'bottom',
         closeable: false,
-        message,
+        message: (e instanceof Error && cropSaveErrorMessages[e.message]) || defaultCropSaveErrorMessage,
         status: 'error',
       });
-      // Rethrown so the cropper can clear its own saving state and stay open for a retry.
-      throw e;
     }
   };
 
