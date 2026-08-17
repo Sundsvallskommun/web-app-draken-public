@@ -12,6 +12,17 @@ Den här katalogen innehåller den lokala utvecklingsytan för tre separata JSON
 
 ## Lokal schema-labb
 
+"Labben" (`schema-lab/`) är en **utvecklarsandlåda för att förhandsgranska utredningsformulär** — inte en del av
+produkten. Den renderar ett schemapar (JSON Schema + UI Schema) i Drakens riktiga formulärkomponenter så att man kan
+se resultatet innan schemat publiceras, och den låter dig växla roll för att prova `canRead`/`canWrite` utan att
+behöva ett verkligt ärende i rätt fas.
+
+Ordet "schema" avser här **JSON Schema och UI Schema** — inte tidsschema, och inte de yup-scheman som används för
+formulärvalidering på andra håll i Draken.
+
+Labben är avsiktligt oåtkomlig utanför lokal utveckling: sidan anropar `notFound()` om inte `NODE_ENV` är
+`development` och `NEXT_PUBLIC_APPLICATION` är `IAF`. Den läser och skriver inga ärenden, och publicerar inga scheman.
+
 Starta IAF-profilen med:
 
 ```sh
@@ -33,7 +44,9 @@ prefixet `draken:investigation-schema-lab:`. Inga ärenden eller scheman läses 
 - `common/components/json` äger återanvändbar rendering, inte IAF-specifika fält.
 - `label-classification/` äger labelväljaren och adaptern mellan Support Managements labelträd och Drakens
   formulärvärden.
-- `schema-lab/` äger exempeldataadapter, mockad `canRead`/`canWrite`, riskvärdesberäkning och separerad lokal lagring.
+- `investigation-form-data.ts` äger normalisering, deklarerade beräkningar och riskvärde — delat av både
+  produktionsflödet och labben.
+- `schema-lab/` äger exempeldataadapter, mockad `canRead`/`canWrite` och separerad lokal lagring.
 
 Enhetschefs- och SOL/LSS-schemana deklarerar det externa fältet `errandClassification`. UI-schemat placerar fältet
 direkt efter `legalBases`, så att avvikelsetyp och underkategori visas i rätt formulärsektion och filtreras av valda

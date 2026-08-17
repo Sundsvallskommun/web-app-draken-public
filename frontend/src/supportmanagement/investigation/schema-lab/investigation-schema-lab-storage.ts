@@ -1,6 +1,6 @@
 import { LabelClassificationSelection } from '@supportmanagement/investigation/label-classification';
 
-import { InvestigationFormData, InvestigationSchemaKey } from './investigation-schema-lab.types';
+import { InvestigationDocumentKey, InvestigationFormData } from '../investigation-document';
 
 const storageNamespace = 'draken:investigation-schema-lab';
 const labelClassificationStorageKey = `${storageNamespace}:supportmanagement-labels`;
@@ -8,7 +8,7 @@ const labelClassificationCatalogVersion = '1.0';
 const labelOwnedInvestigationFields = new Set(['deviationType', 'deviationSubtype']);
 
 interface InvestigationDraftEnvelope {
-  schemaKey: InvestigationSchemaKey;
+  schemaKey: InvestigationDocumentKey;
   schemaVersion: string;
   savedAt: string;
   formData: InvestigationFormData;
@@ -38,7 +38,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function getStorageKey(schemaKey: InvestigationSchemaKey): string {
+function getStorageKey(schemaKey: InvestigationDocumentKey): string {
   return `${storageNamespace}:${schemaKey}`;
 }
 
@@ -63,7 +63,7 @@ function stripLabelOwnedFields(formData: InvestigationFormData): {
 
 function isDraftEnvelope(
   value: unknown,
-  schemaKey: InvestigationSchemaKey,
+  schemaKey: InvestigationDocumentKey,
   schemaVersion: string
 ): value is InvestigationDraftEnvelope {
   if (!isRecord(value)) return false;
@@ -97,7 +97,7 @@ function isLabelClassificationDraftEnvelope(value: unknown): value is LabelClass
 
 export function loadInvestigationDraft(
   storage: InvestigationDraftStorage,
-  schemaKey: InvestigationSchemaKey,
+  schemaKey: InvestigationDocumentKey,
   schemaVersion: string
 ): LoadedInvestigationDraft {
   try {
@@ -130,7 +130,7 @@ export function loadInvestigationDraft(
 
 export function saveInvestigationDraft(
   storage: InvestigationDraftStorage,
-  schemaKey: InvestigationSchemaKey,
+  schemaKey: InvestigationDocumentKey,
   schemaVersion: string,
   formData: InvestigationFormData
 ): string {
@@ -150,7 +150,10 @@ export function saveInvestigationDraft(
   return savedAt;
 }
 
-export function removeInvestigationDraft(storage: InvestigationDraftStorage, schemaKey: InvestigationSchemaKey): void {
+export function removeInvestigationDraft(
+  storage: InvestigationDraftStorage,
+  schemaKey: InvestigationDocumentKey
+): void {
   storage.removeItem(getStorageKey(schemaKey));
 }
 

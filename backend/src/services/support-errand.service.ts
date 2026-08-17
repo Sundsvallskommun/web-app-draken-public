@@ -254,6 +254,23 @@ export interface SupportErrandClassificationSelection {
   categoryLabels: LabelIdReference[];
 }
 
+/**
+ * One resolvable path through the Support Management label tree.
+ *
+ * NOTE: the mapping to `classification` is deliberately shifted by one level, so the field
+ * names do not line up with the metadata classification strings they carry:
+ *
+ *   PROVISION-CATEGORY node (`owner`)  -> classification.category
+ *   CATEGORY node (`category`)         -> classification.type
+ *   TYPE nodes (`types`)               -> neither field; contribute selected label ids only
+ *
+ * When there is no PROVISION-CATEGORY ancestor, `classification.category` falls back to the
+ * CATEGORY node, so category and type then hold the same resource. The frontend performs the
+ * same mapping and documents it at
+ * `investigation/label-classification/iaf-supportmanagement-label-classification.ts`
+ * ("Support Management persists the selected CATEGORY resource in classification.type").
+ * Keep the two in step — they are two implementations of one rule.
+ */
 interface SupportErrandClassificationBinding {
   owner?: Label;
   category: Label;
