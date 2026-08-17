@@ -1,8 +1,6 @@
-import type { InvestigationDocumentKey } from '../investigation-document';
-
-export type { InvestigationFormData } from '../investigation-document';
-export { investigationDocumentKeys as investigationSchemaKeys } from '../investigation-document';
-export type InvestigationSchemaKey = InvestigationDocumentKey;
+// Only lab-local types belong here. The lab uses the module's canonical vocabulary
+// (InvestigationDocumentKey, InvestigationFormData) imported straight from
+// ../investigation-document, so one concept keeps one name across lab and production.
 
 export const investigationLabRoles = ['unitManager', 'lexInvestigator', 'masMar', 'reader'] as const;
 

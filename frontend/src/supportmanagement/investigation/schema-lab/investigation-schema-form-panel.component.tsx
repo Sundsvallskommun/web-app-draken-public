@@ -6,12 +6,9 @@ import { Alert, Button, Disclosure, Label } from '@sk-web-gui/react';
 import { Save, Trash2 } from 'lucide-react';
 import { MouseEvent, ReactNode, useMemo, useState } from 'react';
 
+import { InvestigationFormData } from '../investigation-document';
 import { getHslRiskValue, getInvestigationRenderingSchema } from '../investigation-form-data';
-import {
-  InvestigationFormData,
-  InvestigationLabNotice,
-  InvestigationSchemaAccess,
-} from './investigation-schema-lab.types';
+import { InvestigationLabNotice, InvestigationSchemaAccess } from './investigation-schema-lab.types';
 import { formatInvestigationLabTimestamp } from './investigation-schema-lab-time';
 import { InvestigationSchemaDefinition } from './investigation-schema-registry';
 
