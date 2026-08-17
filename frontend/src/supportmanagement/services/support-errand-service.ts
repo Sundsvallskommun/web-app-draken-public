@@ -613,7 +613,6 @@ export const getSupportErrandByErrandNumber: (
 
 export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand) => {
   if (!errand) {
-    console.warn('supportErrandIsEmpty: errand is undefined or null');
     return true;
   } else if (
     !errand?.id ||
@@ -623,10 +622,8 @@ export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand)
     errand?.category === '' ||
     errand?.type === ''
   ) {
-    console.warn('supportErrandIsEmpty: errand is missing required fields', errand);
     return true;
   }
-  console.warn('supportErrandIsEmpty: errand is valid', errand);
   return false;
 };
 

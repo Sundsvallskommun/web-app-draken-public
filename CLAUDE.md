@@ -4,16 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Draken is a Swedish municipal administration application for Sundsvalls Kommun. It's a multi-tenant system supporting 9 different "drakar" (dragons/modules): **kc**, **ka**, **mex**, **pt**, **rob**, **lop**, **ik**, **msva**, **se**. Each drake serves different municipal departments with distinct feature configurations.
+Draken is a Swedish municipal administration application for Sundsvalls Kommun. It's a multi-tenant system supporting 13 different "drakar" (dragons/modules): **kc**, **ka**, **mex**, **pt**, **rob**, **lop**, **ik**, **msva**, **se**, **bou**, **lok**, **iaf**, **vof**. Each drake serves different municipal departments with distinct feature configurations.
 
 **Two main business domains:**
 
 - **CaseData** (Ärendehantering) - Case/errand management for MEX, PT
 - **SupportManagement** (Supporthantering) - Contact center/support tickets for KC, LOP, ROB, etc.
 
+IAF and VOF are the newest SupportManagement drakar. They share the investigation
+(utredning) feature and are treated as one variant in code via `isIAFOrVOF()`.
+
 ## Development Commands
 
-All commands require specifying a drake: `{drake}` = kc | ka | mex | pt | rob | lop | ik | msva | se
+All commands require specifying a drake: `{drake}` = kc | ka | mex | pt | rob | lop | ik | msva | se | bou | lok | iaf | vof
 
 ### Backend (run from `backend/`)
 

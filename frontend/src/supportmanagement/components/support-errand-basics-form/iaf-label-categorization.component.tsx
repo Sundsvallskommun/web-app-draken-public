@@ -54,7 +54,10 @@ export const IafLabelCategorization: FC<{
     name: ['labels', 'category', 'type', 'subType'],
   });
   const labels = useMemo(() => watchedLabels ?? [], [watchedLabels]);
-  const legalBasesKey = legalBases === undefined ? undefined : [...legalBases].sort().join('|');
+  // Sorted with an explicit string comparator so the memo key is a stable, deterministic
+  // ordering regardless of the order legal bases arrive in.
+  const legalBasesKey =
+    legalBases === undefined ? undefined : [...legalBases].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join('|');
   const normalizedLegalBases = useMemo(
     () => (legalBasesKey === undefined ? undefined : legalBasesKey === '' ? [] : legalBasesKey.split('|')),
     [legalBasesKey]

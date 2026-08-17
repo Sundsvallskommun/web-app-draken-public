@@ -222,7 +222,8 @@ jobs:
           HEALTH_PASSWORD: ""
 
       - name: Wait for server
-        run: npx wait-on http://localhost:3000${{ matrix.NEXT_PUBLIC_BASEPATH || '' }} --timeout 60000
+        # Dependency-free wait loop: npx would fetch an unpinned package at job time.
+        run: timeout 60 bash -c 'until curl -sfo /dev/null http://localhost:3000${{ matrix.NEXT_PUBLIC_BASEPATH || '' }}; do sleep 2; done'
 
       - name: Run Playwright tests
         run: ./node_modules/.bin/playwright test --project=${{ matrix.app }}
