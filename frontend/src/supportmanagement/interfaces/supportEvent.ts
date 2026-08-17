@@ -1,6 +1,6 @@
 import { ApiPagingData } from '@supportmanagement/interfaces/errand';
 
-export const typeMap = {
+const typeMap = {
   CREATE: 'Skapa',
   UPDATE: 'Uppdatera',
   DELETE: 'Ta bort',

@@ -12,19 +12,6 @@ import { getLastUpdatedAdministrator } from './stakeholder.service';
 
 const SERVICE = apiServiceName('case-data');
 
-export const validateErrandPhaseChange: (errand: CreateErrandDto, user: User) => Promise<boolean> = async (errand, user) => {
-  const apiService = new ApiService();
-  const url = `errands/${errand.id}`;
-  const baseURL = apiURL(SERVICE);
-  const existingErrand = await apiService.get<ErrandDTO>({ url, baseURL }, user);
-  const oldPhase = existingErrand.data.phase;
-  const newPhase = errand.phase;
-  if ((newPhase === 'Aktualisering' && oldPhase === 'Utredning') || (newPhase === 'Utredning' && oldPhase === 'Beslut')) {
-    return Promise.resolve(false);
-  }
-  return Promise.resolve(true);
-};
-
 export const makeErrandApiData: (errandData: CreateErrandDto | CPatchErrandDto, errandId: string) => CreateErrandDto = (errandData, errandId) => {
   const newErrand: CreateErrandDto = {
     ...(errandId && { id: parseInt(errandId, 10) }),

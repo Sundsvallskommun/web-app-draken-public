@@ -6,13 +6,6 @@
 // IMPORTANT
 // The value below is a test person number from Skatteverket, it is not a real person number
 export const mockPersonNumber = '199001012385';
-// The same test person number in its 10-digit form. Note its third digit is 0, which is what
-// tells the errand search it is a person number rather than an organization number.
-export const mockPersonNumberShort = '9001012385';
-// The value below is an invalid test person number for testing validation, it is not a real person number
-export const mockInvalidPersonNumber = '199001012386';
-// The value below is a non existing test person number for testing validation, it is not a real person number
-export const mockNonexistentPersonNumber = '199909092380';
 
 // The value below is an organization number for testing validation, it is not a real organization number.
 // Its third digit is 6, which is what tells the errand search it is an organization number.
@@ -26,12 +19,9 @@ export const mockInvalidOrganizationNumber = '556026-9987';
 export const mockPhoneNumber = '0701740635';
 // The value below is a test phone number from Post- och telestyrelsen, it is not a real phone number
 export const mockPhoneNumberCountryCode = '+46701740635';
-// A second test phone number from Post- och telestyrelsen, it is not a real phone number
-export const mockSecondaryPhoneNumber = '0701740636';
 
 // The values below are test emails, they are not real emails
 export const mockEmail = 'a@example.com';
-export const mockRecipientEmail = 'mail@example.com';
 
 // The value below is a test username, it is not a real username
 export const mockAdUsername = 'abc01abc';

@@ -137,7 +137,7 @@ export const getAllRelatedErrands = async (
   return deduplicated.sort((a, b) => a.errandNumber.localeCompare(b.errandNumber));
 };
 
-export interface ReferredFromStakeholder {
+interface ReferredFromStakeholder {
   externalId: string;
   externalIdType: string;
   personNumber: string;

@@ -6,7 +6,7 @@ import {
   sendAttachments,
 } from '@casedata/services/casedata-attachment-service';
 import { CasedataMessageType } from '@casedata/services/casedata-message-types';
-import { Message, MessageStatus } from '@common/interfaces/message';
+import { Message } from '@common/interfaces/message';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX } from '@common/services/application-service';
@@ -304,36 +304,6 @@ export const fetchMessagesWithTree: (
     });
 };
 
-export const fetchMessagesTree: (municipalityId: string, errand: IErrand) => Promise<MessageNode[]> = (
-  municipalityId,
-  errand
-) => {
-  return getErrandMessages(municipalityId, errand)
-    .then((res) => {
-      const tree = buildTree(res);
-      return tree;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when fetching messages for errand:', errand.id, e);
-      throw e;
-    });
-};
-
-export const fetchMessages: (municipalityId: string, errand: IErrand) => Promise<MessageResponse[]> = (
-  municipalityId,
-  errand
-) => {
-  return getErrandMessages(municipalityId, errand)
-    .then((res) => {
-      const list: MessageResponse[] = sortMessagesBySentDesc(res);
-      return list;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when fetching messages for errand:', errand.errandNumber, e);
-      throw e;
-    });
-};
-
 export const fetchMessage: (municipalityId: string, messageId: string) => Promise<ApiResponse<Message>> = (
   municipalityId,
   messageId
@@ -349,23 +319,6 @@ export const fetchMessage: (municipalityId: string, messageId: string) => Promis
       console.error('Something went wrong when fetching message: ', messageId);
       throw e;
     });
-};
-
-export const messageStatusMap = (s: MessageStatus) => {
-  switch (s) {
-    case 'AWAITING_FEEDBACK':
-      return 'Väntar på status';
-    case 'PENDING':
-      return 'Väntar';
-    case 'SENT':
-      return 'Skickat';
-    case 'FAILED':
-      return 'Misslyckades';
-    case 'NO_FEEDBACK_SETTINGS_FOUND':
-      return 'Okänt';
-    case 'NO_FEEDBACK_WANTED':
-      return 'Okänt';
-  }
 };
 
 export const setMessageViewStatus: (

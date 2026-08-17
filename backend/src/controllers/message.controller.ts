@@ -29,7 +29,7 @@ import { isMEX } from '@/services/application.service';
 import { logger } from '@/utils/logger';
 import { apiURL, base64Encode } from '@/utils/util';
 
-export { AgnosticMessageResponse, LetterResponse, MessageClassification, WebMessageResponse } from '@/dtos/message.dto';
+export { AgnosticMessageResponse, LetterResponse, MessageClassification } from '@/dtos/message.dto';
 
 @Controller()
 export class MessageController {

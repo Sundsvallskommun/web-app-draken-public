@@ -13,25 +13,7 @@ import {
 
 import { Role } from './role';
 
-export class Link {
-  href!: string;
-  hreflang!: string;
-  title!: string;
-  type!: string;
-  deprecation!: string;
-  profile!: string;
-  name!: string;
-  templated!: boolean;
-}
-
-export class ContactInfo {
-  @IsString()
-  contactType!: 'CELLPHONE' | 'PHONE' | 'EMAIL';
-  @IsString()
-  value!: string;
-}
-
-export class CAddressDTO {
+class CAddressDTO {
   @IsOptional()
   @IsString()
   apartmentNumber?: string;
@@ -61,7 +43,7 @@ export class CAddressDTO {
   location?: CoordinatesDTO;
 }
 
-export class ContactInformationDTO implements IContactInformationDTO {
+class ContactInformationDTO implements IContactInformationDTO {
   @IsOptional()
   contactType?: ContactInformationContactTypeEnum;
   @IsOptional()

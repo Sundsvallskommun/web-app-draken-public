@@ -49,7 +49,7 @@ export enum MEXAttachmentLabels {
   'STATEMENT' = 'Yttrande',
   'OTHER' = 'Övrigt',
 }
-export enum MEXLegacyAttachmentLabels {
+enum MEXLegacyAttachmentLabels {
   'RECEIVED_CONTRACT' = 'Avtal inkommit',
   'CONTRACT_DRAFT' = 'Avtalsutkast',
   'LEASE_REQUEST' = 'Förfrågan arrende',

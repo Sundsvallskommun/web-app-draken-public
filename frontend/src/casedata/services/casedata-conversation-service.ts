@@ -5,12 +5,12 @@ import { RelationWithErrandNumber } from '@common/services/relations-service';
 
 import { MessageNode } from './casedata-message-service';
 
-export interface Identifier {
+interface Identifier {
   type?: string;
   value: string;
 }
 
-export interface ReadBy {
+interface ReadBy {
   identifier?: Identifier;
   readAt?: string;
 }
@@ -65,7 +65,7 @@ export const getConversationMessages: (
     });
 };
 
-export const createConversation = async (
+const createConversation = async (
   municipalityId: string,
   errandId: number,
   topic: string,

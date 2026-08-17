@@ -39,10 +39,10 @@ import { FC, Fragment, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-export interface SingleAttachment {
+interface SingleAttachment {
   file: File | undefined;
 }
-export interface SupportAttachmentFormModel {
+interface SupportAttachmentFormModel {
   id?: string;
   newAttachment: FileList | undefined;
   attachments: SingleAttachment[];

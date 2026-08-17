@@ -154,15 +154,6 @@ export interface AgnosticMessageResponse {
   messageId: string;
 }
 
-export interface WebMessageResponse {
-  messageId: string;
-  deliveries: {
-    deliveryId: string;
-    messageType: string;
-    status: string;
-  }[];
-}
-
 export interface LetterResponse {
   batchId: string;
   messages: [

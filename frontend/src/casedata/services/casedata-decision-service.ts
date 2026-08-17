@@ -83,9 +83,6 @@ export const getLawMapping = (errand: IErrand): Law[] => {
   ];
 };
 
-export const LOST_PERMIT_STANDARD_DECISION_TEXT =
-  '<p>Inget formellt beslut fattas för borttappade kort, beslutet om att bevilja parkeringstillstånd har tagits i ärendet för den ursprungliga ansökan.</p>';
-
 export const fetchDecisionTemplates: (prefix: string, decision?: string) => Promise<Template[]> = (
   prefix,
   decision
@@ -205,25 +202,14 @@ export const saveDecision: (
   }
 };
 
-export const getProposedDecisonWithHighestId: (ds: Decision[]) => Decision | undefined = (ds) =>
+const getProposedDecisonWithHighestId: (ds: Decision[]) => Decision | undefined = (ds) =>
   ds.filter((d) => d.decisionType === 'PROPOSED').sort((a, b) => (b.id ?? 0) - (a.id ?? 0))?.[0];
 
 export const getFinalDecisonWithHighestId: (ds: Decision[]) => Decision | undefined = (ds) =>
   ds.filter((d) => d.decisionType === 'FINAL').sort((a, b) => (b.id ?? 0) - (a.id ?? 0))?.[0];
 
-export const getTopmostDecision: (ds: Decision[]) => Decision | undefined = (ds) =>
-  ds.find((d) => d.decisionType === 'FINAL') ||
-  ds.find((d) => d.decisionType === 'PROPOSED') ||
-  ds.find((d) => d.decisionType === 'RECOMMENDED');
-
-export const getFinalOrProposedDecision: (ds: Decision[]) => Decision | undefined = (ds) =>
-  ds.find((d) => d.decisionType === 'FINAL') || ds.find((d) => d.decisionType === 'PROPOSED');
-
 export const getProposedOrRecommendedDecision: (ds: Decision[]) => Decision | undefined = (ds) =>
   ds.find((d) => d.decisionType === 'PROPOSED') || ds.find((d) => d.decisionType === 'RECOMMENDED');
-
-export const getRecommendedDecision: (ds: Decision[]) => Decision | undefined = (ds) =>
-  ds.find((d) => d.decisionType === 'RECOMMENDED');
 
 export const getDecisionLabel: (outcome: DecisionOutcome) => string = (outcome) => {
   if (!outcome) {
@@ -248,12 +234,7 @@ export const getUtredningPhrases: (errand: IErrand, outcome: DecisionOutcome) =>
   outcome
 ) => getPhrases(errand, outcome, 'investigation');
 
-export const getDecisionPhrases: (errand: IErrand, outcome: DecisionOutcome) => Promise<{ phrases: string }> = (
-  errand,
-  outcome
-) => getPhrases(errand, outcome, 'decision');
-
-export const getPhrases: (
+const getPhrases: (
   errand: IErrand,
   outcome: DecisionOutcome,
   templateType: 'investigation' | 'decision'

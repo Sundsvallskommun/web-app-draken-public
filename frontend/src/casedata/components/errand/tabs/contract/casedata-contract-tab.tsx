@@ -47,7 +47,7 @@ import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-import ContractForm from './contract-form';
+import { ContractForm } from './contract-form';
 import { ContractNavigation } from './contract-navigation';
 
 interface CasedataContractProps {

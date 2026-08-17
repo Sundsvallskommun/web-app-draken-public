@@ -5,7 +5,7 @@ import { apiURL } from '@utils/util';
 import axios from 'axios';
 import qs from 'qs';
 
-export interface Token {
+interface Token {
   access_token: string;
   expires_in: number;
 }

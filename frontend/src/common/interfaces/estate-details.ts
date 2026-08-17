@@ -6,7 +6,7 @@ export type EstateInfoSearch = {
   districtcode?: string;
 };
 
-export type OwnerChanges = {
+type OwnerChanges = {
   objectidentifier: string;
   acquisition: [
     {

@@ -5,6 +5,9 @@
     "src/types/**/*.d.ts"
   ],
   "project": ["src/**/*.ts"],
+  "exclude": [
+    "enumMembers"
+  ],
   "ignore": [
     "src/data-contracts/**"
   ],

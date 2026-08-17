@@ -14,8 +14,6 @@ import { fileUploadOptions } from '@/utils/fileUploadOptions';
 import { logger } from '@/utils/logger';
 import { validateRequestBody } from '@/utils/validate';
 
-export { SingleSupportAttachment, SupportAttachment } from '@/dtos/support-message.dto';
-
 interface ResponseData {
   data: any;
   message: string;

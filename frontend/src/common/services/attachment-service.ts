@@ -43,6 +43,6 @@ export function mapAttachmentToUploadFile<TExtraMeta extends object = object>(
   return a;
 }
 
-export function validAttachment(attachment: Attachment): boolean {
+function validAttachment(attachment: Attachment): boolean {
   return !!attachment.hash;
 }

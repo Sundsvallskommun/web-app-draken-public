@@ -51,6 +51,7 @@
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "lint:strict": "eslint src/ --max-warnings=0 --cache --cache-location node_modules/.cache/eslint/",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
     "type-check": "tsc --pretty --noEmit",
     "knip": "knip",
@@ -67,8 +68,7 @@
     "test:e2e:ui:pt": "dotenv -e .env.pt -- playwright test --project=pt --ui",
     "test:e2e:ui:kc": "dotenv -e .env.kc -- playwright test --project=kc --ui",
     "test:e2e:ui:lop": "dotenv -e .env.lop -- playwright test --project=lop --ui",
-    "test:e2e:report": "playwright show-report",
-    "test": "jest --watch"
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -96,7 +96,6 @@
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.71.2",
     "react-i18next": "^15.6.1",
-    "react-image-crop": "^10.0.7",
     "sanitize-html": "^2.17.0",
     "sass": "^1.90.0",
     "sharp": "^0.34.3",
@@ -108,8 +107,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
-    "@testing-library/jest-dom": "^5.16.4",
-    "@testing-library/react": "14.0.0",
     "@types/node": "^20.3.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

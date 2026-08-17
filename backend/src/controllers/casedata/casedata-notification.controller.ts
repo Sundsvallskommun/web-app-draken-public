@@ -12,56 +12,6 @@ import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
-export class CasedataNotificationDto implements CasedataNotification {
-  @IsOptional()
-  @IsString()
-  id?: string;
-  @IsOptional()
-  @IsString()
-  municipalityId?: string;
-  @IsOptional()
-  @IsString()
-  namespace?: string;
-  @IsOptional()
-  @IsString()
-  created?: string;
-  @IsOptional()
-  @IsString()
-  modified?: string;
-  @IsOptional()
-  @IsString()
-  ownerFullName?: string;
-  @IsString()
-  ownerId!: string;
-  @IsOptional()
-  @IsString()
-  createdBy?: string;
-  @IsOptional()
-  @IsString()
-  createdByFullName?: string;
-  @IsString()
-  type!: string;
-  @IsString()
-  description!: string;
-  @IsOptional()
-  @IsString()
-  content?: string;
-  @IsOptional()
-  @IsString()
-  expires?: string;
-  @IsOptional()
-  @IsString()
-  acknowledged?: boolean;
-  @IsOptional()
-  @IsString()
-  globalAcknowledged?: boolean;
-  @IsString()
-  errandId!: number;
-  @IsOptional()
-  @IsString()
-  errandNumber?: string;
-}
-
 export class PatchNotificationDto implements PatchNotification {
   @IsOptional()
   @IsString()

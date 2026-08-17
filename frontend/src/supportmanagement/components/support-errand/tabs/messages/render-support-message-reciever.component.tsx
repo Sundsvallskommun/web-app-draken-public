@@ -1,4 +1,4 @@
-import sanitized from '@common/services/sanitizer-service';
+import { sanitized } from '@common/services/sanitizer-service';
 import { Button } from '@sk-web-gui/button';
 import { SupportCommunicationType } from '@supportmanagement/services/support-communication-types';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';

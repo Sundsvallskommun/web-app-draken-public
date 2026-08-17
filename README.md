@@ -264,6 +264,17 @@ yarn dev:{drake}
 # Exempel: yarn dev:se
 ```
 
+### Kodkvalitet
+
+Kör från repots rot:
+
+```bash
+yarn verify # Typkontroll, strikt lint, formatkontroll, Knip och backendtester
+yarn knip   # Dödkod, oanvända exporter och oanvända dependencies
+```
+
+Knip körs även vid `pre-push` och som en blockerande GitHub Actions-kontroll för pull requests samt push till `develop` och `main`.
+
 ### Tester
 
 **Backend** (Vitest, kör från `backend/`):

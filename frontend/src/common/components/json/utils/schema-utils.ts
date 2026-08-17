@@ -29,12 +29,6 @@ function cached<T>(cache: Map<string, Promise<T>>, key: string, loader: () => Pr
   return promise;
 }
 
-export function enumTitleOf(schema: RJSFSchema | null, field: string, value: string): string {
-  if (!schema || !value) return value ?? '';
-  const oneOf = (schema as any)?.properties?.[field]?.oneOf as Array<{ const: string; title?: string }> | undefined;
-  return oneOf?.find((o) => o.const === value)?.title ?? value;
-}
-
 export function enumTitlesOfArray(schema: RJSFSchema | null, field: string, values: string[] = []): string[] {
   if (!schema) return values ?? [];
   const oneOf = (schema as any)?.properties?.[field]?.items?.oneOf as
