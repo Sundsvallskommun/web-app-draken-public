@@ -1,5 +1,7 @@
+import { matchEventToNotification } from '@common/components/notifications/notification-utils';
+import { useRefreshNotifications } from '@common/hooks/useNotificationPoller';
 import { sanitized } from '@common/services/sanitizer-service';
-import { Avatar, Button, Modal, Spinner } from '@sk-web-gui/react';
+import { Avatar, Button, cx, Modal, Spinner } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { ParsedSupportEvent } from '@supportmanagement/interfaces/supportEvent';
@@ -13,17 +15,21 @@ import {
   ResolutionLabelLOK,
   ResolutionLabelLOP,
 } from '@supportmanagement/services/support-errand-service';
-import { getSupportErrandEvents } from '@supportmanagement/services/support-history-service';
+import { getSupportErrandEvents, groupSupportEvents } from '@supportmanagement/services/support-history-service';
 import { fetchRevisionDiff } from '@supportmanagement/services/support-revision-service';
 import dayjs from 'dayjs';
-import { History } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Bell, History } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 export const SidebarHistory: React.FC<{}> = () => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  const notifications = useSupportStore((s) => s.notifications);
   const administrators = useUserStore((s) => s.administrators);
+  const refreshNotifications = useRefreshNotifications();
+  const searchParams = useSearchParams();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -32,6 +38,7 @@ export const SidebarHistory: React.FC<{}> = () => {
   const [selectedChange, setSelectedChange] = useState<ParsedSupportEvent>();
   const [selectedChangeDetails, setSelectedChangeDetails] = useState<ParsedSupportRevisionDifference[]>();
   const [keyMapper, setKeyMapper] = useState<{ [key: string]: string }>();
+  const highlightRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (supportErrand && keyMapper && Object.keys(keyMapper).length > 1) {
@@ -100,6 +107,62 @@ export const SidebarHistory: React.FC<{}> = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIndex]);
 
+  const groups = useMemo(() => groupSupportEvents(events), [events]);
+
+  const notificationId = searchParams?.get('notification');
+
+  /**
+   * Notifications are normally loaded by the poller on the overview, but a notification link opens
+   * the errand in a new tab where the store starts empty. Load them here so the deep link resolves.
+   */
+  useEffect(() => {
+    if (notificationId && !notifications.some((notification) => notification.id === notificationId)) {
+      void refreshNotifications();
+    }
+    // Runs once per deep link. Depending on `notifications` would re-fetch forever when the
+    // notification is gone (expired or acknowledged away).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notificationId]);
+
+  /**
+   * The notification the user arrived from, if any. Following a notification should land on the very
+   * thing it was about, not just somewhere in the log.
+   */
+  const originNotification = useMemo(() => {
+    if (!notificationId) return undefined;
+    return notifications.find((notification) => notification.id === notificationId);
+  }, [notificationId, notifications]);
+
+  /** Events that produced a notification for this user — the "you were told about this" marker. */
+  const notifiedEventKeys = useMemo(() => {
+    const keys = new Set<string>();
+    groups.forEach((group) => {
+      const notified = group.events.some((event) =>
+        notifications.some((notification) => matchEventToNotification(event, notification))
+      );
+      if (notified) keys.add(group.key);
+    });
+    return keys;
+  }, [groups, notifications]);
+
+  const highlightedKey = useMemo(() => {
+    if (!originNotification) return undefined;
+    return groups.find((group) => group.events.some((event) => matchEventToNotification(event, originNotification)))
+      ?.key;
+  }, [groups, originNotification]);
+
+  useEffect(() => {
+    if (highlightedKey && highlightRef.current) {
+      highlightRef.current.scrollIntoView({ block: 'center' });
+    }
+  }, [highlightedKey]);
+
+  const openDetails = (event: ParsedSupportEvent, index: number) => {
+    setIsLoading(true);
+    setSelectedIndex(index);
+    setSelectedChange(event);
+  };
+
   return (
     <div className="relative h-full flex flex-col justify-start" data-cy="history-log">
       <div className="px-0 flex justify-between items-center">
@@ -113,38 +176,43 @@ export const SidebarHistory: React.FC<{}> = () => {
       ) : (
         <>
           <div>
-            {events?.map((p, idx) => {
+            {groups?.map((group, idx) => {
+              const isHighlighted = group.key === highlightedKey;
               return (
                 <div
-                  key={`history-event-${idx}`}
-                  className={
-                    'history-event first:mt-lg mb-xs relative pb-md px-md flex flex-col gap-sm' +
-                    (idx < events.length - 1 && 'border-0 border-l-1 border-gray-300')
-                  }
+                  key={`history-event-${group.key}`}
+                  ref={isHighlighted ? highlightRef : undefined}
+                  data-cy={`history-event-${group.key}`}
+                  className={cx(
+                    'history-event first:mt-lg mb-xs relative pb-md px-md flex flex-col gap-sm',
+                    idx < groups.length - 1 && 'border-0 border-l-1 border-gray-300',
+                    isHighlighted && 'bg-vattjom-surface-accent rounded-groups'
+                  )}
                 >
                   <div className="bg-white absolute m-0 p-0 flex items-start justify-start -left-[4px] top-0 w-[7px] h-[7px] border-2 border-gray-700 rounded-full"></div>
-                  <small className="font-normal -mt-[4px] mb-6">{p.parsed.datetime}</small>
+                  <small className="font-normal -mt-[4px] mb-6 flex items-center gap-8">
+                    {group.latest.parsed.datetime}
+                    {notifiedEventKeys.has(group.key) && (
+                      <Bell size="1.4rem" aria-label="Gav en notis" data-cy="history-event-notified" />
+                    )}
+                  </small>
                   <small className="mb-6">
                     {/* TODO User image or initials for Avatar */}
                     <Avatar rounded size="sm" className="mr-8" />
-                    {p.metadata.find((a) => a.key === 'ExecutedBy')?.value}
-                    {/*{administrators.find((a) => a.adAccount === p.parsed.administrator)?.displayName ||
-                      p.parsed.administrator}*/}
+                    {group.latest.metadata.find((a) => a.key === 'ExecutedBy')?.value}
                   </small>
-                  <small>
-                    <Button
-                      aria-label={`${p.parsed.event}, visa.`}
-                      variant="link"
-                      className="text-dark-secondary"
-                      onClick={() => {
-                        setIsLoading(true);
-                        setSelectedIndex(idx);
-                        setSelectedChange(p);
-                      }}
-                    >
-                      {p.message}
-                    </Button>
-                  </small>
+                  {group.events.map((event) => (
+                    <small key={event.id ?? event.message}>
+                      <Button
+                        aria-label={`${event.parsed.event}, visa.`}
+                        variant="link"
+                        className="text-dark-secondary text-left"
+                        onClick={() => openDetails(event, idx)}
+                      >
+                        {event.message}
+                      </Button>
+                    </small>
+                  ))}
                 </div>
               );
             })}
@@ -164,12 +232,17 @@ export const SidebarHistory: React.FC<{}> = () => {
           >
             <Modal.Content>
               <p>{selectedChange?.message}</p>
+              {selectedChange?.details ? (
+                <p className="text-dark-secondary" data-cy="history-event-details">
+                  {selectedChange.details}
+                </p>
+              ) : null}
               <div className="flex flex-col justify-center">
-                <p data-cy="history-table-details-title">
+                <div data-cy="history-table-details-title">
                   {selectedChangeDetails?.map((details, index) => {
                     return (
-                      <>
-                        <strong key={index}>{details.title + '\n'}</strong>
+                      <div key={`change-detail-${index}`}>
+                        <strong>{details.title + '\n'}</strong>
 
                         <p
                           data-cy="history-table-details-content"
@@ -177,10 +250,10 @@ export const SidebarHistory: React.FC<{}> = () => {
                             __html: sanitized(details.description || ''),
                           }}
                         ></p>
-                      </>
+                      </div>
                     );
                   })}
-                </p>
+                </div>
 
                 <p>
                   Uppdaterades:{' '}

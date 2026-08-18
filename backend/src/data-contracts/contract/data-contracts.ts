@@ -141,8 +141,8 @@ export interface Problem {
   instance?: string;
   /** @format uri */
   type?: string;
-  title?: string;
   detail?: string;
+  title?: string;
   /** @format int32 */
   status?: number;
 }
@@ -642,12 +642,12 @@ export interface PageContract {
   content?: Contract[];
   /** @format int32 */
   number?: number;
+  sort?: SortObject;
   pageable?: PageableObject;
-  first?: boolean;
-  last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  sort?: SortObject;
+  first?: boolean;
+  last?: boolean;
   empty?: boolean;
 }
 
@@ -665,8 +665,8 @@ export interface PageableObject {
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export enum CrsTypeEnum {

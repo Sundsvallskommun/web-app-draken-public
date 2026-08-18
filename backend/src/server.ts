@@ -41,6 +41,7 @@ import { SupportMessageController } from './controllers/supportmanagement/suppor
 import { SupportMetadataController } from './controllers/supportmanagement/support-metadata.controller';
 import { SupportNoteController } from './controllers/supportmanagement/support-note.controller';
 import { SupportNotificationController } from './controllers/supportmanagement/support-notification.controller';
+import { SupportSubscriptionController } from './controllers/supportmanagement/support-subscription.controller';
 import { TemplateController } from './controllers/template.controller';
 import { UserController } from './controllers/user.controller';
 
@@ -81,6 +82,7 @@ validateEnv();
       SupportMetadataController,
       SupportNoteController,
       SupportNotificationController,
+      SupportSubscriptionController,
       TemplateController,
       UserController,
       RelationsController,

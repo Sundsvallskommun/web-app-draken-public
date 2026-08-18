@@ -23,6 +23,7 @@ import {
 } from './fixtures/mockSupportErrands';
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
 import { mockResolvedRelations } from '../case-data/fixtures/mockRelations';
+import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('errand page', () => {
@@ -31,6 +32,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse);
       cy.intercept('GET', '**/me', mockMe);
       cy.intercept('GET', '**/featureflags', []);
+      cy.intercept('GET', '**/supportsubscriptions/2281', mockSubscriptions).as('getSubscriptions');
       cy.intercept('GET', '**/supportnamespaceconfigs/**', []);
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments).as(
         'getAttachments'
@@ -380,7 +382,8 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
 
       cy.get(`[aria-label="${mockSidebarButtons[2].label}"]`).should('exist').click();
-      cy.get('[data-cy="history-log"] div.sk-avatar').should('have.length', mockSupportHistory.totalElements);
+      // Events sharing a requestGroupId are one entry in the log, so there are fewer entries than events.
+      cy.get('[data-cy="history-log"] div.sk-avatar').should('have.length', 5);
       cy.get('[data-cy="history-log"] div button').first().click();
       cy.get('[data-cy="history-table-details-close-button"]').should('exist').contains('Stäng').click();
     });

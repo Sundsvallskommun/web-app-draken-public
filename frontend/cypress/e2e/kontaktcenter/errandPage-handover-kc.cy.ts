@@ -12,6 +12,7 @@ import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import { mockSupportAttachments, mockSupportErrand, mockSupportMessages } from './fixtures/mockSupportErrands';
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
+import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('errand handover to another namespace', () => {
@@ -20,6 +21,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse);
       cy.intercept('GET', '**/me', mockMe);
       cy.intercept('GET', '**/featureflags', []);
+      cy.intercept('GET', '**/supportsubscriptions/2281', mockSubscriptions).as('getSubscriptions');
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments).as('getAttachments');
       cy.intercept('GET', `**/supportmessage/2281/errands/${mockSupportErrand.id}/communication`, mockSupportMessages).as(
         'getMessages'
