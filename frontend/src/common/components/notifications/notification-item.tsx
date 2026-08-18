@@ -1,52 +1,40 @@
-import {
-  acknowledgeCasedataNotification,
-  getCasedataNotifications,
-} from '@casedata/services/casedata-notification-service';
-import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
-import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { prettyTime } from '@common/services/helper-service';
-import { appConfig } from '@config/appconfig';
 import { Checkbox, cx, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
-import {
-  acknowledgeSupportNotification,
-  getSupportNotifications,
-} from '@supportmanagement/services/support-notification-service';
+import { useConfigStore } from '@stores/index';
 import NextLink from 'next/link';
 import { FC } from 'react';
 
+import { acknowledgeNotifications } from './notification-actions';
 import { NotificationRenderIcon } from './notification-render-icon';
-import { getNotificationKey, labelBySubType, NotificationType, senderFallback } from './notification-utils';
+import { labelBySubType, notificationLabel, senderFallback } from './notification-utils';
+import { NotificationView } from './notification-view';
 
 interface NotificationItemProps {
-  notification: NotificationType;
+  notification: NotificationView;
   isSelected?: boolean;
   onToggleSelect?: () => void;
   showCheckbox?: boolean;
+  refresh?: () => Promise<void>;
 }
+
+/** Deep link that opens the errand on its log, with the originating event highlighted. */
+export const notificationHref = (notification: NotificationView): string =>
+  `/arende/${notification.errandNumber}?tab=history&notification=${notification.id}`;
 
 export const NotificationItem: FC<NotificationItemProps> = ({
   notification,
   isSelected = false,
   onToggleSelect,
   showCheckbox = false,
+  refresh,
 }) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
-  const setNotifications = useSupportStore((s) => s.setNotifications);
   const toastMessage = useSnackbar();
 
   const handleAcknowledge = async () => {
     try {
-      if (appConfig.isCaseData) {
-        await acknowledgeCasedataNotification(municipalityId, notification as CaseDataNotification);
-      } else {
-        await acknowledgeSupportNotification(municipalityId, notification as SupportNotification);
-      }
-
-      const getNotifications = appConfig.isCaseData ? getCasedataNotifications : getSupportNotifications;
-
-      const notifications = await getNotifications(municipalityId);
-      setNotifications(notifications);
+      await acknowledgeNotifications(municipalityId, [notification]);
+      await refresh?.();
     } catch (error) {
       toastMessage({
         position: 'bottom',
@@ -57,11 +45,10 @@ export const NotificationItem: FC<NotificationItemProps> = ({
     }
   };
 
-  const notificationKey = getNotificationKey(notification);
-  const subTypeLabel = notificationKey ? labelBySubType[notificationKey] : undefined;
+  const subTypeLabel = notification.subType ? labelBySubType[notification.subType] : undefined;
 
   return (
-    <div className="p-16 pl-0 flex gap-12 items-start justify-between text-small">
+    <div className="p-16 pl-0 flex gap-12 items-start justify-between text-small" data-cy="notification-item">
       {showCheckbox && (
         <div className="flex items-center my-xs">
           <Checkbox checked={isSelected} onChange={onToggleSelect} />
@@ -72,9 +59,9 @@ export const NotificationItem: FC<NotificationItemProps> = ({
       </div>
       <div className="flex-grow">
         <div>
-          <strong>{notification.description + ' › '}</strong>
+          <strong>{`${notificationLabel(notification)} › `}</strong>
           <NextLink
-            href={`/arende/${notification.errandNumber}`}
+            href={notificationHref(notification)}
             target="_blank"
             onClick={handleAcknowledge}
             className="underline whitespace-nowrap"
@@ -82,7 +69,7 @@ export const NotificationItem: FC<NotificationItemProps> = ({
             {notification.errandNumber || 'Till ärendet'}
           </NextLink>
         </div>
-        <div>Från: {senderFallback(notification.createdByFullName || notification.createdBy)}</div>
+        {notification.sender ? <div>Från: {senderFallback(notification.sender)}</div> : null}
         {subTypeLabel ? <div>Händelse: {subTypeLabel}</div> : null}
       </div>
       <span className="whitespace-nowrap">{prettyTime(notification.created ?? '')}</span>

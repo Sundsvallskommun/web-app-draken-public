@@ -21,6 +21,7 @@ import { mockMetaData } from './fixtures/mockMetadata';
 import { mockOrganizationResponse } from './fixtures/mockOrganizationResponse';
 import { mockRelations } from './fixtures/mockRelations';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
+import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
 import {
   mockEmptySupportErrand,
   mockFacilitiesData,
@@ -38,6 +39,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse).as('getSupportAdmins');
       cy.intercept('GET', '**/me', mockMe).as('getMe');
       cy.intercept('GET', '**/featureflags', []);
+      cy.intercept('GET', '**/supportsubscriptions/2281', mockSubscriptions).as('getSubscriptions');
       cy.intercept('GET', '**/supporterrands/2281/3f0e57b2-2876-4cb8-aa71-537b5805be27', mockSupportErrand);
       cy.intercept('GET', `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSupportErrand).as(
         'getErrand'

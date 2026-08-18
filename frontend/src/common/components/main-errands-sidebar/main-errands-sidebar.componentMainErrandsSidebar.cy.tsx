@@ -1,3 +1,4 @@
+import { toNotificationView } from '@common/components/notifications/notification-view';
 import { User } from '@common/interfaces/user';
 import { mockMe } from '@cypress/e2e/case-data/fixtures/mockMe';
 import { mockNotifications } from '@cypress/e2e/kontaktcenter/fixtures/mockSupportNotifications';
@@ -12,7 +13,7 @@ describe('<MainErrandsSidebar />', () => {
       const [open, setOpen] = useState(false);
 
       useUserStore.getState().setUser(mockMe.data as User);
-      useSupportStore.getState().setNotifications(mockNotifications);
+      useSupportStore.getState().setNotifications(mockNotifications.map(toNotificationView));
       useConfigStore.getState().setMunicipalityId('2281');
 
       return (
@@ -40,7 +41,8 @@ describe('<MainErrandsSidebar />', () => {
     cy.get(`[aria-label="Notifieringar"]`).should('exist').click();
     cy.wait('@getSupportNotifications');
     cy.get(`[aria-label="Stäng notiser"]`).should('exist').click();
-    cy.get(`[class="sk-badge-content"]`).should('exist').should('contain', 2);
+    // The badge counts notifications, not the groups they are merged into in the panel.
+    cy.get(`[class="sk-badge-content"]`).should('exist').should('contain', 4);
 
     //Open sidebar
     cy.get(`[aria-label="Öppna sidomeny"]`).should('exist').click();

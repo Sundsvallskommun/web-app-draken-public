@@ -71,8 +71,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  detail?: string;
   causeAsProblem?: ThrowableProblem;
+  detail?: string;
 }
 
 export interface ThrowableProblem {
@@ -232,7 +232,6 @@ export interface JsonNode {
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   integralNumber?: boolean;
   missingNode?: boolean;
   valueNode?: boolean;
@@ -248,6 +247,7 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 
@@ -1558,10 +1558,10 @@ export interface Conversation {
 }
 
 export interface PageSubscriberNotification {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: SubscriberNotification[];
@@ -1580,10 +1580,10 @@ export interface PageableObject {
   /** @format int64 */
   offset?: number;
   sort?: SortObject;
-  unpaged?: boolean;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
+  unpaged?: boolean;
   /** @format int32 */
   pageSize?: number;
 }
@@ -1644,6 +1644,21 @@ export interface SubscriberNotification {
    * @example "2000-10-31T01:30:00.000+02:00"
    */
   acknowledged?: string;
+  /**
+   * Event type that triggered the notification
+   * @example "UPDATE"
+   */
+  eventType?: string;
+  /**
+   * Description of the event that triggered the notification
+   * @example "Bilaga har skapats"
+   */
+  description?: string;
+  /**
+   * Subtype describing what kind of entity the event refers to
+   * @example "ATTACHMENT"
+   */
+  subType?: string;
 }
 
 /** Action definition model describing an available action and its conditions/parameters */
@@ -1699,10 +1714,10 @@ export interface MetadataResponse {
 }
 
 export interface PageErrand {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Errand[];
@@ -1852,10 +1867,10 @@ export interface EventMetaData {
 }
 
 export interface PageEvent {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Event[];
@@ -1961,10 +1976,10 @@ export interface Message {
 }
 
 export interface PageMessage {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: Message[];

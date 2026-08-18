@@ -14,6 +14,7 @@ import { mockConversationMessages, mockConversations } from '../lop/fixtures/moc
 import { mockRelations } from '../lop/fixtures/mockRelations';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
 import { mockResolvedRelations } from '../case-data/fixtures/mockRelations';
+import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
 
 test.describe('Message tab', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
@@ -22,6 +23,7 @@ test.describe('Message tab', () => {
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
+    await mockRoute('**/supportsubscriptions/2281', mockSubscriptions, { method: 'GET' });
     await mockRoute('**/supporterrands/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrand, {
       method: 'GET',
     });

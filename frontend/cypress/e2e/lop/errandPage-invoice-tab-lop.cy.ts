@@ -10,6 +10,7 @@ import { mockMetaData } from './fixtures/mockMetadata';
 import { mockPortalPersonData_external, mockPortalPersonData_internal } from './fixtures/mockPortalPersonData';
 import { mockRelations } from './fixtures/mockRelations';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
+import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
 import {
   mockSupportAttachments,
   mockSupportErrand,
@@ -30,6 +31,7 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse);
       cy.intercept('GET', '**/me', mockMe);
       cy.intercept('GET', '**/featureflags', []);
+      cy.intercept('GET', '**/supportsubscriptions/2281', mockSubscriptions).as('getSubscriptions');
       cy.intercept('GET', '**/supportmetadata/2281', mockMetaData).as('getSupportMetadata');
       cy.intercept('GET', '**/supportnotes/2281/*', mockSupportNotes).as('getNotes');
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments);
