@@ -6,7 +6,7 @@ import {
   serviceStatusColor,
 } from '@common/components/services/service-item.component';
 import { usePartyAssetServices } from '@common/hooks/use-asset-services';
-import { assetStatusLabels } from '@common/interfaces/asset';
+import { assetStatusLabels, assetTypeLabels } from '@common/interfaces/asset';
 import { Service } from '@common/services/service-assets-service';
 import { Button, FormControl, FormLabel, Icon, Label, Select, Spinner } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
@@ -18,13 +18,10 @@ interface CustomerViewServicesProps {
   assetTypes: string[];
 }
 
-const assetTypeDisplay: Record<string, string> = {
-  ParatransitPermitLocal: 'Färdtjänst',
-  ParatransitPermitNational: 'Riksfärdtjänst',
-  PARKINGPERMIT: 'Parkeringstillstånd',
-};
-
-const typeLabel = (assetType?: string) => (assetType && assetTypeDisplay[assetType]) || assetType || 'Insats';
+// Typ- och statusetiketter delas med tjänstefliken via @common/interfaces/asset, så att samma
+// insats heter samma sak oavsett var den visas.
+const typeLabel = (assetType?: string) =>
+  (assetType && (assetTypeLabels as Record<string, string>)[assetType]) || assetType || 'Insats';
 
 const statusLabel = (status: string) => (assetStatusLabels as Record<string, string>)[status] ?? status;
 
@@ -125,7 +122,7 @@ export const CustomerViewServices: FC<CustomerViewServicesProps> = ({ partyId, a
           </p>
           <div className="flex flex-col gap-12">
             {filtered.length === 0 ? (
-              <p data-cy="customer-view-services-empty">Inga beslut och dokument matchar filtret</p>
+              <p data-cy="customer-view-services-filtered-empty">Inga beslut och dokument matchar filtret</p>
             ) : (
               filtered.map((service) => (
                 <button

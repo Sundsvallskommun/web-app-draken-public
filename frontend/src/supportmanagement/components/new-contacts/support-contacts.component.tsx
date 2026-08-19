@@ -1,8 +1,13 @@
 import { CustomerViewFooter } from '@common/components/customer-view/customer-view-footer.component';
 import { StakeholderCard, StakeholderCardAction } from '@common/components/stakeholder-card/stakeholder-card.component';
+import { dispatchOpenMessage } from '@common/services/message-event-service';
 import { appConfig } from '@config/appconfig';
 import { Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
 import { useMetadataStore, useSupportStore } from '@stores/index';
+import {
+  ACTIVE_PARTY_STATUSES,
+  KC_ASSET_TYPES,
+} from '@supportmanagement/components/support-errand/tabs/services/support-errand-services-tab';
 import {
   emptyContact,
   ExternalIdType,
@@ -18,9 +23,12 @@ import { Info, Users } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';
 
-import { ACTIVE_PARTY_STATUSES, KC_ASSET_TYPES } from '../support-errand/tabs/services/support-errand-services-tab';
 import { PartyAssetsSection } from './partyassets-section.component';
 import { SupportSimplifiedContactForm } from './support-simplified-contact-form.component';
+
+// Set-varianten används för filtrering i tjänstefliken; kundbildsfoten vill ha en lista med
+// stabil identitet så att den inte skapar en ny array vid varje render.
+const ACTIVE_PARTY_STATUS_LIST = [...ACTIVE_PARTY_STATUSES];
 
 interface SupportContactsProps {
   setUnsaved: (unsaved: boolean) => void;
@@ -193,8 +201,16 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
     );
   };
 
+  const isErrandOwner = (contact: SupportStakeholderFormModel) =>
+    !!supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY' && s.externalId === contact.externalId);
+
   const renderCardFooter = (contact: SupportStakeholderFormModel) => {
     if (!contact.externalId) return null;
+
+    // Beslut och dokument (färdtjänst, p-tillstånd) hämtas bara för ärendeägaren, precis som
+    // innan kundbilden fanns. Att hämta dem för varje kontaktperson vore mer personuppgifter
+    // än ärendet motiverar, och kostar tre extra anrop per kort.
+    const showServices = appConfig.features.useServices && isErrandOwner(contact);
 
     if (appConfig.features.useCustomerView) {
       return (
@@ -204,23 +220,16 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
             contact.externalIdType === ExternalIdType.COMPANY ? contact.organizationNumber : undefined
           }
           contact={toStakeholderCardContact(contact)}
-          assetTypes={appConfig.features.useServices ? KC_ASSET_TYPES : []}
-          activeStatuses={appConfig.features.useServices ? [...ACTIVE_PARTY_STATUSES] : []}
+          assetTypes={showServices ? KC_ASSET_TYPES : []}
+          activeStatuses={showServices ? ACTIVE_PARTY_STATUS_LIST : []}
           sourceErrandId={supportErrand?.id}
-          onOpenMessage={(relatedErrand) => {
-            window.dispatchEvent(
-              new CustomEvent('openMessage', {
-                detail: { contactMeans: 'draken', relationCaseId: relatedErrand.caseId },
-              })
-            );
-          }}
+          onOpenMessage={(relatedErrand) =>
+            dispatchOpenMessage({ contactMeans: 'draken', relationCaseId: relatedErrand.caseId })
+          }
         />
       );
     }
-    const isOwner = supportErrand?.stakeholders?.some(
-      (s) => s.role === 'PRIMARY' && s.externalId === contact.externalId
-    );
-    if (isOwner && appConfig.features.useServices) {
+    if (showServices) {
       return <PartyAssetsSection partyId={contact.externalId} />;
     }
     return null;

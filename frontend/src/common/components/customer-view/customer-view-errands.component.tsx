@@ -1,16 +1,17 @@
 'use client';
 
-import { CaseLabels } from '@casedata/interfaces/case-label';
 import { RelationErrandCard } from '@common/components/linked-errands-disclosure/relation-errand-card.component';
 import { Relation } from '@common/data-contracts/relations/data-contracts';
 import {
   CaseStatusResponse,
+  caseTypeLabel,
   findOperationUsingNamespace,
   getStatusesUsingOrganizationNumber,
   getStatusesUsingPartyId,
+  isClosedCaseStatus,
 } from '@common/services/casestatus-service';
 import { createRelation, deleteRelation, getResolvedRelations } from '@common/services/relations-service';
-import { Checkbox, Pagination, SearchField, Spinner, useConfirm } from '@sk-web-gui/react';
+import { Checkbox, Pagination, SearchField, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
 import { FC, useEffect, useState } from 'react';
 
@@ -20,9 +21,6 @@ interface CustomerViewErrandsProps {
   sourceErrandId?: string;
   onOpenMessage?: (errand: CaseStatusResponse) => void;
 }
-
-const caseTypeLabel = (errand: CaseStatusResponse) =>
-  (CaseLabels.ALL as Record<string, string>)[errand.caseType ?? ''] ?? errand.caseType ?? '';
 
 const PAGE_SIZE = 20;
 
@@ -42,6 +40,10 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
   const [showOnlyRelated, setShowOnlyRelated] = useState(false);
   const [includeClosed, setIncludeClosed] = useState(false);
   const removeRelationConfirm = useConfirm();
+  const toastMessage = useSnackbar();
+
+  const notifyError = (message: string) =>
+    toastMessage({ position: 'bottom', closeable: false, message, status: 'error' });
 
   useEffect(() => {
     let active = true;
@@ -67,28 +69,36 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
   }, [municipalityId, partyId, organizationNumber, sourceErrandId]);
 
   const refreshRelations = () => {
-    if (!sourceErrandId) return;
-    getResolvedRelations('source', municipalityId, sourceErrandId, 'ASC')
+    if (!sourceErrandId) return Promise.resolve();
+    return getResolvedRelations('source', municipalityId, sourceErrandId, 'ASC')
       .then((res) => setRelations(res.relations))
       .catch(() => setRelations([]));
   };
 
   useEffect(() => {
-    refreshRelations();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!sourceErrandId) return;
+    let active = true;
+    getResolvedRelations('source', municipalityId, sourceErrandId, 'ASC')
+      .then((res) => {
+        if (active) setRelations(res.relations);
+      })
+      .catch(() => {
+        if (active) setRelations([]);
+      });
+    return () => {
+      active = false;
+    };
   }, [municipalityId, sourceErrandId]);
 
   const relationFor = (errand: CaseStatusResponse) =>
     relations.find((relation) => relation.target.resourceId === errand.caseId);
-
-  const isClosed = (errand: CaseStatusResponse) => errand.status === 'Klart' || errand.externalStatus === 'Avslutat';
 
   const handleRelate = (errand: CaseStatusResponse) => {
     if (!sourceErrandId || !errand.caseId) return;
     setBusyCaseId(errand.caseId);
     createRelation(municipalityId, sourceErrandId, errand)
       .then(() => refreshRelations())
-      .catch((e) => console.error('Failed to create relation:', e))
+      .catch(() => notifyError('Ärendena kunde inte kopplas'))
       .finally(() => setBusyCaseId(undefined));
   };
 
@@ -109,13 +119,13 @@ export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
         setBusyCaseId(errand.caseId);
         deleteRelation(municipalityId, relation.id!)
           .then(() => refreshRelations())
-          .catch((e) => console.error('Failed to delete relation:', e))
+          .catch(() => notifyError('Relationen kunde inte tas bort'))
           .finally(() => setBusyCaseId(undefined));
       });
   };
 
   const filtered = (errands ?? [])
-    .filter((errand) => includeClosed || !isClosed(errand))
+    .filter((errand) => includeClosed || !isClosedCaseStatus(errand))
     .filter((errand) => !showOnlyRelated || !!relationFor(errand))
     .filter((errand) => {
       if (!query) return true;

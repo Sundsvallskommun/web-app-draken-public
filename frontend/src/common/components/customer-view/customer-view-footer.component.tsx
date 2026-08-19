@@ -11,7 +11,7 @@ import { getResolvedRelations } from '@common/services/relations-service';
 import { Button, Icon, Spinner } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
 import { ArrowRight, FileText, Link2, ListChecks } from 'lucide-react';
-import { FC, useEffect, useState } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
 
 import { CustomerViewModal } from './customer-view-modal.component';
 
@@ -24,6 +24,8 @@ interface CustomerViewFooterProps {
   sourceErrandId?: string;
   onOpenMessage?: (errand: CaseStatusResponse) => void;
 }
+
+const pluralize = (count: number, singular: string, plural: string) => `${count} ${count === 1 ? singular : plural}`;
 
 export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
   partyId,
@@ -69,15 +71,22 @@ export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
     };
   }, [municipalityId, partyId, organizationNumber]);
 
+  // Det aktuella ärendet räknas inte som ett av personens "andra" ärenden. Samma filtrering
+  // görs i kundbildens ärendeflik, så att siffran här och listan där alltid stämmer överens.
+  const otherErrands = useMemo(
+    () => partyStatuses?.filter((status) => status.caseId !== sourceErrandId),
+    [partyStatuses, sourceErrandId]
+  );
+
   // Relationer tillhör ärendet, inte personen — räknaren visar hur många av det
   // aktuella ärendets relationer som pekar på något av personens ärenden.
   useEffect(() => {
     let active = true;
-    if (!sourceErrandId || !partyStatuses) return;
+    if (!sourceErrandId || !otherErrands) return;
     getResolvedRelations('source', municipalityId, sourceErrandId, 'ASC')
       .then(({ relations }) => {
         if (!active) return;
-        const partyCaseIds = new Set(partyStatuses.map((s) => s.caseId).filter(Boolean));
+        const partyCaseIds = new Set(otherErrands.map((s) => s.caseId).filter(Boolean));
         setRelationCount(relations.filter((r) => partyCaseIds.has(r.target.resourceId)).length);
       })
       .catch(() => {
@@ -86,16 +95,13 @@ export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
     return () => {
       active = false;
     };
-  }, [municipalityId, sourceErrandId, partyStatuses]);
+  }, [municipalityId, sourceErrandId, otherErrands]);
 
-  const errandCount = partyStatuses?.length;
+  const errandCount = otherErrands?.length;
 
-  const activeStatusSet = new Set(activeStatuses);
+  const activeStatusSet = useMemo(() => new Set(activeStatuses), [activeStatuses]);
   const activeServicesCount = partyServices?.filter((s) => s.status && activeStatusSet.has(s.status)).length ?? 0;
-  let errandCountContent = `${errandCount} ärenden`;
-  if (errandError) {
-    errandCountContent = '– ärenden';
-  }
+  const errandCountContent = errandError ? '– ärenden' : pluralize(errandCount ?? 0, 'ärende', 'ärenden');
 
   return (
     <div className="pt-12 pb-20 px-16 border-t-1" data-cy="customer-view-footer">
@@ -118,7 +124,7 @@ export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
                 {servicesLoading ? (
                   <Spinner size={2} aria-label="Hämtar tjänster" />
                 ) : (
-                  `${activeServicesCount} aktiva tjänster`
+                  `${pluralize(activeServicesCount, 'aktiv tjänst', 'aktiva tjänster')}`
                 )}
               </span>
             </span>
@@ -127,7 +133,7 @@ export const CustomerViewFooter: FC<CustomerViewFooterProps> = ({
             <span className="flex items-center gap-8">
               <Icon icon={<Link2 size={18} />} />
               <span className="text-small" data-cy="customer-view-relation-count">
-                {relationCount === 1 ? '1 relation' : `${relationCount} relationer`}
+                {pluralize(relationCount, 'relation', 'relationer')}
               </span>
             </span>
           )}
