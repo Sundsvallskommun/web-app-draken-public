@@ -13,6 +13,7 @@ import {
 } from '../fixtures/mockContractsList';
 import { mockErrands_base } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
+import { MODAL_DIALOG } from '../../utils/modal';
 
 test.describe('Contract Overview page', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -814,7 +815,7 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-detail-edit-button"]').click();
 
         // Confirmation dialog should appear
-        const dialog = page.locator('article.sk-modal-dialog');
+        const dialog = page.locator(MODAL_DIALOG);
         await expect(dialog.locator('.sk-modal-dialog-header-title')).toHaveText('Ändra avtalsuppgifter');
         await expect(dialog.getByText('Vill du skapa ett nytt ärende för avtal 2049-00010?')).toBeVisible();
         await expect(page.locator('[data-cy="contract-detail-confirm-submit"]')).toBeVisible();
