@@ -9,7 +9,6 @@ export interface AppConfig {
 }
 
 interface AppConfigFeatures {
-  useErrandExport: boolean;
   useThreeLevelCategorization: boolean;
   useTwoLevelCategorization: boolean;
   useExplanationOfTheCause: boolean;
@@ -39,6 +38,7 @@ interface AppConfigFeatures {
   useClosedAsDefaultResolution: boolean;
   useServices: boolean;
   useAppeal: boolean;
+  useHandover: boolean;
   useCustomerView: boolean;
 }
 
@@ -58,7 +58,6 @@ export const appConfig: AppConfig = {
   isSupportManagement: envBool(process.env.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT),
   reopenSupportErrandLimit: process.env.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '30',
   features: {
-    useErrandExport: envBool(process.env.NEXT_PUBLIC_USE_ERRAND_EXPORT),
     useThreeLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION),
     useTwoLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION),
     useExplanationOfTheCause: envBool(process.env.NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE),
@@ -88,6 +87,7 @@ export const appConfig: AppConfig = {
     useClosedAsDefaultResolution: envBool(process.env.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION),
     useServices: envBool(process.env.NEXT_PUBLIC_USE_SERVICES),
     useAppeal: envBool(process.env.NEXT_PUBLIC_USE_APPEAL),
+    useHandover: envBool(process.env.NEXT_PUBLIC_USE_HANDOVER),
     useCustomerView: envBool(process.env.NEXT_PUBLIC_USE_CUSTOMER_VIEW),
   },
 };

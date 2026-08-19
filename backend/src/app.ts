@@ -19,6 +19,7 @@ import {
   SECRET_KEY,
   SWAGGER_ENABLED,
 } from '@config';
+import defaultAuthGuard from '@middlewares/default-auth.middleware';
 import errorMiddleware from '@middlewares/error.middleware';
 import { Strategy, VerifiedCallback } from '@node-saml/passport-saml';
 import { logger, stream } from '@utils/logger';
@@ -43,7 +44,7 @@ import swaggerUi from 'swagger-ui-express';
 
 import { HttpException } from './exceptions/HttpException';
 import { Profile } from './interfaces/profile.interface';
-import { authorizeGroups, getPermissions, getRole } from './services/authorization.service';
+import { authorizeGroups, getLoginPermissions, getRole } from './services/authorization.service';
 import { additionalConverters } from './utils/custom-validation-classes';
 import { isValidOrigin } from './utils/isValidateOrigin';
 import { isValidUrl } from './utils/util';
@@ -70,16 +71,16 @@ const samlStrategy = new Strategy(
     // Identity Provider's public key
     idpCert: SAML_IDP_PUBLIC_CERT!,
     issuer: SAML_ISSUER!,
-    wantAssertionsSigned: false,
+    wantAssertionsSigned: true,
     signatureAlgorithm: 'sha256',
     digestAlgorithm: 'sha256',
     // maxAssertionAgeMs: 2592000000,
     // authnRequestBinding: 'HTTP-POST',
     //logoutUrl: 'http://194.71.24.30/sso',
     logoutCallbackUrl: SAML_LOGOUT_CALLBACK_URL!,
-    acceptedClockSkewMs: -1,
+    acceptedClockSkewMs: 5000,
     wantAuthnResponseSigned: false,
-    audience: false,
+    audience: SAML_ISSUER!,
   },
   async function (profile: Profile | null, done: VerifiedCallback) {
     if (!profile) {
@@ -130,10 +131,12 @@ const samlStrategy = new Strategy(
         email: email,
         groups: appGroups,
         role: getRole(appGroups),
-        permissions: getPermissions(appGroups),
+        // Permissions are resolved once here, at login, and carried in the session cookie.
+        permissions: getLoginPermissions(appGroups),
       };
 
-      logger.info(`Found user: ${JSON.stringify(findUser)}`);
+      logger.info(`Authenticated user ${findUser.username} (role: ${findUser.role})`);
+      logger.debug(`Found user: ${JSON.stringify(findUser)}`);
 
       done(null, findUser);
     } catch (err) {
@@ -215,6 +218,10 @@ class App {
         store: this.sessionStore,
         cookie: {
           path: BASE_URL_PREFIX,
+          httpOnly: true,
+          secure: this.env === 'production' && process.env.ENVIRONMENT !== 'LOCAL',
+          sameSite: 'lax',
+          maxAge: 12 * 60 * 60 * 1000,
         },
       }),
     );
@@ -284,7 +291,8 @@ class App {
         }
 
         let successRedirect: URL, failureRedirect: URL;
-        const urls = req?.body?.RelayState.split(',');
+        const relayState = typeof req?.body?.RelayState === 'string' ? req.body.RelayState : '';
+        const urls = relayState.split(',');
 
         if (isValidUrl(urls[0]) && isValidOrigin(urls[0])) {
           successRedirect = new URL(urls[0]);
@@ -316,7 +324,8 @@ class App {
     this.app.post(`${BASE_URL_PREFIX}/saml/login/callback`, samlLimiter, bodyParser.urlencoded({ extended: false }), (req, res, next) => {
       let successRedirect: URL, failureRedirect: URL;
 
-      const urls = req?.body?.RelayState.split(',');
+      const relayState = typeof req?.body?.RelayState === 'string' ? req.body.RelayState : '';
+      const urls = relayState.split(',');
 
       if (isValidUrl(urls[0]) && isValidOrigin(urls[0])) {
         successRedirect = new URL(urls[0]);
@@ -331,6 +340,7 @@ class App {
 
       passport.authenticate('saml', (err: Error | null, user: Express.User | false | null) => {
         if (err) {
+          logger.warn(`SAML login callback failed: ${err.name}: ${err.message}`);
           const queries = new URLSearchParams(failureRedirect.searchParams);
           if (err?.name) {
             queries.append('failMessage', err.name);
@@ -357,6 +367,11 @@ class App {
         }
       })(req, res, next);
     });
+
+    // Default-deny authentication. Mounted last so the SAML endpoints and the `/health`
+    // probe above it stay reachable, and before initializeRoutes() so every
+    // routing-controllers route sits behind it unless listed in PUBLIC_PATHS.
+    this.app.use(BASE_URL_PREFIX!, defaultAuthGuard);
   }
 
   private initializeRoutes(controllers: NewableFunction[]) {

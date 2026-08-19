@@ -1,5 +1,5 @@
 import { Contract, ContractType, Stakeholder, StakeholderType } from '@casedata/interfaces/contracts';
-import { contractTypes, leaseTypes } from '@casedata/services/contract-service';
+import { contractTypes, isOnlyBillingParty, leaseTypes } from '@casedata/services/contract-service';
 import { Button, Input, Label, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
@@ -89,8 +89,8 @@ export const contractTableLabels = [
   { label: 'Undertyp', sortable: true, column: 'leaseType' },
   { label: 'Avtals-id', sortable: true, column: 'id' },
   { label: 'Parter', sortable: false, column: 'stakeholders' },
-  { label: 'Avtalsperiod', sortable: true, column: 'end' },
-  { label: 'Uppsägningsdatum', sortable: false, column: '' },
+  { label: 'Avtalsperiod', sortable: true, column: 'endDate' },
+  { label: 'Uppsägningsdatum', sortable: true, column: 'noticeDate' },
   { label: '', sortable: false, column: '' },
 ];
 
@@ -146,7 +146,13 @@ export const ContractsTable: FC<{
         .join(', ') || '-';
     const districts = contract.propertyDesignations?.map((p) => p.district).filter(Boolean);
     const uniqueDistricts = [...new Set(districts)].join(', ') || '-';
-    const partyNames = contract.stakeholders?.map(getStakeholderName).filter(Boolean) || [];
+    // Hide parties whose only role is invoice recipient ("fakturamottagare") from the overview.
+    // A party that is also another role (e.g. leaseholder) is kept and shown on its contract row.
+    const partyNames =
+      contract.stakeholders
+        ?.filter((stakeholder) => !isOnlyBillingParty(stakeholder))
+        .map(getStakeholderName)
+        .filter(Boolean) || [];
     const parties =
       partyNames.length > 0 ? (
         <div className="whitespace-nowrap">

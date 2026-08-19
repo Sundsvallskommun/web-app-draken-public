@@ -16,6 +16,7 @@ export const emptyUser: User = {
     canEditSupportManagement: false,
     canViewAttestations: false,
     canEditAttestations: false,
+    canViewOtherNamespaces: false,
   },
 };
 

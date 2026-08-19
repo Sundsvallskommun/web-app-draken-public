@@ -24,6 +24,8 @@ export const findOperationUsingNamespace = (namespace: string) => {
       return 'LOP';
     case 'CONTACTSUNDSVALL':
       return 'KS';
+    case 'ROB':
+      return 'ROB';
     default:
       return '(okänd)';
   }

@@ -86,7 +86,7 @@ export const BillingSpecifications: React.FC = () => {
                   );
                 })}
               </Checkbox.Group>
-              <small>Fastigheter hämtas från Ärendeuppgifter.</small>
+              <small>Fastighet hämtas från ärendet och visas på fakturan.</small>
             </>
           ) : (
             <span className="text-secondary">Inga fastighetsbeteckningar finns angivna på ärendet</span>

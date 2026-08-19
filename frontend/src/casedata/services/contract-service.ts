@@ -396,6 +396,17 @@ export const prettyContractRoles: { [key: string]: string } = {
   PRIMARY_BILLING_PARTY: 'Fakturamottagare',
 };
 
+// A party is an invoice recipient ("fakturamottagare") if it carries the PRIMARY_BILLING_PARTY role.
+export const isBillingParty = (stakeholder: { roles?: ContractStakeholderRole[] }): boolean =>
+  (stakeholder.roles ?? []).includes(ContractStakeholderRole.PRIMARY_BILLING_PARTY);
+
+// A party is *exclusively* an invoice recipient when PRIMARY_BILLING_PARTY is its only role.
+// Only such parties are hidden from the party listing in the contract overview ("avtalsöversikt");
+// a party that is also e.g. a leaseholder is kept so it still shows up on its contract row.
+export const isOnlyBillingParty = (stakeholder: { roles?: ContractStakeholderRole[] }): boolean =>
+  isBillingParty(stakeholder) &&
+  (stakeholder.roles ?? []).every((role) => role === ContractStakeholderRole.PRIMARY_BILLING_PARTY);
+
 export const prettyPaymentPeriods: {
   [key in 'yearly' | 'byYear' | 'byLease' | 'indexAdjustedFee' | 'prepaid']: string;
 } = {
@@ -645,7 +656,7 @@ export const fetchSignedContractAttachment: (
 export const saveSignedContractAttachment = (
   municipalityId: string,
   contractId: string,
-  attachment: { id: string; file: File }[],
+  attachment: UploadFile[],
   note: string
 ) => {
   const attachmentPromise = attachment.map(async (attachment) => {

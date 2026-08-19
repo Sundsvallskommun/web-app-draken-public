@@ -1,18 +1,20 @@
 import {
-  Attachment,
   MEXAllAttachmentLabels,
   MEXAttachmentCategory,
   MEXAttachmentLabels,
   MEXLegacyAttachmentLabels,
   PTAttachmentCategory,
   PTAttachmentLabels,
+  SingleCasedataAttachment,
 } from '@casedata/interfaces/attachment';
 import { PTCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
 import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
+import { base64ToFile } from '@common/services/attachment-service';
 import { UploadFile } from '@sk-web-gui/react';
+import { Attachment } from 'src/data-contracts/backend/data-contracts';
 
 export const MAX_FILE_SIZE_MB = 50;
 
@@ -104,23 +106,10 @@ export const getPTAttachmentKey: (label: string) => PTAttachmentCategory | undef
   }
 };
 
-export const getAttachmentLabel = (attachment: Attachment) =>
+export const getAttachmentLabel = (category: string) =>
   isMEX()
-    ? (MEXAttachmentLabels as Record<string, string>)[attachment?.category] || 'Okänt'
-    : (PTAttachmentLabels as Record<string, string>)[attachment?.category] || 'Okänt';
-
-export const getImageAspect: (attachment: Attachment) => number | undefined = (attachment) =>
-  attachment?.category === 'PASSPORT_PHOTO'
-    ? 3 / 4
-    : attachment?.category === 'MEDICAL_CONFIRMATION'
-    ? undefined
-    : attachment?.category === 'SIGNATURE'
-    ? 4 / 1
-    : attachment?.category === 'POLICE_REPORT'
-    ? undefined
-    : attachment?.category === 'UNKNOWN'
-    ? undefined
-    : undefined;
+    ? (MEXAttachmentLabels as Record<string, string>)[category] || 'Okänt'
+    : (PTAttachmentLabels as Record<string, string>)[category] || 'Okänt';
 
 const uniquePTAttachments: PTAttachmentCategory[] = ['PASSPORT_PHOTO', 'SIGNATURE'];
 
@@ -257,14 +246,13 @@ export const sendAttachments = (
       note: '',
       extension,
       mimeType: extension === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type,
-      file: '',
     };
 
     const formData = new FormData();
     formData.append('files', fileItem, fileItem.name);
     formData.append('category', obj.category);
     formData.append('name', obj.name);
-    formData.append('note', obj.note);
+    formData.append('note', obj.note ?? '');
     formData.append('extension', obj.extension || '');
     formData.append('mimeType', obj.mimeType);
     formData.append('errandNumber', errandNumber);
@@ -287,7 +275,7 @@ export const sendAttachments = (
 };
 
 export const deleteAttachment = (municipalityId: string, errandId: number, attachment: UploadFile) => {
-  if (!attachment.id) {
+  if (!attachment?.id) {
     console.error('No id found, cannot continue.');
     return;
   }
@@ -307,18 +295,130 @@ export const deleteAttachment = (municipalityId: string, errandId: number, attac
 export const fetchAttachment: (
   municipalityId: string,
   errandId: number,
-  attachmentId: string
-) => Promise<ApiResponse<Attachment>> = (municipalityId, errandId, attachmentId) => {
-  if (!attachmentId) {
-    console.error('No attachment id found, cannot fetch. Returning.');
+  attachment: Attachment
+) => Promise<SingleCasedataAttachment> = (municipalityId, errandId, attachment) => {
+  if (!attachment.id) {
+    return Promise.reject(new Error('No attachment id found, cannot fetch.'));
   }
 
-  const url = `casedata/${municipalityId}/errands/${errandId}/attachments/${attachmentId}`;
+  const url = `casedata/${municipalityId}/errands/${errandId}/attachments/${attachment.id}`;
   return apiService
-    .get<ApiResponse<Attachment>>(url)
-    .then((res) => res.data)
+    .get<string>(url)
+    .then((res) => {
+      const att: SingleCasedataAttachment = {
+        errandAttachmentHeader: attachment,
+        base64EncodedString: res.data,
+      };
+      return att;
+    })
     .catch((e) => {
-      console.error('Something went wrong when fetching attachment: ', attachmentId);
+      console.error('Something went wrong when fetching attachment');
+      throw e;
+    });
+};
+
+// Decision attachments live under a dedicated CaseData sub-resource and are uploaded as binary
+// multipart, mirroring sendAttachments. The rendered PDF arrives as base64 and is turned back into
+// a File before upload.
+export const sendDecisionAttachment = (
+  municipalityId: string,
+  errandId: number,
+  decisionId: number,
+  pdfBase64: string,
+  name: string,
+  errandNumber: string,
+  category: string = 'DECISION'
+) => {
+  const file = base64ToFile(pdfBase64, name, 'application/pdf');
+
+  const formData = new FormData();
+  formData.append('files', file, name);
+  formData.append('category', category);
+  formData.append('name', name);
+  formData.append('note', '');
+  formData.append('extension', 'pdf');
+  formData.append('mimeType', 'application/pdf');
+  formData.append('errandNumber', errandNumber);
+
+  const postDecisionAttachment = () =>
+    apiService
+      .post<boolean, FormData>(
+        `casedata/${municipalityId}/errands/${errandId}/decisions/${decisionId}/attachments`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      )
+      .then((res) => res)
+      .catch((e) => {
+        console.error('Something went wrong when creating decision attachment');
+        throw e;
+      });
+
+  return withRetries(3, postDecisionAttachment);
+};
+
+export const fetchDecisionAttachment: (
+  municipalityId: string,
+  errandId: number,
+  decisionId: number,
+  attachment: Attachment
+) => Promise<SingleCasedataAttachment> = (municipalityId, errandId, decisionId, attachment) => {
+  if (!attachment.id) {
+    return Promise.reject(new Error('No attachment id found, cannot fetch.'));
+  }
+
+  const url = `casedata/${municipalityId}/errands/${errandId}/decisions/${decisionId}/attachments/${attachment.id}`;
+  return apiService
+    .get<string>(url)
+    .then((res) => {
+      const att: SingleCasedataAttachment = {
+        errandAttachmentHeader: attachment,
+        base64EncodedString: res.data,
+      };
+      return att;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when fetching decision attachment');
+      throw e;
+    });
+};
+
+export const deleteDecisionAttachment = (
+  municipalityId: string,
+  errandId: number,
+  decisionId: number,
+  attachmentId: number
+) => {
+  return apiService
+    .deleteRequest<boolean>(
+      `casedata/${municipalityId}/errands/${errandId}/decisions/${decisionId}/attachments/${attachmentId}`
+    )
+    .then((res) => res)
+    .catch((e) => {
+      console.error('Something went wrong when removing decision attachment ', attachmentId);
+      throw e;
+    });
+};
+
+export const editDecisionAttachment = (
+  municipalityId: string,
+  errandId: string,
+  decisionId: number,
+  attachmentId: string,
+  attachmentName: string,
+  attachmentType: string
+) => {
+  const obj: Partial<Attachment> = {
+    name: attachmentName,
+    category: attachmentType,
+  };
+  return apiService
+    .patch<boolean, Partial<Attachment>>(
+      `casedata/${municipalityId}/errands/${errandId}/decisions/${decisionId}/attachments/${attachmentId}`,
+      obj
+    )
+    .then((res) => res)
+    .catch((e) => {
+      console.error('Something went wrong when editing decision attachment ', obj.category);
       throw e;
     });
 };

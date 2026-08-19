@@ -27,6 +27,7 @@ import { notificationRenewal_UppgiftFieldTemplate } from '@casedata/components/e
 import { notificationRiak_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-riak';
 import { reassessmentApplication_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-reassessment-application';
 import { parkingPermitAppeal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-appeal';
+import { documentationErrand_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-documentation-errand';
 import { lostParkingPermit_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-lost-parking-permit';
 import { parkingPermit_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-parkingpermit';
 import { parkingPermitRenewal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-renewal';
@@ -189,6 +190,7 @@ const template: ExtraParametersObject = {
   LOST_PARKING_PERMIT: lostParkingPermit_UppgiftFieldTemplate,
   PARKING_PERMIT_RENEWAL: parkingPermitRenewal_UppgiftFieldTemplate,
   APPEAL: parkingPermitAppeal_UppgiftFieldTemplate,
+  DOCUMENTATION_ERRAND: documentationErrand_UppgiftFieldTemplate,
 
   //Legacy: needed to view templates regarding extraparameters for old casetypes that has been expired.
   MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE:
@@ -210,6 +212,19 @@ export const getExtraParametersLabels = (caseType: string, channel?: string): { 
     acc[field.field] = field.label;
     return acc;
   }, {} as Record<string, string>);
+};
+
+// Resolve the human-readable value(s) for an UppgiftField. Fields backed by options
+// (radio/select/checkbox/combobox) store a code (e.g. 'DRIVER', 'true'), so map it to the
+// option label ('Förare', 'Ja'). Free-text fields have no options and keep their raw value.
+export const getUppgiftDisplayValues = (field: UppgiftField): string[] => {
+  const rawValues = Array.isArray(field.value) ? field.value : [field.value];
+  const formField = field.formField;
+  const options = 'options' in formField && Array.isArray(formField.options) ? formField.options : undefined;
+  if (!options) {
+    return rawValues;
+  }
+  return rawValues.map((value) => options.find((option) => option.value === value)?.label ?? value);
 };
 
 export const extraParametersToUppgiftMapper: (errand: IErrand) => UppgiftField[] = (errand) => {

@@ -51,7 +51,7 @@ export const ReferredFromErrandInformation: FC<Props> = ({ municipalityId, erran
         <h4 className="text-h4-sm">Information från överlämning</h4>
         <div className="flex flex-row gap-80">
           <div className="flex flex-col">
-            <span className="font-bold text-small">Ärendtyp</span>
+            <span className="font-bold text-small">Ärendetyp</span>
             <span className="text-small">{referredFromErrands[0]?.classificationTypeDisplayName}</span>
           </div>
           <div className="flex flex-col">

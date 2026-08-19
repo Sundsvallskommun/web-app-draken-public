@@ -1,5 +1,7 @@
 import { MetadataResponse } from '@common/data-contracts/supportmanagement/data-contracts';
 
+import { mockEnv } from '../../fixtures/mock-env';
+
 export const mockCategories = [
     {
       name: 'ELECTRICITY_SERVANET',
@@ -1126,6 +1128,7 @@ export const mockMetaData: MetadataResponse = {
                   resourcePath: 'MSVA/EMPLOYMENT/TERMINATION_OF_EMPLOYMENT',
                   resourceName: 'TERMINATION_OF_EMPLOYMENT',
                   labels: [],
+                  attributes: [{ key: 'escalationEmail', value: mockEnv.mockEmail }],
                 },
               ],
             },
