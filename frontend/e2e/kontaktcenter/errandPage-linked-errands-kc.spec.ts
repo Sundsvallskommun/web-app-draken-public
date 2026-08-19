@@ -42,15 +42,19 @@ test.describe('Kopplade ärenden (KC)', () => {
     await mockRoute('**/resolvedrelations/**/**', mockEmptyResolvedRelations, { method: 'GET' });
   });
 
-  const openLinkedErrands = async (page: Page) => {
+  // Cookie-bannern är en overlay som blockerar klick, så den måste stängas innan disclosuren
+  // öppnas. Att innehållet assertas synligt gör att ett uteblivet öppnande faller här i stället
+  // för att visa sig som en förbryllande timeout längre ned i testet.
+  const openLinkedErrands = async (page: Page, dismissCookieConsent: () => Promise<void>) => {
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
+    await dismissCookieConsent();
     await page.locator('[data-cy="connected-errands-disclosure"]').click();
+    await expect(page.locator('[data-cy="link-errands-disclosure"]')).toBeVisible();
   };
 
   test('listar ärendeägarens övriga ärenden utan sökning', async ({ page, dismissCookieConsent }) => {
-    await openLinkedErrands(page);
-    await dismissCookieConsent();
+    await openLinkedErrands(page, dismissCookieConsent);
 
     const list = page.locator('[data-cy="searchresults-list"]');
     await expect(list).toBeVisible();
@@ -62,8 +66,7 @@ test.describe('Kopplade ärenden (KC)', () => {
   });
 
   test('filtrerar ägarens ärenden på pågående och avslutade', async ({ page, dismissCookieConsent }) => {
-    await openLinkedErrands(page);
-    await dismissCookieConsent();
+    await openLinkedErrands(page, dismissCookieConsent);
 
     const filter = page.locator('[data-cy="linked-errands-status-filter"]');
     const list = page.locator('[data-cy="searchresults-list"]');
@@ -78,8 +81,7 @@ test.describe('Kopplade ärenden (KC)', () => {
   });
 
   test('visar felmeddelande när sökningen misslyckas', async ({ page, mockRoute, dismissCookieConsent }) => {
-    await openLinkedErrands(page);
-    await dismissCookieConsent();
+    await openLinkedErrands(page, dismissCookieConsent);
 
     await mockRoute('**/errands/statuses/**', { message: 'error' }, { method: 'GET', status: 500 });
     await mockRoute('**/supporterrands/2281?**', { message: 'error' }, { method: 'GET', status: 500 });
@@ -95,8 +97,7 @@ test.describe('Kopplade ärenden (KC)', () => {
 
   test('markerar redan kopplade ärenden i listan', async ({ page, mockRoute, dismissCookieConsent }) => {
     await mockRoute('**/resolvedrelations/**/**', mockResolvedRelationsWithLink, { method: 'GET' });
-    await openLinkedErrands(page);
-    await dismissCookieConsent();
+    await openLinkedErrands(page, dismissCookieConsent);
 
     const linkedCard = page.locator(`[data-cy="relation-card-${mockPartyStatusErrands.ongoingErrand.caseId}"]`).first();
     await expect(linkedCard).toContainText('Bryt koppling');
