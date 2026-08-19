@@ -10,6 +10,7 @@ export const modifyField: (
 
 export const mockEmptySupportErrand = {
   id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+  version: 7,
   // title: 'Empty errand',
   priority: 'MEDIUM',
   customer: { id: 'abcdefg', type: 'EMPLOYEE' },
@@ -51,6 +52,7 @@ export const mockEmptySupportErrand = {
 
 export const mockSupportErrand = {
   id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+  version: 7,
   errandNumber: 'LOP-24120103',
   title: 'Empty errand',
   priority: 'MEDIUM',
@@ -151,6 +153,7 @@ export const mockSupportErrand = {
 
 export const mockDifferentUserSupportErrand = {
   id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+  version: 7,
   errandNumber: 'LOP-24120103',
   title: 'Empty errand',
   priority: 'MEDIUM',

@@ -20,6 +20,7 @@ import * as yup from 'yup';
 
 import { ExternalCustomerIdentity, InternalCustomerIdentity, invoiceSettings } from './invoiceSettings';
 import { SupportErrand } from './support-errand-service';
+import { StrongSupportErrandETag, toStrongSupportErrandETag } from './support-errand-write-version';
 
 export const attestationLabels = [
   { label: 'Kostnadstyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -272,10 +273,13 @@ export const saveBillingRecord: (
 ) => Promise<boolean> = (errand, municipalityId, record) => {
   const url = `billing/${municipalityId}/billingrecords${record.id ? `/${record.id}` : ''}`;
   const action = record.id ? apiService.put : apiService.post;
-  let data = satisfyApi(record);
+  const data = satisfyApi(record);
+  const errandWrite = errand ? { errand, ifMatch: toStrongSupportErrandETag(errand.version) } : undefined;
   return action<CBillingRecord, CBillingRecord>(url, data)
     .then((res) => {
-      return errand ? saveBillingRecordReferenceToErrand(errand, municipalityId, res.data.id!) : true;
+      return errandWrite
+        ? saveBillingRecordReferenceToErrand(errandWrite.errand, municipalityId, res.data.id!, errandWrite.ifMatch)
+        : true;
     })
     .catch((e) => {
       console.error('Something went wrong when updating invoice');
@@ -286,10 +290,11 @@ export const saveBillingRecord: (
 const saveBillingRecordReferenceToErrand: (
   errand: SupportErrand,
   municipalityId: string,
-  billingRecordId: string
-) => Promise<boolean> = (errand, municipalityId, billingRecordId) => {
+  billingRecordId: string,
+  ifMatch: StrongSupportErrandETag
+) => Promise<boolean> = (errand, municipalityId, billingRecordId, ifMatch) => {
   const url = `supporterrands/${municipalityId}/${errand.id}`;
-  const tags: CExternalTag[] = errand.externalTags || [];
+  const tags: CExternalTag[] = (errand.externalTags ?? []).map((tag) => ({ ...tag }));
   const existingTag = tags.find((t) => t.key === 'billingRecordId');
   if (existingTag) {
     existingTag.value = billingRecordId;
@@ -298,7 +303,7 @@ const saveBillingRecordReferenceToErrand: (
   }
 
   return apiService
-    .patch<boolean, Partial<SupportErrandDto>>(url, { externalTags: tags })
+    .patch<boolean, Partial<SupportErrandDto>>(url, { externalTags: tags }, { headers: { 'If-Match': ifMatch } })
     .then((res) => {
       return true;
     })

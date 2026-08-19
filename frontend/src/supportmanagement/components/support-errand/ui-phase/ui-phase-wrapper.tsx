@@ -1,47 +1,63 @@
-import { Button, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
+import { Button, FormControl, FormLabel, Select, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
-  getSupportErrandByErrandNumber,
+  isSupportErrandLocked,
+  SupportErrand,
   updateSupportErrandPhase,
 } from '@supportmanagement/services/support-errand-service';
-import {
-  getActiveErrandPhaseId,
-  getNextPhase,
-  getSupportPhases,
-} from '@supportmanagement/services/support-phase-service';
+import { getAvailablePhaseTransitions, getSupportPhases } from '@supportmanagement/services/support-phase-service';
 import { ArrowRight } from 'lucide-react';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 import { SupportUiPhaseComponent } from './ui-phase.component';
 
-export const SupportUiPhaseWrapper = () => {
+export const SupportUiPhaseWrapper = ({ hasUnsavedChanges }: { hasUnsavedChanges: boolean }) => {
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const canEditSupportManagement = useUserStore((s) => s.user.permissions.canEditSupportManagement);
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  const form = useFormContext<SupportErrand>();
   const toastMessage = useSnackbar();
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedTransitionId, setSelectedTransitionId] = useState('');
 
   const phases = useMemo(() => getSupportPhases(supportMetadata?.phases), [supportMetadata?.phases]);
-  const activePhaseId = getActiveErrandPhaseId(supportErrand?.phases) ?? phases[0]?.id;
+  const activePhaseId = supportErrand?.activePhaseId;
   const activeIndex = phases.findIndex((p) => p.id === activePhaseId);
-  const activePhase = phases.find((p) => p.id === activePhaseId);
-  const nextPhase = getNextPhase(activePhase, phases);
+  const availableTransitions = useMemo(
+    () => getAvailablePhaseTransitions(activePhaseId, phases),
+    [activePhaseId, phases]
+  );
+  const selectedTransition = availableTransitions.find(({ transition }) => transition.id === selectedTransitionId);
+  const locked = !supportErrand || isSupportErrandLocked(supportErrand);
+
+  useEffect(() => {
+    setSelectedTransitionId(availableTransitions.length === 1 ? availableTransitions[0].transition.id : '');
+  }, [availableTransitions]);
 
   const labelWindowStart = Math.min(Math.max(activeIndex - 1, 0), Math.max(phases.length - 3, 0));
 
   const advancePhase = async () => {
-    if (!municipalityId || !supportErrand?.id || !supportErrand?.errandNumber || !nextPhase?.id) {
+    if (
+      !municipalityId ||
+      !supportErrand?.id ||
+      typeof supportErrand.version !== 'number' ||
+      !selectedTransition?.transition.id
+    ) {
       return;
     }
     setIsSaving(true);
     try {
-      await updateSupportErrandPhase(municipalityId, supportErrand.id, nextPhase.id);
-      const res = await getSupportErrandByErrandNumber(supportErrand.errandNumber);
-      if (res.error) {
-        throw new Error(res.error);
-      }
-      setSupportErrand(res.errand);
+      const savedErrand = await updateSupportErrandPhase(
+        municipalityId,
+        supportErrand.id,
+        selectedTransition.transition.id,
+        supportErrand.version
+      );
+      setSupportErrand(savedErrand);
+      form.reset(savedErrand);
     } catch {
       toastMessage({
         position: 'bottom',
@@ -60,6 +76,15 @@ export const SupportUiPhaseWrapper = () => {
     </span>
   );
 
+  const disabled =
+    !selectedTransition ||
+    !supportErrand?.id ||
+    typeof supportErrand.version !== 'number' ||
+    !canEditSupportManagement ||
+    locked ||
+    hasUnsavedChanges ||
+    isSaving;
+
   return (
     <div className="flex items-center gap-16 w-full min-w-0">
       <div className="flex items-center border-2 rounded-button h-[40px] min-w-0 grow">
@@ -76,17 +101,37 @@ export const SupportUiPhaseWrapper = () => {
           </Fragment>
         ))}
       </div>
-      <Button
-        className="shrink-0"
-        color="primary"
-        rightIcon={<ArrowRight />}
-        loading={isSaving}
-        disabled={!nextPhase || !supportErrand?.id || isSaving}
-        onClick={advancePhase}
-        data-cy="next-phase-button"
-      >
-        Nästa fas
-      </Button>
+      <div className="flex shrink-0 items-end gap-8">
+        {availableTransitions.length > 1 ? (
+          <FormControl>
+            <FormLabel>Välj nästa fas</FormLabel>
+            <Select
+              value={selectedTransitionId}
+              onChange={(event) => setSelectedTransitionId(event.target.value)}
+              disabled={!canEditSupportManagement || locked || hasUnsavedChanges || isSaving}
+              data-cy="phase-transition-select"
+            >
+              <Select.Option value="">Välj övergång</Select.Option>
+              {availableTransitions.map(({ transition, target }) => (
+                <Select.Option key={transition.id} value={transition.id}>
+                  {transition.description || target.displayName || target.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </FormControl>
+        ) : null}
+        <Button
+          className="shrink-0"
+          color="primary"
+          rightIcon={<ArrowRight />}
+          loading={isSaving}
+          disabled={disabled}
+          onClick={advancePhase}
+          data-cy="next-phase-button"
+        >
+          {availableTransitions.length > 1 ? 'Byt fas' : 'Nästa fas'}
+        </Button>
+      </div>
     </div>
   );
 };

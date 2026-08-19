@@ -1,18 +1,12 @@
 import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 
+import type { ReportedMisconductLabelTree } from '../investigation-classification-policy';
 import type { LabelClassificationCatalog, LabelClassificationSelection } from './label-classification.types';
 
-const CATEGORY_ROOT = 'CATEGORY';
-const HSL_OWNER_IDENTIFIERS = ['CATEGORY/HSL', 'HSL'] as const;
-const SOL_LSS_OWNER_IDENTIFIERS = ['CATEGORY/SOL_LSS', 'SOL_LSS'] as const;
-
-export const IAF_LEGAL_BASE = {
-  HSL: 'HSL',
-  LSS: 'LSS',
-  SOL: 'SOL',
-} as const;
-
-export type IafLegalBase = (typeof IAF_LEGAL_BASE)[keyof typeof IAF_LEGAL_BASE];
+export interface LabelClassificationLegalBaseRule {
+  readonly legalBase: string;
+  readonly allowedClassificationCategories: readonly string[];
+}
 
 const normalizeClassification = (classification: string | undefined): string =>
   (classification ?? '').trim().replaceAll('_', '-').toUpperCase();
@@ -24,7 +18,7 @@ const normalizeResourcePath = (resourcePath: string | undefined): string =>
     .toUpperCase();
 
 const isClassification = (label: Label, classification: string): boolean =>
-  normalizeClassification(label.classification) === classification;
+  normalizeClassification(label.classification) === normalizeClassification(classification);
 
 const labelCode = (label: Label): string => label.resourcePath || label.id || label.resourceName;
 
@@ -56,24 +50,36 @@ const withoutChildren = ({ labels: _labels, ...label }: Label): Label => label;
 const sortLabels = (labels: readonly Label[]): Label[] =>
   [...labels].sort((left, right) => labelDisplayName(left).localeCompare(labelDisplayName(right), 'sv'));
 
-const findCategoryRoot = (labelStructure: readonly Label[]): Label | undefined =>
-  labelStructure.find(
-    (label) =>
-      normalizeResourcePath(label.resourcePath || label.resourceName) === CATEGORY_ROOT ||
-      isClassification(label, 'CATEGORY-ROOT')
-  );
+const configuredLabelResource = (label: Label): string | undefined =>
+  typeof label.resourcePath === 'string' && label.resourcePath.trim().length > 0
+    ? label.resourcePath
+    : label.resourceName;
 
-const findTypeLabels = (labels: readonly Label[] | undefined): Label[] => {
+const isConfiguredRoot = (label: Label, labelTree: ReportedMisconductLabelTree): boolean =>
+  normalizeResourcePath(configuredLabelResource(label)) === normalizeResourcePath(labelTree.root.resource) &&
+  isClassification(label, labelTree.root.classification);
+
+const requireConfiguredRoot = (labelStructure: readonly Label[], labelTree: ReportedMisconductLabelTree): Label => {
+  const roots = labelStructure.filter((label) => isConfiguredRoot(label, labelTree));
+  if (roots.length !== 1) {
+    throw new Error(
+      `Support Management classification metadata expected one configured root ${labelTree.root.resource}/${labelTree.root.classification}, found ${roots.length}`
+    );
+  }
+  return roots[0];
+};
+
+const findTypeLabels = (labels: readonly Label[] | undefined, labelTree: ReportedMisconductLabelTree): Label[] => {
   const typeLabels: Label[] = [];
 
   const visit = (nodes: readonly Label[]) => {
     nodes.forEach((node) => {
-      if (isClassification(node, 'TYPE')) {
+      if (isClassification(node, labelTree.typeClassification)) {
         typeLabels.push(node);
         return;
       }
 
-      if (!isClassification(node, 'CATEGORY') && node.labels?.length) {
+      if (!isClassification(node, labelTree.categoryClassification) && node.labels?.length) {
         visit(node.labels);
       }
     });
@@ -92,6 +98,7 @@ export interface IafLabelClassificationBinding {
 export interface IafLabelClassificationModel {
   readonly catalog: LabelClassificationCatalog;
   readonly bindings: readonly IafLabelClassificationBinding[];
+  readonly labelTree: ReportedMisconductLabelTree;
 }
 
 export type PersistedIafLabelClassificationState =
@@ -109,14 +116,23 @@ interface PersistedIafLabelClassification {
   readonly subType?: string;
 }
 
-const getAllowedOwnerIdentifiers = (legalBases: readonly string[]): ReadonlySet<string> => {
+const getAllowedOwnerIdentifiers = (
+  legalBases: readonly string[],
+  legalBaseRules: readonly LabelClassificationLegalBaseRule[]
+): ReadonlySet<string> => {
   const allowedOwnerIdentifiers = new Set<string>();
-  if (legalBases.includes(IAF_LEGAL_BASE.HSL)) {
-    HSL_OWNER_IDENTIFIERS.forEach((identifier) => allowedOwnerIdentifiers.add(identifier));
-  }
-  if (legalBases.includes(IAF_LEGAL_BASE.SOL) || legalBases.includes(IAF_LEGAL_BASE.LSS)) {
-    SOL_LSS_OWNER_IDENTIFIERS.forEach((identifier) => allowedOwnerIdentifiers.add(identifier));
-  }
+  const selectedLegalBases = new Set(legalBases.map((legalBase) => legalBase.trim().toUpperCase()));
+
+  legalBaseRules
+    .filter(({ legalBase }) => selectedLegalBases.has(legalBase.trim().toUpperCase()))
+    .flatMap(({ allowedClassificationCategories }) => allowedClassificationCategories)
+    .forEach((category) => {
+      const normalizedCategory = normalizeResourcePath(category);
+      if (!normalizedCategory) return;
+      allowedOwnerIdentifiers.add(normalizedCategory);
+      allowedOwnerIdentifiers.add(normalizedCategory.split('/').at(-1) ?? normalizedCategory);
+    });
+
   return allowedOwnerIdentifiers;
 };
 
@@ -128,37 +144,74 @@ const belongsToAllowedLegalBase = (owner: Label | undefined, allowedOwnerIdentif
       )
   );
 
+const bindingOwnerValue = (binding: IafLabelClassificationBinding): string =>
+  labelResourceValue(binding.owner ?? binding.category);
+
+const hasPersistedProvisionOwner = (binding: IafLabelClassificationBinding, ownerValue: string | undefined): boolean =>
+  Boolean(
+    binding.owner &&
+      [binding.owner.resourcePath, binding.owner.resourceName].some(
+        (identifier) => normalizeResourcePath(identifier) === normalizeResourcePath(ownerValue)
+      )
+  );
+
+const hasPersistedTypeWithinProvisionOwner = (
+  binding: IafLabelClassificationBinding,
+  typeValue: string | undefined
+): boolean => {
+  if (!binding.owner) return false;
+
+  const persistedType = normalizeResourcePath(typeValue);
+  return [binding.owner.resourcePath, binding.owner.resourceName].some((identifier) => {
+    const ownerPath = normalizeResourcePath(identifier);
+    return Boolean(ownerPath && (persistedType === ownerPath || persistedType.startsWith(`${ownerPath}/`)));
+  });
+};
+
 /**
- * Adapts the IAF SupportManagement label tree to the two choices shown in Draken.
- * CATEGORY is a container, provision-category is retained for persistence, and
- * only category/type are exposed as Avvikelsetyp/Underkategori.
+ * Adapts the configured reported-misconduct tree to the two choices shown in
+ * Draken. The configured root is a container, the configured owner is retained
+ * for persistence, and category/type are exposed as the editable choices.
+ * The Iaf-prefixed symbols are retained until the parallel UI rewrite lands;
+ * their behavior is profile-driven and no longer tied to an application name.
  */
 export const createIafLabelClassificationModel = (
   labelStructure: readonly Label[] | undefined,
-  legalBases?: readonly string[]
+  labelTree: ReportedMisconductLabelTree | undefined,
+  legalBases?: readonly string[],
+  legalBaseRules: readonly LabelClassificationLegalBaseRule[] = []
 ): IafLabelClassificationModel => {
-  const structure = labelStructure ?? [];
-  const categoryRoot = findCategoryRoot(structure);
-  const searchRoots = categoryRoot?.labels ?? structure;
+  if (!labelTree) {
+    throw new Error('The reported-misconduct classification capability is missing label-tree semantics');
+  }
+  if (labelStructure === undefined) {
+    return {
+      catalog: { code: `${labelTree.root.resource}_CLASSIFICATION`, displayName: labelTree.root.resource, types: [] },
+      bindings: [],
+      labelTree,
+    };
+  }
+  const categoryRoot = requireConfiguredRoot(labelStructure, labelTree);
   const bindings: IafLabelClassificationBinding[] = [];
 
   const visit = (nodes: readonly Label[], owner?: Label) => {
     nodes.forEach((node) => {
-      if (isClassification(node, 'CATEGORY')) {
-        bindings.push({ owner, category: node, types: findTypeLabels(node.labels) });
+      if (isClassification(node, labelTree.categoryClassification)) {
+        bindings.push({ owner, category: node, types: findTypeLabels(node.labels, labelTree) });
         return;
       }
 
-      const nextOwner = isClassification(node, 'PROVISION-CATEGORY') ? node : owner;
+      const nextOwner = isClassification(node, labelTree.ownerClassification) ? node : owner;
       if (node.labels?.length) {
         visit(node.labels, nextOwner);
       }
     });
   };
 
-  visit(searchRoots);
+  visit(categoryRoot.labels ?? []);
 
-  const allowedOwnerIdentifiers = legalBases === undefined ? undefined : getAllowedOwnerIdentifiers(legalBases);
+  const allowedOwnerIdentifiers =
+    legalBases === undefined ? undefined : getAllowedOwnerIdentifiers(legalBases, legalBaseRules);
   const filteredBindings = allowedOwnerIdentifiers
     ? bindings.filter(({ owner }) => belongsToAllowedLegalBase(owner, allowedOwnerIdentifiers))
     : bindings;
@@ -168,8 +221,8 @@ export const createIafLabelClassificationModel = (
 
   return {
     catalog: {
-      code: 'IAF_SUPPORTMANAGEMENT_CLASSIFICATION',
-      displayName: 'IAF',
+      code: `${labelTree.root.resource}_CLASSIFICATION`,
+      displayName: labelTree.root.resource,
       types: sortedBindings.map(({ category, types }) => ({
         code: labelCode(category),
         displayName: labelDisplayName(category),
@@ -180,32 +233,60 @@ export const createIafLabelClassificationModel = (
       })),
     },
     bindings: sortedBindings,
+    labelTree,
   };
 };
 
 export const getPersistedIafLabelClassificationState = (
   labelStructure: readonly Label[] | undefined,
+  labelTree: ReportedMisconductLabelTree,
   legalBases: readonly string[],
-  classification: PersistedIafLabelClassification
+  classification: PersistedIafLabelClassification,
+  legalBaseRules: readonly LabelClassificationLegalBaseRule[] = []
 ): PersistedIafLabelClassificationState => {
   if (!classification.category?.trim() || !classification.type?.trim()) return 'missing-classification';
 
-  const completeModel = createIafLabelClassificationModel(labelStructure);
+  const completeModel = createIafLabelClassificationModel(labelStructure, labelTree);
   if (completeModel.bindings.length === 0) return 'legacy-unknown';
 
-  // Support Management persists the selected CATEGORY resource in classification.type.
+  // This strategy persists the selected configured category resource in classification.type.
   // Resolve that exact raw value before considering labels, which may contain stale references.
   const binding = completeModel.bindings.find(
     ({ category }) => normalizeResourcePath(labelResourceValue(category)) === normalizeResourcePath(classification.type)
   );
-  if (!binding) return 'legacy-unknown';
+  if (!binding) {
+    // An older category/type may no longer exist in metadata, but its persisted provision-category
+    // still identifies the legal-base owner. Preserve that legacy value only while the owner remains
+    // available in the current legal-base context; otherwise a legal-base change would silently keep
+    // an incompatible classification.
+    const persistedCategoryOwner = completeModel.bindings.find((candidate) =>
+      hasPersistedProvisionOwner(candidate, classification.category)
+    )?.owner;
+    const persistedTypeOwner = completeModel.bindings.find((candidate) =>
+      hasPersistedTypeWithinProvisionOwner(candidate, classification.type)
+    )?.owner;
+    if (persistedCategoryOwner && persistedTypeOwner && !hasSameIdentity(persistedCategoryOwner, persistedTypeOwner)) {
+      return 'known-inconsistent';
+    }
 
-  const expectedOwner = binding.owner ? labelResourceValue(binding.owner) : labelResourceValue(binding.category);
+    const persistedOwner = persistedTypeOwner ?? persistedCategoryOwner;
+    if (persistedOwner) {
+      const contextualModel = createIafLabelClassificationModel(labelStructure, labelTree, legalBases, legalBaseRules);
+      const persistedOwnerIsAllowed = contextualModel.bindings.some(
+        (candidate) => candidate.owner && hasSameIdentity(candidate.owner, persistedOwner)
+      );
+      if (!persistedOwnerIsAllowed) return 'known-disallowed-legal-base';
+    }
+
+    return 'legacy-unknown';
+  }
+
+  const expectedOwner = bindingOwnerValue(binding);
   if (normalizeResourcePath(expectedOwner) !== normalizeResourcePath(classification.category)) {
     return 'known-inconsistent';
   }
 
-  const contextualModel = createIafLabelClassificationModel(labelStructure, legalBases);
+  const contextualModel = createIafLabelClassificationModel(labelStructure, labelTree, legalBases, legalBaseRules);
   if (!contextualModel.bindings.some(({ category }) => hasSameIdentity(category, binding.category))) {
     return 'known-disallowed-legal-base';
   }
@@ -220,7 +301,7 @@ export const getPersistedIafLabelClassificationState = (
 
   const hasPersistedTypeEvidence =
     Boolean(classification.subType?.trim()) ||
-    classification.labels?.some((label) => isClassification(label, 'TYPE')) === true;
+    classification.labels?.some((label) => isClassification(label, labelTree.typeClassification)) === true;
   if (!hasPersistedTypeEvidence) return 'known-missing-required-type';
 
   const typeKnownInAnotherBinding = completeModel.bindings.some(
@@ -274,13 +355,14 @@ export const getIafLabelClassificationSelection = (
   };
 };
 
-const isCategoryPath = (resourcePath: string | undefined): boolean => {
+const isCategoryPath = (resourcePath: string | undefined, rootResource: string): boolean => {
   const path = normalizeResourcePath(resourcePath);
-  return path === CATEGORY_ROOT || path.startsWith(`${CATEGORY_ROOT}/`);
+  const root = normalizeResourcePath(rootResource);
+  return path === root || path.startsWith(`${root}/`);
 };
 
 const isManagedLabel = (model: IafLabelClassificationModel, label: Label): boolean =>
-  isCategoryPath(label.resourcePath) ||
+  isCategoryPath(label.resourcePath, model.labelTree.root.resource) ||
   model.bindings.some(
     ({ owner, category, types }) =>
       (owner ? hasSameIdentity(label, owner) : false) ||

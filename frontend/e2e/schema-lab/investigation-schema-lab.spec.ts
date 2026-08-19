@@ -5,6 +5,7 @@ const managerIdPrefix = 'utredning-enhetschef';
 const solLssIdPrefix = 'utredning-sol-lss';
 const hslIdPrefix = 'utredning-hsl';
 const investigationTabNames = ['Utredning enhetschef', 'Utredning SoL/LSS', 'Utredning HSL'] as const;
+const backendRequestsByPage = new WeakMap<Page, string[]>();
 
 async function openAllDisclosures(page: Page) {
   const activePanel = page.locator('[role="tabpanel"]:visible');
@@ -100,51 +101,19 @@ async function expectVisibleTextEditorsToFillTheirFrames(page: Page) {
 test.skip(process.env.NEXT_PUBLIC_APPLICATION !== 'IAF', 'Schema-labben körs bara med IAF-profilen.');
 
 test.beforeEach(async ({ page }) => {
+  const backendRequests: string[] = [];
+  backendRequestsByPage.set(page, backendRequests);
   await page.route(`${backendOrigin}/**`, async (route) => {
-    const path = new URL(route.request().url()).pathname;
-
-    if (path.endsWith('/featureflags')) {
-      await route.fulfill({ json: [] });
-      return;
-    }
-
-    if (path.endsWith('/me')) {
-      await route.fulfill({
-        json: {
-          data: {
-            name: 'Schema Labb',
-            firstName: 'Schema',
-            lastName: 'Labb',
-            email: 'schema.labb@example.test',
-            username: 'schema-labb',
-            userSettings: { readNotificationsClearedDate: '' },
-            permissions: {
-              canEditCasedata: false,
-              canEditSupportManagement: false,
-              canViewAttestations: false,
-              canEditAttestations: false,
-            },
-          },
-          message: 'ok',
-        },
-      });
-      return;
-    }
-
-    if (path.endsWith('/users/admins')) {
-      await route.fulfill({ json: { data: [], message: 'ok' } });
-      return;
-    }
-
-    if (path.includes('/supportmetadata/')) {
-      await route.fulfill({ json: { categories: [] } });
-      return;
-    }
-
-    await route.fulfill({ json: {} });
+    backendRequests.push(route.request().url());
+    await route.abort('blockedbyclient');
   });
 
   await page.goto('schema-lab/utredning');
+  await expect(page.getByRole('heading', { name: 'Lokal schema-labb · Utredning' })).toBeVisible();
+});
+
+test.afterEach(async ({ page }) => {
+  expect(backendRequestsByPage.get(page)).toEqual([]);
 });
 
 test('is reachable with the standard IAF profile and renders three investigation schemas', async ({ page }) => {

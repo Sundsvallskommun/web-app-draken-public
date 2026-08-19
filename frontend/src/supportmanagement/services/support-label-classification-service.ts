@@ -1,37 +1,29 @@
-import type { Classification, Label } from '@common/data-contracts/supportmanagement/data-contracts';
-import { isIAFOrVOF } from '@common/services/application-service';
+import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import { getSupportErrandClassificationPlacement } from '@supportmanagement/investigation/investigation-classification-ownership';
+import type { SupportErrandClassificationPlacement } from '@supportmanagement/investigation/investigation-classification-policy';
 
+import {
+  findLabelByClassification,
+  projectErrandTypeLabel,
+  projectLabelCategory,
+  projectMappedLabelSubType,
+  shouldProjectMappedLabelSubType,
+  type SupportErrandLabelSource,
+} from './support-label-classification-projector';
 import type { SupportMetadata } from './support-metadata-service';
 
-interface SupportErrandLabelSource {
-  readonly labels?: Label[];
-  readonly classification?: Classification;
-}
+export { findLabelByClassification } from './support-label-classification-projector';
 
-export const findLabelByClassification = (
-  labels: readonly Label[] | undefined,
-  classification: string
-): Label | undefined => labels?.find((label) => label.classification?.toUpperCase() === classification.toUpperCase());
-
-const flattenLabelTree = (labels: readonly Label[] | undefined): Label[] =>
-  (labels ?? []).flatMap((label) => [label, ...flattenLabelTree(label.labels)]);
-
-const matchesResource = (label: Label, resource: string | undefined): boolean =>
-  Boolean(resource && (label.resourcePath === resource || label.resourceName === resource));
+const getReportedMisconductPolicy = (placement: SupportErrandClassificationPlacement) =>
+  placement.categorization === 'reported-misconduct' ? placement.policy : undefined;
 
 export const getLabelCategory = (
   errand: SupportErrandLabelSource | undefined,
-  metadata?: SupportMetadata
+  metadata?: SupportMetadata,
+  placement: SupportErrandClassificationPlacement = getSupportErrandClassificationPlacement()
 ): Label | undefined => {
-  const selectedCategory = findLabelByClassification(errand?.labels, 'CATEGORY');
-  if (selectedCategory) {
-    return selectedCategory;
-  }
-
-  const categoryResource = isIAFOrVOF() ? errand?.classification?.type : errand?.classification?.category;
-  return flattenLabelTree(metadata?.labels?.labelStructure).find(
-    (label) => label.classification.toUpperCase() === 'CATEGORY' && matchesResource(label, categoryResource)
-  );
+  const policy = getReportedMisconductPolicy(placement);
+  return projectLabelCategory(errand, metadata, policy?.labelTree);
 };
 
 export const getLabelType = (errand: SupportErrandLabelSource | undefined): Label | undefined =>
@@ -42,8 +34,27 @@ export const getLabelSubType = (errand: SupportErrandLabelSource | undefined): L
 
 export const getErrandTypeLabel = (
   errand: SupportErrandLabelSource | undefined,
-  metadata?: SupportMetadata
-): Label | undefined => (isIAFOrVOF() ? getLabelCategory(errand, metadata) : getLabelType(errand));
+  metadata?: SupportMetadata,
+  placement: SupportErrandClassificationPlacement = getSupportErrandClassificationPlacement()
+): Label | undefined => projectErrandTypeLabel(errand, metadata, getReportedMisconductPolicy(placement)?.labelTree);
+
+/** Maps the third form level from the runtime capability vocabulary. */
+export const getMappedLabelSubType = (
+  errand: SupportErrandLabelSource | undefined,
+  placement: SupportErrandClassificationPlacement = getSupportErrandClassificationPlacement()
+): Label | undefined => projectMappedLabelSubType(errand, getReportedMisconductPolicy(placement)?.labelTree);
+
+export const shouldMapLabelSubType = (
+  legacyThreeLevelCategorization: boolean,
+  placement: SupportErrandClassificationPlacement = getSupportErrandClassificationPlacement()
+): boolean =>
+  shouldProjectMappedLabelSubType(legacyThreeLevelCategorization, getReportedMisconductPolicy(placement)?.labelTree);
+
+const flattenLabelTree = (labels: readonly Label[] | undefined): Label[] =>
+  (labels ?? []).flatMap((label) => [label, ...flattenLabelTree(label.labels)]);
+
+const matchesResource = (label: Label, resource: string | undefined): boolean =>
+  Boolean(resource && (label.resourcePath === resource || label.resourceName === resource));
 
 export const getLabelTypeFromDisplayName = (displayName: string, metadata: SupportMetadata): Label[] =>
   flattenLabelTree(metadata?.labels?.labelStructure).filter(

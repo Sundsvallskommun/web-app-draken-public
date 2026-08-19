@@ -61,6 +61,7 @@ test.describe('errand page', () => {
       method: 'GET',
     });
     await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}/admin`, mockSetAdminResponse, { method: 'PATCH' });
+    await mockRoute(`**/supporterrands/2281/${mockSupportErrand.id}/status`, mockSupportErrand, { method: 'PATCH' });
     await mockRoute(`**/supportmessage/2281/${mockSupportErrand.id}`, mockForwardSupportMessage, { method: 'POST' });
     await mockRoute('**/party-services*', { data: [] }, { method: 'GET' });
   });
@@ -95,12 +96,14 @@ test.describe('errand page', () => {
     // for it before clicking; set up the PATCH listener before the click to avoid a race.
     const selfAssignButton = page.locator('[data-cy="self-assign-errand-button"]');
     await expect(selfAssignButton).toBeVisible();
-    const [response] = await Promise.all([
+    const [response, statusRequest] = await Promise.all([
       page.waitForResponse((resp) => resp.url().includes('/admin') && resp.request().method() === 'PATCH'),
+      page.waitForRequest((req) => req.url().endsWith('/status') && req.method() === 'PATCH'),
       selfAssignButton.click(),
     ]);
     const responseBody = await response.json();
     expect(responseBody.assignedUserId).toBe('kctest');
+    expect(statusRequest.postDataJSON()?.status).toBe('ONGOING');
     expect(response.status()).toBe(200);
   });
 
@@ -116,16 +119,25 @@ test.describe('errand page', () => {
     );
     // Set up the response listener before the click — waitForResponse only catches responses that
     // arrive after it starts listening, so clicking first races the (mocked, near-instant) PATCH.
-    const [response] = await Promise.all([
+    const [response, statusRequest] = await Promise.all([
       page.waitForResponse((resp) => resp.url().includes('/admin') && resp.request().method() === 'PATCH'),
+      page.waitForRequest((req) => req.url().endsWith('/status') && req.method() === 'PATCH'),
       page.locator('[data-cy="save-button"]').click(),
     ]);
     const request = response.request();
     const requestBody = request.postDataJSON();
+    expect(request.headers()['if-match']).toBe(`"${mockSupportErrand.version}"`);
     expect(requestBody).toEqual({
       assignedUserId: mockSupportAdminsResponse.data[1].name,
-      status: 'ASSIGNED',
     });
+    expect(requestBody).not.toHaveProperty('status');
+    expect(statusRequest.postDataJSON()).toEqual(
+      expect.objectContaining({
+        expectedStatus: mockSupportErrand.status,
+        expectedVersion: mockSupportErrand.version,
+        status: 'ASSIGNED',
+      })
+    );
     expect(response.status()).toBe(200);
   });
 
@@ -144,18 +156,27 @@ test.describe('errand page', () => {
     await page.locator('[data-cy="priority-input"]').selectOption('LOW');
     await expect(page.locator('[data-cy="priority-input"]')).toHaveValue('LOW');
 
-    const [request] = await Promise.all([
+    const [request, statusRequest] = await Promise.all([
       page.waitForRequest(
         (req) =>
           req.url().includes(`supporterrands/2281/${mockEmptySupportErrand.id}`) &&
           req.method() === 'PATCH' &&
           (req.postData() ?? '').includes('priority')
       ),
+      page.waitForRequest((req) => req.url().endsWith('/status') && req.method() === 'PATCH'),
       page.locator('[data-cy="save-button"]').click(),
     ]);
     const requestBody = request.postDataJSON();
+    expect(request.headers()['if-match']).toBe(`"${mockSupportErrand.version}"`);
     expect(requestBody.priority).toBe('LOW');
-    expect(requestBody.status).toBe('NEW');
+    expect(requestBody).not.toHaveProperty('status');
+    expect(statusRequest.postDataJSON()).toEqual(
+      expect.objectContaining({
+        expectedStatus: mockSupportErrand.status,
+        expectedVersion: mockSupportErrand.version,
+        status: 'NEW',
+      })
+    );
   });
 
   test('Can forward department errand', async ({ page, dismissCookieConsent }) => {

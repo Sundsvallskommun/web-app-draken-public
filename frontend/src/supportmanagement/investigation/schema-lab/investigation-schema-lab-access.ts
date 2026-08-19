@@ -1,8 +1,8 @@
-import { InvestigationDocumentKey } from '../investigation-document';
 import {
   InvestigationLabRole,
   InvestigationLabRoleOption,
   InvestigationSchemaAccess,
+  LocalInvestigationDocumentKey,
 } from './investigation-schema-lab.types';
 
 export const investigationLabRoleOptions: readonly InvestigationLabRoleOption[] = [
@@ -28,7 +28,7 @@ export const investigationLabRoleOptions: readonly InvestigationLabRoleOption[] 
   },
 ];
 
-const schemaOwnerByKey: Record<InvestigationDocumentKey, Exclude<InvestigationLabRole, 'reader'>> = {
+const schemaOwnerByKey: Record<LocalInvestigationDocumentKey, Exclude<InvestigationLabRole, 'reader'>> = {
   'utredning-enhetschef': 'unitManager',
   'utredning-sol-lss': 'lexInvestigator',
   'utredning-hsl': 'masMar',
@@ -41,7 +41,7 @@ const schemaOwnerByKey: Record<InvestigationDocumentKey, Exclude<InvestigationLa
  */
 export function getInvestigationSchemaAccess(
   role: InvestigationLabRole,
-  schemaKey: InvestigationDocumentKey
+  schemaKey: LocalInvestigationDocumentKey
 ): InvestigationSchemaAccess {
   return {
     canRead: true,

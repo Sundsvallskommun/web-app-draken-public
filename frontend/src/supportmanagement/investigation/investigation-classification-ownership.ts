@@ -1,12 +1,13 @@
-import { isIAFOrVOF } from '@common/services/application-service';
-import { appConfig } from '@config/appconfig';
+import {
+  resolveSupportErrandClassificationPlacement,
+  type SupportErrandClassificationPlacement,
+} from './investigation-classification-policy';
+import { useInvestigationProfileStore } from './investigation-profile-store';
 
 /**
- * Canonical application-level owner for IAF/VOF errand classification.
- *
- * Schema declarations decide where the control is placed inside an
- * investigation form. They do not move persistence ownership back to the
- * generic errand form if a schema is temporarily missing that declaration.
+ * Thin runtime adapter around the canonical BFF profile. Every consumer asks
+ * this function whether Grundinformation or an investigation document owns
+ * classification persistence.
  */
-export const investigationOwnsSupportErrandClassification = (): boolean =>
-  isIAFOrVOF() && appConfig.features.useInvestigation;
+export const getSupportErrandClassificationPlacement = (): SupportErrandClassificationPlacement =>
+  resolveSupportErrandClassificationPlacement(useInvestigationProfileStore.getState().profile);

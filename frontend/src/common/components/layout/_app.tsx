@@ -1,5 +1,6 @@
 'use client';
 
+import LoaderFullScreen from '@common/components/loader/loader-fullscreen';
 import { getFeatureFlags } from '@common/services/feature-flag-service';
 import { getAdminUsers, getMe } from '@common/services/user-service';
 import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
@@ -14,6 +15,8 @@ import { useConfigStore } from '@stores/config-store';
 import { useMetadataStore } from '@stores/metadata-store';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { useUserStore } from '@stores/user-store';
+import { getInvestigationProfile } from '@supportmanagement/investigation/investigation-profile-service';
+import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import dayjs from 'dayjs';
 import updateLocale from 'dayjs/plugin/updateLocale';
@@ -49,6 +52,10 @@ function isInvestigationSchemaLabRoute(): boolean {
   return globalThis.window?.location.pathname.endsWith('/schema-lab/utredning') ?? false;
 }
 
+function isAuthenticationRoute(): boolean {
+  return /\/(?:login|logout)\/?$/u.test(globalThis.window?.location.pathname ?? '');
+}
+
 function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -56,13 +63,16 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
     () => false
   );
   const schemaLabRoute = isInvestigationSchemaLabRoute();
+  const authenticationRoute = isAuthenticationRoute();
   const [featureFlagsReady, setFeatureFlagsReady] = useState(schemaLabRoute);
+  const investigationProfileStatus = useInvestigationProfileStore((state) => state.status);
 
   useEffect(() => {
     if (schemaLabRoute) return;
 
     const municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '';
     useConfigStore.getState().setMunicipalityId(municipalityId);
+    useInvestigationProfileStore.getState().reset();
 
     getMe()
       .then((user) => {
@@ -70,19 +80,39 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
       })
       .catch(() => {});
 
-    getFeatureFlags()
-      .then((res) => {
-        applyRuntimeFeatureFlags(res.data);
-      })
-      .catch(() => {})
-      .finally(() => setFeatureFlagsReady(true));
+    const loadRuntimeConfiguration = async () => {
+      try {
+        const response = await getFeatureFlags();
+        applyRuntimeFeatureFlags(response.data);
+      } catch {
+        // Environment flags remain the fallback when Adminpanel is unavailable.
+      }
+
+      if (authenticationRoute || !appConfig.isSupportManagement) {
+        useInvestigationProfileStore.getState().setDisabled();
+        setFeatureFlagsReady(true);
+        return;
+      }
+
+      useInvestigationProfileStore.getState().startLoading();
+      try {
+        const profile = await getInvestigationProfile(process.env.NEXT_PUBLIC_APPLICATION);
+        useInvestigationProfileStore.getState().setProfile(profile);
+      } catch (error) {
+        console.error('Failed to load the SupportManagement investigation profile.', error);
+        useInvestigationProfileStore.getState().setError();
+      } finally {
+        setFeatureFlagsReady(true);
+      }
+    };
+    void loadRuntimeConfiguration();
 
     getAdminUsers()
       .then((data) => {
         useUserStore.getState().setAdministrators(data);
       })
       .catch(() => {});
-  }, [schemaLabRoute]);
+  }, [authenticationRoute, schemaLabRoute]);
 
   useEffect(() => {
     if (schemaLabRoute || !featureFlagsReady) return;
@@ -94,8 +124,17 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
     }
   }, [featureFlagsReady, schemaLabRoute]);
 
+  const investigationProfileReady =
+    schemaLabRoute ||
+    investigationProfileStatus === 'ready' ||
+    investigationProfileStatus === 'error' ||
+    investigationProfileStatus === 'disabled';
   if (!mounted || !featureFlagsReady) {
     return null;
+  }
+
+  if (!investigationProfileReady) {
+    return <LoaderFullScreen />;
   }
 
   return <>{children}</>;

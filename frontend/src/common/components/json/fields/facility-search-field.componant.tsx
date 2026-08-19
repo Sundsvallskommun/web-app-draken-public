@@ -1,22 +1,24 @@
 'use client';
 
 import {
+  findPlaceEmploymentMatch,
   findPlaceNode,
   findPlaceNodeByKey,
+  getEmploymentPrefillNode,
+  getFacilityPlaceInfo,
   getParentPlaceNode,
   getPlaceNodes,
   getPlacePresentation,
   getSubPlaceNodes,
   hasSubPlaces,
-  isDescendantOrSelf,
   isSameLabel,
   matchesPlaceSearch,
+  type PlaceEmploymentMatch,
   placeKey,
   placeName,
   type PlaceNode,
-  placeParentName,
 } from '@common/components/json/utils/place-structure';
-import { getUserEmployments, OrgManagerDTO, UserEmploymentDTO } from '@common/services/employee-service';
+import { getUserEmployments, OrgManagerDTO } from '@common/services/employee-service';
 import { ariaDescribedByIds, type FieldProps } from '@rjsf/utils';
 import { Button, Combobox, FormControl, FormLabel, RadioButton } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
@@ -63,7 +65,7 @@ export function FacilitySearchField(props: FieldProps) {
   const selectablePlaceNodes = useMemo(() => placeNodes.filter((node) => !hasSubPlaces(node)), [placeNodes]);
 
   const [placeSearchValue, setPlaceSearchValue] = useState('');
-  const employmentMatchRef = useRef<{ node: PlaceNode; employment: UserEmploymentDTO } | null>(null);
+  const employmentMatchRef = useRef<PlaceEmploymentMatch<OrgManagerDTO> | undefined>(undefined);
   const prefillDoneRef = useRef(false);
 
   const isEditable = !disabled && !readonly;
@@ -110,16 +112,7 @@ export function FacilitySearchField(props: FieldProps) {
 
   const selectPlace = useCallback(
     (node: PlaceNode) => {
-      const match = employmentMatchRef.current;
-      const isEmploymentPlace = !!match && isSameLabel(node.label, match.node.label);
-      const withinEmploymentBranch = !!match && isDescendantOrSelf(node, match.node);
-
-      onChange({
-        orgId: isEmploymentPlace ? match.employment.orgId : undefined,
-        orgName: placeName(node),
-        parentOrgName: placeParentName(node),
-        manager: withinEmploymentBranch ? match.employment.manager : undefined,
-      });
+      onChange(getFacilityPlaceInfo(node, employmentMatchRef.current));
     },
     [onChange]
   );
@@ -128,31 +121,26 @@ export function FacilitySearchField(props: FieldProps) {
   // labelstrukturen — har noden underenheter måste användaren själv välja en av dem.
   useEffect(() => {
     if (!isEditable || prefillDoneRef.current || placeNodes.length === 0) return;
-    if (orgName) {
-      prefillDoneRef.current = true;
-      return;
-    }
-
     prefillDoneRef.current = true;
 
-    const prefillFromEmployment = async () => {
+    const loadEmploymentMatch = async () => {
       try {
         const employments = await getUserEmployments();
-        for (const employment of employments) {
-          const node = findPlaceNode(placeNodes, employment.orgName);
-          if (node) {
-            employmentMatchRef.current = { node, employment };
-            selectPlace(node);
-            return;
-          }
-        }
+        const match = findPlaceEmploymentMatch<OrgManagerDTO>(placeNodes, employments, selectedNode);
+        if (!match) return;
+
+        // Load the match even for persisted facilities. A later place change can then retain the
+        // manager for a node in the employment branch without replacing the saved selection now.
+        employmentMatchRef.current = match;
+        const prefillNode = getEmploymentPrefillNode(match, orgName);
+        if (prefillNode) selectPlace(prefillNode);
       } catch (error) {
         console.error('Failed to load employments:', error);
       }
     };
 
-    void prefillFromEmployment();
-  }, [isEditable, placeNodes, orgName, selectPlace]);
+    void loadEmploymentMatch();
+  }, [isEditable, placeNodes, orgName, selectPlace, selectedNode]);
 
   const handleSelectPlace = useCallback(
     (key: string) => {

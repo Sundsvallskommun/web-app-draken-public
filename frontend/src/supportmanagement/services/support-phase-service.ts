@@ -1,24 +1,26 @@
-import { Phase } from '@common/data-contracts/supportmanagement/data-contracts';
-import { CErrandPhase } from 'src/data-contracts/backend/data-contracts';
+import type { Phase, PhaseTransition } from '@common/data-contracts/supportmanagement/data-contracts';
 
 export const getSupportPhases = (phases: Phase[] | undefined): Phase[] =>
   [...(phases ?? [])].filter((p) => !p.deprecated).sort((a, b) => (a.phaseOrder ?? 0) - (b.phaseOrder ?? 0));
 
-export const getActiveErrandPhaseId = (errandPhases: CErrandPhase[] | undefined): string | undefined => {
-  if (!errandPhases?.length) {
-    return undefined;
-  }
-  const open = errandPhases.find((p) => !p.ended);
-  if (open) {
-    return open.phaseId;
-  }
-  return [...errandPhases].sort((a, b) => (b.started ?? '').localeCompare(a.started ?? ''))[0]?.phaseId;
-};
+export interface AvailableSupportPhaseTransition {
+  transition: PhaseTransition & { id: string };
+  target: Phase & { id: string };
+}
 
-export const getNextPhase = (current: Phase | undefined, phases: Phase[]): Phase | undefined => {
-  if (!current) {
-    return phases[0];
-  }
-  const transition = current.transitions?.find((t) => !t.deprecated);
-  return transition ? phases.find((p) => p.id === transition.targetPhaseId) : undefined;
+export const getAvailablePhaseTransitions = (
+  activePhaseId: string | undefined,
+  phases: readonly Phase[]
+): AvailableSupportPhaseTransition[] => {
+  if (!activePhaseId) return [];
+  const activePhase = phases.find((phase) => phase.id === activePhaseId);
+  if (!activePhase) return [];
+
+  return (activePhase.transitions ?? []).flatMap((transition) => {
+    if (transition.deprecated || !transition.id) return [];
+    const target = phases.find((phase) => phase.id === transition.targetPhaseId && !phase.deprecated);
+    return target?.id
+      ? [{ transition: { ...transition, id: transition.id }, target: { ...target, id: target.id } }]
+      : [];
+  });
 };

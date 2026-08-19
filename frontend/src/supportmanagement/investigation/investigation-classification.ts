@@ -1,17 +1,18 @@
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
-import { IAF_LEGAL_BASE } from '@supportmanagement/investigation/label-classification';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 
-import { investigationOwnsSupportErrandClassification } from './investigation-classification-ownership';
+import { getSupportErrandClassificationPlacement } from './investigation-classification-ownership';
+import {
+  type InvestigationClassificationLegalBaseRule,
+  isReportedMisconductErrandForPolicy,
+  type ReportedMisconductInvestigationClassificationPolicy,
+  resolveSupportInvestigationClassificationOwnerDocumentKey,
+} from './investigation-classification-policy';
 import type { InvestigationDocumentKey, InvestigationFormData } from './investigation-document';
 import { normalizeInvestigationFormData } from './investigation-form-data';
 
 export const INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD = 'errandClassification';
 export const INVESTIGATION_CLASSIFICATION_SLOT = `$external:${INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD}`;
-
-const classificationDocumentKeys = ['utredning-enhetschef', 'utredning-sol-lss'] as const;
-const socialLegalBases = [IAF_LEGAL_BASE.SOL, IAF_LEGAL_BASE.LSS] as const;
-const supportedLegalBases = new Set<string>([IAF_LEGAL_BASE.HSL, ...socialLegalBases]);
 
 interface InvestigationExternalFieldDefinition {
   kind?: unknown;
@@ -24,17 +25,22 @@ interface InvestigationSchemaExtensions extends RJSFSchema {
 }
 
 const isClassificationDocumentKey = (
-  key: InvestigationDocumentKey
-): key is (typeof classificationDocumentKeys)[number] =>
-  classificationDocumentKeys.some((candidate) => candidate === key);
+  key: InvestigationDocumentKey,
+  policy: ReportedMisconductInvestigationClassificationPolicy
+): boolean => {
+  return policy.defaultOwnerDocumentKey === key || policy.reportedMisconductOwnerDocumentKey === key;
+};
 
-const hasClassificationDeclaration = (schema: RJSFSchema): boolean => {
+const hasClassificationDeclaration = (
+  schema: RJSFSchema,
+  policy: ReportedMisconductInvestigationClassificationPolicy
+): boolean => {
   const definition = (schema as InvestigationSchemaExtensions)['x-draken-external-fields']?.[
     INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD
   ];
   return (
     definition?.kind === 'supportManagementLabelClassification' &&
-    definition.legalBasesPointer === '/legalBases' &&
+    definition.legalBasesPointer === policy.legalBasesPointer &&
     definition.required === true
   );
 };
@@ -54,59 +60,123 @@ export const getInvestigationClassificationSchemaContract = (
   key: InvestigationDocumentKey,
   schema: RJSFSchema
 ): InvestigationClassificationSchemaContract | undefined => {
-  if (!isClassificationDocumentKey(key)) return undefined;
-  if (hasClassificationDeclaration(schema)) return 'declared';
+  const placement = getSupportErrandClassificationPlacement();
+  if (placement.owner !== 'investigation' || !isClassificationDocumentKey(key, placement.policy)) return undefined;
+  if (hasClassificationDeclaration(schema, placement.policy)) return 'declared';
   return isLegacyClassificationSchema(schema) ? 'legacy-fallback' : 'missing-declaration';
 };
 
-export const getInvestigationLegalBases = (formData: InvestigationFormData): string[] =>
-  Array.isArray(formData.legalBases)
-    ? formData.legalBases.filter(
-        (legalBase): legalBase is string => typeof legalBase === 'string' && supportedLegalBases.has(legalBase)
-      )
-    : [];
+const jsonPointerSegments = (pointer: string): string[] =>
+  pointer
+    .slice(1)
+    .split('/')
+    .map((segment) => segment.replaceAll('~1', '/').replaceAll('~0', '~'));
 
-const hasReportedMisconductParameter = (errand: SupportErrand | undefined): boolean =>
-  errand?.parameters?.some(
-    (parameter) => parameter.key === 'eventType' && parameter.values?.some((value) => value === 'MISSFORHALLANDE')
-  ) ?? false;
+const readJsonPointer = (value: unknown, pointer: string): unknown =>
+  jsonPointerSegments(pointer).reduce<unknown>(
+    (current, segment) =>
+      typeof current === 'object' && current !== null && !Array.isArray(current)
+        ? (current as Record<string, unknown>)[segment]
+        : undefined,
+    value
+  );
 
-const hasReportedMisconductLabel = (errand: SupportErrand | undefined): boolean =>
-  errand?.labels?.some((label) => {
-    const resourceName = label.resourceName?.toUpperCase();
-    const resourcePath = label.resourcePath?.toUpperCase();
-    const reportType = resourcePath?.split('/').at(-1) ?? resourceName;
-    return reportType === 'ABUSE' || reportType === 'ADVERSE_INCIDENT';
-  }) ?? false;
+export const getInvestigationLegalBases = (formData: InvestigationFormData): string[] => {
+  const policy = getSupportErrandClassificationPlacement().policy;
+  if (!policy) return [];
 
-export const isReportedMisconductErrand = (errand: SupportErrand | undefined): boolean =>
-  hasReportedMisconductParameter(errand) || hasReportedMisconductLabel(errand);
+  const legalBases = readJsonPointer(formData, policy.legalBasesPointer);
+  if (!Array.isArray(legalBases)) return [];
+
+  const rulesByLegalBase = new Map(
+    policy.legalBaseRules.map((rule) => [rule.legalBase.trim().toUpperCase(), rule.legalBase])
+  );
+  return [
+    ...new Set(
+      legalBases.flatMap((legalBase) => {
+        if (typeof legalBase !== 'string') return [];
+        const configuredLegalBase = rulesByLegalBase.get(legalBase.trim().toUpperCase());
+        return configuredLegalBase ? [configuredLegalBase] : [];
+      })
+    ),
+  ];
+};
+
+export const getInvestigationLegalBaseRules = (): readonly InvestigationClassificationLegalBaseRule[] =>
+  getSupportErrandClassificationPlacement().policy?.legalBaseRules ?? [];
+
+export const isReportedMisconductErrand = (errand: SupportErrand | undefined): boolean => {
+  const policy = getSupportErrandClassificationPlacement().policy;
+  return policy ? isReportedMisconductErrandForPolicy(policy, errand) : false;
+};
 
 export const getInvestigationClassificationOwner = (
   errand: SupportErrand | undefined
-): (typeof classificationDocumentKeys)[number] =>
-  isReportedMisconductErrand(errand) ? 'utredning-sol-lss' : 'utredning-enhetschef';
+): InvestigationDocumentKey | undefined => {
+  const placement = getSupportErrandClassificationPlacement();
+  if (placement.owner !== 'investigation') return undefined;
+  return resolveSupportInvestigationClassificationOwnerDocumentKey(placement.policy, errand ?? {});
+};
 
 export const isInvestigationClassificationOwner = (
   key: InvestigationDocumentKey,
   errand: SupportErrand | undefined
-): boolean => investigationOwnsSupportErrandClassification() && getInvestigationClassificationOwner(errand) === key;
+): boolean => getInvestigationClassificationOwner(errand) === key;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const schemaContainsDataPointer = (schema: RJSFSchema, pointer: string): boolean => {
+  let current: RJSFSchema | boolean = schema;
+  for (const segment of jsonPointerSegments(pointer)) {
+    if (typeof current === 'boolean' || !isRecord(current.properties)) return false;
+    const nextSchema: RJSFSchema | boolean | undefined = current.properties[segment];
+    if (nextSchema === undefined) return false;
+    current = nextSchema;
+  }
+  return true;
+};
+
+const setJsonPointer = (value: InvestigationFormData, pointer: string, nextValue: unknown): InvestigationFormData => {
+  const setAtPath = (current: unknown, segments: readonly string[]): unknown => {
+    const [segment, ...remaining] = segments;
+    if (!segment) return nextValue;
+    const currentRecord = isRecord(current) ? current : {};
+    return {
+      ...currentRecord,
+      [segment]: remaining.length === 0 ? nextValue : setAtPath(currentRecord[segment], remaining),
+    };
+  };
+
+  return setAtPath(value, jsonPointerSegments(pointer)) as InvestigationFormData;
+};
 
 export const normalizeContextualInvestigationFormData = (
-  key: InvestigationDocumentKey,
+  documentKey: InvestigationDocumentKey,
+  schemaName: string,
   schema: RJSFSchema,
   formData: InvestigationFormData,
   reportedMisconduct: boolean
 ): InvestigationFormData => {
-  const normalized = normalizeInvestigationFormData(key, schema, formData);
-  const schemaHasLegalBases = Boolean(
-    schema.properties && typeof schema.properties === 'object' && 'legalBases' in schema.properties
-  );
+  const normalized = normalizeInvestigationFormData(schemaName, schema, formData);
+  const placement = getSupportErrandClassificationPlacement();
+  if (placement.owner !== 'investigation') return normalized;
+
+  const { policy } = placement;
+  const schemaHasLegalBases = schemaContainsDataPointer(schema, policy.legalBasesPointer);
+  const isDistinctReportedMisconductDocument =
+    documentKey === policy.reportedMisconductOwnerDocumentKey &&
+    policy.reportedMisconductOwnerDocumentKey !== policy.defaultOwnerDocumentKey;
   const forceSocialLegalBases =
-    schemaHasLegalBases && (key === 'utredning-sol-lss' || (reportedMisconduct && key === 'utredning-enhetschef'));
+    schemaHasLegalBases &&
+    (isDistinctReportedMisconductDocument || (reportedMisconduct && documentKey === policy.defaultOwnerDocumentKey));
 
   return forceSocialLegalBases
-    ? normalizeInvestigationFormData(key, schema, { ...normalized, legalBases: [...socialLegalBases] })
+    ? normalizeInvestigationFormData(
+        schemaName,
+        schema,
+        setJsonPointer(normalized, policy.legalBasesPointer, [...policy.forcedLegalBases])
+      )
     : normalized;
 };
 
@@ -123,15 +193,30 @@ export const getInvestigationClassificationUiSchema = (
   uiSchema: UiSchema,
   reportedMisconduct: boolean
 ): UiSchema => {
-  const legalBasesUi = (uiSchema.legalBases ?? {}) as UiSchema;
+  const placement = getSupportErrandClassificationPlacement();
+  if (placement.owner !== 'investigation') return uiSchema;
+
+  const { policy } = placement;
+  const legalBasesSegments = jsonPointerSegments(policy.legalBasesPointer);
+  const legalBasesField = legalBasesSegments.at(-1) ?? '';
+  const setUiSchemaReadonly = (current: UiSchema, segments: readonly string[]): UiSchema => {
+    const [segment, ...remaining] = segments;
+    if (!segment) return current;
+    const child = (current[segment] ?? {}) as UiSchema;
+    return {
+      ...current,
+      [segment]: remaining.length === 0 ? { ...child, 'ui:readonly': true } : setUiSchemaReadonly(child, remaining),
+    };
+  };
   const contextualUiSchema: UiSchema =
-    reportedMisconduct && key === 'utredning-enhetschef'
-      ? { ...uiSchema, legalBases: { ...legalBasesUi, 'ui:readonly': true } }
+    reportedMisconduct && key === policy.defaultOwnerDocumentKey
+      ? setUiSchemaReadonly(uiSchema, legalBasesSegments)
       : uiSchema;
 
-  if (!isClassificationDocumentKey(key)) return contextualUiSchema;
+  if (!isClassificationDocumentKey(key, policy)) return contextualUiSchema;
 
-  const targetSectionId = key === 'utredning-enhetschef' ? 'categorization-and-documentation' : 'categorization';
+  const targetSectionId =
+    key === policy.defaultOwnerDocumentKey ? 'categorization-and-documentation' : 'categorization';
   const sections = Array.isArray(contextualUiSchema['ui:sections'])
     ? (contextualUiSchema['ui:sections'] as Array<Record<string, unknown>>)
     : [];
@@ -145,7 +230,7 @@ export const getInvestigationClassificationUiSchema = (
       ...section,
       fields:
         section.id === targetSectionId
-          ? insertAfter(fieldsWithoutClassification, 'legalBases', INVESTIGATION_CLASSIFICATION_SLOT)
+          ? insertAfter(fieldsWithoutClassification, legalBasesField, INVESTIGATION_CLASSIFICATION_SLOT)
           : fieldsWithoutClassification,
     };
   });

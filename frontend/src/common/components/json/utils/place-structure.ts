@@ -23,6 +23,24 @@ export interface PlacePresentation {
   department?: string;
 }
 
+export interface PlaceEmployment<TManager = unknown> {
+  orgId?: number;
+  orgName?: string;
+  manager?: TManager;
+}
+
+export interface PlaceEmploymentMatch<TManager = unknown> {
+  node: PlaceNode;
+  employment: PlaceEmployment<TManager>;
+}
+
+export interface FacilityPlaceInfo<TManager = unknown> {
+  orgId?: number;
+  orgName: string;
+  parentOrgName?: string;
+  manager?: TManager;
+}
+
 const normalizeName = (value: string | undefined): string => (value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
 
 const labelName = (label: Label): string => label.displayName || label.resourceName;
@@ -108,6 +126,32 @@ export const findPlaceNode = (
   return withParent.length === 1 ? withParent[0] : undefined;
 };
 
+export const isDescendantOrSelf = (node: PlaceNode, ancestor: PlaceNode): boolean =>
+  node.path.some((label) => isSameLabel(label, ancestor.label));
+
+/** Finds the first employment whose organisation name resolves unambiguously in the place structure. */
+export const findPlaceEmploymentMatch = <TManager>(
+  nodes: readonly PlaceNode[],
+  employments: readonly PlaceEmployment<TManager>[],
+  selectedNode?: PlaceNode
+): PlaceEmploymentMatch<TManager> | undefined => {
+  const matches: PlaceEmploymentMatch<TManager>[] = [];
+  for (const employment of employments) {
+    const node = findPlaceNode(nodes, employment.orgName);
+    if (node) matches.push({ node, employment });
+  }
+
+  return selectedNode
+    ? matches.find((match) => isDescendantOrSelf(selectedNode, match.node)) ?? matches[0]
+    : matches[0];
+};
+
+/** A saved facility wins over employment prefill, while the match itself remains usable for later changes. */
+export const getEmploymentPrefillNode = <TManager>(
+  employmentMatch: PlaceEmploymentMatch<TManager> | undefined,
+  persistedOrgName: string | undefined
+): PlaceNode | undefined => (persistedOrgName?.trim() ? undefined : employmentMatch?.node);
+
 export const placeKey = (node: PlaceNode): string => node.label.resourcePath ?? node.path.map(labelName).join('/');
 
 export const findPlaceNodeByKey = (nodes: readonly PlaceNode[], key: string): PlaceNode | undefined =>
@@ -139,5 +183,18 @@ export const getParentPlaceNode = (nodes: readonly PlaceNode[], node: PlaceNode)
 export const getSubPlaceNodes = (nodes: readonly PlaceNode[], parent: PlaceNode): PlaceNode[] =>
   nodes.filter((node) => node.path.length === parent.path.length + 1 && isSameLabel(node.path.at(-2), parent.label));
 
-export const isDescendantOrSelf = (node: PlaceNode, ancestor: PlaceNode): boolean =>
-  node.path.some((label) => isSameLabel(label, ancestor.label));
+/** Adds organisation metadata only when the selected place belongs to the matched employment branch. */
+export const getFacilityPlaceInfo = <TManager>(
+  node: PlaceNode,
+  employmentMatch: PlaceEmploymentMatch<TManager> | undefined
+): FacilityPlaceInfo<TManager> => {
+  const isEmploymentPlace = Boolean(employmentMatch && isSameLabel(node.label, employmentMatch.node.label));
+  const withinEmploymentBranch = Boolean(employmentMatch && isDescendantOrSelf(node, employmentMatch.node));
+
+  return {
+    orgId: isEmploymentPlace ? employmentMatch?.employment.orgId : undefined,
+    orgName: placeName(node),
+    parentOrgName: placeParentName(node),
+    manager: withinEmploymentBranch ? employmentMatch?.employment.manager : undefined,
+  };
+};

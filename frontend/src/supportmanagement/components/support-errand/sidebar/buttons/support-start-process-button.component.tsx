@@ -27,20 +27,30 @@ export const SupportStartProcessButtonComponent: FC<{
     try {
       await onSubmit();
 
-      if (!supportErrand!.assignedUserId) {
+      const afterSubmit = await getSupportErrandById(supportErrand!.id!, municipalityId);
+      if (afterSubmit.error) {
+        throw new Error('Could not reload the support errand before starting it');
+      }
+
+      let statusTransitionHandledByAssignment = false;
+      if (!afterSubmit.errand.assignedUserId) {
         const currentAdmin = administrators.find((a) => a.adAccount === user.username);
         if (currentAdmin) {
+          const assignmentStatus = afterSubmit.errand.status === Status.ONGOING ? undefined : Status.ONGOING;
           await setSupportErrandAdmin(
             supportErrand!.id!,
             municipalityId,
             currentAdmin.adAccount,
-            Status.ONGOING,
+            assignmentStatus,
             currentAdmin.adAccount
           );
+          statusTransitionHandledByAssignment = assignmentStatus !== undefined;
         }
       }
 
-      await setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING);
+      if (!statusTransitionHandledByAssignment && afterSubmit.errand.status !== Status.ONGOING) {
+        await setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING);
+      }
 
       const updated = await getSupportErrandById(supportErrand!.id!, municipalityId);
       setSupportErrand(updated.errand);

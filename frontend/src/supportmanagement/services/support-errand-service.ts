@@ -1,7 +1,7 @@
 import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
-import { isIAFOrVOF, isKC, isLOK, isROB } from '@common/services/application-service';
+import { isKC, isLOK, isROB } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
@@ -17,8 +17,16 @@ import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-co
 import { v4 as uuidv4 } from 'uuid';
 
 import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
+import type { SupportErrandFilterQuery, SupportErrandSortQuery } from './support-errand-query';
+import { buildSupportErrandsCountSearchParameters, buildSupportErrandsSearchParameters } from './support-errand-query';
+import {
+  buildSupportErrandStatusTransitionRequest,
+  SupportErrandStatusTransitionChanges,
+  SupportErrandStatusTransitionRequest,
+} from './support-errand-status-transition';
 import { buildSupportErrandUpdateData } from './support-errand-update-data';
-import { findLabelByClassification } from './support-label-classification-service';
+import { toStrongSupportErrandETag } from './support-errand-write-version';
+import { getMappedLabelSubType, shouldMapLabelSubType } from './support-label-classification-service';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
@@ -66,12 +74,25 @@ export type SupportStakeholderType = keyof typeof SupportStakeholderTypeEnum;
 
 export type ExternalTags = Array<{ key: string; value: string }>;
 
+/**
+ * Read-only JSON parameter projection returned with an errand. It is kept out
+ * of the generated SupportErrandDto because that DTO is the generic PATCH
+ * contract, where JSON documents are deliberately forbidden.
+ */
+export interface SupportErrandJsonParameter {
+  key: string;
+  schemaId: string;
+  value?: unknown;
+  version?: number;
+}
+
 export interface ApiSupportErrand extends SupportErrandDto {
   id?: string;
   version?: number;
   created?: string;
   modified?: string;
   touched?: string;
+  jsonParameters?: SupportErrandJsonParameter[];
 }
 
 export interface SupportErrand extends ApiSupportErrand {
@@ -415,9 +436,8 @@ export const useSupportErrands = (
   municipalityId: string,
   page?: number,
   size?: number,
-  filter?: { [key: string]: string | boolean | number },
-  sort?: { [key: string]: 'asc' | 'desc' },
-  extraParameters?: { [key: string]: string }
+  filter?: SupportErrandFilterQuery,
+  sort?: SupportErrandSortQuery
 ): SupportErrandsData => {
   const toastMessage = useSnackbar();
   const setIsLoading = useConfigStore((s) => s.setIsLoading);
@@ -659,9 +679,9 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       category: (e.classification?.category === 'NONE' ? '' : e.classification?.category) || '',
       type: (e.classification?.type === 'NONE' ? '' : e.classification?.type) || '',
       subType:
-        (appConfig.features.useThreeLevelCategorization
+        (shouldMapLabelSubType(appConfig.features.useThreeLevelCategorization)
           ? (() => {
-              const subTypeLabel = findLabelByClassification(e.labels, isIAFOrVOF() ? 'TYPE' : 'SUBTYPE');
+              const subTypeLabel = getMappedLabelSubType(e);
               return subTypeLabel?.resourcePath || subTypeLabel?.resourceName;
             })()
           : undefined) || '',
@@ -734,21 +754,14 @@ export const getSupportErrands: (
   municipalityId: string,
   page?: number,
   size?: number,
-  filter?: { [key: string]: string | boolean | number },
-  sort?: { [key: string]: 'asc' | 'desc' }
+  filter?: SupportErrandFilterQuery,
+  sort?: SupportErrandSortQuery
 ) => Promise<SupportErrandsData> = (municipalityId, page = 0, size = 10, filter = {}, sort = { modified: 'desc' }) => {
   if (!municipalityId) {
     return Promise.reject('Municipality id missing');
   }
-  let url = `supporterrands/${municipalityId}?page=${page}&size=${size}`;
-  const filterQuery = Object.keys(filter)
-    .map((key) => key + '=' + filter[key])
-    .join('&');
-  const sortQuery = `${Object.keys(sort)
-    .map((key) => `sort=${key}%2C${sort[key]}`)
-    .join('&')}`;
-  url = filterQuery ? `supporterrands/${municipalityId}?page=${page}&size=${size}&${filterQuery}` : url;
-  url = sortQuery ? `${url}&${sortQuery}` : url;
+  const query = buildSupportErrandsSearchParameters(page, size, filter, sort);
+  const url = `supporterrands/${municipalityId}?${query}`;
   return apiService
     .get<PagedApiSupportErrands>(url)
     .then((res) => {
@@ -768,17 +781,15 @@ export const getSupportErrands: (
     });
 };
 
-export const getSupportErrandsCount: (
-  municipalityId: string,
-  filter?: { [key: string]: string | boolean | number }
-) => Promise<any> = (municipalityId, filter = {}) => {
+export const getSupportErrandsCount: (municipalityId: string, filter?: SupportErrandFilterQuery) => Promise<any> = (
+  municipalityId,
+  filter = {}
+) => {
   if (!municipalityId) {
     return Promise.reject('Municipality id missing');
   }
-  const filterQuery = Object.keys(filter)
-    .map((key) => key + '=' + filter[key])
-    .join('&');
-  const url = `countsupporterrands/${municipalityId}?${filterQuery}`;
+  const query = buildSupportErrandsCountSearchParameters(filter);
+  const url = `countsupporterrands/${municipalityId}?${query}`;
   return apiService
     .get<any>(url)
     .then((res) => {
@@ -809,21 +820,38 @@ interface UpdateResponse {
   errand: ApiSupportErrand | boolean;
 }
 
-type AllSettledResponse = ({ status: 'fulfilled'; value: any } | { status: 'rejected'; reason: any })[];
-
 export const updateSupportErrand: (
   municipalityId: string,
   formdata: Partial<RegisterSupportErrandFormModel>
 ) => Promise<UpdateResponse> = async (municipalityId, formdata) => {
-  let responseObj: UpdateResponse = {
+  if (!formdata.id) {
+    throw new Error('A support errand id is required before writing');
+  }
+  const errandId = formdata.id;
+  const ifMatch = toStrongSupportErrandETag(formdata.version);
+  const stakeholders = buildStakeholdersList(formdata);
+  const data = buildSupportErrandUpdateData(formdata, stakeholders);
+  const responseObj: UpdateResponse = {
     notes: false,
     attachments: false,
     errand: false,
   };
 
-  if (formdata.notes && formdata.id) {
+  try {
+    await apiService.patch<ApiSupportErrand, Partial<SupportErrandDto>>(
+      `supporterrands/${municipalityId}/${errandId}`,
+      data,
+      { headers: { 'If-Match': ifMatch } }
+    );
+    responseObj.errand = true;
+  } catch (e) {
+    console.error('Something went wrong when patching errand');
+    throw e;
+  }
+
+  if (formdata.notes) {
     try {
-      const noteRes = await saveSupportNote(formdata.id, municipalityId, formdata.notes);
+      const noteRes = await saveSupportNote(errandId, municipalityId, formdata.notes);
       responseObj.notes = noteRes;
     } catch (e) {
       responseObj.notes = false;
@@ -834,8 +862,8 @@ export const updateSupportErrand: (
 
   if (formdata.attachments && formdata.attachments.length > 0) {
     try {
-      const attachmentRes: AllSettledResponse = await saveSupportAttachments(
-        formdata.id!,
+      const attachmentRes = await saveSupportAttachments(
+        errandId,
         municipalityId,
         formdata.attachments as { file: File }[]
       );
@@ -847,29 +875,28 @@ export const updateSupportErrand: (
     responseObj.attachments = true;
   }
 
-  const stakeholders = buildStakeholdersList(formdata);
-  const data = buildSupportErrandUpdateData(formdata, stakeholders);
+  if (!responseObj.notes || !responseObj.attachments) {
+    const failedChildren = [!responseObj.notes && 'note', !responseObj.attachments && 'attachments']
+      .filter(Boolean)
+      .join(' and ');
+    throw new Error(`Support errand was updated, but ${failedChildren} could not be saved`);
+  }
 
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${formdata.id}`, data)
-    .then(() => {
-      responseObj.errand = true;
-      return responseObj;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when patching errand');
-      throw e;
-    });
+  return responseObj;
 };
 
-export const updateSupportErrandPhase: (municipalityId: string, id: string, activePhaseId: string) => Promise<void> = (
-  municipalityId,
-  id,
-  activePhaseId
-) =>
+export const updateSupportErrandPhase = (
+  municipalityId: string,
+  id: string,
+  transitionId: string,
+  expectedVersion: number
+): Promise<SupportErrand> =>
   apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${id}`, { activePhaseId })
-    .then(() => undefined)
+    .patch<ApiSupportErrand, { transitionId: string; expectedVersion: number }>(
+      `supporterrands/${municipalityId}/${id}/phase`,
+      { transitionId, expectedVersion }
+    )
+    .then((response) => mapApiSupportErrandToSupportErrand(response.data))
     .catch((e) => {
       console.error('Something went wrong when updating errand phase');
       throw e;
@@ -935,17 +962,34 @@ export const setSupportErrandAdmin: (
   status?: Status,
   assigner?: string
 ) => Promise<boolean> = async (errandId, municipalityId, assignedUserId, status?, assigner?) => {
-  const data: Partial<SupportErrandDto> = { assignedUserId, status };
+  const data = { assignedUserId };
 
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}/admin`, data)
-    .then(() => {
-      return true;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when patching errand');
-      throw e;
+  try {
+    const current = await apiService.get<ApiSupportErrand>(`supporterrands/${municipalityId}/${errandId}`);
+    const ifMatch = toStrongSupportErrandETag(current.data.version);
+    await apiService.patch<ApiSupportErrand, typeof data>(`supporterrands/${municipalityId}/${errandId}/admin`, data, {
+      headers: { 'If-Match': ifMatch },
     });
+    return status === undefined ? true : transitionSupportErrandStatus(errandId, municipalityId, status);
+  } catch (e) {
+    console.error('Something went wrong when patching errand');
+    throw e;
+  }
+};
+
+const transitionSupportErrandStatus = async (
+  errandId: string,
+  municipalityId: string,
+  status: Status,
+  changes: SupportErrandStatusTransitionChanges = {}
+): Promise<boolean> => {
+  const current = await apiService.get<ApiSupportErrand>(`supporterrands/${municipalityId}/${errandId}`);
+  const command = buildSupportErrandStatusTransitionRequest(current.data, status, changes);
+  await apiService.patch<ApiSupportErrand, SupportErrandStatusTransitionRequest>(
+    `supporterrands/${municipalityId}/${errandId}/status`,
+    command
+  );
+  return true;
 };
 
 export const setSupportErrandStatus: (
@@ -953,17 +997,12 @@ export const setSupportErrandStatus: (
   municipalityId: string,
   status: Status
 ) => Promise<boolean> = async (errandId, municipalityId, status) => {
-  const data: Partial<SupportErrandDto> = { status, suspension: { suspendedFrom: undefined, suspendedTo: undefined } };
-
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then(() => {
-      return true;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when patching errand');
-      throw e;
-    });
+  return transitionSupportErrandStatus(errandId, municipalityId, status, {
+    suspension: { suspendedFrom: undefined, suspendedTo: undefined },
+  }).catch((e) => {
+    console.error('Something went wrong when patching errand');
+    throw e;
+  });
 };
 
 export const closeSupportErrand: (
@@ -971,17 +1010,10 @@ export const closeSupportErrand: (
   municipalityId: string,
   resolution: Resolution
 ) => Promise<boolean> = async (errandId, municipalityId, resolution) => {
-  const data: Partial<SupportErrandDto> = { status: Status.SOLVED, resolution };
-
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then(() => {
-      return true;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when patching errand');
-      throw e;
-    });
+  return transitionSupportErrandStatus(errandId, municipalityId, Status.SOLVED, { resolution }).catch((e) => {
+    console.error('Something went wrong when patching errand');
+    throw e;
+  });
 };
 
 export const setSuspension: (
@@ -994,19 +1026,19 @@ export const setSuspension: (
   if (status === Status.SUSPENDED && (date === '' || dayjs().isAfter(dayjs(date)))) {
     return Promise.reject('Invalid date');
   }
-  const data: Partial<SupportErrandDto> = {
-    status,
-    suspension: {
-      suspendedFrom: status === Status.SUSPENDED ? dayjs().toISOString() : undefined,
-      suspendedTo: status === Status.SUSPENDED ? dayjs(date).set('hour', 7).toISOString() : undefined,
-    },
+  const suspension = {
+    suspendedFrom: status === Status.SUSPENDED ? dayjs().toISOString() : undefined,
+    suspendedTo: status === Status.SUSPENDED ? dayjs(date).set('hour', 7).toISOString() : undefined,
   };
 
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
+  return transitionSupportErrandStatus(errandId, municipalityId, status, {
+    suspension: {
+      ...suspension,
+    },
+  })
     .then(async () => {
       if (status === Status.SUSPENDED && comment) {
-        const note = await saveSupportNote(errandId, municipalityId, comment);
+        await saveSupportNote(errandId, municipalityId, comment);
       }
       return true;
     })
@@ -1019,12 +1051,16 @@ export const setSuspension: (
 export const setSupportErrandPriority: (
   errandId: string,
   municipalityId: string,
-  priority: Priority
-) => Promise<boolean> = async (errandId, municipalityId, priority) => {
+  priority: Priority,
+  expectedVersion: number
+) => Promise<boolean> = async (errandId, municipalityId, priority, expectedVersion) => {
   const data: Partial<SupportErrandDto> = { priority };
+  const ifMatch = toStrongSupportErrandETag(expectedVersion);
 
   return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
+    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data, {
+      headers: { 'If-Match': ifMatch },
+    })
     .then(() => {
       return true;
     })

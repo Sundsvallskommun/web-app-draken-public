@@ -15,6 +15,8 @@ export interface SupportInvestigationClassificationRequest {
     type: string;
   };
   categoryLabels: ErrandLabelReference[];
+  documentKey: string;
+  documentETag: string;
 }
 
 export interface SupportInvestigationClassificationResponse {
@@ -41,7 +43,9 @@ const requireLabelReferences = (labels: readonly Label[]): ErrandLabelReference[
 
 export const buildSupportInvestigationClassificationRequest = (
   update: IafLabelClassificationUpdate,
-  expectedVersion: number | undefined
+  expectedVersion: number | undefined,
+  documentKey: string,
+  documentETag: string | undefined
 ): SupportInvestigationClassificationRequest => {
   if (typeof expectedVersion !== 'number' || !Number.isSafeInteger(expectedVersion) || expectedVersion < 0) {
     throw new Error('Ärendets version saknas. Ladda om ärendet innan klassificeringen sparas.');
@@ -57,6 +61,12 @@ export const buildSupportInvestigationClassificationRequest = (
   if (categoryLabels.length === 0) {
     throw new Error('Klassificeringens etiketter kunde inte bestämmas.');
   }
+  if (!documentKey.trim()) {
+    throw new Error('Dokumentnyckeln för klassificeringen saknas.');
+  }
+  if (typeof documentETag !== 'string' || !/^"(0|[1-9]\d*)"$/u.test(documentETag)) {
+    throw new Error('Utredningsdokumentets version saknas. Ladda om utredningen innan klassificeringen sparas.');
+  }
 
   return {
     expectedVersion,
@@ -65,6 +75,8 @@ export const buildSupportInvestigationClassificationRequest = (
       type: update.type,
     },
     categoryLabels: requireLabelReferences(categoryLabels),
+    documentKey,
+    documentETag,
   };
 };
 

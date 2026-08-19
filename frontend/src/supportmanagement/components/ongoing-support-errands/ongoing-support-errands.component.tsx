@@ -3,6 +3,15 @@ import { attestationEnabled } from '@common/services/feature-flag-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useBillingStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
+import {
+  parsePersistedLabelFilterSelections,
+  serializeLabelFilterSelections,
+  SUPPORT_MANAGEMENT_LABEL_FILTER_PARAMETER,
+} from '@supportmanagement/filters/label-filter-persistence';
+import type { LabelFilterSelection } from '@supportmanagement/filters/label-filter-projector';
+import { projectLabelFilterGroups } from '@supportmanagement/filters/label-filter-projector';
+import { normalizeLabelFilterSelections } from '@supportmanagement/filters/label-filter-selection';
+import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
 import {
   getLabelSubTypeFromName,
@@ -16,7 +25,8 @@ import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import SupportManagementFiltering, {
-  SupportManagementFilter,
+  type SupportManagementFilter,
+  type SupportManagementLabelFilterState,
   SupportManagementValues,
 } from '../supportmanagement-filtering/supportmanagement-filtering.component';
 import { SupportErrandsTable } from './components/supporterrands-table.component';
@@ -55,6 +65,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
   const { sortOrder, sortColumn, pageSize, page } = watchTable();
 
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  const labelFilterProfile = useInvestigationProfileStore((state) => state.profile?.labelFilter);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const administrators = useUserStore((s) => s.administrators);
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -80,15 +91,44 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
   const typeFilter = watchFilter('type');
   const labelTypeFilter = watchFilter('labelType');
   const labelSubTypeFilter = watchFilter('labelSubType');
+  const labelFilterSelections = watchFilter('labelFilter');
   const channelFilter = watchFilter('channel');
   const sortObject = useMemo(() => ({ [sortColumn]: sortOrder }), [sortColumn, sortOrder]);
-  const [filterObject, setFilterObject] = useState<{ [key: string]: string | boolean } | undefined>(
-    Object.keys(storedFilter).length > 0 ? (storedFilter as { [key: string]: string | boolean }) : undefined
+
+  const labelFilterState = useMemo<SupportManagementLabelFilterState>(() => {
+    if (!labelFilterProfile) return { status: 'legacy' };
+    if (!supportMetadata) return { status: 'loading' };
+    if (!Array.isArray(supportMetadata.labels?.labelStructure)) return { status: 'error' };
+
+    try {
+      return {
+        status: 'ready',
+        projections: projectLabelFilterGroups(labelFilterProfile.groups, supportMetadata.labels.labelStructure),
+      };
+    } catch {
+      return { status: 'error' };
+    }
+  }, [labelFilterProfile, supportMetadata]);
+
+  const normalizedLabelFilterSelections = useMemo<readonly LabelFilterSelection[]>(
+    () =>
+      labelFilterState.status === 'ready'
+        ? normalizeLabelFilterSelections(labelFilterState.projections, labelFilterSelections)
+        : [],
+    [labelFilterSelections, labelFilterState]
   );
-  const [extraFilter, setExtraFilter] = useState<{ [key: string]: string }>();
+
+  const [filterObject, setFilterObject] = useState<{ [key: string]: string | boolean } | undefined>(() => {
+    const safeEntries = Object.entries(storedFilter).filter(
+      ([key]) =>
+        key !== SUPPORT_MANAGEMENT_LABEL_FILTER_PARAMETER &&
+        (!labelFilterProfile || !['labelCategory', 'labelType', 'labelSubType'].includes(key))
+    );
+    return safeEntries.length > 0 ? Object.fromEntries(safeEntries) : undefined;
+  });
   const filterInitialized = useRef(false);
 
-  const errands = useSupportErrands(municipalityId, page, pageSize, filterObject, sortObject, extraFilter);
+  const errands = useSupportErrands(municipalityId, page, pageSize, filterObject, sortObject);
 
   const initialFocus = useRef<HTMLButtonElement>(null);
 
@@ -102,31 +142,48 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
   const user = useUserStore((s) => s.user);
 
   useEffect(() => {
-    if (storedFilter && Object.keys(storedFilter).length > 0 && supportMetadata) {
+    if (!supportMetadata) return;
+
+    if (storedFilter && Object.keys(storedFilter).length > 0) {
       let storedFilters;
       try {
+        const projectedLabelSelections =
+          labelFilterState.status === 'ready'
+            ? normalizeLabelFilterSelections(
+                labelFilterState.projections,
+                parsePersistedLabelFilterSelections(storedFilter[SUPPORT_MANAGEMENT_LABEL_FILTER_PARAMETER])
+              )
+            : [];
         storedFilters = {
           category: (storedFilter?.category as string)?.split(',') || SupportManagementValues.category,
-          labelCategory: (storedFilter?.labelCategory as string)?.split(',') || SupportManagementValues.labelCategory,
+          labelCategory:
+            labelFilterState.status === 'legacy'
+              ? (storedFilter?.labelCategory as string)?.split(',') || SupportManagementValues.labelCategory
+              : [],
           type: (storedFilter?.type as string)?.split(',') || SupportManagementValues.type,
           labelType:
-            (Array.from(
-              new Set(
-                (storedFilter?.labelType as string)
-                  ?.split(',')
-                  .map((n: string) => getLabelTypeFromName(n, supportMetadata!))
-                  .map((t: { displayName?: string } | undefined) => t?.displayName)
-              )
-            ) as string[]) || SupportManagementValues.labelType,
+            labelFilterState.status === 'legacy'
+              ? (Array.from(
+                  new Set(
+                    (storedFilter?.labelType as string)
+                      ?.split(',')
+                      .map((n: string) => getLabelTypeFromName(n, supportMetadata))
+                      .map((t: { displayName?: string } | undefined) => t?.displayName)
+                  )
+                ) as string[]) || SupportManagementValues.labelType
+              : [],
           labelSubType:
-            (Array.from(
-              new Set(
-                (storedFilter?.labelSubType as string)
-                  ?.split(',')
-                  .map((n: string) => getLabelSubTypeFromName(n, supportMetadata!))
-                  .map((t: { displayName?: string } | undefined) => t?.displayName)
-              )
-            ) as string[]) || SupportManagementValues.labelSubType,
+            labelFilterState.status === 'legacy'
+              ? (Array.from(
+                  new Set(
+                    (storedFilter?.labelSubType as string)
+                      ?.split(',')
+                      .map((n: string) => getLabelSubTypeFromName(n, supportMetadata))
+                      .map((t: { displayName?: string } | undefined) => t?.displayName)
+                  )
+                ) as string[]) || SupportManagementValues.labelSubType
+              : [],
+          labelFilter: [...projectedLabelSelections],
           priority: (storedFilter?.priority as string)?.split(',') || SupportManagementValues.priority,
           channel: (storedFilter?.channel as string)?.split(',') || SupportManagementValues.channel,
           status:
@@ -159,6 +216,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
           startdate: SupportManagementValues.startdate,
           enddate: SupportManagementValues.enddate,
           admins: [],
+          labelFilter: [],
         };
       }
       if (storedFilter?.stakeholders === user.username) {
@@ -169,7 +227,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
     }
     filterInitialized.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resetFilter, triggerFilter, user.username, supportMetadata]);
+  }, [resetFilter, triggerFilter, user.username, supportMetadata, labelFilterState]);
 
   useEffect(() => {
     const currentStatus = JSON.stringify(getValues('status'));
@@ -216,14 +274,13 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
     () => {
       if (!filterInitialized.current) return;
       const fObj: Record<string, string | boolean> = {};
-      const extraFilterObj: Record<string, string> = {};
       if (priorityFilter && priorityFilter.length > 0) {
         fObj['priority'] = priorityFilter.join(',');
       }
       if (categoryFilter && categoryFilter.length > 0) {
         fObj['category'] = categoryFilter.join(',');
       }
-      if (labelCategoryFilter && labelCategoryFilter.length > 0) {
+      if (labelFilterState.status === 'legacy' && labelCategoryFilter && labelCategoryFilter.length > 0) {
         fObj['labelCategory'] = labelCategoryFilter.join(',');
       }
       if (statusFilter && statusFilter.length > 0) {
@@ -232,13 +289,13 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
       if (typeFilter && typeFilter.length > 0) {
         fObj['type'] = typeFilter.join(',');
       }
-      if (labelTypeFilter && labelTypeFilter.length > 0) {
+      if (labelFilterState.status === 'legacy' && labelTypeFilter && labelTypeFilter.length > 0) {
         const allTypesFlattened = supportMetadata?.labels?.labelStructure?.map((l) => l.labels).flat() ?? [];
         const matchedTypes = allTypesFlattened.filter((l) => l && labelTypeFilter.includes(l.displayName!));
         const matchedTypeNames = matchedTypes.map((t) => t!.resourcePath);
         fObj['labelType'] = matchedTypeNames.join(',');
       }
-      if (labelSubTypeFilter && labelSubTypeFilter.length > 0) {
+      if (labelFilterState.status === 'legacy' && labelSubTypeFilter && labelSubTypeFilter.length > 0) {
         const allTypesFlattened = supportMetadata?.labels?.labelStructure?.map((l) => l.labels).flat() ?? [];
         const allSubTypesFlattened =
           allTypesFlattened
@@ -255,7 +312,12 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
         fObj['channel'] = channelFilter.join(',');
       }
       if (queryFilter) {
-        fObj['query'] = queryFilter.replace(/\+/g, '').replace(/ /g, '+');
+        fObj['query'] = queryFilter;
+      }
+      if (labelFilterState.status === 'ready' && normalizedLabelFilterSelections.length > 0) {
+        fObj[SUPPORT_MANAGEMENT_LABEL_FILTER_PARAMETER] = serializeLabelFilterSelections(
+          normalizedLabelFilterSelections
+        );
       }
       if (administratorFilter && administratorFilter.length > 0) {
         fObj['stakeholders'] = administratorFilter.join(',');
@@ -274,7 +336,6 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
       if (JSON.stringify(fObj) !== JSON.stringify(filterObject)) {
         setFilterObject(fObj);
       }
-      setExtraFilter(extraFilterObj);
       setSelectedErrandStatuses(statusFilter);
       setStoredFilter(fObj);
     },
@@ -293,6 +354,8 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
       administratorFilter,
       startdate,
       enddate,
+      normalizedLabelFilterSelections,
+      labelFilterState.status,
     ]
   );
 
@@ -315,6 +378,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
     getValues().labelCategory.length +
     getValues().labelSubType.length +
     getValues().labelType.length +
+    normalizedLabelFilterSelections.length +
     (getValues().enddate !== '' ? 1 : 0) +
     (getValues().startdate !== '' ? 1 : 0) +
     getValues().priority.length +
@@ -330,6 +394,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
               ownerFilterHandler={ownerFilteringHandler}
               ownerFilter={ownerFilter}
               administrators={administrators}
+              labelFilterState={labelFilterState}
             />
           </FormProvider>
         </div>

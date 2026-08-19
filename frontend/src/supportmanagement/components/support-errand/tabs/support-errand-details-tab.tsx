@@ -1,22 +1,29 @@
 import { JsonParametersDisplay } from '@common/components/json/schema/json-parameters-display.component';
-import { appConfig } from '@config/appconfig';
 import { Table } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
-import { isInvestigationDocumentKey } from '@supportmanagement/investigation/investigation-document';
+import { isInvestigationActive } from '@supportmanagement/investigation/investigation-profile';
+import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
 import { useMemo } from 'react';
 
 export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const _supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  const investigationProfile = useInvestigationProfileStore((state) => state.profile);
+  const investigationDocumentLoadStates = useInvestigationProfileStore((state) => state.documentLoadStates);
   const supportErrand = _supportErrand!;
-  const readonlyJsonParameters = useMemo(
-    () =>
-      (supportErrand.jsonParameters ?? []).filter(
-        ({ key }) => !appConfig.features.useInvestigation || !isInvestigationDocumentKey(key)
-      ),
-    [supportErrand.jsonParameters]
-  );
+  const readonlyJsonParameters = useMemo(() => {
+    if (!isInvestigationActive(investigationProfile)) {
+      return supportErrand.jsonParameters ?? [];
+    }
+
+    const documentsHandledByInvestigationUi = new Set(
+      investigationProfile.documents
+        .filter(({ key }) => investigationDocumentLoadStates[key] === 'ready')
+        .map(({ key }) => key)
+    );
+    return (supportErrand.jsonParameters ?? []).filter(({ key }) => !documentsHandledByInvestigationUi.has(key));
+  }, [investigationDocumentLoadStates, investigationProfile, supportErrand.jsonParameters]);
 
   const simpleParams = useMemo(
     () =>
