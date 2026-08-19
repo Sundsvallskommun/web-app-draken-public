@@ -1,4 +1,4 @@
-import sanitized from '@common/services/sanitizer-service';
+import { sanitized } from '@common/services/sanitizer-service';
 import type { FieldTemplateProps } from '@rjsf/utils';
 import { FormControl, FormErrorMessage, FormLabel } from '@sk-web-gui/react';
 

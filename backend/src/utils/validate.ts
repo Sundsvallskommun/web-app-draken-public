@@ -2,7 +2,7 @@ import { HttpException } from '@exceptions/HttpException';
 import { plainToInstance } from 'class-transformer';
 import { validate, ValidationError } from 'class-validator';
 
-export const getAllNestedErrors = (error: ValidationError): string | string[] => {
+const getAllNestedErrors = (error: ValidationError): string | string[] => {
   if (error.constraints) {
     return Object.values(error.constraints);
   }
@@ -17,7 +17,7 @@ export const getAllNestedErrors = (error: ValidationError): string | string[] =>
  * @param forbidNonWhitelisted
  * @returns ValidationError[]
  */
-export const validateObject = async (
+const validateObject = async (
   schema: any,
   data: any,
   skipMissingProperties = false,

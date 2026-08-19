@@ -2,8 +2,6 @@ import dayjs from 'dayjs';
 
 export const newNumberPhonePattern = /^$|^(?:\+|0)[0-9\s-]{6,19}$/;
 export const phonePattern = /^$|^(\+?[0-9]{7,11})$/gi;
-export const phonePatternNoCountryCode = /^$|^07[02369]\d{7}$/;
-export const phonePatternWithCountryCode = /^$|^(\+[0-9]{10,12})$/gi;
 export const supportManagementPhonePattern = /^\+[1-9]\d{3,14}$/gi;
 export const supportManagementPhonePatternOrCountryCode = /^\+46$|^\+[1-9]\d{3,14}$/gi;
 
@@ -17,14 +15,6 @@ export const invalidUsernameMessage = 'Ej giltigt användarnamn, mellanslag ej t
 
 export const orgNumberPattern = /^$|^([0-9]{6}-[0-9]{4})$/gi;
 export const invalidOrgNumberMessage = 'Ej giltigt organisationsnummer (ange tio siffror med streck: kkllmm-nnnn)';
-
-export function promiseTimeout<T>(time: number): (result: any) => Promise<T> {
-  return (result) => new Promise((resolve) => setTimeout(resolve, time, result));
-}
-
-export function promiseRejectTimeout<T>(time: number): (result: any) => Promise<T> {
-  return (result) => new Promise((resolve, reject) => setTimeout(reject, time, result));
-}
 
 export const truncate = (text: string | null | undefined, maxLength: number): string => {
   if (!text) return '';
@@ -77,17 +67,6 @@ export const base64Decode = (base64: string) => {
   }
 };
 
-export function b64toBlob(data: string, mimeType: string) {
-  var byteString = base64Decode(data);
-  var ab = new ArrayBuffer(byteString.length);
-  var ia = new Uint8Array(ab);
-
-  for (var i = 0; i < byteString.length; i++) {
-    ia[i] = byteString.charCodeAt(i);
-  }
-  return new Blob([ab], { type: mimeType });
-}
-
 export const latestBy = (list: any[], timeField: string) =>
   list && list.length > 0
     ? list
@@ -104,10 +83,6 @@ export const latestBy = (list: any[], timeField: string) =>
 export const sortBy = (list: any[], field: string) =>
   list && list.length > 0 ? list.sort((a, b) => (a[field] > b[field] ? 1 : -1)) : [];
 
-export function toTitleCase(str: string) {
-  return str ? str.charAt(0).toUpperCase() + str.substr(1).toLowerCase() : '';
-}
-
 export function deepFlattenToObject(obj: Record<string, unknown>, prefix = ''): Record<string, unknown> {
   return Object.keys(obj).reduce((acc: Record<string, unknown>, k) => {
     const pre = prefix.length ? prefix + '_' : '';
@@ -118,20 +93,6 @@ export function deepFlattenToObject(obj: Record<string, unknown>, prefix = ''): 
     }
     return acc;
   }, {});
-}
-
-export function debounce(func: (...args: unknown[]) => void, wait: number, immediate?: boolean) {
-  var timeout: ReturnType<typeof setTimeout> | undefined;
-  return (...args: unknown[]) => {
-    var later = () => {
-      timeout = undefined;
-      if (!immediate) func(...args);
-    };
-    var callNow = immediate && !timeout;
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-    if (callNow) func(...args);
-  };
 }
 
 export function prettyTime(time: string | Date) {

@@ -2,7 +2,7 @@ import { ApiResponse, apiService, Data } from '@common/services/api-service';
 import { formatOrgNr, luhnCheck, OrgNumberFormat } from '@common/services/helper-service';
 import { CLegalEntity2WithId } from 'src/data-contracts/backend/data-contracts';
 
-export interface CitizenAddressData extends Data {
+interface CitizenAddressData extends Data {
   personId: string;
   givenname: string;
   lastname: string;
@@ -122,7 +122,7 @@ interface EmployedPersonData {
   companyId: number;
 }
 
-export const isValidPersonalNumber: (ssn: string) => boolean = (ssn) =>
+const isValidPersonalNumber: (ssn: string) => boolean = (ssn) =>
   luhnCheck(ssn) && ((ssn.length === 12 && parseInt(ssn[4]) < 2) || (ssn.length === 10 && parseInt(ssn[2]) < 2));
 
 export const isValidOrgNumber: (ssn: string) => boolean = (ssn) => {
@@ -165,9 +165,7 @@ export const searchPerson: (ssn: string) => Promise<AddressResult | undefined> =
         });
 };
 
-export const isValidADUsername: (username: string) => boolean = (username) => username?.length === 8;
-
-export const parseAdministrationInfo: (orgTree: string) => {
+const parseAdministrationInfo: (orgTree: string) => {
   administrationCode: string;
   administrationName: string;
 } = (orgTree) => {

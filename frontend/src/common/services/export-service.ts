@@ -161,9 +161,3 @@ export const downloadPdf = (
     errorHandler();
   }
 };
-
-export const downloadAttachment = (attachment: { mimeType: string; file: string; name: string }, errand: IErrand) => {
-  const uri = `data:${attachment.mimeType};base64,${attachment.file}`;
-  const filename = attachment.name;
-  downloadFile(filename, uri);
-};

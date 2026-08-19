@@ -11,20 +11,17 @@ import {
   InvoicedIn,
   LeaseType,
   PageContract,
-  Parameter,
   Party,
-  Stakeholder as ContractStakeholder,
   StakeholderRole as ContractStakeholderRole,
   StakeholderType as ContractStakeholderType,
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
-import { PrettyRole, Role } from '@casedata/interfaces/role';
+import { Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact, StakeholderType } from '@casedata/interfaces/stakeholder';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { EstateInfoSearch } from '@common/interfaces/estate-details';
-import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { base64ToFile } from '@common/services/attachment-service';
 import { getSingleFacilityByDesignation } from '@common/services/facilities-service';
@@ -57,13 +54,6 @@ export const leaseTypes = [
   { label: 'Arrende', key: LeaseType.OTHER_FEE }, // Ska inte kunna finnas för nya avtal
 ];
 
-export const getContractLabel = (contractType: ContractType, leaseType?: LeaseType): string => {
-  if (contractType === ContractType.LEASE_AGREEMENT && leaseType) {
-    return leaseTypes.find((t) => t.key === leaseType)?.label ?? 'okänd typ';
-  }
-  return contractTypes.find((t) => t.key === contractType)?.label ?? 'okänd typ';
-};
-
 const feeDescriptionByLeaseType: Partial<Record<LeaseType, string>> = {
   [LeaseType.SITE_LEASE_COMMERCIAL]: 'Avgift, anläggningsarrende',
   [LeaseType.LAND_LEASE_RESIDENTIAL]: 'Avgift, bostadsarrende',
@@ -81,7 +71,7 @@ const feeDescriptionByContractType: Partial<Record<ContractType, string>> = {
   [ContractType.LEASEHOLD]: 'Avgift, tomträttsavgäld',
 };
 
-export const getFeeDescription = (type: ContractType, leaseType?: LeaseType): string => {
+const getFeeDescription = (type: ContractType, leaseType?: LeaseType): string => {
   if (type === ContractType.LEASE_AGREEMENT && leaseType) {
     return feeDescriptionByLeaseType[leaseType] ?? 'Övrig avgift';
   }
@@ -116,22 +106,6 @@ export const hasRecurringFee = (contractType: ContractType, leaseType?: LeaseTyp
       LeaseType.LAND_LEASE_LICENSE,
       LeaseType.OTHER_FEE,
     ].includes(leaseType));
-
-export const roleLabels: { [key in ContractStakeholderRole]: string } = {
-  BUYER: 'Köpare',
-  CONTACT_PERSON: 'Kontaktperson',
-  GRANTOR: 'Upplåtare',
-  LAND_RIGHT_OWNER: 'LAND_RIGHT_OWNER',
-  LEASEHOLDER: 'LEASEHOLDER',
-  PROPERTY_OWNER: 'PROPERTY_OWNER',
-  POWER_OF_ATTORNEY_CHECK: 'POWER_OF_ATTORNEY_CHECK',
-  POWER_OF_ATTORNEY_ROLE: 'POWER_OF_ATTORNEY_ROLE',
-  SELLER: 'SELLER',
-  SIGNATORY: 'SIGNATORY',
-  PRIMARY_BILLING_PARTY: 'PRIMARY_BILLING_PARTY',
-  LESSOR: 'LESSOR',
-  LESSEE: 'LESSEE',
-};
 
 export const defaultKopeavtal: ContractData = {
   status: Status.DRAFT,
@@ -213,18 +187,7 @@ export const saveContract: (contract: ContractData) => Promise<Contract> = (cont
   }
 };
 
-export const deleteContract: (contractId: string) => Promise<AxiosResponse<boolean>> = (contractId) => {
-  if (!contractId) {
-    console.error('No contract id found, cannot delete. Returning.');
-  }
-  const url = `contracts/${contractId}`;
-  return apiService.deleteRequest<boolean>(url).catch((e) => {
-    console.error('Something went wrong when deleting contract: ', contractId);
-    throw e;
-  });
-};
-
-export const fetchContract: (contractId: string) => Promise<ApiResponse<Contract>> = (contractId) => {
+const fetchContract: (contractId: string) => Promise<ApiResponse<Contract>> = (contractId) => {
   if (!contractId) {
     console.error('No contract id found, cannot fetch. Returning.');
   }
@@ -320,71 +283,6 @@ export const getErrandContract: (errand: IErrand) => Promise<ContractData> = (er
     });
 };
 
-export const renderContractPdf: (
-  errand: IErrand,
-  contract: Contract,
-  isDraft: boolean
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, contract, isDraft) => {
-  if (!contract?.contractId) {
-    console.error('No contract id found. Cannot render contract pdf.');
-  }
-
-  const templateIdentifier =
-    contract.type === ContractType.PURCHASE_AGREEMENT
-      ? `mex.contract.purchaseagreement`
-      : isLeaseAgreement(contract.type)
-      ? `mex.contract.landlease`
-      : 'mex.contract.purchaseagreement';
-
-  const renderBody: TemplateSelector = {
-    identifier: templateIdentifier,
-    parameters: {
-      header: contract.type === ContractType.PURCHASE_AGREEMENT ? 'KÖPEAVTAL' : 'AVTAL OM LÄGENHETSARRENDE',
-      description: `<b>Avtals ID:</b> ${contract.contractId}<br />
-                    <b>Ärendenummer:</b> ${errand.errandNumber} <br />`,
-      isDraft: isDraft,
-
-      stakeholders: (contract.stakeholders ?? []).map((s) => ({
-        name: s.type === 'PERSON' ? s.firstName + ' ' + s.lastName : s.organizationName + ' ' + s.organizationNumber,
-        street: s.address?.streetAddress ?? '',
-        careof: s.address?.careOf ?? '',
-        zip: (s.address?.postalCode ?? '') + ' ' + (s.address?.town ?? ''),
-        role: (s.roles ?? []).map((r) => (PrettyRole as Record<string, string>)[r]).join(', '),
-        extraInformation: s.parameters?.find((p) => p.key === 'extraInformation')?.values?.[0],
-      })),
-      sections: (contract.indexTerms ?? [])
-        .filter((t) => (t.terms ?? []).some((term) => term.term !== '' && typeof term.term !== 'undefined'))
-        .map((t) => ({
-          header: t.header,
-          content: (t.terms ?? []).map((t) => `<p>${t.term}</p>`).join('<br />'),
-        })),
-    },
-  };
-
-  return apiService
-    .post<ApiResponse<Render>, TemplateSelector>('render/pdf', renderBody)
-    .then((res) => {
-      const pdfBase64 = res.data.data.output;
-      return { pdfBase64 };
-    })
-    .catch((e) => {
-      throw new Error('Något gick fel när dokumentet skulle skapas');
-    });
-};
-
-// export const contractRoles: string[] = ['BUYER', 'SELLER', 'LEASEHOLDER', 'GRANTOR'];
-export const contractRoles: string[] = [
-  'BUYER',
-  'CONTACT_PERSON',
-  'GRANTOR',
-  'LAND_OWNER',
-  'LEASEHOLDER',
-  'POWER_OF_ATTORNEY_CHECK',
-  'POWER_OF_ATTORNEY_ROLE',
-  'SELLER',
-  'SIGNATORY',
-];
-
 export const prettyContractRoles: { [key: string]: string } = {
   BUYER: 'Köpare',
   SELLER: 'Säljare',
@@ -397,7 +295,7 @@ export const prettyContractRoles: { [key: string]: string } = {
 };
 
 // A party is an invoice recipient ("fakturamottagare") if it carries the PRIMARY_BILLING_PARTY role.
-export const isBillingParty = (stakeholder: { roles?: ContractStakeholderRole[] }): boolean =>
+const isBillingParty = (stakeholder: { roles?: ContractStakeholderRole[] }): boolean =>
   (stakeholder.roles ?? []).includes(ContractStakeholderRole.PRIMARY_BILLING_PARTY);
 
 // A party is *exclusively* an invoice recipient when PRIMARY_BILLING_PARTY is its only role.
@@ -406,16 +304,6 @@ export const isBillingParty = (stakeholder: { roles?: ContractStakeholderRole[] 
 export const isOnlyBillingParty = (stakeholder: { roles?: ContractStakeholderRole[] }): boolean =>
   isBillingParty(stakeholder) &&
   (stakeholder.roles ?? []).every((role) => role === ContractStakeholderRole.PRIMARY_BILLING_PARTY);
-
-export const prettyPaymentPeriods: {
-  [key in 'yearly' | 'byYear' | 'byLease' | 'indexAdjustedFee' | 'prepaid']: string;
-} = {
-  yearly: 'Årlig',
-  byYear: 'Per år',
-  byLease: 'Per arrende',
-  indexAdjustedFee: 'Indexjusterad',
-  prepaid: 'Förskott',
-};
 
 const toContractStakeholderRole = (role: Role): ContractStakeholderRole => {
   switch (role) {
@@ -439,44 +327,7 @@ const toContractStakeholderType = (type: StakeholderType): ContractStakeholderTy
   return type as ContractStakeholderType;
 };
 
-export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOwnerOrContact): ContractStakeholder => {
-  const phone = stakeholder.phoneNumbers?.[0] || '';
-  const email = stakeholder.emails?.[0] || '';
-  const address: Address = {
-    type: AddressType.POSTAL_ADDRESS,
-    streetAddress: stakeholder.street || '',
-    postalCode: stakeholder.zip || '',
-    town: stakeholder.city || '',
-    country: '',
-    attention: '',
-    careOf: stakeholder.careof || '',
-  };
-  const parameters: Parameter[] = [
-    {
-      key: 'extraParameter',
-      values: [stakeholder.extraInformation ?? ''],
-    },
-  ];
-  return {
-    ...(stakeholder.stakeholderType && { type: toContractStakeholderType(stakeholder.stakeholderType) }),
-    roles: stakeholder.roles.map(toContractStakeholderRole),
-    ...(stakeholder.personalNumber && { personalNumber: stakeholder.personalNumber }),
-    ...(stakeholder.organizationName && { organizationName: stakeholder.organizationName }),
-    ...(stakeholder.organizationNumber && { organizationNumber: stakeholder.organizationNumber }),
-    ...(stakeholder.firstName && { firstName: stakeholder.firstName }),
-    ...(stakeholder.lastName && { lastName: stakeholder.lastName }),
-    ...(stakeholder.personId && { partyId: stakeholder.personId }),
-    ...(stakeholder.id && { stakeholderId: String(stakeholder.id) }),
-    ...(stakeholder.extraInformation && { extraInformation: stakeholder.extraInformation }),
-    ...(stakeholder.extraInformation && { extraInformation: stakeholder.extraInformation }),
-    parameters: parameters,
-    ...(phone && { phone }),
-    ...(email && { email }),
-    ...(address && { address }),
-  };
-};
-
-export const kopeavtalToContract = (data: ContractData): Contract => {
+const kopeavtalToContract = (data: ContractData): Contract => {
   // Strip personalNumber and stakeholderId from stakeholders before sending to API
   const stakeholders = ((data.stakeholders ?? []) as StakeholderWithPersonnumber[]).map(
     ({ personalNumber, stakeholderId, ...rest }) => rest
@@ -504,7 +355,7 @@ export const contractToKopeavtal = (contract: Contract): ContractData => {
   };
 };
 
-export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
+const lagenhetsArrendeToContract = (data: ContractData): Contract => {
   console.log('transforming to contract: ', data);
   let fees: Fees | undefined = undefined;
   if (data.generateInvoice) {

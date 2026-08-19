@@ -1,5 +1,5 @@
 import { AssetStatus, assetStatusLabels, assetTypeLabels } from '@common/interfaces/asset';
-import sanitized from '@common/services/sanitizer-service';
+import { sanitized } from '@common/services/sanitizer-service';
 import { canDeleteErrandServiceAsset, Service } from '@common/services/service-assets-service';
 import { Button, Label } from '@sk-web-gui/react';
 import { Car, Cog, ExternalLink, ListChecks, Pencil, PlusCircle } from 'lucide-react';

@@ -39,7 +39,7 @@ import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-export interface UtredningFormModel {
+interface UtredningFormModel {
   id?: string;
   errandNumber?: string;
   description: string;

@@ -19,7 +19,7 @@ const normalizeAddress = (address?: string, zip?: string, city?: string) => {
   );
 };
 
-export const extractContactInfo = (c: SupportStakeholderFormModel | undefined) => {
+const extractContactInfo = (c: SupportStakeholderFormModel | undefined) => {
   if (!c) {
     return { name: '(saknas)', adress: '(saknas)', phone: '(saknas)', email: '(saknas)' };
   }

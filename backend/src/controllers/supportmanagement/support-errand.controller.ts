@@ -52,15 +52,7 @@ import {
 import { logger } from '@/utils/logger';
 import { apiURL, formatOrgNr, luhnCheck, OrgNumberFormat, withRetries } from '@/utils/util';
 
-export { SupportStakeholderRole };
-
-export enum CustomerType {
-  PRIVATE,
-  ENTERPRISE,
-  EMPLOYEE,
-}
-
-export enum Status {
+enum Status {
   NEW = 'NEW',
   ONGOING = 'ONGOING',
   PENDING = 'PENDING',
@@ -68,39 +60,14 @@ export enum Status {
   SOLVED = 'SOLVED',
 }
 
-export enum StatusLabel {
-  NEW = 'Inkommet',
-  ONGOING = 'Pågående',
-  PENDING = 'Komplettering',
-  ASSIGNED = 'Tilldelat',
-  SOLVED = 'Avslutat',
-}
-
-export enum Resolution {
-  INFORMED = 'INFORMED',
-  ESCALATED = 'ESCALATED',
-  CONNECTED = 'CONNECTED',
-}
-
-export enum ResolutionLabel {
-  INFORMED = 'Informerat',
-  ESCALATED = 'Överlämnat',
-  CONNECTED = 'Kopplat',
-}
-
-export interface SupportErrandParameters {
-  name: string;
-  value: string;
-}
-
-export class CExternalTag implements ExternalTag {
+class CExternalTag implements ExternalTag {
   @IsString()
   key!: string;
   @IsString()
   value!: string;
 }
 
-export class CParameter implements Parameter {
+class CParameter implements Parameter {
   @IsString()
   key!: string;
   @IsString()

@@ -18,7 +18,7 @@ import {
   removeEmailInformation,
 } from '@common/services/message-template-body-service';
 import { getAllRelatedErrands, RelationWithErrandNumber } from '@common/services/relations-service';
-import sanitized from '@common/services/sanitizer-service';
+import { sanitized } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -63,7 +63,7 @@ import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-export interface SupportMessageFormModel {
+interface SupportMessageFormModel {
   id: string;
   messageContact: boolean;
   contactMeans: MessageContactMeans;

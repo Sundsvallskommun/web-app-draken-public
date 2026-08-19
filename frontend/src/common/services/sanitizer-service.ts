@@ -63,5 +63,3 @@ export const formatMessage: (text: string) => string = (text) => {
 export const sanitizeHtmlMessageBody: (text: string) => string = (text) => {
   return SanitizeHTML(text).replaceAll(/<br\s*\/?>/gi, '</p><p>');
 };
-
-export default sanitized;

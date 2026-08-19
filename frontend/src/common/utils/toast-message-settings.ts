@@ -1,6 +1,6 @@
-export type ToastStatus = 'success' | 'error' | 'info' | 'warning';
+type ToastStatus = 'success' | 'error' | 'info' | 'warning';
 
-export interface ToastOverrides {
+interface ToastOverrides {
   duration?: number;
   position?: 'top' | 'bottom';
   closeable?: boolean;

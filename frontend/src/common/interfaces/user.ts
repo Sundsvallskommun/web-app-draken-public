@@ -1,4 +1,4 @@
-export interface Permissions {
+interface Permissions {
   canEditCasedata: boolean;
   canEditSupportManagement: boolean;
   canViewAttestations: boolean;

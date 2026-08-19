@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
-import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { SUPPORTMANAGEMENT_NAMESPACE, SUPPORTMANAGEMENT_SENDER_EMAIL, SUPPORTMANAGEMENT_SENDER_SMS } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Communication, EmailRequest, SmsRequest, WebMessageRequest } from '@/data-contracts/supportmanagement/data-contracts';
 import { CCommunication, generateMessageId, SupportMessageDto } from '@/dtos/support-message.dto';
@@ -13,8 +13,6 @@ import { validateSupportAction } from '@/services/support-errand.service';
 import { fileUploadOptions } from '@/utils/fileUploadOptions';
 import { logger } from '@/utils/logger';
 import { validateRequestBody } from '@/utils/validate';
-
-export { SingleSupportAttachment, SupportAttachment } from '@/dtos/support-message.dto';
 
 interface ResponseData {
   data: any;
@@ -61,7 +59,7 @@ export class SupportMessageController {
     if (messageDto.contactMeans === 'email') {
       url += '/email';
       body = {
-        sender: process.env.SUPPORTMANAGEMENT_SENDER_EMAIL,
+        sender: SUPPORTMANAGEMENT_SENDER_EMAIL,
         recipient: messageDto.recipientEmail,
         message: messageDto.plaintextMessage,
         htmlMessage: messageDto.htmlMessage,
@@ -77,7 +75,7 @@ export class SupportMessageController {
     } else if (messageDto.contactMeans === 'sms') {
       url += '/sms';
       body = {
-        sender: process.env.SUPPORTMANAGEMENT_SENDER_SMS,
+        sender: SUPPORTMANAGEMENT_SENDER_SMS,
         recipient: messageDto.recipientPhone,
         message: messageDto.plaintextMessage,
       } as SmsRequest;

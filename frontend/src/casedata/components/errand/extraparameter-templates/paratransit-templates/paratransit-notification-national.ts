@@ -2,7 +2,7 @@ import { UppgiftField } from '@casedata/services/casedata-extra-parameters-servi
 
 import { swedishMunicipalities } from '../municipalities';
 
-export const journeyFieldsGroup = {
+const journeyFieldsGroup = {
   groupName: 'Resa',
   basePath: 'personal.journey',
   section: 'Yttre omständigheter',

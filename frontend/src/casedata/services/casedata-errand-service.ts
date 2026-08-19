@@ -5,7 +5,6 @@ import {
   FTCaseType,
   FTNationalCaseTypes,
   FTNotificationCaseType,
-  MEXCaseType,
   PTCaseType,
 } from '@casedata/interfaces/case-type';
 import { ApiChannels, Channels } from '@casedata/interfaces/channels';
@@ -30,7 +29,7 @@ import {
 } from '@casedata/services/casedata-stakeholder-service';
 import { User } from '@common/interfaces/user';
 import { getApplicationEnvironment, isMEX, isPT } from '@common/services/application-service';
-import sanitized from '@common/services/sanitizer-service';
+import { sanitized } from '@common/services/sanitizer-service';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore } from '@stores/index';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
@@ -42,7 +41,7 @@ import { saveErrandNote } from './casedata-errand-notes-service';
 import { extraParametersToUppgiftMapper } from './casedata-extra-parameters-service';
 import { phaseChangeInProgress } from './process-service';
 
-export const municipalityIds = [
+const municipalityIds = [
   { label: 'Sundsvall', id: '2281' },
   { label: 'Timrå', id: '2262' },
   { label: 'Ånge', id: '2260' },
@@ -50,17 +49,12 @@ export const municipalityIds = [
 
 export const defaultMunicipality = municipalityIds.find((m) => m.id === process.env.NEXT_PUBLIC_MUNICIPALITY_ID);
 
-export const emptyMeaErrandList: ErrandsData = {
+const emptyErrandList: ErrandsData = {
   errands: [],
   labels: [],
 };
 
-export const emptyErrandList: ErrandsData = {
-  errands: [],
-  labels: [],
-};
-
-export const ongoingCaseDataErrandLabels = [
+const ongoingCaseDataErrandLabels = [
   { label: 'Fast.bet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -71,7 +65,7 @@ export const ongoingCaseDataErrandLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
 ];
 
-export const ongoingCaseDataPTErrandLabels = [
+const ongoingCaseDataPTErrandLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -123,7 +117,7 @@ export const getStatusLabel = (statuses: ErrandStatus[]) => {
   return 'Ärenden';
 };
 
-export const isFTCaseType = (caseType?: string): boolean =>
+const isFTCaseType = (caseType?: string): boolean =>
   !!caseType && Object.values(FTCaseType).includes(caseType as FTCaseType);
 
 export const isFTErrand = (errand: IErrand) => {
@@ -145,33 +139,11 @@ export const isFTNationalErrand = (errand: IErrand) => {
   return Object.values(FTNationalCaseTypes).includes(errand.caseType as FTNationalCaseTypes);
 };
 
-export const findPriorityKeyForPriorityLabel = (key: string) =>
-  Object.entries(Priority).find((e: [string, string]) => e[1] === key)?.[0];
-
 export const findStatusKeyForStatusLabel = (statusKey: string) =>
   Object.entries(ErrandStatus).find((e: [string, string]) => e[1] === statusKey)?.[0];
 
 export const findStatusLabelForStatusKey = (statusLabel: string) =>
   Object.entries(ErrandStatus).find((e: [string, string]) => e[1] === statusLabel)?.[1] || statusLabel;
-
-export const getCaseTypes = () => {
-  const isTest = getApplicationEnvironment() === 'TEST';
-
-  if (isPT()) {
-    return { ...PTCaseType, ...FTCaseType };
-  }
-
-  if (isMEX()) {
-    return MEXCaseType;
-  }
-
-  //Temporarily added to show all case types in test environment, this can later be changed to CaseTypes.ALL
-  if (isTest) {
-    return { ...PTCaseType, ...MEXCaseType, ...FTCaseType };
-  }
-
-  return { ...PTCaseType, ...MEXCaseType };
-};
 
 export const getCaseLabels = () => {
   const isTest = getApplicationEnvironment() === 'TEST';
@@ -192,20 +164,8 @@ export const getCaseLabels = () => {
   return { ...PTCaseLabel, ...MEXCaseLabel };
 };
 
-export const findCaseTypeForCaseLabel = (caseLabel: string) => {
-  return Object.entries(getCaseLabels()).find((e: [string, string]) => e[1] === caseLabel)?.[0];
-};
-
 export const findCaseLabelForCaseType = (caseType: string) =>
   Object.entries(getCaseLabels()).find((e: [string, string]) => e[0] === caseType)?.[1];
-
-export const isErrandClosed: (errand: IErrand | CasedataFormModel) => boolean = (errand) => {
-  if (errand?.status && typeof errand?.status === 'object') {
-    return errand?.status?.statusType === ErrandStatus.ArendeAvslutat;
-  } else {
-    return errand?.status === ErrandStatus.ArendeAvslutat;
-  }
-};
 
 export const isErrandLocked: (errand: IErrand | CasedataFormModel) => boolean = (errand) => {
   const lockedStatuses = [
@@ -249,7 +209,7 @@ export const emptyErrand: Partial<IErrand> = {
   status: { statusType: ErrandStatus.ArendeInkommit },
 };
 
-export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErrand = (e, municipalityId): IErrand => {
+const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErrand = (e, municipalityId): IErrand => {
   const administrator = getLastUpdatedAdministrator(e.stakeholders);
   try {
     const ierrand: IErrand = {
@@ -293,7 +253,7 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
   }
 };
 
-export const handleErrandResponse: (res: ApiErrand[], municipalityId: string) => IErrand[] = (res, municipalityId) => {
+const handleErrandResponse: (res: ApiErrand[], municipalityId: string) => IErrand[] = (res, municipalityId) => {
   const errands = res.map((res) => mapErrandToIErrand(res, municipalityId));
   return errands;
 };
@@ -364,7 +324,7 @@ export const getErrandByErrandNumber: (
     );
 };
 
-export const getErrands: (
+const getErrands: (
   municipalityId: string,
   page?: number,
   size?: number,

@@ -1,10 +1,10 @@
-export enum AddressDtoAddressCategoryEnum {
+enum AddressDtoAddressCategoryEnum {
   POSTAL_ADDRESS = 'POSTAL_ADDRESS',
   INVOICE_ADDRESS = 'INVOICE_ADDRESS',
   VISITING_ADDRESS = 'VISITING_ADDRESS',
 }
 
-export interface CoordinatesDTO {
+interface CoordinatesDTO {
   /**
    * Decimal Degrees (DD)
    * @format double

@@ -1,6 +1,6 @@
 import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Body, Controller, Get, HttpCode, Param, Patch, Put, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
+import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
@@ -12,7 +12,11 @@ import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
-export class CasedataNotificationDto implements CasedataNotification {
+// Response contract for GET /casedatanotifications. Declared via @ResponseSchema below so it
+// reaches the OpenAPI spec and the generated frontend data-contracts; it has no other consumer
+// in this service. Not exported: the OpenAPI schema comes from the class's decorator metadata,
+// which is registered when this module loads, so `export` would only be dead surface area.
+class CasedataNotificationDto implements CasedataNotification {
   @IsOptional()
   @IsString()
   id?: string;
@@ -50,12 +54,12 @@ export class CasedataNotificationDto implements CasedataNotification {
   @IsString()
   expires?: string;
   @IsOptional()
-  @IsString()
+  @IsBoolean()
   acknowledged?: boolean;
   @IsOptional()
-  @IsString()
+  @IsBoolean()
   globalAcknowledged?: boolean;
-  @IsString()
+  @IsNumber()
   errandId!: number;
   @IsOptional()
   @IsString()
@@ -100,6 +104,7 @@ export class CasedataNotificationController {
 
   @Get('/casedatanotifications/:municipalityId')
   @OpenAPI({ summary: 'Get notifications' })
+  @ResponseSchema(CasedataNotificationDto, { isArray: true })
   @UseBefore(authMiddleware)
   async getCasedataNotifications(
     @Req() req: RequestWithUser,

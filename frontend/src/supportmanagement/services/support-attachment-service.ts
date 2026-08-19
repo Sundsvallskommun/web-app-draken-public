@@ -18,16 +18,7 @@ export interface SingleSupportAttachment {
   base64EncodedString: string;
 }
 
-export interface SupportAttachmentDto {
-  context: string;
-  role: string;
-  partyId: string;
-  subject: string;
-  body: string;
-  createdBy: string;
-}
-
-export type AttachmentCategory =
+type AttachmentCategory =
   | 'PASSPORT_PHOTO'
   | 'MEDICAL_CONFIRMATION'
   | 'SIGNATURE'
@@ -37,7 +28,7 @@ export type AttachmentCategory =
   | 'SERVICE_RECEIPT'
   | 'OTHER_ATTACHMENT';
 
-export const MAX_FILE_SIZE_MB = 50;
+const MAX_FILE_SIZE_MB = 50;
 
 export const documentMimeTypes = [
   'video/quicktime',
@@ -91,31 +82,6 @@ export const ACCEPTED_UPLOAD_FILETYPES = [
   ...imageMimeTypes,
   ...documentMimeTypes,
 ];
-
-export const isImageAttachment: (a: SupportAttachment) => boolean = (a) => {
-  return imageMimeTypes.includes(a.mimeType);
-};
-
-export const getAttachmentKey: (label: string) => AttachmentCategory = (label) => {
-  switch (label) {
-    case 'Passfoto':
-      return 'PASSPORT_PHOTO';
-    case 'Läkarintyg':
-      return 'MEDICAL_CONFIRMATION';
-    case 'Underskrift':
-      return 'SIGNATURE';
-    case 'Polisanmälan':
-      return 'POLICE_REPORT';
-    case 'Ärende (Skannad ansökan)':
-      return 'ERRAND_SCANNED_APPLICATION';
-    case 'Delgivningskvitto':
-      return 'SERVICE_RECEIPT';
-    case 'Övriga bilagor':
-      return 'OTHER_ATTACHMENT';
-    default:
-      return 'OTHER_ATTACHMENT';
-  }
-};
 
 export const getSupportAttachment: (
   errandId: string,

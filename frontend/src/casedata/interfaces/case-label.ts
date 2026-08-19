@@ -5,7 +5,7 @@ export enum PTCaseLabel {
   APPEAL = 'Överklagan',
   DOCUMENTATION_ERRAND = 'Dokumentationsärende',
 }
-export const PTCaseShortLabel: Partial<Record<keyof typeof PTCaseLabel, string>> = {
+const PTCaseShortLabel: Partial<Record<keyof typeof PTCaseLabel, string>> = {
   PARKING_PERMIT: 'Nytt p-tillstånd',
   PARKING_PERMIT_RENEWAL: 'Förnyelse p-tillstånd',
   LOST_PARKING_PERMIT: 'Borttappat p-tillstånd',
@@ -30,7 +30,7 @@ export enum FTCaseLabel {
   PARATRANSIT_NOTIFICATION_BUS_CARD = 'Anmälan busskort',
 }
 
-export const FTCaseShortLabel: Partial<Record<keyof typeof FTCaseLabel, string>> = {
+const FTCaseShortLabel: Partial<Record<keyof typeof FTCaseLabel, string>> = {
   PARATRANSIT: 'Ansökan färdtjänst',
   // PARATRANSIT_RENEWAL: 'Ansökan forts. färdtjänst',
   PARATRANSIT_NATIONAL: 'Ansökan riksfärdtjänst',
@@ -105,13 +105,13 @@ export const getShortLabel = (caseType: string): string => {
   );
 };
 
-export const ALL_LABELS = {
+const ALL_LABELS = {
   ...PTCaseLabel,
   ...FTCaseLabel,
   ...MEXCaseLabel,
 } as const;
 
-export type AnyCaseType = keyof typeof ALL_LABELS;
+type AnyCaseType = keyof typeof ALL_LABELS;
 
 const ALL_SHORT_LABELS: Partial<Record<AnyCaseType, string>> = {
   ...PTCaseShortLabel,

@@ -8,8 +8,10 @@ config({ path: `.env.${process.env.NODE_ENV || 'development'}.local` });
 
 export const CREDENTIALS = process.env.CREDENTIALS === 'true';
 export const SWAGGER_ENABLED = process.env.SWAGGER_ENABLED === 'true';
-export const SESSION_MEMORY = process.env.SESSION_MEMORY === 'true';
 
+// Single source of truth for environment configuration: every consumer imports the constant
+// from here instead of reaching into `process.env`, so a missing key is a compile-time error
+// rather than a silent `undefined`. `validateEnv` checks these same constants at startup.
 export const {
   NODE_ENV,
   PORT,
@@ -25,8 +27,6 @@ export const {
   SAML_LOGOUT_CALLBACK_URL,
   SAML_SUCCESS_REDIRECT,
   SAML_FAILURE_REDIRECT,
-  SAML_FAILURE_REDIRECT_MESSAGE,
-  SAML_LOGOUT_REDIRECT,
   SAML_ENTRY_SSO,
   SAML_ISSUER,
   SAML_IDP_PUBLIC_CERT,
@@ -41,7 +41,6 @@ export const {
   APPLICATION,
   MUNICIPALITY_ID,
   DOMAIN,
-  SUPPORTMANAGEMENT_TEST_EMAIL,
   SUPPORTMANAGEMENT_SENDER_EMAIL,
   SUPPORTMANAGEMENT_SENDER_SMS,
   CASEDATA_SENDER_EMAIL,

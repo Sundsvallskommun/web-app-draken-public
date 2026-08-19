@@ -4,7 +4,7 @@ import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 
 import { ApiSupportErrand } from './support-errand-service';
 
-export interface ParametersObject {
+interface ParametersObject {
   RECRUITMENT?: Parameter[];
 }
 

@@ -42,7 +42,7 @@ import { PROCESS_PARAMETER_KEYS } from './process-service';
 
 export const EXTRAPARAMETER_SEPARATOR = '@';
 
-export const groupRepeatableParameters = (
+const groupRepeatableParameters = (
   extraParameters: ExtraParameter[],
   basePath: string
 ): Record<number, Record<string, string | string[]>> => {
@@ -147,7 +147,7 @@ const caseTypeTemplateAlias: Record<string, string> = {
   PARATRANSIT_RIAK: 'PARATRANSIT_NOTIFICATION_RIAK',
 };
 
-export interface ExtraParametersObject {
+interface ExtraParametersObject {
   [key: string]: UppgiftField[] | undefined;
 }
 
@@ -360,11 +360,4 @@ export const saveExtraParameters = (municipalityId: string, data: ExtraParameter
     `casedata/${municipalityId}/errands/${errand.id}/extraparameters`,
     mergedExtraParameters
   );
-};
-
-// If parameter exists, replace the existing one, otherwise append to list
-export const replaceExtraParameter = (extraParameters: ExtraParameter[], newParameter: ExtraParameter) => {
-  return extraParameters.some((p) => p.key === newParameter.key)
-    ? extraParameters.map((p) => (p.key === newParameter.key ? newParameter : p))
-    : [...extraParameters, newParameter];
 };

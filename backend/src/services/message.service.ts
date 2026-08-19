@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import NodeFormData from 'form-data';
 import { v4 as uuidv4 } from 'uuid';
 
-import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
+import { CASEDATA_NAMESPACE, CASEDATA_REPLY_TO, CASEDATA_SENDER, CASEDATA_SENDER_EMAIL, MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   Attachment,
@@ -27,7 +27,6 @@ import {
   EmailAttachment,
   EmailRequest,
   HistoryResponse,
-  LetterRequest,
   SmsRequest,
   WebMessageAttachment,
   WebMessageRequest,
@@ -192,56 +191,7 @@ export const sendEmail = (
     });
 };
 
-export const sendDigitalMail = (
-  municipalityId: string,
-  message: LetterRequest & { message?: string },
-  req: RequestWithUser,
-  errandData: ApiResponse<ErrandDTO>,
-  classification: MessageClassification,
-) => {
-  const url = `${MESSAGING_SERVICE}/${municipalityId}/letter?async=false`;
-  const apiService = new ApiService();
-  return apiService
-    .post<LetterResponse, LetterRequest>({ url, data: message }, req.user)
-    .then(async (res: ApiResponse<LetterResponse>) => {
-      const id = res.data.messages?.[0]?.messageId;
-      if (!id) {
-        throw new Error('Error: no id returned when sending message');
-      }
-      return saveMessageOnErrand(
-        municipalityId,
-        errandData.data,
-        {
-          message: message.message ?? '',
-          id: id,
-          messageType: 'DIGITAL_MAIL',
-          messageClassification: classification,
-          header_message_Id: '',
-          header_reply_to: '',
-          header_references: '',
-        },
-        req.user,
-      )
-        .then(async _ => {
-          if (NOTIFY_CONTACTS) {
-            await notifyContactPersons(municipalityId, errandData.data, req.user);
-            return { data: { messageId: id }, message: `Message sent` };
-          } else {
-            return { data: { messageId: id }, message: `Message sent` };
-          }
-        })
-        .catch(e => {
-          logger.error('Error when saving message id:', e);
-          return { data: { messageId: id }, message: `Message sent but id could not be stored` };
-        });
-    })
-    .catch(e => {
-      logger.error('Error when sending message:', e);
-      throw e;
-    });
-};
-
-export const saveMessageOnErrand: (
+const saveMessageOnErrand: (
   municipalityId: string,
   errand: ErrandDTO,
   message: {
@@ -294,7 +244,7 @@ export const saveMessageOnErrand: (
     lastName: user.lastName,
     mobileNumber: message.mobileNumber || '',
     recipients: message.email ? [message.email] : [],
-    email: process.env.CASEDATA_SENDER_EMAIL || '',
+    email: CASEDATA_SENDER_EMAIL || '',
     userId: '',
     attachments: attachments.map(a => ({
       content: a.content ?? a.base64Data,
@@ -351,7 +301,7 @@ const buildEmail = (applicant: StakeholderDTO, contact: StakeholderDTO, message:
   return email;
 };
 
-export const notifyContactPersons: (municipalityId: string, errand: ErrandDTO, user: User) => Promise<boolean> = (municipalityId, errand, user) => {
+const notifyContactPersons: (municipalityId: string, errand: ErrandDTO, user: User) => Promise<boolean> = (municipalityId, errand, user) => {
   const apiService = new ApiService();
   const applicant = errand.stakeholders?.find(s => s.roles.includes(Role.APPLICANT));
   if (!applicant) {
@@ -380,7 +330,7 @@ export const notifyContactPersons: (municipalityId: string, errand: ErrandDTO, u
   });
 };
 
-export const setMessageViewed = (municipalityId: string, errandId: number, messageId: string, user: User) => {
+const setMessageViewed = (municipalityId: string, errandId: number, messageId: string, user: User) => {
   const apiService = new ApiService();
   const url = `${SERVICE}/${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/viewed/true`;
   return apiService.put<any, any>({ url }, user);
@@ -426,7 +376,7 @@ export const sendConversationTextMessage = async (errandId: string, conversation
   return await apiService.post<any, any>({ url, baseURL, data: formData, headers: { 'Content-Type': 'multipart/form-data' } }, user);
 };
 
-export const sendConversation = async (errandId: string, conversationId: string, user: User, pdf: Attachment, decisionId: number) => {
+const sendConversation = async (errandId: string, conversationId: string, user: User, pdf: Attachment, decisionId: number) => {
   const apiService = new ApiService();
   const url = `${SERVICE}/${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
 
@@ -613,9 +563,9 @@ export const sendDecisionForMex = async (
       message: cleanedBody,
       htmlMessage: base64Encode(cleanedBody),
       sender: {
-        name: process.env.CASEDATA_SENDER,
-        address: process.env.CASEDATA_SENDER_EMAIL,
-        replyTo: process.env.CASEDATA_REPLY_TO,
+        name: CASEDATA_SENDER,
+        address: CASEDATA_SENDER_EMAIL,
+        replyTo: CASEDATA_REPLY_TO,
       },
       headers: {
         MESSAGE_ID: [generateMessageId()],

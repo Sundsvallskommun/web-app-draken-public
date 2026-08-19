@@ -44,7 +44,6 @@ import swaggerUi from 'swagger-ui-express';
 import { HttpException } from './exceptions/HttpException';
 import { Profile } from './interfaces/profile.interface';
 import { authorizeGroups, getLoginPermissions, getRole } from './services/authorization.service';
-import { additionalConverters } from './utils/custom-validation-classes';
 import { isValidOrigin } from './utils/isValidateOrigin';
 import { isValidUrl } from './utils/util';
 
@@ -385,7 +384,6 @@ class App {
     const schemas = validationMetadatasToSchemas({
       classTransformerMetadataStorage: defaultMetadataStorage,
       refPointerPrefix: '#/components/schemas/',
-      additionalConverters: additionalConverters,
     });
 
     const routingControllersOptions = {

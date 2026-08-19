@@ -15,7 +15,7 @@ import {
   Type,
 } from '@/data-contracts/billingpreprocessor/data-contracts';
 
-export class CAccountInformation implements AccountInformation {
+class CAccountInformation implements AccountInformation {
   @IsOptional()
   @IsString()
   costCenter?: string;
@@ -45,7 +45,7 @@ export class CAccountInformation implements AccountInformation {
   amount?: number;
 }
 
-export class CInvoiceRow implements InvoiceRow {
+class CInvoiceRow implements InvoiceRow {
   @IsOptional()
   @IsArray()
   descriptions?: string[];
@@ -95,7 +95,7 @@ export class CInvoice implements Invoice {
   invoiceRows!: InvoiceRow[];
 }
 
-export class CAddressDetails implements AddressDetails {
+class CAddressDetails implements AddressDetails {
   @IsOptional()
   @IsString()
   street?: string;
@@ -110,7 +110,7 @@ export class CAddressDetails implements AddressDetails {
   city?: string;
 }
 
-export class CRecipient implements Recipient {
+class CRecipient implements Recipient {
   @IsOptional()
   @IsString()
   partyId?: string;
@@ -183,7 +183,7 @@ export class CBillingRecord implements BillingRecord {
   @IsOptional()
   transferDate?: string;
 }
-export class CSortObject implements SortObject {
+class CSortObject implements SortObject {
   @IsOptional()
   @IsBoolean()
   unsorted?: boolean;
@@ -195,7 +195,7 @@ export class CSortObject implements SortObject {
   sorted?: boolean;
 }
 
-export class CPageableObject implements PageableObject {
+class CPageableObject implements PageableObject {
   @IsOptional()
   @IsBoolean()
   paged?: boolean;

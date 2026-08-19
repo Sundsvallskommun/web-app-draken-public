@@ -45,7 +45,7 @@ export const getSupportConversationMessages: (
     });
 };
 
-export const createSupportConversation = async (
+const createSupportConversation = async (
   municipalityId: string,
   errandId: string,
   topic: string,

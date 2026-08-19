@@ -48,7 +48,7 @@ class SupportNoteUpdateDto {
   body!: string;
 }
 
-export interface SupportNoteResponse {
+interface SupportNoteResponse {
   id: string;
   context: string;
   role: string;

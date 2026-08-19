@@ -14,7 +14,7 @@ export class ApiResponse<T> {
 
 // Extends AxiosRequestConfig with an opt-in flag. When `propagateClientError` is true, upstream
 // 4xx responses are re-thrown with their original status and message instead of a generic 500.
-export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & { propagateClientError?: boolean };
+type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & { propagateClientError?: boolean };
 
 const apiTokenService = new ApiTokenService();
 
