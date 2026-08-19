@@ -390,7 +390,7 @@ class App {
         origin: ORIGIN,
         credentials: CREDENTIALS,
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-        exposedHeaders: ['ETag'],
+        exposedHeaders: ['ETag', 'X-Errand-Version'],
       },
       controllers: controllers,
       defaultErrorHandler: false,

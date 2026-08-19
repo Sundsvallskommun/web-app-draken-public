@@ -8,12 +8,18 @@ import { DifferenceResponse, PageEvent } from '@/data-contracts/supportmanagemen
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
+import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 
 @Controller()
 export class SupportHistoryController {
   private apiService = new ApiService();
+  private readonly investigationPolicyService: SupportInvestigationPolicyService;
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private SERVICE = apiServiceName('supportmanagement');
+
+  constructor(investigationPolicyService = new SupportInvestigationPolicyService()) {
+    this.investigationPolicyService = investigationPolicyService;
+  }
 
   @Get('/supporthistory/:municipalityId/:id')
   @OpenAPI({ summary: 'Get events for errand' })
@@ -42,7 +48,7 @@ export class SupportHistoryController {
   ): Promise<Response<DifferenceResponse, any>> {
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/revisions/difference?source=${source}&target=${target}`;
     const res = await this.apiService.get<DifferenceResponse>({ url }, req.user);
-    return response.status(200).send(res.data);
+    return response.status(200).send(this.investigationPolicyService.filterProtectedRevisionDifference(res.data, req.user));
   }
 
   @Get('/supporthistory/:municipalityId/:id/notes/:noteId/revisions/difference/')
