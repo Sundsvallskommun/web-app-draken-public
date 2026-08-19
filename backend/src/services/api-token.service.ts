@@ -1,3 +1,4 @@
+import { CLIENT_KEY, CLIENT_SECRET } from '@config';
 import { HttpException } from '@exceptions/HttpException';
 import { logger } from '@utils/logger';
 import { getRedisClient } from '@utils/redis';
@@ -92,9 +93,7 @@ class ApiTokenService {
   }
 
   private async fetchFromWso2(): Promise<Token> {
-    const clientKey = process.env.CLIENT_KEY;
-    const clientSecret = process.env.CLIENT_SECRET;
-    const authString = Buffer.from(`${clientKey}:${clientSecret}`, 'utf-8').toString('base64');
+    const authString = Buffer.from(`${CLIENT_KEY}:${CLIENT_SECRET}`, 'utf-8').toString('base64');
 
     try {
       const { data } = await axios({

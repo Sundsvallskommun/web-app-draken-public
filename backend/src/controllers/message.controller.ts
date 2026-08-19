@@ -20,6 +20,7 @@ import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, Res, UploadedFi
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import { v4 as uuidv4 } from 'uuid';
 
+import { CASEDATA_REPLY_TO, CASEDATA_SENDER, CASEDATA_SENDER_EMAIL, CASEDATA_SENDER_SMS } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Errand as ErrandDTO, MessageResponse as IMessageResponse } from '@/data-contracts/case-data/data-contracts';
 import { EmailAttachment, EmailRequest, SmsRequest, WebMessageAttachment, WebMessageRequest } from '@/data-contracts/messaging/data-contracts';
@@ -95,7 +96,7 @@ export class MessageController {
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
 
     const message: SmsRequest = {
-      sender: process.env.CASEDATA_SENDER_SMS,
+      sender: CASEDATA_SENDER_SMS,
       mobileNumber: smsDto.phonenumber,
       message: smsDto.text,
     };
@@ -144,9 +145,9 @@ export class MessageController {
       htmlMessage: base64Encode(messageDto.text.replace(/<p><br \/><\/p>/g, '')),
       attachments: attachments,
       sender: {
-        name: process.env.CASEDATA_SENDER,
-        address: process.env.CASEDATA_SENDER_EMAIL,
-        replyTo: process.env.CASEDATA_REPLY_TO,
+        name: CASEDATA_SENDER,
+        address: CASEDATA_SENDER_EMAIL,
+        replyTo: CASEDATA_REPLY_TO,
       },
       headers: {
         MESSAGE_ID: [MESSAGE_ID],

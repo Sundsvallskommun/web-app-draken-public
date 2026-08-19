@@ -275,6 +275,28 @@ yarn knip   # Dödkod, oanvända exporter och oanvända dependencies
 
 Knip körs även vid `pre-push` och som en blockerande GitHub Actions-kontroll för pull requests samt push till `develop` och `main`.
 
+Undantag i `backend/knip.json` och `frontend/knip.json`:
+
+- `src/data-contracts/**` (samt `src/common/data-contracts/**` i frontend) — ägs av kodgeneratorn,
+  inte av handskriven kod.
+- `enumMembers` — enumvärden kan vara externa API-kontrakt även när varje medlem inte refereras lokalt.
+- `backend/src/tests/helpers/mock-data.ts` — registret över testidentifierare (personnummer,
+  organisationsnummer, telefonnummer) med dokumenterad proveniens. Värden ska ligga kvar även när
+  inget test råkar använda dem just nu, så att nästa test importerar därifrån i stället för att
+  hårdkoda ett nytt nummer.
+
+Backend har dessutom taggen `@openapi`. En DTO-klass som bara existerar för att hamna i
+OpenAPI-specen (och därmed i frontendens genererade `data-contracts`) har ingen importör i
+backend, men får inte tas bort. Märk den i så fall så här:
+
+```ts
+/** @openapi */
+export class MinResponseDto { ... }
+```
+
+Behöver klassen inte exporteras räcker det att ta bort `export` — schemat byggs av
+class-validator-metadatan när modulen laddas, inte av exporten.
+
 ### Tester
 
 **Backend** (Vitest, kör från `backend/`):

@@ -1,6 +1,6 @@
 import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Body, Controller, Get, HttpCode, Param, Patch, Put, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
+import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
@@ -11,6 +11,60 @@ import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
+
+// Response contract for GET /casedatanotifications. Declared via @ResponseSchema below so it
+// reaches the OpenAPI spec and the generated frontend data-contracts; it has no other consumer
+// in this service. Not exported: the OpenAPI schema comes from the class's decorator metadata,
+// which is registered when this module loads, so `export` would only be dead surface area.
+class CasedataNotificationDto implements CasedataNotification {
+  @IsOptional()
+  @IsString()
+  id?: string;
+  @IsOptional()
+  @IsString()
+  municipalityId?: string;
+  @IsOptional()
+  @IsString()
+  namespace?: string;
+  @IsOptional()
+  @IsString()
+  created?: string;
+  @IsOptional()
+  @IsString()
+  modified?: string;
+  @IsOptional()
+  @IsString()
+  ownerFullName?: string;
+  @IsString()
+  ownerId!: string;
+  @IsOptional()
+  @IsString()
+  createdBy?: string;
+  @IsOptional()
+  @IsString()
+  createdByFullName?: string;
+  @IsString()
+  type!: string;
+  @IsString()
+  description!: string;
+  @IsOptional()
+  @IsString()
+  content?: string;
+  @IsOptional()
+  @IsString()
+  expires?: string;
+  @IsOptional()
+  @IsBoolean()
+  acknowledged?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  globalAcknowledged?: boolean;
+  @IsNumber()
+  errandId!: number;
+  @IsOptional()
+  @IsString()
+  errandNumber?: string;
+}
 
 export class PatchNotificationDto implements PatchNotification {
   @IsOptional()
@@ -50,6 +104,7 @@ export class CasedataNotificationController {
 
   @Get('/casedatanotifications/:municipalityId')
   @OpenAPI({ summary: 'Get notifications' })
+  @ResponseSchema(CasedataNotificationDto, { isArray: true })
   @UseBefore(authMiddleware)
   async getCasedataNotifications(
     @Req() req: RequestWithUser,

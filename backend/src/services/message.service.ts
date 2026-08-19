@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import NodeFormData from 'form-data';
 import { v4 as uuidv4 } from 'uuid';
 
-import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
+import { CASEDATA_NAMESPACE, CASEDATA_REPLY_TO, CASEDATA_SENDER, CASEDATA_SENDER_EMAIL, MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   Attachment,
@@ -244,7 +244,7 @@ const saveMessageOnErrand: (
     lastName: user.lastName,
     mobileNumber: message.mobileNumber || '',
     recipients: message.email ? [message.email] : [],
-    email: process.env.CASEDATA_SENDER_EMAIL || '',
+    email: CASEDATA_SENDER_EMAIL || '',
     userId: '',
     attachments: attachments.map(a => ({
       content: a.content ?? a.base64Data,
@@ -563,9 +563,9 @@ export const sendDecisionForMex = async (
       message: cleanedBody,
       htmlMessage: base64Encode(cleanedBody),
       sender: {
-        name: process.env.CASEDATA_SENDER,
-        address: process.env.CASEDATA_SENDER_EMAIL,
-        replyTo: process.env.CASEDATA_REPLY_TO,
+        name: CASEDATA_SENDER,
+        address: CASEDATA_SENDER_EMAIL,
+        replyTo: CASEDATA_REPLY_TO,
       },
       headers: {
         MESSAGE_ID: [generateMessageId()],
