@@ -55,12 +55,16 @@ test.describe('Kundbild (KC)', () => {
   // Flikarna klickas via roll, som i resten av sviten — data-cy ligger på omslutande element och
   // ett klick där byter inte panel. Panelen assertas synlig: toContainText matchar även dolda
   // element, så utan det kan ett uteblivet flikbyte passera som grönt.
+  //
+  // Allt som rör korten scopas till den returnerade panelen. Samma ärende renderas nämligen på
+  // flera ställen samtidigt — i relationsöversikten, i kopplingar-till-listan och i ärendeägarens
+  // autolistade ärenden bakom modalen — så ett oscopat relation-card-* matchar flera element.
   const openErrandsTab = async (page: Page) => {
     await ownerFooter(page).locator('[data-cy="show-customer-view-button"]').click();
     await page.getByRole('tab', { name: 'Ärenden', exact: true }).click();
-    const list = page.locator('[data-cy="customer-view-errands"]');
-    await expect(list).toBeVisible();
-    return list;
+    const panel = page.locator('[data-cy="customer-view-errands"]');
+    await expect(panel).toBeVisible();
+    return panel;
   };
 
   test('räknar bort det aktuella ärendet i kortfoten', async ({ page, dismissCookieConsent }) => {
@@ -86,18 +90,16 @@ test.describe('Kundbild (KC)', () => {
     await openErrand(page);
     await dismissCookieConsent();
 
-    await ownerFooter(page).locator('[data-cy="show-customer-view-button"]').click();
     await expect(page.locator('[data-cy="customer-view-name"]')).toContainText('Kim Svensson');
-
-    await page.getByRole('tab', { name: 'Ärenden', exact: true }).click();
-    const list = page.locator('[data-cy="customer-view-errands-list"]');
+    const panel = await openErrandsTab(page);
+    const list = panel.locator('[data-cy="customer-view-errands-list"]');
     await expect(list).toBeVisible();
     await expect(list).toContainText(mockPartyStatusErrands.ongoingErrand.errandNumber);
     await expect(list).not.toContainText(mockPartyStatusErrands.currentErrand.errandNumber);
 
     // Avslutade ärenden är dolda tills handläggaren ber om dem.
     await expect(list).not.toContainText(mockPartyStatusErrands.closedErrand.errandNumber);
-    await page.locator('[data-cy="customer-view-errands-include-closed-filter"]').check({ force: true });
+    await panel.locator('[data-cy="customer-view-errands-include-closed-filter"]').check({ force: true });
     await expect(list).toContainText(mockPartyStatusErrands.closedErrand.errandNumber);
   });
 
@@ -105,9 +107,9 @@ test.describe('Kundbild (KC)', () => {
     await openErrand(page);
     await dismissCookieConsent();
 
-    await openErrandsTab(page);
-    await page.locator('[data-cy="customer-view-errands-include-closed-filter"]').check({ force: true });
-    await expect(page.locator('[data-cy="customer-view-errands-count"]')).toContainText('Visar 2 av 2 ärenden');
+    const panel = await openErrandsTab(page);
+    await panel.locator('[data-cy="customer-view-errands-include-closed-filter"]').check({ force: true });
+    await expect(panel.locator('[data-cy="customer-view-errands-count"]')).toContainText('Visar 2 av 2 ärenden');
   });
 
   test('visar fel när en koppling inte kan skapas', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -115,8 +117,8 @@ test.describe('Kundbild (KC)', () => {
     await dismissCookieConsent();
     await mockRoute('**/2281/relations', { message: 'error' }, { method: 'POST', status: 500 });
 
-    await openErrandsTab(page);
-    const linkButton = page.locator(`[data-cy="relation-card-link-${mockPartyStatusErrands.ongoingErrand.caseId}"]`);
+    const panel = await openErrandsTab(page);
+    const linkButton = panel.locator(`[data-cy="relation-card-link-${mockPartyStatusErrands.ongoingErrand.caseId}"]`);
     await expect(linkButton).toBeVisible();
     await linkButton.click();
 
@@ -131,9 +133,9 @@ test.describe('Kundbild (KC)', () => {
 
     await expect(ownerFooter(page).locator('[data-cy="customer-view-relation-count"]')).toHaveText('1 relation');
 
-    await openErrandsTab(page);
+    const panel = await openErrandsTab(page);
     await expect(
-      page.locator(`[data-cy="relation-card-${mockPartyStatusErrands.ongoingErrand.caseId}"]`)
+      panel.locator(`[data-cy="relation-card-${mockPartyStatusErrands.ongoingErrand.caseId}"]`)
     ).toContainText('Bryt koppling');
   });
 });
