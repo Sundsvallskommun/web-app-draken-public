@@ -86,8 +86,9 @@ test.describe('Kopplade ärenden (KC)', () => {
     await mockRoute('**/errands/statuses/**', { message: 'error' }, { method: 'GET', status: 500 });
     await mockRoute('**/supporterrands/2281?**', { message: 'error' }, { method: 'GET', status: 500 });
 
-    await page.locator('[data-cy="linked-errands-search"] input').fill('KC-99999999');
-    await page.locator('[data-cy="linked-errands-search"]').getByRole('button', { name: 'Sök' }).click();
+    // data-cy hamnar på själva inputen, som för facility-search — inte på ett omslutande fält.
+    await page.locator('[data-cy="linked-errands-search"]').fill('KC-99999999');
+    await page.locator('[data-cy="link-errands-disclosure"]').getByRole('button', { name: 'Sök', exact: true }).click();
 
     // Sökningen får inte sluta tyst: antingen träffar, tomt-läge eller ett fel — aldrig ingenting.
     await expect(

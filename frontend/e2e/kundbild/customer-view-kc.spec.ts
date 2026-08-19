@@ -90,8 +90,8 @@ test.describe('Kundbild (KC)', () => {
     await openErrand(page);
     await dismissCookieConsent();
 
-    await expect(page.locator('[data-cy="customer-view-name"]')).toContainText('Kim Svensson');
     const panel = await openErrandsTab(page);
+    await expect(page.locator('[data-cy="customer-view-name"]')).toContainText('Kim Svensson');
     const list = panel.locator('[data-cy="customer-view-errands-list"]');
     await expect(list).toBeVisible();
     await expect(list).toContainText(mockPartyStatusErrands.ongoingErrand.errandNumber);
