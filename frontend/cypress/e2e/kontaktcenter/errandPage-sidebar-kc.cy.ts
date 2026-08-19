@@ -22,6 +22,7 @@ import {
   mockSupportMessages,
 } from './fixtures/mockSupportErrands';
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
+import { mockResolvedRelations } from '../case-data/fixtures/mockRelations';
 
 onlyOn(Cypress.env('application_name') === 'KC', () => {
   describe('errand page', () => {
@@ -30,8 +31,12 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('GET', '**/users/admins', mockSupportAdminsResponse);
       cy.intercept('GET', '**/me', mockMe);
       cy.intercept('GET', '**/featureflags', []);
+      cy.intercept('GET', '**/supportnamespaceconfigs/**', []);
       cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments', mockSupportAttachments).as(
         'getAttachments'
+      );
+      cy.intercept('GET', '**/supportattachments/2281/errands/*/attachments/*', mockSupportAttachments[0]).as(
+        'getAttachment'
       );
       cy.intercept(
         'GET',
@@ -52,6 +57,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       );
       cy.intercept('GET', '**/sourcerelations/**/**', mockRelations).as('getSourceRelations');
       cy.intercept('GET', '**/targetrelations/**/**', mockRelations).as('getTargetRelations');
+      cy.intercept('GET', '**/resolvedrelations/**/**', mockResolvedRelations).as('getResolvedRelations');
       cy.intercept('GET', '**/namespace/errands/**/communication/conversations', mockConversations).as(
         'getConversations'
       );
@@ -69,6 +75,7 @@ onlyOn(Cypress.env('application_name') === 'KC', () => {
       cy.intercept('POST', `**/supportmessage/2281/${mockSupportErrand.id}`, mockForwardSupportMessage).as(
         'postMessage'
       );
+      cy.intercept('GET', '**/party-services*', { data: [] }).as('getPartyServices');
     });
 
     it('shows the correct base errand and sidebar main buttons', () => {

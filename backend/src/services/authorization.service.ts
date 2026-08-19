@@ -6,8 +6,8 @@ import { logger } from '@/utils/logger';
 import { roleADMapping } from './ad-role.service';
 
 export function authorizeGroups(groups: string) {
-  logger.info(`authorizing groups ${groups}`);
-  logger.info(`against ${AUTHORIZED_GROUPS}`);
+  logger.debug(`authorizing groups ${groups}`);
+  logger.debug(`against ${AUTHORIZED_GROUPS}`);
   const authorizedGroupsList = AUTHORIZED_GROUPS!.split(',');
   const groupsList = groups.split(',').map((g: string) => g.toLowerCase());
   return authorizedGroupsList.some(authorizedGroup => groupsList.includes(authorizedGroup.toLowerCase()));

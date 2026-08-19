@@ -80,8 +80,11 @@ export const UploadAttachmentModal: FC<UploadAttachmentModalProps> = ({
           status: 'error',
         });
       }
+    } finally {
+      // Also covers the early return above — without it a failed errand save leaves the
+      // button stuck on "Laddar upp" with no way to retry.
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (

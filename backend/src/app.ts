@@ -71,16 +71,16 @@ const samlStrategy = new Strategy(
     // Identity Provider's public key
     idpCert: SAML_IDP_PUBLIC_CERT!,
     issuer: SAML_ISSUER!,
-    wantAssertionsSigned: false,
+    wantAssertionsSigned: true,
     signatureAlgorithm: 'sha256',
     digestAlgorithm: 'sha256',
     // maxAssertionAgeMs: 2592000000,
     // authnRequestBinding: 'HTTP-POST',
     //logoutUrl: 'http://194.71.24.30/sso',
     logoutCallbackUrl: SAML_LOGOUT_CALLBACK_URL!,
-    acceptedClockSkewMs: -1,
+    acceptedClockSkewMs: 5000,
     wantAuthnResponseSigned: false,
-    audience: false,
+    audience: SAML_ISSUER!,
   },
   async function (profile: Profile | null, done: VerifiedCallback) {
     if (!profile) {
@@ -140,7 +140,8 @@ const samlStrategy = new Strategy(
         },
       };
 
-      logger.info(`Found user: ${JSON.stringify(findUser)}`);
+      logger.info(`Authenticated user ${findUser.username} (role: ${findUser.role})`);
+      logger.debug(`Found user: ${JSON.stringify(findUser)}`);
 
       done(null, findUser);
     } catch (err) {
@@ -222,6 +223,10 @@ class App {
         store: this.sessionStore,
         cookie: {
           path: BASE_URL_PREFIX,
+          httpOnly: true,
+          secure: this.env === 'production' && process.env.ENVIRONMENT !== 'LOCAL',
+          sameSite: 'lax',
+          maxAge: 12 * 60 * 60 * 1000,
         },
       }),
     );
@@ -291,7 +296,8 @@ class App {
         }
 
         let successRedirect: URL, failureRedirect: URL;
-        const urls = req?.body?.RelayState.split(',');
+        const relayState = typeof req?.body?.RelayState === 'string' ? req.body.RelayState : '';
+        const urls = relayState.split(',');
 
         if (isValidUrl(urls[0]) && isValidOrigin(urls[0])) {
           successRedirect = new URL(urls[0]);
@@ -323,7 +329,8 @@ class App {
     this.app.post(`${BASE_URL_PREFIX}/saml/login/callback`, samlLimiter, bodyParser.urlencoded({ extended: false }), (req, res, next) => {
       let successRedirect: URL, failureRedirect: URL;
 
-      const urls = req?.body?.RelayState.split(',');
+      const relayState = typeof req?.body?.RelayState === 'string' ? req.body.RelayState : '';
+      const urls = relayState.split(',');
 
       if (isValidUrl(urls[0]) && isValidOrigin(urls[0])) {
         successRedirect = new URL(urls[0]);
@@ -338,6 +345,7 @@ class App {
 
       passport.authenticate('saml', (err: Error | null, user: Express.User | false | null) => {
         if (err) {
+          logger.warn(`SAML login callback failed: ${err.name}: ${err.message}`);
           const queries = new URLSearchParams(failureRedirect.searchParams);
           if (err?.name) {
             queries.append('failMessage', err.name);

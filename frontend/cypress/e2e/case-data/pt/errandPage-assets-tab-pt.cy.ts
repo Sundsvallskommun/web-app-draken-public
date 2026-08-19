@@ -583,6 +583,18 @@ onlyOn(Cypress.env('application_name') === 'PT', () => {
         cy.get('[data-cy="edit-service-button"]').should('not.exist');
         cy.get('[data-cy="remove-service-button"]').should('not.exist');
       });
+
+      // Regression guard: a decided errand (status "Beslutad") is locked for editing but not
+      // closed, so sending messages must stay possible. Guards isMessagesLocked in
+      // casedata-errand-service so the post-decision message lock does not reappear. Reuses the
+      // proven locked-errand load (visitInsatserTab) and just switches to the messages tab.
+      it('keeps the message buttons enabled', () => {
+        visitInsatserTab(mockDraftAsset);
+        cy.get('.sk-tabs-list button').contains('Meddelanden').click({ force: true });
+
+        cy.get('[data-cy="new-message-button"]').first().should('be.enabled');
+        cy.get('[data-cy="sidebar-new-message-button"]').first().should('be.enabled');
+      });
     });
   });
 });

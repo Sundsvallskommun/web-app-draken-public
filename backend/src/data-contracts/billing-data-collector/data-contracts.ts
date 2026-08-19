@@ -123,10 +123,10 @@ export interface EventRequest {
 }
 
 export interface PageScheduledBilling {
-  /** @format int32 */
-  totalPages?: number;
   /** @format int64 */
   totalElements?: number;
+  /** @format int32 */
+  totalPages?: number;
   /** @format int32 */
   size?: number;
   content?: ScheduledBilling[];
@@ -149,8 +149,8 @@ export interface PageableObject {
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
   unpaged?: boolean;
+  sort?: SortObject;
 }
 
 export interface SortObject {

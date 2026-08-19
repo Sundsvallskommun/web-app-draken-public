@@ -1126,6 +1126,7 @@ export const mockMetaData: MetadataResponse = {
                   resourcePath: 'MSVA/EMPLOYMENT/TERMINATION_OF_EMPLOYMENT',
                   resourceName: 'TERMINATION_OF_EMPLOYMENT',
                   labels: [],
+                  attributes: [{ key: 'escalationEmail', value: Cypress.env('mockEmail') }],
                 },
               ],
             },

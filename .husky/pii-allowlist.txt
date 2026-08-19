@@ -30,6 +30,8 @@
 556026-9987
 # Falsk träff: test-ärendenummer (20240515-8152) som matchar personnummer-regexen
 20240515-8152
+# Falsk träff: test-ärendenummer (KC/MEX-2026-000001) som matchar telefonnummer-regexen
+026-000001
 623696-2571
 357248-4270
 293241-3460

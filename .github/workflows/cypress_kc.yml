@@ -64,3 +64,4 @@ jobs:
           NEXT_PUBLIC_USE_ESCALATION: true
           NEXT_PUBLIC_USE_MY_PAGES: true
           NEXT_PUBLIC_USE_RELATIONS: true
+          NEXT_PUBLIC_USE_HANDOVER: true

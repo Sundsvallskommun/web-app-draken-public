@@ -13,12 +13,11 @@ import {
 import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
 import { mockRelations } from '../lop/fixtures/mockRelations';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
+import { mockResolvedRelations } from '../case-data/fixtures/mockRelations';
 
 test.describe('Message tab', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
-    await page.context().addCookies([
-      { name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' },
-    ]);
+    await page.context().addCookies([{ name: 'connect.sid', value: 'test-session', domain: 'localhost', path: '/' }]);
     await mockRoute('**/administrators', mockAdmins, { method: 'GET' });
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
@@ -32,21 +31,30 @@ test.describe('Message tab', () => {
     await mockRoute('**/supportmetadata/2281', mockMetaData, { method: 'GET' });
     await mockRoute('**/supportnotes/2281/*', mockSupportNotes, { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
+    await mockRoute('**/supportattachments/2281/errands/*/attachments/*', mockSupportAttachments[0], { method: 'GET' });
+    await mockRoute(
+      '**/supportmanagement/2281/namespace/errands/c9a96dcb-24b1-479b-84cb-2cc0260bb490/communication/conversations/abababab-ed21-4b30-9e0c-1252c878153f/messages',
+      mockConversationMessages,
+      {
+        method: 'GET',
+      }
+    );
     await mockRoute('**/supportmessage/2281/errands/*/communication', mockSupportErrandCommunication, {
       method: 'GET',
     });
-    await mockRoute(
-      '**/supportmessage/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490',
-      mockSupportErrandCommunication,
-      { method: 'POST' }
-    );
+    await mockRoute('**/supportmessage/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSupportErrandCommunication, {
+      method: 'POST',
+    });
     await mockRoute('**/sourcerelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/targetrelations/**/**', mockRelations, { method: 'GET' });
+    await mockRoute('**/resolvedrelations/**/**', mockResolvedRelations, { method: 'GET' });
     await mockRoute('**/party/*/statuses', mockStakeholderStatus, { method: 'GET' });
     await mockRoute('**/namespace/errands/**/communication/conversations', mockConversations, { method: 'GET' });
     await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, {
       method: 'GET',
     });
+    await mockRoute('**/party-services*', { data: [] }, { method: 'GET' });
+    await mockRoute('**/templates?*', { data: [], message: 'success' }, { method: 'GET' });
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
     await page.locator('.sk-cookie-consent-btn-wrapper').getByText('Godkänn alla').click();
@@ -54,6 +62,7 @@ test.describe('Message tab', () => {
   });
 
   test('views messages in inbox', async ({ page, mockRoute }) => {
+    test.slow(); // clicks "viewed" + awaits a response per message; ~37s solo, flakes under parallel load
     await mockRoute(
       '**/supportmessage/2281/errands/c9a96dcb-24b1-479b-84cb-2cc0260bb490/communication/*/viewed/true',
       mockSupportErrandCommunication,
@@ -68,9 +77,10 @@ test.describe('Message tab', () => {
       await expect(page.locator(`[data-cy="message-${communication.communicationID}"]`)).toBeVisible();
       await page.locator(`[data-cy="message-${communication.communicationID}"] button.sk-btn-ghost svg`).click();
 
-      await page.waitForResponse((resp) =>
-        resp.url().includes('supportmessage/2281/errands/c9a96dcb-24b1-479b-84cb-2cc0260bb490/communication') &&
-        resp.url().includes('viewed/true')
+      await page.waitForResponse(
+        (resp) =>
+          resp.url().includes('supportmessage/2281/errands/c9a96dcb-24b1-479b-84cb-2cc0260bb490/communication') &&
+          resp.url().includes('viewed/true')
       );
 
       if (communication.communicationAttachments.length !== 0) {

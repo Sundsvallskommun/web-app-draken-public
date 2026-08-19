@@ -1,3 +1,4 @@
+import { isLOK } from '@common/services/application-service';
 import { Admin } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { Button, Checkbox, cx, Link } from '@sk-web-gui/react';
@@ -143,9 +144,11 @@ const SupportManagementFiltering: FC<{
                   <div className="relative max-md:w-full">
                     <SupportManagementFilterLabelType />
                   </div>
-                  <div className="relative max-md:w-full">
-                    <SupportManagementFilterLabelSubType />
-                  </div>
+                  {!isLOK() ? (
+                    <div className="relative max-md:w-full">
+                      <SupportManagementFilterLabelSubType />
+                    </div>
+                  ) : null}
                 </>
               ) : null}
 
