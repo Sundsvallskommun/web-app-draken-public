@@ -3,14 +3,16 @@ import { Response } from 'express';
 import { Body, Controller, Get, HeaderParam, Param, Put, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
-import { apiServiceName } from '@/config/api-config';
+import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
+import { SupportInvestigationDocumentProfileDto, SupportInvestigationProfileDto } from '@/dtos/support-investigation-profile.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
-import ApiService from '@/services/api.service';
+import { SupportInvestigationDocument, SupportInvestigationDocumentService } from '@/services/support-investigation-document.service';
+import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 
 export interface JsonObject {
   [property: string]: JsonValue;
@@ -18,16 +20,9 @@ export interface JsonObject {
 
 export type JsonValue = null | boolean | number | string | JsonValue[] | JsonObject;
 
-export const INVESTIGATION_JSON_PARAMETER_KEYS = ['utredning-enhetschef', 'utredning-sol-lss', 'utredning-hsl'] as const;
+export type InvestigationJsonParameterKey = SupportInvestigationProfileDto['documents'][number]['key'];
 
-export type InvestigationJsonParameterKey = (typeof INVESTIGATION_JSON_PARAMETER_KEYS)[number];
-
-export interface SupportErrandJsonParameter {
-  key: InvestigationJsonParameterKey;
-  value: JsonObject;
-  schemaId: string;
-  version?: number;
-}
+export type SupportErrandJsonParameter = SupportInvestigationDocument<InvestigationJsonParameterKey>;
 
 export class UpdateSupportErrandJsonParameterDto {
   @IsString()
@@ -50,20 +45,26 @@ const setETagHeader = (response: Response, etag: unknown, version?: number): voi
   }
 };
 
-const requireInvestigationKey = (key: string): InvestigationJsonParameterKey => {
-  const supportedKey = INVESTIGATION_JSON_PARAMETER_KEYS.find(candidate => candidate === key);
-  if (!supportedKey) {
+const requireInvestigationDocument = (profile: SupportInvestigationProfileDto, key: string): SupportInvestigationDocumentProfileDto => {
+  const definition = profile.documents.find(document => document.key === key);
+  if (!definition) {
     throw new HttpException(400, 'Unsupported investigation JSON parameter key');
   }
 
-  return supportedKey;
+  return definition;
 };
 
 @Controller()
 export class SupportErrandJsonParameterController {
-  private apiService = new ApiService();
-  private readonly namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  private readonly service = apiServiceName('supportmanagement');
+  private readonly investigationProfile: SupportInvestigationProfileDto;
+  private documentService: SupportInvestigationDocumentService;
+  private policyService: SupportInvestigationPolicyService;
+
+  constructor(investigationProfile: SupportInvestigationProfileDto = getSupportInvestigationProfile(APPLICATION)) {
+    this.investigationProfile = investigationProfile;
+    this.documentService = new SupportInvestigationDocumentService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' });
+    this.policyService = new SupportInvestigationPolicyService(undefined, investigationProfile);
+  }
 
   @Get('/supporterrands/:municipalityId/:errandId/json-parameters/:key')
   @OpenAPI({ summary: 'Read one JSON parameter from a support errand' })
@@ -75,12 +76,12 @@ export class SupportErrandJsonParameterController {
     @Param('key') key: string,
     @Res() response: Response,
   ): Promise<Response> {
-    const investigationKey = requireInvestigationKey(key);
-    const url = this.buildUpstreamUrl(municipalityId, errandId, investigationKey);
-    const result = await this.apiService.get<SupportErrandJsonParameter>({ url, includeResponseHeaders: true, propagateClientError: true }, req.user);
+    const definition = requireInvestigationDocument(this.investigationProfile, key);
+    this.policyService.assertCanReadDocument(req.user, definition.key);
+    const result = await this.documentService.readDocument({ definition, municipalityId, errandId, user: req.user });
 
-    setETagHeader(response, result.headers?.etag, result.data.version);
-    return response.status(200).send(result.data);
+    setETagHeader(response, result.etag, result.document.version);
+    return response.status(result.status).send(result.document);
   }
 
   @Put('/supporterrands/:municipalityId/:errandId/json-parameters/:key')
@@ -92,32 +93,32 @@ export class SupportErrandJsonParameterController {
     @Param('errandId') errandId: string,
     @Param('key') key: string,
     @HeaderParam('If-Match') ifMatch: string | undefined,
+    @HeaderParam('If-None-Match') ifNoneMatch: string | undefined,
+    @HeaderParam('X-Errand-Version') parentErrandVersion: string | undefined,
     @Body() data: UpdateSupportErrandJsonParameterDto,
     @Res() response: Response,
   ): Promise<Response> {
-    const investigationKey = requireInvestigationKey(key);
-    const url = this.buildUpstreamUrl(municipalityId, errandId, investigationKey);
-    const body: SupportErrandJsonParameter = {
-      key: investigationKey,
-      schemaId: data.schemaId,
-      value: data.value,
-    };
-    const result = await this.apiService.put<SupportErrandJsonParameter, SupportErrandJsonParameter>(
-      {
-        url,
-        data: body,
-        headers: ifMatch ? { 'If-Match': ifMatch } : undefined,
-        includeResponseHeaders: true,
-        propagateClientError: true,
-      },
-      req.user,
-    );
+    const definition = requireInvestigationDocument(this.investigationProfile, key);
+    const state = await this.policyService.getState(req.user);
+    if (state === 'unavailable') {
+      throw new HttpException(503, 'Investigation write policy is temporarily unavailable');
+    }
+    if (state !== 'active') {
+      throw new HttpException(409, 'Investigation documents are not active for this application');
+    }
+    this.policyService.assertCanWriteDocument(req.user, definition.key);
 
-    setETagHeader(response, result.headers?.etag, result.data.version);
-    return response.status(200).send(result.data);
-  }
+    const result = await this.documentService.writeDocument({
+      definition,
+      municipalityId,
+      errandId,
+      user: req.user,
+      data,
+      preconditions: { ifMatch, ifNoneMatch, parentErrandVersion },
+    });
 
-  private buildUpstreamUrl(municipalityId: string, errandId: string, key: InvestigationJsonParameterKey): string {
-    return `${this.service}/${municipalityId}/${this.namespace}/errands/${errandId}/json-parameters/${key}`;
+    setETagHeader(response, result.etag, result.document.version);
+    response.setHeader('X-Errand-Version', String(result.parentErrandVersion));
+    return response.status(result.status).send(result.document);
   }
 }
