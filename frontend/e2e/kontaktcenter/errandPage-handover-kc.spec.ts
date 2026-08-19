@@ -46,6 +46,12 @@ test.describe('errand handover to another namespace', () => {
     });
   });
 
+  // Bekräftelsedialogen från useConfirm renderas som article.sk-modal-dialog.sk-dialog — samma
+  // element som modalen, plus en klass. Efter "Ja" ligger den kvar monterad i stängt läge en
+  // stund, så en oskild selektor matchar två element och fälls av strict mode i stället för att
+  // invänta stängningen. Modalen pekas därför ut med :not(.sk-dialog).
+  const handoverModal = 'article.sk-modal-dialog:not(.sk-dialog)';
+
   test('hands over the errand to another namespace and closes the modal', async ({ page, dismissCookieConsent }) => {
     await page.goto('arende/KC-00000001');
     await page.waitForResponse((resp) => resp.url().includes('supporterrands') && resp.status() === 200);
@@ -53,12 +59,12 @@ test.describe('errand handover to another namespace', () => {
 
     // Step 1 – open modal, choose "Draken" and pick the target namespace (where MEX is also listed).
     await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
-    await expect(page.locator('article.sk-modal-dialog')).toBeVisible();
-    await page.locator('.sk-modal-dialog [type="radio"]').nth(0).check();
+    await expect(page.locator(handoverModal)).toBeVisible();
+    await page.locator(`${handoverModal} [type="radio"]`).nth(0).check();
 
     // Selecting the namespace triggers the preview automatically (no "Nästa" click).
     const previewResponse = page.waitForResponse((resp) => resp.url().includes('/handover/preview'));
-    await page.locator('.sk-modal-dialog [data-cy="resolution-input"]').selectOption('ROB');
+    await page.locator(`${handoverModal} [data-cy="resolution-input"]`).selectOption('ROB');
     await previewResponse;
 
     // Step 2 – review renders, auto-suggestions are preselected.
@@ -78,6 +84,6 @@ test.describe('errand handover to another namespace', () => {
     expect(request.headers()['idempotency-key']).toBeTruthy();
 
     // Like the MEX forward: the modal closes after a successful handover (no in-modal success view).
-    await expect(page.locator('article.sk-modal-dialog')).toBeHidden();
+    await expect(page.locator(handoverModal)).toBeHidden();
   });
 });
