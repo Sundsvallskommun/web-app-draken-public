@@ -47,9 +47,20 @@ export default defineConfig({
       testDir: './e2e/lop',
       use: { ...devices['Desktop Chrome'] },
     },
+    // Kundbilden är flaggad och avstängd i kc:s driftkonfiguration. Egen svit i stället för
+    // att slå på flaggan i kc-projektet, så att kc-sviten fortsätter testa den konfiguration
+    // som faktiskt driftsätts.
+    {
+      name: 'kc-kundbild',
+      testDir: './e2e/kundbild',
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
   // No webServer config — start the dev server manually before running tests:
   //   yarn dev:mex   (then yarn test:e2e:mex in another terminal)
   //   yarn dev:pt    (then yarn test:e2e:pt)
   //   etc.
+  // Kundbildssviten kräver kc byggt med NEXT_PUBLIC_USE_CUSTOMER_VIEW=true:
+  //   NEXT_PUBLIC_USE_CUSTOMER_VIEW=true NEXT_PUBLIC_USE_SERVICES=true yarn dev:kc
+  //   (then yarn test:e2e:kc-kundbild)
 });
