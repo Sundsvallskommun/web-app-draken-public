@@ -3,7 +3,7 @@ import {
   ErrandChannelEnum as CasedataErrandDtoChannelEnum,
   StakeholderTypeEnum as CasedataStakeholderDtoTypeEnum,
 } from '@/data-contracts/case-data/data-contracts';
-import { ErrandAttachment, Label, Parameter, Stakeholder as SupportStakeholder } from '@/data-contracts/supportmanagement/data-contracts';
+import { ErrandAttachment, Label, Parameter, Phase, Stakeholder as SupportStakeholder } from '@/data-contracts/supportmanagement/data-contracts';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import { Role } from '@/interfaces/role';
 import {
@@ -14,6 +14,8 @@ import {
   NEW_ERRAND_DEFAULTS,
   resolveDefaultLabels,
   resolveSupportErrandClassification,
+  resolveSupportErrandPhaseTransition,
+  resolveSupportErrandStatusTransition,
   sanitizeQuery,
   stripErrandVersions,
   stripParameterVersions,
@@ -113,6 +115,13 @@ const classificationLabelStructure: Label[] = [
     ],
   },
 ];
+
+const classificationLabelTree = {
+  root: { resource: 'CATEGORY', classification: 'CATEGORY_ROOT' },
+  ownerClassification: 'PROVISION_CATEGORY',
+  categoryClassification: 'CATEGORY',
+  typeClassification: 'TYPE',
+};
 
 describe('support-errand.service', () => {
   describe('sanitizeQuery', () => {
@@ -263,7 +272,14 @@ describe('support-errand.service', () => {
     });
 
     it('covers every configured drake', () => {
-      expect(Object.keys(NEW_ERRAND_DEFAULTS).sort()).toEqual(['BOU', 'IK', 'KA', 'KC', 'LOK', 'LOP', 'MSVA', 'ROB', 'SE']);
+      expect(Object.keys(NEW_ERRAND_DEFAULTS).sort()).toEqual(['BOU', 'IAF', 'IK', 'KA', 'KC', 'LOK', 'LOP', 'MSVA', 'ROB', 'SE', 'VOF']);
+    });
+
+    it.each(['IAF', 'VOF'])('seeds %s registration with an explicit ordinary-deviation contract', application => {
+      expect(getNewErrandDefaults(application)).toEqual({
+        labels: { category: 'REPORT_TYPE', type: 'REPORT_TYPE/DEVIATION' },
+        parameters: [{ key: 'eventType', displayName: 'Rapporttyp', values: ['AVVIKELSE'] }],
+      });
     });
 
     it('leaves labels undefined for the drakes that configure none', () => {
@@ -295,18 +311,26 @@ describe('support-errand.service', () => {
       expect(result.map(l => l.resourcePath)).toEqual(['SALARY', 'SALARY/UNCATEGORIZED']);
     });
 
-    it('falls back to the longest prefix that could be resolved', () => {
-      expect(
-        resolveDefaultLabels(structure, { category: 'SALARY', type: 'SALARY/UNCATEGORIZED', subType: 'SALARY/UNCATEGORIZED/MISSING' }).map(
-          l => l.resourcePath,
-        ),
-      ).toEqual(['SALARY', 'SALARY/UNCATEGORIZED']);
-      expect(resolveDefaultLabels(structure, { category: 'SALARY', type: 'SALARY/MISSING' }).map(l => l.resourcePath)).toEqual(['SALARY']);
-    });
-
-    it('returns an empty list when the category is missing or the structure is absent', () => {
-      expect(resolveDefaultLabels(structure, { category: 'MISSING', type: 'MISSING/X' })).toEqual([]);
-      expect(resolveDefaultLabels(undefined, { category: 'SALARY', type: 'SALARY/UNCATEGORIZED' })).toEqual([]);
+    it('fails closed instead of persisting a partial or ambiguous label path', () => {
+      expect(() =>
+        resolveDefaultLabels(structure, {
+          category: 'SALARY',
+          type: 'SALARY/UNCATEGORIZED',
+          subType: 'SALARY/UNCATEGORIZED/MISSING',
+        }),
+      ).toThrow('Registration label path SALARY/UNCATEGORIZED/MISSING resolved 0 times');
+      expect(() => resolveDefaultLabels(structure, { category: 'SALARY', type: 'SALARY/MISSING' })).toThrow(
+        'Registration label path SALARY/MISSING resolved 0 times',
+      );
+      expect(() => resolveDefaultLabels(structure, { category: 'MISSING', type: 'MISSING/X' })).toThrow(
+        'Registration label path MISSING resolved 0 times',
+      );
+      expect(() => resolveDefaultLabels(undefined, { category: 'SALARY', type: 'SALARY/UNCATEGORIZED' })).toThrow(
+        'Registration label path SALARY resolved 0 times',
+      );
+      expect(() => resolveDefaultLabels([...structure, ...structure], { category: 'SALARY', type: 'SALARY/UNCATEGORIZED' })).toThrow(
+        'Registration label path SALARY resolved 2 times',
+      );
     });
   });
 
@@ -495,6 +519,95 @@ describe('support-errand.service', () => {
     });
   });
 
+  describe('resolveSupportErrandStatusTransition', () => {
+    const statuses = [{ name: 'ONGOING' }, { name: 'SOLVED' }, { name: 'RETIRED', deprecated: true }];
+
+    it('keeps optional resolution and suspension inside the resolved status command', () => {
+      expect(
+        resolveSupportErrandStatusTransition({ status: 'ONGOING' }, statuses, {
+          expectedStatus: 'ONGOING',
+          status: 'SOLVED',
+          resolution: 'CLOSED',
+          suspension: { suspendedFrom: undefined, suspendedTo: undefined },
+        }),
+      ).toEqual({
+        status: 'SOLVED',
+        resolution: 'CLOSED',
+        suspension: { suspendedFrom: undefined, suspendedTo: undefined },
+      });
+    });
+
+    it('rejects a command whose source status no longer matches', () => {
+      expect(() => resolveSupportErrandStatusTransition({ status: 'SOLVED' }, statuses, { expectedStatus: 'ONGOING', status: 'ONGOING' })).toThrow(
+        expect.objectContaining({ status: 409, message: 'Support errand status has changed since it was loaded' }),
+      );
+    });
+
+    it('rejects unknown and deprecated target statuses without inventing app-specific rules', () => {
+      for (const status of ['UNKNOWN', 'RETIRED']) {
+        expect(() =>
+          resolveSupportErrandStatusTransition({ status: 'ONGOING' }, statuses, {
+            expectedStatus: 'ONGOING',
+            status,
+          }),
+        ).toThrow(expect.objectContaining({ status: 400 }));
+      }
+    });
+
+    it('fails explicitly when upstream state or metadata is incomplete', () => {
+      expect(() => resolveSupportErrandStatusTransition({}, statuses, { expectedStatus: 'ONGOING', status: 'SOLVED' })).toThrow(
+        expect.objectContaining({ status: 502 }),
+      );
+      expect(() => resolveSupportErrandStatusTransition({ status: 'ONGOING' }, undefined, { expectedStatus: 'ONGOING', status: 'SOLVED' })).toThrow(
+        expect.objectContaining({ status: 502 }),
+      );
+    });
+  });
+
+  describe('resolveSupportErrandPhaseTransition', () => {
+    const phases: Phase[] = [
+      {
+        id: 'received',
+        name: 'RECEIVED',
+        transitions: [
+          { id: 'start-investigation', targetPhaseId: 'investigation' },
+          { id: 'close-directly', targetPhaseId: 'closed' },
+        ],
+      },
+      { id: 'investigation', name: 'INVESTIGATION' },
+      { id: 'closed', name: 'CLOSED' },
+    ];
+
+    it('resolves the submitted transition id instead of relying on metadata order', () => {
+      expect(resolveSupportErrandPhaseTransition({ activePhaseId: 'received', status: 'ONGOING' }, phases, 'close-directly')).toEqual({
+        transitionId: 'close-directly',
+        targetPhaseId: 'closed',
+      });
+    });
+
+    it('rejects unavailable transitions, locked errands and missing active phase state', () => {
+      expect(() => resolveSupportErrandPhaseTransition({ activePhaseId: 'received', status: 'ONGOING' }, phases, 'unknown')).toThrow(
+        expect.objectContaining({ status: 400 }),
+      );
+      expect(() => resolveSupportErrandPhaseTransition({ activePhaseId: 'received', status: 'SOLVED' }, phases, 'start-investigation')).toThrow(
+        expect.objectContaining({ status: 409 }),
+      );
+      expect(() => resolveSupportErrandPhaseTransition({ status: 'ONGOING' }, phases, 'start-investigation')).toThrow(
+        expect.objectContaining({ status: 409 }),
+      );
+    });
+
+    it('fails explicitly when metadata points at a missing or deprecated target', () => {
+      expect(() =>
+        resolveSupportErrandPhaseTransition(
+          { activePhaseId: 'received', status: 'ONGOING' },
+          phases.map(phase => (phase.id === 'closed' ? { ...phase, deprecated: true } : phase)),
+          'close-directly',
+        ),
+      ).toThrow(expect.objectContaining({ status: 502 }));
+    });
+  });
+
   describe('toAttachmentDto', () => {
     const attachment = (fileName: string): ErrandAttachment => ({ id: mockAttachmentId, fileName, mimeType: mockMimeType }) as ErrandAttachment;
 
@@ -539,11 +652,13 @@ describe('support-errand.service', () => {
             categoryLabels: [{ id: 'type-label-id' }, { id: 'category-owner-id' }, { id: 'category-label-id' }],
           },
           classificationLabelStructure,
+          classificationLabelTree,
         ),
       ).toEqual({
         classification: { category: 'CATEGORY/HSL', type: 'CATEGORY/HSL/REHAB' },
         categoryLabels: [{ id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'type-label-id' }],
         managedCategoryLabelIds: ['category-root-id', 'category-owner-id', 'category-label-id', 'type-label-id', 'other-type-label-id'],
+        managedRootResource: 'CATEGORY',
       });
     });
 
@@ -555,6 +670,7 @@ describe('support-errand.service', () => {
             categoryLabels: [{ id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'type-label-id' }],
           },
           classificationLabelStructure,
+          classificationLabelTree,
         ).classification,
       ).toEqual({ category: 'CATEGORY/HSL', type: 'CATEGORY/HSL/REHAB' });
     });
@@ -575,6 +691,7 @@ describe('support-errand.service', () => {
           categoryLabels: [{ id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'type-label-id' }],
         },
         structureWithoutPaths,
+        classificationLabelTree,
       );
 
       expect(resolved.classification).toEqual({ category: 'HSL', type: 'REHAB' });
@@ -599,6 +716,7 @@ describe('support-errand.service', () => {
             categoryLabels: [{ id: 'foreign-category-id' }],
           },
           structureWithForeignCategory,
+          classificationLabelTree,
         ),
       ).toThrow(expect.objectContaining({ status: 400 }));
     });
@@ -611,6 +729,7 @@ describe('support-errand.service', () => {
             categoryLabels: [{ id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'deviation-id' }],
           },
           classificationLabelStructure,
+          classificationLabelTree,
         ),
       ).toThrow(expect.objectContaining({ status: 400 }));
 
@@ -621,6 +740,7 @@ describe('support-errand.service', () => {
             categoryLabels: [{ id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'type-label-id' }],
           },
           classificationLabelStructure,
+          classificationLabelTree,
         ),
       ).toThrow(expect.objectContaining({ status: 400 }));
     });
@@ -637,8 +757,106 @@ describe('support-errand.service', () => {
               categoryLabels,
             },
             classificationLabelStructure,
+            classificationLabelTree,
           ),
         ).toThrow(expect.objectContaining({ status: 400 }));
+      }
+    });
+
+    it('projects a future application custom root and classification vocabulary', () => {
+      const futureTree = {
+        root: { resource: 'INCIDENTS', classification: 'INCIDENT_ROOT' },
+        ownerClassification: 'ACT_BRANCH',
+        categoryClassification: 'INCIDENT_CLASS',
+        typeClassification: 'INCIDENT_DETAIL',
+      };
+      const futureStructure: Label[] = [
+        {
+          id: 'future-root',
+          classification: 'INCIDENT_ROOT',
+          resourceName: 'INCIDENTS',
+          resourcePath: 'INCIDENTS',
+          labels: [
+            {
+              id: 'future-owner',
+              classification: 'ACT_BRANCH',
+              resourceName: 'FUTURE_ACT',
+              resourcePath: 'INCIDENTS/FUTURE_ACT',
+              labels: [
+                {
+                  id: 'future-category',
+                  classification: 'INCIDENT_CLASS',
+                  resourceName: 'SAFETY',
+                  resourcePath: 'INCIDENTS/FUTURE_ACT/SAFETY',
+                  labels: [
+                    {
+                      id: 'future-type',
+                      classification: 'INCIDENT_DETAIL',
+                      resourceName: 'FALL',
+                      resourcePath: 'INCIDENTS/FUTURE_ACT/SAFETY/FALL',
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ];
+
+      expect(
+        resolveSupportErrandClassification(
+          {
+            classification: { category: 'INCIDENTS/FUTURE_ACT', type: 'INCIDENTS/FUTURE_ACT/SAFETY' },
+            categoryLabels: [{ id: 'future-owner' }, { id: 'future-category' }, { id: 'future-type' }],
+          },
+          futureStructure,
+          futureTree,
+        ),
+      ).toEqual({
+        classification: { category: 'INCIDENTS/FUTURE_ACT', type: 'INCIDENTS/FUTURE_ACT/SAFETY' },
+        categoryLabels: [{ id: 'future-owner' }, { id: 'future-category' }, { id: 'future-type' }],
+        managedCategoryLabelIds: ['future-root', 'future-owner', 'future-category', 'future-type'],
+        managedRootResource: 'INCIDENTS',
+      });
+    });
+
+    it('fails closed when the configured classification root is missing or duplicated', () => {
+      const request = {
+        classification: { category: 'CATEGORY/HSL', type: 'CATEGORY/HSL/REHAB' },
+        categoryLabels: [{ id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'type-label-id' }],
+      };
+
+      expect(() => resolveSupportErrandClassification(request, [], classificationLabelTree)).toThrow(
+        expect.objectContaining({
+          status: 502,
+          message: 'Support Management classification metadata expected one configured root CATEGORY/CATEGORY_ROOT, found 0',
+        }),
+      );
+      expect(() =>
+        resolveSupportErrandClassification(
+          request,
+          [
+            ...classificationLabelStructure,
+            { id: 'duplicate-root', classification: 'CATEGORY_ROOT', resourceName: 'CATEGORY', resourcePath: 'CATEGORY' },
+          ],
+          classificationLabelTree,
+        ),
+      ).toThrow(
+        expect.objectContaining({
+          status: 502,
+          message: 'Support Management classification metadata expected one configured root CATEGORY/CATEGORY_ROOT, found 2',
+        }),
+      );
+      for (const nearMiss of [
+        [{ id: 'wrong-resource', classification: 'CATEGORY_ROOT', resourceName: 'CATEGORY', resourcePath: 'OTHER' }],
+        [{ id: 'wrong-classification', classification: 'OTHER_ROOT', resourceName: 'CATEGORY', resourcePath: 'CATEGORY' }],
+      ] as Label[][]) {
+        expect(() => resolveSupportErrandClassification(request, nearMiss, classificationLabelTree)).toThrow(
+          expect.objectContaining({
+            status: 502,
+            message: 'Support Management classification metadata expected one configured root CATEGORY/CATEGORY_ROOT, found 0',
+          }),
+        );
       }
     });
 
@@ -655,6 +873,7 @@ describe('support-errand.service', () => {
             categoryLabels: [{ id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'type-label-id' }],
           },
           duplicateIdStructure,
+          classificationLabelTree,
         ),
       ).toThrow(
         expect.objectContaining({
@@ -688,6 +907,7 @@ describe('support-errand.service', () => {
         [{ id: 'new-category-id' }, { id: 'new-category-id' }, { id: 'new-type-id' }],
         { category: 'HSL', type: 'REHAB' },
         ['old-category-id', 'old-type-id', 'new-category-id', 'new-type-id'],
+        classificationLabelTree.root.resource,
       );
 
       expect(body).toEqual({

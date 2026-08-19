@@ -1,4 +1,4 @@
-import { AxiosAdapter, AxiosError } from 'axios';
+import axios, { AxiosAdapter, AxiosError } from 'axios';
 
 import ApiService from '@/services/api.service';
 import ApiTokenService from '@/services/api-token.service';
@@ -12,8 +12,8 @@ const user = mockUser({ permissions: { canEditSupportManagement: true } } as nev
 const TOKEN_URL = 'token';
 
 const okAdapter =
-  (data: unknown, headers: Record<string, string> = {}): AxiosAdapter =>
-  async config => ({ config, data, headers, status: 200, statusText: 'OK' });
+  (data: unknown, headers: Record<string, string> = {}, status = 200): AxiosAdapter =>
+  async config => ({ config, data, headers, status, statusText: status === 201 ? 'Created' : 'OK' });
 
 const failingAdapter =
   (status: number, data: unknown, statusText: string): AxiosAdapter =>
@@ -38,6 +38,25 @@ describe('ApiService', () => {
 
     expect(response.data).toEqual({ saved: true });
     expect(response.headers?.etag).toBe('"4"');
+    expect(response.status).toBe(200);
+  });
+
+  it('can preserve a create response instead of following its Location header', async () => {
+    const follow = vi.spyOn(axios, 'get');
+    const response = await new ApiService().put<{ saved: boolean }, { value: string }>(
+      {
+        adapter: okAdapter({ saved: true }, { location: '/created-resource', etag: '"1"' }, 201),
+        data: { value: 'new' },
+        followLocation: false,
+        includeResponseHeaders: true,
+        url: TOKEN_URL,
+      },
+      user,
+    );
+
+    expect(follow).not.toHaveBeenCalled();
+    expect(response).toMatchObject({ data: { saved: true }, status: 201 });
+    expect(response.headers?.etag).toBe('"1"');
   });
 
   it('does not add upstream headers to existing controller response wrappers unless requested', async () => {
