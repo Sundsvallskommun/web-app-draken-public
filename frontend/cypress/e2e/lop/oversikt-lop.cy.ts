@@ -69,6 +69,44 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="Channel-filter"]').should('exist');
     });
 
+    it('does not offer deprecated labels in the filters', () => {
+      cy.get('[data-cy="show-filters-button"]').should('exist');
+
+      cy.get('[data-cy="Verksamhet-filter"]').type('1');
+      cy.get('[data-cy=Verksamhet-filter-DEPRECATION_TEST]').should('exist');
+      cy.get('[data-cy=Verksamhet-filter-DEPRECATED_CATEGORY]').should('not.exist');
+
+      // Narrowing to one verksamhet keeps the type list from being truncated, so the assertions
+      // below say something about the deprecated type rather than about the cut-off.
+      cy.get('[data-cy=Verksamhet-filter-DEPRECATION_TEST]').click();
+      cy.get('[data-cy="Ärendekategori-filter"]').type('2');
+      cy.get('[data-cy="Ärendekategori-filter-Aktiv typ"]').should('exist');
+      cy.get('[data-cy="Ärendekategori-filter-Utgangen typ"]').should('not.exist');
+      // The type under the deprecated verksamhet is unreachable through it.
+      cy.get('[data-cy="Ärendekategori-filter-Typ under utgangen verksamhet"]').should('not.exist');
+      // All subtypes of this type are deprecated, leaving no reachable leaf, so the branch is gone here
+      // too — the filter offers exactly what the categorization picker offers.
+      cy.get('[data-cy="Ärendekategori-filter-Typ med bara utgangna undertyper"]').should('not.exist');
+    });
+
+    it('marks a deprecated label in the errand list', () => {
+      const deprecatedCategory = mockMetaData.labels.labelStructure.find(
+        (l) => l.resourcePath === 'DEPRECATED_CATEGORY'
+      );
+      const [firstErrand, ...remainingErrands] = mockSupportErrands.content;
+
+      cy.intercept('GET', '**/supporterrands/2281?page=0*', {
+        ...mockSupportErrands,
+        content: [{ ...firstErrand, labels: [{ ...deprecatedCategory, labels: undefined }] }, ...remainingErrands],
+      }).as('getErrandsWithDeprecatedLabel');
+      cy.reload();
+      cy.wait('@getErrandsWithDeprecatedLabel');
+
+      cy.get('[data-cy="main-table"] .sk-table-tbody-tr')
+        .first()
+        .should('contain.text', 'Utgangen verksamhet (Utgått)');
+    });
+
     //FILTER
     it('allows filtering', () => {
       cy.get('[data-cy="show-filters-button"]').should('exist');

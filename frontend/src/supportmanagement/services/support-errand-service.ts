@@ -241,11 +241,6 @@ export const getLabelSubType = (errand: SupportErrand) => {
   return errand.labels?.find((label) => label.classification === 'SUBTYPE');
 };
 
-export const getLabelTypeFromDisplayName = (displayName: string, metadata: SupportMetadata): Label[] => {
-  const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
-  return allTypesFlattened.filter((t) => t?.displayName === displayName);
-};
-
 export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
   const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
   return allTypesFlattened.find((t) => t?.resourcePath === name);

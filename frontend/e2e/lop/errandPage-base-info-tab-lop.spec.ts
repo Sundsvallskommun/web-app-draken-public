@@ -73,6 +73,73 @@ test.describe('Errand page', () => {
     await expect(page.locator('[data-cy="save-button"]')).toContainText('Spara');
   });
 
+  test('keeps a deprecated label on an existing errand', async ({ page, mockRoute, dismissCookieConsent }) => {
+    // Deep-copy so the shared metadata fixture is not mutated by stripping nested labels.
+    const deprecatedCategory = JSON.parse(
+      JSON.stringify(mockMetaData.labels.labelStructure.find((l) => l.resourcePath === 'DEPRECATED_CATEGORY'))
+    );
+    const deprecatedCategoryType = JSON.parse(JSON.stringify(deprecatedCategory.labels[0]));
+    delete deprecatedCategory.labels;
+    delete deprecatedCategoryType.labels;
+
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      { ...mockSupportErrand, labels: [deprecatedCategory, deprecatedCategoryType] },
+      { method: 'GET' }
+    );
+
+    await page.goto(`arende/${mockSupportErrand.errandNumber}`);
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
+    await dismissCookieConsent();
+
+    // The errand keeps showing its own classification even though the label is deprecated, marked so
+    // it reads as a leftover rather than a current option.
+    const categorySelect = page.locator('[data-cy="labelCategory-input"]');
+    await expect(categorySelect).toHaveValue(deprecatedCategory.id);
+    await expect(categorySelect.locator('option', { hasText: 'Utgangen verksamhet (Utgått)' })).toHaveCount(1);
+    // The type is not flagged itself; it counts as deprecated because its category is.
+    await expect(
+      page.locator(`[data-cy="labelType-input"][placeholder="${deprecatedCategoryType.displayName} (Utgått)"]`)
+    ).toBeVisible();
+
+    // Once another category is picked the deprecated one is gone for good.
+    await categorySelect.selectOption('Utgangstest');
+    await expect(categorySelect.locator('option', { hasText: 'Utgangen verksamhet' })).toHaveCount(0);
+  });
+
+  test('marks a deprecated type under a category that is still active', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    const activeCategory = JSON.parse(
+      JSON.stringify(mockMetaData.labels.labelStructure.find((l) => l.resourcePath === 'DEPRECATION_TEST'))
+    );
+    const deprecatedType = JSON.parse(
+      JSON.stringify(activeCategory.labels.find((l) => l.resourcePath === 'DEPRECATION_TEST/DEPRECATED_TYPE'))
+    );
+    delete activeCategory.labels;
+    delete deprecatedType.labels;
+
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      { ...mockSupportErrand, labels: [activeCategory, deprecatedType] },
+      { method: 'GET' }
+    );
+
+    await page.goto(`arende/${mockSupportErrand.errandNumber}`);
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
+    await dismissCookieConsent();
+
+    // Only the deprecated level is marked — the category above it is still selectable.
+    const categorySelect = page.locator('[data-cy="labelCategory-input"]');
+    await expect(categorySelect.locator('option', { hasText: 'Utgangstest' })).toHaveCount(1);
+    await expect(categorySelect.locator('option', { hasText: 'Utgangstest (Utgått)' })).toHaveCount(0);
+    await expect(
+      page.locator(`[data-cy="labelType-input"][placeholder="${deprecatedType.displayName} (Utgått)"]`)
+    ).toBeVisible();
+  });
+
   test('allows updating errand information', async ({ page, mockRoute, dismissCookieConsent }) => {
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
     await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);

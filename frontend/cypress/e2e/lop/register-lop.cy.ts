@@ -66,6 +66,19 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="errand-description-richtext-wrapper"]').should('exist');
     });
 
+    it('does not offer deprecated labels when registering a new errand', () => {
+      // The category itself is deprecated, so neither it nor anything below it may be picked.
+      cy.get('[data-cy="labelCategory-input"]').children().contains('Utgangen verksamhet').should('not.exist');
+      cy.get('[data-cy="labelCategory-input"]').children().contains('Utgangstest').should('exist');
+
+      cy.get('[data-cy="labelCategory-input"]').select('Utgangstest');
+      cy.get('[data-cy="labelType-input"]').click();
+      cy.get('[data-cy="labelType-list"]').children().contains('Aktiv typ').should('exist');
+      cy.get('[data-cy="labelType-list"]').children().contains('Utgangen typ').should('not.exist');
+      // Every subtype of this type is deprecated, so the whole branch is unreachable.
+      cy.get('[data-cy="labelType-list"]').children().contains('Typ med bara utgangna undertyper').should('not.exist');
+    });
+
     it('displays the admin part of the register form', () => {
       cy.get('[data-cy="admin-input"]').should('exist');
       cy.get('[data-cy="status-input"]').should('exist');

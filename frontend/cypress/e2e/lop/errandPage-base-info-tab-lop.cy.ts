@@ -88,6 +88,60 @@ onlyOn(Cypress.env('application_name') === 'LOP', () => {
       cy.get('[data-cy="save-button"]').contains('Spara').should('exist');
     });
 
+    it('keeps a deprecated label on an existing errand', () => {
+      const deprecatedCategory = mockMetaData.labels.labelStructure.find(
+        (l) => l.resourcePath === 'DEPRECATED_CATEGORY'
+      );
+      const deprecatedCategoryType = deprecatedCategory.labels[0];
+      cy.intercept('GET', `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
+        ...mockSupportErrand,
+        labels: [
+          { ...deprecatedCategory, labels: undefined },
+          { ...deprecatedCategoryType, labels: undefined },
+        ],
+      }).as('getErrandWithDeprecatedLabel');
+
+      cy.visit(`/arende/${mockSupportErrand.errandNumber}`);
+      cy.wait('@getErrandWithDeprecatedLabel');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+
+      // The errand keeps showing its own classification even though the label is deprecated, marked so
+      // it reads as a leftover rather than a current option.
+      cy.get('[data-cy="labelCategory-input"]').should('have.value', deprecatedCategory.id);
+      cy.get('[data-cy="labelCategory-input"]').children().contains('Utgangen verksamhet (Utgått)').should('exist');
+      // The type is not flagged itself; it counts as deprecated because its category is.
+      cy.get(`[data-cy="labelType-input"][placeholder="${deprecatedCategoryType.displayName} (Utgått)"]`).should(
+        'exist'
+      );
+
+      // Once another category is picked the deprecated one is gone for good.
+      cy.get('[data-cy="labelCategory-input"]').select('Utgangstest');
+      cy.get('[data-cy="labelCategory-input"]').children().contains('Utgangen verksamhet').should('not.exist');
+    });
+
+    it('marks a deprecated type under a category that is still active', () => {
+      const activeCategory = mockMetaData.labels.labelStructure.find((l) => l.resourcePath === 'DEPRECATION_TEST');
+      const deprecatedType = activeCategory.labels.find(
+        (l) => l.resourcePath === 'DEPRECATION_TEST/DEPRECATED_TYPE'
+      );
+      cy.intercept('GET', `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, {
+        ...mockSupportErrand,
+        labels: [
+          { ...activeCategory, labels: undefined },
+          { ...deprecatedType, labels: undefined },
+        ],
+      }).as('getErrandWithDeprecatedType');
+
+      cy.visit(`/arende/${mockSupportErrand.errandNumber}`);
+      cy.wait('@getErrandWithDeprecatedType');
+      cy.get('.sk-cookie-consent-btn-wrapper').contains('Godkänn alla').click();
+
+      // Only the deprecated level is marked — the category above it is still selectable.
+      cy.get('[data-cy="labelCategory-input"]').children().contains('Utgangstest').should('exist');
+      cy.get('[data-cy="labelCategory-input"]').children().contains('Utgangstest (Utgått)').should('not.exist');
+      cy.get(`[data-cy="labelType-input"][placeholder="${deprecatedType.displayName} (Utgått)"]`).should('exist');
+    });
+
     it('allows updating errand information', () => {
       cy.visit(`/arende/${mockSupportErrand.errandNumber}`);
       cy.wait('@getErrand');
