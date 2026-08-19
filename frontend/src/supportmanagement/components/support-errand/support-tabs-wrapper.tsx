@@ -151,7 +151,14 @@ export const SupportTabsWrapper: FC<{
           />
         ),
         disabled: false,
-        visibleFor: appConfig.features.useServices && !!supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY'),
+        // Beslut och dokument bor i kundbilden när useCustomerView är på. Fliken är ett fallback
+        // så länge flaggan är av — inte en parallell vy för andra drakar: KC är enda appen med
+        // useServices och enda appen med kundbild. När flaggan blir permanent ska fliken och
+        // PartyAssetsSection tas bort, annars underhålls två vyer av samma data utan användare.
+        visibleFor:
+          appConfig.features.useServices &&
+          !appConfig.features.useCustomerView &&
+          !!supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY'),
       },
       {
         key: 'recruitment',

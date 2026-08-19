@@ -30,6 +30,10 @@ envalid.cleanEnv(process.env, {
 
 module.exports = {
   allowedDevOrigins: ['dev.test'],
+  // Pin the workspace root so Turbopack doesn't infer it from stray lockfiles in parent directories
+  turbopack: {
+    root: __dirname,
+  },
   distDir:
     process.env.DOCKER_BUILD === 'true'
       ? '.next'

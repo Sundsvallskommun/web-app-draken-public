@@ -32,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [mex, pt, kc, lop]
+        app: [mex, pt, kc, lop, kc-kundbild]
         include:
           - app: mex
             build_cmd: yarn build:mex
@@ -80,6 +80,31 @@ jobs:
             NEXT_PUBLIC_USE_MY_PAGES: true
             NEXT_PUBLIC_USE_RELATIONS: true
             NEXT_PUBLIC_USE_HANDOVER: true
+          # Kundbilden är flaggad och avstängd i kc:s driftkonfiguration. Egen rad så att
+          # på-läget testas utan att kc-sviten byggs med en annan konfig än den som driftsätts.
+          - app: kc-kundbild
+            build_cmd: yarn build:kc
+            start_cmd: yarn start:kc
+            env_file: .env.kc
+            NEXT_PUBLIC_APPLICATION: KC
+            NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: true
+            NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION: true
+            NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE: true
+            NEXT_PUBLIC_USE_REASON_FOR_CONTACT: true
+            NEXT_PUBLIC_USE_BUSINESS_CASE: true
+            NEXT_PUBLIC_USE_FACILITIES: true
+            NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION: true
+            NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER: true
+            NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL: true
+            NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL: true
+            NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS: true
+            NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS: true
+            NEXT_PUBLIC_USE_ESCALATION: true
+            NEXT_PUBLIC_USE_MY_PAGES: true
+            NEXT_PUBLIC_USE_RELATIONS: true
+            NEXT_PUBLIC_USE_HANDOVER: true
+            NEXT_PUBLIC_USE_SERVICES: true
+            NEXT_PUBLIC_USE_CUSTOMER_VIEW: true
           - app: lop
             build_cmd: yarn build:lop
             start_cmd: yarn start:lop
@@ -176,6 +201,8 @@ jobs:
           NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: ${{ matrix.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '' }}
           NEXT_PUBLIC_INVOICE_BREAK_DATE: ${{ matrix.NEXT_PUBLIC_INVOICE_BREAK_DATE || '' }}
           NEXT_PUBLIC_USE_HANDOVER: ${{ matrix.NEXT_PUBLIC_USE_HANDOVER || '' }}
+          NEXT_PUBLIC_USE_SERVICES: ${{ matrix.NEXT_PUBLIC_USE_SERVICES || '' }}
+          NEXT_PUBLIC_USE_CUSTOMER_VIEW: ${{ matrix.NEXT_PUBLIC_USE_CUSTOMER_VIEW || '' }}
 
       - name: Start server
         run: ${{ matrix.start_cmd }} &

@@ -3,10 +3,12 @@
 import { usePartyAssetServices } from '@common/hooks/use-asset-services';
 import { Button, Icon, Spinner } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
+import {
+  ACTIVE_PARTY_STATUSES,
+  KC_ASSET_TYPES,
+} from '@supportmanagement/components/support-errand/tabs/services/support-errand-services-tab';
 import { ArrowRight, ListChecks } from 'lucide-react';
 import { useMemo } from 'react';
-
-import { ACTIVE_PARTY_STATUSES, KC_ASSET_TYPES } from '../support-errand/tabs/services/support-errand-services-tab';
 
 export const PartyAssetsSection: React.FC<{ partyId: string }> = ({ partyId }) => {
   const { setActiveTabKey } = useSupportStore();

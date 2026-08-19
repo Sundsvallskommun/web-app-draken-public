@@ -1,0 +1,258 @@
+'use client';
+
+import { RelationErrandCard } from '@common/components/linked-errands-disclosure/relation-errand-card.component';
+import { Relation } from '@common/data-contracts/relations/data-contracts';
+import {
+  CaseStatusResponse,
+  caseTypeLabel,
+  findOperationUsingNamespace,
+  getStatusesUsingOrganizationNumber,
+  getStatusesUsingPartyId,
+  isClosedCaseStatus,
+} from '@common/services/casestatus-service';
+import { createRelation, deleteRelation, getResolvedRelations } from '@common/services/relations-service';
+import { Checkbox, Pagination, SearchField, Spinner, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore } from '@stores/index';
+import { FC, useEffect, useState } from 'react';
+
+interface CustomerViewErrandsProps {
+  partyId: string;
+  organizationNumber?: string;
+  sourceErrandId?: string;
+  onOpenMessage?: (errand: CaseStatusResponse) => void;
+}
+
+const PAGE_SIZE = 20;
+
+export const CustomerViewErrands: FC<CustomerViewErrandsProps> = ({
+  partyId,
+  organizationNumber,
+  sourceErrandId,
+  onOpenMessage,
+}) => {
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const [errands, setErrands] = useState<CaseStatusResponse[]>();
+  const [error, setError] = useState(false);
+  const [relations, setRelations] = useState<Relation[]>([]);
+  const [query, setQuery] = useState('');
+  const [busyCaseId, setBusyCaseId] = useState<string>();
+  const [page, setPage] = useState(0);
+  const [showOnlyRelated, setShowOnlyRelated] = useState(false);
+  const [includeClosed, setIncludeClosed] = useState(false);
+  const removeRelationConfirm = useConfirm();
+  const toastMessage = useSnackbar();
+
+  const notifyError = (message: string) =>
+    toastMessage({ position: 'bottom', closeable: false, message, status: 'error' });
+
+  useEffect(() => {
+    let active = true;
+    const fetchStatuses = organizationNumber
+      ? getStatusesUsingOrganizationNumber(municipalityId, organizationNumber)
+      : getStatusesUsingPartyId(municipalityId, partyId);
+    fetchStatuses
+      .then((statuses: CaseStatusResponse[]) => {
+        if (active) {
+          setErrands(statuses.filter((s) => s.caseId !== sourceErrandId));
+          setError(false);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setErrands([]);
+          setError(true);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [municipalityId, partyId, organizationNumber, sourceErrandId]);
+
+  const refreshRelations = () => {
+    if (!sourceErrandId) return Promise.resolve();
+    return getResolvedRelations('source', municipalityId, sourceErrandId, 'ASC')
+      .then((res) => setRelations(res.relations))
+      .catch(() => setRelations([]));
+  };
+
+  useEffect(() => {
+    if (!sourceErrandId) return;
+    let active = true;
+    getResolvedRelations('source', municipalityId, sourceErrandId, 'ASC')
+      .then((res) => {
+        if (active) setRelations(res.relations);
+      })
+      .catch(() => {
+        if (active) setRelations([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [municipalityId, sourceErrandId]);
+
+  const relationFor = (errand: CaseStatusResponse) =>
+    relations.find((relation) => relation.target.resourceId === errand.caseId);
+
+  const handleRelate = (errand: CaseStatusResponse) => {
+    if (!sourceErrandId || !errand.caseId) return;
+    setBusyCaseId(errand.caseId);
+    createRelation(municipalityId, sourceErrandId, errand)
+      .then(() => refreshRelations())
+      .catch(() => notifyError('Ärendena kunde inte kopplas'))
+      .finally(() => setBusyCaseId(undefined));
+  };
+
+  const handleUnrelate = (errand: CaseStatusResponse) => {
+    const relation = relationFor(errand);
+    if (!relation?.id) return;
+    removeRelationConfirm
+      .showConfirmation(
+        'Ta bort relation?',
+        `Relationen till ärende ${errand.errandNumber ?? ''} kommer att tas bort. Vill du fortsätta?`,
+        'Ja',
+        'Nej',
+        'info',
+        'info'
+      )
+      .then((confirmed) => {
+        if (!confirmed) return;
+        setBusyCaseId(errand.caseId);
+        deleteRelation(municipalityId, relation.id!)
+          .then(() => refreshRelations())
+          .catch(() => notifyError('Relationen kunde inte tas bort'))
+          .finally(() => setBusyCaseId(undefined));
+      });
+  };
+
+  const filtered = (errands ?? [])
+    .filter((errand) => includeClosed || !isClosedCaseStatus(errand))
+    .filter((errand) => !showOnlyRelated || !!relationFor(errand))
+    .filter((errand) => {
+      if (!query) return true;
+      const q = query.toLowerCase();
+      return [
+        errand.errandNumber,
+        caseTypeLabel(errand),
+        errand.externalStatus,
+        errand.status,
+        findOperationUsingNamespace(errand.namespace ?? ''),
+      ]
+        .filter(Boolean)
+        .some((value) => value!.toLowerCase().includes(q));
+    })
+    .sort((a, b) => (b.lastStatusChange ?? '').localeCompare(a.lastStatusChange ?? ''));
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const safePage = Math.min(page, Math.max(totalPages - 1, 0));
+  const paged = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+
+  if (errands === undefined) {
+    return (
+      <div className="flex justify-center items-center py-40">
+        <Spinner aria-label="Hämtar ärenden" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="py-24" data-cy="customer-view-errands">
+      <div className="flex flex-wrap items-start gap-16">
+        <div className="flex flex-wrap gap-16 pt-32">
+          <Checkbox
+            checked={includeClosed}
+            onChange={(event) => {
+              setIncludeClosed(event.currentTarget.checked);
+              setPage(0);
+            }}
+            data-cy="customer-view-errands-include-closed-filter"
+          >
+            Inkludera avslutade ärenden
+          </Checkbox>
+          {sourceErrandId ? (
+            <Checkbox
+              checked={showOnlyRelated}
+              onChange={(event) => {
+                setShowOnlyRelated(event.currentTarget.checked);
+                setPage(0);
+              }}
+              data-cy="customer-view-errands-related-filter"
+            >
+              Visa endast relaterade
+            </Checkbox>
+          ) : null}
+        </div>
+        <div className="flex-1 min-w-[24rem] max-w-[52rem]">
+          <p className="text-label-small">Sök i listan</p>
+          <div className="max-w-[52rem]">
+            <SearchField
+              size="md"
+              className="w-full"
+              placeholder="Sök på ärendetyp, status eller ärendenummer"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setPage(0);
+              }}
+              onReset={() => {
+                setQuery('');
+                setPage(0);
+              }}
+              showSearchButton={false}
+              data-cy="customer-view-errands-search"
+            />
+          </div>
+        </div>
+      </div>
+      {error ? (
+        <p className="text-error mt-24" role="alert">
+          Ärenden kunde inte hämtas
+        </p>
+      ) : (
+        <>
+          <p className="mt-24 mb-8 text-small" data-cy="customer-view-errands-count">
+            Visar {paged.length} av {filtered.length} ärenden
+          </p>
+          {filtered.length > 0 ? (
+            <>
+              <div className="flex flex-col gap-12" data-cy="customer-view-errands-list">
+                {paged.map((errand) => {
+                  const linked = !!relationFor(errand);
+                  return (
+                    <RelationErrandCard
+                      key={errand.caseId}
+                      errand={errand}
+                      linked={linked}
+                      actionsDisabled={busyCaseId === errand.caseId}
+                      onToggleLink={
+                        sourceErrandId ? () => (linked ? handleUnrelate(errand) : handleRelate(errand)) : undefined
+                      }
+                      onOpenMessage={linked && onOpenMessage ? () => onOpenMessage(errand) : undefined}
+                    />
+                  );
+                })}
+              </div>
+              {totalPages > 1 ? (
+                <div className="sk-table-paginationwrapper mt-16">
+                  <Pagination
+                    showFirst
+                    showLast
+                    pagesBefore={1}
+                    pagesAfter={1}
+                    showConstantPages={true}
+                    fitContainer
+                    pages={totalPages}
+                    activePage={safePage + 1}
+                    changePage={(newPage) => setPage(newPage - 1)}
+                    data-cy="customer-view-errands-pagination"
+                  />
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <p data-cy="customer-view-errands-empty">Inga ärenden hittades</p>
+          )}
+        </>
+      )}
+    </div>
+  );
+};

@@ -15,6 +15,8 @@ interface JsonParameter {
 
 export enum assetTypeLabels {
   PARKINGPERMIT = 'P-tillstånd',
+  ParatransitPermitLocal = 'Färdtjänst',
+  ParatransitPermitNational = 'Riksfärdtjänst',
 }
 export interface Asset {
   id: string;

@@ -39,6 +39,7 @@ interface AppConfigFeatures {
   useServices: boolean;
   useAppeal: boolean;
   useHandover: boolean;
+  useCustomerView: boolean;
 }
 
 // JSON.parse prevents the minifier from folding placeholder comparisons at build time.
@@ -87,6 +88,7 @@ export const appConfig: AppConfig = {
     useServices: envBool(process.env.NEXT_PUBLIC_USE_SERVICES),
     useAppeal: envBool(process.env.NEXT_PUBLIC_USE_APPEAL),
     useHandover: envBool(process.env.NEXT_PUBLIC_USE_HANDOVER),
+    useCustomerView: envBool(process.env.NEXT_PUBLIC_USE_CUSTOMER_VIEW),
   },
 };
 

@@ -1,5 +1,6 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { deepFlattenToObject, prettyTime } from '@common/services/helper-service';
+import { dispatchOpenMessage } from '@common/services/message-event-service';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
@@ -512,7 +513,7 @@ export const SidebarInfo: FC<{
                         color="vattjom"
                         data-cy="sidebar-new-message-button"
                         variant="secondary"
-                        onClick={() => window.dispatchEvent(new CustomEvent('openMessage'))}
+                        onClick={() => dispatchOpenMessage()}
                       >
                         Nytt meddelande
                       </Button>
