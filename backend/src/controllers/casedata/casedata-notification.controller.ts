@@ -148,6 +148,7 @@ export class CasedataNotificationController {
   @Put('/casedatanotifications/:municipalityId/:errandId/global-acknowledged')
   @HttpCode(201)
   @OpenAPI({ summary: 'Global-acknowledged all casedata notification for errand' })
+  @UseBefore(authMiddleware)
   async globalAcknowledgedCasedataNotification(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,

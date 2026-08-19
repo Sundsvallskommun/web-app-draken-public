@@ -19,6 +19,7 @@ import {
   SECRET_KEY,
   SWAGGER_ENABLED,
 } from '@config';
+import defaultAuthGuard from '@middlewares/default-auth.middleware';
 import errorMiddleware from '@middlewares/error.middleware';
 import { Strategy, VerifiedCallback } from '@node-saml/passport-saml';
 import { logger, stream } from '@utils/logger';
@@ -366,6 +367,11 @@ class App {
         }
       })(req, res, next);
     });
+
+    // Default-deny authentication. Mounted last so the SAML endpoints and the `/health`
+    // probe above it stay reachable, and before initializeRoutes() so every
+    // routing-controllers route sits behind it unless listed in PUBLIC_PATHS.
+    this.app.use(BASE_URL_PREFIX!, defaultAuthGuard);
   }
 
   private initializeRoutes(controllers: NewableFunction[]) {
