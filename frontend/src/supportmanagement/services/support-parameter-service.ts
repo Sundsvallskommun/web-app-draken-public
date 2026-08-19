@@ -3,6 +3,7 @@ import { apiService } from '@common/services/api-service';
 import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 
 import { ApiSupportErrand } from './support-errand-service';
+import { toStrongSupportErrandETag } from './support-errand-write-version';
 
 export interface ParametersObject {
   RECRUITMENT?: Parameter[];
@@ -143,13 +144,17 @@ export const getRecruitmentParameters = (errand: SupportErrandDto) => {
 export const saveParameters = (
   errandId: string,
   municipalityId: string,
-  parameters: { [key: string]: Parameter[] }
+  parameters: { [key: string]: Parameter[] },
+  expectedVersion: number
 ) => {
   const paramsList = Object.values(parameters).flat(1);
+  const ifMatch = toStrongSupportErrandETag(expectedVersion);
   return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, {
-      parameters: paramsList,
-    })
+    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(
+      `supporterrands/${municipalityId}/${errandId}`,
+      { parameters: paramsList },
+      { headers: { 'If-Match': ifMatch } }
+    )
     .catch((e) => {
       console.error('Something went wrong when patching errand');
       throw e;

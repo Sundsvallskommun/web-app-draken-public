@@ -54,9 +54,9 @@ export function InvestigationSchemaFormPanel({
   onRemoveDraft,
 }: InvestigationSchemaFormPanelProps) {
   const [jsonPreviewOpen, setJsonPreviewOpen] = useState(false);
-  const hslRiskValue = definition.key === 'utredning-enhetschef' ? getHslRiskValue(formData) : undefined;
+  const hslRiskValue = definition.schemaName === 'utredning-enhetschef' ? getHslRiskValue(formData) : undefined;
   const renderingSchema = useMemo(
-    () => getInvestigationRenderingSchema(definition.key, definition.schema, formData),
+    () => getInvestigationRenderingSchema(definition.schemaName, definition.schema, formData),
     [definition, formData]
   );
   const jsonPreviewId = `${definition.key}-json-preview`;

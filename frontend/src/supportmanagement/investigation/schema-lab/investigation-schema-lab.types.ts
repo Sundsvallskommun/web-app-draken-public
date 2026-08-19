@@ -1,6 +1,6 @@
-// Only lab-local types belong here. The lab uses the module's canonical vocabulary
-// (InvestigationDocumentKey, InvestigationFormData) imported straight from
-// ../investigation-document, so one concept keeps one name across lab and production.
+export const localInvestigationDocumentKeys = ['utredning-enhetschef', 'utredning-sol-lss', 'utredning-hsl'] as const;
+
+export type LocalInvestigationDocumentKey = (typeof localInvestigationDocumentKeys)[number];
 
 export const investigationLabRoles = ['unitManager', 'lexInvestigator', 'masMar', 'reader'] as const;
 

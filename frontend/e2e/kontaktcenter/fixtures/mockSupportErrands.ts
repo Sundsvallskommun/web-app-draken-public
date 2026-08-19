@@ -2,6 +2,7 @@ import { mockEnv } from '../../fixtures/mock-env';
 
 export const mockEmptySupportErrand = {
   id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+  version: 7,
   // title: 'Empty errand',
   errandNumber: 'KC-00000000',
   priority: 'MEDIUM',
@@ -21,6 +22,7 @@ export const mockEmptySupportErrand = {
 
 export const mockSupportErrand = {
   id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+  version: 7,
   errandNumber: 'KC-00000001',
   title: 'Empty errand',
   priority: 'MEDIUM',
@@ -87,6 +89,7 @@ export const mockSupportErrand = {
 
 export const mockDifferentUserSupportErrand = {
   id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
+  version: 7,
   errandNumber: 'KC-00000001',
   title: 'Empty errand',
   priority: 'MEDIUM',

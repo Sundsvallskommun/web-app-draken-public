@@ -1,6 +1,6 @@
 import { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Checkbox, Disclosure, FormControl, FormLabel, Input, Label, Textarea } from '@sk-web-gui/react';
-import { useSupportStore } from '@stores/index';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import { getRecruitmentParameters, saveParameters } from '@supportmanagement/services/support-parameter-service';
 import { Text } from 'lucide-react';
 import { FC, useMemo, useState } from 'react';
@@ -11,6 +11,7 @@ export const SupportErrandRecruitmentTab: FC<{
   setUnsaved: (unsaved: boolean) => void;
 }> = (props) => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const recruitmentParameterGroups = useMemo<{ [key: string]: Parameter[] }>(
     () => getRecruitmentParameters(supportErrand as any),
     [supportErrand]
@@ -25,10 +26,13 @@ export const SupportErrandRecruitmentTab: FC<{
 
   const handleSubmit = async () => {
     setLoading(true);
-    await saveParameters(supportErrand!.id!, '2281', recruitmentForm.getValues()).then((res) => {
+    try {
+      await saveParameters(supportErrand!.id!, municipalityId, recruitmentForm.getValues(), supportErrand!.version!);
+      props.setUnsaved(false);
+      props.update();
+    } finally {
       setLoading(false);
-      return res;
-    });
+    }
   };
 
   return (

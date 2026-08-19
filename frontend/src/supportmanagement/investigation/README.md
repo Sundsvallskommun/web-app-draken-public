@@ -43,7 +43,9 @@ prefixet `draken:investigation-schema-lab:`. Inga ärenden eller scheman läses 
 - UI Schema äger ordning, accordions, widgets och layout.
 - `common/components/json` äger återanvändbar rendering, inte IAF-specifika fält.
 - `label-classification/` äger labelväljaren och adaptern mellan Support Managements labelträd och Drakens
-  formulärvärden.
+  formulärvärden för strategin `reported-misconduct`.
+- `investigation-classification-policy.ts` äger den generiska klienttolkningen av backendens
+  klassificeringscapability. Den innehåller inga appnamn eller feature-flaggor.
 - `investigation-form-data.ts` äger normalisering, deklarerade beräkningar och riskvärde — delat av både
   produktionsflödet och labben.
 - `schema-lab/` äger exempeldataadapter, mockad `canRead`/`canWrite` och separerad lokal lagring.
@@ -59,23 +61,100 @@ ett enda redigeringsställe, även om samma externa fält kan deklareras av båd
 
 ## Riktigt ärendeflöde
 
-Feature-flaggen `useInvestigation` visar huvudtabben `Utredning`. Varje dokument laddas och sparas via sin egen
-allowlistade BFF-route och kan inte skrivas genom den generiska ärende-PATCH:en. Ett befintligt dokument laddar sitt
-exakta `schemaId`; ett nytt dokument hämtar senaste schema och fryser det ID:t vid första sparningen. `ETag` och
-`If-Match` används för att upptäcka samtidiga ändringar, och lokala formulärvärden behålls vid konflikt.
+`GET supportmanagement/investigation-profile` är produktflödets runtimeprojektion av backendens kanoniska register för
+dokumentnyckel, schemanamn, fliketikett och ansvarig roll. Backend väger in feature-flaggen `useInvestigation` och
+åtkomstkonfigurationen i profilens `state` och dokumentbehörigheter. Profilen deklarerar även vilket Support
+Management-transportmål capabilityn kräver. Om deploymenten använder ett äldre mål blir state `unavailable` innan
+registrering eller dokumentanrop; kravet härleds alltså inte från appnamn i controllern. Huvudtabben `Utredning` visas bara när profilen
+är aktiv och innehåller minst ett dokument; dokumentbehörigheten avgör därefter vilka underflikar som kan läsas och
+skrivas. Vid saknad, ogiltig eller fel appbunden profil stängs flödet
+säkert och befintliga JSON Parameters döljs inte från `Ärendeuppgifter`.
+
+### App-profiler och nya appar
+
+Backendregistret i `backend/src/config/support-investigation-profile.ts` är enda ägare till vilka dokument en app
+har i produktionsflödet. IAF och VOF har två separata, immutabla profiler som för närvarande skapas från samma
+gemensamma bas. De kan därför ändras oberoende senare utan att frontend eller den andra appens profil behöver
+förgrenas.
+
+En ny SupportManagement-app kan konfigurera valfritt antal dokument. Varje post består av:
+
+- `key`: stabil persistensidentitet för JSON Parametern och BFF-routen. En nyckel får inte bytas efter att data har
+  sparats utan en uttrycklig datamigrering.
+- `schemaName`: namnet som används när senaste publicerade schema hämtas för ett nytt dokument. Det behöver inte vara
+  samma sträng som `key`.
+- `tabLabel` och `ownerLabel`: enbart presentation i klienten.
+
+Läs- och skrivrättigheter kommer separat från backendens `SUPPORT_INVESTIGATION_DOCUMENT_ACCESS`. Runtimeprofilen
+projicerar endast `canRead`/`canWrite` för den inloggade användaren; både GET- och PUT-routen kontrollerar samma
+serverägda regel. `canEditSupportManagement` krävs fortfarande för skrivning men ger aldrig ensam åtkomst till ett
+utredningsdokument.
+
+Skyddade dokument kan bara följa med en överlämning till mål som deploymenten uttryckligen har markerat som
+kompatibla i `SUPPORT_INVESTIGATION_HANDOVER_TARGETS`. Varje post innehåller `municipalityId`, `namespace` och
+målcapabilityns `documentKeys`; en ny dokumenttyp i källprofilen stänger överföringen tills målet deklarerats stödja den.
+Backend kontrollerar den faktiska källans dokumentnycklar och användarens läsåtkomst före både preview och execute;
+execute kräver också `canEditSupportManagement`. Saknad allowlist stänger endast överföringen av skyddade dokument,
+inte överlämningar utan JSON Parameters eller ärenden som bara innehåller generiska JSON Parameters.
+
+Standardbeteendet för appar utan `classificationPolicy` är att klassificeringen redigeras i `Grundinformation`.
+Backendens appkonfiguration kan lägga till en diskriminerad capability. IAF och VOF använder för närvarande strategin
+`reported-misconduct`, vars policydata anger ägardokument, exakt parameter-/labelselector, lagrumspekare, tvingade
+lagrum, tillåtna klassificeringsrötter och labelträdets exakta Support Management-vokabulär. `labelTree` deklarerar
+rootens resurs **och** klassificering samt klassificeringarna för owner/category/type; en metadata-root måste matcha
+båda identiteterna och finnas exakt en gång. Backend och frontend konsumerar samma serialiserade policy och har samma
+ägar- och projektionsalgoritm; frontend innehåller ingen separat IAF/VOF- eller feature-flaggsgren. Strategins
+persistensmappning är avsiktligt fast: owner sparas i `classification.category`, category i `classification.type` och
+type som vald label. En framtida app kan återanvända strategin med andra dokumentnycklar, root och
+klassificeringstokens utan att ändra formulärkomponenterna. Appar utan capability behåller den generiska
+TYPE/SUBTYPE-mappningen.
+
+Om profilen eller backendens ägarskapsbeslut är otillgängligt visas IAF/VOF-kategoriseringen skrivskyddad i
+`Grundinformation`. Den generiska ärende-PATCH:en utelämnar då `classification` och `labels`, så orelaterade
+ärendeändringar kan sparas utan att någon av skrivvägarna tar över klassificeringen.
+
+För att slå på en ny app läggs dess dokumentprofil och eventuella capabilities till i backendkonfigurationen, dess
+dokumentåtkomst konfigureras, de namngivna JSON- och UI-schemana publiceras och `useInvestigation` aktiveras. Frontend
+har ingen separat app- eller dokumentlista att uppdatera. Flaggan, profilen, åtkomstkonfigurationen och
+schemapubliceringen är oberoende driftsförutsättningar; en lyckad profilrespons garanterar inte att ett schema är
+publicerat.
+
+Varje dokument laddas och sparas via sin profilkonfigurerade `key` och sin allowlistade BFF-route; `schemaName` används
+separat för att hämta senaste schema. Ett befintligt dokument laddar sitt exakta `schemaId`; ett nytt dokument hämtar
+senaste schema och fryser det ID:t vid första sparningen. Dokumentet kan inte skrivas genom den generiska
+ärende-PATCH:en. Dokumentnyckeln och schema-ID:t binds mot schema-metadata i backend. Exakt stark `If-Match` krävs
+för uppdatering och create-only-precondition används vid första skrivningen; lokala formulärvärden behålls vid
+konflikt.
+
+Dokumentskrivningen skickar dessutom den föräldraärendeversion som formuläret laddades med. BFF:en jämför den mot
+ett färskt ärende, kontrollerar låst status och upprepar kontrollen direkt före dokument-PUT. Det stänger stale- och
+statusbypass i Draken, men Support Managements JSON Parameter-operation villkoras atomiskt endast med dokumentets
+egen ETag. Ett fullständigt skydd mot att föräldraärendet låses i det sista intervallet mellan kontroll och PUT kräver
+därför en atomisk parent-version/status-precondition i upstreamkontraktet.
 
 `Spara utredning` samordnar sparningen av utredningsdokumentet med en smal PATCH av ärendets klassificeringslabels.
-Dokumentet sparas först och label-PATCH:en skickar endast klassificering och labelreferenser. Operationerna är inte
-atomiska. Om dokumentet har sparats men label-PATCH:en misslyckas visas det uttryckligen som ett delvis fel; formuläret
-behåller klassificeringen och nästa försök upprepar endast label-PATCH:en.
+Dokumentet sparas först och label-PATCH:en skickar endast klassificering, labelreferenser, ägande `documentKey`,
+dokumentets ETag och förväntad ärendeversion. Backend verifierar därmed både rätt IAF/VOF-ägardokument och att varken
+dokumentet eller ärendet har ändrats sedan formuläret laddades. Operationerna är inte atomiska. Om dokumentet har
+sparats men label-PATCH:en misslyckas visas det uttryckligen som ett delvis fel; formuläret behåller klassificeringen och
+nästa försök upprepar endast label-PATCH:en.
 
 Label-PATCH:en skickar ärendeversionen som laddades tillsammans med formuläret. BFF:en läser den aktuella versionen,
 avvisar en inaktuell klient med konflikt och vidarebefordrar samma version som `If-Match`. Efter en lyckad sparning
 ersätts klientens version med den version som läses tillbaka från Support Management.
 
 När flaggen är avstängd ligger kategoriseringen kvar under `Grundinformation` och utredningsparametrarna visas
-skrivskyddade under `Ärendeuppgifter`. Det ger en direkt rollback utan datamigrering. Nuvarande skrivbehörighet är den
-grova `canEditSupportManagement`; rollspecifika rättigheter per utredningsdel är medvetet inte införda ännu.
+skrivskyddade under `Ärendeuppgifter`. Det ger en direkt rollback utan datamigrering. När flaggtjänsten är
+otillgänglig blir state i stället `unavailable`: skyddade skrivningar stoppas med 503 medan orelaterade ärendefält kan
+sparas. För en implementation där utredningen äger klassificeringen stoppas även nyregistrering tills policyn kan
+avgöras igen, så att inget oklassificerbart ärende skapas.
+
+Runtimeprofilens valfria `labelFilter` beskriver generiska filtergrupper och fält. Frontend projicerar dem mot live
+label-metadata och skickar hela identiteten `(groupKey, fieldKey, resourcePath)`. Backend validerar samma identitet
+mot samma metadata innan filteruttrycket byggs; handskrivna eller inaktuella val avvisas i stället för att tyst bredda
+sökningen. Profilens `registration`-capability avgör dessutom om registreringsvägen visas. IAF/VOF skapar ett nytt
+ärende med explicit vanlig avvikelse (`REPORT_TYPE/DEVIATION` och `eventType=AVVIKELSE`), medan lagrumsstyrd
+klassificering fortsatt ägs av utredningen.
 
 All data som läses från RJSF eller localStorage normaliseras mot det aktuella schemat före rendering och lagring.
 Okända fält tas bort, liksom villkorsstyrda värden som inte längre gäller (exempelvis IVO-ärendenummer när IVO är
@@ -88,7 +167,8 @@ JSON Parameter.
 De lokala artefakterna för `utredning-enhetschef` och `utredning-sol-lss` är version 1.1 och deklarerar
 `errandClassification`; `utredning-hsl` ligger kvar på version 1.0. För redan bundna manager- och SOL/LSS-dokument
 med schema till och med version 1.0 injicerar runtime samma externa placering som en bakåtkompatibel fallback.
-Ägarskapet bestäms dock centralt av IAF:s utredningsfeature, inte av en enskild schemadeklaration. Om även ett nyare
+Ägarskapet bestäms dock centralt av runtimeprofilens klassificeringspolicy, inte av en enskild schemadeklaration. Om
+även ett nyare
 schema saknar deklarationen behåller därför utredningen klassificeringen, placerar den i en säker standardsektion och
 visar en varning i stället för att skapa dubbla eller saknade redigeringsvägar.
 Artefakterna i repot är publiceringsunderlag och innebär inte i sig att någon schemaversion har publicerats.
@@ -96,7 +176,11 @@ Artefakterna i repot är publiceringsunderlag och innebär inte i sig att någon
 ## Verifiering
 
 ```sh
+yarn test:investigation-form-data
+yarn test:investigation-profile
+yarn test:investigation-classification-policy
 yarn test:investigation-schemas
+yarn test:unit
 yarn type-check
 yarn lint:strict
 ```

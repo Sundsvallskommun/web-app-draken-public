@@ -1,6 +1,6 @@
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 
-import { InvestigationDocumentKey, InvestigationFormData } from '../investigation-document';
+import { InvestigationFormData } from '../investigation-document';
 import investigationSchemaCases from '../schemas/fixtures/investigation-schema-cases.json';
 import managerSchemaRequest from '../schemas/utredning-enhetschef.schema-request.json';
 import managerUiSchemaRequest from '../schemas/utredning-enhetschef.ui-schema-request.json';
@@ -8,6 +8,7 @@ import hslSchemaRequest from '../schemas/utredning-hsl.schema-request.json';
 import hslUiSchemaRequest from '../schemas/utredning-hsl.ui-schema-request.json';
 import solLssSchemaRequest from '../schemas/utredning-sol-lss.schema-request.json';
 import solLssUiSchemaRequest from '../schemas/utredning-sol-lss.ui-schema-request.json';
+import { LocalInvestigationDocumentKey } from './investigation-schema-lab.types';
 
 interface JsonSchemaRequest {
   name: string;
@@ -22,7 +23,8 @@ interface UiSchemaRequest {
 }
 
 export interface InvestigationSchemaDefinition {
-  key: InvestigationDocumentKey;
+  key: LocalInvestigationDocumentKey;
+  schemaName: string;
   tabLabel: string;
   ownerLabel: string;
   description: string;
@@ -37,7 +39,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function readJsonSchemaRequest(value: unknown, expectedName: InvestigationDocumentKey): JsonSchemaRequest {
+function readJsonSchemaRequest(value: unknown, expectedName: LocalInvestigationDocumentKey): JsonSchemaRequest {
   if (
     !isRecord(value) ||
     value.name !== expectedName ||
@@ -56,7 +58,7 @@ function readJsonSchemaRequest(value: unknown, expectedName: InvestigationDocume
   };
 }
 
-function readUiSchemaRequest(value: unknown, expectedName: InvestigationDocumentKey): UiSchemaRequest {
+function readUiSchemaRequest(value: unknown, expectedName: LocalInvestigationDocumentKey): UiSchemaRequest {
   if (!isRecord(value) || typeof value.description !== 'string' || !isRecord(value.value)) {
     throw new Error(`Ogiltig lokal UI-schemaartefakt för ${expectedName}.`);
   }
@@ -67,7 +69,7 @@ function readUiSchemaRequest(value: unknown, expectedName: InvestigationDocument
   };
 }
 
-function readExampleFormData(value: unknown, expectedName: InvestigationDocumentKey): InvestigationFormData {
+function readExampleFormData(value: unknown, expectedName: LocalInvestigationDocumentKey): InvestigationFormData {
   if (!isRecord(value) || !isRecord(value[expectedName]) || !isRecord(value[expectedName].valid)) {
     throw new Error(`Ogiltig lokal exempelfixture för ${expectedName}.`);
   }
@@ -82,7 +84,7 @@ function createSchemaDefinition({
   schemaRequestValue,
   uiSchemaRequestValue,
 }: {
-  key: InvestigationDocumentKey;
+  key: LocalInvestigationDocumentKey;
   tabLabel: string;
   ownerLabel: string;
   schemaRequestValue: unknown;
@@ -94,6 +96,7 @@ function createSchemaDefinition({
 
   return {
     key,
+    schemaName: schemaRequest.name,
     tabLabel,
     ownerLabel,
     description:
@@ -130,7 +133,9 @@ export const investigationSchemaDefinitions: readonly InvestigationSchemaDefinit
   }),
 ];
 
-export function getInvestigationSchemaDefinition(schemaKey: InvestigationDocumentKey): InvestigationSchemaDefinition {
+export function getInvestigationSchemaDefinition(
+  schemaKey: LocalInvestigationDocumentKey
+): InvestigationSchemaDefinition {
   const definition = investigationSchemaDefinitions.find(({ key }) => key === schemaKey);
   if (!definition) throw new Error(`Utredningsschema saknas för ${schemaKey}.`);
 

@@ -1,10 +1,10 @@
 import TextEditor from '@common/components/dynamic-text-editor';
 import { ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
-import { isIAFOrVOF, isLOK } from '@common/services/application-service';
+import { isLOK } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, cx, FormControl, FormErrorMessage, FormLabel, Select, Textarea } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
-import { investigationOwnsSupportErrandClassification } from '@supportmanagement/investigation/investigation-classification-ownership';
+import { getSupportErrandClassificationPlacement } from '@supportmanagement/investigation/investigation-classification-ownership';
 import {
   ContactChannelType,
   getErrandParameterValue,
@@ -47,6 +47,11 @@ export const SupportErrandBasicsAboutForm: FC<{
 
   const { description } = watch();
   const userHasEditedDescription = useRef(false);
+  const classificationPlacement = getSupportErrandClassificationPlacement();
+  const basicsOwnsClassification = classificationPlacement.owner === 'basics';
+  const classificationUnavailable = classificationPlacement.owner === 'unavailable';
+  const classificationPolicy =
+    classificationPlacement.categorization === 'reported-misconduct' ? classificationPlacement.policy : undefined;
 
   // useLayoutEffect fires synchronously after DOM update, before Quill's onChange
   useLayoutEffect(() => {
@@ -64,7 +69,7 @@ export const SupportErrandBasicsAboutForm: FC<{
       ) : null}
 
       {/* FIXME complicated logic for selecting categorization. Should be simplified. */}
-      {appConfig.features.useTwoLevelCategorization && !investigationOwnsSupportErrandClassification() ? (
+      {appConfig.features.useTwoLevelCategorization && basicsOwnsClassification ? (
         <div className="flex gap-24">
           <TwoLevelCategorization />
         </div>
@@ -72,9 +77,13 @@ export const SupportErrandBasicsAboutForm: FC<{
 
       {/* FIXME Same as above */}
       {appConfig.features.useThreeLevelCategorization ? (
-        isIAFOrVOF() && !investigationOwnsSupportErrandClassification() ? (
-          <IafLabelCategorization supportMetadata={supportMetadata} disabled={isSupportErrandLocked(supportErrand)} />
-        ) : !isIAFOrVOF() ? (
+        classificationPolicy && classificationPlacement.owner !== 'investigation' ? (
+          <IafLabelCategorization
+            supportMetadata={supportMetadata}
+            labelTree={classificationPolicy.labelTree}
+            disabled={classificationUnavailable || isSupportErrandLocked(supportErrand)}
+          />
+        ) : !classificationPolicy && basicsOwnsClassification ? (
           <div className="w-full flex gap-20">
             <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
           </div>

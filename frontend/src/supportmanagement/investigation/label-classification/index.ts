@@ -2,6 +2,7 @@ export type {
   IafLabelClassificationBinding,
   IafLabelClassificationModel,
   IafLabelClassificationUpdate,
+  LabelClassificationLegalBaseRule,
   PersistedIafLabelClassificationState,
 } from './iaf-supportmanagement-label-classification';
 export {
@@ -9,7 +10,6 @@ export {
   createIafLabelClassificationModel,
   getIafLabelClassificationSelection,
   getPersistedIafLabelClassificationState,
-  IAF_LEGAL_BASE,
 } from './iaf-supportmanagement-label-classification';
 export type { IafVofLabelClassificationGroup } from './iaf-vof-label-classification.mock';
 export {

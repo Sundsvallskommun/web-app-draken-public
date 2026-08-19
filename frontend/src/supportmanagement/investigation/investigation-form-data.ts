@@ -1,6 +1,6 @@
 import type { RJSFSchema } from '@rjsf/utils';
 
-import type { InvestigationDocumentKey, InvestigationFormData } from './investigation-document';
+import type { InvestigationFormData } from './investigation-document';
 
 interface CalculationMetadata {
   formula: 'probability * severity';
@@ -25,7 +25,7 @@ function resolveLocalReference(schema: RJSFSchema | boolean, rootSchema: RJSFSch
   }
 
   const definitionName = schema.$ref.slice('#/$defs/'.length);
-  const definition = schema.$defs?.[definitionName];
+  const definition = rootSchema.$defs?.[definitionName];
   if (!isRecord(definition)) return schema;
 
   const { $ref: _reference, ...schemaSiblings } = schema;
@@ -167,16 +167,16 @@ function applyDeclaredCalculations(schema: RJSFSchema, formData: InvestigationFo
  * calculations declared by the schema are applied.
  */
 export function normalizeInvestigationFormData(
-  documentKey: InvestigationDocumentKey,
+  schemaName: string,
   schema: RJSFSchema,
   formData: InvestigationFormData
 ): InvestigationFormData {
   const prunedData = pruneValueToSchema(schema, formData, schema);
   const schemaOwnedData = isRecord(prunedData) ? prunedData : {};
   const conditionallyNormalizedData =
-    documentKey === 'utredning-enhetschef'
+    schemaName === 'utredning-enhetschef'
       ? normalizeManagerConditions(schemaOwnedData)
-      : documentKey === 'utredning-hsl'
+      : schemaName === 'utredning-hsl'
       ? normalizeHslConditions(schemaOwnedData)
       : schemaOwnedData;
 
@@ -188,11 +188,11 @@ export function normalizeInvestigationFormData(
  * accepts for the selected legal bases. The source schema remains untouched.
  */
 export function getInvestigationRenderingSchema(
-  documentKey: InvestigationDocumentKey,
+  schemaName: string,
   schema: RJSFSchema,
   formData: InvestigationFormData
 ): RJSFSchema {
-  if (documentKey !== 'utredning-enhetschef') return schema;
+  if (schemaName !== 'utredning-enhetschef') return schema;
 
   const properties = { ...schema.properties };
   const { hasHsl, hasSolOrLss } = getManagerLegalBaseFlags(formData);

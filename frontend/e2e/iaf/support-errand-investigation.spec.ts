@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures/base.fixture';
 import {
   allExistingInvestigationDocuments,
+  defaultInvestigationProfile,
   errandNumber,
   existingManagerDocument,
   iafLabelFixture,
@@ -37,6 +38,15 @@ async function openInvestigation(page: Page) {
 }
 
 test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
+  test('hämtar inte den auth-skyddade profilen på login-sidan', async ({ page }) => {
+    const trace = await installIafApiMock(page);
+
+    await page.goto('login');
+
+    await expect(page.locator('[data-cy="loginButton"]')).toBeVisible();
+    expect(trace.profileGets).toBe(0);
+  });
+
   test('visar klassificeringen endast i utredningen när utredningsfeaturen äger den', async ({
     page,
     dismissCookieConsent,
@@ -63,6 +73,305 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await openInvestigation(page);
     await expect(page.locator(classificationFieldSelector)).toHaveCount(1);
   });
+
+  test('renderar exakt de dokument som den aktuella appens profil tillåter', async ({ page, dismissCookieConsent }) => {
+    const profile = defaultInvestigationProfile();
+    const managerDocument = profile.documents.find(({ key }) => key === managerKey)!;
+    const solLssDocument = profile.documents.find(({ key }) => key === solLssKey)!;
+    profile.documents = [
+      { ...solLssDocument, tabLabel: 'Först: SoL/LSS' },
+      { ...managerDocument, tabLabel: 'Sedan: enhetschef' },
+    ];
+    const trace = await installIafApiMock(page, { investigationProfile: profile });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    const investigation = page.locator('[data-cy="support-investigation-tab"]');
+    await expect(investigation.getByRole('tab')).toHaveCount(2);
+    await expect(investigation.getByRole('tab').nth(0)).toHaveText('Först: SoL/LSS');
+    await expect(investigation.getByRole('tab').nth(1)).toHaveText('Sedan: enhetschef');
+    await expect(investigation.getByRole('tab', { name: 'Utredning HSL', exact: true })).toHaveCount(0);
+    await expect.poll(() => [...new Set(trace.documentGets)].sort()).toEqual([managerKey, solLssKey].sort());
+  });
+
+  test('håller dokumentnyckeln skild från schemanamnet', async ({ page, dismissCookieConsent }) => {
+    const profile = defaultInvestigationProfile();
+    profile.documents = [
+      {
+        key: 'manager-investigation',
+        schemaName: 'utredning-enhetschef',
+        tabLabel: 'Profilstyrd utredning',
+        ownerLabel: 'Testroll',
+        permissions: { canRead: true, canWrite: true },
+      },
+    ];
+    const trace = await installIafApiMock(page, {
+      documents: {},
+      investigationProfile: profile,
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    const investigation = page.locator('[data-cy="support-investigation-tab"]');
+    await expect(investigation.getByRole('tab')).toHaveCount(1);
+    await expect(investigation.getByRole('tab', { name: 'Profilstyrd utredning', exact: true })).toBeVisible();
+    await expect(page.locator('[data-cy="investigation-document-manager-investigation"]')).toContainText(
+      'Ansvarig roll: Testroll'
+    );
+    await expect.poll(() => [...new Set(trace.documentGets)]).toEqual(['manager-investigation']);
+    await expect.poll(() => [...new Set(trace.latestSchemaNames)]).toEqual(['utredning-enhetschef']);
+  });
+
+  test('filtrerar en profilkonfigurerad dokumentnyckel från Ärendeuppgifter', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const profile = defaultInvestigationProfile();
+    profile.documents = [
+      {
+        key: 'manager-investigation',
+        schemaName: 'utredning-enhetschef',
+        tabLabel: 'Profilstyrd utredning',
+        ownerLabel: 'Testroll',
+        permissions: { canRead: true, canWrite: true },
+      },
+    ];
+    const existing = existingManagerDocument();
+    existing.key = 'manager-investigation';
+    existing.value.investigationText = '<p>SKA ENDAST VISAS UNDER PROFILENS UTREDNING</p>';
+    await installIafApiMock(page, {
+      documents: { 'manager-investigation': existing },
+      investigationProfile: profile,
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await page.getByRole('tab', { name: 'Ärendeuppgifter', exact: true }).click();
+
+    const details = page.getByRole('heading', { name: 'Ärendeuppgifter', exact: true }).locator('..');
+    await expect(details.getByRole('textbox', { name: 'Händelse från Katla', exact: true })).toHaveValue(
+      'Katla från web-app-katla-sm'
+    );
+    await expect(details).not.toContainText('SKA ENDAST VISAS UNDER PROFILENS UTREDNING');
+  });
+
+  test('behåller kategoriseringen i Grundinformation när IAF/VOF:s ägardokument saknas', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const profile = defaultInvestigationProfile();
+    profile.documents = profile.documents.filter(({ schemaName }) => schemaName === 'utredning-enhetschef');
+    const trace = await installIafApiMock(page, {
+      documents: { [managerKey]: existingManagerDocument() },
+      investigationProfile: profile,
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await expect(page.locator('[data-cy="iaf-label-categorization"]')).toBeVisible();
+    await page
+      .locator('[data-cy="label-classification-type"]')
+      .selectOption(iafLabelFixture.classification.medication.resourcePath);
+    await page
+      .locator('[data-cy="label-classification-subtype"]')
+      .selectOption(iafLabelFixture.classification.incorrectAdministration.resourcePath);
+    await page
+      .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')
+      .filter({ hasText: 'Spara ärende' })
+      .click();
+    await expect.poll(() => trace.errandPatches.length).toBe(1);
+    expect(trace.errandPatches[0]).toEqual(
+      expect.objectContaining({
+        classification: {
+          category: iafLabelFixture.classification.hslOwner.resourcePath,
+          type: iafLabelFixture.classification.medication.resourcePath,
+        },
+      })
+    );
+
+    await openInvestigation(page);
+    await expect(page.locator(classificationFieldSelector)).toHaveCount(0);
+    await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
+    await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+
+    await expect.poll(() => trace.puts.length).toBe(1);
+    expect(trace.classificationPatches).toHaveLength(0);
+  });
+
+  test('faller säkert tillbaka när profilen gäller en annan app', async ({ page, dismissCookieConsent }) => {
+    const existing = existingManagerDocument();
+    existing.value.investigationText = '<p>BEFINTLIG UTREDNING SKA VARA SYNLIG</p>';
+    const trace = await installIafApiMock(page, {
+      documents: { [managerKey]: existing },
+      investigationProfileResponse: {
+        application: 'KC',
+        state: 'inactive',
+        registration: { mode: 'enabled' },
+        documents: [],
+      },
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+
+    await expect(page.locator('[data-cy="investigation-profile-error"]')).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
+    await expect(page.locator('[data-cy="iaf-label-categorization"]')).toBeVisible();
+    await expect(page.locator('[data-cy="label-classification-type"]')).toBeDisabled();
+
+    await page.getByRole('tab', { name: 'Ärendeuppgifter', exact: true }).click();
+    await expect(page.getByText('BEFINTLIG UTREDNING SKA VARA SYNLIG', { exact: false })).toBeVisible();
+    expect(trace.profileGets).toBe(1);
+  });
+
+  test('låter orelaterade ärendefält sparas när klassificeringsägarskapet är otillgängligt', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const profile = defaultInvestigationProfile();
+    profile.state = 'unavailable';
+    const trace = await installIafApiMock(page, { investigationProfile: profile });
+
+    await visitErrand(page, dismissCookieConsent);
+
+    await expect(page.locator('[data-cy="investigation-profile-unavailable"]')).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
+    await expect(page.locator('[data-cy="label-classification-type"]')).toBeDisabled();
+
+    await page.locator('[data-cy="priority-input"]').selectOption('HIGH');
+    await page
+      .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')
+      .filter({ hasText: 'Spara ärende' })
+      .click();
+
+    await expect.poll(() => trace.errandPatches.length).toBe(1);
+    expect(trace.errandPatches[0]).toEqual(expect.objectContaining({ priority: 'HIGH' }));
+    expect(trace.errandPatches[0]).not.toHaveProperty('classification');
+    expect(trace.errandPatches[0]).not.toHaveProperty('labels');
+  });
+
+  test('låter orelaterade ärendefält sparas när profilhämtningen misslyckas', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const trace = await installIafApiMock(page, { investigationProfileStatus: 500 });
+
+    await visitErrand(page, dismissCookieConsent);
+
+    await expect(page.locator('[data-cy="investigation-profile-error"]')).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
+    await expect(page.locator('[data-cy="label-classification-type"]')).toBeDisabled();
+
+    await page.locator('[data-cy="priority-input"]').selectOption('HIGH');
+    await page
+      .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')
+      .filter({ hasText: 'Spara ärende' })
+      .click();
+
+    await expect.poll(() => trace.errandPatches.length).toBe(1);
+    expect(trace.errandPatches[0]).toEqual(expect.objectContaining({ priority: 'HIGH' }));
+    expect(trace.errandPatches[0]).not.toHaveProperty('classification');
+    expect(trace.errandPatches[0]).not.toHaveProperty('labels');
+  });
+
+  test('behandlar en tom inaktiv profil som ett explicit legacyflöde', async ({ page, dismissCookieConsent }) => {
+    const profile = defaultInvestigationProfile();
+    profile.state = 'inactive';
+    profile.documents = [];
+    await installIafApiMock(page, { investigationProfile: profile });
+
+    await visitErrand(page, dismissCookieConsent);
+
+    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
+    await expect(page.locator('[data-cy="investigation-profile-error"]')).toHaveCount(0);
+    await expect(page.locator('[data-cy="investigation-profile-unavailable"]')).toHaveCount(0);
+    await expect(page.locator('[data-cy="iaf-label-categorization"]')).toBeVisible();
+  });
+
+  for (const ownerCase of [
+    { eventType: 'AVVIKELSE', ownerKey: 'manager-investigation' },
+    { eventType: 'MISSFORHALLANDE', ownerKey: 'misconduct-investigation' },
+  ] as const) {
+    test(`löser IAF/VOF-regelns ägardokument via profilnycklar för ${ownerCase.eventType}`, async ({
+      page,
+      dismissCookieConsent,
+    }) => {
+      const profile = defaultInvestigationProfile();
+      profile.documents = [
+        {
+          key: 'manager-investigation',
+          schemaName: 'utredning-enhetschef',
+          tabLabel: 'Chefens utredning',
+          ownerLabel: 'Enhetschef',
+          permissions: { canRead: true, canWrite: true },
+        },
+        {
+          key: 'misconduct-investigation',
+          schemaName: 'utredning-sol-lss',
+          tabLabel: 'Missförhållandeutredning',
+          ownerLabel: 'LEX-utredare',
+          permissions: { canRead: true, canWrite: true },
+        },
+      ];
+      const sourceDocuments = allExistingInvestigationDocuments();
+      const trace = await installIafApiMock(page, {
+        documents: {
+          'manager-investigation': {
+            ...sourceDocuments['utredning-enhetschef'],
+            key: 'manager-investigation',
+          },
+          'misconduct-investigation': {
+            ...sourceDocuments['utredning-sol-lss'],
+            key: 'misconduct-investigation',
+          },
+        },
+        eventType: ownerCase.eventType,
+        investigationProfile: profile,
+      });
+
+      await visitErrand(page, dismissCookieConsent);
+      await openInvestigation(page);
+
+      for (const { key } of profile.documents) {
+        await expect(
+          page.locator(`[data-cy="investigation-document-${key}"]`).locator(classificationFieldSelector)
+        ).toHaveCount(key === ownerCase.ownerKey ? 1 : 0);
+      }
+
+      if (ownerCase.eventType === 'MISSFORHALLANDE') {
+        await page.getByRole('tab', { name: 'Missförhållandeutredning', exact: true }).click();
+      }
+      const ownerDocument = page.locator(`[data-cy="investigation-document-${ownerCase.ownerKey}"]`);
+      const ownerClassification = ownerDocument.locator(classificationFieldSelector);
+      if (ownerCase.eventType === 'MISSFORHALLANDE') {
+        await ownerClassification
+          .locator('[data-cy="label-classification-type"]')
+          .selectOption(iafLabelFixture.classification.executionDeficiency.resourcePath);
+        await ownerClassification
+          .locator('[data-cy="label-classification-subtype"]')
+          .selectOption(iafLabelFixture.classification.supportNotProvided.resourcePath);
+      } else {
+        await ownerClassification
+          .locator('[data-cy="label-classification-type"]')
+          .selectOption(iafLabelFixture.classification.medication.resourcePath);
+        await ownerClassification
+          .locator('[data-cy="label-classification-subtype"]')
+          .selectOption(iafLabelFixture.classification.incorrectAdministration.resourcePath);
+      }
+      await ownerDocument.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+
+      await expect.poll(() => trace.classificationPatches.length).toBe(1);
+      expect(trace.puts).toHaveLength(0);
+      expect(trace.classificationPatches[0].body).toEqual(
+        expect.objectContaining({
+          documentKey: ownerCase.ownerKey,
+          documentETag:
+            ownerCase.eventType === 'MISSFORHALLANDE'
+              ? sourceDocuments['utredning-sol-lss'].etag
+              : sourceDocuments['utredning-enhetschef'].etag,
+        })
+      );
+    });
+  }
 
   test('visar tre dokumentflikar och låser ett befintligt dokument till dess exakta schemaversion', async ({
     page,
@@ -237,6 +546,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await sidebarSaveButton.click();
 
     await expect.poll(() => trace.errandPatches.length).toBe(1);
+    expect(trace.profileGets).toBe(1);
     expect(trace.errandPatches[0]).toEqual(
       expect.objectContaining({
         classification: {
@@ -527,7 +837,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     }
 
     expect(trace.classificationPatches[0].body).toEqual({
-      expectedVersion: 7,
+      expectedVersion: 8,
       classification: {
         category: iafLabelFixture.classification.hslOwner.resourcePath,
         type: iafLabelFixture.classification.medication.resourcePath,
@@ -537,10 +847,14 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
         { id: iafLabelFixture.classification.medication.id },
         { id: iafLabelFixture.classification.incorrectAdministration.id },
       ],
+      documentKey: managerKey,
+      documentETag: '"8"',
     });
     expect(Object.keys(trace.classificationPatches[0].body as Record<string, unknown>).sort()).toEqual([
       'categoryLabels',
       'classification',
+      'documentETag',
+      'documentKey',
       'expectedVersion',
     ]);
     await expect(typeSelect).toHaveValue(iafLabelFixture.classification.medication.resourcePath);
@@ -556,7 +870,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.puts).toHaveLength(1);
     expect(trace.classificationPatches[1].body).toEqual(
       expect.objectContaining({
-        expectedVersion: 8,
+        expectedVersion: 9,
         classification: {
           category: iafLabelFixture.classification.hslOwner.resourcePath,
           type: iafLabelFixture.classification.rehab.resourcePath,
@@ -566,8 +880,9 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
   });
 
   test('sparar klassificering från metadata som endast har resourceName', async ({ page, dismissCookieConsent }) => {
+    const existing = existingManagerDocument();
     const trace = await installIafApiMock(page, {
-      documents: { [managerKey]: existingManagerDocument() },
+      documents: { [managerKey]: existing },
       omitLabelResourcePaths: true,
     });
 
@@ -593,6 +908,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
         { id: iafLabelFixture.classification.medication.id },
         { id: iafLabelFixture.classification.incorrectAdministration.id },
       ],
+      documentKey: managerKey,
+      documentETag: existing.etag,
     });
   });
 
@@ -662,7 +979,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     );
     expect(trace.puts).toHaveLength(1);
     expect(trace.classificationPatches).toHaveLength(1);
-    expect(trace.classificationPatches[0].body).toEqual(expect.objectContaining({ expectedVersion: 7 }));
+    expect(trace.classificationPatches[0].body).toEqual(expect.objectContaining({ expectedVersion: 8 }));
   });
 
   test('behåller lokala ändringar när Support Management svarar med versionskonflikt', async ({
@@ -696,9 +1013,10 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     page,
     dismissCookieConsent,
   }) => {
+    const documents = allExistingInvestigationDocuments();
     const trace = await installIafApiMock(page, {
       eventType: 'MISSFORHALLANDE',
-      documents: allExistingInvestigationDocuments(),
+      documents,
     });
 
     await visitErrand(page, dismissCookieConsent);
@@ -751,6 +1069,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
         { id: iafLabelFixture.classification.executionDeficiency.id },
         { id: iafLabelFixture.classification.supportNotProvided.id },
       ],
+      documentKey: solLssKey,
+      documentETag: documents[solLssKey].etag,
     });
   });
 

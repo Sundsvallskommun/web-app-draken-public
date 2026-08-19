@@ -11,11 +11,55 @@ import solLssUiSchemaRequest from '../../../src/supportmanagement/investigation/
 export const backendOrigin = 'http://localhost:3001';
 export const municipalityId = '2281';
 export const errandId = 'ca97b2be-dc37-4707-b5bb-bae98936a183';
-export const errandNumber = 'IAF-2026-0001';
-export const katlaSchemaId = '2281_katla-iaf-report_1.0';
+export const application = (process.env.NEXT_PUBLIC_APPLICATION ?? 'IAF').trim().toUpperCase();
+const applicationSlug = application.toLowerCase();
+export const errandNumber = `${application}-2026-0001`;
+export const katlaSchemaId = `2281_katla-${applicationSlug}-report_1.0`;
 
 export const investigationKeys = ['utredning-enhetschef', 'utredning-sol-lss', 'utredning-hsl'] as const;
 export type InvestigationKey = (typeof investigationKeys)[number];
+
+export interface MockInvestigationProfile {
+  application: string;
+  state: 'active' | 'inactive' | 'unavailable';
+  registration: { mode: 'enabled' | 'disabled' };
+  documents: Array<{
+    key: string;
+    schemaName: InvestigationKey;
+    tabLabel: string;
+    ownerLabel: string;
+    permissions: { canRead: boolean; canWrite: boolean };
+  }>;
+}
+
+export const defaultInvestigationProfile = (): MockInvestigationProfile => ({
+  application,
+  state: 'active',
+  registration: { mode: 'disabled' },
+  documents: [
+    {
+      key: 'utredning-enhetschef',
+      schemaName: 'utredning-enhetschef',
+      tabLabel: 'Utredning enhetschef',
+      ownerLabel: 'Enhetschef',
+      permissions: { canRead: true, canWrite: true },
+    },
+    {
+      key: 'utredning-sol-lss',
+      schemaName: 'utredning-sol-lss',
+      tabLabel: 'Utredning SoL/LSS',
+      ownerLabel: 'LEX-utredare',
+      permissions: { canRead: true, canWrite: true },
+    },
+    {
+      key: 'utredning-hsl',
+      schemaName: 'utredning-hsl',
+      tabLabel: 'Utredning HSL',
+      ownerLabel: 'MAS/MAR',
+      permissions: { canRead: true, canWrite: true },
+    },
+  ],
+});
 
 type JsonObject = Record<string, unknown>;
 
@@ -32,7 +76,7 @@ interface UiSchemaRequest {
 }
 
 interface InvestigationDocument {
-  key: InvestigationKey;
+  key: string;
   schemaId: string;
   value: JsonObject;
   version: number;
@@ -40,7 +84,7 @@ interface InvestigationDocument {
 }
 
 interface PutTrace {
-  key: InvestigationKey;
+  key: string;
   headers: Record<string, string>;
   body: unknown;
 }
@@ -51,9 +95,10 @@ interface ClassificationPatchTrace {
 }
 
 export interface IafApiTrace {
+  profileGets: number;
   exactSchemaIds: string[];
   latestSchemaNames: string[];
-  documentGets: InvestigationKey[];
+  documentGets: string[];
   puts: PutTrace[];
   classificationPatches: ClassificationPatchTrace[];
   errandPatches: unknown[];
@@ -64,7 +109,7 @@ export interface IafApiScenario {
   canEdit?: boolean;
   errandStatus?: string;
   eventType?: 'AVVIKELSE' | 'MISSFORHALLANDE';
-  documents?: Partial<Record<InvestigationKey, InvestigationDocument>>;
+  documents?: Record<string, InvestigationDocument>;
   featureFlags?: Array<{ name: string; enabled: boolean; value?: string }>;
   putResult?: 'success' | 'conflict';
   classificationPatchResult?: 'success' | 'bad-request' | 'conflict' | 'server-error' | 'server-error-once';
@@ -75,6 +120,9 @@ export interface IafApiScenario {
   labels?: MockLabel[];
   labelStructure?: MockLabel[];
   omitLabelResourcePaths?: boolean;
+  investigationProfile?: MockInvestigationProfile;
+  investigationProfileResponse?: unknown;
+  investigationProfileStatus?: number;
 }
 
 const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
@@ -106,7 +154,7 @@ export const existingManagerDocument = (): InvestigationDocument => ({
   schemaId: '2281_utredning-enhetschef_0.9',
   value: structuredClone(validValues['utredning-enhetschef']),
   version: 7,
-  etag: '"manager-v7"',
+  etag: '"7"',
 });
 
 export const allExistingInvestigationDocuments = (): Record<InvestigationKey, InvestigationDocument> =>
@@ -118,7 +166,7 @@ export const allExistingInvestigationDocuments = (): Record<InvestigationKey, In
         schemaId: latestSchemaIds[key],
         value: structuredClone(validValues[key]),
         version: index + 1,
-        etag: `"${key}-v${index + 1}"`,
+        etag: `"${index + 1}"`,
       },
     ])
   ) as Record<InvestigationKey, InvestigationDocument>;
@@ -133,7 +181,7 @@ export interface MockLabel {
 }
 
 export const iafLabelFixture = {
-  namespace: 'HEALTHCAREDEVIATIONIAF',
+  namespace: `HEALTHCAREDEVIATION${application}`,
   provision: {
     hsl: { id: 'provision-hsl-id', resourcePath: 'PROVISION/HSL' },
     sol: { id: 'provision-sol-id', resourcePath: 'PROVISION/SOL' },
@@ -361,14 +409,14 @@ const collectLabels = (labels: readonly MockLabel[]) => {
 collectLabels(labelStructure);
 
 const katlaParameter = {
-  key: 'katla-iaf-report',
+  key: `katla-${applicationSlug}-report`,
   schemaId: katlaSchemaId,
   value: { reportedEvent: 'Katla från web-app-katla-sm' },
 };
 
 const katlaSchema = {
   id: katlaSchemaId,
-  name: 'katla-iaf-report',
+  name: `katla-${applicationSlug}-report`,
   version: '1.0',
   value: {
     $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -447,6 +495,8 @@ interface ClassificationPatchBody {
   expectedVersion: number;
   classification: { category: string; type: string };
   categoryLabels: Array<{ id: string }>;
+  documentKey: string;
+  documentETag: string;
 }
 
 const hasOnlyKeys = (value: JsonObject, keys: readonly string[]): boolean =>
@@ -455,7 +505,8 @@ const hasOnlyKeys = (value: JsonObject, keys: readonly string[]): boolean =>
 const isClassificationPatchBody = (body: unknown): body is ClassificationPatchBody => {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return false;
   const value = body as JsonObject;
-  if (!hasOnlyKeys(value, ['expectedVersion', 'classification', 'categoryLabels'])) return false;
+  if (!hasOnlyKeys(value, ['expectedVersion', 'classification', 'categoryLabels', 'documentKey', 'documentETag']))
+    return false;
   if (!value.classification || typeof value.classification !== 'object' || Array.isArray(value.classification)) {
     return false;
   }
@@ -467,6 +518,8 @@ const isClassificationPatchBody = (body: unknown): body is ClassificationPatchBo
     hasOnlyKeys(classification, ['category', 'type']) &&
     typeof classification.category === 'string' &&
     typeof classification.type === 'string' &&
+    typeof value.documentKey === 'string' &&
+    typeof value.documentETag === 'string' &&
     Array.isArray(value.categoryLabels) &&
     value.categoryLabels.every(
       (labelReference) =>
@@ -480,7 +533,9 @@ const isClassificationPatchBody = (body: unknown): body is ClassificationPatchBo
 };
 
 export async function installIafApiMock(page: Page, scenario: IafApiScenario = {}): Promise<IafApiTrace> {
-  const documents: Partial<Record<InvestigationKey, InvestigationDocument>> = structuredClone(
+  const investigationProfile = scenario.investigationProfile ?? defaultInvestigationProfile();
+  const configuredDocumentKeys = new Set(investigationProfile.documents.map(({ key }) => key));
+  const documents: Record<string, InvestigationDocument> = structuredClone(
     scenario.documents ?? { 'utredning-enhetschef': existingManagerDocument() }
   );
   const eventType = scenario.eventType ?? 'AVVIKELSE';
@@ -511,6 +566,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
   let classificationPatchAttempts = 0;
   let errandVersion = 7;
   const trace: IafApiTrace = {
+    profileGets: 0,
     exactSchemaIds: [],
     latestSchemaNames: [],
     documentGets: [],
@@ -523,14 +579,14 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
   const buildErrand = () => ({
     id: errandId,
     errandNumber,
-    title: 'IAF-avvikelse för test',
+    title: `${application}-avvikelse för test`,
     description: '<p>Inrapporterad avvikelse.</p>',
     priority: 'MEDIUM',
     status: scenario.errandStatus ?? 'ONGOING',
     resolution: 'NONE',
     channel: 'WEB_UI',
-    assignedUserId: 'iaf.test',
-    reporterUserId: 'iaf.reporter',
+    assignedUserId: `${applicationSlug}.test`,
+    reporterUserId: `${applicationSlug}.reporter`,
     created: '2026-08-01T10:00:00.000+02:00',
     modified: '2026-08-12T09:00:00.000+02:00',
     version: errandVersion,
@@ -550,12 +606,11 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     ],
     jsonParameters: [
       katlaParameter,
-      ...investigationKeys.flatMap((key) => {
-        const document = documents[key];
-        return document
-          ? [{ key: document.key, schemaId: document.schemaId, value: structuredClone(document.value) }]
-          : [];
-      }),
+      ...Object.values(documents).map((document) => ({
+        key: document.key,
+        schemaId: document.schemaId,
+        value: structuredClone(document.value),
+      })),
     ],
   });
 
@@ -566,6 +621,24 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
 
     if (method === 'GET' && path.endsWith('/featureflags')) {
       await fulfillJson(route, scenario.featureFlags ?? []);
+      return;
+    }
+
+    if (method === 'GET' && path.endsWith('/supportmanagement/investigation-profile')) {
+      trace.profileGets += 1;
+      const configuredResponse =
+        scenario.investigationProfileResponse === undefined
+          ? investigationProfile
+          : scenario.investigationProfileResponse;
+      const featureFlagState = scenario.featureFlags?.find(({ name }) => name === 'useInvestigation')?.enabled;
+      const response =
+        featureFlagState === false &&
+        configuredResponse &&
+        typeof configuredResponse === 'object' &&
+        !Array.isArray(configuredResponse)
+          ? { ...configuredResponse, state: 'inactive' }
+          : configuredResponse;
+      await fulfillJson(route, response, scenario.investigationProfileStatus ?? 200);
       return;
     }
 
@@ -636,6 +709,10 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         await fulfillJson(route, { message: 'Ärendets klassificering har ändrats sedan den laddades.' }, 409);
         return;
       }
+      if (documents[body.documentKey]?.etag !== body.documentETag) {
+        await fulfillJson(route, { message: 'Utredningsdokumentet har ändrats.' }, 409);
+        return;
+      }
 
       const resolvedCategoryLabels = body.categoryLabels.map(({ id }) => allLabelsById.get(id));
       if (resolvedCategoryLabels.some((resolvedLabel) => !resolvedLabel)) {
@@ -689,7 +766,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     const documentMatch = path.match(/\/json-parameters\/([^/]+)$/u);
     if (documentMatch) {
       const key = decodeURIComponent(documentMatch[1]);
-      if (!isInvestigationKey(key)) {
+      if (!configuredDocumentKeys.has(key)) {
         await fulfillJson(route, { message: 'Unsupported investigation document' }, 400);
         return;
       }
@@ -734,19 +811,23 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
           return;
         }
 
-        const previousVersion = documents[key]?.version ?? 0;
+        const existingDocument = documents[key];
+        const previousVersion = existingDocument?.version ?? -1;
+        const nextVersion = previousVersion + 1;
         const updated: InvestigationDocument = {
           key,
           schemaId: body.schemaId,
           value: structuredClone(body.value as JsonObject),
-          version: previousVersion + 1,
-          etag: `"${key}-v${previousVersion + 1}"`,
+          version: nextVersion,
+          etag: `"${nextVersion}"`,
         };
         documents[key] = updated;
+        errandVersion += 1;
         const { etag, ...responseDocument } = updated;
-        await fulfillJson(route, responseDocument, 200, {
+        await fulfillJson(route, responseDocument, existingDocument ? 200 : 201, {
           etag,
-          'access-control-expose-headers': 'ETag',
+          'x-errand-version': String(errandVersion),
+          'access-control-expose-headers': 'ETag, X-Errand-Version',
         });
         return;
       }
@@ -804,12 +885,13 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
           if (!section || typeof section !== 'object' || Array.isArray(section)) return section;
           const fields = (section as JsonObject).fields;
           if (!Array.isArray(fields)) return section;
-          const fieldsWithoutClassification = fields.filter(
-            (field) => field !== '$external:errandClassification'
-          );
+          const fieldsWithoutClassification = fields.filter((field) => field !== '$external:errandClassification');
           return {
             ...(section as JsonObject),
-            fields: index === 0 ? ['$external:errandClassification', ...fieldsWithoutClassification] : fieldsWithoutClassification,
+            fields:
+              index === 0
+                ? ['$external:errandClassification', ...fieldsWithoutClassification]
+                : fieldsWithoutClassification,
           };
         });
       }

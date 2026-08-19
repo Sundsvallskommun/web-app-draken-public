@@ -11,11 +11,15 @@ import { FlaskConical } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import { INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD } from '../investigation-classification';
-import { InvestigationDocumentKey, InvestigationFormData } from '../investigation-document';
+import { InvestigationFormData } from '../investigation-document';
 import { normalizeInvestigationFormData } from '../investigation-form-data';
 import { InvestigationLabelClassificationPanel } from './investigation-label-classification-panel.component';
 import { InvestigationSchemaFormPanel } from './investigation-schema-form-panel.component';
-import { InvestigationLabNotice, InvestigationLabRole } from './investigation-schema-lab.types';
+import {
+  InvestigationLabNotice,
+  InvestigationLabRole,
+  LocalInvestigationDocumentKey,
+} from './investigation-schema-lab.types';
 import { getInvestigationSchemaAccess, investigationLabRoleOptions } from './investigation-schema-lab-access';
 import {
   loadInvestigationDraft,
@@ -27,9 +31,9 @@ import {
 } from './investigation-schema-lab-storage';
 import { getInvestigationSchemaDefinition, investigationSchemaDefinitions } from './investigation-schema-registry';
 
-type DraftsBySchema = Record<InvestigationDocumentKey, InvestigationFormData>;
-type SavedAtBySchema = Partial<Record<InvestigationDocumentKey, string>>;
-type NoticesBySchema = Partial<Record<InvestigationDocumentKey, InvestigationLabNotice>>;
+type DraftsBySchema = Record<LocalInvestigationDocumentKey, InvestigationFormData>;
+type SavedAtBySchema = Partial<Record<LocalInvestigationDocumentKey, string>>;
+type NoticesBySchema = Partial<Record<LocalInvestigationDocumentKey, InvestigationLabNotice>>;
 
 interface InitialLabState {
   drafts: DraftsBySchema;
@@ -115,7 +119,7 @@ function createInitialLabState(): InitialLabState {
   for (const definition of investigationSchemaDefinitions) {
     if (!browserStorage) {
       drafts[definition.key] = normalizeInvestigationFormData(
-        definition.key,
+        definition.schemaName,
         definition.schema,
         definition.exampleFormData
       );
@@ -124,7 +128,7 @@ function createInitialLabState(): InitialLabState {
 
     const loadedDraft = loadInvestigationDraft(browserStorage, definition.key, definition.schemaVersion);
     const initialFormData = loadedDraft.savedAt ? loadedDraft.formData : definition.exampleFormData;
-    drafts[definition.key] = normalizeInvestigationFormData(definition.key, definition.schema, initialFormData);
+    drafts[definition.key] = normalizeInvestigationFormData(definition.schemaName, definition.schema, initialFormData);
 
     if (loadedDraft.savedAt) savedAt[definition.key] = loadedDraft.savedAt;
     if (loadedDraft.warning) notices[definition.key] = { type: 'warning', message: loadedDraft.warning };
@@ -191,7 +195,7 @@ export function InvestigationSchemaLab() {
   const managerLabelCatalog = useMemo(() => getManagerLabelCatalog(drafts['utredning-enhetschef']), [drafts]);
 
   const updateLabelClassification = (
-    schemaKey: InvestigationDocumentKey,
+    schemaKey: LocalInvestigationDocumentKey,
     catalog: LabelClassificationCatalog,
     value: LabelClassificationSelection
   ) => {
@@ -214,15 +218,15 @@ export function InvestigationSchemaLab() {
     }
   };
 
-  const updateDraft = (schemaKey: InvestigationDocumentKey, formData: InvestigationFormData) => {
+  const updateDraft = (schemaKey: LocalInvestigationDocumentKey, formData: InvestigationFormData) => {
     const definition = getInvestigationSchemaDefinition(schemaKey);
-    const normalizedData = normalizeInvestigationFormData(schemaKey, definition.schema, formData);
+    const normalizedData = normalizeInvestigationFormData(definition.schemaName, definition.schema, formData);
     setDrafts((currentDrafts) => ({
       ...currentDrafts,
       [schemaKey]: normalizedData,
     }));
 
-    if (schemaKey === 'utredning-enhetschef') {
+    if (definition.schemaName === 'utredning-enhetschef') {
       const nextCatalog = getManagerLabelCatalog(normalizedData);
       const normalizedLabels = normalizeLabelClassification(nextCatalog, labelClassification);
       if (!isSameLabelClassification(normalizedLabels, labelClassification)) {
@@ -247,14 +251,14 @@ export function InvestigationSchemaLab() {
   };
 
   const persistDraft = (
-    schemaKey: InvestigationDocumentKey,
+    schemaKey: LocalInvestigationDocumentKey,
     schemaVersion: string,
     formData: InvestigationFormData,
     validated: boolean
   ) => {
     try {
       const definition = getInvestigationSchemaDefinition(schemaKey);
-      const normalizedData = normalizeInvestigationFormData(schemaKey, definition.schema, formData);
+      const normalizedData = normalizeInvestigationFormData(definition.schemaName, definition.schema, formData);
       const timestamp = saveInvestigationDraft(window.localStorage, schemaKey, schemaVersion, normalizedData);
       setDrafts((currentDrafts) => ({ ...currentDrafts, [schemaKey]: normalizedData }));
       setSavedAt((currentSavedAt) => ({ ...currentSavedAt, [schemaKey]: timestamp }));
@@ -278,7 +282,7 @@ export function InvestigationSchemaLab() {
     }
   };
 
-  const resetDraft = (schemaKey: InvestigationDocumentKey, exampleFormData: InvestigationFormData) => {
+  const resetDraft = (schemaKey: LocalInvestigationDocumentKey, exampleFormData: InvestigationFormData) => {
     const confirmed = window.confirm(
       'Rensa det lokala utkastet och återställ exempeldata för den här utredningen? Åtgärden kan inte ångras.'
     );
@@ -286,7 +290,9 @@ export function InvestigationSchemaLab() {
 
     try {
       removeInvestigationDraft(window.localStorage, schemaKey);
-      if (schemaKey === 'utredning-enhetschef') removeLabelClassificationDraft(window.localStorage);
+      if (getInvestigationSchemaDefinition(schemaKey).schemaName === 'utredning-enhetschef') {
+        removeLabelClassificationDraft(window.localStorage);
+      }
     } catch {
       setNotices((currentNotices) => ({
         ...currentNotices,
@@ -298,15 +304,12 @@ export function InvestigationSchemaLab() {
       return;
     }
 
+    const definition = getInvestigationSchemaDefinition(schemaKey);
     setDrafts((currentDrafts) => ({
       ...currentDrafts,
-      [schemaKey]: normalizeInvestigationFormData(
-        schemaKey,
-        getInvestigationSchemaDefinition(schemaKey).schema,
-        exampleFormData
-      ),
+      [schemaKey]: normalizeInvestigationFormData(definition.schemaName, definition.schema, exampleFormData),
     }));
-    if (schemaKey === 'utredning-enhetschef') {
+    if (definition.schemaName === 'utredning-enhetschef') {
       const resetCatalog = getManagerLabelCatalog(exampleFormData);
       setLabelClassification(normalizeLabelClassification(resetCatalog, defaultLabelClassification));
       setLabelClassificationSavedAt(undefined);
@@ -384,9 +387,9 @@ export function InvestigationSchemaLab() {
           {investigationSchemaDefinitions.map((definition) => {
             const access = getInvestigationSchemaAccess(role, definition.key);
             const classificationCatalog =
-              definition.key === 'utredning-enhetschef'
+              definition.schemaName === 'utredning-enhetschef'
                 ? managerLabelCatalog
-                : definition.key === 'utredning-sol-lss'
+                : definition.schemaName === 'utredning-sol-lss'
                 ? IAF_VOF_LABEL_CLASSIFICATION_CATALOGS[IAF_VOF_LABEL_CLASSIFICATION_GROUP.SOL_LSS]
                 : undefined;
 

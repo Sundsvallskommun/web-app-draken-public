@@ -24,6 +24,7 @@ import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 import {
   getInvestigationClassificationSchemaContract,
   getInvestigationClassificationUiSchema,
+  getInvestigationLegalBaseRules,
   getInvestigationLegalBases,
   isInvestigationClassificationOwner,
   isReportedMisconductErrand,
@@ -31,6 +32,7 @@ import {
 } from './investigation-classification';
 import type { InvestigationDocumentDefinition, InvestigationFormData } from './investigation-document';
 import { getHslRiskValue, getInvestigationRenderingSchema } from './investigation-form-data';
+import { useInvestigationProfileStore } from './investigation-profile-store';
 import {
   buildSupportInvestigationClassificationRequest,
   isSupportInvestigationClassificationConflict,
@@ -100,6 +102,7 @@ export function SupportInvestigationDocument({
   const municipalityId = useConfigStore((state) => state.municipalityId);
   const supportErrand = useSupportStore((state) => state.supportErrand);
   const supportMetadata = useMetadataStore((state) => state.supportMetadata);
+  const classificationPolicy = useInvestigationProfileStore((state) => state.profile?.classificationPolicy);
   const { register: registerErrandField, resetField: resetErrandField } = useFormContext<SupportErrand>();
   const errandId = supportErrand?.id;
   const reportedMisconduct = isReportedMisconductErrand(supportErrand);
@@ -141,6 +144,7 @@ export function SupportInvestigationDocument({
       if (!municipalityId || !errandId) return;
 
       setLoadState('loading');
+      useInvestigationProfileStore.getState().setDocumentLoadState(definition.key, 'loading');
       setNotice(undefined);
       setDocumentDirty(false);
       setClassificationDirty(false);
@@ -153,7 +157,7 @@ export function SupportInvestigationDocument({
               schema: await getRjsfSchema(municipalityId, storedDocument.document.schemaId),
               schemaId: storedDocument.document.schemaId,
             }
-          : await getLatestRjsfSchema(municipalityId, definition.key);
+          : await getLatestRjsfSchema(municipalityId, definition.schemaName);
         const uiSchema = await getUiSchemaForSchema(municipalityId, loadedSchema.schemaId);
 
         if (cancelled) return;
@@ -163,6 +167,7 @@ export function SupportInvestigationDocument({
           schemaId: loadedSchema.schemaId,
           formData: normalizeContextualInvestigationFormData(
             definition.key,
+            definition.schemaName,
             loadedSchema.schema,
             storedDocument?.document.value ?? {},
             reportedMisconduct
@@ -171,10 +176,12 @@ export function SupportInvestigationDocument({
           etag: storedDocument?.etag,
         });
         setLoadState('ready');
+        useInvestigationProfileStore.getState().setDocumentLoadState(definition.key, 'ready');
       } catch (error) {
         if (cancelled) return;
         console.error(`Failed to load investigation document ${definition.key}`, error);
         setLoadState('error');
+        useInvestigationProfileStore.getState().setDocumentLoadState(definition.key, 'error');
         setNotice({
           type: 'error',
           message: 'Utredningen kunde inte laddas. Försök igen eller kontakta support om felet kvarstår.',
@@ -187,22 +194,34 @@ export function SupportInvestigationDocument({
     return () => {
       cancelled = true;
     };
-  }, [definition.key, errandId, municipalityId, reportedMisconduct, resetClassification, setDocumentDirty]);
+  }, [
+    definition.key,
+    definition.schemaName,
+    errandId,
+    municipalityId,
+    reportedMisconduct,
+    resetClassification,
+    setDocumentDirty,
+  ]);
 
   const renderingSchema = useMemo(
     () =>
       documentState
-        ? getInvestigationRenderingSchema(definition.key, documentState.schema, documentState.formData)
+        ? getInvestigationRenderingSchema(definition.schemaName, documentState.schema, documentState.formData)
         : undefined,
-    [definition.key, documentState]
+    [definition.schemaName, documentState]
   );
   const hslRiskValue =
-    definition.key === 'utredning-enhetschef' && documentState ? getHslRiskValue(documentState.formData) : undefined;
+    definition.schemaName === 'utredning-enhetschef' && documentState
+      ? getHslRiskValue(documentState.formData)
+      : undefined;
   const classificationOwner = isInvestigationClassificationOwner(definition.key, supportErrand);
+  const classificationLabelTree = classificationPolicy?.labelTree;
   const classificationSchemaContract = documentState
     ? getInvestigationClassificationSchemaContract(definition.key, documentState.schema)
     : undefined;
   const legalBases = documentState ? getInvestigationLegalBases(documentState.formData) : [];
+  const legalBaseRules = getInvestigationLegalBaseRules();
   const classificationUiSchema = useMemo(
     () =>
       documentState
@@ -245,6 +264,7 @@ export function SupportInvestigationDocument({
 
     const normalizedData = normalizeContextualInvestigationFormData(
       definition.key,
+      definition.schemaName,
       documentState.schema,
       formData,
       reportedMisconduct
@@ -258,15 +278,18 @@ export function SupportInvestigationDocument({
     let savedClassification = false;
 
     try {
-      let classificationRequest: SupportInvestigationClassificationRequest | undefined;
       let classificationModel: IafLabelClassificationModel | undefined;
       let classificationUpdate: IafLabelClassificationUpdate | undefined;
+      let expectedErrandVersion = supportErrand?.version;
+      let classificationDocumentETag = documentState.etag;
       const persistedClassificationState =
-        classificationRequired && !classificationDirty
+        classificationRequired && classificationLabelTree && !classificationDirty
           ? getPersistedIafLabelClassificationState(
               supportMetadata?.labels?.labelStructure,
+              classificationLabelTree,
               getInvestigationLegalBases(normalizedData),
-              persistedClassification
+              persistedClassification,
+              legalBaseRules
             )
           : undefined;
       if (
@@ -285,6 +308,9 @@ export function SupportInvestigationDocument({
       }
 
       if (classificationRequired && classificationDirty) {
+        if (!classificationLabelTree) {
+          throw new Error('Klassificeringsprofilens labelträd saknas. Ladda om sidan innan utredningen sparas.');
+        }
         const classificationValid = await triggerClassification(['category', 'type', 'subType']);
         if (!classificationValid) {
           throw new Error('Välj avvikelsetyp och underkategori innan utredningen sparas.');
@@ -292,7 +318,9 @@ export function SupportInvestigationDocument({
         const currentClassification = getClassificationValues();
         classificationModel = createIafLabelClassificationModel(
           supportMetadata?.labels?.labelStructure,
-          getInvestigationLegalBases(normalizedData)
+          classificationLabelTree,
+          getInvestigationLegalBases(normalizedData),
+          legalBaseRules
         );
         const selection = getIafLabelClassificationSelection(classificationModel, currentClassification.labels, {
           category: currentClassification.category,
@@ -304,19 +332,24 @@ export function SupportInvestigationDocument({
           currentClassification.labels,
           selection
         );
-        classificationRequest = buildSupportInvestigationClassificationRequest(
-          classificationUpdate,
-          supportErrand?.version
-        );
       }
 
       const mustCreateDocumentBeforeClassification = !documentState.persisted && classificationDirty;
       if (!documentSavedPendingClassification && (isDirty || mustCreateDocumentBeforeClassification)) {
+        const parentErrandVersionBeforeDocumentWrite = expectedErrandVersion;
+        if (
+          typeof parentErrandVersionBeforeDocumentWrite !== 'number' ||
+          !Number.isSafeInteger(parentErrandVersionBeforeDocumentWrite) ||
+          parentErrandVersionBeforeDocumentWrite < 0
+        ) {
+          throw new Error('Ärendets version saknas. Ladda om ärendet innan utredningen sparas.');
+        }
         const saved = await saveSupportInvestigationDocument(
           municipalityId,
           errandId,
           definition.key,
           { schemaId: documentState.schemaId, value: normalizedData },
+          parentErrandVersionBeforeDocumentWrite,
           documentState.etag
         );
         setDocumentState((current) =>
@@ -331,6 +364,13 @@ export function SupportInvestigationDocument({
             : current
         );
         onSaved(saved.document);
+        expectedErrandVersion = saved.parentErrandVersion;
+        classificationDocumentETag = saved.etag;
+        useSupportStore.setState((state) => {
+          if (!state.supportErrand || state.supportErrand.id !== errandId) return state;
+          return { supportErrand: { ...state.supportErrand, version: saved.parentErrandVersion } };
+        });
+        resetErrandField('version', { defaultValue: saved.parentErrandVersion });
         savedDocument = true;
         setDocumentDirty(false);
 
@@ -340,10 +380,17 @@ export function SupportInvestigationDocument({
         }
       }
 
-      if (classificationRequest && classificationUpdate && classificationDirty) {
+      if (classificationUpdate && classificationDirty) {
         if (!classificationModel) {
           throw new Error('Klassificeringsmodellen kunde inte läsas in.');
         }
+        const classificationRequest: SupportInvestigationClassificationRequest =
+          buildSupportInvestigationClassificationRequest(
+            classificationUpdate,
+            expectedErrandVersion,
+            definition.key,
+            classificationDocumentETag
+          );
         const savedErrand = await saveSupportInvestigationClassification(
           municipalityId,
           errandId,
@@ -508,6 +555,7 @@ export function SupportInvestigationDocument({
           if (isSaving) return;
           const normalizedData = normalizeContextualInvestigationFormData(
             definition.key,
+            definition.schemaName,
             documentState.schema,
             formData,
             reportedMisconduct
@@ -521,14 +569,16 @@ export function SupportInvestigationDocument({
         onSubmit={(formData) => void save(formData)}
         readonly={readonly || isSaving}
         externalFields={
-          classificationOwner
+          classificationOwner && classificationLabelTree
             ? {
                 errandClassification: (
                   <FormProvider {...classificationMethods}>
                     <IafLabelCategorization
                       supportMetadata={supportMetadata}
+                      labelTree={classificationLabelTree}
                       disabled={readonly || isSaving}
                       legalBases={legalBases}
+                      legalBaseRules={legalBaseRules}
                       onClassificationChange={() => {
                         setClassificationDirty(true);
                         setNotice(undefined);

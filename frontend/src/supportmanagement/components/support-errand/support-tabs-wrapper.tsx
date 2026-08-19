@@ -1,9 +1,11 @@
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
-import { cx, Tabs } from '@sk-web-gui/react';
+import { Alert, cx, Tabs } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
+import { isInvestigationActive } from '@supportmanagement/investigation/investigation-profile';
+import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { countAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import {
   getSupportConversationMessages,
@@ -30,12 +32,17 @@ import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
 
 export const SupportTabsWrapper: FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
-}> = (props) => {
+  onUnsavedChangesChange: (hasUnsavedChanges: boolean) => void;
+}> = ({ setUnsavedFacility, onUnsavedChangesChange }) => {
   const [messages, setMessages] = useState<any>([]);
   const [supportConversations, setSupportConversations] = useState<any>([]);
   const [messageTree, setMessageTree] = useState<MessageNode[]>([]);
   const [conversationMessageTree, setConversationMessageTree] = useState<MessageNode[]>([]);
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  const investigationProfile = useInvestigationProfileStore((state) => state.profile);
+  const investigationProfileStatus = useInvestigationProfileStore((state) => state.status);
+  const investigationUnavailable =
+    investigationProfileStatus === 'ready' && investigationProfile?.state === 'unavailable';
   const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
 
   const [tabUnsavedChanges, setTabUnsavedChanges] = useState(false);
@@ -47,6 +54,11 @@ export const SupportTabsWrapper: FC<{
   const { activeTabKey, setActiveTabKey } = useSupportStore();
 
   const unsavedChanges = isErrandDirty || tabUnsavedChanges || Object.values(investigationDirty).some(Boolean);
+
+  useEffect(() => {
+    onUnsavedChangesChange(unsavedChanges);
+    return () => onUnsavedChangesChange(false);
+  }, [onUnsavedChangesChange, unsavedChanges]);
 
   const setInvestigationDocumentDirty = useCallback((key: InvestigationDocumentKey, isDirty: boolean) => {
     setInvestigationDirty((current) => (current[key] === isDirty ? current : { ...current, [key]: isDirty }));
@@ -103,7 +115,7 @@ export const SupportTabsWrapper: FC<{
         label: 'Grundinformation',
         content: supportErrand && (
           <SupportErrandBasicsTab
-            setUnsavedFacility={props.setUnsavedFacility}
+            setUnsavedFacility={setUnsavedFacility}
             errand={supportErrand}
             setUnsaved={setTabUnsavedChanges}
             update={update}
@@ -122,9 +134,14 @@ export const SupportTabsWrapper: FC<{
       {
         key: 'investigation',
         label: 'Utredning',
-        content: supportErrand && <SupportErrandInvestigationTab onDirtyChange={setInvestigationDocumentDirty} />,
+        content: supportErrand && isInvestigationActive(investigationProfile) && (
+          <SupportErrandInvestigationTab
+            documents={investigationProfile.documents}
+            onDirtyChange={setInvestigationDocumentDirty}
+          />
+        ),
         disabled: false,
-        visibleFor: appConfig.features.useInvestigation,
+        visibleFor: isInvestigationActive(investigationProfile),
       },
       {
         key: 'messages',
@@ -184,7 +201,8 @@ export const SupportTabsWrapper: FC<{
       messageTree,
       messages,
       municipalityId,
-      props.setUnsavedFacility,
+      investigationProfile,
+      setUnsavedFacility,
       supportAttachments,
       supportConversations,
       supportErrand,
@@ -202,6 +220,26 @@ export const SupportTabsWrapper: FC<{
   return (
     <>
       <div className="mb-xl">
+        {(investigationProfileStatus === 'error' || investigationUnavailable) && (
+          <Alert
+            type="warning"
+            className="mb-16"
+            data-cy={investigationUnavailable ? 'investigation-profile-unavailable' : 'investigation-profile-error'}
+          >
+            <Alert.Icon />
+            <Alert.Content>
+              <Alert.Content.Title>
+                {investigationUnavailable
+                  ? 'Utredningsfunktionen är tillfälligt otillgänglig'
+                  : 'Utredningsprofilen kunde inte laddas'}
+              </Alert.Content.Title>
+              <Alert.Content.Description>
+                Utredningsflikarna är tillfälligt avstängda. Befintliga utredningsuppgifter döljs inte från
+                Ärendeuppgifter.
+              </Alert.Content.Description>
+            </Alert.Content>
+          </Alert>
+        )}
         <WarnIfUnsavedChanges showWarning={unsavedChanges}>
           <Tabs
             className="border-1 rounded-12 bg-background-content pt-22 pl-5"

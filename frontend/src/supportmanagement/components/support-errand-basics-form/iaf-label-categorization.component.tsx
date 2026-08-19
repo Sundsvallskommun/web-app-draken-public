@@ -1,10 +1,12 @@
 'use client';
 
+import type { ReportedMisconductLabelTree } from '@supportmanagement/investigation/investigation-classification-policy';
 import {
   applyIafLabelClassificationSelection,
   createIafLabelClassificationModel,
   getIafLabelClassificationSelection,
   LabelClassification,
+  type LabelClassificationLegalBaseRule,
 } from '@supportmanagement/investigation/label-classification';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import type { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
@@ -26,12 +28,20 @@ const iafClassificationContent = {
 const errorMessage = (error: FieldError | undefined): string | undefined =>
   typeof error?.message === 'string' ? error.message : undefined;
 
+const requireLabelTree = (labelTree: ReportedMisconductLabelTree | undefined): ReportedMisconductLabelTree => {
+  if (!labelTree) throw new Error('Klassificeringsprofilens labelträd saknas.');
+  return labelTree;
+};
+
 export const IafLabelCategorization: FC<{
   supportMetadata?: SupportMetadata;
   disabled?: boolean;
+  labelTree?: ReportedMisconductLabelTree;
   legalBases?: readonly string[];
+  legalBaseRules?: readonly LabelClassificationLegalBaseRule[];
   onClassificationChange?: () => void;
-}> = ({ supportMetadata, disabled = false, legalBases, onClassificationChange }) => {
+}> = ({ supportMetadata, disabled = false, labelTree, legalBases, legalBaseRules = [], onClassificationChange }) => {
+  const configuredLabelTree = requireLabelTree(labelTree);
   const {
     control,
     register,
@@ -63,12 +73,18 @@ export const IafLabelCategorization: FC<{
     [legalBasesKey]
   );
   const completeModel = useMemo(
-    () => createIafLabelClassificationModel(supportMetadata?.labels?.labelStructure),
-    [supportMetadata?.labels?.labelStructure]
+    () => createIafLabelClassificationModel(supportMetadata?.labels?.labelStructure, configuredLabelTree),
+    [configuredLabelTree, supportMetadata?.labels?.labelStructure]
   );
   const model = useMemo(
-    () => createIafLabelClassificationModel(supportMetadata?.labels?.labelStructure, normalizedLegalBases),
-    [normalizedLegalBases, supportMetadata?.labels?.labelStructure]
+    () =>
+      createIafLabelClassificationModel(
+        supportMetadata?.labels?.labelStructure,
+        configuredLabelTree,
+        normalizedLegalBases,
+        legalBaseRules
+      ),
+    [configuredLabelTree, legalBaseRules, normalizedLegalBases, supportMetadata?.labels?.labelStructure]
   );
   const selection = useMemo(
     () => getIafLabelClassificationSelection(model, labels, { category, type, subType }),
