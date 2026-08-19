@@ -62,6 +62,7 @@ import {
   getNewErrandDefaults,
   resolveDefaultLabels,
   resolveSupportErrandClassification,
+  stripErrandVersions,
   SupportStakeholderRole,
   toAttachmentDto,
   toCasedataChannel,
@@ -131,7 +132,8 @@ export class CParameter implements Parameter {
   @IsArray()
   @IsOptional()
   values!: string[];
-  // Optimistic locking version, set by SupportManagement and sent back untouched on update
+  // Optimistic locking version, set by SupportManagement. Accepted here because the frontend echoes
+  // fetched errands back, but stripped before we forward (SupportManagement rejects it on update).
   @IsNumber()
   @IsOptional()
   version?: number;
@@ -411,7 +413,8 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @IsOptional()
   @IsString()
   touched?: string;
-  // Optimistic locking version, set by SupportManagement and sent back untouched on update
+  // Optimistic locking version, set by SupportManagement. Accepted here because the frontend echoes
+  // fetched errands back, but stripped before we forward (SupportManagement rejects it on update).
   @IsNumber()
   @IsOptional()
   version?: number;
@@ -442,19 +445,6 @@ class ForwardFormDto {
   @IsString()
   messageBodyPlaintext!: string;
 }
-
-const withoutParameterVersion = (parameter: Parameter): Parameter => {
-  const writableParameter = { ...parameter };
-  delete writableParameter.version;
-  return writableParameter;
-};
-
-export const buildSupportErrandUpdateBody = (data: Partial<SupportErrandDto>): Partial<SupportErrandDto> => ({
-  ...data,
-  ...(data.parameters !== undefined && {
-    parameters: data.parameters.map(withoutParameterVersion),
-  }),
-});
 
 @Controller()
 @UseBefore(hasPermissions(['canEditSupportManagement']))
@@ -767,7 +757,7 @@ export class SupportErrandController {
     }
     const url = `${municipalityId}/${this.namespace}/errands/${id}`;
     const baseURL = apiURL(this.SERVICE);
-    const body = buildSupportErrandUpdateBody(data);
+    const body: Partial<SupportErrandDto> = stripErrandVersions({ ...data });
     const res = await this.apiService.patch<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when registering support errand');
       logger.error(e);
