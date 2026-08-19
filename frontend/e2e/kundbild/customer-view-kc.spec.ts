@@ -18,6 +18,7 @@ import {
   mockSupportNotes,
 } from '../kontaktcenter/fixtures/mockSupportErrands';
 import { mockNotifications } from '../kontaktcenter/fixtures/mockSupportNotifications';
+import { mockCustomerViewErrand } from './fixtures/mockCustomerViewErrand';
 
 // Kundbilden är flaggad (NEXT_PUBLIC_USE_CUSTOMER_VIEW) och är avstängd i den kc-konfiguration
 // som ligger i .env.kc-example. Den här sviten körs därför i ett eget projekt som byggs med
@@ -30,10 +31,10 @@ test.describe('Kundbild (KC)', () => {
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
-    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSupportErrand, {
+    await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockCustomerViewErrand, {
       method: 'GET',
     });
-    await mockRoute('**/supporterrands/2281/*', mockSupportErrand, { method: 'GET' });
+    await mockRoute('**/supporterrands/2281/*', mockCustomerViewErrand, { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
     await mockRoute('**/supportmessage/2281/errands/*/communication', mockSupportMessages, { method: 'GET' });
     await mockRoute('**/supportnotes/2281/*', mockSupportNotes, { method: 'GET' });
@@ -51,6 +52,17 @@ test.describe('Kundbild (KC)', () => {
 
   const ownerFooter = (page: Page) => page.locator('[data-cy="rendered-PRIMARY"] [data-cy="customer-view-footer"]');
 
+  // Flikarna klickas via roll, som i resten av sviten — data-cy ligger på omslutande element och
+  // ett klick där byter inte panel. Panelen assertas synlig: toContainText matchar även dolda
+  // element, så utan det kan ett uteblivet flikbyte passera som grönt.
+  const openErrandsTab = async (page: Page) => {
+    await ownerFooter(page).locator('[data-cy="show-customer-view-button"]').click();
+    await page.getByRole('tab', { name: 'Ärenden', exact: true }).click();
+    const list = page.locator('[data-cy="customer-view-errands"]');
+    await expect(list).toBeVisible();
+    return list;
+  };
+
   test('räknar bort det aktuella ärendet i kortfoten', async ({ page, dismissCookieConsent }) => {
     await openErrand(page);
     await dismissCookieConsent();
@@ -66,9 +78,8 @@ test.describe('Kundbild (KC)', () => {
     // Beslut och dokument hämtas bara för ärendeägaren — kontaktpersonernas kort ska inte visa
     // räknaren, och ska därmed inte heller ha hämtat personens insatser.
     await expect(ownerFooter(page).locator('[data-cy="customer-view-services-count"]')).toBeVisible();
-    await expect(
-      page.locator('[data-cy="rendered-CONTACT"] [data-cy="customer-view-services-count"]').first()
-    ).toHaveCount(0);
+    await expect(page.locator('[data-cy="rendered-CONTACT"] [data-cy="customer-view-footer"]').first()).toBeVisible();
+    await expect(page.locator('[data-cy="rendered-CONTACT"] [data-cy="customer-view-services-count"]')).toHaveCount(0);
   });
 
   test('öppnar kundbilden och listar personens övriga ärenden', async ({ page, dismissCookieConsent }) => {
@@ -78,8 +89,9 @@ test.describe('Kundbild (KC)', () => {
     await ownerFooter(page).locator('[data-cy="show-customer-view-button"]').click();
     await expect(page.locator('[data-cy="customer-view-name"]')).toContainText('Kim Svensson');
 
-    await page.locator('[data-cy="customer-view-tab-errands"]').click();
+    await page.getByRole('tab', { name: 'Ärenden', exact: true }).click();
     const list = page.locator('[data-cy="customer-view-errands-list"]');
+    await expect(list).toBeVisible();
     await expect(list).toContainText(mockPartyStatusErrands.ongoingErrand.errandNumber);
     await expect(list).not.toContainText(mockPartyStatusErrands.currentErrand.errandNumber);
 
@@ -93,8 +105,7 @@ test.describe('Kundbild (KC)', () => {
     await openErrand(page);
     await dismissCookieConsent();
 
-    await ownerFooter(page).locator('[data-cy="show-customer-view-button"]').click();
-    await page.locator('[data-cy="customer-view-tab-errands"]').click();
+    await openErrandsTab(page);
     await page.locator('[data-cy="customer-view-errands-include-closed-filter"]').check({ force: true });
     await expect(page.locator('[data-cy="customer-view-errands-count"]')).toContainText('Visar 2 av 2 ärenden');
   });
@@ -104,9 +115,10 @@ test.describe('Kundbild (KC)', () => {
     await dismissCookieConsent();
     await mockRoute('**/2281/relations', { message: 'error' }, { method: 'POST', status: 500 });
 
-    await ownerFooter(page).locator('[data-cy="show-customer-view-button"]').click();
-    await page.locator('[data-cy="customer-view-tab-errands"]').click();
-    await page.locator(`[data-cy="relation-card-link-${mockPartyStatusErrands.ongoingErrand.caseId}"]`).first().click();
+    await openErrandsTab(page);
+    const linkButton = page.locator(`[data-cy="relation-card-link-${mockPartyStatusErrands.ongoingErrand.caseId}"]`);
+    await expect(linkButton).toBeVisible();
+    await linkButton.click();
 
     // Ett misslyckat kopplingsförsök får inte passera tyst.
     await expect(page.getByText('Ärendena kunde inte kopplas')).toBeVisible();
@@ -119,10 +131,9 @@ test.describe('Kundbild (KC)', () => {
 
     await expect(ownerFooter(page).locator('[data-cy="customer-view-relation-count"]')).toHaveText('1 relation');
 
-    await ownerFooter(page).locator('[data-cy="show-customer-view-button"]').click();
-    await page.locator('[data-cy="customer-view-tab-errands"]').click();
+    await openErrandsTab(page);
     await expect(
-      page.locator(`[data-cy="relation-card-${mockPartyStatusErrands.ongoingErrand.caseId}"]`).first()
+      page.locator(`[data-cy="relation-card-${mockPartyStatusErrands.ongoingErrand.caseId}"]`)
     ).toContainText('Bryt koppling');
   });
 });
