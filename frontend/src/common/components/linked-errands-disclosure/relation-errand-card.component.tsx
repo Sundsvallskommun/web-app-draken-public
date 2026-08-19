@@ -1,8 +1,7 @@
 'use client';
 
-import { CaseLabels } from '@casedata/interfaces/case-label';
 import { CaseStatusLabelComponent } from '@common/components/case-status-label/case-status-label.component';
-import { CaseStatusResponse, findOperationUsingNamespace } from '@common/services/casestatus-service';
+import { CaseStatusResponse, caseTypeLabel, findOperationUsingNamespace } from '@common/services/casestatus-service';
 import { Button, Icon } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { ChevronDown, Link2, Link2Off, Mail } from 'lucide-react';
@@ -23,9 +22,6 @@ interface RelationErrandCardActionsProps {
   onOpenMessage?: () => void;
   actionsDisabled?: boolean;
 }
-
-const caseTypeLabel = (errand: CaseStatusResponse) =>
-  (CaseLabels.ALL as Record<string, string>)[errand.caseType ?? ''] ?? errand.caseType ?? '';
 
 const RelationErrandCardActions: FC<RelationErrandCardActionsProps> = ({
   caseId,
