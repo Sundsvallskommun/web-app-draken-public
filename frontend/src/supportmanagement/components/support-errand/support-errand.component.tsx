@@ -1,5 +1,6 @@
 import { ReferredFromErrandInformation } from '@common/components/referred-from-errand-information/referred-from-errand-information.component';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
+import { isIAFOrVOF } from '@common/services/application-service';
 import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -12,27 +13,18 @@ import {
   SupportErrand,
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
+import { getErrandTypeLabel } from '@supportmanagement/services/support-label-classification-service';
 import { getSupportNotesCount } from '@supportmanagement/services/support-note-service';
 import { useParams, useRouter } from 'next/navigation';
 import { FC, useEffect, useRef, useState } from 'react';
-import { FormProvider, useForm } from 'react-hook-form';
-import * as yup from 'yup';
+import { FormProvider, type Resolver, useForm } from 'react-hook-form';
 
 import { SupportErrandSummary } from '../support-errand-basics-form/support-errand-summary.component';
 import { MessagePortal } from './sidebar/message-portal.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
+import { supportErrandFormSchema } from './support-errand-form-schema';
 import { SupportTabsWrapper } from './support-tabs-wrapper';
-
-let formSchema = yup
-  .object({
-    id: yup.string(),
-    category: yup.string().required('Välj ärendekategori'),
-    type: yup.string().required('Välj ärendetyp'),
-    channel: yup.string().required('Välj kanal'),
-    description: yup.string(),
-    parameters: yup.array(),
-  })
-  .required();
+import { SupportUiPhaseWrapper } from './ui-phase/ui-phase-wrapper';
 
 export const SupportErrandComponent: FC = () => {
   const params = useParams<{ errandNumber?: string }>();
@@ -48,7 +40,7 @@ export const SupportErrandComponent: FC = () => {
   const toastMessage = useSnackbar();
 
   const methods = useForm<SupportErrand>({
-    resolver: yupResolver(formSchema) as any,
+    resolver: yupResolver(supportErrandFormSchema) as unknown as Resolver<SupportErrand>,
     defaultValues: defaultSupportErrandInformation,
     mode: 'onChange', // NOTE: Needed if we want to disable submit until valid
   });
@@ -158,6 +150,13 @@ export const SupportErrandComponent: FC = () => {
               }}
             >
               <div className="flex-grow w-full max-w-screen-lg">
+                {appConfig.features.useUiPhases && (
+                  <section className="bg-transparent pt-24">
+                    <div className="container m-auto pl-0 pr-24 md:pr-40">
+                      <SupportUiPhaseWrapper />
+                    </div>
+                  </section>
+                )}
                 <section className="bg-transparent pt-24 pb-4">
                   <div className="container m-auto pl-0 pr-24 md:pr-40">
                     <div className="w-full flex flex-wrap flex-col justify-between gap-24">
@@ -165,12 +164,11 @@ export const SupportErrandComponent: FC = () => {
                         <>
                           <h1 className="max-md:w-full text-h2-sm md:text-h2-md xl:text-h2-md mb-0 break-words">
                             {appConfig.features.useThreeLevelCategorization
-                              ? supportErrand!.labels?.find((l) => l.classification === 'TYPE')?.displayName ??
-                                '(Ärendetyp saknas)'
+                              ? getErrandTypeLabel(supportErrand, supportMetadata)?.displayName ?? '(Ärendetyp saknas)'
                               : categoriesList?.find((c) => c.name === supportErrand?.classification?.category)
                                   ?.displayName}
                           </h1>
-                          {process.env.NEXT_PUBLIC_APPLICATION === 'IAF' && <SupportErrandSummary />}
+                          {isIAFOrVOF() && <SupportErrandSummary />}
                         </>
                       ) : (
                         <div className="flex justify-between items-center pt-8">

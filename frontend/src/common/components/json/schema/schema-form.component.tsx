@@ -6,17 +6,23 @@ import { SectionsObjectFieldTemplate } from '@common/components/json/fields/sect
 import { SubmitButtonFieldTemplate } from '@common/components/json/fields/submit-button-field-template.componant';
 import { jsonWidgets } from '@common/components/json/widgets/index.componant';
 import Form, { FormProps, IChangeEvent } from '@rjsf/core';
-import type { RegistryFieldsType, RegistryWidgetsType, RJSFSchema, UiSchema } from '@rjsf/utils';
+import type {
+  ArrayFieldTemplateProps,
+  RegistryFieldsType,
+  RegistryWidgetsType,
+  RJSFSchema,
+  UiSchema,
+} from '@rjsf/utils';
 import { customizeValidator } from '@rjsf/validator-ajv8';
 import Ajv2020 from 'ajv/dist/2020';
-import { ComponentType, useCallback, useMemo, useState } from 'react';
+import { ComponentType, ReactNode, useCallback, useMemo, useState } from 'react';
 
 import createJsonErrorTransformer from '../utils/schema-form-error-handling';
 
 // Schemas declare $schema: draft 2020-12, which the default AJV8 validator (draft-07) cannot compile.
 const validator = customizeValidator({ AjvClass: Ajv2020 });
 
-const widgets: RegistryWidgetsType = jsonWidgets as RegistryWidgetsType;
+const widgets: RegistryWidgetsType = jsonWidgets;
 
 const fields: RegistryFieldsType = {
   FacilitySearchWidget: FacilitySearchField as any,
@@ -37,10 +43,14 @@ type SchemaFormProps = {
   formData?: any;
   onChange?: (data: any, e?: IChangeEvent) => void;
   onSubmit?: (payload: any, e: IChangeEvent) => void;
+  arrayFieldTemplate?: ComponentType<ArrayFieldTemplateProps>;
   objectFieldTemplate?: ComponentType<any>;
+  idPrefix?: string;
   disabled?: boolean;
+  readonly?: boolean;
   submitButtonOptions?: { label?: string; leadingIcon?: boolean; loading?: boolean; disabled?: boolean };
   extraContent?: React.ReactNode;
+  externalFields?: Readonly<Record<string, ReactNode>>;
 };
 
 const hasType = (p: AnyProp | undefined, t: string) =>
@@ -93,10 +103,14 @@ export default function SchemaForm({
   formData,
   onChange,
   onSubmit,
+  arrayFieldTemplate,
   objectFieldTemplate,
+  idPrefix,
   disabled,
+  readonly,
   submitButtonOptions,
   extraContent,
+  externalFields,
 }: SchemaFormProps) {
   const [localData, setLocalData] = useState<any>({});
   const data = formData ?? localData;
@@ -126,44 +140,62 @@ export default function SchemaForm({
   const effectiveUiSchema = uiSchema ?? autoUi;
 
   // Send original schema via formContext so ObjectFieldTemplate can read if/then conditions
-  const formContext = useMemo(() => ({ originalSchema: schema, submitButtonOptions }), [schema, submitButtonOptions]);
+  const formContext = useMemo(
+    () => ({ originalSchema: schema, submitButtonOptions, idPrefix, externalFields }),
+    [externalFields, idPrefix, schema, submitButtonOptions]
+  );
 
-  const templates: any = {
+  const templates: NonNullable<FormProps['templates']> = {
     FieldTemplate,
     ObjectFieldTemplate: SectionsObjectFieldTemplate,
     ButtonTemplates: { SubmitButton: SubmitButtonFieldTemplate },
   };
 
+  if (arrayFieldTemplate) {
+    templates.ArrayFieldTemplate = arrayFieldTemplate;
+  }
+
   if (objectFieldTemplate) {
     templates.ObjectFieldTemplate = objectFieldTemplate;
   }
 
+  const formProps: FormProps = {
+    schema: schema || { type: 'object', properties: {} },
+    idPrefix,
+    uiSchema: effectiveUiSchema,
+    formData: data,
+    formContext,
+    onChange: handleChange,
+    onSubmit: handleSubmit,
+    validator,
+    fields,
+    widgets,
+    templates,
+    transformErrors: createJsonErrorTransformer(schema),
+    noHtml5Validate: true,
+    showErrorList: false,
+    disabled,
+    readonly,
+  };
+
+  if (extraContent) {
+    return (
+      <div className="w-full min-w-0 max-w-full">
+        <Form {...formProps} templates={{ ...templates, ButtonTemplates: { SubmitButton: () => null } }}>
+          {extraContent}
+          <SubmitButtonFieldTemplate {...({ registry: { formContext } } as any)} />
+        </Form>
+      </div>
+    );
+  }
+
+  const formWithoutSubmit = disabled || readonly;
   return (
-    <div className="w-full max-w-full">
+    <div className="w-full min-w-0 max-w-full">
       <Form
-        schema={schema || { type: 'object', properties: {} }}
-        uiSchema={effectiveUiSchema}
-        formData={data}
-        formContext={formContext}
-        onChange={handleChange}
-        onSubmit={handleSubmit}
-        validator={validator}
-        fields={fields}
-        widgets={widgets}
-        templates={extraContent ? { ...templates, ButtonTemplates: { SubmitButton: () => null } } : templates}
-        transformErrors={createJsonErrorTransformer(schema)}
-        noHtml5Validate
-        showErrorList={false}
-        disabled={disabled}
-      >
-        {extraContent && (
-          <>
-            {extraContent}
-            <SubmitButtonFieldTemplate {...({ registry: { formContext } } as any)} />
-          </>
-        )}
-        {!extraContent && disabled && <></>}
-      </Form>
+        {...formProps}
+        templates={formWithoutSubmit ? { ...templates, ButtonTemplates: { SubmitButton: () => null } } : templates}
+      />
     </div>
   );
 }

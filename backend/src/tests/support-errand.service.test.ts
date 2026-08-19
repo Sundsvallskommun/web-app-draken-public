@@ -8,13 +8,16 @@ import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import { Role } from '@/interfaces/role';
 import {
   buildErrandFilter,
+  buildSupportErrandClassificationUpdateBody,
   getNewErrandDefaults,
   mapContactChannels,
   NEW_ERRAND_DEFAULTS,
   resolveDefaultLabels,
+  resolveSupportErrandClassification,
   sanitizeQuery,
   stripErrandVersions,
   stripParameterVersions,
+  SupportErrandClassificationSelection,
   toAttachmentDto,
   toCasedataChannel,
   toCasedataStakeholder,
@@ -52,6 +55,64 @@ const stakeholder = (overrides: Partial<SupportStakeholder> = {}): SupportStakeh
 // Labels carry required `classification`/`resourceName` fields that none of these tests care about.
 const label = (resourcePath: string, labels: Label[] = []): Label =>
   ({ resourcePath, resourceName: resourcePath, classification: 'CLASSIFICATION', labels }) as Label;
+
+/**
+ * A CATEGORY tree shaped like the SupportManagement metadata: one CATEGORY root, an owning
+ * PROVISION_CATEGORY, one CATEGORY under it and two TYPE leaves, plus an unrelated REPORT_TYPE root
+ * that must never be treated as part of the classification.
+ */
+const classificationLabelStructure: Label[] = [
+  {
+    id: 'category-root-id',
+    classification: 'CATEGORY_ROOT',
+    resourceName: 'CATEGORY',
+    resourcePath: 'CATEGORY',
+    labels: [
+      {
+        id: 'category-owner-id',
+        classification: 'PROVISION_CATEGORY',
+        resourceName: 'HSL',
+        resourcePath: 'CATEGORY/HSL',
+        labels: [
+          {
+            id: 'category-label-id',
+            classification: 'CATEGORY',
+            resourceName: 'REHAB',
+            resourcePath: 'CATEGORY/HSL/REHAB',
+            labels: [
+              {
+                id: 'type-label-id',
+                classification: 'TYPE',
+                resourceName: 'MISSED',
+                resourcePath: 'CATEGORY/HSL/REHAB/MISSED',
+              },
+              {
+                id: 'other-type-label-id',
+                classification: 'TYPE',
+                resourceName: 'OTHER',
+                resourcePath: 'CATEGORY/HSL/REHAB/OTHER',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'report-type-id',
+    classification: 'REPORT_TYPE_ROOT',
+    resourceName: 'REPORT_TYPE',
+    resourcePath: 'REPORT_TYPE',
+    labels: [
+      {
+        id: 'deviation-id',
+        classification: 'REPORT_TYPE',
+        resourceName: 'DEVIATION',
+        resourcePath: 'REPORT_TYPE/DEVIATION',
+      },
+    ],
+  },
+];
 
 describe('support-errand.service', () => {
   describe('sanitizeQuery', () => {
@@ -464,6 +525,197 @@ describe('support-errand.service', () => {
           note: '',
           errandNumber: mockCasedataErrandNumber,
           channel: 'WEB_UI',
+        }),
+      );
+    });
+  });
+
+  describe('resolveSupportErrandClassification', () => {
+    it('resolves only the exact owner/category/type ids from the metadata CATEGORY tree', () => {
+      expect(
+        resolveSupportErrandClassification(
+          {
+            classification: { category: 'CATEGORY/HSL', type: 'CATEGORY/HSL/REHAB' },
+            categoryLabels: [{ id: 'type-label-id' }, { id: 'category-owner-id' }, { id: 'category-label-id' }],
+          },
+          classificationLabelStructure,
+        ),
+      ).toEqual({
+        classification: { category: 'CATEGORY/HSL', type: 'CATEGORY/HSL/REHAB' },
+        categoryLabels: [{ id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'type-label-id' }],
+        managedCategoryLabelIds: ['category-root-id', 'category-owner-id', 'category-label-id', 'type-label-id', 'other-type-label-id'],
+      });
+    });
+
+    it('returns canonical metadata paths instead of persisting normalized client strings', () => {
+      expect(
+        resolveSupportErrandClassification(
+          {
+            classification: { category: '  category/hsl ', type: '/category/hsl/rehab/' },
+            categoryLabels: [{ id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'type-label-id' }],
+          },
+          classificationLabelStructure,
+        ).classification,
+      ).toEqual({ category: 'CATEGORY/HSL', type: 'CATEGORY/HSL/REHAB' });
+    });
+
+    it('uses resource names when classification metadata omits optional resource paths', () => {
+      const structureWithoutPaths = structuredClone(classificationLabelStructure);
+      const removePaths = (labels: Label[]) => {
+        labels.forEach(label => {
+          delete label.resourcePath;
+          if (label.labels) removePaths(label.labels);
+        });
+      };
+      removePaths(structureWithoutPaths);
+
+      const resolved = resolveSupportErrandClassification(
+        {
+          classification: { category: 'HSL', type: 'REHAB' },
+          categoryLabels: [{ id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'type-label-id' }],
+        },
+        structureWithoutPaths,
+      );
+
+      expect(resolved.classification).toEqual({ category: 'HSL', type: 'REHAB' });
+      expect(resolved.categoryLabels).toEqual([{ id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'type-label-id' }]);
+    });
+
+    it('ignores CATEGORY-classified labels outside the CATEGORY metadata root', () => {
+      const structureWithForeignCategory = [
+        ...classificationLabelStructure,
+        {
+          id: 'foreign-category-id',
+          classification: 'CATEGORY',
+          resourceName: 'FOREIGN',
+          resourcePath: 'CATEGORY/FOREIGN',
+        },
+      ];
+
+      expect(() =>
+        resolveSupportErrandClassification(
+          {
+            classification: { category: 'CATEGORY/FOREIGN', type: 'CATEGORY/FOREIGN' },
+            categoryLabels: [{ id: 'foreign-category-id' }],
+          },
+          structureWithForeignCategory,
+        ),
+      ).toThrow(expect.objectContaining({ status: 400 }));
+    });
+
+    it('rejects non-category ids and classification paths that do not match metadata', () => {
+      expect(() =>
+        resolveSupportErrandClassification(
+          {
+            classification: { category: 'CATEGORY/HSL', type: 'CATEGORY/HSL/REHAB' },
+            categoryLabels: [{ id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'deviation-id' }],
+          },
+          classificationLabelStructure,
+        ),
+      ).toThrow(expect.objectContaining({ status: 400 }));
+
+      expect(() =>
+        resolveSupportErrandClassification(
+          {
+            classification: { category: 'CATEGORY/SOL_LSS', type: 'CATEGORY/HSL/REHAB' },
+            categoryLabels: [{ id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'type-label-id' }],
+          },
+          classificationLabelStructure,
+        ),
+      ).toThrow(expect.objectContaining({ status: 400 }));
+    });
+
+    it('rejects a known category without exactly one valid undercategory', () => {
+      for (const categoryLabels of [
+        [{ id: 'category-owner-id' }, { id: 'category-label-id' }],
+        [{ id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'type-label-id' }, { id: 'other-type-label-id' }],
+      ]) {
+        expect(() =>
+          resolveSupportErrandClassification(
+            {
+              classification: { category: 'CATEGORY/HSL', type: 'CATEGORY/HSL/REHAB' },
+              categoryLabels,
+            },
+            classificationLabelStructure,
+          ),
+        ).toThrow(expect.objectContaining({ status: 400 }));
+      }
+    });
+
+    it('treats duplicate ids in classification metadata as an upstream contract error', () => {
+      const duplicateIdStructure = structuredClone(classificationLabelStructure);
+      const firstType = duplicateIdStructure[0]?.labels?.[0]?.labels?.[0]?.labels?.[0];
+      expect(firstType).toBeDefined();
+      firstType!.id = 'category-label-id';
+
+      expect(() =>
+        resolveSupportErrandClassification(
+          {
+            classification: { category: 'CATEGORY/HSL', type: 'CATEGORY/HSL/REHAB' },
+            categoryLabels: [{ id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'type-label-id' }],
+          },
+          duplicateIdStructure,
+        ),
+      ).toThrow(
+        expect.objectContaining({
+          status: 502,
+          message: 'Support Management classification metadata contains duplicate label ids',
+        }),
+      );
+    });
+  });
+
+  describe('buildSupportErrandClassificationUpdateBody', () => {
+    it('replaces CATEGORY labels while preserving fresh unrelated labels in the exact upstream body', () => {
+      const body = buildSupportErrandClassificationUpdateBody(
+        {
+          classification: { category: 'HSL', type: 'REHAB', displayName: 'Not writable' },
+          categoryLabels: [
+            { id: 'new-category-id', displayName: 'Not writable' },
+            { id: 'new-category-id', displayName: 'Duplicate' },
+            { id: 'new-type-id' },
+          ],
+          title: 'Not writable',
+        } as unknown as SupportErrandClassificationSelection,
+        [
+          { id: 'provision-id', resourcePath: 'PROVISION/HSL' },
+          { id: 'report-type-id', resourcePath: 'REPORT_TYPE/DEVIATION' },
+          { id: 'concurrent-location-id', resourcePath: 'LOCATION/NEW_SINCE_PAGE_LOAD' },
+          { id: 'old-category-id', resourcePath: 'CATEGORY/HSL/OLD' },
+          { id: 'old-type-id', classification: 'TYPE' },
+          { id: 'location-type-id', classification: 'TYPE', resourcePath: 'LOCATION/SCHOOL/TYPE' },
+        ],
+        [{ id: 'new-category-id' }, { id: 'new-category-id' }, { id: 'new-type-id' }],
+        { category: 'HSL', type: 'REHAB' },
+        ['old-category-id', 'old-type-id', 'new-category-id', 'new-type-id'],
+      );
+
+      expect(body).toEqual({
+        classification: { category: 'HSL', type: 'REHAB' },
+        labels: [
+          { id: 'provision-id' },
+          { id: 'report-type-id' },
+          { id: 'concurrent-location-id' },
+          { id: 'location-type-id' },
+          { id: 'new-category-id' },
+          { id: 'new-type-id' },
+        ],
+      });
+    });
+
+    it('stops instead of dropping a fresh unrelated label without an id', () => {
+      expect(() =>
+        buildSupportErrandClassificationUpdateBody(
+          {
+            classification: { category: 'HSL', type: 'REHAB' },
+            categoryLabels: [{ id: 'new-category-id' }],
+          },
+          [{ resourcePath: 'LOCATION/NEW_SINCE_PAGE_LOAD' } as Label],
+        ),
+      ).toThrow(
+        expect.objectContaining({
+          status: 502,
+          message: 'Support Management response contains an unrelated label without id',
         }),
       );
     });

@@ -1,9 +1,10 @@
 import TextEditor from '@common/components/dynamic-text-editor';
 import { ContactReason } from '@common/data-contracts/supportmanagement/data-contracts';
-import { isLOK } from '@common/services/application-service';
+import { isIAFOrVOF, isLOK } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, cx, FormControl, FormErrorMessage, FormLabel, Select, Textarea } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
+import { investigationOwnsSupportErrandClassification } from '@supportmanagement/investigation/investigation-classification-ownership';
 import {
   ContactChannelType,
   getErrandParameterValue,
@@ -17,6 +18,7 @@ import { FC, useLayoutEffect, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
+import { IafLabelCategorization } from './iaf-label-categorization.component';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
 
@@ -61,16 +63,22 @@ export const SupportErrandBasicsAboutForm: FC<{
         </FormControl>
       ) : null}
 
-      {appConfig.features.useTwoLevelCategorization ? (
+      {/* FIXME complicated logic for selecting categorization. Should be simplified. */}
+      {appConfig.features.useTwoLevelCategorization && !investigationOwnsSupportErrandClassification() ? (
         <div className="flex gap-24">
           <TwoLevelCategorization />
         </div>
       ) : null}
 
+      {/* FIXME Same as above */}
       {appConfig.features.useThreeLevelCategorization ? (
-        <div className="w-full flex gap-20">
-          <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
-        </div>
+        isIAFOrVOF() && !investigationOwnsSupportErrandClassification() ? (
+          <IafLabelCategorization supportMetadata={supportMetadata} disabled={isSupportErrandLocked(supportErrand)} />
+        ) : !isIAFOrVOF() ? (
+          <div className="w-full flex gap-20">
+            <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
+          </div>
+        ) : null
       ) : null}
 
       {appConfig.features.useBusinessCase ? (

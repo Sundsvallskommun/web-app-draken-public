@@ -1,5 +1,19 @@
 import { Type as TypeTransformer } from 'class-transformer';
-import { IsArray, IsBoolean, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsDefined,
+  IsInt,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 import FormData from 'form-data';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
@@ -17,8 +31,10 @@ import {
   Errand as SupportErrand,
   ErrandAction,
   ErrandAttachment,
+  ErrandPhase,
   ExternalTag,
   Label,
+  Labels as SupportLabels,
   Notification,
   PageErrand,
   Parameter,
@@ -26,6 +42,7 @@ import {
   Stakeholder as SupportStakeholder,
   Suspension,
 } from '@/data-contracts/supportmanagement/data-contracts';
+import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { MEXCaseType } from '@/interfaces/case-type.interface';
 import { ErrandStatus } from '@/interfaces/errand-status.interface';
@@ -39,9 +56,12 @@ import { createConversation, sendConversationTextMessage } from '@/services/mess
 import { OrganizationService } from '@/services/organization.service';
 import {
   buildErrandFilter,
+  buildSupportErrandClassificationUpdateBody,
   ErrandFilterInput,
+  getErrandVersion,
   getNewErrandDefaults,
   resolveDefaultLabels,
+  resolveSupportErrandClassification,
   stripErrandVersions,
   SupportStakeholderRole,
   toAttachmentDto,
@@ -128,20 +148,6 @@ export class CContactChannel implements ContactChannel {
   value?: string;
 }
 
-export class CJsonParameter {
-  @IsString()
-  key!: string;
-  @IsOptional()
-  value: any;
-  @IsString()
-  schemaId!: string;
-  // Optimistic locking version, set by SupportManagement. Accepted here because the frontend echoes
-  // fetched errands back, but stripped before we forward (SupportManagement rejects it on update).
-  @IsNumber()
-  @IsOptional()
-  version?: number;
-}
-
 export class CSupportStakeholder implements SupportStakeholder {
   @IsString()
   @IsOptional()
@@ -193,6 +199,42 @@ export class Classification {
   category!: string;
   @IsString()
   type!: string;
+}
+
+export class RequiredClassificationDto {
+  @IsString()
+  @MinLength(1)
+  category!: string;
+
+  @IsString()
+  @MinLength(1)
+  type!: string;
+}
+
+export class ClassificationLabelReferenceDto {
+  @IsString()
+  @MinLength(1)
+  id!: string;
+}
+
+export class UpdateSupportErrandClassificationDto {
+  @IsInt()
+  @Min(0)
+  @Max(Number.MAX_SAFE_INTEGER)
+  expectedVersion!: number;
+
+  @IsDefined()
+  @IsObject()
+  @ValidateNested()
+  @TypeTransformer(() => RequiredClassificationDto)
+  classification!: RequiredClassificationDto;
+
+  @IsDefined()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => ClassificationLabelReferenceDto)
+  categoryLabels!: ClassificationLabelReferenceDto[];
 }
 
 export class CSuspension implements Suspension {
@@ -264,6 +306,23 @@ export class CNotification implements Notification {
   @IsOptional()
   errandNumber?: string;
 }
+export class CErrandPhase implements ErrandPhase {
+  @IsString()
+  @IsOptional()
+  phaseId?: string;
+  @IsString()
+  @IsOptional()
+  name?: string;
+  @IsString()
+  @IsOptional()
+  displayName?: string;
+  @IsString()
+  @IsOptional()
+  started?: string;
+  @IsString()
+  @IsOptional()
+  ended?: string;
+}
 export class SupportErrandDto implements Partial<SupportErrand> {
   @IsString()
   @IsOptional()
@@ -292,11 +351,8 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @ValidateNested({ each: true })
   @TypeTransformer(() => CParameter)
   parameters!: Parameter[];
-  @IsArray()
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @TypeTransformer(() => CJsonParameter)
-  jsonParameters?: CJsonParameter[];
+  // jsonParameters is intentionally absent: investigation documents are written only through the
+  // per-key endpoints in SupportErrandJsonParameterController, which enforce If-Match versioning.
   @TypeTransformer(() => Classification)
   @ValidateNested()
   @IsObject()
@@ -367,6 +423,14 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @ValidateNested({ each: true })
   @TypeTransformer(() => CErrandAction)
   actions?: CErrandAction[];
+  @IsString()
+  @IsOptional()
+  activePhaseId?: string;
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => CErrandPhase)
+  phases?: CErrandPhase[];
 }
 
 class ForwardFormDto {
@@ -700,6 +764,55 @@ export class SupportErrandController {
       throw e;
     });
     return response.status(200).send(res.data);
+  }
+
+  @Patch('/supporterrands/:municipalityId/:id/classification')
+  @HttpCode(200)
+  @OpenAPI({ summary: 'Update the classification and labels of a support errand' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(UpdateSupportErrandClassificationDto, 'body'))
+  async updateSupportErrandClassification(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Param('municipalityId') municipalityId: string,
+    @Body() data: UpdateSupportErrandClassificationDto,
+    @Res() response: any,
+  ): Promise<any> {
+    if (!municipalityId) {
+      console.error('No municipality id found, it is needed to update errand classification.');
+      logger.error('No municipality id found, it is needed to update errand classification.');
+      return response.status(400).send('Municipality id missing');
+    }
+
+    const url = `${municipalityId}/${this.namespace}/errands/${id}`;
+    const metadataUrl = `${municipalityId}/${this.namespace}/metadata/labels`;
+    const baseURL = apiURL(this.SERVICE);
+    const [currentErrand, labelMetadata] = await Promise.all([
+      this.apiService.get<SupportErrand>({ url, baseURL, includeResponseHeaders: true, propagateClientError: true }, req.user),
+      this.apiService.get<SupportLabels | null>({ url: metadataUrl, baseURL, propagateClientError: true }, req.user),
+    ]);
+    const currentVersion = getErrandVersion(currentErrand.data, currentErrand.headers?.etag);
+    if (currentVersion !== data.expectedVersion) {
+      throw new HttpException(409, 'Support errand classification has changed since it was loaded');
+    }
+    const resolvedClassification = resolveSupportErrandClassification(data, labelMetadata.data?.labelStructure);
+    const body = buildSupportErrandClassificationUpdateBody(
+      data,
+      currentErrand.data.labels,
+      resolvedClassification.categoryLabels,
+      resolvedClassification.classification,
+      resolvedClassification.managedCategoryLabelIds,
+    );
+    await this.apiService.patch<SupportErrand, typeof body>(
+      { url, baseURL, data: body, headers: { 'If-Match': `"${data.expectedVersion}"` }, propagateClientError: true },
+      req.user,
+    );
+    const savedErrand = await this.apiService.get<SupportErrand>(
+      { url, baseURL, includeResponseHeaders: true, propagateClientError: true },
+      req.user,
+    );
+    const savedVersion = getErrandVersion(savedErrand.data, savedErrand.headers?.etag);
+
+    return response.status(200).send({ ...savedErrand.data, version: savedVersion });
   }
 
   @Patch('/supporterrands/:municipalityId/:id/admin')

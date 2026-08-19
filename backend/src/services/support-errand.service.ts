@@ -21,6 +21,7 @@ import {
   Parameter,
   Stakeholder as SupportStakeholder,
 } from '@/data-contracts/supportmanagement/data-contracts';
+import { HttpException } from '@/exceptions/HttpException';
 import { CreateAttachmentDto } from '@/interfaces/attachment.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import { Role } from '@/interfaces/role';
@@ -233,6 +234,278 @@ export const resolveDefaultLabels = (labelStructure: Label[] | undefined, names:
   const subTypeObject = typeObject.labels?.find(l => l.resourcePath === names.subType);
   if (!subTypeObject) return [categoryObject, typeObject];
   return [categoryObject, typeObject, subTypeObject];
+};
+
+/**
+ * Structural shapes of the classification payload. The controller's class-validator DTOs satisfy
+ * these, which keeps the validation classes in the controller without the service importing them.
+ */
+export interface ClassificationSpec {
+  category: string;
+  type: string;
+}
+
+export interface LabelIdReference {
+  id: string;
+}
+
+export interface SupportErrandClassificationSelection {
+  classification: ClassificationSpec;
+  categoryLabels: LabelIdReference[];
+}
+
+/**
+ * One resolvable path through the Support Management label tree.
+ *
+ * NOTE: the mapping to `classification` is deliberately shifted by one level, so the field
+ * names do not line up with the metadata classification strings they carry:
+ *
+ *   PROVISION-CATEGORY node (`owner`)  -> classification.category
+ *   CATEGORY node (`category`)         -> classification.type
+ *   TYPE nodes (`types`)               -> neither field; contribute selected label ids only
+ *
+ * When there is no PROVISION-CATEGORY ancestor, `classification.category` falls back to the
+ * CATEGORY node, so category and type then hold the same resource. The frontend performs the
+ * same mapping and documents it at
+ * `investigation/label-classification/iaf-supportmanagement-label-classification.ts`
+ * ("Support Management persists the selected CATEGORY resource in classification.type").
+ * Keep the two in step — they are two implementations of one rule.
+ */
+interface SupportErrandClassificationBinding {
+  owner?: Label;
+  category: Label;
+  types: Label[];
+}
+
+interface SupportErrandClassificationMetadata {
+  bindings: SupportErrandClassificationBinding[];
+  managedLabels: Label[];
+}
+
+const normalizeLabelClassification = (classification: string | undefined): string => (classification ?? '').trim().replace(/_/g, '-').toUpperCase();
+
+const normalizeLabelResource = (resource: string | undefined): string =>
+  (resource ?? '')
+    .trim()
+    .replace(/^\/+|\/+$/gu, '')
+    .toUpperCase();
+
+const isCategoryLabel = (label: NonNullable<Errand['labels']>[number], managedCategoryLabelIds: ReadonlySet<string>): boolean => {
+  const resourcePath = normalizeLabelResource(label.resourcePath);
+  return (
+    resourcePath === 'CATEGORY' || resourcePath.startsWith('CATEGORY/') || (typeof label.id === 'string' && managedCategoryLabelIds.has(label.id))
+  );
+};
+
+const getLabelResource = (label: Label): string => label.resourcePath || label.resourceName;
+
+const requireMetadataLabelResource = (label: Label): string => {
+  if (typeof label.resourcePath === 'string' && label.resourcePath.trim().length > 0) return label.resourcePath;
+  if (typeof label.resourceName === 'string' && label.resourceName.trim().length > 0) return label.resourceName;
+  throw new HttpException(502, 'Support Management classification metadata contains a label without resource');
+};
+
+const findClassificationTypeLabels = (labels: readonly Label[] | undefined): Label[] => {
+  const types: Label[] = [];
+
+  const visit = (nodes: readonly Label[]) => {
+    for (const node of nodes) {
+      const classification = normalizeLabelClassification(node.classification);
+      if (classification === 'TYPE') {
+        types.push(node);
+      } else if (classification !== 'CATEGORY' && node.labels?.length) {
+        visit(node.labels);
+      }
+    }
+  };
+
+  visit(labels ?? []);
+  return types;
+};
+
+const getSupportErrandClassificationMetadata = (labelStructure: readonly Label[]): SupportErrandClassificationMetadata => {
+  const bindings: SupportErrandClassificationBinding[] = [];
+
+  const visit = (nodes: readonly Label[], owner?: Label) => {
+    for (const node of nodes) {
+      const classification = normalizeLabelClassification(node.classification);
+      const resource = normalizeLabelResource(getLabelResource(node));
+      const categoryRoot = classification === 'CATEGORY-ROOT' || resource === 'CATEGORY';
+      if (classification === 'CATEGORY' && !categoryRoot) {
+        bindings.push({ owner, category: node, types: findClassificationTypeLabels(node.labels) });
+        continue;
+      }
+
+      const nextOwner = classification === 'PROVISION-CATEGORY' ? node : owner;
+      if (node.labels?.length) visit(node.labels, nextOwner);
+    }
+  };
+
+  const categoryRoots = labelStructure.filter(label => {
+    const classification = normalizeLabelClassification(label.classification);
+    return classification === 'CATEGORY-ROOT' || normalizeLabelResource(getLabelResource(label)) === 'CATEGORY';
+  });
+  if (categoryRoots.length !== 1) {
+    throw new HttpException(502, 'Support Management classification metadata must contain exactly one CATEGORY root');
+  }
+  const categoryRoot = categoryRoots[0];
+  if (categoryRoot?.labels?.length) visit(categoryRoot.labels);
+  if (bindings.length === 0) {
+    throw new HttpException(502, 'Support Management classification metadata contains no CATEGORY labels');
+  }
+  const managedLabels: Label[] = [];
+  const collectManagedLabels = (labels: readonly Label[]) => {
+    for (const label of labels) {
+      managedLabels.push(label);
+      if (label.labels?.length) collectManagedLabels(label.labels);
+    }
+  };
+  collectManagedLabels([categoryRoot]);
+
+  return { bindings, managedLabels };
+};
+
+const requireMetadataLabelId = (label: Label): string => {
+  if (typeof label.id === 'string' && label.id.length > 0) return label.id;
+  throw new HttpException(502, 'Support Management classification metadata contains a label without id');
+};
+
+export interface ResolvedSupportErrandClassification {
+  classification: ClassificationSpec;
+  categoryLabels: LabelIdReference[];
+  managedCategoryLabelIds: string[];
+}
+
+/**
+ * Validates a submitted classification against the metadata CATEGORY tree and returns the canonical
+ * resource names plus the exact label ids that path implies. Throws 400 for a payload that does not
+ * match the tree, and 502 when the metadata itself is unusable.
+ */
+export const resolveSupportErrandClassification = (
+  data: SupportErrandClassificationSelection,
+  labelStructure: readonly Label[] | undefined,
+): ResolvedSupportErrandClassification => {
+  if (!labelStructure?.length) {
+    throw new HttpException(502, 'Support Management classification metadata is unavailable');
+  }
+
+  const { bindings, managedLabels } = getSupportErrandClassificationMetadata(labelStructure);
+  const metadataIds = new Map<string, Label>();
+  for (const label of managedLabels) {
+    const id = requireMetadataLabelId(label);
+    if (metadataIds.has(id)) {
+      throw new HttpException(502, 'Support Management classification metadata contains duplicate label ids');
+    }
+    metadataIds.set(id, label);
+  }
+
+  for (const binding of bindings) {
+    for (const label of [...(binding.owner ? [binding.owner] : []), binding.category, ...binding.types]) {
+      requireMetadataLabelResource(label);
+    }
+  }
+
+  const matchingBindings = bindings.filter(binding => {
+    const expectedCategory = binding.owner ? requireMetadataLabelResource(binding.owner) : requireMetadataLabelResource(binding.category);
+    return (
+      normalizeLabelResource(expectedCategory) === normalizeLabelResource(data.classification.category) &&
+      normalizeLabelResource(requireMetadataLabelResource(binding.category)) === normalizeLabelResource(data.classification.type)
+    );
+  });
+  if (matchingBindings.length === 0) {
+    throw new HttpException(400, 'Classification does not match the Support Management CATEGORY tree');
+  }
+  if (matchingBindings.length > 1) {
+    throw new HttpException(502, 'Support Management classification metadata contains an ambiguous CATEGORY path');
+  }
+
+  const binding = matchingBindings[0];
+  const submittedIds = data.categoryLabels.map(label => label.id);
+  const submittedIdSet = new Set(submittedIds);
+  if (submittedIdSet.size !== submittedIds.length) {
+    throw new HttpException(400, 'Classification label ids must be unique');
+  }
+
+  const ownerId = binding.owner ? requireMetadataLabelId(binding.owner) : undefined;
+  const categoryId = requireMetadataLabelId(binding.category);
+  const typeIds = binding.types.map(type => ({ id: requireMetadataLabelId(type), type }));
+  const selectedTypes = typeIds.filter(({ id }) => submittedIdSet.has(id));
+  if ((typeIds.length > 0 && selectedTypes.length !== 1) || (typeIds.length === 0 && selectedTypes.length !== 0)) {
+    throw new HttpException(400, 'Classification must contain exactly one valid undercategory when required');
+  }
+
+  const expectedIds = [...(ownerId ? [ownerId] : []), categoryId, ...selectedTypes.map(({ id }) => id)];
+  if (submittedIds.length !== expectedIds.length || submittedIds.some(id => !expectedIds.includes(id))) {
+    throw new HttpException(400, 'Classification label ids do not match the selected CATEGORY path');
+  }
+
+  return {
+    classification: {
+      category: binding.owner ? requireMetadataLabelResource(binding.owner) : requireMetadataLabelResource(binding.category),
+      type: requireMetadataLabelResource(binding.category),
+    },
+    categoryLabels: expectedIds.map(id => ({ id })),
+    managedCategoryLabelIds: [...metadataIds.keys()],
+  };
+};
+
+/**
+ * Builds the PATCH body for a classification change, keeping every label that the CATEGORY tree does
+ * not own so unrelated labels survive the update.
+ */
+export const buildSupportErrandClassificationUpdateBody = (
+  data: SupportErrandClassificationSelection,
+  currentLabels: Errand['labels'],
+  categoryLabels: readonly LabelIdReference[] = data.categoryLabels,
+  classification: ClassificationSpec = data.classification,
+  managedCategoryLabelIds: readonly string[] = categoryLabels.map(label => label.id),
+): { classification: ClassificationSpec; labels: LabelIdReference[] } => {
+  const managedCategoryLabelIdSet = new Set(managedCategoryLabelIds);
+  const preservedLabelIds = (currentLabels ?? [])
+    .filter(label => !isCategoryLabel(label, managedCategoryLabelIdSet))
+    .map(label => {
+      if (typeof label.id !== 'string' || label.id.length === 0) {
+        throw new HttpException(502, 'Support Management response contains an unrelated label without id');
+      }
+
+      return label.id;
+    });
+  const labelIds = [...preservedLabelIds, ...categoryLabels.map(label => label.id)];
+
+  return {
+    classification: {
+      category: classification.category,
+      type: classification.type,
+    },
+    labels: [...new Set(labelIds)].map(id => ({ id })),
+  };
+};
+
+const STRONG_ERRAND_ETAG_PATTERN = /^"\d+"$/;
+
+/**
+ * Reads the errand's optimistic locking version from the ETag header, falling back to the body.
+ * Both are checked against each other so a stale or malformed version never reaches an If-Match.
+ */
+export const getErrandVersion = (errand: Errand, responseETag: unknown): number => {
+  const responseVersion =
+    typeof responseETag === 'string' && STRONG_ERRAND_ETAG_PATTERN.test(responseETag) ? Number(responseETag.slice(1, -1)) : undefined;
+  const bodyVersion = typeof errand.version === 'number' && Number.isSafeInteger(errand.version) && errand.version >= 0 ? errand.version : undefined;
+
+  if (responseVersion !== undefined && !Number.isSafeInteger(responseVersion)) {
+    throw new HttpException(502, 'Support Management response contains an invalid errand ETag');
+  }
+  if (responseVersion !== undefined && bodyVersion !== undefined && responseVersion !== bodyVersion) {
+    throw new HttpException(502, 'Support Management response contains inconsistent errand versions');
+  }
+  if (responseVersion !== undefined) {
+    return responseVersion;
+  }
+  if (bodyVersion !== undefined) {
+    return bodyVersion;
+  }
+
+  throw new HttpException(502, 'Support Management response is missing a valid errand version');
 };
 
 /** Maps SupportManagement contact channels onto CaseData contact information, dropping unknown types. */

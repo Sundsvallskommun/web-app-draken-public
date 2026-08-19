@@ -103,7 +103,9 @@
     ".next-BOU/types/**/*.ts",
     ".next-BOU/dev/types/**/*.ts",
     ".next-LOK/types/**/*.ts",
-    ".next-LOK/dev/types/**/*.ts"
+    ".next-LOK/dev/types/**/*.ts",
+    ".next-VOF/types/**/*.ts",
+    ".next-VOF/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

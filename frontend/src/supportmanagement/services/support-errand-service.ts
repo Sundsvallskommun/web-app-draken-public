@@ -1,7 +1,7 @@
 import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
-import { isKC, isLOK, isROB } from '@common/services/application-service';
+import { isIAFOrVOF, isKC, isLOK, isROB } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
@@ -17,8 +17,9 @@ import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-co
 import { v4 as uuidv4 } from 'uuid';
 
 import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
+import { buildSupportErrandUpdateData } from './support-errand-update-data';
+import { findLabelByClassification } from './support-label-classification-service';
 import { MessageRequest, sendMessage } from './support-message-service';
-import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 export interface Customer {
@@ -67,6 +68,7 @@ export type ExternalTags = Array<{ key: string; value: string }>;
 
 export interface ApiSupportErrand extends SupportErrandDto {
   id?: string;
+  version?: number;
   created?: string;
   modified?: string;
   touched?: string;
@@ -77,6 +79,8 @@ export interface SupportErrand extends ApiSupportErrand {
   category: string;
   type: string;
   subType: string;
+  labels?: Label[];
+  classificationHasSubTypes?: boolean;
   customer: SupportStakeholderFormModel[];
   contacts: SupportStakeholderFormModel[];
 }
@@ -228,40 +232,16 @@ export const findAttestationStatusKeyForAttestationStatusLabel = (attestationSta
 export const findAttestationStatusLabelForAttestationStatusKey = (attestationStatusLabel: string) =>
   Object.entries(AttestationStatusLabel).find((e: [string, string]) => e[0] === attestationStatusLabel)?.[1];
 
-export const getLabelCategory = (errand: SupportErrand, metadata: SupportMetadata) =>
-  errand.labels?.length !== 0
-    ? errand.labels?.find((label) => label.classification === 'CATEGORY')
-    : metadata?.labels?.labelStructure?.find((c) => errand.classification?.category === c.resourceName);
-
-export const getLabelType = (errand: SupportErrand) => {
-  return errand.labels?.find((label) => label.classification === 'TYPE');
-};
-
-export const getLabelSubType = (errand: SupportErrand) => {
-  return errand.labels?.find((label) => label.classification === 'SUBTYPE');
-};
-
-export const getLabelTypeFromDisplayName = (displayName: string, metadata: SupportMetadata): Label[] => {
-  const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
-  return allTypesFlattened.filter((t) => t?.displayName === displayName);
-};
-
-export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
-  const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
-  return allTypesFlattened.find((t) => t?.resourcePath === name);
-};
-
-export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
-  const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
-  const allSubTypesFlattened = allTypesFlattened
-    .filter((l) => l?.labels && l.labels.length > 0)
-    .flatMap((l) => l.labels ?? []) as Label[];
-  return allSubTypesFlattened.find((t) => t?.resourcePath === name);
-};
-
-export const getLabelCategoryFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
-  return metadata?.labels?.labelStructure?.find((category) => category?.resourcePath === name);
-};
+export {
+  getErrandTypeLabel,
+  getLabelCategory,
+  getLabelCategoryFromName,
+  getLabelSubType,
+  getLabelSubTypeFromName,
+  getLabelType,
+  getLabelTypeFromDisplayName,
+  getLabelTypeFromName,
+} from './support-label-classification-service';
 
 export enum Resolution {
   SOLVED = 'SOLVED',
@@ -387,6 +367,8 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
   priority: 'MEDIUM',
   category: '',
   type: '',
+  subType: '',
+  classificationHasSubTypes: false,
   labels: [],
   contactReason: '',
   contactReasonDescription: undefined,
@@ -678,7 +660,10 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       type: (e.classification?.type === 'NONE' ? '' : e.classification?.type) || '',
       subType:
         (appConfig.features.useThreeLevelCategorization
-          ? e.labels?.find((l) => l.classification === 'SUBTYPE')?.resourcePath
+          ? (() => {
+              const subTypeLabel = findLabelByClassification(e.labels, isIAFOrVOF() ? 'TYPE' : 'SUBTYPE');
+              return subTypeLabel?.resourcePath || subTypeLabel?.resourceName;
+            })()
           : undefined) || '',
       contactReason: e.contactReason,
       contactReasonDescription: e.contactReasonDescription,
@@ -863,47 +848,7 @@ export const updateSupportErrand: (
   }
 
   const stakeholders = buildStakeholdersList(formdata);
-
-  const data: Partial<SupportErrandDto> = {
-    ...(formdata.title && { title: formdata.title }),
-    ...(formdata.priority && {
-      priority: formdata.priority,
-    }),
-    ...(formdata.category &&
-      formdata.type && {
-        classification: {
-          category: formdata.category,
-          type: formdata.type,
-        },
-      }),
-    labels: (formdata.labels ?? []).map((label): Label => ({ ...label, labels: undefined })),
-    ...(formdata.contactReason && { contactReason: formdata.contactReason }),
-    ...(typeof formdata.contactReasonDescription !== 'undefined' && {
-      contactReasonDescription: formdata.contactReasonDescription,
-    }),
-    businessRelated: !!formdata.businessRelated,
-    ...(formdata.status && { status: formdata.status }),
-    ...(formdata.status && {
-      suspension: {
-        suspendedFrom: undefined,
-        suspendedTo: undefined,
-      },
-    }),
-    ...(formdata.resolution && { resolution: formdata.resolution }),
-    ...(formdata.escalationEmail && { escalationEmail: formdata.escalationEmail }),
-    ...(formdata.channel && { channel: formdata.channel }),
-    ...(formdata.description && { description: formdata.description }),
-    ...(formdata.assignedUserId && { assignedUserId: formdata.assignedUserId }),
-    ...{ stakeholders: stakeholders },
-    externalTags: (formdata.externalTags || []).filter((t) => t.key !== 'caseId'),
-    parameters: formdata.parameters || [],
-  };
-  if (formdata.caseId) {
-    data.externalTags!.push({
-      key: 'caseId',
-      value: formdata.caseId,
-    });
-  }
+  const data = buildSupportErrandUpdateData(formdata, stakeholders);
 
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${formdata.id}`, data)
@@ -916,6 +861,19 @@ export const updateSupportErrand: (
       throw e;
     });
 };
+
+export const updateSupportErrandPhase: (municipalityId: string, id: string, activePhaseId: string) => Promise<void> = (
+  municipalityId,
+  id,
+  activePhaseId
+) =>
+  apiService
+    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${id}`, { activePhaseId })
+    .then(() => undefined)
+    .catch((e) => {
+      console.error('Something went wrong when updating errand phase');
+      throw e;
+    });
 
 export const getStatus: (errand: SupportErrand) => Status = (errand) => errand.status as Status;
 

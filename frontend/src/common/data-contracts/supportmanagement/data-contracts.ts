@@ -1137,6 +1137,8 @@ export interface Parameter {
   group?: string;
   /** Parameter values. Each value can have a maximum length of 2000 characters */
   values?: string[];
+  /** Optimistic locking version of the parameter */
+  version?: number;
 }
 
 /** JSON Parameter model */
@@ -1579,6 +1581,67 @@ export interface Labels {
   labelStructure?: Label[];
 }
 
+/** Phase transition model */
+export interface PhaseTransition {
+  /** Transition ID */
+  id?: string;
+  /**
+   * Target phase ID
+   * @minLength 1
+   */
+  targetPhaseId: string;
+  /** Target phase name */
+  targetPhaseName?: string;
+  /** Target phase display name */
+  targetPhaseDisplayName?: string;
+  /** Description of the transition */
+  description?: string;
+  /**
+   * Indicates if the phase transition is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
+}
+
+/** Phase model */
+export interface Phase {
+  /** Phase ID */
+  id?: string;
+  /**
+   * Phase name
+   * @minLength 1
+   */
+  name: string;
+  /** Display name for the phase */
+  displayName?: string;
+  /** Description of the phase */
+  description?: string;
+  /**
+   * Order of the phase in the process (0 = initial phase)
+   * @format int32
+   */
+  phaseOrder?: number;
+  /** Allowed statuses in this phase */
+  allowedStatuses?: string[];
+  /** Transitions from this phase */
+  transitions?: PhaseTransition[];
+  /**
+   * Indicates if the phase is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
+  /**
+   * Timestamp when the phase was created
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * Timestamp when the phase was last modified
+   * @format date-time
+   */
+  modified?: string;
+}
+
 /** MetadataResponse model */
 export interface MetadataResponse {
   categories?: Category[];
@@ -1588,6 +1651,7 @@ export interface MetadataResponse {
   statuses?: Status[];
   roles?: Role[];
   contactReasons?: ContactReason[];
+  phases?: Phase[];
 }
 
 export interface PageErrand {

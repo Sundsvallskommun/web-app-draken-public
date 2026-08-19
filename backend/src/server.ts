@@ -33,6 +33,7 @@ import { RelationsController } from './controllers/relations.controller';
 import { SupportAttachmentController } from './controllers/supportmanagement/support-attachment.controller';
 import { SupportConversationController } from './controllers/supportmanagement/support-conversation.controller';
 import { SupportErrandController } from './controllers/supportmanagement/support-errand.controller';
+import { SupportErrandJsonParameterController } from './controllers/supportmanagement/support-errand-json-parameter.controller';
 import { SupportExportController } from './controllers/supportmanagement/support-export.controller';
 import { SupportFacilitiesController } from './controllers/supportmanagement/support-facilities.controller';
 import { SupportHandoverController } from './controllers/supportmanagement/support-handover.controller';
@@ -73,6 +74,7 @@ validateEnv();
       MessageController,
       SupportAttachmentController,
       SupportErrandController,
+      SupportErrandJsonParameterController,
       SupportExportController,
       SupportFacilitiesController,
       SupportHandoverController,

@@ -61,3 +61,6 @@ jobs:
 
       - name: Run type check
         run: yarn type-check
+
+      - name: Run investigation schema contracts
+        run: yarn test:investigation-schemas

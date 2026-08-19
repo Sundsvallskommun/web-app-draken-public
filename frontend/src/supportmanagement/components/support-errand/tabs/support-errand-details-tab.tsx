@@ -1,6 +1,8 @@
 import { JsonParametersDisplay } from '@common/components/json/schema/json-parameters-display.component';
+import { appConfig } from '@config/appconfig';
 import { Table } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
+import { isInvestigationDocumentKey } from '@supportmanagement/investigation/investigation-document';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
 import { useMemo } from 'react';
 
@@ -8,6 +10,13 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const _supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = _supportErrand!;
+  const readonlyJsonParameters = useMemo(
+    () =>
+      (supportErrand.jsonParameters ?? []).filter(
+        ({ key }) => !appConfig.features.useInvestigation || !isInvestigationDocumentKey(key)
+      ),
+    [supportErrand.jsonParameters]
+  );
 
   const simpleParams = useMemo(
     () =>
@@ -100,12 +109,9 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
             </Table>
           </div>
         ))}
-        {(supportErrand.jsonParameters?.length ?? 0) > 0 && municipalityId ? (
+        {readonlyJsonParameters.length > 0 && municipalityId ? (
           <div className="p-16">
-            <JsonParametersDisplay
-              jsonParameters={supportErrand.jsonParameters as any}
-              municipalityId={municipalityId}
-            />
+            <JsonParametersDisplay jsonParameters={readonlyJsonParameters} municipalityId={municipalityId} />
           </div>
         ) : null}
       </div>

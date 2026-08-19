@@ -1,0 +1,240 @@
+{
+  "name": "utredning-sol-lss",
+  "version": "1.1",
+  "value": {
+    "$id": "https://schemas.sundsvall.se/2281/utredning-sol-lss/1.1",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Utredning SOL/LSS",
+    "description": "SOL/LSS-utredning för IAF- och VOF-ärenden. Åtgärder, handlingsplan och interna arbetsanteckningar lagras inte i detta dokument.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["legalBases"],
+    "x-draken-external-fields": {
+      "errandClassification": {
+        "kind": "supportManagementLabelClassification",
+        "legalBasesPointer": "/legalBases",
+        "required": true
+      }
+    },
+    "properties": {
+      "legalBases": {
+        "title": "Lagrum",
+        "description": "Missförhållanden utreds enligt SOL/LSS. Värdet sätts och låses av Draken.",
+        "type": "array",
+        "const": ["SOL", "LSS"],
+        "default": ["SOL", "LSS"],
+        "readOnly": true,
+        "items": {
+          "type": "string",
+          "enum": ["SOL", "LSS"]
+        }
+      },
+      "occurredDate": {
+        "title": "När inträffade missförhållandet?",
+        "type": "string",
+        "format": "date"
+      },
+      "reportReceivedDate": {
+        "title": "När togs rapporten emot?",
+        "type": "string",
+        "format": "date"
+      },
+      "eventTypes": {
+        "title": "Typ av händelse",
+        "description": "Välj en eller flera typer.",
+        "type": "array",
+        "minItems": 1,
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "physical_or_psychological_violation",
+              "title": "Fysisk eller psykisk kränkning"
+            },
+            {
+              "const": "care_support_service_deficiency",
+              "title": "Brister i omsorg, stöd eller service"
+            },
+            {
+              "const": "financial_irregularity",
+              "title": "Ekonomiska oegentligheter"
+            },
+            {
+              "const": "treatment_or_integrity_deficiency",
+              "title": "Brister i bemötande eller integritet"
+            },
+            {
+              "const": "legal_certainty_deficiency",
+              "title": "Brister i rättssäkerhet"
+            }
+          ]
+        }
+      },
+      "investigationTemplate": {
+        "title": "Utredningsmall",
+        "description": "Vald mall är presentationsmetadata. Händelsebeskrivningen är den formella uppgiften.",
+        "type": "string",
+        "oneOf": [
+          {
+            "const": "standard_sol_lss",
+            "title": "Standardutredning SoL/LSS"
+          },
+          {
+            "const": "simplified",
+            "title": "Förenklad utredning"
+          },
+          {
+            "const": "lex_sarah",
+            "title": "Lex Sarah-utredning"
+          }
+        ]
+      },
+      "eventDescription": {
+        "title": "Händelsebeskrivning",
+        "description": "Beskriv händelseförlopp, bakgrund, sammanhang, berörda personer och konsekvenser för den enskilde.",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "causeAreas": {
+        "title": "Vilka orsaksområden berör avvikelsen?",
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "communication_information",
+              "title": "Kommunikation och information"
+            },
+            {
+              "const": "environment_organization",
+              "title": "Omgivning och organisation"
+            },
+            {
+              "const": "procedures_routines_guidelines",
+              "title": "Procedurer, rutiner och riktlinjer"
+            },
+            {
+              "const": "technology_equipment",
+              "title": "Teknik, utrustning och apparatur"
+            },
+            {
+              "const": "people_knowledge_competence",
+              "title": "Människa – kunskap och kompetens"
+            }
+          ]
+        }
+      },
+      "primaryUnderlyingCauses": {
+        "title": "Primär bakomliggande orsak",
+        "description": "Flerval enligt utredningsskissen.",
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "oneOf": [
+            {
+              "const": "communication_failure",
+              "title": "Brist i kommunikation"
+            },
+            {
+              "const": "time_pressure_workload",
+              "title": "Tidsbrist / arbetsbelastning"
+            },
+            {
+              "const": "knowledge_gap",
+              "title": "Kunskapsbrist"
+            },
+            {
+              "const": "routine_missing_not_followed",
+              "title": "Rutin saknas eller följs inte"
+            },
+            {
+              "const": "technical_fault",
+              "title": "Tekniskt fel"
+            },
+            {
+              "const": "other",
+              "title": "Övrigt"
+            }
+          ]
+        }
+      },
+      "individualNotified": {
+        "title": "Är den enskilde underrättad?",
+        "$ref": "#/$defs/yesNo"
+      },
+      "representativeNotified": {
+        "title": "Är god man, förvaltare eller anhörig informerad?",
+        "$ref": "#/$defs/yesNo"
+      },
+      "conversationDocumentation": {
+        "title": "Dokumentation om samtal med berörda",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "documentedInRecord": {
+        "title": "Är det säkerställt att det inträffade dokumenterats i den enskildes personakt/journal?",
+        "$ref": "#/$defs/yesNo"
+      },
+      "documentationMotivation": {
+        "title": "Motivering",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "requiresPoliceReport": {
+        "title": "Är missförhållandet av den karaktären att det behöver polisanmälas?",
+        "$ref": "#/$defs/yesNo"
+      },
+      "proposedMisconductDegree": {
+        "title": "Det rapporterade utgjorde",
+        "description": "Utredarens förslag till beslut om graden av missförhållande.",
+        "type": "string",
+        "oneOf": [
+          {
+            "const": "no_misconduct",
+            "title": "Inget missförhållande"
+          },
+          {
+            "const": "tangible_risk_of_misconduct",
+            "title": "Påtaglig risk för missförhållande"
+          },
+          {
+            "const": "misconduct",
+            "title": "Missförhållande"
+          },
+          {
+            "const": "tangible_risk_of_serious_misconduct",
+            "title": "Påtaglig risk för allvarligt missförhållande – anmäls till IVO"
+          },
+          {
+            "const": "serious_misconduct",
+            "title": "Allvarligt missförhållande – anmäls till IVO"
+          }
+        ]
+      },
+      "proposalMotivation": {
+        "title": "Motivering",
+        "type": "string",
+        "contentMediaType": "text/html"
+      }
+    },
+    "$defs": {
+      "yesNo": {
+        "type": "string",
+        "oneOf": [
+          {
+            "const": "yes",
+            "title": "Ja"
+          },
+          {
+            "const": "no",
+            "title": "Nej"
+          }
+        ]
+      }
+    }
+  },
+  "description": "WSO2 request body for version 1.1 of the SOL/LSS investigation schema"
+}
