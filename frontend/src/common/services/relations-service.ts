@@ -3,7 +3,7 @@ import { appConfig } from '@config/appconfig';
 import { All } from '@supportmanagement/interfaces/priority';
 
 import { ApiResponse, apiService } from './api-service';
-import { CaseStatusResponse } from './casestatus-service';
+import { CaseStatusResponse, clearCaseStatusCache } from './casestatus-service';
 
 export const relationsToLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
@@ -20,6 +20,12 @@ export const relationsFromLabels = [
   { label: 'Ärendenummer', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: '', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
 ];
+
+// En ändrad relation gör både relationslistan och de cachade ärendelistorna inaktuella.
+const invalidateRelationCaches = () => {
+  clearResolvedRelationsCache();
+  clearCaseStatusCache();
+};
 
 const formatServiceName = (str: string) => {
   if (str === 'SUPPORT_MANAGEMENT') return 'supportmanagement';
@@ -49,6 +55,7 @@ export const createRelation = (municipalityId: string, sourceId: string, targetE
   return apiService
     .post<ApiResponse<Relation>, Partial<Relation>>(url, body)
     .then((res) => {
+      invalidateRelationCaches();
       return res.data;
     })
     .catch((e) => {
@@ -62,7 +69,10 @@ export const deleteRelation = (municipalityId: string, id: string) => {
 
   return apiService
     .deleteRequest<ApiResponse<boolean>>(url)
-    .then((res) => res.data)
+    .then((res) => {
+      invalidateRelationCaches();
+      return res.data;
+    })
     .catch((e) => {
       console.error('Something went wrong when deleting relation: ' + e);
       throw e;
@@ -183,6 +193,16 @@ export const getReferredFromErrands = (
     });
 };
 
+// Ett ärendes relationer efterfrågas av flera komponenter samtidigt — kundbildsfoten renderas
+// en gång per intressentkort och modalen hämtar samma lista. Utan dedupliceringen blir det ett
+// identiskt anrop per kort. Fönstret är kort och töms så fort en relation skapas eller tas bort.
+const RESOLVED_RELATIONS_TTL_MS = 30 * 1000;
+const resolvedRelationsCache = new Map<string, { fetchedAt: number; promise: Promise<ResolvedRelationsResponse> }>();
+
+const clearResolvedRelationsCache = () => {
+  resolvedRelationsCache.clear();
+};
+
 export const getResolvedRelations = (
   direction: 'source' | 'target',
   municipalityId: string,
@@ -191,8 +211,26 @@ export const getResolvedRelations = (
 ): Promise<ResolvedRelationsResponse> => {
   const url = `${municipalityId}/resolvedrelations/${direction}/${sort}/${resourceId}`;
 
-  return apiService
+  const now = Date.now();
+  resolvedRelationsCache.forEach((cached, key) => {
+    if (now - cached.fetchedAt >= RESOLVED_RELATIONS_TTL_MS) {
+      resolvedRelationsCache.delete(key);
+    }
+  });
+
+  const entry = resolvedRelationsCache.get(url);
+  if (entry) {
+    return entry.promise.then((res) => ({ relations: [...res.relations], caseStatuses: [...res.caseStatuses] }));
+  }
+
+  const promise = apiService
     .get<ApiResponse<ResolvedRelationsResponse>>(url)
     .then((res) => res.data.data)
-    .catch(() => ({ relations: [], caseStatuses: [] }));
+    .catch(() => {
+      resolvedRelationsCache.delete(url);
+      return { relations: [], caseStatuses: [] };
+    });
+  resolvedRelationsCache.set(url, { fetchedAt: now, promise });
+
+  return promise.then((res) => ({ relations: [...res.relations], caseStatuses: [...res.caseStatuses] }));
 };

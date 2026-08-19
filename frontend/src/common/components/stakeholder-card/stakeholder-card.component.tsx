@@ -1,3 +1,5 @@
+'use client';
+
 import { Avatar, Button } from '@sk-web-gui/react';
 import { FC, ReactNode } from 'react';
 
