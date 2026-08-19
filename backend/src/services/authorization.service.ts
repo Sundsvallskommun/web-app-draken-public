@@ -4,6 +4,7 @@ import { InternalRole, Permissions } from '@interfaces/users.interface';
 import { logger } from '@/utils/logger';
 
 import { roleADMapping } from './ad-role.service';
+import { isContactSundsvall } from './application.service';
 
 export function authorizeGroups(groups: string) {
   logger.debug(`authorizing groups ${groups}`);
@@ -87,6 +88,19 @@ export const getPermissions = (groups: InternalRole[] | string[], internalGroups
   });
   return permissions;
 };
+
+/**
+ * The permissions stored on the session user at login: the union of the permissions from the user's
+ * AD groups, plus cross-namespace casestatus access, which only the Kontakt Sundsvall drake grants.
+ * Endpoints check the permission, never the environment, so access can never leak from a
+ * namespace/env misconfiguration.
+ * @param groups Array of AD groups from the SAML assertion
+ * @returns permissions to carry in the session
+ */
+export const getLoginPermissions = (groups: string[]): Permissions => ({
+  ...getPermissions(groups),
+  canViewOtherNamespaces: isContactSundsvall(),
+});
 
 /**
  * Ensures to return only the role with most permissions
