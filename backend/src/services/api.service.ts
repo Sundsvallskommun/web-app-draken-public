@@ -12,11 +12,13 @@ export class ApiResponse<T> {
   data!: T;
   message!: string;
   headers?: AxiosResponseHeaders | RawAxiosResponseHeaders;
+  status?: number;
 }
 
 // Extends AxiosRequestConfig with an opt-in flag. When `propagateClientError` is true, upstream
 // 4xx responses are re-thrown with their original status and message instead of a generic 500.
 export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & {
+  followLocation?: boolean;
   includeResponseHeaders?: boolean;
   propagateClientError?: boolean;
 };
@@ -84,10 +86,13 @@ class ApiService {
         if (response.headers.location && response.config.url?.includes('asset-drafts')) {
           response.headers.location = response.headers.location.replace('/asset-drafts/', '/assets/');
         }
-        if (response.headers.location && !response.config.url?.includes('messaging')) {
+        const followLocation = (response.config as ApiRequestConfig).followLocation !== false;
+        if (response.headers.location && followLocation && !response.config.url?.includes('messaging')) {
           logger.info(`Response contained location header: ${response.headers.location}`);
           logger.info(`Base URL was: ${response.config.baseURL}`);
-          return axios.get(response.headers.location, { baseURL: response.config.baseURL, headers: defaultHeaders }).catch(e => {
+          const sentBy = response.config.headers?.['X-Sent-By'];
+          const headers = sentBy === undefined ? defaultHeaders : { ...defaultHeaders, 'X-Sent-By': sentBy };
+          return axios.get(response.headers.location, { baseURL: response.config.baseURL, headers }).catch(e => {
             logger.error(`Error in location header request: ${e.details}`);
             logger.error(`Base URL was: ${e.config?.baseURL}`);
             logger.error(`URL was: ${e.config?.url}`);
@@ -115,7 +120,9 @@ class ApiService {
     };
     try {
       const res = await this.instance(preparedConfig);
-      return includeResponseHeaders ? { data: res.data, message: 'success', headers: res.headers } : { data: res.data, message: 'success' };
+      return includeResponseHeaders
+        ? { data: res.data, message: 'success', headers: res.headers, status: res.status }
+        : { data: res.data, message: 'success' };
     } catch (error: unknown | AxiosError) {
       if (axios.isAxiosError(error) && (error as AxiosError).response?.status === 404) {
         logger.error(`ERROR: API request failed with status: ${error.response?.status}`);

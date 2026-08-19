@@ -1,0 +1,80 @@
+import { HttpException } from '@/exceptions/HttpException';
+
+import type {
+  SupportInvestigationClassificationOwnerSelection,
+  SupportInvestigationClassificationPolicy,
+} from './support-investigation-classification-owner';
+import { InvestigationJsonObject } from './support-investigation-document.service';
+
+interface RequestedClassification {
+  readonly category: string;
+  readonly type: string;
+}
+
+const normalizeResourcePath = (value: string): string =>
+  value
+    .trim()
+    .replace(/^\/+|\/+$/gu, '')
+    .toUpperCase();
+
+const readJsonPointer = (value: InvestigationJsonObject, pointer: string): unknown =>
+  pointer
+    .slice(1)
+    .split('/')
+    .map(segment => segment.replace(/~1/gu, '/').replace(/~0/gu, '~'))
+    .reduce<unknown>(
+      (current, segment) =>
+        typeof current === 'object' && current !== null && !Array.isArray(current)
+          ? (current as Readonly<Record<string, unknown>>)[segment]
+          : undefined,
+      value,
+    );
+
+/**
+ * Enforces the policy-owned legal-base invariant at the backend write boundary.
+ * Metadata still resolves the complete CATEGORY path; this rule decides which
+ * owning category paths are allowed by the exact versioned document.
+ */
+export const assertSupportInvestigationClassificationContext = (
+  policy: SupportInvestigationClassificationPolicy,
+  owner: SupportInvestigationClassificationOwnerSelection,
+  documentKey: string,
+  documentValue: InvestigationJsonObject,
+  classification: RequestedClassification,
+): void => {
+  if (documentKey !== owner.documentKey) {
+    throw new HttpException(409, 'The selected investigation document does not own classification for this errand');
+  }
+
+  const rawLegalBases = readJsonPointer(documentValue, policy.legalBasesPointer);
+  if (!Array.isArray(rawLegalBases) || rawLegalBases.length === 0 || rawLegalBases.some(value => typeof value !== 'string')) {
+    throw new HttpException(409, 'The investigation document must contain at least one supported legal base');
+  }
+
+  const normalizedLegalBases = (rawLegalBases as string[]).map(legalBase => legalBase.trim().toUpperCase());
+  if (new Set(normalizedLegalBases).size !== normalizedLegalBases.length) {
+    throw new HttpException(409, 'The investigation document contains duplicate legal bases');
+  }
+
+  if (owner.strategy === 'reported-misconduct' && owner.mode === 'reported-misconduct') {
+    const forcedLegalBases = new Set(policy.forcedLegalBases.map(legalBase => legalBase.trim().toUpperCase()));
+    const actualLegalBases = new Set(normalizedLegalBases);
+    if (actualLegalBases.size !== forcedLegalBases.size || [...forcedLegalBases].some(legalBase => !actualLegalBases.has(legalBase))) {
+      throw new HttpException(409, 'The reported-misconduct investigation document must contain exactly the policy-forced legal bases');
+    }
+  }
+
+  const rules = new Map(policy.legalBaseRules.map(rule => [rule.legalBase.toUpperCase(), rule]));
+  const allowedCategories = new Set<string>();
+  for (const [index, normalizedLegalBase] of normalizedLegalBases.entries()) {
+    const rule = rules.get(normalizedLegalBase);
+    if (!rule) {
+      throw new HttpException(409, `The investigation document contains unsupported legal base ${(rawLegalBases as string[])[index]}`);
+    }
+    rule.allowedClassificationCategories.forEach(category => allowedCategories.add(normalizeResourcePath(category)));
+  }
+
+  if (!allowedCategories.has(normalizeResourcePath(classification.category))) {
+    throw new HttpException(409, 'The requested classification is incompatible with the investigation legal bases');
+  }
+};

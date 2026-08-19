@@ -1,3 +1,5 @@
+import { resolveSupportManagementApiTarget } from '@/config/api-config';
+import { resolveSupportInvestigationHandoverTargets } from '@/config/support-investigation-handover-targets';
 import { isContactSundsvall, isKC, isMEX, isPT } from '@/services/application.service';
 import { logger } from '@/utils/logger';
 
@@ -102,6 +104,14 @@ const validateEnv = () => {
       CASEDATA_NAMESPACE: s(),
     });
   } else {
+    try {
+      resolveSupportManagementApiTarget();
+      resolveSupportInvestigationHandoverTargets();
+    } catch (error) {
+      console.error(`\n${error instanceof Error ? error.message : 'Invalid Support Management runtime configuration'}\n`);
+      process.exit(1);
+    }
+
     warnMissingEnv({
       ...commonSpec,
       SUPERADMIN_GROUP: s(),

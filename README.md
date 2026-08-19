@@ -239,6 +239,50 @@ cp .env.{drake}.example.local .env.{drake}.development.local
 # Exempel: cp .env.se.example.local .env.se.development.local
 ```
 
+Support Management använder den stabila API-prenumerationen `supportmanagement/14.9` som standard. En drake som
+behöver sprintkontraktet (för närvarande IAF/VOF-utredning) ska välja det uttryckligen i backendmiljön:
+
+```env
+SUPPORTMANAGEMENT_API_TARGET=sprint
+```
+
+Tillåtna värden är `stable` och `sprint`. Ett okänt värde stoppar backend vid uppstart, så att en felstavad
+deploymentinställning inte tyst byter API-kontrakt för alla implementationer.
+
+Drakens ärende-, handläggar-, status- och fastighetskommandon kräver en exakt stark `If-Match` och skickar samma
+version vidare till Support Management. Det atomiska upstreamstödet är verifierat mot sprintkontraktet 14.14. Innan
+en implementation som ligger kvar på `stable` använder dessa skrivvägar ska dess faktiska 14.9-prenumeration därför
+kontrakts- eller integrationstestas för `If-Match`, 409 och 412; något 14.9-kontrakt finns inte incheckat i detta repo.
+Draken gör fortfarande en versions- och statuskontroll före anropet, men en sådan förkontroll kan inte ensam ersätta
+atomisk versionskontroll i upstream.
+
+Statuskommandot validerar klientens källstatus och version mot ett färskt ärende samt målstatusen mot live metadata.
+Support Management 14.14 exponerar däremot ingen source→target-graf eller exekveringsroute för statusövergångar, så
+Draken kan inte auktorisera själva kanten utan att införa appspecifika regler. Den domänregeln behöver ägas av
+Support Management innan starkare generell transitionvalidering kan införas.
+
+Utredningsdokument aktiveras per app genom backendens runtimeprofil. Appar med dokument måste dessutom konfigurera
+åtkomst per dokument; saknad eller ofullständig konfiguration stänger utredningsflödet i stället för att falla tillbaka
+till den breda ärendebehörigheten:
+
+```env
+SUPPORT_INVESTIGATION_DOCUMENT_ACCESS={"utredning-enhetschef":{"readGroups":["ad-read-group","ad-write-group"],"writeGroups":["ad-write-group"]},"utredning-sol-lss":{"readGroups":["ad-read-group","ad-write-group"],"writeGroups":["ad-write-group"]},"utredning-hsl":{"readGroups":["ad-read-group","ad-write-group"],"writeGroups":["ad-write-group"]}}
+SUPPORT_INVESTIGATION_HANDOVER_TARGETS=[{"municipalityId":"2281","namespace":"target-namespace","documentKeys":["utredning-enhetschef","utredning-sol-lss","utredning-hsl"]}]
+```
+
+Konfigurationen ska innehålla exakt profilens dokumentnycklar. Gruppnamn jämförs skiftlägesokänsligt,
+`writeGroups` måste vara en delmängd av `readGroups` och jokertecknet `*` måste väljas uttryckligen. IAF/VOF med
+aktiverad utredning behöver både denna konfiguration och `SUPPORTMANAGEMENT_API_TARGET=sprint`. Transportkravet
+deklareras i utredningsprofilen och kontrolleras i runtimepolicyn; en felaktig stable-deployment annonserar därför
+utredningen och dess registrering som otillgängliga i stället för att försöka använda ett inkompatibelt API.
+
+`SUPPORT_INVESTIGATION_HANDOVER_TARGETS` är en explicit allowlist över de kommun- och namespace-par som är
+förberedda att ta emot skyddade utredningsdokument samt exakt vilka `documentKeys` målet stöder. När källprofilen
+utökas måste målcapabilityn därför uppdateras uttryckligen innan överföring tillåts. Saknad eller ogiltig konfiguration tillåter aldrig sådan
+överföring. Förhandsgranskning kräver läsåtkomst till alla skyddade dokument på källärendet; genomförandet kräver
+dessutom `canEditSupportManagement`. Vanliga JSON Parameters och överlämningar där `jsonParameters` inte väljs
+påverkas inte av allowlisten.
+
 4. Konfigurera env-filer
 
 Redigera env-filer efter behov. URLer, nycklar och cert behöver fyllas i korrekt.
