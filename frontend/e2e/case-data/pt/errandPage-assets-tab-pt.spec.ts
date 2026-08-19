@@ -377,7 +377,7 @@ type MockRoute = (pattern: string | RegExp, response: unknown, options?: { metho
 const setupCommonIntercepts = async (page: import('@playwright/test').Page, mockRoute: MockRoute) => {
   await mockRoute('**/schemas/*/latest', mockSchema);
   await mockRoute('**/schemas/*/ui-schema', mockUiSchema);
-  // Edit flow fetches the schema by id (no /latest); Cypress matched both with one regex.
+  // Edit flow fetches the schema by id (no /latest), so match both endpoint variants.
   await mockRoute('**/schemas/*', mockSchema);
   await mockRoute('**/users/admins', mockAdmins);
   await mockRoute('**/me', mockMe);

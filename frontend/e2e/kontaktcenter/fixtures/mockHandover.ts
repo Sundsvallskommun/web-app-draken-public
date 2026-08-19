@@ -1,5 +1,4 @@
 // Mock data for the supportmanagement -> supportmanagement handover flow (KC -> another namespace).
-// NOTE: this is a Playwright copy of cypress/e2e/kontaktcenter/fixtures/mockHandover.ts – keep in sync.
 
 export const mockNamespaceConfigs = [
   {
