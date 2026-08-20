@@ -21,6 +21,7 @@ import type { AxiosError } from 'axios';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 
+import { IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY } from './iaf-vof-investigation-classification-policy';
 import {
   getInvestigationClassificationSchemaContract,
   getInvestigationClassificationUiSchema,
@@ -102,7 +103,6 @@ export function SupportInvestigationDocument({
   const municipalityId = useConfigStore((state) => state.municipalityId);
   const supportErrand = useSupportStore((state) => state.supportErrand);
   const supportMetadata = useMetadataStore((state) => state.supportMetadata);
-  const classificationPolicy = useInvestigationProfileStore((state) => state.profile?.classificationPolicy);
   const { register: registerErrandField, resetField: resetErrandField } = useFormContext<SupportErrand>();
   const errandId = supportErrand?.id;
   const reportedMisconduct = isReportedMisconductErrand(supportErrand);
@@ -216,7 +216,9 @@ export function SupportInvestigationDocument({
       ? getHslRiskValue(documentState.formData)
       : undefined;
   const classificationOwner = isInvestigationClassificationOwner(definition.key, supportErrand);
-  const classificationLabelTree = classificationPolicy?.labelTree;
+  const classificationLabelTree = classificationOwner
+    ? IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree
+    : undefined;
   const classificationSchemaContract = documentState
     ? getInvestigationClassificationSchemaContract(definition.key, documentState.schema)
     : undefined;

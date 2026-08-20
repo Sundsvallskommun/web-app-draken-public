@@ -43,9 +43,10 @@ prefixet `draken:investigation-schema-lab:`. Inga ärenden eller scheman läses 
 - UI Schema äger ordning, accordions, widgets och layout.
 - `common/components/json` äger återanvändbar rendering, inte IAF-specifika fält.
 - `label-classification/` äger labelväljaren och adaptern mellan Support Managements labelträd och Drakens
-  formulärvärden för strategin `reported-misconduct`.
-- `investigation-classification-policy.ts` äger den generiska klienttolkningen av backendens
-  klassificeringscapability. Den innehåller inga appnamn eller feature-flaggor.
+  formulärvärden för IAF/VOF-kategorisering.
+- `iaf-vof-investigation-classification-policy.ts` äger den fasta IAF/VOF-regeln för var kategorisering redigeras.
+  Runtimeprofilen tillhandahåller endast dokumentens stabila nycklar och aktiveringsstatus; den kan inte ändra
+  själva verksamhetsregeln.
 - `investigation-form-data.ts` äger normalisering, deklarerade beräkningar och riskvärde — delat av både
   produktionsflödet och labben.
 - `schema-lab/` äger exempeldataadapter, mockad `canRead`/`canWrite` och separerad lokal lagring.
@@ -97,23 +98,25 @@ Backend kontrollerar den faktiska källans dokumentnycklar och användarens läs
 execute kräver också `canEditSupportManagement`. Saknad allowlist stänger endast överföringen av skyddade dokument,
 inte överlämningar utan JSON Parameters eller ärenden som bara innehåller generiska JSON Parameters.
 
-Standardbeteendet för appar utan `classificationPolicy` är att klassificeringen redigeras i `Grundinformation`.
-Backendens appkonfiguration kan lägga till en diskriminerad capability. IAF och VOF använder för närvarande strategin
-`reported-misconduct`, vars policydata anger ägardokument, exakt parameter-/labelselector, lagrumspekare, tvingade
-lagrum, tillåtna klassificeringsrötter och labelträdets exakta Support Management-vokabulär. `labelTree` deklarerar
-rootens resurs **och** klassificering samt klassificeringarna för owner/category/type; en metadata-root måste matcha
-båda identiteterna och finnas exakt en gång. Backend och frontend konsumerar samma serialiserade policy och har samma
-ägar- och projektionsalgoritm; frontend innehåller ingen separat IAF/VOF- eller feature-flaggsgren. Strategins
-persistensmappning är avsiktligt fast: owner sparas i `classification.category`, category i `classification.type` och
-type som vald label. En framtida app kan återanvända strategin med andra dokumentnycklar, root och
-klassificeringstokens utan att ändra formulärkomponenterna. Appar utan capability behåller den generiska
-TYPE/SUBTYPE-mappningen.
+Standardbeteendet är att klassificeringen redigeras i `Grundinformation`. IAF och VOF har tills vidare en uttrycklig,
+fast specialregel i både backend och frontend: när utredningen är aktiv flyttas redigeringen till dokumentet med
+schemarollen `utredning-enhetschef`, eller till `utredning-sol-lss` vid missförhållande. Profilens `schemaName` används
+för att hitta rollen och profilens `key` används för persistens, så egna stabila dokumentnycklar stöds utan att
+verksamhetsregeln blir dynamisk konfiguration.
+
+Samma IAF/VOF-modul äger parameter-/labelselectorn, lagrumspekaren, tvingade lagrum, tillåtna
+klassificeringsrötter och labelträdets Support Management-vokabulär. Backend och frontend implementerar samma fasta
+regel och tester låser pariteten. Persistensmappningen är avsiktligt fast: owner sparas i
+`classification.category`, category i `classification.type` och type som vald label. Alla andra appar behåller
+Grundinformation och den generiska TYPE/SUBTYPE-mappningen, även om de råkar använda samma schemastrukturer. Om en
+framtida app behöver motsvarande specialhantering görs det som ett medvetet nytt verksamhetsstöd, inte genom att
+lägga policyfält i den generiska dokumentprofilen.
 
 Om profilen eller backendens ägarskapsbeslut är otillgängligt visas IAF/VOF-kategoriseringen skrivskyddad i
 `Grundinformation`. Den generiska ärende-PATCH:en utelämnar då `classification` och `labels`, så orelaterade
 ärendeändringar kan sparas utan att någon av skrivvägarna tar över klassificeringen.
 
-För att slå på en ny app läggs dess dokumentprofil och eventuella capabilities till i backendkonfigurationen, dess
+För att slå på en ny app läggs dess dokumentprofil till i backendkonfigurationen, dess
 dokumentåtkomst konfigureras, de namngivna JSON- och UI-schemana publiceras och `useInvestigation` aktiveras. Frontend
 har ingen separat app- eller dokumentlista att uppdatera. Flaggan, profilen, åtkomstkonfigurationen och
 schemapubliceringen är oberoende driftsförutsättningar; en lyckad profilrespons garanterar inte att ett schema är
@@ -167,7 +170,8 @@ JSON Parameter.
 De lokala artefakterna för `utredning-enhetschef` och `utredning-sol-lss` är version 1.1 och deklarerar
 `errandClassification`; `utredning-hsl` ligger kvar på version 1.0. För redan bundna manager- och SOL/LSS-dokument
 med schema till och med version 1.0 injicerar runtime samma externa placering som en bakåtkompatibel fallback.
-Ägarskapet bestäms dock centralt av runtimeprofilens klassificeringspolicy, inte av en enskild schemadeklaration. Om
+Ägarskapet bestäms dock centralt av den fasta IAF/VOF-regeln tillsammans med runtimeprofilens dokumentnycklar, inte
+av en enskild schemadeklaration. Om
 även ett nyare
 schema saknar deklarationen behåller därför utredningen klassificeringen, placerar den i en säker standardsektion och
 visar en varning i stället för att skapa dubbla eller saknade redigeringsvägar.

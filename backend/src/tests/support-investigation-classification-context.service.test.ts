@@ -1,33 +1,24 @@
+import {
+  IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE,
+  IAF_VOF_INVESTIGATION_CLASSIFICATION_LEGAL_BASE_RULES,
+  IAF_VOF_INVESTIGATION_LEGAL_BASES_POINTER,
+  IAF_VOF_REPORTED_MISCONDUCT_FORCED_LEGAL_BASES,
+  type IafVofInvestigationClassificationPolicy,
+} from '@/config/iaf-vof-investigation-classification';
 import { assertSupportInvestigationClassificationContext } from '@/services/support-investigation-classification-context.service';
-import type { ReportedMisconductInvestigationClassificationPolicy } from '@/services/support-investigation-classification-owner';
 
-const policy: ReportedMisconductInvestigationClassificationPolicy = {
-  strategy: 'reported-misconduct',
+const policy: IafVofInvestigationClassificationPolicy = {
   defaultOwnerDocumentKey: 'manager-document',
   reportedMisconductOwnerDocumentKey: 'social-document',
-  reportedMisconductSelector: {
-    parameter: { key: 'eventType', values: ['MISSFORHALLANDE'] },
-    labels: { resourcePaths: ['REPORT_TYPE/ABUSE'], resourceNames: ['ABUSE'] },
-  },
-  labelTree: {
-    root: { resource: 'CATEGORY', classification: 'CATEGORY_ROOT' },
-    ownerClassification: 'PROVISION_CATEGORY',
-    categoryClassification: 'CATEGORY',
-    typeClassification: 'TYPE',
-  },
-  forcedLegalBases: ['SOL', 'LSS'],
-  legalBasesPointer: '/legalBases',
-  legalBaseRules: [
-    { legalBase: 'HSL', allowedClassificationCategories: ['CATEGORY/HSL'] },
-    { legalBase: 'SOL', allowedClassificationCategories: ['CATEGORY/SOL_LSS'] },
-    { legalBase: 'LSS', allowedClassificationCategories: ['CATEGORY/SOL_LSS'] },
-  ],
+  labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE,
+  forcedLegalBases: IAF_VOF_REPORTED_MISCONDUCT_FORCED_LEGAL_BASES,
+  legalBasesPointer: IAF_VOF_INVESTIGATION_LEGAL_BASES_POINTER,
+  legalBaseRules: IAF_VOF_INVESTIGATION_CLASSIFICATION_LEGAL_BASE_RULES,
 };
 
 const classification = (category: string) => ({ category, type: `${category}/CATEGORY` });
 const document = (...legalBases: string[]) => ({ legalBases });
 const owner = (mode: 'default' | 'reported-misconduct', documentKey = 'manager-document') => ({
-  strategy: 'reported-misconduct' as const,
   mode,
   documentKey,
 });

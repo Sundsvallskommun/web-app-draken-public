@@ -1,7 +1,6 @@
 import { createSupportInvestigationProfile, getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import { FeatureFlagService } from '@/services/feature-flag.service';
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
-import type { ReportedMisconductInvestigationClassificationPolicy } from '@/services/support-investigation-classification-owner';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 
 import { mockReq, mockUser } from './helpers/http';
@@ -16,25 +15,6 @@ const accessService = () =>
     configured: true,
     permissionsFor: vi.fn(() => ({ canRead: true, canWrite: true })),
   }) as unknown as SupportInvestigationAccessService;
-
-const futureClassificationPolicy: ReportedMisconductInvestigationClassificationPolicy = {
-  strategy: 'reported-misconduct',
-  defaultOwnerDocumentKey: 'manager-document',
-  reportedMisconductOwnerDocumentKey: 'social-document',
-  reportedMisconductSelector: {
-    parameter: { key: 'futureEventType', values: ['SPECIAL_CASE'] },
-    labels: { resourcePaths: ['FUTURE_REPORT/SPECIAL_CASE'], resourceNames: ['SPECIAL_CASE'] },
-  },
-  labelTree: {
-    root: { resource: 'FUTURE_CATEGORY', classification: 'FUTURE_CATEGORY_ROOT' },
-    ownerClassification: 'FUTURE_OWNER',
-    categoryClassification: 'FUTURE_CATEGORY',
-    typeClassification: 'FUTURE_TYPE',
-  },
-  forcedLegalBases: ['FUTURE_ACT'],
-  legalBasesPointer: '/legalBases',
-  legalBaseRules: [{ legalBase: 'FUTURE_ACT', allowedClassificationCategories: ['FUTURE_CATEGORY/SPECIAL_CASE'] }],
-};
 
 const serviceWith = (enabled: boolean | undefined | Error, configuredProfile = profile) => {
   const featureFlags = {
@@ -94,9 +74,9 @@ describe('SupportInvestigationPolicyService', () => {
     });
   });
 
-  it('moves classification ownership when a profile declares the capability, without application-name inference', async () => {
-    const capabilityProfile = createSupportInvestigationProfile({
-      application: 'FUTURE',
+  it('moves classification ownership only for IAF/VOF with the fixed owner schema roles', async () => {
+    const iafProfile = createSupportInvestigationProfile({
+      application: 'IAF',
       documents: [
         {
           key: 'manager-document',
@@ -111,7 +91,6 @@ describe('SupportInvestigationPolicyService', () => {
           ownerLabel: 'Investigator',
         },
       ],
-      classificationPolicy: futureClassificationPolicy,
       labelFilter: {
         groups: [
           {
@@ -123,9 +102,7 @@ describe('SupportInvestigationPolicyService', () => {
         ],
       },
     });
-    const policy = (enabled: boolean | undefined | Error) => {
-      return serviceWith(enabled, capabilityProfile).service;
-    };
+    const policy = (enabled: boolean | undefined | Error) => serviceWith(enabled, iafProfile).service;
 
     await expect(policy(true).getClassificationOwner(mockReq().user)).resolves.toBe('investigation');
     await expect(policy(false).getClassificationOwner(mockReq().user)).resolves.toBe('generic-errand');
@@ -133,11 +110,11 @@ describe('SupportInvestigationPolicyService', () => {
     const activePolicy = policy(true);
     const runtimeProfile = await activePolicy.getRuntimeProfile(mockReq().user);
     expect(runtimeProfile).toMatchObject({
-      classificationPolicy: capabilityProfile.classificationPolicy,
       labelFilter: {
         groups: [{ key: 'future-filter', rootResourcePath: 'FUTURE' }],
       },
     });
+    expect('classificationPolicy' in runtimeProfile).toBe(false);
     await expect(serviceWith(true).service.getClassificationOwner(mockReq().user)).resolves.toBe('generic-errand');
   });
 
@@ -157,9 +134,9 @@ describe('SupportInvestigationPolicyService', () => {
     });
   });
 
-  it('does not infer a classification capability from an application name or document schema', async () => {
+  it('does not apply the fixed IAF/VOF rule to another application with the same document schemas', async () => {
     const documentsOnly = createSupportInvestigationProfile({
-      application: 'IAF',
+      application: 'FUTURE',
       documents: [
         {
           key: 'manager-document',
@@ -177,7 +154,7 @@ describe('SupportInvestigationPolicyService', () => {
     });
 
     await expect(serviceWith(true, documentsOnly).service.getClassificationOwner(mockReq().user)).resolves.toBe('generic-errand');
-    expect(serviceWith(true, documentsOnly).service.classificationPolicy).toBeUndefined();
+    expect(serviceWith(true, documentsOnly).service.iafVofClassificationPolicy).toBeUndefined();
     expect(serviceWith(true, documentsOnly).service.labelFilter).toBeUndefined();
   });
 

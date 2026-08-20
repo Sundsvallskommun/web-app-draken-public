@@ -4,6 +4,7 @@ import { NextFunction, Response } from 'express';
 import { getMetadataArgsStorage } from 'routing-controllers';
 
 import { apiServiceName } from '@/config/api-config';
+import { resolveIafVofInvestigationClassificationPolicy } from '@/config/iaf-vof-investigation-classification';
 import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import {
   AssignSupportErrandDto,
@@ -99,7 +100,7 @@ const makeController = (classificationOwner: SupportErrandClassificationOwner = 
     getRegistrationState: vi.fn(async () => (classificationOwner === 'unavailable' ? 'unavailable' : 'enabled')),
     profile: configuredProfile,
     labelFilter: configuredProfile.labelFilter,
-    classificationPolicy: configuredProfile.classificationPolicy,
+    iafVofClassificationPolicy: resolveIafVofInvestigationClassificationPolicy(configuredProfile),
     assertCanWriteDocument: vi.fn(),
     filterProtectedJsonParameters: vi.fn((errand: unknown) => errand),
   };

@@ -50,8 +50,8 @@ export const SupportErrandBasicsAboutForm: FC<{
   const classificationPlacement = getSupportErrandClassificationPlacement();
   const basicsOwnsClassification = classificationPlacement.owner === 'basics';
   const classificationUnavailable = classificationPlacement.owner === 'unavailable';
-  const classificationPolicy =
-    classificationPlacement.categorization === 'reported-misconduct' ? classificationPlacement.policy : undefined;
+  const iafVofClassificationPolicy =
+    classificationPlacement.categorization === 'iaf-vof' ? classificationPlacement.policy : undefined;
 
   // useLayoutEffect fires synchronously after DOM update, before Quill's onChange
   useLayoutEffect(() => {
@@ -77,13 +77,13 @@ export const SupportErrandBasicsAboutForm: FC<{
 
       {/* FIXME Same as above */}
       {appConfig.features.useThreeLevelCategorization ? (
-        classificationPolicy && classificationPlacement.owner !== 'investigation' ? (
+        iafVofClassificationPolicy && classificationPlacement.owner !== 'investigation' ? (
           <IafLabelCategorization
             supportMetadata={supportMetadata}
-            labelTree={classificationPolicy.labelTree}
+            labelTree={iafVofClassificationPolicy.labelTree}
             disabled={classificationUnavailable || isSupportErrandLocked(supportErrand)}
           />
-        ) : !classificationPolicy && basicsOwnsClassification ? (
+        ) : !iafVofClassificationPolicy && basicsOwnsClassification ? (
           <div className="w-full flex gap-20">
             <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
           </div>

@@ -24,6 +24,10 @@ import { OpenAPI } from 'routing-controllers-openapi';
 import { APPLICATION, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
+  preservesIafVofInvestigationClassificationOwnerParameter,
+  resolveIafVofInvestigationClassificationOwner,
+} from '@/config/iaf-vof-investigation-classification';
+import {
   Errand as CasedataErrandDTO,
   ErrandPriorityEnum as CasedataErrandDtoPriorityEnum,
   Stakeholder as CasedataStakeholderDTO,
@@ -78,10 +82,6 @@ import {
   toFacilities,
 } from '@/services/support-errand.service';
 import { assertSupportInvestigationClassificationContext } from '@/services/support-investigation-classification-context.service';
-import {
-  preservesSupportInvestigationClassificationSelectorParameter,
-  resolveSupportInvestigationClassificationOwner,
-} from '@/services/support-investigation-classification-owner';
 import { SupportInvestigationDocumentService } from '@/services/support-investigation-document.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import {
@@ -1124,17 +1124,14 @@ export class SupportErrandController {
     assertSupportErrandWritable(currentErrand.data, 'generic changes');
 
     const classificationFieldsRequested = data.classification !== undefined || data.labels !== undefined;
-    const classificationPolicy = this.investigationPolicyService.classificationPolicy;
-    if (classificationFieldsRequested || (data.parameters !== undefined && classificationPolicy)) {
+    const iafVofClassificationPolicy = this.investigationPolicyService.iafVofClassificationPolicy;
+    if (classificationFieldsRequested || (data.parameters !== undefined && iafVofClassificationPolicy)) {
       const owner = await this.investigationPolicyService.getClassificationOwner(req.user);
       if (owner === 'investigation') {
         if (classificationFieldsRequested) {
           throw new HttpException(409, 'Use the investigation classification endpoint to update classification and labels');
         }
-        if (
-          classificationPolicy &&
-          !preservesSupportInvestigationClassificationSelectorParameter(classificationPolicy, currentErrand.data.parameters, data.parameters)
-        ) {
+        if (iafVofClassificationPolicy && !preservesIafVofInvestigationClassificationOwnerParameter(currentErrand.data.parameters, data.parameters)) {
           throw new HttpException(409, 'The investigation classification owner parameter cannot be changed through the generic errand endpoint');
         }
       }
@@ -1298,8 +1295,8 @@ export class SupportErrandController {
     if (classificationOwner !== 'investigation') {
       throw new HttpException(409, 'Investigation does not own classification for this application');
     }
-    const classificationPolicy = this.investigationPolicyService.classificationPolicy;
-    if (!classificationPolicy) {
+    const iafVofClassificationPolicy = this.investigationPolicyService.iafVofClassificationPolicy;
+    if (!iafVofClassificationPolicy) {
       throw new HttpException(409, 'Investigation classification policy is unavailable');
     }
     const definition = this.investigationPolicyService.profile.documents.find(document => document.key === data.documentKey);
@@ -1328,15 +1325,15 @@ export class SupportErrandController {
     if (classificationDocument.etag !== data.documentETag) {
       throw new HttpException(409, 'Investigation document has changed since classification was edited');
     }
-    const classificationOwnerSelection = resolveSupportInvestigationClassificationOwner(classificationPolicy, currentErrand.data);
+    const classificationOwnerSelection = resolveIafVofInvestigationClassificationOwner(iafVofClassificationPolicy, currentErrand.data);
     assertSupportInvestigationClassificationContext(
-      classificationPolicy,
+      iafVofClassificationPolicy,
       classificationOwnerSelection,
       definition.key,
       classificationDocument.document.value,
       data.classification,
     );
-    const resolvedClassification = resolveSupportErrandClassification(data, labelMetadata.data?.labelStructure, classificationPolicy.labelTree);
+    const resolvedClassification = resolveSupportErrandClassification(data, labelMetadata.data?.labelStructure, iafVofClassificationPolicy.labelTree);
     const body = buildSupportErrandClassificationUpdateBody(
       data,
       currentErrand.data.labels,

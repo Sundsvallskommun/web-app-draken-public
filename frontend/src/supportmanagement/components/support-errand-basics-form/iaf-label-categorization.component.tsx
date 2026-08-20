@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReportedMisconductLabelTree } from '@supportmanagement/investigation/investigation-classification-policy';
+import type { IafVofInvestigationClassificationLabelTree } from '@supportmanagement/investigation/iaf-vof-investigation-classification-policy';
 import {
   applyIafLabelClassificationSelection,
   createIafLabelClassificationModel,
@@ -28,7 +28,9 @@ const iafClassificationContent = {
 const errorMessage = (error: FieldError | undefined): string | undefined =>
   typeof error?.message === 'string' ? error.message : undefined;
 
-const requireLabelTree = (labelTree: ReportedMisconductLabelTree | undefined): ReportedMisconductLabelTree => {
+const requireLabelTree = (
+  labelTree: IafVofInvestigationClassificationLabelTree | undefined
+): IafVofInvestigationClassificationLabelTree => {
   if (!labelTree) throw new Error('Klassificeringsprofilens labelträd saknas.');
   return labelTree;
 };
@@ -36,7 +38,7 @@ const requireLabelTree = (labelTree: ReportedMisconductLabelTree | undefined): R
 export const IafLabelCategorization: FC<{
   supportMetadata?: SupportMetadata;
   disabled?: boolean;
-  labelTree?: ReportedMisconductLabelTree;
+  labelTree?: IafVofInvestigationClassificationLabelTree;
   legalBases?: readonly string[];
   legalBaseRules?: readonly LabelClassificationLegalBaseRule[];
   onClassificationChange?: () => void;

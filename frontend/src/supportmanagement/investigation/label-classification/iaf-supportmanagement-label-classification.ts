@@ -1,6 +1,6 @@
 import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 
-import type { ReportedMisconductLabelTree } from '../investigation-classification-policy';
+import type { IafVofInvestigationClassificationLabelTree } from '../iaf-vof-investigation-classification-policy';
 import type { LabelClassificationCatalog, LabelClassificationSelection } from './label-classification.types';
 
 export interface LabelClassificationLegalBaseRule {
@@ -55,11 +55,14 @@ const configuredLabelResource = (label: Label): string | undefined =>
     ? label.resourcePath
     : label.resourceName;
 
-const isConfiguredRoot = (label: Label, labelTree: ReportedMisconductLabelTree): boolean =>
+const isConfiguredRoot = (label: Label, labelTree: IafVofInvestigationClassificationLabelTree): boolean =>
   normalizeResourcePath(configuredLabelResource(label)) === normalizeResourcePath(labelTree.root.resource) &&
   isClassification(label, labelTree.root.classification);
 
-const requireConfiguredRoot = (labelStructure: readonly Label[], labelTree: ReportedMisconductLabelTree): Label => {
+const requireConfiguredRoot = (
+  labelStructure: readonly Label[],
+  labelTree: IafVofInvestigationClassificationLabelTree
+): Label => {
   const roots = labelStructure.filter((label) => isConfiguredRoot(label, labelTree));
   if (roots.length !== 1) {
     throw new Error(
@@ -69,7 +72,10 @@ const requireConfiguredRoot = (labelStructure: readonly Label[], labelTree: Repo
   return roots[0];
 };
 
-const findTypeLabels = (labels: readonly Label[] | undefined, labelTree: ReportedMisconductLabelTree): Label[] => {
+const findTypeLabels = (
+  labels: readonly Label[] | undefined,
+  labelTree: IafVofInvestigationClassificationLabelTree
+): Label[] => {
   const typeLabels: Label[] = [];
 
   const visit = (nodes: readonly Label[]) => {
@@ -98,7 +104,7 @@ export interface IafLabelClassificationBinding {
 export interface IafLabelClassificationModel {
   readonly catalog: LabelClassificationCatalog;
   readonly bindings: readonly IafLabelClassificationBinding[];
-  readonly labelTree: ReportedMisconductLabelTree;
+  readonly labelTree: IafVofInvestigationClassificationLabelTree;
 }
 
 export type PersistedIafLabelClassificationState =
@@ -169,7 +175,7 @@ const hasPersistedTypeWithinProvisionOwner = (
 };
 
 /**
- * Adapts the configured reported-misconduct tree to the two choices shown in
+ * Adapts the fixed IAF/VOF classification tree to the two choices shown in
  * Draken. The configured root is a container, the configured owner is retained
  * for persistence, and category/type are exposed as the editable choices.
  * The Iaf-prefixed symbols are retained until the parallel UI rewrite lands;
@@ -177,12 +183,12 @@ const hasPersistedTypeWithinProvisionOwner = (
  */
 export const createIafLabelClassificationModel = (
   labelStructure: readonly Label[] | undefined,
-  labelTree: ReportedMisconductLabelTree | undefined,
+  labelTree: IafVofInvestigationClassificationLabelTree | undefined,
   legalBases?: readonly string[],
   legalBaseRules: readonly LabelClassificationLegalBaseRule[] = []
 ): IafLabelClassificationModel => {
   if (!labelTree) {
-    throw new Error('The reported-misconduct classification capability is missing label-tree semantics');
+    throw new Error('The IAF/VOF investigation classification rule is missing label-tree semantics');
   }
   if (labelStructure === undefined) {
     return {
@@ -239,7 +245,7 @@ export const createIafLabelClassificationModel = (
 
 export const getPersistedIafLabelClassificationState = (
   labelStructure: readonly Label[] | undefined,
-  labelTree: ReportedMisconductLabelTree,
+  labelTree: IafVofInvestigationClassificationLabelTree,
   legalBases: readonly string[],
   classification: PersistedIafLabelClassification,
   legalBaseRules: readonly LabelClassificationLegalBaseRule[] = []
