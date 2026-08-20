@@ -1,20 +1,16 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { appealErrand, getErrand } from '@casedata/services/casedata-errand-service';
-import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useAppContext } from '@contexts/app.context';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore } from '@stores/index';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) => {
-  const {
-    municipalityId,
-    errand,
-    setErrand,
-  } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
 
   const toastMessage = useSnackbar();
   const [isLoading, setIsLoading] = useState<boolean>(false);

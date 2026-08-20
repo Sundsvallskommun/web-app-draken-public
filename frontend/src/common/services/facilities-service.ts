@@ -1,6 +1,5 @@
-import { EstateInfoSearch, EstateInformation } from '@common/interfaces/estate-details';
+import { EstateInformation, EstateInfoSearch } from '@common/interfaces/estate-details';
 import { FacilityAddressDTO, FacilityDTO } from '@common/interfaces/facilities';
-
 import { ApiResponse, apiService } from '@common/services/api-service';
 
 export const makeFacility: (estate: EstateInfoSearch) => FacilityDTO = (estate) => {

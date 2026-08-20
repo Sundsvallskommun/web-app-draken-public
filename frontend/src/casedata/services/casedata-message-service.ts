@@ -1,32 +1,43 @@
 import { CasedataMessageTabFormModel } from '@casedata/components/errand/tabs/messages/message-composer.component';
-import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
-import { sendAttachments } from '@casedata/services/casedata-attachment-service';
+import {
+  fetchAttachment,
+  fetchDecisionAttachment,
+  sendAttachments,
+} from '@casedata/services/casedata-attachment-service';
+import { CasedataMessageType } from '@casedata/services/casedata-message-types';
 import { Message, MessageStatus } from '@common/interfaces/message';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX } from '@common/services/application-service';
+import { base64ToFile } from '@common/services/attachment-service';
 import { base64Decode } from '@common/services/helper-service';
-import { toBase64 } from '@common/utils/toBase64';
 import { UploadFile } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 
-export const sendDecisionMessage: (municipalityId: string, errand: IErrand) => Promise<boolean> = (
-  municipalityId,
-  errand
-) => {
+export const sendDecisionMessage: (
+  municipalityId: string,
+  errand: IErrand,
+  html: string,
+  plaintext: string
+) => Promise<boolean> = (municipalityId, errand, html, plaintext) => {
   return apiService
-    .post<ApiResponse<MessageResponse>[], { errandId: string }>(`casedata/${municipalityId}/message/decision`, {
-      errandId: errand.id.toString(),
-    })
+    .post<ApiResponse<MessageResponse>[], { errandId: string; html: string; plaintext: string }>(
+      `casedata/${municipalityId}/message/decision`,
+      {
+        errandId: errand.id.toString(),
+        html,
+        plaintext,
+      }
+    )
     .then((res) => {
       const allSuccess = res.data.every((c) => c?.data?.messageId);
       if (allSuccess) return true;
       throw new Error('Not all channels returned a messageId');
     })
-    .catch(() => {
-      throw new Error('Något gick fel när beslutet skulle skickas');
+    .catch((e) => {
+      throw new Error(e?.response?.data?.message || 'Något gick fel när beslutet skulle skickas');
     });
 };
 
@@ -42,43 +53,41 @@ export const sendMessage: (
   const targets = data.contactMeans === 'webmessage' ? [{ value: '' }] : [...data.emails];
   const msgPromises = targets.map(async (target) => {
     const messageFormData = new FormData();
-    const newAttachmentPromises: Promise<{ attachment: Attachment; blob: Blob }>[] = data.messageAttachments?.map(
-      async (f) => {
-        const fileItem = f.file![0];
-        const fileData = await toBase64(fileItem);
-        const attachment: Attachment = {
-          category: 'MESSAGE_ATTACHMENT',
-          name: fileItem.name,
-          note: '',
-          extension: fileItem.name.split('.').pop() ?? '',
-          // msg files not handled properly by the browser, so we need to set the mime type manually
-          mimeType: fileItem.name.split('.').pop() === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type,
-          file: fileData,
-        };
-        const buf = Buffer.from(attachment.file, 'base64');
-        const blob = new Blob([buf], { type: attachment.mimeType });
-        return Promise.resolve({ attachment, blob });
+
+    // Newly picked files are already in hand; only the mime type needs correcting, since
+    // the browser does not detect msg files properly.
+    (data.messageAttachments ?? []).forEach((f) => {
+      const fileItem = f.file?.[0];
+      if (!fileItem) {
+        return;
       }
-    ) || [new Promise((resolve) => resolve({ attachment: null as unknown as Attachment, blob: null as unknown as Blob }))];
-    return Promise.allSettled(newAttachmentPromises)
-      .then((r) => {
-        r.forEach((r) => {
-          if (r.status === 'fulfilled') {
-            const attachment = r.value.attachment;
-            const blob = r.value.blob;
-            messageFormData.append(`files`, blob, attachment.name);
+      const mimeType = fileItem.name.split('.').pop() === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type;
+      messageFormData.append(`files`, new Blob([fileItem], { type: mimeType }), fileItem.name);
+    });
+
+    // Attachments already on the errand carry metadata only, so their content has to
+    // be fetched one by one before it can be attached to the message.
+    const existingAttachmentPromises = (data.existingAttachments ?? []).map(async (existingAttachment) => {
+      if (!existingAttachment.id) {
+        throw new Error('Existing attachment does not have an id');
+      }
+      const fetched = existingAttachment.decisionId
+        ? await fetchDecisionAttachment(municipalityId, errand.id, existingAttachment.decisionId, existingAttachment)
+        : await fetchAttachment(municipalityId, errand.id, existingAttachment);
+      return base64ToFile(fetched.base64EncodedString, existingAttachment.name, existingAttachment.mimeType);
+    });
+
+    return Promise.allSettled(existingAttachmentPromises)
+      .then((results) => {
+        results.forEach((result) => {
+          if (result.status === 'fulfilled') {
+            messageFormData.append(`files`, result.value, result.value.name);
           } else {
-            console.error(`Error: attachment could not be processed for the following reason: ${r.reason}`);
+            console.error(`Error: attachment could not be processed for the following reason: ${result.reason}`);
           }
         });
       })
       .then(() => {
-        data.existingAttachments?.forEach((attachment) => {
-          const buf = Buffer.from(attachment.file, 'base64');
-          const blob = new Blob([buf], { type: attachment.mimeType });
-          messageFormData.append(`files`, blob, attachment.name);
-        });
-
         messageFormData.append('email', Object(target).value);
         messageFormData.append('contactMeans', data.contactMeans);
         messageFormData.append('subject', `Ärende #${errand.errandNumber}`);
@@ -157,8 +166,11 @@ export const sendSms: (
   return Promise.all(msgPromises).then((results) => results.every((r) => r));
 };
 
-const sortBySentDate = (a: { sent: string }, b: { sent: string }) =>
-  dayjs(a.sent).isAfter(dayjs(b.sent)) ? 1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? -1 : 0;
+const sortMessagesBySentDesc = (messages: MessageResponse[]): MessageResponse[] => {
+  return messages.sort((a, b) =>
+    dayjs(a.sent).isAfter(dayjs(b.sent)) ? -1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? 1 : 0
+  );
+};
 
 export const countAllMessages = (tree: MessageNode[]): number => {
   if (!tree) {
@@ -233,7 +245,7 @@ const buildTree = (_list: MessageResponse[]) => {
   list.forEach((msg) => {
     msg.message = msg.message?.replace(/\r\n/g, '<br>');
     const id =
-      msg.messageType === 'EMAIL'
+      msg.messageType === CasedataMessageType.Email
         ? (msg.emailHeaders ?? []).find((h) => h.header === 'MESSAGE_ID')?.values?.[0]
         : msg.messageId;
     if (id) {
@@ -243,7 +255,7 @@ const buildTree = (_list: MessageResponse[]) => {
 
   list.forEach((msg) => {
     const id =
-      msg.messageType === 'EMAIL'
+      msg.messageType === CasedataMessageType.Email
         ? (msg.emailHeaders ?? []).find((h) => h.header === 'MESSAGE_ID')?.values?.[0]
         : msg.messageId;
     const parent = (msg.emailHeaders ?? []).find((h) => h.header === 'IN_REPLY_TO')?.values?.[0];
@@ -266,18 +278,37 @@ const buildTree = (_list: MessageResponse[]) => {
   return roots;
 };
 
+const getErrandMessages = (municipalityId: string, errand: IErrand): Promise<MessageResponse[]> => {
+  if (!errand?.errandNumber || !municipalityId) {
+    console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
+  }
+
+  return apiService
+    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/errand/${errand?.id}/messages`)
+    .then((res) => res.data.data);
+};
+
+export const fetchMessagesWithTree: (
+  municipalityId: string,
+  errand: IErrand
+) => Promise<{ messages: MessageResponse[]; messageTree: MessageNode[] }> = (municipalityId, errand) => {
+  return getErrandMessages(municipalityId, errand)
+    .then((res) => {
+      const messages = sortMessagesBySentDesc([...res]);
+      const messageTree = buildTree(res.map((message) => ({ ...message })));
+      return { messages, messageTree };
+    })
+    .catch((e) => {
+      console.error('Something went wrong when fetching messages for errand:', errand.id, e);
+      throw e;
+    });
+};
+
 export const fetchMessagesTree: (municipalityId: string, errand: IErrand) => Promise<MessageNode[]> = (
   municipalityId,
   errand
 ) => {
-  if (!errand?.errandNumber || !municipalityId) {
-    console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
-  }
-  return apiService
-    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/errand/${errand?.id}/messages`)
-    .then((res) => {
-      return res.data.data; //.sort(sortBySentDate); //.reduce(findLastInThread, []);
-    })
+  return getErrandMessages(municipalityId, errand)
     .then((res) => {
       const tree = buildTree(res);
       return tree;
@@ -292,15 +323,9 @@ export const fetchMessages: (municipalityId: string, errand: IErrand) => Promise
   municipalityId,
   errand
 ) => {
-  if (!errand?.errandNumber || !municipalityId) {
-    console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
-  }
-  return apiService
-    .get<ApiResponse<MessageResponse[]>>(`casedata/${municipalityId}/errand/${errand?.id}/messages`)
+  return getErrandMessages(municipalityId, errand)
     .then((res) => {
-      const list: MessageResponse[] = res.data.data.sort((a, b) =>
-        dayjs(a.sent).isAfter(dayjs(b.sent)) ? -1 : dayjs(b.sent).isAfter(dayjs(a.sent)) ? 1 : 0
-      );
+      const list: MessageResponse[] = sortMessagesBySentDesc(res);
       return list;
     })
     .catch((e) => {

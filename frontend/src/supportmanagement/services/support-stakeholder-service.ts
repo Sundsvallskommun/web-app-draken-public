@@ -1,12 +1,14 @@
 import { Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import { Admin } from '@common/services/user-service';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
+
 import {
   ContactChannelType,
+  ExternalIdType,
   SupportErrand,
   SupportStakeholderFormModel,
   SupportStakeholderTypeEnum,
 } from './support-errand-service';
-import { Admin } from '@common/services/user-service';
 
 export const getAdminName = (a: Admin) => {
   return a && a.firstName && a.lastName ? `${a.firstName} ${a.lastName} (${a.adAccount})` : ``;
@@ -64,7 +66,9 @@ export const primaryStakeholderNameorEmail = (errand: SupportErrand) => {
 };
 
 export const mapExternalIdTypeToStakeholderType = (c: SupportStakeholderFormModel | SupportStakeholder) =>
-  c.externalIdType === 'COMPANY' ? SupportStakeholderTypeEnum.ORGANIZATION : SupportStakeholderTypeEnum.PERSON;
+  c.externalIdType === ExternalIdType.COMPANY
+    ? SupportStakeholderTypeEnum.ORGANIZATION
+    : SupportStakeholderTypeEnum.PERSON;
 
 const buildStakeholder = (c: SupportStakeholderFormModel, role: string) => {
   if (
@@ -98,8 +102,17 @@ const buildStakeholder = (c: SupportStakeholderFormModel, role: string) => {
     if (c.referenceNumber) {
       parameters.push({ key: 'referenceNumber', values: [c.referenceNumber], displayName: 'Referensnummer' });
     }
+    if (c.organizationNumber) {
+      parameters.push({
+        key: 'organizationNumber',
+        values: [c.organizationNumber],
+        displayName: 'Organisationsnummer',
+      });
+    }
     const stakeholder: SupportStakeholder = {
-      externalId: c.externalId || c.organizationNumber || undefined,
+      // externalId is the party UUID. Never fall back to the organization number here — that would
+      // store a non-UUID as the partyId. The organization number is persisted as a parameter above.
+      externalId: c.externalId || undefined,
       externalIdType: c.externalIdType,
       role,
       organizationName: c.organizationName,

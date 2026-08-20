@@ -12,17 +12,14 @@ export interface Template {
   identifier: string;
   name: string;
   description: string;
-  metadata: [
-    {
-      key: string;
-      value: string;
-    }
-  ];
-  defaultValues: [
-    {
-      fieldName: string;
-      value: string;
-    }
-  ];
+  version?: string;
+  metadata: {
+    key: string;
+    value: string;
+  }[];
+  defaultValues: {
+    fieldName: string;
+    value: string;
+  }[];
   content: string;
 }

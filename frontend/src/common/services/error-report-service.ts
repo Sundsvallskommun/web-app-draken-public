@@ -1,21 +1,16 @@
 'use client';
 
-import { apiService, ApiResponse } from '@common/services/api-service';
+import { ApiResponse, apiService } from '@common/services/api-service';
 import {
   captureNetworkError,
-  initLogCapture,
   ErrorReportPayload,
   ErrorReportResponse,
+  initLogCapture,
 } from '@common/services/error-reporting';
 import axios from 'axios';
 
-export async function submitErrorReport(
-  payload: ErrorReportPayload,
-): Promise<ApiResponse<ErrorReportResponse>> {
-  const res = await apiService.post<ApiResponse<ErrorReportResponse>, ErrorReportPayload>(
-    'error-reports',
-    payload,
-  );
+export async function submitErrorReport(payload: ErrorReportPayload): Promise<ApiResponse<ErrorReportResponse>> {
+  const res = await apiService.post<ApiResponse<ErrorReportResponse>, ErrorReportPayload>('error-reports', payload);
   return res.data;
 }
 

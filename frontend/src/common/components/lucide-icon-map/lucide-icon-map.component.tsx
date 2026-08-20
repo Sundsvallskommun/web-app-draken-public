@@ -16,8 +16,8 @@ import {
   CircleAlert,
   CircleCheckBig,
   CirclePause,
-  CircleX,
   CirclePlay,
+  CircleX,
   ClipboardPen,
   ClipboardPenLine,
   Clock10,
@@ -27,7 +27,6 @@ import {
   Ellipsis,
   ExternalLink,
   Eye,
-  View,
   File,
   FileInput,
   FileOutput,
@@ -45,7 +44,9 @@ import {
   Link2Off,
   ListChecks,
   ListFilter,
+  LockOpen,
   LogOut,
+  type LucideProps,
   Mail,
   MapPin,
   Menu,
@@ -67,8 +68,8 @@ import {
   Split,
   SquarePen,
   Sun,
-  TextSelect,
   Text,
+  TextSelect,
   ThumbsDown,
   Trash,
   Trash2,
@@ -77,12 +78,13 @@ import {
   User,
   UserCog,
   Users,
+  View,
   Wallet,
   X,
-  type LucideProps,
 } from 'lucide-react';
+import { FC } from 'react';
 
-const iconMap: Record<string, React.FC<LucideProps>> = {
+const iconMap: Record<string, FC<LucideProps>> = {
   'archive-x': ArchiveX,
   'arrow-left': ArrowLeft,
   'arrow-right': ArrowRight,
@@ -163,6 +165,7 @@ const iconMap: Record<string, React.FC<LucideProps>> = {
   users: Users,
   wallet: Wallet,
   x: X,
+  'lock-open': LockOpen,
 };
 
 export default iconMap;

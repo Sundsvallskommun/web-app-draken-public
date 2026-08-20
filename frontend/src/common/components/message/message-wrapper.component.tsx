@@ -1,7 +1,8 @@
+import { Button, cx, Header } from '@sk-web-gui/react';
 import { Mail, X } from 'lucide-react';
-import { Button, Header, cx } from '@sk-web-gui/react';
+import { FC } from 'react';
 
-export const MessageWrapper: React.FC<{
+export const MessageWrapper: FC<{
   show: boolean;
   label: string;
   closeHandler: () => void;
@@ -32,7 +33,7 @@ export const MessageWrapper: React.FC<{
           <X data-cy="close-message-wrapper-icon" />
         </Button>
       </Header>
-      {children}
+      {show && children}
     </section>
   </>
 );

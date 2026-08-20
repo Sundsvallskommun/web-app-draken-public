@@ -1,9 +1,8 @@
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
 import { isROB } from '@common/services/application-service';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { Badge, Button, Spinner } from '@sk-web-gui/react';
-import store from '@supportmanagement/services/storage-service';
+import { useUiSettingsStore } from '@stores/ui-settings-store';
 import {
   assignedStatuses,
   closedStatuses,
@@ -14,8 +13,7 @@ import {
   Status,
   suspendedStatuses,
 } from '@supportmanagement/services/support-errand-service';
-import { useMemo } from 'react';
-
+import { FC, useMemo } from 'react';
 export interface SupportManagementStatusFilter {
   status: Status[];
 }
@@ -24,31 +22,27 @@ export const SupportManagementStatusValues: SupportManagementStatusFilter = {
   status: [],
 };
 
-export const SupportManagementFilterSidebarStatusSelector: React.FC<{
+export const SupportManagementFilterSidebarStatusSelector: FC<{
   showAttestationTable: boolean;
   setShowAttestationTable: (show: boolean) => void;
   iconButton: boolean;
 }> = ({ showAttestationTable, setShowAttestationTable, iconButton }) => {
-  const {
-    setSidebarLabel,
-    setSelectedSupportErrandStatuses,
-    selectedSupportErrandStatuses,
-    newSupportErrands,
-    ongoingSupportErrands,
-    assignedSupportErrands,
-    suspendedSupportErrands,
-    solvedSupportErrands,
-  }: AppContextInterface = useAppContext();
+  const setSidebarLabel = useUiSettingsStore((s) => s.setSidebarLabel);
+  const setSelectedErrandStatuses = useUiSettingsStore((s) => s.setSelectedErrandStatuses);
+  const selectedErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
+  const setFilter = useUiSettingsStore((s) => s.setFilter);
+  const filter = useUiSettingsStore((s) => s.filter);
+  const newSupportErrands = useUiSettingsStore((s) => s.newErrands);
+  const ongoingSupportErrands = useUiSettingsStore((s) => s.ongoingErrands);
+  const assignedSupportErrands = useUiSettingsStore((s) => s.assignedErrands);
+  const suspendedSupportErrands = useUiSettingsStore((s) => s.suspendedErrands);
+  const solvedSupportErrands = useUiSettingsStore((s) => s.closedErrands);
 
   const updateStatusFilter = (ss: Status[]) => {
     try {
-      const storedFilter = store.get('filter');
-      const jsonparsedstatus = JSON.parse(storedFilter);
       const status = ss.join(',');
-      jsonparsedstatus.status = status;
-      const stringified = JSON.stringify(jsonparsedstatus);
-      store.set('filter', stringified);
-      setSelectedSupportErrandStatuses(ss);
+      setFilter({ ...filter, status });
+      setSelectedErrandStatuses(ss);
     } catch (error) {
       console.error('Error updating status filter');
     }
@@ -92,13 +86,13 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
         totalStatusErrands: solvedSupportErrands,
       },
     ],
-    [, newSupportErrands, ongoingSupportErrands, suspendedSupportErrands, assignedSupportErrands, solvedSupportErrands]
+    [newSupportErrands, ongoingSupportErrands, suspendedSupportErrands, assignedSupportErrands, solvedSupportErrands]
   );
 
   return (
     <>
       {supportSidebarButtons?.map((button) => {
-        const buttonIsActive = selectedSupportErrandStatuses.includes(button.key as Status);
+        const buttonIsActive = selectedErrandStatuses.includes(button.key as Status);
         return (
           <Button
             onClick={() => {
@@ -109,7 +103,10 @@ export const SupportManagementFilterSidebarStatusSelector: React.FC<{
             aria-label={`status-button-${button.key}`}
             variant={buttonIsActive && !showAttestationTable ? 'primary' : 'ghost'}
             className={`${!iconButton && 'justify-start'} ${!buttonIsActive && 'hover:bg-dark-ghost'}`}
-            leftIcon={(() => { const DynIcon = iconMap[button.icon as string]; return DynIcon ? <DynIcon /> : undefined; })()}
+            leftIcon={(() => {
+              const DynIcon = iconMap[button.icon as string];
+              return DynIcon ? <DynIcon /> : undefined;
+            })()}
             key={button.key}
             iconButton={iconButton}
           >

@@ -6,4 +6,4 @@ export type EstateInfoSearch = {
   districtcode: string;
 };
 
-export type EstateInformation = {};
+export type EstateInformation = Record<string, unknown>;

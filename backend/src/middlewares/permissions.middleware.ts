@@ -1,9 +1,9 @@
-import { NextFunction, Response } from 'express';
 import { HttpException } from '@exceptions/HttpException';
-import { getPermissions } from '@services/authorization.service';
-import { InternalRoleMap, Permissions } from '@interfaces/users.interface';
 import { RequestWithUser } from '@interfaces/auth.interface';
+import { InternalRoleMap, Permissions } from '@interfaces/users.interface';
+import { getPermissions } from '@services/authorization.service';
 import { logger } from '@utils/logger';
+import { NextFunction, Response } from 'express';
 
 type KeyOfMap<M extends Map<unknown, unknown>> = M extends Map<infer K, unknown> ? K : never;
 

@@ -10,6 +10,7 @@ import {
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { formatOrgNr, latestBy, OrgNumberFormat } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
+
 import { getErrand } from './casedata-errand-service';
 
 export const getLastUpdatedAdministrator = (stakeholders: Stakeholder[]) => {
@@ -116,19 +117,13 @@ const isValidStakeholder: (c: CasedataOwnerOrContact) => boolean = (c) => {
 
 export const makeStakeholdersList: (data: Partial<IErrand>) => Partial<CreateStakeholderDto>[] = (data) => {
   let stakeholders: Partial<CreateStakeholderDto>[] = [];
-  // if (data.owner?.length === 1 && isValidStakeholder(data.owner[0])) {
-  //   stakeholders.push(makeStakeholder(data.owner[0], Role.APPLICANT));
-  // }
-  // if (data.contacts?.length > 0) {
-  //   const contacts = data.contacts.map((c) => {
-  //     return makeStakeholder(c, Role.CONTACT_PERSON);
-  //   });
-  //   stakeholders = stakeholders.concat(contacts);
-  // }
   if ((data.stakeholders?.length ?? 0) > 0) {
-    const items = data.stakeholders!.filter(isValidStakeholder).map((s) => {
-      return makeStakeholder(s, s.newRole);
-    });
+    const items = data
+      .stakeholders!.filter(isValidStakeholder)
+      .filter((s) => s.newRole !== Role.ADMINISTRATOR)
+      .map((s) => {
+        return makeStakeholder(s, s.newRole);
+      });
     stakeholders = stakeholders.concat(items);
   }
   if (data.administrator) {
@@ -291,10 +286,12 @@ export const validateOwnerForSendingDecisionByLetter: (e: IErrand) => boolean = 
 };
 
 export const getStakeholderName: (c: CasedataOwnerOrContact) => string = (c) =>
-  c.stakeholderType === 'ORGANIZATION' ? (c.organizationName ?? '') : `${c.firstName} ${c.lastName}`;
+  c.stakeholderType === 'ORGANIZATION' ? c.organizationName ?? '' : `${c.firstName} ${c.lastName}`;
 
 export const getStakeholderSSN: (c: CasedataOwnerOrContact) => string = (c) => {
-  return c.stakeholderType === 'ORGANIZATION' ? (c.organizationNumber ?? '') : (c.personalNumber || '(personnummer saknas)');
+  return c.stakeholderType === 'ORGANIZATION'
+    ? c.organizationNumber ?? ''
+    : c.personalNumber || '(personnummer saknas)';
 };
 
 export const getSSNFromPersonId: (municipalityId: string, personId: string) => Promise<string> = (

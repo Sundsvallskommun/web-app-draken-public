@@ -1,7 +1,8 @@
 import { ErrandPhasePT } from '@casedata/interfaces/errand-phase';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
-import { useFormContext } from 'react-hook-form';
 import { ChevronDown } from 'lucide-react';
+import { FC } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 export interface CasePhaseFilter {
   phase: string[];
@@ -11,7 +12,7 @@ export const CasePhaseValues: CasePhaseFilter = {
   phase: [],
 };
 
-export const CasedataFilterPhase: React.FC = () => {
+export const CasedataFilterPhase: FC = () => {
   const { register } = useFormContext<CasePhaseFilter>();
 
   return (

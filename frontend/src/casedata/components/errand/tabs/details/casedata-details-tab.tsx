@@ -1,26 +1,27 @@
+import { Channels } from '@casedata/interfaces/channels';
 import { IErrand } from '@casedata/interfaces/errand';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import {
   EXTRAPARAMETER_SEPARATOR,
-  UppgiftField,
   extraParametersToUppgiftMapper,
+  UppgiftField,
 } from '@casedata/services/casedata-extra-parameters-service';
 import { saveFacilities } from '@casedata/services/casedata-facilities-service';
+import TextEditor from '@common/components/dynamic-text-editor';
 import Facilities from '@common/components/facilities/facilities';
-import { useAppContext } from '@common/contexts/app.context';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
-import { Disclosure, FormControl, FormLabel, Input, cx, useSnackbar } from '@sk-web-gui/react';
+import { cx, Disclosure, FormControl, FormLabel, Input, useSnackbar } from '@sk-web-gui/react';
+import { useCasedataStore, useConfigStore } from '@stores/index';
+import { MapPin } from 'lucide-react';
 import { IconName } from 'lucide-react/dynamic';
-import dynamic from 'next/dynamic';
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+
 import { baseDetails } from '../../extraparameter-templates/base-template';
 import { CasedataFormFieldRenderer } from './casedata-formfield-renderer';
-import { MapPin } from 'lucide-react';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-const TextEditor = dynamic(() => import('@sk-web-gui/text-editor'), { ssr: false });
 
 interface CasedataDetailsProps {
   update: () => void;
@@ -29,7 +30,9 @@ interface CasedataDetailsProps {
 }
 
 export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
-  const { municipalityId, errand, setErrand, user } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
   const [fields, setFields] = useState<UppgiftField[]>([]);
   const toastMessage = useSnackbar();
 
@@ -68,7 +71,18 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   };
 
   useEffect(() => {
-    const uppgifterFields: UppgiftField[] = (errand ? extraParametersToUppgiftMapper(errand) : undefined) || baseDetails;
+    const mappedFields: UppgiftField[] = (errand ? extraParametersToUppgiftMapper(errand) : undefined) || baseDetails;
+
+    // Medicinskt utlåtande visas som egen sektion endast när ärendet kommit in via
+    // katla-färdtjänsten (Channels.ESERVICE_KATLA). För övriga kanaler flyttas de
+    // medicinska fälten in under Yttre omständigheter (externa fält först, sedan
+    // medicinska enligt mallens ordning) och ingen separat medicinsk sektion visas.
+    const uppgifterFields: UppgiftField[] =
+      errand?.channel === Channels.ESERVICE_KATLA
+        ? mappedFields
+        : mappedFields.map((f) =>
+            f.section === 'Medicinskt utlåtande' ? { ...f, section: 'Yttre omständigheter' } : f
+          );
 
     setFields(uppgifterFields ?? []);
     setRealEstates(errand?.facilities ?? []);
@@ -102,7 +116,12 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
       <div className="my-lg">
         <Disclosure variant="alt" data-cy={`section-${label}-disclosure`} initalOpen>
           <Disclosure.Header>
-            <Disclosure.Icon icon={(() => { const DynIcon = iconMap[icon as string]; return DynIcon ? <DynIcon /> : undefined; })()} />
+            <Disclosure.Icon
+              icon={(() => {
+                const DynIcon = iconMap[icon as string];
+                return DynIcon ? <DynIcon /> : undefined;
+              })()}
+            />
             <Disclosure.Title>{label}</Disclosure.Title>
             <Disclosure.Button />
           </Disclosure.Header>
@@ -143,12 +162,12 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
   const sections: { label: string; icon: IconName }[] = [
     { label: 'Övergripande', icon: 'text' },
     { label: 'Datum', icon: 'calendar' },
-    { label: 'Uppsägning', icon: 'file-signature' },
+    { label: 'Uppsägning', icon: 'file-pen' },
     { label: 'Köpa & sälja', icon: 'wallet' },
     { label: 'Vägbidrag', icon: 'helping-hand' },
-    { label: 'Yttre omständigheter', icon: 'clipboard-signature' },
+    { label: 'Yttre omständigheter', icon: 'clipboard-pen' },
     { label: 'Personlig information', icon: 'person-standing' },
-    { label: 'Medicinskt utlåtande', icon: 'clipboard-signature' },
+    { label: 'Medicinskt utlåtande', icon: 'clipboard-pen' },
   ];
 
   return (
@@ -192,18 +211,19 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
               const filtered = fields?.filter((f) => f.section === label);
               return filtered?.length ? <div key={idx}>{renderSection(filtered, label, icon)}</div> : null;
             })}
-            <div className="flex my-24 gap-xl">
-              <FormControl id="description" className="w-full">
-                <FormLabel>Ärendebeskrivning</FormLabel>
-
-                <TextEditor
-                  className={'h-[25rem] case-description-editor'}
-                  readOnly
-                  disableToolbar
-                  value={{ markup: description }}
-                />
-              </FormControl>
-            </div>
+            {description && (
+              <div className="flex my-24 gap-xl">
+                <FormControl id="description" className="w-full">
+                  <FormLabel>Ärendebeskrivning</FormLabel>
+                  <TextEditor
+                    className={'h-[25rem] case-description-editor'}
+                    readOnly
+                    disableToolbar
+                    value={{ markup: description }}
+                  />
+                </FormControl>
+              </div>
+            )}
           </div>
         </div>
       </div>

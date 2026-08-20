@@ -1,30 +1,27 @@
 import { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
-import { useAppContext } from '@contexts/app.context';
 import { Checkbox, Disclosure, FormControl, FormLabel, Input, Label, Textarea } from '@sk-web-gui/react';
+import { useSupportStore } from '@stores/index';
 import { getRecruitmentParameters, saveParameters } from '@supportmanagement/services/support-parameter-service';
 import { Text } from 'lucide-react';
-import React, { useEffect } from 'react';
+import { FC, useMemo, useState } from 'react';
 import { useForm, useFormContext } from 'react-hook-form';
 
-export const SupportErrandRecruitmentTab: React.FC<{
+export const SupportErrandRecruitmentTab: FC<{
   update: () => void;
   setUnsaved: (unsaved: boolean) => void;
 }> = (props) => {
-  const { supportErrand } = useAppContext();
-  const [recruitmentParameterGroups, setParameters] = React.useState<{ [key: string]: Parameter[] }>({});
-  const [loading, setLoading] = React.useState(false);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const recruitmentParameterGroups = useMemo<{ [key: string]: Parameter[] }>(
+    () => getRecruitmentParameters(supportErrand as any),
+    [supportErrand]
+  );
+  const [loading, setLoading] = useState(false);
 
   const recruitmentForm = useForm<{ [key: string]: Parameter[] }>({
-    defaultValues: recruitmentParameterGroups,
+    values: structuredClone(recruitmentParameterGroups),
   });
 
   const errandForm = useFormContext<{ [key: string]: Parameter[] }>();
-
-  useEffect(() => {
-    const ps = getRecruitmentParameters(supportErrand as any);
-    setParameters(ps);
-    recruitmentForm.reset(structuredClone(ps));
-  }, [supportErrand, recruitmentForm]);
 
   const handleSubmit = async () => {
     setLoading(true);

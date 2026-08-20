@@ -221,6 +221,8 @@ export interface Address {
   firstName?: string;
   /** The last name of the recipient */
   lastName?: string;
+  /** The organization name of the recipient */
+  organizationName?: string;
   /** The address */
   address?: string;
   /** The apartment number */
@@ -506,11 +508,13 @@ export interface EmailRequest {
   /** Party */
   party?: EmailRequestParty;
   /**
-   * Recipient e-mail address
+   * Recipient e-mail address. Deprecated, use 'recipients' instead
+   * @deprecated
    * @format email
-   * @minLength 1
    */
-  emailAddress: string;
+  emailAddress?: string;
+  recipients?: string[];
+  cc?: string[];
   /**
    * E-mail subject
    * @minLength 1

@@ -8,17 +8,18 @@ import {
   saveSignedContractAttachment,
 } from '@casedata/services/contract-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
-import { useAppContext } from '@contexts/app.context';
 import { Button, FileUpload, PopupMenu, UploadFile, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useEffect, useState } from 'react';
+import { useCasedataStore, useConfigStore } from '@stores/index';
 import { Eye, FilePen, Trash } from 'lucide-react';
-
-export const ContractAttachments: React.FC<{
+import { FC, useEffect, useState } from 'react';
+export const ContractAttachments: FC<{
   existingContract: ContractData;
   readOnly?: boolean;
 }> = ({ existingContract, readOnly = false }) => {
   const toastMessage = useSnackbar();
-  const { municipalityId, errand, setErrand } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const errand = useCasedataStore((s) => s.errand);
+  const setErrand = useCasedataStore((s) => s.setErrand);
   const removeConfirm = useConfirm();
 
   const viewFileHandler = (attachment: any) => {
@@ -100,19 +101,17 @@ export const ContractAttachments: React.FC<{
               Öppna
             </Button>
           </PopupMenu.Item>
-          {!readOnly && (
-            <PopupMenu.Item>
-              <Button
-                data-cy={`delete-attachment-${file.id}`}
-                leftIcon={<Trash />}
-                onClick={async () => {
-                  handleRemoveFile(file);
-                }}
-              >
-                Ta bort
-              </Button>
-            </PopupMenu.Item>
-          )}
+          <PopupMenu.Item>
+            <Button
+              data-cy={`delete-attachment-${file.id}`}
+              leftIcon={<Trash />}
+              onClick={async () => {
+                handleRemoveFile(file);
+              }}
+            >
+              Ta bort
+            </Button>
+          </PopupMenu.Item>
         </PopupMenu.Group>
       </PopupMenu.Items>
     </PopupMenu.Panel>
@@ -120,38 +119,36 @@ export const ContractAttachments: React.FC<{
 
   return (
     <div className="my-16 flex flex-col gap-24 items-center">
-      {!readOnly && (
-        <FileUpload.Field
-          data-cy={`contract-upload-field`}
-          onChange={(e) => {
-            const files = e.target.value;
-            saveSignedContractAttachment(municipalityId, existingContract?.contractId ?? '', files, '')
-              .then((res) => {
-                if (!res) {
-                  throw new Error('Error saving attachment');
-                }
-                getErrand(municipalityId, errand!.id.toString()).then((res) => {
-                  setErrand(res.errand);
-                  loadFiles();
-                  toastMessage(
-                    getToastOptions({
-                      message: 'Bilagan/orna sparades',
-                      status: 'success',
-                    })
-                  );
-                });
-              })
-              .catch(() => {
-                toastMessage({
-                  position: 'bottom',
-                  closeable: false,
-                  message: 'Något gick fel när bilagan/orna sparades',
-                  status: 'error',
-                });
+      <FileUpload.Field
+        data-cy={`contract-upload-field`}
+        onChange={(e) => {
+          const files = e.target.value;
+          saveSignedContractAttachment(municipalityId, existingContract?.contractId ?? '', files, '')
+            .then((res) => {
+              if (!res) {
+                throw new Error('Error saving attachment');
+              }
+              getErrand(municipalityId, errand!.id.toString()).then((res) => {
+                setErrand(res.errand);
+                loadFiles();
+                toastMessage(
+                  getToastOptions({
+                    message: 'Bilagan/orna sparades',
+                    status: 'success',
+                  })
+                );
               });
-          }}
-        ></FileUpload.Field>
-      )}
+            })
+            .catch(() => {
+              toastMessage({
+                position: 'bottom',
+                closeable: false,
+                message: 'Något gick fel när bilagan/orna sparades',
+                status: 'error',
+              });
+            });
+        }}
+      ></FileUpload.Field>
       <div className="w-full flex flex-col gap-lg">
         <FileUpload.List isEdit={false}>
           {files?.map((file, i) => (

@@ -1,12 +1,11 @@
-import { Tooltip, cx, useOnElementOutside } from '@sk-web-gui/react';
-import { ReactNode, useRef, useState } from 'react';
-
+import { cx, Tooltip, useOnElementOutside } from '@sk-web-gui/react';
+import { FC, ReactNode, useRef, useState } from 'react';
 interface SidebarTooltipProps {
   children?: ReactNode;
   open?: boolean;
 }
 
-export const SidebarTooltip: React.FC<SidebarTooltipProps> = ({ children, open }) => {
+export const SidebarTooltip: FC<SidebarTooltipProps> = ({ children, open }) => {
   const [position, setPosition] = useState<'left' | 'right'>('left');
   const ref = useRef<HTMLElement>(null);
 

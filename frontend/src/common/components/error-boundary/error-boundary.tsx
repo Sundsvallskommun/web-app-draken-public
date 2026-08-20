@@ -1,7 +1,8 @@
 'use client';
 
-import { Component, ErrorInfo, ReactNode } from 'react';
 import { ErrorDetails } from '@common/services/error-reporting';
+import { Component, ErrorInfo, ReactNode } from 'react';
+
 import { ErrorFallback } from './error-fallback';
 
 interface ErrorBoundaryProps {

@@ -1,14 +1,14 @@
+import { MEXAttachmentLabels, PTAttachmentLabels } from '@casedata/interfaces/attachment';
 import { MAX_FILE_SIZE_MB } from '@casedata/services/casedata-attachment-service';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { isMEX } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import { Button, cx, FormControl, FormErrorMessage, FormHelperText, FormLabel, Input, Select } from '@sk-web-gui/react';
-import { KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { UploadCloud, X } from 'lucide-react';
+import { FC, KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { UseFormRegister, UseFormSetValue } from 'react-hook-form';
 
-import { appConfig } from '@config/appconfig';
-import { UploadCloud, X } from 'lucide-react';
 import { useFileUpload } from './file-upload-dragdrop-context';
-import { MEXAttachmentLabels, PTAttachmentLabels } from '@casedata/interfaces/attachment';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 export const imageMimeTypes = [
   'image/jpeg',
@@ -20,7 +20,7 @@ export const imageMimeTypes = [
   'image/heif',
 ];
 
-const FileUpload: React.FC<{
+const FileUpload: FC<{
   dragDrop: boolean;
   fieldName: string;
   fields: any[];
@@ -322,9 +322,10 @@ const FileUpload: React.FC<{
                       <div className="flex justify-between">
                         <div className="flex w-5/6 gap-10">
                           <div className="bg-vattjom-surface-accent pt-4 pb-0 px-4 rounded self-center">
-                            {(() => { const DynIcon = iconMap[imageMimeTypes.includes(field.file[0]?.type) ? 'image' : 'file']; return DynIcon ? <DynIcon
-                              size={25}
-                            /> : null; })()}
+                            {(() => {
+                              const DynIcon = iconMap[imageMimeTypes.includes(field.file[0]?.type) ? 'image' : 'file'];
+                              return DynIcon ? <DynIcon size={25} /> : null;
+                            })()}
                           </div>
                           <div className="overflow-hidden">
                             <p className="self-center" title={field.file[0]?.name}>

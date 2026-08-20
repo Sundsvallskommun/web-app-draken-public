@@ -124,6 +124,7 @@ export interface CBillingRecord {
   status: CBillingRecordStatusEnum;
   invoice: CInvoice;
   extraParameters?: CExtraParameters;
+  transferDate?: string;
 }
 
 export interface CSortObject {
@@ -186,21 +187,27 @@ export interface Attachment {
   note?: string;
   extension: string;
   mimeType: string;
-  file?: string;
   version?: number;
   created?: string;
   updated?: string;
   extraParameters?: any;
+  municipalityId?: string;
+  errandId?: number;
+  /** Decision id associated with the attachment, null for attachments belonging directly to the errand */
+  decisionId?: number;
+  namespace?: string;
+  channel?: AttachmentChannelEnum;
+  hash?: string;
 }
 
 export interface CreateAttachmentDto {
-  file?: string;
   category: string;
   extension: string;
   mimeType: string;
   name: string;
   note: string;
   errandNumber: string;
+  channel?: CreateAttachmentDtoChannelEnum;
 }
 
 export interface LawDTO {
@@ -358,6 +365,12 @@ export interface PatchNotificationDto {
   globalAcknowledged?: boolean;
 }
 
+export interface FeatureFlagDto {
+  name: string;
+  value?: string;
+  enabled: boolean;
+}
+
 export interface MessageDto {
   email?: string;
   contactMeans?: string;
@@ -381,6 +394,8 @@ export interface SmsDto {
 
 export interface DecisionMessageDto {
   errandId: string;
+  html?: string;
+  plaintext?: string;
 }
 
 export interface MessageResponse {
@@ -399,7 +414,8 @@ export interface MessageResponse {
   lastName?: string;
   messageType?: string;
   mobileNumber?: string;
-  recipients?: any[];
+  recipients?: string[];
+  ccRecipients?: string[];
   email?: string;
   htmlMessage?: string;
   userId?: string;
@@ -424,6 +440,7 @@ export interface CParameter {
   displayName?: string;
   group?: string;
   values?: any[];
+  version?: number;
 }
 
 export interface CContactChannel {
@@ -435,6 +452,7 @@ export interface CJsonParameter {
   key: string;
   value?: any;
   schemaId: string;
+  version?: number;
 }
 
 export interface CSupportStakeholder {
@@ -516,6 +534,7 @@ export interface SupportErrandDto {
   created?: string;
   modified?: string;
   touched?: string;
+  version?: number;
   actions?: CErrandAction[];
 }
 
@@ -562,6 +581,7 @@ export interface CCommunication {
   target?: string;
   internal?: boolean;
   viewed?: boolean;
+  ccRecipients?: string[];
   emailHeaders?: string;
   communicationAttachments: CCommunicationAttachment[];
 }
@@ -603,12 +623,6 @@ export interface TemplateSelector {
   identifier?: string;
   content?: string;
   parameters?: object;
-}
-
-export interface FeatureFlagDto {
-  name: string;
-  value?: string;
-  enabled: boolean;
 }
 
 export enum CBillingRecordTypeEnum {
@@ -662,6 +676,20 @@ export enum ExtraParametersDtoConsentViewTransportationServiceDetailsEnum {
 export enum ExtraParametersDtoApplicationRenewalChangedCircumstancesEnum {
   Y = "Y",
   N = "N",
+}
+
+export enum AttachmentChannelEnum {
+  EMAIL = "EMAIL",
+  ESERVICE = "ESERVICE",
+  WEB_UI = "WEB_UI",
+  MY_PAGES = "MY_PAGES",
+}
+
+export enum CreateAttachmentDtoChannelEnum {
+  EMAIL = "EMAIL",
+  ESERVICE = "ESERVICE",
+  WEB_UI = "WEB_UI",
+  MY_PAGES = "MY_PAGES",
 }
 
 export enum CCommunicationDirectionEnum {

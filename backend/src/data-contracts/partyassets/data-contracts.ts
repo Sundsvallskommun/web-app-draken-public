@@ -13,9 +13,11 @@
 /** Status model */
 export enum Status {
   ACTIVE = "ACTIVE",
+  DRAFT = "DRAFT",
   EXPIRED = "EXPIRED",
   BLOCKED = "BLOCKED",
   TEMPORARY = "TEMPORARY",
+  REPLACED = "REPLACED",
 }
 
 export interface Problem {
@@ -117,6 +119,10 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   integralNumber?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
@@ -129,22 +135,32 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  valueNode?: boolean;
-  container?: boolean;
-  number?: boolean;
   string?: boolean;
   boolean?: boolean;
+  number?: boolean;
   embeddedValue?: boolean;
 }
 
 export interface AssetUpdateRequest {
+  /** Asset status */
+  status?: Status;
+  /** Status reason */
+  statusReason?: string;
+}
+
+export interface DraftAssetUpdateRequest {
+  /**
+   * Issued date
+   * @format date
+   */
+  issued?: string;
   /**
    * Valid to date
    * @format date
    */
   validTo?: string;
+  /** If true, validTo will be cleared (asset becomes indefinite). Takes precedence over validTo when both are supplied. */
+  indefinitely?: boolean;
   /** Asset status */
   status?: Status;
   /** Status reason */
@@ -186,6 +202,8 @@ export interface Asset {
   additionalParameters?: Record<string, string>;
   /** JSON parameters */
   jsonParameters?: AssetJsonParameter[];
+  /** Id of the asset this asset replaces */
+  replacesId?: string;
 }
 
 export enum JsonNodeNodeTypeEnum {

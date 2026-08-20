@@ -1,438 +1,59 @@
 import { CAccountInformation } from 'src/data-contracts/backend/data-contracts';
 
+import invoiceData from './invoicedata-MEX-2026-04-14.json';
+
+interface InvoiceRow {
+  costPerUnit: number;
+  vatCode: string;
+  description: string;
+  detailedDescriptions?: string[];
+  visible: boolean;
+  main: boolean;
+  accountInformationRows?: { amountFromParent: boolean; object?: string }[];
+}
+
 export interface CasedataService {
   id: string;
   name: string;
   description: string;
   costPerUnit: number;
-  unit: string;
   vatCode: string;
   fixedPrice: boolean;
   detailedDescriptions?: string[];
   accountInformation: CAccountInformation & { object?: string };
 }
 
-interface CasedataActivity {
-  value: string;
-  name: string;
-  costCenter?: string;
-}
-
 export interface CasedataInvoiceSettings {
   category: string;
-  counterpart: string;
   services: CasedataService[];
-  activities: CasedataActivity[];
 }
 
-export const casedataInvoiceSettings: CasedataInvoiceSettings = {
-  category: 'MEX_INVOICE',
-  counterpart: '00000000',
-  services: [
-    {
-      id: 'upplatelse-allman-plats',
-      name: 'Upplåtelse allmän plats',
-      description: 'Markupplåtelse',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      detailedDescriptions: ['Allmän plats'],
+const mapInvoiceData = (): CasedataInvoiceSettings => {
+  const services: CasedataService[] = invoiceData.invoiceTypes.map((type) => {
+    const rows = type.external?.invoiceRows as InvoiceRow[] | undefined;
+    const mainRow = rows?.find((r) => r.main) ?? rows?.[0];
+    const accountInfo = type.external?.accountInformation ?? {};
+    const objectValue = mainRow?.accountInformationRows?.[0]?.object;
+
+    return {
+      id: type.invoiceType,
+      name: type.invoiceType,
+      description: mainRow?.description ?? '',
+      costPerUnit: mainRow?.costPerUnit ?? 0,
+      vatCode: mainRow?.vatCode ?? '00',
+      fixedPrice: type.fixedPrice ?? false,
+      ...(mainRow?.detailedDescriptions && { detailedDescriptions: mainRow.detailedDescriptions }),
       accountInformation: {
-        costCenter: '36000000',
-        subaccount: '342000',
-        department: '810100',
-        activity: '3056',
+        ...accountInfo,
+        ...(objectValue && { object: objectValue }),
       },
-    },
-    {
-      id: 'upplatelse-allman-plats-moms',
-      name: 'Upplåtelse allmän plats (moms)',
-      description: 'Markupplåtelse',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '25',
-      fixedPrice: false,
-      detailedDescriptions: ['Allmän plats'],
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '342100',
-        department: '810100',
-        activity: '3056',
-      },
-    },
-    {
-      id: 'torgplats',
-      name: 'Torgplats',
-      description: 'Torgplats',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '342000',
-        department: '810100',
-        activity: '3060',
-      },
-    },
-    {
-      id: 'foodtruck',
-      name: 'Foodtruck',
-      description: 'Foodtruck',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '342000',
-        department: '810100',
-        activity: '3025',
-      },
-    },
-    {
-      id: 'upplatelse-fisktorget',
-      name: 'Upplåtelse, Fisktorget',
-      description: 'Markupplåtelse',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      detailedDescriptions: ['Fisktorget'],
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '342000',
-        department: '810100',
-        activity: '3065',
-      },
-    },
-    {
-      id: 'arrende-allman-mark',
-      name: 'Arrende, allmän mark',
-      description: 'Arrende',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      detailedDescriptions: ['Allmän mark'],
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '342000',
-        department: '810100',
-        activity: '3091',
-      },
-    },
-    {
-      id: 'arrende-allman-mark-moms',
-      name: 'Arrende, allmän mark (moms)',
-      description: 'Arrende',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '25',
-      fixedPrice: false,
-      detailedDescriptions: ['Allmän mark'],
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '342100',
-        department: '810100',
-        activity: '3091',
-      },
-    },
-    {
-      id: 'arrende-tomtmark',
-      name: 'Arrende, tomtmark',
-      description: 'Arrende',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      detailedDescriptions: ['Tomtmark'],
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '342000',
-        department: '810100',
-        activity: '3092',
-      },
-    },
-    {
-      id: 'matfors-folkets-park-vidarefakturering',
-      name: 'Matfors Folkets Park, vidarefakturering',
-      description: 'Vidarefakturering',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      detailedDescriptions: ['Matfors Folkets Park'],
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '361000',
-        department: '810100',
-        object: '2335002',
-      },
-    },
-    {
-      id: 'hyra-inlost-fastighet',
-      name: 'Hyra, inlöst fastighet',
-      description: 'Hyra, inlöst fastighet',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '341000',
-        department: '215050',
-        activity: '3056',
-      },
-    },
-    {
-      id: 'el-fisktorget-moms',
-      name: 'El, Fisktorget (moms)',
-      description: 'Elanslutning',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '25',
-      fixedPrice: false,
-      detailedDescriptions: ['Fisktorget'],
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '313200',
-        department: '810100',
-        activity: '3065',
-      },
-    },
-    {
-      id: 'el-batplats-norra-kajen-moms',
-      name: 'El, båtplats Norra Kajen (moms)',
-      description: 'Elanslutning',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '25',
-      fixedPrice: false,
-      detailedDescriptions: ['Båtplats Norra Kajen'],
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '313200',
-        department: '215090',
-      },
-    },
-    {
-      id: 'administrativ-avgift',
-      name: 'Administrativ avgift',
-      description: 'Administrativ avgift',
-      costPerUnit: 1500,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: true,
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '313100',
-        department: '810100',
-        activity: '3300',
-      },
-    },
-    {
-      id: 'administrativ-avgift-moms',
-      name: 'Administrativ avgift (moms)',
-      description: 'Administrativ avgift',
-      costPerUnit: 1500,
-      unit: 'st',
-      vatCode: '25',
-      fixedPrice: true,
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '313200',
-        department: '810100',
-        activity: '3300',
-      },
-    },
-    {
-      id: 'markanvisningsavgift',
-      name: 'Markanvisningsavgift',
-      description: 'Markanvisningsavgift',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '313100',
-        department: '215050',
-      },
-    },
-    {
-      id: 'ersattning-offentlig-anlaggning-moms',
-      name: 'Ersättning offentlig anläggning (moms)',
-      description: 'Ersättning offentlig anläggning',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '25',
-      fixedPrice: false,
-      accountInformation: {
-        costCenter: '30000000',
-        subaccount: '342100',
-        department: '215050',
-      },
-    },
-    {
-      id: 'parkeringsplats',
-      name: 'Parkeringsplats',
-      description: 'Parkeringsplats',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      accountInformation: {
-        costCenter: '36200000',
-        subaccount: '342000',
-        department: '249270',
-      },
-    },
-    {
-      id: 'elsparkcyklar',
-      name: 'Elsparkcyklar',
-      description: 'Elsparkcyklar',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      accountInformation: {
-        costCenter: '36200000',
-        subaccount: '342000',
-        department: '249130',
-      },
-    },
-    {
-      id: 'forsaljning-fastighet',
-      name: 'Försäljning fastighet',
-      description: 'Försäljning fastighet',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '382000',
-        department: '215050',
-      },
-    },
-    {
-      id: 'fastighetsreglering',
-      name: 'Fastighetsreglering',
-      description: 'Fastighetsreglering',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '382000',
-        department: '215050',
-      },
-    },
-    {
-      id: 'uttag-bergmaterial',
-      name: 'Uttag bergmaterial',
-      description: 'Uttag bergmaterial',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '301100',
-        department: '215050',
-      },
-    },
-    {
-      id: 'industrisp\u00e5r',
-      name: 'Industrispår',
-      description: 'Industrispår',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '342000',
-        department: '800100',
-      },
-    },
-    {
-      id: 'miljouppdrag',
-      name: 'Miljöuppdrag',
-      description: 'Miljöuppdrag',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '361000',
-        department: '215060',
-      },
-    },
-    {
-      id: 'miljouppdrag-brunne',
-      name: 'Miljöuppdrag Brunne',
-      description: 'Miljöuppdrag Brunne',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '361000',
-        department: '215060',
-        project: '13828',
-        object: '3338001',
-      },
-    },
-    {
-      id: 'miljouppdrag-svano',
-      name: 'Miljöuppdrag Svanö',
-      description: 'Miljöuppdrag Svanö',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      accountInformation: {
-        costCenter: '36000000',
-        subaccount: '361000',
-        department: '215060',
-        project: '13828',
-        object: '3338002',
-      },
-    },
-    {
-      id: 'faktura-allman',
-      name: 'Faktura allmän',
-      description: 'Faktura allmän',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '00',
-      fixedPrice: false,
-      accountInformation: {},
-    },
-    {
-      id: 'faktura-allman-moms',
-      name: 'Faktura allmän (moms)',
-      description: 'Faktura allmän (moms)',
-      costPerUnit: 0,
-      unit: 'st',
-      vatCode: '25',
-      fixedPrice: false,
-      accountInformation: {},
-    },
-  ],
-  activities: [
-    { value: '3025', name: 'Foodtruck' },
-    { value: '3056', name: 'Upplåtelse / Hyra' },
-    { value: '3060', name: 'Torgplats' },
-    { value: '3065', name: 'Fisktorget' },
-    { value: '3091', name: 'Arrende, allmän mark' },
-    { value: '3092', name: 'Arrende, tomtmark' },
-    { value: '3300', name: 'Administrativ avgift' },
-  ],
+    };
+  });
+
+  return {
+    category: invoiceData.category,
+    services: services.toSorted((a, b) => a.name.localeCompare(b.name)),
+  };
 };
+
+export const casedataInvoiceSettings: CasedataInvoiceSettings = mapInvoiceData();

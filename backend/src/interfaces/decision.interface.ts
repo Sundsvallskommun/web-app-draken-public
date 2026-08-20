@@ -1,7 +1,6 @@
-import { Attachment } from './attachment.interface';
-import { GenericExtraParameters } from './extra-parameters.interface';
-import { IsArray, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsArray, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+
 import {
   Decision,
   DecisionDecisionOutcomeEnum,
@@ -9,6 +8,9 @@ import {
   Law,
   Stakeholder as StakeholderDTO,
 } from '@/data-contracts/case-data/data-contracts';
+
+import { Attachment } from './attachment.interface';
+import { GenericExtraParameters } from './extra-parameters.interface';
 
 export class LawDTO implements Law {
   @IsString()

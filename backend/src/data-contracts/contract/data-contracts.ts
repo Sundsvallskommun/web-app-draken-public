@@ -87,6 +87,8 @@ export enum LeaseType {
   USUFRUCT_FARMING = "USUFRUCT_FARMING",
   USUFRUCT_MISC = "USUFRUCT_MISC",
   LAND_LEASE_MISC = "LAND_LEASE_MISC",
+  LAND_LEASE_LICENSE = "LAND_LEASE_LICENSE",
+  LAND_LEASE_MUNICIPALITY = "LAND_LEASE_MUNICIPALITY",
   OTHER_FEE = "OTHER_FEE",
 }
 
@@ -112,6 +114,7 @@ export enum ContractType {
   SHORT_TERM_LEASE_AGREEMENT = "SHORT_TERM_LEASE_AGREEMENT",
   OBJECT_LEASE = "OBJECT_LEASE",
   LEASEHOLD = "LEASEHOLD",
+  MAINTENANCE_AGREEMENT = "MAINTENANCE_AGREEMENT",
 }
 
 /** Attachment category */
@@ -125,6 +128,12 @@ export enum AddressType {
   POSTAL_ADDRESS = "POSTAL_ADDRESS",
   BILLING_ADDRESS = "BILLING_ADDRESS",
   VISITING_ADDRESS = "VISITING_ADDRESS",
+}
+
+export interface GeoJsonObject {
+  crs?: Crs;
+  bbox?: number[];
+  type: string;
 }
 
 export interface Problem {
@@ -179,11 +188,6 @@ export interface AttachmentMetadata {
 
 /** Contract */
 export interface Contract {
-  /**
-   * Version for contract
-   * @format int32
-   */
-  version?: number;
   /** Contract id */
   contractId?: string;
   /** A description of the contract */
@@ -209,8 +213,6 @@ export interface Contract {
   indexTerms?: TermGroup[];
   propertyDesignations?: PropertyDesignation[];
   stakeholders?: Stakeholder[];
-  /** Duration */
-  duration?: Duration;
   /** Extension */
   extension?: Extension;
   /** Fees */
@@ -245,18 +247,6 @@ export interface Contract {
 export interface Crs {
   type?: CrsTypeEnum;
   properties?: Record<string, any>;
-}
-
-/** Duration */
-export interface Duration {
-  /**
-   * The lease duration value
-   * @format int32
-   * @min 0
-   */
-  leaseDuration: number;
-  /** The unit of the duration value */
-  unit: TimeUnit;
 }
 
 /** Extension */
@@ -337,14 +327,8 @@ export interface Fees {
    * @max 1
    */
   indexationRate?: number;
-  /** Additional information */
+  /** Additional information. Each entry must be non-blank and between 1 and 30 characters (used as invoice row descriptions). */
   additionalInformation?: string[];
-}
-
-export interface GeoJsonObject {
-  crs?: Crs;
-  bbox?: number[];
-  type: string;
 }
 
 export type GeometryCollection = GeoJsonObject & {
@@ -364,9 +348,9 @@ export type GeometryCollection = GeoJsonObject & {
 /** Invoicing details */
 export interface Invoicing {
   /** How often the lease is invoiced */
-  invoiceInterval?: IntervalType;
+  invoiceInterval: IntervalType;
   /** Invoiced in */
-  invoicedIn?: InvoicedIn;
+  invoicedIn: InvoicedIn;
 }
 
 /** Leasehold */
@@ -487,19 +471,43 @@ export interface Stakeholder {
   /** Type of stakeholder */
   type?: StakeholderType;
   roles?: StakeholderRole[];
-  /** Name of the organization */
+  /**
+   * Name of the organization
+   * @minLength 0
+   * @maxLength 255
+   */
   organizationName?: string;
-  /** Swedish organization number */
+  /**
+   * Swedish organization number
+   * @minLength 0
+   * @maxLength 255
+   */
   organizationNumber?: string;
-  /** Stakeholders first name */
+  /**
+   * Stakeholders first name
+   * @minLength 0
+   * @maxLength 255
+   */
   firstName?: string;
-  /** Stakeholders last name */
+  /**
+   * Stakeholders last name
+   * @minLength 0
+   * @maxLength 255
+   */
   lastName?: string;
   /** PartyId */
   partyId?: string;
-  /** Phone number for stakeholder */
+  /**
+   * Phone number for stakeholder
+   * @minLength 0
+   * @maxLength 255
+   */
   phoneNumber?: string;
-  /** Email adress for stakeholder */
+  /**
+   * Email adress for stakeholder
+   * @minLength 0
+   * @maxLength 255
+   */
   emailAddress?: string;
   /** Address for stakeholder */
   address?: Address;
@@ -569,65 +577,74 @@ export interface AttachmentData {
   content?: string;
 }
 
-export interface Change {
-  type?: ChangeTypeEnum;
-  path?: string;
-  oldValue?: JsonNode;
-  newValue?: JsonNode;
-}
-
-export interface Diff {
-  /** @format int32 */
-  oldVersion?: number;
-  /** @format int32 */
-  newVersion?: number;
-  changes?: Change[];
-  availableVersions?: number[];
-}
-
-export interface JsonNode {
-  empty?: boolean;
-  array?: boolean;
-  null?: boolean;
-  object?: boolean;
-  float?: boolean;
-  short?: boolean;
-  valueNode?: boolean;
-  bigInteger?: boolean;
-  binary?: boolean;
-  bigDecimal?: boolean;
-  floatingPointNumber?: boolean;
-  double?: boolean;
-  missingNode?: boolean;
-  /** @deprecated */
-  textual?: boolean;
-  int?: boolean;
-  long?: boolean;
-  pojo?: boolean;
-  integralNumber?: boolean;
-  container?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  number?: boolean;
-  string?: boolean;
-  boolean?: boolean;
-  embeddedValue?: boolean;
+/** Partial contract payload used for PATCH. Only the fields present in the payload are applied to the existing contract. */
+export interface PatchContract {
+  /** A description of the contract */
+  description?: string;
+  /** External referenceId */
+  externalReferenceId?: string;
+  /** Type of lease */
+  leaseType?: LeaseType;
+  /** Object identity (from Lantmäteriet) */
+  objectIdentity?: string;
+  /** Contract status */
+  status?: Status;
+  /** Contract type */
+  type?: ContractType;
+  /** Type of leasehold */
+  leasehold?: Leasehold;
+  additionalTerms?: TermGroup[];
+  /** Extra parameters */
+  extraParameters?: ExtraParameterGroup[];
+  indexTerms?: TermGroup[];
+  propertyDesignations?: PropertyDesignation[];
+  stakeholders?: Stakeholder[];
+  /** Lease extension */
+  extension?: Extension;
+  /** Fee details */
+  fees?: Fees;
+  /** Invoicing details */
+  invoicing?: Invoicing;
+  /**
+   * Start date of the contract
+   * @format date
+   */
+  startDate?: string;
+  /**
+   * End date of the contract. Set when the contract is terminated
+   * @format date
+   */
+  endDate?: string;
+  /** Notice details */
+  notice?: Notice;
+  /** Current contract period */
+  currentPeriod?: Period;
+  /**
+   * Leased area (m2)
+   * @format int32
+   */
+  area?: number;
+  /** Whether the contract is signed by a witness */
+  signedByWitness?: boolean;
+  /** Part(s) of property covered by the lease. Described by GeoJSON using polygon(s) */
+  areaData?: FeatureCollection;
 }
 
 export type SpecificationContractEntity = any;
 
 export interface PageContract {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Contract[];
   /** @format int32 */
   number?: number;
+  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
-  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
@@ -642,8 +659,8 @@ export interface PageableObject {
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
   unpaged?: boolean;
+  sort?: SortObject;
 }
 
 export interface SortObject {
@@ -655,22 +672,4 @@ export interface SortObject {
 export enum CrsTypeEnum {
   Name = "name",
   Link = "link",
-}
-
-export enum ChangeTypeEnum {
-  ADDITION = "ADDITION",
-  REMOVAL = "REMOVAL",
-  MODIFICATION = "MODIFICATION",
-}
-
-export enum JsonNodeNodeTypeEnum {
-  ARRAY = "ARRAY",
-  BINARY = "BINARY",
-  BOOLEAN = "BOOLEAN",
-  MISSING = "MISSING",
-  NULL = "NULL",
-  NUMBER = "NUMBER",
-  OBJECT = "OBJECT",
-  POJO = "POJO",
-  STRING = "STRING",
 }

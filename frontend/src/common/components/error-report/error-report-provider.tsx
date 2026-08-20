@@ -2,6 +2,7 @@
 
 import { ErrorDetails } from '@common/services/error-reporting';
 import { useCallback, useEffect, useState } from 'react';
+
 import { ErrorReportModal } from './error-report-modal';
 
 interface ErrorReportProviderProps {

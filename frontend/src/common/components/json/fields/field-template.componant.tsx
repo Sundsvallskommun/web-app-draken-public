@@ -1,6 +1,6 @@
+import sanitized from '@common/services/sanitizer-service';
 import type { FieldTemplateProps } from '@rjsf/utils';
 import { FormControl, FormErrorMessage, FormLabel } from '@sk-web-gui/react';
-import sanitized from '@common/services/sanitizer-service';
 
 export function FieldTemplate(props: FieldTemplateProps) {
   const { id, label, required, displayLabel, help, children, uiSchema, rawErrors, schema } = props;
@@ -19,8 +19,7 @@ export function FieldTemplate(props: FieldTemplateProps) {
   const formControlClassName = className ? `form-row ${className}` : 'form-row w-full';
 
   // Get description from ui:description or schema.description
-  const descriptionText =
-    (uiSchema?.['ui:description'] as string) || (schema?.description as string) || '';
+  const descriptionText = (uiSchema?.['ui:description'] as string) || (schema?.description as string) || '';
   const sanitizedDescription = sanitized(descriptionText);
 
   const renderDescription = (position: 'above' | 'below') => {
@@ -50,9 +49,7 @@ export function FieldTemplate(props: FieldTemplateProps) {
 
       {descriptionBelow && renderDescription('below')}
 
-      {hasError && (
-        <FormErrorMessage className="text-error">{rawErrors[0]}</FormErrorMessage>
-      )}
+      {hasError && <FormErrorMessage className="text-error">{rawErrors[0]}</FormErrorMessage>}
 
       {help}
     </FormControl>

@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+
 import {
   BASE_URL_PREFIX,
   CREDENTIALS,
@@ -7,17 +9,18 @@ import {
   PORT,
   SAML_CALLBACK_URL,
   SAML_ENTRY_SSO,
-  SAML_SUCCESS_REDIRECT,
   SAML_FAILURE_REDIRECT,
   SAML_IDP_PUBLIC_CERT,
   SAML_ISSUER,
   SAML_LOGOUT_CALLBACK_URL,
+  SAML_LOGOUT_URL,
   SAML_PRIVATE_KEY,
   SAML_PUBLIC_KEY,
+  SAML_SUCCESS_REDIRECT,
   SECRET_KEY,
-  SESSION_MEMORY,
   SWAGGER_ENABLED,
 } from '@config';
+import defaultAuthGuard from '@middlewares/default-auth.middleware';
 import errorMiddleware from '@middlewares/error.middleware';
 import { Strategy, VerifiedCallback } from '@node-saml/passport-saml';
 import { logger, stream } from '@utils/logger';
@@ -32,26 +35,20 @@ import session from 'express-session';
 import { existsSync, mkdirSync } from 'fs';
 import helmet from 'helmet';
 import hpp from 'hpp';
-import createMemoryStore from 'memorystore';
 import morgan from 'morgan';
 import type { ReferenceObject, SchemaObject } from 'openapi3-ts';
 import passport from 'passport';
 import { join } from 'path';
-import 'reflect-metadata';
 import { getMetadataArgsStorage, useExpressServer } from 'routing-controllers';
 import { routingControllersToSpec } from 'routing-controllers-openapi';
-import createFileStore from 'session-file-store';
 import swaggerUi from 'swagger-ui-express';
+
 import { HttpException } from './exceptions/HttpException';
 import { Profile } from './interfaces/profile.interface';
-import { authorizeGroups, getPermissions, getRole } from './services/authorization.service';
+import { authorizeGroups, getLoginPermissions, getRole } from './services/authorization.service';
 import { additionalConverters } from './utils/custom-validation-classes';
-import { isValidUrl } from './utils/util';
 import { isValidOrigin } from './utils/isValidateOrigin';
-const SessionStoreCreate = SESSION_MEMORY ? createMemoryStore(session) : createFileStore(session);
-const sessionTTL = 4 * 24 * 60 * 60;
-// NOTE: memory uses ms while file uses seconds
-const sessionStore = new SessionStoreCreate(SESSION_MEMORY ? { checkPeriod: sessionTTL * 1000 } : { ttl: sessionTTL, path: './data/sessions' });
+import { isValidUrl } from './utils/util';
 
 passport.serializeUser(function (user, done) {
   done(null, user);
@@ -75,16 +72,17 @@ const samlStrategy = new Strategy(
     // Identity Provider's public key
     idpCert: SAML_IDP_PUBLIC_CERT!,
     issuer: SAML_ISSUER!,
-    wantAssertionsSigned: false,
+    wantAssertionsSigned: true,
     signatureAlgorithm: 'sha256',
     digestAlgorithm: 'sha256',
     // maxAssertionAgeMs: 2592000000,
     // authnRequestBinding: 'HTTP-POST',
-    //logoutUrl: 'http://194.71.24.30/sso',
+    // IdP Single Logout endpoint. Optional: when unset, /saml/logout does a local-only logout.
+    logoutUrl: SAML_LOGOUT_URL,
     logoutCallbackUrl: SAML_LOGOUT_CALLBACK_URL!,
-    acceptedClockSkewMs: -1,
+    acceptedClockSkewMs: 5000,
     wantAuthnResponseSigned: false,
-    audience: false,
+    audience: SAML_ISSUER!,
   },
   async function (profile: Profile | null, done: VerifiedCallback) {
     if (!profile) {
@@ -135,10 +133,16 @@ const samlStrategy = new Strategy(
         email: email,
         groups: appGroups,
         role: getRole(appGroups),
-        permissions: getPermissions(appGroups),
+        // SAML session identity — needed so SP-initiated Single Logout can build a valid LogoutRequest.
+        nameID: profile.nameID,
+        nameIDFormat: profile.nameIDFormat,
+        sessionIndex: profile.sessionIndex,
+        // Permissions are resolved once here, at login, and carried in the session cookie.
+        permissions: getLoginPermissions(appGroups),
       };
 
-      logger.info(`Found user: ${JSON.stringify(findUser)}`);
+      logger.info(`Authenticated user ${findUser.username} (role: ${findUser.role})`);
+      logger.debug(`Found user: ${JSON.stringify(findUser)}`);
 
       done(null, findUser);
     } catch (err) {
@@ -161,13 +165,20 @@ class App {
   public port: string | number;
   public swaggerEnabled: boolean;
 
-  constructor(Controllers: Function[]) {
+  constructor(
+    Controllers: NewableFunction[],
+    private readonly sessionStore: session.Store,
+  ) {
     this.app = express();
     this.env = NODE_ENV || 'development';
     this.port = PORT || 3000;
     this.swaggerEnabled = SWAGGER_ENABLED || false;
 
     this.initializeDataFolders();
+
+    this.app.get('/health', (_req, res) => {
+      res.status(200).json({ status: 'OK' });
+    });
 
     this.initializeMiddlewares();
     this.initializeRoutes(Controllers);
@@ -191,7 +202,7 @@ class App {
   }
 
   private initializeMiddlewares() {
-    this.app.use(morgan(LOG_FORMAT!, { stream }));
+    this.app.use(morgan(LOG_FORMAT!, { stream, skip: req => req.url?.endsWith('/health/up') ?? false }));
     this.app.use(hpp());
     this.app.use(helmet());
     this.app.use(compression());
@@ -210,9 +221,13 @@ class App {
         secret: SECRET_KEY!,
         resave: false,
         saveUninitialized: false,
-        store: sessionStore,
+        store: this.sessionStore,
         cookie: {
           path: BASE_URL_PREFIX,
+          httpOnly: true,
+          secure: this.env === 'production' && process.env.ENVIRONMENT !== 'LOCAL',
+          sameSite: 'lax',
+          maxAge: 12 * 60 * 60 * 1000,
         },
       }),
     );
@@ -264,13 +279,16 @@ class App {
         if (typeof req.query.successRedirect === 'string' && isValidUrl(req.query.successRedirect) && isValidOrigin(req.query.successRedirect)) {
           successRedirect = req.query.successRedirect;
         }
-        samlStrategy.logout(req as any, () => {
-          req.logout(err => {
-            if (err) {
-              return next(err);
-            }
-            res.redirect(successRedirect as string);
-          });
+        // No IdP logout endpoint configured → local-only logout (e.g. prod opting out of SLO).
+        if (!SAML_LOGOUT_URL) {
+          return req.logout(err => (err ? next(err) : res.redirect(successRedirect as string)));
+        }
+        samlStrategy.logout(req as any, (err: Error | null, url?: string | null) => {
+          if (err || !url) {
+            logger.error('SAML logout URL generation failed; falling back to local logout', err);
+            return req.logout(logoutErr => (logoutErr ? next(logoutErr) : res.redirect(successRedirect as string)));
+          }
+          req.logout(logoutErr => (logoutErr ? next(logoutErr) : res.redirect(url)));
         });
       },
     );
@@ -282,7 +300,8 @@ class App {
         }
 
         let successRedirect: URL, failureRedirect: URL;
-        const urls = req?.body?.RelayState.split(',');
+        const relayState = typeof req?.body?.RelayState === 'string' ? req.body.RelayState : '';
+        const urls = relayState.split(',');
 
         if (isValidUrl(urls[0]) && isValidOrigin(urls[0])) {
           successRedirect = new URL(urls[0]);
@@ -314,7 +333,8 @@ class App {
     this.app.post(`${BASE_URL_PREFIX}/saml/login/callback`, samlLimiter, bodyParser.urlencoded({ extended: false }), (req, res, next) => {
       let successRedirect: URL, failureRedirect: URL;
 
-      const urls = req?.body?.RelayState.split(',');
+      const relayState = typeof req?.body?.RelayState === 'string' ? req.body.RelayState : '';
+      const urls = relayState.split(',');
 
       if (isValidUrl(urls[0]) && isValidOrigin(urls[0])) {
         successRedirect = new URL(urls[0]);
@@ -329,6 +349,7 @@ class App {
 
       passport.authenticate('saml', (err: Error | null, user: Express.User | false | null) => {
         if (err) {
+          logger.warn(`SAML login callback failed: ${err.name}: ${err.message}`);
           const queries = new URLSearchParams(failureRedirect.searchParams);
           if (err?.name) {
             queries.append('failMessage', err.name);
@@ -355,9 +376,14 @@ class App {
         }
       })(req, res, next);
     });
+
+    // Default-deny authentication. Mounted last so the SAML endpoints and the `/health`
+    // probe above it stay reachable, and before initializeRoutes() so every
+    // routing-controllers route sits behind it unless listed in PUBLIC_PATHS.
+    this.app.use(BASE_URL_PREFIX!, defaultAuthGuard);
   }
 
-  private initializeRoutes(controllers: Function[]) {
+  private initializeRoutes(controllers: NewableFunction[]) {
     useExpressServer(this.app, {
       routePrefix: BASE_URL_PREFIX,
       cors: {
@@ -370,7 +396,7 @@ class App {
     });
   }
 
-  private initializeSwagger(controllers: Function[]) {
+  private initializeSwagger(controllers: NewableFunction[]) {
     const schemas = validationMetadatasToSchemas({
       classTransformerMetadataStorage: defaultMetadataStorage,
       refPointerPrefix: '#/components/schemas/',

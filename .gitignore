@@ -4,3 +4,7 @@ node_modules
 .DS_Store
 frontend/tsconfig.tsbuildinfo
 frontend/public/deploy-info.json
+.vscode/
+.claude
+.playwright-mcp
+screenshots

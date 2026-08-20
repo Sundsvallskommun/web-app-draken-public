@@ -6,6 +6,7 @@ export interface SupportAttachment {
   id: string;
   fileName: string;
   mimeType: string;
+  channel?: string;
 }
 
 export interface SingleSupportAttachment {

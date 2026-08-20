@@ -1,13 +1,14 @@
-import { Conversation, ConversationType, Message, PageMessage } from '@/data-contracts/case-data/data-contracts';
-import { PortalPersonData } from '@/data-contracts/employee/data-contracts';
-import { apiURL } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
-import { Body, Controller, Get, Param, Post, Req, UseBefore, UploadedFiles } from 'routing-controllers';
+import { Body, Controller, Get, Param, Post, Req, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
-import { fileUploadOptions } from '@/utils/fileUploadOptions';
+
 import { apiServiceName } from '@/config/api-config';
+import { Conversation, ConversationType, PageMessage } from '@/data-contracts/case-data/data-contracts';
+import { PortalPersonData } from '@/data-contracts/employee/data-contracts';
+import { fileUploadOptions } from '@/utils/fileUploadOptions';
+import { apiURL } from '@/utils/util';
 
 interface ResponseData {
   data: any;
@@ -69,7 +70,7 @@ export class CaseDataConversationController {
           viewed = 'true';
         }
 
-        if (msg?.createdBy?.type === 'AD_ACCOUNT') {
+        if (msg?.createdBy?.type === 'adAccount') {
           if (msg?.createdBy?.value === req.user.username) {
             firstName = req.user.firstName;
             lastName = req.user.lastName;
@@ -83,7 +84,7 @@ export class CaseDataConversationController {
           }
         }
 
-        if (msg?.createdBy?.type === 'PARTY_ID') {
+        if (msg?.createdBy?.type === 'partyId') {
           const adAccountUrl = `${this.CITIZEN_SERVICE}/${municipalityId}/${msg?.createdBy?.value}`;
           const res = await this.apiService.get<any>({ url: adAccountUrl }, req.user);
           firstName = res.data.givenname;

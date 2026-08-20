@@ -1,15 +1,17 @@
 import { Type } from 'class-transformer';
 import { IsArray, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
-import { Role } from './role';
+
 import {
+  Address as IAddressDTO,
   AddressAddressCategoryEnum,
+  ContactInformation as IContactInformationDTO,
   ContactInformationContactTypeEnum,
   Coordinates as CoordinatesDTO,
-  Address as IAddressDTO,
-  ContactInformation as IContactInformationDTO,
   Stakeholder as StakeholderDTO,
   StakeholderTypeEnum,
 } from '@/data-contracts/case-data/data-contracts';
+
+import { Role } from './role';
 
 export class Link {
   href!: string;

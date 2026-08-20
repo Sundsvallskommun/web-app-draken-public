@@ -1,4 +1,5 @@
-export const AngeSymbol: React.FC<React.SVGProps<SVGSVGElement>> = (props) => {
+import { FC, SVGProps } from 'react';
+export const AngeSymbol: FC<SVGProps<SVGSVGElement>> = (props) => {
   if (process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260') {
     return (
       <svg
@@ -8,7 +9,7 @@ export const AngeSymbol: React.FC<React.SVGProps<SVGSVGElement>> = (props) => {
         viewBox="0 0 93.45 103.83"
         width="85%"
         height="85%"
-        style={{ marginTop: '6px' }}
+        className="mt-[6px]"
         aria-label="Ånge kommun symbol"
         {...props}
       >

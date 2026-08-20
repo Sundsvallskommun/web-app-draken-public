@@ -1,8 +1,12 @@
 import { MessageAvatar } from '@common/components/message/message-avatar.component';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
-import sanitized, { formatMessage } from '@common/services/sanitizer-service';
-import { AppContextInterface, useAppContext } from '@contexts/app.context';
+import sanitized from '@common/services/sanitizer-service';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import {
+  isSupportReplyableCommunicationType,
+  SupportCommunicationType,
+} from '@supportmanagement/services/support-communication-types';
 import { getSupportConversationAttachment } from '@supportmanagement/services/support-conversation-service';
 import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
 import {
@@ -12,31 +16,55 @@ import {
   setMessageViewStatus,
 } from '@supportmanagement/services/support-message-service';
 import dayjs from 'dayjs';
-import { CornerDownRight, Image, Mail, Monitor, Paperclip, Smartphone, SquareMinus, SquarePlus } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
-import { RenderSupportMessageReciever } from './render-support-message-reciever.component';
+import {
+  CornerDownRight,
+  Image,
+  type LucideIcon,
+  Mail,
+  Monitor,
+  Paperclip,
+  Smartphone,
+  SquareMinus,
+  SquarePlus,
+} from 'lucide-react';
+import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
 
-export const RenderedSupportMessage: React.FC<{
+import { EmailRecipients, RenderSupportMessageReciever } from './render-support-message-reciever.component';
+
+type ChannelPresentation = {
+  Icon: LucideIcon;
+  label: string;
+};
+
+const communicationChannelPresentation: Partial<Record<SupportCommunicationType, ChannelPresentation>> = {
+  [SupportCommunicationType.Sms]: { Icon: Smartphone, label: 'Via SMS' },
+  [SupportCommunicationType.Email]: { Icon: Mail, label: 'Via e-post' },
+  [SupportCommunicationType.WebMessage]: { Icon: Monitor, label: 'Via e-tjänst' },
+  [SupportCommunicationType.Draken]: { Icon: Monitor, label: 'Via Draken' },
+  [SupportCommunicationType.MinaSidor]: { Icon: Monitor, label: 'Via Mina sidor' },
+};
+
+export const RenderedSupportMessage: FC<{
   update: () => void;
-  setShowMessageForm: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMessageForm: Dispatch<SetStateAction<boolean>>;
   message: MessageNode;
   selected: string;
   onSelect: (msg: Message) => void;
   root?: boolean;
   children: any;
 }> = ({ update, setShowMessageForm, message, onSelect, root = false, children }) => {
-  const { supportErrand: _supportErrand, municipalityId, user } = useAppContext();
+  const _supportErrand = useSupportStore((s) => s.supportErrand);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const user = useUserStore((s) => s.user);
   const supportErrand = _supportErrand!;
-  const [allowed, setAllowed] = useState(false);
 
   // Changed logic for expanded message to see if it solve problem with unread message counter
   // const [expanded, setExpanded] = useState(!message?.children?.length ? true : false);
   const [expanded, setExpanded] = useState(false);
+  const channelPresentation = communicationChannelPresentation[message.communicationType];
+  const ChannelIcon = channelPresentation?.Icon;
 
-  useEffect(() => {
-    const _a = validateAction(supportErrand, user);
-    setAllowed(_a);
-  }, [user, supportErrand]);
+  const allowed = useMemo(() => validateAction(supportErrand, user), [user, supportErrand]);
 
   const toastMessage = useSnackbar();
 
@@ -52,7 +80,7 @@ export const RenderedSupportMessage: React.FC<{
     if (!msg) {
       return '';
     }
-    if (msg.communicationType === 'WEB_MESSAGE') {
+    if (msg.communicationType === SupportCommunicationType.WebMessage) {
       return msg.direction === 'OUTBOUND' ? 'Draken' : msg.sender || 'E-tjänst';
     }
     return msg?.sender || '(okänd avsändare)';
@@ -62,7 +90,7 @@ export const RenderedSupportMessage: React.FC<{
     if (msg.direction === MessageResponseDirectionEnum.INBOUND) {
       const ownerInfomration =
         supportErrand.stakeholders?.filter((stakeholder) => stakeholder.role?.includes('PRIMARY')) ?? [];
-      const isWebMessageOpenE = msg.communicationType === 'WEB_MESSAGE';
+      const isWebMessageOpenE = msg.communicationType === SupportCommunicationType.WebMessage;
       const isOwnerStakeholderEmail = ownerInfomration.some((stakeholder) =>
         stakeholder.contactChannels?.some((value) => value.value === msg.sender)
       );
@@ -117,6 +145,11 @@ export const RenderedSupportMessage: React.FC<{
                   <p className="mr-md break-all font-bold">
                     Till: <RenderSupportMessageReciever selectedMessage={message} errand={supportErrand} />
                   </p>
+                  {message.communicationType === SupportCommunicationType.Email && message.ccRecipients?.length > 0 && (
+                    <p className="mr-md break-all font-bold">
+                      Kopia: <EmailRecipients recipients={message.ccRecipients} />
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -136,44 +169,12 @@ export const RenderedSupportMessage: React.FC<{
                   <span className="text-xs mx-sm">|</span>
                 </>
               ) : null}
-              <span className="flex text-xs whitespace-nowrap items-center">
-                {(() => {
-                  switch (message.communicationType) {
-                    case 'SMS':
-                      return (
-                        <>
-                          <Icon icon={<Smartphone />} size="1.5rem" className="align-sub mx-sm" /> Via SMS
-                        </>
-                      );
-                    case 'EMAIL':
-                      return (
-                        <>
-                          <Icon icon={<Mail />} size="1.5rem" className="align-sub mx-sm" /> Via e-post
-                        </>
-                      );
-                    case 'WEB_MESSAGE':
-                      return (
-                        <>
-                          <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via e-tjänst
-                        </>
-                      );
-                    case 'DRAKEN':
-                      return (
-                        <>
-                          <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via Draken
-                        </>
-                      );
-                    case 'MINASIDOR':
-                      return (
-                        <>
-                          <Icon icon={<Monitor />} size="1.5rem" className="align-sub mx-sm" /> Via Mina sidor
-                        </>
-                      );
-                    default:
-                      return '';
-                  }
-                })()}
-              </span>
+              {channelPresentation && ChannelIcon ? (
+                <span className="flex text-xs whitespace-nowrap items-center">
+                  <Icon icon={<ChannelIcon />} size="1.5rem" className="align-sub mx-sm" />
+                  {channelPresentation.label}
+                </span>
+              ) : null}
             </div>
             {getMessageOwner(message)}
           </div>
@@ -204,11 +205,7 @@ export const RenderedSupportMessage: React.FC<{
               __html: sanitized(message.subject || ''),
             }}
           ></p>
-          {expanded &&
-          (message.communicationType === 'EMAIL' ||
-            message.communicationType === 'WEB_MESSAGE' ||
-            message.communicationType === 'DRAKEN' ||
-            message.communicationType === 'MINASIDOR') ? (
+          {expanded && isSupportReplyableCommunicationType(message.communicationType) ? (
             <Button
               type="button"
               className="self-start"
@@ -316,7 +313,7 @@ export const RenderedSupportMessage: React.FC<{
             <span
               className="text"
               dangerouslySetInnerHTML={{
-                __html: message.htmlMessageBody ? sanitized(message.htmlMessageBody) : message.messageBody,
+                __html: message.htmlMessageBody ? sanitized(message.htmlMessageBody) : sanitized(message.messageBody),
               }}
             />
           </div>

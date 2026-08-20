@@ -1,15 +1,17 @@
+import { IsOptional, IsString } from 'class-validator';
+import FormData from 'form-data';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
+import { ErrandAttachmentChannelEnum } from '@/data-contracts/supportmanagement/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
 import { fileUploadOptions } from '@/utils/fileUploadOptions';
 import { logger } from '@/utils/logger';
 import { validateRequestBody } from '@/utils/validate';
-import { IsOptional, IsString } from 'class-validator';
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
-const FormData = require('form-data');
 
 interface SupportAttachment {
   id: string;
@@ -102,6 +104,7 @@ export class SupportAttachmentController {
     const data = new FormData();
     if (files && files.length > 0) {
       data.append(`errandAttachment`, files[0].buffer, { filename: files[0].originalname });
+      data.append('channel', ErrandAttachmentChannelEnum.WEB_UI);
     } else {
       logger.error('Trying to save attachment without name or data');
       throw new Error('File missing');

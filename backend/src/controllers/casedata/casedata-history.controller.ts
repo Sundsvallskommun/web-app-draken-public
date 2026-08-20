@@ -1,10 +1,11 @@
-import { apiServiceName } from '@/config/api-config';
-import { apiURL } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
 import { Controller, Get, Param, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
+
+import { apiServiceName } from '@/config/api-config';
+import { apiURL } from '@/utils/util';
 
 interface ResponseData {
   data: any;

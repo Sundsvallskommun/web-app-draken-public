@@ -1,14 +1,13 @@
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { Button, Dialog } from '@sk-web-gui/react';
 import { IconName } from 'lucide-react/dynamic';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-import { JSX } from 'react';
-
-export const PhaseChangerDialogComponent: React.FC<{
+import { Dispatch, FC, JSX, SetStateAction } from 'react';
+export const PhaseChangerDialogComponent: FC<{
   icon: IconName;
   title: string;
   message: JSX.Element;
   dialogIsOpen: boolean;
-  setDialogIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setDialogIsOpen: Dispatch<SetStateAction<boolean>>;
   triggerPhaseChange: () => Promise<void>;
 }> = ({ icon, title, message, dialogIsOpen, setDialogIsOpen, triggerPhaseChange }) => {
   return (

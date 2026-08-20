@@ -1,7 +1,7 @@
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { AddressResult, searchOrganization, searchPerson } from '@common/services/adress-service';
-import { Button, FormControl, FormErrorMessage, FormLabel, Input, isArray, SearchField } from '@sk-web-gui/react';
-import { useState } from 'react';
+import { FormControl, FormErrorMessage, FormLabel, Input, isArray, SearchField } from '@sk-web-gui/react';
+import { Dispatch, FC, SetStateAction } from 'react';
 import { UseFieldArrayAppend, UseFormReturn } from 'react-hook-form';
 
 interface SearchFieldProps {
@@ -11,14 +11,14 @@ interface SearchFieldProps {
   notFound: boolean;
   setUnsaved: (unsaved: boolean) => void;
   id: string;
-  setSearchResult: React.Dispatch<React.SetStateAction<boolean>>;
+  setSearchResult: Dispatch<SetStateAction<boolean>>;
   searching: boolean;
-  setSearching: React.Dispatch<React.SetStateAction<boolean>>;
-  setNotFound: React.Dispatch<React.SetStateAction<boolean>>;
+  setSearching: Dispatch<SetStateAction<boolean>>;
+  setNotFound: Dispatch<SetStateAction<boolean>>;
   appendPhonenumber: UseFieldArrayAppend<CasedataOwnerOrContact, 'phoneNumbers'>;
 }
 
-export const ContactSearchField: React.FC<SearchFieldProps> = ({
+export const ContactSearchField: FC<SearchFieldProps> = ({
   searchMode,
   disabled,
   form,

@@ -3,6 +3,7 @@
   "basics_tab": {
     "errandType": {
       "KA": "Ärendekategori*",
+      "LOK": "Ärendekategori*",
       "default": "Ärendetyp*"
     },
     "contactReason": {
@@ -35,6 +36,7 @@
     "errandType": {
       "MSVA": "Ärendekategori",
       "LOP": "Ärendekategori",
+      "LOK": "Ärendekategori",
       "default": "Ärendetyp"
     },
     "incomingVia": "Inkom via",

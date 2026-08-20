@@ -1,6 +1,6 @@
 'use client';
 
-import { useAppContext } from '@common/contexts/app.context';
+import { submitErrorReport } from '@common/services/error-report-service';
 import {
   buildErrorReport,
   collectEnvironmentInfo,
@@ -9,7 +9,6 @@ import {
   getAppVersion,
   getLogBuffer,
 } from '@common/services/error-reporting';
-import { submitErrorReport } from '@common/services/error-report-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
@@ -23,6 +22,7 @@ import {
   Textarea,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { useUserStore } from '@stores/user-store';
 import { Info } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -46,7 +46,7 @@ interface ErrorReportModalProps {
 }
 
 export function ErrorReportModal({ show, onClose, errorDetails }: ErrorReportModalProps) {
-  const { user } = useAppContext();
+  const user = useUserStore((state) => state.user);
   const pathname = usePathname();
   const toastMessage = useSnackbar();
   const [isLoading, setIsLoading] = useState(false);
@@ -152,7 +152,7 @@ export function ErrorReportModal({ show, onClose, errorDetails }: ErrorReportMod
           getToastOptions({
             message: result.data.message,
             status: 'success',
-          }),
+          })
         );
       }
       handleClose();
@@ -195,7 +195,11 @@ export function ErrorReportModal({ show, onClose, errorDetails }: ErrorReportMod
 
           <FormControl id="expectedBehavior" className="w-full" required>
             <FormLabel>Vad förväntade du dig?</FormLabel>
-            <Textarea rows={3} placeholder="Beskriv vad du förväntade dig skulle hända..." {...register('expectedBehavior')} />
+            <Textarea
+              rows={3}
+              placeholder="Beskriv vad du förväntade dig skulle hända..."
+              {...register('expectedBehavior')}
+            />
             {errors.expectedBehavior && <FormErrorMessage>{errors.expectedBehavior.message}</FormErrorMessage>}
           </FormControl>
 
@@ -228,7 +232,9 @@ export function ErrorReportModal({ show, onClose, errorDetails }: ErrorReportMod
               <Disclosure.Content>
                 <dl className="grid grid-cols-[auto_1fr] gap-x-md gap-y-xs text-small p-md">
                   <dt className="font-bold">Användare</dt>
-                  <dd>{user.name} ({user.username})</dd>
+                  <dd>
+                    {user.name} ({user.username})
+                  </dd>
                   <dt className="font-bold">Applikation</dt>
                   <dd>{autoInfo.application}</dd>
                   <dt className="font-bold">Webbläsare</dt>

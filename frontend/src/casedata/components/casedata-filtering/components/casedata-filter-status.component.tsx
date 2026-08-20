@@ -1,9 +1,9 @@
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { isMEX } from '@common/services/application-service';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
-import { useState } from 'react';
-import { useFormContext } from 'react-hook-form';
 import { ChevronDown } from 'lucide-react';
+import { FC, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 export interface CaseStatusFilter {
   status: string[];
@@ -13,7 +13,7 @@ export const CaseStatusValues: CaseStatusFilter = {
   status: [],
 };
 
-export const CasedataFilterStatus: React.FC = () => {
+export const CasedataFilterStatus: FC = () => {
   const { register } = useFormContext<CaseStatusFilter>();
   const [query, setQuery] = useState<string>('');
 

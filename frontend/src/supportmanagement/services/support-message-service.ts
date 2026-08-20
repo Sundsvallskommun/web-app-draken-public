@@ -1,11 +1,13 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
-import { isIK, isKA, isLOP, isSE } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
 import { CCommunicationAttachment } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
+
+import { getClosingTemplate } from './message-template-service';
 import { SingleSupportAttachment } from './support-attachment-service';
+import { SupportCommunicationType } from './support-communication-types';
 import { Channels, ContactChannelType, SupportErrand } from './support-errand-service';
 import { applicantContactChannel } from './support-stakeholder-service';
 
@@ -30,7 +32,7 @@ export interface MessageRequest {
 export interface Message {
   communicationAttachments: CCommunicationAttachment[];
   communicationID: string;
-  communicationType: string;
+  communicationType: SupportCommunicationType;
   direction: string;
   errandNumber: string;
   messageBody: string;
@@ -44,44 +46,19 @@ export interface Message {
   conversationId?: string;
   messageId?: string;
   recipients: string[];
+  ccRecipients: string[];
 }
 
-const getClosingMessageBody = (): string => {
-  if (isKA()) {
-    return `Hej,<br><br>
-      Ditt ärende är löst och har nu avslutats av handläggare.<br><br>
-      Har du frågor eller vill lämna kompletterande information kan du svara på detta mail utan att ändra i ämnesraden.<br><br>
-      Med vänlig hälsning,<br><br>
-      <strong>Kontaktcenter</strong><br>
-      Ånge kommun<br>
-      Torggatan 10<br>
-      841 81 Ånge<br>
-      <a href="mailto:ange@ange.se">ange@ange.se</a><br>
-      0690-25 01 00<br>
-      <a href="https://www.ange.se">www.ange.se</a><br>`;
+const getClosingMessageBody = async (userName: string): Promise<string> => {
+  const app = process.env.NEXT_PUBLIC_APPLICATION?.toLowerCase() || 'default';
+
+  const content = await getClosingTemplate(app, { user: userName });
+  if (!content) {
+    console.error(`Could not get closing-template: neither ${app}.email.closing nor default.email.closing was found`);
+    return '';
   }
 
-  if (isLOP()) {
-    return `Hej,<br><br>
-    Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>
-    Har du frågor eller vill lämna kompletterande information kan du svara på detta mail utan att ändra i ämnesraden.<br><br>Med vänlig hälsning<br><br>
-    Servicecenter Lön och pension<br>
-    Sundsvalls kommun<br>
-    <a href="mailto:lonochpension@sundsvall.se">lonochpension@sundsvall.se</a><br>
-    060-19 26 00, telefontid 9:00-12:00<br>`;
-  }
-
-  if (isIK() || isSE()) {
-    return `Hej,<br><br>
-    Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>
-    Med vänliga hälsningar<br>
-    Intern Kundtjänst<br>
-    <a href="mailto:internkundtjanst@sundsvall.se">internkundtjanst@sundsvall.se</a><br>
-    060-191565<br>`;
-  }
-
-  return `Hej,<br><br>
-    Ditt ärende är klart och ärendet har avslutats av handläggare.<br><br>`;
+  return content;
 };
 
 const getPlaintextMessageBody = (htmlMessage: string): string => {
@@ -97,9 +74,12 @@ const getPlaintextMessageBody = (htmlMessage: string): string => {
   return sanitized(transformed).trim();
 };
 
-export const sendClosingMessage = (adminName: string, supportErrand: SupportErrand, municipalityId: string) => {
+export const sendClosingMessage = async (adminName: string, supportErrand: SupportErrand, municipalityId: string) => {
   const contactChannels = applicantContactChannel(supportErrand);
-  const messageBody = getClosingMessageBody();
+  const messageBody = await getClosingMessageBody(adminName);
+  if (!messageBody) {
+    throw new Error('No closing-message template available');
+  }
   const plaintextMessageBody = getPlaintextMessageBody(messageBody);
 
   return sendMessage({
@@ -322,12 +302,18 @@ export const buildTree = (_list: Message[]) => {
   );
   list.forEach((msg) => {
     msg.messageBody = msg.messageBody?.replace(/\r\n/g, '<br>');
-    const id = msg.communicationType === 'EMAIL' ? msg.emailHeaders?.['MESSAGE_ID']?.[0] : msg.communicationID;
+    const id =
+      msg.communicationType === SupportCommunicationType.Email
+        ? msg.emailHeaders?.['MESSAGE_ID']?.[0]
+        : msg.communicationID;
     nodesMap.set(id, { ...msg, children: [] });
   });
 
   list.forEach((msg) => {
-    const id = msg.communicationType === 'EMAIL' ? msg.emailHeaders?.['MESSAGE_ID']?.[0] : msg.communicationID;
+    const id =
+      msg.communicationType === SupportCommunicationType.Email
+        ? msg.emailHeaders?.['MESSAGE_ID']?.[0]
+        : msg.communicationID;
     const parent = msg.emailHeaders?.['IN_REPLY_TO']?.[0];
     if (parent) {
       const parentMsg = nodesMap.get(parent);
@@ -350,6 +336,7 @@ export const buildTree = (_list: Message[]) => {
           },
           children: [],
           recipients: [],
+          ccRecipients: [],
         };
         dummyParent?.children?.push(nodesMap.get(id)!);
         roots.push(dummyParent);

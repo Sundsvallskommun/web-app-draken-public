@@ -1,5 +1,5 @@
 import { SearchField } from '@sk-web-gui/react';
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 export interface SupportManagementQueryFilter {
@@ -10,7 +10,7 @@ export const SupportManagementQueryValues = {
   query: '',
 };
 
-export const SupportManagementFilterQuery: React.FC = () => {
+export const SupportManagementFilterQuery: FC = () => {
   const { watch, setValue } = useFormContext<SupportManagementQueryFilter>();
   const value = watch('query');
   const [query, setQuery] = useState<string>(value);

@@ -1,20 +1,22 @@
 import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
-import { isKC, isROB } from '@common/services/application-service';
+import { isKC, isLOK, isROB } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
-import { useAppContext } from '@contexts/app.context';
 import { useSnackbar } from '@sk-web-gui/react';
-import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/forward-errand.component';
+import { useConfigStore, useSupportStore } from '@stores/index';
+import { useUiSettingsStore } from '@stores/ui-settings-store';
+import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/buttons/support-forward-errand-button.component';
 import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
-import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
+import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
-import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
+
+import { saveSupportAttachments, SupportAttachment } from './support-attachment-service';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
@@ -118,7 +120,20 @@ export enum Channels {
   SOCIAL_MEDIA = 'Sociala medier',
   ESERVICE = 'E-tjänst',
   ESERVICE_INTERNAL = 'E-tjänst (intern)',
+  WEB_UI = 'Draken webbgränssnitt',
 }
+
+// The channels a user can choose from when registering an errand.
+// LOK is limited to phone, email and internal e-service.
+const LOK_SELECTABLE_CHANNELS: (keyof typeof Channels)[] = ['PHONE', 'EMAIL', 'ESERVICE_INTERNAL'];
+
+export const getSelectableChannels = (): [string, string][] => {
+  const entries = Object.entries(Channels) as [string, string][];
+  if (isLOK()) {
+    return entries.filter(([key]) => LOK_SELECTABLE_CHANNELS.includes(key as keyof typeof Channels));
+  }
+  return entries;
+};
 
 export const municipalityIds = [
   { label: 'Sundsvall', id: '2281' },
@@ -141,6 +156,7 @@ export enum Status {
   SECURITY_CLEARENCE = 'SECURITY_CLEARENCE',
   FEEDBACK_CLOSURE = 'FEEDBACK_CLOSURE',
   SUBPACKAGE_HANDLED = 'SUBPACKAGE_HANDLED',
+  REOPENED = 'REOPENED',
 }
 
 export const shouldShowResumeErrandButton = (status?: Status): boolean => {
@@ -163,7 +179,7 @@ export enum AttestationStatusLabel {
 
 export const newStatuses = [Status.NEW];
 
-export const ongoingStatuses = [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE];
+export const ongoingStatuses = [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.REOPENED];
 
 export const ongoingStatusesROB = [
   ...ongoingStatuses,
@@ -243,6 +259,10 @@ export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata)
   return allSubTypesFlattened.find((t) => t?.resourcePath === name);
 };
 
+export const getLabelCategoryFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
+  return metadata?.labels?.labelStructure?.find((category) => category?.resourcePath === name);
+};
+
 export enum Resolution {
   SOLVED = 'SOLVED',
   REFERRED_VIA_EXCHANGE = 'REFERRED_VIA_EXCHANGE',
@@ -262,6 +282,11 @@ export enum Resolution {
   RECRUITED_MORE = 'RECRUITED_MORE',
   CANCELLED = 'CANCELLED',
   SECURE_APPBOX = 'SECURE_APPBOX',
+  BACK_TO_CONTACT_SUNDSVALL = 'BACK_TO_CONTACT_SUNDSVALL',
+  FORWARDED_TO_DRAKFASTIGHETER = 'FORWARDED_TO_DRAKFASTIGHETER',
+  FORWARDED_TO_EXTERNAL_LANDLORD = 'FORWARDED_TO_EXTERNAL_LANDLORD',
+  FORWARDED_TO_INTERNAL_CONTRACTOR = 'FORWARDED_TO_INTERNAL_CONTRACTOR',
+  FORWARDED_TO_EXTERNAL_CONTRACTOR = 'FORWARDED_TO_EXTERNAL_CONTRACTOR',
 }
 
 export enum ResolutionLabelLOP {
@@ -302,6 +327,19 @@ export enum ResolutionLabelROB {
   RECRUITED_MORE = 'Rekryterat fler',
   CANCELLED = 'Avbruten',
 }
+
+export enum ResolutionLabelBOU {
+  SOLVED = 'Löst',
+  BACK_TO_CONTACT_SUNDSVALL = 'Åter till Kontakt Sundsvall',
+}
+
+export enum ResolutionLabelLOK {
+  SOLVED = 'Löst av VoF/IAF Lokalplanering',
+  FORWARDED_TO_DRAKFASTIGHETER = 'Vidarebefordrat till Drakfastigheter',
+  FORWARDED_TO_EXTERNAL_LANDLORD = 'Vidarebefordrat till extern hyresvärd',
+  FORWARDED_TO_INTERNAL_CONTRACTOR = 'Vidarebefordrat till intern entreprenör',
+  FORWARDED_TO_EXTERNAL_CONTRACTOR = 'Vidarebefordrat till extern entreprenör',
+}
 export interface SupportStakeholderFormModel extends SupportStakeholder {
   stakeholderType: SupportStakeholderType;
   internalId: string;
@@ -323,6 +361,8 @@ export const emptyContact: SupportStakeholderFormModel = {
   stakeholderType: SupportStakeholderTypeEnum.PERSON,
   internalId: '',
   externalId: '',
+  personNumber: '',
+  organizationNumber: '',
   externalIdType: isKC() ? ExternalIdType.PRIVATE : ExternalIdType.EMPLOYEE,
   username: '',
   firstName: '',
@@ -381,7 +421,12 @@ export const isOpenEErrand: (supportErrand: SupportErrand) => boolean = (support
 };
 
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
-  return errand?.status === Status.SOLVED || errand?.status === Status.SUSPENDED || errand?.status === Status.ASSIGNED;
+  return (
+    errand?.status === Status.SOLVED ||
+    errand?.status === Status.SUSPENDED ||
+    errand?.status === Status.ASSIGNED ||
+    errand?.status === Status.REOPENED
+  );
 };
 
 export const useSupportErrands = (
@@ -393,21 +438,19 @@ export const useSupportErrands = (
   extraParameters?: { [key: string]: string }
 ): SupportErrandsData => {
   const toastMessage = useSnackbar();
-  const {
-    setIsLoading,
-    setSupportErrands,
-    supportErrands,
-    setNewSupportErrands,
-    newSupportErrands,
-    setOngoingSupportErrands,
-    ongoingSupportErrands,
-    setSuspendedSupportErrands,
-    suspendedSupportErrands,
-    setAssignedSupportErrands,
-    assignedSupportErrands,
-    setSolvedSupportErrands,
-    solvedSupportErrands,
-  } = useAppContext();
+  const setIsLoading = useConfigStore((s) => s.setIsLoading);
+  const setSupportErrands = useSupportStore((s) => s.setSupportErrands);
+  const supportErrands = useSupportStore((s) => s.supportErrands);
+  const setNewSupportErrands = useUiSettingsStore((s) => s.setNewErrands);
+  const newSupportErrands = useUiSettingsStore((s) => s.newErrands);
+  const setOngoingSupportErrands = useUiSettingsStore((s) => s.setOngoingErrands);
+  const ongoingSupportErrands = useUiSettingsStore((s) => s.ongoingErrands);
+  const setSuspendedSupportErrands = useUiSettingsStore((s) => s.setSuspendedErrands);
+  const suspendedSupportErrands = useUiSettingsStore((s) => s.suspendedErrands);
+  const setAssignedSupportErrands = useUiSettingsStore((s) => s.setAssignedErrands);
+  const assignedSupportErrands = useUiSettingsStore((s) => s.assignedErrands);
+  const setSolvedSupportErrands = useUiSettingsStore((s) => s.setClosedErrands);
+  const solvedSupportErrands = useUiSettingsStore((s) => s.closedErrands);
 
   const fetchErrands = useCallback(
     async (page: number = 0) => {
@@ -538,7 +581,7 @@ export const useSupportErrands = (
   }, [filter, size, sort]);
 
   useEffect(() => {
-    if (page !== supportErrands.page) {
+    if (supportErrands.page !== undefined && page !== supportErrands.page) {
       fetchErrands(page).then(() => setIsLoading(false));
     }
     //eslint-disable-next-line
@@ -602,6 +645,31 @@ export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand)
   return false;
 };
 
+// Resolve a stakeholder's organization number: prefer the dedicated parameter (written on save),
+// and fall back to externalId for legacy COMPANY stakeholders saved before the org number was split out.
+const getStakeholderOrganizationNumber = (s: SupportStakeholder): string | undefined =>
+  s.parameters?.find((p) => p.key === 'organizationNumber')?.values?.[0] ||
+  (s.externalIdType === ExternalIdType.COMPANY ? s.externalId : undefined);
+
+// Read the first value of an errand parameter by key.
+export const getErrandParameterValue = (parameters: CParameter[] | undefined, key: string): string =>
+  parameters?.find((parameter) => parameter.key === key)?.values?.[0] ?? '';
+
+// Set (or replace) an errand parameter by key while keeping the other parameters intact.
+// An empty value removes the parameter so we don't persist blank entries.
+export const upsertErrandParameter = (
+  parameters: CParameter[] = [],
+  key: string,
+  value: string,
+  displayName?: string
+): CParameter[] => {
+  const otherParameters = parameters.filter((parameter) => parameter.key !== key);
+  if (!value?.trim()) {
+    return otherParameters;
+  }
+  return [...otherParameters, { key, displayName, values: [value] }];
+};
+
 export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => SupportErrand = (e) => {
   try {
     const ierrand: SupportErrand = {
@@ -616,6 +684,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
       labels: e.labels || [],
+      caseId: e.externalTags?.find((t) => t.key === 'caseId')?.value,
       description: sanitized(e?.description ?? ''),
       customer: (e.stakeholders
         ?.filter((s) => s.role === 'PRIMARY')
@@ -630,6 +699,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
           title: s.parameters?.find((p) => p.key === 'title')?.values?.[0],
           referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values?.[0],
           department: s.parameters?.find((p) => p.key === 'department')?.values?.[0],
+          organizationNumber: getStakeholderOrganizationNumber(s),
           newRole: 'PRIMARY',
           internalId: uuidv4(),
           emails: (s.contactChannels ?? [])
@@ -652,6 +722,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
           title: s.parameters?.find((p) => p.key === 'title')?.values?.[0],
           referenceNumber: s.parameters?.find((p) => p.key === 'referenceNumber')?.values?.[0],
           department: s.parameters?.find((p) => p.key === 'department')?.values?.[0],
+          organizationNumber: getStakeholderOrganizationNumber(s),
           newRole: s.role as string,
           internalId: uuidv4(),
           emails: (s.contactChannels ?? [])
@@ -824,7 +895,7 @@ export const updateSupportErrand: (
     ...(formdata.description && { description: formdata.description }),
     ...(formdata.assignedUserId && { assignedUserId: formdata.assignedUserId }),
     ...{ stakeholders: stakeholders },
-    externalTags: formdata.externalTags || [],
+    externalTags: (formdata.externalTags || []).filter((t) => t.key !== 'caseId'),
     parameters: formdata.parameters || [],
   };
   if (formdata.caseId) {
@@ -854,49 +925,6 @@ export const validateAction: (errand: SupportErrand, user: User) => boolean = (e
     allowed = true;
   }
   return allowed;
-};
-
-export const blobToBase64: (blobl: Blob) => Promise<string> = (blob) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(blob);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
-
-export const saveSupportCroppedImage = async (errandId: number, attachment: SupportAttachment, _blob: Blob) => {
-  if (!attachment?.id) {
-    throw 'No attachment id found. Cannot save attachment without id.';
-  }
-  if (_blob.size / 1024 / 1024 > MAX_FILE_SIZE_MB) {
-    throw new Error('MAX_SIZE');
-  }
-  const blob64 = await blobToBase64(_blob);
-  const obj: SupportAttachment = {
-    id: attachment.id,
-    fileName: attachment.fileName,
-    mimeType: attachment.mimeType,
-  };
-  const buf = Buffer.from(obj.id, 'base64');
-  const blob = new Blob([buf], { type: obj.mimeType });
-
-  // Building form data
-  const formData = new FormData();
-  formData.append(`files`, blob, obj.id);
-  formData.append(`name`, obj.fileName);
-  formData.append(`mimeType`, obj.mimeType);
-  const url = `casedata/errands/${errandId}/attachments/${attachment.id}`;
-  return apiService
-    .put<boolean, FormData>(url, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    .then((res) => {
-      return res;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when creating attachment ', obj.fileName);
-      throw e;
-    });
 };
 
 export const setSupportErrandAdmin: (
@@ -1022,6 +1050,14 @@ export const forwardSupportErrand: (
     throw 'No message found. Cannot forward errand without message.';
   }
 
+  // The errand is closed when it's forwarded. If it has no handler (e.g. forwarded directly
+  // from status NEW), assign the current user so the errand always has a responsible person.
+  const assignSelfIfUnassigned = async () => {
+    if (!errand.assignedUserId) {
+      await setSupportErrandAdmin(errand.id!, municipalityId, user.username, undefined, user.username);
+    }
+  };
+
   let attachmentId = [] as string[];
   for (const att of supportAttachment) {
     attachmentId.push(att.id);
@@ -1049,8 +1085,9 @@ export const forwardSupportErrand: (
       message.senderName = 'Kontakt  Sundsvall';
     }
     await sendMessage(message);
+    await assignSelfIfUnassigned();
     return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
-  } else if (data.recipient == 'DEPARTMENT' && data.department === 'MEX') {
+  } else if (data.recipient == 'DEPARTMENT' && data.department) {
     errand.stakeholders?.forEach((s) => {
       if (!s.firstName && !s.organizationName) {
         throw new Error('MISSING_NAME');
@@ -1060,7 +1097,8 @@ export const forwardSupportErrand: (
     delete data.newEmail;
     return apiService
       .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id!}/forward`, data)
-      .then(() => {
+      .then(async () => {
+        await assignSelfIfUnassigned();
         return closeSupportErrand(errand.id!, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
       })
       .catch((e: AxiosError) => {

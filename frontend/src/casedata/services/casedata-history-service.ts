@@ -1,12 +1,4 @@
-import { Priority } from '@supportmanagement/interfaces/priority';
-import { ApiResponse, apiService } from '@common/services/api-service';
-import dayjs from 'dayjs';
-import { fetchNote } from './casedata-errand-notes-service';
-import { fetchStakeholder } from './casedata-stakeholder-service';
-import { fetchAttachment, getAttachmentLabel } from './casedata-attachment-service';
-import { fetchDecision, getDecisionLabel } from './casedata-decision-service';
-import { fetchMessage } from './casedata-message-service';
-import { EmployeeInfo, getUserInfo } from '@common/services/user-service';
+import { CaseLabels } from '@casedata/interfaces/case-label';
 import {
   ErrandChange,
   ErrandHistory,
@@ -15,7 +7,16 @@ import {
   ParsedErrandHistory,
 } from '@casedata/interfaces/history';
 import { PrettyRole } from '@casedata/interfaces/role';
-import { CaseLabels } from '@casedata/interfaces/case-label';
+import { ApiResponse, apiService } from '@common/services/api-service';
+import { getUserInfo } from '@common/services/user-service';
+import { Priority } from '@supportmanagement/interfaces/priority';
+import dayjs from 'dayjs';
+
+import { fetchErrandAttachments, getAttachmentLabel } from './casedata-attachment-service';
+import { fetchDecision, getDecisionLabel } from './casedata-decision-service';
+import { fetchNote } from './casedata-errand-notes-service';
+import { fetchMessage } from './casedata-message-service';
+import { fetchStakeholder } from './casedata-stakeholder-service';
 
 const relevantProperties = [
   'caseType',
@@ -136,7 +137,10 @@ export const mapProperty = (c: ParsedErrandChange) => {
 
 const mapRightLeftvalues = (c: ParsedErrandChange) => {
   if (c.property === 'caseType') {
-    return { left: (CaseLabels.ALL as Record<string, string>)[c.left], right: (CaseLabels.ALL as Record<string, string>)[c.right] };
+    return {
+      left: (CaseLabels.ALL as Record<string, string>)[c.left],
+      right: (CaseLabels.ALL as Record<string, string>)[c.right],
+    };
   } else if (c.property === 'priority') {
     return { left: (Priority as Record<string, string>)[c.left], right: (Priority as Record<string, string>)[c.right] };
   }
@@ -194,7 +198,12 @@ const parseChangeType: (c: ErrandChange) => { label: string; details: string } =
       case 'diaryNumber':
         return { label: `Diarienummer ändrades`, details: '' };
       case 'priority':
-        return { label: `Prioritet ändrades`, details: `${(Priority as Record<string, string>)[c.left]} till ${(Priority as Record<string, string>)[c.right]}` };
+        return {
+          label: `Prioritet ändrades`,
+          details: `${(Priority as Record<string, string>)[c.left]} till ${
+            (Priority as Record<string, string>)[c.right]
+          }`,
+        };
       default:
         return {
           label: `Okänt fält ${c.property} ändrades från "${c.left !== '' ? c.left : '(tomt)'}" till "${c.right}"`,
@@ -204,7 +213,10 @@ const parseChangeType: (c: ErrandChange) => { label: string; details: string } =
   } else if (c.changeType === 'MapChange') {
     switch (c.property) {
       case 'extraParameters':
-        return { label: `Extraparametrar ändrades`, details: `${(extraParametersMap as Record<string, string>)[c.entryChanges?.[0].key]}` };
+        return {
+          label: `Extraparametrar ändrades`,
+          details: `${(extraParametersMap as Record<string, string>)[c.entryChanges?.[0].key]}`,
+        };
       case 'messageIds':
         return {
           label: `${c.entryChanges?.[0]?.entryChangeType === 'EntryAdded' ? 'Nytt meddelande' : 'Meddelandeändring'}`,
@@ -273,26 +285,34 @@ export const fetchChangeData: (
               const data: GenericChangeData = {
                 type: 'Ny handläggare/intressent',
                 title: '',
-                content: `<p>Roll: ${(PrettyRole as Record<string, string>)[res.data.roles?.[0]]}</p><p>Namn: ${res.data.firstName} ${
-                  res.data.lastName
-                }</p>`,
+                content: `<p>Roll: ${(PrettyRole as Record<string, string>)[res.data.roles?.[0]]}</p><p>Namn: ${
+                  res.data.firstName
+                } ${res.data.lastName}</p>`,
                 date: res.data.updated,
               };
               return data;
             })
             .catch(genericFailedFetch);
-        case 'attachments':
-          return fetchAttachment(municipalityId, errandId, c.elementChanges?.[0].value.cdoId.toString())
+        case 'attachments': {
+          // Only metadata is needed here, so the attachment list is used rather than
+          // fetching the (binary) content of the single attachment.
+          const attachmentId = Number(c.elementChanges?.[0].value.cdoId);
+          return fetchErrandAttachments(municipalityId, errandId)
             .then((res) => {
+              const attachment = res.data.find((a) => a.id === attachmentId);
+              if (!attachment) {
+                return genericFailedFetch();
+              }
               const data: GenericChangeData = {
                 type: 'Ny bilaga',
-                title: getAttachmentLabel(res.data) ?? '',
-                content: `<p>Filnamn: ${res.data.name}</p>`,
-                date: res.data.updated ?? '',
+                title: getAttachmentLabel(attachment.category) ?? '',
+                content: `<p>Filnamn: ${attachment.name}</p>`,
+                date: attachment.updated ?? '',
               };
               return data;
             })
             .catch(genericFailedFetch);
+        }
         case 'decisions':
           return fetchDecision(c.elementChanges?.[0].value.cdoId.toString())
             .then((res) => {
@@ -365,9 +385,9 @@ export const fetchChangeData: (
         .map((e, idx) => {
           const s =
             e.leftValue || e.rightValue
-              ? `<li key='${idx}'><i>${(extraParametersMap as Record<string, string>)[e.key]}</i> ändrades från ${e.leftValue || '(tomt)'} till ${
-                  e.rightValue || '(tomt)'
-                }</li>`
+              ? `<li key='${idx}'><i>${(extraParametersMap as Record<string, string>)[e.key]}</i> ändrades från ${
+                  e.leftValue || '(tomt)'
+                } till ${e.rightValue || '(tomt)'}</li>`
               : `<li key='${idx}'><i>${(extraParametersMap as Record<string, string>)[e.key]}</i>: ${
                   !e.value ? '(tomt)' : mapExtraParametersValue(e.value)
                 }</li>`;

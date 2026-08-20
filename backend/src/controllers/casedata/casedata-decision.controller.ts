@@ -1,9 +1,3 @@
-import { Decision, DecisionDecisionOutcomeEnum, DecisionDecisionTypeEnum, Law } from '@/data-contracts/case-data/data-contracts';
-import { HttpException } from '@/exceptions/HttpException';
-import { DecisionDTO } from '@/interfaces/decision.interface';
-import { User } from '@/interfaces/users.interface';
-import { validateAction } from '@/services/errand.service';
-import { apiURL } from '@/utils/util';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
@@ -11,8 +5,16 @@ import ApiService from '@services/api.service';
 import { logger } from '@utils/logger';
 import { Body, Controller, Get, HttpCode, Param, Patch, Put, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
-import { ResponseData } from './casedata-notes.controller';
+
 import { apiServiceName } from '@/config/api-config';
+import { Decision, DecisionDecisionOutcomeEnum, DecisionDecisionTypeEnum } from '@/data-contracts/case-data/data-contracts';
+import { HttpException } from '@/exceptions/HttpException';
+import { DecisionDTO } from '@/interfaces/decision.interface';
+import { User } from '@/interfaces/users.interface';
+import { validateAction } from '@/services/errand.service';
+import { apiURL } from '@/utils/util';
+
+import { ResponseData } from './casedata-notes.controller';
 
 @Controller()
 export class CaseDataDecisionsController {
@@ -40,8 +42,9 @@ export class CaseDataDecisionsController {
     if (!allowed) {
       throw new HttpException(403, 'Forbidden');
     }
+    // Attachments are managed through the dedicated decision-attachment endpoint;
+    // CaseData rejects attachments sent in the decision payload.
     const patchData: Decision = {
-      attachments: decisionData.attachments,
       decisionType: decisionData.decisionType as unknown as DecisionDecisionTypeEnum,
       decisionOutcome: decisionData.decisionOutcome as unknown as DecisionDecisionOutcomeEnum,
       description: decisionData.description,
@@ -82,7 +85,11 @@ export class CaseDataDecisionsController {
     if (await this.isUnsigning(municipalityId, errandId.toString(), decisionData, req.user)) {
       throw new HttpException(400, 'Cannot unsign a signed decision');
     }
-    await this.apiService.put<any, Decision>({ url, baseURL, data: decisionData }, req.user).catch(e => {
+    // Attachments are managed through the dedicated decision-attachment endpoint;
+    // CaseData rejects attachments sent in the decision payload.
+    const putData: Decision = { ...decisionData };
+    delete putData.attachments;
+    await this.apiService.put<any, Decision>({ url, baseURL, data: putData }, req.user).catch(e => {
       logger.error(`Error when putting decision: ${e}`);
       throw e;
     });
@@ -97,7 +104,7 @@ export class CaseDataDecisionsController {
     @Param('id') errandId: number,
     @Param('decisionId') decisionId: string,
     @Param('municipalityId') municipalityId: string,
-    @Res() response: any,
+    @Res() _response: any,
   ): Promise<ResponseData> {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/decisions/${decisionId}`;
     const baseURL = apiURL(this.SERVICE);

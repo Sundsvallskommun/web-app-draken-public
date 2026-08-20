@@ -1,0 +1,249 @@
+name: Playwright Tests
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - "develop"
+      - "main"
+      - "*"
+    paths:
+      - frontend/src/**
+      - frontend/e2e/**
+
+# En ny push gör tidigare körningar på samma ref inaktuella, men utan detta lever de kvar och
+# konkurrerar om jobbudgeten. Sex pushar på en branch gav sex matriser om fem jobb som alla
+# körde samtidigt och svälte varandra. develop och main undantas så att historiken där alltid
+# körs färdigt.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_name != 'develop' && github.ref_name != 'main' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [mex, pt, kc, lop]
+        include:
+          - app: mex
+            build_cmd: yarn build:mex
+            start_cmd: yarn start:mex
+            env_file: .env.mex
+            NEXT_PUBLIC_APPLICATION: MEX
+            NEXT_PUBLIC_IS_CASEDATA: true
+            NEXT_PUBLIC_USE_FACILITIES: true
+            NEXT_PUBLIC_USE_EXTRA_INFORMATION_STAKEHOLDERS: true
+            NEXT_PUBLIC_USE_RELATIONS: true
+            NEXT_PUBLIC_USE_ESCALATION: true
+            NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER: true
+            NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL: true
+            NEXT_PUBLIC_USE_MY_PAGES: true
+            NEXT_PUBLIC_USE_UI_PHASES: true
+            NEXT_PUBLIC_USE_UI_BILLING: true
+            NEXT_PUBLIC_USE_CONTRACTS: true
+          - app: pt
+            build_cmd: yarn build:pt
+            start_cmd: yarn start:pt
+            env_file: .env.pt
+            NEXT_PUBLIC_APPLICATION: PT
+            NEXT_PUBLIC_IS_CASEDATA: true
+            NEXT_PUBLIC_USE_MY_PAGES: true
+            NEXT_PUBLIC_USE_RELATIONS: true
+            NEXT_PUBLIC_USE_UI_PHASES: true
+          - app: kc
+            build_cmd: yarn build:kc
+            start_cmd: yarn start:kc
+            env_file: .env.kc
+            NEXT_PUBLIC_APPLICATION: KC
+            NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: true
+            NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION: true
+            NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE: true
+            NEXT_PUBLIC_USE_REASON_FOR_CONTACT: true
+            NEXT_PUBLIC_USE_BUSINESS_CASE: true
+            NEXT_PUBLIC_USE_FACILITIES: true
+            NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION: true
+            NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER: true
+            NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL: true
+            NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL: true
+            NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS: true
+            NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS: true
+            NEXT_PUBLIC_USE_ESCALATION: true
+            NEXT_PUBLIC_USE_MY_PAGES: true
+            NEXT_PUBLIC_USE_RELATIONS: true
+            NEXT_PUBLIC_USE_HANDOVER: true
+          - app: lop
+            build_cmd: yarn build:lop
+            start_cmd: yarn start:lop
+            env_file: .env.lop
+            # Flags mirror the canonical lop config (.env.lop-example); the
+            # earlier list had been copied from a casedata app and used the
+            # wrong categorization level and feature set.
+            NEXT_PUBLIC_APPLICATION: LOP
+            NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: true
+            NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: true
+            NEXT_PUBLIC_USE_BILLING: true
+            NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: true
+            NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL: true
+            NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL: true
+            NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS: true
+            NEXT_PUBLIC_USE_DETAILS_TAB: true
+            NEXT_PUBLIC_USE_ESCALATION: true
+            NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX: true
+            NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION: true
+            NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: 30
+            NEXT_PUBLIC_INVOICE_BREAK_DATE: "2025-12-31"
+
+    name: E2E ${{ matrix.app }} on ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: Install dependencies
+        run: yarn --frozen-lockfile --silent --network-timeout 1000000 --ignore-scripts
+
+      - name: Install Playwright browsers
+        # Invoke the local binary directly (not `npx`/`yarn`): `npx` would fetch on-demand,
+        # and `yarn … install` trips SonarCloud's "Yarn v2+ lifecycle scripts" rule. This is
+        # Playwright's browser installer (a CLI subcommand), not an npm dependency install.
+        #
+        # Utan `--with-deps`: samtliga bibliotek Chromium behöver finns redan på ubuntu-latest
+        # ("already the newest version" för varje paket). Det enda flaggan faktiskt hämtade var
+        # teckensnitt för CJK och liknande — 13,7 MB i 22 kB/s från Ubuntu-spegeln, tio minuter
+        # per jobb och fem jobb per körning. Sviten har inga visuella snapshots och ingen text
+        # utanför latinsk skrift, så de teckensnitten används inte. Skulle ett bibliotek någon
+        # gång saknas i runner-avbilden faller testerna på att webbläsaren inte startar, vilket
+        # syns direkt — då sätts flaggan tillbaka.
+        run: ./node_modules/.bin/playwright install chromium
+
+      - name: Build
+        run: ${{ matrix.build_cmd }}
+        env:
+          NEXT_PUBLIC_APPLICATION: ${{ matrix.NEXT_PUBLIC_APPLICATION }}
+          NEXT_PUBLIC_APP_NAME: "Draken"
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+          DOMAIN_NAME: localhost
+          BASE_PATH: ""
+          NEXT_PUBLIC_BASE_PATH: ""
+          NEXT_PUBLIC_MUNICIPALITY_ID: 2281
+          NEXT_PUBLIC_ENVIRONMENT: TEST
+          HEALTH_AUTH: false
+          HEALTH_USERNAME: ""
+          HEALTH_PASSWORD: ""
+          NEXT_PUBLIC_IS_CASEDATA: ${{ matrix.NEXT_PUBLIC_IS_CASEDATA || '' }}
+          NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: ${{ matrix.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT || '' }}
+          NEXT_PUBLIC_USE_FACILITIES: ${{ matrix.NEXT_PUBLIC_USE_FACILITIES || '' }}
+          NEXT_PUBLIC_USE_EXTRA_INFORMATION_STAKEHOLDERS: ${{ matrix.NEXT_PUBLIC_USE_EXTRA_INFORMATION_STAKEHOLDERS || '' }}
+          NEXT_PUBLIC_USE_RELATIONS: ${{ matrix.NEXT_PUBLIC_USE_RELATIONS || '' }}
+          NEXT_PUBLIC_USE_ESCALATION: ${{ matrix.NEXT_PUBLIC_USE_ESCALATION || '' }}
+          NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER: ${{ matrix.NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER || '' }}
+          NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL: ${{ matrix.NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL || '' }}
+          NEXT_PUBLIC_USE_MY_PAGES: ${{ matrix.NEXT_PUBLIC_USE_MY_PAGES || '' }}
+          NEXT_PUBLIC_USE_UI_PHASES: ${{ matrix.NEXT_PUBLIC_USE_UI_PHASES || '' }}
+          NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION: ${{ matrix.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION || '' }}
+          NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE: ${{ matrix.NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE || '' }}
+          NEXT_PUBLIC_USE_REASON_FOR_CONTACT: ${{ matrix.NEXT_PUBLIC_USE_REASON_FOR_CONTACT || '' }}
+          NEXT_PUBLIC_USE_BUSINESS_CASE: ${{ matrix.NEXT_PUBLIC_USE_BUSINESS_CASE || '' }}
+          NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION: ${{ matrix.NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION || '' }}
+          NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL: ${{ matrix.NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL || '' }}
+          NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL: ${{ matrix.NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL || '' }}
+          NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS: ${{ matrix.NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS || '' }}
+          NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS: ${{ matrix.NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS || '' }}
+          NEXT_PUBLIC_USE_BILLING_RECORDS: ${{ matrix.NEXT_PUBLIC_USE_BILLING_RECORDS || '' }}
+          NEXT_PUBLIC_USE_UI_BILLING: ${{ matrix.NEXT_PUBLIC_USE_UI_BILLING || '' }}
+          NEXT_PUBLIC_USE_CONTRACTS: ${{ matrix.NEXT_PUBLIC_USE_CONTRACTS || '' }}
+          NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: ${{ matrix.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION || '' }}
+          NEXT_PUBLIC_USE_BILLING: ${{ matrix.NEXT_PUBLIC_USE_BILLING || '' }}
+          NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: ${{ matrix.NEXT_PUBLIC_USE_EMPLOYEE_SEARCH || '' }}
+          NEXT_PUBLIC_USE_DETAILS_TAB: ${{ matrix.NEXT_PUBLIC_USE_DETAILS_TAB || '' }}
+          NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX: ${{ matrix.NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX || '' }}
+          NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION: ${{ matrix.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION || '' }}
+          NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: ${{ matrix.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '' }}
+          NEXT_PUBLIC_INVOICE_BREAK_DATE: ${{ matrix.NEXT_PUBLIC_INVOICE_BREAK_DATE || '' }}
+          NEXT_PUBLIC_USE_HANDOVER: ${{ matrix.NEXT_PUBLIC_USE_HANDOVER || '' }}
+
+      - name: Start server
+        run: ${{ matrix.start_cmd }} &
+        env:
+          NEXT_PUBLIC_APPLICATION: ${{ matrix.NEXT_PUBLIC_APPLICATION }}
+          NEXT_PUBLIC_APP_NAME: "Draken"
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+          DOMAIN_NAME: localhost
+          BASE_PATH: ""
+          NEXT_PUBLIC_BASE_PATH: ""
+          NEXT_PUBLIC_MUNICIPALITY_ID: 2281
+          NEXT_PUBLIC_ENVIRONMENT: TEST
+          HEALTH_AUTH: false
+          HEALTH_USERNAME: ""
+          HEALTH_PASSWORD: ""
+
+      - name: Wait for server
+        run: timeout 60 bash -c 'until curl -sfo /dev/null http://localhost:3000; do sleep 2; done'
+
+      - name: Run Playwright tests
+        run: ./node_modules/.bin/playwright test --project=${{ matrix.app }}
+        env:
+          NEXT_PUBLIC_APPLICATION: ${{ matrix.NEXT_PUBLIC_APPLICATION }}
+          NEXT_PUBLIC_APP_NAME: "Draken"
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+          DOMAIN_NAME: localhost
+          BASE_PATH: ""
+          NEXT_PUBLIC_BASE_PATH: ""
+          NEXT_PUBLIC_MUNICIPALITY_ID: 2281
+          NEXT_PUBLIC_ENVIRONMENT: TEST
+          HEALTH_AUTH: false
+          HEALTH_USERNAME: ""
+          HEALTH_PASSWORD: ""
+          NEXT_PUBLIC_IS_CASEDATA: ${{ matrix.NEXT_PUBLIC_IS_CASEDATA || '' }}
+          NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: ${{ matrix.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT || '' }}
+          NEXT_PUBLIC_USE_FACILITIES: ${{ matrix.NEXT_PUBLIC_USE_FACILITIES || '' }}
+          NEXT_PUBLIC_USE_EXTRA_INFORMATION_STAKEHOLDERS: ${{ matrix.NEXT_PUBLIC_USE_EXTRA_INFORMATION_STAKEHOLDERS || '' }}
+          NEXT_PUBLIC_USE_RELATIONS: ${{ matrix.NEXT_PUBLIC_USE_RELATIONS || '' }}
+          NEXT_PUBLIC_USE_ESCALATION: ${{ matrix.NEXT_PUBLIC_USE_ESCALATION || '' }}
+          NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER: ${{ matrix.NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER || '' }}
+          NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL: ${{ matrix.NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL || '' }}
+          NEXT_PUBLIC_USE_MY_PAGES: ${{ matrix.NEXT_PUBLIC_USE_MY_PAGES || '' }}
+          NEXT_PUBLIC_USE_UI_PHASES: ${{ matrix.NEXT_PUBLIC_USE_UI_PHASES || '' }}
+          NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION: ${{ matrix.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION || '' }}
+          NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE: ${{ matrix.NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE || '' }}
+          NEXT_PUBLIC_USE_REASON_FOR_CONTACT: ${{ matrix.NEXT_PUBLIC_USE_REASON_FOR_CONTACT || '' }}
+          NEXT_PUBLIC_USE_BUSINESS_CASE: ${{ matrix.NEXT_PUBLIC_USE_BUSINESS_CASE || '' }}
+          NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION: ${{ matrix.NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION || '' }}
+          NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL: ${{ matrix.NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL || '' }}
+          NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL: ${{ matrix.NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL || '' }}
+          NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS: ${{ matrix.NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS || '' }}
+          NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS: ${{ matrix.NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS || '' }}
+          NEXT_PUBLIC_USE_BILLING_RECORDS: ${{ matrix.NEXT_PUBLIC_USE_BILLING_RECORDS || '' }}
+          NEXT_PUBLIC_USE_UI_BILLING: ${{ matrix.NEXT_PUBLIC_USE_UI_BILLING || '' }}
+          NEXT_PUBLIC_USE_CONTRACTS: ${{ matrix.NEXT_PUBLIC_USE_CONTRACTS || '' }}
+          NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: ${{ matrix.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION || '' }}
+          NEXT_PUBLIC_USE_BILLING: ${{ matrix.NEXT_PUBLIC_USE_BILLING || '' }}
+          NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: ${{ matrix.NEXT_PUBLIC_USE_EMPLOYEE_SEARCH || '' }}
+          NEXT_PUBLIC_USE_DETAILS_TAB: ${{ matrix.NEXT_PUBLIC_USE_DETAILS_TAB || '' }}
+          NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX: ${{ matrix.NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX || '' }}
+          NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION: ${{ matrix.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION || '' }}
+          NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: ${{ matrix.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '' }}
+          NEXT_PUBLIC_INVOICE_BREAK_DATE: ${{ matrix.NEXT_PUBLIC_INVOICE_BREAK_DATE || '' }}
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-${{ matrix.app }}
+          path: frontend/playwright-report/
+          retention-days: 30

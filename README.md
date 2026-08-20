@@ -6,31 +6,34 @@ Dessa APIer används i projektet, applikationsanvändaren i WSO2 måste prenumer
 
 För MEX (Mark och exploatering):
 
-| API             | Version |
-| --------------- | ------: |
-| ActiveDirectory |     2.0 |
-| Citizen         |     3.0 |
-| CaseData        |    11.5 |
-| Messaging       |    7.10 |
-| Templating      |     2.0 |
-| Contract        |     3.0 |
-| Employee        |     2.0 |
-| Party           |     2.0 |
-| SimulatorServer |     2.0 |
-| LegalEntity     |     2.0 |
-| Relations       |     1.1 |
-| CaseStatus      |     4.1 |
+| API                  | Version |
+| -------------------- | ------: |
+| ActiveDirectory      |     2.0 |
+| Citizen              |     3.0 |
+| CaseData             |   12.10 |
+| Messaging            |    7.10 |
+| Templating           |     2.1 |
+| Contract             |     7.0 |
+| Employee             |     2.0 |
+| Party                |     2.0 |
+| SimulatorServer      |     2.0 |
+| LegalEntity          |     2.0 |
+| Relations            |     1.1 |
+| CaseStatus           |     4.1 |
+| Estateinfo           |     2.2 |
+| BillingPreprocessor  |     4.5 |
+| BillingDataCollector |     2.1 |
 
 För KS (Kontakt Sundsvall):
 
 | API               | Version |
 | ----------------- | ------: |
-| CaseData          |    11.5 |
-| SupportManagement |    12.3 |
+| CaseData          |   12.10 |
+| SupportManagement |    14.9 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
-| Templating        |     2.0 |
-| Estateinfo        |     1.0 |
+| Templating        |     2.1 |
+| Estateinfo        |     2.2 |
 | Party             |     2.0 |
 | SimulatorServer   |     2.0 |
 | LegalEntity       |     2.0 |
@@ -44,10 +47,10 @@ För PT (Parkeringstillstånd):
 | --------------- | ------: |
 | ActiveDirectory |     2.0 |
 | Citizen         |     3.0 |
-| CaseData        |    11.5 |
+| CaseData        |   12.10 |
 | Messaging       |    7.10 |
-| Templating      |     2.0 |
-| Contract        |     2.1 |
+| Templating      |     2.1 |
+| Contract        |     7.0 |
 | Employee        |     2.0 |
 | SimulatorServer |     2.0 |
 | LegalEntity     |     2.0 |
@@ -60,49 +63,47 @@ För LOP (Lön och pension):
 
 | API                 | Version |
 | ------------------- | ------: |
-| SupportManagement   |    12.3 |
+| SupportManagement   |    14.9 |
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
-| Templating          |     2.0 |
+| Templating          |     2.1 |
 | LegalEntity         |     2.0 |
 | Employee            |     2.0 |
-| BillingPreprocessor |     4.0 |
+| BillingPreprocessor |     4.5 |
 | SimulatorServer     |     2.0 |
 
 För ROB (Rekrytering och bemanning):
 
-| API                 | Version |
-| ------------------- | ------: |
-| ActiveDirectory     |     2.0 |
-| BillingPreprocessor |     4.0 |
-| Citizen             |     3.0 |
-| Employee            |     2.0 |
-| LegalEntity         |     2.0 |
-| SimulatorServer     |     2.0 |
-| SupportManagement   |    12.3 |
-| Templating          |     2.0 |
+| API               | Version |
+| ----------------- | ------: |
+| ActiveDirectory   |     2.0 |
+| Citizen           |     3.0 |
+| Employee          |     2.0 |
+| LegalEntity       |     2.0 |
+| SimulatorServer   |     2.0 |
+| SupportManagement |    14.9 |
+| Templating        |     2.1 |
 
 För KA (Kontakt Ånge):
 
-| API                 | Version |
-| ------------------- | ------: |
-| SupportManagement   |    12.3 |
-| Citizen             |     3.0 |
-| ActiveDirectory     |     2.0 |
-| Templating          |     2.0 |
-| LegalEntity         |     2.0 |
-| Employee            |     2.0 |
-| BillingPreprocessor |     4.0 |
-| SimulatorServer     |     2.0 |
+| API               | Version |
+| ----------------- | ------: |
+| SupportManagement |    14.9 |
+| Citizen           |     3.0 |
+| ActiveDirectory   |     2.0 |
+| Templating        |     2.1 |
+| LegalEntity       |     2.0 |
+| Employee          |     2.0 |
+| SimulatorServer   |     2.0 |
 
 För IK (Intern kundtjänst):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    12.3 |
+| SupportManagement |    14.9 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
-| Templating        |     2.0 |
+| Templating        |     2.1 |
 | LegalEntity       |     2.0 |
 | Employee          |     2.0 |
 | SimulatorServer   |     2.0 |
@@ -111,10 +112,10 @@ För MSVA (MittSverige Vatten & avfall):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    12.3 |
+| SupportManagement |    14.9 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
-| Templating        |     2.0 |
+| Templating        |     2.1 |
 | LegalEntity       |     2.0 |
 | Employee          |     2.0 |
 | SimulatorServer   |     2.0 |
@@ -123,12 +124,38 @@ För SE (Servicecenter Ekonomi):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    12.3 |
+| SupportManagement |    14.9 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
-| Templating        |     2.0 |
+| Templating        |     2.1 |
 | LegalEntity       |     2.0 |
 | Employee          |     2.0 |
+| SimulatorServer   |     2.0 |
+
+För BOU (Barn- och utbildningsförvaltningen):
+
+| API               | Version |
+| ----------------- | ------: |
+| SupportManagement |    14.9 |
+| Citizen           |     3.0 |
+| ActiveDirectory   |     2.0 |
+| Templating        |     2.1 |
+| LegalEntity       |     2.0 |
+| Employee          |     2.0 |
+| Relations         |     1.1 |
+| SimulatorServer   |     2.0 |
+
+För LOK (Lokalplanering):
+
+| API               | Version |
+| ----------------- | ------: |
+| SupportManagement |    14.9 |
+| Citizen           |     3.0 |
+| ActiveDirectory   |     2.0 |
+| Templating        |     2.1 |
+| LegalEntity       |     2.0 |
+| Employee          |     2.0 |
+| Relations         |     1.1 |
 | SimulatorServer   |     2.0 |
 
 ## Utveckling
@@ -158,7 +185,7 @@ yarn install
 
 3. Skapa .env-filer
 
-**Tillgängliga drakar:** `kc`, `ka`, `mex`, `pt`, `rob`, `lop`, `ik`, `msva`, `se`
+**Tillgängliga drakar:** `kc`, `ka`, `mex`, `pt`, `rob`, `lop`, `ik`, `msva`, `se`, `bou`, `lok`
 
 ### Skapa alla env-filer på en gång
 
@@ -173,7 +200,9 @@ cp .env.rob-example .env.rob && \
 cp .env.lop-example .env.lop && \
 cp .env.ik-example .env.ik && \
 cp .env.msva-example .env.msva && \
-cp .env.se-example .env.se
+cp .env.se-example .env.se && \
+cp .env.bou-example .env.bou && \
+cp .env.lok-example .env.lok
 ```
 
 Backend (kör från `backend/`):
@@ -187,7 +216,9 @@ cp .env.rob.example.local .env.rob.development.local && \
 cp .env.lop.example.local .env.lop.development.local && \
 cp .env.ik.example.local .env.ik.development.local && \
 cp .env.msva.example.local .env.msva.development.local && \
-cp .env.se.example.local .env.se.development.local
+cp .env.se.example.local .env.se.development.local && \
+cp .env.bou.example.local .env.bou.development.local && \
+cp .env.lok.example.local .env.lok.development.local
 ```
 
 ### Skapa för enskild drake
@@ -233,6 +264,26 @@ yarn dev:{drake}
 # Exempel: yarn dev:se
 ```
 
+### Tester
+
+**Backend** (Vitest, kör från `backend/`):
+
+```bash
+yarn test           # Kör enhetstesterna en gång
+yarn test:watch     # Watch-läge
+yarn test:coverage  # Med täckningsrapport (v8)
+yarn type-check:test # Typkontroll av testerna
+```
+
+Testerna ligger i `backend/src/tests/` (`*.service.test.ts`).
+
+**Frontend** (kör från `frontend/`):
+
+```bash
+yarn test:e2e:{drake}    # Playwright E2E (mex | pt | kc | lop)
+yarn test:e2e:ui:{drake} # Interaktivt (mex | pt | kc | lop)
+```
+
 ### Feature-flaggor
 
 Feature-flaggor konfigureras i frontend `.env`-filerna. Se dokumentation:
@@ -244,5 +295,5 @@ https://confluence.sundsvall.se/spaces/OA/pages/1259405457/Feature+flaggor+alla+
 | ------------------------------------- | ----------------------------------- |
 | `yarn build:{drake}`                  | Bygger för produktion               |
 | `yarn start:{drake}`                  | Startar produktionsserver           |
-| `yarn cypress:{drake}`                | Kör Cypress tester                  |
+| `yarn test:e2e:{drake}`               | Kör Playwright E2E-tester           |
 | `yarn generate:datacontracts:{drake}` | Genererar TypeScript-typer från API |

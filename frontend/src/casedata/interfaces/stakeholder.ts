@@ -1,4 +1,5 @@
 import { Data } from '@common/services/api-service';
+
 import { Address } from './address';
 import { Role } from './role';
 

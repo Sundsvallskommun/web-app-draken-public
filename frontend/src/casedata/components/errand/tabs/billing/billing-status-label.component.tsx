@@ -1,9 +1,10 @@
 import { Label } from '@sk-web-gui/react';
 import { billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
+import { FC } from 'react';
 
 //TODO: Update colors?
 
-export const BillingStatusLabel: React.FC<{ status: string }> = ({ status }) => {
+export const BillingStatusLabel: FC<{ status: string }> = ({ status }) => {
   let color,
     inverted = false;
   switch (status) {

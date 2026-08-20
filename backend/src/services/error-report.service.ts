@@ -1,7 +1,8 @@
+import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
+
 import { ErrorReportHandler, ErrorReportResponse, ErrorReportResult, ProcessedErrorReport } from '@/interfaces/error-report.interface';
 import { logger } from '@/utils/logger';
-import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';
 
 function sanitizeForExternal(report: ProcessedErrorReport) {
   return {
@@ -139,7 +140,7 @@ export class ErrorReportService {
       receivedAt: new Date().toISOString(),
     };
 
-    const results = await Promise.allSettled(this.handlers.map((h) => h.handle(processedReport)));
+    const results = await Promise.allSettled(this.handlers.map(h => h.handle(processedReport)));
 
     const handlerResults: ErrorReportResult[] = results.map((result, i) => {
       if (result.status === 'rejected') {
@@ -149,14 +150,14 @@ export class ErrorReportService {
       return result.value;
     });
 
-    const externalHandlers = handlerResults.filter((r) => r.handler !== 'LogFileHandler');
+    const externalHandlers = handlerResults.filter(r => r.handler !== 'LogFileHandler');
     const hasExternalHandlers = externalHandlers.length > 0;
-    const allExternalFailed = hasExternalHandlers && externalHandlers.every((r) => !r.success);
+    const allExternalFailed = hasExternalHandlers && externalHandlers.every(r => !r.success);
 
     let status: 'received' | 'forwarded' | 'failed';
     if (allExternalFailed) {
       status = 'failed';
-    } else if (hasExternalHandlers && externalHandlers.some((r) => r.success)) {
+    } else if (hasExternalHandlers && externalHandlers.some(r => r.success)) {
       status = 'forwarded';
     } else {
       status = 'received';

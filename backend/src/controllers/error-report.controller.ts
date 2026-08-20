@@ -1,3 +1,6 @@
+import { Body, Controller, HttpCode, Post, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { ErrorReportDto } from '@/dtos/error-report.dto';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { ErrorReportResponse } from '@/interfaces/error-report.interface';
@@ -5,8 +8,6 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import { ErrorReportService } from '@/services/error-report.service';
 import { logger } from '@/utils/logger';
-import { Body, Controller, HttpCode, Post, Req, Res, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
 
 @Controller()
 export class ErrorReportController {

@@ -1,3 +1,7 @@
+import dayjs from 'dayjs';
+import { Body, Controller, Param, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Errand, ExtraParameter, MessageResponse as IMessageResponse, Stakeholder } from '@/data-contracts/case-data/data-contracts';
@@ -7,9 +11,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
-import dayjs from 'dayjs';
-import { Body, Controller, Param, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
+
 import { PROCESS_PARAMETER_KEYS } from './casedata/extraparameter.controller';
 
 @Controller()
@@ -17,20 +19,25 @@ export class ExportController {
   private apiService = new ApiService();
   SERVICE = apiServiceName('case-data');
   TEMPLATING_SERVICE = apiServiceName('templating');
+  // Both templates are generic (the heading comes from the applicationName parameter), so MEX and PT
+  // share them. Names kept as-is to avoid re-registering the existing templates in the Templating service.
+  EXPORT_LIST_IDENTIFIER = 'sbk.errands.export';
+  EXPORT_SINGLE_IDENTIFIER = 'sbk.singleerrand.export';
 
   @Post('/:municipalityId/export')
   @OpenAPI({ summary: 'Export list of errands' })
   @UseBefore(authMiddleware)
   async exportErrands(
     @Req() req: RequestWithUser,
-    @Body() data: (Errand & { caseLabel: string })[],
-    @Param('municipalityId') municipalityId: string,
-    @QueryParam('include') include: string,
+    @Body() data: { applicationName: string; errands: (Errand & { caseLabel: string })[] },
+    @Param('municipalityId') _municipalityId: string,
+    @QueryParam('include') _include: string,
   ): Promise<any> {
     const renderRequest: RenderRequest = {
-      identifier: 'sbk.errands.export',
+      identifier: this.EXPORT_LIST_IDENTIFIER,
       parameters: {
-        errands: data.map(e => ({
+        applicationName: data.applicationName,
+        errands: data.errands.map(e => ({
           errandNumber: e.errandNumber,
           caseType: e.caseLabel,
           status: e.status?.statusType,
@@ -51,19 +58,19 @@ export class ExportController {
   @UseBefore(authMiddleware)
   async exportSingleErrand(
     @Req() req: RequestWithUser,
-    @Body() data: Errand & { administratorName: string; caseLabel: string; attachments: any[] },
+    @Body() data: Errand & { administratorName: string; applicationName: string; caseLabel: string; attachments: any[] },
     @Param('municipalityId') municipalityId: string,
     @QueryParam('include') include: string,
   ): Promise<any> {
     const templateStakeholder = (s: Stakeholder) => {
       const extra = s as Stakeholder & { street: string; zip: string; city: string; phoneNumbers: { value: string }[]; emails: { value: string }[] };
       return {
-        name: s.organizationName ?? s.firstName + ' ' + s.lastName,
+        name: s.organizationName || `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim(),
         street: extra.street,
         zip: extra.zip,
         city: extra.city,
-        email: extra.emails?.map(v => v.value).join(', ') ?? 'E-post saknas',
-        phone: extra.phoneNumbers?.map(v => v.value).join(', ') ?? 'Telefonnummer saknas',
+        email: extra.emails?.map(v => v.value).join(', ') || 'E-post saknas',
+        phone: extra.phoneNumbers?.map(v => v.value).join(', ') || 'Telefonnummer saknas',
       };
     };
 
@@ -79,7 +86,9 @@ export class ExportController {
         description: data.description,
         facilities: (data.facilities ?? []).map(f => f?.address?.propertyDesignation ?? 'Fastighetsbeteckning saknas'),
         applicants: (data.stakeholders ?? []).filter(s => s.roles.includes('APPLICANT'))?.map(templateStakeholder),
-        contacts: (data.stakeholders ?? []).filter(s => !s.roles.includes('APPLICANT') && !s.roles.includes('ADMINISTRATOR'))?.map(templateStakeholder),
+        contacts: (data.stakeholders ?? [])
+          .filter(s => !s.roles.includes('APPLICANT') && !s.roles.includes('ADMINISTRATOR'))
+          ?.map(templateStakeholder),
         created: dayjs(data.created).format('YYYY-MM-DD HH:mm:ss'),
         updated: dayjs(data.updated).format('YYYY-MM-DD HH:mm:ss'),
       };
@@ -122,10 +131,11 @@ export class ExportController {
     }
 
     const renderRequest: RenderRequest = {
-      identifier: 'sbk.singleerrand.export',
+      identifier: this.EXPORT_SINGLE_IDENTIFIER,
       parameters: {
         errand: {
           errandNumber: data.errandNumber,
+          applicationName: data.applicationName,
           ...(basicInformation && { basicInformation }),
           messages,
           notes,

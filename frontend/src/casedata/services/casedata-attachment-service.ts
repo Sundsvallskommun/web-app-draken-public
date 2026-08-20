@@ -1,18 +1,20 @@
 import {
-  Attachment,
   MEXAllAttachmentLabels,
   MEXAttachmentCategory,
   MEXAttachmentLabels,
   MEXLegacyAttachmentLabels,
   PTAttachmentCategory,
   PTAttachmentLabels,
+  SingleCasedataAttachment,
 } from '@casedata/interfaces/attachment';
 import { PTCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
 import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
+import { base64ToFile, mapAttachmentToUploadFile } from '@common/services/attachment-service';
 import { UploadFile } from '@sk-web-gui/react';
+import { Attachment } from 'src/data-contracts/backend/data-contracts';
 
 export const MAX_FILE_SIZE_MB = 50;
 
@@ -104,38 +106,38 @@ export const getPTAttachmentKey: (label: string) => PTAttachmentCategory | undef
   }
 };
 
-export const getAttachmentLabel = (attachment: Attachment) =>
-  isMEX() ? (MEXAttachmentLabels as Record<string, string>)[attachment?.category] || 'Okänt' : (PTAttachmentLabels as Record<string, string>)[attachment?.category] || 'Okänt';
+export const getAttachmentLabel = (category: string) =>
+  isMEX()
+    ? (MEXAttachmentLabels as Record<string, string>)[category] || 'Okänt'
+    : (PTAttachmentLabels as Record<string, string>)[category] || 'Okänt';
 
-export const getImageAspect: (attachment: Attachment) => number | undefined = (attachment) =>
-  attachment?.category === 'PASSPORT_PHOTO'
-    ? 3 / 4
-    : attachment?.category === 'MEDICAL_CONFIRMATION'
-    ? undefined
-    : attachment?.category === 'SIGNATURE'
-    ? 4 / 1
-    : attachment?.category === 'POLICE_REPORT'
-    ? undefined
-    : attachment?.category === 'UNKNOWN'
-    ? undefined
-    : undefined;
+/**
+ * Fixed aspect ratios for the PT categories that have a formal format. Returning undefined lets
+ * the user crop freely, which is what every other category needs.
+ */
+export const getImageAspect = (category: string): number | undefined => {
+  switch (category) {
+    case 'PASSPORT_PHOTO':
+      return 3 / 4;
+    case 'SIGNATURE':
+      return 4 / 1;
+    default:
+      return undefined;
+  }
+};
 
-const uniqueAttachments: MEXAttachmentCategory[] = [];
 const uniquePTAttachments: PTAttachmentCategory[] = ['PASSPORT_PHOTO', 'SIGNATURE'];
 
 export const onlyOneAllowed: (cat: MEXAttachmentCategory | PTAttachmentCategory) => boolean = (
   cat: MEXAttachmentCategory | PTAttachmentCategory
-) => (isMEX() ? uniqueAttachments.includes(cat as MEXAttachmentCategory) : uniquePTAttachments.includes(cat as PTAttachmentCategory));
+) => isPT() && uniquePTAttachments.includes(cat as PTAttachmentCategory);
 
 export const validateAttachmentsForUtredning: (errand: IErrand) => boolean = (errand) => {
+  if (!isPT()) return true;
   // Errand may only have max one passport photo and max one signature before moving to Utredning phase
-  const uniqueAttachmentsOnlyOnce = uniqueAttachments.every(
-    (u) =>
-      errand.attachments.filter(
-        (a) => (isMEX() ? (a.category as MEXAttachmentCategory) : (a.category as PTAttachmentCategory)) === u
-      ).length < 2
+  return uniquePTAttachments.every(
+    (u) => errand.attachments.filter((a) => (a.category as PTAttachmentCategory) === u).length < 2
   );
-  return uniqueAttachmentsOnlyOnce;
 };
 
 export const validateAttachmentsForDecision: (errand: IErrand) => { valid: boolean; reason: string } = (errand) => {
@@ -234,7 +236,11 @@ export const sendAttachments = (
   municipalityId: string,
   errandId: number,
   errandNumber: string,
-  attachmentData: UploadFile[]
+  attachmentData: UploadFile[],
+  // Creating an attachment is not idempotent: a response lost after the server committed makes a
+  // retry create a second copy. Callers that delete something on success can pass 0 to trade
+  // automatic recovery for never producing a silent duplicate.
+  retries = 3
 ) => {
   const attachmentPromises = attachmentData.map(async (attachment) => {
     const fileItem = attachment.file;
@@ -256,17 +262,16 @@ export const sendAttachments = (
     const obj: Attachment = {
       category: attachment.meta.category,
       name: `${attachment.meta.name}.${attachment.meta.ending}`,
-      note: '',
+      note: (attachment.meta.note as string) ?? '',
       extension,
       mimeType: extension === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type,
-      file: '',
     };
 
     const formData = new FormData();
     formData.append('files', fileItem, fileItem.name);
     formData.append('category', obj.category);
     formData.append('name', obj.name);
-    formData.append('note', obj.note);
+    formData.append('note', obj.note ?? '');
     formData.append('extension', obj.extension || '');
     formData.append('mimeType', obj.mimeType);
     formData.append('errandNumber', errandNumber);
@@ -282,14 +287,14 @@ export const sendAttachments = (
           throw e;
         });
 
-    return withRetries(3, postAttachment);
+    return withRetries(retries, postAttachment);
   });
 
   return Promise.all(attachmentPromises).then(() => true);
 };
 
 export const deleteAttachment = (municipalityId: string, errandId: number, attachment: UploadFile) => {
-  if (!attachment.id) {
+  if (!attachment?.id) {
     console.error('No id found, cannot continue.');
     return;
   }
@@ -306,21 +311,192 @@ export const deleteAttachment = (municipalityId: string, errandId: number, attac
     });
 };
 
+export interface ReplaceAttachmentResult {
+  /** False when the replacement was created but the original could not be removed. */
+  originalRemoved: boolean;
+}
+
+/**
+ * CaseData cannot replace the content of an existing attachment: PATCH carries metadata only and
+ * the multipart PUT was removed when attachments became binary. The replacement is therefore
+ * uploaded as a new attachment and the original deleted afterwards.
+ *
+ * The order is deliberate. Uploading first means a failed upload leaves the original untouched;
+ * deleting first would remove the only copy on the server while the new bytes exist solely in
+ * browser memory, so a failed upload would lose the file for good.
+ */
+export const replaceAttachmentFile = async (
+  municipalityId: string,
+  errandId: number,
+  errandNumber: string,
+  attachment: Attachment,
+  file: File
+): Promise<ReplaceAttachmentResult> => {
+  if (!attachment.id) {
+    throw new Error('ATTACHMENT_ID_MISSING');
+  }
+  // Decision attachments live under a separate sub-resource and are part of a legally significant
+  // record, so they are never replaced this way.
+  if (attachment.decisionId) {
+    throw new Error('DECISION_ATTACHMENT_NOT_SUPPORTED');
+  }
+  if (file.size / 1024 / 1024 > MAX_FILE_SIZE_MB) {
+    throw new Error('MAX_SIZE');
+  }
+
+  // Category, name and note carry over, but the replacement is a new row: it gets a new id and
+  // created timestamp, the backend forces channel to WEB_UI, and extraParameters has no field on
+  // CreateAttachmentDto. Preserving those needs a content-replacing endpoint upstream.
+  const original = mapAttachmentToUploadFile(attachment);
+  const replacement: UploadFile = {
+    // The id is assigned by the backend when the attachment is created.
+    id: '',
+    file,
+    meta: { ...original.meta, ending: file.name.split('.').pop() ?? original.meta.ending },
+  };
+
+  // No retries here. Retrying the upload risks a second copy if the first request committed but
+  // its response was lost, and the original is deleted right after, so a silent duplicate would
+  // be left behind with nothing to compare against. A visible failure the user can repeat is the
+  // safer trade. The cropper keeps the selection, so retrying costs one click.
+  await sendAttachments(municipalityId, errandId, errandNumber, [replacement], 0);
+
+  try {
+    await deleteAttachment(municipalityId, errandId, original);
+    return { originalRemoved: true };
+  } catch (e) {
+    console.error('Replacement attachment created but the original could not be removed ', attachment.id, e);
+    return { originalRemoved: false };
+  }
+};
+
 export const fetchAttachment: (
   municipalityId: string,
   errandId: number,
-  attachmentId: string
-) => Promise<ApiResponse<Attachment>> = (municipalityId, errandId, attachmentId) => {
-  if (!attachmentId) {
-    console.error('No attachment id found, cannot fetch. Returning.');
+  attachment: Attachment
+) => Promise<SingleCasedataAttachment> = (municipalityId, errandId, attachment) => {
+  if (!attachment.id) {
+    return Promise.reject(new Error('No attachment id found, cannot fetch.'));
   }
 
-  const url = `casedata/${municipalityId}/errands/${errandId}/attachments/${attachmentId}`;
+  const url = `casedata/${municipalityId}/errands/${errandId}/attachments/${attachment.id}`;
   return apiService
-    .get<ApiResponse<Attachment>>(url)
-    .then((res) => res.data)
+    .get<string>(url)
+    .then((res) => {
+      const att: SingleCasedataAttachment = {
+        errandAttachmentHeader: attachment,
+        base64EncodedString: res.data,
+      };
+      return att;
+    })
     .catch((e) => {
-      console.error('Something went wrong when fetching attachment: ', attachmentId);
+      console.error('Something went wrong when fetching attachment');
+      throw e;
+    });
+};
+
+// Decision attachments live under a dedicated CaseData sub-resource and are uploaded as binary
+// multipart, mirroring sendAttachments. The rendered PDF arrives as base64 and is turned back into
+// a File before upload.
+export const sendDecisionAttachment = (
+  municipalityId: string,
+  errandId: number,
+  decisionId: number,
+  pdfBase64: string,
+  name: string,
+  errandNumber: string,
+  category: string = 'DECISION'
+) => {
+  const file = base64ToFile(pdfBase64, name, 'application/pdf');
+
+  const formData = new FormData();
+  formData.append('files', file, name);
+  formData.append('category', category);
+  formData.append('name', name);
+  formData.append('note', '');
+  formData.append('extension', 'pdf');
+  formData.append('mimeType', 'application/pdf');
+  formData.append('errandNumber', errandNumber);
+
+  const postDecisionAttachment = () =>
+    apiService
+      .post<boolean, FormData>(
+        `casedata/${municipalityId}/errands/${errandId}/decisions/${decisionId}/attachments`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      )
+      .then((res) => res)
+      .catch((e) => {
+        console.error('Something went wrong when creating decision attachment');
+        throw e;
+      });
+
+  return withRetries(3, postDecisionAttachment);
+};
+
+export const fetchDecisionAttachment: (
+  municipalityId: string,
+  errandId: number,
+  decisionId: number,
+  attachment: Attachment
+) => Promise<SingleCasedataAttachment> = (municipalityId, errandId, decisionId, attachment) => {
+  if (!attachment.id) {
+    return Promise.reject(new Error('No attachment id found, cannot fetch.'));
+  }
+
+  const url = `casedata/${municipalityId}/errands/${errandId}/decisions/${decisionId}/attachments/${attachment.id}`;
+  return apiService
+    .get<string>(url)
+    .then((res) => {
+      const att: SingleCasedataAttachment = {
+        errandAttachmentHeader: attachment,
+        base64EncodedString: res.data,
+      };
+      return att;
+    })
+    .catch((e) => {
+      console.error('Something went wrong when fetching decision attachment');
+      throw e;
+    });
+};
+
+export const deleteDecisionAttachment = (
+  municipalityId: string,
+  errandId: number,
+  decisionId: number,
+  attachmentId: number
+) => {
+  return apiService
+    .deleteRequest<boolean>(
+      `casedata/${municipalityId}/errands/${errandId}/decisions/${decisionId}/attachments/${attachmentId}`
+    )
+    .then((res) => res)
+    .catch((e) => {
+      console.error('Something went wrong when removing decision attachment ', attachmentId);
+      throw e;
+    });
+};
+
+export const editDecisionAttachment = (
+  municipalityId: string,
+  errandId: string,
+  decisionId: number,
+  attachmentId: string,
+  attachmentName: string,
+  attachmentType: string
+) => {
+  const obj: Partial<Attachment> = {
+    name: attachmentName,
+    category: attachmentType,
+  };
+  return apiService
+    .patch<boolean, Partial<Attachment>>(
+      `casedata/${municipalityId}/errands/${errandId}/decisions/${decisionId}/attachments/${attachmentId}`,
+      obj
+    )
+    .then((res) => res)
+    .catch((e) => {
+      console.error('Something went wrong when editing decision attachment ', obj.category);
       throw e;
     });
 };

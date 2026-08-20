@@ -314,6 +314,11 @@ export interface Attachment {
    * @format int64
    */
   errandId?: number;
+  /**
+   * Decision id associated with the attachment, null for attachments belonging directly to the errand
+   * @format int64
+   */
+  decisionId?: number;
   /** Namespace */
   namespace?: string;
   /**
@@ -328,6 +333,8 @@ export interface Attachment {
   updated?: string;
   /** Category of the attachment */
   category?: string;
+  /** Channel through which the attachment was received */
+  channel?: AttachmentChannelEnum;
   /** Name of the attachment */
   name?: string;
   /** Note about the attachment */
@@ -336,8 +343,8 @@ export interface Attachment {
   extension?: string;
   /** MIME type of the attachment */
   mimeType?: string;
-  /** Base64 encoded file content */
-  file?: string;
+  /** SHA-256 hash (hex encoded) of the attachment's raw content */
+  hash?: string;
   /** Additional parameters for the attachment */
   extraParameters?: Record<string, string>;
 }
@@ -393,7 +400,7 @@ export interface Decision {
    * @format date-time
    */
   validTo?: string;
-  /** List of attachments related to the decision */
+  /** List of attachments related to the decision. Attachments are managed through the decision attachment endpoints and sending them in this payload is rejected */
   attachments?: Attachment[];
   /** Additional parameters for the decision */
   extraParameters?: Record<string, string>;
@@ -497,10 +504,7 @@ export interface Errand {
    * @maxLength 255
    */
   phase?: string;
-  /**
-   * The current status of the errand
-   * @maxLength 255
-   */
+  /** The current status of the errand */
   status?: Status;
   /** The statuses connected to the errand */
   statuses?: Status[];
@@ -547,6 +551,8 @@ export interface Errand {
   updatedBy?: string;
   /** Suspension information */
   suspension?: Suspension;
+  /** Whether the errand is confidential or not */
+  confidential?: boolean;
   /** Extra parameters for the errand */
   extraParameters?: ExtraParameter[];
   /** JSON parameters for the errand */
@@ -583,9 +589,9 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  number?: boolean;
-  string?: boolean;
-  boolean?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
+  missingNode?: boolean;
   valueNode?: boolean;
   container?: boolean;
   pojo?: boolean;
@@ -599,9 +605,9 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  missingNode?: boolean;
-  integralNumber?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
+  number?: boolean;
+  string?: boolean;
+  boolean?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -835,6 +841,8 @@ export interface MessageRequest {
   email?: string;
   /** List of email recipients */
   recipients?: string[];
+  /** List of CC email recipients */
+  ccRecipients?: string[];
   /** The user ID of the user that sent the message */
   userId?: string;
   /** The classification of the message */
@@ -908,6 +916,8 @@ export interface ConversationAttachment {
   fileSize?: number;
   /** Mime type of the file */
   mimeType?: string;
+  /** Hash of the file content */
+  hash?: string;
   /**
    * The attachment created date
    * @format date-time
@@ -1027,6 +1037,8 @@ export interface PatchErrand {
   labels?: string[];
   /** The current status of the errand */
   status?: Status;
+  /** Whether the errand is confidential or not */
+  confidential?: boolean;
 }
 
 export interface PatchDecision {
@@ -1073,20 +1085,20 @@ export interface PageErrand {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  sort?: SortObject;
   pageable?: PageableObject;
+  sort?: SortObject;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  sort?: SortObject;
   unpaged?: boolean;
 }
 
@@ -1192,6 +1204,8 @@ export interface MessageResponse {
   mobileNumber?: string;
   /** The recipients of the message, if email */
   recipients?: string[];
+  /** The CC recipients of the message, if email */
+  ccRecipients?: string[];
   /** The email of the user that sent the message */
   email?: string;
   /** The user ID of the user that sent the message */
@@ -1222,8 +1236,8 @@ export interface PageMessage {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  sort?: SortObject;
   pageable?: PageableObject;
+  sort?: SortObject;
   empty?: boolean;
 }
 
@@ -1241,8 +1255,8 @@ export interface PageDecision {
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
-  sort?: SortObject;
   pageable?: PageableObject;
+  sort?: SortObject;
   empty?: boolean;
 }
 
@@ -1264,6 +1278,14 @@ export enum ContactInformationContactTypeEnum {
 export enum StakeholderTypeEnum {
   PERSON = "PERSON",
   ORGANIZATION = "ORGANIZATION",
+}
+
+/** Channel through which the attachment was received */
+export enum AttachmentChannelEnum {
+  EMAIL = "EMAIL",
+  ESERVICE = "ESERVICE",
+  WEB_UI = "WEB_UI",
+  MY_PAGES = "MY_PAGES",
 }
 
 /** Type of the decision */
@@ -1289,6 +1311,7 @@ export enum ErrandChannelEnum {
   WEB_UI = "WEB_UI",
   MOBILE = "MOBILE",
   SYSTEM = "SYSTEM",
+  MY_PAGES = "MY_PAGES",
 }
 
 /**

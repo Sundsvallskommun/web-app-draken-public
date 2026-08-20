@@ -1,4 +1,8 @@
-import { GenericExtraParameters } from './extra-parameters';
+import { Attachment } from 'src/data-contracts/backend/data-contracts';
+
+// The generated contract is the single source of truth for attachment metadata.
+// Re-exported here so consumers can keep importing it alongside the category enums.
+export type { Attachment };
 
 export type MEXAttachmentCategory =
   | 'OEP_APPLICATION'
@@ -78,17 +82,7 @@ export enum PTAttachmentLabels {
   'OTHER_ATTACHMENT' = 'Övriga bilagor',
 }
 
-export interface Attachment {
-  id?: string;
-  attachmentId?: string;
-  version?: number;
-  created?: string;
-  updated?: string;
-  category: string;
-  name: string;
-  note: string;
-  extension: string;
-  mimeType: string;
-  file: string;
-  extraParameters?: GenericExtraParameters;
+export interface SingleCasedataAttachment {
+  errandAttachmentHeader: Attachment;
+  base64EncodedString: string;
 }

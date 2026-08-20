@@ -27,6 +27,7 @@ export interface Organization {
   orgName?: string | null;
   /** @format int32 */
   parentId?: number | null;
+  orgPath?: string | null;
   isLeafLevel?: boolean;
   /** @format int32 */
   treeLevel?: number;
@@ -45,6 +46,7 @@ export interface OrganizationTree {
   orgName?: string | null;
   /** @format int32 */
   parentId?: number;
+  orgPath?: string | null;
   isLeafLevel?: boolean;
   /** @format int32 */
   companyId?: number;

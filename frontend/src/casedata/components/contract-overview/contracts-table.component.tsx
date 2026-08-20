@@ -1,11 +1,11 @@
 import { Contract, ContractType, Stakeholder, StakeholderType } from '@casedata/interfaces/contracts';
-import { contractTypes, leaseTypes } from '@casedata/services/contract-service';
+import { contractTypes, isOnlyBillingParty, leaseTypes } from '@casedata/services/contract-service';
 import { Button, Input, Label, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import dayjs from 'dayjs';
-import React, { useState } from 'react';
-import { useFormContext } from 'react-hook-form';
 import { ArrowRight } from 'lucide-react';
+import { FC, ReactNode, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 export interface ContractTableForm {
   sortOrder: 'asc' | 'desc';
@@ -33,7 +33,7 @@ const getStakeholderName = (stakeholder: Stakeholder): string => {
   return stakeholder.organizationName || '-';
 };
 
-const CasedataStatusLabelComponent: React.FC<{ status: string }> = ({ status }) => {
+export const CasedataStatusLabelComponent: FC<{ status: string }> = ({ status }) => {
   switch (status) {
     case 'DRAFT':
       return (
@@ -67,7 +67,7 @@ const formatDate = (date?: string): string => {
   return dayjs(date).format('YYYY-MM-DD');
 };
 
-const formatPeriod = (start?: string, end?: string): React.ReactNode => {
+const formatPeriod = (start?: string, end?: string): ReactNode => {
   const startStr = formatDate(start);
   const endStr = formatDate(end);
   if (startStr || endStr) {
@@ -83,24 +83,25 @@ const formatPeriod = (start?: string, end?: string): React.ReactNode => {
 
 export const contractTableLabels = [
   { label: 'Status', sortable: true, column: 'status' },
-  { label: 'Fastighetsbeteckning', sortable: false, column: 'propertyDesignations' },
-  { label: 'Distrikt', sortable: false, column: 'district' },
+  { label: 'Fastighetsbeteckning', sortable: true, column: 'propertyDesignations.name' },
+  { label: 'Distrikt', sortable: true, column: 'propertyDesignations.district' },
   { label: 'Avtalstyp', sortable: true, column: 'type' },
   { label: 'Undertyp', sortable: true, column: 'leaseType' },
   { label: 'Avtals-id', sortable: true, column: 'id' },
   { label: 'Parter', sortable: false, column: 'stakeholders' },
-  { label: 'Avtalsperiod', sortable: true, column: 'end' },
-  { label: 'Uppsägningsdatum', sortable: false, column: '' },
+  { label: 'Avtalsperiod', sortable: true, column: 'endDate' },
+  { label: 'Uppsägningsdatum', sortable: true, column: 'noticeDate' },
   { label: '', sortable: false, column: '' },
 ];
 
-export const ContractsTable: React.FC<{
+export const ContractsTable: FC<{
   contracts: Contract[];
   isLoading: boolean;
   onRowClick?: (contract: Contract) => void;
 }> = ({ contracts, isLoading, onRowClick }) => {
-  const { watch, setValue, register } = useFormContext<ContractTableForm>();
+  const { watch, setValue } = useFormContext<ContractTableForm>();
   const [rowHeight, setRowHeight] = useState<string>('normal');
+  const [pageSizeInput, setPageSizeInput] = useState<string>((watch('pageSize') || 12).toString());
 
   const sortOrder = watch('sortOrder');
   const sortColumn = watch('sortColumn');
@@ -145,7 +146,13 @@ export const ContractsTable: React.FC<{
         .join(', ') || '-';
     const districts = contract.propertyDesignations?.map((p) => p.district).filter(Boolean);
     const uniqueDistricts = [...new Set(districts)].join(', ') || '-';
-    const partyNames = contract.stakeholders?.map(getStakeholderName).filter(Boolean) || [];
+    // Hide parties whose only role is invoice recipient ("fakturamottagare") from the overview.
+    // A party that is also another role (e.g. leaseholder) is kept and shown on its contract row.
+    const partyNames =
+      contract.stakeholders
+        ?.filter((stakeholder) => !isOnlyBillingParty(stakeholder))
+        .map(getStakeholderName)
+        .filter(Boolean) || [];
     const parties =
       partyNames.length > 0 ? (
         <div className="whitespace-nowrap">
@@ -229,13 +236,27 @@ export const ContractsTable: React.FC<{
                 Rader per sida:
               </label>
               <Input
-                {...register('pageSize')}
                 size="sm"
                 id="pageSize"
                 type="number"
                 min={1}
                 max={1000}
                 className="max-w-[6rem]"
+                value={pageSizeInput}
+                onChange={(e) => setPageSizeInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+                onBlur={() => {
+                  const parsed = parseInt(pageSizeInput, 10);
+                  if (!isNaN(parsed) && parsed > 0) {
+                    setValue('pageSize', parsed);
+                  } else {
+                    setPageSizeInput((watch('pageSize') || 12).toString());
+                  }
+                }}
               />
             </div>
             <div className="sk-table-paginationwrapper">

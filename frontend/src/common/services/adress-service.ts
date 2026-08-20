@@ -260,7 +260,7 @@ export const searchOrganization: (orgNr: string) => Promise<AddressResult | unde
               street: res.address.addressArea,
             };
             return {
-              personId: '',
+              personId: res.partyId,
               firstName: '',
               lastName: '',
               organizationName: res.name,

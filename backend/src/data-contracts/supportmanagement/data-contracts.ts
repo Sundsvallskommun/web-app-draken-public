@@ -24,6 +24,26 @@ export enum ConversationType {
   EXTERNAL = "EXTERNAL",
 }
 
+/** Action to take on the source errand after handover */
+export enum HandoverSourceAction {
+  CLOSE = "CLOSE",
+  RETAIN = "RETAIN",
+  SUSPEND = "SUSPEND",
+}
+
+/** Type of warning raised while building a handover preview: PARAMETER_SCHEMA_MISMATCH (a parameter references a json schema not registered in the target namespace, see 'key'/'detail'), ROLE_NOT_IN_TARGET (a stakeholder role on the source errand does not exist in the target namespace, see 'value') */
+export enum WarningType {
+  PARAMETER_SCHEMA_MISMATCH = "PARAMETER_SCHEMA_MISMATCH",
+  ROLE_NOT_IN_TARGET = "ROLE_NOT_IN_TARGET",
+}
+
+/** Reason a target was auto-suggested for a namespace-bound field: NAME_EXACT (exact match on technical name), DISPLAY_NAME_EXACT (case-insensitive exact match on display name), RESOURCE_PATH_MATCH (match on hierarchical resource path, labels only) */
+export enum MatchReason {
+  NAME_EXACT = "NAME_EXACT",
+  DISPLAY_NAME_EXACT = "DISPLAY_NAME_EXACT",
+  RESOURCE_PATH_MATCH = "RESOURCE_PATH_MATCH",
+}
+
 /** Priority model */
 export enum Priority {
   LOW = "LOW",
@@ -51,8 +71,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  causeAsProblem?: ThrowableProblem;
   detail?: string;
+  causeAsProblem?: ThrowableProblem;
 }
 
 export interface ThrowableProblem {
@@ -161,7 +181,98 @@ export interface Label {
    * @pattern [A-Z0-9_]+
    */
   resourceName: string;
+  /**
+   * Indicates if the label is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
   labels?: Label[];
+  /** Free-form key/value data owned by the client. Stored and returned as-is by the service, which does not interpret the contents (apart from rejecting duplicate keys per label). Keys are conventions agreed between clients (e.g. 'escalationEmail'). */
+  attributes?: LabelAttribute[];
+}
+
+/** Label attribute model. Free-form key/value data owned by the client; not interpreted by the service. Keys are conventions agreed between clients (e.g. 'escalationEmail'). */
+export interface LabelAttribute {
+  /**
+   * Attribute key
+   * @minLength 1
+   */
+  key: string;
+  /**
+   * Attribute value
+   * @minLength 1
+   */
+  value: string;
+}
+
+/** Message exchange worker config model */
+export interface MessageExchangeIntegration {
+  /** Status on errand that will trigger a status change when a new incoming message refers to an existing errand */
+  triggerStatusChangeOn?: string | null;
+  /** Status that will be set on errand if status change is triggered. Can only be null if 'triggerStatusChangeOn' is null. */
+  statusChangeTo?: string | null;
+  /**
+   * Timestamp when the configuration was created
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * Timestamp when the configuration was last modified
+   * @format date-time
+   */
+  modified?: string;
+}
+
+export interface JsonNode {
+  empty?: boolean;
+  array?: boolean;
+  null?: boolean;
+  object?: boolean;
+  float?: boolean;
+  number?: boolean;
+  string?: boolean;
+  boolean?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
+  missingNode?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  pojo?: boolean;
+  floatingPointNumber?: boolean;
+  short?: boolean;
+  int?: boolean;
+  long?: boolean;
+  double?: boolean;
+  bigDecimal?: boolean;
+  bigInteger?: boolean;
+  /** @deprecated */
+  textual?: boolean;
+  binary?: boolean;
+  embeddedValue?: boolean;
+}
+
+/** JSON Parameter model */
+export interface JsonParameter {
+  /**
+   * Parameter key/name
+   * @minLength 1
+   */
+  key: string;
+  /**
+   * JSON structure value
+   * @example {"firstName":"Joe","lastName":"Doe"}
+   */
+  value: JsonNode;
+  /**
+   * ID referencing a schema in the json-schema service
+   * @minLength 1
+   */
+  schemaId: string;
+  /**
+   * Optimistic locking version of the JSON parameter
+   * @format int64
+   */
+  version?: number;
 }
 
 /** Email integration config model */
@@ -184,7 +295,7 @@ export interface EmailIntegration {
    * Number of days before incoming mail is rejected. Measured from when the errand was last touched. Rejection can only occur if status on errand equals 'inactiveStatus'.
    * @format int32
    */
-  daysOfInactivityBeforeReject?: number | string | null;
+  daysOfInactivityBeforeReject?: string | null;
   /** Status set on errand when email results in a new errand */
   statusForNew: string;
   /** Status on errand that will trigger a status change when email refers to an existing errand */
@@ -194,7 +305,7 @@ export interface EmailIntegration {
   /** Status of an inactive errand. This value relates to property 'daysOfInactivityBeforeReject'. If set to null, no rejection mail will be sent */
   inactiveStatus?: string | null;
   /** If true sender is added as stakeholder */
-  addSenderAsStakeholder?: boolean | string | null;
+  addSenderAsStakeholder?: string | null;
   /** Role set on stakeholder. */
   stakeholderRole?: string | null;
   /** Channel set on created errands */
@@ -238,8 +349,129 @@ export interface MessageExchangeSync {
   active: boolean;
 }
 
+/** Filter on event type/subtype, used to limit which eventlog events trigger a notification */
+export interface EventFilter {
+  /**
+   * Event type. Matches the eventlog EventType enum.
+   * @minLength 1
+   * @pattern ^(CREATE|READ|UPDATE|DELETE|ACCESS|EXECUTE|CANCEL|DROP)$
+   */
+  type: EventFilterTypeEnum;
+  /**
+   * Event subtype. If null, all subtypes of the given type match.
+   * @minLength 0
+   * @maxLength 64
+   */
+  subtype?: string;
+}
+
+/** Identifier describing a user or subject (AD-account or party-id) */
+export interface Identifier {
+  /**
+   * Identifier type
+   * @minLength 1
+   * @pattern ^(adAccount|partyId)$
+   */
+  type: IdentifierTypeEnum;
+  /**
+   * Identifier value (AD-account name or partyId UUID)
+   * @minLength 0
+   * @maxLength 255
+   */
+  value: string;
+}
+
+/** Channel a subscriber wants to receive notifications on */
+export interface NotificationChannel {
+  /** Channel type */
+  type: NotificationChannelTypeEnum;
+  /**
+   * Optional destination override (e.g. an alternative e-mail address or phone number). If omitted, the default destination derived from the subscriber's identifier is used.
+   * @minLength 0
+   * @maxLength 255
+   */
+  destination?: string;
+}
+
+/** A subscriber describes who receives notifications, which channels they prefer, and which event types they are interested in. */
+export interface Subscriber {
+  /** Unique identifier of the subscriber */
+  id?: string;
+  /**
+   * Optional human-readable label. Useful when a person has several subscribers (e.g. one per role or purpose).
+   * @minLength 0
+   * @maxLength 255
+   */
+  name?: string;
+  /** Identifier of the principal that ultimately receives notifications (AD-account or partyId). Immutable once created. */
+  identifier?: Identifier;
+  /** Channels the subscriber wants to receive notifications on. If empty, defaults to INTERNAL. */
+  channels?: NotificationChannel[];
+  /** Event filters that restrict which eventlog events trigger notifications. If empty, all events match. */
+  eventFilters?: EventFilter[];
+  /**
+   * When the subscriber's notifications are paused from (inclusive). Null means not paused.
+   * @format date-time
+   */
+  pausedFrom?: string;
+  /**
+   * When the subscriber's notifications resume (exclusive). Null means paused indefinitely (only meaningful if pausedFrom is set).
+   * @format date-time
+   */
+  pausedUntil?: string;
+  /**
+   * Timestamp when the subscriber was created
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * Timestamp when the subscriber was last modified
+   * @format date-time
+   */
+  modified?: string;
+  /** Identifier of the principal that created the subscriber */
+  createdBy?: Identifier;
+  /**
+   * Number of subscriptions currently owned by this subscriber
+   * @format int32
+   */
+  subscriptionCount?: number;
+}
+
+/** A subscription describes what a subscriber is listening for (an errand or all events in a namespace). Subscriptions support create and delete only — to change what is being listened to, delete and create a new one. */
+export interface Subscription {
+  /** Unique identifier of the subscription */
+  id?: string;
+  /** What this subscription targets (an errand or the whole namespace). */
+  target?: SubscriptionTarget;
+  /** Optional per-subscription override of the subscriber-level event filters. When set, these filters apply to events matched by this subscription instead of the subscriber's global filters. When null or empty, the subscriber-level filters are used as-is. */
+  eventFilters?: EventFilter[];
+  /**
+   * Optional expiration timestamp. After this point the subscription is eligible for automatic cleanup.
+   * @format date-time
+   */
+  expiresAt?: string;
+  /**
+   * Timestamp when the subscription was created
+   * @format date-time
+   */
+  created?: string;
+  /** Identifier of the principal that created the subscription (may differ from the owning subscriber, e.g. when an admin subscribes on behalf of someone else). */
+  createdBy?: Identifier;
+}
+
+/** What a subscription targets. The id field is required when type=ERRAND and ignored when type=NAMESPACE. */
+export interface SubscriptionTarget {
+  /** Target type */
+  type: SubscriptionTargetTypeEnum;
+  /** Identifier of the target. Required (errand UUID) when type=ERRAND. Must be null when type=NAMESPACE. */
+  id?: string;
+}
+
 /** Status model */
 export interface Status {
+  /** Status ID */
+  id?: string;
   /**
    * Name for the status
    * @minLength 1
@@ -249,6 +481,16 @@ export interface Status {
   displayName?: string | null;
   /** External display name for the status */
   externalDisplayName?: string | null;
+  /**
+   * Sort order for the status
+   * @format int32
+   */
+  sortOrder?: number | null;
+  /**
+   * Indicates if the status is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
   /**
    * Timestamp when the status was created
    * @format date-time
@@ -263,6 +505,8 @@ export interface Status {
 
 /** Role model */
 export interface Role {
+  /** Role ID */
+  id?: string;
   /**
    * Name for the role. Used as key
    * @minLength 1
@@ -270,6 +514,16 @@ export interface Role {
   name: string;
   /** Display name for the role */
   displayName?: string | null;
+  /**
+   * Sort order for the role
+   * @format int32
+   */
+  sortOrder?: number | null;
+  /**
+   * Indicates if the role is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
   /**
    * Timestamp when the role was created
    * @format date-time
@@ -305,6 +559,11 @@ export interface Phase {
   /** Transitions from this phase */
   transitions?: PhaseTransition[];
   /**
+   * Indicates if the phase is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
+  /**
    * Timestamp when the phase was created
    * @format date-time
    */
@@ -331,10 +590,17 @@ export interface PhaseTransition {
   targetPhaseDisplayName?: string;
   /** Description of the transition */
   description?: string;
+  /**
+   * Indicates if the phase transition is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
 }
 
 /** ExternalIdType model */
 export interface ExternalIdType {
+  /** ExternalIdType ID */
+  id?: string;
   /**
    * Name for the external id type
    * @minLength 1
@@ -342,6 +608,16 @@ export interface ExternalIdType {
   name: string;
   /** Display name for the external id type */
   displayName?: string | null;
+  /**
+   * Sort order for the external id type
+   * @format int32
+   */
+  sortOrder?: number | null;
+  /**
+   * Indicates if the external ID type is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
   /**
    * Timestamp when the external id type was created
    * @format date-time
@@ -356,11 +632,8 @@ export interface ExternalIdType {
 
 /** Contact reason model */
 export interface ContactReason {
-  /**
-   * ID
-   * @format int64
-   */
-  id?: number;
+  /** ID */
+  id?: string;
   /**
    * Reason for contact
    * @minLength 1
@@ -368,6 +641,16 @@ export interface ContactReason {
   reason: string;
   /** Display name for the contact reason */
   displayName?: string | null;
+  /**
+   * Sort order for the contact reason
+   * @format int32
+   */
+  sortOrder?: number | null;
+  /**
+   * Indicates if the contact reason is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
   /**
    * Timestamp when the contact reason was created
    * @format date-time
@@ -382,10 +665,22 @@ export interface ContactReason {
 
 /** Category model */
 export interface Category {
+  /** Category ID */
+  id?: string;
   /** Name for the category */
   name?: string;
   /** Display name for the category */
   displayName?: string;
+  /**
+   * Sort order for the category
+   * @format int32
+   */
+  sortOrder?: number | null;
+  /**
+   * Indicates if the category is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
   /** @uniqueItems true */
   types?: Type[];
   /**
@@ -414,6 +709,11 @@ export interface Type {
    * @format email
    */
   escalationEmail?: string;
+  /**
+   * Indicates if the type is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
   /**
    * Timestamp when type was created
    * @format date-time
@@ -496,8 +796,10 @@ export interface Errand {
   businessRelated?: boolean;
   /** List of labels for the errand */
   labels?: ErrandLabel[];
-  /** List of phases for the errand */
+  /** Phase history for the errand */
   phases?: ErrandPhase[];
+  /** Phase metadata ID to assign as the active phase on the errand */
+  activePhaseId?: string;
   /** List of active notifications for the errand */
   activeNotifications?: Notification[];
   /** List of pending actions for the errand */
@@ -517,6 +819,11 @@ export interface Errand {
    * @format date-time
    */
   touched?: string;
+  /**
+   * Optimistic locking version of the errand
+   * @format int64
+   */
+  version?: number;
 }
 
 /** Errand action model */
@@ -552,8 +859,8 @@ export interface ErrandLabel {
 
 /** Errand phase model */
 export interface ErrandPhase {
-  /** Phase ID */
-  id?: string;
+  /** Phase metadata ID */
+  phaseId?: string;
   /** Phase name */
   name?: string;
   /** Phase display name */
@@ -576,53 +883,6 @@ export interface ExternalTag {
   key?: string;
   /** Value for external tag */
   value?: string;
-}
-
-export interface JsonNode {
-  empty?: boolean;
-  array?: boolean;
-  null?: boolean;
-  object?: boolean;
-  float?: boolean;
-  string?: boolean;
-  boolean?: boolean;
-  number?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  pojo?: boolean;
-  floatingPointNumber?: boolean;
-  short?: boolean;
-  int?: boolean;
-  long?: boolean;
-  double?: boolean;
-  bigDecimal?: boolean;
-  bigInteger?: boolean;
-  /** @deprecated */
-  textual?: boolean;
-  binary?: boolean;
-  integralNumber?: boolean;
-  embeddedValue?: boolean;
-}
-
-/** JSON Parameter model */
-export interface JsonParameter {
-  /**
-   * Parameter key/name
-   * @minLength 1
-   */
-  key: string;
-  /**
-   * JSON structure value
-   * @example {"firstName":"Joe","lastName":"Doe"}
-   */
-  value: JsonNode;
-  /**
-   * ID referencing a schema in the json-schema service
-   * @minLength 1
-   */
-  schemaId: string;
 }
 
 export interface Notification {
@@ -682,11 +942,16 @@ export interface Parameter {
   group?: string;
   /** Parameter values. Each value can have a maximum length of 3000 characters */
   values?: string[];
+  /**
+   * Optimistic locking version of the parameter
+   * @format int64
+   */
+  version?: number;
 }
 
 /** Stakeholder model */
 export interface Stakeholder {
-  /** Unique identifier for the stakeholder */
+  /** Unique identifier (partyId) for the stakeholder. Must be null or a valid UUID. */
   externalId?: string;
   /** Type of external id */
   externalIdType?: string;
@@ -759,6 +1024,328 @@ export interface CreateErrandNoteRequest {
    * @minLength 1
    */
   createdBy: string;
+}
+
+/** Request describing which namespace a source errand should be previewed for handover to */
+export interface HandoverPreviewRequest {
+  /**
+   * Namespace the errand should be handed over to
+   * @minLength 1
+   * @pattern [\w|\-]+
+   */
+  targetNamespace: string;
+  /** Municipality id the errand should be handed over to */
+  targetMunicipalityId: string;
+}
+
+/** Mapping suggestion for the namespace-bound classification (category/type) field */
+export interface ClassificationMapping {
+  /** Classification on the source errand */
+  source?: ClassificationOption;
+  /** Auto-suggested target category name, or null if no match was found */
+  suggestedCategory?: string;
+  /** Auto-suggested target type name, or null if no match was found */
+  suggestedType?: string;
+  /** Selectable types per category in the target namespace. Always present, may be empty */
+  candidates: Record<string, string[]>;
+}
+
+/** A category/type pair describing an errand classification */
+export interface ClassificationOption {
+  /** Category name */
+  category?: string;
+  /** Type name */
+  type?: string;
+}
+
+/** Mapping suggestion for the namespace-bound contact reason field */
+export interface ContactReasonMapping {
+  /** Contact reason on the source errand */
+  source?: string;
+  /** Auto-suggested target contact reason, or null if no match was found */
+  suggested?: string;
+  /** All selectable contact reasons in the target namespace. Always present, may be empty */
+  candidates: string[];
+}
+
+/** Fields that are copied automatically to the target namespace without manual mapping */
+export interface DirectlyCopyable {
+  /** Title of the source errand */
+  title?: string;
+  /** Priority of the source errand */
+  priority?: Priority;
+  /**
+   * Number of stakeholders that will be copied
+   * @format int32
+   */
+  stakeholderCount?: number;
+  /**
+   * Number of external tags that will be copied
+   * @format int32
+   */
+  externalTagCount?: number;
+  /**
+   * Number of attachments that will be copied
+   * @format int32
+   */
+  attachmentCount?: number;
+}
+
+/** Preview of how a source errand would be handed over to another namespace, without any side effects */
+export interface HandoverPreview {
+  /** Fields that are copied automatically */
+  directlyCopyable?: DirectlyCopyable;
+  /** Namespace-bound fields that require manual mapping */
+  mappingRequired?: MappingRequired;
+  /** Options for handling the source errand after handover. Always present */
+  sourceHandling: SourceHandling;
+  /** Fields that can not be copied to the target namespace. Always present, may be empty */
+  notCopyable: NotCopyable[];
+  /** Warnings raised while building the preview. Always present, may be empty */
+  warnings: Warning[];
+}
+
+/** A label that can be chosen as the target for a source label */
+export interface LabelCandidate {
+  /** Unique id of the label in the target namespace */
+  id?: string;
+  /** Display name of the label */
+  displayName?: string;
+  /** Hierarchical resource path of the label */
+  resourcePath?: string;
+}
+
+/** Mapping suggestion for a single namespace-bound label */
+export interface LabelMapping {
+  /** Unique id of the label on the source errand */
+  sourceId?: string;
+  /** Display name of the source label */
+  sourceDisplayName?: string;
+  /** Hierarchical resource path of the source label */
+  sourceResourcePath?: string;
+  /** Auto-suggested target label id, or null if no match was found */
+  suggestedTargetId?: string;
+  /** Reason the target was suggested, or null if there is no suggestion */
+  matchReason?: MatchReason;
+}
+
+/** Label mapping section: the selectable target labels shared by every mapping, plus one mapping suggestion per source label */
+export interface LabelMappingGroup {
+  /** All selectable labels in the target namespace, shared by every mapping. Always present, may be empty */
+  candidates: LabelCandidate[];
+  /** Mapping suggestions, one entry per source label. Always present, may be empty */
+  mappings: LabelMapping[];
+}
+
+/** Namespace-bound fields that require a human to decide how they should be mapped to the target namespace */
+export interface MappingRequired {
+  /** Status mapping suggestion */
+  status?: StatusMapping;
+  /** Classification (category/type) mapping suggestion */
+  classification?: ClassificationMapping;
+  /** Label mapping section: the selectable target labels plus one mapping suggestion per source label. Always present */
+  labels: LabelMappingGroup;
+  /** Contact reason mapping suggestion */
+  contactReason?: ContactReasonMapping;
+}
+
+/** A selectable metadata option identified by its technical name and display name */
+export interface MetadataOption {
+  /** Technical name of the option */
+  name?: string;
+  /** Human readable display name of the option */
+  displayName?: string;
+}
+
+/** A field that can not be copied to the target namespace */
+export interface NotCopyable {
+  /** Name of the field that can not be copied */
+  field?: string;
+  /** Reason the field can not be copied */
+  reason?: string;
+}
+
+/** Options for handling the source errand after handover */
+export interface SourceHandling {
+  /** Selectable statuses in the source namespace, used when choosing how the source errand is handled after handover. Always present, may be empty */
+  statusCandidates: MetadataOption[];
+}
+
+/** Mapping suggestion for the namespace-bound status field */
+export interface StatusMapping {
+  /** Status on the source errand */
+  source?: MetadataOption;
+  /** Auto-suggested target status name, or null if no match was found */
+  suggestedTarget?: string;
+  /** Reason the target was suggested, or null if there is no suggestion */
+  matchReason?: MatchReason;
+  /** All selectable statuses in the target namespace. Always present, may be empty */
+  candidates: MetadataOption[];
+}
+
+/** A warning raised while building the handover preview. The applicable fields depend on 'type' */
+export interface Warning {
+  /** Type of warning, acts as discriminator for which other fields are populated */
+  type: WarningType;
+  /** Key the warning relates to. Populated for PARAMETER_SCHEMA_MISMATCH */
+  key?: string;
+  /** Human readable detail describing the warning. Populated for PARAMETER_SCHEMA_MISMATCH */
+  detail?: string;
+  /** Value the warning relates to. Populated for ROLE_NOT_IN_TARGET */
+  value?: string;
+}
+
+/** Request body for handing over an errand to another namespace */
+export interface HandoverErrandRequest {
+  /** Target system to handover the errand to */
+  target: HandoverTarget;
+  /** Field mappings to apply when creating the errand in the target system */
+  mapping: HandoverMapping;
+  /** Field values that override what is copied from the source errand */
+  overrides?: HandoverOverrides;
+  /** Flags controlling what data is copied from the source errand */
+  include?: HandoverInclude;
+  /** Defines what happens to the source errand after handover */
+  sourceHandling?: HandoverSourceHandling;
+}
+
+/** Flags controlling what data is copied from the source errand */
+export interface HandoverInclude {
+  /**
+   * Include stakeholders
+   * @default false
+   */
+  stakeholders?: boolean;
+  /**
+   * Include external tags
+   * @default false
+   */
+  externalTags?: boolean;
+  /**
+   * Include parameters
+   * @default false
+   */
+  parameters?: boolean;
+  /**
+   * Include JSON parameters
+   * @default false
+   */
+  jsonParameters?: boolean;
+  /**
+   * Include attachments
+   * @default false
+   */
+  attachments?: boolean;
+  /**
+   * Include business related flag
+   * @default false
+   */
+  businessRelated?: boolean;
+  /**
+   * Include escalation email
+   * @default false
+   */
+  escalationEmail?: boolean;
+  /**
+   * Include contact reason description
+   * @default false
+   */
+  contactReasonDescription?: boolean;
+}
+
+/** Field mappings to apply when creating the errand in the target system */
+export interface HandoverMapping {
+  /**
+   * Status to set on the new errand
+   * @example "NEW_CASE"
+   */
+  status?: string;
+  /** Classification model */
+  classification?: Classification;
+  /** Label UUIDs to apply on the new errand */
+  labels?: string[];
+  /**
+   * Contact reason to set on the new errand
+   * @example "Printer issue"
+   */
+  contactReason?: string;
+  /**
+   * Channel to set on the new errand
+   * @example "WEB_UI"
+   */
+  channel?: string;
+}
+
+/** Field values that override what is copied from the source errand */
+export interface HandoverOverrides {
+  /** Title override */
+  title?: string;
+  /** Description override */
+  description?: string;
+  /** Priority model */
+  priority?: Priority;
+  /** Assigned user id override */
+  assignedUserId?: string;
+  /** Assigned group id override */
+  assignedGroupId?: string;
+}
+
+/** Defines what happens to the source errand after handover */
+export interface HandoverSourceHandling {
+  /** Action to take on the source errand after handover */
+  action: HandoverSourceAction;
+  /**
+   * Status to set on the source errand
+   * @example "SOLVED"
+   */
+  status?: string;
+  /**
+   * Resolution to set on the source errand
+   * @example "HANDED_OVER"
+   */
+  resolution?: string;
+  /**
+   * Closing comment to add to the source errand
+   * @example "Överlämnad till annan drake"
+   */
+  closingComment?: string;
+}
+
+/** Target system to handover the errand to */
+export interface HandoverTarget {
+  /**
+   * Target namespace
+   * @minLength 1
+   * @example "OTHER_NAMESPACE"
+   */
+  namespace: string;
+  /**
+   * Target municipality id
+   * @example "2281"
+   */
+  municipalityId?: string;
+}
+
+/** Response body for a successful errand handover */
+export interface HandoverErrand {
+  /**
+   * Id of the newly created errand in the target system
+   * @example "f0882f1d-06bc-47fd-b017-1d8307f5ce95"
+   */
+  newErrandId?: string;
+  /**
+   * Errand number of the newly created errand
+   * @example "KC-23010001"
+   */
+  newErrandNumber?: string;
+  /** Target namespace and municipality the errand was handed over to */
+  target?: HandoverTarget;
+  /** Id of the relation created between the source and target errand */
+  relationId?: string;
+  /** Field mappings that were applied when creating the new errand */
+  appliedMappings?: Record<string, string>;
+  /** Non-fatal warnings that occurred during handover */
+  warnings?: string[];
 }
 
 /** WebMessageAttachment model */
@@ -877,20 +1464,6 @@ export interface ConversationRequest {
   metadata?: KeyValues[];
 }
 
-/** Identifier model */
-export interface Identifier {
-  /**
-   * The conversation identifier type
-   * @pattern ^(adAccount|partyId)$
-   */
-  type?: string;
-  /**
-   * The conversation identifier value
-   * @minLength 1
-   */
-  value: string;
-}
-
 /** KeyValues model */
 export interface KeyValues {
   /** The key */
@@ -908,6 +1481,12 @@ export interface MessageRequest {
    */
   content: string;
   attachmentIds?: string[];
+}
+
+/** MarkAsReadRequest model */
+export interface MarkAsReadRequest {
+  /** @minItems 1 */
+  messageIds: string[];
 }
 
 /** UpdateErrandNoteRequest model */
@@ -978,6 +1557,95 @@ export interface Conversation {
   metadata?: KeyValues[];
 }
 
+export interface PageSubscriberNotification {
+  /** @format int32 */
+  totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
+  /** @format int32 */
+  size?: number;
+  content?: SubscriberNotification[];
+  /** @format int32 */
+  number?: number;
+  first?: boolean;
+  last?: boolean;
+  /** @format int32 */
+  numberOfElements?: number;
+  sort?: SortObject;
+  pageable?: PageableObject;
+  empty?: boolean;
+}
+
+export interface PageableObject {
+  /** @format int64 */
+  offset?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
+  paged?: boolean;
+  /** @format int32 */
+  pageNumber?: number;
+  /** @format int32 */
+  pageSize?: number;
+}
+
+export interface SortObject {
+  empty?: boolean;
+  unsorted?: boolean;
+  sorted?: boolean;
+}
+
+export interface SubscriberNotification {
+  /**
+   * Unique identifier for the notification
+   * @example "123e4567-e89b-12d3-a456-426614174000"
+   */
+  id?: string;
+  /**
+   * Timestamp when the notification was created
+   * @format date-time
+   * @example "2000-10-31T01:30:00.000+02:00"
+   */
+  created?: string;
+  /**
+   * Timestamp when the notification was last modified
+   * @format date-time
+   * @example "2000-10-31T01:30:00.000+02:00"
+   */
+  modified?: string;
+  /**
+   * Identifier type of the notification owner
+   * @example "adAccount"
+   */
+  identifierType?: string;
+  /**
+   * Identifier value of the notification owner
+   * @example "joe01doe"
+   */
+  identifierValue?: string;
+  /**
+   * ID of the errand this notification relates to
+   * @example "f0882f1d-06bc-47fd-b017-1d8307f5ce95"
+   */
+  errandId?: string;
+  /**
+   * Number of the errand this notification relates to
+   * @example "PRH-2022-000001"
+   */
+  errandNumber?: string;
+  /**
+   * Timestamp when the notification expires
+   * @format date-time
+   * @example "2000-10-31T01:30:00.000+02:00"
+   */
+  expires?: string;
+  /**
+   * Timestamp when the notification was acknowledged, null if not yet acknowledged
+   * @format date-time
+   * @example "2000-10-31T01:30:00.000+02:00"
+   */
+  acknowledged?: string;
+}
+
 /** Action definition model describing an available action and its conditions/parameters */
 export interface ActionDefinition {
   /** Name of the action */
@@ -1031,40 +1699,22 @@ export interface MetadataResponse {
 }
 
 export interface PageErrand {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Errand[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
-}
-
-export interface PageableObject {
-  /** @format int64 */
-  offset?: number;
-  paged?: boolean;
-  /** @format int32 */
-  pageNumber?: number;
-  /** @format int32 */
-  pageSize?: number;
-  sort?: SortObject;
-  unpaged?: boolean;
-}
-
-export interface SortObject {
-  empty?: boolean;
-  sorted?: boolean;
-  unsorted?: boolean;
 }
 
 /** Revision model */
@@ -1167,10 +1817,18 @@ export interface MetaData {
 
 /** Event model */
 export interface Event {
+  /** Unique identifier for the event */
+  id?: string;
   /** Type of event */
   type?: EventType;
-  /** Event description */
+  /** Subtype describing what kind of entity the event refers to */
+  subType?: string;
+  /** Groups related events and notifications together within one operation */
+  requestGroupId?: string;
+  /** Short event description */
   message?: string;
+  /** Detailed event description */
+  details?: string;
   /** Service that created event */
   owner?: string;
   /**
@@ -1194,21 +1852,21 @@ export interface EventMetaData {
 }
 
 export interface PageEvent {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Event[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1238,6 +1896,8 @@ export interface Communication {
   target?: string;
   /** The recipients of the communication, if email */
   recipients?: string[];
+  /** The CC recipients of the communication, if email */
+  ccRecipients?: string[];
   /** Indicates if the communication is internal */
   internal?: boolean;
   /** Signal if the communication has been viewed or not */
@@ -1270,6 +1930,8 @@ export interface Attachment {
   fileSize?: number;
   /** Mime type of the file */
   mimeType?: string;
+  /** Hash of the file content */
+  hash?: string;
   /**
    * The attachment created date
    * @format date-time
@@ -1299,21 +1961,21 @@ export interface Message {
 }
 
 export interface PageMessage {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Message[];
   /** @format int32 */
   number?: number;
-  pageable?: PageableObject;
   first?: boolean;
   last?: boolean;
   /** @format int32 */
   numberOfElements?: number;
   sort?: SortObject;
+  pageable?: PageableObject;
   empty?: boolean;
 }
 
@@ -1328,6 +1990,49 @@ export interface ReadBy {
   readAt?: string;
 }
 
+/** Read-by statistics for a conversation */
+export interface ConversationReadByCount {
+  /**
+   * The unique identifier of the conversation
+   * @example "2af1002e-008f-4bdc-924b-daaae31f1118"
+   */
+  conversationId?: string;
+  /**
+   * Total number of messages in the conversation
+   * @format int32
+   */
+  messageCount?: number;
+  /** Per-identifier read count */
+  readByCount?: ReadByCountEntry[];
+  /** Per-part read count */
+  readByPartCount?: PartReadByCountEntry[];
+}
+
+/** Read count for a specific part */
+export interface PartReadByCountEntry {
+  /**
+   * The part that read the messages
+   * @example "KC-23010001"
+   */
+  part?: string;
+  /**
+   * Number of messages read by this part
+   * @format int32
+   */
+  count?: number;
+}
+
+/** Read count for a specific identifier */
+export interface ReadByCountEntry {
+  /** The identifier that read the messages */
+  identifier?: Identifier;
+  /**
+   * Number of messages read by this identifier
+   * @format int32
+   */
+  count?: number;
+}
+
 /** ErrandAttachment model */
 export interface ErrandAttachment {
   /** Unique identifier for the attachment */
@@ -1336,11 +2041,15 @@ export interface ErrandAttachment {
   fileName?: string;
   /** Mime type of the file */
   mimeType?: string;
+  /** The channel the attachment was received via */
+  channel?: ErrandAttachmentChannelEnum;
   /**
    * The attachment created date
    * @format date-time
    */
   created?: string;
+  /** SHA-256 hash (hex encoded) of the attachment's raw content */
+  hash?: string;
 }
 
 export interface CountResponse {
@@ -1360,6 +2069,45 @@ export enum JsonNodeNodeTypeEnum {
   STRING = "STRING",
 }
 
+/**
+ * Event type. Matches the eventlog EventType enum.
+ * @minLength 1
+ * @pattern ^(CREATE|READ|UPDATE|DELETE|ACCESS|EXECUTE|CANCEL|DROP)$
+ */
+export enum EventFilterTypeEnum {
+  CREATE = "CREATE",
+  READ = "READ",
+  UPDATE = "UPDATE",
+  DELETE = "DELETE",
+  ACCESS = "ACCESS",
+  EXECUTE = "EXECUTE",
+  CANCEL = "CANCEL",
+  DROP = "DROP",
+}
+
+/**
+ * Identifier type
+ * @minLength 1
+ * @pattern ^(adAccount|partyId)$
+ */
+export enum IdentifierTypeEnum {
+  AdAccount = "adAccount",
+  PartyId = "partyId",
+}
+
+/** Channel type */
+export enum NotificationChannelTypeEnum {
+  INTERNAL = "INTERNAL",
+  EMAIL = "EMAIL",
+  SMS = "SMS",
+}
+
+/** Target type */
+export enum SubscriptionTargetTypeEnum {
+  ERRAND = "ERRAND",
+  NAMESPACE = "NAMESPACE",
+}
+
 /** If the communication is inbound or outbound from the perspective of case-data/e-service. */
 export enum CommunicationDirectionEnum {
   INBOUND = "INBOUND",
@@ -1377,4 +2125,12 @@ export enum CommunicationCommunicationTypeEnum {
 export enum MessageTypeEnum {
   USER_CREATED = "USER_CREATED",
   SYSTEM_CREATED = "SYSTEM_CREATED",
+}
+
+/** The channel the attachment was received via */
+export enum ErrandAttachmentChannelEnum {
+  EMAIL = "EMAIL",
+  ESERVICE = "ESERVICE",
+  WEB_UI = "WEB_UI",
+  MY_PAGES = "MY_PAGES",
 }

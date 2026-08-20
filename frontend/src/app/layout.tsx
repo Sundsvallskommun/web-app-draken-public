@@ -1,7 +1,9 @@
 import '@styles/tailwind.scss';
-import { ReactNode } from 'react';
+
 import AppLayout from '@common/components/layout/_app';
 import { headers } from 'next/headers';
+import { ReactNode } from 'react';
+
 import i18nConfig from './i18nConfig';
 
 interface RootLayoutProps {
@@ -18,7 +20,7 @@ const RootLayout = async ({ children }: RootLayoutProps) => {
   const validLocale = i18nConfig.locales.find((locale) => path.startsWith(`/${locale}/`) || path === `/${locale}`);
   const locale = validLocale ?? i18nConfig.defaultLocale;
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning>
       <body>
         <AppLayout>{children}</AppLayout>
       </body>

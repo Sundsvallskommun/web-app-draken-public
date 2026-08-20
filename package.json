@@ -2,22 +2,18 @@
   "name": "web-app-draken",
   "private": true,
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "type-check": "yarn --cwd frontend type-check && yarn --cwd backend type-check && yarn --cwd backend type-check:test",
+    "lint": "yarn --cwd frontend lint && yarn --cwd backend lint",
+    "knip": "yarn --cwd frontend knip && yarn --cwd backend knip",
+    "format": "yarn --cwd frontend format && yarn --cwd backend format",
+    "test": "yarn --cwd backend test",
+    "verify": "yarn type-check && yarn lint && yarn knip && yarn test"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.4.3"
-  },
-  "lint-staged": {
-    "frontend/src/**/*.{ts,tsx}": [
-      "cd frontend && yarn prettier --write",
-      "cd frontend && yarn eslint --no-error-on-unmatched-pattern --fix"
-    ],
-    "backend/src/**/*.ts": [
-      "cd backend && yarn prettier --write",
-      "cd backend && yarn eslint --no-error-on-unmatched-pattern --fix"
-    ]
   }
 }

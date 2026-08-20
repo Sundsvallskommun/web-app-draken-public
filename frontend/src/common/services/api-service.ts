@@ -1,6 +1,5 @@
 'use client';
 
-import { appURL } from '@common/utils/app-url';
 import axios, { AxiosError } from 'axios';
 
 export interface Data {
@@ -13,11 +12,11 @@ export interface ApiResponse<T = unknown> {
 }
 
 export const handleError = (error: AxiosError<ApiResponse>) => {
-  //TODO: Refactor to be more compliant with NextJS routing standards
-  if (error?.response?.status === 401 && !window?.location.pathname.includes('login')) {
-    window.location.href = `${appURL()}/login?path=${window.location.pathname}&failMessage=${
-      error.response.data.message
-    }`;
+  if (globalThis.window !== undefined) {
+    if (error?.response?.status === 401 && !globalThis.window.location.pathname.includes('login')) {
+      const basePath = process.env.NEXT_PUBLIC_BASEPATH || '';
+      globalThis.window.location.href = `${globalThis.window.location.origin}${basePath}/login?path=${globalThis.window.location.pathname}&failMessage=${error.response.data.message}`;
+    }
   }
 
   throw error;
@@ -34,19 +33,31 @@ const get = <T>(url: string) => axios.get<T>(`${process.env.NEXT_PUBLIC_API_URL}
 
 const post = <T, U>(url: string, data: U, customOptions: { [key: string]: any } = {}) => {
   return axios
-    .post<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, data, { ...options, ...customOptions })
+    .post<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, data, {
+      ...options,
+      ...customOptions,
+      headers: { ...options.headers, ...customOptions.headers },
+    })
     .catch(handleError);
 };
 
 const patch = <T, U>(url: string, data: U, customOptions: { [key: string]: any } = {}) => {
   return axios
-    .patch<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, data, { ...options, ...customOptions })
+    .patch<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, data, {
+      ...options,
+      ...customOptions,
+      headers: { ...options.headers, ...customOptions.headers },
+    })
     .catch(handleError);
 };
 
 const put = <T, U>(url: string, data: U, customOptions: { [key: string]: any } = {}) => {
   return axios
-    .put<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, data, { ...options, ...customOptions })
+    .put<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, data, {
+      ...options,
+      ...customOptions,
+      headers: { ...options.headers, ...customOptions.headers },
+    })
     .catch(handleError);
 };
 

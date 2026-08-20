@@ -1,7 +1,7 @@
 import { Button, Input, PopupMenu } from '@sk-web-gui/react';
-import { useState } from 'react';
-import { useFormContext } from 'react-hook-form';
 import { ChevronDown } from 'lucide-react';
+import { FC, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 export interface CasePropertyDesignationFilter {
   propertyDesignation: string;
@@ -11,7 +11,7 @@ export const CasePropertyDesignationValues = {
   propertyDesignation: '',
 };
 
-export const CasedataFilterPropertyDesignation: React.FC = () => {
+export const CasedataFilterPropertyDesignation: FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   const { setValue, watch } = useFormContext<CasePropertyDesignationFilter>();
 

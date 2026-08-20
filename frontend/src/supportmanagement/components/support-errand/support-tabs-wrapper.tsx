@@ -1,14 +1,10 @@
-import { useAppContext } from '@common/contexts/app.context';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
-import {
-  countAttachment,
-  getSupportAttachments,
-  SupportAttachment,
-} from '@supportmanagement/services/support-attachment-service';
+import { countAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import {
   getSupportConversationMessages,
   getSupportConversations,
@@ -21,31 +17,30 @@ import {
   groupByConversationIdSortedTree,
   MessageNode,
 } from '@supportmanagement/services/support-message-service';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, FC, ReactNode, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
+import { SupportErrandServicesTab } from './tabs/services/support-errand-services-tab';
 import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-tab';
 import { SupportErrandBasicsTab } from './tabs/support-errand-basics-tab';
 import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
 
-export const SupportTabsWrapper: React.FC<{
+export const SupportTabsWrapper: FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
 }> = (props) => {
   const [messages, setMessages] = useState<any>([]);
   const [supportConversations, setSupportConversations] = useState<any>([]);
   const [messageTree, setMessageTree] = useState<MessageNode[]>([]);
   const [conversationMessageTree, setConversationMessageTree] = useState<MessageNode[]>([]);
-  const {
-    municipalityId,
-    supportErrand,
-    setSupportErrand,
-    supportAttachments,
-    setSupportAttachments,
-  } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
 
   const [unsavedChanges, setUnsavedChanges] = useState(false);
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
+
+  const { activeTabKey, setActiveTabKey } = useSupportStore();
 
   useEffect(() => {
     if (methods?.getValues as unknown) {
@@ -95,67 +90,105 @@ export const SupportTabsWrapper: React.FC<{
   }, [supportErrand]);
 
   const tabs: {
+    key: string;
     label: string;
-    content: React.ReactNode;
+    content: ReactNode;
     disabled: boolean;
     visibleFor: boolean;
-  }[] = [
-    {
-      label: 'Grundinformation',
-      content: supportErrand && (
-        <SupportErrandBasicsTab
-          setUnsavedFacility={props.setUnsavedFacility}
-          errand={supportErrand}
-          setUnsaved={setUnsavedChanges}
-          update={update}
-        />
-      ),
-      disabled: false,
-      visibleFor: true,
-    },
-    {
-      label: 'Ärendeuppgifter',
-      content: supportErrand && <SupportErrandDetailsTab />,
-      disabled: false,
-      visibleFor: appConfig.features.useDetailsTab,
-    },
-    {
-      label: `Meddelanden (${countUnreadMessages(messages)})`,
-      content: supportErrand && (
-        <SupportMessagesTab
-          messages={messages}
-          messageTree={messageTree}
-          supportConversations={supportConversations}
-          conversationMessageTree={conversationMessageTree}
-          setUnsaved={setUnsavedChanges}
-          update={update}
-          municipalityId={municipalityId}
-        />
-      ),
-      disabled: false,
-      visibleFor: true,
-    },
-    {
-      label: `Bilagor (${countAttachment(supportAttachments ?? [])})`,
-      content: supportErrand && <SupportErrandAttachmentsTab update={update} />,
-      disabled: false,
-      visibleFor: true,
-    },
-    {
-      label: 'Rekryteringsprocess',
-      content: supportErrand && <SupportErrandRecruitmentTab setUnsaved={setUnsavedChanges} update={update} />,
-      disabled: false,
-      visibleFor: appConfig.features.useRecruitment,
-    },
-    {
-      label: 'Fakturering',
-      content: supportErrand && (
-        <SupportErrandInvoiceTab errand={supportErrand} setUnsaved={setUnsavedChanges} update={update} />
-      ),
-      disabled: false,
-      visibleFor: appConfig.features.useBilling,
-    },
-  ];
+  }[] = useMemo(
+    () => [
+      {
+        key: 'basics',
+        label: 'Grundinformation',
+        content: supportErrand && (
+          <SupportErrandBasicsTab
+            setUnsavedFacility={props.setUnsavedFacility}
+            errand={supportErrand}
+            setUnsaved={setUnsavedChanges}
+            update={update}
+          />
+        ),
+        disabled: false,
+        visibleFor: true,
+      },
+      {
+        key: 'details',
+        label: 'Ärendeuppgifter',
+        content: supportErrand && <SupportErrandDetailsTab />,
+        disabled: false,
+        visibleFor: appConfig.features.useDetailsTab,
+      },
+      {
+        key: 'messages',
+        label: `Meddelanden (${countUnreadMessages(messages)})`,
+        content: supportErrand && (
+          <SupportMessagesTab
+            messages={messages}
+            messageTree={messageTree}
+            supportConversations={supportConversations}
+            conversationMessageTree={conversationMessageTree}
+            setUnsaved={setUnsavedChanges}
+            update={update}
+            municipalityId={municipalityId}
+          />
+        ),
+        disabled: false,
+        visibleFor: true,
+      },
+      {
+        key: 'attachments',
+        label: `Bilagor (${countAttachment(supportAttachments ?? [])})`,
+        content: supportErrand && <SupportErrandAttachmentsTab update={update} />,
+        disabled: false,
+        visibleFor: true,
+      },
+      {
+        key: 'services',
+        label: 'Beslut och dokument',
+        content: supportErrand && (
+          <SupportErrandServicesTab
+            partyId={supportErrand?.stakeholders?.find((s) => s.role === 'PRIMARY')?.externalId ?? ''}
+          />
+        ),
+        disabled: false,
+        visibleFor: appConfig.features.useServices && !!supportErrand?.stakeholders?.some((s) => s.role === 'PRIMARY'),
+      },
+      {
+        key: 'recruitment',
+        label: 'Rekryteringsprocess',
+        content: supportErrand && <SupportErrandRecruitmentTab setUnsaved={setUnsavedChanges} update={update} />,
+        disabled: false,
+        visibleFor: appConfig.features.useRecruitment,
+      },
+      {
+        key: 'invoice',
+        label: 'Fakturering',
+        content: supportErrand && (
+          <SupportErrandInvoiceTab errand={supportErrand} setUnsaved={setUnsavedChanges} update={update} />
+        ),
+        disabled: false,
+        visibleFor: appConfig.features.useBilling,
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      conversationMessageTree,
+      messageTree,
+      messages,
+      municipalityId,
+      props.setUnsavedFacility,
+      supportAttachments,
+      supportConversations,
+      supportErrand,
+    ]
+  );
+
+  const [activeTab, setActiveTab] = useState(0);
+
+  useEffect(() => {
+    const index = tabs.filter((tab) => tab.visibleFor).findIndex((tab) => tab.key === activeTabKey);
+    setActiveTab(index >= 0 ? index : 0);
+  }, [activeTabKey, tabs]);
 
   return (
     <>
@@ -165,14 +198,16 @@ export const SupportTabsWrapper: React.FC<{
             className="border-1 rounded-12 bg-background-content pt-22 pl-5"
             tabslistClassName="border-0 border-red-500 -m-b-12 flex-wrap ml-10"
             panelsClassName="border-t-1"
-            current={0}
-            onTabChange={() => {}}
+            current={activeTab}
+            onTabChange={(e) => {
+              setActiveTabKey(tabs.filter((tab) => tab.visibleFor)[e].key);
+            }}
             size={'sm'}
           >
             {tabs
               .filter((tab) => tab.visibleFor)
               .map((tab, index) => (
-                <Tabs.Item key={tab.label}>
+                <Tabs.Item key={tab.key}>
                   <Tabs.Button disabled={tab.disabled} className={cx('text-base', index === 0 && 'ml-8')}>
                     {tab.label}
                   </Tabs.Button>

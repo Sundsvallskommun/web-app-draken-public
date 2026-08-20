@@ -1,10 +1,10 @@
 'use client';
 
+import { ErrorReportModal } from '@common/components/error-report/error-report-modal';
 import { ErrorDetails } from '@common/services/error-reporting';
 import { Button } from '@sk-web-gui/react';
 import { AlertTriangle, Bug, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
-import { ErrorReportModal } from '@common/components/error-report/error-report-modal';
 
 interface ErrorFallbackProps {
   errorDetails: ErrorDetails | null;

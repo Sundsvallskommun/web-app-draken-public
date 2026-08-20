@@ -1,8 +1,8 @@
-import { ReactNode } from 'react';
+import LocalizationProvider from '@common/components/localization-provider/localization-provider';
 import { headers } from 'next/headers';
+import { ReactNode } from 'react';
 
 import initLocalization from '../i18n';
-import LocalizationProvider from '@common/components/localization-provider/localization-provider';
 
 interface LocaleLayoutProps {
   children: ReactNode;

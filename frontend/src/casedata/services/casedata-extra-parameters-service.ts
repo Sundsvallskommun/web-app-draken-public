@@ -16,19 +16,28 @@ import { mexRequestForPublicDocument_UppgiftFieldTemplate } from '@casedata/comp
 import { mexSellLandToTheMunicipality_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-sell-land-to-the-municipality';
 import { mexSquarePlace_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-square-place';
 import { mexTerminationOfLease_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-termination-of-lease';
+import { changeApplication_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-change-application';
+import { nationalEservice_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-national-eservice';
 import { notification_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification';
 import { notificationBusCard_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-bus-card';
+import { notificationChange_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-change';
 import { notificationNational_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-national';
+import { notificationReassessment_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-reassessment';
 import { notificationRenewal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-renewal';
 import { notificationRiak_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-riak';
+import { reassessmentApplication_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-reassessment-application';
 import { parkingPermitAppeal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-appeal';
+import { documentationErrand_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-documentation-errand';
 import { lostParkingPermit_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-lost-parking-permit';
 import { parkingPermit_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-parkingpermit';
 import { parkingPermitRenewal_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/parkingpermit-templates/parkingpermit-renewal';
+import { CaseType } from '@casedata/interfaces/case-type';
+import { Channels } from '@casedata/interfaces/channels';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { apiService } from '@common/services/api-service';
 import escapeStringRegexp from 'escape-string-regexp';
+
 import { PROCESS_PARAMETER_KEYS } from './process-service';
 
 export const EXTRAPARAMETER_SEPARATOR = '@';
@@ -111,7 +120,9 @@ export interface UppgiftField {
     | { type: 'radio'; options: OptionBase[]; inline?: boolean }
     | { type: 'radioPlus'; options: OptionBase[]; ownOption: string }
     | { type: 'checkbox'; options: OptionBase[] }
-    | { type: 'repeatableGroup' };
+    | { type: 'repeatableGroup' }
+    | { type: 'info' }
+    | { type: 'alert'; alertType?: 'neutral' | 'info' | 'success' | 'warning' | 'error' };
   section: string;
   dependsOnLogic?: 'AND' | 'OR';
   dependsOn?: {
@@ -123,6 +134,10 @@ export interface UppgiftField {
   required?: boolean;
   pairWith?: string;
   repeatableGroup?: any;
+  disabledBy?: {
+    field: string;
+    value: string;
+  };
 }
 
 const caseTypeTemplateAlias: Record<string, string> = {
@@ -130,7 +145,6 @@ const caseTypeTemplateAlias: Record<string, string> = {
   PARATRANSIT_RENEWAL: 'PARATRANSIT_NOTIFICATION_RENEWAL',
   PARATRANSIT_NATIONAL: 'PARATRANSIT_NOTIFICATION_NATIONAL',
   PARATRANSIT_RIAK: 'PARATRANSIT_NOTIFICATION_RIAK',
-  PARATRANSIT_BUS_CARD: 'PARATRANSIT_NOTIFICATION_BUS_CARD',
 };
 
 export interface ExtraParametersObject {
@@ -142,12 +156,16 @@ const template: ExtraParametersObject = {
   PARATRANSIT_RENEWAL: notificationRenewal_UppgiftFieldTemplate,
   PARATRANSIT_NATIONAL: notificationNational_UppgiftFieldTemplate,
   PARATRANSIT_RIAK: notificationRiak_UppgiftFieldTemplate,
-  PARATRANSIT_BUS_CARD: notificationBusCard_UppgiftFieldTemplate,
+  PARATRANSIT_CHANGE_APPLICATION: changeApplication_UppgiftFieldTemplate,
+  PARATRANSIT_REASSESSMENT_APPLICATION: reassessmentApplication_UppgiftFieldTemplate,
+  PARATRANSIT_BUS_CARD_APPLICATION: notificationBusCard_UppgiftFieldTemplate,
 
   PARATRANSIT_NOTIFICATION: notification_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_RENEWAL: notificationRenewal_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_NATIONAL: notificationNational_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_RIAK: notificationRiak_UppgiftFieldTemplate,
+  PARATRANSIT_NOTIFICATION_CHANGE: notificationChange_UppgiftFieldTemplate,
+  PARATRANSIT_NOTIFICATION_REASSESSMENT: notificationReassessment_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_BUS_CARD: notificationBusCard_UppgiftFieldTemplate,
 
   ANMALAN_ATTEFALL: [],
@@ -172,6 +190,7 @@ const template: ExtraParametersObject = {
   LOST_PARKING_PERMIT: lostParkingPermit_UppgiftFieldTemplate,
   PARKING_PERMIT_RENEWAL: parkingPermitRenewal_UppgiftFieldTemplate,
   APPEAL: parkingPermitAppeal_UppgiftFieldTemplate,
+  DOCUMENTATION_ERRAND: documentationErrand_UppgiftFieldTemplate,
 
   //Legacy: needed to view templates regarding extraparameters for old casetypes that has been expired.
   MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE:
@@ -180,11 +199,32 @@ const template: ExtraParametersObject = {
   MEX_BUY_LAND_FROM_THE_MUNICIPALITY: mexBuyLandFromTheMunicipality_UppgiftFieldTemplate,
 };
 
-export const getExtraParametersLabels = (caseType: string): { [key: string]: string } => {
-  return (template as Record<string, any>)[caseType]?.reduce((acc: Record<string, string>, field: { field: string; label: string }) => {
+// Nationella riksfärdtjänstansökningar (PARATRANSIT_NATIONAL) som kommit in via e-tjänsten
+// använder en fritextvariant av mallen i stället för den strukturerade reslistan.
+const isNationalEserviceErrand = (caseType: string, channel?: string): boolean =>
+  caseType === CaseType.PARATRANSIT_NATIONAL && channel === Channels.ESERVICE;
+
+export const getExtraParametersLabels = (caseType: string, channel?: string): { [key: string]: string } => {
+  const labelTemplate = isNationalEserviceErrand(caseType, channel)
+    ? nationalEservice_UppgiftFieldTemplate
+    : (template as Record<string, any>)[caseType];
+  return labelTemplate?.reduce((acc: Record<string, string>, field: { field: string; label: string }) => {
     acc[field.field] = field.label;
     return acc;
   }, {} as Record<string, string>);
+};
+
+// Resolve the human-readable value(s) for an UppgiftField. Fields backed by options
+// (radio/select/checkbox/combobox) store a code (e.g. 'DRIVER', 'true'), so map it to the
+// option label ('Förare', 'Ja'). Free-text fields have no options and keep their raw value.
+export const getUppgiftDisplayValues = (field: UppgiftField): string[] => {
+  const rawValues = Array.isArray(field.value) ? field.value : [field.value];
+  const formField = field.formField;
+  const options = 'options' in formField && Array.isArray(formField.options) ? formField.options : undefined;
+  if (!options) {
+    return rawValues;
+  }
+  return rawValues.map((value) => options.find((option) => option.value === value)?.label ?? value);
 };
 
 export const extraParametersToUppgiftMapper: (errand: IErrand) => UppgiftField[] = (errand) => {
@@ -199,7 +239,9 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => UppgiftField[]
 
   const caseType = errand.caseType;
   const resolvedCaseType = caseTypeTemplateAlias[caseType] ?? caseType;
-  const caseTypeTemplate = (template[resolvedCaseType] as UppgiftField[]) || baseDetails;
+  const caseTypeTemplate = isNationalEserviceErrand(caseType, errand.channel)
+    ? nationalEservice_UppgiftFieldTemplate
+    : (template[resolvedCaseType] as UppgiftField[]) || baseDetails;
 
   obj[caseType] = caseTypeTemplate?.map((field) => ({ ...field })) || [];
 

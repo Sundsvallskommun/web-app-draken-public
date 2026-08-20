@@ -1,6 +1,8 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+
+import { Attachment as AttachmentDTO, AttachmentChannelEnum } from '@/data-contracts/case-data/data-contracts';
+
 import { GenericExtraParameters } from './extra-parameters.interface';
-import { Attachment as AttachmentDTO } from '@/data-contracts/case-data/data-contracts';
 
 export class Attachment implements AttachmentDTO {
   @IsNumber()
@@ -17,9 +19,6 @@ export class Attachment implements AttachmentDTO {
   extension!: string;
   @IsString()
   mimeType!: string;
-  @IsString()
-  @IsOptional()
-  file?: string;
   @IsNumber()
   @IsOptional()
   version?: number;
@@ -31,12 +30,27 @@ export class Attachment implements AttachmentDTO {
   updated?: string;
   @IsOptional()
   extraParameters?: GenericExtraParameters;
+  @IsString()
+  @IsOptional()
+  municipalityId?: string;
+  @IsNumber()
+  @IsOptional()
+  errandId?: number;
+  @IsNumber()
+  @IsOptional()
+  decisionId?: number;
+  @IsString()
+  @IsOptional()
+  namespace?: string;
+  @IsEnum(AttachmentChannelEnum)
+  @IsOptional()
+  channel?: AttachmentChannelEnum;
+  @IsString()
+  @IsOptional()
+  hash?: string;
 }
 
 export class CreateAttachmentDto implements AttachmentDTO {
-  @IsString()
-  @IsOptional()
-  file?: string;
   @IsString()
   category!: string;
   @IsString()
@@ -49,4 +63,7 @@ export class CreateAttachmentDto implements AttachmentDTO {
   note!: string;
   @IsString()
   errandNumber!: string;
+  @IsEnum(AttachmentChannelEnum)
+  @IsOptional()
+  channel?: AttachmentChannelEnum;
 }

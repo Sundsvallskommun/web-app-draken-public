@@ -1,12 +1,13 @@
+import { apiService } from '@common/services/api-service';
+import { Admin } from '@common/services/user-service';
 import { ParsedSupportEvent } from '@supportmanagement/interfaces/supportEvent';
 import {
   ParsedSupportRevisionDifference,
   RevisionDifferenceData,
   SupportRevisionDifference,
 } from '@supportmanagement/interfaces/supportRevisionDiff';
-import { apiService } from '@common/services/api-service';
+
 import { Channels } from './support-errand-service';
-import { Admin } from '@common/services/user-service';
 
 const extractValues: (d: SupportRevisionDifference) => {
   value: string | { [key: string]: string };
@@ -112,9 +113,9 @@ const parseGenericStringDiff: (
     d.op === 'add'
       ? `<p>${keyMapper ? keyMapper[strVal] : strVal}</p>`
       : d.op === 'replace'
-      ? `<div><p>Före: ${keyMapper && fromValue ? keyMapper[fromValue] || '(tomt)' : fromValue ?? '(tomt)'}</p><p>Efter: ${
-          keyMapper ? keyMapper[strVal] : value
-        }</p></div>`
+      ? `<div><p>Före: ${
+          keyMapper && fromValue ? keyMapper[fromValue] || '(tomt)' : fromValue ?? '(tomt)'
+        }</p><p>Efter: ${keyMapper ? keyMapper[strVal] : value}</p></div>`
       : `<p>${value}</p>`;
   return { title: `${key} ${operation}`, description: `<p>${details}</p>` };
 };

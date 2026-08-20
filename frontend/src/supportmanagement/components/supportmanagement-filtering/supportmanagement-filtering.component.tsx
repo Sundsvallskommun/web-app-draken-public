@@ -1,6 +1,10 @@
+import { isLOK } from '@common/services/application-service';
 import { Admin } from '@common/services/user-service';
+import { appConfig } from '@config/appconfig';
 import { Button, Checkbox, cx, Link } from '@sk-web-gui/react';
-import { useState } from 'react';
+import { ListFilter } from 'lucide-react';
+import { FC, useState } from 'react';
+
 import {
   CaseAdminsFilter,
   CaseAdminsValues,
@@ -12,26 +16,15 @@ import {
   SupportManagementFilterCategory,
 } from './components/supportmanagement-filter-category.component';
 import {
-  SupportManagementDatesFilter,
-  SupportManagementDatesValues,
-  SupportManagementFilterDates,
-} from './components/supportmanagement-filter-dates.component';
-import {
-  SupportManagementFilterPriority,
-  SupportManagementPriorityFilter,
-  SupportManagementPriorityValues,
-} from './components/supportmanagement-filter-priority.component';
-import {
-  SupportManagementFilterQuery,
-  SupportManagementQueryFilter,
-  SupportManagementQueryValues,
-} from './components/supportmanagement-filter-query.component';
-import { appConfig } from '@config/appconfig';
-import {
   ChannelFilter,
   ChannelValues,
   SupportManagementFilterChannel,
 } from './components/supportmanagement-filter-channel.component';
+import {
+  SupportManagementDatesFilter,
+  SupportManagementDatesValues,
+  SupportManagementFilterDates,
+} from './components/supportmanagement-filter-dates.component';
 import {
   LabelCategoryFilter,
   LabelCategoryValues,
@@ -48,6 +41,16 @@ import {
   SupportManagementFilterLabelType,
 } from './components/supportmanagement-filter-labelType.component';
 import {
+  SupportManagementFilterPriority,
+  SupportManagementPriorityFilter,
+  SupportManagementPriorityValues,
+} from './components/supportmanagement-filter-priority.component';
+import {
+  SupportManagementFilterQuery,
+  SupportManagementQueryFilter,
+  SupportManagementQueryValues,
+} from './components/supportmanagement-filter-query.component';
+import {
   SupportManagementStatusFilter,
   SupportManagementStatusValues,
 } from './components/supportmanagement-filter-sidebarstatus-selector.component';
@@ -57,7 +60,6 @@ import {
   TypeFilter,
   TypeValues,
 } from './components/supportmanagement-filter-type.component';
-import { ListFilter } from 'lucide-react';
 
 export type SupportManagementFilter = CategoryFilter &
   LabelCategoryFilter &
@@ -84,7 +86,7 @@ export const SupportManagementValues = {
   ...SupportManagementQueryValues,
 };
 
-const SupportManagementFiltering: React.FC<{
+const SupportManagementFiltering: FC<{
   ownerFilterHandler: (b: boolean) => void;
   ownerFilter?: boolean;
   administrators?: Admin[];
@@ -142,9 +144,11 @@ const SupportManagementFiltering: React.FC<{
                   <div className="relative max-md:w-full">
                     <SupportManagementFilterLabelType />
                   </div>
-                  <div className="relative max-md:w-full">
-                    <SupportManagementFilterLabelSubType />
-                  </div>
+                  {!isLOK() ? (
+                    <div className="relative max-md:w-full">
+                      <SupportManagementFilterLabelSubType />
+                    </div>
+                  ) : null}
                 </>
               ) : null}
 

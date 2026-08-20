@@ -1,8 +1,14 @@
 {
   "compilerOptions": {
-    "types": ["@simonsmith/cypress-image-snapshot/types"],
+    "types": [
+      "node"
+    ],
     "target": "es6",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -17,16 +23,39 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@pages/*": ["src/pages/*"],
-      "@public/*": ["src/public/*"],
-      "@config/*": ["src/config/*"],
-      "@contexts/*": ["src/common/contexts/*"],
-      "@supportmanagement/*": ["src/supportmanagement/*"],
-      "@casedata/*": ["src/casedata/*"],
-      "@common/*": ["src/common/*"],
-      "@jestRoot/*": [".jest/*"],
-      "@styles/*": ["src/styles/*"],
-      "@cypress/*": ["cypress/*"]
+      "@pages/*": [
+        "src/pages/*"
+      ],
+      "@public/*": [
+        "src/public/*"
+      ],
+      "@config/*": [
+        "src/config/*"
+      ],
+      "@contexts/*": [
+        "src/common/contexts/*"
+      ],
+      "@supportmanagement/*": [
+        "src/supportmanagement/*"
+      ],
+      "@casedata/*": [
+        "src/casedata/*"
+      ],
+      "@common/*": [
+        "src/common/*"
+      ],
+      "@jestRoot/*": [
+        ".jest/*"
+      ],
+      "@styles/*": [
+        "src/styles/*"
+      ],
+      "@e2e/*": [
+        "e2e/*"
+      ],
+      "@stores/*": [
+        "src/stores/*"
+      ]
       // "@services/*": ["src/services/*"],
       // "@common/components/*": ["src/components/*"],
       // "@interfaces/*": ["src/interfaces/*"],
@@ -40,7 +69,7 @@
   },
   "include": [
     "src/**/*.{ts,tsx}",
-    "cypress/**/*.{ts,tsx}",
+    "e2e/**/*.{ts,tsx}",
     "next-env.d.ts",
     "node_modules/dayjs/plugin/utc.d.ts",
     "src/common/components/localization-provider",
@@ -65,7 +94,13 @@
     ".next-ROB/dev/types/**/*.ts",
     ".next-IAF/dev/types/**/*.ts",
     ".next-SE/dev/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".next-BOU/types/**/*.ts",
+    ".next-BOU/dev/types/**/*.ts",
+    ".next-LOK/types/**/*.ts",
+    ".next-LOK/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

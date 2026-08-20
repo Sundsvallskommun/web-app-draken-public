@@ -1,8 +1,8 @@
 import { Admin } from '@common/services/user-service';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
-import { useState } from 'react';
-import { useFormContext } from 'react-hook-form';
 import { ChevronDown } from 'lucide-react';
+import { FC, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 export interface CaseAdminsFilter {
   admins: string[];
@@ -16,7 +16,7 @@ interface SupportManagementFilterAdminsProps {
   administrators?: Admin[];
 }
 
-export const SupportManagementFilterAdmins: React.FC<SupportManagementFilterAdminsProps> = ({ administrators }) => {
+export const SupportManagementFilterAdmins: FC<SupportManagementFilterAdminsProps> = ({ administrators }) => {
   const { register } = useFormContext<CaseAdminsFilter>();
   const [query, setQuery] = useState<string>('');
 

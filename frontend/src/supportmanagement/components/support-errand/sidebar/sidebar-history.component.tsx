@@ -1,14 +1,16 @@
-import { useAppContext } from '@common/contexts/app.context';
 import { sanitized } from '@common/services/sanitizer-service';
 import { Avatar, Button, Modal, Spinner } from '@sk-web-gui/react';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { ParsedSupportEvent } from '@supportmanagement/interfaces/supportEvent';
 import { ParsedSupportRevisionDifference } from '@supportmanagement/interfaces/supportRevisionDiff';
 import {
   Channels,
+  ResolutionLabelBOU,
   ResolutionLabelIK,
   ResolutionLabelKA,
   ResolutionLabelKS,
+  ResolutionLabelLOK,
   ResolutionLabelLOP,
 } from '@supportmanagement/services/support-errand-service';
 import { getSupportErrandEvents } from '@supportmanagement/services/support-history-service';
@@ -18,7 +20,10 @@ import { History } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export const SidebarHistory: React.FC<{}> = () => {
-  const { municipalityId, supportErrand, supportMetadata, administrators } = useAppContext();
+  const municipalityId = useConfigStore((s) => s.municipalityId);
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  const administrators = useUserStore((s) => s.administrators);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -52,6 +57,8 @@ export const SidebarHistory: React.FC<{}> = () => {
       ...Object.entries(ResolutionLabelKA),
       ...Object.entries(ResolutionLabelLOP),
       ...Object.entries(ResolutionLabelIK),
+      ...Object.entries(ResolutionLabelLOK),
+      ...Object.entries(ResolutionLabelBOU),
     ].forEach((e) => {
       _km[e[0]] = e[1];
     });

@@ -1,6 +1,7 @@
-import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
 import FileUpload, { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
-import { useAppContext } from '@common/contexts/app.context';
+import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
+import { getAttachmentChannelLabel, isKnownAttachmentChannel } from '@common/interfaces/attachment-channel';
 import { isKC } from '@common/services/application-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -17,14 +18,15 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
+import { useConfigStore, useSupportStore } from '@stores/index';
 import {
   ACCEPTED_UPLOAD_FILETYPES,
-  SingleSupportAttachment,
-  SupportAttachment,
   deleteSupportAttachment,
   documentMimeTypes,
   getSupportAttachment,
   saveSupportAttachments,
+  SingleSupportAttachment,
+  SupportAttachment,
 } from '@supportmanagement/services/support-attachment-service';
 import {
   getSupportErrandById,
@@ -32,11 +34,10 @@ import {
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import dayjs from 'dayjs';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Ellipsis, Eye, Trash, Upload } from 'lucide-react';
+import { FC, Fragment, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as yup from 'yup';
-import { Ellipsis, Eye, Trash, Upload } from 'lucide-react';
-import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 
 export interface SingleAttachment {
   file: File | undefined;
@@ -55,10 +56,13 @@ const defaultAttachmentInformation: SupportAttachmentFormModel = {
   attachmentList: [],
 };
 
-export const SupportErrandAttachmentsTab: React.FC<{
+export const SupportErrandAttachmentsTab: FC<{
   update: () => void;
 }> = (props) => {
-  const { supportErrand, setSupportErrand, supportAttachments, user, municipalityId } = useAppContext();
+  const supportErrand = useSupportStore((s) => s.supportErrand);
+  const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const supportAttachments = useSupportStore((s) => s.supportAttachments);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const [modalAttachment, setModalAttachment] = useState<SingleSupportAttachment>();
   const [addNewAttachment, setAddNewAttachment] = useState(false);
   const [modalFetching, setModalFetching] = useState(false);
@@ -467,12 +471,19 @@ export const SupportErrandAttachmentsTab: React.FC<{
                     <p>
                       <strong>{attachment.fileName}</strong>{' '}
                     </p>
-                    <p>
-                      Uppladdad den{' '}
-                      {dayjs((attachment as SupportAttachment & { created?: string }).created).format(
-                        'YYYY-MM-DD HH:mm'
+                    <div className="text-small">
+                      <span>
+                        <b>Uppladdad den: </b>{' '}
+                        {dayjs((attachment as SupportAttachment & { created?: string }).created).format(
+                          'YYYY-MM-DD HH:mm'
+                        )}
+                      </span>{' '}
+                      {isKnownAttachmentChannel(attachment?.channel as string | undefined) && (
+                        <span>
+                          <b>Kanal: </b> {getAttachmentChannelLabel(attachment?.channel as string | undefined)}
+                        </span>
                       )}
-                    </p>
+                    </div>
                   </div>
                 </div>
 

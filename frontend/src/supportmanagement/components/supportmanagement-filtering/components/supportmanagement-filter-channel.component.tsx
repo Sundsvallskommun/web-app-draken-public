@@ -1,8 +1,8 @@
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
-import { Channels } from '@supportmanagement/services/support-errand-service';
-import { useState } from 'react';
-import { useFormContext } from 'react-hook-form';
+import { getSelectableChannels } from '@supportmanagement/services/support-errand-service';
 import { ChevronDown } from 'lucide-react';
+import { FC, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 
 export interface ChannelFilter {
   channel: string[];
@@ -12,7 +12,7 @@ export const ChannelValues: ChannelFilter = {
   channel: [],
 };
 
-export const SupportManagementFilterChannel: React.FC = () => {
+export const SupportManagementFilterChannel: FC = () => {
   const { register } = useFormContext<ChannelFilter>();
   const [query, setQuery] = useState<string>('');
 
@@ -38,7 +38,7 @@ export const SupportManagementFilterChannel: React.FC = () => {
           placeholder="Skriv för att söka"
         />
         <PopupMenu.Items autoFocus={false}>
-          {Object.entries(Channels)
+          {getSelectableChannels()
             .filter((s: [string, string]) => s[1].toLowerCase().includes(query.toLowerCase()))
             .map((s: [string, string], idx) => (
               <PopupMenu.Item key={`${s[1]}-${idx}`}>

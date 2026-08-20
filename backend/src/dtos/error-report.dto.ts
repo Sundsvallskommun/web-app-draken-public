@@ -1,5 +1,5 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsArray, ValidateNested, MaxLength, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsArray, IsEnum, IsNotEmpty, IsObject, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
 
 class CapturedLogEntryDto {
   @IsEnum(['log', 'warn', 'error', 'info', 'debug'])

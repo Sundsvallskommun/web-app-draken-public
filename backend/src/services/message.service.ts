@@ -1,3 +1,11 @@
+import { AgnosticMessageResponse, LetterResponse, MessageClassification } from '@controllers/message.controller';
+import { Role } from '@interfaces/role';
+import { User } from '@interfaces/users.interface';
+import { logger } from '@utils/logger';
+import dayjs from 'dayjs';
+import NodeFormData from 'form-data';
+import { v4 as uuidv4 } from 'uuid';
+
 import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
@@ -24,16 +32,14 @@ import {
   WebMessageAttachment,
   WebMessageRequest,
 } from '@/data-contracts/messaging/data-contracts';
+import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
-import { AgnosticMessageResponse, LetterResponse, MessageClassification } from '@controllers/message.controller';
-import { Role } from '@interfaces/role';
-import { User } from '@interfaces/users.interface';
-import { logger } from '@utils/logger';
-import dayjs from 'dayjs';
-import { v4 as uuidv4 } from 'uuid';
+import { FTCaseType, MEXCaseType, PTCaseType } from '@/interfaces/case-type.interface';
+import { apiURL, base64Encode } from '@/utils/util';
+
 import ApiService, { ApiResponse } from './api.service';
-import { apiURL, base64ToByteArray } from '@/utils/util';
-import { getOwnerStakeholder } from './stakeholder.service';
+import { getDecisionAttachmentAsBase64 } from './casedata-attachment.service';
+import { getOwnerStakeholder, getOwnerStakeholderEmail } from './stakeholder.service';
 
 interface SmsMessage {
   party?: {
@@ -186,7 +192,13 @@ export const sendEmail = (
     });
 };
 
-export const sendDigitalMail = (municipalityId: string, message: LetterRequest & { message?: string }, req: RequestWithUser, errandData: ApiResponse<ErrandDTO>, classification: MessageClassification) => {
+export const sendDigitalMail = (
+  municipalityId: string,
+  message: LetterRequest & { message?: string },
+  req: RequestWithUser,
+  errandData: ApiResponse<ErrandDTO>,
+  classification: MessageClassification,
+) => {
   const url = `${MESSAGING_SERVICE}/${municipalityId}/letter?async=false`;
   const apiService = new ApiService();
   return apiService
@@ -374,37 +386,68 @@ export const setMessageViewed = (municipalityId: string, errandId: number, messa
   return apiService.put<any, any>({ url }, user);
 };
 
-export const createConversation = async (errandId: string, user: User, converastionType: string, topic: string) => {
+export const createConversation = async (
+  errandId: string,
+  user: User,
+  converastionType: string,
+  topic: string,
+  namespace: string,
+  relationIds?: string[],
+) => {
   const apiService = new ApiService();
   const baseURL = apiURL(SERVICE);
-  const url = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations`;
-  const body = {
+  const url = `${MUNICIPALITY_ID}/${namespace}/errands/${errandId}/communication/conversations`;
+  const body: Record<string, unknown> = {
     topic: topic,
     type: converastionType,
   };
+
+  if (relationIds?.length) {
+    body.relationIds = relationIds;
+  }
 
   const res = await apiService.post<any, any>({ url, baseURL, data: body }, user);
 
   return res.data;
 };
 
-export const sendConversation = async (errandId: string, conversationId: string, user: User, pdf: Attachment) => {
+export const sendConversationTextMessage = async (errandId: string, conversationId: string, user: User, content: string, namespace: string) => {
+  const apiService = new ApiService();
+  const baseURL = apiURL(SERVICE);
+  const url = `${MUNICIPALITY_ID}/${namespace}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
+
+  const formData = new FormData();
+  const messageObj = {
+    createdBy: { type: 'adAccount', value: user.username },
+    content: content,
+  };
+  formData.append('message', JSON.stringify(messageObj));
+
+  return await apiService.post<any, any>({ url, baseURL, data: formData, headers: { 'Content-Type': 'multipart/form-data' } }, user);
+};
+
+export const sendConversation = async (errandId: string, conversationId: string, user: User, pdf: Attachment, decisionId: number) => {
   const apiService = new ApiService();
   const url = `${SERVICE}/${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
 
-  const formData = new FormData();
+  // The conversation message's `attachmentIds` only resolves *errand* attachments, so the decision
+  // PDF (a decision-scoped attachment) has to be uploaded as new bytes on the `attachments` part.
+  const formData = new NodeFormData();
   const messageObj = {
     createdBy: { type: 'adAccount', value: user.username },
     content: 'Beslut fattat i ärende',
   };
   formData.append('message', JSON.stringify(messageObj));
-  const byteArray = base64ToByteArray(pdf.file!);
-  formData.append('attachments', new Blob([byteArray], { type: pdf.mimeType }), `${pdf.name}.pdf`);
 
-  return await apiService.post<any, any>({ url, data: formData, headers: { 'Content-Type': 'multipart/form-data' } }, user);
+  if (pdf.id) {
+    const content = await getDecisionAttachmentAsBase64(MUNICIPALITY_ID!, errandId, decisionId, pdf.id, user);
+    formData.append('attachments', Buffer.from(content, 'base64'), { filename: pdf.name, contentType: pdf.mimeType });
+  }
+
+  return await apiService.post<any, any>({ url, data: formData, headers: { 'Content-Type': formData.getHeaders()['content-type'] } }, user);
 };
 
-export const sendDecisionToMinaSidor = async (baseURL: string, errandId: string, user: User, pdf: Attachment) => {
+export const sendDecisionToMinaSidor = async (baseURL: string, errandId: string, user: User, pdf: Attachment, decisionId: number) => {
   const apiService = new ApiService();
   const conversationUrl = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations`;
   const conversationRes = await apiService.get<Conversation[]>({ url: conversationUrl, baseURL }, user);
@@ -412,9 +455,9 @@ export const sendDecisionToMinaSidor = async (baseURL: string, errandId: string,
   externalConversation = conversationRes.data.find(c => c.type === 'EXTERNAL');
 
   if (externalConversation === undefined) {
-    externalConversation = await createConversation(errandId, user, 'EXTERNAL', 'Mina sidor');
+    externalConversation = await createConversation(errandId, user, 'EXTERNAL', 'Mina sidor', CASEDATA_NAMESPACE!);
   }
-  return sendConversation(errandId, externalConversation!.id!, user, pdf)
+  return sendConversation(errandId, externalConversation!.id!, user, pdf, decisionId)
     .then(async res => {
       return { data: { ...res.data, messageId: externalConversation!.id }, message: `Message sent to Mina sidor` };
     })
@@ -424,7 +467,7 @@ export const sendDecisionToMinaSidor = async (baseURL: string, errandId: string,
     });
 };
 
-export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, user: User, pdf: Attachment) => {
+export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, user: User, pdf: Attachment, decisionId: number) => {
   if (errand.channel !== 'ESERVICE_KATLA') {
     return { data: { messageId: 'Non Katla errand' }, message: `Non Katla errand` };
   }
@@ -437,9 +480,9 @@ export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, us
   relationlessConversation = conversationRes.data.find(c => c.relationIds?.length === 0 && c.type !== 'EXTERNAL');
 
   if (relationlessConversation === undefined) {
-    relationlessConversation = await createConversation(errand.id!.toString(), user, 'INTERNAL', errand.errandNumber!);
+    relationlessConversation = await createConversation(errand.id!.toString(), user, 'INTERNAL', errand.errandNumber!, CASEDATA_NAMESPACE!);
   }
-  return sendConversation(errand.id!.toString(), relationlessConversation!.id!, user, pdf)
+  return sendConversation(errand.id!.toString(), relationlessConversation!.id!, user, pdf, decisionId)
     .then(async res => {
       return { data: { ...res.data, messageId: relationlessConversation!.id }, message: `Message sent to Katla` };
     })
@@ -449,77 +492,37 @@ export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, us
     });
 };
 
-export const sendDecisionToOpenE = (errand: ErrandDTO, user: User, pdf: Attachment) => {
-  const url = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/webmessage`;
-  const apiService = new ApiService();
-
-  const attachments = [
-    {
-      base64Data: pdf.file,
-      fileName: `${pdf.name}.pdf`,
-      mimeType: pdf.mimeType,
-    } as WebMessageAttachment,
-  ];
-  const message: WebMessageRequest = {
-    party: {
-      partyId: getOwnerStakeholder(errand).personId,
-      externalReferences: [
-        {
-          key: 'flowInstanceId',
-          value: errand.externalCaseId,
-        },
-      ],
-    },
-    message: 'Beslut fattat i ärende',
-    attachments,
-  } as WebMessageRequest;
-
-  return apiService
-    .post<AgnosticMessageResponse, WebMessageRequest>({ url, data: message }, user)
-    .then(async (res: ApiResponse<AgnosticMessageResponse>) => {
-      return saveMessageOnErrand(
-        MUNICIPALITY_ID!,
-        errand,
-        {
-          message: message.message,
-          id: res.data.messageId,
-          messageType: 'WEBMESSAGE',
-          messageClassification: MessageClassification.Informationsmeddelande,
-          header_message_Id: '',
-          header_reply_to: '',
-          header_references: '',
-        },
-        user,
-      )
-        .then(async _ => {
-          return { data: res.data, message: `Message sent to OpenE` };
-        })
-        .catch(e => {
-          logger.error('Error when saving message id:', e);
-          return { data: res.data, message: `Message to OpenE sent but id could not be stored` };
-        });
-    })
-    .catch(e => {
-      logger.error('Error when sending message to OpenE:', e);
-      throw e;
-    });
+export const decisionMessageSubject = (errand: ErrandDTO) => {
+  if (errand?.caseType && Object.values(PTCaseType).includes(errand.caseType as PTCaseType)) {
+    return 'Meddelande gällande er ansökan om parkeringstillstånd';
+  } else if (errand?.caseType && Object.values(FTCaseType).includes(errand.caseType as FTCaseType)) {
+    return 'Meddelande gällande er ansökan om färdtjänst';
+  } else if (errand?.caseType && Object.values(MEXCaseType).includes(errand.caseType as MEXCaseType)) {
+    return 'Meddelande från MEX';
+  }
+  return 'Beslutsmeddelande';
 };
 
-export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: Attachment) => {
+export const sendDecisionToDigitalMail = async (errand: ErrandDTO, user: User, pdf: Attachment, decisionId: number) => {
   const url = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/letter?async=false`;
   const apiService = new ApiService();
+
+  if (!pdf.id) {
+    throw new Error('Decision attachment is missing id, cannot fetch attachment content');
+  }
+  const content = await getDecisionAttachmentAsBase64(MUNICIPALITY_ID!, errand.id!, decisionId, pdf.id, user);
 
   const attachments = [
     {
       deliveryMode: 'ANY',
       contentType: DigitalMailAttachmentContentTypeEnum.ApplicationPdf,
-      content: pdf.file,
-      filename: `${pdf.name}.pdf`,
+      content,
+      filename: pdf.name,
     } as DigitalMailAttachment,
   ];
   const message: DigitalMailRequest = {
     party: {
-      partyIds: [getOwnerStakeholder(errand).personId!],
+      partyIds: [getOwnerStakeholder(errand)?.personId ?? ''],
       externalReferences: [],
     },
     sender: {
@@ -531,7 +534,7 @@ export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: At
       },
     },
     //Change subject depending on application and casetype?
-    subject: 'Meddelande gällande er ansökan om parkeringstillstånd',
+    subject: decisionMessageSubject(errand),
     contentType: DigitalMailRequestContentTypeEnum.TextPlain,
     body: 'Beslut fattat i ärende',
     department: 'SBK(Gatuavdelningen, Trafiksektionen)',
@@ -571,4 +574,55 @@ export const sendDecisionToDigitalMail = (errand: ErrandDTO, user: User, pdf: At
       logger.error('Error when sending digital mail:', e);
       throw e;
     });
+};
+
+// Sends a MEX decision through a single channel, chosen the same way the frontend used to choose it:
+// webmessage for e-service errands, otherwise email to the owner. The decision body is rendered by
+// the frontend and passed in (html for email, plaintext for webmessage).
+export const sendDecisionForMex = async (
+  municipalityId: string,
+  req: RequestWithUser,
+  errandData: ApiResponse<ErrandDTO>,
+  html: string,
+  plaintext: string,
+): Promise<{ data: AgnosticMessageResponse; message: string }> => {
+  const errand = errandData.data;
+
+  if (errand.externalCaseId) {
+    const owner = getOwnerStakeholder(errand);
+    const message = {
+      party: {
+        ...(owner?.personId && { partyId: owner.personId }),
+        externalReferences: [{ key: 'flowInstanceId', value: errand.externalCaseId }],
+      },
+      message: plaintext,
+    } as WebMessageRequest;
+    return sendWebMessage(municipalityId, message, req, errandData);
+  }
+
+  const ownerEmail = getOwnerStakeholderEmail(errand);
+  if (ownerEmail) {
+    const cleanedBody = html.replace(/<p><br \/><\/p>/g, '');
+    const message = {
+      party: {
+        // Fake uuid since Messaging demands one
+        partyId: uuidv4(),
+      },
+      emailAddress: ownerEmail,
+      subject: `Ärende #${errand.errandNumber}`,
+      message: cleanedBody,
+      htmlMessage: base64Encode(cleanedBody),
+      sender: {
+        name: process.env.CASEDATA_SENDER,
+        address: process.env.CASEDATA_SENDER_EMAIL,
+        replyTo: process.env.CASEDATA_REPLY_TO,
+      },
+      headers: {
+        MESSAGE_ID: [generateMessageId()],
+      },
+    } as EmailRequest;
+    return sendEmail(municipalityId, message, req, errandData, MessageClassification.Informationsmeddelande);
+  }
+
+  throw new HttpException(400, 'Ärendeägaren har inga godkända kontaktsätt');
 };

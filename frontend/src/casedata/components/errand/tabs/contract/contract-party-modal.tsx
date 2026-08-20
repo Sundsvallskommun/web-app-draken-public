@@ -1,0 +1,208 @@
+import { StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data';
+import { Address, ContractType, StakeholderRole } from '@casedata/interfaces/contracts';
+import { Role } from '@casedata/interfaces/role';
+import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
+import { getContractStakeholderName, isLeaseAgreement, prettyContractRoles } from '@casedata/services/contract-service';
+import { Button, Checkbox, FormControl, FormLabel, Input, Modal, Select } from '@sk-web-gui/react';
+import React, { useState } from 'react';
+
+interface ContractPartyModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (stakeholderId: string, roles: StakeholderRole[], address?: Address) => void;
+  mode: 'add' | 'edit';
+  stakeholderOptions: CasedataOwnerOrContact[];
+  existingParty?: StakeholderWithPersonnumber;
+  contractType: ContractType;
+  existingParties?: StakeholderWithPersonnumber[];
+  isDraft?: boolean;
+}
+
+export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+  mode,
+  stakeholderOptions,
+  existingParty,
+  contractType,
+  existingParties = [],
+  isDraft = true,
+}) => {
+  const [selectedStakeholderId, setSelectedStakeholderId] = useState<string>(
+    mode === 'edit' && existingParty ? existingParty.stakeholderId ?? '' : ''
+  );
+  const [selectedRoles, setSelectedRoles] = useState<StakeholderRole[]>(
+    mode === 'edit' && existingParty ? existingParty.roles ?? [] : []
+  );
+  // Address is editable in edit mode only; in add mode the parent copies it from the errand stakeholder.
+  const [address, setAddress] = useState<Address>(() => existingParty?.address ?? {});
+
+  // Get available roles based on contract type and draft status
+  const getAvailableRoles = (): StakeholderRole[] => {
+    if (!isDraft) {
+      return [StakeholderRole.PRIMARY_BILLING_PARTY];
+    }
+    if (contractType === ContractType.PURCHASE_AGREEMENT) {
+      return [StakeholderRole.BUYER, StakeholderRole.SELLER];
+    }
+    if (isLeaseAgreement(contractType)) {
+      return [StakeholderRole.LESSEE, StakeholderRole.LESSOR, StakeholderRole.PRIMARY_BILLING_PARTY];
+    }
+    return [];
+  };
+
+  const availableRoles = getAvailableRoles();
+
+  const handleRoleToggle = (role: StakeholderRole) => {
+    setSelectedRoles((prev) => {
+      if (prev.includes(role)) {
+        return prev.filter((r) => r !== role);
+      } else {
+        return [...prev, role];
+      }
+    });
+  };
+
+  // In edit mode the save button stays enabled even with no roles selected: clearing every role is
+  // how a user removes an existing party (the parent drops zero-role parties when saving). In add
+  // mode a stakeholder and at least one role are still required to create a meaningful party.
+  const canSave = mode === 'edit' || (!!selectedStakeholderId && selectedRoles.length > 0);
+
+  const handleSave = () => {
+    if (canSave) {
+      onSave(selectedStakeholderId, selectedRoles, mode === 'edit' ? address : undefined);
+      onClose();
+    }
+  };
+
+  // Helper to get stakeholder display name
+  const getStakeholderLabel = (s: CasedataOwnerOrContact): string => {
+    if (s.stakeholderType === 'ORGANIZATION') {
+      return s.organizationName ?? '';
+    }
+    return `${s.firstName} ${s.lastName}`.trim();
+  };
+
+  // Helper to check if a stakeholder matches an existing party
+  const stakeholderMatchesParty = (s: CasedataOwnerOrContact, p: StakeholderWithPersonnumber): boolean => {
+    // Match by organization number for organizations
+    if (s.stakeholderType === 'ORGANIZATION' && s.organizationNumber && p.organizationNumber) {
+      return s.organizationNumber === p.organizationNumber;
+    }
+    // Match by person ID for persons
+    if (s.personId && p.personalNumber) {
+      return s.personId === p.personalNumber;
+    }
+    // Fallback: match by name
+    const stakeholderName =
+      s.stakeholderType === 'ORGANIZATION' ? s.organizationName : `${s.firstName} ${s.lastName}`.trim();
+    return stakeholderName === getContractStakeholderName(p);
+  };
+
+  // Filter stakeholder options for dropdown
+  // Exclude administrators and stakeholders already added (in add mode)
+  const filteredStakeholderOptions = stakeholderOptions
+    .filter((s) => s.id && !s.roles.includes(Role.ADMINISTRATOR))
+    .filter((s) => {
+      if (mode === 'add') {
+        return !existingParties.some((p) => stakeholderMatchesParty(s, p));
+      }
+      return true;
+    });
+
+  return (
+    <Modal
+      show={isOpen}
+      onClose={onClose}
+      label={mode === 'add' ? 'Lägg till ny part' : 'Redigera part'}
+      className="w-full max-w-prose"
+    >
+      <Modal.Content>
+        <div className="flex flex-col gap-24">
+          {mode === 'add' ? (
+            <FormControl>
+              <FormLabel>Intressent</FormLabel>
+              <Select
+                data-cy="party-modal-stakeholder-select"
+                value={selectedStakeholderId}
+                onChange={(e) => setSelectedStakeholderId(e.target.value)}
+              >
+                <Select.Option value="">Välj intressent...</Select.Option>
+                {filteredStakeholderOptions.map((s) => (
+                  <Select.Option key={s.id} value={String(s.id)}>
+                    {getStakeholderLabel(s) || '(namn saknas)'}
+                  </Select.Option>
+                ))}
+              </Select>
+            </FormControl>
+          ) : (
+            <div>
+              <FormLabel>Intressent</FormLabel>
+              <div className="font-bold">{existingParty ? getContractStakeholderName(existingParty) : ''}</div>
+              <div className="text-gray-600">{existingParty?.personalNumber || existingParty?.organizationNumber}</div>
+            </div>
+          )}
+
+          <FormControl>
+            <FormLabel>{mode === 'add' ? 'Välj roll' : 'Byt eller lägg till roll'}</FormLabel>
+            <div className="flex flex-col gap-12">
+              {availableRoles.map((role) => (
+                <Checkbox
+                  key={role}
+                  data-cy={`party-modal-role-${role}`}
+                  checked={selectedRoles.includes(role)}
+                  onChange={() => handleRoleToggle(role)}
+                >
+                  {prettyContractRoles[role] || role}
+                </Checkbox>
+              ))}
+            </div>
+          </FormControl>
+
+          {mode === 'edit' && (
+            <FormControl>
+              <FormLabel>Adress</FormLabel>
+              <div className="flex flex-col gap-12">
+                <Input
+                  data-cy="party-modal-street"
+                  placeholder="Gatuadress"
+                  value={address.streetAddress ?? ''}
+                  onChange={(e) => setAddress((a) => ({ ...a, streetAddress: e.target.value }))}
+                />
+                <Input
+                  data-cy="party-modal-careof"
+                  placeholder="c/o"
+                  value={address.careOf ?? ''}
+                  onChange={(e) => setAddress((a) => ({ ...a, careOf: e.target.value }))}
+                />
+                <div className="flex gap-12">
+                  <Input
+                    data-cy="party-modal-postalcode"
+                    placeholder="Postnummer"
+                    value={address.postalCode ?? ''}
+                    onChange={(e) => setAddress((a) => ({ ...a, postalCode: e.target.value }))}
+                  />
+                  <Input
+                    data-cy="party-modal-town"
+                    placeholder="Ort"
+                    value={address.town ?? ''}
+                    onChange={(e) => setAddress((a) => ({ ...a, town: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </FormControl>
+          )}
+        </div>
+      </Modal.Content>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onClose}>
+          Avbryt
+        </Button>
+        <Button color="vattjom" data-cy="party-modal-save-button" disabled={!canSave} onClick={handleSave}>
+          {mode === 'add' ? 'Lägg till' : 'Spara'}
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+};

@@ -4,6 +4,7 @@ import { logger } from '@utils/logger';
 import { apiURL } from '@utils/util';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
+
 import ApiTokenService from './api-token.service';
 
 export class ApiResponse<T> {
@@ -11,7 +12,25 @@ export class ApiResponse<T> {
   message!: string;
 }
 
+// Extends AxiosRequestConfig with an opt-in flag. When `propagateClientError` is true, upstream
+// 4xx responses are re-thrown with their original status and message instead of a generic 500.
+export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & { propagateClientError?: boolean };
+
 const apiTokenService = new ApiTokenService();
+
+/**
+ * Render a request body for the error log. Multipart requests carry a form-data
+ * stream rather than a string, so it can only be described, not excerpted.
+ */
+const describeRequestBody = (data: unknown): string => {
+  if (typeof data === 'string') {
+    return data.slice(0, 1500);
+  }
+  if (data === undefined || data === null) {
+    return '';
+  }
+  return `[${data.constructor?.name ?? typeof data} body, not logged]`;
+};
 
 class ApiService {
   private instance: AxiosInstance;
@@ -20,7 +39,7 @@ class ApiService {
     this.instance.interceptors.request.use(
       async function (request) {
         if (request.url === apiURL('token')) {
-          return Promise.resolve(request);
+          return request;
         }
         const token = await apiTokenService.getToken();
         const defaultHeaders = {
@@ -28,10 +47,15 @@ class ApiService {
           'Content-Type': 'application/json',
           'X-Request-Id': uuidv4(),
         };
-        logger.info(`x-request-id: ${defaultHeaders['X-Request-Id']}`);
+        const isSimulatorRequest = request.url?.includes('simulatorserver');
+        if (!isSimulatorRequest) {
+          const fullUrl = `${request.baseURL || ''}/${request.url}`;
+          logger.info(`MAKING ${request.method?.toUpperCase()} REQUEST TO URL ${fullUrl}`);
+          logger.info(`x-request-id: ${defaultHeaders['X-Request-Id']}`);
+        }
         request.headers = { ...defaultHeaders, ...request.headers } as any;
         request.headers['Content-Type'] = request.headers['Content-Type'] || defaultHeaders['Content-Type'];
-        return Promise.resolve(request);
+        return request;
       },
       function (error) {
         return Promise.reject(error);
@@ -49,6 +73,12 @@ class ApiService {
           'Content-Type': 'application/json',
           'X-Request-Id': uuidv4(),
         };
+        // Rewerite location header to point to correct resource since the API response header
+        // contains an errouneous url - asset-drafts does not have an GET ../{id} endpoint.
+        // When this has been fixed, we can remove the rewrite.
+        if (response.headers.location && response.config.url?.includes('asset-drafts')) {
+          response.headers.location = response.headers.location.replace('/asset-drafts/', '/assets/');
+        }
         if (response.headers.location && !response.config.url?.includes('messaging')) {
           logger.info(`Response contained location header: ${response.headers.location}`);
           logger.info(`Base URL was: ${response.config.baseURL}`);
@@ -57,25 +87,26 @@ class ApiService {
             logger.error(`Base URL was: ${e.config?.baseURL}`);
             logger.error(`URL was: ${e.config?.url}`);
             logger.error(`Method was: ${e.config?.method}`);
-            return Promise.resolve(response);
+            return response;
           });
         }
-        return Promise.resolve(response);
+        return response;
       },
       function (error) {
         return Promise.reject(error);
       },
     );
   }
-  private async request<T>(config: AxiosRequestConfig, user: User): Promise<ApiResponse<T>> {
+  private async request<T>(config: ApiRequestConfig, user: User): Promise<ApiResponse<T>> {
+    const { propagateClientError, ...axiosConfig } = config;
     const defaultParams = {};
     const preparedConfig: AxiosRequestConfig = {
-      ...config,
+      ...axiosConfig,
       maxContentLength: Infinity,
       maxBodyLength: Infinity,
-      headers: { ...config.headers, 'X-Sent-By': [`type=adAccount; ${user.username}`] },
-      params: { ...defaultParams, ...config.params },
-      url: config.baseURL ? config.url : apiURL(config.url!),
+      headers: { ...axiosConfig.headers, 'X-Sent-By': [`type=adAccount; ${user.username}`] },
+      params: { ...defaultParams, ...axiosConfig.params },
+      url: axiosConfig.baseURL ? axiosConfig.url : apiURL(axiosConfig.url!),
     };
     try {
       const res = await this.instance(preparedConfig);
@@ -85,7 +116,7 @@ class ApiService {
         logger.error(`ERROR: API request failed with status: ${error.response?.status}`);
         logger.error(`Error details: ${JSON.stringify(error.response!.data)}`);
         logger.error(`Error url: ${error.response!.config.baseURL || ''}/${error.response!.config.url}`);
-        logger.error(`Error data: ${error.response!.config.data?.slice(0, 1500)}`);
+        logger.error(`Error data: ${describeRequestBody(error.response!.config.data)}`);
         logger.error(`Error method: ${error.response!.config.method}`);
         logger.error(`Error headers: ${error.response!.config.headers}`);
         throw new HttpException(404, 'Not found');
@@ -93,9 +124,17 @@ class ApiService {
         logger.error(`ERROR: API request failed with status: ${error.response?.status}`);
         logger.error(`Error details: ${JSON.stringify(error.response!.data)}`);
         logger.error(`Error url: ${error.response!.config.baseURL || ''}/${error.response!.config.url}`);
-        logger.error(`Error data: ${error.response!.config.data?.slice(0, 1500)}`);
+        logger.error(`Error data: ${describeRequestBody(error.response!.config.data)}`);
         logger.error(`Error method: ${error.response!.config.method}`);
         logger.error(`Error headers: ${error.response!.config.headers}`);
+        // Opt-in: surface upstream client errors (4xx) so callers can show the real message in
+        // context instead of an opaque 500. Server/network errors still become 500 below.
+        const status = error.response!.status;
+        if (propagateClientError && status >= 400 && status < 500) {
+          const data = error.response!.data as { detail?: string; message?: string; title?: string };
+          const message = (typeof data === 'object' && (data.detail || data.message || data.title)) || 'Request failed';
+          throw new HttpException(status, message);
+        }
       } else {
         logger.error(`Unknown error: ${error}`);
       }
@@ -103,27 +142,23 @@ class ApiService {
     }
   }
 
-  public async get<T>(config: AxiosRequestConfig, user: User): Promise<ApiResponse<T>> {
-    logger.info(`MAKING GET REQUEST TO URL ${config.baseURL || ''}/${config.url}`);
+  public async get<T>(config: ApiRequestConfig, user: User): Promise<ApiResponse<T>> {
     return this.request<T>({ ...config, method: 'GET' }, user);
   }
 
-  public async post<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
-    logger.info(`MAKING POST REQUEST TO URL ${config.baseURL || ''}/${config.url}`);
+  public async post<T, D>(config: ApiRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
     return this.request<T>({ ...config, method: 'POST' }, user);
   }
 
-  public async patch<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
-    logger.info(`MAKING PATCH REQUEST TO URL ${config.baseURL || ''}/${config.url}`);
+  public async patch<T, D>(config: ApiRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
     return this.request<T>({ ...config, method: 'PATCH' }, user);
   }
 
-  public async put<T, D>(config: AxiosRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
-    logger.info(`MAKING PUT REQUEST TO URL ${config.baseURL || ''}/${config.url}`);
+  public async put<T, D>(config: ApiRequestConfig<D>, user: User): Promise<ApiResponse<T>> {
     return this.request<T>({ ...config, method: 'PUT' }, user);
   }
 
-  public async delete<T>(config: AxiosRequestConfig, user: User): Promise<ApiResponse<T>> {
+  public async delete<T>(config: ApiRequestConfig, user: User): Promise<ApiResponse<T>> {
     return this.request<T>({ ...config, method: 'DELETE' }, user);
   }
 }
