@@ -2,8 +2,6 @@ import { Type } from 'class-transformer';
 import { IsArray, IsBoolean, IsIn, IsOptional, IsString, Matches, MinLength, ValidateNested } from 'class-validator';
 
 const SUPPORT_INVESTIGATION_IDENTIFIER = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
-const SUPPORT_MANAGEMENT_RESOURCE_PATH = /^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/u;
-const SUPPORT_MANAGEMENT_CLASSIFICATION = /^[A-Za-z0-9]+(?:[_-][A-Za-z0-9]+)*$/u;
 
 export class SupportInvestigationDocumentProfileDto {
   @IsString()
@@ -98,113 +96,6 @@ export class SupportManagementLabelFilterProfileDto {
   readonly groups!: readonly SupportManagementLabelFilterGroupProfileDto[];
 }
 
-export class SupportInvestigationClassificationParameterSelectorDto {
-  @IsString()
-  @MinLength(1)
-  readonly key!: string;
-
-  @IsArray()
-  @IsString({ each: true })
-  readonly values!: readonly string[];
-}
-
-export class SupportInvestigationClassificationLabelSelectorDto {
-  @IsArray()
-  @IsString({ each: true })
-  readonly resourcePaths!: readonly string[];
-
-  @IsArray()
-  @IsString({ each: true })
-  readonly resourceNames!: readonly string[];
-}
-
-export class ReportedMisconductSelectorDto {
-  @ValidateNested()
-  @Type(() => SupportInvestigationClassificationParameterSelectorDto)
-  readonly parameter!: SupportInvestigationClassificationParameterSelectorDto;
-
-  @ValidateNested()
-  @Type(() => SupportInvestigationClassificationLabelSelectorDto)
-  readonly labels!: SupportInvestigationClassificationLabelSelectorDto;
-}
-
-export class SupportInvestigationClassificationLegalBaseRuleDto {
-  @IsString()
-  @MinLength(1)
-  readonly legalBase!: string;
-
-  @IsArray()
-  @IsString({ each: true })
-  readonly allowedClassificationCategories!: readonly string[];
-}
-
-export class ReportedMisconductLabelTreeRootDto {
-  @IsString()
-  @MinLength(1)
-  @Matches(SUPPORT_MANAGEMENT_RESOURCE_PATH)
-  readonly resource!: string;
-
-  @IsString()
-  @MinLength(1)
-  @Matches(SUPPORT_MANAGEMENT_CLASSIFICATION)
-  readonly classification!: string;
-}
-
-export class ReportedMisconductLabelTreeDto {
-  @ValidateNested()
-  @Type(() => ReportedMisconductLabelTreeRootDto)
-  readonly root!: ReportedMisconductLabelTreeRootDto;
-
-  @IsString()
-  @MinLength(1)
-  @Matches(SUPPORT_MANAGEMENT_CLASSIFICATION)
-  readonly ownerClassification!: string;
-
-  @IsString()
-  @MinLength(1)
-  @Matches(SUPPORT_MANAGEMENT_CLASSIFICATION)
-  readonly categoryClassification!: string;
-
-  @IsString()
-  @MinLength(1)
-  @Matches(SUPPORT_MANAGEMENT_CLASSIFICATION)
-  readonly typeClassification!: string;
-}
-
-export class ReportedMisconductInvestigationClassificationPolicyDto {
-  @IsIn(['reported-misconduct'])
-  readonly strategy!: 'reported-misconduct';
-
-  @IsString()
-  @MinLength(1)
-  readonly defaultOwnerDocumentKey!: string;
-
-  @IsString()
-  @MinLength(1)
-  readonly reportedMisconductOwnerDocumentKey!: string;
-
-  @ValidateNested()
-  @Type(() => ReportedMisconductSelectorDto)
-  readonly reportedMisconductSelector!: ReportedMisconductSelectorDto;
-
-  @ValidateNested()
-  @Type(() => ReportedMisconductLabelTreeDto)
-  readonly labelTree!: ReportedMisconductLabelTreeDto;
-
-  @IsArray()
-  @IsString({ each: true })
-  readonly forcedLegalBases!: readonly string[];
-
-  @IsString()
-  @MinLength(1)
-  readonly legalBasesPointer!: string;
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => SupportInvestigationClassificationLegalBaseRuleDto)
-  readonly legalBaseRules!: readonly SupportInvestigationClassificationLegalBaseRuleDto[];
-}
-
 export class SupportInvestigationRuntimeProfileDto extends SupportInvestigationProfileDto {
   @IsIn(SUPPORT_INVESTIGATION_STATES)
   readonly state!: SupportInvestigationState;
@@ -222,9 +113,4 @@ export class SupportInvestigationRuntimeProfileDto extends SupportInvestigationP
   @ValidateNested()
   @Type(() => SupportManagementLabelFilterProfileDto)
   readonly labelFilter?: SupportManagementLabelFilterProfileDto;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => ReportedMisconductInvestigationClassificationPolicyDto)
-  readonly classificationPolicy?: ReportedMisconductInvestigationClassificationPolicyDto;
 }

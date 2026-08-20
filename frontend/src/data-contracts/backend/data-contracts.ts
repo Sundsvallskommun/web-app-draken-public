@@ -638,47 +638,11 @@ export interface SupportManagementLabelFilterProfileDto {
   groups: SupportManagementLabelFilterGroupProfileDto[];
 }
 
-export interface SupportInvestigationClassificationParameterSelectorDto {
-  /** @minLength 1 */
-  key: string;
-  values: string[];
-}
-
-export interface SupportInvestigationClassificationLabelSelectorDto {
-  resourcePaths: string[];
-  resourceNames: string[];
-}
-
-export interface ReportedMisconductSelectorDto {
-  parameter: SupportInvestigationClassificationParameterSelectorDto;
-  labels: SupportInvestigationClassificationLabelSelectorDto;
-}
-
-export interface SupportInvestigationClassificationLegalBaseRuleDto {
-  /** @minLength 1 */
-  legalBase: string;
-  allowedClassificationCategories: string[];
-}
-
-export interface ReportedMisconductInvestigationClassificationPolicyDto {
-  strategy: ReportedMisconductInvestigationClassificationPolicyDtoStrategyEnum;
-  /** @minLength 1 */
-  defaultOwnerDocumentKey: string;
-  /** @minLength 1 */
-  reportedMisconductOwnerDocumentKey: string;
-  reportedMisconductSelector: ReportedMisconductSelectorDto;
-  forcedLegalBases: string[];
-  /** @minLength 1 */
-  legalBasesPointer: string;
-  legalBaseRules: SupportInvestigationClassificationLegalBaseRuleDto[];
-}
-
 export interface SupportInvestigationRuntimeProfileDto {
   state: SupportInvestigationRuntimeProfileDtoStateEnum;
   registration: SupportRegistrationCapabilityDto;
   documents: SupportInvestigationRuntimeDocumentProfileDto[];
   labelFilter?: SupportManagementLabelFilterProfileDto;
-  classificationPolicy?: ReportedMisconductInvestigationClassificationPolicyDto;
   application: string;
 }
 
@@ -928,10 +892,6 @@ export enum CreateAttachmentDtoChannelEnum {
 export enum SupportRegistrationCapabilityDtoModeEnum {
   Enabled = "enabled",
   Disabled = "disabled",
-}
-
-export enum ReportedMisconductInvestigationClassificationPolicyDtoStrategyEnum {
-  ReportedMisconduct = "reported-misconduct",
 }
 
 export enum SupportInvestigationRuntimeProfileDtoStateEnum {

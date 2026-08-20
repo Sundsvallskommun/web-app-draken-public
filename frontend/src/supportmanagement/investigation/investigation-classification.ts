@@ -1,13 +1,13 @@
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 
-import { getSupportErrandClassificationPlacement } from './investigation-classification-ownership';
 import {
-  type InvestigationClassificationLegalBaseRule,
-  isReportedMisconductErrandForPolicy,
-  type ReportedMisconductInvestigationClassificationPolicy,
-  resolveSupportInvestigationClassificationOwnerDocumentKey,
-} from './investigation-classification-policy';
+  type IafVofInvestigationClassificationLegalBaseRule,
+  isIafVofReportedMisconductErrand,
+  resolveIafVofInvestigationClassificationOwnerDocumentKey,
+  type SupportErrandClassificationPlacement,
+} from './iaf-vof-investigation-classification-policy';
+import { getSupportErrandClassificationPlacement } from './investigation-classification-ownership';
 import type { InvestigationDocumentKey, InvestigationFormData } from './investigation-document';
 import { normalizeInvestigationFormData } from './investigation-form-data';
 
@@ -26,14 +26,14 @@ interface InvestigationSchemaExtensions extends RJSFSchema {
 
 const isClassificationDocumentKey = (
   key: InvestigationDocumentKey,
-  policy: ReportedMisconductInvestigationClassificationPolicy
+  policy: Extract<SupportErrandClassificationPlacement, { owner: 'investigation' }>['policy']
 ): boolean => {
   return policy.defaultOwnerDocumentKey === key || policy.reportedMisconductOwnerDocumentKey === key;
 };
 
 const hasClassificationDeclaration = (
   schema: RJSFSchema,
-  policy: ReportedMisconductInvestigationClassificationPolicy
+  policy: Extract<SupportErrandClassificationPlacement, { owner: 'investigation' }>['policy']
 ): boolean => {
   const definition = (schema as InvestigationSchemaExtensions)['x-draken-external-fields']?.[
     INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD
@@ -102,12 +102,12 @@ export const getInvestigationLegalBases = (formData: InvestigationFormData): str
   ];
 };
 
-export const getInvestigationLegalBaseRules = (): readonly InvestigationClassificationLegalBaseRule[] =>
+export const getInvestigationLegalBaseRules = (): readonly IafVofInvestigationClassificationLegalBaseRule[] =>
   getSupportErrandClassificationPlacement().policy?.legalBaseRules ?? [];
 
 export const isReportedMisconductErrand = (errand: SupportErrand | undefined): boolean => {
-  const policy = getSupportErrandClassificationPlacement().policy;
-  return policy ? isReportedMisconductErrandForPolicy(policy, errand) : false;
+  const placement = getSupportErrandClassificationPlacement();
+  return placement.categorization === 'iaf-vof' ? isIafVofReportedMisconductErrand(errand) : false;
 };
 
 export const getInvestigationClassificationOwner = (
@@ -115,7 +115,7 @@ export const getInvestigationClassificationOwner = (
 ): InvestigationDocumentKey | undefined => {
   const placement = getSupportErrandClassificationPlacement();
   if (placement.owner !== 'investigation') return undefined;
-  return resolveSupportInvestigationClassificationOwnerDocumentKey(placement.policy, errand ?? {});
+  return resolveIafVofInvestigationClassificationOwnerDocumentKey(placement, errand ?? {});
 };
 
 export const isInvestigationClassificationOwner = (

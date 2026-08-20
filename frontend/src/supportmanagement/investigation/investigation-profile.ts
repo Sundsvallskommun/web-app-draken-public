@@ -1,15 +1,4 @@
 import type { LabelFilterGroupDefinition } from '../filters/label-filter-projector';
-import type {
-  InvestigationClassificationPolicy,
-  ReportedMisconductLabelTree,
-} from './investigation-classification-policy';
-
-export type {
-  InvestigationClassificationLegalBaseRule,
-  InvestigationClassificationPolicy,
-  ReportedMisconductInvestigationClassificationPolicy,
-  ReportedMisconductLabelTree,
-} from './investigation-classification-policy';
 
 export const INVESTIGATION_PROFILE_STATES = ['active', 'inactive', 'unavailable'] as const;
 export type InvestigationProfileState = (typeof INVESTIGATION_PROFILE_STATES)[number];
@@ -27,7 +16,6 @@ export interface InvestigationProfile {
   readonly state: InvestigationProfileState;
   readonly documents: readonly InvestigationProfileDocument[];
   readonly registration: { readonly mode: 'enabled' | 'disabled' };
-  readonly classificationPolicy?: InvestigationClassificationPolicy;
   readonly labelFilter?: { readonly groups: readonly LabelFilterGroupDefinition[] };
 }
 
@@ -84,215 +72,6 @@ function readDocument(value: unknown, index: number): InvestigationProfileDocume
 }
 
 const labelResourcePathPattern = /^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/u;
-const labelClassificationPattern = /^[A-Za-z0-9]+(?:[_-][A-Za-z0-9]+)*$/u;
-
-function readStringArray(
-  value: unknown,
-  path: string,
-  { allowEmpty = false }: { readonly allowEmpty?: boolean } = {}
-): readonly string[] {
-  if (!Array.isArray(value) || (!allowEmpty && value.length === 0)) {
-    throw new Error(`Utredningsprofilens ${path} är ogiltig.`);
-  }
-  return Object.freeze(value.map((candidate, index) => readRequiredString(candidate, `${path}[${index}]`)));
-}
-
-function assertSemanticUniqueness(
-  values: readonly string[],
-  path: string,
-  normalize: (value: string) => string = (value) => value.trim().toUpperCase()
-): void {
-  if (new Set(values.map(normalize)).size !== values.length) {
-    throw new Error(`Utredningsprofilens ${path} innehåller duplicerade värden.`);
-  }
-}
-
-function readClassificationResourcePaths(value: unknown, path: string, allowEmpty = false): readonly string[] {
-  const values = readStringArray(value, path, { allowEmpty });
-  if (values.some((candidate) => !labelResourcePathPattern.test(candidate))) {
-    throw new Error(`Utredningsprofilens ${path} är ogiltig.`);
-  }
-  assertSemanticUniqueness(values, path, (candidate) => candidate.trim().toUpperCase());
-  return values;
-}
-
-function readClassificationToken(value: unknown, path: string): string {
-  const token = readRequiredString(value, path);
-  if (!labelClassificationPattern.test(token)) {
-    throw new Error(`Utredningsprofilens ${path} är ogiltig.`);
-  }
-  return token;
-}
-
-const normalizeClassificationToken = (value: string): string => value.replaceAll('_', '-').toUpperCase();
-const normalizeLabelResourcePath = (value: string): string => value.toUpperCase();
-
-function readReportedMisconductLabelTree(value: unknown): ReportedMisconductLabelTree {
-  if (!isRecord(value) || !isRecord(value.root)) {
-    throw new Error('Utredningsprofilens classificationPolicy.labelTree är ogiltig.');
-  }
-  const rootResource = readRequiredString(value.root.resource, 'classificationPolicy.labelTree.root.resource');
-  if (!labelResourcePathPattern.test(rootResource)) {
-    throw new Error('Utredningsprofilens classificationPolicy.labelTree.root.resource är ogiltig.');
-  }
-  const labelTree = Object.freeze({
-    root: Object.freeze({
-      resource: rootResource,
-      classification: readClassificationToken(
-        value.root.classification,
-        'classificationPolicy.labelTree.root.classification'
-      ),
-    }),
-    ownerClassification: readClassificationToken(
-      value.ownerClassification,
-      'classificationPolicy.labelTree.ownerClassification'
-    ),
-    categoryClassification: readClassificationToken(
-      value.categoryClassification,
-      'classificationPolicy.labelTree.categoryClassification'
-    ),
-    typeClassification: readClassificationToken(
-      value.typeClassification,
-      'classificationPolicy.labelTree.typeClassification'
-    ),
-  });
-  const classifications = [
-    labelTree.root.classification,
-    labelTree.ownerClassification,
-    labelTree.categoryClassification,
-    labelTree.typeClassification,
-  ].map(normalizeClassificationToken);
-  if (new Set(classifications).size !== classifications.length) {
-    throw new Error('Utredningsprofilens classificationPolicy.labelTree måste använda unika klassificeringar.');
-  }
-  return labelTree;
-}
-
-const decodeJsonPointerSegment = (segment: string): string => segment.replaceAll('~1', '/').replaceAll('~0', '~');
-
-function readJsonPointer(value: unknown, path: string): string {
-  const pointer = readRequiredString(value, path);
-  if (!pointer.startsWith('/') || /~(?![01])/u.test(pointer)) {
-    throw new Error(`Utredningsprofilens ${path} är ogiltig.`);
-  }
-  const segments = pointer.slice(1).split('/').map(decodeJsonPointerSegment);
-  if (segments.some((segment) => segment.length === 0 || ['__proto__', 'prototype', 'constructor'].includes(segment))) {
-    throw new Error(`Utredningsprofilens ${path} är ogiltig.`);
-  }
-  return pointer;
-}
-
-function readClassificationPolicy(
-  value: unknown,
-  documents: readonly InvestigationProfileDocument[]
-): InvestigationClassificationPolicy | undefined {
-  if (value === undefined) return undefined;
-  if (!isRecord(value) || value.strategy !== 'reported-misconduct') {
-    throw new Error('Utredningsprofilens classificationPolicy är ogiltig.');
-  }
-
-  const defaultOwnerDocumentKey = readProfileIdentifier(
-    value.defaultOwnerDocumentKey,
-    'classificationPolicy.defaultOwnerDocumentKey'
-  );
-  const reportedMisconductOwnerDocumentKey = readProfileIdentifier(
-    value.reportedMisconductOwnerDocumentKey,
-    'classificationPolicy.reportedMisconductOwnerDocumentKey'
-  );
-  const documentKeys = new Set(documents.map(({ key }) => key));
-  if (!documentKeys.has(defaultOwnerDocumentKey) || !documentKeys.has(reportedMisconductOwnerDocumentKey)) {
-    throw new Error('Utredningsprofilens classificationPolicy refererar till ett okänt dokument.');
-  }
-
-  if (!isRecord(value.reportedMisconductSelector)) {
-    throw new Error('Utredningsprofilens classificationPolicy.reportedMisconductSelector är ogiltig.');
-  }
-  const { parameter, labels } = value.reportedMisconductSelector;
-  if (!isRecord(parameter) || !isRecord(labels)) {
-    throw new Error('Utredningsprofilens classificationPolicy.reportedMisconductSelector är ogiltig.');
-  }
-  const parameterKey = readRequiredString(
-    parameter.key,
-    'classificationPolicy.reportedMisconductSelector.parameter.key'
-  );
-  const parameterValues = readStringArray(
-    parameter.values,
-    'classificationPolicy.reportedMisconductSelector.parameter.values'
-  );
-  assertSemanticUniqueness(parameterValues, 'classificationPolicy.reportedMisconductSelector.parameter.values');
-  const resourcePaths = readClassificationResourcePaths(
-    labels.resourcePaths,
-    'classificationPolicy.reportedMisconductSelector.labels.resourcePaths',
-    true
-  );
-  const resourceNames = readStringArray(
-    labels.resourceNames,
-    'classificationPolicy.reportedMisconductSelector.labels.resourceNames',
-    { allowEmpty: true }
-  );
-  assertSemanticUniqueness(resourceNames, 'classificationPolicy.reportedMisconductSelector.labels.resourceNames');
-  if (resourcePaths.length === 0 && resourceNames.length === 0) {
-    throw new Error('Utredningsprofilens classificationPolicy.reportedMisconductSelector.labels är tom.');
-  }
-
-  const labelTree = readReportedMisconductLabelTree(value.labelTree);
-  const legalBasesPointer = readJsonPointer(value.legalBasesPointer, 'classificationPolicy.legalBasesPointer');
-  if (!Array.isArray(value.legalBaseRules) || value.legalBaseRules.length === 0) {
-    throw new Error('Utredningsprofilens classificationPolicy.legalBaseRules är ogiltig.');
-  }
-  const legalBaseRules = value.legalBaseRules.map((candidate, index) => {
-    if (!isRecord(candidate)) {
-      throw new Error(`Utredningsprofilens classificationPolicy.legalBaseRules[${index}] är ogiltig.`);
-    }
-    const legalBase = readRequiredString(
-      candidate.legalBase,
-      `classificationPolicy.legalBaseRules[${index}].legalBase`
-    );
-    const allowedClassificationCategories = readClassificationResourcePaths(
-      candidate.allowedClassificationCategories,
-      `classificationPolicy.legalBaseRules[${index}].allowedClassificationCategories`
-    );
-    return Object.freeze({ legalBase, allowedClassificationCategories });
-  });
-  assertSemanticUniqueness(
-    legalBaseRules.map(({ legalBase }) => legalBase),
-    'classificationPolicy.legalBaseRules'
-  );
-  const normalizedRootResource = normalizeLabelResourcePath(labelTree.root.resource);
-  if (
-    legalBaseRules.some(({ allowedClassificationCategories }) =>
-      allowedClassificationCategories.some((category) => {
-        const normalizedCategory = normalizeLabelResourcePath(category);
-        return (
-          normalizedCategory !== normalizedRootResource && !normalizedCategory.startsWith(`${normalizedRootResource}/`)
-        );
-      })
-    )
-  ) {
-    throw new Error('Utredningsprofilens classificationPolicy.legalBaseRules refererar utanför labelTree-roten.');
-  }
-
-  const forcedLegalBases = readStringArray(value.forcedLegalBases, 'classificationPolicy.forcedLegalBases');
-  assertSemanticUniqueness(forcedLegalBases, 'classificationPolicy.forcedLegalBases');
-  const supportedLegalBases = new Set(legalBaseRules.map(({ legalBase }) => legalBase.trim().toUpperCase()));
-  if (forcedLegalBases.some((legalBase) => !supportedLegalBases.has(legalBase.trim().toUpperCase()))) {
-    throw new Error('Utredningsprofilens classificationPolicy.forcedLegalBases innehåller ett lagrum utan regel.');
-  }
-
-  return Object.freeze({
-    strategy: 'reported-misconduct',
-    defaultOwnerDocumentKey,
-    reportedMisconductOwnerDocumentKey,
-    reportedMisconductSelector: Object.freeze({
-      parameter: Object.freeze({ key: parameterKey, values: parameterValues }),
-      labels: Object.freeze({ resourcePaths, resourceNames }),
-    }),
-    labelTree,
-    forcedLegalBases,
-    legalBasesPointer,
-    legalBaseRules: Object.freeze(legalBaseRules),
-  });
-}
 
 function readLabelFilter(value: unknown): InvestigationProfile['labelFilter'] {
   if (value === undefined) return undefined;
@@ -383,7 +162,6 @@ export function parseInvestigationProfile(value: unknown, expectedApplication?: 
     throw new Error('Utredningsprofilens registration är ogiltig.');
   }
   const registration = Object.freeze({ mode: value.registration.mode });
-  const classificationPolicy = readClassificationPolicy(value.classificationPolicy, documents);
   const labelFilter = readLabelFilter(value.labelFilter);
   assertUnique(
     documents.map(({ key }) => key),
@@ -394,7 +172,6 @@ export function parseInvestigationProfile(value: unknown, expectedApplication?: 
     state: state as InvestigationProfileState,
     documents: Object.freeze(documents),
     registration,
-    ...(classificationPolicy ? { classificationPolicy } : {}),
     ...(labelFilter ? { labelFilter } : {}),
   });
 }

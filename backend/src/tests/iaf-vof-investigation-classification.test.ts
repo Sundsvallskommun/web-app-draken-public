@@ -1,59 +1,83 @@
-import { createIafVofInvestigationClassificationPolicy } from '@/config/iaf-vof-investigation-classification';
+import {
+  IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE,
+  IAF_VOF_INVESTIGATION_CLASSIFICATION_LEGAL_BASE_RULES,
+  IAF_VOF_INVESTIGATION_LEGAL_BASES_POINTER,
+  IAF_VOF_REPORTED_MISCONDUCT_FORCED_LEGAL_BASES,
+  preservesIafVofInvestigationClassificationOwnerParameter,
+  resolveIafVofInvestigationClassificationOwner,
+  resolveIafVofInvestigationClassificationPolicy,
+} from '@/config/iaf-vof-investigation-classification';
+import { createSupportInvestigationProfile, getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 
-describe('IAF/VOF investigation classification capability', () => {
-  it('builds declarative policy data from concrete profile keys without application or schema-name checks', () => {
-    expect(
-      createIafVofInvestigationClassificationPolicy({
-        defaultOwnerDocumentKey: 'custom-manager-key',
-        reportedMisconductOwnerDocumentKey: 'custom-social-key',
-      }),
-    ).toEqual({
-      strategy: 'reported-misconduct',
-      defaultOwnerDocumentKey: 'custom-manager-key',
-      reportedMisconductOwnerDocumentKey: 'custom-social-key',
-      reportedMisconductSelector: {
-        parameter: { key: 'eventType', values: ['MISSFORHALLANDE'] },
-        labels: {
-          resourcePaths: ['REPORT_TYPE/ABUSE', 'REPORT_TYPE/ADVERSE_INCIDENT'],
-          resourceNames: ['ABUSE', 'ADVERSE_INCIDENT'],
-        },
-      },
-      labelTree: {
-        root: { resource: 'CATEGORY', classification: 'CATEGORY_ROOT' },
-        ownerClassification: 'PROVISION_CATEGORY',
-        categoryClassification: 'CATEGORY',
-        typeClassification: 'TYPE',
-      },
-      forcedLegalBases: ['SOL', 'LSS'],
-      legalBasesPointer: '/legalBases',
-      legalBaseRules: [
-        { legalBase: 'HSL', allowedClassificationCategories: ['CATEGORY/HSL'] },
-        { legalBase: 'SOL', allowedClassificationCategories: ['CATEGORY/SOL_LSS'] },
-        { legalBase: 'LSS', allowedClassificationCategories: ['CATEGORY/SOL_LSS'] },
-      ],
+const customProfile = (application = 'IAF') =>
+  createSupportInvestigationProfile({
+    application,
+    documents: [
+      { key: 'manager-document', schemaName: 'utredning-enhetschef', tabLabel: 'Manager', ownerLabel: 'Manager' },
+      { key: 'social-document', schemaName: 'utredning-sol-lss', tabLabel: 'Social', ownerLabel: 'Investigator' },
+    ],
+  });
+
+describe('fixed IAF/VOF investigation classification policy', () => {
+  it.each(['IAF', 'VOF'])('resolves fixed schema roles to profile persistence keys for %s', application => {
+    expect(resolveIafVofInvestigationClassificationPolicy(customProfile(application))).toEqual({
+      defaultOwnerDocumentKey: 'manager-document',
+      reportedMisconductOwnerDocumentKey: 'social-document',
+      labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE,
+      forcedLegalBases: IAF_VOF_REPORTED_MISCONDUCT_FORCED_LEGAL_BASES,
+      legalBasesPointer: IAF_VOF_INVESTIGATION_LEGAL_BASES_POINTER,
+      legalBaseRules: IAF_VOF_INVESTIGATION_CLASSIFICATION_LEGAL_BASE_RULES,
     });
   });
 
-  it('returns deeply immutable, independent instances', () => {
-    const first = createIafVofInvestigationClassificationPolicy({
-      defaultOwnerDocumentKey: 'manager',
-      reportedMisconductOwnerDocumentKey: 'social',
-    });
-    const second = createIafVofInvestigationClassificationPolicy({
-      defaultOwnerDocumentKey: 'manager',
-      reportedMisconductOwnerDocumentKey: 'social',
-    });
+  it('does not apply IAF/VOF behavior to another application', () => {
+    expect(resolveIafVofInvestigationClassificationPolicy(customProfile('FUTURE'))).toBeUndefined();
+  });
 
-    expect(first).not.toBe(second);
-    expect(first.reportedMisconductSelector).not.toBe(second.reportedMisconductSelector);
-    expect(first.labelTree).not.toBe(second.labelTree);
-    expect(first.labelTree.root).not.toBe(second.labelTree.root);
-    expect(first.legalBaseRules).not.toBe(second.legalBaseRules);
-    expect(Object.isFrozen(first)).toBe(true);
-    expect(Object.isFrozen(first.reportedMisconductSelector)).toBe(true);
-    expect(Object.isFrozen(first.reportedMisconductSelector.parameter.values)).toBe(true);
-    expect(Object.isFrozen(first.labelTree)).toBe(true);
-    expect(Object.isFrozen(first.labelTree.root)).toBe(true);
-    expect(first.legalBaseRules.every(rule => Object.isFrozen(rule) && Object.isFrozen(rule.allowedClassificationCategories))).toBe(true);
+  it('fails closed when a fixed owner schema is missing or ambiguous', () => {
+    const missing = createSupportInvestigationProfile({
+      application: 'IAF',
+      documents: [{ key: 'manager', schemaName: 'utredning-enhetschef', tabLabel: 'Manager', ownerLabel: 'Manager' }],
+    });
+    const ambiguous = createSupportInvestigationProfile({
+      application: 'IAF',
+      documents: [...customProfile().documents, { key: 'manager-copy', schemaName: 'utredning-enhetschef', tabLabel: 'Copy', ownerLabel: 'Manager' }],
+    });
+    expect(resolveIafVofInvestigationClassificationPolicy(missing)).toBeUndefined();
+    expect(resolveIafVofInvestigationClassificationPolicy(ambiguous)).toBeUndefined();
+  });
+
+  it('selects manager for deviations and SoL/LSS for reported misconduct', () => {
+    const policy = resolveIafVofInvestigationClassificationPolicy(customProfile());
+    if (!policy) throw new Error('Expected IAF policy');
+
+    expect(resolveIafVofInvestigationClassificationOwner(policy, { parameters: [{ key: 'eventType', values: ['AVVIKELSE'] }] })).toEqual({
+      mode: 'default',
+      documentKey: 'manager-document',
+    });
+    expect(resolveIafVofInvestigationClassificationOwner(policy, { parameters: [{ key: 'eventType', values: [' missforhallande '] }] })).toEqual({
+      mode: 'reported-misconduct',
+      documentKey: 'social-document',
+    });
+  });
+
+  it('uses resourcePath as authoritative and resourceName only as a pathless fallback', () => {
+    const policy = resolveIafVofInvestigationClassificationPolicy(getSupportInvestigationProfile('IAF'))!;
+    expect(resolveIafVofInvestigationClassificationOwner(policy, { labels: [{ resourcePath: 'OTHER/ABUSE', resourceName: 'ABUSE' }] }).mode).toBe(
+      'default',
+    );
+    expect(resolveIafVofInvestigationClassificationOwner(policy, { labels: [{ resourceName: 'ABUSE' }] }).mode).toBe('reported-misconduct');
+  });
+
+  it('protects only the fixed eventType selector from generic parameter writes', () => {
+    const current = [{ key: 'eventType', values: ['AVVIKELSE'] }];
+    expect(preservesIafVofInvestigationClassificationOwnerParameter(current, current)).toBe(true);
+    expect(preservesIafVofInvestigationClassificationOwnerParameter(current, [{ key: 'eventType', values: ['MISSFORHALLANDE'] }])).toBe(false);
+    expect(
+      preservesIafVofInvestigationClassificationOwnerParameter(
+        [...current, { key: 'facility', values: ['OLD'] }],
+        [...current, { key: 'facility', values: ['NEW'] }],
+      ),
+    ).toBe(true);
   });
 });

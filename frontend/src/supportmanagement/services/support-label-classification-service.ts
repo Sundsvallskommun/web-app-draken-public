@@ -1,6 +1,6 @@
 import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { SupportErrandClassificationPlacement } from '@supportmanagement/investigation/iaf-vof-investigation-classification-policy';
 import { getSupportErrandClassificationPlacement } from '@supportmanagement/investigation/investigation-classification-ownership';
-import type { SupportErrandClassificationPlacement } from '@supportmanagement/investigation/investigation-classification-policy';
 
 import {
   findLabelByClassification,
@@ -14,15 +14,15 @@ import type { SupportMetadata } from './support-metadata-service';
 
 export { findLabelByClassification } from './support-label-classification-projector';
 
-const getReportedMisconductPolicy = (placement: SupportErrandClassificationPlacement) =>
-  placement.categorization === 'reported-misconduct' ? placement.policy : undefined;
+const getIafVofPolicy = (placement: SupportErrandClassificationPlacement) =>
+  placement.categorization === 'iaf-vof' ? placement.policy : undefined;
 
 export const getLabelCategory = (
   errand: SupportErrandLabelSource | undefined,
   metadata?: SupportMetadata,
   placement: SupportErrandClassificationPlacement = getSupportErrandClassificationPlacement()
 ): Label | undefined => {
-  const policy = getReportedMisconductPolicy(placement);
+  const policy = getIafVofPolicy(placement);
   return projectLabelCategory(errand, metadata, policy?.labelTree);
 };
 
@@ -36,19 +36,18 @@ export const getErrandTypeLabel = (
   errand: SupportErrandLabelSource | undefined,
   metadata?: SupportMetadata,
   placement: SupportErrandClassificationPlacement = getSupportErrandClassificationPlacement()
-): Label | undefined => projectErrandTypeLabel(errand, metadata, getReportedMisconductPolicy(placement)?.labelTree);
+): Label | undefined => projectErrandTypeLabel(errand, metadata, getIafVofPolicy(placement)?.labelTree);
 
 /** Maps the third form level from the runtime capability vocabulary. */
 export const getMappedLabelSubType = (
   errand: SupportErrandLabelSource | undefined,
   placement: SupportErrandClassificationPlacement = getSupportErrandClassificationPlacement()
-): Label | undefined => projectMappedLabelSubType(errand, getReportedMisconductPolicy(placement)?.labelTree);
+): Label | undefined => projectMappedLabelSubType(errand, getIafVofPolicy(placement)?.labelTree);
 
 export const shouldMapLabelSubType = (
   legacyThreeLevelCategorization: boolean,
   placement: SupportErrandClassificationPlacement = getSupportErrandClassificationPlacement()
-): boolean =>
-  shouldProjectMappedLabelSubType(legacyThreeLevelCategorization, getReportedMisconductPolicy(placement)?.labelTree);
+): boolean => shouldProjectMappedLabelSubType(legacyThreeLevelCategorization, getIafVofPolicy(placement)?.labelTree);
 
 const flattenLabelTree = (labels: readonly Label[] | undefined): Label[] =>
   (labels ?? []).flatMap((label) => [label, ...flattenLabelTree(label.labels)]);

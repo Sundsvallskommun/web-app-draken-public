@@ -30,7 +30,7 @@ const type = {
   displayName: 'Fall',
 };
 
-test('maps a FUTURE reported-misconduct profile from its capability rather than its application name', () => {
+test('projects an explicit label-tree vocabulary independently of application selection', () => {
   const errand = {
     classification: { category: 'INCIDENTS/FUTURE_ACT', type: category.resourcePath },
     labels: [type],

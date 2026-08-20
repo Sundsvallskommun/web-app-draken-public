@@ -1,7 +1,9 @@
+import { getApplication } from '@common/services/application-service';
+
 import {
   resolveSupportErrandClassificationPlacement,
   type SupportErrandClassificationPlacement,
-} from './investigation-classification-policy';
+} from './iaf-vof-investigation-classification-policy';
 import { useInvestigationProfileStore } from './investigation-profile-store';
 
 /**
@@ -10,4 +12,7 @@ import { useInvestigationProfileStore } from './investigation-profile-store';
  * classification persistence.
  */
 export const getSupportErrandClassificationPlacement = (): SupportErrandClassificationPlacement =>
-  resolveSupportErrandClassificationPlacement(useInvestigationProfileStore.getState().profile);
+  resolveSupportErrandClassificationPlacement({
+    application: getApplication(),
+    profile: useInvestigationProfileStore.getState().profile,
+  });

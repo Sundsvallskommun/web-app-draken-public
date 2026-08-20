@@ -93,7 +93,7 @@
     "test:e2e:vof": "dotenv -e .env.vof -- playwright test --project=vof",
     "test:e2e:iaf": "dotenv -e .env.iaf -- playwright test --project=iaf",
     "test:e2e:iaf-schema-lab": "dotenv -e .env.iaf -- playwright test --project=iaf-schema-lab",
-    "test:investigation-classification-policy": "node --test src/supportmanagement/investigation/investigation-classification-policy.test.mjs",
+    "test:investigation-classification-policy": "node --test src/supportmanagement/investigation/iaf-vof-investigation-classification-policy.test.mjs",
     "test:investigation-form-data": "node --test src/supportmanagement/investigation/investigation-form-data.test.mjs",
     "test:investigation-profile": "node --test src/supportmanagement/investigation/investigation-profile.test.mjs",
     "test:unit": "node --test",

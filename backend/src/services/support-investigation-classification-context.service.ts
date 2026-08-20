@@ -1,9 +1,9 @@
+import type {
+  IafVofInvestigationClassificationOwnerSelection,
+  IafVofInvestigationClassificationPolicy,
+} from '@/config/iaf-vof-investigation-classification';
 import { HttpException } from '@/exceptions/HttpException';
 
-import type {
-  SupportInvestigationClassificationOwnerSelection,
-  SupportInvestigationClassificationPolicy,
-} from './support-investigation-classification-owner';
 import { InvestigationJsonObject } from './support-investigation-document.service';
 
 interface RequestedClassification {
@@ -36,8 +36,8 @@ const readJsonPointer = (value: InvestigationJsonObject, pointer: string): unkno
  * owning category paths are allowed by the exact versioned document.
  */
 export const assertSupportInvestigationClassificationContext = (
-  policy: SupportInvestigationClassificationPolicy,
-  owner: SupportInvestigationClassificationOwnerSelection,
+  policy: IafVofInvestigationClassificationPolicy,
+  owner: IafVofInvestigationClassificationOwnerSelection,
   documentKey: string,
   documentValue: InvestigationJsonObject,
   classification: RequestedClassification,
@@ -56,7 +56,7 @@ export const assertSupportInvestigationClassificationContext = (
     throw new HttpException(409, 'The investigation document contains duplicate legal bases');
   }
 
-  if (owner.strategy === 'reported-misconduct' && owner.mode === 'reported-misconduct') {
+  if (owner.mode === 'reported-misconduct') {
     const forcedLegalBases = new Set(policy.forcedLegalBases.map(legalBase => legalBase.trim().toUpperCase()));
     const actualLegalBases = new Set(normalizedLegalBases);
     if (actualLegalBases.size !== forcedLegalBases.size || [...forcedLegalBases].some(legalBase => !actualLegalBases.has(legalBase))) {

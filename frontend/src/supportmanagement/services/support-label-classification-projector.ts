@@ -1,6 +1,6 @@
 import type { Classification, Label } from '@common/data-contracts/supportmanagement/data-contracts';
 
-import type { ReportedMisconductLabelTree } from '../investigation/investigation-classification-policy';
+import type { IafVofInvestigationClassificationLabelTree } from '../investigation/iaf-vof-investigation-classification-policy';
 
 export interface SupportErrandLabelSource {
   readonly labels?: readonly Label[];
@@ -40,15 +40,15 @@ const matchesResource = (label: Label, resource: string | undefined): boolean =>
 export const projectLabelCategory = (
   errand: SupportErrandLabelSource | undefined,
   metadata: SupportLabelMetadataSource | undefined,
-  labelTree: ReportedMisconductLabelTree | undefined
+  labelTree: IafVofInvestigationClassificationLabelTree | undefined
 ): Label | undefined => {
   const categoryClassification = labelTree?.categoryClassification ?? 'CATEGORY';
   const selectedCategory = findLabelByClassification(errand?.labels, categoryClassification);
   if (selectedCategory) return selectedCategory;
 
-  // This is a discriminated-strategy invariant, not a configurable mapping:
-  // reported misconduct persists its selected category in classification.type.
-  // Profiles without the capability retain legacy classification.category.
+  // This is an IAF/VOF invariant, not a configurable mapping: reported
+  // misconduct persists its selected category in classification.type. Other
+  // applications retain legacy classification.category.
   const categoryResource = labelTree ? errand?.classification?.type : errand?.classification?.category;
   return flattenLabelTree(metadata?.labels?.labelStructure).find(
     (label) =>
@@ -60,16 +60,16 @@ export const projectLabelCategory = (
 export const projectErrandTypeLabel = (
   errand: SupportErrandLabelSource | undefined,
   metadata: SupportLabelMetadataSource | undefined,
-  labelTree: ReportedMisconductLabelTree | undefined
+  labelTree: IafVofInvestigationClassificationLabelTree | undefined
 ): Label | undefined =>
   labelTree ? projectLabelCategory(errand, metadata, labelTree) : findLabelByClassification(errand?.labels, 'TYPE');
 
 export const projectMappedLabelSubType = (
   errand: SupportErrandLabelSource | undefined,
-  labelTree: ReportedMisconductLabelTree | undefined
+  labelTree: IafVofInvestigationClassificationLabelTree | undefined
 ): Label | undefined => findLabelByClassification(errand?.labels, labelTree?.typeClassification ?? 'SUBTYPE');
 
 export const shouldProjectMappedLabelSubType = (
   legacyThreeLevelCategorization: boolean,
-  labelTree: ReportedMisconductLabelTree | undefined
+  labelTree: IafVofInvestigationClassificationLabelTree | undefined
 ): boolean => Boolean(labelTree) || legacyThreeLevelCategorization;

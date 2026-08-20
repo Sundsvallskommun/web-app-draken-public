@@ -237,14 +237,14 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
     await expect(page.locator('[data-cy="label-classification-type"]')).toBeDisabled();
 
-    await page.locator('[data-cy="priority-input"]').selectOption('HIGH');
+    await page.locator('[data-cy="channel-input"]').selectOption('PHONE');
     await page
       .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')
       .filter({ hasText: 'Spara ärende' })
       .click();
 
     await expect.poll(() => trace.errandPatches.length).toBe(1);
-    expect(trace.errandPatches[0]).toEqual(expect.objectContaining({ priority: 'HIGH' }));
+    expect(trace.errandPatches[0]).toEqual(expect.objectContaining({ channel: 'PHONE' }));
     expect(trace.errandPatches[0]).not.toHaveProperty('classification');
     expect(trace.errandPatches[0]).not.toHaveProperty('labels');
   });
@@ -261,14 +261,14 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
     await expect(page.locator('[data-cy="label-classification-type"]')).toBeDisabled();
 
-    await page.locator('[data-cy="priority-input"]').selectOption('HIGH');
+    await page.locator('[data-cy="channel-input"]').selectOption('PHONE');
     await page
       .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')
       .filter({ hasText: 'Spara ärende' })
       .click();
 
     await expect.poll(() => trace.errandPatches.length).toBe(1);
-    expect(trace.errandPatches[0]).toEqual(expect.objectContaining({ priority: 'HIGH' }));
+    expect(trace.errandPatches[0]).toEqual(expect.objectContaining({ channel: 'PHONE' }));
     expect(trace.errandPatches[0]).not.toHaveProperty('classification');
     expect(trace.errandPatches[0]).not.toHaveProperty('labels');
   });

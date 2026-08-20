@@ -3,6 +3,7 @@ import FormData from 'form-data';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
+import type { IafVofInvestigationClassificationLabelTree } from '@/config/iaf-vof-investigation-classification';
 import {
   AddressAddressCategoryEnum,
   AttachmentChannelEnum,
@@ -31,7 +32,6 @@ import { Role } from '@/interfaces/role';
 import { ContactChannelType } from '@/interfaces/support-contactchannel';
 import { SupportManagementChannels } from '@/interfaces/supportmanagement-channel.interface';
 import { User } from '@/interfaces/users.interface';
-import type { ReportedMisconductLabelTree } from '@/services/support-investigation-classification-owner';
 import { logger } from '@/utils/logger';
 import { apiURL, buildCategoryFilter, findLeafComponents, removeUnreachablePaths, toOffsetDateTime } from '@/utils/util';
 
@@ -281,7 +281,7 @@ export interface SupportErrandClassificationSelection {
  *
  * When there is no configured owner ancestor, `classification.category` falls back to the
  * category node, so category and type then hold the same resource. This mapping is an invariant
- * of the `reported-misconduct` strategy; only the label-tree vocabulary is profile data. The
+ * of the fixed IAF/VOF investigation classification rule. The
  * frontend performs the same mapping and documents it at
  * `investigation/label-classification/iaf-supportmanagement-label-classification.ts`
  * ("Support Management persists the selected CATEGORY resource in classification.type").
@@ -328,7 +328,7 @@ const requireMetadataLabelResource = (label: Label): string => {
   throw new HttpException(502, 'Support Management classification metadata contains a label without resource');
 };
 
-const findClassificationTypeLabels = (labels: readonly Label[] | undefined, labelTree: ReportedMisconductLabelTree): Label[] => {
+const findClassificationTypeLabels = (labels: readonly Label[] | undefined, labelTree: IafVofInvestigationClassificationLabelTree): Label[] => {
   const types: Label[] = [];
 
   const visit = (nodes: readonly Label[]) => {
@@ -348,7 +348,7 @@ const findClassificationTypeLabels = (labels: readonly Label[] | undefined, labe
 
 const getSupportErrandClassificationMetadata = (
   labelStructure: readonly Label[],
-  labelTree: ReportedMisconductLabelTree,
+  labelTree: IafVofInvestigationClassificationLabelTree,
 ): SupportErrandClassificationMetadata => {
   const bindings: SupportErrandClassificationBinding[] = [];
 
@@ -418,7 +418,7 @@ export interface ResolvedSupportErrandClassification {
 export const resolveSupportErrandClassification = (
   data: SupportErrandClassificationSelection,
   labelStructure: readonly Label[] | undefined,
-  labelTree: ReportedMisconductLabelTree,
+  labelTree: IafVofInvestigationClassificationLabelTree,
 ): ResolvedSupportErrandClassification => {
   if (!labelStructure) {
     throw new HttpException(502, 'Support Management classification metadata is unavailable');

@@ -1,5 +1,9 @@
 import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { resolveSupportManagementApiTarget, SupportManagementApiTarget } from '@/config/api-config';
+import {
+  IafVofInvestigationClassificationPolicy,
+  resolveIafVofInvestigationClassificationPolicy,
+} from '@/config/iaf-vof-investigation-classification';
 import { getSupportInvestigationProfile, SupportInvestigationProfile } from '@/config/support-investigation-profile';
 import {
   SupportInvestigationRuntimeProfileDto,
@@ -13,7 +17,6 @@ import { logger } from '@/utils/logger';
 import { FeatureFlagService, featureFlagService } from './feature-flag.service';
 import { getNewErrandDefaults } from './support-errand.service';
 import { SupportInvestigationAccessService } from './support-investigation-access.service';
-import type { SupportInvestigationClassificationPolicy } from './support-investigation-classification-owner';
 
 export type SupportErrandClassificationOwner = 'generic-errand' | 'investigation' | 'unavailable';
 export type SupportRegistrationState = 'enabled' | 'disabled' | 'unavailable';
@@ -29,6 +32,7 @@ export class SupportInvestigationPolicyService {
   private readonly namespace: string | undefined;
   private readonly accessService: SupportInvestigationAccessService;
   private readonly supportManagementApiTarget: SupportManagementApiTarget;
+  private readonly resolvedIafVofClassificationPolicy: IafVofInvestigationClassificationPolicy | undefined;
 
   constructor(
     featureFlags: FeatureFlagService = featureFlagService,
@@ -42,6 +46,7 @@ export class SupportInvestigationPolicyService {
     this.namespace = namespace;
     this.accessService = accessService;
     this.supportManagementApiTarget = supportManagementApiTarget;
+    this.resolvedIafVofClassificationPolicy = resolveIafVofInvestigationClassificationPolicy(configuredProfile);
   }
 
   async getState(user: User): Promise<SupportInvestigationState> {
@@ -75,7 +80,6 @@ export class SupportInvestigationPolicyService {
           Object.freeze({ ...document, permissions: Object.freeze(this.accessService.permissionsFor(user, document.key)) }),
         ),
       ),
-      ...(this.configuredProfile.classificationPolicy ? { classificationPolicy: this.configuredProfile.classificationPolicy } : {}),
       ...(this.configuredProfile.labelFilter ? { labelFilter: this.configuredProfile.labelFilter } : {}),
       state,
       registration: Object.freeze({ mode: registrationState === 'enabled' ? 'enabled' : 'disabled' }),
@@ -83,7 +87,7 @@ export class SupportInvestigationPolicyService {
   }
 
   async getClassificationOwner(user: User): Promise<SupportErrandClassificationOwner> {
-    if (!this.configuredProfile.classificationPolicy) return 'generic-errand';
+    if (!this.resolvedIafVofClassificationPolicy) return 'generic-errand';
 
     const state = await this.getState(user);
     if (state === 'active') return 'investigation';
@@ -99,7 +103,7 @@ export class SupportInvestigationPolicyService {
    */
   async getRegistrationState(user: User): Promise<SupportRegistrationState> {
     if (!getNewErrandDefaults(this.configuredProfile.application)) return 'disabled';
-    if (!this.configuredProfile.classificationPolicy) return 'enabled';
+    if (!this.resolvedIafVofClassificationPolicy) return 'enabled';
     return this.registrationStateForInvestigationState(await this.getState(user));
   }
 
@@ -107,8 +111,8 @@ export class SupportInvestigationPolicyService {
     return this.configuredProfile;
   }
 
-  get classificationPolicy(): SupportInvestigationClassificationPolicy | undefined {
-    return this.configuredProfile.classificationPolicy;
+  get iafVofClassificationPolicy(): IafVofInvestigationClassificationPolicy | undefined {
+    return this.resolvedIafVofClassificationPolicy;
   }
 
   get labelFilter(): SupportManagementLabelFilterProfileDto | undefined {
@@ -161,6 +165,6 @@ export class SupportInvestigationPolicyService {
 
   private registrationStateForInvestigationState(state: SupportInvestigationState): SupportRegistrationState {
     if (!getNewErrandDefaults(this.configuredProfile.application)) return 'disabled';
-    return this.configuredProfile.classificationPolicy && state === 'unavailable' ? 'unavailable' : 'enabled';
+    return this.resolvedIafVofClassificationPolicy && state === 'unavailable' ? 'unavailable' : 'enabled';
   }
 }

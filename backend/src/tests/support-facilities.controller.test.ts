@@ -3,11 +3,15 @@ import { validate } from 'class-validator';
 import { NextFunction, Response } from 'express';
 import { getMetadataArgsStorage } from 'routing-controllers';
 
+import {
+  IafVofInvestigationClassificationPolicy,
+  resolveIafVofInvestigationClassificationPolicy,
+} from '@/config/iaf-vof-investigation-classification';
+import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import { SupportFacilitiesController, SupportFacilitiesPayloadDto } from '@/controllers/supportmanagement/support-facilities.controller';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
-import type { SupportInvestigationClassificationPolicy } from '@/services/support-investigation-classification-owner';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 
 import { mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
@@ -18,24 +22,8 @@ interface ApiStub {
   patch: ReturnType<typeof vi.fn>;
 }
 
-const classificationPolicy = (selectorKey = 'eventType'): SupportInvestigationClassificationPolicy => ({
-  strategy: 'reported-misconduct',
-  defaultOwnerDocumentKey: 'manager-document',
-  reportedMisconductOwnerDocumentKey: 'misconduct-document',
-  reportedMisconductSelector: {
-    parameter: { key: selectorKey, values: ['MISCONDUCT'] },
-    labels: { resourcePaths: ['REPORT_TYPE/MISCONDUCT'], resourceNames: ['MISCONDUCT'] },
-  },
-  labelTree: {
-    root: { resource: 'CATEGORY', classification: 'CATEGORY_ROOT' },
-    ownerClassification: 'PROVISION_CATEGORY',
-    categoryClassification: 'CATEGORY',
-    typeClassification: 'TYPE',
-  },
-  forcedLegalBases: ['SOL'],
-  legalBasesPointer: '/legalBases',
-  legalBaseRules: [{ legalBase: 'SOL', allowedClassificationCategories: ['CATEGORY/SOL'] }],
-});
+const classificationPolicy = (): IafVofInvestigationClassificationPolicy =>
+  resolveIafVofInvestigationClassificationPolicy(getSupportInvestigationProfile('IAF'))!;
 
 const facilities = (): SupportFacilitiesPayloadDto => ({
   propertyDesignations: ['SUNDSVALL BÖLE 1:1'],
@@ -45,7 +33,7 @@ const facilities = (): SupportFacilitiesPayloadDto => ({
 
 const makeController = (
   options: {
-    policy?: SupportInvestigationClassificationPolicy;
+    policy?: IafVofInvestigationClassificationPolicy;
     owner?: 'generic-errand' | 'investigation' | 'unavailable';
   } = {},
 ) => {
@@ -68,7 +56,7 @@ const makeController = (
     patch: vi.fn(async (_config: unknown) => ({ data: [{ key: 'saved', values: ['true'] }], message: 'success' })),
   };
   const investigationPolicy = {
-    classificationPolicy: options.policy,
+    iafVofClassificationPolicy: options.policy,
     getClassificationOwner: vi.fn(async () => options.owner ?? 'investigation'),
   };
 
@@ -212,18 +200,6 @@ describe('SupportFacilitiesController saveFacility', () => {
     );
     expect(response.statusCode).toBe(200);
     expect(response.body).toEqual([{ key: 'saved', values: ['true'] }]);
-  });
-
-  it('rejects a facility change when that parameter is configured as the active classification selector', async () => {
-    const { controller, api } = makeController({ policy: classificationPolicy('propertyDesignation') });
-
-    await expect(
-      controller.saveFacility(mockReq(), mockMunicipalityId, mockSupportErrandId, '"7"', facilities(), responseDouble()),
-    ).rejects.toMatchObject({
-      status: 409,
-      message: 'The investigation classification owner parameter cannot be changed through the facilities endpoint',
-    });
-    expect(api.patch).not.toHaveBeenCalled();
   });
 
   it('fails closed when classification ownership is temporarily unavailable', async () => {
