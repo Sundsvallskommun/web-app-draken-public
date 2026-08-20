@@ -18,6 +18,7 @@ import { FC, useLayoutEffect, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
+import { resolveCategorizationControl, resolveCategorizationMode } from './categorization-control';
 import { IafLabelCategorization } from './iaf-label-categorization.component';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
@@ -47,11 +48,10 @@ export const SupportErrandBasicsAboutForm: FC<{
 
   const { description } = watch();
   const userHasEditedDescription = useRef(false);
-  const classificationPlacement = getSupportErrandClassificationPlacement();
-  const basicsOwnsClassification = classificationPlacement.owner === 'basics';
-  const classificationUnavailable = classificationPlacement.owner === 'unavailable';
-  const iafVofClassificationPolicy =
-    classificationPlacement.categorization === 'iaf-vof' ? classificationPlacement.policy : undefined;
+  const categorizationControl = resolveCategorizationControl(
+    resolveCategorizationMode(appConfig.features),
+    getSupportErrandClassificationPlacement()
+  );
 
   // useLayoutEffect fires synchronously after DOM update, before Quill's onChange
   useLayoutEffect(() => {
@@ -68,26 +68,24 @@ export const SupportErrandBasicsAboutForm: FC<{
         </FormControl>
       ) : null}
 
-      {/* FIXME complicated logic for selecting categorization. Should be simplified. */}
-      {appConfig.features.useTwoLevelCategorization && basicsOwnsClassification ? (
+      {categorizationControl.kind === 'two-level' ? (
         <div className="flex gap-24">
           <TwoLevelCategorization />
         </div>
       ) : null}
 
-      {/* FIXME Same as above */}
-      {appConfig.features.useThreeLevelCategorization ? (
-        iafVofClassificationPolicy && classificationPlacement.owner !== 'investigation' ? (
-          <IafLabelCategorization
-            supportMetadata={supportMetadata}
-            labelTree={iafVofClassificationPolicy.labelTree}
-            disabled={classificationUnavailable || isSupportErrandLocked(supportErrand)}
-          />
-        ) : !iafVofClassificationPolicy && basicsOwnsClassification ? (
-          <div className="w-full flex gap-20">
-            <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
-          </div>
-        ) : null
+      {categorizationControl.kind === 'three-level' ? (
+        <div className="w-full flex gap-20">
+          <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
+        </div>
+      ) : null}
+
+      {categorizationControl.kind === 'iaf-vof' ? (
+        <IafLabelCategorization
+          supportMetadata={supportMetadata}
+          labelTree={categorizationControl.labelTree}
+          disabled={categorizationControl.disabled || isSupportErrandLocked(supportErrand)}
+        />
       ) : null}
 
       {appConfig.features.useBusinessCase ? (
