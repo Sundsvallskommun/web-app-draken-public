@@ -140,6 +140,41 @@ test.describe('Errand page', () => {
     ).toBeVisible();
   });
 
+  test('keeps a type with only deprecated subtypes when the errand already uses it', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    const activeCategory = JSON.parse(
+      JSON.stringify(mockMetaData.labels.labelStructure.find((l) => l.resourcePath === 'DEPRECATION_TEST'))
+    );
+    const emptiedType = JSON.parse(
+      JSON.stringify(activeCategory.labels.find((l) => l.resourcePath === 'DEPRECATION_TEST/EMPTIED_TYPE'))
+    );
+    delete activeCategory.labels;
+    delete emptiedType.labels;
+
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      { ...mockSupportErrand, labels: [activeCategory, emptiedType] },
+      { method: 'GET' }
+    );
+
+    await page.goto(`arende/${mockSupportErrand.errandNumber}`);
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
+    await dismissCookieConsent();
+
+    // Neither the type nor its category is deprecated, so it is shown unmarked...
+    await expect(page.locator(`[data-cy="labelType-input"][placeholder="${emptiedType.displayName}"]`)).toBeVisible();
+
+    // ...and offered as a plain option rather than an empty option group, so the errand's existing
+    // type-without-subtype classification can be restored after looking at something else.
+    await page.locator('[data-cy="labelType-wrapper"]').click();
+    await expect(page.getByRole('option', { name: emptiedType.displayName, exact: true })).toBeVisible();
+    // Its subtypes are all deprecated and stay out of reach.
+    await expect(page.getByRole('option', { name: 'Utgangen undertyp', exact: true })).toHaveCount(0);
+  });
+
   test('allows updating errand information', async ({ page, mockRoute, dismissCookieConsent }) => {
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
     await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);

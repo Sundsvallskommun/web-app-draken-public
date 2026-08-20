@@ -31,10 +31,17 @@ export const getSelectableLabels = (labels: Label[] | undefined, keepIds: (strin
 /**
  * Selectable types for a category, with their selectable subtypes inlined.
  *
- * A type that has subtypes in the metadata but no selectable ones left is dropped entirely. It has
- * no valid leaf to pick, and hiding the branch is closer to the intent behind deprecating every
- * subtype than turning the type itself into a selectable leaf would be — that would silently change
- * how that branch gets classified. Types kept via `keepIds` are never dropped.
+ * A type that has subtypes in the metadata but no selectable ones left is dropped: there is no valid
+ * leaf to pick, and hiding the branch matches the intent behind deprecating every subtype better
+ * than offering the type itself as a leaf would.
+ *
+ * A type named by `keepIds` — the one already on the errand being edited — is the exception. It is
+ * kept even with an empty subtype list, and therefore renders as a plain option rather than as an
+ * option group, which does make it re-selectable as a leaf. That is deliberate: this case only
+ * arises when the errand is already classified as that type without a subtype (had it a subtype,
+ * that subtype would be in `keepIds` too and the group would be non-empty), so re-picking it
+ * restores the classification the errand already has instead of creating a new shape. It disappears
+ * as soon as another type is chosen.
  */
 export const getSelectableTypesWithSubTypes = (
   types: Label[] | undefined,
@@ -94,44 +101,83 @@ export const getUniqueLabelDisplayNames = (labels: Label[]): string[] =>
 const DEPRECATED_LABEL_SUFFIX = '(Utgått)';
 
 /**
- * Whether a label, or any label above it, is deprecated.
+ * Effective deprecation for every label in a metadata structure, looked up by id and by resource
+ * path. Both keys are needed: the copies stored on an errand carry an id and a resource path but no
+ * flags, so they have to be resolved back to the structure. They are kept in separate maps so an id
+ * can never collide with a path.
  *
- * Works for both metadata labels and the copies stored on an errand — the latter do not carry the
- * flag, so the label is looked up in the metadata structure by id, falling back to resource path.
- * The tree is searched rather than indexed by path segments: `resourcePath` is not reliably a chain
- * of the `resourceName` values above it, so descending segment by segment misses real labels.
+ * The structure is indexed rather than searched per label. `resourcePath` is not reliably a chain of
+ * the `resourceName` values above it, so it cannot be used to descend level by level, and searching
+ * the tree for every rendered label is quadratic in the size of the structure.
+ */
+interface DeprecationIndex {
+  byId: Map<string, boolean>;
+  byResourcePath: Map<string, boolean>;
+}
+
+/**
+ * One index per metadata object. A refetch replaces the whole object, so it gets a fresh index and
+ * the previous one is collected along with the metadata it described.
+ */
+const deprecationIndexes = new WeakMap<SupportMetadata, DeprecationIndex>();
+
+const buildDeprecationIndex = (labelStructure: Label[]): DeprecationIndex => {
+  const index: DeprecationIndex = { byId: new Map(), byResourcePath: new Map() };
+
+  // A branch is only reachable through its parent, so a deprecated ancestor makes everything below
+  // it deprecated as well.
+  const indexLevel = (labels: Label[], hasDeprecatedAncestor: boolean) => {
+    for (const label of labels) {
+      const deprecated = hasDeprecatedAncestor || isLabelDeprecated(label);
+      if (label.id) {
+        index.byId.set(label.id, deprecated);
+      }
+      if (label.resourcePath) {
+        index.byResourcePath.set(label.resourcePath, deprecated);
+      }
+      indexLevel(label.labels ?? [], deprecated);
+    }
+  };
+
+  indexLevel(labelStructure, false);
+  return index;
+};
+
+const getDeprecationIndex = (metadata: SupportMetadata | undefined): DeprecationIndex | undefined => {
+  const labelStructure = metadata?.labels?.labelStructure;
+  if (!metadata || !labelStructure?.length) {
+    return undefined;
+  }
+
+  const cached = deprecationIndexes.get(metadata);
+  if (cached) {
+    return cached;
+  }
+
+  const index = buildDeprecationIndex(labelStructure);
+  deprecationIndexes.set(metadata, index);
+  return index;
+};
+
+/**
+ * Whether a label, or any label above it, is deprecated. Matches on id first and falls back to
+ * resource path, so a label that was renamed still resolves.
  *
- * A branch is only reachable through its parent, so a deprecated ancestor makes everything below it
- * deprecated as well. Returns false when there is nothing to resolve against (metadata not loaded
- * yet) or when the label is not found: an unknown label is left unmarked rather than guessed at.
+ * Returns false when there is nothing to resolve against (metadata not loaded yet) or when the label
+ * is not in the structure: an unknown label is left unmarked rather than guessed at.
  */
 const isLabelPathDeprecated = (label: Label | undefined, metadata: SupportMetadata | undefined): boolean => {
-  const labelStructure = metadata?.labels?.labelStructure;
-  if (!labelStructure?.length || !label) {
+  const index = getDeprecationIndex(metadata);
+  if (!index || !label) {
     return false;
   }
 
-  const isSameLabel = (candidate: Label): boolean =>
-    (!!label.id && candidate.id === label.id) ||
-    (!!label.resourcePath && candidate.resourcePath === label.resourcePath);
+  const byId = label.id ? index.byId.get(label.id) : undefined;
+  if (byId !== undefined) {
+    return byId;
+  }
 
-  // Returns undefined while the label has not been found, so that a miss in one branch keeps the
-  // search going instead of being read as 'not deprecated'.
-  const findDeprecation = (candidates: Label[], hasDeprecatedAncestor: boolean): boolean | undefined => {
-    for (const candidate of candidates) {
-      const deprecated = hasDeprecatedAncestor || isLabelDeprecated(candidate);
-      if (isSameLabel(candidate)) {
-        return deprecated;
-      }
-      const found = findDeprecation(candidate.labels ?? [], deprecated);
-      if (found !== undefined) {
-        return found;
-      }
-    }
-    return undefined;
-  };
-
-  return findDeprecation(labelStructure, false) ?? false;
+  return (label.resourcePath ? index.byResourcePath.get(label.resourcePath) : undefined) ?? false;
 };
 
 /**
