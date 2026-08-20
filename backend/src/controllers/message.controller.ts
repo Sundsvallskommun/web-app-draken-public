@@ -3,6 +3,7 @@ import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
 import {
+  decisionMessageSubject,
   generateMessageId,
   sendDecisionForMex,
   sendDecisionToDigitalMail,
@@ -24,13 +25,11 @@ import { Errand as ErrandDTO, MessageResponse as IMessageResponse } from '@/data
 import { EmailAttachment, EmailRequest, SmsRequest, WebMessageAttachment, WebMessageRequest } from '@/data-contracts/messaging/data-contracts';
 import { AgnosticMessageResponse, DecisionMessageDto, MessageClassification, MessageDto, MessageResponse, SmsDto } from '@/dtos/message.dto';
 import { HttpException } from '@/exceptions/HttpException';
-import { isMEX, isPT } from '@/services/application.service';
+import { isMEX } from '@/services/application.service';
 import { logger } from '@/utils/logger';
 import { apiURL, base64Encode } from '@/utils/util';
 
 export { AgnosticMessageResponse, LetterResponse, MessageClassification, WebMessageResponse } from '@/dtos/message.dto';
-
-const MESSAGE_SUBJECT = isPT() ? 'Meddelande gällande er ansökan om parkeringstillstånd' : 'Meddelande från MEX';
 
 @Controller()
 export class MessageController {
@@ -51,7 +50,9 @@ export class MessageController {
     const errandsUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
 
-    let emailSuccess = { data: { messageId: '' }, message: 'Not sent by email' };
+    // PT never sends by email; the placeholder keeps a truthy messageId so the frontend's
+    // "every channel returned a messageId" check still passes. MEX overrides it with a real send.
+    let emailSuccess = { data: { messageId: 'Not sent by email for PT' }, message: 'Not sent by email for PT' };
     if (isMEX()) {
       emailSuccess = await sendDecisionForMex(municipalityId, req, errandData, messageDto.html ?? '', messageDto.plaintext ?? '');
     }
@@ -72,9 +73,9 @@ export class MessageController {
       ];
     }
 
-    const minasidor_success = await sendDecisionToMinaSidor(baseURL, errandData.data.id!.toString(), req.user, pdf);
-    const katla_success = await sendDecisionToKatla(baseURL, errandData.data, req.user, pdf);
-    const digitalMail_success = await sendDecisionToDigitalMail(errandData.data, req.user, pdf);
+    const minasidor_success = await sendDecisionToMinaSidor(baseURL, errandData.data.id!.toString(), req.user, pdf, decision!.id!);
+    const katla_success = await sendDecisionToKatla(baseURL, errandData.data, req.user, pdf, decision!.id!);
+    const digitalMail_success = await sendDecisionToDigitalMail(errandData.data, req.user, pdf, decision!.id!);
 
     return [minasidor_success, katla_success, digitalMail_success, emailSuccess];
   }
@@ -138,7 +139,7 @@ export class MessageController {
         partyId: uuidv4(),
       },
       emailAddress: recipientEmail,
-      subject: messageDto.subject || MESSAGE_SUBJECT,
+      subject: messageDto.subject || decisionMessageSubject(errandData.data),
       message: messageDto.text.replace(/<p><br \/><\/p>/g, ''),
       htmlMessage: base64Encode(messageDto.text.replace(/<p><br \/><\/p>/g, '')),
       attachments: attachments,

@@ -20,6 +20,7 @@ import {
   SECRET_KEY,
   SWAGGER_ENABLED,
 } from '@config';
+import defaultAuthGuard from '@middlewares/default-auth.middleware';
 import errorMiddleware from '@middlewares/error.middleware';
 import { Strategy, VerifiedCallback } from '@node-saml/passport-saml';
 import { logger, stream } from '@utils/logger';
@@ -44,7 +45,7 @@ import swaggerUi from 'swagger-ui-express';
 
 import { HttpException } from './exceptions/HttpException';
 import { Profile } from './interfaces/profile.interface';
-import { authorizeGroups, getPermissions, getRole } from './services/authorization.service';
+import { authorizeGroups, getLoginPermissions, getRole } from './services/authorization.service';
 import { additionalConverters } from './utils/custom-validation-classes';
 import { isValidOrigin } from './utils/isValidateOrigin';
 import { isValidUrl } from './utils/util';
@@ -132,11 +133,12 @@ const samlStrategy = new Strategy(
         email: email,
         groups: appGroups,
         role: getRole(appGroups),
-        permissions: getPermissions(appGroups),
         // SAML session identity — needed so SP-initiated Single Logout can build a valid LogoutRequest.
         nameID: profile.nameID,
         nameIDFormat: profile.nameIDFormat,
         sessionIndex: profile.sessionIndex,
+        // Permissions are resolved once here, at login, and carried in the session cookie.
+        permissions: getLoginPermissions(appGroups),
       };
 
       logger.info(`Authenticated user ${findUser.username} (role: ${findUser.role})`);
@@ -222,14 +224,8 @@ class App {
         store: this.sessionStore,
         cookie: {
           path: BASE_URL_PREFIX,
-          httpOnly: true, // XSS protection; independent of TLS
-          // The app is served over https in both TEST and production (only the IdP is http, and the
-          // session cookie is scoped to the app domain — it never travels to the IdP), so Secure is
-          // correct in every deployed env. Off only for local dev: a non-production build, or a
-          // local production build served over http://localhost (signalled by ENVIRONMENT=LOCAL).
+          httpOnly: true,
           secure: this.env === 'production' && process.env.ENVIRONMENT !== 'LOCAL',
-          // Frontend + backend are same-origin (foobar.domain.com + foobar.domain.com/api), so Lax
-          // works everywhere; the cross-site IdP callback doesn't need the cookie sent.
           sameSite: 'lax',
           maxAge: 12 * 60 * 60 * 1000,
         },
@@ -380,6 +376,11 @@ class App {
         }
       })(req, res, next);
     });
+
+    // Default-deny authentication. Mounted last so the SAML endpoints and the `/health`
+    // probe above it stay reachable, and before initializeRoutes() so every
+    // routing-controllers route sits behind it unless listed in PUBLIC_PATHS.
+    this.app.use(BASE_URL_PREFIX!, defaultAuthGuard);
   }
 
   private initializeRoutes(controllers: NewableFunction[]) {

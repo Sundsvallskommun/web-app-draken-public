@@ -1,11 +1,12 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
-    "src/**/*.cy.{ts,tsx}",
-    "cypress/e2e/**/*.cy.{ts,tsx}",
-    "cypress/support/**/*.{ts,tsx}"
+    "e2e/**/*.spec.ts"
   ],
-  "project": ["src/**/*.{ts,tsx}", "cypress/**/*.{ts,tsx}"],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "e2e/**/*.{ts,tsx}"
+  ],
   "ignore": [
     "src/data-contracts/**"
   ],

@@ -63,6 +63,18 @@ export interface CitizenWithChangedAddress {
   addresses?: CitizenAddress[] | null;
 }
 
+export interface CustodyChild {
+  /** @format uuid */
+  personId?: string;
+  personNumber?: string | null;
+  givenname?: string | null;
+  middlename?: string | null;
+  lastname?: string | null;
+  notNR?: string | null;
+  classified?: string | null;
+  protectedNR?: string | null;
+}
+
 export interface CustodyChildrenPupil {
   personnumber?: string | null;
   typeOfSchool?: string | null;

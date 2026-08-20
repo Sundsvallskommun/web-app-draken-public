@@ -61,7 +61,9 @@ export class SupportExportController {
     @QueryParam('include') include: string,
   ): Promise<any> {
     const templateStakeholder = (s: SupportExportStakeholder) => ({
-      name: s.organizationName ?? `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim(),
+      // Persons have first/last name, organizations only organizationName. Prefer the name parts (organizationName
+      // is polluted with firstName upstream, so it can't be used for persons); organizations fall back to it.
+      name: `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim() || s.organizationName || '',
       street: s.address ?? '',
       zip: s.zipCode ?? '',
       city: s.city ?? '',

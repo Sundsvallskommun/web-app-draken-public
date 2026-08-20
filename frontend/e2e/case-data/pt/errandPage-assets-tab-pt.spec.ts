@@ -377,7 +377,7 @@ type MockRoute = (pattern: string | RegExp, response: unknown, options?: { metho
 const setupCommonIntercepts = async (page: import('@playwright/test').Page, mockRoute: MockRoute) => {
   await mockRoute('**/schemas/*/latest', mockSchema);
   await mockRoute('**/schemas/*/ui-schema', mockUiSchema);
-  // Edit flow fetches the schema by id (no /latest); Cypress matched both with one regex.
+  // Edit flow fetches the schema by id (no /latest), so match both endpoint variants.
   await mockRoute('**/schemas/*', mockSchema);
   await mockRoute('**/users/admins', mockAdmins);
   await mockRoute('**/me', mockMe);
@@ -531,6 +531,18 @@ test.describe('Errand page Insatser tab', () => {
       await visitInsatserTab(page, mockRoute, dismissCookieConsent, mockDraftAsset);
       await expect(page.locator('[data-cy="edit-service-button"]')).toHaveCount(0);
       await expect(page.locator('[data-cy="remove-service-button"]')).toHaveCount(0);
+    });
+
+    // Regression guard: a decided errand (status "Beslutad") is locked for editing but not
+    // closed, so sending messages must stay possible. Guards isMessagesLocked in
+    // casedata-errand-service so the post-decision message lock does not reappear. Reuses the
+    // proven locked-errand load (visitInsatserTab) and just switches to the messages tab.
+    test('keeps the message buttons enabled', async ({ page, mockRoute, dismissCookieConsent }) => {
+      await visitInsatserTab(page, mockRoute, dismissCookieConsent, mockDraftAsset);
+      await page.locator('.sk-tabs-list button').filter({ hasText: 'Meddelanden' }).click({ force: true });
+
+      await expect(page.locator('[data-cy="new-message-button"]').first()).toBeEnabled();
+      await expect(page.locator('[data-cy="sidebar-new-message-button"]').first()).toBeEnabled();
     });
   });
 });
