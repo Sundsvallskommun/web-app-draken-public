@@ -9,6 +9,7 @@ import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
 import { mockPersonId } from '../fixtures/mockPersonId';
+import { MODAL_DIALOG } from '../../utils/modal';
 
 const [imageAttachment, pdfAttachment] = mockAttachments.data;
 
@@ -169,7 +170,7 @@ test.describe('Errand page attachments tab', () => {
     const imageRow = page.locator('[data-cy="casedataAttachments-list"] li.sk-form-file-upload-list-item').filter({ hasText: imageAttachment.name });
     await imageRow.getByRole('button', { name: 'Öppna' }).click();
 
-    const modalImage = page.locator('.sk-modal-dialog img');
+    const modalImage = page.locator(`${MODAL_DIALOG} img`);
     await expect(modalImage).toBeVisible();
     await expect(modalImage).toHaveAttribute('src', `data:${imageAttachment.mimeType};base64,${mockJpegBase64}`);
     await expect.poll(() => modalImage.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
