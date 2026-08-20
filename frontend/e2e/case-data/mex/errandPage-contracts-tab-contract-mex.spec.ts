@@ -8,7 +8,6 @@ import {
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
-import { Role } from '@casedata/interfaces/role';
 import { test, expect } from '../../fixtures/base.fixture';
 import { mockAttachments } from '../fixtures/mockAttachments';
 import { mockHistory } from '../fixtures/mockHistory';
