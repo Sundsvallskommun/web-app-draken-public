@@ -2,7 +2,12 @@ import { StakeholderWithPersonnumber } from '@casedata/interfaces/contract-data'
 import { Address, ContractType, StakeholderRole } from '@casedata/interfaces/contracts';
 import { Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
-import { getContractStakeholderName, isLeaseAgreement, prettyContractRoles } from '@casedata/services/contract-service';
+import {
+  canBeContractParty,
+  getContractStakeholderName,
+  isLeaseAgreement,
+  prettyContractRoles,
+} from '@casedata/services/contract-service';
 import { Button, Checkbox, FormControl, FormLabel, Input, Modal, Select } from '@sk-web-gui/react';
 import React, { useState } from 'react';
 
@@ -111,6 +116,12 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
       return true;
     });
 
+  // Stakeholders without a partyId (person/organization lookup) or an organization number cannot
+  // be saved as contract parties, so they are excluded from the dropdown entirely; a hint below
+  // the field lists them and explains why.
+  const selectableStakeholderOptions = filteredStakeholderOptions.filter(canBeContractParty);
+  const excludedStakeholderOptions = filteredStakeholderOptions.filter((s) => !canBeContractParty(s));
+
   return (
     <Modal
       show={isOpen}
@@ -129,12 +140,19 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
                 onChange={(e) => setSelectedStakeholderId(e.target.value)}
               >
                 <Select.Option value="">Välj intressent...</Select.Option>
-                {filteredStakeholderOptions.map((s) => (
+                {selectableStakeholderOptions.map((s) => (
                   <Select.Option key={s.id} value={String(s.id)}>
                     {getStakeholderLabel(s) || '(namn saknas)'}
                   </Select.Option>
                 ))}
               </Select>
+              {excludedStakeholderOptions.length > 0 && (
+                <small data-cy="party-modal-manual-stakeholder-hint">
+                  {`Följande intressenter saknar person-/organisationsuppslag eller organisationsnummer och kan därför inte väljas som avtalspart: ${excludedStakeholderOptions
+                    .map((s) => getStakeholderLabel(s) || '(namn saknas)')
+                    .join(', ')}`}
+                </small>
+              )}
             </FormControl>
           ) : (
             <div>
