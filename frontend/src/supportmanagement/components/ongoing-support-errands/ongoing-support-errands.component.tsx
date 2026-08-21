@@ -113,7 +113,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
       // A stored filter can point at a label that has since been deprecated. Such a value is dropped
       // here: its checkbox is no longer rendered, so keeping it would leave an active filter the user
       // can neither see nor switch off.
-      const selectableCategoryPaths = getSelectableCategories(supportMetadata).map((c) => c.resourcePath);
+      const selectableCategoryPaths = new Set(getSelectableCategories(supportMetadata).map((c) => c.resourcePath));
       const selectableTypeNames = getUniqueLabelDisplayNames(getSelectableTypes(supportMetadata));
       const selectableSubTypeNames = getUniqueLabelDisplayNames(getSelectableSubTypes(supportMetadata));
       try {
@@ -122,7 +122,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
           labelCategory:
             (storedFilter?.labelCategory as string)
               ?.split(',')
-              .filter((resourcePath: string) => selectableCategoryPaths.includes(resourcePath)) ||
+              .filter((resourcePath: string) => selectableCategoryPaths.has(resourcePath)) ||
             SupportManagementValues.labelCategory,
           type: (storedFilter?.type as string)?.split(',') || SupportManagementValues.type,
           labelType:
