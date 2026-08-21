@@ -694,7 +694,7 @@ export const ContractForm: FC<{
                     </FormControl>
                   </div>
 
-                  <strong className="text-h6-md">Ange tid för upplåtarens uppsägningstid</strong>
+                  <strong>Ange tid för upplåtarens uppsägningstid</strong>
                   <div className="flex justify-between gap-32 items-start mb-md">
                     <FormControl id={`noticePeriod-2`} className="flex-grow max-w-[45%]">
                       <FormLabel>Enhet</FormLabel>
@@ -737,7 +737,7 @@ export const ContractForm: FC<{
                 </>
               ) : (
                 <>
-                  <strong className="-mb-16">Ange uppsägningstid</strong>
+                  <strong>Ange uppsägningstid</strong>
                   <div className="flex justify-between gap-32 items-start mb-md">
                     <FormControl id={`noticePeriod-0`} className="flex-grow max-w-[45%]">
                       <FormLabel>Enhet</FormLabel>
