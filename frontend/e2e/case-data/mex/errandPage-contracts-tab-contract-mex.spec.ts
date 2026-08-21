@@ -332,6 +332,43 @@ test.describe('Errand page contracts tab', () => {
     });
   });
 
+  test('manages extra avitexter in lease agreements', async ({ page, mockRoute, dismissCookieConsent }) => {
+    await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
+    await mockRoute('**/errand/101', mockMexErrand_base, { method: 'GET' }); // @getErrand
+    await page.locator('[data-cy="lopande-disclosure"] button.sk-disclosure-header-button').click();
+
+    await page.locator('[data-cy="fees-yearly-input"]').fill('120');
+
+    // Extra avitexter are stored as detailedDescriptionNN under the InvoiceInfo extraParameter group
+    await page.locator('[data-cy="add-detailed-description-button"]').click();
+    await page.locator('[data-cy="detailed-description-input-0"]').fill('Första kompletterande raden');
+    await page.locator('[data-cy="add-detailed-description-button"]').click();
+    await page.locator('[data-cy="detailed-description-input-1"]').fill('Andra kompletterande raden');
+
+    // Each row is capped at 51 characters
+    await expect(page.locator('[data-cy="detailed-description-input-0"]')).toHaveAttribute('maxlength', '51');
+
+    // Removing the first row renumbers the remaining one
+    await page.locator('[data-cy="remove-detailed-description-0-button"]').click();
+    await expect(page.locator('[data-cy="detailed-description-input-0"]')).toHaveValue('Andra kompletterande raden');
+    await expect(page.locator('[data-cy="detailed-description-input-1"]')).not.toBeVisible();
+
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
+    await page.locator('[data-cy="avtalstid-start"]').clear();
+    await page.locator('[data-cy="avtalstid-start"]').fill('2024-01-01');
+    await page.locator('[data-cy="all-notice-period"]').clear();
+    await page.locator('[data-cy="all-notice-period"]').fill('1');
+
+    const putContractRequest = page.waitForRequest(
+      (req) => req.url().includes('/contracts/2024-01026') && req.method() === 'PUT'
+    );
+    await page.locator('[data-cy="lopande-disclosure"] button.sk-btn-primary').filter({ hasText: 'Spara' }).click();
+    const leaseAgreement: Contract = (await putContractRequest).postDataJSON();
+    const invoiceInfo = leaseAgreement.extraParameters?.find((p) => p.name === 'InvoiceInfo');
+    expect(invoiceInfo?.parameters?.detailedDescription01).toBe('Andra kompletterande raden');
+    expect(invoiceInfo?.parameters?.detailedDescription02).toBeUndefined();
+  });
+
   test('manages creating a new lease agreement with correct default values', async ({ page, mockRoute, dismissCookieConsent }) => {
     await visitErrandWithoutContract(page, mockRoute, dismissCookieConsent);
     await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.LEASE_AGREEMENT);

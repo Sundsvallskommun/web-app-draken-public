@@ -6,6 +6,7 @@ import {
   AttachmentCategory,
   Contract,
   ContractType,
+  ExtraParameterGroup,
   Fees,
   IntervalType,
   InvoicedIn,
@@ -87,6 +88,38 @@ export const getFeeDescription = (type: ContractType, leaseType?: LeaseType): st
   }
   return feeDescriptionByContractType[type] ?? 'Övrig avgift';
 };
+
+// Extra avitexter for recurring invoicing are stored in the InvoiceInfo extraParameter group,
+// keyed detailedDescriptionNN (two-digit sequence: 01, 02, ...). Max 51 chars per value.
+export const MAX_DETAILED_DESCRIPTION_LENGTH = 51;
+const DETAILED_DESCRIPTION_KEY = /^detailedDescription\d{2}$/;
+
+export const isDetailedDescriptionKey = (key: string): boolean => DETAILED_DESCRIPTION_KEY.test(key);
+
+export const getDetailedDescriptions = (parameters?: Record<string, string>): string[] =>
+  Object.keys(parameters ?? {})
+    .filter(isDetailedDescriptionKey)
+    .sort()
+    .map((key) => parameters?.[key] ?? '');
+
+export const toDetailedDescriptionParameters = (values: string[]): Record<string, string> =>
+  Object.fromEntries(values.map((value, i) => [`detailedDescription${String(i + 1).padStart(2, '0')}`, value]));
+
+// Drops empty rows and renumbers the remaining ones so the API always receives a contiguous
+// detailedDescription01..NN sequence capped at the max length.
+const sanitizeInvoiceInfoParameters = (groups?: ExtraParameterGroup[]): ExtraParameterGroup[] | undefined =>
+  groups?.map((group) => {
+    if (group.name !== 'InvoiceInfo') {
+      return group;
+    }
+    const otherParameters = Object.fromEntries(
+      Object.entries(group.parameters ?? {}).filter(([key]) => !isDetailedDescriptionKey(key))
+    );
+    const descriptions = getDetailedDescriptions(group.parameters)
+      .filter((value) => value?.trim())
+      .map((value) => value.slice(0, MAX_DETAILED_DESCRIPTION_LENGTH));
+    return { ...group, parameters: { ...otherParameters, ...toDetailedDescriptionParameters(descriptions) } };
+  });
 
 export const isLeaseAgreement = (contractType: ContractType) =>
   [
@@ -565,7 +598,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     status: data.status,
     externalReferenceId: (data.externalReferenceId ?? '').toString(),
     stakeholders,
-    extraParameters: data.extraParameters,
+    extraParameters: sanitizeInvoiceInfoParameters(data.extraParameters),
     additionalTerms: data.additionalTerms,
   };
 };
