@@ -102,6 +102,15 @@ test.describe('Errand page', () => {
       page.locator(`[data-cy="labelType-input"][placeholder="${deprecatedCategoryType.displayName} (Utgått)"]`)
     ).toBeVisible();
 
+    await page.locator('[data-cy="labelType-wrapper"]').click();
+    await expect(
+      page.getByRole('option', { name: `${deprecatedCategoryType.displayName} (Utgått)`, exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', { name: 'Annan typ under utgangen verksamhet (Utgått)', exact: true })
+    ).toHaveCount(0);
+    await page.keyboard.press('Escape');
+
     // Once another category is picked the deprecated one is gone for good.
     await categorySelect.selectOption('Utgangstest');
     await expect(categorySelect.locator('option', { hasText: 'Utgangen verksamhet' })).toHaveCount(0);
@@ -138,6 +147,14 @@ test.describe('Errand page', () => {
     await expect(
       page.locator(`[data-cy="labelType-input"][placeholder="${deprecatedType.displayName} (Utgått)"]`)
     ).toBeVisible();
+
+    await page.locator('[data-cy="labelType-wrapper"]').click();
+    await expect(
+      page.getByRole('option', { name: `${deprecatedType.displayName} (Utgått)`, exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', { name: 'Aktiv undertyp under utgangen typ (Utgått)', exact: true })
+    ).toHaveCount(0);
   });
 
   test('keeps a type with only deprecated subtypes when the errand already uses it', async ({

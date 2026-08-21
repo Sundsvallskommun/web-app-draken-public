@@ -4,7 +4,7 @@ import { isSupportErrandLocked, SupportErrand } from '@supportmanagement/service
 import {
   getLabelDisplayName,
   getSelectableLabels,
-  getSelectableTypesWithSubTypes,
+  getSelectableTypesForCategory,
 } from '@supportmanagement/services/support-label-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { ChangeEvent, FC, useEffect, useMemo, useState } from 'react';
@@ -50,10 +50,13 @@ export const ThreeLevelCategorization: FC<{
   const { t } = useTranslation();
 
   const [selectedLabels, setSelectedLabels] = useState<SelectedLabels>({});
-  const [typesList, setTypesList] = useState<Label[]>([]);
 
-  const categoriesList = supportMetadata?.labels?.labelStructure?.sort((a, b) =>
-    (a.displayName ?? '').localeCompare(b.displayName ?? '')
+  const categoriesList = useMemo(
+    () =>
+      [...(supportMetadata?.labels?.labelStructure ?? [])].sort((a, b) =>
+        (a.displayName ?? '').localeCompare(b.displayName ?? '')
+      ),
+    [supportMetadata?.labels?.labelStructure]
   );
 
   useEffect(() => {
@@ -62,12 +65,16 @@ export const ThreeLevelCategorization: FC<{
     }
   }, [supportErrand]);
 
-  useEffect(() => {
-    const categoryItem = categoriesList?.find(
-      (c) => c.id === getErrandLabelId(supportErrand, CLASSIFICATIONS.CATEGORY)
-    );
-    setTypesList(categoryItem?.labels?.sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? '')) ?? []);
-  }, [categoriesList, supportErrand]);
+  const selectedCategory = useMemo(
+    () => categoriesList.find((category) => category.id === selectedLabels.CATEGORY?.id),
+    [categoriesList, selectedLabels.CATEGORY?.id]
+  );
+
+  const typesList = useMemo(
+    () =>
+      [...(selectedCategory?.labels ?? [])].sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? '')),
+    [selectedCategory]
+  );
 
   // `categoriesList` and `typesList` deliberately keep every label, deprecated ones included, since
   // they back the lookups further down (handleCategoryChange, findType, findSubType) which must keep
@@ -80,8 +87,8 @@ export const ThreeLevelCategorization: FC<{
   );
 
   const selectableTypes = useMemo(
-    () => getSelectableTypesWithSubTypes(typesList, [selectedLabels.TYPE?.id, selectedLabels.SUBTYPE?.id]),
-    [typesList, selectedLabels.TYPE?.id, selectedLabels.SUBTYPE?.id]
+    () => getSelectableTypesForCategory(selectedCategory, [selectedLabels.TYPE?.id, selectedLabels.SUBTYPE?.id]),
+    [selectedCategory, selectedLabels.TYPE?.id, selectedLabels.SUBTYPE?.id]
   );
 
   useEffect(() => {
@@ -97,9 +104,6 @@ export const ThreeLevelCategorization: FC<{
 
   const handleCategoryChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const selectedCategory = categoriesList?.find((c) => c.id === e.currentTarget.value);
-    setTypesList(
-      selectedCategory?.labels?.sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? '')) ?? []
-    );
     setSelectedLabels({ CATEGORY: selectedCategory! });
     setValue('category', selectedCategory?.resourcePath ?? '', { shouldDirty: true });
     setValue('type', '' as any, { shouldDirty: true });
@@ -201,9 +205,12 @@ export const ThreeLevelCategorization: FC<{
           >
             <Combobox.Input data-cy="labelType-input" className="w-full" />
             <Combobox.List data-cy="labelType-list" className="!max-h-[30em]">
-              {selectableTypes.map((typeLabel, index) =>
+              {selectableTypes.map((typeLabel) =>
                 (typeLabel.labels?.length ?? 0) > 0 ? (
-                  <Combobox.Optgroup key={`group-${index}`} label={getLabelDisplayName(typeLabel, supportMetadata)}>
+                  <Combobox.Optgroup
+                    key={`group-${typeLabel.id ?? typeLabel.resourcePath ?? typeLabel.resourceName}`}
+                    label={getLabelDisplayName(typeLabel, supportMetadata)}
+                  >
                     {typeLabel.labels
                       ?.sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? ''))
                       .map((subtypeLabel) => (
