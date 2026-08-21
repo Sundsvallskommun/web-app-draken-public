@@ -116,10 +116,11 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
       return true;
     });
 
-  // Manually added stakeholders (no person/organization lookup, so no partyId) cannot be saved as
-  // contract parties — the contract API requires a valid UUID. They are shown but not selectable.
+  // Stakeholders without a partyId (person/organization lookup) or an organization number cannot
+  // be saved as contract parties, so they are excluded from the dropdown entirely; a hint below
+  // the field lists them and explains why.
   const selectableStakeholderOptions = filteredStakeholderOptions.filter(canBeContractParty);
-  const manualStakeholderOptions = filteredStakeholderOptions.filter((s) => !canBeContractParty(s));
+  const excludedStakeholderOptions = filteredStakeholderOptions.filter((s) => !canBeContractParty(s));
 
   return (
     <Modal
@@ -144,15 +145,12 @@ export const ContractPartyModal: React.FC<ContractPartyModalProps> = ({
                     {getStakeholderLabel(s) || '(namn saknas)'}
                   </Select.Option>
                 ))}
-                {manualStakeholderOptions.map((s) => (
-                  <Select.Option key={s.id} value={String(s.id)} disabled>
-                    {`${getStakeholderLabel(s) || '(namn saknas)'} (manuellt tillagd)`}
-                  </Select.Option>
-                ))}
               </Select>
-              {manualStakeholderOptions.length > 0 && (
+              {excludedStakeholderOptions.length > 0 && (
                 <small data-cy="party-modal-manual-stakeholder-hint">
-                  Manuellt tillagda intressenter (utan person-/organisationsuppslag) kan inte väljas som avtalspart.
+                  {`Följande intressenter saknar person-/organisationsuppslag eller organisationsnummer och kan därför inte väljas som avtalspart: ${excludedStakeholderOptions
+                    .map((s) => getStakeholderLabel(s) || '(namn saknas)')
+                    .join(', ')}`}
                 </small>
               )}
             </FormControl>

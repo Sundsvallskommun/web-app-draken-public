@@ -597,10 +597,12 @@ export const getContractStakeholderName: (c: StakeholderWithPersonnumber) => str
     ? c.organizationName ?? ''
     : `${c.firstName} ${c.lastName}`;
 
-// A stakeholder can only be added as a contract party if it has a party-register id (personId, set
-// by the person/organization lookup). The contract API validates stakeholder partyId as a UUID, so
-// manually entered stakeholders (no lookup, empty personId) are rejected with a 400 on save.
-export const canBeContractParty = (stakeholder: CasedataOwnerOrContact): boolean => !!stakeholder.personId;
+// A stakeholder can only be added as a contract party if it carries an identifier the contract can
+// be keyed on: a party-register id (personId, set by the person/organization lookup) or an
+// organization number. The contract API validates stakeholder partyId as a UUID, so manually
+// entered stakeholders without either identifier cannot be saved on a contract.
+export const canBeContractParty = (stakeholder: CasedataOwnerOrContact): boolean =>
+  !!stakeholder.personId || !!stakeholder.organizationNumber;
 
 // Convert errand stakeholder to contract stakeholder format (for adding new parties)
 export const errandStakeholderToContractStakeholder = (

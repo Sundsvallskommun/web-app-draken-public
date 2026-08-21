@@ -501,10 +501,12 @@ test.describe('Errand page contracts tab', () => {
     const stakeholderSelect = page.locator('[data-cy="party-modal-stakeholder-select"]');
     await expect(stakeholderSelect).toBeVisible();
 
-    // Looked-up stakeholders are selectable; the manual one is disabled with an explanatory hint
+    // Looked-up stakeholders are selectable; the manual one is excluded from the list entirely,
+    // and the hint below the field names it and explains why
     await expect(stakeholderSelect.locator('option', { hasText: 'Test Upplåtarsson' })).toBeEnabled();
-    await expect(stakeholderSelect.locator('option', { hasText: 'Manuell Intressent' })).toBeDisabled();
+    await expect(stakeholderSelect.locator('option', { hasText: 'Manuell Intressent' })).toHaveCount(0);
     await expect(page.locator('[data-cy="party-modal-manual-stakeholder-hint"]')).toBeVisible();
+    await expect(page.locator('[data-cy="party-modal-manual-stakeholder-hint"]')).toContainText('Manuell Intressent');
   });
 
   test('manages creating a new purchase agreement with manual party selection', async ({ page, mockRoute, dismissCookieConsent }) => {
