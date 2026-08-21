@@ -599,6 +599,7 @@ export interface Details {
   /**
    * The invoice amount
    * @format float
+   * @min 0
    */
   amount: number;
   /**

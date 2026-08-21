@@ -589,11 +589,6 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  integralNumber?: boolean;
-  missingNode?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -605,9 +600,14 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  number?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  missingNode?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
   string?: boolean;
   boolean?: boolean;
+  number?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -892,6 +892,31 @@ export interface KeyValues {
   values?: string[];
 }
 
+/** Message model */
+export interface Message {
+  /** Message ID */
+  id?: string;
+  /** The ID of the replied message */
+  inReplyToMessageId?: string;
+  /**
+   * The timestamp when the message was created.
+   * @format date-time
+   */
+  created?: string;
+  /** The participant who created the message. */
+  createdBy?: Identifier;
+  /**
+   * The content of the message.
+   * @minLength 1
+   */
+  content: string;
+  readBy?: ReadBy[];
+  attachments?: ConversationAttachment[];
+  attachmentIds?: number[];
+  /** Type of message (user or system created) */
+  type?: MessageTypeEnum;
+}
+
 /** Readby model */
 export interface ReadBy {
   /** The identifier of the person who read the message. */
@@ -925,29 +950,10 @@ export interface ConversationAttachment {
   created?: string;
 }
 
-/** Message model */
-export interface Message {
-  /** Message ID */
-  id?: string;
-  /** The ID of the replied message */
-  inReplyToMessageId?: string;
-  /**
-   * The timestamp when the message was created.
-   * @format date-time
-   */
-  created?: string;
-  /** The participant who created the message. */
-  createdBy?: Identifier;
-  /**
-   * The content of the message.
-   * @minLength 1
-   */
-  content: string;
-  readBy?: ReadBy[];
-  attachments?: ConversationAttachment[];
-  attachmentIds?: number[];
-  /** Type of message (user or system created) */
-  type?: MessageTypeEnum;
+/** Request to mark messages as read */
+export interface MarkAsReadRequest {
+  /** @minItems 1 */
+  messageIds: string[];
 }
 
 export interface PatchNotification {
@@ -1081,31 +1087,31 @@ export interface PageErrand {
   content?: Errand[];
   /** @format int32 */
   number?: number;
-  first?: boolean;
-  last?: boolean;
+  sort?: SortObject;
+  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
-  sort?: SortObject;
+  first?: boolean;
+  last?: boolean;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
   unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export interface CommitMetadata {
@@ -1232,13 +1238,54 @@ export interface PageMessage {
   content?: Message[];
   /** @format int32 */
   number?: number;
-  first?: boolean;
-  last?: boolean;
+  sort?: SortObject;
+  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
-  sort?: SortObject;
+  first?: boolean;
+  last?: boolean;
   empty?: boolean;
+}
+
+/** Read-by statistics for a conversation */
+export interface ConversationReadByCount {
+  /**
+   * The SM conversation ID
+   * @example "896a44d8-724b-11ed-a840-0242ac110002"
+   */
+  conversationId?: string;
+  /**
+   * Total number of messages in the conversation
+   * @format int64
+   */
+  messageCount?: number;
+  readByCount?: ReadByCount[];
+  readByPartCount?: ReadByPartCount[];
+}
+
+/** Number of messages read by a specific identifier */
+export interface ReadByCount {
+  /** The identifier of the person the count refers to */
+  identifier?: Identifier;
+  /**
+   * Number of messages read by the identifier
+   * @format int64
+   */
+  count?: number;
+}
+
+/** Number of messages read by a specific part */
+export interface ReadByPartCount {
+  /**
+   * The part the count refers to
+   * @example "KC-23010001"
+   */
+  part?: string;
+  /**
+   * Number of messages read by the part
+   * @format int64
+   */
+  count?: number;
 }
 
 export interface PageDecision {
@@ -1251,12 +1298,12 @@ export interface PageDecision {
   content?: Decision[];
   /** @format int32 */
   number?: number;
-  first?: boolean;
-  last?: boolean;
+  sort?: SortObject;
+  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
-  sort?: SortObject;
+  first?: boolean;
+  last?: boolean;
   empty?: boolean;
 }
 
