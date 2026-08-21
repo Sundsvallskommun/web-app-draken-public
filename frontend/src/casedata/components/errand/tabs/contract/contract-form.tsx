@@ -1127,7 +1127,7 @@ export const ContractForm: FC<{
                     </FormControl>
                   </div>
                   <div className="flex gap-18 justify-start">
-                    <FormControl className="w-[36.7rem]">
+                    <FormControl className="w-full">
                       <FormLabel>Avitext</FormLabel>
                       <Textarea
                         rows={1}
@@ -1143,7 +1143,7 @@ export const ContractForm: FC<{
                   </div>
                   {detailedDescriptions.map((value, idx) => (
                     <div className="flex gap-18 justify-start" key={idx}>
-                      <FormControl className="w-[36.7rem]">
+                      <FormControl className="w-full">
                         <div className="flex w-full justify-between">
                           <FormLabel>Ytterligare avitext {idx + 1}</FormLabel>
                           <span className="text-small text-dark-secondary">
