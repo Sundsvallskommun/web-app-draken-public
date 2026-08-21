@@ -614,7 +614,6 @@ export const ContractForm: FC<{
                   </FormControl>
                   <small>För nya avtal blir startdatum automatiskt samma som &quot;Avtalet gäller från&quot;.</small>
                 </div>
-                <div className="w-full"></div>
               </div>
               <div className="flex gap-18 justify-start">
                 <FormControl id="currentPeriod.startDate" className="w-full">
