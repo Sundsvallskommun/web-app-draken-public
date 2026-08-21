@@ -150,7 +150,10 @@ export const ContractAttachments: FC<{
         }}
       ></FileUpload.Field>
       <div className="w-full flex flex-col gap-lg">
-        <FileUpload.List isEdit={false}>
+        {/* `files` must be passed explicitly: without it (and without a `name` for a real form field)
+            FileUpload.List falls back to watching a nonexistent `files` field in the surrounding
+            contract form context, which yields a new array every render and loops setState. */}
+        <FileUpload.List isEdit={false} files={files}>
           {files?.map((file, i) => (
             <FileUpload.ListItem
               data-cy={`contract-attachment-item-${file.id}`}
