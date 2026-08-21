@@ -996,7 +996,7 @@ export const ContractForm: FC<{
                         setValue('invoicing.invoiceInterval', e.target.value as IntervalType);
                       }}
                     >
-                      <FormLabel>Avgift ska betalas</FormLabel>
+                      <FormLabel>Hur ofta ska avgiften betalas?</FormLabel>
                       <RadioButton.Group
                         inline
                         className="flex gap-24"
@@ -1048,7 +1048,7 @@ export const ContractForm: FC<{
                         setValue('invoicing.invoicedIn', e.target.value as InvoicedIn);
                       }}
                     >
-                      <FormLabel>Avgift ska betalas</FormLabel>
+                      <FormLabel>Ska avgiften betalas i förskott eller efterskott?</FormLabel>
                       <RadioButton.Group
                         inline
                         className="flex gap-24"
