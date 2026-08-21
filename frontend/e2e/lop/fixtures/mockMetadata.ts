@@ -3366,6 +3366,14 @@ export const mockMetaData: MetadataResponse = {
               resourceName: 'CHILD_OF_DEPRECATED_NAME',
               labels: [],
             },
+            {
+              id: 'd1000000-0000-4000-8000-000000000003',
+              classification: 'TYPE',
+              displayName: 'Annan typ under utgangen verksamhet',
+              resourcePath: 'DEPRECATED_CATEGORY/OTHER_CHILD_OF_DEPRECATED',
+              resourceName: 'OTHER_CHILD_OF_DEPRECATED_NAME',
+              labels: [],
+            },
           ],
         },
         {
@@ -3390,7 +3398,16 @@ export const mockMetaData: MetadataResponse = {
               resourcePath: 'DEPRECATION_TEST/DEPRECATED_TYPE',
               resourceName: 'DEPRECATED_TYPE_NAME',
               deprecated: true,
-              labels: [],
+              labels: [
+                {
+                  id: 'd2000000-0000-4000-8000-000000000006',
+                  classification: 'SUBTYPE',
+                  displayName: 'Aktiv undertyp under utgangen typ',
+                  resourcePath: 'DEPRECATION_TEST/DEPRECATED_TYPE/ACTIVE_SUBTYPE',
+                  resourceName: 'ACTIVE_SUBTYPE_NAME',
+                  labels: [],
+                },
+              ],
             },
             {
               id: 'd2000000-0000-4000-8000-000000000004',

@@ -24,8 +24,8 @@ const isLabelDeprecated = (label?: Label): boolean => label?.deprecated === true
  * rendering an empty select. They can be deselected but not chosen again.
  */
 export const getSelectableLabels = (labels: Label[] | undefined, keepIds: (string | undefined)[] = []): Label[] => {
-  const idsToKeep = keepIds.filter((id): id is string => !!id);
-  return (labels ?? []).filter((label) => !isLabelDeprecated(label) || (!!label.id && idsToKeep.includes(label.id)));
+  const idsToKeep = new Set(keepIds.filter((id): id is string => !!id));
+  return (labels ?? []).filter((label) => !isLabelDeprecated(label) || (!!label.id && idsToKeep.has(label.id)));
 };
 
 /**
@@ -35,25 +35,32 @@ export const getSelectableLabels = (labels: Label[] | undefined, keepIds: (strin
  * leaf to pick, and hiding the branch matches the intent behind deprecating every subtype better
  * than offering the type itself as a leaf would.
  *
- * A type named by `keepIds` — the one already on the errand being edited — is the exception. It is
- * kept even with an empty subtype list, and therefore renders as a plain option rather than as an
- * option group, which does make it re-selectable as a leaf. That is deliberate: this case only
- * arises when the errand is already classified as that type without a subtype (had it a subtype,
- * that subtype would be in `keepIds` too and the group would be non-empty), so re-picking it
- * restores the classification the errand already has instead of creating a new shape. It disappears
- * as soon as another type is chosen.
+ * When the category or a type is deprecated, only the labels named by `keepIds` are retained below
+ * that point. This lets an existing errand display its current classification without exposing new
+ * choices below an effectively deprecated parent.
  */
-export const getSelectableTypesWithSubTypes = (
-  types: Label[] | undefined,
+export const getSelectableTypesForCategory = (
+  category: Label | undefined,
   keepIds: (string | undefined)[] = []
 ): Label[] => {
-  const idsToKeep = keepIds.filter((id): id is string => !!id);
+  const idsToKeep = new Set(keepIds.filter((id): id is string => !!id));
+  const isKept = (label: Label) => !!label.id && idsToKeep.has(label.id);
+  const categoryDeprecated = isLabelDeprecated(category);
+  const selectableTypes = categoryDeprecated
+    ? (category?.labels ?? []).filter(isKept)
+    : getSelectableLabels(category?.labels, keepIds);
 
-  return getSelectableLabels(types, keepIds)
-    .map((type) => ({ type, selectableSubTypes: getSelectableLabels(type.labels, keepIds) }))
+  return selectableTypes
+    .map((type) => ({
+      type,
+      selectableSubTypes:
+        categoryDeprecated || isLabelDeprecated(type)
+          ? (type.labels ?? []).filter(isKept)
+          : getSelectableLabels(type.labels, keepIds),
+    }))
     .filter(
       ({ type, selectableSubTypes }) =>
-        (type.labels?.length ?? 0) === 0 || selectableSubTypes.length > 0 || (!!type.id && idsToKeep.includes(type.id))
+        (type.labels?.length ?? 0) === 0 || selectableSubTypes.length > 0 || (!!type.id && idsToKeep.has(type.id))
     )
     .map(({ type, selectableSubTypes }) => ({ ...type, labels: selectableSubTypes }));
 };
@@ -75,7 +82,7 @@ export const getSelectableTypes = (
       categoryResourcePaths.length === 0 ||
       (!!category.resourcePath && categoryResourcePaths.includes(category.resourcePath))
   );
-  return categories.flatMap((category) => getSelectableTypesWithSubTypes(category.labels));
+  return categories.flatMap((category) => getSelectableTypesForCategory(category));
 };
 
 /**
