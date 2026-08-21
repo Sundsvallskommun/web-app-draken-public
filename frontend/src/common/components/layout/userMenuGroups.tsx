@@ -3,7 +3,7 @@ import { Bug, ChevronRight, LogOut, Palette } from 'lucide-react';
 
 import { ColorSchemeItems } from './color-scheme-items.component';
 
-export const userMenuGroups = [
+export const getUserMenuGroups = (errorReportingEnabled: boolean) => [
   {
     label: 'Annat',
     showLabel: false,
@@ -29,23 +29,27 @@ export const userMenuGroups = [
           </PopupMenu.Item>
         ),
       },
-      {
-        label: 'Rapportera fel',
-        element: () => (
-          <PopupMenu.Item>
-            <Button
-              type="button"
-              className="usermenu-item w-full text-left inline-flex items-center gap-2"
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('open-error-report'));
-              }}
-            >
-              <Bug />
-              <span>Rapportera fel</span>
-            </Button>
-          </PopupMenu.Item>
-        ),
-      },
+      ...(errorReportingEnabled
+        ? [
+            {
+              label: 'Rapportera fel',
+              element: () => (
+                <PopupMenu.Item>
+                  <Button
+                    type="button"
+                    className="usermenu-item w-full text-left inline-flex items-center gap-2"
+                    onClick={() => {
+                      window.dispatchEvent(new CustomEvent('open-error-report'));
+                    }}
+                  >
+                    <Bug />
+                    <span>Rapportera fel</span>
+                  </Button>
+                </PopupMenu.Item>
+              ),
+            },
+          ]
+        : []),
       {
         label: 'Logga ut',
         element: () => (

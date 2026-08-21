@@ -1,7 +1,7 @@
 'use client';
 
 import { initErrorReporting } from '@common/services/error-report-service';
-import { getFeatureFlags } from '@common/services/feature-flag-service';
+import { getFeatureFlags, useFeatureFlag } from '@common/services/feature-flag-service';
 import { getAdminUsers, getMe } from '@common/services/user-service';
 import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
 import {
@@ -57,8 +57,6 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
   );
 
   useEffect(() => {
-    initErrorReporting();
-
     const municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '';
     useConfigStore.getState().setMunicipalityId(municipalityId);
 
@@ -72,7 +70,13 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
       .then((res) => {
         applyRuntimeFeatureFlags(res.data);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (appConfig.features.useErrorReporting) {
+          initErrorReporting();
+        }
+        useConfigStore.getState().setFeatureFlagsLoaded();
+      });
 
     getAdminUsers()
       .then((data) => {
@@ -97,6 +101,7 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 function AppLayout({ children }: ClientApplicationProps) {
+  const errorReportingEnabled = useFeatureFlag('useErrorReporting');
   const colorScheme = useSyncExternalStore(
     useUiSettingsStore.subscribe,
     () => (useUiSettingsStore.getState().colorScheme as ColorSchemeMode) || ColorSchemeMode.Light,
@@ -118,8 +123,8 @@ function AppLayout({ children }: ClientApplicationProps) {
   return (
     <GuiProvider theme={theme} colorScheme={colorScheme}>
       <ConfirmationDialogContextProvider>
-        <ErrorBoundary>
-          <ErrorReportProvider />
+        <ErrorBoundary errorReportingEnabled={errorReportingEnabled}>
+          {errorReportingEnabled && <ErrorReportProvider />}
           <AppInitializer>{children}</AppInitializer>
         </ErrorBoundary>
       </ConfirmationDialogContextProvider>

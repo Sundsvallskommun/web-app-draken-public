@@ -1,5 +1,6 @@
 import { User } from '@common/interfaces/user';
 import { appConfig } from '@config/appconfig';
+import { useConfigStore } from '@stores/config-store';
 import { FeatureFlagDto } from 'src/data-contracts/backend/data-contracts';
 
 import { apiService } from './api-service';
@@ -8,6 +9,11 @@ import { isLOP } from './application-service';
 export const isAppealEnabled = () => appConfig.features.useAppeal;
 export const attestationEnabled = (user: User) => isLOP() && user.permissions?.canViewAttestations;
 export const contractsEnabled = () => appConfig.features.useContracts;
+
+export const useFeatureFlag = (flagName: keyof (typeof appConfig)['features']): boolean => {
+  const featureFlagsLoaded = useConfigStore((state) => state.featureFlagsLoaded);
+  return featureFlagsLoaded && appConfig.features[flagName];
+};
 
 export const getFeatureFlags = async () => {
   return await apiService

@@ -7,6 +7,7 @@ import { ErrorFallback } from './error-fallback';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
+  errorReportingEnabled: boolean;
 }
 
 interface ErrorBoundaryState {
@@ -47,7 +48,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   render() {
     if (this.state.hasError) {
-      return <ErrorFallback errorDetails={this.state.errorDetails} onReset={this.handleReset} />;
+      return (
+        <ErrorFallback
+          errorDetails={this.state.errorDetails}
+          errorReportingEnabled={this.props.errorReportingEnabled}
+          onReset={this.handleReset}
+        />
+      );
     }
 
     return this.props.children;

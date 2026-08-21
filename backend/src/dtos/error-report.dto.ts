@@ -1,6 +1,8 @@
 import { Type } from 'class-transformer';
 import { IsArray, IsEnum, IsNotEmpty, IsObject, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
 
+import { ErrorReportSeverity } from '@/interfaces/error-report.interface';
+
 class CapturedLogEntryDto {
   @IsEnum(['log', 'warn', 'error', 'info', 'debug'])
   level!: string;
@@ -81,7 +83,7 @@ export class ErrorReportDto {
   stepsToReproduce!: string;
 
   @IsEnum(['low', 'medium', 'high', 'critical'])
-  severity!: string;
+  severity!: ErrorReportSeverity;
 
   @IsString()
   timestamp!: string;

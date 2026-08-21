@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
+import { ErrorReportDto } from '@/dtos/error-report.dto';
 import { ErrorReportHandler, ErrorReportResponse, ErrorReportResult, ProcessedErrorReport } from '@/interfaces/error-report.interface';
 import { logger } from '@/utils/logger';
 
@@ -116,6 +117,8 @@ export class ErrorReportService {
   }
 
   private initializeHandlers(): ErrorReportHandler[] {
+    // TODO: Replace this temporary, non-durable log sink once the owning report system is decided.
+    // Keep useErrorReporting disabled in production until retention, access control, and redaction are agreed.
     const handlers: ErrorReportHandler[] = [new LogFileHandler()];
 
     if (process.env.ERROR_REPORT_API_URL) {
@@ -129,10 +132,11 @@ export class ErrorReportService {
     return handlers;
   }
 
-  async processReport(reportData: any, submittedBy: string): Promise<ErrorReportResponse> {
+  async processReport(reportData: ErrorReportDto, submittedBy: string): Promise<ErrorReportResponse> {
     const id = uuidv4();
     const processedReport: ProcessedErrorReport = {
       ...reportData,
+      appVersion: reportData.appVersion ?? null,
       id,
       submittedBy,
       username: submittedBy,

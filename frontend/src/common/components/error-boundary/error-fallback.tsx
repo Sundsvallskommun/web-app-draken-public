@@ -8,10 +8,11 @@ import { useState } from 'react';
 
 interface ErrorFallbackProps {
   errorDetails: ErrorDetails | null;
+  errorReportingEnabled: boolean;
   onReset: () => void;
 }
 
-export function ErrorFallback({ errorDetails, onReset }: ErrorFallbackProps) {
+export function ErrorFallback({ errorDetails, errorReportingEnabled, onReset }: ErrorFallbackProps) {
   const [showReportModal, setShowReportModal] = useState(false);
 
   return (
@@ -22,15 +23,18 @@ export function ErrorFallback({ errorDetails, onReset }: ErrorFallbackProps) {
         <h1 className="text-h2-sm md:text-h2-md mb-md">Något gick fel</h1>
 
         <p className="text-large text-content-secondary mb-xl">
-          Ett oväntat fel inträffade. Du kan rapportera felet för att hjälpa oss förbättra systemet, eller försöka ladda
-          om sidan.
+          {errorReportingEnabled
+            ? 'Ett oväntat fel inträffade. Du kan rapportera felet för att hjälpa oss förbättra systemet, eller försöka ladda om sidan.'
+            : 'Ett oväntat fel inträffade. Försök ladda om sidan.'}
         </p>
 
         <div className="flex gap-md justify-center flex-wrap">
-          <Button variant="primary" color="vattjom" onClick={() => setShowReportModal(true)}>
-            <Bug className="w-[1.8rem] h-[1.8rem] mr-sm" />
-            Rapportera fel
-          </Button>
+          {errorReportingEnabled && (
+            <Button variant="primary" color="vattjom" onClick={() => setShowReportModal(true)}>
+              <Bug className="w-[1.8rem] h-[1.8rem] mr-sm" />
+              Rapportera fel
+            </Button>
+          )}
 
           <Button variant="secondary" onClick={() => window.location.reload()}>
             <RefreshCw className="w-[1.8rem] h-[1.8rem] mr-sm" />
@@ -39,7 +43,13 @@ export function ErrorFallback({ errorDetails, onReset }: ErrorFallbackProps) {
         </div>
       </div>
 
-      <ErrorReportModal show={showReportModal} onClose={() => setShowReportModal(false)} errorDetails={errorDetails} />
+      {errorReportingEnabled && (
+        <ErrorReportModal
+          show={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          errorDetails={errorDetails}
+        />
+      )}
     </div>
   );
 }
