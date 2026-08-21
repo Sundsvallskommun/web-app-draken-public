@@ -791,7 +791,11 @@ export const ContractForm: FC<{
                   }}
                 >
                   <FormLabel>Automatisk förlängning av avtalet</FormLabel>
-                  <RadioButton.Group className="flex gap-24" value={watch().extension?.autoExtend ? 'true' : 'false'}>
+                  <RadioButton.Group
+                    inline
+                    className="flex gap-24"
+                    value={watch().extension?.autoExtend ? 'true' : 'false'}
+                  >
                     <RadioButton data-cy="autoextend-true-radiobutton" value={'true'} disabled={!isEditable('general')}>
                       Ja
                     </RadioButton>
