@@ -489,7 +489,7 @@ export const ContractForm: FC<{
               <FormControl>
                 <FormLabel>
                   Ange vilka fastighet/er som området ligger på{' '}
-                  <span className="font-normal">(hämtad från uppgifter)</span>
+                  <span className="font-normal">(hämtas automatiskt från ärendeuppgifter)</span>
                 </FormLabel>
                 {(errand?.facilities?.length ?? 0) > 0 || (existingContract?.propertyDesignations?.length ?? 0) > 0 ? (
                   <Checkbox.Group
@@ -1113,7 +1113,7 @@ export const ContractForm: FC<{
                       ></Textarea>
                     </FormControl>
                   </div>
-                  <small>Fastighet behöver inte anges, hämtas automatisk från ärendeuppgifter.</small>
+                  <small>Fastighet behöver inte anges, hämtas automatiskt från ärendeuppgifter.</small>
                 </>
               ) : null}
               {saveButton()}
