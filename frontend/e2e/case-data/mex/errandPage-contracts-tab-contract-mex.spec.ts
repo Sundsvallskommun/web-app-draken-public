@@ -465,6 +465,54 @@ test.describe('Errand page contracts tab', () => {
     expect(lessee.roles).toContain(StakeholderRole.PRIMARY_BILLING_PARTY);
   });
 
+  test('prevents selecting manually added stakeholders as contract parties', async ({ page, mockRoute, dismissCookieConsent }) => {
+    // A stakeholder entered by hand (no person/organization lookup) has no personId; the contract
+    // API rejects such parties since stakeholder partyId must be a valid UUID.
+    const mockErrandWithManualStakeholder = structuredClone(mockMexErrand_base);
+    mockErrandWithManualStakeholder.data.extraParameters = mockErrandWithManualStakeholder.data.extraParameters.filter(
+      (p) => p.key !== 'contractId'
+    );
+    mockErrandWithManualStakeholder.data.stakeholders.push({
+      id: 9999,
+      version: 1,
+      created: '2024-05-17T10:50:17.25221+02:00',
+      updated: '2024-05-17T10:50:17.252221+02:00',
+      type: 'PERSON',
+      firstName: 'Manuell',
+      lastName: 'Intressent',
+      organizationName: '',
+      roles: ['CONTACT_PERSON'],
+      personId: '',
+      personalNumber: '',
+      addresses: [],
+      address: { streetAddress: '' },
+      contactInformation: [],
+      extraParameters: {},
+    });
+    await mockRoute('**/errand/101', mockErrandWithManualStakeholder, { method: 'GET' });
+    await mockRoute('**/errand/errandNumber/*', mockErrandWithManualStakeholder, { method: 'GET' });
+    const errandResponse = page.waitForResponse(
+      (resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200
+    );
+    await page.goto(`arende/${mockMexErrand_base.data.id}`);
+    await errandResponse;
+    await dismissCookieConsent();
+    await page.getByRole('tab', { name: 'Faktura', exact: true }).click({ force: true });
+    await expect(page.locator('[data-cy="contract-type-select"]')).toBeVisible();
+
+    await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.LEASE_AGREEMENT);
+    await page.locator('[data-cy="contract-subtype-select"]').selectOption(LeaseType.LAND_LEASE_MISC);
+
+    await page.locator('[data-cy="add-party-button"]').click();
+    const stakeholderSelect = page.locator('[data-cy="party-modal-stakeholder-select"]');
+    await expect(stakeholderSelect).toBeVisible();
+
+    // Looked-up stakeholders are selectable; the manual one is disabled with an explanatory hint
+    await expect(stakeholderSelect.locator('option', { hasText: 'Test Upplåtarsson' })).toBeEnabled();
+    await expect(stakeholderSelect.locator('option', { hasText: 'Manuell Intressent' })).toBeDisabled();
+    await expect(page.locator('[data-cy="party-modal-manual-stakeholder-hint"]')).toBeVisible();
+  });
+
   test('manages creating a new purchase agreement with manual party selection', async ({ page, mockRoute, dismissCookieConsent }) => {
     await visitErrandWithoutContract(page, mockRoute, dismissCookieConsent);
 
