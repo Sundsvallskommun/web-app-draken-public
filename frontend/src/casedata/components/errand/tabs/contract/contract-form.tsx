@@ -1136,6 +1136,9 @@ export const ContractForm: FC<{
                         {...register('fees.additionalInformation.0')}
                         data-cy="fees-additional-information-0-input"
                       ></Textarea>
+                      {!contractOveriewMode && (
+                        <small>Hämtas automatiskt från vald avtalstyp och kan inte ändras.</small>
+                      )}
                     </FormControl>
                   </div>
                   {detailedDescriptions.map((value, idx) => (
