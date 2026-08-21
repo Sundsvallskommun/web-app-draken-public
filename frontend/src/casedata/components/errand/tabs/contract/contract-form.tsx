@@ -230,7 +230,7 @@ export const ContractForm: FC<{
     return (
       <div className="my-md">
         {loading ? (
-          <Button disabled={true}>Sparar</Button>
+          <Button disabled={true}>Sparar avtalet</Button>
         ) : (
           <div>
             <Button
@@ -248,7 +248,7 @@ export const ContractForm: FC<{
                 }
               )}
             >
-              Spara
+              Spara avtalet
             </Button>
           </div>
         )}
