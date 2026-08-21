@@ -4,12 +4,14 @@ interface ConfigState {
   municipalityId: string;
   isLoading: boolean;
   isCookieConsentOpen: boolean;
+  featureFlagsLoaded: boolean;
 }
 
 interface ConfigActions {
   setMunicipalityId: (municipalityId: string) => void;
   setIsLoading: (isLoading: boolean) => void;
   setIsCookieConsentOpen: (isOpen: boolean) => void;
+  setFeatureFlagsLoaded: () => void;
   reset: () => void;
 }
 
@@ -19,6 +21,7 @@ const initialState: ConfigState = {
   municipalityId: '',
   isLoading: false,
   isCookieConsentOpen: true,
+  featureFlagsLoaded: false,
 };
 
 export const useConfigStore = create<ConfigStore>((set) => ({
@@ -26,5 +29,6 @@ export const useConfigStore = create<ConfigStore>((set) => ({
   setMunicipalityId: (municipalityId) => set({ municipalityId }),
   setIsLoading: (isLoading) => set({ isLoading }),
   setIsCookieConsentOpen: (isCookieConsentOpen) => set({ isCookieConsentOpen }),
+  setFeatureFlagsLoaded: () => set({ featureFlagsLoaded: true }),
   reset: () => set(initialState),
 }));
