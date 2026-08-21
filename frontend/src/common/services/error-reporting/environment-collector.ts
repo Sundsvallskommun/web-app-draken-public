@@ -15,7 +15,7 @@ export function parseBrowserInfo(userAgent: string): BrowserInfo {
   ];
 
   for (const { pattern, name } of browsers) {
-    const match = userAgent.match(pattern);
+    const match = pattern.exec(userAgent);
     if (match) {
       return { name, version: match[1] };
     }
@@ -35,7 +35,7 @@ export function parseOsInfo(userAgent: string): string {
   ];
 
   for (const { pattern, name } of osPatterns) {
-    const match = userAgent.match(pattern);
+    const match = pattern.exec(userAgent);
     if (match) {
       const version = match[1]?.replace(/_/g, '.') ?? '';
       return version ? `${name} ${version}` : name;

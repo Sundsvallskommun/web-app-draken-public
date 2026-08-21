@@ -6,15 +6,15 @@ import { FeatureFlagsApiResponse } from '@/responses/featureflag.response';
 import ApiService from './api.service';
 
 export class FeatureFlagService {
-  private apiService = new ApiService();
+  private readonly apiService = new ApiService();
 
   async getFeatureFlags(user: User): Promise<FeatureFlagDto[]> {
     const url = `${process.env.ADMINPANEL_URL}/featureflags/${MUNICIPALITY_ID}`;
     const response = await this.apiService.get<FeatureFlagsApiResponse>({ baseURL: url }, user);
-    const namespaces = [process.env.CASEDATA_NAMESPACE, process.env.SUPPORTMANAGEMENT_NAMESPACE];
+    const namespaces = new Set([process.env.CASEDATA_NAMESPACE, process.env.SUPPORTMANAGEMENT_NAMESPACE]);
 
     return response.data.data
-      .filter(flag => flag.application === process.env.APPLICATION && namespaces.includes(flag.namespace))
+      .filter(flag => flag.application === process.env.APPLICATION && namespaces.has(flag.namespace))
       .map(flag => ({
         name: flag.name,
         value: flag.value,

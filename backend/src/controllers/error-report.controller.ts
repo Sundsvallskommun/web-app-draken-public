@@ -13,8 +13,8 @@ import { logger } from '@/utils/logger';
 
 @Controller()
 export class ErrorReportController {
-  private errorReportService = new ErrorReportService();
-  private featureFlagService = new FeatureFlagService();
+  private readonly errorReportService = new ErrorReportService();
+  private readonly featureFlagService = new FeatureFlagService();
 
   @Post('/error-reports')
   @HttpCode(201)

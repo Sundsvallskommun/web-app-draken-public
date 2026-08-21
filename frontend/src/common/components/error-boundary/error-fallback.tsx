@@ -12,7 +12,7 @@ interface ErrorFallbackProps {
   onReset: () => void;
 }
 
-export function ErrorFallback({ errorDetails, errorReportingEnabled, onReset }: ErrorFallbackProps) {
+export function ErrorFallback({ errorDetails, errorReportingEnabled, onReset }: Readonly<ErrorFallbackProps>) {
   const [showReportModal, setShowReportModal] = useState(false);
 
   return (

@@ -56,7 +56,7 @@ class LogFileHandler implements ErrorReportHandler {
 }
 
 class ExternalApiHandler implements ErrorReportHandler {
-  private apiUrl: string;
+  private readonly apiUrl: string;
 
   constructor(apiUrl: string) {
     this.apiUrl = apiUrl;
@@ -78,7 +78,7 @@ class ExternalApiHandler implements ErrorReportHandler {
 }
 
 class NotificationHandler implements ErrorReportHandler {
-  private webhookUrl: string;
+  private readonly webhookUrl: string;
 
   constructor(webhookUrl: string) {
     this.webhookUrl = webhookUrl;
@@ -110,14 +110,14 @@ class NotificationHandler implements ErrorReportHandler {
 }
 
 export class ErrorReportService {
-  private handlers: ErrorReportHandler[];
+  private readonly handlers: ErrorReportHandler[];
 
   constructor() {
     this.handlers = this.initializeHandlers();
   }
 
   private initializeHandlers(): ErrorReportHandler[] {
-    // TODO: Replace this temporary, non-durable log sink once the owning report system is decided.
+    // Temporary, non-durable fallback until the owning report system is decided.
     // Keep useErrorReporting disabled in production until retention, access control, and redaction are agreed.
     const handlers: ErrorReportHandler[] = [new LogFileHandler()];
 

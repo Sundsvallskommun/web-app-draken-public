@@ -9,7 +9,7 @@ interface ErrorReportProviderProps {
   errorDetails?: ErrorDetails | null;
 }
 
-export function ErrorReportProvider({ errorDetails }: ErrorReportProviderProps) {
+export function ErrorReportProvider({ errorDetails }: Readonly<ErrorReportProviderProps>) {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleOpen = useCallback(() => {

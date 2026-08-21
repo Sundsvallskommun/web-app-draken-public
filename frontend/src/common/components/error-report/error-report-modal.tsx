@@ -45,7 +45,7 @@ interface ErrorReportModalProps {
   errorDetails?: ErrorDetails | null;
 }
 
-export function ErrorReportModal({ show, onClose, errorDetails }: ErrorReportModalProps) {
+export function ErrorReportModal({ show, onClose, errorDetails }: Readonly<ErrorReportModalProps>) {
   const user = useUserStore((state) => state.user);
   const pathname = usePathname();
   const toastMessage = useSnackbar();
@@ -177,14 +177,14 @@ export function ErrorReportModal({ show, onClose, errorDetails }: ErrorReportMod
   return (
     <Modal show={show} label="Rapportera fel" className="w-[56rem]" onClose={handleClose}>
       <Modal.Content>
-        <div className="sk-alert sk-alert-info sk-alert-md mb-lg" role="status">
+        <output className="sk-alert sk-alert-info sk-alert-md mb-lg">
           <Info className="sk-alert-icon w-[2rem] h-[2rem]" aria-hidden="true" />
-          <div className="sk-alert-content sk-alert-content-md">
-            <p className="sk-alert-content-description">
+          <span className="sk-alert-content sk-alert-content-md">
+            <span className="sk-alert-content-description">
               Teknisk information samlas in automatiskt för att underlätta felsökning.
-            </p>
-          </div>
-        </div>
+            </span>
+          </span>
+        </output>
 
         <form className="flex flex-col gap-lg" onSubmit={handleSubmit(onSubmit)}>
           <FormControl id="description" className="w-full" required>
