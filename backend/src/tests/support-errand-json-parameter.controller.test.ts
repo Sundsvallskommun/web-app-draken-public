@@ -69,6 +69,17 @@ describe('SupportErrandJsonParameterController', () => {
     expect(res.body).toEqual(parameter);
   });
 
+  it('fails closed before document reads when the runtime policy is unavailable', async () => {
+    const { controller, documentService, policyService } = makeController('IAF', 'unavailable');
+
+    await expect(
+      controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, 'utredning-enhetschef', resDouble()),
+    ).rejects.toMatchObject({ status: 503, message: 'Investigation read policy is temporarily unavailable' });
+
+    expect(policyService.assertCanReadDocument).not.toHaveBeenCalled();
+    expect(documentService.readDocument).not.toHaveBeenCalled();
+  });
+
   it('writes through the deep document boundary and returns status, ETag and fresh parent version', async () => {
     const update: UpdateSupportErrandJsonParameterDto = {
       schemaId: '2281_utredning-hsl_1.0',

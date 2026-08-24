@@ -1,7 +1,11 @@
 import { HttpException } from '@/exceptions/HttpException';
 import type { User } from '@/interfaces/users.interface';
 import ApiService, { type ApiRequestConfig, type ApiResponse } from '@/services/api.service';
-import { type InvestigationDocumentWritePreconditions, SupportInvestigationDocumentService } from '@/services/support-investigation-document.service';
+import {
+  type InvestigationDocumentWritePreconditions,
+  type InvestigationJsonObject,
+  SupportInvestigationDocumentService,
+} from '@/services/support-investigation-document.service';
 
 import { mockUser } from './helpers/http';
 
@@ -94,9 +98,13 @@ const request = {
   user: USER,
 };
 
-const writeRequest = (preconditions: InvestigationDocumentWritePreconditions, schemaId = SCHEMA_ID) => ({
+const writeRequest = (
+  preconditions: InvestigationDocumentWritePreconditions,
+  schemaId = SCHEMA_ID,
+  value: InvestigationJsonObject = { assessment: 'saved' },
+) => ({
   ...request,
-  data: { schemaId, value: { assessment: 'saved' } },
+  data: { schemaId, value },
   preconditions: { parentErrandVersion: '10', ...preconditions },
 });
 
@@ -250,6 +258,53 @@ describe('SupportInvestigationDocumentService', () => {
     });
 
     expect(api.getCalls.map(call => call.url)).toEqual([ERRAND_URL, DOCUMENT_URL, SCHEMA_URL]);
+    expect(api.putCalls).toHaveLength(0);
+  });
+
+  it('rejects a document that omits fields required by its bound JSON Schema', async () => {
+    const requiredSchema = schema(DEFINITION.schemaName, SCHEMA_ID, {
+      type: 'object',
+      required: ['decision'],
+      properties: { decision: { type: 'string' } },
+    });
+    const { api, service } = makeSubject([writableParentResponse(), new HttpException(404, 'Not found'), response(requiredSchema, 200)]);
+
+    await expect(service.writeDocument(writeRequest({ ifNoneMatch: '*' }))).rejects.toMatchObject({
+      status: 400,
+      message: expect.stringContaining("must have required property 'decision'"),
+    });
+
+    expect(api.putCalls).toHaveLength(0);
+  });
+
+  it('enforces standard date formats at the backend trust boundary', async () => {
+    const dateSchema = schema(DEFINITION.schemaName, SCHEMA_ID, {
+      type: 'object',
+      required: ['decisionDate'],
+      properties: { decisionDate: { type: 'string', format: 'date' } },
+    });
+    const { api, service } = makeSubject([writableParentResponse(), new HttpException(404, 'Not found'), response(dateSchema, 200)]);
+
+    await expect(service.writeDocument(writeRequest({ ifNoneMatch: '*' }, SCHEMA_ID, { decisionDate: 'not-a-date' }))).rejects.toMatchObject({
+      status: 400,
+      message: expect.stringContaining('must match format "date"'),
+    });
+
+    expect(api.putCalls).toHaveLength(0);
+  });
+
+  it('treats an uncompilable bound schema as an upstream contract failure', async () => {
+    const invalidSchema = schema(DEFINITION.schemaName, SCHEMA_ID, {
+      type: 'object',
+      properties: { decision: { type: 'unsupported-type' } },
+    });
+    const { api, service } = makeSubject([writableParentResponse(), new HttpException(404, 'Not found'), response(invalidSchema, 200)]);
+
+    await expect(service.writeDocument(writeRequest({ ifNoneMatch: '*' }))).rejects.toMatchObject({
+      status: 502,
+      message: 'JSON Schema returned an investigation schema that could not be compiled',
+    });
+
     expect(api.putCalls).toHaveLength(0);
   });
 

@@ -909,6 +909,23 @@ describe('SupportErrandController', () => {
       ).rejects.toMatchObject({ status: 409, message: 'Support errand status does not allow administrator changes' });
       expect(api.patch).not.toHaveBeenCalled();
     });
+
+    it.each(['SUSPENDED', 'ASSIGNED', 'REOPENED'])('allows administrator assignment to resume an errand in %s', async status => {
+      const { controller, api } = makeController();
+      api.get.mockResolvedValue({ data: { version: 7, status }, headers: { etag: '"7"' }, message: 'success' });
+      api.patch.mockResolvedValue({ data: { id: mockSupportErrandId, status }, message: 'success' });
+
+      await controller.becomeAdminForSupportErrand(
+        mockReq(),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        '"7"',
+        { assignedUserId: mockAdUsername },
+        mockRes(),
+      );
+
+      expect(api.patch).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('preparedErrandResponse', () => {

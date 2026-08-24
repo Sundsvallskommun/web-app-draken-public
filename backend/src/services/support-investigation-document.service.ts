@@ -1,4 +1,5 @@
 import Ajv2020 from 'ajv/dist/2020';
+import addFormats from 'ajv-formats';
 
 import { apiServiceName } from '@/config/api-config';
 import type { JsonSchema } from '@/data-contracts/jsonschema/data-contracts';
@@ -402,7 +403,9 @@ export class SupportInvestigationDocumentService {
 
     let validate: ReturnType<Ajv2020['compile']>;
     try {
-      validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema.value);
+      const ajv = new Ajv2020({ allErrors: true, strict: false });
+      addFormats(ajv);
+      validate = ajv.compile(schema.value);
     } catch {
       throw new HttpException(502, 'JSON Schema returned an investigation schema that could not be compiled');
     }
