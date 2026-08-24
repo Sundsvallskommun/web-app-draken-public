@@ -30,6 +30,9 @@ envalid.cleanEnv(process.env, {
 
 module.exports = {
   allowedDevOrigins: ['dev.test'],
+  turbopack: {
+    root: path.join(__dirname, '.'),
+  },
   distDir:
     process.env.DOCKER_BUILD === 'true'
       ? '.next'

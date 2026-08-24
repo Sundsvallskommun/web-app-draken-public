@@ -311,6 +311,7 @@ export class AssetController {
     @QueryParam('errandId') errandId?: string,
   ): Promise<ResponseData<EnrichedAsset[]>> {
     municipalityId ??= '2281';
+    if (!partyId) return { data: [], message: 'success' };
     const data = await this.listAssetsForPath(
       req,
       'asset-drafts',

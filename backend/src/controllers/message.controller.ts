@@ -22,13 +22,30 @@ import { v4 as uuidv4 } from 'uuid';
 import { apiServiceName } from '@/config/api-config';
 import { Errand as ErrandDTO, MessageResponse as IMessageResponse } from '@/data-contracts/case-data/data-contracts';
 import { EmailAttachment, EmailRequest, SmsRequest, WebMessageAttachment, WebMessageRequest } from '@/data-contracts/messaging/data-contracts';
-import { AgnosticMessageResponse, DecisionMessageDto, MessageClassification, MessageDto, MessageResponse, SmsDto } from '@/dtos/message.dto';
+import {
+  AgnosticMessageResponse,
+  DecisionChannelResult,
+  DecisionMessageDto,
+  MessageClassification,
+  MessageDto,
+  MessageResponse,
+  SmsDto,
+} from '@/dtos/message.dto';
 import { HttpException } from '@/exceptions/HttpException';
+import { Role } from '@/interfaces/role';
 import { isMEX, isPT } from '@/services/application.service';
 import { logger } from '@/utils/logger';
 import { apiURL, base64Encode } from '@/utils/util';
 
-export { AgnosticMessageResponse, LetterResponse, MessageClassification, WebMessageResponse } from '@/dtos/message.dto';
+export {
+  AgnosticMessageResponse,
+  DecisionChannel,
+  DecisionChannelResult,
+  DecisionSendStatus,
+  LetterResponse,
+  MessageClassification,
+  WebMessageResponse,
+} from '@/dtos/message.dto';
 
 const MESSAGE_SUBJECT = isPT() ? 'Meddelande gällande er ansökan om parkeringstillstånd' : 'Meddelande från MEX';
 
@@ -45,15 +62,18 @@ export class MessageController {
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
     @Body() messageDto: DecisionMessageDto,
-  ): Promise<{ data: AgnosticMessageResponse; message: string }[]> {
+  ): Promise<DecisionChannelResult[]> {
     const baseURL = apiURL(this.SERVICE);
 
     const errandsUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
 
-    let emailSuccess = { data: { messageId: '' }, message: 'Not sent by email' };
+    const logChannel = (result: DecisionChannelResult) => logger.info(`Decision channel ${result.channel}: ${result.status} - ${result.message}`);
+
+    let mexResult: DecisionChannelResult = { channel: 'EMAIL', status: 'skipped', data: {}, message: 'Not sent by email' };
     if (isMEX()) {
-      emailSuccess = await sendDecisionForMex(municipalityId, req, errandData, messageDto.html ?? '', messageDto.plaintext ?? '');
+      mexResult = await sendDecisionForMex(municipalityId, req, errandData, messageDto.html ?? '', messageDto.plaintext ?? '');
+      logChannel(mexResult);
     }
 
     // PT Ånge (2260) sends decisions manually outside Draken.
@@ -64,19 +84,33 @@ export class MessageController {
     const decision = errandData.data?.decisions?.find(d => d.decisionType === 'FINAL');
     const pdf = decision?.attachments?.[0];
     if (!pdf) {
+      const reason = 'No decision attachment found';
       return [
-        {
-          data: { messageId: '' },
-          message: 'No decision attachment found',
-        },
+        ...(['MINA_SIDOR', 'KATLA', 'DIGITAL_MAIL'] as const).map(
+          channel => ({ channel, status: 'failed', data: { reason }, message: reason }) as DecisionChannelResult,
+        ),
+        mexResult,
       ];
     }
 
-    const minasidor_success = await sendDecisionToMinaSidor(baseURL, errandData.data.id!.toString(), req.user, pdf, decision!.id!);
-    const katla_success = await sendDecisionToKatla(baseURL, errandData.data, req.user, pdf, decision!.id!);
-    const digitalMail_success = await sendDecisionToDigitalMail(errandData.data, req.user, pdf, decision!.id!);
+    const katlaResult = await sendDecisionToKatla(baseURL, errandData.data, req.user, pdf, decision!.id!);
+    logChannel(katlaResult);
+    let minasidorResult: DecisionChannelResult;
+    let digitalMailResult: DecisionChannelResult;
+    const applicant = errandData.data.stakeholders?.find(s => s.roles.includes(Role.APPLICANT));
+    if (applicant?.personId) {
+      digitalMailResult = await sendDecisionToDigitalMail(errandData.data, req.user, pdf, decision!.id!);
+      logChannel(digitalMailResult);
+      minasidorResult = await sendDecisionToMinaSidor(baseURL, errandData.data.id!.toString(), req.user, pdf, decision!.id!);
+      logChannel(minasidorResult);
+    } else {
+      logger.info(`Decision channel DIGITAL_MAIL: skipped - No applicant stakeholder partyId found`);
+      digitalMailResult = { channel: 'DIGITAL_MAIL', status: 'skipped', data: {}, message: 'Not sent by digital mail' };
+      logger.info(`Decision channel MINA_SIDOR: skipped - No applicant stakeholder partyId found`);
+      minasidorResult = { channel: 'MINA_SIDOR', status: 'skipped', data: {}, message: 'Not sent to Mina sidor' };
+    }
 
-    return [minasidor_success, katla_success, digitalMail_success, emailSuccess];
+    return [minasidorResult, katlaResult, digitalMailResult, mexResult];
   }
 
   @Post('/casedata/:municipalityId/sms')
