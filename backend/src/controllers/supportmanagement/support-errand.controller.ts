@@ -1,5 +1,5 @@
 import { Type as TypeTransformer } from 'class-transformer';
-import { IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 import FormData from 'form-data';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
@@ -42,6 +42,7 @@ import {
   ErrandFilterInput,
   getNewErrandDefaults,
   resolveDefaultLabels,
+  stripErrandVersions,
   SupportStakeholderRole,
   toAttachmentDto,
   toCasedataChannel,
@@ -111,6 +112,11 @@ export class CParameter implements Parameter {
   @IsArray()
   @IsOptional()
   values!: string[];
+  // Optimistic locking version, set by SupportManagement. Accepted here because the frontend echoes
+  // fetched errands back, but stripped before we forward (SupportManagement rejects it on update).
+  @IsNumber()
+  @IsOptional()
+  version?: number;
 }
 
 export class CContactChannel implements ContactChannel {
@@ -129,6 +135,11 @@ export class CJsonParameter {
   value: any;
   @IsString()
   schemaId!: string;
+  // Optimistic locking version, set by SupportManagement. Accepted here because the frontend echoes
+  // fetched errands back, but stripped before we forward (SupportManagement rejects it on update).
+  @IsNumber()
+  @IsOptional()
+  version?: number;
 }
 
 export class CSupportStakeholder implements SupportStakeholder {
@@ -346,6 +357,11 @@ export class SupportErrandDto implements Partial<SupportErrand> {
   @IsOptional()
   @IsString()
   touched?: string;
+  // Optimistic locking version, set by SupportManagement. Accepted here because the frontend echoes
+  // fetched errands back, but stripped before we forward (SupportManagement rejects it on update).
+  @IsNumber()
+  @IsOptional()
+  version?: number;
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
@@ -677,7 +693,7 @@ export class SupportErrandController {
     }
     const url = `${municipalityId}/${this.namespace}/errands/${id}`;
     const baseURL = apiURL(this.SERVICE);
-    const body: Partial<SupportErrandDto> = { ...data };
+    const body: Partial<SupportErrandDto> = stripErrandVersions({ ...data });
     const res = await this.apiService.patch<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
       logger.error('Error when registering support errand');
       logger.error(e);

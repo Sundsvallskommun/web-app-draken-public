@@ -73,6 +73,51 @@ test.describe('Overview errands lop', () => {
   });
 
   // FILTER
+  test('does not offer deprecated labels in the filters', async ({ page, mockRoute }) => {
+    await expect(page.locator('[data-cy="show-filters-button"]')).toBeVisible();
+
+    await page.locator('[data-cy="Verksamhet-filter"]').click();
+    await expect(page.locator('[data-cy="Verksamhet-filter-DEPRECATION_TEST"]')).toBeVisible();
+    await expect(page.locator('[data-cy="Verksamhet-filter-DEPRECATED_CATEGORY"]')).toHaveCount(0);
+
+    // Narrowing to one verksamhet keeps the type list from being truncated, so the assertions below
+    // say something about the deprecated type rather than about the cut-off.
+    await mockRoute(/\/supporterrands\/2281\?page=0.*labelCategory.*/, mockFilteredCategoryErrands, {
+      method: 'GET',
+    });
+    await page.locator('[data-cy="Verksamhet-filter-DEPRECATION_TEST"]').click();
+    await page.keyboard.press('Escape');
+
+    await page.locator('[data-cy="Ärendekategori-filter"]').click();
+    await expect(page.locator('[data-cy="Ärendekategori-filter-Aktiv typ"]')).toBeVisible();
+    await expect(page.locator('[data-cy="Ärendekategori-filter-Utgangen typ"]')).toHaveCount(0);
+    // The type under the deprecated verksamhet is unreachable through it.
+    await expect(page.locator('[data-cy="Ärendekategori-filter-Typ under utgangen verksamhet"]')).toHaveCount(0);
+    // All subtypes of this type are deprecated, leaving no reachable leaf, so the branch is gone here
+    // too — the filter offers exactly what the categorization picker offers.
+    await expect(page.locator('[data-cy="Ärendekategori-filter-Typ med bara utgangna undertyper"]')).toHaveCount(0);
+  });
+
+  test('marks a deprecated label in the errand list', async ({ page, mockRoute }) => {
+    const deprecatedCategory = JSON.parse(
+      JSON.stringify(mockMetaData.labels.labelStructure.find((l) => l.resourcePath === 'DEPRECATED_CATEGORY'))
+    );
+    delete deprecatedCategory.labels;
+    const [firstErrand, ...remainingErrands] = mockSupportErrands.content;
+
+    await mockRoute(
+      '**/supporterrands/2281?page=0*',
+      { ...mockSupportErrands, content: [{ ...firstErrand, labels: [deprecatedCategory] }, ...remainingErrands] },
+      { method: 'GET' }
+    );
+    await page.reload();
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands/2281?page=0') && resp.status() === 200);
+
+    await expect(page.locator('[data-cy="main-table"] .sk-table-tbody-tr').first()).toContainText(
+      'Utgangen verksamhet (Utgått)'
+    );
+  });
+
   test('allows filtering', async ({ page, mockRoute }) => {
     await expect(page.locator('[data-cy="show-filters-button"]')).toBeVisible();
 

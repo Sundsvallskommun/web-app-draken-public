@@ -3,6 +3,7 @@ import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
 import {
+  decisionMessageSubject,
   generateMessageId,
   sendDecisionForMex,
   sendDecisionToDigitalMail,
@@ -32,8 +33,7 @@ import {
   SmsDto,
 } from '@/dtos/message.dto';
 import { HttpException } from '@/exceptions/HttpException';
-import { Role } from '@/interfaces/role';
-import { isMEX, isPT } from '@/services/application.service';
+import { isMEX } from '@/services/application.service';
 import { logger } from '@/utils/logger';
 import { apiURL, base64Encode } from '@/utils/util';
 
@@ -46,8 +46,6 @@ export {
   MessageClassification,
   WebMessageResponse,
 } from '@/dtos/message.dto';
-
-const MESSAGE_SUBJECT = isPT() ? 'Meddelande gällande er ansökan om parkeringstillstånd' : 'Meddelande från MEX';
 
 @Controller()
 export class MessageController {
@@ -97,7 +95,7 @@ export class MessageController {
     logChannel(katlaResult);
     let minasidorResult: DecisionChannelResult;
     let digitalMailResult: DecisionChannelResult;
-    const applicant = errandData.data.stakeholders?.find(s => s.roles.includes(Role.APPLICANT));
+    const applicant = getOwnerStakeholder(errandData.data);
     if (applicant?.personId) {
       digitalMailResult = await sendDecisionToDigitalMail(errandData.data, req.user, pdf, decision!.id!);
       logChannel(digitalMailResult);
@@ -172,7 +170,7 @@ export class MessageController {
         partyId: uuidv4(),
       },
       emailAddress: recipientEmail,
-      subject: messageDto.subject || MESSAGE_SUBJECT,
+      subject: messageDto.subject || decisionMessageSubject(errandData.data),
       message: messageDto.text.replace(/<p><br \/><\/p>/g, ''),
       htmlMessage: base64Encode(messageDto.text.replace(/<p><br \/><\/p>/g, '')),
       attachments: attachments,

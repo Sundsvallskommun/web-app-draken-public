@@ -33,6 +33,7 @@ import {
   WebMessageRequest,
 } from '@/data-contracts/messaging/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
+import { FTCaseType, MEXCaseType, PTCaseType } from '@/interfaces/case-type.interface';
 import { apiURL, base64Encode } from '@/utils/util';
 
 import ApiService, { ApiResponse } from './api.service';
@@ -506,6 +507,17 @@ export const sendDecisionToKatla = async (
   }
 };
 
+export const decisionMessageSubject = (errand: ErrandDTO) => {
+  if (errand?.caseType && Object.values(PTCaseType).includes(errand.caseType as PTCaseType)) {
+    return 'Meddelande gällande er ansökan om parkeringstillstånd';
+  } else if (errand?.caseType && Object.values(FTCaseType).includes(errand.caseType as FTCaseType)) {
+    return 'Meddelande gällande er ansökan om färdtjänst';
+  } else if (errand?.caseType && Object.values(MEXCaseType).includes(errand.caseType as MEXCaseType)) {
+    return 'Meddelande från MEX';
+  }
+  return 'Beslutsmeddelande';
+};
+
 export const sendDecisionToDigitalMail = async (
   errand: ErrandDTO,
   user: User,
@@ -555,7 +567,7 @@ export const sendDecisionToDigitalMail = async (
       },
     },
     //Change subject depending on application and casetype?
-    subject: 'Meddelande gällande er ansökan om parkeringstillstånd',
+    subject: decisionMessageSubject(errand),
     contentType: DigitalMailRequestContentTypeEnum.TextPlain,
     body: 'Beslut fattat i ärende',
     department: 'SBK(Gatuavdelningen, Trafiksektionen)',

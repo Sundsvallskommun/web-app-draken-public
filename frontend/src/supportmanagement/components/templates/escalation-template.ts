@@ -66,7 +66,7 @@ const getRoleLabel = () => {
 
 const TENANTS: Record<TenantKey, TenantConfig> = {
   sundsvall: {
-    departmentName: (e) => (isKC() ? 'Sundsvalls kommun' : appConfig.applicationName),
+    departmentName: (e) => (isKC() ? 'Kontaktcenter' : appConfig.applicationName),
     roleLabel: (user) => getRoleLabel() + ` ${user}`,
     phoneNumber: '+46 60 19 10 00',
     showMetaRows: true,
@@ -97,10 +97,9 @@ export const buildEscalationEmailContent = (e: SupportErrand, user: string, tena
   const propertyDesignations = e?.parameters?.find((p) => p.key === 'propertyDesignation')?.values ?? [];
   const streets = e?.parameters?.find((p) => p.key === 'street')?.values ?? [];
 
-  const introLine = 'Vi på ${department} har tagit emot ett ärende som vi behöver förmedla till er.'.replace(
-    '${department}',
-    department
-  );
+  const introLine = isKC()
+    ? `Vi på ${department} förmedlar detta ärende till er för vidare hantering.`
+    : `Vi på ${department} har tagit emot ett ärende som vi behöver förmedla till er.`;
 
   const metaRows = cfg.showMetaRows
     ? `<p><b>Inkom via:</b> ${channel}</p>${
@@ -122,6 +121,18 @@ export const buildEscalationEmailContent = (e: SupportErrand, user: string, tena
         '<br>'
       : '';
 
+  const misdirectedLine = isKC()
+    ? ''
+    : '<br><p>Har detta meddelande inte hamnat rätt? Låt oss veta, för vidare hantering.</p>';
+
+  const signatureBlock = isKC()
+    ? `<br><p>Med vänliga hälsningar,</p><p>${cfg.roleLabel(user)}</p><p><b>${department}</b></p><p>Telefon: ${
+        cfg.phoneNumber
+      }</p>`
+    : `<br><p>Med vänliga hälsningar,</p><p><b>${department}</b></p><p>${cfg.roleLabel(user)}</p><p>Telefon: ${
+        cfg.phoneNumber
+      }</p>`;
+
   return (
     '<p>Hej,</p><br><p>' +
     introLine +
@@ -133,14 +144,10 @@ export const buildEscalationEmailContent = (e: SupportErrand, user: string, tena
     propertyBlock +
     (customer ? renderContactBlock('Kontaktuppgifter', customer) : '') +
     renderOtherContacts(contacts) +
-    '<br><p>Har detta meddelande inte hamnat rätt? Låt oss veta, för vidare hantering.</p><br><p>' +
+    misdirectedLine +
+    '<br><p>' +
     cfg.closingLine +
-    '</p><br><p>Med vänliga hälsningar,</p><p><b>' +
-    department +
-    '</b></p><p>' +
-    cfg.roleLabel(user) +
-    '</p><p>Telefon: ' +
-    cfg.phoneNumber +
-    '</p>'
+    '</p>' +
+    signatureBlock
   );
 };

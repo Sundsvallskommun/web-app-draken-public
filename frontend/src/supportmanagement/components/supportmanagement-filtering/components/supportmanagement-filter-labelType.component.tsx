@@ -1,6 +1,6 @@
-import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
+import { getSelectableTypes, getUniqueLabelDisplayNames } from '@supportmanagement/services/support-label-service';
 import { ChevronDown } from 'lucide-react';
 import { FC, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -23,22 +23,10 @@ export const SupportManagementFilterLabelType: FC = () => {
   const [query, setQuery] = useState<string>('');
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
 
-  const allStringTypes = useMemo(() => {
-    const _types: Label[] = [];
-    if (labelCategories.length > 0) {
-      labelCategories?.forEach((category) => {
-        const categoryTypes = supportMetadata?.labels?.labelStructure?.find((c) => c.resourcePath === category)?.labels;
-        if (categoryTypes) {
-          _types.push(...categoryTypes);
-        }
-      });
-    } else {
-      supportMetadata?.labels?.labelStructure?.forEach((category) => {
-        _types.push(...(category.labels ?? []));
-      });
-    }
-    return Array.from(new Set(_types.map((l) => l.displayName).filter((d): d is string => d !== undefined)));
-  }, [supportMetadata, labelCategories]);
+  const allStringTypes = useMemo(
+    () => getUniqueLabelDisplayNames(getSelectableTypes(supportMetadata, labelCategories)),
+    [supportMetadata, labelCategories]
+  );
 
   return (
     <PopupMenu>
