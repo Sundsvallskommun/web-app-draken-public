@@ -49,6 +49,9 @@ interface ClientApplicationProps {
 }
 
 function isInvestigationSchemaLabRoute(): boolean {
+  // The lab route is not compiled into production builds (see pageExtensions in next.config.js),
+  // so this branch folds away there instead of running its path check on every app bootstrap.
+  if (process.env.NODE_ENV === 'production') return false;
   return globalThis.window?.location.pathname.endsWith('/schema-lab/utredning') ?? false;
 }
 
