@@ -3,7 +3,11 @@
 import { FacilitySearchField } from '@common/components/json/fields/facility-search-field.componant';
 import { FieldTemplate } from '@common/components/json/fields/field-template.componant';
 import { SectionsObjectFieldTemplate } from '@common/components/json/fields/sections-object-field-template.componant';
-import { SubmitButtonFieldTemplate } from '@common/components/json/fields/submit-button-field-template.componant';
+import {
+  SchemaSubmitButton,
+  SubmitButtonFieldTemplate,
+  type SubmitButtonOptions,
+} from '@common/components/json/fields/submit-button-field-template.componant';
 import { jsonWidgets } from '@common/components/json/widgets/index.componant';
 import Form, { FormProps, IChangeEvent } from '@rjsf/core';
 import type {
@@ -40,7 +44,7 @@ type SchemaFormProps = {
   idPrefix?: string;
   disabled?: boolean;
   readonly?: boolean;
-  submitButtonOptions?: { label?: string; leadingIcon?: boolean; loading?: boolean; disabled?: boolean };
+  submitButtonOptions?: SubmitButtonOptions;
   extraContent?: React.ReactNode;
   externalFields?: Readonly<Record<string, ReactNode>>;
 };
@@ -131,7 +135,7 @@ export default function SchemaForm({
       <div className="w-full min-w-0 max-w-full">
         <Form {...formProps} templates={{ ...templates, ButtonTemplates: { SubmitButton: () => null } }}>
           {extraContent}
-          <SubmitButtonFieldTemplate {...({ registry: { formContext } } as any)} />
+          <SchemaSubmitButton options={submitButtonOptions} />
         </Form>
       </div>
     );

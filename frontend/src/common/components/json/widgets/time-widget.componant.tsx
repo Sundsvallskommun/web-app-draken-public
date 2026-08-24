@@ -26,7 +26,7 @@ export function TimeWidget({
   required,
   schema,
 }: WidgetProps) {
-  const customClassName = (options as any)?.className || 'w-full max-w-[40rem]';
+  const customClassName = typeof options.className === 'string' ? options.className : 'w-full max-w-[40rem]';
   const requiresSeconds = schema.format === 'time';
 
   return (
