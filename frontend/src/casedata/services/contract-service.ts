@@ -96,11 +96,14 @@ const DETAILED_DESCRIPTION_KEY = /^detailedDescription\d{2}$/;
 
 export const isDetailedDescriptionKey = (key: string): boolean => DETAILED_DESCRIPTION_KEY.test(key);
 
-export const getDetailedDescriptions = (parameters?: Record<string, string>): string[] =>
+export const getDetailedDescriptionEntries = (parameters?: Record<string, string>): { key: string; value: string }[] =>
   Object.keys(parameters ?? {})
     .filter(isDetailedDescriptionKey)
-    .sort()
-    .map((key) => parameters?.[key] ?? '');
+    .sort((left, right) => left.localeCompare(right))
+    .map((key) => ({ key, value: parameters?.[key] ?? '' }));
+
+export const getDetailedDescriptions = (parameters?: Record<string, string>): string[] =>
+  getDetailedDescriptionEntries(parameters).map(({ value }) => value);
 
 export const toDetailedDescriptionParameters = (values: string[]): Record<string, string> =>
   Object.fromEntries(values.map((value, i) => [`detailedDescription${String(i + 1).padStart(2, '0')}`, value]));

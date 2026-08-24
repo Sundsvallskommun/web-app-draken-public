@@ -16,7 +16,7 @@ import { validateAction } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
 import {
   getContractStakeholderName,
-  getDetailedDescriptions,
+  getDetailedDescriptionEntries,
   getErrandPropertyInformation,
   hasRecurringFee,
   isDetailedDescriptionKey,
@@ -232,10 +232,11 @@ export const ContractForm: FC<{
   // name in the live form state — not via invoiceInfoIndex — since the group order in the form can
   // be rewritten after load (see setErrandIdParameter in casedata-contract-tab).
   const extraParameterGroups = watch('extraParameters');
-  const detailedDescriptions = useMemo(
-    () => getDetailedDescriptions(extraParameterGroups?.find((g) => g.name === 'InvoiceInfo')?.parameters),
+  const detailedDescriptionRows = useMemo(
+    () => getDetailedDescriptionEntries(extraParameterGroups?.find((g) => g.name === 'InvoiceInfo')?.parameters),
     [extraParameterGroups]
   );
+  const detailedDescriptions = detailedDescriptionRows.map(({ value }) => value);
 
   const setDetailedDescriptions = (values: string[]) => {
     const groups = getValues('extraParameters') ?? [];
@@ -1141,8 +1142,8 @@ export const ContractForm: FC<{
                       )}
                     </FormControl>
                   </div>
-                  {detailedDescriptions.map((value, idx) => (
-                    <div className="flex gap-18 justify-start" key={idx}>
+                  {detailedDescriptionRows.map(({ key, value }, idx) => (
+                    <div className="flex gap-18 justify-start" key={key}>
                       <FormControl className="w-full">
                         <div className="flex w-full justify-between">
                           <FormLabel>Ytterligare avitext {idx + 1}</FormLabel>
