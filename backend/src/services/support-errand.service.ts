@@ -4,6 +4,7 @@ import FormData from 'form-data';
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import type { IafVofInvestigationClassificationLabelTree } from '@/config/iaf-vof-investigation-classification';
+import { normalizeSupportManagementResourcePath } from '@/config/supportmanagement-path';
 import {
   AddressAddressCategoryEnum,
   AttachmentChannelEnum,
@@ -298,13 +299,9 @@ interface SupportErrandClassificationMetadata {
   managedLabels: Label[];
 }
 
-const normalizeLabelClassification = (classification: string | undefined): string => (classification ?? '').trim().replace(/_/g, '-').toUpperCase();
+const normalizeLabelClassification = (classification: string | undefined): string => (classification ?? '').trim().split('_').join('-').toUpperCase();
 
-const normalizeLabelResource = (resource: string | undefined): string =>
-  (resource ?? '')
-    .trim()
-    .replace(/^\/+|\/+$/gu, '')
-    .toUpperCase();
+const normalizeLabelResource = normalizeSupportManagementResourcePath;
 
 const isCategoryLabel = (
   label: NonNullable<Errand['labels']>[number],
@@ -410,6 +407,72 @@ export interface ResolvedSupportErrandClassification {
   managedRootResource: string;
 }
 
+const buildClassificationMetadataIds = (labels: readonly Label[]): Map<string, Label> => {
+  const metadataIds = new Map<string, Label>();
+  for (const label of labels) {
+    const id = requireMetadataLabelId(label);
+    if (metadataIds.has(id)) {
+      throw new HttpException(502, 'Support Management classification metadata contains duplicate label ids');
+    }
+    metadataIds.set(id, label);
+  }
+  return metadataIds;
+};
+
+const bindingMatchesClassification = (binding: SupportErrandClassificationBinding, classification: ClassificationSpec): boolean => {
+  const categoryLabel = binding.owner ?? binding.category;
+  return (
+    normalizeLabelResource(requireMetadataLabelResource(categoryLabel)) === normalizeLabelResource(classification.category) &&
+    normalizeLabelResource(requireMetadataLabelResource(binding.category)) === normalizeLabelResource(classification.type)
+  );
+};
+
+const requireMatchingClassificationBinding = (
+  bindings: readonly SupportErrandClassificationBinding[],
+  classification: ClassificationSpec,
+): SupportErrandClassificationBinding => {
+  for (const binding of bindings) {
+    for (const label of [...(binding.owner ? [binding.owner] : []), binding.category, ...binding.types]) {
+      requireMetadataLabelResource(label);
+    }
+  }
+
+  const matches = bindings.filter(binding => bindingMatchesClassification(binding, classification));
+  if (matches.length === 0) {
+    throw new HttpException(400, 'Classification does not match the configured Support Management label tree');
+  }
+  if (matches.length > 1) {
+    throw new HttpException(502, 'Support Management classification metadata contains an ambiguous configured category path');
+  }
+  return matches[0];
+};
+
+const resolveSubmittedClassificationLabelIds = (
+  binding: SupportErrandClassificationBinding,
+  categoryLabels: readonly LabelIdReference[],
+): string[] => {
+  const submittedIds = categoryLabels.map(label => label.id);
+  const submittedIdSet = new Set(submittedIds);
+  if (submittedIdSet.size !== submittedIds.length) {
+    throw new HttpException(400, 'Classification label ids must be unique');
+  }
+
+  const ownerId = binding.owner ? requireMetadataLabelId(binding.owner) : undefined;
+  const categoryId = requireMetadataLabelId(binding.category);
+  const typeIds = binding.types.map(type => requireMetadataLabelId(type));
+  const selectedTypeIds = typeIds.filter(id => submittedIdSet.has(id));
+  const expectedSelectedTypeCount = typeIds.length > 0 ? 1 : 0;
+  if (selectedTypeIds.length !== expectedSelectedTypeCount) {
+    throw new HttpException(400, 'Classification must contain exactly one valid undercategory when required');
+  }
+
+  const expectedIds = [...(ownerId ? [ownerId] : []), categoryId, ...selectedTypeIds];
+  if (submittedIds.length !== expectedIds.length || submittedIds.some(id => !expectedIds.includes(id))) {
+    throw new HttpException(400, 'Classification label ids do not match the selected configured category path');
+  }
+  return expectedIds;
+};
+
 /**
  * Validates a submitted classification against the configured metadata tree and returns the canonical
  * resource names plus the exact label ids that path implies. Throws 400 for a payload that does not
@@ -425,54 +488,9 @@ export const resolveSupportErrandClassification = (
   }
 
   const { bindings, managedLabels } = getSupportErrandClassificationMetadata(labelStructure, labelTree);
-  const metadataIds = new Map<string, Label>();
-  for (const label of managedLabels) {
-    const id = requireMetadataLabelId(label);
-    if (metadataIds.has(id)) {
-      throw new HttpException(502, 'Support Management classification metadata contains duplicate label ids');
-    }
-    metadataIds.set(id, label);
-  }
-
-  for (const binding of bindings) {
-    for (const label of [...(binding.owner ? [binding.owner] : []), binding.category, ...binding.types]) {
-      requireMetadataLabelResource(label);
-    }
-  }
-
-  const matchingBindings = bindings.filter(binding => {
-    const expectedCategory = binding.owner ? requireMetadataLabelResource(binding.owner) : requireMetadataLabelResource(binding.category);
-    return (
-      normalizeLabelResource(expectedCategory) === normalizeLabelResource(data.classification.category) &&
-      normalizeLabelResource(requireMetadataLabelResource(binding.category)) === normalizeLabelResource(data.classification.type)
-    );
-  });
-  if (matchingBindings.length === 0) {
-    throw new HttpException(400, 'Classification does not match the configured Support Management label tree');
-  }
-  if (matchingBindings.length > 1) {
-    throw new HttpException(502, 'Support Management classification metadata contains an ambiguous configured category path');
-  }
-
-  const binding = matchingBindings[0];
-  const submittedIds = data.categoryLabels.map(label => label.id);
-  const submittedIdSet = new Set(submittedIds);
-  if (submittedIdSet.size !== submittedIds.length) {
-    throw new HttpException(400, 'Classification label ids must be unique');
-  }
-
-  const ownerId = binding.owner ? requireMetadataLabelId(binding.owner) : undefined;
-  const categoryId = requireMetadataLabelId(binding.category);
-  const typeIds = binding.types.map(type => ({ id: requireMetadataLabelId(type), type }));
-  const selectedTypes = typeIds.filter(({ id }) => submittedIdSet.has(id));
-  if ((typeIds.length > 0 && selectedTypes.length !== 1) || (typeIds.length === 0 && selectedTypes.length !== 0)) {
-    throw new HttpException(400, 'Classification must contain exactly one valid undercategory when required');
-  }
-
-  const expectedIds = [...(ownerId ? [ownerId] : []), categoryId, ...selectedTypes.map(({ id }) => id)];
-  if (submittedIds.length !== expectedIds.length || submittedIds.some(id => !expectedIds.includes(id))) {
-    throw new HttpException(400, 'Classification label ids do not match the selected configured category path');
-  }
+  const metadataIds = buildClassificationMetadataIds(managedLabels);
+  const binding = requireMatchingClassificationBinding(bindings, data.classification);
+  const expectedIds = resolveSubmittedClassificationLabelIds(binding, data.categoryLabels);
 
   return {
     classification: {

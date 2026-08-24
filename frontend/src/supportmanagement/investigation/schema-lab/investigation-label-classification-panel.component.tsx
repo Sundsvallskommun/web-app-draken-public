@@ -27,7 +27,7 @@ export function InvestigationLabelClassificationPanel({
   savedAt,
   notice,
   onChange,
-}: InvestigationLabelClassificationPanelProps) {
+}: Readonly<InvestigationLabelClassificationPanelProps>) {
   return (
     <section
       className="mb-32 min-w-0 max-w-full rounded-12 border-1 border-vattjom-surface-primary bg-vattjom-background-100 p-16 sm:p-20"

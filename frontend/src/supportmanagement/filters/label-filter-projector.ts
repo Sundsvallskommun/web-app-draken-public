@@ -71,7 +71,7 @@ const requireNonEmpty = (value: string, path: string): string => {
 };
 
 const normalizeClassification = (classification: string): string =>
-  requireNonEmpty(classification, 'classification').replace(/_/gu, '-').toUpperCase();
+  requireNonEmpty(classification, 'classification').replaceAll('_', '-').toUpperCase();
 
 const requireResourcePath = (node: LabelFilterMetadataNode, context: string): string => {
   if (typeof node.resourcePath !== 'string' || !node.resourcePath.trim()) {

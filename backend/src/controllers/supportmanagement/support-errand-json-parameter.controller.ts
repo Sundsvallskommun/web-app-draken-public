@@ -57,13 +57,17 @@ const requireInvestigationDocument = (profile: SupportInvestigationProfileDto, k
 @Controller()
 export class SupportErrandJsonParameterController {
   private readonly investigationProfile: SupportInvestigationProfileDto;
-  private documentService: SupportInvestigationDocumentService;
-  private policyService: SupportInvestigationPolicyService;
+  private readonly documentService: SupportInvestigationDocumentService;
+  private readonly policyService: SupportInvestigationPolicyService;
 
-  constructor(investigationProfile: SupportInvestigationProfileDto = getSupportInvestigationProfile(APPLICATION)) {
+  constructor(
+    investigationProfile: SupportInvestigationProfileDto = getSupportInvestigationProfile(APPLICATION),
+    documentService = new SupportInvestigationDocumentService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' }),
+    policyService = new SupportInvestigationPolicyService(undefined, investigationProfile),
+  ) {
     this.investigationProfile = investigationProfile;
-    this.documentService = new SupportInvestigationDocumentService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' });
-    this.policyService = new SupportInvestigationPolicyService(undefined, investigationProfile);
+    this.documentService = documentService;
+    this.policyService = policyService;
   }
 
   @Get('/supporterrands/:municipalityId/:errandId/json-parameters/:key')

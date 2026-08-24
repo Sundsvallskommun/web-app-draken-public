@@ -28,7 +28,7 @@ export const ProjectedLabelFilters = ({ projections, selections, onChange }: Pro
   return (
     <div className="flex flex-wrap gap-8">
       {projections.map((group) => (
-        <div key={group.key} role="group" aria-label={group.label} className="flex flex-wrap gap-8">
+        <fieldset key={group.key} aria-label={group.label} className="m-0 flex min-w-0 flex-wrap gap-8 border-0 p-0">
           {group.fields.map((field) => {
             const choices = getVisibleLabelFilterChoices(projections, group.key, field.key, normalizedSelections);
             const selectedCount = normalizedSelections.filter(
@@ -83,7 +83,7 @@ export const ProjectedLabelFilters = ({ projections, selections, onChange }: Pro
               </PopupMenu>
             );
           })}
-        </div>
+        </fieldset>
       ))}
     </div>
   );

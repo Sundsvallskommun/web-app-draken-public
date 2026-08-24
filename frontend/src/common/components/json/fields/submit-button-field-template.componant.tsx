@@ -58,7 +58,7 @@ function readSubmitButtonOptions(uiOptions: unknown, formOptions: unknown): Subm
   };
 }
 
-export function SchemaSubmitButton({ options = {} }: SchemaSubmitButtonProps) {
+export function SchemaSubmitButton({ options = {} }: Readonly<SchemaSubmitButtonProps>) {
   const label = options.label || 'Lägg till';
   const variant = options.variant || 'primary';
   const className = options.className || 'mt-[3.2rem] min-w-0 max-w-full';

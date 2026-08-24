@@ -48,7 +48,7 @@ export const parsePersistedLabelFilterSelections = (value: unknown): readonly La
 
   if (!Array.isArray(candidate)) return Object.freeze([]);
   const selections = candidate.map(readSelection);
-  if (selections.some((selection) => selection === undefined)) return Object.freeze([]);
+  if (selections.includes(undefined)) return Object.freeze([]);
   return Object.freeze(selections as LabelFilterSelection[]);
 };
 

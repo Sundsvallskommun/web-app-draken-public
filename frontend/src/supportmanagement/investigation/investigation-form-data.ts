@@ -16,7 +16,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function hasOwn(value: object, key: string): boolean {
-  return Object.prototype.hasOwnProperty.call(value, key);
+  return Object.hasOwn(value, key);
 }
 
 function resolveLocalReference(schema: RJSFSchema | boolean, rootSchema: RJSFSchema): RJSFSchema | boolean {
@@ -32,37 +32,41 @@ function resolveLocalReference(schema: RJSFSchema | boolean, rootSchema: RJSFSch
   return { ...definition, ...schemaSiblings };
 }
 
+function pruneArrayToSchema(schema: RJSFSchema, value: unknown[], rootSchema: RJSFSchema): unknown[] {
+  const { items } = schema;
+  if (Array.isArray(items)) {
+    return value.map((item, index) =>
+      items[index] === undefined ? item : pruneValueToSchema(items[index], item, rootSchema)
+    );
+  }
+  if (typeof items === 'boolean' || isRecord(items)) {
+    return value.map((item) => pruneValueToSchema(items, item, rootSchema));
+  }
+  return value;
+}
+
+function pruneRecordToSchema(
+  properties: Record<string, RJSFSchema | boolean>,
+  value: Record<string, unknown>,
+  rootSchema: RJSFSchema
+): Record<string, unknown> {
+  const prunedValue: Record<string, unknown> = {};
+  for (const [propertyName, propertySchema] of Object.entries(properties)) {
+    if (!hasOwn(value, propertyName)) continue;
+    const prunedPropertyValue = pruneValueToSchema(propertySchema, value[propertyName], rootSchema);
+    if (prunedPropertyValue !== undefined) prunedValue[propertyName] = prunedPropertyValue;
+  }
+  return prunedValue;
+}
+
 function pruneValueToSchema(schema: RJSFSchema | boolean, value: unknown, rootSchema: RJSFSchema): unknown {
   const resolvedSchema = resolveLocalReference(schema, rootSchema);
   if (resolvedSchema === false) return undefined;
   if (resolvedSchema === true) return value;
-
-  if (Array.isArray(value)) {
-    const { items } = resolvedSchema;
-    if (Array.isArray(items)) {
-      return value.map((item, index) =>
-        items[index] === undefined ? item : pruneValueToSchema(items[index], item, rootSchema)
-      );
-    }
-    if (typeof items === 'boolean' || isRecord(items)) {
-      return value.map((item) => pruneValueToSchema(items, item, rootSchema));
-    }
-    return value;
-  }
-
+  if (Array.isArray(value)) return pruneArrayToSchema(resolvedSchema, value, rootSchema);
   if (isRecord(value) && isRecord(resolvedSchema.properties)) {
-    const prunedValue: Record<string, unknown> = {};
-
-    for (const [propertyName, propertySchema] of Object.entries(resolvedSchema.properties)) {
-      if (!hasOwn(value, propertyName)) continue;
-
-      const prunedPropertyValue = pruneValueToSchema(propertySchema, value[propertyName], rootSchema);
-      if (prunedPropertyValue !== undefined) prunedValue[propertyName] = prunedPropertyValue;
-    }
-
-    return prunedValue;
+    return pruneRecordToSchema(resolvedSchema.properties, value, rootSchema);
   }
-
   return value;
 }
 
@@ -100,7 +104,9 @@ function normalizeManagerConditions(formData: InvestigationFormData): Investigat
 
   const allowedTemplates = getAllowedManagerTemplates(normalizedData);
   const selectedTemplate = normalizedData.investigationTemplate;
-  if (!allowedTemplates.some((template) => template === selectedTemplate)) {
+  const selectedTemplateIsAllowed =
+    typeof selectedTemplate === 'string' && (allowedTemplates as readonly string[]).includes(selectedTemplate);
+  if (!selectedTemplateIsAllowed) {
     if (allowedTemplates.length === 1) {
       normalizedData.investigationTemplate = allowedTemplates[0];
     } else {
@@ -173,12 +179,9 @@ export function normalizeInvestigationFormData(
 ): InvestigationFormData {
   const prunedData = pruneValueToSchema(schema, formData, schema);
   const schemaOwnedData = isRecord(prunedData) ? prunedData : {};
-  const conditionallyNormalizedData =
-    schemaName === 'utredning-enhetschef'
-      ? normalizeManagerConditions(schemaOwnedData)
-      : schemaName === 'utredning-hsl'
-      ? normalizeHslConditions(schemaOwnedData)
-      : schemaOwnedData;
+  let conditionallyNormalizedData = schemaOwnedData;
+  if (schemaName === 'utredning-enhetschef') conditionallyNormalizedData = normalizeManagerConditions(schemaOwnedData);
+  if (schemaName === 'utredning-hsl') conditionallyNormalizedData = normalizeHslConditions(schemaOwnedData);
 
   return applyDeclaredCalculations(schema, conditionallyNormalizedData);
 }

@@ -18,7 +18,6 @@ interface DocumentServiceStub {
 }
 
 const makeController = (application = 'IAF', state: 'active' | 'inactive' | 'unavailable' = 'active') => {
-  const controller = new SupportErrandJsonParameterController(getSupportInvestigationProfile(application));
   const documentService: DocumentServiceStub = {
     readDocument: vi.fn(),
     writeDocument: vi.fn(),
@@ -28,10 +27,11 @@ const makeController = (application = 'IAF', state: 'active' | 'inactive' | 'una
     assertCanReadDocument: vi.fn(),
     assertCanWriteDocument: vi.fn(),
   };
-  (controller as unknown as { documentService: SupportInvestigationDocumentService }).documentService =
-    documentService as unknown as SupportInvestigationDocumentService;
-  (controller as unknown as { policyService: SupportInvestigationPolicyService }).policyService =
-    policyService as unknown as SupportInvestigationPolicyService;
+  const controller = new SupportErrandJsonParameterController(
+    getSupportInvestigationProfile(application),
+    documentService as unknown as SupportInvestigationDocumentService,
+    policyService as unknown as SupportInvestigationPolicyService,
+  );
   return { controller, documentService, policyService };
 };
 
@@ -198,19 +198,19 @@ describe('SupportErrandJsonParameterController', () => {
       application: 'FUTURE',
       documents: [{ key: 'custom-document', schemaName: 'shared-schema', tabLabel: 'Custom', ownerLabel: 'Owner' }],
     });
-    const controller = new SupportErrandJsonParameterController(profile);
     const documentService = {
       readDocument: vi.fn(async () => ({
         document: { key: 'custom-document', schemaId: '2281_shared-schema_1.0', value: {} },
         etag: '"1"',
         status: 200,
       })),
-    };
-    (controller as unknown as { documentService: SupportInvestigationDocumentService }).documentService =
-      documentService as unknown as SupportInvestigationDocumentService;
+    } as unknown as SupportInvestigationDocumentService;
     const policyService = { assertCanReadDocument: vi.fn(), getState: vi.fn().mockResolvedValue('active') };
-    (controller as unknown as { policyService: SupportInvestigationPolicyService }).policyService =
-      policyService as unknown as SupportInvestigationPolicyService;
+    const controller = new SupportErrandJsonParameterController(
+      profile,
+      documentService,
+      policyService as unknown as SupportInvestigationPolicyService,
+    );
 
     await controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, 'custom-document', resDouble());
 

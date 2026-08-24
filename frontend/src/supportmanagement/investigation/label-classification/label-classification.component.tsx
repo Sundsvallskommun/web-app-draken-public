@@ -3,7 +3,11 @@
 import { FormControl, FormErrorMessage, FormHelperText, FormLabel, Select } from '@sk-web-gui/react';
 import { type ChangeEvent, type FC, useId } from 'react';
 
-import type { LabelClassificationCatalog, LabelClassificationSelection } from './label-classification.types';
+import type {
+  LabelClassificationCatalog,
+  LabelClassificationSelection,
+  LabelClassificationTypeOption,
+} from './label-classification.types';
 
 export interface LabelClassificationProps {
   catalog: LabelClassificationCatalog;
@@ -39,6 +43,14 @@ const defaultContent: LabelClassificationContent = {
   subtypeEmptyPlaceholder: 'Saknar detaljerade typer',
 };
 
+const getSubtypePlaceholder = (
+  selectedType: LabelClassificationTypeOption | undefined,
+  content: LabelClassificationContent
+): string => {
+  if (!selectedType) return content.subtypeBeforeTypePlaceholder;
+  return selectedType.subtypes.length > 0 ? content.subtypePlaceholder : content.subtypeEmptyPlaceholder;
+};
+
 export const LabelClassification: FC<LabelClassificationProps> = ({
   catalog,
   value,
@@ -70,11 +82,7 @@ export const LabelClassification: FC<LabelClassificationProps> = ({
     });
   };
 
-  const subtypePlaceholder = !selectedType
-    ? resolvedContent.subtypeBeforeTypePlaceholder
-    : hasSubtypes
-    ? resolvedContent.subtypePlaceholder
-    : resolvedContent.subtypeEmptyPlaceholder;
+  const subtypePlaceholder = getSubtypePlaceholder(selectedType, resolvedContent);
 
   return (
     <div className="grid grid-cols-1 gap-lg md:grid-cols-2">

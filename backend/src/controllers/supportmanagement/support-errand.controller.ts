@@ -118,6 +118,24 @@ export enum StatusLabel {
   SOLVED = 'Avslutat',
 }
 
+const getLabelFilterErrorStatus = (error: SupportManagementLabelFilterError): number => {
+  if (error.source === 'selection') return 400;
+  if (error.source === 'metadata') return 502;
+  return 500;
+};
+
+const assertGenericUpdateFields = (data: Partial<SupportErrandDto>): void => {
+  if (data.activePhaseId !== undefined) {
+    throw new HttpException(400, 'Use the phase transition endpoint to change the active phase');
+  }
+  if (data.status !== undefined || data.resolution !== undefined || data.suspension !== undefined) {
+    throw new HttpException(400, 'Use the status transition endpoint to change status, resolution or suspension');
+  }
+  if (data.assignedUserId !== undefined) {
+    throw new HttpException(400, 'Use the administrator endpoint to change the assigned user');
+  }
+};
+
 export enum Resolution {
   INFORMED = 'INFORMED',
   ESCALATED = 'ESCALATED',
@@ -579,11 +597,12 @@ export class SupportErrandController {
         selections as readonly SupportManagementLabelFilterSelection[],
       );
       const clauses = [errandFilter, labelFilter].filter(Boolean).map(fragment => fragment.replace(/^&filter=/u, ''));
-      return clauses.length > 0 ? `&filter=${clauses.map(clause => `(${clause})`).join(' and ')}` : '';
+      if (clauses.length === 0) return '';
+      const groupedClauses = clauses.map(clause => `(${clause})`).join(' and ');
+      return `&filter=${groupedClauses}`;
     } catch (error) {
       if (error instanceof SupportManagementLabelFilterError) {
-        const status = error.source === 'selection' ? 400 : error.source === 'metadata' ? 502 : 500;
-        throw new HttpException(status, error.message);
+        throw new HttpException(getLabelFilterErrorStatus(error), error.message);
       }
       throw error;
     }
@@ -597,14 +616,13 @@ export class SupportErrandController {
    */
   private async resolveStakeholderOrgNumber(s: SupportStakeholder, municipalityId: string, req: RequestWithUser): Promise<string | undefined> {
     const organizationNumberFromParameter = s.parameters?.find(p => p.key === 'organizationNumber')?.values?.[0] ?? '';
-    const organizationNumberSource =
-      organizationNumberFromParameter ||
-      (s.externalId
-        ? await this.organizationService.getOrganizationNumberByPartyId(municipalityId, s.externalId, req.user).catch(e => {
-            logger.error(`Error fetching organization number for partyId ${s.externalId}: `, e);
-            return '';
-          })
-        : '');
+    let organizationNumberSource = organizationNumberFromParameter;
+    if (!organizationNumberSource && s.externalId) {
+      organizationNumberSource = await this.organizationService.getOrganizationNumberByPartyId(municipalityId, s.externalId, req.user).catch(e => {
+        logger.error(`Error fetching organization number for partyId ${s.externalId}: `, e);
+        return '';
+      });
+    }
     return formatOrgNr(organizationNumberSource, OrgNumberFormat.DASH);
   }
 
@@ -865,6 +883,28 @@ export class SupportErrandController {
     return response.status(201).send(res.data);
   }
 
+  private async assertGenericClassificationUpdateAllowed(
+    req: RequestWithUser,
+    currentErrand: SupportErrand,
+    data: Partial<SupportErrandDto>,
+  ): Promise<void> {
+    const classificationFieldsRequested = data.classification !== undefined || data.labels !== undefined;
+    const policy = this.investigationPolicyService.iafVofClassificationPolicy;
+    if (!classificationFieldsRequested && (data.parameters === undefined || !policy)) return;
+
+    const owner = await this.investigationPolicyService.getClassificationOwner(req.user);
+    if (owner === 'unavailable') {
+      throw new HttpException(503, 'Investigation classification ownership is temporarily unavailable');
+    }
+    if (owner !== 'investigation') return;
+    if (classificationFieldsRequested) {
+      throw new HttpException(409, 'Use the investigation classification endpoint to update classification and labels');
+    }
+    if (policy && !preservesIafVofInvestigationClassificationOwnerParameter(currentErrand.parameters, data.parameters)) {
+      throw new HttpException(409, 'The investigation classification owner parameter cannot be changed through the generic errand endpoint');
+    }
+  }
+
   @Patch('/supporterrands/:municipalityId/:id')
   @OpenAPI({ summary: 'Update a support errand' })
   @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(SupportErrandDto, 'body'))
@@ -881,15 +921,7 @@ export class SupportErrandController {
       logger.error('No municipality id found, it is needed to fetch errands.');
       return response.status(400).send('Municipality id missing');
     }
-    if (data.activePhaseId !== undefined) {
-      throw new HttpException(400, 'Use the phase transition endpoint to change the active phase');
-    }
-    if (data.status !== undefined || data.resolution !== undefined || data.suspension !== undefined) {
-      throw new HttpException(400, 'Use the status transition endpoint to change status, resolution or suspension');
-    }
-    if (data.assignedUserId !== undefined) {
-      throw new HttpException(400, 'Use the administrator endpoint to change the assigned user');
-    }
+    assertGenericUpdateFields(data);
     const requestedVersion = requireStrongErrandVersion(ifMatch);
     const url = `${municipalityId}/${this.namespace}/errands/${id}`;
     const baseURL = apiURL(this.SERVICE);
@@ -901,22 +933,7 @@ export class SupportErrandController {
     assertRequestedErrandVersion(requestedVersion, currentVersion);
     assertSupportErrandWritable(currentErrand.data, 'generic changes');
 
-    const classificationFieldsRequested = data.classification !== undefined || data.labels !== undefined;
-    const iafVofClassificationPolicy = this.investigationPolicyService.iafVofClassificationPolicy;
-    if (classificationFieldsRequested || (data.parameters !== undefined && iafVofClassificationPolicy)) {
-      const owner = await this.investigationPolicyService.getClassificationOwner(req.user);
-      if (owner === 'investigation') {
-        if (classificationFieldsRequested) {
-          throw new HttpException(409, 'Use the investigation classification endpoint to update classification and labels');
-        }
-        if (iafVofClassificationPolicy && !preservesIafVofInvestigationClassificationOwnerParameter(currentErrand.data.parameters, data.parameters)) {
-          throw new HttpException(409, 'The investigation classification owner parameter cannot be changed through the generic errand endpoint');
-        }
-      }
-      if (owner === 'unavailable') {
-        throw new HttpException(503, 'Investigation classification ownership is temporarily unavailable');
-      }
-    }
+    await this.assertGenericClassificationUpdateAllowed(req, currentErrand.data, data);
     const body: Partial<SupportErrandDto> = stripErrandVersions({ ...data });
     const res = await this.apiService
       .patch<any, Partial<SupportErrandDto>>(

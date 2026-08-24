@@ -47,6 +47,92 @@ export interface TableForm {
   pageSize: number;
 }
 
+type SupportMetadataValue = NonNullable<Parameters<typeof getSelectableCategories>[0]>;
+
+const readStoredList = <T extends string>(value: string | boolean | undefined, fallback: readonly T[]): T[] => {
+  if (typeof value !== 'string' || value.length === 0) return [...fallback];
+  return value.split(',') as T[];
+};
+
+const readLegacyDisplayNames = (
+  value: string | boolean | undefined,
+  supportMetadata: SupportMetadataValue,
+  selectableNames: readonly string[],
+  findLabel: (name: string, metadata: SupportMetadataValue) => { readonly displayName?: string } | undefined
+): string[] => [
+  ...new Set(
+    readStoredList(value, [])
+      .map((name) => findLabel(name, supportMetadata)?.displayName)
+      .filter(
+        (displayName): displayName is string => typeof displayName === 'string' && selectableNames.includes(displayName)
+      )
+  ),
+];
+
+interface RestoreStoredFilterInput {
+  readonly storedFilter: Readonly<Record<string, string | boolean>>;
+  readonly supportMetadata: SupportMetadataValue;
+  readonly labelFilterState: SupportManagementLabelFilterState;
+  readonly username: string;
+}
+
+const restoreStoredFilter = ({
+  storedFilter,
+  supportMetadata,
+  labelFilterState,
+  username,
+}: RestoreStoredFilterInput): SupportManagementFilter => {
+  const legacyLabels = labelFilterState.status === 'legacy';
+  const selectableCategoryPaths = new Set(
+    getSelectableCategories(supportMetadata).map(({ resourcePath }) => resourcePath)
+  );
+  const selectableTypeNames = getUniqueLabelDisplayNames(getSelectableTypes(supportMetadata));
+  const selectableSubTypeNames = getUniqueLabelDisplayNames(getSelectableSubTypes(supportMetadata));
+  const projectedSelections =
+    labelFilterState.status === 'ready'
+      ? normalizeLabelFilterSelections(
+          labelFilterState.projections,
+          parsePersistedLabelFilterSelections(storedFilter[SUPPORT_MANAGEMENT_LABEL_FILTER_PARAMETER])
+        )
+      : [];
+  const labelCategory = legacyLabels
+    ? readStoredList(storedFilter.labelCategory, SupportManagementValues.labelCategory).filter((resourcePath) =>
+        selectableCategoryPaths.has(resourcePath)
+      )
+    : [];
+  const status =
+    storedFilter.status === '' ? [] : readStoredList<Status>(storedFilter.status, SupportManagementValues.status);
+  const admins =
+    storedFilter.stakeholders === username
+      ? []
+      : readStoredList(storedFilter.stakeholders, SupportManagementValues.admins);
+
+  return {
+    category: readStoredList(storedFilter.category, SupportManagementValues.category),
+    labelCategory,
+    type: readStoredList(storedFilter.type, SupportManagementValues.type),
+    labelType: legacyLabels
+      ? readLegacyDisplayNames(storedFilter.labelType, supportMetadata, selectableTypeNames, getLabelTypeFromName)
+      : [],
+    labelSubType: legacyLabels
+      ? readLegacyDisplayNames(
+          storedFilter.labelSubType,
+          supportMetadata,
+          selectableSubTypeNames,
+          getLabelSubTypeFromName
+        )
+      : [],
+    labelFilter: [...projectedSelections],
+    priority: readStoredList(storedFilter.priority, SupportManagementValues.priority),
+    channel: readStoredList(storedFilter.channel, SupportManagementValues.channel),
+    status,
+    startdate: typeof storedFilter.start === 'string' ? storedFilter.start : SupportManagementValues.startdate,
+    enddate: typeof storedFilter.end === 'string' ? storedFilter.end : SupportManagementValues.enddate,
+    admins,
+    query: SupportManagementValues.query,
+  };
+};
+
 export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
   const filterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const {
@@ -140,7 +226,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
 
   const setInitialFocus = () => {
     setTimeout(() => {
-      initialFocus.current && initialFocus.current.focus();
+      initialFocus.current?.focus();
     });
   };
 
@@ -152,75 +238,21 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
     // filtering must not depend on it: bailing out before filterInitialized below would leave
     // every filter silently inert whenever the metadata request fails.
     if (supportMetadata && storedFilter && Object.keys(storedFilter).length > 0) {
-      let storedFilters;
-      // A stored filter can point at a label that has since been deprecated. Such a value is dropped
-      // here: its checkbox is no longer rendered, so keeping it would leave an active filter the user
-      // can neither see nor switch off.
-      const selectableCategoryPaths = new Set(getSelectableCategories(supportMetadata).map((c) => c.resourcePath));
-      const selectableTypeNames = getUniqueLabelDisplayNames(getSelectableTypes(supportMetadata));
-      const selectableSubTypeNames = getUniqueLabelDisplayNames(getSelectableSubTypes(supportMetadata));
+      let storedFilters: SupportManagementFilter;
       try {
-        const projectedLabelSelections =
-          labelFilterState.status === 'ready'
-            ? normalizeLabelFilterSelections(
-                labelFilterState.projections,
-                parsePersistedLabelFilterSelections(storedFilter[SUPPORT_MANAGEMENT_LABEL_FILTER_PARAMETER])
-              )
-            : [];
-        storedFilters = {
-          category: (storedFilter?.category as string)?.split(',') || SupportManagementValues.category,
-          labelCategory:
-            labelFilterState.status === 'legacy'
-              ? (storedFilter?.labelCategory as string)
-                  ?.split(',')
-                  .filter((resourcePath: string) => selectableCategoryPaths.has(resourcePath)) ||
-                SupportManagementValues.labelCategory
-              : [],
-          type: (storedFilter?.type as string)?.split(',') || SupportManagementValues.type,
-          labelType:
-            labelFilterState.status === 'legacy'
-              ? (Array.from(
-                  new Set(
-                    (storedFilter?.labelType as string)
-                      ?.split(',')
-                      .map((n: string) => getLabelTypeFromName(n, supportMetadata))
-                      .map((t: { displayName?: string } | undefined) => t?.displayName)
-                      .filter((displayName?: string) => !!displayName && selectableTypeNames.includes(displayName))
-                  )
-                ) as string[]) || SupportManagementValues.labelType
-              : [],
-          labelSubType:
-            labelFilterState.status === 'legacy'
-              ? (Array.from(
-                  new Set(
-                    (storedFilter?.labelSubType as string)
-                      ?.split(',')
-                      .map((n: string) => getLabelSubTypeFromName(n, supportMetadata))
-                      .map((t: { displayName?: string } | undefined) => t?.displayName)
-                      .filter((displayName?: string) => !!displayName && selectableSubTypeNames.includes(displayName))
-                  )
-                ) as string[]) || SupportManagementValues.labelSubType
-              : [],
-          labelFilter: [...projectedLabelSelections],
-          priority: (storedFilter?.priority as string)?.split(',') || SupportManagementValues.priority,
-          channel: (storedFilter?.channel as string)?.split(',') || SupportManagementValues.channel,
-          status:
-            storedFilter?.status !== ''
-              ? ((storedFilter?.status as string)?.split(',') as Status[]) || SupportManagementValues.status
-              : [],
-          startdate: (storedFilter?.start as string) || SupportManagementValues.startdate,
-          enddate: (storedFilter?.end as string) || SupportManagementValues.enddate,
-          admins:
-            storedFilter?.stakeholders !== user.username
-              ? (storedFilter?.stakeholders as string)?.split(',') || SupportManagementValues.admins
-              : [],
-        };
-        const filterStatuses = (storedFilter?.status as string)?.split(',') || SupportManagementValues.status;
+        // Deprecated labels are dropped because their controls are no longer rendered and could not be cleared.
+        storedFilters = restoreStoredFilter({
+          storedFilter,
+          supportMetadata,
+          labelFilterState,
+          username: user.username,
+        });
+        const filterStatuses = readStoredList<Status>(storedFilter.status, SupportManagementValues.status);
         const selectedStatusLabel = getStatusLabel(
           filterStatuses.map((s: string) => (Status as Record<string, string>)[s]) as Status[]
         );
         setSidebarLabel(selectedStatusLabel ?? '');
-      } catch (error) {
+      } catch {
         setStoredFilter({});
         storedFilters = {
           category: SupportManagementValues.category,
@@ -235,6 +267,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
           enddate: SupportManagementValues.enddate,
           admins: [],
           labelFilter: [],
+          query: SupportManagementValues.query,
         };
       }
       if (storedFilter?.stakeholders === user.username) {

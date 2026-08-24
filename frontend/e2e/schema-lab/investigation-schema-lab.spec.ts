@@ -144,12 +144,15 @@ test('updates risks and label choices when the manager changes legal bases', asy
   const hsl = legalBases.getByLabel(/^HSL –/u);
   const lss = legalBases.getByLabel(/^LSS –/u);
   const sol = legalBases.getByLabel(/^SoL –/u);
+  const hslLabel = legalBases.getByText(/^HSL –/u);
+  const solLabel = legalBases.getByText(/^SoL –/u);
   const typeSelect = activePanel.locator('[data-cy="label-classification-type"]');
   const templateSelect = page.locator(`#${managerIdPrefix}_investigationTemplate`);
 
   await expect(lss).toBeDisabled();
   await expect(templateSelect.locator('option:not([value=""])')).toHaveCount(3);
-  await hsl.uncheck({ force: true });
+  await hslLabel.click();
+  await expect(hsl).not.toBeChecked();
 
   await expect(lss).toBeEnabled();
   await expect(templateSelect).toHaveValue('sol_lss');
@@ -163,7 +166,8 @@ test('updates risks and label choices when the manager changes legal bases', asy
     'ärendeklassificering passade inte längre valda lagrum'
   );
 
-  await sol.uncheck({ force: true });
+  await solLabel.click();
+  await expect(sol).not.toBeChecked();
   await expect(page.locator(`#${managerIdPrefix}_riskAssessmentSolLss_probability`)).toHaveCount(0);
   await expect(page.locator(`#${managerIdPrefix}_suspectedMisconduct`)).toHaveCount(0);
   await expect(templateSelect).toHaveCount(0);
