@@ -1,6 +1,7 @@
 import type { Classification, Label } from '@common/data-contracts/supportmanagement/data-contracts';
 
 import type { IafVofInvestigationClassificationLabelTree } from '../investigation/iaf-vof-investigation-classification-policy';
+import { normalizeSupportManagementResourcePath } from './supportmanagement-path';
 
 export interface SupportErrandLabelSource {
   readonly labels?: readonly Label[];
@@ -11,14 +12,10 @@ export interface SupportLabelMetadataSource {
   readonly labels?: { readonly labelStructure?: readonly Label[] };
 }
 
-const normalizeClassification = (classification: string | undefined): string =>
+export const normalizeClassification = (classification: string | undefined): string =>
   (classification ?? '').trim().replaceAll('_', '-').toUpperCase();
 
-const normalizeResource = (resource: string | undefined): string =>
-  (resource ?? '')
-    .trim()
-    .replace(/^\/+|\/+$/g, '')
-    .toUpperCase();
+const normalizeResource = normalizeSupportManagementResourcePath;
 
 export const findLabelByClassification = (
   labels: readonly Label[] | undefined,
@@ -26,10 +23,10 @@ export const findLabelByClassification = (
 ): Label | undefined =>
   labels?.find((label) => normalizeClassification(label.classification) === normalizeClassification(classification));
 
-const flattenLabelTree = (labels: readonly Label[] | undefined): Label[] =>
+export const flattenLabelTree = (labels: readonly Label[] | undefined): Label[] =>
   (labels ?? []).flatMap((label) => [label, ...flattenLabelTree(label.labels)]);
 
-const matchesResource = (label: Label, resource: string | undefined): boolean =>
+export const matchesResource = (label: Label, resource: string | undefined): boolean =>
   Boolean(
     resource &&
       [label.resourcePath, label.resourceName].some(

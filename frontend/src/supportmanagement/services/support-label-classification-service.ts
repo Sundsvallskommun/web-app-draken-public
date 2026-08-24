@@ -4,6 +4,9 @@ import { getSupportErrandClassificationPlacement } from '@supportmanagement/inve
 
 import {
   findLabelByClassification,
+  flattenLabelTree,
+  matchesResource,
+  normalizeClassification,
   projectErrandTypeLabel,
   projectLabelCategory,
   projectMappedLabelSubType,
@@ -49,28 +52,20 @@ export const shouldMapLabelSubType = (
   placement: SupportErrandClassificationPlacement = getSupportErrandClassificationPlacement()
 ): boolean => shouldProjectMappedLabelSubType(legacyThreeLevelCategorization, getIafVofPolicy(placement)?.labelTree);
 
-const flattenLabelTree = (labels: readonly Label[] | undefined): Label[] =>
-  (labels ?? []).flatMap((label) => [label, ...flattenLabelTree(label.labels)]);
-
-const matchesResource = (label: Label, resource: string | undefined): boolean =>
-  Boolean(resource && (label.resourcePath === resource || label.resourceName === resource));
-
-export const getLabelTypeFromDisplayName = (displayName: string, metadata: SupportMetadata): Label[] =>
-  flattenLabelTree(metadata?.labels?.labelStructure).filter(
-    (label) => label.classification.toUpperCase() === 'TYPE' && label.displayName === displayName
+const findLabelByClassificationAndResource = (
+  metadata: SupportMetadata,
+  classification: string,
+  name: string
+): Label | undefined =>
+  flattenLabelTree(metadata?.labels?.labelStructure).find(
+    (label) => normalizeClassification(label.classification) === classification && matchesResource(label, name)
   );
 
 export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined =>
-  flattenLabelTree(metadata?.labels?.labelStructure).find(
-    (label) => label.classification.toUpperCase() === 'TYPE' && matchesResource(label, name)
-  );
+  findLabelByClassificationAndResource(metadata, 'TYPE', name);
 
 export const getLabelSubTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined =>
-  flattenLabelTree(metadata?.labels?.labelStructure).find(
-    (label) => label.classification.toUpperCase() === 'SUBTYPE' && matchesResource(label, name)
-  );
+  findLabelByClassificationAndResource(metadata, 'SUBTYPE', name);
 
 export const getLabelCategoryFromName = (name: string, metadata: SupportMetadata): Label | undefined =>
-  flattenLabelTree(metadata?.labels?.labelStructure).find(
-    (label) => label.classification.toUpperCase() === 'CATEGORY' && matchesResource(label, name)
-  );
+  findLabelByClassificationAndResource(metadata, 'CATEGORY', name);

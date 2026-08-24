@@ -125,7 +125,7 @@ const requireKey = (value: unknown, source: 'profile' | 'selection', location: s
 const requireResourcePath = (value: unknown, source: SupportManagementLabelFilterErrorSource, location: string): string => {
   if (
     typeof value !== 'string' ||
-    !value ||
+    !value.trim() ||
     value.trim() !== value ||
     value.startsWith('/') ||
     value.endsWith('/') ||
@@ -142,7 +142,7 @@ const normalizeClassification = (value: unknown, source: 'metadata' | 'profile',
   if (typeof value !== 'string' || !value.trim()) {
     return fail(source, source === 'metadata' ? 'INVALID_METADATA' : 'INVALID_PROFILE', `${location} must contain a classification`);
   }
-  return value.trim().replace(/_/gu, '-').toUpperCase();
+  return value.trim().replaceAll('_', '-').toUpperCase();
 };
 
 const readMetadata = (

@@ -185,7 +185,7 @@ yarn install
 
 3. Skapa .env-filer
 
-**Tillgängliga drakar:** `kc`, `ka`, `mex`, `pt`, `rob`, `lop`, `ik`, `msva`, `se`, `bou`, `lok`
+**Tillgängliga drakar:** `kc`, `ka`, `mex`, `pt`, `rob`, `lop`, `ik`, `msva`, `se`, `bou`, `lok`, `iaf`, `vof`
 
 ### Skapa alla env-filer på en gång
 
@@ -202,7 +202,9 @@ cp .env.ik-example .env.ik && \
 cp .env.msva-example .env.msva && \
 cp .env.se-example .env.se && \
 cp .env.bou-example .env.bou && \
-cp .env.lok-example .env.lok
+cp .env.lok-example .env.lok && \
+cp .env.iaf-example .env.iaf && \
+cp .env.vof-example .env.vof
 ```
 
 Backend (kör från `backend/`):
@@ -218,7 +220,9 @@ cp .env.ik.example.local .env.ik.development.local && \
 cp .env.msva.example.local .env.msva.development.local && \
 cp .env.se.example.local .env.se.development.local && \
 cp .env.bou.example.local .env.bou.development.local && \
-cp .env.lok.example.local .env.lok.development.local
+cp .env.lok.example.local .env.lok.development.local && \
+cp .env.iaf.example.local .env.iaf.development.local && \
+cp .env.vof.example.local .env.vof.development.local
 ```
 
 ### Skapa för enskild drake
@@ -250,11 +254,11 @@ Tillåtna värden är `stable` och `sprint`. Ett okänt värde stoppar backend v
 deploymentinställning inte tyst byter API-kontrakt för alla implementationer.
 
 Drakens ärende-, handläggar-, status- och fastighetskommandon kräver en exakt stark `If-Match` och skickar samma
-version vidare till Support Management. Det atomiska upstreamstödet är verifierat mot sprintkontraktet 14.14. Innan
-en implementation som ligger kvar på `stable` använder dessa skrivvägar ska dess faktiska 14.9-prenumeration därför
-kontrakts- eller integrationstestas för `If-Match`, 409 och 412; något 14.9-kontrakt finns inte incheckat i detta repo.
-Draken gör fortfarande en versions- och statuskontroll före anropet, men en sådan förkontroll kan inte ensam ersätta
-atomisk versionskontroll i upstream.
+version vidare till Support Management. Den 24 augusti 2026 verifierades de publicerade OpenAPI-kontrakten för både
+`supportmanagement/14.9` och `supportmanagement-sprint/14.14`: båda deklarerar `If-Match`, svaren 409/412 och
+versionsfält på ärenden och JSON Parameters. Därmed använder stable- och sprintdeploymenterna samma atomiska
+skrivkontrakt utan en svag kompatibilitetsväg i Draken. Kontrollera kontrakten på nytt när någon prenumeration byter
+version; Drakens förkontroll av version och status ersätter inte atomisk versionskontroll i upstream.
 
 Statuskommandot validerar klientens källstatus och version mot ett färskt ärende samt målstatusen mot live metadata.
 Support Management 14.14 exponerar däremot ingen source→target-graf eller exekveringsroute för statusövergångar, så
@@ -328,9 +332,9 @@ yarn test                       # Enhetstester (Vitest)
 yarn test:watch                 # Vitest i watch-läge
 yarn test:coverage              # Med täckningsrapport (v8)
 yarn type-check:test            # Typkontroll av testerna
-yarn cypress:{drake}            # Cypress E2E, interaktivt (öppnar Cypress)
-yarn cypress:headless:{drake}   # Cypress E2E, headless (för CI)
-yarn test:e2e:{drake}          # Playwright E2E (drake: mex | pt | kc | lop)
+yarn test:e2e:{drake}           # Playwright E2E (mex | pt | kc | lop | iaf | vof)
+yarn test:e2e:iaf-schema-lab    # Playwright E2E för utvecklingslabbet
+yarn test:e2e:ui:{drake}        # Interaktivt (mex | pt | kc | lop | vof)
 ```
 
 Enhetstesterna ligger bredvid modulen de testar (`<modul>.test.ts`) och körs med Vitest,
@@ -351,5 +355,5 @@ https://confluence.sundsvall.se/spaces/OA/pages/1259405457/Feature+flaggor+alla+
 | ------------------------------------- | ----------------------------------- |
 | `yarn build:{drake}`                  | Bygger för produktion               |
 | `yarn start:{drake}`                  | Startar produktionsserver           |
-| `yarn cypress:{drake}`                | Kör Cypress tester                  |
+| `yarn test:e2e:{drake}`               | Kör Playwright E2E-tester           |
 | `yarn generate:datacontracts:{drake}` | Genererar TypeScript-typer från API |

@@ -552,6 +552,11 @@ export interface Label {
    * @example "keycard"
    */
   resourceName: string;
+  /**
+   * Indicates if the label is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
   labels?: Label[];
   /** Free-form key/value data owned by the client. Keys are conventions agreed between clients (e.g. 'escalationEmail'). */
   attributes?: LabelAttribute[];

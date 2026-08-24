@@ -21,6 +21,7 @@ import {
   stripParameterVersions,
 } from '@/services/support-errand.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
 const PROPERTY_DESIGNATION = { key: 'propertyDesignation', displayName: 'Fastighetsbeteckning' } as const;
@@ -84,9 +85,14 @@ export class SupportFacilitiesController {
     assertRequestedErrandVersion(requestedVersion, currentVersion);
     assertSupportErrandWritable(currentErrand, 'facility changes');
 
-    const preservedParameters = stripParameterVersions(
-      (currentErrand.parameters ?? []).filter(parameter => !FACILITY_PARAMETER_KEYS.has(parameter.key)),
-    );
+    // The PATCH below replaces the whole collection, so an absent list must not be read as an
+    // empty one - that would drop every non-facility parameter on the errand.
+    if (!Array.isArray(currentErrand.parameters)) {
+      logger.error(`No parameters found for errand with id ${id}`);
+      throw new HttpException(502, 'Support Management response is missing the errand parameters');
+    }
+
+    const preservedParameters = stripParameterVersions(currentErrand.parameters.filter(parameter => !FACILITY_PARAMETER_KEYS.has(parameter.key)));
     const requestedParameters: WritableParameter[] = [
       ...preservedParameters,
       { ...PROPERTY_DESIGNATION, values: facilities.propertyDesignations },

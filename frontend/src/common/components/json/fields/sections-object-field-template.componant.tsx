@@ -21,7 +21,7 @@ interface ConditionalRule {
   if: SchemaCondition;
   then: {
     required?: string[];
-    properties?: Record<string, unknown | boolean>;
+    properties?: Record<string, unknown>;
   };
 }
 
@@ -47,40 +47,43 @@ interface FormContext {
 const externalFieldPrefix = '$external:';
 
 function hasOwn(value: object, key: string): boolean {
-  return Object.prototype.hasOwnProperty.call(value, key);
+  return Object.hasOwn(value, key);
 }
+
+const isRecordValue = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const matchesRequiredFields = (required: readonly string[] | undefined, value: unknown): boolean =>
+  !required || (isRecordValue(value) && required.every((fieldName) => hasOwn(value, fieldName)));
+
+const matchesProperties = (properties: SchemaCondition['properties'], value: unknown): boolean =>
+  !properties ||
+  (isRecordValue(value) &&
+    Object.entries(properties).every(
+      ([fieldName, fieldCondition]) =>
+        !hasOwn(value, fieldName) || matchesSchemaCondition(fieldCondition, value[fieldName])
+    ));
+
+const matchesContains = (contains: SchemaCondition['contains'], value: unknown): boolean =>
+  !contains || (Array.isArray(value) && value.some((item) => matchesSchemaCondition(contains, item)));
+
+const matchesCombinators = (condition: SchemaCondition, value: unknown): boolean => {
+  if (condition.allOf && !condition.allOf.every((part) => matchesSchemaCondition(part, value))) return false;
+  if (condition.anyOf && !condition.anyOf.some((part) => matchesSchemaCondition(part, value))) return false;
+  if (condition.oneOf && condition.oneOf.filter((part) => matchesSchemaCondition(part, value)).length !== 1) {
+    return false;
+  }
+  return condition.not === undefined || !matchesSchemaCondition(condition.not, value);
+};
 
 function matchesSchemaCondition(condition: SchemaCondition | boolean, value: unknown): boolean {
   if (typeof condition === 'boolean') return condition;
-
   if (hasOwn(condition, 'const') && !Object.is(value, condition.const)) return false;
   if (condition.enum && !condition.enum.some((enumValue) => Object.is(enumValue, value))) return false;
-
-  if (condition.required) {
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
-    if (!condition.required.every((fieldName) => hasOwn(value, fieldName))) return false;
-  }
-
-  if (condition.properties) {
-    if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
-    const recordValue = value as Record<string, unknown>;
-    const propertiesMatch = Object.entries(condition.properties).every(([fieldName, fieldCondition]) =>
-      hasOwn(recordValue, fieldName) ? matchesSchemaCondition(fieldCondition, recordValue[fieldName]) : true
-    );
-    if (!propertiesMatch) return false;
-  }
-
-  if (condition.contains) {
-    if (!Array.isArray(value) || !value.some((item) => matchesSchemaCondition(condition.contains!, item))) return false;
-  }
-
-  if (condition.allOf && !condition.allOf.every((part) => matchesSchemaCondition(part, value))) return false;
-  if (condition.anyOf && !condition.anyOf.some((part) => matchesSchemaCondition(part, value))) return false;
-  if (condition.oneOf && condition.oneOf.filter((part) => matchesSchemaCondition(part, value)).length !== 1)
-    return false;
-  if (condition.not !== undefined && matchesSchemaCondition(condition.not, value)) return false;
-
-  return true;
+  if (!matchesRequiredFields(condition.required, value)) return false;
+  if (!matchesProperties(condition.properties, value)) return false;
+  if (!matchesContains(condition.contains, value)) return false;
+  return matchesCombinators(condition, value);
 }
 
 function isConditionMet(condition: ConditionalRule['if'], formData: Record<string, unknown>): boolean {
@@ -146,7 +149,7 @@ function SectionDisclosure({
   isReadonly,
   showCompletionControl,
   children,
-}: SectionDisclosureProps) {
+}: Readonly<SectionDisclosureProps>) {
   const [open, setOpen] = useState(section.defaultOpen ?? false);
   const [doneMark, setDoneMark] = useState(false);
 

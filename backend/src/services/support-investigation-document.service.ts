@@ -1,4 +1,8 @@
+import Ajv2020 from 'ajv/dist/2020';
+import addFormats from 'ajv-formats';
+
 import { apiServiceName } from '@/config/api-config';
+import { trimSupportManagementPath } from '@/config/supportmanagement-path';
 import type { JsonSchema } from '@/data-contracts/jsonschema/data-contracts';
 import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
@@ -129,7 +133,7 @@ const isInvestigationJsonObject = (value: unknown): value is InvestigationJsonOb
 const hasHttpStatus = (error: unknown, status: number): boolean => isRecord(error) && error.status === status;
 
 const requireNonEmpty = (value: string, name: string): string => {
-  const normalized = value.trim().replace(/^\/+|\/+$/gu, '');
+  const normalized = trimSupportManagementPath(value);
   if (!normalized) throw new Error(`${name} must not be empty`);
   return normalized;
 };
@@ -290,7 +294,8 @@ export class SupportInvestigationDocumentService {
     if (existing && existing.document.schemaId !== request.data.schemaId) {
       throw new HttpException(409, 'An investigation document schemaId cannot be changed after creation');
     }
-    await this.requireSchemaBinding(request, request.data.schemaId, existing ? 502 : 400);
+    const schema = await this.requireSchemaBinding(request, request.data.schemaId, existing ? 502 : 400);
+    this.assertDocumentMatchesSchema(schema, request.data.value);
     // Schema/document preflight can involve several upstream reads. Recheck the
     // parent immediately before the child write to keep the unavoidable
     // non-atomic parent-status race as narrow as the upstream contract allows.
@@ -364,7 +369,7 @@ export class SupportInvestigationDocumentService {
     request: InvestigationDocumentRequest<TKey, TSchemaName>,
     schemaId: string,
     mismatchStatus: number,
-  ): Promise<void> {
+  ): Promise<JsonSchema> {
     const response = await this.apiService.get<JsonSchema>(
       {
         url: `${this.jsonSchemaService}/${encodeURIComponent(request.municipalityId)}/schemas/${encodeURIComponent(schemaId)}`,
@@ -383,6 +388,32 @@ export class SupportInvestigationDocumentService {
     }
     if (response.data.name !== request.definition.schemaName) {
       throw new HttpException(mismatchStatus, 'Investigation document schemaId does not match its configured schemaName');
+    }
+    return response.data;
+  }
+
+  /**
+   * Validates the instance against the schema the binding check already fetched. The client-side
+   * form validates the same schema, but the BFF is the trust boundary for these documents: without
+   * this, a direct call persists a legally significant investigation with required fields absent.
+   */
+  private assertDocumentMatchesSchema(schema: JsonSchema, value: InvestigationJsonObject): void {
+    if (!isRecord(schema.value)) {
+      throw new HttpException(502, 'JSON Schema returned an investigation schema without a schema document');
+    }
+
+    let validate: ReturnType<Ajv2020['compile']>;
+    try {
+      const ajv = new Ajv2020({ allErrors: true, strict: false });
+      addFormats(ajv);
+      validate = ajv.compile(schema.value);
+    } catch {
+      throw new HttpException(502, 'JSON Schema returned an investigation schema that could not be compiled');
+    }
+
+    if (!validate(value)) {
+      const details = (validate.errors ?? []).map(error => `${error.instancePath || '/'} ${error.message ?? 'is invalid'}`).join('; ');
+      throw new HttpException(400, `Investigation document does not match its JSON Schema: ${details}`);
     }
   }
 

@@ -1,5 +1,6 @@
-import { test as base, Page, Route } from '@playwright/test';
+import { test as base, Route } from '@playwright/test';
 import { mockEnv } from './mock-env';
+import { mockInvestigationProfile } from './mock-investigation-profile';
 
 type MockRouteOptions = {
   method?: string;
@@ -15,12 +16,29 @@ type BaseFixtures = {
   dismissCookieConsent: () => Promise<void>;
   waitForFonts: () => Promise<void>;
   env: typeof mockEnv;
+  investigationProfileRoute: void;
 };
 
 export const test = base.extend<BaseFixtures>({
   env: async ({}, use) => {
     await use(mockEnv);
   },
+
+  // Registered before the test body, so a spec that routes the endpoint itself still wins:
+  // Playwright runs the most recently registered handler first.
+  investigationProfileRoute: [
+    async ({ page }, use) => {
+      await page.route('**/supportmanagement/investigation-profile', async (route: Route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(mockInvestigationProfile()),
+        });
+      });
+      await use();
+    },
+    { auto: true },
+  ],
 
   mockRoute: async ({ page }, use) => {
     const mocked: (() => Promise<void>)[] = [];

@@ -49,7 +49,7 @@ export type InvestigationClassificationSchemaContract = 'declared' | 'legacy-fal
 
 const isLegacyClassificationSchema = (schema: RJSFSchema): boolean => {
   if (typeof schema.$id !== 'string') return true;
-  const version = schema.$id.match(/(?:\/|_)(\d+)\.(\d+)$/u);
+  const version = schema.$id.match(/[/_](\d+)\.(\d+)$/u);
   if (!version) return false;
   const major = Number(version[1]);
   const minor = Number(version[2]);

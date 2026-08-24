@@ -25,7 +25,7 @@ const requireResourcePath = (value: string, path: string): string => {
   return canonical;
 };
 
-const normalizeClassification = (value: string): string => value.replace(/_/gu, '-').toUpperCase();
+const normalizeClassification = (value: string): string => value.replaceAll('_', '-').toUpperCase();
 
 /**
  * Canonicalizes the declarative filter capability before it is advertised to

@@ -14,7 +14,10 @@ interface SupportErrandInvestigationTabProps {
   onDirtyChange: (key: InvestigationDocumentKey, isDirty: boolean) => void;
 }
 
-export function SupportErrandInvestigationTab({ documents, onDirtyChange }: SupportErrandInvestigationTabProps) {
+export function SupportErrandInvestigationTab({
+  documents,
+  onDirtyChange,
+}: Readonly<SupportErrandInvestigationTabProps>) {
   const [activeTab, setActiveTab] = useState(0);
   const supportErrand = useSupportStore((state) => state.supportErrand);
   const canEditSupportManagement = useUserStore((state) => state.user.permissions.canEditSupportManagement);

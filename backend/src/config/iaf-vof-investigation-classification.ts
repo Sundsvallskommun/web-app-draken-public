@@ -1,6 +1,8 @@
 import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 import type { SupportInvestigationProfileDto } from '@/dtos/support-investigation-profile.dto';
 
+import { normalizeSupportManagementResourcePath } from './supportmanagement-path';
+
 export interface IafVofInvestigationClassificationLegalBaseRule {
   readonly legalBase: string;
   readonly allowedClassificationCategories: readonly string[];
@@ -86,7 +88,7 @@ export const resolveIafVofInvestigationClassificationPolicy = (
 };
 
 const normalizeCode = (value: string): string => value.trim().toUpperCase();
-const normalizeResourcePath = (value: string): string => normalizeCode(value).replace(/^\/+|\/+$/gu, '');
+const normalizeResourcePath = (value: string): string => normalizeSupportManagementResourcePath(value);
 const matchesSelectorParameterKey = (parameterKey: string): boolean => parameterKey.trim() === REPORTED_MISCONDUCT_PARAMETER.key;
 
 const isReportedMisconduct = (errand: ClassificationOwnerErrand): boolean => {

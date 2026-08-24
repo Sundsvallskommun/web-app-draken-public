@@ -25,7 +25,7 @@ export const buildSupportErrandUpdateData = (
       labels: (formdata.labels ?? []).map((label): Label => ({ ...label, labels: undefined })),
     }),
     ...(formdata.contactReason && { contactReason: formdata.contactReason }),
-    ...(typeof formdata.contactReasonDescription !== 'undefined' && {
+    ...(formdata.contactReasonDescription !== undefined && {
       contactReasonDescription: formdata.contactReasonDescription,
     }),
     businessRelated: !!formdata.businessRelated,

@@ -105,6 +105,57 @@ export type SupportManagementLabelFilterState =
   | { readonly status: 'error' }
   | { readonly status: 'ready'; readonly projections: readonly LabelFilterGroupProjection[] };
 
+interface CategorizationFiltersProps {
+  readonly labelFilterState: SupportManagementLabelFilterState;
+  readonly selections: readonly LabelFilterSelection[];
+  readonly onChange: (selections: readonly LabelFilterSelection[]) => void;
+}
+
+const CategorizationFilters = ({ labelFilterState, selections, onChange }: CategorizationFiltersProps) => {
+  if (labelFilterState.status === 'ready') {
+    return (
+      <ProjectedLabelFilters projections={labelFilterState.projections} selections={selections} onChange={onChange} />
+    );
+  }
+  if (labelFilterState.status === 'loading') {
+    return <span className="px-8 text-small">Etikettfilter läses in …</span>;
+  }
+  if (labelFilterState.status === 'error') {
+    return (
+      <Alert type="warning" className="max-w-[50rem]" data-cy="label-filter-warning">
+        <Alert.Icon />
+        <Alert.Content>
+          <Alert.Content.Description>
+            Etikettfiltren kunde inte läsas in. Inga etikettval används i sökningen.
+          </Alert.Content.Description>
+        </Alert.Content>
+      </Alert>
+    );
+  }
+  if (!appConfig.features.useThreeLevelCategorization) return null;
+
+  return (
+    <>
+      <div className="relative max-md:w-full">
+        <SupportManagementFilterLabelCategory />
+      </div>
+      <div className="relative max-md:w-full">
+        <SupportManagementFilterLabelType />
+      </div>
+      {!isLOK() && (
+        <div className="relative max-md:w-full">
+          <SupportManagementFilterLabelSubType />
+        </div>
+      )}
+    </>
+  );
+};
+
+const getFilterToggleLabel = (show: boolean, numberOfFilters: number): string => {
+  if (show) return 'Dölj filter';
+  return numberOfFilters === 0 ? 'Visa filter' : `Visa filter (${numberOfFilters})`;
+};
+
 const SupportManagementFiltering: FC<{
   ownerFilterHandler: (b: boolean) => void;
   ownerFilter?: boolean;
@@ -144,7 +195,7 @@ const SupportManagementFiltering: FC<{
               inverted={show ? false : true}
               leftIcon={<ListFilter size="1.8rem" />}
             >
-              {show ? 'Dölj filter' : `Visa filter ${numberOfFilters !== 0 ? `(${numberOfFilters})` : ''}`}
+              {getFilterToggleLabel(show, numberOfFilters)}
             </Button>
             {registrationEnabled && (
               <Link
@@ -174,40 +225,13 @@ const SupportManagementFiltering: FC<{
                 </>
               ) : null}
 
-              {labelFilterState.status === 'ready' ? (
-                <ProjectedLabelFilters
-                  projections={labelFilterState.projections}
-                  selections={normalizedLabelFilterSelections}
-                  onChange={(selections) =>
-                    setValue('labelFilter', [...selections], { shouldDirty: true, shouldTouch: true })
-                  }
-                />
-              ) : labelFilterState.status === 'loading' ? (
-                <span className="px-8 text-small">Etikettfilter läses in …</span>
-              ) : labelFilterState.status === 'error' ? (
-                <Alert type="warning" className="max-w-[50rem]" data-cy="label-filter-warning">
-                  <Alert.Icon />
-                  <Alert.Content>
-                    <Alert.Content.Description>
-                      Etikettfiltren kunde inte läsas in. Inga etikettval används i sökningen.
-                    </Alert.Content.Description>
-                  </Alert.Content>
-                </Alert>
-              ) : appConfig.features.useThreeLevelCategorization ? (
-                <>
-                  <div className="relative max-md:w-full">
-                    <SupportManagementFilterLabelCategory />
-                  </div>
-                  <div className="relative max-md:w-full">
-                    <SupportManagementFilterLabelType />
-                  </div>
-                  {!isLOK() ? (
-                    <div className="relative max-md:w-full">
-                      <SupportManagementFilterLabelSubType />
-                    </div>
-                  ) : null}
-                </>
-              ) : null}
+              <CategorizationFilters
+                labelFilterState={labelFilterState}
+                selections={normalizedLabelFilterSelections}
+                onChange={(selections) =>
+                  setValue('labelFilter', [...selections], { shouldDirty: true, shouldTouch: true })
+                }
+              />
 
               <div className="relative max-md:w-full">
                 <SupportManagementFilterPriority />

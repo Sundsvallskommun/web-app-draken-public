@@ -3,6 +3,7 @@ export interface Permissions {
   canEditSupportManagement: boolean;
   canViewAttestations: boolean;
   canEditAttestations: boolean;
+  canViewOtherNamespaces: boolean;
 }
 
 export interface User {

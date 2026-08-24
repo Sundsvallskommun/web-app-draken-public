@@ -1,5 +1,6 @@
 import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 
+import { normalizeSupportManagementResourcePath } from '../../services/supportmanagement-path';
 import type { IafVofInvestigationClassificationLabelTree } from '../iaf-vof-investigation-classification-policy';
 import type { LabelClassificationCatalog, LabelClassificationSelection } from './label-classification.types';
 
@@ -11,11 +12,7 @@ export interface LabelClassificationLegalBaseRule {
 const normalizeClassification = (classification: string | undefined): string =>
   (classification ?? '').trim().replaceAll('_', '-').toUpperCase();
 
-const normalizeResourcePath = (resourcePath: string | undefined): string =>
-  (resourcePath ?? '')
-    .trim()
-    .replace(/^\/+|\/+$/g, '')
-    .toUpperCase();
+const normalizeResourcePath = normalizeSupportManagementResourcePath;
 
 const isClassification = (label: Label, classification: string): boolean =>
   normalizeClassification(label.classification) === normalizeClassification(classification);
@@ -243,6 +240,39 @@ export const createIafLabelClassificationModel = (
   };
 };
 
+const classificationReferencesType = (classification: PersistedIafLabelClassification, type: Label): boolean =>
+  normalizeResourcePath(labelResourceValue(type)) === normalizeResourcePath(classification.subType) ||
+  classification.labels?.some((label) => hasSameIdentity(label, type)) === true;
+
+const getMissingBindingState = (
+  completeModel: IafLabelClassificationModel,
+  classification: PersistedIafLabelClassification,
+  labelStructure: readonly Label[] | undefined,
+  labelTree: IafVofInvestigationClassificationLabelTree,
+  legalBases: readonly string[],
+  legalBaseRules: readonly LabelClassificationLegalBaseRule[]
+): PersistedIafLabelClassificationState => {
+  // An older category/type may no longer exist in metadata, but its persisted provision-category
+  // still identifies the legal-base owner. Preserve it only while that owner remains allowed.
+  const persistedCategoryOwner = completeModel.bindings.find((candidate) =>
+    hasPersistedProvisionOwner(candidate, classification.category)
+  )?.owner;
+  const persistedTypeOwner = completeModel.bindings.find((candidate) =>
+    hasPersistedTypeWithinProvisionOwner(candidate, classification.type)
+  )?.owner;
+  if (persistedCategoryOwner && persistedTypeOwner && !hasSameIdentity(persistedCategoryOwner, persistedTypeOwner)) {
+    return 'known-inconsistent';
+  }
+
+  const persistedOwner = persistedTypeOwner ?? persistedCategoryOwner;
+  if (!persistedOwner) return 'legacy-unknown';
+  const contextualModel = createIafLabelClassificationModel(labelStructure, labelTree, legalBases, legalBaseRules);
+  const persistedOwnerIsAllowed = contextualModel.bindings.some(
+    (candidate) => candidate.owner && hasSameIdentity(candidate.owner, persistedOwner)
+  );
+  return persistedOwnerIsAllowed ? 'legacy-unknown' : 'known-disallowed-legal-base';
+};
+
 export const getPersistedIafLabelClassificationState = (
   labelStructure: readonly Label[] | undefined,
   labelTree: IafVofInvestigationClassificationLabelTree,
@@ -261,30 +291,7 @@ export const getPersistedIafLabelClassificationState = (
     ({ category }) => normalizeResourcePath(labelResourceValue(category)) === normalizeResourcePath(classification.type)
   );
   if (!binding) {
-    // An older category/type may no longer exist in metadata, but its persisted provision-category
-    // still identifies the legal-base owner. Preserve that legacy value only while the owner remains
-    // available in the current legal-base context; otherwise a legal-base change would silently keep
-    // an incompatible classification.
-    const persistedCategoryOwner = completeModel.bindings.find((candidate) =>
-      hasPersistedProvisionOwner(candidate, classification.category)
-    )?.owner;
-    const persistedTypeOwner = completeModel.bindings.find((candidate) =>
-      hasPersistedTypeWithinProvisionOwner(candidate, classification.type)
-    )?.owner;
-    if (persistedCategoryOwner && persistedTypeOwner && !hasSameIdentity(persistedCategoryOwner, persistedTypeOwner)) {
-      return 'known-inconsistent';
-    }
-
-    const persistedOwner = persistedTypeOwner ?? persistedCategoryOwner;
-    if (persistedOwner) {
-      const contextualModel = createIafLabelClassificationModel(labelStructure, labelTree, legalBases, legalBaseRules);
-      const persistedOwnerIsAllowed = contextualModel.bindings.some(
-        (candidate) => candidate.owner && hasSameIdentity(candidate.owner, persistedOwner)
-      );
-      if (!persistedOwnerIsAllowed) return 'known-disallowed-legal-base';
-    }
-
-    return 'legacy-unknown';
+    return getMissingBindingState(completeModel, classification, labelStructure, labelTree, legalBases, legalBaseRules);
   }
 
   const expectedOwner = bindingOwnerValue(binding);
@@ -298,12 +305,8 @@ export const getPersistedIafLabelClassificationState = (
   }
   if (binding.types.length === 0) return 'known-valid';
 
-  const selectedKnownType = binding.types.find(
-    (type) =>
-      normalizeResourcePath(labelResourceValue(type)) === normalizeResourcePath(classification.subType) ||
-      classification.labels?.some((label) => hasSameIdentity(label, type))
-  );
-  if (selectedKnownType) return 'known-valid';
+  const referencesKnownType = binding.types.some((type) => classificationReferencesType(classification, type));
+  if (referencesKnownType) return 'known-valid';
 
   const hasPersistedTypeEvidence =
     Boolean(classification.subType?.trim()) ||
@@ -313,11 +316,7 @@ export const getPersistedIafLabelClassificationState = (
   const typeKnownInAnotherBinding = completeModel.bindings.some(
     (candidate) =>
       !hasSameIdentity(candidate.category, binding.category) &&
-      candidate.types.some(
-        (type) =>
-          normalizeResourcePath(labelResourceValue(type)) === normalizeResourcePath(classification.subType) ||
-          classification.labels?.some((label) => hasSameIdentity(label, type))
-      )
+      candidate.types.some((type) => classificationReferencesType(classification, type))
   );
 
   return typeKnownInAnotherBinding ? 'known-inconsistent' : 'legacy-unknown';
@@ -411,11 +410,13 @@ export const applyIafLabelClassificationSelection = (
     appendUnique(categoryLabels, selectedLabel);
   }
 
+  const category = binding ? labelResourceValue(binding.owner ?? binding.category) : '';
+
   return {
     labels,
     categoryLabels,
     labelsChanged: !hasSameLabelSequence(currentLabels ?? [], labels),
-    category: binding?.owner ? labelResourceValue(binding.owner) : binding ? labelResourceValue(binding.category) : '',
+    category,
     type: binding ? labelResourceValue(binding.category) : '',
     subType: selectedType ? labelResourceValue(selectedType) : '',
     requiresSubType: Boolean(binding?.types.length),

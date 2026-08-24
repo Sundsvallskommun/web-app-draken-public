@@ -1,4 +1,5 @@
 import { ErrandPhase } from '@casedata/interfaces/errand-phase';
+import { MODAL_DIALOG } from '../../utils/modal';
 
 import { expect,test } from '../../fixtures/base.fixture';
 import { mockAdmins } from '../fixtures/mockAdmins';
@@ -377,7 +378,7 @@ type MockRoute = (pattern: string | RegExp, response: unknown, options?: { metho
 const setupCommonIntercepts = async (page: import('@playwright/test').Page, mockRoute: MockRoute) => {
   await mockRoute('**/schemas/*/latest', mockSchema);
   await mockRoute('**/schemas/*/ui-schema', mockUiSchema);
-  // Edit flow fetches the schema by id (no /latest); Cypress matched both with one regex.
+  // Edit flow fetches the schema by id (no /latest), so match both endpoint variants.
   await mockRoute('**/schemas/*', mockSchema);
   await mockRoute('**/users/admins', mockAdmins);
   await mockRoute('**/me', mockMe);
@@ -495,7 +496,7 @@ test.describe('Errand page Insatser tab', () => {
     await mockRoute('**/asset-drafts/*', { data: 'ok', message: 'ok' }, { method: 'PATCH' });
     await visitInsatserTab(page, mockRoute, dismissCookieConsent, mockDraftAsset);
     await page.locator('[data-cy="edit-service-button"]').first().click();
-    await expect(page.locator('article.sk-modal-dialog')).toBeVisible();
+    await expect(page.locator(MODAL_DIALOG)).toBeVisible();
     const patchRequest = page.waitForRequest(
       (req) => /\/asset-drafts\//.test(req.url()) && req.method() === 'PATCH'
     );

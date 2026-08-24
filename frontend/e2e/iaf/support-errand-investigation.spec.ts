@@ -488,6 +488,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const legalBases = managerDocument.locator(`#${managerKey}_legalBases-group`);
     const hsl = legalBases.getByLabel(/^HSL –/u);
     const sol = legalBases.getByLabel(/^SoL –/u);
+    const hslLabel = legalBases.getByText(/^HSL –/u);
+    const solLabel = legalBases.getByText(/^SoL –/u);
     const typeSelect = managerDocument.locator('[data-cy="label-classification-type"]');
 
     await expect(
@@ -497,7 +499,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       typeSelect.locator('option').filter({ hasText: iafLabelFixture.classification.legalCertainty.displayName })
     ).toHaveCount(1);
 
-    await sol.uncheck({ force: true });
+    await solLabel.click();
+    await expect(sol).not.toBeChecked();
     await expect(
       typeSelect.locator('option').filter({ hasText: iafLabelFixture.classification.rehab.displayName })
     ).toHaveCount(1);
@@ -505,8 +508,10 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       typeSelect.locator('option').filter({ hasText: iafLabelFixture.classification.legalCertainty.displayName })
     ).toHaveCount(0);
 
-    await sol.check({ force: true });
-    await hsl.uncheck({ force: true });
+    await solLabel.click();
+    await expect(sol).toBeChecked();
+    await hslLabel.click();
+    await expect(hsl).not.toBeChecked();
     await expect(
       typeSelect.locator('option').filter({ hasText: iafLabelFixture.classification.rehab.displayName })
     ).toHaveCount(0);

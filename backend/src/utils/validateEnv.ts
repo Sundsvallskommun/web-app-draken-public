@@ -1,6 +1,10 @@
+import { APPLICATION } from '@/config';
 import { resolveSupportManagementApiTarget } from '@/config/api-config';
 import { resolveSupportInvestigationHandoverTargets } from '@/config/support-investigation-handover-targets';
-import { isMEX, isPT } from '@/services/application.service';
+import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
+import { isContactSundsvall, isKC, isMEX, isPT } from '@/services/application.service';
+import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
+import { logger } from '@/utils/logger';
 
 type EnvSpec = Record<string, { type: 'str' | 'port' | 'url' }>;
 
@@ -106,6 +110,9 @@ const validateEnv = () => {
     try {
       resolveSupportManagementApiTarget();
       resolveSupportInvestigationHandoverTargets();
+      // The access service is otherwise first constructed from controller class fields, where a
+      // malformed value aborts createExpressServer and takes every unrelated route down with it.
+      new SupportInvestigationAccessService(getSupportInvestigationProfile(APPLICATION));
     } catch (error) {
       console.error(`\n${error instanceof Error ? error.message : 'Invalid Support Management runtime configuration'}\n`);
       process.exit(1);
@@ -121,6 +128,15 @@ const validateEnv = () => {
     });
   }
 
+  // The KC drake grants the canViewOtherNamespaces permission at login only when the CONTACTSUNDSVALL
+  // supportmanagement namespace is also configured. Warn if the identity says KC but the namespace is
+  // missing, so the resulting (silent) loss of cross-namespace access is visible instead of mysterious.
+  if (isKC() && !isContactSundsvall()) {
+    logger.warn(
+      'APPLICATION is "KC" but SUPPORTMANAGEMENT_NAMESPACE is not "CONTACTSUNDSVALL". ' +
+        'Kontakt Sundsvall users will not be granted the canViewOtherNamespaces permission. Check the environment configuration.',
+    );
+  }
   validateSecretStrength();
 };
 

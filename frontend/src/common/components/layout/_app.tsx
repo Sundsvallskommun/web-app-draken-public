@@ -49,6 +49,9 @@ interface ClientApplicationProps {
 }
 
 function isInvestigationSchemaLabRoute(): boolean {
+  // The lab route is not compiled into production builds (see pageExtensions in next.config.js),
+  // so this branch folds away there instead of running its path check on every app bootstrap.
+  if (process.env.NODE_ENV === 'production') return false;
   return globalThis.window?.location.pathname.endsWith('/schema-lab/utredning') ?? false;
 }
 
@@ -94,15 +97,17 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
         return;
       }
 
+      // The runtime flags decide whether this is a SupportManagement app, so metadata waits for
+      // them - but not for the profile behind them. Chaining the two would put a second request
+      // timeout in front of the first paint and delay metadata by that long again.
       useInvestigationProfileStore.getState().startLoading();
+      setFeatureFlagsReady(true);
       try {
         const profile = await getInvestigationProfile(process.env.NEXT_PUBLIC_APPLICATION);
         useInvestigationProfileStore.getState().setProfile(profile);
       } catch (error) {
         console.error('Failed to load the SupportManagement investigation profile.', error);
         useInvestigationProfileStore.getState().setError();
-      } finally {
-        setFeatureFlagsReady(true);
       }
     };
     void loadRuntimeConfiguration();
@@ -129,11 +134,12 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
     investigationProfileStatus === 'ready' ||
     investigationProfileStatus === 'error' ||
     investigationProfileStatus === 'disabled';
-  if (!mounted || !featureFlagsReady) {
+  if (!mounted) {
     return null;
   }
 
-  if (!investigationProfileReady) {
+  // A slow Adminpanel or profile endpoint should show that the app is working, not a blank page.
+  if (!featureFlagsReady || !investigationProfileReady) {
     return <LoaderFullScreen />;
   }
 

@@ -1,3 +1,5 @@
+import { normalizeSupportManagementResourcePath } from '../services/supportmanagement-path';
+
 export interface IafVofInvestigationClassificationLegalBaseRule {
   readonly legalBase: string;
   readonly allowedClassificationCategories: readonly string[];
@@ -134,7 +136,7 @@ export function resolveSupportErrandClassificationPlacement({
 }
 
 const normalizeCode = (value: string): string => value.trim().toUpperCase();
-const normalizeResourcePath = (value: string): string => normalizeCode(value).replace(/^\/+|\/+$/gu, '');
+const normalizeResourcePath = (value: string): string => normalizeSupportManagementResourcePath(value);
 
 export const isIafVofReportedMisconductErrand = (errand: ClassificationOwnerErrand | undefined): boolean => {
   if (!errand) return false;

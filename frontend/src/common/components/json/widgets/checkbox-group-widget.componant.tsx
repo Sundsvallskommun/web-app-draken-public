@@ -34,6 +34,11 @@ const getCheckboxOptions = (value: unknown): CheckboxOption[] => {
 const containsValue = (values: readonly unknown[], expected: unknown): boolean =>
   values.some((value) => Object.is(value, expected));
 
+const getDirection = (configuredDirection: unknown, inline: unknown): 'row' | 'column' => {
+  if (configuredDirection === 'row' || configuredDirection === 'column') return configuredDirection;
+  return inline ? 'row' : 'column';
+};
+
 export function CheckboxGroupWidget({
   id,
   label,
@@ -55,13 +60,7 @@ export function CheckboxGroupWidget({
   );
   const disabledValues: readonly unknown[] = Array.isArray(options.enumDisabled) ? options.enumDisabled : [];
   const hasReachedMaximum = typeof schema.maxItems === 'number' && selectedValues.length >= schema.maxItems;
-  const configuredDirection = options.direction;
-  const direction =
-    configuredDirection === 'row' || configuredDirection === 'column'
-      ? configuredDirection
-      : options.inline
-      ? 'row'
-      : 'column';
+  const direction = getDirection(options.direction, options.inline);
   const className = typeof options.className === 'string' ? options.className : 'w-full max-w-[48rem]';
 
   const handleChange = (optionKeys: Array<string | number | readonly string[] | undefined>) => {
@@ -71,9 +70,9 @@ export function CheckboxGroupWidget({
 
   return (
     <FormControl className={`${className} min-w-0 max-w-full`} invalid={Boolean(rawErrors?.length)}>
-      <div
+      <fieldset
         id={`${id}-group`}
-        role="group"
+        className="m-0 min-w-0 border-0 p-0"
         aria-label={hideLabel ? label : undefined}
         aria-labelledby={hideLabel ? undefined : titleId(id)}
         aria-describedby={ariaDescribedByIds(id)}
@@ -98,7 +97,7 @@ export function CheckboxGroupWidget({
             </Checkbox>
           ))}
         </Checkbox.Group>
-      </div>
+      </fieldset>
     </FormControl>
   );
 }

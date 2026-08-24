@@ -83,6 +83,17 @@ function getManagerLabelCatalog(formData: InvestigationFormData): LabelClassific
   };
 }
 
+function getSchemaLabelCatalog(
+  schemaName: string,
+  managerLabelCatalog: LabelClassificationCatalog
+): LabelClassificationCatalog | undefined {
+  if (schemaName === 'utredning-enhetschef') return managerLabelCatalog;
+  if (schemaName === 'utredning-sol-lss') {
+    return IAF_VOF_LABEL_CLASSIFICATION_CATALOGS[IAF_VOF_LABEL_CLASSIFICATION_GROUP.SOL_LSS];
+  }
+  return undefined;
+}
+
 function normalizeLabelClassification(
   catalog: LabelClassificationCatalog,
   value: LabelClassificationSelection
@@ -101,45 +112,43 @@ function isSameLabelClassification(left: LabelClassificationSelection, right: La
   return left.typeCode === right.typeCode && left.subtypeCode === right.subtypeCode;
 }
 
-function createInitialLabState(): InitialLabState {
-  const drafts: DraftsBySchema = { ...emptyDrafts };
-  const savedAt: SavedAtBySchema = {};
-  const notices: NoticesBySchema = {};
-  let browserStorage: Storage | undefined;
-
+function readBrowserStorage(notices: NoticesBySchema): Storage | undefined {
   try {
-    browserStorage = typeof window === 'undefined' ? undefined : window.localStorage;
+    return typeof window === 'undefined' ? undefined : window.localStorage;
   } catch {
     notices['utredning-enhetschef'] = {
       type: 'warning',
       message: 'localStorage är inte tillgängligt. Exempeldata visas, men lokala utkast kan inte återställas.',
     };
+    return undefined;
   }
+}
 
+function loadInitialDocumentDrafts(
+  browserStorage: Storage | undefined,
+  drafts: DraftsBySchema,
+  savedAt: SavedAtBySchema,
+  notices: NoticesBySchema
+): void {
   for (const definition of investigationSchemaDefinitions) {
-    if (!browserStorage) {
-      drafts[definition.key] = normalizeInvestigationFormData(
-        definition.schemaName,
-        definition.schema,
-        definition.exampleFormData
-      );
-      continue;
-    }
-
-    const loadedDraft = loadInvestigationDraft(browserStorage, definition.key, definition.schemaVersion);
-    const initialFormData = loadedDraft.savedAt ? loadedDraft.formData : definition.exampleFormData;
+    const loadedDraft = browserStorage
+      ? loadInvestigationDraft(browserStorage, definition.key, definition.schemaVersion)
+      : undefined;
+    const initialFormData = loadedDraft?.savedAt ? loadedDraft.formData : definition.exampleFormData;
     drafts[definition.key] = normalizeInvestigationFormData(definition.schemaName, definition.schema, initialFormData);
 
-    if (loadedDraft.savedAt) savedAt[definition.key] = loadedDraft.savedAt;
-    if (loadedDraft.warning) notices[definition.key] = { type: 'warning', message: loadedDraft.warning };
+    if (loadedDraft?.savedAt) savedAt[definition.key] = loadedDraft.savedAt;
+    if (loadedDraft?.warning) notices[definition.key] = { type: 'warning', message: loadedDraft.warning };
   }
+}
 
-  const managerLabelCatalog = getManagerLabelCatalog(drafts['utredning-enhetschef']);
+function loadInitialLabelClassification(
+  browserStorage: Storage | undefined,
+  managerLabelCatalog: LabelClassificationCatalog,
+  notices: NoticesBySchema
+): Pick<InitialLabState, 'labelClassification' | 'labelClassificationSavedAt'> {
   if (!browserStorage) {
     return {
-      drafts,
-      savedAt,
-      notices,
       labelClassification: normalizeLabelClassification(managerLabelCatalog, defaultLabelClassification),
     };
   }
@@ -161,15 +170,22 @@ function createInitialLabState(): InitialLabState {
     };
   }
 
+  const classificationMatches = isSameLabelClassification(normalizedLabelClassification, initialLabelClassification);
   return {
-    drafts,
-    savedAt,
-    notices,
     labelClassification: normalizedLabelClassification,
-    labelClassificationSavedAt: isSameLabelClassification(normalizedLabelClassification, initialLabelClassification)
-      ? loadedLabelClassification.savedAt
-      : undefined,
+    labelClassificationSavedAt: classificationMatches ? loadedLabelClassification.savedAt : undefined,
   };
+}
+
+function createInitialLabState(): InitialLabState {
+  const drafts: DraftsBySchema = { ...emptyDrafts };
+  const savedAt: SavedAtBySchema = {};
+  const notices: NoticesBySchema = {};
+  const browserStorage = readBrowserStorage(notices);
+  loadInitialDocumentDrafts(browserStorage, drafts, savedAt, notices);
+  const managerLabelCatalog = getManagerLabelCatalog(drafts['utredning-enhetschef']);
+  const labelState = loadInitialLabelClassification(browserStorage, managerLabelCatalog, notices);
+  return { drafts, savedAt, notices, ...labelState };
 }
 
 export function InvestigationSchemaLab() {
@@ -386,12 +402,7 @@ export function InvestigationSchemaLab() {
         >
           {investigationSchemaDefinitions.map((definition) => {
             const access = getInvestigationSchemaAccess(role, definition.key);
-            const classificationCatalog =
-              definition.schemaName === 'utredning-enhetschef'
-                ? managerLabelCatalog
-                : definition.schemaName === 'utredning-sol-lss'
-                ? IAF_VOF_LABEL_CLASSIFICATION_CATALOGS[IAF_VOF_LABEL_CLASSIFICATION_GROUP.SOL_LSS]
-                : undefined;
+            const classificationCatalog = getSchemaLabelCatalog(definition.schemaName, managerLabelCatalog);
 
             return (
               <Tabs.Item key={definition.key}>

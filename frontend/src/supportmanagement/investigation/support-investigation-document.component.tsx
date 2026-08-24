@@ -3,21 +3,15 @@
 import { ArrayObjectFieldTemplate } from '@common/components/json/fields/array-object-field-template.componant';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
-import type { Label as SupportLabel } from '@common/data-contracts/supportmanagement/data-contracts';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { Alert, Label, Spinner } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import { IafLabelCategorization } from '@supportmanagement/components/support-errand-basics-form/iaf-label-categorization.component';
 import {
   applyIafLabelClassificationSelection,
-  createIafLabelClassificationModel,
   getIafLabelClassificationSelection,
-  getPersistedIafLabelClassificationState,
-  type IafLabelClassificationModel,
-  type IafLabelClassificationUpdate,
 } from '@supportmanagement/investigation/label-classification';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
-import type { AxiosError } from 'axios';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 
@@ -34,16 +28,19 @@ import {
 import type { InvestigationDocumentDefinition, InvestigationFormData } from './investigation-document';
 import { getHslRiskValue, getInvestigationRenderingSchema } from './investigation-form-data';
 import { useInvestigationProfileStore } from './investigation-profile-store';
+import { type SupportInvestigationClassificationResponse } from './support-investigation-classification-service';
 import {
-  buildSupportInvestigationClassificationRequest,
-  isSupportInvestigationClassificationConflict,
-  saveSupportInvestigationClassification,
-  type SupportInvestigationClassificationRequest,
-} from './support-investigation-classification-service';
+  type InvestigationClassificationDraft,
+  investigationSaveErrorMessage,
+  investigationSaveSuccessMessage,
+  type PreparedInvestigationClassification,
+  prepareInvestigationClassification,
+  saveInvestigationClassificationStep,
+  saveInvestigationDocumentStep,
+} from './support-investigation-save-workflow';
 import {
   getSupportInvestigationDocument,
-  isSupportInvestigationConflict,
-  saveSupportInvestigationDocument,
+  type SavedSupportInvestigationDocument,
   type SupportInvestigationDocument as SavedInvestigationDocument,
 } from './support-investigation-service';
 
@@ -56,14 +53,6 @@ interface InvestigationDocumentState {
   formData: InvestigationFormData;
   persisted: boolean;
   etag?: string;
-}
-
-interface InvestigationClassificationDraft {
-  labels: SupportLabel[];
-  category: string;
-  type: string;
-  subType: string;
-  classificationHasSubTypes: boolean;
 }
 
 const getClassificationDraft = (errand: SupportErrand | undefined): InvestigationClassificationDraft => ({
@@ -81,7 +70,7 @@ interface SupportInvestigationDocumentProps {
   onSaved: (document: SavedInvestigationDocument) => void;
 }
 
-function InvestigationAlert({ type, message }: { type: 'error' | 'warning' | 'success'; message: string }) {
+function InvestigationAlert({ type, message }: Readonly<{ type: 'error' | 'warning' | 'success'; message: string }>) {
   return (
     <div role={type === 'error' ? 'alert' : 'status'} aria-live={type === 'error' ? 'assertive' : 'polite'}>
       <Alert type={type} className="mb-24" data-cy="investigation-document-notice">
@@ -99,7 +88,7 @@ export function SupportInvestigationDocument({
   readonly,
   onDirtyChange,
   onSaved,
-}: SupportInvestigationDocumentProps) {
+}: Readonly<SupportInvestigationDocumentProps>) {
   const municipalityId = useConfigStore((state) => state.municipalityId);
   const supportErrand = useSupportStore((state) => state.supportErrand);
   const supportMetadata = useMetadataStore((state) => state.supportMetadata);
@@ -261,6 +250,70 @@ export function SupportInvestigationDocument({
     return <div className="p-32">{notice && <InvestigationAlert {...notice} />}</div>;
   }
 
+  const applySavedDocument = (saved: SavedSupportInvestigationDocument) => {
+    setDocumentState((current) =>
+      current
+        ? {
+            ...current,
+            formData: saved.document.value,
+            schemaId: saved.document.schemaId,
+            persisted: true,
+            etag: saved.etag,
+          }
+        : current
+    );
+    onSaved(saved.document);
+    useSupportStore.setState((state) => {
+      if (!state.supportErrand || state.supportErrand.id !== errandId) return state;
+      return { supportErrand: { ...state.supportErrand, version: saved.parentErrandVersion } };
+    });
+    resetErrandField('version', { defaultValue: saved.parentErrandVersion });
+    setDocumentDirty(false);
+  };
+
+  const applySavedClassification = (
+    savedErrand: SupportInvestigationClassificationResponse,
+    prepared: PreparedInvestigationClassification
+  ) => {
+    const savedSelection = getIafLabelClassificationSelection(
+      prepared.model,
+      savedErrand.labels,
+      savedErrand.classification
+    );
+    const savedUpdate = applyIafLabelClassificationSelection(prepared.model, savedErrand.labels, savedSelection);
+    const savedDraft: InvestigationClassificationDraft = {
+      labels: savedErrand.labels,
+      category: savedUpdate.category,
+      type: savedUpdate.type,
+      subType: savedUpdate.subType,
+      classificationHasSubTypes: savedUpdate.requiresSubType,
+    };
+
+    useSupportStore.setState((state) => {
+      if (!state.supportErrand || state.supportErrand.id !== errandId) return state;
+      return {
+        supportErrand: {
+          ...state.supportErrand,
+          classification: savedErrand.classification,
+          labels: savedErrand.labels,
+          category: savedDraft.category,
+          type: savedDraft.type,
+          subType: savedDraft.subType,
+          classificationHasSubTypes: savedDraft.classificationHasSubTypes,
+          version: savedErrand.version,
+        },
+      };
+    });
+    resetClassification(savedDraft);
+    resetErrandField('classification', { defaultValue: savedErrand.classification });
+    resetErrandField('labels', { defaultValue: savedDraft.labels });
+    resetErrandField('category', { defaultValue: savedDraft.category });
+    resetErrandField('type', { defaultValue: savedDraft.type });
+    resetErrandField('subType', { defaultValue: savedDraft.subType });
+    resetErrandField('classificationHasSubTypes', { defaultValue: savedDraft.classificationHasSubTypes });
+    resetErrandField('version', { defaultValue: savedErrand.version });
+  };
+
   const save = async (formData: InvestigationFormData) => {
     if (!municipalityId || !errandId || readonly || isSaving) return;
 
@@ -274,174 +327,50 @@ export function SupportInvestigationDocument({
     setDocumentState((current) => (current ? { ...current, formData: normalizedData } : current));
     setIsSaving(true);
     setNotice(undefined);
-    const classificationRequired = classificationOwner;
     let documentSavedForClassification = documentSavedPendingClassification;
-    let savedDocument = false;
-    let savedClassification = false;
 
     try {
-      let classificationModel: IafLabelClassificationModel | undefined;
-      let classificationUpdate: IafLabelClassificationUpdate | undefined;
-      let expectedErrandVersion = supportErrand?.version;
-      let classificationDocumentETag = documentState.etag;
-      const persistedClassificationState =
-        classificationRequired && classificationLabelTree && !classificationDirty
-          ? getPersistedIafLabelClassificationState(
-              supportMetadata?.labels?.labelStructure,
-              classificationLabelTree,
-              getInvestigationLegalBases(normalizedData),
-              persistedClassification,
-              legalBaseRules
-            )
-          : undefined;
-      if (
-        persistedClassificationState &&
-        persistedClassificationState !== 'known-valid' &&
-        persistedClassificationState !== 'legacy-unknown'
-      ) {
-        await triggerClassification(['category', 'type', 'subType']);
-        throw new Error(
-          persistedClassificationState === 'known-disallowed-legal-base'
-            ? 'Den befintliga kategoriseringen stämmer inte med valda lagrum. Välj en giltig avvikelsetyp och underkategori.'
-            : persistedClassificationState === 'known-missing-required-type'
-            ? 'Välj underkategori innan utredningen sparas.'
-            : 'Välj avvikelsetyp och underkategori innan utredningen sparas.'
-        );
+      const preparedClassification = await prepareInvestigationClassification({
+        required: classificationOwner,
+        dirty: classificationDirty,
+        labelTree: classificationLabelTree,
+        labelStructure: supportMetadata?.labels?.labelStructure,
+        legalBases: getInvestigationLegalBases(normalizedData),
+        legalBaseRules,
+        persistedClassification,
+        triggerValidation: () => triggerClassification(['category', 'type', 'subType']),
+        getDraft: getClassificationValues,
+      });
+      const savedDocument = await saveInvestigationDocumentStep({
+        municipalityId,
+        errandId,
+        documentKey: definition.key,
+        schemaId: documentState.schemaId,
+        value: normalizedData,
+        persisted: documentState.persisted,
+        etag: documentState.etag,
+        parentErrandVersion: supportErrand?.version,
+        documentDirty: isDirty,
+        classificationDirty,
+        documentSavedPendingClassification,
+      });
+      if (savedDocument) applySavedDocument(savedDocument);
+
+      if (savedDocument && classificationDirty) {
+        documentSavedForClassification = true;
+        setDocumentSavedPendingClassification(true);
       }
 
-      if (classificationRequired && classificationDirty) {
-        if (!classificationLabelTree) {
-          throw new Error('Klassificeringsprofilens labelträd saknas. Ladda om sidan innan utredningen sparas.');
-        }
-        const classificationValid = await triggerClassification(['category', 'type', 'subType']);
-        if (!classificationValid) {
-          throw new Error('Välj avvikelsetyp och underkategori innan utredningen sparas.');
-        }
-        const currentClassification = getClassificationValues();
-        classificationModel = createIafLabelClassificationModel(
-          supportMetadata?.labels?.labelStructure,
-          classificationLabelTree,
-          getInvestigationLegalBases(normalizedData),
-          legalBaseRules
-        );
-        const selection = getIafLabelClassificationSelection(classificationModel, currentClassification.labels, {
-          category: currentClassification.category,
-          type: currentClassification.type,
-          subType: currentClassification.subType,
-        });
-        classificationUpdate = applyIafLabelClassificationSelection(
-          classificationModel,
-          currentClassification.labels,
-          selection
-        );
-      }
-
-      const mustCreateDocumentBeforeClassification = !documentState.persisted && classificationDirty;
-      if (!documentSavedPendingClassification && (isDirty || mustCreateDocumentBeforeClassification)) {
-        const parentErrandVersionBeforeDocumentWrite = expectedErrandVersion;
-        if (
-          typeof parentErrandVersionBeforeDocumentWrite !== 'number' ||
-          !Number.isSafeInteger(parentErrandVersionBeforeDocumentWrite) ||
-          parentErrandVersionBeforeDocumentWrite < 0
-        ) {
-          throw new Error('Ärendets version saknas. Ladda om ärendet innan utredningen sparas.');
-        }
-        const saved = await saveSupportInvestigationDocument(
-          municipalityId,
-          errandId,
-          definition.key,
-          { schemaId: documentState.schemaId, value: normalizedData },
-          parentErrandVersionBeforeDocumentWrite,
-          documentState.etag
-        );
-        setDocumentState((current) =>
-          current
-            ? {
-                ...current,
-                formData: saved.document.value,
-                schemaId: saved.document.schemaId,
-                persisted: true,
-                etag: saved.etag,
-              }
-            : current
-        );
-        onSaved(saved.document);
-        expectedErrandVersion = saved.parentErrandVersion;
-        classificationDocumentETag = saved.etag;
-        useSupportStore.setState((state) => {
-          if (!state.supportErrand || state.supportErrand.id !== errandId) return state;
-          return { supportErrand: { ...state.supportErrand, version: saved.parentErrandVersion } };
-        });
-        resetErrandField('version', { defaultValue: saved.parentErrandVersion });
-        savedDocument = true;
-        setDocumentDirty(false);
-
-        if (classificationDirty) {
-          documentSavedForClassification = true;
-          setDocumentSavedPendingClassification(true);
-        }
-      }
-
-      if (classificationUpdate && classificationDirty) {
-        if (!classificationModel) {
-          throw new Error('Klassificeringsmodellen kunde inte läsas in.');
-        }
-        const classificationRequest: SupportInvestigationClassificationRequest =
-          buildSupportInvestigationClassificationRequest(
-            classificationUpdate,
-            expectedErrandVersion,
-            definition.key,
-            classificationDocumentETag
-          );
-        const savedErrand = await saveSupportInvestigationClassification(
-          municipalityId,
-          errandId,
-          classificationRequest
-        );
-        const savedSelection = getIafLabelClassificationSelection(
-          classificationModel,
-          savedErrand.labels,
-          savedErrand.classification
-        );
-        const savedClassificationUpdate = applyIafLabelClassificationSelection(
-          classificationModel,
-          savedErrand.labels,
-          savedSelection
-        );
-        const savedClassificationDraft: InvestigationClassificationDraft = {
-          labels: savedErrand.labels,
-          category: savedClassificationUpdate.category,
-          type: savedClassificationUpdate.type,
-          subType: savedClassificationUpdate.subType,
-          classificationHasSubTypes: savedClassificationUpdate.requiresSubType,
-        };
-        savedClassification = true;
-
-        useSupportStore.setState((state) => {
-          if (!state.supportErrand || state.supportErrand.id !== errandId) return state;
-          return {
-            supportErrand: {
-              ...state.supportErrand,
-              classification: savedErrand.classification,
-              labels: savedErrand.labels,
-              category: savedClassificationUpdate.category,
-              type: savedClassificationUpdate.type,
-              subType: savedClassificationUpdate.subType,
-              classificationHasSubTypes: savedClassificationUpdate.requiresSubType,
-              version: savedErrand.version,
-            },
-          };
-        });
-        resetClassification(savedClassificationDraft);
-        resetErrandField('classification', { defaultValue: savedErrand.classification });
-        resetErrandField('labels', { defaultValue: savedClassificationDraft.labels });
-        resetErrandField('category', { defaultValue: savedClassificationDraft.category });
-        resetErrandField('type', { defaultValue: savedClassificationDraft.type });
-        resetErrandField('subType', { defaultValue: savedClassificationDraft.subType });
-        resetErrandField('classificationHasSubTypes', {
-          defaultValue: savedClassificationDraft.classificationHasSubTypes,
-        });
-        resetErrandField('version', { defaultValue: savedErrand.version });
+      const savedClassification = await saveInvestigationClassificationStep({
+        municipalityId,
+        errandId,
+        documentKey: definition.key,
+        prepared: preparedClassification,
+        parentErrandVersion: savedDocument?.parentErrandVersion ?? supportErrand?.version,
+        documentETag: savedDocument?.etag ?? documentState.etag,
+      });
+      if (savedClassification && preparedClassification) {
+        applySavedClassification(savedClassification, preparedClassification);
       }
 
       setDocumentSavedPendingClassification(false);
@@ -449,32 +378,18 @@ export function SupportInvestigationDocument({
       setDocumentDirty(false);
       setNotice({
         type: 'success',
-        message:
-          savedDocument && savedClassification
-            ? 'Utredningen och ärendets klassificering har sparats.'
-            : savedClassification
-            ? 'Ärendets klassificering har sparats.'
-            : 'Utredningen har sparats.',
+        message: investigationSaveSuccessMessage(Boolean(savedDocument), Boolean(savedClassification)),
       });
     } catch (error) {
-      const apiMessage = (error as AxiosError<{ message?: string }>).response?.data?.message;
-      const localMessage = error instanceof Error ? error.message : undefined;
-      const classificationConflict = isSupportInvestigationClassificationConflict(error);
-      const message =
-        classificationConflict && documentSavedForClassification && classificationDirty
-          ? 'Utredningen har sparats, men ärendets klassificering har ändrats av någon annan. Dina kategoriseringsval finns kvar här. Ladda om ärendet och jämför innan du sparar klassificeringen igen.'
-          : classificationConflict && classificationDirty
-          ? 'Ärendets klassificering har ändrats av någon annan. Dina kategoriseringsval finns kvar här. Ladda om ärendet och jämför innan du sparar igen.'
-          : documentSavedForClassification && classificationDirty
-          ? 'Utredningen har sparats, men ärendets klassificering kunde inte synkroniseras. Försök igen; nästa försök uppdaterar bara klassificeringen.'
-          : isSupportInvestigationConflict(error)
-          ? 'Utredningen har ändrats av någon annan. Dina ändringar finns kvar här. Ladda om ärendet och jämför innan du sparar igen.'
-          : apiMessage ??
-            localMessage ??
-            (classificationRequired && classificationDirty
-              ? 'Ärendets klassificering kunde inte sparas. Dina ändringar finns kvar och du kan försöka igen.'
-              : 'Utredningen kunde inte sparas. Dina ändringar finns kvar och du kan försöka igen.');
-      setNotice({ type: 'error', message });
+      setNotice({
+        type: 'error',
+        message: investigationSaveErrorMessage({
+          error,
+          documentSavedForClassification,
+          classificationDirty,
+          classificationRequired: classificationOwner,
+        }),
+      });
     } finally {
       setIsSaving(false);
     }

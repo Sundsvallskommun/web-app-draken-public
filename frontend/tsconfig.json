@@ -1,8 +1,7 @@
 {
   "compilerOptions": {
     "types": [
-      "node",
-      "@simonsmith/cypress-image-snapshot/types"
+      "node"
     ],
     "target": "es6",
     "lib": [
@@ -48,9 +47,6 @@
       "@styles/*": [
         "src/styles/*"
       ],
-      "@cypress/*": [
-        "cypress/*"
-      ],
       "@e2e/*": [
         "e2e/*"
       ],
@@ -70,7 +66,6 @@
   },
   "include": [
     "src/**/*.{ts,tsx}",
-    "cypress/**/*.{ts,tsx}",
     "e2e/**/*.{ts,tsx}",
     "next-env.d.ts",
     "node_modules/dayjs/plugin/utc.d.ts",

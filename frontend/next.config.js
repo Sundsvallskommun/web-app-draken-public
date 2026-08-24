@@ -28,10 +28,20 @@ envalid.cleanEnv(process.env, {
   HEALTH_PASSWORD: authDependent(),
 });
 
+// Routes named `*.dev.tsx` exist only outside production builds. The schema lab is a developer
+// sandbox, and a runtime notFound() would still ship its route into every production bundle;
+// leaving the extension out of the production list keeps it from being compiled at all.
+const DEVELOPMENT_ONLY_PAGE_EXTENSIONS = ['dev.tsx', 'dev.ts'];
+const PAGE_EXTENSIONS = ['tsx', 'ts', 'jsx', 'js'];
+
 module.exports = {
   allowedDevOrigins: ['dev.test'],
+  pageExtensions:
+    process.env.NODE_ENV === 'production' ? PAGE_EXTENSIONS : [...DEVELOPMENT_ONLY_PAGE_EXTENSIONS, ...PAGE_EXTENSIONS],
+  // Keep Turbopack scoped to this Next.js app. Without an explicit root it can
+  // select a parent lockfile and index the whole home directory.
   turbopack: {
-    root: path.join(__dirname, '.'),
+    root: __dirname,
   },
   distDir:
     process.env.DOCKER_BUILD === 'true'

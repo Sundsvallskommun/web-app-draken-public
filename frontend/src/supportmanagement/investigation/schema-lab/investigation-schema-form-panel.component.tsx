@@ -25,7 +25,7 @@ interface InvestigationSchemaFormPanelProps {
   onRemoveDraft: () => void;
 }
 
-function LabAlert({ notice }: { notice: InvestigationLabNotice }) {
+function LabAlert({ notice }: Readonly<{ notice: InvestigationLabNotice }>) {
   return (
     <div
       role={notice.type === 'error' ? 'alert' : 'status'}
@@ -52,7 +52,7 @@ export function InvestigationSchemaFormPanel({
   onSaveDraft,
   onValidatedSave,
   onRemoveDraft,
-}: InvestigationSchemaFormPanelProps) {
+}: Readonly<InvestigationSchemaFormPanelProps>) {
   const [jsonPreviewOpen, setJsonPreviewOpen] = useState(false);
   const hslRiskValue = definition.schemaName === 'utredning-enhetschef' ? getHslRiskValue(formData) : undefined;
   const renderingSchema = useMemo(

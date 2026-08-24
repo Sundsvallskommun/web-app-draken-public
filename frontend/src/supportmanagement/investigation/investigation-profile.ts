@@ -146,7 +146,7 @@ export function parseInvestigationProfile(value: unknown, expectedApplication?: 
 
   const application = normalizeApplication(readRequiredString(value.application, 'application'));
   const state = readRequiredString(value.state, 'state');
-  if (!INVESTIGATION_PROFILE_STATES.some((candidate) => candidate === state)) {
+  if (!INVESTIGATION_PROFILE_STATES.includes(state as InvestigationProfileState)) {
     throw new Error('Utredningsprofilens state är ogiltig.');
   }
   const normalizedExpectedApplication = expectedApplication ? normalizeApplication(expectedApplication) : '';
@@ -154,7 +154,7 @@ export function parseInvestigationProfile(value: unknown, expectedApplication?: 
     throw new Error(`Utredningsprofilen gäller ${application}, men klienten kör ${normalizedExpectedApplication}.`);
   }
 
-  const documents = value.documents.map(readDocument);
+  const documents = value.documents.map((document, index) => readDocument(document, index));
   if (
     !isRecord(value.registration) ||
     (value.registration.mode !== 'enabled' && value.registration.mode !== 'disabled')
