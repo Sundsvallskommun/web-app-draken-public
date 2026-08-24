@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+
+import { test } from 'vitest';
 
 import {
   projectErrandTypeLabel,
   projectLabelCategory,
   projectMappedLabelSubType,
   shouldProjectMappedLabelSubType,
-} from './support-label-classification-projector.ts';
+} from './support-label-classification-projector';
 
 const futureLabelTree = {
   root: { resource: 'INCIDENTS', classification: 'INCIDENT_ROOT' },
@@ -40,8 +41,16 @@ test('projects an explicit label-tree vocabulary independently of application se
       labelStructure: [
         {
           classification: 'INCIDENT_ROOT',
+          resourceName: 'INCIDENTS',
           resourcePath: 'INCIDENTS',
-          labels: [{ classification: 'ACT_BRANCH', resourcePath: 'INCIDENTS/FUTURE_ACT', labels: [category] }],
+          labels: [
+            {
+              classification: 'ACT_BRANCH',
+              resourceName: 'FUTURE_ACT',
+              resourcePath: 'INCIDENTS/FUTURE_ACT',
+              labels: [category],
+            },
+          ],
         },
       ],
     },
@@ -54,8 +63,13 @@ test('projects an explicit label-tree vocabulary independently of application se
 });
 
 test('preserves legacy TYPE/SUBTYPE projection when no classification capability exists', () => {
-  const legacyType = { id: 'legacy-type', classification: 'TYPE', resourcePath: 'SERVICE/TYPE' };
-  const legacySubType = { id: 'legacy-subtype', classification: 'SUBTYPE', resourcePath: 'SERVICE/TYPE/SUBTYPE' };
+  const legacyType = { id: 'legacy-type', classification: 'TYPE', resourceName: 'TYPE', resourcePath: 'SERVICE/TYPE' };
+  const legacySubType = {
+    id: 'legacy-subtype',
+    classification: 'SUBTYPE',
+    resourceName: 'SUBTYPE',
+    resourcePath: 'SERVICE/TYPE/SUBTYPE',
+  };
   const errand = {
     classification: { category: 'SERVICE', type: 'SERVICE/TYPE' },
     labels: [legacyType, legacySubType],

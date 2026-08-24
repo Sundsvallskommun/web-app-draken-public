@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
 
-import { toStrongSupportErrandETag } from './support-errand-write-version.ts';
+import { test } from 'vitest';
+
+import { toStrongSupportErrandETag } from './support-errand-write-version';
 
 test('creates canonical strong ETags from valid support errand versions', () => {
   assert.equal(toStrongSupportErrandETag(0), '"0"');

@@ -1,27 +1,53 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
 
-import { IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY } from '../../investigation/iaf-vof-investigation-classification-policy.ts';
-import { resolveCategorizationControl, resolveCategorizationMode } from './categorization-control.ts';
+import type { SupportErrandClassificationPlacement } from '@supportmanagement/investigation/iaf-vof-investigation-classification-policy';
+import { IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY } from '@supportmanagement/investigation/iaf-vof-investigation-classification-policy';
+import { test } from 'vitest';
 
-const defaultBasics = { owner: 'basics', categorization: 'default' };
+import { resolveCategorizationControl, resolveCategorizationMode } from './categorization-control';
 
-const iafVofPlacement = (owner) => ({
+const defaultBasics: SupportErrandClassificationPlacement = { owner: 'basics', categorization: 'default' };
+
+const iafVofPlacement = (owner: 'basics' | 'unavailable'): SupportErrandClassificationPlacement => ({
   owner,
   categorization: 'iaf-vof',
   policy: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
 });
 
+// Only the investigation-owned placement carries the resolved document keys; the type
+// records that, so this variant cannot reuse the factory above.
+const iafVofInvestigationPlacement: SupportErrandClassificationPlacement = {
+  owner: 'investigation',
+  categorization: 'iaf-vof',
+  policy: {
+    ...IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
+    defaultOwnerDocumentKey: 'manager-document',
+    reportedMisconductOwnerDocumentKey: 'misconduct-document',
+  },
+};
+
 test('resolves the categorization mode from the deployment flags', () => {
-  assert.equal(resolveCategorizationMode({ useTwoLevelCategorization: true, useThreeLevelCategorization: false }), 'two-level');
-  assert.equal(resolveCategorizationMode({ useTwoLevelCategorization: false, useThreeLevelCategorization: true }), 'three-level');
-  assert.equal(resolveCategorizationMode({ useTwoLevelCategorization: false, useThreeLevelCategorization: false }), 'none');
+  assert.equal(
+    resolveCategorizationMode({ useTwoLevelCategorization: true, useThreeLevelCategorization: false }),
+    'two-level'
+  );
+  assert.equal(
+    resolveCategorizationMode({ useTwoLevelCategorization: false, useThreeLevelCategorization: true }),
+    'three-level'
+  );
+  assert.equal(
+    resolveCategorizationMode({ useTwoLevelCategorization: false, useThreeLevelCategorization: false }),
+    'none'
+  );
 });
 
 test('prefers the label-backed mode when a deployment sets both flags', () => {
   // The flags encode one choice, so both-true is a misconfiguration. Picking the
   // label-backed mode keeps a single control rather than rendering two.
-  assert.equal(resolveCategorizationMode({ useTwoLevelCategorization: true, useThreeLevelCategorization: true }), 'three-level');
+  assert.equal(
+    resolveCategorizationMode({ useTwoLevelCategorization: true, useThreeLevelCategorization: true }),
+    'three-level'
+  );
 });
 
 test('renders the two-level control for a two-level deployment', () => {
@@ -55,7 +81,7 @@ test('renders the IAF/VOF control read-only when the capability is unavailable',
 });
 
 test('renders nothing when the investigation document owns classification', () => {
-  assert.deepEqual(resolveCategorizationControl('three-level', iafVofPlacement('investigation')), { kind: 'none' });
+  assert.deepEqual(resolveCategorizationControl('three-level', iafVofInvestigationPlacement), { kind: 'none' });
 });
 
 test('never renders a default-vocabulary control for an IAF/VOF placement', () => {
@@ -68,7 +94,14 @@ test('never renders a default-vocabulary control for an IAF/VOF placement', () =
 test('renders nothing when a default placement is not owned by Grundinformation', () => {
   // Unreachable today: every non-IAF/VOF application resolves to owner "basics".
   // The guard keeps a future placement change from double-rendering the control.
-  assert.deepEqual(resolveCategorizationControl('three-level', { owner: 'investigation', categorization: 'default' }), {
-    kind: 'none',
-  });
+  assert.deepEqual(
+    resolveCategorizationControl('three-level', {
+      owner: 'investigation',
+      categorization: 'default',
+      // SupportErrandClassificationPlacement has no such member, so the cast is what
+      // makes the case expressible at all. The guard defends against placements that
+      // reach the control from untyped data, not against anything TypeScript allows.
+    } as unknown as SupportErrandClassificationPlacement),
+    { kind: 'none' }
+  );
 });

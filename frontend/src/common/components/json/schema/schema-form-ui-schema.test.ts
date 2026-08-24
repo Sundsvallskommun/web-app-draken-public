@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
 
-import { buildUiSchemaFromSchema } from './schema-form-ui-schema.ts';
+import type { RJSFSchema } from '@rjsf/utils';
+import { test } from 'vitest';
+
+import { buildUiSchemaFromSchema } from './schema-form-ui-schema';
 
 test('maps only the supported date and time string formats to specialized widgets', () => {
   const uiSchema = buildUiSchemaFromSchema({
@@ -26,12 +28,14 @@ test('maps only the supported date and time string formats to specialized widget
 
 test('keeps an explicitly authored widget for a time-formatted field', () => {
   assert.deepEqual(
+    // `widget` is a vendor extension buildUiSchemaFromSchema reads but RJSFSchema
+    // (JSONSchema7) does not model, so the literal needs the cast.
     buildUiSchemaFromSchema({
       type: 'object',
       properties: {
         occurredAt: { type: 'string', format: 'time', widget: 'TextWidget' },
       },
-    }),
+    } as RJSFSchema),
     { occurredAt: { 'ui:widget': 'TextWidget' } }
   );
 });

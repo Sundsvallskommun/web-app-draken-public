@@ -1,18 +1,24 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+
+import { test } from 'vitest';
 
 import {
   isIafVofReportedMisconductErrand,
   resolveIafVofInvestigationClassificationOwnerDocumentKey,
   resolveSupportErrandClassificationPlacement,
-} from './iaf-vof-investigation-classification-policy.ts';
+} from './iaf-vof-investigation-classification-policy';
 
 const documents = () => [
   { key: 'manager-document', schemaName: 'utredning-enhetschef' },
   { key: 'misconduct-document', schemaName: 'utredning-sol-lss' },
 ];
 
-const profile = (overrides = {}) => ({ application: 'IAF', state: 'active', documents: documents(), ...overrides });
+const profile = (overrides = {}) => ({
+  application: 'IAF',
+  state: 'active' as const,
+  documents: documents(),
+  ...overrides,
+});
 
 test('moves IAF and VOF classification only for an active profile with both fixed schema roles', () => {
   for (const application of ['IAF', 'VOF']) {
@@ -32,9 +38,13 @@ test('keeps other applications on the ordinary basics categorization', () => {
 });
 
 test('uses profile state as the classification ownership authority for IAF/VOF', () => {
-  assert.equal(resolveSupportErrandClassificationPlacement({ application: 'IAF', profile: undefined }).owner, 'unavailable');
   assert.equal(
-    resolveSupportErrandClassificationPlacement({ application: 'IAF', profile: profile({ state: 'unavailable' }) }).owner,
+    resolveSupportErrandClassificationPlacement({ application: 'IAF', profile: undefined }).owner,
+    'unavailable'
+  );
+  assert.equal(
+    resolveSupportErrandClassificationPlacement({ application: 'IAF', profile: profile({ state: 'unavailable' }) })
+      .owner,
     'unavailable'
   );
   assert.equal(
@@ -49,7 +59,9 @@ test('uses profile state as the classification ownership authority for IAF/VOF',
 
 test('falls back to IAF/VOF basics when either fixed owner schema is missing or ambiguous', () => {
   const missing = profile({ documents: documents().slice(0, 1) });
-  const ambiguous = profile({ documents: [...documents(), { key: 'manager-copy', schemaName: 'utredning-enhetschef' }] });
+  const ambiguous = profile({
+    documents: [...documents(), { key: 'manager-copy', schemaName: 'utredning-enhetschef' }],
+  });
   assert.equal(resolveSupportErrandClassificationPlacement({ application: 'IAF', profile: missing }).owner, 'basics');
   assert.equal(resolveSupportErrandClassificationPlacement({ application: 'IAF', profile: ambiguous }).owner, 'basics');
 });

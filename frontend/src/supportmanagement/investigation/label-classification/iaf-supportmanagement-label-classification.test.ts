@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+
+import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import { test } from 'vitest';
 
 import {
   applyIafLabelClassificationSelection,
   createIafLabelClassificationModel,
   getPersistedIafLabelClassificationState,
-} from './iaf-supportmanagement-label-classification.ts';
+} from './iaf-supportmanagement-label-classification';
 
 const labelTree = {
   root: { resource: 'CATEGORY', classification: 'CATEGORY_ROOT' },
@@ -20,7 +22,7 @@ const legalBaseRules = [
   { legalBase: 'LSS', allowedClassificationCategories: ['CATEGORY/SOL_LSS'] },
 ];
 
-const category = (owner, code) => ({
+const category = (owner: string, code: string): Label => ({
   id: `${code}-id`,
   classification: 'CATEGORY',
   displayName: code,
@@ -29,7 +31,7 @@ const category = (owner, code) => ({
   labels: [],
 });
 
-const owner = (code, categories) => ({
+const owner = (code: string, categories: Label[]): Label => ({
   id: `${code}-owner-id`,
   classification: 'PROVISION_CATEGORY',
   displayName: code,
@@ -208,7 +210,13 @@ test('fails closed when the configured classification root is missing or duplica
       createIafLabelClassificationModel(
         [
           labelStructure[0],
-          { id: 'second-root', classification: 'CATEGORY_ROOT', resourcePath: 'CATEGORY', labels: [] },
+          {
+            id: 'second-root',
+            classification: 'CATEGORY_ROOT',
+            resourceName: 'CATEGORY',
+            resourcePath: 'CATEGORY',
+            labels: [],
+          },
         ],
         labelTree
       ),
@@ -224,7 +232,15 @@ test('fails closed when the configured classification root is missing or duplica
         labels: [],
       },
     ],
-    [{ id: 'wrong-classification', classification: 'OTHER_ROOT', resourcePath: 'CATEGORY', labels: [] }],
+    [
+      {
+        id: 'wrong-classification',
+        classification: 'OTHER_ROOT',
+        resourceName: 'CATEGORY',
+        resourcePath: 'CATEGORY',
+        labels: [],
+      },
+    ],
   ]) {
     assert.throws(
       () => createIafLabelClassificationModel(nearMiss, labelTree),

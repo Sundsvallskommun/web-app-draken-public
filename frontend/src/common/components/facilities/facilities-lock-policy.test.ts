@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
 
-import { resolveFacilitiesEditingLock } from './facilities-lock-policy.ts';
+import { test } from 'vitest';
+
+import { resolveFacilitiesEditingLock } from './facilities-lock-policy';
 
 test('uses the Support Management lock for every Support Management application', () => {
   let caseDataReads = 0;

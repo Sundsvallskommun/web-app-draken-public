@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
 
-import { getAvailablePhaseTransitions, getSupportPhases } from './support-phase-service.ts';
+import { test } from 'vitest';
+
+import { getAvailablePhaseTransitions, getSupportPhases } from './support-phase-service';
 
 const phases = [
   {

@@ -44,9 +44,6 @@
       "@common/*": [
         "src/common/*"
       ],
-      "@jestRoot/*": [
-        ".jest/*"
-      ],
       "@styles/*": [
         "src/styles/*"
       ],

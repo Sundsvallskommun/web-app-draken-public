@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
 
-import { projectLabelFilterGroups } from './label-filter-projector.ts';
+import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import { test } from 'vitest';
 
-const label = (classification, resourcePath, displayName, labels = []) => ({
+import { projectLabelFilterGroups } from './label-filter-projector';
+
+const label = (classification: string, resourcePath: string, displayName: string, labels: Label[] = []): Label => ({
   classification,
   displayName,
-  resourceName: resourcePath.split('/').at(-1),
+  resourceName: resourcePath.split('/').at(-1) ?? resourcePath,
   resourcePath,
   labels,
 });
@@ -103,7 +105,9 @@ test('projects independent IAF/VOF roots with stable selection identities', () =
 
 test('traverses hidden provision-category nodes and records the visible field ancestry', () => {
   const projected = projectLabelFilterGroups(definitions, metadata);
-  const typeChoices = projected.find(({ key }) => key === 'classification').fields[1].choices;
+  const classificationGroup = projected.find(({ key }) => key === 'classification');
+  assert.ok(classificationGroup);
+  const typeChoices = classificationGroup.fields[1].choices;
 
   assert.deepEqual(typeChoices[0].ancestors, [
     {
