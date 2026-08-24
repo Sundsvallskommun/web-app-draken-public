@@ -230,7 +230,7 @@ export const ContractForm: FC<{
     return (
       <div className="my-md">
         {loading ? (
-          <Button disabled={true}>Sparar</Button>
+          <Button disabled={true}>Sparar avtalet</Button>
         ) : (
           <div>
             <Button
@@ -248,7 +248,7 @@ export const ContractForm: FC<{
                 }
               )}
             >
-              Spara
+              Spara avtalet
             </Button>
           </div>
         )}
@@ -489,7 +489,7 @@ export const ContractForm: FC<{
               <FormControl>
                 <FormLabel>
                   Ange vilka fastighet/er som området ligger på{' '}
-                  <span className="font-normal">(hämtad från uppgifter)</span>
+                  <span className="font-normal">(hämtas automatiskt från ärendeuppgifter)</span>
                 </FormLabel>
                 {(errand?.facilities?.length ?? 0) > 0 || (existingContract?.propertyDesignations?.length ?? 0) > 0 ? (
                   <Checkbox.Group
@@ -614,7 +614,6 @@ export const ContractForm: FC<{
                   </FormControl>
                   <small>För nya avtal blir startdatum automatiskt samma som &quot;Avtalet gäller från&quot;.</small>
                 </div>
-                <div className="w-full"></div>
               </div>
               <div className="flex gap-18 justify-start">
                 <FormControl id="currentPeriod.startDate" className="w-full">
@@ -655,8 +654,8 @@ export const ContractForm: FC<{
               getValues().notice?.terms?.some((t) => t.party === 'LESSEE') ? (
                 <>
                   <strong>Ange tid för arrendatorns uppsägningstid</strong>
-                  <div className="flex justify-between gap-32 items-start mb-md">
-                    <FormControl id={`noticePeriod-1`} className="flex-grow max-w-[45%]">
+                  <div className="flex gap-18 justify-start">
+                    <FormControl id={`noticePeriod-1`} className="w-full">
                       <FormLabel>Enhet</FormLabel>
                       <Select
                         className="w-full"
@@ -670,7 +669,7 @@ export const ContractForm: FC<{
                         <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
                       </Select>
                     </FormControl>
-                    <FormControl className="flex-grow max-w-[45%]">
+                    <FormControl className="w-full">
                       <FormLabel>Antal</FormLabel>
                       <Input
                         readOnly={!isEditable('general')}
@@ -695,9 +694,9 @@ export const ContractForm: FC<{
                     </FormControl>
                   </div>
 
-                  <strong className="text-h6-md">Ange tid för upplåtarens uppsägningstid</strong>
-                  <div className="flex justify-between gap-32 items-start mb-md">
-                    <FormControl id={`noticePeriod-2`} className="flex-grow max-w-[45%]">
+                  <strong>Ange tid för upplåtarens uppsägningstid</strong>
+                  <div className="flex gap-18 justify-start">
+                    <FormControl id={`noticePeriod-2`} className="w-full">
                       <FormLabel>Enhet</FormLabel>
                       <Select
                         className="w-full"
@@ -711,7 +710,7 @@ export const ContractForm: FC<{
                         <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
                       </Select>
                     </FormControl>
-                    <FormControl className="flex-grow max-w-[45%]">
+                    <FormControl className="w-full">
                       <FormLabel>Antal</FormLabel>
                       <Input
                         readOnly={!isEditable('general')}
@@ -738,9 +737,9 @@ export const ContractForm: FC<{
                 </>
               ) : (
                 <>
-                  <strong className="-mb-16">Ange uppsägningstid</strong>
-                  <div className="flex justify-between gap-32 items-start mb-md">
-                    <FormControl id={`noticePeriod-0`} className="flex-grow max-w-[45%]">
+                  <strong>Ange uppsägningstid</strong>
+                  <div className="flex gap-18 justify-start">
+                    <FormControl id={`noticePeriod-0`} className="w-full">
                       <FormLabel>Enhet</FormLabel>
                       <Select
                         className="w-full"
@@ -754,7 +753,7 @@ export const ContractForm: FC<{
                         <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
                       </Select>
                     </FormControl>
-                    <FormControl className="flex-grow max-w-[45%]">
+                    <FormControl className="w-full">
                       <FormLabel>Antal</FormLabel>
                       <Input
                         readOnly={!isEditable('general')}
@@ -781,7 +780,7 @@ export const ContractForm: FC<{
                 </>
               )}
 
-              <div className="flex justify-between gap-32 items-end mb-md">
+              <div className="flex gap-18 justify-start">
                 <FormControl
                   className="flex-grow"
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
@@ -791,7 +790,11 @@ export const ContractForm: FC<{
                   }}
                 >
                   <FormLabel>Automatisk förlängning av avtalet</FormLabel>
-                  <RadioButton.Group className="flex gap-24" value={watch().extension?.autoExtend ? 'true' : 'false'}>
+                  <RadioButton.Group
+                    inline
+                    className="flex gap-24"
+                    value={watch().extension?.autoExtend ? 'true' : 'false'}
+                  >
                     <RadioButton data-cy="autoextend-true-radiobutton" value={'true'} disabled={!isEditable('general')}>
                       Ja
                     </RadioButton>
@@ -803,8 +806,8 @@ export const ContractForm: FC<{
               </div>
 
               {watch().extension?.autoExtend && (
-                <div className="flex justify-between gap-32 items-start mb-md">
-                  <FormControl id={`extension`} className="flex-grow max-w-[45%]">
+                <div className="flex gap-18 justify-start">
+                  <FormControl id={`extension`} className="w-full">
                     <FormLabel>Enhet</FormLabel>
                     <Select
                       className="w-full"
@@ -818,7 +821,7 @@ export const ContractForm: FC<{
                       <Select.Option value={TimeUnit.YEARS}>År</Select.Option>
                     </Select>
                   </FormControl>
-                  <FormControl className="flex-grow max-w-[45%]">
+                  <FormControl className="w-full">
                     <FormLabel>Antal</FormLabel>
                     <Input
                       readOnly={!isEditable('general')}
@@ -946,10 +949,11 @@ export const ContractForm: FC<{
               {getValues().generateInvoice === 'true' ? (
                 <>
                   <div className="flex gap-18 justify-start">
-                    <FormControl>
+                    <FormControl className="w-full">
                       <FormLabel>Ange avgift/år</FormLabel>
                       <Input
                         type="number"
+                        className="w-full"
                         readOnly={!isEditable('general')}
                         {...register('fees.yearly')}
                         data-cy="fees-yearly-input"
@@ -993,7 +997,7 @@ export const ContractForm: FC<{
                         setValue('invoicing.invoiceInterval', e.target.value as IntervalType);
                       }}
                     >
-                      <FormLabel>Avgift ska betalas</FormLabel>
+                      <FormLabel>Hur ofta ska avgiften betalas?</FormLabel>
                       <RadioButton.Group
                         inline
                         className="flex gap-24"
@@ -1045,7 +1049,7 @@ export const ContractForm: FC<{
                         setValue('invoicing.invoicedIn', e.target.value as InvoicedIn);
                       }}
                     >
-                      <FormLabel>Avgift ska betalas</FormLabel>
+                      <FormLabel>Ska avgiften betalas i förskott eller efterskott?</FormLabel>
                       <RadioButton.Group
                         inline
                         className="flex gap-24"
@@ -1076,10 +1080,11 @@ export const ContractForm: FC<{
                     </FormControl>
                   </div>
                   <div className="flex gap-18 justify-start">
-                    <FormControl className="w-[36.7rem]">
+                    <FormControl className="w-full">
                       <FormLabel>Ange fakturans referens</FormLabel>
                       <Input
                         type="text"
+                        className="w-full"
                         readOnly={!isEditable('billing')}
                         {...register(`extraParameters.${invoiceInfoIndex}.parameters.markup`)}
                         data-cy="invoice-markup-input"
@@ -1108,7 +1113,7 @@ export const ContractForm: FC<{
                       ></Textarea>
                     </FormControl>
                   </div>
-                  <small>Fastighet behöver inte anges, hämtas automatisk från ärendeuppgifter.</small>
+                  <small>Fastighet behöver inte anges, hämtas automatiskt från ärendeuppgifter.</small>
                 </>
               ) : null}
               {saveButton()}
