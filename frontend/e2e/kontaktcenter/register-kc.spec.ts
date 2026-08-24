@@ -91,8 +91,9 @@ test.describe('register page', () => {
       page.locator('[data-cy="save-button"]').click(),
     ]);
     const body = request.postDataJSON();
+    // Handler, status, resolution and suspension are no longer part of the errand PATCH; they are
+    // written by the dedicated admin and status commands instead.
     expect(body).toEqual({
-      assignedUserId: mockEmptySupportErrand.assignedUserId,
       businessRelated: false,
       classification: {
         category: cat.name,
@@ -104,10 +105,7 @@ test.describe('register page', () => {
       parameters: [],
       channel: 'PHONE',
       priority: 'MEDIUM',
-      resolution: 'INFORMED',
       stakeholders: [],
-      status: 'ONGOING',
-      suspension: {},
     });
   });
 
@@ -136,7 +134,6 @@ test.describe('register page', () => {
     ]);
     const body = request.postDataJSON();
     expect(body).toEqual({
-      assignedUserId: mockEmptySupportErrand.assignedUserId,
       businessRelated: false,
       classification: {
         category: cat.name,
@@ -149,11 +146,8 @@ test.describe('register page', () => {
       parameters: [],
       channel: 'PHONE',
       priority: 'MEDIUM',
-      resolution: 'INFORMED',
       stakeholders: [],
       description: '<p>Mock description</p>',
-      status: 'ONGOING',
-      suspension: {},
     });
   });
 });
