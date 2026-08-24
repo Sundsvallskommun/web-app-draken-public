@@ -20,8 +20,10 @@ behöva ett verkligt ärende i rätt fas.
 Ordet "schema" avser här **JSON Schema och UI Schema** — inte tidsschema, och inte de yup-scheman som används för
 formulärvalidering på andra håll i Draken.
 
-Labben är avsiktligt oåtkomlig utanför lokal utveckling: sidan anropar `notFound()` om inte `NODE_ENV` är
-`development` och `NEXT_PUBLIC_APPLICATION` är `IAF`. Den läser och skriver inga ärenden, och publicerar inga scheman.
+Labben är avsiktligt oåtkomlig utanför lokal utveckling, och spärren sitter i två lager. Rutten heter
+`page.dev.tsx`, och `pageExtensions` i `next.config.js` accepterar den ändelsen bara när `NODE_ENV` inte är
+`production` — i ett produktionsbygge kompileras alltså sidan inte alls. Kompileras den ändå anropar den `notFound()`
+för alla profiler utom `IAF`. Den läser och skriver inga ärenden, och publicerar inga scheman.
 
 Starta IAF-profilen med:
 
