@@ -1,4 +1,4 @@
-import { defaultPermissions, getPermissions, getRole } from '@/services/authorization.service';
+import { defaultPermissions, getLoginPermissions, getPermissions, getRole } from '@/services/authorization.service';
 
 import { MOCK_ADMIN_GROUP, MOCK_DEVELOPER_GROUP, MOCK_SUPERADMIN_GROUP } from './helpers/mock-data';
 
@@ -10,6 +10,7 @@ describe('authorization.service', () => {
         canEditSupportManagement: false,
         canViewAttestations: false,
         canEditAttestations: false,
+        canViewOtherNamespaces: false,
       });
     });
 
@@ -27,6 +28,7 @@ describe('authorization.service', () => {
         canEditSupportManagement: true,
         canViewAttestations: true,
         canEditAttestations: true,
+        canViewOtherNamespaces: false,
       });
     });
 
@@ -36,6 +38,7 @@ describe('authorization.service', () => {
         canEditSupportManagement: true,
         canViewAttestations: true,
         canEditAttestations: false,
+        canViewOtherNamespaces: false,
       });
     });
 
@@ -46,6 +49,7 @@ describe('authorization.service', () => {
         canEditSupportManagement: true,
         canViewAttestations: true,
         canEditAttestations: true,
+        canViewOtherNamespaces: false,
       });
     });
 
@@ -61,7 +65,52 @@ describe('authorization.service', () => {
         canEditSupportManagement: true,
         canViewAttestations: true,
         canEditAttestations: false,
+        canViewOtherNamespaces: false,
       });
+    });
+  });
+
+  describe('getLoginPermissions', () => {
+    // No AD group carries canViewOtherNamespaces - it is granted at login, from the environment,
+    // and only for the Kontakt Sundsvall drake (APPLICATION=KC AND the CONTACTSUNDSVALL namespace).
+    // isContactSundsvall() reads the environment at call time, so each case stubs it for itself;
+    // unstubAllEnvs restores the values seeded in setup.ts.
+    afterEach(() => {
+      vi.unstubAllEnvs();
+    });
+
+    const asContactSundsvall = () => {
+      vi.stubEnv('APPLICATION', 'KC');
+      vi.stubEnv('SUPPORTMANAGEMENT_NAMESPACE', 'CONTACTSUNDSVALL');
+    };
+
+    it('grants canViewOtherNamespaces to a Kontakt Sundsvall user, alongside their role permissions', () => {
+      asContactSundsvall();
+      expect(getLoginPermissions([MOCK_DEVELOPER_GROUP])).toEqual({
+        canEditCasedata: false,
+        canEditSupportManagement: true,
+        canViewAttestations: true,
+        canEditAttestations: false,
+        canViewOtherNamespaces: true,
+      });
+    });
+
+    it('grants it to a Kontakt Sundsvall user without any role, since no AD group carries it', () => {
+      expect(getPermissions([]).canViewOtherNamespaces).toBe(false);
+      asContactSundsvall();
+      expect(getLoginPermissions([]).canViewOtherNamespaces).toBe(true);
+    });
+
+    it('withholds it from another drake, even with the CONTACTSUNDSVALL namespace configured', () => {
+      vi.stubEnv('APPLICATION', 'KA');
+      vi.stubEnv('SUPPORTMANAGEMENT_NAMESPACE', 'CONTACTSUNDSVALL');
+      expect(getLoginPermissions([MOCK_DEVELOPER_GROUP]).canViewOtherNamespaces).toBe(false);
+    });
+
+    it('withholds it from KC when the namespace is not CONTACTSUNDSVALL', () => {
+      vi.stubEnv('APPLICATION', 'KC');
+      vi.stubEnv('SUPPORTMANAGEMENT_NAMESPACE', 'SBK_MEX');
+      expect(getLoginPermissions([MOCK_DEVELOPER_GROUP]).canViewOtherNamespaces).toBe(false);
     });
   });
 

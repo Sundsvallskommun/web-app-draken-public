@@ -1,8 +1,13 @@
 import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Combobox, FormControl, FormErrorMessage, FormLabel, Select } from '@sk-web-gui/react';
 import { isSupportErrandLocked, SupportErrand } from '@supportmanagement/services/support-errand-service';
+import {
+  getLabelDisplayName,
+  getSelectableLabels,
+  getSelectableTypesForCategory,
+} from '@supportmanagement/services/support-label-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
-import { ChangeEvent, FC, useEffect, useState } from 'react';
+import { ChangeEvent, FC, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -45,10 +50,13 @@ export const ThreeLevelCategorization: FC<{
   const { t } = useTranslation();
 
   const [selectedLabels, setSelectedLabels] = useState<SelectedLabels>({});
-  const [typesList, setTypesList] = useState<Label[]>([]);
 
-  const categoriesList = supportMetadata?.labels?.labelStructure?.sort((a, b) =>
-    (a.displayName ?? '').localeCompare(b.displayName ?? '')
+  const categoriesList = useMemo(
+    () =>
+      [...(supportMetadata?.labels?.labelStructure ?? [])].sort((a, b) =>
+        (a.displayName ?? '').localeCompare(b.displayName ?? '')
+      ),
+    [supportMetadata?.labels?.labelStructure]
   );
 
   useEffect(() => {
@@ -57,12 +65,31 @@ export const ThreeLevelCategorization: FC<{
     }
   }, [supportErrand]);
 
-  useEffect(() => {
-    const categoryItem = categoriesList?.find(
-      (c) => c.id === getErrandLabelId(supportErrand, CLASSIFICATIONS.CATEGORY)
-    );
-    setTypesList(categoryItem?.labels?.sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? '')) ?? []);
-  }, [categoriesList, supportErrand]);
+  const selectedCategory = useMemo(
+    () => categoriesList.find((category) => category.id === selectedLabels.CATEGORY?.id),
+    [categoriesList, selectedLabels.CATEGORY?.id]
+  );
+
+  const typesList = useMemo(
+    () =>
+      [...(selectedCategory?.labels ?? [])].sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? '')),
+    [selectedCategory]
+  );
+
+  // `categoriesList` and `typesList` deliberately keep every label, deprecated ones included, since
+  // they back the lookups further down (handleCategoryChange, findType, findSubType) which must keep
+  // resolving the classification of an existing errand. Only the option lists rendered below are
+  // filtered. The labels already set on the errand are kept even when deprecated, so an existing
+  // errand still shows its own classification; they can be deselected but not picked again.
+  const selectableCategories = useMemo(
+    () => getSelectableLabels(categoriesList, [selectedLabels.CATEGORY?.id]),
+    [categoriesList, selectedLabels.CATEGORY?.id]
+  );
+
+  const selectableTypes = useMemo(
+    () => getSelectableTypesForCategory(selectedCategory, [selectedLabels.TYPE?.id, selectedLabels.SUBTYPE?.id]),
+    [selectedCategory, selectedLabels.TYPE?.id, selectedLabels.SUBTYPE?.id]
+  );
 
   useEffect(() => {
     if (selectedLabels.CATEGORY && selectedLabels.TYPE) {
@@ -77,9 +104,6 @@ export const ThreeLevelCategorization: FC<{
 
   const handleCategoryChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const selectedCategory = categoriesList?.find((c) => c.id === e.currentTarget.value);
-    setTypesList(
-      selectedCategory?.labels?.sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? '')) ?? []
-    );
     setSelectedLabels({ CATEGORY: selectedCategory! });
     setValue('category', selectedCategory?.resourcePath ?? '', { shouldDirty: true });
     setValue('type', '' as any, { shouldDirty: true });
@@ -126,9 +150,9 @@ export const ThreeLevelCategorization: FC<{
   };
 
   const typePlaceholder = getValues().subType
-    ? selectedLabels.SUBTYPE?.displayName
+    ? getLabelDisplayName(selectedLabels.SUBTYPE, supportMetadata)
     : getValues().type
-    ? selectedLabels.TYPE?.displayName
+    ? getLabelDisplayName(selectedLabels.TYPE, supportMetadata)
     : 'Välj ärendetyp';
 
   return (
@@ -147,9 +171,9 @@ export const ThreeLevelCategorization: FC<{
             onChange={handleCategoryChange}
           >
             <Select.Option value="">Välj verksamhet</Select.Option>
-            {categoriesList?.map((label: Label) => (
+            {selectableCategories.map((label: Label) => (
               <Select.Option value={label.id} key={`label-${label.id}`}>
-                {label.displayName || label.resourcePath}
+                {getLabelDisplayName(label, supportMetadata)}
               </Select.Option>
             ))}
           </Select>
@@ -181,20 +205,23 @@ export const ThreeLevelCategorization: FC<{
           >
             <Combobox.Input data-cy="labelType-input" className="w-full" />
             <Combobox.List data-cy="labelType-list" className="!max-h-[30em]">
-              {typesList.map((typeLabel, index) =>
+              {selectableTypes.map((typeLabel) =>
                 (typeLabel.labels?.length ?? 0) > 0 ? (
-                  <Combobox.Optgroup key={`group-${index}`} label={typeLabel.displayName || typeLabel.resourcePath}>
+                  <Combobox.Optgroup
+                    key={`group-${typeLabel.id ?? typeLabel.resourcePath ?? typeLabel.resourceName}`}
+                    label={getLabelDisplayName(typeLabel, supportMetadata)}
+                  >
                     {typeLabel.labels
                       ?.sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? ''))
                       .map((subtypeLabel) => (
                         <Combobox.Option value={subtypeLabel.id!} key={`label-${subtypeLabel.resourcePath}`}>
-                          {`${subtypeLabel.displayName || subtypeLabel.resourcePath}`}
+                          {getLabelDisplayName(subtypeLabel, supportMetadata)}
                         </Combobox.Option>
                       ))}
                   </Combobox.Optgroup>
                 ) : (
                   <Combobox.Option value={typeLabel.id!} key={`label-${typeLabel.resourcePath}`}>
-                    {`${typeLabel.displayName || typeLabel.resourcePath}`}
+                    {getLabelDisplayName(typeLabel, supportMetadata)}
                   </Combobox.Option>
                 )
               )}

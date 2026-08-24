@@ -12,7 +12,21 @@ const statusOverrides: Partial<Record<ToastStatus, ToastOverrides>> = {
     closeable: true,
     position: 'bottom',
   },
-  // Options for error, info, warning can be added similarly
+  error: {
+    // No duration: an error stays until the snackbar retires it, rather than disappearing as
+    // quickly as a success does. Matches how error toasts are raised throughout the app.
+    closeable: false,
+    position: 'bottom',
+  },
+  warning: {
+    // A warning normally means the user has something left to do, so it can be dismissed.
+    closeable: true,
+    position: 'bottom',
+  },
+  info: {
+    closeable: true,
+    position: 'bottom',
+  },
 };
 
 interface ToastInput {

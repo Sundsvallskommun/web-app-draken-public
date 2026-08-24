@@ -119,7 +119,10 @@ export const ContractAttachments: FC<{
 
   return (
     <div className="my-16 flex flex-col gap-24 items-center">
+      {/* The library prints the raw accept list (MIME types) truncated with an ellipsis; hide that
+          row and describe the allowed formats in plain language below instead. */}
       <FileUpload.Field
+        className="[&_.sk-form-file-upload-field-button-content-restrictions-mimetypes]:hidden"
         data-cy={`contract-upload-field`}
         onChange={(e) => {
           const files = e.target.value;
@@ -149,8 +152,14 @@ export const ContractAttachments: FC<{
             });
         }}
       ></FileUpload.Field>
+      <small className="w-full">
+        Tillåtna filtyper: bilder (jpeg, png, gif, tiff, bmp) samt dokument (pdf, Word, Excel, OpenDocument, txt m.fl.)
+      </small>
       <div className="w-full flex flex-col gap-lg">
-        <FileUpload.List isEdit={false}>
+        {/* `files` must be passed explicitly: without it (and without a `name` for a real form field)
+            FileUpload.List falls back to watching a nonexistent `files` field in the surrounding
+            contract form context, which yields a new array every render and loops setState. */}
+        <FileUpload.List isEdit={false} files={files}>
           {files?.map((file, i) => (
             <FileUpload.ListItem
               data-cy={`contract-attachment-item-${file.id}`}

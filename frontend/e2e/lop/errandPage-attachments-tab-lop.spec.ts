@@ -13,6 +13,7 @@ import {
   mockSupportMessages,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
+import { MODAL_DIALOG } from '../utils/modal';
 
 test.describe('Errand page support attachments tab', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -81,7 +82,7 @@ test.describe('Errand page support attachments tab', () => {
         page.locator(`[data-cy="open-attachment-${attachment.id}"]`).filter({ hasText: 'Öppna' }).click(),
       ]);
       if (attachment.mimeType !== 'application/pdf') {
-        const previewDialog = page.locator('article.sk-modal-dialog').filter({ has: page.locator('img') });
+        const previewDialog = page.locator(MODAL_DIALOG).filter({ has: page.locator('img') });
         await expect(previewDialog.locator('img').first()).toBeVisible();
         await previewDialog.locator('.sk-modal-dialog-close').click();
         // Wait for the preview modal and its overlay to finish their close
