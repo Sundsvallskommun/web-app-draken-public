@@ -107,7 +107,7 @@ const requireIdempotencyKey = (value: string | undefined): string => {
       const codePoint = character.codePointAt(0) ?? 0;
       return codePoint <= 31 || codePoint === 127;
     }) ?? false;
-  if (!value || value !== value.trim() || value.length > 128 || containsControlCharacter) {
+  if (!value?.trim() || value !== value.trim() || value.length > 128 || containsControlCharacter) {
     throw new HttpException(400, 'Idempotency-Key must be a canonical non-empty value of at most 128 characters');
   }
   return value;

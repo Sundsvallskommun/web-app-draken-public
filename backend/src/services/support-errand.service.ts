@@ -299,7 +299,7 @@ interface SupportErrandClassificationMetadata {
   managedLabels: Label[];
 }
 
-const normalizeLabelClassification = (classification: string | undefined): string => (classification ?? '').trim().split('_').join('-').toUpperCase();
+const normalizeLabelClassification = (classification: string | undefined): string => (classification ?? '').trim().replaceAll('_', '-').toUpperCase();
 
 const normalizeLabelResource = normalizeSupportManagementResourcePath;
 

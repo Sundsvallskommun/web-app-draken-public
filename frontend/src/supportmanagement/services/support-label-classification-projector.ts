@@ -1,7 +1,7 @@
 import type { Classification, Label } from '@common/data-contracts/supportmanagement/data-contracts';
 
 import type { IafVofInvestigationClassificationLabelTree } from '../investigation/iaf-vof-investigation-classification-policy';
-import { normalizeSupportManagementResourcePath } from './supportmanagement-path';
+import { normalizeSupportManagementResourcePath } from './supportmanagement-path.mjs';
 
 export interface SupportErrandLabelSource {
   readonly labels?: readonly Label[];

@@ -16,7 +16,7 @@ const readJsonPointer = (value: InvestigationJsonObject, pointer: string): unkno
   pointer
     .slice(1)
     .split('/')
-    .map(segment => segment.split('~1').join('/').split('~0').join('~'))
+    .map(segment => segment.replaceAll('~1', '/').replaceAll('~0', '~'))
     .reduce<unknown>(
       (current, segment) =>
         typeof current === 'object' && current !== null && !Array.isArray(current)
