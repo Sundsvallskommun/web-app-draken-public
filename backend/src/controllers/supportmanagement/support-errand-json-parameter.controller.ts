@@ -77,6 +77,11 @@ export class SupportErrandJsonParameterController {
     @Res() response: Response,
   ): Promise<Response> {
     const definition = requireInvestigationDocument(this.investigationProfile, key);
+    // Reads stay allowed while investigation is merely inactive, so existing documents remain
+    // viewable, but an unresolvable policy fails closed here as it does on every write path.
+    if ((await this.policyService.getState(req.user)) === 'unavailable') {
+      throw new HttpException(503, 'Investigation read policy is temporarily unavailable');
+    }
     this.policyService.assertCanReadDocument(req.user, definition.key);
     const result = await this.documentService.readDocument({ definition, municipalityId, errandId, user: req.user });
 

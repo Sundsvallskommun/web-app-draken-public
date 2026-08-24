@@ -63,6 +63,7 @@ import { createConversation, sendConversationTextMessage } from '@/services/mess
 import { OrganizationService } from '@/services/organization.service';
 import {
   assertRequestedErrandVersion,
+  assertSupportErrandAdminAssignable,
   assertSupportErrandWritable,
   buildErrandFilter,
   buildSupportErrandClassificationUpdateBody,
@@ -1159,7 +1160,7 @@ export class SupportErrandController {
     );
     const currentVersion = getErrandVersion(currentErrand.data, currentErrand.headers?.etag);
     assertRequestedErrandVersion(requestedVersion, currentVersion);
-    assertSupportErrandWritable(currentErrand.data, 'administrator changes');
+    assertSupportErrandAdminAssignable(currentErrand.data, 'administrator changes');
 
     const body: AssignSupportErrandDto = { assignedUserId: data.assignedUserId };
     const res = await this.apiService

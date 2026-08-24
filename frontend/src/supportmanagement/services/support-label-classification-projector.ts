@@ -11,7 +11,7 @@ export interface SupportLabelMetadataSource {
   readonly labels?: { readonly labelStructure?: readonly Label[] };
 }
 
-const normalizeClassification = (classification: string | undefined): string =>
+export const normalizeClassification = (classification: string | undefined): string =>
   (classification ?? '').trim().replaceAll('_', '-').toUpperCase();
 
 const normalizeResource = (resource: string | undefined): string =>
@@ -26,10 +26,10 @@ export const findLabelByClassification = (
 ): Label | undefined =>
   labels?.find((label) => normalizeClassification(label.classification) === normalizeClassification(classification));
 
-const flattenLabelTree = (labels: readonly Label[] | undefined): Label[] =>
+export const flattenLabelTree = (labels: readonly Label[] | undefined): Label[] =>
   (labels ?? []).flatMap((label) => [label, ...flattenLabelTree(label.labels)]);
 
-const matchesResource = (label: Label, resource: string | undefined): boolean =>
+export const matchesResource = (label: Label, resource: string | undefined): boolean =>
   Boolean(
     resource &&
       [label.resourcePath, label.resourceName].some(

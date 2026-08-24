@@ -67,7 +67,12 @@ const document = (version: number, schemaId = SCHEMA_ID) => ({
   version,
 });
 
-const schema = (name: string = DEFINITION.schemaName, id = SCHEMA_ID) => ({ id, name, version: '1.0' });
+const schema = (name: string = DEFINITION.schemaName, id = SCHEMA_ID, value: object = { type: 'object' }) => ({
+  id,
+  name,
+  version: '1.0',
+  value,
+});
 const parentErrand = (version: number) => ({ id: ERRAND_ID, version });
 const writableParentResponse = (version: number = 10) => response(parentErrand(version), 200, `"${version}"`);
 

@@ -266,11 +266,13 @@ export const setBillingRecordStatus: (
     });
 };
 
+// async so that a rejected version guard below reaches the caller's .catch() instead of throwing
+// synchronously out of the call, before the promise chain it attaches to exists.
 export const saveBillingRecord: (
   errand: SupportErrand,
   municipalityId: string,
   record: CBillingRecord
-) => Promise<boolean> = (errand, municipalityId, record) => {
+) => Promise<boolean> = async (errand, municipalityId, record) => {
   const url = `billing/${municipalityId}/billingrecords${record.id ? `/${record.id}` : ''}`;
   const action = record.id ? apiService.put : apiService.post;
   const data = satisfyApi(record);
