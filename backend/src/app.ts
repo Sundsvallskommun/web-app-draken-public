@@ -13,12 +13,14 @@ import {
   SAML_IDP_PUBLIC_CERT,
   SAML_ISSUER,
   SAML_LOGOUT_CALLBACK_URL,
+  SAML_LOGOUT_URL,
   SAML_PRIVATE_KEY,
   SAML_PUBLIC_KEY,
   SAML_SUCCESS_REDIRECT,
   SECRET_KEY,
   SWAGGER_ENABLED,
 } from '@config';
+import defaultAuthGuard from '@middlewares/default-auth.middleware';
 import errorMiddleware from '@middlewares/error.middleware';
 import { Strategy, VerifiedCallback } from '@node-saml/passport-saml';
 import { logger, stream } from '@utils/logger';
@@ -43,7 +45,7 @@ import swaggerUi from 'swagger-ui-express';
 
 import { HttpException } from './exceptions/HttpException';
 import { Profile } from './interfaces/profile.interface';
-import { authorizeGroups, getPermissions, getRole } from './services/authorization.service';
+import { authorizeGroups, getLoginPermissions, getRole } from './services/authorization.service';
 import { additionalConverters } from './utils/custom-validation-classes';
 import { isValidOrigin } from './utils/isValidateOrigin';
 import { isValidUrl } from './utils/util';
@@ -75,7 +77,8 @@ const samlStrategy = new Strategy(
     digestAlgorithm: 'sha256',
     // maxAssertionAgeMs: 2592000000,
     // authnRequestBinding: 'HTTP-POST',
-    //logoutUrl: 'http://194.71.24.30/sso',
+    // IdP Single Logout endpoint. Optional: when unset, /saml/logout does a local-only logout.
+    logoutUrl: SAML_LOGOUT_URL,
     logoutCallbackUrl: SAML_LOGOUT_CALLBACK_URL!,
     acceptedClockSkewMs: 5000,
     wantAuthnResponseSigned: false,
@@ -130,7 +133,12 @@ const samlStrategy = new Strategy(
         email: email,
         groups: appGroups,
         role: getRole(appGroups),
-        permissions: getPermissions(appGroups),
+        // SAML session identity — needed so SP-initiated Single Logout can build a valid LogoutRequest.
+        nameID: profile.nameID,
+        nameIDFormat: profile.nameIDFormat,
+        sessionIndex: profile.sessionIndex,
+        // Permissions are resolved once here, at login, and carried in the session cookie.
+        permissions: getLoginPermissions(appGroups),
       };
 
       logger.info(`Authenticated user ${findUser.username} (role: ${findUser.role})`);
@@ -271,13 +279,16 @@ class App {
         if (typeof req.query.successRedirect === 'string' && isValidUrl(req.query.successRedirect) && isValidOrigin(req.query.successRedirect)) {
           successRedirect = req.query.successRedirect;
         }
-        samlStrategy.logout(req as any, () => {
-          req.logout(err => {
-            if (err) {
-              return next(err);
-            }
-            res.redirect(successRedirect as string);
-          });
+        // No IdP logout endpoint configured → local-only logout (e.g. prod opting out of SLO).
+        if (!SAML_LOGOUT_URL) {
+          return req.logout(err => (err ? next(err) : res.redirect(successRedirect as string)));
+        }
+        samlStrategy.logout(req as any, (err: Error | null, url?: string | null) => {
+          if (err || !url) {
+            logger.error('SAML logout URL generation failed; falling back to local logout', err);
+            return req.logout(logoutErr => (logoutErr ? next(logoutErr) : res.redirect(successRedirect as string)));
+          }
+          req.logout(logoutErr => (logoutErr ? next(logoutErr) : res.redirect(url)));
         });
       },
     );
@@ -365,6 +376,11 @@ class App {
         }
       })(req, res, next);
     });
+
+    // Default-deny authentication. Mounted last so the SAML endpoints and the `/health`
+    // probe above it stay reachable, and before initializeRoutes() so every
+    // routing-controllers route sits behind it unless listed in PUBLIC_PATHS.
+    this.app.use(BASE_URL_PREFIX!, defaultAuthGuard);
   }
 
   private initializeRoutes(controllers: NewableFunction[]) {

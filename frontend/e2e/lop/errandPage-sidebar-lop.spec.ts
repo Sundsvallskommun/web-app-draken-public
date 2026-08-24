@@ -20,6 +20,7 @@ import {
   mockSupportMessages,
 } from './fixtures/mockSupportErrands';
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
+import { CONFIRM_DIALOG, MODAL_DIALOG } from '../utils/modal';
 
 test.describe('errand page', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
@@ -169,7 +170,7 @@ test.describe('errand page', () => {
     await mockRoute(`**/supportmessage/2281/${mockSupportErrand.id}`, mockForwardSupportMessage, { method: 'POST' });
     await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
 
-    const forwardDialog = page.locator('article.sk-modal-dialog').last();
+    const forwardDialog = page.locator(MODAL_DIALOG);
     await expect(forwardDialog).toBeVisible();
 
     // Escalation email is auto-populated from the errand's label (SUBTYPE escalationEmail attribute)
@@ -182,7 +183,7 @@ test.describe('errand page', () => {
 
     await forwardDialog.locator('button.sk-btn-primary').filter({ hasText: 'Överlämna ärende' }).click();
 
-    const confirmDialog = page.locator('article.sk-modal-dialog').last();
+    const confirmDialog = page.locator(CONFIRM_DIALOG);
     await expect(confirmDialog).toContainText('Vill du överlämna ärendet?');
     await expect(confirmDialog.locator('.sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
     await Promise.all([
@@ -194,8 +195,8 @@ test.describe('errand page', () => {
 
     // Can suspend the errand
     await page.locator('[data-cy="suspend-button"]').filter({ hasText: 'Parkera ärende' }).click();
-    const suspendDialog = page.locator('article.sk-modal-dialog').last();
-    await expect(suspendDialog).toContainText('Parkera ärendet');
+    const suspendDialog = page.locator(MODAL_DIALOG).filter({ hasText: 'Parkera ärendet' });
+    await expect(suspendDialog).toBeVisible();
     await suspendDialog.locator('.sk-btn-primary').filter({ hasText: 'Parkera ärende' }).click();
     // The errand refetches after suspending; wait for the dialog to close and the
     // solve button to settle before interacting with it.
@@ -211,7 +212,8 @@ test.describe('errand page', () => {
 
     // Can change supportErrand to solved
     await page.locator('[data-cy="solved-button"]').filter({ hasText: 'Avsluta ärende' }).click();
-    await expect(page.locator('article.sk-modal-dialog')).toContainText('Välj en lösning');
+    const solveModal = page.locator(MODAL_DIALOG).filter({ hasText: 'Välj en lösning' });
+    await expect(solveModal).toBeVisible();
     await expect(page.locator('[data-cy="solve-radiolist"] label')).toHaveCount(solveLabels.length);
     // The radio order is no longer fixed; assert all expected resolutions exist
     // and select one by value rather than by index.
@@ -220,7 +222,7 @@ test.describe('errand page', () => {
     }
     await page.locator('[data-cy="solve-radiolist"] label input[value="REGISTERED_EXTERNAL_SYSTEM"]').check();
     // The modal footer submit button is labelled "Avsluta" (the trigger is "Avsluta ärendet").
-    await page.locator('article.sk-modal-dialog button.sk-btn-primary').filter({ hasText: /^Avsluta$/ }).click();
+    await solveModal.locator('button.sk-btn-primary').filter({ hasText: /^Avsluta$/ }).click();
   });
 
   test('Resets suspendedFrom and suspendedTo when reactivating errand', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -237,7 +239,7 @@ test.describe('errand page', () => {
     await dismissCookieConsent();
 
     await page.locator('[data-cy="resume-button"]').click();
-    const confirmDialog = page.locator('article.sk-modal-dialog').last();
+    const confirmDialog = page.locator(CONFIRM_DIALOG);
     const [response] = await Promise.all([
       page.waitForResponse((resp) => resp.url().endsWith('/status') && resp.request().method() === 'PATCH'),
       confirmDialog.getByRole('button', { name: 'Ja' }).click(),
@@ -289,7 +291,7 @@ test.describe('errand page', () => {
     // Delete comment
     await page.locator(`[data-cy="options-${mockComments.notes[0].id}"]`).click();
     await page.locator('[data-cy="delete-note-button"]:visible').filter({ hasText: 'Ta bort' }).click();
-    const confirmDialog = page.locator('article.sk-modal-dialog').last();
+    const confirmDialog = page.locator(CONFIRM_DIALOG);
     await expect(confirmDialog).toContainText('Vill du ta bort kommentaren?');
     await expect(confirmDialog.locator('.sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
     await Promise.all([

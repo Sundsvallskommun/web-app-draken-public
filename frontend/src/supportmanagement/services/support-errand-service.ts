@@ -16,7 +16,7 @@ import { useCallback, useEffect } from 'react';
 import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 
-import { MAX_FILE_SIZE_MB, saveSupportAttachments, SupportAttachment } from './support-attachment-service';
+import { saveSupportAttachments, SupportAttachment } from './support-attachment-service';
 import type { SupportErrandFilterQuery, SupportErrandSortQuery } from './support-errand-query';
 import { buildSupportErrandsCountSearchParameters, buildSupportErrandsSearchParameters } from './support-errand-query';
 import {
@@ -260,7 +260,6 @@ export {
   getLabelSubType,
   getLabelSubTypeFromName,
   getLabelType,
-  getLabelTypeFromDisplayName,
   getLabelTypeFromName,
 } from './support-label-classification-service';
 
@@ -910,49 +909,6 @@ export const validateAction: (errand: SupportErrand, user: User) => boolean = (e
     allowed = true;
   }
   return allowed;
-};
-
-export const blobToBase64: (blobl: Blob) => Promise<string> = (blob) =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(blob);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
-
-export const saveSupportCroppedImage = async (errandId: number, attachment: SupportAttachment, _blob: Blob) => {
-  if (!attachment?.id) {
-    throw 'No attachment id found. Cannot save attachment without id.';
-  }
-  if (_blob.size / 1024 / 1024 > MAX_FILE_SIZE_MB) {
-    throw new Error('MAX_SIZE');
-  }
-  const blob64 = await blobToBase64(_blob);
-  const obj: SupportAttachment = {
-    id: attachment.id,
-    fileName: attachment.fileName,
-    mimeType: attachment.mimeType,
-  };
-  const buf = Buffer.from(obj.id, 'base64');
-  const blob = new Blob([buf], { type: obj.mimeType });
-
-  // Building form data
-  const formData = new FormData();
-  formData.append(`files`, blob, obj.id);
-  formData.append(`name`, obj.fileName);
-  formData.append(`mimeType`, obj.mimeType);
-  const url = `casedata/errands/${errandId}/attachments/${attachment.id}`;
-  return apiService
-    .put<boolean, FormData>(url, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    .then((res) => {
-      return res;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when creating attachment ', obj.fileName);
-      throw e;
-    });
 };
 
 export const setSupportErrandAdmin: (

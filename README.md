@@ -324,9 +324,8 @@ Testerna ligger i `backend/src/tests/` (`*.service.test.ts`).
 **Frontend** (kör från `frontend/`):
 
 ```bash
-yarn cypress:{drake}            # Cypress E2E, interaktivt (öppnar Cypress)
-yarn cypress:headless:{drake}   # Cypress E2E, headless (för CI)
-yarn test:e2e:{drake}          # Playwright E2E (drake: mex | pt | kc | lop)
+yarn test:e2e:{drake}    # Playwright E2E (mex | pt | kc | lop)
+yarn test:e2e:ui:{drake} # Interaktivt (mex | pt | kc | lop)
 ```
 
 ### Feature-flaggor
@@ -340,5 +339,5 @@ https://confluence.sundsvall.se/spaces/OA/pages/1259405457/Feature+flaggor+alla+
 | ------------------------------------- | ----------------------------------- |
 | `yarn build:{drake}`                  | Bygger för produktion               |
 | `yarn start:{drake}`                  | Startar produktionsserver           |
-| `yarn cypress:{drake}`                | Kör Cypress tester                  |
+| `yarn test:e2e:{drake}`               | Kör Playwright E2E-tester           |
 | `yarn generate:datacontracts:{drake}` | Genererar TypeScript-typer från API |

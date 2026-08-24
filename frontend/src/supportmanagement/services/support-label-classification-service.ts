@@ -55,11 +55,6 @@ const flattenLabelTree = (labels: readonly Label[] | undefined): Label[] =>
 const matchesResource = (label: Label, resource: string | undefined): boolean =>
   Boolean(resource && (label.resourcePath === resource || label.resourceName === resource));
 
-export const getLabelTypeFromDisplayName = (displayName: string, metadata: SupportMetadata): Label[] =>
-  flattenLabelTree(metadata?.labels?.labelStructure).filter(
-    (label) => label.classification.toUpperCase() === 'TYPE' && label.displayName === displayName
-  );
-
 export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined =>
   flattenLabelTree(metadata?.labels?.labelStructure).find(
     (label) => label.classification.toUpperCase() === 'TYPE' && matchesResource(label, name)

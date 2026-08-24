@@ -1,7 +1,6 @@
-import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
-import { getLabelTypeFromDisplayName } from '@supportmanagement/services/support-errand-service';
+import { getSelectableSubTypes, getUniqueLabelDisplayNames } from '@supportmanagement/services/support-label-service';
 import { ChevronDown } from 'lucide-react';
 import { FC, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -25,40 +24,17 @@ export const SupportManagementFilterLabelSubType: FC = () => {
   const [query, setQuery] = useState<string>('');
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
 
-  const allStringSubTypes = useMemo(() => {
-    const _subTypes: Label[] = [];
-    if (labelTypes.length > 0) {
-      labelTypes?.forEach((typeDisplayName) => {
-        const types = getLabelTypeFromDisplayName(typeDisplayName, supportMetadata!);
-        types?.forEach((t) => {
-          const _s = t?.labels;
-          if ((_s?.length ?? 0) > 0) {
-            _subTypes.push(..._s!);
-          }
-        });
-      });
-    } else if (labelCategories.length > 0) {
-      labelCategories?.forEach((category) => {
-        const types = supportMetadata?.labels?.labelStructure?.find((c) => c.resourcePath === category)?.labels;
-        if (types) {
-          types.forEach((type) => {
-            if ((type.labels?.length ?? 0) > 0) {
-              _subTypes.push(...type.labels!);
-            }
-          });
-        }
-      });
-    } else {
-      supportMetadata?.labels?.labelStructure?.forEach((category) => {
-        category.labels?.forEach((type) => {
-          if ((type.labels?.length ?? 0) > 0) {
-            _subTypes.push(...type.labels!);
-          }
-        });
-      });
-    }
-    return Array.from(new Set(_subTypes.map((l) => l.displayName).filter((d): d is string => d !== undefined)));
-  }, [supportMetadata, labelCategories, labelTypes]);
+  const allStringSubTypes = useMemo(
+    () =>
+      getUniqueLabelDisplayNames(
+        // Selected types take precedence over selected categories: once a type is picked, its
+        // subtypes are listed wherever that type occurs, regardless of the category filter.
+        labelTypes.length > 0
+          ? getSelectableSubTypes(supportMetadata, [], labelTypes)
+          : getSelectableSubTypes(supportMetadata, labelCategories)
+      ),
+    [supportMetadata, labelCategories, labelTypes]
+  );
 
   return (
     <PopupMenu>
