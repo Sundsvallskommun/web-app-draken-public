@@ -1,4 +1,4 @@
-import { normalizeSupportManagementResourcePath } from '@supportmanagement/services/supportmanagement-path';
+import { normalizeSupportManagementResourcePath } from '../services/supportmanagement-path.mjs';
 
 export interface IafVofInvestigationClassificationLegalBaseRule {
   readonly legalBase: string;

@@ -50,11 +50,11 @@ export const resolveSupportInvestigationHandoverTargets = (
   try {
     parsed = JSON.parse(configuredTargets);
   } catch {
-    throw new TypeError('SUPPORT_INVESTIGATION_HANDOVER_TARGETS must contain valid JSON');
+    throw new SyntaxError('SUPPORT_INVESTIGATION_HANDOVER_TARGETS must contain valid JSON');
   }
 
   if (!Array.isArray(parsed)) {
-    throw new Error('SUPPORT_INVESTIGATION_HANDOVER_TARGETS must be an array');
+    throw new TypeError('SUPPORT_INVESTIGATION_HANDOVER_TARGETS must be an array');
   }
 
   const identities = new Set<string>();

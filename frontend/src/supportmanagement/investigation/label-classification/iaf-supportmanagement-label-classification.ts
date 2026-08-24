@@ -1,6 +1,6 @@
 import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
-import { normalizeSupportManagementResourcePath } from '@supportmanagement/services/supportmanagement-path';
 
+import { normalizeSupportManagementResourcePath } from '../../services/supportmanagement-path.mjs';
 import type { IafVofInvestigationClassificationLabelTree } from '../iaf-vof-investigation-classification-policy';
 import type { LabelClassificationCatalog, LabelClassificationSelection } from './label-classification.types';
 

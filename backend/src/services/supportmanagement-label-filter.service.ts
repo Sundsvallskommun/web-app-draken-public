@@ -142,7 +142,7 @@ const normalizeClassification = (value: unknown, source: 'metadata' | 'profile',
   if (typeof value !== 'string' || !value.trim()) {
     return fail(source, source === 'metadata' ? 'INVALID_METADATA' : 'INVALID_PROFILE', `${location} must contain a classification`);
   }
-  return value.trim().split('_').join('-').toUpperCase();
+  return value.trim().replaceAll('_', '-').toUpperCase();
 };
 
 const readMetadata = (
