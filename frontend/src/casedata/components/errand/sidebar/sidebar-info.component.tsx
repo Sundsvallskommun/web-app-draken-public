@@ -379,7 +379,7 @@ export const SidebarInfo: React.FC<{}> = () => {
               }}
               disabled={!canCloseErrand(errand, user, ErrandCloseMode.Abort)}
             >
-              Avsluta ärende i förtid
+              Avsluta ärendet
             </Button>
           </>
         )}
