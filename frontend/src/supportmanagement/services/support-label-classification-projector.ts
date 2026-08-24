@@ -1,6 +1,7 @@
 import type { Classification, Label } from '@common/data-contracts/supportmanagement/data-contracts';
 
 import type { IafVofInvestigationClassificationLabelTree } from '../investigation/iaf-vof-investigation-classification-policy';
+import { normalizeSupportManagementResourcePath } from './supportmanagement-path';
 
 export interface SupportErrandLabelSource {
   readonly labels?: readonly Label[];
@@ -14,11 +15,7 @@ export interface SupportLabelMetadataSource {
 export const normalizeClassification = (classification: string | undefined): string =>
   (classification ?? '').trim().replaceAll('_', '-').toUpperCase();
 
-const normalizeResource = (resource: string | undefined): string =>
-  (resource ?? '')
-    .trim()
-    .replace(/^\/+|\/+$/g, '')
-    .toUpperCase();
+const normalizeResource = normalizeSupportManagementResourcePath;
 
 export const findLabelByClassification = (
   labels: readonly Label[] | undefined,

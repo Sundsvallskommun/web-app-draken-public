@@ -146,7 +146,7 @@ export function parseInvestigationProfile(value: unknown, expectedApplication?: 
 
   const application = normalizeApplication(readRequiredString(value.application, 'application'));
   const state = readRequiredString(value.state, 'state');
-  if (!INVESTIGATION_PROFILE_STATES.some((candidate) => candidate === state)) {
+  if (!INVESTIGATION_PROFILE_STATES.includes(state as InvestigationProfileState)) {
     throw new Error('Utredningsprofilens state är ogiltig.');
   }
   const normalizedExpectedApplication = expectedApplication ? normalizeApplication(expectedApplication) : '';

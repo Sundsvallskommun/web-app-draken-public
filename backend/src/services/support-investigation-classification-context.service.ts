@@ -2,6 +2,7 @@ import type {
   IafVofInvestigationClassificationOwnerSelection,
   IafVofInvestigationClassificationPolicy,
 } from '@/config/iaf-vof-investigation-classification';
+import { normalizeSupportManagementResourcePath } from '@/config/supportmanagement-path';
 import { HttpException } from '@/exceptions/HttpException';
 
 import { InvestigationJsonObject } from './support-investigation-document.service';
@@ -11,17 +12,11 @@ interface RequestedClassification {
   readonly type: string;
 }
 
-const normalizeResourcePath = (value: string): string =>
-  value
-    .trim()
-    .replace(/^\/+|\/+$/gu, '')
-    .toUpperCase();
-
 const readJsonPointer = (value: InvestigationJsonObject, pointer: string): unknown =>
   pointer
     .slice(1)
     .split('/')
-    .map(segment => segment.replace(/~1/gu, '/').replace(/~0/gu, '~'))
+    .map(segment => segment.split('~1').join('/').split('~0').join('~'))
     .reduce<unknown>(
       (current, segment) =>
         typeof current === 'object' && current !== null && !Array.isArray(current)
@@ -71,10 +66,10 @@ export const assertSupportInvestigationClassificationContext = (
     if (!rule) {
       throw new HttpException(409, `The investigation document contains unsupported legal base ${(rawLegalBases as string[])[index]}`);
     }
-    rule.allowedClassificationCategories.forEach(category => allowedCategories.add(normalizeResourcePath(category)));
+    rule.allowedClassificationCategories.forEach(category => allowedCategories.add(normalizeSupportManagementResourcePath(category)));
   }
 
-  if (!allowedCategories.has(normalizeResourcePath(classification.category))) {
+  if (!allowedCategories.has(normalizeSupportManagementResourcePath(classification.category))) {
     throw new HttpException(409, 'The requested classification is incompatible with the investigation legal bases');
   }
 };

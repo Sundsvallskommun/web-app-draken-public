@@ -30,7 +30,7 @@ export function RjsfTextEditor({
   required,
   defaultClassName,
   disableToolbar,
-}: RjsfTextEditorProps) {
+}: Readonly<RjsfTextEditorProps>) {
   const hostRef = useRef<HTMLDivElement>(null);
   const markupValue = typeof value === 'string' ? value : '';
   const configuredClassName = typeof options.className === 'string' ? options.className : defaultClassName;

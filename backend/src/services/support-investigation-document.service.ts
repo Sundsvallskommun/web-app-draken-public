@@ -2,6 +2,7 @@ import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
 
 import { apiServiceName } from '@/config/api-config';
+import { trimSupportManagementPath } from '@/config/supportmanagement-path';
 import type { JsonSchema } from '@/data-contracts/jsonschema/data-contracts';
 import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
@@ -132,7 +133,7 @@ const isInvestigationJsonObject = (value: unknown): value is InvestigationJsonOb
 const hasHttpStatus = (error: unknown, status: number): boolean => isRecord(error) && error.status === status;
 
 const requireNonEmpty = (value: string, name: string): string => {
-  const normalized = value.trim().replace(/^\/+|\/+$/gu, '');
+  const normalized = trimSupportManagementPath(value);
   if (!normalized) throw new Error(`${name} must not be empty`);
   return normalized;
 };

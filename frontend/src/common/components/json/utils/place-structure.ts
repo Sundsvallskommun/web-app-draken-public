@@ -6,7 +6,7 @@ import type { Label } from '@common/data-contracts/supportmanagement/data-contra
  * strukturen måste slås upp för att veta vad som är anläggning och vad som är avdelning. Nivåerna
  * speglar Katlas frontend/src/utils/label-structure.ts och måste hållas i takt med den.
  */
-const PLACE_STRUCTURE_ROOT_NAMES = ['platsstruktur', 'place_structure', 'placestructure'];
+const PLACE_STRUCTURE_ROOT_NAMES = new Set(['platsstruktur', 'place_structure', 'placestructure']);
 const PLACE_STRUCTURE_ROOT_LEVEL = 2;
 const PLACE_LEVEL = 6;
 const DEPARTMENT_LEVEL = 7;
@@ -55,8 +55,8 @@ export const isSameLabel = (left: Label | undefined, right: Label | undefined): 
 const getPlaceStructureRoot = (labelStructure: readonly Label[] | undefined): Label | undefined =>
   labelStructure?.find(
     (label) =>
-      PLACE_STRUCTURE_ROOT_NAMES.includes(normalizeName(label.resourceName)) ||
-      PLACE_STRUCTURE_ROOT_NAMES.includes(normalizeName(label.displayName))
+      PLACE_STRUCTURE_ROOT_NAMES.has(normalizeName(label.resourceName)) ||
+      PLACE_STRUCTURE_ROOT_NAMES.has(normalizeName(label.displayName))
   );
 
 /** Alla noder under platsstrukturens rot, var och en med sin väg från roten */
@@ -82,7 +82,7 @@ export const placeName = (node: PlaceNode): string => labelName(node.label);
 
 /** Föräldern inom platsstrukturen. Roten räknas inte som förälder. */
 export const placeParentName = (node: PlaceNode): string | undefined => {
-  const parent = node.path[node.path.length - 2];
+  const parent = node.path.at(-2);
   return parent && !isSameLabel(parent, node.path[0]) ? labelName(parent) : undefined;
 };
 

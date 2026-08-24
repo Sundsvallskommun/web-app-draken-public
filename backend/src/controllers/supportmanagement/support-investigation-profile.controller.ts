@@ -8,7 +8,7 @@ import { SupportInvestigationPolicyService } from '@/services/support-investigat
 
 @Controller()
 export class SupportInvestigationProfileController {
-  private policyService = new SupportInvestigationPolicyService();
+  constructor(private readonly policyService = new SupportInvestigationPolicyService()) {}
 
   @Get('/supportmanagement/investigation-profile')
   @OpenAPI({ summary: 'Get the investigation profile for the current application' })

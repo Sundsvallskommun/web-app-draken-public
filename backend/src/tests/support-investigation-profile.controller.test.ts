@@ -8,7 +8,6 @@ import { mockReq } from './helpers/http';
 
 describe('SupportInvestigationProfileController', () => {
   it('returns the effective runtime profile selected by the backend policy', async () => {
-    const controller = new SupportInvestigationProfileController();
     const runtimeProfile = {
       application: 'FUTURE',
       documents: [],
@@ -16,7 +15,7 @@ describe('SupportInvestigationProfileController', () => {
       registration: { mode: 'disabled' as const },
     };
     const policyService = { getRuntimeProfile: vi.fn(async () => runtimeProfile) } as unknown as SupportInvestigationPolicyService;
-    (controller as unknown as { policyService: SupportInvestigationPolicyService }).policyService = policyService;
+    const controller = new SupportInvestigationProfileController(policyService);
     const req = mockReq();
 
     await expect(controller.getInvestigationProfile(req)).resolves.toEqual(runtimeProfile);

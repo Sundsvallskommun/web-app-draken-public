@@ -35,6 +35,16 @@ const requireLabelTree = (
   return labelTree;
 };
 
+const compareLegalBases = (left: string, right: string): number => {
+  if (left === right) return 0;
+  return left < right ? -1 : 1;
+};
+
+const parseLegalBasesKey = (key: string | undefined): string[] | undefined => {
+  if (key === undefined) return undefined;
+  return key === '' ? [] : key.split('|');
+};
+
 export const IafLabelCategorization: FC<{
   supportMetadata?: SupportMetadata;
   disabled?: boolean;
@@ -68,12 +78,8 @@ export const IafLabelCategorization: FC<{
   const labels = useMemo(() => watchedLabels ?? [], [watchedLabels]);
   // Sorted with an explicit string comparator so the memo key is a stable, deterministic
   // ordering regardless of the order legal bases arrive in.
-  const legalBasesKey =
-    legalBases === undefined ? undefined : [...legalBases].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join('|');
-  const normalizedLegalBases = useMemo(
-    () => (legalBasesKey === undefined ? undefined : legalBasesKey === '' ? [] : legalBasesKey.split('|')),
-    [legalBasesKey]
-  );
+  const legalBasesKey = legalBases === undefined ? undefined : [...legalBases].sort(compareLegalBases).join('|');
+  const normalizedLegalBases = useMemo(() => parseLegalBasesKey(legalBasesKey), [legalBasesKey]);
   const completeModel = useMemo(
     () => createIafLabelClassificationModel(supportMetadata?.labels?.labelStructure, configuredLabelTree),
     [configuredLabelTree, supportMetadata?.labels?.labelStructure]
