@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
 
-import { parseInvestigationProfile } from './investigation-profile.ts';
+import { test } from 'vitest';
+
+import { parseInvestigationProfile } from './investigation-profile';
 
 const validProfile = () => ({
   application: 'iaf',
@@ -38,7 +39,10 @@ test('parses, normalizes and freezes a valid application-bound document profile'
 
 test('accepts a valid inactive empty document profile', () => {
   assert.deepEqual(
-    parseInvestigationProfile({ application: 'KC', state: 'inactive', registration: { mode: 'enabled' }, documents: [] }, 'kc'),
+    parseInvestigationProfile(
+      { application: 'KC', state: 'inactive', registration: { mode: 'enabled' }, documents: [] },
+      'kc'
+    ),
     { application: 'KC', state: 'inactive', registration: { mode: 'enabled' }, documents: [] }
   );
 });
@@ -104,8 +108,18 @@ test('rejects ambiguous or unsafe label-filter definitions', () => {
   Object.assign(profile, {
     labelFilter: {
       groups: [
-        { key: 'first', label: 'First', rootResourcePath: 'CATEGORY', fields: [{ key: 'category', label: 'Category', classification: 'CATEGORY' }] },
-        { key: 'second', label: 'Second', rootResourcePath: 'CATEGORY', fields: [{ key: 'type', label: 'Type', classification: 'TYPE' }] },
+        {
+          key: 'first',
+          label: 'First',
+          rootResourcePath: 'CATEGORY',
+          fields: [{ key: 'category', label: 'Category', classification: 'CATEGORY' }],
+        },
+        {
+          key: 'second',
+          label: 'Second',
+          rootResourcePath: 'CATEGORY',
+          fields: [{ key: 'type', label: 'Type', classification: 'TYPE' }],
+        },
       ],
     },
   });

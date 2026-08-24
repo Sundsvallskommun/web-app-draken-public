@@ -1,10 +1,8 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
 
-import {
-  parseParentErrandVersion,
-  parseSupportInvestigationDocument,
-} from './support-investigation-contract.ts';
+import { test } from 'vitest';
+
+import { parseParentErrandVersion, parseSupportInvestigationDocument } from './support-investigation-contract';
 
 const document = { key: 'custom-document', schemaId: '2281_shared-schema_1.0', value: { answer: 42 }, version: 3 };
 

@@ -2,6 +2,9 @@
   "name": "draken-frontend",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
     "env:dev:kc": "dotenv -e .env.kc",
     "env:dev:mex": "dotenv -e .env.mex",
@@ -55,8 +58,9 @@
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "lint:strict": "eslint src/ --max-warnings=0 --cache --cache-location node_modules/.cache/eslint/",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,mjs}\"",
     "type-check": "tsc --pretty --noEmit",
+    "type-check:test": "tsc -p tsconfig.test.json --pretty --noEmit",
     "knip": "knip",
     "knip:production": "knip --production",
     "analyze": "cross-env ANALYZE=true next build",
@@ -93,19 +97,15 @@
     "test:e2e:vof": "dotenv -e .env.vof -- playwright test --project=vof",
     "test:e2e:iaf": "dotenv -e .env.iaf -- playwright test --project=iaf",
     "test:e2e:iaf-schema-lab": "dotenv -e .env.iaf -- playwright test --project=iaf-schema-lab",
-    "test:categorization-control": "node --test src/supportmanagement/components/support-errand-basics-form/categorization-control.test.mjs",
-    "test:investigation-classification-policy": "node --test src/supportmanagement/investigation/iaf-vof-investigation-classification-policy.test.mjs",
-    "test:investigation-form-data": "node --test src/supportmanagement/investigation/investigation-form-data.test.mjs",
-    "test:investigation-profile": "node --test src/supportmanagement/investigation/investigation-profile.test.mjs",
-    "test:unit": "node --test",
     "test:e2e:ui:mex": "dotenv -e .env.mex -- playwright test --project=mex --ui",
     "test:e2e:ui:pt": "dotenv -e .env.pt -- playwright test --project=pt --ui",
     "test:e2e:ui:kc": "dotenv -e .env.kc -- playwright test --project=kc --ui",
     "test:e2e:ui:lop": "dotenv -e .env.lop -- playwright test --project=lop --ui",
     "test:e2e:ui:vof": "dotenv -e .env.vof -- playwright test --project=vof --ui",
     "test:e2e:report": "playwright show-report",
-    "test:investigation-schemas": "node --test src/supportmanagement/investigation/schemas/investigation-schemas.contract.test.mjs",
-    "test": "jest --watch"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -157,6 +157,7 @@
     "@types/sanitize-html": "^2.11.0",
     "@types/underscore.string": "^0.0.41",
     "@types/uuid": "^9.0.1",
+    "@vitest/coverage-v8": "^4.1.9",
     "autoprefixer": "^10.4.21",
     "cross-env": "^7.0.3",
     "cypress": "^15.11.0",
@@ -174,7 +175,8 @@
     "prettier": "^2.4.1",
     "swagger-typescript-api": "13.2.8",
     "tailwindcss": "^3.4.17",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "^4.1.9"
   },
   "resolutions": {
     "form-data": "^4.0.4",

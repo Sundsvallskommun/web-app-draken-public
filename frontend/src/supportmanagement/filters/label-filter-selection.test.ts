@@ -1,17 +1,19 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
 
-import { projectLabelFilterGroups } from './label-filter-projector.ts';
+import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import { test } from 'vitest';
+
+import { projectLabelFilterGroups } from './label-filter-projector';
 import {
   getVisibleLabelFilterChoices,
   normalizeLabelFilterSelections,
   reduceLabelFilterSelection,
-} from './label-filter-selection.ts';
+} from './label-filter-selection';
 
-const label = (classification, resourcePath, displayName, labels = []) => ({
+const label = (classification: string, resourcePath: string, displayName: string, labels: Label[] = []): Label => ({
   classification,
   displayName,
-  resourceName: resourcePath.split('/').at(-1),
+  resourceName: resourcePath.split('/').at(-1) ?? resourcePath,
   resourcePath,
   labels,
 });
@@ -58,7 +60,7 @@ const projections = projectLabelFilterGroups(
   metadata
 );
 
-const selection = (groupKey, fieldKey, resourcePath) => ({ groupKey, fieldKey, resourcePath });
+const selection = (groupKey: string, fieldKey: string, resourcePath: string) => ({ groupKey, fieldKey, resourcePath });
 
 const categoryA = selection('classification', 'category', 'CATEGORY/HSL/FIRST');
 const categoryB = selection('classification', 'category', 'CATEGORY/SOL/SECOND');

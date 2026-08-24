@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+
+import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import { test } from 'vitest';
 
 import {
   findPlaceEmploymentMatch,
@@ -7,9 +9,9 @@ import {
   getEmploymentPrefillNode,
   getFacilityPlaceInfo,
   getPlaceNodes,
-} from './place-structure.ts';
+} from './place-structure';
 
-const label = (id, displayName, labels = []) => ({
+const label = (id: string, displayName: string, labels: Label[] = []): Label => ({
   id,
   classification: 'PLACE',
   displayName,
@@ -40,7 +42,10 @@ test('keeps the employment match available when a persisted facility prevents pr
 
   const match = findPlaceEmploymentMatch(
     placeNodes,
-    [{ orgId: 7, orgName: 'Other place', manager: { personId: 'other-manager' } }, employment],
+    [
+      { orgId: 7, orgName: 'Other place', manager: { personId: 'other-manager', givenname: 'Other manager' } },
+      employment,
+    ],
     persistedNode
   );
 

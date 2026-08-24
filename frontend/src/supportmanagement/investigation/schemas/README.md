@@ -56,7 +56,7 @@ inte motsvarar `probability * severity`.
 Kör kontraktstesterna från `frontend`:
 
 ```sh
-yarn test:investigation-schemas
+yarn test src/supportmanagement/investigation/schemas
 ```
 
 Publicerade schema- och UI-schema-versioner ska behandlas som immutabla. Ändringar av kontrakt eller presentation publiceras med ett nytt versionsnummer.

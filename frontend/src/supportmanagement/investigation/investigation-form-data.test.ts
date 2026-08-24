@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
 
-import { normalizeInvestigationFormData } from './investigation-form-data.ts';
+import type { RJSFSchema } from '@rjsf/utils';
+import { test } from 'vitest';
+
+import { normalizeInvestigationFormData } from './investigation-form-data';
 
 test('normalizes nested values through root-level local schema references', () => {
-  const schema = {
+  const schema: RJSFSchema = {
     type: 'object',
     additionalProperties: false,
     properties: {

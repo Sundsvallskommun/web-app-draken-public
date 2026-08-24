@@ -3,11 +3,11 @@
   "private": true,
   "scripts": {
     "prepare": "husky",
-    "type-check": "yarn --cwd frontend type-check && yarn --cwd backend type-check && yarn --cwd backend type-check:test",
+    "type-check": "yarn --cwd frontend type-check && yarn --cwd frontend type-check:test && yarn --cwd backend type-check && yarn --cwd backend type-check:test",
     "lint": "yarn --cwd frontend lint && yarn --cwd backend lint",
     "knip": "yarn --cwd frontend knip && yarn --cwd backend knip",
     "format": "yarn --cwd frontend format && yarn --cwd backend format",
-    "test": "yarn --cwd backend test",
+    "test": "yarn --cwd frontend test && yarn --cwd backend test",
     "verify": "yarn type-check && yarn lint && yarn knip && yarn test"
   },
   "devDependencies": {

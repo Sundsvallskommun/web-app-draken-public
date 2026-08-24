@@ -40,7 +40,11 @@ yarn dev:{drake}              # Start Next.js dev server
 yarn build:{drake}            # Build for production
 yarn start:{drake}            # Start production server
 yarn lint                     # Run ESLint
-yarn type-check               # TypeScript check only
+yarn type-check               # TypeScript check only (app; excludes the colocated tests)
+yarn type-check:test          # TypeScript check for tests (tsconfig.test.json)
+yarn test                     # Vitest unit tests (run mode)
+yarn test:watch               # Vitest watch mode
+yarn test:coverage            # Vitest with v8 coverage
 yarn cypress:{drake}          # Run Cypress tests (interactive)
 yarn cypress:headless:{drake} # Run Cypress tests (CI)
 ```
@@ -149,7 +153,39 @@ Backend unit tests use **Vitest** (`backend/vitest.config.ts`), run from `backen
 
 **Test data**: never hardcode person numbers, organization numbers, phone numbers, party ids or similar identifiers in tests — import them from `src/tests/helpers/mock-data.ts`, which records each value's provenance (Skatteverket / PTS test ranges). That keeps one place to confirm no production-like identifier enters the repo.
 
-### Frontend
+### Frontend (unit)
+
+Frontend unit tests use **Vitest** (`frontend/vitest.config.mts`), run from `frontend/`.
+They previously ran on Node's built-in test runner from `.mjs` files; that was migrated so the
+runner matches the backend and so tests are no longer restricted to alias-free modules.
+
+- **Location**: colocated, `<module>.test.ts` next to the `<module>.ts` it covers. This
+  deliberately differs from the backend layout: the backend keeps tests in `src/tests/` so the
+  per-drake production `tsc` never emits them, a constraint Next.js does not have.
+- **Shape**: `import { test } from 'vitest'` + `import assert from 'node:assert/strict'`, flat
+  top-level `test(...)` calls. Assertions are **`node:assert`, not `expect`** — `globals` is
+  off in the config, so nothing is injected and every import is explicit. No DOM, no React.
+- **Path aliases**: resolved natively by Vite via `resolve.tsconfigPaths`, which reads the
+  `paths` table in `tsconfig.json`. This works because that tsconfig sets `baseUrl`; the
+  backend's does not, which is why `backend/vitest.config.ts` needs a hand-written alias table
+  instead. Do not copy that pattern here.
+- **Environment**: `node`. The suites are pure functions; nothing renders. Component tests
+  would need `jsdom` plus `@testing-library/react`, which is a separate decision.
+- **Scope**: pure functions — parsers, projectors, policy resolvers
+  (`resolveCategorizationControl`, `parseInvestigationProfile`, `projectLabelFilterGroups`, …).
+  Anything needing rendering or navigation belongs in the Playwright suites below.
+- **Type-checking**: `yarn type-check` does **not** cover the tests — the root `tsconfig.json`
+  `include` entry `src/**/*.{ts,tsx}` uses brace expansion, which TypeScript's include globs do
+  not support, so it matches nothing and `src` is only reached transitively through imports.
+  Test files have no importer, so `tsconfig.test.json` includes them explicitly and
+  `yarn type-check:test` runs it. (Fixing the root glob would also pull ~100 pre-existing
+  errors in `*.cy.tsx` and Cypress fixtures into `yarn type-check`; that is untouched debt.)
+- **CI**: `.github/workflows/frontend-unit.yml` runs `yarn type-check:test` and `yarn test` on
+  pull requests and pushes to `develop`/`main`.
+- **Test data**: the same rule as the backend applies — no real person numbers, organization
+  numbers or phone numbers. `.husky/pre-commit` scans `.ts`/`.tsx`/`.mjs` for them.
+
+### Frontend (e2e)
 
 There are e2e tests in both Cypress and Playwright. The Cypress tests are the older original tests. The app will migrate to use Playwright shortly, and in the meantime tests are duplicated across them to evaluate equality.
 

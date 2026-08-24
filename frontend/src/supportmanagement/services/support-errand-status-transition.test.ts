@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
 
-import { buildSupportErrandStatusTransitionRequest } from './support-errand-status-transition.ts';
+import { test } from 'vitest';
+
+import { buildSupportErrandStatusTransitionRequest } from './support-errand-status-transition';
 
 test('builds a status command with exact source status and version', () => {
   assert.deepEqual(

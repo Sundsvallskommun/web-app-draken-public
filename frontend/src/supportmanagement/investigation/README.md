@@ -180,12 +180,10 @@ Artefakterna i repot är publiceringsunderlag och innebär inte i sig att någon
 ## Verifiering
 
 ```sh
-yarn test:investigation-form-data
-yarn test:investigation-profile
-yarn test:investigation-classification-policy
-yarn test:investigation-schemas
-yarn test:unit
+yarn test                       # hela enhetstestsviten
+yarn test src/supportmanagement/investigation   # bara utredningens tester
 yarn type-check
+yarn type-check:test
 yarn lint:strict
 ```
 

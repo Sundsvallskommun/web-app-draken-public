@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import Ajv2020 from 'ajv/dist/2020.js';
+import { test } from 'vitest';
 
 const currentDirectory = dirname(fileURLToPath(import.meta.url));
 
@@ -32,17 +32,19 @@ const artifacts = [
   },
 ];
 
-function readJson(relativePath) {
+// The artifacts are arbitrary JSON documents that the assertions walk structurally,
+// so the traversal helpers below are deliberately untyped.
+function readJson(relativePath: string) {
   return JSON.parse(readFileSync(join(currentDirectory, relativePath), 'utf8'));
 }
 
-function createValidator(schema) {
+function createValidator(schema: any) {
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   ajv.addFormat('date', /^\d{4}-\d{2}-\d{2}$/u);
   return { ajv, validate: ajv.compile(schema) };
 }
 
-function assertCalculatedRisk(riskAssessment, label) {
+function assertCalculatedRisk(riskAssessment: any, label: string) {
   assert.equal(
     riskAssessment.calculatedRiskValue,
     riskAssessment.probability * riskAssessment.severity,
@@ -50,7 +52,7 @@ function assertCalculatedRisk(riskAssessment, label) {
   );
 }
 
-function collectPropertyNames(schema, result = []) {
+function collectPropertyNames(schema: any, result: string[] = []): string[] {
   if (!schema || typeof schema !== 'object') return result;
 
   if (schema.properties && typeof schema.properties === 'object') {
@@ -73,7 +75,7 @@ function collectPropertyNames(schema, result = []) {
   return result;
 }
 
-function collectObjectKeys(value, result = new Set()) {
+function collectObjectKeys(value: any, result = new Set<string>()): Set<string> {
   if (!value || typeof value !== 'object') return result;
 
   if (Array.isArray(value)) {
@@ -114,8 +116,8 @@ test('UI schemas group every root field once and disable unsaved section complet
     const propertyNames = Object.keys(schema.properties);
     const orderedFields = uiSchema['ui:order'];
     const sectionFields = uiSchema['ui:sections']
-      .flatMap((section) => section.fields)
-      .filter((fieldName) => !fieldName.startsWith('$external:'));
+      .flatMap((section: any) => section.fields)
+      .filter((fieldName: string) => !fieldName.startsWith('$external:'));
 
     assert.equal(uiSchema['ui:options'].showSectionCompletion, false);
     assert.deepEqual(new Set(orderedFields), new Set(propertyNames));
@@ -150,8 +152,8 @@ test('schemas declare errand classification externally only where it is edited',
     const schema = readJson(artifact.schemaFile).value;
     const uiSchema = readJson(artifact.uiSchemaFile).value;
     const externalFields = uiSchema['ui:sections']
-      .flatMap((section) => section.fields)
-      .filter((fieldName) => fieldName.startsWith('$external:'));
+      .flatMap((section: any) => section.fields)
+      .filter((fieldName: string) => fieldName.startsWith('$external:'));
 
     if (artifact.hasErrandClassification) {
       assert.deepEqual(schema['x-draken-external-fields'], {
@@ -176,7 +178,7 @@ test('errand classification values stay outside investigation JSON properties an
     'subType',
     'type',
   ];
-  const fixtureKeys = new Set();
+  const fixtureKeys = new Set<string>();
 
   collectObjectKeys(fixtures, fixtureKeys);
 
@@ -198,7 +200,7 @@ test('errand classification values stay outside investigation JSON properties an
 });
 
 test('UI schemas keep the agreed Draken accordion structure', () => {
-  const expectedSections = {
+  const expectedSections: Record<string, { id: string; title: string }[]> = {
     'utredning-enhetschef': [{ id: 'categorization-and-documentation', title: 'Kategorisering och dokumentation' }],
     'utredning-sol-lss': [
       { id: 'categorization', title: 'Kategorisering' },
@@ -218,7 +220,7 @@ test('UI schemas keep the agreed Draken accordion structure', () => {
   for (const artifact of artifacts) {
     const uiSchema = readJson(artifact.uiSchemaFile).value;
     assert.deepEqual(
-      uiSchema['ui:sections'].map(({ id, title }) => ({ id, title })),
+      uiSchema['ui:sections'].map(({ id, title }: { id: string; title: string }) => ({ id, title })),
       expectedSections[artifact.name]
     );
   }
@@ -352,7 +354,7 @@ test('HSL requires Public 360 always and IVO case number only for a positive IVO
 });
 
 test('all sketch multiselects are represented as unique arrays', () => {
-  const expectedMultiselects = {
+  const expectedMultiselects: Record<string, string[]> = {
     'utredning-enhetschef': ['legalBases', 'causeAreas'],
     'utredning-sol-lss': ['eventTypes', 'causeAreas', 'primaryUnderlyingCauses'],
     'utredning-hsl': ['identifiedCauses', 'underlyingCauses'],
@@ -369,12 +371,12 @@ test('all sketch multiselects are represented as unique arrays', () => {
 });
 
 test('short multiselects use checkboxes while longer cause lists remain searchable', () => {
-  const expectedCheckboxes = {
+  const expectedCheckboxes: Record<string, string[]> = {
     'utredning-enhetschef': ['legalBases', 'causeAreas'],
     'utredning-sol-lss': ['eventTypes', 'causeAreas'],
     'utredning-hsl': ['identifiedCauses'],
   };
-  const expectedComboboxes = {
+  const expectedComboboxes: Partial<Record<string, string[]>> = {
     'utredning-sol-lss': ['primaryUnderlyingCauses'],
     'utredning-hsl': ['underlyingCauses'],
   };

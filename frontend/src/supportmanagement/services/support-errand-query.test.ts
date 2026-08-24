@@ -1,10 +1,8 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
 
-import {
-  buildSupportErrandsCountSearchParameters,
-  buildSupportErrandsSearchParameters,
-} from './support-errand-query.ts';
+import { test } from 'vitest';
+
+import { buildSupportErrandsCountSearchParameters, buildSupportErrandsSearchParameters } from './support-errand-query';
 
 const labelSelections = [
   { groupKey: 'classification', fieldKey: 'category', resourcePath: 'CATEGORY/HSL/FIRST' },

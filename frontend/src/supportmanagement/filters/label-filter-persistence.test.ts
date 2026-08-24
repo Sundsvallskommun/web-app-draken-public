@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+
+import { test } from 'vitest';
 
 import {
   labelFilterSelectionsEqual,
   parsePersistedLabelFilterSelections,
   serializeLabelFilterSelections,
-} from './label-filter-persistence.ts';
+} from './label-filter-persistence';
 
 const selections = [
   { groupKey: 'classification', fieldKey: 'category', resourcePath: 'CATEGORY/HSL/FIRST' },
