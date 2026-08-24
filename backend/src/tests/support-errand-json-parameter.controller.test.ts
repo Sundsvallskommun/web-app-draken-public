@@ -197,7 +197,7 @@ describe('SupportErrandJsonParameterController', () => {
     };
     (controller as unknown as { documentService: SupportInvestigationDocumentService }).documentService =
       documentService as unknown as SupportInvestigationDocumentService;
-    const policyService = { assertCanReadDocument: vi.fn() };
+    const policyService = { assertCanReadDocument: vi.fn(), getState: vi.fn().mockResolvedValue('active') };
     (controller as unknown as { policyService: SupportInvestigationPolicyService }).policyService =
       policyService as unknown as SupportInvestigationPolicyService;
 

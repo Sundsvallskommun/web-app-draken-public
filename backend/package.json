@@ -76,6 +76,7 @@
   },
   "dependencies": {
     "@node-saml/passport-saml": "^5.1.0",
+    "ajv": "^8.18.0",
     "axios": "^1.15.2",
     "body-parser": "2.2.2",
     "class-transformer": "^0.5.1",

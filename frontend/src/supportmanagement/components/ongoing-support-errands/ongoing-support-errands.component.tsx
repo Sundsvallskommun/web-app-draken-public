@@ -148,9 +148,10 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
   const user = useUserStore((s) => s.user);
 
   useEffect(() => {
-    if (!supportMetadata) return;
-
-    if (storedFilter && Object.keys(storedFilter).length > 0) {
+    // Restoring a stored filter needs the metadata to resolve its labels, but the rest of the
+    // filtering must not depend on it: bailing out before filterInitialized below would leave
+    // every filter silently inert whenever the metadata request fails.
+    if (supportMetadata && storedFilter && Object.keys(storedFilter).length > 0) {
       let storedFilters;
       // A stored filter can point at a label that has since been deprecated. Such a value is dropped
       // here: its checkbox is no longer rendered, so keeping it would leave an active filter the user

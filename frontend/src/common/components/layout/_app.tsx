@@ -94,15 +94,17 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
         return;
       }
 
+      // The runtime flags decide whether this is a SupportManagement app, so metadata waits for
+      // them - but not for the profile behind them. Chaining the two would put a second request
+      // timeout in front of the first paint and delay metadata by that long again.
       useInvestigationProfileStore.getState().startLoading();
+      setFeatureFlagsReady(true);
       try {
         const profile = await getInvestigationProfile(process.env.NEXT_PUBLIC_APPLICATION);
         useInvestigationProfileStore.getState().setProfile(profile);
       } catch (error) {
         console.error('Failed to load the SupportManagement investigation profile.', error);
         useInvestigationProfileStore.getState().setError();
-      } finally {
-        setFeatureFlagsReady(true);
       }
     };
     void loadRuntimeConfiguration();
@@ -129,11 +131,12 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
     investigationProfileStatus === 'ready' ||
     investigationProfileStatus === 'error' ||
     investigationProfileStatus === 'disabled';
-  if (!mounted || !featureFlagsReady) {
+  if (!mounted) {
     return null;
   }
 
-  if (!investigationProfileReady) {
+  // A slow Adminpanel or profile endpoint should show that the app is working, not a blank page.
+  if (!featureFlagsReady || !investigationProfileReady) {
     return <LoaderFullScreen />;
   }
 

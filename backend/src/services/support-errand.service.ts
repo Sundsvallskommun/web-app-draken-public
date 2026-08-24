@@ -574,9 +574,22 @@ export const getErrandVersion = (errand: Errand, responseETag: unknown): number 
 
 const LOCKED_SUPPORT_ERRAND_STATUSES = new Set(['SOLVED', 'SUSPENDED', 'ASSIGNED', 'REOPENED']);
 
+/**
+ * Assigning a handler is how an errand leaves the parked states, so only the terminal one
+ * locks it. The UI offers "Ta ärende" regardless of status and follows it with a transition
+ * to ONGOING; locking SUSPENDED/ASSIGNED/REOPENED here would strand those errands.
+ */
+const LOCKED_SUPPORT_ERRAND_ADMIN_STATUSES = new Set(['SOLVED']);
+
 /** Mirrors the product's write lock at the backend boundary for all new command routes. */
 export const assertSupportErrandWritable = (errand: Pick<Errand, 'status'>, operation: string): void => {
   if (LOCKED_SUPPORT_ERRAND_STATUSES.has(errand.status ?? '')) {
+    throw new HttpException(409, `Support errand status does not allow ${operation}`);
+  }
+};
+
+export const assertSupportErrandAdminAssignable = (errand: Pick<Errand, 'status'>, operation: string): void => {
+  if (LOCKED_SUPPORT_ERRAND_ADMIN_STATUSES.has(errand.status ?? '')) {
     throw new HttpException(409, `Support errand status does not allow ${operation}`);
   }
 };
