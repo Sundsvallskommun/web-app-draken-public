@@ -12,7 +12,7 @@ import { mockAsset } from '../fixtures/mockAsset';
 import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
 import { mockRelations } from '../fixtures/mockRelations';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
-import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockLeaseAgreement } from '../fixtures/mockContract';
 import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 
 const b64 = (s: string) => Buffer.from(s, 'utf-8').toString('base64');
@@ -50,7 +50,6 @@ test.describe('Message tab', () => {
     await mockRoute('**/address', mockAddress, { method: 'POST' }); // @postAddress
     await mockRoute('**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders, { method: 'POST' });
     await mockRoute('**/contracts/2024-01026', mockLeaseAgreement, { method: 'GET' }); // @getContract
-    await mockRoute('**/contracts/2281/2024-01026/attachments/1', mockContractAttachment, { method: 'GET' }); // @getContractAttachment
     await page.route(/\/errand\/\d+\/messages$/, async (route) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(mockMessages) });
     });

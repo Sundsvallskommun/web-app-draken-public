@@ -1,32 +1,22 @@
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
+import { fileUploadOptions } from '@utils/fileUploadOptions';
+import FormData from 'form-data';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, QueryParam, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { Contract, PageContract } from '@/data-contracts/contract/data-contracts';
+import { AttachmentMetadata, Contract, PageContract } from '@/data-contracts/contract/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
-import { validateContractAction } from '@/services/contract-service';
+import { getContractAttachmentAsBase64, getContractErrandId, validateContractAction } from '@/services/contract-service';
 import { logger } from '@/utils/logger';
 import { apiURL, luhnCheck } from '@/utils/util';
 
 export interface ResponseData {
   data: any;
   message: string;
-}
-
-export interface CasedataContractAttachment {
-  attachmentData: {
-    content: string;
-  };
-  metaData: {
-    category: string;
-    filename: string;
-    mimeType: string;
-    note: string;
-  };
 }
 
 @Controller()
@@ -206,19 +196,35 @@ export class CasedataContractsController {
     return { data: response.data, message: `Contract ${id} removed` };
   }
 
+  /**
+   * Attachment writes are gated the same way as contract writes. The errand id is not on the
+   * request, so it is resolved from the contract itself. Fails closed: a contract without an
+   * errandId extra parameter cannot be authorised, mirroring create/update which reject with 400.
+   */
+  private async assertAttachmentActionAllowed(contractId: string, req: RequestWithUser): Promise<void> {
+    const errandId = await getContractErrandId(MUNICIPALITY_ID!, contractId, req.user);
+    if (!errandId) {
+      throw new HttpException(400, 'Missing errand id');
+    }
+    const allowed = await validateContractAction(MUNICIPALITY_ID!, errandId, req.user);
+    if (!allowed) {
+      throw new HttpException(403, 'Forbidden');
+    }
+  }
+
   @Get('/contracts/:municipalityId/:contractId/attachments/:attachmentId')
-  @OpenAPI({ summary: 'Fetch signed contract attachment' })
+  @OpenAPI({ summary: 'Fetch the content of a signed contract attachment' })
   @UseBefore(authMiddleware)
   async fetchSignedContractAttachment(
     @Req() req: RequestWithUser,
     @Param('contractId') contractId: string,
     @Param('attachmentId') attachmentId: number,
-    @Res() _response: any,
-  ): Promise<ResponseData> {
-    const url = `${MUNICIPALITY_ID}/contracts/${contractId}/attachments/${attachmentId}`;
-    const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.get<CasedataContractAttachment>({ url, baseURL }, req.user);
-    return { data: res.data, message: 'success' } as ResponseData;
+    @Res() response: any,
+  ): Promise<any> {
+    // The Contract API streams the raw bytes. Hand them to the browser as base64 plain text,
+    // matching every other attachment resource in this app.
+    const b64 = await getContractAttachmentAsBase64(MUNICIPALITY_ID!, contractId, attachmentId, req.user);
+    return response.type('text/plain').send(b64);
   }
 
   @Post('/contracts/:municipalityId/:contractId/attachments')
@@ -228,16 +234,41 @@ export class CasedataContractsController {
   async saveSignedContractAttachment(
     @Req() req: RequestWithUser,
     @Param('contractId') contractId: string,
-    @Body() data: CasedataContractAttachment,
-  ): Promise<{ data: CasedataContractAttachment; message: string }> {
+    @UploadedFiles('files', { options: fileUploadOptions, required: false }) files: Express.Multer.File[],
+    @Body() attachmentData: AttachmentMetadata,
+  ): Promise<{ data: boolean; message: string }> {
+    await this.assertAttachmentActionAllowed(contractId, req);
+    // fileUploadOptions drops disallowed mime types silently (multer's fileFilter calls back with
+    // false rather than an error), so an unsupported file arrives here as an empty list.
+    if (!files || files.length === 0) {
+      logger.error('Trying to save a contract attachment without a file, or with an unsupported file type');
+      throw new HttpException(400, 'File missing or of an unsupported file type');
+    }
+    const metadata: AttachmentMetadata = {
+      category: attachmentData.category,
+      filename: attachmentData.filename || files[0].originalname,
+      mimeType: attachmentData.mimeType || files[0].mimetype,
+      note: attachmentData.note,
+    };
+    const data = new FormData();
+    data.append('file', files[0].buffer, { filename: files[0].originalname });
+    // Spring picks the message converter for a JSON-bound @RequestPart by the part's own content
+    // type, so declare it rather than letting form-data default to text/plain.
+    data.append('attachment', JSON.stringify(metadata), { contentType: 'application/json' });
+
     const url = `${MUNICIPALITY_ID}/contracts/${contractId}/attachments`;
     const baseURL = apiURL(this.SERVICE);
-    const response = await this.apiService.post<CasedataContractAttachment, CasedataContractAttachment>({ url, baseURL, data }, req.user).catch(e => {
-      logger.error('Something went wrong when saving signed contract attachment');
-      logger.error(e);
-      throw e;
-    });
-    return { data: response.data, message: `Signed contract attachment was saved` };
+    // The Contract API answers 201 with an empty body and a Location header pointing at the new
+    // attachment. That resource now streams raw bytes, so the api service's default
+    // follow-the-location behaviour would silently re-download the file we just uploaded.
+    await this.apiService
+      .post<void, FormData>({ url, baseURL, data, headers: { 'Content-Type': data.getHeaders()['content-type'] }, followLocation: false }, req.user)
+      .catch(e => {
+        logger.error('Something went wrong when saving signed contract attachment');
+        logger.error(e);
+        throw e;
+      });
+    return { data: true, message: `Signed contract attachment was saved` };
   }
 
   @Delete('/contracts/:municipalityId/:contractId/attachments/:attachmentId')
@@ -250,13 +281,15 @@ export class CasedataContractsController {
     @Param('attachmentId') attachmentId: number,
   ): Promise<{ data: boolean; message: string }> {
     const baseURL = apiURL(this.SERVICE);
-    if (!attachmentId && !contractId) {
-      throw 'Id not found. Cannot delete signed contract attachment without id.';
+    if (!attachmentId || !contractId) {
+      throw new HttpException(400, 'Id not found. Cannot delete signed contract attachment without id.');
     }
+    await this.assertAttachmentActionAllowed(contractId, req);
     const url = `${MUNICIPALITY_ID}/contracts/${contractId}/attachments/${attachmentId}`;
-    const response = await this.apiService.delete<boolean>({ url, baseURL }, req.user).catch(e => {
+    // The Contract API answers 204 with an empty body.
+    await this.apiService.delete<void>({ url, baseURL }, req.user).catch(e => {
       throw e;
     });
-    return { data: response.data, message: `Signed contract attachment with ${attachmentId} removed` };
+    return { data: true, message: `Signed contract attachment with ${attachmentId} removed` };
   }
 }

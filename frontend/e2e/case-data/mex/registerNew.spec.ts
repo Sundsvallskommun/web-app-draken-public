@@ -4,7 +4,7 @@ import { MEXLegacyCaseType } from '../../../src/casedata/interfaces/case-type';
 import { mockAttachments } from '../fixtures/mockAttachments';
 import { mockErrands_base } from '../fixtures/mockErrands';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockContractAttachment, mockLeaseAgreement, mockPurchaseAgreement } from '../fixtures/mockContract';
+import { mockLeaseAgreement, mockPurchaseAgreement } from '../fixtures/mockContract';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
@@ -31,7 +31,6 @@ test.describe('Register errand', () => {
     await mockRoute('**/namespace/errands/**/communication/conversations', mockConversations, { method: 'GET' }); // @getConversations
     await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, { method: 'GET' }); // @getConversationMessages
     await mockRoute('**/contracts/2024-01026', mockLeaseAgreement, { method: 'GET' }); // @getContract
-    await mockRoute('**/contracts/2281/2024-01026/attachments/1', mockContractAttachment, { method: 'GET' }); // @getContractAttachment
     await mockRoute('**/schemas/FTErrandAssets/latest', mockJsonSchema, { method: 'GET' }); // @getJsonSchema
     await page.goto('registrera');
     await dismissCookieConsent();
@@ -68,7 +67,9 @@ test.describe('Register errand', () => {
 
     await page.waitForResponse((resp) => resp.url().includes('/errands') && resp.request().method() === 'POST' && resp.status() === 200);
     await page.waitForResponse((resp) => resp.url().includes('/errand/') && resp.request().method() === 'GET' && resp.status() === 200);
-    await page.waitForResponse((resp) => resp.url().includes('/attachments') && resp.status() === 200);
+    // Pinned to the errand attachment request. A bare '/attachments' substring also matched the
+    // contract attachment fetch, which no longer fires - content is only fetched when opened.
+    await page.waitForResponse((resp) => /\/errand\/\d+\/attachments$/.test(resp.url()) && resp.status() === 200);
 
     await page.goto(`arende/${mockMexErrand_base.data.errandNumber}`);
   });

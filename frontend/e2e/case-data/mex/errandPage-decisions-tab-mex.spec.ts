@@ -9,7 +9,7 @@ import { mockMe } from '../fixtures/mockMe';
 import { mockPermits } from '../fixtures/mockPermits';
 import { mockAsset } from '../fixtures/mockAsset';
 import { mockMexErrand_base } from '../fixtures/mockMexErrand';
-import { mockContractAttachment, mockLeaseAgreement, mockPurchaseAgreement } from '../fixtures/mockContract';
+import { mockLeaseAgreement, mockPurchaseAgreement } from '../fixtures/mockContract';
 import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
 import { mockRelations } from '../fixtures/mockRelations';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
@@ -48,7 +48,6 @@ test.describe('Decisions tab', () => {
     });
 
     await mockRoute('**/contracts/2024-01026', mockLeaseAgreement, { method: 'GET' }); // @getContract
-    await mockRoute('**/contracts/2281/2024-01026/attachments/1', mockContractAttachment, { method: 'GET' }); // @getContractAttachment
 
     await mockRoute('**/errand/errandNumber/*', mockMexErrand_base, { method: 'GET' }); // @getErrand
     await mockRoute('**/sourcerelations/**/**', mockRelations, { method: 'GET' }); // @getSourceRelations
