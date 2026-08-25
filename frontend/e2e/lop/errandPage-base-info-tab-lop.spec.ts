@@ -75,6 +75,125 @@ test.describe('Errand page', () => {
     await expect(page.locator('[data-cy="save-button"]')).toContainText('Spara');
   });
 
+  test('keeps a deprecated label on an existing errand', async ({ page, mockRoute, dismissCookieConsent }) => {
+    // Deep-copy so the shared metadata fixture is not mutated by stripping nested labels.
+    const deprecatedCategory = JSON.parse(
+      JSON.stringify(mockMetaData.labels.labelStructure.find((l) => l.resourcePath === 'DEPRECATED_CATEGORY'))
+    );
+    const deprecatedCategoryType = JSON.parse(JSON.stringify(deprecatedCategory.labels[0]));
+    delete deprecatedCategory.labels;
+    delete deprecatedCategoryType.labels;
+
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      { ...mockSupportErrand, labels: [deprecatedCategory, deprecatedCategoryType] },
+      { method: 'GET' }
+    );
+
+    await page.goto(`arende/${mockSupportErrand.errandNumber}`);
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
+    await dismissCookieConsent();
+
+    // The errand keeps showing its own classification even though the label is deprecated, marked so
+    // it reads as a leftover rather than a current option.
+    const categorySelect = page.locator('[data-cy="labelCategory-input"]');
+    await expect(categorySelect).toHaveValue(deprecatedCategory.id);
+    await expect(categorySelect.locator('option', { hasText: 'Utgangen verksamhet (Utgått)' })).toHaveCount(1);
+    // The type is not flagged itself; it counts as deprecated because its category is.
+    await expect(
+      page.locator(`[data-cy="labelType-input"][placeholder="${deprecatedCategoryType.displayName} (Utgått)"]`)
+    ).toBeVisible();
+
+    await page.locator('[data-cy="labelType-wrapper"]').click();
+    await expect(
+      page.getByRole('option', { name: `${deprecatedCategoryType.displayName} (Utgått)`, exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', { name: 'Annan typ under utgangen verksamhet (Utgått)', exact: true })
+    ).toHaveCount(0);
+    await page.keyboard.press('Escape');
+
+    // Once another category is picked the deprecated one is gone for good.
+    await categorySelect.selectOption('Utgangstest');
+    await expect(categorySelect.locator('option', { hasText: 'Utgangen verksamhet' })).toHaveCount(0);
+  });
+
+  test('marks a deprecated type under a category that is still active', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    const activeCategory = JSON.parse(
+      JSON.stringify(mockMetaData.labels.labelStructure.find((l) => l.resourcePath === 'DEPRECATION_TEST'))
+    );
+    const deprecatedType = JSON.parse(
+      JSON.stringify(activeCategory.labels.find((l) => l.resourcePath === 'DEPRECATION_TEST/DEPRECATED_TYPE'))
+    );
+    delete activeCategory.labels;
+    delete deprecatedType.labels;
+
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      { ...mockSupportErrand, labels: [activeCategory, deprecatedType] },
+      { method: 'GET' }
+    );
+
+    await page.goto(`arende/${mockSupportErrand.errandNumber}`);
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
+    await dismissCookieConsent();
+
+    // Only the deprecated level is marked — the category above it is still selectable.
+    const categorySelect = page.locator('[data-cy="labelCategory-input"]');
+    await expect(categorySelect.locator('option', { hasText: 'Utgangstest' })).toHaveCount(1);
+    await expect(categorySelect.locator('option', { hasText: 'Utgangstest (Utgått)' })).toHaveCount(0);
+    await expect(
+      page.locator(`[data-cy="labelType-input"][placeholder="${deprecatedType.displayName} (Utgått)"]`)
+    ).toBeVisible();
+
+    await page.locator('[data-cy="labelType-wrapper"]').click();
+    await expect(
+      page.getByRole('option', { name: `${deprecatedType.displayName} (Utgått)`, exact: true })
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', { name: 'Aktiv undertyp under utgangen typ (Utgått)', exact: true })
+    ).toHaveCount(0);
+  });
+
+  test('keeps a type with only deprecated subtypes when the errand already uses it', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    const activeCategory = JSON.parse(
+      JSON.stringify(mockMetaData.labels.labelStructure.find((l) => l.resourcePath === 'DEPRECATION_TEST'))
+    );
+    const emptiedType = JSON.parse(
+      JSON.stringify(activeCategory.labels.find((l) => l.resourcePath === 'DEPRECATION_TEST/EMPTIED_TYPE'))
+    );
+    delete activeCategory.labels;
+    delete emptiedType.labels;
+
+    await mockRoute(
+      `**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`,
+      { ...mockSupportErrand, labels: [activeCategory, emptiedType] },
+      { method: 'GET' }
+    );
+
+    await page.goto(`arende/${mockSupportErrand.errandNumber}`);
+    await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);
+    await dismissCookieConsent();
+
+    // Neither the type nor its category is deprecated, so it is shown unmarked...
+    await expect(page.locator(`[data-cy="labelType-input"][placeholder="${emptiedType.displayName}"]`)).toBeVisible();
+
+    // ...and offered as a plain option rather than an empty option group, so the errand's existing
+    // type-without-subtype classification can be restored after looking at something else.
+    await page.locator('[data-cy="labelType-wrapper"]').click();
+    await expect(page.getByRole('option', { name: emptiedType.displayName, exact: true })).toBeVisible();
+    // Its subtypes are all deprecated and stay out of reach.
+    await expect(page.getByRole('option', { name: 'Utgangen undertyp', exact: true })).toHaveCount(0);
+  });
+
   test('allows updating errand information', async ({ page, mockRoute, dismissCookieConsent }) => {
     await page.goto(`arende/${mockSupportErrand.errandNumber}`);
     await page.waitForResponse((resp) => resp.url().includes('supporterrands/errandnumber') && resp.status() === 200);

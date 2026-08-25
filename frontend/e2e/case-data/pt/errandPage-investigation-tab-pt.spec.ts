@@ -12,6 +12,7 @@ import { mockPermits } from '../fixtures/mockPermits';
 import { mockPTErrand_base } from '../fixtures/mockPtErrand';
 import { mockRelations } from '../fixtures/mockRelations';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
+import { CONFIRM_DIALOG } from '../../utils/modal';
 
 test.describe('Investigation tab', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -99,7 +100,7 @@ test.describe('Investigation tab', () => {
 
     await page.locator('[data-cy="investigation-law-select"]').selectOption('13 kap. 8 § trafikförordningen');
     await page.locator('[data-cy="outcome-select"]').selectOption('REJECTION');
-    await page.locator('article.sk-modal-dialog').getByRole('button', { name: 'Ja' }).click();
+    await page.locator(CONFIRM_DIALOG).getByRole('button', { name: 'Ja' }).click();
     await page.locator('[data-cy="utredning-richtext-wrapper"]').click();
     await page.keyboard.press('Control+A');
     await page.keyboard.type('Mock text');

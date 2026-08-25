@@ -25,6 +25,7 @@ import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
 import { mockEnv } from '../fixtures/mock-env';
 import type { Page } from '@playwright/test';
 import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
+import { CONFIRM_DIALOG } from '../utils/modal';
 
 // Local corrected helpers (the shared utils/stakeholder-search.ts variants assert
 // against pre-@sk-web-gui-bump DOM: validation now fires on "Sök" click rather than
@@ -999,7 +1000,7 @@ test.describe('Errand page', () => {
     await expect(page.locator('[data-cy="make-stakeholder-owner-button"]')).toBeEnabled();
     await page.locator('[data-cy="make-stakeholder-owner-button"]').click();
 
-    await page.locator('article.sk-modal-dialog button').filter({ hasText: 'Ja' }).click();
+    await page.locator(`${CONFIRM_DIALOG} button`).filter({ hasText: 'Ja' }).click();
 
     await expect(page.locator('[data-cy="save-button"]')).toBeEnabled();
 

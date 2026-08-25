@@ -12,7 +12,7 @@ import { IErrand } from '@casedata/interfaces/errand';
 import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
-import { base64ToFile } from '@common/services/attachment-service';
+import { base64ToFile, mapAttachmentToUploadFile } from '@common/services/attachment-service';
 import { UploadFile } from '@sk-web-gui/react';
 import { Attachment } from 'src/data-contracts/backend/data-contracts';
 
@@ -110,6 +110,21 @@ export const getAttachmentLabel = (category: string) =>
   isMEX()
     ? (MEXAttachmentLabels as Record<string, string>)[category] || 'Okänt'
     : (PTAttachmentLabels as Record<string, string>)[category] || 'Okänt';
+
+/**
+ * Fixed aspect ratios for the PT categories that have a formal format. Returning undefined lets
+ * the user crop freely, which is what every other category needs.
+ */
+export const getImageAspect = (category: string): number | undefined => {
+  switch (category) {
+    case 'PASSPORT_PHOTO':
+      return 3 / 4;
+    case 'SIGNATURE':
+      return 4 / 1;
+    default:
+      return undefined;
+  }
+};
 
 const uniquePTAttachments: PTAttachmentCategory[] = ['PASSPORT_PHOTO', 'SIGNATURE'];
 
@@ -221,7 +236,11 @@ export const sendAttachments = (
   municipalityId: string,
   errandId: number,
   errandNumber: string,
-  attachmentData: UploadFile[]
+  attachmentData: UploadFile[],
+  // Creating an attachment is not idempotent: a response lost after the server committed makes a
+  // retry create a second copy. Callers that delete something on success can pass 0 to trade
+  // automatic recovery for never producing a silent duplicate.
+  retries = 3
 ) => {
   const attachmentPromises = attachmentData.map(async (attachment) => {
     const fileItem = attachment.file;
@@ -243,7 +262,7 @@ export const sendAttachments = (
     const obj: Attachment = {
       category: attachment.meta.category,
       name: `${attachment.meta.name}.${attachment.meta.ending}`,
-      note: '',
+      note: (attachment.meta.note as string) ?? '',
       extension,
       mimeType: extension === 'msg' ? 'application/vnd.ms-outlook' : fileItem.type,
     };
@@ -268,7 +287,7 @@ export const sendAttachments = (
           throw e;
         });
 
-    return withRetries(3, postAttachment);
+    return withRetries(retries, postAttachment);
   });
 
   return Promise.all(attachmentPromises).then(() => true);
@@ -290,6 +309,65 @@ export const deleteAttachment = (municipalityId: string, errandId: number, attac
       console.error('Something went wrong when removing attachment ', attachmentId);
       throw e;
     });
+};
+
+export interface ReplaceAttachmentResult {
+  /** False when the replacement was created but the original could not be removed. */
+  originalRemoved: boolean;
+}
+
+/**
+ * CaseData cannot replace the content of an existing attachment: PATCH carries metadata only and
+ * the multipart PUT was removed when attachments became binary. The replacement is therefore
+ * uploaded as a new attachment and the original deleted afterwards.
+ *
+ * The order is deliberate. Uploading first means a failed upload leaves the original untouched;
+ * deleting first would remove the only copy on the server while the new bytes exist solely in
+ * browser memory, so a failed upload would lose the file for good.
+ */
+export const replaceAttachmentFile = async (
+  municipalityId: string,
+  errandId: number,
+  errandNumber: string,
+  attachment: Attachment,
+  file: File
+): Promise<ReplaceAttachmentResult> => {
+  if (!attachment.id) {
+    throw new Error('ATTACHMENT_ID_MISSING');
+  }
+  // Decision attachments live under a separate sub-resource and are part of a legally significant
+  // record, so they are never replaced this way.
+  if (attachment.decisionId) {
+    throw new Error('DECISION_ATTACHMENT_NOT_SUPPORTED');
+  }
+  if (file.size / 1024 / 1024 > MAX_FILE_SIZE_MB) {
+    throw new Error('MAX_SIZE');
+  }
+
+  // Category, name and note carry over, but the replacement is a new row: it gets a new id and
+  // created timestamp, the backend forces channel to WEB_UI, and extraParameters has no field on
+  // CreateAttachmentDto. Preserving those needs a content-replacing endpoint upstream.
+  const original = mapAttachmentToUploadFile(attachment);
+  const replacement: UploadFile = {
+    // The id is assigned by the backend when the attachment is created.
+    id: '',
+    file,
+    meta: { ...original.meta, ending: file.name.split('.').pop() ?? original.meta.ending },
+  };
+
+  // No retries here. Retrying the upload risks a second copy if the first request committed but
+  // its response was lost, and the original is deleted right after, so a silent duplicate would
+  // be left behind with nothing to compare against. A visible failure the user can repeat is the
+  // safer trade. The cropper keeps the selection, so retrying costs one click.
+  await sendAttachments(municipalityId, errandId, errandNumber, [replacement], 0);
+
+  try {
+    await deleteAttachment(municipalityId, errandId, original);
+    return { originalRemoved: true };
+  } catch (e) {
+    console.error('Replacement attachment created but the original could not be removed ', attachment.id, e);
+    return { originalRemoved: false };
+  }
 };
 
 export const fetchAttachment: (

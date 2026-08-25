@@ -13,6 +13,7 @@ import {
 } from '../fixtures/mockContractsList';
 import { mockErrands_base } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
+import { MODAL_DIALOG } from '../../utils/modal';
 
 test.describe('Contract Overview page', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -814,7 +815,7 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-detail-edit-button"]').click();
 
         // Confirmation dialog should appear
-        const dialog = page.locator('article.sk-modal-dialog');
+        const dialog = page.locator(MODAL_DIALOG);
         await expect(dialog.locator('.sk-modal-dialog-header-title')).toHaveText('Ändra avtalsuppgifter');
         await expect(dialog.getByText('Vill du skapa ett nytt ärende för avtal 2049-00010?')).toBeVisible();
         await expect(page.locator('[data-cy="contract-detail-confirm-submit"]')).toBeVisible();
@@ -934,9 +935,8 @@ test.describe('Contract Overview page', () => {
         await mockRoute('**/errands/999/stakeholders', mockCreatedErrand, { method: 'PATCH' }); // @patchErrand
         await mockRoute('**/errands/**/extraparameters', { data: [], message: 'ok' }, { method: 'PATCH' }); // @patchExtraParameters
 
-        // NOTE: Cypress stubbed window.open; here we record its calls via an init script
-        // so we can assert the new errand is opened in a new tab ('_blank') without
-        // actually navigating a popup to a non-existent page.
+        // Record window.open calls so we can assert the new errand is opened in a
+        // new tab ('_blank') without navigating a popup to a non-existent page.
         await page.addInitScript(() => {
           (window as unknown as { __openCalls: { url: string; target: string }[] }).__openCalls = [];
           window.open = ((url?: string | URL, target?: string) => {

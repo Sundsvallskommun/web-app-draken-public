@@ -12,6 +12,7 @@ import {
   Status,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
+import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
 import { getAdminName, primaryStakeholderNameorEmail } from '@supportmanagement/services/support-stakeholder-service';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
@@ -74,7 +75,9 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       render: (errand: SupportErrand) => (
         <div>
           {appConfig.features.useThreeLevelCategorization ? (
-            <div className="font-bold">{getLabelCategory(errand, supportMetadata!)?.displayName || ''}</div>
+            <div className="font-bold">
+              {getLabelDisplayName(getLabelCategory(errand, supportMetadata!), supportMetadata)}
+            </div>
           ) : null}
           {appConfig.features.useTwoLevelCategorization ? (
             <div className="font-bold">
@@ -97,8 +100,8 @@ export const useSupportErrandTable = (statuses: Status[]) => {
         <div className="max-w-[280px]">
           {appConfig.features.useThreeLevelCategorization ? (
             <div>
-              <div>{getLabelType(errand)?.displayName || ''}</div>
-              <div>{getLabelSubType(errand)?.displayName || ''}</div>
+              <div>{getLabelDisplayName(getLabelType(errand), supportMetadata)}</div>
+              <div>{getLabelDisplayName(getLabelSubType(errand), supportMetadata)}</div>
             </div>
           ) : null}
           {appConfig.features.useTwoLevelCategorization ? (

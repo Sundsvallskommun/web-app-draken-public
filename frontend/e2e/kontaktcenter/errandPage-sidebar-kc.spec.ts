@@ -24,6 +24,7 @@ import {
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
 import { mockNotificationsForErrandLog } from './fixtures/mockSupportNotifications';
 import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
+import { MODAL_DIALOG } from '../utils/modal';
 
 test.describe('errand page', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
@@ -168,21 +169,21 @@ test.describe('errand page', () => {
 
     await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
 
-    await expect(page.locator('article.sk-modal-dialog')).toBeVisible();
+    await expect(page.locator(MODAL_DIALOG)).toBeVisible();
 
-    await expect(page.locator('.sk-modal-dialog [type="radio"]').nth(1)).toHaveValue('EMAIL');
-    await page.locator('.sk-modal-dialog [type="radio"]').nth(1).check();
-    await expect(page.locator('.sk-modal-dialog [data-cy="email-tag-0"]')).not.toBeVisible();
+    await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(1)).toHaveValue('EMAIL');
+    await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(1).check();
+    await expect(page.locator(`${MODAL_DIALOG} [data-cy="email-tag-0"]`)).not.toBeVisible();
 
-    await expect(page.locator('.sk-modal-dialog [type="radio"]').nth(0)).toHaveValue('DEPARTMENT');
-    await page.locator('.sk-modal-dialog [type="radio"]').nth(0).check();
-    await page.locator('.sk-modal-dialog [data-cy="resolution-input"]').selectOption({ index: 0 });
+    await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
+    await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
+    await page.locator(`${MODAL_DIALOG} [data-cy="resolution-input"]`).selectOption({ index: 0 });
 
     // Department forwards do not pre-fill a greeting (only email forwards do), so just assert
     // the editor is present.
     await expect(page.locator('[data-cy="escalation-richtext-wrapper"]')).toBeVisible();
 
-    await page.locator('.sk-modal-dialog button.sk-btn-primary').filter({ hasText: 'Överlämna ärendet' }).click();
+    await page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärendet' }).click();
 
     await expect(page.locator('.sk-dialog')).toContainText('Vill du överlämna ärendet?');
     await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
@@ -199,19 +200,19 @@ test.describe('errand page', () => {
 
     await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
 
-    await expect(page.locator('article.sk-modal-dialog')).toBeVisible();
+    await expect(page.locator(MODAL_DIALOG)).toBeVisible();
 
-    await expect(page.locator('.sk-modal-dialog [type="radio"]').nth(0)).toHaveValue('DEPARTMENT');
-    await page.locator('.sk-modal-dialog [type="radio"]').nth(0).check();
-    await page.locator('.sk-modal-dialog [data-cy="resolution-input"]').selectOption({ index: 0 });
-    await expect(page.locator('.sk-modal-dialog [type="radio"]').nth(1)).toHaveValue('EMAIL');
-    await page.locator('.sk-modal-dialog [type="radio"]').nth(1).check();
-    await page.locator('.sk-modal-dialog [data-cy="new-email-input"]').fill('test@test.se');
-    await page.locator('.sk-modal-dialog [data-cy="add-new-email-button"]').click();
+    await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
+    await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
+    await page.locator(`${MODAL_DIALOG} [data-cy="resolution-input"]`).selectOption({ index: 0 });
+    await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(1)).toHaveValue('EMAIL');
+    await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(1).check();
+    await page.locator(`${MODAL_DIALOG} [data-cy="new-email-input"]`).fill('test@test.se');
+    await page.locator(`${MODAL_DIALOG} [data-cy="add-new-email-button"]`).click();
 
     await expect(page.locator('[data-cy="escalation-richtext-wrapper"]')).toContainText('Hej,');
 
-    await page.locator('.sk-modal-dialog button.sk-btn-primary').filter({ hasText: 'Överlämna ärendet' }).click();
+    await page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärendet' }).click();
 
     await expect(page.locator('.sk-dialog')).toContainText('Vill du överlämna ärendet?');
     await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
@@ -231,19 +232,19 @@ test.describe('errand page', () => {
     //Can forward the errand
     await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
 
-    await expect(page.locator('article.sk-modal-dialog')).toBeVisible();
+    await expect(page.locator(MODAL_DIALOG)).toBeVisible();
 
-    await expect(page.locator('.sk-modal-dialog [type="radio"]').nth(0)).toHaveValue('DEPARTMENT');
-    await page.locator('.sk-modal-dialog [type="radio"]').nth(0).check();
-    await page.locator('.sk-modal-dialog [data-cy="resolution-input"]').selectOption({ index: 0 });
-    await expect(page.locator('.sk-modal-dialog [type="radio"]').nth(1)).toHaveValue('EMAIL');
-    await page.locator('.sk-modal-dialog [type="radio"]').nth(1).check();
-    await page.locator('.sk-modal-dialog [data-cy="new-email-input"]').fill('test@test.se');
-    await page.locator('.sk-modal-dialog [data-cy="add-new-email-button"]').click();
+    await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
+    await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
+    await page.locator(`${MODAL_DIALOG} [data-cy="resolution-input"]`).selectOption({ index: 0 });
+    await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(1)).toHaveValue('EMAIL');
+    await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(1).check();
+    await page.locator(`${MODAL_DIALOG} [data-cy="new-email-input"]`).fill('test@test.se');
+    await page.locator(`${MODAL_DIALOG} [data-cy="add-new-email-button"]`).click();
 
     await expect(page.locator('[data-cy="escalation-richtext-wrapper"]')).toContainText('Hej,');
 
-    await page.locator('.sk-modal-dialog button.sk-btn-primary').filter({ hasText: 'Överlämna ärende' }).click();
+    await page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärende' }).click();
 
     await expect(page.locator('.sk-dialog')).toContainText('Vill du överlämna ärendet?');
     await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
@@ -254,8 +255,9 @@ test.describe('errand page', () => {
 
     //Can suspend the errand
     await page.locator('[data-cy="suspend-button"]').filter({ hasText: 'Parkera ärende' }).click();
-    await expect(page.locator('.sk-modal-dialog')).toContainText('Parkera ärendet');
-    await page.locator('.sk-modal-dialog .sk-btn-primary').filter({ hasText: 'Parkera ärende' }).click();
+    const suspendModal = page.locator(MODAL_DIALOG).filter({ hasText: 'Parkera ärendet' });
+    await expect(suspendModal).toBeVisible();
+    await suspendModal.locator('.sk-btn-primary').filter({ hasText: 'Parkera ärende' }).click();
 
     const solveLables = [
       { label: 'Hänvisat att återkomma', id: 'REFERRED_TO_RETURN' },
@@ -269,12 +271,13 @@ test.describe('errand page', () => {
 
     //can change supportErrand to solved
     await page.locator('[data-cy="solved-button"]').filter({ hasText: 'Avsluta ärende' }).click();
-    await expect(page.locator('article.sk-modal-dialog')).toContainText('Välj en lösning');
+    const solveModal = page.locator(MODAL_DIALOG).filter({ hasText: 'Välj en lösning' });
+    await expect(solveModal).toBeVisible();
     await expect(page.locator('[data-cy="solve-radiolist"] label')).toHaveCount(solveLables.length);
     await expect(page.locator('[data-cy="solve-radiolist"] label input').nth(1)).toHaveValue(solveLables[1].id);
     await page.locator('[data-cy="solve-radiolist"] label input').nth(1).check();
-    await page
-      .locator('article.sk-modal-dialog button.sk-btn-primary')
+    await solveModal
+      .locator('button.sk-btn-primary')
       .filter({ hasText: /^Avsluta$/ })
       .click();
   });
@@ -296,11 +299,11 @@ test.describe('errand page', () => {
     await dismissCookieConsent();
 
     await page.locator('[data-cy="solved-button"]').filter({ hasText: 'Avsluta ärende' }).click();
-    await expect(page.locator('article.sk-modal-dialog')).toBeVisible();
-    await expect(page.locator('article.sk-modal-dialog')).toContainText('Nuvarande lösningskod');
-    await expect(page.locator('article.sk-modal-dialog')).toContainText('Ändra lösningskod');
+    await expect(page.locator(MODAL_DIALOG)).toBeVisible();
+    await expect(page.locator(MODAL_DIALOG)).toContainText('Nuvarande lösningskod');
+    await expect(page.locator(MODAL_DIALOG)).toContainText('Ändra lösningskod');
     await expect(
-      page.locator('article.sk-modal-dialog button.sk-btn-primary').filter({ hasText: /^Avsluta$/ })
+      page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: /^Avsluta$/ })
     ).toBeVisible();
   });
 
@@ -321,11 +324,11 @@ test.describe('errand page', () => {
     await dismissCookieConsent();
 
     await page.locator('[data-cy="solved-button"]').filter({ hasText: 'Avsluta ärende' }).click();
-    await expect(page.locator('article.sk-modal-dialog')).toBeVisible();
+    await expect(page.locator(MODAL_DIALOG)).toBeVisible();
 
     // Click "Ändra lösningskod" to switch to resolution selection view
-    await page.locator('article.sk-modal-dialog').getByText('Ändra lösningskod').click();
-    await expect(page.locator('article.sk-modal-dialog')).toContainText('Välj ny lösningskod');
+    await page.locator(MODAL_DIALOG).getByText('Ändra lösningskod').click();
+    await expect(page.locator(MODAL_DIALOG)).toContainText('Välj ny lösningskod');
     await expect(page.locator('[data-cy="solve-radiolist"]')).toBeVisible();
   });
 
@@ -351,17 +354,17 @@ test.describe('errand page', () => {
 
     // Open modal and switch to "Välj ny lösningskod"
     await page.locator('[data-cy="solved-button"]').filter({ hasText: 'Avsluta ärende' }).click();
-    await page.locator('article.sk-modal-dialog').getByText('Ändra lösningskod').click();
-    await expect(page.locator('article.sk-modal-dialog')).toContainText('Välj ny lösningskod');
+    await page.locator(MODAL_DIALOG).getByText('Ändra lösningskod').click();
+    await expect(page.locator(MODAL_DIALOG)).toContainText('Välj ny lösningskod');
 
     // Close modal
-    await page.locator('article.sk-modal-dialog .sk-modal-dialog-close').click();
-    await expect(page.locator('article.sk-modal-dialog')).not.toBeVisible();
+    await page.locator(`${MODAL_DIALOG} .sk-modal-dialog-close`).click();
+    await expect(page.locator(MODAL_DIALOG)).not.toBeVisible();
 
     // Reopen modal - should show "Nuvarande lösningskod" again
     await page.locator('[data-cy="solved-button"]').filter({ hasText: 'Avsluta ärende' }).click();
-    await expect(page.locator('article.sk-modal-dialog')).toBeVisible();
-    await expect(page.locator('article.sk-modal-dialog')).toContainText('Nuvarande lösningskod');
+    await expect(page.locator(MODAL_DIALOG)).toBeVisible();
+    await expect(page.locator(MODAL_DIALOG)).toContainText('Nuvarande lösningskod');
   });
 
   test('Can manage Kommentarer', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -474,8 +477,8 @@ test.describe('errand page', () => {
     await dismissCookieConsent();
 
     await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
-    await expect(page.locator('.sk-modal-dialog [type="radio"]').nth(0)).toHaveValue('DEPARTMENT');
-    await page.locator('.sk-modal-dialog [type="radio"]').nth(0).check();
+    await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
+    await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
     await page.locator('[data-cy="resolution-input"]').selectOption('Mark och exploatering (MEX)');
     // Department forwards do not pre-fill a greeting (only email forwards do), so type a message
     // into the editor before forwarding.
@@ -483,7 +486,7 @@ test.describe('errand page', () => {
     await page.locator('[data-cy="escalation-richtext-wrapper"] .ql-editor').click();
     await page.locator('[data-cy="escalation-richtext-wrapper"] .ql-editor').type('TEST', { delay: 50 });
 
-    await page.locator('.sk-modal-dialog button.sk-btn-primary').filter({ hasText: 'Överlämna ärende' }).click();
+    await page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärende' }).click();
 
     await expect(page.locator('.sk-dialog')).toContainText('Vill du överlämna ärendet?');
     await expect(page.locator('.sk-dialog .sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();

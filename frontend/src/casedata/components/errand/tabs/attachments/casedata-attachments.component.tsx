@@ -1,3 +1,4 @@
+import { useAttachmentContents } from '@casedata/hooks/useAttachmentContents';
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import {
   MEXAllAttachmentLabels,
@@ -13,20 +14,24 @@ import {
   editDecisionAttachment,
   fetchAttachment,
   fetchDecisionAttachment,
+  MAX_FILE_SIZE_MB,
   onlyOneAllowed,
+  replaceAttachmentFile,
 } from '@casedata/services/casedata-attachment-service';
 import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
+import { isCroppableImage } from '@common/components/image-cropper/crop-geometry';
+import { CroppedImage } from '@common/components/image-cropper/crop-image';
+import { useToastMessages } from '@common/hooks/use-toast-messages';
 import { getAttachmentChannelLabel, isKnownAttachmentChannel } from '@common/interfaces/attachment-channel';
 import { isMEX } from '@common/services/application-service';
 import { base64ToFile, mapAttachmentToUploadFile } from '@common/services/attachment-service';
-import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Button, FileUpload, PopupMenu, UploadFile, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { Button, FileUpload, PopupMenu, UploadFile, useConfirm } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore } from '@stores/index';
 import dayjs from 'dayjs';
 import { Eye, Pencil, Trash, Upload } from 'lucide-react';
-import { FC, Fragment, useEffect, useRef, useState } from 'react';
+import { FC, Fragment, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { Attachment } from 'src/data-contracts/backend/data-contracts';
 import * as yup from 'yup';
@@ -43,39 +48,37 @@ const defaultAttachmentInformation: CasedataAttachmentFormModel = {
   newFiles: [],
 };
 
+// Sentinel errors thrown by the crop and replace steps, mapped to what the handler should read.
+const cropSaveErrorMessages: Record<string, string> = {
+  MAX_SIZE: `Den beskurna bilden överskrider maximal storlek (${MAX_FILE_SIZE_MB} Mb)`,
+  CANVAS_EMPTY: 'Bilden kunde inte beskäras',
+};
+const defaultCropSaveErrorMessage = 'Något gick fel när den beskurna bilagan sparades';
+
 export const CasedataAttachments: FC = () => {
   const [modalAttachment, setModalAttachment] = useState<SingleCasedataAttachment | undefined>();
   const [addAttachmentWindowIsOpen, setAddAttachmentWindowIsOpen] = useState<boolean>(false);
   const [attachmentTypeExists, setAttachmentTypeExists] = useState<boolean>(false);
   const [modalFetching, setModalFetching] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [isCropping, setIsCropping] = useState<boolean>(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [originalFile, setOriginalFile] = useState<UploadFile | null>(null);
 
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const errand = useCasedataStore((s) => s.errand);
   const setErrand = useCasedataStore((s) => s.setErrand);
-  // Attachment content is no longer part of the errand payload, so it is fetched per
-  // attachment and cached here, keyed by attachment id.
-  const [attachmentContents, setAttachmentContents] = useState<Record<number, string>>({});
-  // Attachment ids whose content has been requested, so repeated errand refreshes do not
-  // re-request content that is already on its way.
-  const requestedContentIds = useRef<Set<number>>(new Set());
-  const isMounted = useRef(true);
+  const { contents, cacheContent, dropContent } = useAttachmentContents(municipalityId, errand);
   const removeConfirm = useConfirm();
-  const toastMessage = useSnackbar();
+  const { showError, showSuccess, showWarning } = useToastMessages();
 
   const closeModal = () => {
     getErrand(municipalityId, errand!.id.toString())
       .then((data) => setErrand(data.errand))
       .catch((e) => {
-        toastMessage({
-          position: 'bottom',
-          closeable: false,
-          message: `Något gick fel när ärendet skulle hämtas`,
-          status: 'error',
-        });
+        showError('Något gick fel när ärendet skulle hämtas');
       });
+    setIsCropping(false);
     setIsOpen(false);
     setTimeout(() => setModalAttachment(undefined), 250);
   };
@@ -114,79 +117,13 @@ export const CasedataAttachments: FC = () => {
     const uploadFiles =
       errand?.attachments?.map((a) => {
         const uploadFile = mapAttachmentToUploadFile(a);
-        const content = a.id ? attachmentContents[a.id] : undefined;
+        const content = a.id ? contents[a.id] : undefined;
         // Without content the UploadFile carries an empty File and the list preview stays blank.
         return content ? { ...uploadFile, file: base64ToFile(content, a.name, a.mimeType) } : uploadFile;
       }) ?? [];
     setValue('files', uploadFiles);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [errand?.attachments, attachmentContents]);
-
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  // Cached content belongs to one errand; drop it when navigating to another so it does not
-  // accumulate for the lifetime of the session.
-  useEffect(() => {
-    requestedContentIds.current = new Set();
-    setAttachmentContents({});
-  }, [errand?.id]);
-
-  // Fetch the content of image attachments so the list can show previews. Done in small
-  // batches so a long attachment list does not fire every request at once.
-  useEffect(() => {
-    if (!errand?.id || !errand.attachments?.length) return;
-
-    // Tracked in a ref rather than against attachmentContents, because the errand is
-    // refetched several times while the first request is still in flight — keying off the
-    // fetched content would request the same attachment once per refetch.
-    const missing = errand.attachments.filter(
-      (a): a is Attachment & { id: number } =>
-        imageMimeTypes.includes(a.mimeType) && !!a.id && !requestedContentIds.current.has(a.id)
-    );
-    if (missing.length === 0) return;
-    missing.forEach((a) => requestedContentIds.current.add(a.id));
-
-    const fetchPreviews = async () => {
-      const batchSize = 3;
-      for (let i = 0; i < missing.length; i += batchSize) {
-        if (!isMounted.current) break;
-        const batch = missing.slice(i, i + batchSize);
-        const results = await Promise.allSettled(
-          batch.map((a) =>
-            (a.decisionId
-              ? fetchDecisionAttachment(municipalityId, errand.id, a.decisionId, a)
-              : fetchAttachment(municipalityId, errand.id, a)
-            ).then((res) => [a.id, res] as const)
-          )
-        );
-        if (!isMounted.current) break;
-
-        const fetched: Record<number, string> = {};
-        results.forEach((result, index) => {
-          if (result.status === 'fulfilled') {
-            const [id, res] = result.value;
-            fetched[id] = res.base64EncodedString;
-          } else {
-            // Let a later errand refresh retry this one.
-            requestedContentIds.current.delete(batch[index].id);
-          }
-        });
-        if (Object.keys(fetched).length > 0) {
-          setAttachmentContents((prev) => ({ ...prev, ...fetched }));
-        }
-      }
-    };
-
-    fetchPreviews();
-    // No cleanup that cancels in-flight work: the errand is refetched while requests are
-    // still running, and cancelling on every rerun would abandon them without clearing the
-    // requested set, leaving previews permanently empty.
-  }, [errand?.id, errand?.attachments, municipalityId]);
+  }, [errand?.attachments, contents]);
 
   useEffect(() => {
     const files: UploadFile[] = watch('files') || [];
@@ -251,7 +188,7 @@ export const CasedataAttachments: FC = () => {
         : await fetchAttachment(municipalityId, errand!.id, attachment);
       const attachmentId = attachment.id;
       if (attachmentId) {
-        setAttachmentContents((prev) => ({ ...prev, [attachmentId]: data.base64EncodedString }));
+        cacheContent(attachmentId, data.base64EncodedString);
       }
       if (imageMimeTypes.includes(attachment.mimeType)) {
         setModalAttachment(data);
@@ -260,12 +197,7 @@ export const CasedataAttachments: FC = () => {
         downloadDocument(data);
       }
     } catch (e) {
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Något gick fel när bilagan skulle hämtas',
-        status: 'error',
-      });
+      showError('Något gick fel när bilagan skulle hämtas');
     } finally {
       setModalFetching(false);
     }
@@ -293,19 +225,55 @@ export const CasedataAttachments: FC = () => {
       }
       const res = await getErrand(municipalityId, errand!.id.toString());
       setErrand(res.errand);
-      toastMessage(
-        getToastOptions({
-          message: 'Bilagan togs bort',
-          status: 'success',
-        })
-      );
+      showSuccess('Bilagan togs bort');
     } catch (e) {
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Något gick fel när bilagan togs bort',
-        status: 'error',
-      });
+      showError('Något gick fel när bilagan togs bort');
+    }
+  };
+
+  const cropHeader = modalAttachment?.errandAttachmentHeader;
+  const canCrop =
+    !!errand &&
+    !isErrandLocked(errand) &&
+    !!cropHeader &&
+    !cropHeader.decisionId &&
+    isCroppableImage(cropHeader.mimeType);
+
+  const handleCropSave = async (result: CroppedImage) => {
+    if (!cropHeader?.id || !errand) {
+      return;
+    }
+    const replacedId = cropHeader.id;
+
+    try {
+      const saved = await saveErrand();
+      if (!saved) return;
+
+      const baseName = cropHeader.name.replace(/\.[^/.]+$/, '');
+      const file = new File([result.blob], `${baseName}.${result.extension}`, { type: result.mimeType });
+
+      const { originalRemoved } = await replaceAttachmentFile(
+        municipalityId,
+        errand.id,
+        errand.errandNumber,
+        cropHeader,
+        file
+      );
+
+      // The replaced attachment is gone, so its cached content goes with it.
+      dropContent(replacedId);
+
+      if (originalRemoved) {
+        showSuccess('Bilagan beskars och sparades');
+      } else {
+        showWarning('Den beskurna bilagan sparades, men originalet kunde inte tas bort. Ta bort det manuellt.');
+      }
+
+      closeModal();
+    } catch (e) {
+      // Reported here rather than rethrown: the cropper leaves saving failures to its caller, so
+      // rethrowing would surface the same failure twice.
+      showError((e instanceof Error && cropSaveErrorMessages[e.message]) || defaultCropSaveErrorMessage);
     }
   };
 
@@ -364,12 +332,7 @@ export const CasedataAttachments: FC = () => {
                       // yup.mixed() reports on the array element itself, so the message
                       // lands on files[i], not on a nested files[i].meta.name.
                       if (errors?.files?.[i]?.message) {
-                        toastMessage({
-                          position: 'bottom',
-                          closeable: false,
-                          message: 'Namn måste anges',
-                          status: 'error',
-                        });
+                        showError('Namn måste anges');
                         return;
                       }
                       if (!singleAttachment?.id) {
@@ -482,7 +445,11 @@ export const CasedataAttachments: FC = () => {
         isOpen={isOpen}
         modalFetching={modalFetching}
         modalAttachment={modalAttachment}
+        isCropping={isCropping}
+        canCrop={canCrop}
         onClose={closeModal}
+        onToggleCrop={() => setIsCropping((cropping) => !cropping)}
+        onCropSave={handleCropSave}
       />
     </FormProvider>
   );

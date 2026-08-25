@@ -8,7 +8,6 @@ import {
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
-import { Role } from '@casedata/interfaces/role';
 import { test, expect } from '../../fixtures/base.fixture';
 import { mockAttachments } from '../fixtures/mockAttachments';
 import { mockHistory } from '../fixtures/mockHistory';
@@ -99,10 +98,16 @@ test.describe('Errand page contracts tab', () => {
     await expect(page.locator('[data-cy="contract-type-select"]')).toBeVisible();
   };
 
-  const visitErrandWithoutContract = async (page, mockRoute, dismissCookieConsent) => {
-    // Deep clone so filtering extraParameters does not mutate the shared
-    // mockMexErrand_base fixture (which other tests/files reuse).
-    const mockMexErrand_base_without_contract = structuredClone(mockMexErrand_base);
+  // errandMock defaults to a deep clone of mockMexErrand_base so filtering extraParameters does
+  // not mutate the shared fixture (which other tests/files reuse); pass a pre-modified clone to
+  // visit an errand with e.g. extra stakeholders.
+  const visitErrandWithoutContract = async (
+    page,
+    mockRoute,
+    dismissCookieConsent,
+    errandMock = structuredClone(mockMexErrand_base)
+  ) => {
+    const mockMexErrand_base_without_contract = errandMock;
     mockMexErrand_base_without_contract.data.extraParameters =
       mockMexErrand_base_without_contract.data.extraParameters.filter((p) => p.key !== 'contractId');
     await mockRoute('**/errand/101', mockMexErrand_base_without_contract, { method: 'GET' }); // @getErrandByIdNoContract
@@ -466,6 +471,44 @@ test.describe('Errand page contracts tab', () => {
     expect(lessee.roles).toContain(StakeholderRole.PRIMARY_BILLING_PARTY);
   });
 
+  test('prevents selecting manually added stakeholders as contract parties', async ({ page, mockRoute, dismissCookieConsent }) => {
+    // A stakeholder entered by hand (no person/organization lookup) has no personId; the contract
+    // API rejects such parties since stakeholder partyId must be a valid UUID.
+    const mockErrandWithManualStakeholder = structuredClone(mockMexErrand_base);
+    mockErrandWithManualStakeholder.data.stakeholders.push({
+      id: 9999,
+      version: 1,
+      created: '2024-05-17T10:50:17.25221+02:00',
+      updated: '2024-05-17T10:50:17.252221+02:00',
+      type: 'PERSON',
+      firstName: 'Manuell',
+      lastName: 'Intressent',
+      organizationName: '',
+      roles: ['CONTACT_PERSON'],
+      personId: '',
+      personalNumber: '',
+      addresses: [],
+      address: { streetAddress: '' },
+      contactInformation: [],
+      extraParameters: {},
+    });
+    await visitErrandWithoutContract(page, mockRoute, dismissCookieConsent, mockErrandWithManualStakeholder);
+
+    await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.LEASE_AGREEMENT);
+    await page.locator('[data-cy="contract-subtype-select"]').selectOption(LeaseType.LAND_LEASE_MISC);
+
+    await page.locator('[data-cy="add-party-button"]').click();
+    const stakeholderSelect = page.locator('[data-cy="party-modal-stakeholder-select"]');
+    await expect(stakeholderSelect).toBeVisible();
+
+    // Looked-up stakeholders are selectable; the manual one is excluded from the list entirely,
+    // and the hint below the field names it and explains why
+    await expect(stakeholderSelect.locator('option', { hasText: 'Test Upplåtarsson' })).toBeEnabled();
+    await expect(stakeholderSelect.locator('option', { hasText: 'Manuell Intressent' })).toHaveCount(0);
+    await expect(page.locator('[data-cy="party-modal-manual-stakeholder-hint"]')).toBeVisible();
+    await expect(page.locator('[data-cy="party-modal-manual-stakeholder-hint"]')).toContainText('Manuell Intressent');
+  });
+
   test('manages creating a new purchase agreement with manual party selection', async ({ page, mockRoute, dismissCookieConsent }) => {
     await visitErrandWithoutContract(page, mockRoute, dismissCookieConsent);
 
@@ -645,123 +688,6 @@ test.describe('Errand page contracts tab', () => {
     expect(contract.leaseType).toBeUndefined();
     expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSOR))).toBe(true);
     expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSEE))).toBe(true);
-  });
-
-  test.describe('Manual party selection with stakeholders without partyId', () => {
-    // Mock errand with a stakeholder that has no personalNumber/personId (manually added)
-    const mockMexErrandWithManualStakeholder = {
-      ...mockMexErrand_base,
-      data: {
-        ...mockMexErrand_base.data,
-        stakeholders: [
-          ...mockMexErrand_base.data.stakeholders,
-          {
-            id: 9999, // Has id but no personalNumber/personId
-            version: 1,
-            created: '2024-05-17T10:50:17.25221+02:00',
-            updated: '2024-05-17T10:50:17.252221+02:00',
-            type: 'PERSON',
-            // No personalNumber - manually added stakeholder
-            firstName: 'Manual',
-            lastName: 'Stakeholder',
-            roles: ['CONTACT_PERSON'],
-            addresses: [
-              {
-                addressCategory: 'POSTAL_ADDRESS',
-                street: 'Manual Street 1',
-                postalCode: '12345',
-                city: 'TestCity',
-                careOf: '',
-              },
-            ],
-            address: {
-              streetAddress: '',
-            },
-            contactInformation: [
-              {
-                contactType: 'EMAIL',
-                value: 'manual@example.com',
-              },
-            ],
-            extraParameters: {},
-          },
-        ],
-        extraParameters: mockMexErrand_base.data.extraParameters.filter((p) => p.key !== 'contractId'),
-      },
-    };
-
-    test('allows selecting stakeholders without partyId as billing parties', async ({ page, mockRoute, dismissCookieConsent }) => {
-      // Override the errand intercept for this test
-      await mockRoute('**/errand/101', mockMexErrandWithManualStakeholder, { method: 'GET' }); // @getErrandByIdManual
-      await mockRoute('**/errand/errandNumber/*', mockMexErrandWithManualStakeholder, { method: 'GET' }); // @getErrandManual
-      const errandResponse = page.waitForResponse(
-        (resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200
-      );
-      await page.goto(`arende/${mockMexErrand_base.data.id}`);
-      await errandResponse;
-      await dismissCookieConsent();
-      const tab = page.getByRole('tab', { name: 'Faktura', exact: true });
-      await tab.click({ force: true });
-      await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.LEASE_AGREEMENT);
-
-      // Add lessor via party modal
-      await page.locator('[data-cy="add-party-button"]').click();
-      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
-      await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2260');
-      await page.locator('[data-cy="party-modal-role-LESSOR"]').check({ force: true });
-      await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
-      await page.locator('[data-cy="party-modal-save-button"]').click();
-      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
-
-      // Add lessee (Test Arrendatorsson)
-      await page.locator('[data-cy="add-party-button"]').click();
-      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
-      await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2280');
-      await page.locator('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
-      await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
-      await page.locator('[data-cy="party-modal-save-button"]').click();
-      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
-
-      // Add manual stakeholder (without partyId) as lessee + billing party
-      await page.locator('[data-cy="add-party-button"]').click();
-      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
-      await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('9999');
-      await page.locator('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
-      await page.locator('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').check({ force: true });
-      await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
-      await page.locator('[data-cy="party-modal-save-button"]').click();
-      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
-
-      // Verify all parties were added
-      await expect(page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-0"]')).toBeVisible();
-      await expect(page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-1"]')).toBeVisible();
-      await expect(page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-2"]')).toBeVisible();
-
-      // Verify the manual stakeholder has billing role
-      await expect(page.locator('[data-cy="parties-table"]')).toContainText('Manual Stakeholder');
-      await expect(page.locator('[data-cy="parties-table"]')).toContainText('Fakturamottagare');
-
-      // Fill required fields before saving
-      await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
-      await page.locator('[data-cy="avtalstid-start"]').fill('2024-01-01');
-      await page.locator('[data-cy="all-notice-period"]').clear();
-      await page.locator('[data-cy="all-notice-period"]').fill('3');
-
-      // Save the contract and verify the stakeholder is included with PRIMARY_BILLING_PARTY role
-      const postContractRequest = page.waitForRequest(
-        (req) => req.url().includes('/contracts') && req.method() === 'POST'
-      );
-      await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
-      const contract: Contract = (await postContractRequest).postDataJSON();
-      const manualStakeholder = contract.stakeholders.find(
-        (s) => s.firstName === 'Manual' && s.lastName === 'Stakeholder'
-      );
-      expect(manualStakeholder).toBeTruthy();
-      expect(manualStakeholder.roles).toContain(StakeholderRole.LESSEE);
-      expect(manualStakeholder.roles).toContain(StakeholderRole.PRIMARY_BILLING_PARTY);
-      // The manual stakeholder should NOT have a meaningful partyId since it was added without personnummer
-      expect(manualStakeholder.partyId).toBeFalsy();
-    });
   });
 
   test.describe('Non-DRAFT contract restrictions', () => {
