@@ -71,8 +71,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  detail?: string;
   causeAsProblem?: ThrowableProblem;
+  detail?: string;
 }
 
 export interface ThrowableProblem {
@@ -229,14 +229,9 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  integralNumber?: boolean;
-  missingNode?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
+  number?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -248,6 +243,11 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
+  integralNumber?: boolean;
+  missingNode?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 
@@ -1567,25 +1567,25 @@ export interface PageSubscriberNotification {
   content?: SubscriberNotification[];
   /** @format int32 */
   number?: number;
-  first?: boolean;
-  last?: boolean;
-  /** @format int32 */
-  numberOfElements?: number;
   sort?: SortObject;
   pageable?: PageableObject;
+  /** @format int32 */
+  numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   empty?: boolean;
 }
 
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  sort?: SortObject;
   unpaged?: boolean;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
+  sort?: SortObject;
 }
 
 export interface SortObject {
@@ -1644,6 +1644,21 @@ export interface SubscriberNotification {
    * @example "2000-10-31T01:30:00.000+02:00"
    */
   acknowledged?: string;
+  /**
+   * Event type that triggered the notification
+   * @example "UPDATE"
+   */
+  eventType?: string;
+  /**
+   * Description of the event that triggered the notification
+   * @example "Bilaga har skapats"
+   */
+  description?: string;
+  /**
+   * Subtype describing what kind of entity the event refers to
+   * @example "ATTACHMENT"
+   */
+  subType?: string;
 }
 
 /** Action definition model describing an available action and its conditions/parameters */
@@ -1708,12 +1723,12 @@ export interface PageErrand {
   content?: Errand[];
   /** @format int32 */
   number?: number;
-  first?: boolean;
-  last?: boolean;
-  /** @format int32 */
-  numberOfElements?: number;
   sort?: SortObject;
   pageable?: PageableObject;
+  /** @format int32 */
+  numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   empty?: boolean;
 }
 
@@ -1861,12 +1876,12 @@ export interface PageEvent {
   content?: Event[];
   /** @format int32 */
   number?: number;
-  first?: boolean;
-  last?: boolean;
-  /** @format int32 */
-  numberOfElements?: number;
   sort?: SortObject;
   pageable?: PageableObject;
+  /** @format int32 */
+  numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   empty?: boolean;
 }
 
@@ -1970,12 +1985,12 @@ export interface PageMessage {
   content?: Message[];
   /** @format int32 */
   number?: number;
-  first?: boolean;
-  last?: boolean;
-  /** @format int32 */
-  numberOfElements?: number;
   sort?: SortObject;
   pageable?: PageableObject;
+  /** @format int32 */
+  numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   empty?: boolean;
 }
 
