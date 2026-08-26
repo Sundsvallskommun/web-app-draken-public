@@ -912,7 +912,7 @@ export class SupportErrandController {
     @Req() req: RequestWithUser,
     @Param('id') id: string,
     @Param('municipalityId') municipalityId: string,
-    @HeaderParam('If-Match') ifMatch: string | undefined,
+    @HeaderParam('If-Match') ifMatch: string,
     @Body() data: Partial<SupportErrandDto>,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
@@ -1159,7 +1159,7 @@ export class SupportErrandController {
     @Req() req: RequestWithUser,
     @Param('id') id: string,
     @Param('municipalityId') municipalityId: string,
-    @HeaderParam('If-Match') ifMatch: string | undefined,
+    @HeaderParam('If-Match') ifMatch: string,
     @Body() data: AssignSupportErrandDto,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
