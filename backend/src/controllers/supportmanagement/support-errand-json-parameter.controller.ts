@@ -11,18 +11,13 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
-import { SupportInvestigationDocument, SupportInvestigationDocumentService } from '@/services/support-investigation-document.service';
+import { JsonObject } from '@/services/schema-bound-json.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import { SupportJsonParameter, SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
-export interface JsonObject {
-  [property: string]: JsonValue;
-}
+export type SupportErrandJsonParameterKey = SupportInvestigationProfileDto['documents'][number]['key'];
 
-export type JsonValue = null | boolean | number | string | JsonValue[] | JsonObject;
-
-export type InvestigationJsonParameterKey = SupportInvestigationProfileDto['documents'][number]['key'];
-
-export type SupportErrandJsonParameter = SupportInvestigationDocument<InvestigationJsonParameterKey>;
+export type SupportErrandJsonParameter = SupportJsonParameter<SupportErrandJsonParameterKey>;
 
 export class UpdateSupportErrandJsonParameterDto {
   @IsString()
@@ -45,7 +40,7 @@ const setETagHeader = (response: Response, etag: unknown, version?: number): voi
   }
 };
 
-const requireInvestigationDocument = (profile: SupportInvestigationProfileDto, key: string): SupportInvestigationDocumentProfileDto => {
+const requireJsonParameterDefinition = (profile: SupportInvestigationProfileDto, key: string): SupportInvestigationDocumentProfileDto => {
   const definition = profile.documents.find(document => document.key === key);
   if (!definition) {
     throw new HttpException(400, 'Unsupported investigation JSON parameter key');
@@ -57,12 +52,12 @@ const requireInvestigationDocument = (profile: SupportInvestigationProfileDto, k
 @Controller()
 export class SupportErrandJsonParameterController {
   private readonly investigationProfile: SupportInvestigationProfileDto;
-  private readonly documentService: SupportInvestigationDocumentService;
+  private readonly documentService: SupportJsonParameterService;
   private readonly policyService: SupportInvestigationPolicyService;
 
   constructor(
     investigationProfile: SupportInvestigationProfileDto = getSupportInvestigationProfile(APPLICATION),
-    documentService = new SupportInvestigationDocumentService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' }),
+    documentService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' }),
     policyService = new SupportInvestigationPolicyService(undefined, investigationProfile),
   ) {
     this.investigationProfile = investigationProfile;
@@ -80,14 +75,14 @@ export class SupportErrandJsonParameterController {
     @Param('key') key: string,
     @Res() response: Response,
   ): Promise<Response> {
-    const definition = requireInvestigationDocument(this.investigationProfile, key);
+    const definition = requireJsonParameterDefinition(this.investigationProfile, key);
     // Reads stay allowed while investigation is merely inactive, so existing documents remain
     // viewable, but an unresolvable policy fails closed here as it does on every write path.
     if ((await this.policyService.getState(req.user)) === 'unavailable') {
       throw new HttpException(503, 'Investigation read policy is temporarily unavailable');
     }
     this.policyService.assertCanReadDocument(req.user, definition.key);
-    const result = await this.documentService.readDocument({ definition, municipalityId, errandId, user: req.user });
+    const result = await this.documentService.readJsonParameter({ definition, municipalityId, errandId, user: req.user });
 
     setETagHeader(response, result.etag, result.document.version);
     return response.status(result.status).send(result.document);
@@ -101,13 +96,13 @@ export class SupportErrandJsonParameterController {
     @Param('municipalityId') municipalityId: string,
     @Param('errandId') errandId: string,
     @Param('key') key: string,
-    @HeaderParam('If-Match') ifMatch: string | undefined,
-    @HeaderParam('If-None-Match') ifNoneMatch: string | undefined,
+    @HeaderParam('If-Match') ifMatch: string,
+    @HeaderParam('If-None-Match') ifNoneMatch: string,
     @HeaderParam('X-Errand-Version') parentErrandVersion: string | undefined,
     @Body() data: UpdateSupportErrandJsonParameterDto,
     @Res() response: Response,
   ): Promise<Response> {
-    const definition = requireInvestigationDocument(this.investigationProfile, key);
+    const definition = requireJsonParameterDefinition(this.investigationProfile, key);
     const state = await this.policyService.getState(req.user);
     if (state === 'unavailable') {
       throw new HttpException(503, 'Investigation write policy is temporarily unavailable');
@@ -117,7 +112,7 @@ export class SupportErrandJsonParameterController {
     }
     this.policyService.assertCanWriteDocument(req.user, definition.key);
 
-    const result = await this.documentService.writeDocument({
+    const result = await this.documentService.writeJsonParameter({
       definition,
       municipalityId,
       errandId,

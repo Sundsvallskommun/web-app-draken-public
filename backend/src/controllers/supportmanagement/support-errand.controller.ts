@@ -84,8 +84,8 @@ import {
   toFacilities,
 } from '@/services/support-errand.service';
 import { assertSupportInvestigationClassificationContext } from '@/services/support-investigation-classification-context.service';
-import { SupportInvestigationDocumentService } from '@/services/support-investigation-document.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 import {
   SupportManagementLabelFilterError,
   SupportManagementLabelFilterSelection,
@@ -546,7 +546,7 @@ export class SupportErrandController {
   private apiService = new ApiService();
   private organizationService = new OrganizationService();
   private investigationPolicyService = new SupportInvestigationPolicyService();
-  private investigationDocumentService = new SupportInvestigationDocumentService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' });
+  private jsonParameterService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' });
   private newErrandDefaults: NewErrandDefaults | undefined = getNewErrandDefaults(APPLICATION);
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   SERVICE = apiServiceName('supportmanagement');
@@ -912,7 +912,7 @@ export class SupportErrandController {
     @Req() req: RequestWithUser,
     @Param('id') id: string,
     @Param('municipalityId') municipalityId: string,
-    @HeaderParam('If-Match') ifMatch: string | undefined,
+    @HeaderParam('If-Match') ifMatch: string,
     @Body() data: Partial<SupportErrandDto>,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
@@ -1105,7 +1105,7 @@ export class SupportErrandController {
     const [currentErrand, labelMetadata, classificationDocument] = await Promise.all([
       this.apiService.get<SupportErrand>({ url, baseURL, includeResponseHeaders: true, propagateClientError: true }, req.user),
       this.apiService.get<SupportLabels | null>({ url: metadataUrl, baseURL, propagateClientError: true }, req.user),
-      this.investigationDocumentService.readDocument({
+      this.jsonParameterService.readJsonParameter({
         definition,
         municipalityId,
         errandId: id,
@@ -1159,7 +1159,7 @@ export class SupportErrandController {
     @Req() req: RequestWithUser,
     @Param('id') id: string,
     @Param('municipalityId') municipalityId: string,
-    @HeaderParam('If-Match') ifMatch: string | undefined,
+    @HeaderParam('If-Match') ifMatch: string,
     @Body() data: AssignSupportErrandDto,
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {

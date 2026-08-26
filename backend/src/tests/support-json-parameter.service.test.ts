@@ -1,11 +1,8 @@
 import { HttpException } from '@/exceptions/HttpException';
 import type { User } from '@/interfaces/users.interface';
 import ApiService, { type ApiRequestConfig, type ApiResponse } from '@/services/api.service';
-import {
-  type InvestigationDocumentWritePreconditions,
-  type InvestigationJsonObject,
-  SupportInvestigationDocumentService,
-} from '@/services/support-investigation-document.service';
+import type { JsonObject } from '@/services/schema-bound-json.service';
+import { type JsonParameterWritePreconditions, SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
 import { mockUser } from './helpers/http';
 
@@ -82,7 +79,7 @@ const writableParentResponse = (version: number = 10) => response(parentErrand(v
 
 const makeSubject = (getQueue: readonly QueuedResponse[], putQueue: readonly QueuedResponse[] = []) => {
   const api = new FakeApiService(getQueue, putQueue);
-  const service = new SupportInvestigationDocumentService({
+  const service = new SupportJsonParameterService({
     apiService: api,
     namespace: NAMESPACE,
     supportManagementService: SUPPORT_MANAGEMENT_SERVICE,
@@ -98,21 +95,17 @@ const request = {
   user: USER,
 };
 
-const writeRequest = (
-  preconditions: InvestigationDocumentWritePreconditions,
-  schemaId = SCHEMA_ID,
-  value: InvestigationJsonObject = { assessment: 'saved' },
-) => ({
+const writeRequest = (preconditions: JsonParameterWritePreconditions, schemaId = SCHEMA_ID, value: JsonObject = { assessment: 'saved' }) => ({
   ...request,
   data: { schemaId, value },
   preconditions: { parentErrandVersion: '10', ...preconditions },
 });
 
-describe('SupportInvestigationDocumentService', () => {
+describe('SupportJsonParameterService', () => {
   it('reads a document only after binding the injected schemaName to schema metadata', async () => {
     const { api, service } = makeSubject([response(document(7), 200, '"7"'), response(schema(), 200)]);
 
-    await expect(service.readDocument(request)).resolves.toEqual({
+    await expect(service.readJsonParameter(request)).resolves.toEqual({
       document: document(7),
       etag: '"7"',
       status: 200,
@@ -146,7 +139,7 @@ describe('SupportInvestigationDocumentService', () => {
       [response(document(8), 200, '"8"')],
     );
 
-    await expect(service.writeDocument(writeRequest({ ifMatch: '"7"', parentErrandVersion: '11' }))).resolves.toEqual({
+    await expect(service.writeJsonParameter(writeRequest({ ifMatch: '"7"', parentErrandVersion: '11' }))).resolves.toEqual({
       document: document(8),
       etag: '"8"',
       status: 200,
@@ -172,7 +165,7 @@ describe('SupportInvestigationDocumentService', () => {
       [response(document(0), 201, '"0"')],
     );
 
-    await expect(service.writeDocument(writeRequest({ ifNoneMatch: '*', parentErrandVersion: '3' }))).resolves.toEqual({
+    await expect(service.writeJsonParameter(writeRequest({ ifNoneMatch: '*', parentErrandVersion: '3' }))).resolves.toEqual({
       document: document(0),
       etag: '"0"',
       status: 201,
@@ -204,7 +197,7 @@ describe('SupportInvestigationDocumentService', () => {
   ])('rejects update with $name before PUT', async ({ preconditions, status, getCalls }) => {
     const { api, service } = makeSubject([writableParentResponse(), response(document(7), 200, '"7"')]);
 
-    await expect(service.writeDocument(writeRequest(preconditions))).rejects.toMatchObject({ status });
+    await expect(service.writeJsonParameter(writeRequest(preconditions))).rejects.toMatchObject({ status });
 
     expect(api.getCalls).toHaveLength(getCalls);
     expect(api.putCalls).toHaveLength(0);
@@ -218,7 +211,7 @@ describe('SupportInvestigationDocumentService', () => {
   ])('rejects create with $name before PUT', async ({ preconditions, status, getCalls }) => {
     const { api, service } = makeSubject([writableParentResponse(), new HttpException(404, 'Not found')]);
 
-    await expect(service.writeDocument(writeRequest(preconditions))).rejects.toMatchObject({ status });
+    await expect(service.writeJsonParameter(writeRequest(preconditions))).rejects.toMatchObject({ status });
 
     expect(api.getCalls).toHaveLength(getCalls);
     expect(api.putCalls).toHaveLength(0);
@@ -228,9 +221,9 @@ describe('SupportInvestigationDocumentService', () => {
     const changedSchemaId = '2281_custom-schema_2.0';
     const { api, service } = makeSubject([writableParentResponse(), response(document(7), 200, '"7"')]);
 
-    await expect(service.writeDocument(writeRequest({ ifMatch: '"7"' }, changedSchemaId))).rejects.toMatchObject({
+    await expect(service.writeJsonParameter(writeRequest({ ifMatch: '"7"' }, changedSchemaId))).rejects.toMatchObject({
       status: 409,
-      message: 'An investigation document schemaId cannot be changed after creation',
+      message: 'A JSON parameter schemaId cannot be changed after creation',
     });
 
     expect(api.getCalls).toHaveLength(2);
@@ -240,9 +233,9 @@ describe('SupportInvestigationDocumentService', () => {
   it.each(['SOLVED', 'SUSPENDED', 'ASSIGNED', 'REOPENED'])('rejects writes when the parent errand status is %s', async status => {
     const { api, service } = makeSubject([response({ ...parentErrand(10), status }, 200, '"10"')]);
 
-    await expect(service.writeDocument(writeRequest({ ifMatch: '"7"' }))).rejects.toMatchObject({
+    await expect(service.writeJsonParameter(writeRequest({ ifMatch: '"7"' }))).rejects.toMatchObject({
       status: 409,
-      message: 'Support errand status does not allow investigation document changes',
+      message: 'Support errand status does not allow JSON parameter changes',
     });
 
     expect(api.getCalls.map(call => call.url)).toEqual([ERRAND_URL]);
@@ -252,9 +245,9 @@ describe('SupportInvestigationDocumentService', () => {
   it('rejects a create when schema metadata does not match the injected schemaName', async () => {
     const { api, service } = makeSubject([writableParentResponse(), new HttpException(404, 'Not found'), response(schema('another-schema'), 200)]);
 
-    await expect(service.writeDocument(writeRequest({ ifNoneMatch: '*' }))).rejects.toMatchObject({
+    await expect(service.writeJsonParameter(writeRequest({ ifNoneMatch: '*' }))).rejects.toMatchObject({
       status: 400,
-      message: 'Investigation document schemaId does not match its configured schemaName',
+      message: 'Document schemaId does not match its configured schemaName',
     });
 
     expect(api.getCalls.map(call => call.url)).toEqual([ERRAND_URL, DOCUMENT_URL, SCHEMA_URL]);
@@ -269,7 +262,7 @@ describe('SupportInvestigationDocumentService', () => {
     });
     const { api, service } = makeSubject([writableParentResponse(), new HttpException(404, 'Not found'), response(requiredSchema, 200)]);
 
-    await expect(service.writeDocument(writeRequest({ ifNoneMatch: '*' }))).rejects.toMatchObject({
+    await expect(service.writeJsonParameter(writeRequest({ ifNoneMatch: '*' }))).rejects.toMatchObject({
       status: 400,
       message: expect.stringContaining("must have required property 'decision'"),
     });
@@ -285,7 +278,7 @@ describe('SupportInvestigationDocumentService', () => {
     });
     const { api, service } = makeSubject([writableParentResponse(), new HttpException(404, 'Not found'), response(dateSchema, 200)]);
 
-    await expect(service.writeDocument(writeRequest({ ifNoneMatch: '*' }, SCHEMA_ID, { decisionDate: 'not-a-date' }))).rejects.toMatchObject({
+    await expect(service.writeJsonParameter(writeRequest({ ifNoneMatch: '*' }, SCHEMA_ID, { decisionDate: 'not-a-date' }))).rejects.toMatchObject({
       status: 400,
       message: expect.stringContaining('must match format "date"'),
     });
@@ -300,9 +293,9 @@ describe('SupportInvestigationDocumentService', () => {
     });
     const { api, service } = makeSubject([writableParentResponse(), new HttpException(404, 'Not found'), response(invalidSchema, 200)]);
 
-    await expect(service.writeDocument(writeRequest({ ifNoneMatch: '*' }))).rejects.toMatchObject({
+    await expect(service.writeJsonParameter(writeRequest({ ifNoneMatch: '*' }))).rejects.toMatchObject({
       status: 502,
-      message: 'JSON Schema returned an investigation schema that could not be compiled',
+      message: 'JSON Schema returned a schema that could not be compiled',
     });
 
     expect(api.putCalls).toHaveLength(0);
@@ -311,9 +304,9 @@ describe('SupportInvestigationDocumentService', () => {
   it('treats a persisted key-to-schema mismatch as an upstream contract failure', async () => {
     const { api, service } = makeSubject([response(document(7), 200, '"7"'), response(schema('another-schema'), 200)]);
 
-    await expect(service.readDocument(request)).rejects.toMatchObject({
+    await expect(service.readJsonParameter(request)).rejects.toMatchObject({
       status: 502,
-      message: 'Investigation document schemaId does not match its configured schemaName',
+      message: 'Document schemaId does not match its configured schemaName',
     });
 
     expect(api.putCalls).toHaveLength(0);
@@ -322,7 +315,7 @@ describe('SupportInvestigationDocumentService', () => {
   it('rejects schema metadata returned for another schemaId', async () => {
     const { service } = makeSubject([response(document(7), 200, '"7"'), response(schema(DEFINITION.schemaName, 'different-id'), 200)]);
 
-    await expect(service.readDocument(request)).rejects.toMatchObject({
+    await expect(service.readJsonParameter(request)).rejects.toMatchObject({
       status: 502,
       message: 'JSON Schema returned metadata for a different schemaId',
     });
@@ -335,7 +328,7 @@ describe('SupportInvestigationDocumentService', () => {
       [upstreamFailure],
     );
 
-    await expect(service.writeDocument(writeRequest({ ifMatch: '"7"' }))).rejects.toBe(upstreamFailure);
+    await expect(service.writeJsonParameter(writeRequest({ ifMatch: '"7"' }))).rejects.toBe(upstreamFailure);
 
     expect(api.getCalls.map(call => call.url)).toEqual([ERRAND_URL, DOCUMENT_URL, SCHEMA_URL, ERRAND_URL]);
   });
@@ -348,7 +341,7 @@ describe('SupportInvestigationDocumentService', () => {
       writableParentResponse(11),
     ]);
 
-    await expect(service.writeDocument(writeRequest({ ifMatch: '"7"' }))).rejects.toMatchObject({
+    await expect(service.writeJsonParameter(writeRequest({ ifMatch: '"7"' }))).rejects.toMatchObject({
       status: 412,
       message: 'X-Errand-Version does not match the current parent errand version',
     });
@@ -364,9 +357,9 @@ describe('SupportInvestigationDocumentService', () => {
       response({ ...parentErrand(10), status: 'SOLVED' }, 200, '"10"'),
     ]);
 
-    await expect(service.writeDocument(writeRequest({ ifMatch: '"7"' }))).rejects.toMatchObject({
+    await expect(service.writeJsonParameter(writeRequest({ ifMatch: '"7"' }))).rejects.toMatchObject({
       status: 409,
-      message: 'Support errand status does not allow investigation document changes',
+      message: 'Support errand status does not allow JSON parameter changes',
     });
     expect(api.getCalls.map(call => call.url)).toEqual([ERRAND_URL, DOCUMENT_URL, SCHEMA_URL, ERRAND_URL]);
     expect(api.putCalls).toHaveLength(0);
@@ -379,7 +372,7 @@ describe('SupportInvestigationDocumentService', () => {
       [concurrentCreate],
     );
 
-    await expect(service.writeDocument(writeRequest({ ifNoneMatch: '*' }))).rejects.toBe(concurrentCreate);
+    await expect(service.writeJsonParameter(writeRequest({ ifNoneMatch: '*' }))).rejects.toBe(concurrentCreate);
 
     expect(api.putCalls[0]?.headers).toEqual({ 'If-Match': '"-1"' });
     expect(api.getCalls.map(call => call.url)).toEqual([ERRAND_URL, DOCUMENT_URL, SCHEMA_URL, ERRAND_URL]);
@@ -388,7 +381,7 @@ describe('SupportInvestigationDocumentService', () => {
   it.each(['W/"7"', '*', '"7", "8"', '7'])('rejects malformed upstream document ETag %s', async etag => {
     const { api, service } = makeSubject([response(document(7), 200, etag)]);
 
-    await expect(service.readDocument(request)).rejects.toMatchObject({ status: 502 });
+    await expect(service.readJsonParameter(request)).rejects.toMatchObject({ status: 502 });
 
     expect(api.getCalls).toHaveLength(1);
   });
@@ -396,9 +389,9 @@ describe('SupportInvestigationDocumentService', () => {
   it('rejects an upstream body version that disagrees with its strong ETag', async () => {
     const { api, service } = makeSubject([response(document(7), 200, '"8"')]);
 
-    await expect(service.readDocument(request)).rejects.toMatchObject({
+    await expect(service.readJsonParameter(request)).rejects.toMatchObject({
       status: 502,
-      message: 'Support Management returned inconsistent investigation document versions',
+      message: 'Support Management returned inconsistent JSON parameter versions',
     });
 
     expect(api.getCalls).toHaveLength(1);

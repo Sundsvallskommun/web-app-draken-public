@@ -20,8 +20,8 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { getNewErrandDefaults, NewErrandDefaults } from '@/services/support-errand.service';
-import { SupportInvestigationDocumentService } from '@/services/support-investigation-document.service';
 import { SupportErrandClassificationOwner, SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
 import { mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
 import {
@@ -105,7 +105,7 @@ const makeController = (classificationOwner: SupportErrandClassificationOwner = 
     filterProtectedJsonParameters: vi.fn((errand: unknown) => errand),
   };
   const investigationDocument = {
-    readDocument: vi.fn(async () => ({
+    readJsonParameter: vi.fn(async () => ({
       document: {
         key: 'utredning-enhetschef',
         schemaId: '2281_utredning-enhetschef_1.0',
@@ -120,8 +120,8 @@ const makeController = (classificationOwner: SupportErrandClassificationOwner = 
   (controller as unknown as { organizationService: OrgStub }).organizationService = organization;
   (controller as unknown as { investigationPolicyService: SupportInvestigationPolicyService }).investigationPolicyService =
     investigationPolicy as unknown as SupportInvestigationPolicyService;
-  (controller as unknown as { investigationDocumentService: SupportInvestigationDocumentService }).investigationDocumentService =
-    investigationDocument as unknown as SupportInvestigationDocumentService;
+  (controller as unknown as { jsonParameterService: SupportJsonParameterService }).jsonParameterService =
+    investigationDocument as unknown as SupportJsonParameterService;
   return { controller, api, organization, investigationPolicy, investigationDocument };
 };
 
@@ -1612,7 +1612,7 @@ describe('updateSupportErrandClassification', () => {
   it('rejects stale classification document context before reading or patching the errand', async () => {
     const { controller, api, investigationDocument } = makeController();
     routeClassificationGets(api, [{ data: { id: mockSupportErrandId, version: 7, labels: [] }, message: 'success' }]);
-    investigationDocument.readDocument.mockResolvedValue({
+    investigationDocument.readJsonParameter.mockResolvedValue({
       document: {
         key: 'utredning-enhetschef',
         schemaId: '2281_utredning-enhetschef_1.0',
@@ -1632,7 +1632,7 @@ describe('updateSupportErrandClassification', () => {
   it('rejects a classification that conflicts with the versioned document legal bases', async () => {
     const { controller, api, investigationDocument } = makeController();
     routeClassificationGets(api, [{ data: { id: mockSupportErrandId, version: 7, labels: [] }, message: 'success' }]);
-    investigationDocument.readDocument.mockResolvedValue({
+    investigationDocument.readJsonParameter.mockResolvedValue({
       document: {
         key: 'utredning-enhetschef',
         schemaId: '2281_utredning-enhetschef_1.0',
@@ -1721,7 +1721,7 @@ describe('updateSupportErrandClassification', () => {
 
     await controller.updateSupportErrandClassification(req, mockSupportErrandId, MUNICIPALITY_ID, update(), res);
 
-    expect(investigationDocument.readDocument).toHaveBeenCalledWith({
+    expect(investigationDocument.readJsonParameter).toHaveBeenCalledWith({
       definition: expect.objectContaining({ key: update().documentKey }),
       municipalityId: MUNICIPALITY_ID,
       errandId: mockSupportErrandId,
