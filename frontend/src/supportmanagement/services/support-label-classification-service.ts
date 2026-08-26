@@ -61,11 +61,6 @@ const findLabelByClassificationAndResource = (
     (label) => normalizeClassification(label.classification) === classification && matchesResource(label, name)
   );
 
-export const getLabelTypeFromDisplayName = (displayName: string, metadata: SupportMetadata): Label[] =>
-  flattenLabelTree(metadata?.labels?.labelStructure).filter(
-    (label) => label.classification.toUpperCase() === 'TYPE' && label.displayName === displayName
-  );
-
 export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined =>
   findLabelByClassificationAndResource(metadata, 'TYPE', name);
 

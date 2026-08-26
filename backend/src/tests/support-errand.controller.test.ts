@@ -246,6 +246,7 @@ const labelFilterLabelStructure: Label[] = [
   },
   ...classificationLabelStructure,
 ];
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -1284,6 +1285,7 @@ describe('SupportErrandController', () => {
     });
   });
 });
+
 describe('SupportErrandDto write boundary', () => {
   it('accepts the optimistic locking version returned on existing parameters', async () => {
     const payload = plainToInstance(SupportErrandDto, {

@@ -260,7 +260,6 @@ export {
   getLabelSubType,
   getLabelSubTypeFromName,
   getLabelType,
-  getLabelTypeFromDisplayName,
   getLabelTypeFromName,
 } from './support-label-classification-service';
 

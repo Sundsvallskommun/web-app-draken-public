@@ -8,6 +8,7 @@ import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import { Role } from '@/interfaces/role';
 import {
   buildErrandFilter,
+  buildSupportErrandClassificationUpdateBody,
   getNewErrandDefaults,
   mapContactChannels,
   NEW_ERRAND_DEFAULTS,
@@ -18,6 +19,7 @@ import {
   sanitizeQuery,
   stripErrandVersions,
   stripParameterVersions,
+  SupportErrandClassificationSelection,
   toAttachmentDto,
   toCasedataChannel,
   toCasedataStakeholder,
@@ -120,6 +122,7 @@ const classificationLabelTree = {
   categoryClassification: 'CATEGORY',
   typeClassification: 'TYPE',
 };
+
 describe('support-errand.service', () => {
   describe('sanitizeQuery', () => {
     it('returns an empty string for undefined', () => {
@@ -639,6 +642,7 @@ describe('support-errand.service', () => {
       );
     });
   });
+
   describe('resolveSupportErrandClassification', () => {
     it('resolves only the exact owner/category/type ids from the metadata CATEGORY tree', () => {
       expect(
