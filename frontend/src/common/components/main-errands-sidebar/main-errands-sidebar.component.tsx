@@ -1,6 +1,7 @@
 import { CaseDataFilter } from '@casedata/components/casedata-filtering/casedata-filtering.component';
 import { CasedataFilterSidebarStatusSelector } from '@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component';
 import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
+import { CustomerMenu } from '@common/components/customer-menu/customer-menu.component';
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
 import { getApplicationEnvironment } from '@common/services/application-service';
@@ -160,6 +161,7 @@ export const MainErrandsSidebar: FC<{
             </div>
           </>
         ) : null}
+        <CustomerMenu open={open} />
         <div
           className={cx('absolute bottom-[2.4rem]', open ? 'right-[2.4rem]' : 'left-1/2 transform -translate-x-1/2')}
         >

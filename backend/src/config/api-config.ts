@@ -74,7 +74,19 @@ export const APIS = [
   },
 ];
 
-export function apiServiceName(name: string): string {
+const serviceOverrideEnvKeys: Record<string, string> = {
+  supportmanagement: 'SUPPORTMANAGEMENT_SERVICE',
+};
+
+const getServiceOverride = (name: string): string | undefined => {
+  const envKey = serviceOverrideEnvKeys[name];
+  if (!envKey) return undefined;
+  return process.env[envKey]?.trim() || undefined;
+};
+
+export const apiServiceName = (name: string): string => {
+  const override = getServiceOverride(name);
+  if (override) return override;
   const api = APIS.find(a => a.name === name);
   return api ? `${api.name}/${api.version}` : name;
-}
+};

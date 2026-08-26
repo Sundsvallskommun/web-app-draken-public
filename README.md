@@ -158,6 +158,18 @@ För LOK (Lokalplanering):
 | Relations         |     1.1 |
 | SimulatorServer   |     2.0 |
 
+För AOT (Alkohol och Tobak):
+
+| API               | Version |
+| ----------------- | ------: |
+| SupportManagement |    14.9 |
+| Citizen           |     3.0 |
+| ActiveDirectory   |     2.0 |
+| Templating        |     2.1 |
+| LegalEntity       |     2.0 |
+| Employee          |     2.0 |
+| SimulatorServer   |     2.0 |
+
 ## Utveckling
 
 ### Krav
@@ -185,7 +197,7 @@ yarn install
 
 3. Skapa .env-filer
 
-**Tillgängliga drakar:** `kc`, `ka`, `mex`, `pt`, `rob`, `lop`, `ik`, `msva`, `se`, `bou`, `lok`
+**Tillgängliga drakar:** `kc`, `ka`, `mex`, `pt`, `rob`, `lop`, `ik`, `msva`, `se`, `bou`, `lok`, `aot`
 
 ### Skapa alla env-filer på en gång
 
@@ -202,7 +214,8 @@ cp .env.ik-example .env.ik && \
 cp .env.msva-example .env.msva && \
 cp .env.se-example .env.se && \
 cp .env.bou-example .env.bou && \
-cp .env.lok-example .env.lok
+cp .env.lok-example .env.lok && \
+cp .env.aot-example .env.aot
 ```
 
 Backend (kör från `backend/`):
@@ -218,7 +231,8 @@ cp .env.ik.example.local .env.ik.development.local && \
 cp .env.msva.example.local .env.msva.development.local && \
 cp .env.se.example.local .env.se.development.local && \
 cp .env.bou.example.local .env.bou.development.local && \
-cp .env.lok.example.local .env.lok.development.local
+cp .env.lok.example.local .env.lok.development.local && \
+cp .env.aot.example.local .env.aot.development.local
 ```
 
 ### Skapa för enskild drake
