@@ -5,14 +5,14 @@ import type {
 import { normalizeSupportManagementResourcePath } from '@/config/supportmanagement-path';
 import { HttpException } from '@/exceptions/HttpException';
 
-import { InvestigationJsonObject } from './support-investigation-document.service';
+import { JsonObject } from './schema-bound-json.service';
 
 interface RequestedClassification {
   readonly category: string;
   readonly type: string;
 }
 
-const readJsonPointer = (value: InvestigationJsonObject, pointer: string): unknown =>
+const readJsonPointer = (value: JsonObject, pointer: string): unknown =>
   pointer
     .slice(1)
     .split('/')
@@ -34,7 +34,7 @@ export const assertSupportInvestigationClassificationContext = (
   policy: IafVofInvestigationClassificationPolicy,
   owner: IafVofInvestigationClassificationOwnerSelection,
   documentKey: string,
-  documentValue: InvestigationJsonObject,
+  documentValue: JsonObject,
   classification: RequestedClassification,
 ): void => {
   if (documentKey !== owner.documentKey) {
