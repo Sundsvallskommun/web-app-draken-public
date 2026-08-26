@@ -65,7 +65,7 @@ export class SupportFacilitiesController {
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
     @Param('id') id: string,
-    @HeaderParam('If-Match') ifMatch: string | undefined,
+    @HeaderParam('If-Match') ifMatch: string,
     @Body() facilities: SupportFacilitiesPayloadDto,
     @Res() response: Response,
   ): Promise<Response> {

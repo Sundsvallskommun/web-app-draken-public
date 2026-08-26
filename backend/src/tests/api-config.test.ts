@@ -15,14 +15,14 @@ describe('apiServiceName', () => {
     delete process.env.SUPPORTMANAGEMENT_API_TARGET;
 
     expect(resolveSupportManagementApiTarget()).toBe('stable');
-    expect(apiServiceName('supportmanagement')).toBe('supportmanagement/14.9');
+    expect(apiServiceName('supportmanagement')).toBe('supportmanagement/15.1');
   });
 
   it('routes only deployments that explicitly opt in through the sprint API', () => {
     process.env.SUPPORTMANAGEMENT_API_TARGET = 'sprint';
 
     expect(resolveSupportManagementApiTarget()).toBe('sprint');
-    expect(apiServiceName('supportmanagement')).toBe('supportmanagement-sprint/14.14');
+    expect(apiServiceName('supportmanagement')).toBe('supportmanagement-sprint/15.1');
   });
 
   it('rejects misspelled targets instead of silently changing the upstream contract', () => {

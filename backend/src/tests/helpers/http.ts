@@ -52,3 +52,13 @@ export const mockRes = (): MockResponse => {
   };
   return res;
 };
+
+/**
+ * The value a controller receives for an absent conditional-write header.
+ *
+ * These parameters are declared `string` rather than `string | undefined` on purpose: the union
+ * reflects `design:type` as `Object`, which makes routing-controllers JSON.parse the header and
+ * corrupt it (see the comment above the decorators). At runtime an absent header still arrives as
+ * undefined, so tests that exercise the missing-precondition path pass this instead of a raw cast.
+ */
+export const ABSENT_HEADER = undefined as unknown as string;
