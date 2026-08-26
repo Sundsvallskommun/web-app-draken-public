@@ -121,4 +121,16 @@ describe('conditional-write headers (over HTTP)', () => {
     // handler intact rather than dying in parameter binding.
     expect(JSON.stringify(response.body)).not.toContain('cannot be parsed into JSON');
   });
+
+  it('does not try to JSON.parse a malformed X-Errand-Version', async () => {
+    const response = await request(server)
+      .put(`${errandUrl}/json-parameters/utredning-enhetschef`)
+      .set('If-None-Match', '*')
+      .set('X-Errand-Version', 'inte-ett-nummer')
+      .send({ schemaId: 'x', value: {} });
+
+    // Canonical digits survive the parse by coincidence - `JSON.parse('12')` is a number the
+    // pattern check coerces back - so only a non-JSON value exposes the binding bug.
+    expect(JSON.stringify(response.body)).not.toContain('cannot be parsed into JSON');
+  });
 });

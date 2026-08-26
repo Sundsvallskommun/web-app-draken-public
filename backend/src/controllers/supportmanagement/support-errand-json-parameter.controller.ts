@@ -98,7 +98,7 @@ export class SupportErrandJsonParameterController {
     @Param('key') key: string,
     @HeaderParam('If-Match') ifMatch: string,
     @HeaderParam('If-None-Match') ifNoneMatch: string,
-    @HeaderParam('X-Errand-Version') parentErrandVersion: string | undefined,
+    @HeaderParam('X-Errand-Version') parentErrandVersion: string,
     @Body() data: UpdateSupportErrandJsonParameterDto,
     @Res() response: Response,
   ): Promise<Response> {

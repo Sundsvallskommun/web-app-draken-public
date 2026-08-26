@@ -14,7 +14,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 
-import { mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
+import { ABSENT_HEADER, mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
 import { mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';
 
 interface ApiStub {
@@ -119,7 +119,7 @@ describe('SupportFacilitiesController route contract', () => {
 
 describe('SupportFacilitiesController saveFacility', () => {
   it.each([
-    [undefined, 428, 'If-Match is required when updating a support errand'],
+    [ABSENT_HEADER, 428, 'If-Match is required when updating a support errand'],
     ['7', 400, 'If-Match must contain one strong numeric ETag'],
     ['W/"7"', 400, 'If-Match must contain one strong numeric ETag'],
     ['"07"', 400, 'If-Match must contain one strong numeric ETag'],

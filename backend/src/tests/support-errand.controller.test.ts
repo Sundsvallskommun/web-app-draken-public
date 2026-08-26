@@ -23,7 +23,7 @@ import { getNewErrandDefaults, NewErrandDefaults } from '@/services/support-erra
 import { SupportErrandClassificationOwner, SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
-import { mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
+import { ABSENT_HEADER, mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
 import {
   mockAdUsername,
   mockAttachmentId,
@@ -279,12 +279,12 @@ describe('SupportErrandController', () => {
         (res: MockResponse) => controller.errands(req, ...errandsArgs(), '', res),
         (res: MockResponse) => controller.countErrands(req, ...countArgs(), '', res),
         (res: MockResponse) => controller.registerSupportErrand(req, '', res),
-        (res: MockResponse) => controller.updateSupportErrand(req, mockSupportErrandId, '', undefined, {}, res),
+        (res: MockResponse) => controller.updateSupportErrand(req, mockSupportErrandId, '', ABSENT_HEADER, {}, res),
         (res: MockResponse) =>
           controller.updateSupportErrandStatus(req, mockSupportErrandId, '', { expectedVersion: 1, expectedStatus: 'NEW', status: 'ONGOING' }, res),
         (res: MockResponse) => controller.updateSupportErrandPhase(req, mockSupportErrandId, '', { expectedVersion: 1, transitionId: 'next' }, res),
         (res: MockResponse) =>
-          controller.becomeAdminForSupportErrand(req, mockSupportErrandId, '', undefined, { assignedUserId: mockAdUsername }, res),
+          controller.becomeAdminForSupportErrand(req, mockSupportErrandId, '', ABSENT_HEADER, { assignedUserId: mockAdUsername }, res),
         (res: MockResponse) => controller.forwardSupportErrand(req, mockSupportErrandId, '', {}, res),
       ];
 
@@ -606,7 +606,7 @@ describe('SupportErrandController', () => {
     });
 
     it.each([
-      [undefined, 428, 'If-Match is required when updating a support errand'],
+      [ABSENT_HEADER, 428, 'If-Match is required when updating a support errand'],
       ['7', 400, 'If-Match must contain one strong numeric ETag'],
       ['W/"7"', 400, 'If-Match must contain one strong numeric ETag'],
       ['"07"', 400, 'If-Match must contain one strong numeric ETag'],
@@ -658,7 +658,7 @@ describe('SupportErrandController', () => {
           mockReq(),
           mockSupportErrandId,
           MUNICIPALITY_ID,
-          undefined,
+          ABSENT_HEADER,
           { activePhaseId: 'unvalidated-target' },
           mockRes(),
         ),
@@ -673,9 +673,9 @@ describe('SupportErrandController', () => {
     ])('rejects direct %s writes so workflow commands cannot bypass current-state validation', async (data, _field) => {
       const { controller, api } = makeController();
 
-      await expect(controller.updateSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, undefined, data, mockRes())).rejects.toMatchObject(
-        { status: 400, message: 'Use the status transition endpoint to change status, resolution or suspension' },
-      );
+      await expect(
+        controller.updateSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, ABSENT_HEADER, data, mockRes()),
+      ).rejects.toMatchObject({ status: 400, message: 'Use the status transition endpoint to change status, resolution or suspension' });
       expect(api.patch).not.toHaveBeenCalled();
     });
 
@@ -683,7 +683,7 @@ describe('SupportErrandController', () => {
       const { controller, api } = makeController();
 
       await expect(
-        controller.updateSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, undefined, { assignedUserId: mockAdUsername }, mockRes()),
+        controller.updateSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, ABSENT_HEADER, { assignedUserId: mockAdUsername }, mockRes()),
       ).rejects.toMatchObject({ status: 400, message: 'Use the administrator endpoint to change the assigned user' });
       expect(api.get).not.toHaveBeenCalled();
       expect(api.patch).not.toHaveBeenCalled();
@@ -883,7 +883,7 @@ describe('SupportErrandController', () => {
           mockReq(),
           mockSupportErrandId,
           MUNICIPALITY_ID,
-          undefined,
+          ABSENT_HEADER,
           { assignedUserId: mockAdUsername },
           mockRes(),
         ),

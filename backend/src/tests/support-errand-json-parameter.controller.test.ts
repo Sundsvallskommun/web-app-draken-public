@@ -9,7 +9,7 @@ import {
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
-import { mockReq, mockRes, MockResponse } from './helpers/http';
+import { ABSENT_HEADER, mockReq, mockRes, MockResponse } from './helpers/http';
 import { mockMunicipalityId, mockSupportErrandId } from './helpers/mock-data';
 
 interface DocumentServiceStub {
@@ -96,7 +96,7 @@ describe('SupportErrandJsonParameterController', () => {
     const req = mockReq();
     const res = resDouble();
 
-    await controller.updateJsonParameter(req, mockMunicipalityId, mockSupportErrandId, updated.key, '"7"', undefined, '12', update, res);
+    await controller.updateJsonParameter(req, mockMunicipalityId, mockSupportErrandId, updated.key, '"7"', ABSENT_HEADER, '12', update, res);
 
     expect(policyService.getState).toHaveBeenCalledWith(req.user);
     expect(policyService.assertCanWriteDocument).toHaveBeenCalledWith(req.user, updated.key);
@@ -126,7 +126,7 @@ describe('SupportErrandJsonParameterController', () => {
     });
     const res = resDouble();
 
-    await controller.updateJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, document.key, undefined, '*', '3', update, res);
+    await controller.updateJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, document.key, ABSENT_HEADER, '*', '3', update, res);
 
     expect(documentService.writeJsonParameter.mock.calls[0][0].preconditions).toEqual({
       ifMatch: undefined,
@@ -148,7 +148,7 @@ describe('SupportErrandJsonParameterController', () => {
         mockMunicipalityId,
         mockSupportErrandId,
         'utredning-enhetschef',
-        undefined,
+        ABSENT_HEADER,
         '*',
         '10',
         { schemaId: '2281_utredning-enhetschef_1.0', value: {} },
@@ -171,7 +171,7 @@ describe('SupportErrandJsonParameterController', () => {
         mockMunicipalityId,
         mockSupportErrandId,
         'other-document',
-        undefined,
+        ABSENT_HEADER,
         '*',
         '10',
         { schemaId: '2281_other-document_1.0', value: {} },
