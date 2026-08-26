@@ -98,10 +98,8 @@ export const SupportStatusLabelComponent: FC<{
   }
 
   const solvedErrandText = () => {
-    const isRob = isROB();
-
     if (status === Status.SOLVED && resolution) {
-      if (isRob) {
+      if (isROB()) {
         return (ResolutionLabelROB as Record<string, string>)[resolution] ?? 'Löst';
       }
 
@@ -114,6 +112,8 @@ export const SupportStatusLabelComponent: FC<{
           return 'Åter till chef';
         case Resolution.BACK_TO_HR:
           return 'Åter till HR';
+        case Resolution.BACK_TO_CONTACT_SUNDSVALL:
+          return 'Felskickat';
       }
     }
 
