@@ -1,12 +1,11 @@
+import { useAcknowledgeNotification } from '@common/hooks/use-acknowledge-notification';
 import { prettyTime } from '@common/services/helper-service';
-import { Checkbox, cx, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore } from '@stores/index';
+import { Checkbox, cx } from '@sk-web-gui/react';
 import NextLink from 'next/link';
 import { FC } from 'react';
 
-import { acknowledgeNotifications } from './notification-actions';
 import { NotificationRenderIcon } from './notification-render-icon';
-import { labelBySubType, notificationLabel, senderFallback } from './notification-utils';
+import { notificationHref, notificationLabel, primaryEvent, senderFallback, subTypeLabel } from './notification-utils';
 import { NotificationView } from './notification-view';
 
 interface NotificationItemProps {
@@ -17,10 +16,12 @@ interface NotificationItemProps {
   refresh?: () => Promise<void>;
 }
 
-/** Deep link that opens the errand on its log, with the originating event highlighted. */
-export const notificationHref = (notification: NotificationView): string =>
-  `/arende/${notification.errandNumber}?tab=history&notification=${notification.id}`;
-
+/**
+ * A notification the user can act on, rendered as one line.
+ *
+ * Used for notifications covering a single event; a notification carrying several is rendered by
+ * `NotificationGroupItem` instead, which collapses them into a summary.
+ */
 export const NotificationItem: FC<NotificationItemProps> = ({
   notification,
   isSelected = false,
@@ -28,24 +29,10 @@ export const NotificationItem: FC<NotificationItemProps> = ({
   showCheckbox = false,
   refresh,
 }) => {
-  const municipalityId = useConfigStore((s) => s.municipalityId);
-  const toastMessage = useSnackbar();
+  const handleAcknowledge = useAcknowledgeNotification(notification, refresh);
 
-  const handleAcknowledge = async () => {
-    try {
-      await acknowledgeNotifications(municipalityId, [notification]);
-      await refresh?.();
-    } catch (error) {
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Något gick fel när notifieringen skulle kvitteras',
-        status: 'error',
-      });
-    }
-  };
-
-  const subTypeLabel = notification.subType ? labelBySubType[notification.subType] : undefined;
+  const event = primaryEvent(notification);
+  const eventLabel = subTypeLabel(event);
 
   return (
     <div className="p-16 pl-0 flex gap-12 items-start justify-between text-small" data-cy="notification-item">
@@ -55,11 +42,15 @@ export const NotificationItem: FC<NotificationItemProps> = ({
         </div>
       )}
       <div className="flex items-center my-xs">
-        <NotificationRenderIcon notification={notification} />
+        <NotificationRenderIcon
+          subType={event?.subType}
+          acknowledged={notification.acknowledged}
+          sender={notification.sender}
+        />
       </div>
       <div className="flex-grow">
         <div>
-          <strong>{`${notificationLabel(notification)} › `}</strong>
+          <strong>{`${notificationLabel(event)} › `}</strong>
           <NextLink
             href={notificationHref(notification)}
             target="_blank"
@@ -69,8 +60,8 @@ export const NotificationItem: FC<NotificationItemProps> = ({
             {notification.errandNumber || 'Till ärendet'}
           </NextLink>
         </div>
-        {notification.sender ? <div>Från: {senderFallback(notification.sender)}</div> : null}
-        {subTypeLabel ? <div>Händelse: {subTypeLabel}</div> : null}
+        {notification.sender !== undefined ? <div>Från: {senderFallback(notification.sender)}</div> : null}
+        {eventLabel ? <div>Händelse: {eventLabel}</div> : null}
       </div>
       <span className="whitespace-nowrap">{prettyTime(notification.created ?? '')}</span>
       {!notification.acknowledged && (

@@ -2,10 +2,15 @@ import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.componen
 import { Avatar, cx } from '@sk-web-gui/react';
 import { FC } from 'react';
 
-import { NotificationView } from './notification-view';
-
+/**
+ * Takes the fields it draws rather than a whole notification, so the same icon renders both a
+ * collapsed notification row and a single event inside an expanded one.
+ */
 interface NotificationRenderIconProps {
-  notification: NotificationView;
+  subType?: string;
+  acknowledged?: boolean;
+  /** Only casedata knows who acted; without a name the avatar variant falls back to its icon. */
+  sender?: string;
 }
 
 /**
@@ -39,15 +44,15 @@ const textColor: Record<string, string> = {
   primary: 'text-primary',
 };
 
-export const NotificationRenderIcon: FC<NotificationRenderIconProps> = ({ notification }) => {
-  const config = (notification.subType && iconConfig[notification.subType]) || iconConfig.default;
-  const color = notification.acknowledged ? 'primary' : config.defaultColor;
+export const NotificationRenderIcon: FC<NotificationRenderIconProps> = ({ subType, acknowledged, sender }) => {
+  const config = (subType && iconConfig[subType]) || iconConfig.default;
+  const color = acknowledged ? 'primary' : config.defaultColor;
   const bgColor = surfaceColor[color] ?? 'bg-tertiary-surface';
 
-  if (config.avatar && notification.sender) {
+  if (config.avatar && sender) {
     const initials =
-      `${notification.sender?.split(' ')[1]?.charAt(0).toUpperCase() ?? ''}` +
-      `${notification.sender?.split(' ')[0]?.charAt(0).toUpperCase() ?? ''}`;
+      `${sender.split(' ')[1]?.charAt(0).toUpperCase() ?? ''}` +
+      `${sender.split(' ')[0]?.charAt(0).toUpperCase() ?? ''}`;
 
     return (
       <div className={cx(`w-[4rem] h-[4rem] rounded-12 flex items-center justify-center bg-${color}-surface-accent`)}>

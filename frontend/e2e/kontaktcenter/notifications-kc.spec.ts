@@ -34,11 +34,12 @@ test.describe('Notifications', () => {
   };
 
   test('counts every unacknowledged notification on the bell', async ({ page }) => {
-    // Four notifications, two of which are merged into one group in the panel.
+    // One notification per errand, so the badge matches the number of rows in the panel — the errand
+    // with two messages counts once, not twice.
     await expect(bellBadge(page)).toContainText('4');
   });
 
-  test('merges notifications for the same errand and subtype into one row', async ({ page }) => {
+  test('collapses the events of one errand into a single row', async ({ page }) => {
     await openPanel(page);
 
     const groups = page.locator('[data-cy="notification-group"]');
@@ -46,8 +47,8 @@ test.describe('Notifications', () => {
     await expect(groups.first()).toContainText('2 nya meddelanden');
     await expect(groups.first()).toContainText('KC-2024-000001');
 
-    // The two ungrouped notifications are still shown on their own.
-    await expect(page.locator('[data-cy="notification-item"]')).toHaveCount(2);
+    // Notifications carrying a single event are still shown as plain rows.
+    await expect(page.locator('[data-cy="notification-item"]')).toHaveCount(3);
   });
 
   test('falls back to a generic label when the notification has no description', async ({ page }) => {
@@ -58,13 +59,21 @@ test.describe('Notifications', () => {
     await expect(bare).not.toContainText('undefined');
   });
 
-  test('expands a group to show the individual notifications', async ({ page }) => {
+  test('tells a removal apart from an addition when there is no description', async ({ page }) => {
+    await openPanel(page);
+
+    const removed = page.locator('[data-cy="notification-item"]').filter({ hasText: 'KC-2024-000004' });
+    await expect(removed).toContainText('Bilaga borttagen');
+    await expect(removed).not.toContainText('Ny bilaga');
+  });
+
+  test('expands a group to show the individual events', async ({ page }) => {
     await openPanel(page);
 
     const group = page.locator('[data-cy="notification-group"]').first();
     await group.locator('[data-cy="notification-group-toggle"]').click();
 
-    await expect(group.locator('[data-cy="notification-item"]')).toHaveCount(2);
+    await expect(group.locator('[data-cy="notification-event"]')).toHaveCount(2);
   });
 
   test('acknowledges a whole group in a single request', async ({ page }) => {
@@ -83,11 +92,28 @@ test.describe('Notifications', () => {
       .check({ force: true });
 
     const acknowledgeButton = page.locator('[data-cy="acknowledge-selected-notifications"]');
-    await expect(acknowledgeButton).toContainText('Markera som läst (2)');
+    // One notification covers both messages, so acknowledging the row is a single id upstream.
+    await expect(acknowledgeButton).toContainText('Markera som läst (1)');
     await acknowledgeButton.click();
 
     const request = await acknowledgeRequest;
-    expect(JSON.parse(request.postData() ?? '{}').ids).toHaveLength(2);
+    expect(JSON.parse(request.postData() ?? '{}').ids).toHaveLength(1);
+  });
+
+  // A notification covering several events used to stay unread when followed, while one covering a
+  // single event was acknowledged — an arbitrary split, since upstream moves a notification between
+  // those two states as activity arrives.
+  test('acknowledges a grouped notification when it is followed to the errand', async ({ page }) => {
+    await openPanel(page);
+
+    const acknowledgeRequest = page.waitForRequest(
+      (request) => request.url().includes('/supportnotifications/2281/acknowledge') && request.method() === 'PATCH'
+    );
+
+    await page.locator('[data-cy="notification-group"]').first().getByRole('link').click();
+
+    const request = await acknowledgeRequest;
+    expect(JSON.parse(request.postData() ?? '{}').ids).toEqual(['bb893d57-04e9-44af-a271-aff5df530bba']);
   });
 
   test('links a notification to the errand log', async ({ page }) => {

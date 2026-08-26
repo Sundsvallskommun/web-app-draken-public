@@ -29,7 +29,7 @@ För KS (Kontakt Sundsvall):
 | API               | Version |
 | ----------------- | ------: |
 | CaseData          |   12.10 |
-| SupportManagement |    14.9 |
+| SupportManagement |    15.1 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -63,7 +63,7 @@ För LOP (Lön och pension):
 
 | API                 | Version |
 | ------------------- | ------: |
-| SupportManagement   |    14.9 |
+| SupportManagement   |    15.1 |
 | Citizen             |     3.0 |
 | ActiveDirectory     |     2.0 |
 | Templating          |     2.1 |
@@ -81,14 +81,14 @@ För ROB (Rekrytering och bemanning):
 | Employee          |     2.0 |
 | LegalEntity       |     2.0 |
 | SimulatorServer   |     2.0 |
-| SupportManagement |    14.9 |
+| SupportManagement |    15.1 |
 | Templating        |     2.1 |
 
 För KA (Kontakt Ånge):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    14.9 |
+| SupportManagement |    15.1 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -100,7 +100,7 @@ För IK (Intern kundtjänst):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    14.9 |
+| SupportManagement |    15.1 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -112,7 +112,7 @@ För MSVA (MittSverige Vatten & avfall):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    14.9 |
+| SupportManagement |    15.1 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -124,7 +124,7 @@ För SE (Servicecenter Ekonomi):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    14.9 |
+| SupportManagement |    15.1 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -136,7 +136,7 @@ För BOU (Barn- och utbildningsförvaltningen):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    14.9 |
+| SupportManagement |    15.1 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
@@ -149,7 +149,7 @@ För LOK (Lokalplanering):
 
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    14.9 |
+| SupportManagement |    15.1 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |

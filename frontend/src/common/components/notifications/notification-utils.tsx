@@ -1,18 +1,32 @@
 import dayjs from 'dayjs';
 
-import { NotificationView } from './notification-view';
+import { NotificationEventView, NotificationView } from './notification-view';
 
-export const labelBySubType: Record<string, string> = {
+/** Fallback labels for everything that is not a removal. */
+const labelBySubType: Record<string, string> = {
   ATTACHMENT: 'Ny bilaga',
   DECISION: 'Nytt beslut',
   ERRAND: 'Ärende uppdaterat',
   MESSAGE: 'Nytt meddelande',
   NOTE: 'Ny kommentar/anteckning',
-  SYSTEM: 'Fasbyte',
   SUSPENSION: 'Parkering upphört',
 };
 
-/** Plural forms for the grouped notification summary, falling back to the singular label. */
+/**
+ * Labels for removals, which the plain ones get wrong — a deleted attachment is not "Ny bilaga".
+ *
+ * Only DELETE is treated specially. UPDATE would be the obvious second case, but upstream uses it
+ * for things that merely reached the errand (`eventType: UPDATE` with the description "Meddelande
+ * mottaget"), so an "uppdaterad" wording there would be plain wrong.
+ */
+const removalLabelBySubType: Record<string, string> = {
+  ATTACHMENT: 'Bilaga borttagen',
+  DECISION: 'Beslut borttaget',
+  MESSAGE: 'Meddelande borttaget',
+  NOTE: 'Kommentar/anteckning borttagen',
+};
+
+/** Plural forms for the collapsed notification summary, falling back to the singular label. */
 const pluralBySubType: Record<string, string> = {
   ATTACHMENT: 'nya bilagor',
   DECISION: 'nya beslut',
@@ -22,8 +36,11 @@ const pluralBySubType: Record<string, string> = {
   SUSPENSION: 'parkeringar som upphört',
 };
 
-/** Shown when a notification carries neither a description nor a recognised subtype. */
-export const DEFAULT_NOTIFICATION_LABEL = 'Händelse på ärende';
+/** Shown when an event carries neither a description nor a recognised subtype. */
+const DEFAULT_NOTIFICATION_LABEL = 'Händelse på ärende';
+
+/** Upstream marks removals with DELETE; every other type is something arriving or changing. */
+const isRemoval = (event: NotificationEventView): boolean => event.eventType === 'DELETE';
 
 export const senderFallback = (name?: string): string => {
   if (!name || name.toUpperCase() === 'UNKNOWN') return 'Okänd';
@@ -31,22 +48,51 @@ export const senderFallback = (name?: string): string => {
 };
 
 /**
- * What to call a notification in the list.
+ * The event that stands for the notification in a collapsed row — the newest one.
  *
- * Not every notification carries a description or a subtype — older ones predate those fields, and
- * upstream does not guarantee them. Falling back keeps the panel readable instead of rendering an
- * empty or broken row.
+ * Undefined when the notification carries no events at all, which upstream does not rule out.
  */
-export const notificationLabel = (notification: NotificationView): string => {
-  if (notification.description) return notification.description;
-  if (notification.subType && labelBySubType[notification.subType]) {
-    return labelBySubType[notification.subType];
-  }
-  return DEFAULT_NOTIFICATION_LABEL;
+export const primaryEvent = (notification: NotificationView): NotificationEventView | undefined =>
+  notification.events[0];
+
+/** What kind of thing happened, e.g. "Ny bilaga" or "Bilaga borttagen". */
+export const subTypeLabel = (event?: NotificationEventView): string | undefined => {
+  if (!event?.subType) return undefined;
+  if (isRemoval(event)) return removalLabelBySubType[event.subType] ?? labelBySubType[event.subType];
+  return labelBySubType[event.subType];
 };
 
 /**
- * Hide notifications the user should not be bothered by.
+ * What to call an event in the list.
+ *
+ * Not every event carries a description or a subtype — older ones predate those fields, and upstream
+ * does not guarantee them. Falling back keeps the panel readable instead of rendering an empty or
+ * broken row, and an absent event falls back the same way.
+ */
+export const notificationLabel = (event?: NotificationEventView): string =>
+  event?.description ?? subTypeLabel(event) ?? DEFAULT_NOTIFICATION_LABEL;
+
+/**
+ * Human readable summary of a notification, e.g. "3 nya meddelanden".
+ *
+ * Only worth pluralising when every event is of the same kind; a mixed burst is just "händelser".
+ */
+export const notificationSummary = (notification: NotificationView): string => {
+  if (notification.events.length <= 1) {
+    return notificationLabel(primaryEvent(notification));
+  }
+
+  const subTypes = new Set(notification.events.map((event) => event.subType));
+  const sharedSubType = subTypes.size === 1 ? notification.events[0].subType : undefined;
+  // Every plural form reads as "new X". A burst that includes a removal is not that, so it falls
+  // back to the neutral wording rather than claiming three new attachments when one was deleted.
+  const plural = sharedSubType && !notification.events.some(isRemoval) ? pluralBySubType[sharedSubType] : undefined;
+
+  return `${notification.events.length} ${plural ?? 'nya händelser'}`;
+};
+
+/**
+ * Hide what the user should not be bothered by.
  *
  * The own-action filter only applies when the notification knows who triggered it. Supportmanagement
  * no longer exposes that (the backend is responsible for not notifying the person who acted), while
@@ -57,97 +103,50 @@ export const getFilteredNotifications = (
   currentUsername: string
 ): NotificationView[] => {
   const username = (currentUsername || '').toLowerCase();
+  const kept: NotificationView[] = [];
 
-  return notifications.filter((notification) => {
+  notifications.forEach((notification) => {
+    if (notification.createdBy && notification.createdBy.toLowerCase() === username) return;
+
     // Phase changes are noise for everyone until subscriber event filters are configured.
-    if (notification.subType === 'SYSTEM') return false;
-    if (!notification.createdBy) return true;
-    return notification.createdBy.toLowerCase() !== username;
+    const events = notification.events.filter((event) => event.subType !== 'SYSTEM');
+
+    // Filtering away everything a notification had to say leaves nothing to show. A notification
+    // that never carried events is a different case — it keeps its row, under the generic label.
+    if (notification.events.length > 0 && events.length === 0) return;
+
+    kept.push({ ...notification, events });
   });
-};
 
-export interface NotificationGroup {
-  key: string;
-  errandId: string;
-  errandNumber: string;
-  subType?: string;
-  /** Newest notification in the group — its timestamp and text represent the group. */
-  latest: NotificationView;
-  items: NotificationView[];
-}
-
-/** Human readable summary of a group, e.g. "3 nya meddelanden". */
-export const groupSummary = (group: NotificationGroup): string => {
-  if (group.items.length === 1) {
-    return notificationLabel(group.latest);
-  }
-  const plural = group.subType ? pluralBySubType[group.subType] : undefined;
-  return `${group.items.length} ${plural ?? 'nya händelser'}`;
+  return kept;
 };
 
 /**
- * Merge similar notifications so a burst of activity on one errand reads as one line.
+ * Does a log event and a notification event describe the same thing?
  *
- * Grouping prefers the upstream `requestGroupId`, which ties everything that happened in one
- * operation together. Supportmanagement does not expose it on notifications yet, so the fallback
- * groups by errand and subtype within a time window — same intent, coarser precision.
+ * Still a heuristic: upstream timestamps every notification event but puts no id on it, so there is
+ * nothing exact to compare. Matching per event rather than per notification is as close as the API
+ * currently allows, and keeping the comparison in one place means it disappears in a single edit
+ * once upstream exposes the reference.
  */
-export const groupNotifications = (
-  notifications: NotificationView[],
-  windowMinutes: number = 60
-): NotificationGroup[] => {
-  const groups: NotificationGroup[] = [];
-
-  // Newest first, so the first notification of a group is always the one representing it.
-  const sorted = [...notifications].sort((a, b) => dayjs(b.created).valueOf() - dayjs(a.created).valueOf());
-
-  sorted.forEach((notification) => {
-    const openGroup = groups.find((group) => {
-      if (group.errandId !== notification.errandId) return false;
-      if (notification.requestGroupId || group.latest.requestGroupId) {
-        return group.latest.requestGroupId === notification.requestGroupId;
-      }
-      if (group.subType !== notification.subType) return false;
-      return dayjs(group.latest.created).diff(dayjs(notification.created), 'minute') < windowMinutes;
-    });
-
-    if (openGroup) {
-      openGroup.items.push(notification);
-      return;
-    }
-
-    groups.push({
-      key: notification.requestGroupId ?? `${notification.errandId}-${notification.subType}-${notification.id}`,
-      errandId: notification.errandId,
-      errandNumber: notification.errandNumber,
-      subType: notification.subType,
-      latest: notification,
-      items: [notification],
-    });
-  });
-
-  return groups;
-};
-
-/**
- * Does this event belong to the given notification?
- *
- * Exact while `eventId`/`requestGroupId` are present, and heuristic otherwise — supportmanagement
- * does not link notifications to events yet. Keeping the fuzzy comparison in one place means the
- * heuristic disappears in a single edit once upstream exposes the reference.
- */
-export const matchEventToNotification = (
-  event: { id?: string; requestGroupId?: string; subType?: string; created?: string },
-  notification: NotificationView
+const isSameEvent = (
+  event: { subType?: string; created?: string },
+  notificationEvent: NotificationEventView
 ): boolean => {
-  if (notification.eventId && event.id) return notification.eventId === event.id;
-  if (notification.requestGroupId && event.requestGroupId) {
-    return notification.requestGroupId === event.requestGroupId;
-  }
-  if (!event.created || !notification.created) return false;
+  if (!event.created || !notificationEvent.created) return false;
   // Both subtypes must be known. Treating "neither has one" as a match would let any event within
-  // the time window claim any subtype-less notification.
-  if (!event.subType || !notification.subType) return false;
-  if (event.subType.toUpperCase() !== notification.subType) return false;
-  return Math.abs(dayjs(event.created).diff(dayjs(notification.created), 'second')) <= 5;
+  // the time window claim any subtype-less notification event.
+  if (!event.subType || !notificationEvent.subType) return false;
+  if (event.subType.toUpperCase() !== notificationEvent.subType) return false;
+  return Math.abs(dayjs(event.created).diff(dayjs(notificationEvent.created), 'second')) <= 5;
 };
+
+/** Did this log event produce one of the events the notification is about? */
+export const matchEventToNotification = (
+  event: { subType?: string; created?: string },
+  notification: NotificationView
+): boolean => notification.events.some((notificationEvent) => isSameEvent(event, notificationEvent));
+
+/** Deep link that opens the errand on its log, with the events the notification covers highlighted. */
+export const notificationHref = (notification: NotificationView): string =>
+  `/arende/${notification.errandNumber}?tab=history&notification=${notification.id}`;

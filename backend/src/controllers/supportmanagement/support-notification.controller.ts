@@ -1,11 +1,17 @@
-import { ArrayNotEmpty, IsArray, IsString } from 'class-validator';
+import { Type as TypeTransformer } from 'class-transformer';
+import { ArrayNotEmpty, IsArray, IsString, ValidateNested } from 'class-validator';
 import { randomUUID } from 'crypto';
 import { Body, Controller, Get, Param, Patch, Put, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { IdentifierTypeEnum, PageSubscriberNotification, SubscriberNotification } from '@/data-contracts/supportmanagement/data-contracts';
+import {
+  IdentifierTypeEnum,
+  PageSubscriberNotification,
+  SubscriberNotification,
+  SubscriberNotificationEvent,
+} from '@/data-contracts/supportmanagement/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { User } from '@/interfaces/users.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -14,19 +20,34 @@ import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 
 /**
+ * One thing that happened on an errand, as the frontend consumes it.
+ *
+ * Upstream aggregates every event since the last acknowledgement onto a single notification, so a
+ * notification carries a list of these rather than one flat event of its own.
+ */
+export class SupportNotificationEventDto {
+  @IsString()
+  created?: string;
+  @IsString()
+  eventType?: string;
+  @IsString()
+  subType?: string;
+  @IsString()
+  description?: string;
+}
+
+/**
  * A notification as the frontend consumes it.
  *
- * Deliberately not the raw upstream SubscriberNotification: `eventId` and `requestGroupId` are not
- * exposed upstream yet, and keeping them in the shape from the start means they can be filled in
- * later without touching a single component.
+ * One notification per errand, holding everything that has happened on it since the user last
+ * acknowledged. The panel renders a notification as a single row, so no grouping is needed on the
+ * client any more.
  */
 export class SupportNotificationDto {
   @IsString()
   id!: string;
   @IsString()
   created!: string;
-  @IsString()
-  expires?: string;
   /** Timestamp of acknowledgement, absent while the notification is unacknowledged. */
   @IsString()
   acknowledged?: string;
@@ -34,16 +55,14 @@ export class SupportNotificationDto {
   errandId!: string;
   @IsString()
   errandNumber!: string;
-  @IsString()
-  eventType?: string;
-  @IsString()
-  subType?: string;
-  @IsString()
-  description?: string;
-  @IsString()
-  eventId?: string;
-  @IsString()
-  requestGroupId?: string;
+  /**
+   * Events since the last acknowledgement, newest first. Can be empty — upstream does not guarantee
+   * an event for every notification, and consumers have to stay readable when it is.
+   */
+  @IsArray()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => SupportNotificationEventDto)
+  events!: SupportNotificationEventDto[];
 }
 
 class AcknowledgeNotificationsDto {
@@ -58,16 +77,25 @@ export class AcknowledgeResultDto {
   failed!: string[];
 }
 
+/**
+ * Newest first. Upstream does not promise an order, and the panel takes the first event as the one
+ * that represents the notification, so the order is settled here rather than in every consumer.
+ */
+const byCreatedDesc = (a: SubscriberNotificationEvent, b: SubscriberNotificationEvent): number =>
+  new Date(b.created ?? 0).getTime() - new Date(a.created ?? 0).getTime();
+
 const toNotificationDto = (notification: SubscriberNotification): SupportNotificationDto => ({
   id: notification.id!,
   created: notification.created!,
-  expires: notification.expires,
   acknowledged: notification.acknowledged,
   errandId: notification.errandId!,
   errandNumber: notification.errandNumber!,
-  eventType: notification.eventType,
-  subType: notification.subType,
-  description: notification.description,
+  events: [...(notification.events ?? [])].sort(byCreatedDesc).map(event => ({
+    created: event.created,
+    eventType: event.eventType,
+    subType: event.subType,
+    description: event.description,
+  })),
 });
 
 @Controller()

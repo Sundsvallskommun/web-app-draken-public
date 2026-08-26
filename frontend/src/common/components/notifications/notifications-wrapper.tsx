@@ -1,3 +1,4 @@
+import { sortBy } from '@common/services/helper-service';
 import { Button, Checkbox, cx, Divider, useSnackbar } from '@sk-web-gui/react';
 import { useSupportStore, useUserStore } from '@stores/index';
 import { useConfigStore } from '@stores/index';
@@ -6,7 +7,8 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { acknowledgeNotifications } from './notification-actions';
 import { NotificationGroupItem } from './notification-group-item';
-import { getFilteredNotifications, groupNotifications, NotificationGroup } from './notification-utils';
+import { getFilteredNotifications } from './notification-utils';
+import { NotificationView } from './notification-view';
 
 export const NotificationsWrapper: React.FC<{
   show: boolean;
@@ -29,39 +31,47 @@ export const NotificationsWrapper: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show]);
 
-  const { newGroups, acknowledgedGroups } = useMemo(() => {
+  // One row per notification, never merged in the client. Supportmanagement aggregates upstream, so
+  // a row can still cover several events; casedata emits one notification per event and each stays
+  // its own row. Sorted here because neither API guarantees an order.
+  const { newNotifications, acknowledgedNotifications } = useMemo(() => {
     const filtered = getFilteredNotifications(notifications, user?.username || '');
     return {
-      newGroups: groupNotifications(filtered.filter((n) => !n.acknowledged)),
-      acknowledgedGroups: groupNotifications(filtered.filter((n) => n.acknowledged)),
+      newNotifications: sortBy(
+        filtered.filter((n) => !n.acknowledged),
+        'created'
+      ).reverse(),
+      acknowledgedNotifications: sortBy(
+        filtered.filter((n) => n.acknowledged),
+        'created'
+      ).reverse(),
     };
   }, [notifications, user?.username]);
 
-  const handleToggleSelect = (groupKey: string) => {
+  const handleToggleSelect = (notificationId: string) => {
     setSelectedKeys((prev) => {
       const next = new Set(prev);
-      if (next.has(groupKey)) {
-        next.delete(groupKey);
+      if (next.has(notificationId)) {
+        next.delete(notificationId);
       } else {
-        next.add(groupKey);
+        next.add(notificationId);
       }
       return next;
     });
   };
 
   const handleSelectAllNew = () => {
-    const allKeys = newGroups.map((group) => group.key);
-    const allSelected = allKeys.every((key) => selectedKeys.has(key));
+    const allIds = newNotifications.map((notification) => notification.id);
+    const allSelected = allIds.every((id) => selectedKeys.has(id));
 
     setSelectedKeys((prev) => {
       const next = new Set(prev);
-      allKeys.forEach((key) => (allSelected ? next.delete(key) : next.add(key)));
+      allIds.forEach((id) => (allSelected ? next.delete(id) : next.add(id)));
       return next;
     });
   };
 
-  const selectedGroups = newGroups.filter((group) => selectedKeys.has(group.key));
-  const selectedNotifications = selectedGroups.flatMap((group) => group.items);
+  const selectedNotifications = newNotifications.filter((notification) => selectedKeys.has(notification.id));
 
   const handleAcknowledgeSelected = async () => {
     if (!selectedNotifications.length) return;
@@ -91,17 +101,18 @@ export const NotificationsWrapper: React.FC<{
     }
   };
 
-  const allNewSelected = newGroups.length > 0 && newGroups.every((group) => selectedKeys.has(group.key));
-  const someNewSelected = newGroups.some((group) => selectedKeys.has(group.key));
+  const allNewSelected =
+    newNotifications.length > 0 && newNotifications.every((notification) => selectedKeys.has(notification.id));
+  const someNewSelected = newNotifications.some((notification) => selectedKeys.has(notification.id));
 
-  const renderGroups = (groups: NotificationGroup[], selectable: boolean) => (
+  const renderNotifications = (list: NotificationView[], selectable: boolean) => (
     <ul>
-      {groups.map((group) => (
-        <li key={group.key}>
+      {list.map((notification) => (
+        <li key={notification.id}>
           <NotificationGroupItem
-            group={group}
-            isSelected={selectedKeys.has(group.key)}
-            onToggleSelect={() => handleToggleSelect(group.key)}
+            notification={notification}
+            isSelected={selectedKeys.has(notification.id)}
+            onToggleSelect={() => handleToggleSelect(notification.id)}
             showCheckbox={selectable}
             refresh={refresh}
           />
@@ -149,7 +160,7 @@ export const NotificationsWrapper: React.FC<{
                 <div className="relative">
                   <Divider.Section>
                     <div className="flex gap-sm items-center">
-                      {newGroups.length > 0 && (
+                      {newNotifications.length > 0 && (
                         <Checkbox
                           checked={allNewSelected}
                           indeterminate={someNewSelected && !allNewSelected}
@@ -174,8 +185,8 @@ export const NotificationsWrapper: React.FC<{
                     </Button>
                   )}
                 </div>
-                {newGroups.length > 0 ? (
-                  renderGroups(newGroups, true)
+                {newNotifications.length > 0 ? (
+                  renderNotifications(newNotifications, true)
                 ) : (
                   <div className="m-md">Inga nya notifieringar</div>
                 )}
@@ -187,8 +198,8 @@ export const NotificationsWrapper: React.FC<{
                   </div>
                 </Divider.Section>
 
-                {acknowledgedGroups.length > 0 ? (
-                  renderGroups(acknowledgedGroups, false)
+                {acknowledgedNotifications.length > 0 ? (
+                  renderNotifications(acknowledgedNotifications, false)
                 ) : (
                   <div className="m-md">Inga notifieringar</div>
                 )}

@@ -71,8 +71,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  causeAsProblem?: ThrowableProblem;
   detail?: string;
+  causeAsProblem?: ThrowableProblem;
 }
 
 export interface ThrowableProblem {
@@ -90,6 +90,22 @@ export interface ThrowableProblem {
 export interface Violation {
   field?: string;
   message?: string;
+}
+
+/** Field of an errand exposed to a role */
+export interface FieldAccess {
+  /** Field to expose */
+  field: FieldAccessFieldEnum;
+  /** Keys to expose when the field is a keyed collection. The whole collection is exposed when left empty */
+  keys?: string[];
+}
+
+/** What limited read means within the namespace */
+export interface LimitedReadAccess {
+  /** Resources reachable on an errand the labels of the user only grant them limited read for. The errand itself is always reachable, listing resources here extends limited read beyond it. Read only, so no access level is given per resource */
+  resources?: LimitedReadAccessResourcesEnum[];
+  /** Fields of the errand exposed, applying instead of the fields of any role the user holds, when role based mapping is active */
+  fields?: FieldAccess[];
 }
 
 /** Namespace configuration model */
@@ -121,6 +137,43 @@ export interface NamespaceConfig {
   accessControl?: boolean;
   /** If set to true notification will be sent to the stakeholder when stakeholder with reporter role recieves an internal message. If no value is set it defaults to false. */
   notifyReporter?: boolean;
+  /** If set to true errands are mapped according to the fields configured for the roles held by the requesting user. Users holding no role, and all users when set to false, receive the full errand. If no value is set it defaults to false. */
+  roleBasedMapping?: boolean;
+  /** If set to true the resources a user may reach are decided by the access mapper in addition to their labels. Leave false until the namespace has resource access configured there, otherwise no resource can be reached. If no value is set it defaults to false. */
+  resourceAccessControl?: boolean;
+  /** What a user whose labels only grant them limited read for an errand may reach on it. Limited read always reaches the errand itself, listing resources here extends it beyond that, up to what read access gives. The fields apply instead of the fields of any role the user holds */
+  limitedReadAccess?: LimitedReadAccess;
+  /** Access given to the reporter of an errand. Leaving it out means reporters get nothing beyond what their labels already grant */
+  reporterAccess?: ReporterAccess;
+  /** Restricts the errand to the listed fields for holders of a role supplied by the access mapper, when role based mapping is active. A role that is not listed is not restricted and sees the errand in full */
+  roleFieldRestrictions?: RoleFieldRestriction[];
+}
+
+/** Access given to the reporter of an errand */
+export interface ReporterAccess {
+  /** Resources the reporter may reach on their own errand, and what they may do with each. The access mapper knows nothing about reporters, so this is the only place their resources are granted */
+  resources?: ResourceAccess[];
+  /** Fields of the errand exposed to its reporter. These widen whatever else applies, whether or not the namespace maps errands per role, since reporting an errand may never reduce what its reporter sees */
+  fields?: FieldAccess[];
+}
+
+/** Resource a role may reach, and what it may do with it */
+export interface ResourceAccess {
+  /** Resource to grant access to */
+  resource: ResourceAccessResourceEnum;
+  /** Access level granted for the resource */
+  level: ResourceAccessLevelEnum;
+}
+
+/** Restricts the errand to a set of fields for holders of one role */
+export interface RoleFieldRestriction {
+  /**
+   * Role the restriction applies to, as supplied by the access mapper
+   * @minLength 1
+   */
+  role: string;
+  /** Fields the errand is restricted to. Applies to errands the user has read or read/write for, an errand they only have limited read for uses limitedReadAccess instead */
+  fields?: FieldAccess[];
 }
 
 /** Errand action parameter model */
@@ -232,10 +285,8 @@ export interface JsonNode {
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   integralNumber?: boolean;
-  missingNode?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -247,7 +298,9 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
+  valueNode?: boolean;
+  container?: boolean;
+  missingNode?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -597,6 +650,44 @@ export interface PhaseTransition {
   deprecated?: boolean;
 }
 
+/** MeasureType model */
+export interface MeasureType {
+  /** MeasureType ID */
+  id?: string;
+  /**
+   * Name for the measure type. Used as key
+   * @minLength 1
+   */
+  name: string;
+  /** Display name for the measure type */
+  displayName?: string | null;
+  /**
+   * Group that this measure type belongs to
+   * @minLength 1
+   */
+  measureGroup: string;
+  /**
+   * Sort order for the measure type
+   * @format int32
+   */
+  sortOrder?: number | null;
+  /**
+   * Indicates if the measure type is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
+  /**
+   * Timestamp when the measure type was created
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * Timestamp when the measure type was last modified
+   * @format date-time
+   */
+  modified?: string;
+}
+
 /** ExternalIdType model */
 export interface ExternalIdType {
   /** ExternalIdType ID */
@@ -804,6 +895,8 @@ export interface Errand {
   activeNotifications?: Notification[];
   /** List of pending actions for the errand */
   actions?: ErrandAction[];
+  /** List of measures for the errand */
+  measures?: Measure[];
   /**
    * Timestamp when errand was created
    * @format date-time
@@ -883,6 +976,57 @@ export interface ExternalTag {
   key?: string;
   /** Value for external tag */
   value?: string;
+}
+
+/** Measure model */
+export interface Measure {
+  /** Measure ID */
+  id?: string;
+  /** Responsible user (ad-username) */
+  responsibleUser?: string;
+  /** Type of measure */
+  type?: string;
+  /**
+   * Planned start date
+   * @format date-time
+   */
+  plannedStart?: string;
+  /**
+   * Planned completion date
+   * @format date-time
+   */
+  plannedComplete?: string;
+  /**
+   * Execution date
+   * @format date-time
+   */
+  executed?: string;
+  /** User who added the measure */
+  addedByUser?: string;
+  /** Role of the user who added the measure */
+  addedByRole?: string;
+  /** Goal of the measure */
+  goal?: string;
+  /** Description of the measure */
+  description?: string;
+  /** Accept status */
+  accept?: string | null;
+  /** Motivation for the accept decision */
+  acceptMotivation?: string;
+  /** Rework goal */
+  reworkGoal?: string;
+  /** Rework description */
+  reworkDescription?: string;
+  /**
+   * Timestamp when the measure was created
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * Timestamp when the measure was last modified
+   * @format date-time
+   */
+  modified?: string;
 }
 
 export interface Notification {
@@ -1489,6 +1633,24 @@ export interface MarkAsReadRequest {
   messageIds: string[];
 }
 
+/** Validation model */
+export interface Validation {
+  /** Type of metadata that the validation applies to */
+  type?: ValidationTypeEnum;
+  /** Signals if values of the type are validated against the metadata of the namespace when errands are created or updated */
+  validated: boolean;
+  /**
+   * Timestamp when the validation was created
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * Timestamp when the validation was last modified
+   * @format date-time
+   */
+  modified?: string;
+}
+
 /** UpdateErrandNoteRequest model */
 export interface UpdateErrandNoteRequest {
   /**
@@ -1558,21 +1720,21 @@ export interface Conversation {
 }
 
 export interface PageSubscriberNotification {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: SubscriberNotification[];
   /** @format int32 */
   number?: number;
-  first?: boolean;
-  last?: boolean;
-  /** @format int32 */
-  numberOfElements?: number;
   sort?: SortObject;
   pageable?: PageableObject;
+  /** @format int32 */
+  numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   empty?: boolean;
 }
 
@@ -1583,15 +1745,15 @@ export interface PageableObject {
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
-  unpaged?: boolean;
   /** @format int32 */
   pageSize?: number;
+  unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  unsorted?: boolean;
   sorted?: boolean;
+  unsorted?: boolean;
 }
 
 export interface SubscriberNotification {
@@ -1644,13 +1806,24 @@ export interface SubscriberNotification {
    * @example "2000-10-31T01:30:00.000+02:00"
    */
   acknowledged?: string;
+  /** Events that have occurred on the errand since the notification was last acknowledged */
+  events?: SubscriberNotificationEvent[];
+}
+
+export interface SubscriberNotificationEvent {
   /**
-   * Event type that triggered the notification
+   * Timestamp when the event occurred
+   * @format date-time
+   * @example "2000-10-31T01:30:00.000+02:00"
+   */
+  created?: string;
+  /**
+   * Event type
    * @example "UPDATE"
    */
   eventType?: string;
   /**
-   * Description of the event that triggered the notification
+   * Description of the event
    * @example "Bilaga har skapats"
    */
   description?: string;
@@ -1709,26 +1882,27 @@ export interface MetadataResponse {
   labels?: Labels;
   statuses?: Status[];
   roles?: Role[];
+  measureTypes?: MeasureType[];
   contactReasons?: ContactReason[];
   phases?: Phase[];
 }
 
 export interface PageErrand {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Errand[];
   /** @format int32 */
   number?: number;
-  first?: boolean;
-  last?: boolean;
-  /** @format int32 */
-  numberOfElements?: number;
   sort?: SortObject;
   pageable?: PageableObject;
+  /** @format int32 */
+  numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   empty?: boolean;
 }
 
@@ -1867,21 +2041,21 @@ export interface EventMetaData {
 }
 
 export interface PageEvent {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Event[];
   /** @format int32 */
   number?: number;
-  first?: boolean;
-  last?: boolean;
-  /** @format int32 */
-  numberOfElements?: number;
   sort?: SortObject;
   pageable?: PageableObject;
+  /** @format int32 */
+  numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   empty?: boolean;
 }
 
@@ -1976,21 +2150,21 @@ export interface Message {
 }
 
 export interface PageMessage {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: Message[];
   /** @format int32 */
   number?: number;
-  first?: boolean;
-  last?: boolean;
-  /** @format int32 */
-  numberOfElements?: number;
   sort?: SortObject;
   pageable?: PageableObject;
+  /** @format int32 */
+  numberOfElements?: number;
+  first?: boolean;
+  last?: boolean;
   empty?: boolean;
 }
 
@@ -2072,6 +2246,112 @@ export interface CountResponse {
   count?: number;
 }
 
+/** Field to expose */
+export enum FieldAccessFieldEnum {
+  ID = "ID",
+  ERRAND_NUMBER = "ERRAND_NUMBER",
+  TITLE = "TITLE",
+  STATUS = "STATUS",
+  RESOLUTION = "RESOLUTION",
+  CHANNEL = "CHANNEL",
+  CREATED = "CREATED",
+  MODIFIED = "MODIFIED",
+  TOUCHED = "TOUCHED",
+  PRIORITY = "PRIORITY",
+  DESCRIPTION = "DESCRIPTION",
+  CLASSIFICATION = "CLASSIFICATION",
+  REPORTER_USER_ID = "REPORTER_USER_ID",
+  ASSIGNED_USER_ID = "ASSIGNED_USER_ID",
+  ASSIGNED_GROUP_ID = "ASSIGNED_GROUP_ID",
+  BUSINESS_RELATED = "BUSINESS_RELATED",
+  SUSPENSION = "SUSPENSION",
+  CONTACT_REASON = "CONTACT_REASON",
+  CONTACT_REASON_DESCRIPTION = "CONTACT_REASON_DESCRIPTION",
+  ESCALATION_EMAIL = "ESCALATION_EMAIL",
+  LABELS = "LABELS",
+  STAKEHOLDERS = "STAKEHOLDERS",
+  MEASURES = "MEASURES",
+  ACTIVE_NOTIFICATIONS = "ACTIVE_NOTIFICATIONS",
+  VERSION = "VERSION",
+  PARAMETERS = "PARAMETERS",
+  JSON_PARAMETERS = "JSON_PARAMETERS",
+  EXTERNAL_TAGS = "EXTERNAL_TAGS",
+}
+
+export enum LimitedReadAccessResourcesEnum {
+  ERRAND = "ERRAND",
+  ATTACHMENT = "ATTACHMENT",
+  COMMUNICATION = "COMMUNICATION",
+  COMMUNICATION_ATTACHMENT = "COMMUNICATION_ATTACHMENT",
+  CONVERSATION = "CONVERSATION",
+  CONVERSATION_MESSAGE = "CONVERSATION_MESSAGE",
+  CONVERSATION_ATTACHMENT = "CONVERSATION_ATTACHMENT",
+  EVENT = "EVENT",
+  NOTE = "NOTE",
+  NOTE_REVISION = "NOTE_REVISION",
+  PARAMETER = "PARAMETER",
+  JSON_PARAMETER = "JSON_PARAMETER",
+  MEASURE = "MEASURE",
+  NOTIFICATION = "NOTIFICATION",
+  REVISION = "REVISION",
+  TIME_MEASURE = "TIME_MEASURE",
+  NAMESPACE_CONFIG = "NAMESPACE_CONFIG",
+  EMAIL_INTEGRATION_CONFIG = "EMAIL_INTEGRATION_CONFIG",
+  MESSAGE_EXCHANGE_INTEGRATION_CONFIG = "MESSAGE_EXCHANGE_INTEGRATION_CONFIG",
+  METADATA_CATEGORY = "METADATA_CATEGORY",
+  METADATA_CONTACT_REASON = "METADATA_CONTACT_REASON",
+  METADATA_EXTERNAL_ID_TYPE = "METADATA_EXTERNAL_ID_TYPE",
+  METADATA_LABEL = "METADATA_LABEL",
+  METADATA_MEASURE_TYPE = "METADATA_MEASURE_TYPE",
+  METADATA_PHASE = "METADATA_PHASE",
+  METADATA_ROLE = "METADATA_ROLE",
+  METADATA_STATUS = "METADATA_STATUS",
+  SUBSCRIBER = "SUBSCRIBER",
+  SUBSCRIPTION = "SUBSCRIPTION",
+  SUBSCRIBER_NOTIFICATION = "SUBSCRIBER_NOTIFICATION",
+}
+
+/** Resource to grant access to */
+export enum ResourceAccessResourceEnum {
+  ERRAND = "ERRAND",
+  ATTACHMENT = "ATTACHMENT",
+  COMMUNICATION = "COMMUNICATION",
+  COMMUNICATION_ATTACHMENT = "COMMUNICATION_ATTACHMENT",
+  CONVERSATION = "CONVERSATION",
+  CONVERSATION_MESSAGE = "CONVERSATION_MESSAGE",
+  CONVERSATION_ATTACHMENT = "CONVERSATION_ATTACHMENT",
+  EVENT = "EVENT",
+  NOTE = "NOTE",
+  NOTE_REVISION = "NOTE_REVISION",
+  PARAMETER = "PARAMETER",
+  JSON_PARAMETER = "JSON_PARAMETER",
+  MEASURE = "MEASURE",
+  NOTIFICATION = "NOTIFICATION",
+  REVISION = "REVISION",
+  TIME_MEASURE = "TIME_MEASURE",
+  NAMESPACE_CONFIG = "NAMESPACE_CONFIG",
+  EMAIL_INTEGRATION_CONFIG = "EMAIL_INTEGRATION_CONFIG",
+  MESSAGE_EXCHANGE_INTEGRATION_CONFIG = "MESSAGE_EXCHANGE_INTEGRATION_CONFIG",
+  METADATA_CATEGORY = "METADATA_CATEGORY",
+  METADATA_CONTACT_REASON = "METADATA_CONTACT_REASON",
+  METADATA_EXTERNAL_ID_TYPE = "METADATA_EXTERNAL_ID_TYPE",
+  METADATA_LABEL = "METADATA_LABEL",
+  METADATA_MEASURE_TYPE = "METADATA_MEASURE_TYPE",
+  METADATA_PHASE = "METADATA_PHASE",
+  METADATA_ROLE = "METADATA_ROLE",
+  METADATA_STATUS = "METADATA_STATUS",
+  SUBSCRIBER = "SUBSCRIBER",
+  SUBSCRIPTION = "SUBSCRIPTION",
+  SUBSCRIBER_NOTIFICATION = "SUBSCRIBER_NOTIFICATION",
+}
+
+/** Access level granted for the resource */
+export enum ResourceAccessLevelEnum {
+  LR = "LR",
+  R = "R",
+  RW = "RW",
+}
+
 export enum JsonNodeNodeTypeEnum {
   ARRAY = "ARRAY",
   BINARY = "BINARY",
@@ -2123,6 +2403,16 @@ export enum SubscriptionTargetTypeEnum {
   NAMESPACE = "NAMESPACE",
 }
 
+/** Type of metadata that the validation applies to */
+export enum ValidationTypeEnum {
+  CATEGORY = "CATEGORY",
+  EXTERNAL_ID_TYPE = "EXTERNAL_ID_TYPE",
+  STATUS = "STATUS",
+  TYPE = "TYPE",
+  ROLE = "ROLE",
+  CONTACT_REASON = "CONTACT_REASON",
+}
+
 /** If the communication is inbound or outbound from the perspective of case-data/e-service. */
 export enum CommunicationDirectionEnum {
   INBOUND = "INBOUND",
@@ -2148,4 +2438,26 @@ export enum ErrandAttachmentChannelEnum {
   ESERVICE = "ESERVICE",
   WEB_UI = "WEB_UI",
   MY_PAGES = "MY_PAGES",
+}
+
+/**
+ * Type of metadata to validate
+ * @example "STATUS"
+ */
+export enum UpdateValidationParamsTypeEnum {
+  CATEGORY = "CATEGORY",
+  EXTERNAL_ID_TYPE = "EXTERNAL_ID_TYPE",
+  STATUS = "STATUS",
+  TYPE = "TYPE",
+  ROLE = "ROLE",
+  CONTACT_REASON = "CONTACT_REASON",
+}
+
+export enum UpdateValidationParamsEnum {
+  CATEGORY = "CATEGORY",
+  EXTERNAL_ID_TYPE = "EXTERNAL_ID_TYPE",
+  STATUS = "STATUS",
+  TYPE = "TYPE",
+  ROLE = "ROLE",
+  CONTACT_REASON = "CONTACT_REASON",
 }

@@ -1,6 +1,6 @@
 import { apiServiceName } from '@/config/api-config';
 import { SupportNotificationController } from '@/controllers/supportmanagement/support-notification.controller';
-import { SubscriberNotification } from '@/data-contracts/supportmanagement/data-contracts';
+import { SubscriberNotification, SubscriberNotificationEvent } from '@/data-contracts/supportmanagement/data-contracts';
 
 import { mockReq, mockRes, MockResponse } from './helpers/http';
 import { mockAdUsername, mockMunicipalityId, mockSupportErrandId, mockSupportErrandNumber, mockSupportNamespace } from './helpers/mock-data';
@@ -17,14 +17,20 @@ interface ApiStub {
   put: ReturnType<typeof vi.fn>;
 }
 
+const event = (overrides: Partial<SubscriberNotificationEvent> = {}): SubscriberNotificationEvent => ({
+  created: '2026-08-17T10:00:00.000+02:00',
+  eventType: 'UPDATE',
+  subType: 'MESSAGE',
+  description: 'Meddelande mottaget',
+  ...overrides,
+});
+
 const notification = (overrides: Partial<SubscriberNotification> = {}): SubscriberNotification => ({
   id: 'notification-1',
   created: '2026-08-17T10:00:00.000+02:00',
   errandId: mockSupportErrandId,
   errandNumber: mockSupportErrandNumber,
-  eventType: 'UPDATE',
-  subType: 'MESSAGE',
-  description: 'Meddelande mottaget',
+  events: [event()],
   ...overrides,
 });
 
@@ -72,15 +78,45 @@ describe('SupportNotificationController', () => {
         {
           id: 'notification-1',
           created: '2026-08-17T10:00:00.000+02:00',
-          expires: undefined,
           acknowledged: undefined,
           errandId: mockSupportErrandId,
           errandNumber: mockSupportErrandNumber,
-          eventType: 'UPDATE',
-          subType: 'MESSAGE',
-          description: 'Meddelande mottaget',
+          events: [
+            {
+              created: '2026-08-17T10:00:00.000+02:00',
+              eventType: 'UPDATE',
+              subType: 'MESSAGE',
+              description: 'Meddelande mottaget',
+            },
+          ],
         },
       ]);
+    });
+
+    it('sorts the events of a notification newest first', async () => {
+      const { controller } = makeController([
+        notification({
+          events: [
+            event({ created: '2026-08-17T10:00:00.000+02:00', description: 'äldst' }),
+            event({ created: '2026-08-17T12:00:00.000+02:00', description: 'nyast' }),
+            event({ created: '2026-08-17T11:00:00.000+02:00', description: 'mitten' }),
+          ],
+        }),
+      ]);
+      const res: MockResponse = mockRes();
+
+      await controller.getSupportNotifications(mockReq(), MUNICIPALITY_ID, undefined as any, undefined as any, res);
+
+      expect(res.body[0].events.map((e: { description: string }) => e.description)).toEqual(['nyast', 'mitten', 'äldst']);
+    });
+
+    it('maps a notification without events to an empty list rather than undefined', async () => {
+      const { controller } = makeController([notification({ events: undefined })]);
+      const res: MockResponse = mockRes();
+
+      await controller.getSupportNotifications(mockReq(), MUNICIPALITY_ID, undefined as any, undefined as any, res);
+
+      expect(res.body[0].events).toEqual([]);
     });
 
     it('returns an empty list when upstream has no page content', async () => {

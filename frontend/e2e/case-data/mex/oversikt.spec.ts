@@ -1,11 +1,11 @@
 import { test, expect } from '../../fixtures/base.fixture';
-import { mockNotifications } from '../../kontaktcenter/fixtures/mockSupportNotifications';
 import { CaseLabels } from '../../../src/casedata/interfaces/case-label';
 import { ErrandStatus } from '../../../src/casedata/interfaces/errand-status';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
 import { emptyMockErrands, mockErrands_base, mockFilterErrandsByProperty } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
+import { mockNotifications } from '../fixtures/mockNotifications';
 
 test.describe('Overview page', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -24,6 +24,43 @@ test.describe('Overview page', () => {
   test('displays the logged in users initials', async ({ page }) => {
     const initials = 'MT';
     await expect(page.locator('[data-cy=avatar-aside]').filter({ hasText: initials })).toBeVisible();
+  });
+
+  // Casedata still emits one flat notification per event while supportmanagement aggregates them.
+  // Both are mapped to the same view, so this guards the fields only casedata carries.
+  test('renders a casedata notification with its description and sender', async ({ page }) => {
+    await page.locator('[aria-label="Notifieringar"]').click();
+
+    const notification = page.locator('[data-cy="notification-item"]').filter({ hasText: 'MEX-2024-000307' });
+    await expect(notification).toContainText('En anteckning har lagts till');
+    await expect(notification).toContainText('Från: Testperson Testsson');
+
+    // Develop shows the sender line even without a full name, falling back to the ad account. The
+    // line disappearing entirely would be a silent loss.
+    const withoutFullName = page.locator('[data-cy="notification-item"]').filter({ hasText: 'MEX-2024-000306' });
+    await expect(withoutFullName).toContainText('Från: TestUser');
+    await expect(notification).toContainText('Händelse: Ny kommentar/anteckning');
+    // The avatar variant needs a sender to build initials from; supportmanagement never has one.
+    await expect(notification.locator('[data-cy="avatar-aside"]')).toContainText('TT');
+  });
+
+  // Casedata must keep behaving as it does on develop: no client side grouping, one row per
+  // notification. Supportmanagement collapses several events into one row, but that is upstream
+  // aggregation in 15.1, not something the panel does on its own.
+  test('keeps casedata notifications for the same errand as separate rows', async ({ page }) => {
+    await page.locator('[aria-label="Notifieringar"]').click();
+
+    const rows = page.locator('[data-cy="notification-item"]');
+    await expect(rows.filter({ hasText: 'Först tillagda anteckningen' })).toBeVisible();
+    await expect(rows.filter({ hasText: 'Sedan tillagda anteckningen' })).toBeVisible();
+    await expect(rows.filter({ hasText: 'MEX-2024-000308' })).toHaveCount(2);
+
+    // Each keeps its own sender, and nothing is collapsed into a summary row.
+    const second = rows.filter({ hasText: 'Sedan tillagda anteckningen' });
+    await expect(second).toContainText('Från: Kim Testarsson');
+    // Initialerna byggs efternamn först, vilket bara syns när de två skiljer sig åt.
+    await expect(second.locator('[data-cy="avatar-aside"]')).toContainText('TK');
+    await expect(page.locator('[data-cy="notification-group"]')).toHaveCount(0);
   });
 
   test('displays table data', async ({ page }) => {

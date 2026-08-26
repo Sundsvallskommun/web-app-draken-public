@@ -141,8 +141,8 @@ export interface Problem {
   instance?: string;
   /** @format uri */
   type?: string;
-  detail?: string;
   title?: string;
+  detail?: string;
   /** @format int32 */
   status?: number;
 }
@@ -170,15 +170,23 @@ export interface AttachmentMetadata {
   /**
    * The attachment filename
    * @minLength 1
+   * @maxLength 255
    */
   filename: string;
   /**
-   * The attachment mime-type
+   * The attachment mime-type, on the form 'type/subtype'. Parameters (e.g. ';charset=utf-8') are not accepted.
    * @minLength 1
+   * @maxLength 255
    */
   mimeType: string;
-  /** Notes on the attachment */
+  /**
+   * Notes on the attachment
+   * @minLength 0
+   * @maxLength 255
+   */
   note?: string;
+  /** SHA-256 hash, lower-case hex encoded, of the attachment's raw binary content. Identical to what the database produces with lower(sha2(file, 256)), and to the hash the same file is given in other services. */
+  hash?: string;
   /**
    * Date when the attachment was created
    * @format date-time
@@ -560,23 +568,6 @@ export interface Violation {
   message?: string;
 }
 
-/** Attachment */
-export interface Attachment {
-  /** Attachment data, i.e. the file */
-  attachmentData: AttachmentData;
-  /** Attachment metadata */
-  metadata: AttachmentMetadata;
-}
-
-/** Attachment content */
-export interface AttachmentData {
-  /**
-   * BASE64-encoded attachment file content
-   * @format base64
-   */
-  content?: string;
-}
-
 /** Partial contract payload used for PATCH. Only the fields present in the payload are applied to the existing contract. */
 export interface PatchContract {
   /** A description of the contract */
@@ -630,6 +621,30 @@ export interface PatchContract {
   areaData?: FeatureCollection;
 }
 
+/** Partial attachment metadata payload used for PATCH. Only the fields present in the payload are applied to the existing attachment. The binary content cannot be patched. */
+export interface PatchAttachmentMetadata {
+  /** Attachment category */
+  category?: AttachmentCategory;
+  /**
+   * The attachment filename
+   * @minLength 0
+   * @maxLength 255
+   */
+  filename?: string;
+  /**
+   * The attachment mime-type, on the form 'type/subtype'. Parameters (e.g. ';charset=utf-8') are not accepted.
+   * @minLength 0
+   * @maxLength 255
+   */
+  mimeType?: string;
+  /**
+   * Notes on the attachment
+   * @minLength 0
+   * @maxLength 255
+   */
+  note?: string;
+}
+
 export type SpecificationContractEntity = any;
 
 export interface PageContract {
@@ -665,8 +680,8 @@ export interface PageableObject {
 
 export interface SortObject {
   empty?: boolean;
-  unsorted?: boolean;
   sorted?: boolean;
+  unsorted?: boolean;
 }
 
 export enum CrsTypeEnum {
