@@ -293,6 +293,23 @@ test.describe('Errand page contracts tab', () => {
   });
 
   // Löpande avgift
+  test('shows the KPI index used for index adjustment', async ({ page, mockRoute, dismissCookieConsent }) => {
+    const indexYear = new Date().getFullYear() - 1;
+    const indexNumber = 419.35;
+    await mockRoute(
+      '**/billingdatacollector/kpi*',
+      { baseYear: 'KPI_80', period: `${indexYear}-10`, value: indexNumber },
+      { method: 'GET' }
+    );
+
+    await visitErrandWithoutContract(page, mockRoute, dismissCookieConsent);
+    await page.locator('[data-cy="lopande-disclosure"] button.sk-disclosure-header-button').click();
+
+    await expect(page.locator('[data-cy="index-adjustment-help-text"]')).toHaveText(
+      `Indexreglering utgår från index enligt KPI 80 för oktober ${indexYear}: ${indexNumber}`
+    );
+  });
+
   test('manages lease fee automatically in lease agreements', async ({ page, mockRoute, dismissCookieConsent }) => {
     await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
     await mockRoute('**/errand/101', mockMexErrand_base, { method: 'GET' }); // @getErrand
@@ -347,6 +364,8 @@ test.describe('Errand page contracts tab', () => {
 
     // Extra avitexter are stored as detailedDescriptionNN under the InvoiceInfo extraParameter group
     await page.locator('[data-cy="add-detailed-description-button"]').click();
+    await expect(page.getByText('Kompletterande avitext 1', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Ta bort kompletterande avitext 1' })).toBeVisible();
     await page.locator('[data-cy="detailed-description-input-0"]').fill('Första kompletterande raden');
     await page.locator('[data-cy="add-detailed-description-button"]').click();
     await page.locator('[data-cy="detailed-description-input-1"]').fill('Andra kompletterande raden');
