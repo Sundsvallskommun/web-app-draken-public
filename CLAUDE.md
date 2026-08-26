@@ -45,8 +45,8 @@ yarn type-check:test          # TypeScript check for tests (tsconfig.test.json)
 yarn test                     # Vitest unit tests (run mode)
 yarn test:watch               # Vitest watch mode
 yarn test:coverage            # Vitest with v8 coverage
-yarn cypress:{drake}          # Run Cypress tests (interactive)
-yarn cypress:headless:{drake} # Run Cypress tests (CI)
+yarn test:e2e:{drake}         # Playwright E2E (mex, pt, kc, lop, iaf, vof)
+yarn test:e2e:iaf-schema-lab  # Playwright E2E for the development-only schema lab
 ```
 
 ### Environment Setup
@@ -178,8 +178,8 @@ runner matches the backend and so tests are no longer restricted to alias-free m
   `include` entry `src/**/*.{ts,tsx}` uses brace expansion, which TypeScript's include globs do
   not support, so it matches nothing and `src` is only reached transitively through imports.
   Test files have no importer, so `tsconfig.test.json` includes them explicitly and
-  `yarn type-check:test` runs it. (Fixing the root glob would also pull ~100 pre-existing
-  errors in `*.cy.tsx` and Cypress fixtures into `yarn type-check`; that is untouched debt.)
+  `yarn type-check:test` runs it. The test config disables incremental compilation so the
+  type-check does not create a generated `tsconfig.test.tsbuildinfo` artifact.
 - **CI**: `.github/workflows/frontend-unit.yml` runs `yarn type-check:test` and `yarn test` on
   pull requests and pushes to `develop`/`main`.
 - **Test data**: the same rule as the backend applies — no real person numbers, organization
@@ -187,29 +187,14 @@ runner matches the backend and so tests are no longer restricted to alias-free m
 
 ### Frontend (e2e)
 
-There are e2e tests in both Cypress and Playwright. The Cypress tests are the older original tests. The app will migrate to use Playwright shortly, and in the meantime tests are duplicated across them to evaluate equality.
-
-#### Cypress E2E
-
-Cypress E2E tests are organized by drake in `frontend/cypress/e2e/`:
-
-- `kontaktcenter/` - KC tests
-- `case-data/mex/` - MEX tests
-- `case-data/pt/` - PT tests
-- `lop/` - LOP tests
-
-Run with: `yarn cypress:headless:{drake}`
-
-Run for individual spec files with eg: `npx dotenv -e .env.kc -- cypress run --spec "cypress/e2e/kontaktcenter/errandPage-sidebar-kc.cy.ts"` (use app key of choice: kc, mex, pt etc)
-
-#### Playwright
-
 Playwright E2E tests are organized by drake in `frontend/e2e/`:
 
 - `kontaktcenter/` - KC tests
 - `case-data/mex/` - MEX tests
 - `case-data/pt/` - PT tests
 - `lop/` - LOP tests
+- `iaf/` - shared IAF/VOF investigation tests
+- `schema-lab/` - development-only investigation schema lab tests
 
 Run with: `yarn test:e2e:{drake}`
 

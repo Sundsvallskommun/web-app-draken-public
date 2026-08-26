@@ -1,5 +1,4 @@
-/** @param {string} value */
-export const trimSupportManagementPath = (value) => {
+export const trimSupportManagementPath = (value: string): string => {
   const trimmedValue = value.trim();
   let start = 0;
   while (trimmedValue[start] === '/') start += 1;
@@ -9,5 +8,5 @@ export const trimSupportManagementPath = (value) => {
   return trimmedValue.slice(start, end);
 };
 
-/** @param {string | undefined} value */
-export const normalizeSupportManagementResourcePath = (value) => trimSupportManagementPath(value ?? '').toUpperCase();
+export const normalizeSupportManagementResourcePath = (value?: string): string =>
+  trimSupportManagementPath(value ?? '').toUpperCase();

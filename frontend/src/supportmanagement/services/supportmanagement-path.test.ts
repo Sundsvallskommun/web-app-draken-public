@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
 
-import { normalizeSupportManagementResourcePath, trimSupportManagementPath } from './supportmanagement-path.mjs';
+import { test } from 'vitest';
+
+import { normalizeSupportManagementResourcePath, trimSupportManagementPath } from './supportmanagement-path';
 
 test('trims only Support Management path boundaries', () => {
   assert.equal(trimSupportManagementPath('  ///Category/HSL///  '), 'Category/HSL');
