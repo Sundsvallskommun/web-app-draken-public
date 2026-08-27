@@ -221,6 +221,7 @@ jobs:
           NEXT_PUBLIC_INVOICE_BREAK_DATE: ${{ matrix.NEXT_PUBLIC_INVOICE_BREAK_DATE || '' }}
           NEXT_PUBLIC_USE_HANDOVER: ${{ matrix.NEXT_PUBLIC_USE_HANDOVER || '' }}
           NEXT_PUBLIC_USE_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_INVESTIGATION || '' }}
+          NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION || '' }}
 
       - name: Start server
         run: ${{ matrix.start_cmd }} &
@@ -290,6 +291,7 @@ jobs:
           NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: ${{ matrix.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '' }}
           NEXT_PUBLIC_INVOICE_BREAK_DATE: ${{ matrix.NEXT_PUBLIC_INVOICE_BREAK_DATE || '' }}
           NEXT_PUBLIC_USE_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_INVESTIGATION || '' }}
+          NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION || '' }}
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
