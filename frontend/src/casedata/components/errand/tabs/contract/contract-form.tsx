@@ -174,6 +174,13 @@ export const ContractForm: FC<{
   }, []);
 
   const indexAdjusted = watch('indexAdjusted');
+  const indexType = watch('fees.indexType');
+  const indexYear = watch('fees.indexYear');
+  const indexNumber = watch('fees.indexNumber');
+  const hasIndexDetails = Boolean(indexType && indexYear && indexNumber);
+  const indexAdjustmentHelpText = hasIndexDetails
+    ? `Indexreglering utgår från index enligt ${indexType} för oktober ${indexYear}: ${indexNumber}`
+    : 'Indexreglering baseras på föregående år (oktober månad)';
 
   useEffect(() => {
     if (indexAdjusted !== 'true' || !kpiData) return;
@@ -226,7 +233,7 @@ export const ContractForm: FC<{
     };
   }, [existingContract]);
 
-  // Extra avitexter ("Ytterligare avitext") live as detailedDescriptionNN keys in the InvoiceInfo
+  // Kompletterande avitexter live as detailedDescriptionNN keys in the InvoiceInfo
   // extraParameter group. The inputs are controlled (watch/setValue rather than register) so rows
   // can be added and removed while keeping the NN numbering contiguous. The group is looked up by
   // name in the live form state — not via invoiceInfoIndex — since the group order in the form can
@@ -1017,7 +1024,9 @@ export const ContractForm: FC<{
                           Nej
                         </RadioButton>
                       </RadioButton.Group>
-                      {!contractOveriewMode && <small>Indexreglering baseras på nuvarande år (Oktober månad)</small>}
+                      {!contractOveriewMode && (
+                        <small data-cy="index-adjustment-help-text">{indexAdjustmentHelpText}</small>
+                      )}
                     </FormControl>
                   </div>
                   <div className="flex gap-18 justify-start">
@@ -1151,7 +1160,7 @@ export const ContractForm: FC<{
                     <div className="flex gap-18 justify-start" key={key}>
                       <FormControl className="w-full">
                         <div className="flex w-full justify-between">
-                          <FormLabel>Ytterligare avitext {idx + 1}</FormLabel>
+                          <FormLabel>Kompletterande avitext {idx + 1}</FormLabel>
                           <span className="text-small text-dark-secondary">
                             {value.length}/{MAX_DETAILED_DESCRIPTION_LENGTH}
                           </span>
@@ -1175,7 +1184,7 @@ export const ContractForm: FC<{
                               iconButton
                               variant="ghost"
                               size="sm"
-                              aria-label={`Ta bort ytterligare avitext ${idx + 1}`}
+                              aria-label={`Ta bort kompletterande avitext ${idx + 1}`}
                               data-cy={`remove-detailed-description-${idx}-button`}
                               onClick={() => setDetailedDescriptions(detailedDescriptions.filter((_, i) => i !== idx))}
                             >
