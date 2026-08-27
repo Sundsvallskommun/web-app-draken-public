@@ -575,6 +575,31 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     );
   });
 
+  // The complement of the test above, and the case a new drake hits: the master switch is on, but
+  // no capability claims the investigation. The tab must disappear *and* Grundinformation must fall
+  // back to the ordinary three-level control - not to the avvikelse one, and not to nothing.
+  test('lämnar kategoriseringen orörd när ingen utredningskapabilitet är påslagen', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installIafApiMock(page, {
+      documents: { [managerKey]: existingManagerDocument() },
+      featureFlags: [
+        { name: 'isSupportManagement', enabled: true },
+        { name: 'useDetailsTab', enabled: true },
+        { name: 'useThreeLevelCategorization', enabled: true },
+        { name: 'useInvestigation', enabled: true },
+        { name: 'useAvvikelseInvestigation', enabled: false },
+      ],
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+
+    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
+    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toHaveCount(0);
+    await expect(page.locator('[data-cy="labelCategory-input"]')).toBeVisible();
+  });
+
   test('sparar endast aktiv dokumentnyckel med schemaId och If-Match', async ({ page, dismissCookieConsent }) => {
     const existing = existingManagerDocument();
     const trace = await installIafApiMock(page, { documents: { [managerKey]: existing } });
