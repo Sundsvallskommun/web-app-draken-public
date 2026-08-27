@@ -1,13 +1,13 @@
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 
+import { getAvvikelseClassificationPlacement } from './avvikelse/avvikelse-classification-placement';
 import {
+  type IafVofClassificationPlacement,
   type IafVofInvestigationClassificationLegalBaseRule,
   isIafVofReportedMisconductErrand,
   resolveIafVofInvestigationClassificationOwnerDocumentKey,
-  type SupportErrandClassificationPlacement,
 } from './iaf-vof-investigation-classification-policy';
-import { getSupportErrandClassificationPlacement } from './investigation-classification-ownership';
 import type { InvestigationDocumentKey, InvestigationFormData } from './investigation-document';
 import { normalizeInvestigationFormData } from './investigation-form-data';
 
@@ -26,14 +26,14 @@ interface InvestigationSchemaExtensions extends RJSFSchema {
 
 const isClassificationDocumentKey = (
   key: InvestigationDocumentKey,
-  policy: Extract<SupportErrandClassificationPlacement, { owner: 'investigation' }>['policy']
+  policy: Extract<IafVofClassificationPlacement, { owner: 'investigation' }>['policy']
 ): boolean => {
   return policy.defaultOwnerDocumentKey === key || policy.reportedMisconductOwnerDocumentKey === key;
 };
 
 const hasClassificationDeclaration = (
   schema: RJSFSchema,
-  policy: Extract<SupportErrandClassificationPlacement, { owner: 'investigation' }>['policy']
+  policy: Extract<IafVofClassificationPlacement, { owner: 'investigation' }>['policy']
 ): boolean => {
   const definition = (schema as InvestigationSchemaExtensions)['x-draken-external-fields']?.[
     INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD
@@ -60,7 +60,7 @@ export const getInvestigationClassificationSchemaContract = (
   key: InvestigationDocumentKey,
   schema: RJSFSchema
 ): InvestigationClassificationSchemaContract | undefined => {
-  const placement = getSupportErrandClassificationPlacement();
+  const placement = getAvvikelseClassificationPlacement();
   if (placement.owner !== 'investigation' || !isClassificationDocumentKey(key, placement.policy)) return undefined;
   if (hasClassificationDeclaration(schema, placement.policy)) return 'declared';
   return isLegacyClassificationSchema(schema) ? 'legacy-fallback' : 'missing-declaration';
@@ -82,9 +82,7 @@ const readJsonPointer = (value: unknown, pointer: string): unknown =>
   );
 
 export const getInvestigationLegalBases = (formData: InvestigationFormData): string[] => {
-  const policy = getSupportErrandClassificationPlacement().policy;
-  if (!policy) return [];
-
+  const { policy } = getAvvikelseClassificationPlacement();
   const legalBases = readJsonPointer(formData, policy.legalBasesPointer);
   if (!Array.isArray(legalBases)) return [];
 
@@ -103,17 +101,15 @@ export const getInvestigationLegalBases = (formData: InvestigationFormData): str
 };
 
 export const getInvestigationLegalBaseRules = (): readonly IafVofInvestigationClassificationLegalBaseRule[] =>
-  getSupportErrandClassificationPlacement().policy?.legalBaseRules ?? [];
+  getAvvikelseClassificationPlacement().policy.legalBaseRules;
 
-export const isReportedMisconductErrand = (errand: SupportErrand | undefined): boolean => {
-  const placement = getSupportErrandClassificationPlacement();
-  return placement.categorization === 'avvikelse' ? isIafVofReportedMisconductErrand(errand) : false;
-};
+export const isReportedMisconductErrand = (errand: SupportErrand | undefined): boolean =>
+  isIafVofReportedMisconductErrand(errand);
 
 export const getInvestigationClassificationOwner = (
   errand: SupportErrand | undefined
 ): InvestigationDocumentKey | undefined => {
-  const placement = getSupportErrandClassificationPlacement();
+  const placement = getAvvikelseClassificationPlacement();
   if (placement.owner !== 'investigation') return undefined;
   return resolveIafVofInvestigationClassificationOwnerDocumentKey(placement, errand ?? {});
 };
@@ -159,7 +155,7 @@ export const normalizeContextualInvestigationFormData = (
   reportedMisconduct: boolean
 ): InvestigationFormData => {
   const normalized = normalizeInvestigationFormData(schemaName, schema, formData);
-  const placement = getSupportErrandClassificationPlacement();
+  const placement = getAvvikelseClassificationPlacement();
   if (placement.owner !== 'investigation') return normalized;
 
   const { policy } = placement;
@@ -193,7 +189,7 @@ export const getInvestigationClassificationUiSchema = (
   uiSchema: UiSchema,
   reportedMisconduct: boolean
 ): UiSchema => {
-  const placement = getSupportErrandClassificationPlacement();
+  const placement = getAvvikelseClassificationPlacement();
   if (placement.owner !== 'investigation') return uiSchema;
 
   const { policy } = placement;

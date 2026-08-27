@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
 import {
+  IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
   isIafVofReportedMisconductErrand,
   resolveIafVofInvestigationClassificationOwnerDocumentKey,
   resolveSupportErrandClassificationPlacement,
@@ -26,7 +27,7 @@ test('moves classification to the investigation document for an active profile w
   for (const application of ['IAF', 'VOF']) {
     const placement = resolveSupportErrandClassificationPlacement({ application, profile: profile({ application }) });
     assert.equal(placement.owner, 'investigation');
-    assert.equal(placement.categorization, 'avvikelse');
+    assert.equal(placement.labelTree, IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree);
     assert.equal(placement.policy.defaultOwnerDocumentKey, 'manager-document');
     assert.equal(placement.policy.reportedMisconductOwnerDocumentKey, 'misconduct-document');
   }
@@ -42,7 +43,7 @@ test('does not gate on the application name', () => {
   });
 
   assert.equal(placement.owner, 'investigation');
-  assert.equal(placement.categorization, 'avvikelse');
+  assert.equal(placement.labelTree, IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree);
 });
 
 test('uses profile state as the classification ownership authority for IAF/VOF', () => {

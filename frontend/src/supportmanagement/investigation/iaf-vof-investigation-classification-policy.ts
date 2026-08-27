@@ -1,18 +1,18 @@
+import type { SupportLabelTreeProfile } from '../services/support-label-classification-projector';
 import { normalizeSupportManagementResourcePath } from '../services/supportmanagement-path';
+import type { SupportErrandClassificationPlacement } from './classification-placement';
 
 export interface IafVofInvestigationClassificationLegalBaseRule {
   readonly legalBase: string;
   readonly allowedClassificationCategories: readonly string[];
 }
 
-export interface IafVofInvestigationClassificationLabelTree {
+export interface IafVofInvestigationClassificationLabelTree extends SupportLabelTreeProfile {
   readonly root: Readonly<{
     readonly resource: string;
     readonly classification: string;
   }>;
   readonly ownerClassification: string;
-  readonly categoryClassification: string;
-  readonly typeClassification: string;
 }
 
 export const IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY = Object.freeze({
@@ -47,10 +47,17 @@ type ResolvedIafVofClassificationPolicy = IafVofClassificationPolicy &
     reportedMisconductOwnerDocumentKey: string;
   }>;
 
-export type SupportErrandClassificationPlacement =
-  | Readonly<{ owner: 'basics'; categorization: 'default'; policy?: undefined }>
-  | Readonly<{ owner: 'basics' | 'unavailable'; categorization: 'avvikelse'; policy: IafVofClassificationPolicy }>
-  | Readonly<{ owner: 'investigation'; categorization: 'avvikelse'; policy: ResolvedIafVofClassificationPolicy }>;
+/**
+ * The avvikelse placement. Structurally a SupportErrandClassificationPlacement, plus the policy
+ * payload that only avvikelse code reads - which is why shared consumers take the shared type and
+ * never see this one.
+ */
+export type IafVofClassificationPlacement = SupportErrandClassificationPlacement &
+  (
+    | Readonly<{ owner: 'basics' | 'unavailable'; policy: IafVofClassificationPolicy }>
+    | Readonly<{ owner: 'investigation'; policy: ResolvedIafVofClassificationPolicy }>
+  ) &
+  Readonly<{ labelTree: IafVofInvestigationClassificationLabelTree }>;
 
 interface ClassificationPolicyProfile {
   readonly application: string;
@@ -74,14 +81,14 @@ interface ClassificationOwnerErrand {
   }[];
 }
 
-const iafVofBasicsPlacement: SupportErrandClassificationPlacement = Object.freeze({
+const iafVofBasicsPlacement: IafVofClassificationPlacement = Object.freeze({
   owner: 'basics',
-  categorization: 'avvikelse',
+  labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree,
   policy: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
 });
-const iafVofUnavailablePlacement: SupportErrandClassificationPlacement = Object.freeze({
+const iafVofUnavailablePlacement: IafVofClassificationPlacement = Object.freeze({
   owner: 'unavailable',
-  categorization: 'avvikelse',
+  labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree,
   policy: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
 });
 
@@ -102,7 +109,7 @@ const findUniqueDocumentKey = (
 export function resolveSupportErrandClassificationPlacement({
   application,
   profile,
-}: ResolveClassificationPlacementOptions): SupportErrandClassificationPlacement {
+}: ResolveClassificationPlacementOptions): IafVofClassificationPlacement {
   const normalizedApplication = normalizeApplication(application);
   if (!profile || profile.state === 'unavailable') return iafVofUnavailablePlacement;
   // Not a capability decision: the enabling flag already made that. This only catches a BFF
@@ -122,7 +129,7 @@ export function resolveSupportErrandClassificationPlacement({
 
   return Object.freeze({
     owner: 'investigation',
-    categorization: 'avvikelse',
+    labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree,
     policy: Object.freeze({
       ...IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
       defaultOwnerDocumentKey,
@@ -158,7 +165,7 @@ export const isIafVofReportedMisconductErrand = (errand: ClassificationOwnerErra
 };
 
 export const resolveIafVofInvestigationClassificationOwnerDocumentKey = (
-  placement: Extract<SupportErrandClassificationPlacement, { owner: 'investigation' }>,
+  placement: Extract<IafVofClassificationPlacement, { owner: 'investigation' }>,
   errand: ClassificationOwnerErrand
 ): string =>
   isIafVofReportedMisconductErrand(errand)

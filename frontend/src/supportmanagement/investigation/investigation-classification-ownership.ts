@@ -1,5 +1,4 @@
-import { defaultBasicsPlacement } from './classification-placement';
-import { type SupportErrandClassificationPlacement } from './iaf-vof-investigation-classification-policy';
+import { defaultBasicsPlacement, type SupportErrandClassificationPlacement } from './classification-placement';
 import { useInvestigationProfileStore } from './investigation-profile-store';
 import { getInvestigationVariant } from './investigation-variant-registry';
 

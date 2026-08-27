@@ -1,7 +1,7 @@
 import type { AppConfigFeatures } from '@config/appconfig';
 import type { ReactNode } from 'react';
 
-import type { SupportErrandClassificationPlacement } from './iaf-vof-investigation-classification-policy';
+import type { SupportErrandClassificationPlacement } from './classification-placement';
 import type { InvestigationProfile } from './investigation-profile';
 
 /**
@@ -12,6 +12,10 @@ export type InvestigationCapability = 'useAvvikelseInvestigation';
 
 export interface InvestigationTabProps {
   onDirtyChange: (key: string, isDirty: boolean) => void;
+}
+
+export interface InvestigationCategorizationControlProps {
+  readonly disabled: boolean;
 }
 
 /**
@@ -35,6 +39,13 @@ export interface InvestigationVariantModule {
    * than only after opening this one. Returns null when there is nothing to say.
    */
   renderNotice?: () => ReactNode;
+  /**
+   * The categorization control Grundinformation renders in place of the default two-/three-level
+   * ones. Required exactly when \`resolveClassificationPlacement\` returns a placement carrying a
+   * \`labelTree\`: a variant bringing its own vocabulary must also bring the control that edits it.
+   * A variant categorizing from the default tree omits this and gets the ordinary controls.
+   */
+  renderCategorizationControl?: (props: InvestigationCategorizationControlProps) => ReactNode;
 }
 
 /**
