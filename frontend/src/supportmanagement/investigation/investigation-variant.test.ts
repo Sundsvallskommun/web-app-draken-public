@@ -29,8 +29,10 @@ test('no enabled capability resolves to no variant', () => {
 
 test('the enabled capability selects its variant', () => {
   const avvikelse = stub('avvikelse', 'useAvvikelseInvestigation');
+  const aot = stub('aot', 'useAotInvestigation');
 
   assert.equal(resolveInvestigationVariant(features({ useAvvikelseInvestigation: true }), [avvikelse]), avvikelse);
+  assert.equal(resolveInvestigationVariant(features({ useAotInvestigation: true }), [aot]), aot);
 });
 
 // Implementations are mutually exclusive, so two enabled flags are a configuration error. Pinning
