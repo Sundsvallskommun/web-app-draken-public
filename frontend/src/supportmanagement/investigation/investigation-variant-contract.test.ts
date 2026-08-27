@@ -21,12 +21,17 @@ import {
  * needs something from `avvikelse/`, the contract has grown a coupling to one implementation.
  */
 
-const OTHER = 'useOtherInvestigation' as InvestigationCapability;
+// A real second capability, not a cast: these fixtures stand in for a future variant, but the flag
+// that would select one is genuine.
+const OTHER: InvestigationCapability = 'useAotInvestigation';
 
-// Spread rather than a literal: with one capability defined today, TypeScript narrows a second key
-// to the same one and rejects it as a duplicate property.
-const features = (enabled: Partial<Record<string, boolean>>): AppConfigFeatures =>
-  ({ useInvestigation: false, useAvvikelseInvestigation: false, ...enabled } as AppConfigFeatures);
+const features = (enabled: Partial<Record<InvestigationCapability | 'useInvestigation', boolean>>): AppConfigFeatures =>
+  ({
+    useInvestigation: false,
+    useAvvikelseInvestigation: false,
+    useAotInvestigation: false,
+    ...enabled,
+  } as AppConfigFeatures);
 
 /**
  * The minimum a variant must supply. No notice, no categorization control, and a placement with no

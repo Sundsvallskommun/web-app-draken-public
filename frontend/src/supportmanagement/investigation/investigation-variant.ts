@@ -8,7 +8,7 @@ import type { InvestigationProfile } from './investigation-profile';
  * The feature flags that turn on one investigation implementation. An application declares which
  * functionality it uses; nothing here or below asks which application is running.
  */
-export type InvestigationCapability = 'useAvvikelseInvestigation';
+export type InvestigationCapability = 'useAvvikelseInvestigation' | 'useAotInvestigation';
 
 export interface InvestigationTabProps {
   onDirtyChange: (key: string, isDirty: boolean) => void;

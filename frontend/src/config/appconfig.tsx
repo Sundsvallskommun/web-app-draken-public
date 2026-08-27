@@ -41,6 +41,7 @@ export interface AppConfigFeatures {
   useHandover: boolean;
   useInvestigation: boolean;
   useAvvikelseInvestigation: boolean;
+  useAotInvestigation: boolean;
 }
 
 // JSON.parse prevents the minifier from folding placeholder comparisons at build time.
@@ -91,6 +92,7 @@ export const appConfig: AppConfig = {
     useHandover: envBool(process.env.NEXT_PUBLIC_USE_HANDOVER),
     useInvestigation: envBool(process.env.NEXT_PUBLIC_USE_INVESTIGATION),
     useAvvikelseInvestigation: envBool(process.env.NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION),
+    useAotInvestigation: envBool(process.env.NEXT_PUBLIC_USE_AOT_INVESTIGATION),
   },
 };
 
