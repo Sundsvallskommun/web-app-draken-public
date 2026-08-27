@@ -43,9 +43,9 @@ export const projectLabelCategory = (
   const selectedCategory = findLabelByClassification(errand?.labels, categoryClassification);
   if (selectedCategory) return selectedCategory;
 
-  // This is an IAF/VOF invariant, not a configurable mapping: reported
-  // misconduct persists its selected category in classification.type. Other
-  // applications retain legacy classification.category.
+  // This is an avvikelse invariant, not a configurable mapping: reported
+  // misconduct persists its selected category in classification.type. Without
+  // that capability, legacy classification.category is retained.
   const categoryResource = labelTree ? errand?.classification?.type : errand?.classification?.category;
   return flattenLabelTree(metadata?.labels?.labelStructure).find(
     (label) =>

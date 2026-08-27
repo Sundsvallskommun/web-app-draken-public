@@ -18,7 +18,7 @@ import type { SupportMetadata } from './support-metadata-service';
 export { findLabelByClassification } from './support-label-classification-projector';
 
 const getIafVofPolicy = (placement: SupportErrandClassificationPlacement) =>
-  placement.categorization === 'iaf-vof' ? placement.policy : undefined;
+  placement.categorization === 'avvikelse' ? placement.policy : undefined;
 
 export const getLabelCategory = (
   errand: SupportErrandLabelSource | undefined,

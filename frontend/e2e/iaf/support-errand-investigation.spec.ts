@@ -59,6 +59,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
         { name: 'useTwoLevelCategorization', enabled: true },
         { name: 'useThreeLevelCategorization', enabled: true },
         { name: 'useInvestigation', enabled: true },
+        { name: 'useAvvikelseInvestigation', enabled: true },
       ],
     });
 
@@ -214,7 +215,9 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await visitErrand(page, dismissCookieConsent);
 
     await expect(page.locator('[data-cy="investigation-profile-error"]')).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
+    // Gated on the capability flag, not on the profile: the tab stays and explains itself,
+    // while the notice above the tab strip is what warns from any other tab.
+    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(1);
     await expect(page.locator('[data-cy="iaf-label-categorization"]')).toBeVisible();
     await expect(page.locator('[data-cy="label-classification-type"]')).toBeDisabled();
 
@@ -234,7 +237,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await visitErrand(page, dismissCookieConsent);
 
     await expect(page.locator('[data-cy="investigation-profile-unavailable"]')).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(1);
     await expect(page.locator('[data-cy="label-classification-type"]')).toBeDisabled();
 
     await page.locator('[data-cy="channel-input"]').selectOption('PHONE');
@@ -247,6 +250,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.errandPatches[0]).toEqual(expect.objectContaining({ channel: 'PHONE' }));
     expect(trace.errandPatches[0]).not.toHaveProperty('classification');
     expect(trace.errandPatches[0]).not.toHaveProperty('labels');
+
+    // Asserted last on purpose: opening Utredning hides Grundinformation, and the steps
+    // above operate on it.
+    await page.getByRole('tab', { name: 'Utredning', exact: true }).click();
+    await expect(page.locator('[data-cy="investigation-tab-unavailable"]')).toBeVisible();
   });
 
   test('låter orelaterade ärendefält sparas när profilhämtningen misslyckas', async ({
@@ -258,7 +266,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await visitErrand(page, dismissCookieConsent);
 
     await expect(page.locator('[data-cy="investigation-profile-error"]')).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(1);
     await expect(page.locator('[data-cy="label-classification-type"]')).toBeDisabled();
 
     await page.locator('[data-cy="channel-input"]').selectOption('PHONE');
@@ -281,10 +289,14 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     await visitErrand(page, dismissCookieConsent);
 
-    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(1);
     await expect(page.locator('[data-cy="investigation-profile-error"]')).toHaveCount(0);
     await expect(page.locator('[data-cy="investigation-profile-unavailable"]')).toHaveCount(0);
     await expect(page.locator('[data-cy="iaf-label-categorization"]')).toBeVisible();
+
+    // Asserted last: opening Utredning hides Grundinformation's categorization control.
+    await page.getByRole('tab', { name: 'Utredning', exact: true }).click();
+    await expect(page.locator('[data-cy="investigation-tab-not-configured"]')).toBeVisible();
   });
 
   for (const ownerCase of [
@@ -529,6 +541,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
         { name: 'useDetailsTab', enabled: true },
         { name: 'useThreeLevelCategorization', enabled: true },
         { name: 'useInvestigation', enabled: false },
+        { name: 'useAvvikelseInvestigation', enabled: true },
       ],
     });
 

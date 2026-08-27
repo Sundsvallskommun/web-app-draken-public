@@ -20,21 +20,29 @@ const profile = (overrides = {}) => ({
   ...overrides,
 });
 
-test('moves IAF and VOF classification only for an active profile with both fixed schema roles', () => {
+// IAF and VOF are the applications that enable this policy today. The resolver treats them as
+// ordinary input, not as a condition - see the test below.
+test('moves classification to the investigation document for an active profile with both schema roles', () => {
   for (const application of ['IAF', 'VOF']) {
     const placement = resolveSupportErrandClassificationPlacement({ application, profile: profile({ application }) });
     assert.equal(placement.owner, 'investigation');
-    assert.equal(placement.categorization, 'iaf-vof');
+    assert.equal(placement.categorization, 'avvikelse');
     assert.equal(placement.policy.defaultOwnerDocumentKey, 'manager-document');
     assert.equal(placement.policy.reportedMisconductOwnerDocumentKey, 'misconduct-document');
   }
 });
 
-test('keeps other applications on the ordinary basics categorization', () => {
-  assert.deepEqual(resolveSupportErrandClassificationPlacement({ application: 'KC', profile: undefined }), {
-    owner: 'basics',
-    categorization: 'default',
+// Which applications get this policy is decided by the capability flag, not here - see
+// investigation-variant.test.ts. The resolver runs only once that flag has selected it, so it no
+// longer inspects the application name to decide whether it applies.
+test('does not gate on the application name', () => {
+  const placement = resolveSupportErrandClassificationPlacement({
+    application: 'ANY-APPLICATION',
+    profile: profile({ application: 'ANY-APPLICATION' }),
   });
+
+  assert.equal(placement.owner, 'investigation');
+  assert.equal(placement.categorization, 'avvikelse');
 });
 
 test('uses profile state as the classification ownership authority for IAF/VOF', () => {

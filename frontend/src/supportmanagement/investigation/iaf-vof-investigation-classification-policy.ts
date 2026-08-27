@@ -49,8 +49,8 @@ type ResolvedIafVofClassificationPolicy = IafVofClassificationPolicy &
 
 export type SupportErrandClassificationPlacement =
   | Readonly<{ owner: 'basics'; categorization: 'default'; policy?: undefined }>
-  | Readonly<{ owner: 'basics' | 'unavailable'; categorization: 'iaf-vof'; policy: IafVofClassificationPolicy }>
-  | Readonly<{ owner: 'investigation'; categorization: 'iaf-vof'; policy: ResolvedIafVofClassificationPolicy }>;
+  | Readonly<{ owner: 'basics' | 'unavailable'; categorization: 'avvikelse'; policy: IafVofClassificationPolicy }>
+  | Readonly<{ owner: 'investigation'; categorization: 'avvikelse'; policy: ResolvedIafVofClassificationPolicy }>;
 
 interface ClassificationPolicyProfile {
   readonly application: string;
@@ -74,23 +74,18 @@ interface ClassificationOwnerErrand {
   }[];
 }
 
-const defaultBasicsPlacement: SupportErrandClassificationPlacement = Object.freeze({
-  owner: 'basics',
-  categorization: 'default',
-});
 const iafVofBasicsPlacement: SupportErrandClassificationPlacement = Object.freeze({
   owner: 'basics',
-  categorization: 'iaf-vof',
+  categorization: 'avvikelse',
   policy: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
 });
 const iafVofUnavailablePlacement: SupportErrandClassificationPlacement = Object.freeze({
   owner: 'unavailable',
-  categorization: 'iaf-vof',
+  categorization: 'avvikelse',
   policy: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
 });
 
 const normalizeApplication = (application: string | undefined): string => application?.trim().toUpperCase() ?? '';
-const isIafVofApplication = (application: string): boolean => application === 'IAF' || application === 'VOF';
 
 const findUniqueDocumentKey = (
   documents: ClassificationPolicyProfile['documents'],
@@ -109,8 +104,9 @@ export function resolveSupportErrandClassificationPlacement({
   profile,
 }: ResolveClassificationPlacementOptions): SupportErrandClassificationPlacement {
   const normalizedApplication = normalizeApplication(application);
-  if (!isIafVofApplication(normalizedApplication)) return defaultBasicsPlacement;
   if (!profile || profile.state === 'unavailable') return iafVofUnavailablePlacement;
+  // Not a capability decision: the enabling flag already made that. This only catches a BFF
+  // handing back another deployment's profile, which no local flag could detect.
   if (normalizeApplication(profile.application) !== normalizedApplication) return iafVofUnavailablePlacement;
   if (profile.state !== 'active') return iafVofBasicsPlacement;
 
@@ -126,7 +122,7 @@ export function resolveSupportErrandClassificationPlacement({
 
   return Object.freeze({
     owner: 'investigation',
-    categorization: 'iaf-vof',
+    categorization: 'avvikelse',
     policy: Object.freeze({
       ...IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
       defaultOwnerDocumentKey,

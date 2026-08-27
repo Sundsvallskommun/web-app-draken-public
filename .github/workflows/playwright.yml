@@ -127,6 +127,7 @@ jobs:
             NEXT_PUBLIC_USE_UI_PHASES: true
             NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: true
             NEXT_PUBLIC_USE_INVESTIGATION: true
+            NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION: true
           - app: iaf-schema-lab
             build_cmd: yarn build:iaf
             # Schema-labben är avsiktligt development-only och exponeras inte av produktionsservern.
@@ -141,6 +142,7 @@ jobs:
             NEXT_PUBLIC_USE_UI_PHASES: true
             NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: true
             NEXT_PUBLIC_USE_INVESTIGATION: true
+            NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION: true
 
     name: E2E ${{ matrix.app }} on ubuntu-latest
     steps:

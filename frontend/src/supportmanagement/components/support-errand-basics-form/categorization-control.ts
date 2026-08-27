@@ -15,7 +15,7 @@ export type CategorizationControl =
   | { readonly kind: 'two-level' }
   | { readonly kind: 'three-level' }
   | {
-      readonly kind: 'iaf-vof';
+      readonly kind: 'avvikelse';
       readonly disabled: boolean;
       readonly labelTree: IafVofInvestigationClassificationLabelTree;
     };
@@ -36,7 +36,7 @@ export const resolveCategorizationMode = ({
 
 /**
  * Selects which categorization control Grundinformation renders, from the
- * deployment mode and the runtime classification placement. The IAF/VOF label
+ * deployment mode and the runtime classification placement. The avvikelse label
  * tree is a different vocabulary rather than a variant of the default one, so
  * the placement decides first and the mode only selects between default controls.
  */
@@ -44,16 +44,16 @@ export const resolveCategorizationControl = (
   mode: CategorizationMode,
   placement: SupportErrandClassificationPlacement
 ): CategorizationControl => {
-  if (placement.categorization === 'iaf-vof') {
+  if (placement.categorization === 'avvikelse') {
     // The investigation document owns the control when it is active. While the
     // capability is unavailable the control stays visible but read-only, so a
     // required field is never silently absent.
     if (mode !== 'three-level' || placement.owner === 'investigation') return { kind: 'none' };
-    return { kind: 'iaf-vof', disabled: placement.owner === 'unavailable', labelTree: placement.policy.labelTree };
+    return { kind: 'avvikelse', disabled: placement.owner === 'unavailable', labelTree: placement.policy.labelTree };
   }
 
-  // Every non-IAF/VOF application resolves to owner "basics" today. The guard is
-  // kept so a future placement change fails closed instead of double-rendering.
+  // Without an investigation capability enabled, placement resolves to owner "basics". The
+  // guard is kept so a future placement change fails closed instead of double-rendering.
   if (placement.owner !== 'basics' || mode === 'none') return { kind: 'none' };
   return { kind: mode };
 };

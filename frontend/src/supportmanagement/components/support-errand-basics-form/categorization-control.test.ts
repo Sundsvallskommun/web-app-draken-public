@@ -10,7 +10,7 @@ const defaultBasics: SupportErrandClassificationPlacement = { owner: 'basics', c
 
 const iafVofPlacement = (owner: 'basics' | 'unavailable'): SupportErrandClassificationPlacement => ({
   owner,
-  categorization: 'iaf-vof',
+  categorization: 'avvikelse',
   policy: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
 });
 
@@ -18,7 +18,7 @@ const iafVofPlacement = (owner: 'basics' | 'unavailable'): SupportErrandClassifi
 // records that, so this variant cannot reuse the factory above.
 const iafVofInvestigationPlacement: SupportErrandClassificationPlacement = {
   owner: 'investigation',
-  categorization: 'iaf-vof',
+  categorization: 'avvikelse',
   policy: {
     ...IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
     defaultOwnerDocumentKey: 'manager-document',
@@ -64,7 +64,7 @@ test('renders nothing when no categorization is configured', () => {
 
 test('renders the IAF/VOF control while Grundinformation owns classification', () => {
   assert.deepEqual(resolveCategorizationControl('three-level', iafVofPlacement('basics')), {
-    kind: 'iaf-vof',
+    kind: 'avvikelse',
     disabled: false,
     labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree,
   });
@@ -74,7 +74,7 @@ test('renders the IAF/VOF control read-only when the capability is unavailable',
   // Showing it disabled keeps a required field visible; hiding it would read as
   // "not required" while the errand still cannot be classified anywhere else.
   assert.deepEqual(resolveCategorizationControl('three-level', iafVofPlacement('unavailable')), {
-    kind: 'iaf-vof',
+    kind: 'avvikelse',
     disabled: true,
     labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree,
   });

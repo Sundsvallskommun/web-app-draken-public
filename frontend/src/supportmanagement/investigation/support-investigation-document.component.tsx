@@ -133,7 +133,7 @@ export function SupportInvestigationDocument({
       if (!municipalityId || !errandId) return;
 
       setLoadState('loading');
-      useInvestigationProfileStore.getState().setDocumentLoadState(definition.key, 'loading');
+      useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, false);
       setNotice(undefined);
       setDocumentDirty(false);
       setClassificationDirty(false);
@@ -165,12 +165,12 @@ export function SupportInvestigationDocument({
           etag: storedDocument?.etag,
         });
         setLoadState('ready');
-        useInvestigationProfileStore.getState().setDocumentLoadState(definition.key, 'ready');
+        useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, true);
       } catch (error) {
         if (cancelled) return;
         console.error(`Failed to load investigation document ${definition.key}`, error);
         setLoadState('error');
-        useInvestigationProfileStore.getState().setDocumentLoadState(definition.key, 'error');
+        useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, false);
         setNotice({
           type: 'error',
           message: 'Utredningen kunde inte laddas. Försök igen eller kontakta support om felet kvarstår.',
@@ -182,6 +182,9 @@ export function SupportInvestigationDocument({
     void loadDocument();
     return () => {
       cancelled = true;
+      // Without this an unmounted document stays marked as handled and its jsonParameter is
+      // hidden from Ärendeuppgifter for the rest of the session.
+      useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, false);
     };
   }, [
     definition.key,

@@ -107,7 +107,7 @@ export const getInvestigationLegalBaseRules = (): readonly IafVofInvestigationCl
 
 export const isReportedMisconductErrand = (errand: SupportErrand | undefined): boolean => {
   const placement = getSupportErrandClassificationPlacement();
-  return placement.categorization === 'iaf-vof' ? isIafVofReportedMisconductErrand(errand) : false;
+  return placement.categorization === 'avvikelse' ? isIafVofReportedMisconductErrand(errand) : false;
 };
 
 export const getInvestigationClassificationOwner = (

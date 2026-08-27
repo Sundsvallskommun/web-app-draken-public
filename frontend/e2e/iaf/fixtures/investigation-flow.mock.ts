@@ -8,7 +8,7 @@ import hslUiSchemaRequest from '../../../src/supportmanagement/investigation/sch
 import solLssSchemaRequest from '../../../src/supportmanagement/investigation/schemas/utredning-sol-lss.schema-request.json';
 import solLssUiSchemaRequest from '../../../src/supportmanagement/investigation/schemas/utredning-sol-lss.ui-schema-request.json';
 
-export const backendOrigin = 'http://localhost:3001';
+export const backendOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').origin;
 export const municipalityId = '2281';
 export const errandId = 'ca97b2be-dc37-4707-b5bb-bae98936a183';
 export const application = (process.env.NEXT_PUBLIC_APPLICATION ?? 'IAF').trim().toUpperCase();

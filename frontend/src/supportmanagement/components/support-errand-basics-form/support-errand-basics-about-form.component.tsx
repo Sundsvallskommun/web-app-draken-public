@@ -80,7 +80,7 @@ export const SupportErrandBasicsAboutForm: FC<{
         </div>
       ) : null}
 
-      {categorizationControl.kind === 'iaf-vof' ? (
+      {categorizationControl.kind === 'avvikelse' ? (
         <IafLabelCategorization
           supportMetadata={supportMetadata}
           labelTree={categorizationControl.labelTree}
