@@ -282,6 +282,10 @@ export enum Resolution {
   FORWARDED_TO_EXTERNAL_LANDLORD = 'FORWARDED_TO_EXTERNAL_LANDLORD',
   FORWARDED_TO_INTERNAL_CONTRACTOR = 'FORWARDED_TO_INTERNAL_CONTRACTOR',
   FORWARDED_TO_EXTERNAL_CONTRACTOR = 'FORWARDED_TO_EXTERNAL_CONTRACTOR',
+  GRANTED = 'GRANTED',
+  REJECTED = 'REJECTED',
+  WITHDRAWN = 'WITHDRAWN',
+  DISMISSED = 'DISMISSED',
 }
 
 export enum ResolutionLabelLOP {
@@ -326,6 +330,14 @@ export enum ResolutionLabelROB {
 export enum ResolutionLabelBOU {
   SOLVED = 'Löst',
   BACK_TO_CONTACT_SUNDSVALL = 'Åter till Kontakt Sundsvall',
+}
+
+export enum ResolutionLabelAOT {
+  GRANTED = 'Beviljat',
+  REJECTED = 'Avslag',
+  WITHDRAWN = 'Återkallat av sökanden',
+  DISMISSED = 'Avskrivet',
+  CLOSED = 'Avslutat',
 }
 
 export enum ResolutionLabelLOK {

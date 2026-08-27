@@ -199,16 +199,18 @@ describe('support-errand.service', () => {
       expect(getNewErrandDefaults('KC')?.classification).toEqual({ category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' });
       expect(getNewErrandDefaults('LOP')?.classification).toEqual({ category: 'SALARY', type: 'SALARY.UNCATEGORIZED' });
       expect(getNewErrandDefaults('MSVA')?.classification).toEqual({ category: 'MSVA', type: 'MSVA.UNCATEGORIZED' });
+      expect(getNewErrandDefaults('AOT')?.classification).toEqual({ category: 'AOT', type: 'AOT.UNCATEGORIZED' });
     });
 
     it('covers every configured drake', () => {
-      expect(Object.keys(NEW_ERRAND_DEFAULTS).sort()).toEqual(['BOU', 'IK', 'KA', 'KC', 'LOK', 'LOP', 'MSVA', 'ROB', 'SE']);
+      expect(Object.keys(NEW_ERRAND_DEFAULTS).sort()).toEqual(['AOT', 'BOU', 'IK', 'KA', 'KC', 'LOK', 'LOP', 'MSVA', 'ROB', 'SE']);
     });
 
     it('leaves labels undefined for the drakes that configure none', () => {
       expect(getNewErrandDefaults('KC')).toEqual({ classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' } });
       expect(getNewErrandDefaults('MSVA')).toEqual({ classification: { category: 'MSVA', type: 'MSVA.UNCATEGORIZED' } });
       expect(getNewErrandDefaults('ROB')).toEqual({ classification: { category: 'COMPLETE_RECRUITMENT', type: 'COMPLETE_RECRUITMENT.RETAKE' } });
+      expect(getNewErrandDefaults('AOT')).toEqual({ classification: { category: 'AOT', type: 'AOT.UNCATEGORIZED' } });
     });
 
     it('returns undefined for an unknown or missing application', () => {

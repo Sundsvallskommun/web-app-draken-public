@@ -215,6 +215,7 @@ export const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
     classification: { category: 'IAF', type: 'IAF/WORK_AND_LIVELIHOOD' },
     labels: { category: 'IAF', type: 'IAF/WORK_AND_LIVELIHOOD' },
   },
+  AOT: { classification: { category: 'AOT', type: 'AOT.UNCATEGORIZED' } },
 };
 
 export const getNewErrandDefaults = (application?: string): NewErrandDefaults | undefined => NEW_ERRAND_DEFAULTS[application ?? ''];

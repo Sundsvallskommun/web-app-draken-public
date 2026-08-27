@@ -1,4 +1,4 @@
-import { isBOU, isIK, isKA, isLOK, isLOP, isROB, isSE } from '@common/services/application-service';
+import { isAOT, isBOU, isIK, isKA, isLOK, isLOP, isROB, isSE } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
@@ -8,6 +8,7 @@ import {
   closeSupportErrand,
   getSupportErrandById,
   Resolution,
+  ResolutionLabelAOT,
   ResolutionLabelBOU,
   ResolutionLabelIK,
   ResolutionLabelKA,
@@ -30,6 +31,7 @@ const RESOLUTION_DESCRIPTION =
   'Du kan avsluta ärendet med nuvarande lösningskod, eller ändra om något i ärendet har påverkat lösningen.';
 
 const getResolutionLabels = (): Record<string, string> => {
+  if (isAOT()) return ResolutionLabelAOT;
   if (isLOP()) return ResolutionLabelLOP;
   if (isIK() || isSE()) return ResolutionLabelIK;
   if (isKA()) return ResolutionLabelKA;
