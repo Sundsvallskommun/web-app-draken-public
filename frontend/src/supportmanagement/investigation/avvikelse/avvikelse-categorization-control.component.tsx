@@ -1,11 +1,11 @@
 'use client';
 
 import { useMetadataStore } from '@stores/index';
-import { IafLabelCategorization } from '@supportmanagement/components/support-errand-basics-form/iaf-label-categorization.component';
+import { IafLabelCategorization } from '@supportmanagement/investigation/avvikelse/iaf-label-categorization.component';
 import type { FC } from 'react';
 
-import { IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY } from '../iaf-vof-investigation-classification-policy';
 import type { InvestigationCategorizationControlProps } from '../investigation-variant';
+import { IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY } from './iaf-vof-investigation-classification-policy';
 
 /**
  * Adapts the avvikelse categorization control to the variant contract: Grundinformation passes only

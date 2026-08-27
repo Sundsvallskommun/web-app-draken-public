@@ -1,12 +1,12 @@
 import type { Page, Request, Route } from '@playwright/test';
 
-import investigationCases from '../../../src/supportmanagement/investigation/schemas/fixtures/investigation-schema-cases.json';
-import managerSchemaRequest from '../../../src/supportmanagement/investigation/schemas/utredning-enhetschef.schema-request.json';
-import managerUiSchemaRequest from '../../../src/supportmanagement/investigation/schemas/utredning-enhetschef.ui-schema-request.json';
-import hslSchemaRequest from '../../../src/supportmanagement/investigation/schemas/utredning-hsl.schema-request.json';
-import hslUiSchemaRequest from '../../../src/supportmanagement/investigation/schemas/utredning-hsl.ui-schema-request.json';
-import solLssSchemaRequest from '../../../src/supportmanagement/investigation/schemas/utredning-sol-lss.schema-request.json';
-import solLssUiSchemaRequest from '../../../src/supportmanagement/investigation/schemas/utredning-sol-lss.ui-schema-request.json';
+import investigationCases from '../../../src/supportmanagement/investigation/avvikelse/schemas/fixtures/investigation-schema-cases.json';
+import managerSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-enhetschef.schema-request.json';
+import managerUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-enhetschef.ui-schema-request.json';
+import hslSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-hsl.schema-request.json';
+import hslUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-hsl.ui-schema-request.json';
+import solLssSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-sol-lss.schema-request.json';
+import solLssUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-sol-lss.ui-schema-request.json';
 
 export const backendOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').origin;
 export const municipalityId = '2281';

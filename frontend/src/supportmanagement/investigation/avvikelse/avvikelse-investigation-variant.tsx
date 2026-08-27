@@ -18,7 +18,7 @@ import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.c
  * owns classification. The dynamic import breaks that edge, and splits the tab into its own chunk.
  */
 const SupportErrandInvestigationTab = dynamic(
-  () => import('../support-errand-investigation-tab').then((module) => module.SupportErrandInvestigationTab),
+  () => import('./support-errand-investigation-tab').then((module) => module.SupportErrandInvestigationTab),
   {
     loading: () => (
       <div className="flex justify-center p-24">

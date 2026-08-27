@@ -1,10 +1,10 @@
 import { getApplication } from '@common/services/application-service';
 
+import { useInvestigationProfileStore } from '../investigation-profile-store';
 import {
   type IafVofClassificationPlacement,
   resolveSupportErrandClassificationPlacement,
-} from '../iaf-vof-investigation-classification-policy';
-import { useInvestigationProfileStore } from '../investigation-profile-store';
+} from './iaf-vof-investigation-classification-policy';
 
 /**
  * getApplication() is passed only so the resolver can verify the profile it was handed belongs to
