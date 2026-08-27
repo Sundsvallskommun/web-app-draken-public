@@ -1,21 +1,21 @@
+export type { AvvikelseLabelClassificationGroup } from './avvikelse-label-classification.mock';
+export {
+  AVVIKELSE_LABEL_CLASSIFICATION_CATALOGS,
+  AVVIKELSE_LABEL_CLASSIFICATION_GROUP,
+} from './avvikelse-label-classification.mock';
 export type {
-  IafLabelClassificationBinding,
-  IafLabelClassificationModel,
-  IafLabelClassificationUpdate,
+  AvvikelseLabelClassificationBinding,
+  AvvikelseLabelClassificationModel,
+  AvvikelseLabelClassificationUpdate,
   LabelClassificationLegalBaseRule,
   PersistedIafLabelClassificationState,
-} from './iaf-supportmanagement-label-classification';
+} from './avvikelse-supportmanagement-label-classification';
 export {
-  applyIafLabelClassificationSelection,
-  createIafLabelClassificationModel,
-  getIafLabelClassificationSelection,
-  getPersistedIafLabelClassificationState,
-} from './iaf-supportmanagement-label-classification';
-export type { IafVofLabelClassificationGroup } from './iaf-vof-label-classification.mock';
-export {
-  IAF_VOF_LABEL_CLASSIFICATION_CATALOGS,
-  IAF_VOF_LABEL_CLASSIFICATION_GROUP,
-} from './iaf-vof-label-classification.mock';
+  applyAvvikelseLabelClassificationSelection,
+  createAvvikelseLabelClassificationModel,
+  getAvvikelseLabelClassificationSelection,
+  getPersistedAvvikelseLabelClassificationState,
+} from './avvikelse-supportmanagement-label-classification';
 export type { LabelClassificationProps } from './label-classification.component';
 export { LabelClassification } from './label-classification.component';
 export type {

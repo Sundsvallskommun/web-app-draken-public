@@ -69,7 +69,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const basics = page.locator('[role="tabpanel"]:visible');
     await expect(basics.locator('[data-cy="category-input"]')).toHaveCount(0);
     await expect(basics.locator('[data-cy="type-input"]')).toHaveCount(0);
-    await expect(basics.locator('[data-cy="iaf-label-categorization"]')).toHaveCount(0);
+    await expect(basics.locator('[data-cy="avvikelse-label-categorization"]')).toHaveCount(0);
 
     await openInvestigation(page);
     await expect(page.locator(classificationFieldSelector)).toHaveCount(1);
@@ -169,7 +169,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     });
 
     await visitErrand(page, dismissCookieConsent);
-    await expect(page.locator('[data-cy="iaf-label-categorization"]')).toBeVisible();
+    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toBeVisible();
     await page
       .locator('[data-cy="label-classification-type"]')
       .selectOption(iafLabelFixture.classification.medication.resourcePath);
@@ -218,7 +218,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     // Gated on the capability flag, not on the profile: the tab stays and explains itself,
     // while the notice above the tab strip is what warns from any other tab.
     await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(1);
-    await expect(page.locator('[data-cy="iaf-label-categorization"]')).toBeVisible();
+    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toBeVisible();
     await expect(page.locator('[data-cy="label-classification-type"]')).toBeDisabled();
 
     await page.getByRole('tab', { name: 'Ärendeuppgifter', exact: true }).click();
@@ -292,7 +292,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(1);
     await expect(page.locator('[data-cy="investigation-profile-error"]')).toHaveCount(0);
     await expect(page.locator('[data-cy="investigation-profile-unavailable"]')).toHaveCount(0);
-    await expect(page.locator('[data-cy="iaf-label-categorization"]')).toBeVisible();
+    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toBeVisible();
 
     // Asserted last: opening Utredning hides Grundinformation's categorization control.
     await page.getByRole('tab', { name: 'Utredning', exact: true }).click();

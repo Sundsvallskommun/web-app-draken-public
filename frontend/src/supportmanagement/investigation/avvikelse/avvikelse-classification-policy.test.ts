@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
 import {
-  IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
-  isIafVofReportedMisconductErrand,
-  resolveIafVofInvestigationClassificationOwnerDocumentKey,
+  AVVIKELSE_CLASSIFICATION_POLICY,
+  isAvvikelseReportedMisconductErrand,
+  resolveAvvikelseClassificationOwnerDocumentKey,
   resolveSupportErrandClassificationPlacement,
-} from './iaf-vof-investigation-classification-policy';
+} from './avvikelse-classification-policy';
 
 const documents = () => [
   { key: 'manager-document', schemaName: 'utredning-enhetschef' },
@@ -27,7 +27,7 @@ test('moves classification to the investigation document for an active profile w
   for (const application of ['IAF', 'VOF']) {
     const placement = resolveSupportErrandClassificationPlacement({ application, profile: profile({ application }) });
     assert.equal(placement.owner, 'investigation');
-    assert.equal(placement.labelTree, IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree);
+    assert.equal(placement.labelTree, AVVIKELSE_CLASSIFICATION_POLICY.labelTree);
     assert.equal(placement.policy.defaultOwnerDocumentKey, 'manager-document');
     assert.equal(placement.policy.reportedMisconductOwnerDocumentKey, 'misconduct-document');
   }
@@ -43,7 +43,7 @@ test('does not gate on the application name', () => {
   });
 
   assert.equal(placement.owner, 'investigation');
-  assert.equal(placement.labelTree, IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree);
+  assert.equal(placement.labelTree, AVVIKELSE_CLASSIFICATION_POLICY.labelTree);
 });
 
 test('uses profile state as the classification ownership authority for IAF/VOF', () => {
@@ -81,13 +81,13 @@ test('selects the configured profile keys for ordinary deviations and reported m
   if (placement.owner !== 'investigation') throw new Error('Expected investigation placement');
 
   assert.equal(
-    resolveIafVofInvestigationClassificationOwnerDocumentKey(placement, {
+    resolveAvvikelseClassificationOwnerDocumentKey(placement, {
       parameters: [{ key: 'eventType', values: ['AVVIKELSE'] }],
     }),
     'manager-document'
   );
   assert.equal(
-    resolveIafVofInvestigationClassificationOwnerDocumentKey(placement, {
+    resolveAvvikelseClassificationOwnerDocumentKey(placement, {
       parameters: [{ key: 'eventType', values: [' missforhallande '] }],
     }),
     'misconduct-document'
@@ -96,11 +96,11 @@ test('selects the configured profile keys for ordinary deviations and reported m
 
 test('treats resourcePath as authoritative and resourceName only as a pathless fallback', () => {
   assert.equal(
-    isIafVofReportedMisconductErrand({ labels: [{ resourcePath: 'OTHER/ABUSE', resourceName: 'ABUSE' }] }),
+    isAvvikelseReportedMisconductErrand({ labels: [{ resourcePath: 'OTHER/ABUSE', resourceName: 'ABUSE' }] }),
     false
   );
-  assert.equal(isIafVofReportedMisconductErrand({ labels: [{ resourceName: ' abuse ' }] }), true);
-  assert.equal(isIafVofReportedMisconductErrand({ labels: [{ resourcePath: '/report_type/abuse/' }] }), true);
+  assert.equal(isAvvikelseReportedMisconductErrand({ labels: [{ resourceName: ' abuse ' }] }), true);
+  assert.equal(isAvvikelseReportedMisconductErrand({ labels: [{ resourcePath: '/report_type/abuse/' }] }), true);
 });
 
 test('does not accept selector suffixes or another label path', () => {
@@ -109,6 +109,6 @@ test('does not accept selector suffixes or another label path', () => {
     { labels: [{ resourcePath: 'OTHER/REPORT_TYPE/ABUSE', resourceName: 'ABUSE' }] },
     { labels: [{ resourceName: 'OTHER_ABUSE' }] },
   ]) {
-    assert.equal(isIafVofReportedMisconductErrand(errand), false);
+    assert.equal(isAvvikelseReportedMisconductErrand(errand), false);
   }
 });

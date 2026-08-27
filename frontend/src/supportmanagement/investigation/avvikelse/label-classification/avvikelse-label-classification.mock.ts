@@ -1,12 +1,12 @@
 import type { LabelClassificationCatalog } from './label-classification.types';
 
-export const IAF_VOF_LABEL_CLASSIFICATION_GROUP = {
+export const AVVIKELSE_LABEL_CLASSIFICATION_GROUP = {
   HSL: 'HSL',
   SOL_LSS: 'SOL_LSS',
 } as const;
 
-export type IafVofLabelClassificationGroup =
-  (typeof IAF_VOF_LABEL_CLASSIFICATION_GROUP)[keyof typeof IAF_VOF_LABEL_CLASSIFICATION_GROUP];
+export type AvvikelseLabelClassificationGroup =
+  (typeof AVVIKELSE_LABEL_CLASSIFICATION_GROUP)[keyof typeof AVVIKELSE_LABEL_CLASSIFICATION_GROUP];
 
 /**
  * Local working catalog for the IAF/VOF investigation lab. The codes are
@@ -14,8 +14,8 @@ export type IafVofLabelClassificationGroup =
  * Replace this record with catalogs mapped from SupportManagement metadata once
  * that API contract is available.
  */
-export const IAF_VOF_LABEL_CLASSIFICATION_CATALOGS = {
-  [IAF_VOF_LABEL_CLASSIFICATION_GROUP.HSL]: {
+export const AVVIKELSE_LABEL_CLASSIFICATION_CATALOGS = {
+  [AVVIKELSE_LABEL_CLASSIFICATION_GROUP.HSL]: {
     code: 'HSL',
     displayName: 'HSL',
     types: [
@@ -129,7 +129,7 @@ export const IAF_VOF_LABEL_CLASSIFICATION_CATALOGS = {
       },
     ],
   },
-  [IAF_VOF_LABEL_CLASSIFICATION_GROUP.SOL_LSS]: {
+  [AVVIKELSE_LABEL_CLASSIFICATION_GROUP.SOL_LSS]: {
     code: 'SOL_LSS',
     displayName: 'SOL/LSS',
     types: [
@@ -306,4 +306,4 @@ export const IAF_VOF_LABEL_CLASSIFICATION_CATALOGS = {
       { code: 'sol_lss_sexuella_overgrepp', displayName: 'Sexuella övergrepp', subtypes: [] },
     ],
   },
-} as const satisfies Readonly<Record<IafVofLabelClassificationGroup, LabelClassificationCatalog>>;
+} as const satisfies Readonly<Record<AvvikelseLabelClassificationGroup, LabelClassificationCatalog>>;

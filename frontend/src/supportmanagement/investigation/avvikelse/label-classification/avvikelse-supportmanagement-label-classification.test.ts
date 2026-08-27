@@ -4,10 +4,10 @@ import type { Label } from '@common/data-contracts/supportmanagement/data-contra
 import { test } from 'vitest';
 
 import {
-  applyIafLabelClassificationSelection,
-  createIafLabelClassificationModel,
-  getPersistedIafLabelClassificationState,
-} from './iaf-supportmanagement-label-classification';
+  applyAvvikelseLabelClassificationSelection,
+  createAvvikelseLabelClassificationModel,
+  getPersistedAvvikelseLabelClassificationState,
+} from './avvikelse-supportmanagement-label-classification';
 
 const labelTree = {
   root: { resource: 'CATEGORY', classification: 'CATEGORY_ROOT' },
@@ -59,7 +59,7 @@ const legacyHslClassification = {
 
 test('blocks a legacy unknown category when current legal bases exclude its known owner', () => {
   assert.equal(
-    getPersistedIafLabelClassificationState(
+    getPersistedAvvikelseLabelClassificationState(
       labelStructure,
       labelTree,
       ['SOL'],
@@ -70,7 +70,7 @@ test('blocks a legacy unknown category when current legal bases exclude its know
   );
 
   assert.equal(
-    getPersistedIafLabelClassificationState(
+    getPersistedAvvikelseLabelClassificationState(
       labelStructure,
       labelTree,
       ['SOL'],
@@ -86,7 +86,7 @@ test('blocks a legacy unknown category when current legal bases exclude its know
 
 test('preserves a legacy unknown category while its known owner remains allowed', () => {
   assert.equal(
-    getPersistedIafLabelClassificationState(
+    getPersistedAvvikelseLabelClassificationState(
       labelStructure,
       labelTree,
       ['HSL'],
@@ -99,7 +99,7 @@ test('preserves a legacy unknown category while its known owner remains allowed'
 
 test('blocks changing the persisted owner while an unknown type still identifies its original owner', () => {
   assert.equal(
-    getPersistedIafLabelClassificationState(
+    getPersistedAvvikelseLabelClassificationState(
       labelStructure,
       labelTree,
       ['SOL'],
@@ -115,14 +115,20 @@ test('blocks changing the persisted owner while an unknown type still identifies
 
 test('keeps the metadata-unavailable compatibility path for legacy classifications', () => {
   assert.equal(
-    getPersistedIafLabelClassificationState(undefined, labelTree, ['SOL'], legacyHslClassification, legalBaseRules),
+    getPersistedAvvikelseLabelClassificationState(
+      undefined,
+      labelTree,
+      ['SOL'],
+      legacyHslClassification,
+      legalBaseRules
+    ),
     'legacy-unknown'
   );
 });
 
 test('derives allowed metadata owners from policy rules rather than known legal-base names', () => {
   const futureRules = [{ legalBase: 'FUTURE-ACT', allowedClassificationCategories: ['CATEGORY/HSL'] }];
-  const model = createIafLabelClassificationModel(labelStructure, labelTree, ['future-act'], futureRules);
+  const model = createAvvikelseLabelClassificationModel(labelStructure, labelTree, ['future-act'], futureRules);
 
   assert.deepEqual(
     model.bindings.map(({ owner: bindingOwner }) => bindingOwner?.resourcePath),
@@ -170,8 +176,8 @@ test('projects a future application custom root and vocabulary with the strategy
     },
   ];
 
-  const model = createIafLabelClassificationModel(futureStructure, futureTree);
-  const update = applyIafLabelClassificationSelection(model, [], {
+  const model = createAvvikelseLabelClassificationModel(futureStructure, futureTree);
+  const update = applyAvvikelseLabelClassificationSelection(model, [], {
     typeCode: 'INCIDENTS/FUTURE_ACT/SAFETY',
     subtypeCode: 'INCIDENTS/FUTURE_ACT/SAFETY/FALL',
   });
@@ -202,12 +208,12 @@ test('projects a future application custom root and vocabulary with the strategy
 
 test('fails closed when the configured classification root is missing or duplicated', () => {
   assert.throws(
-    () => createIafLabelClassificationModel([], labelTree),
+    () => createAvvikelseLabelClassificationModel([], labelTree),
     /expected one configured root CATEGORY\/CATEGORY_ROOT, found 0/u
   );
   assert.throws(
     () =>
-      createIafLabelClassificationModel(
+      createAvvikelseLabelClassificationModel(
         [
           labelStructure[0],
           {
@@ -243,7 +249,7 @@ test('fails closed when the configured classification root is missing or duplica
     ],
   ]) {
     assert.throws(
-      () => createIafLabelClassificationModel(nearMiss, labelTree),
+      () => createAvvikelseLabelClassificationModel(nearMiss, labelTree),
       /expected one configured root CATEGORY\/CATEGORY_ROOT, found 0/u
     );
   }

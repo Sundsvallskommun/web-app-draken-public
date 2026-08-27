@@ -1,9 +1,9 @@
 import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
-  applyIafLabelClassificationSelection,
-  createIafLabelClassificationModel,
-  getIafLabelClassificationSelection,
+  applyAvvikelseLabelClassificationSelection,
+  createAvvikelseLabelClassificationModel,
+  getAvvikelseLabelClassificationSelection,
 } from '@supportmanagement/investigation/avvikelse/label-classification';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { getErrandTypeLabel } from '@supportmanagement/services/support-label-classification-service';
@@ -11,7 +11,7 @@ import type { SupportMetadata } from '@supportmanagement/services/support-metada
 import { FormProvider, type Resolver, useForm, useFormContext, useWatch } from 'react-hook-form';
 
 import { supportErrandFormSchema } from '../../components/support-errand/support-errand-form-schema';
-import { IafLabelCategorization } from './iaf-label-categorization.component';
+import { AvvikelseLabelCategorization } from './avvikelse-label-categorization.component';
 
 const medicationAdministration: Label = {
   id: 'medication-administration-id',
@@ -156,7 +156,7 @@ const ClassificationHarness = ({
 
   return (
     <FormProvider {...methods}>
-      <IafLabelCategorization supportMetadata={classificationMetadata} />
+      <AvvikelseLabelCategorization supportMetadata={classificationMetadata} />
       <FormValues />
     </FormProvider>
   );
@@ -164,7 +164,7 @@ const ClassificationHarness = ({
 
 describe('IAF label categorization', () => {
   it('unwraps CATEGORY and preserves labels outside classification', () => {
-    const model = createIafLabelClassificationModel(labelStructure);
+    const model = createAvvikelseLabelClassificationModel(labelStructure);
 
     expect(model.catalog.types.map(({ displayName }) => displayName)).to.deep.equal([
       'Dokumentation',
@@ -179,7 +179,7 @@ describe('IAF label categorization', () => {
       'Rapporttyp',
     ]);
 
-    const selectedFromLeaf = getIafLabelClassificationSelection(model, [medicationAdministration], {
+    const selectedFromLeaf = getAvvikelseLabelClassificationSelection(model, [medicationAdministration], {
       type: 'CATEGORY/SOL_LSS/DOCUMENTATION',
     });
     expect(selectedFromLeaf).to.deep.equal({
@@ -187,13 +187,13 @@ describe('IAF label categorization', () => {
       subtypeCode: medicationAdministration.resourcePath,
     });
     expect(
-      getIafLabelClassificationSelection(model, [], {
+      getAvvikelseLabelClassificationSelection(model, [], {
         category: hsl.resourcePath,
         type: medication.resourcePath,
       })
     ).to.deep.equal({ typeCode: medication.resourcePath, subtypeCode: undefined });
 
-    const update = applyIafLabelClassificationSelection(model, [provision, reportType], selectedFromLeaf);
+    const update = applyAvvikelseLabelClassificationSelection(model, [provision, reportType], selectedFromLeaf);
     expect(update.category).to.equal(hsl.resourcePath);
     expect(update.type).to.equal(medication.resourcePath);
     expect(update.subType).to.equal(medicationAdministration.resourcePath);
@@ -208,9 +208,11 @@ describe('IAF label categorization', () => {
     ]);
     expect(update.labels.every(({ labels }) => labels === undefined)).to.equal(true);
     expect(getErrandTypeLabel({ labels: update.labels }, metadata)?.displayName).to.equal('Läkemedel');
-    expect(applyIafLabelClassificationSelection(model, update.labels, selectedFromLeaf).labelsChanged).to.equal(false);
+    expect(applyAvvikelseLabelClassificationSelection(model, update.labels, selectedFromLeaf).labelsChanged).to.equal(
+      false
+    );
 
-    const terminalUpdate = applyIafLabelClassificationSelection(model, update.labels, {
+    const terminalUpdate = applyAvvikelseLabelClassificationSelection(model, update.labels, {
       typeCode: fallWithoutInjury.resourcePath,
     });
     expect(terminalUpdate.requiresSubType).to.equal(false);

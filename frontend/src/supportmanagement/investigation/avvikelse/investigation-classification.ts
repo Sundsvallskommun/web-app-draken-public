@@ -3,11 +3,11 @@ import type { SupportErrand } from '@supportmanagement/services/support-errand-s
 
 import { getAvvikelseClassificationPlacement } from './avvikelse-classification-placement';
 import {
-  type IafVofClassificationPlacement,
-  type IafVofInvestigationClassificationLegalBaseRule,
-  isIafVofReportedMisconductErrand,
-  resolveIafVofInvestigationClassificationOwnerDocumentKey,
-} from './iaf-vof-investigation-classification-policy';
+  type AvvikelseClassificationLegalBaseRule,
+  type AvvikelseClassificationPlacement,
+  isAvvikelseReportedMisconductErrand,
+  resolveAvvikelseClassificationOwnerDocumentKey,
+} from './avvikelse-classification-policy';
 import type { InvestigationDocumentKey, InvestigationFormData } from './investigation-document';
 import { normalizeInvestigationFormData } from './investigation-form-data';
 
@@ -26,14 +26,14 @@ interface InvestigationSchemaExtensions extends RJSFSchema {
 
 const isClassificationDocumentKey = (
   key: InvestigationDocumentKey,
-  policy: Extract<IafVofClassificationPlacement, { owner: 'investigation' }>['policy']
+  policy: Extract<AvvikelseClassificationPlacement, { owner: 'investigation' }>['policy']
 ): boolean => {
   return policy.defaultOwnerDocumentKey === key || policy.reportedMisconductOwnerDocumentKey === key;
 };
 
 const hasClassificationDeclaration = (
   schema: RJSFSchema,
-  policy: Extract<IafVofClassificationPlacement, { owner: 'investigation' }>['policy']
+  policy: Extract<AvvikelseClassificationPlacement, { owner: 'investigation' }>['policy']
 ): boolean => {
   const definition = (schema as InvestigationSchemaExtensions)['x-draken-external-fields']?.[
     INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD
@@ -100,18 +100,18 @@ export const getInvestigationLegalBases = (formData: InvestigationFormData): str
   ];
 };
 
-export const getInvestigationLegalBaseRules = (): readonly IafVofInvestigationClassificationLegalBaseRule[] =>
+export const getInvestigationLegalBaseRules = (): readonly AvvikelseClassificationLegalBaseRule[] =>
   getAvvikelseClassificationPlacement().policy.legalBaseRules;
 
 export const isReportedMisconductErrand = (errand: SupportErrand | undefined): boolean =>
-  isIafVofReportedMisconductErrand(errand);
+  isAvvikelseReportedMisconductErrand(errand);
 
 export const getInvestigationClassificationOwner = (
   errand: SupportErrand | undefined
 ): InvestigationDocumentKey | undefined => {
   const placement = getAvvikelseClassificationPlacement();
   if (placement.owner !== 'investigation') return undefined;
-  return resolveIafVofInvestigationClassificationOwnerDocumentKey(placement, errand ?? {});
+  return resolveAvvikelseClassificationOwnerDocumentKey(placement, errand ?? {});
 };
 
 export const isInvestigationClassificationOwner = (

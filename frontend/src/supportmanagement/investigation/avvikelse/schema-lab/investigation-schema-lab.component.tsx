@@ -2,8 +2,8 @@
 
 import { Alert, FormControl, FormLabel, Label, Select, Tabs } from '@sk-web-gui/react';
 import {
-  IAF_VOF_LABEL_CLASSIFICATION_CATALOGS,
-  IAF_VOF_LABEL_CLASSIFICATION_GROUP,
+  AVVIKELSE_LABEL_CLASSIFICATION_CATALOGS,
+  AVVIKELSE_LABEL_CLASSIFICATION_GROUP,
   LabelClassificationCatalog,
   LabelClassificationSelection,
 } from '@supportmanagement/investigation/avvikelse/label-classification';
@@ -67,10 +67,10 @@ function getManagerLabelCatalog(formData: InvestigationFormData): LabelClassific
   const catalogs: LabelClassificationCatalog[] = [];
 
   if (legalBases.includes('HSL')) {
-    catalogs.push(IAF_VOF_LABEL_CLASSIFICATION_CATALOGS[IAF_VOF_LABEL_CLASSIFICATION_GROUP.HSL]);
+    catalogs.push(AVVIKELSE_LABEL_CLASSIFICATION_CATALOGS[AVVIKELSE_LABEL_CLASSIFICATION_GROUP.HSL]);
   }
   if (legalBases.includes('SOL') || legalBases.includes('LSS')) {
-    catalogs.push(IAF_VOF_LABEL_CLASSIFICATION_CATALOGS[IAF_VOF_LABEL_CLASSIFICATION_GROUP.SOL_LSS]);
+    catalogs.push(AVVIKELSE_LABEL_CLASSIFICATION_CATALOGS[AVVIKELSE_LABEL_CLASSIFICATION_GROUP.SOL_LSS]);
   }
 
   if (catalogs.length === 0) return emptyLabelCatalog;
@@ -89,7 +89,7 @@ function getSchemaLabelCatalog(
 ): LabelClassificationCatalog | undefined {
   if (schemaName === 'utredning-enhetschef') return managerLabelCatalog;
   if (schemaName === 'utredning-sol-lss') {
-    return IAF_VOF_LABEL_CLASSIFICATION_CATALOGS[IAF_VOF_LABEL_CLASSIFICATION_GROUP.SOL_LSS];
+    return AVVIKELSE_LABEL_CLASSIFICATION_CATALOGS[AVVIKELSE_LABEL_CLASSIFICATION_GROUP.SOL_LSS];
   }
   return undefined;
 }

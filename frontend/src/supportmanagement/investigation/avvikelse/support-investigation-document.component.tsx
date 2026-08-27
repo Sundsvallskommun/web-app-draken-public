@@ -6,17 +6,17 @@ import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@commo
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { Alert, Label, Spinner } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
-import { IafLabelCategorization } from '@supportmanagement/investigation/avvikelse/iaf-label-categorization.component';
+import { AvvikelseLabelCategorization } from '@supportmanagement/investigation/avvikelse/avvikelse-label-categorization.component';
 import {
-  applyIafLabelClassificationSelection,
-  getIafLabelClassificationSelection,
+  applyAvvikelseLabelClassificationSelection,
+  getAvvikelseLabelClassificationSelection,
 } from '@supportmanagement/investigation/avvikelse/label-classification';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 
 import { useInvestigationProfileStore } from '../investigation-profile-store';
-import { IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY } from './iaf-vof-investigation-classification-policy';
+import { AVVIKELSE_CLASSIFICATION_POLICY } from './avvikelse-classification-policy';
 import {
   getInvestigationClassificationSchemaContract,
   getInvestigationClassificationUiSchema,
@@ -208,9 +208,7 @@ export function SupportInvestigationDocument({
       ? getHslRiskValue(documentState.formData)
       : undefined;
   const classificationOwner = isInvestigationClassificationOwner(definition.key, supportErrand);
-  const classificationLabelTree = classificationOwner
-    ? IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree
-    : undefined;
+  const classificationLabelTree = classificationOwner ? AVVIKELSE_CLASSIFICATION_POLICY.labelTree : undefined;
   const classificationSchemaContract = documentState
     ? getInvestigationClassificationSchemaContract(definition.key, documentState.schema)
     : undefined;
@@ -278,12 +276,12 @@ export function SupportInvestigationDocument({
     savedErrand: SupportInvestigationClassificationResponse,
     prepared: PreparedInvestigationClassification
   ) => {
-    const savedSelection = getIafLabelClassificationSelection(
+    const savedSelection = getAvvikelseLabelClassificationSelection(
       prepared.model,
       savedErrand.labels,
       savedErrand.classification
     );
-    const savedUpdate = applyIafLabelClassificationSelection(prepared.model, savedErrand.labels, savedSelection);
+    const savedUpdate = applyAvvikelseLabelClassificationSelection(prepared.model, savedErrand.labels, savedSelection);
     const savedDraft: InvestigationClassificationDraft = {
       labels: savedErrand.labels,
       category: savedUpdate.category,
@@ -493,7 +491,7 @@ export function SupportInvestigationDocument({
             ? {
                 errandClassification: (
                   <FormProvider {...classificationMethods}>
-                    <IafLabelCategorization
+                    <AvvikelseLabelCategorization
                       supportMetadata={supportMetadata}
                       labelTree={classificationLabelTree}
                       disabled={readonly || isSaving}

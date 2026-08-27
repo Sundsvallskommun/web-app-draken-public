@@ -2,12 +2,12 @@ import type { SupportLabelTreeProfile } from '../../services/support-label-class
 import { normalizeSupportManagementResourcePath } from '../../services/supportmanagement-path';
 import type { SupportErrandClassificationPlacement } from '../classification-placement';
 
-export interface IafVofInvestigationClassificationLegalBaseRule {
+export interface AvvikelseClassificationLegalBaseRule {
   readonly legalBase: string;
   readonly allowedClassificationCategories: readonly string[];
 }
 
-export interface IafVofInvestigationClassificationLabelTree extends SupportLabelTreeProfile {
+export interface AvvikelseClassificationLabelTree extends SupportLabelTreeProfile {
   readonly root: Readonly<{
     readonly resource: string;
     readonly classification: string;
@@ -15,7 +15,7 @@ export interface IafVofInvestigationClassificationLabelTree extends SupportLabel
   readonly ownerClassification: string;
 }
 
-export const IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY = Object.freeze({
+export const AVVIKELSE_CLASSIFICATION_POLICY = Object.freeze({
   defaultOwnerSchemaName: 'utredning-enhetschef',
   reportedMisconductOwnerSchemaName: 'utredning-sol-lss',
   reportedMisconductSelector: Object.freeze({
@@ -30,18 +30,18 @@ export const IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY = Object.freeze({
     ownerClassification: 'PROVISION_CATEGORY',
     categoryClassification: 'CATEGORY',
     typeClassification: 'TYPE',
-  }) satisfies IafVofInvestigationClassificationLabelTree,
+  }) satisfies AvvikelseClassificationLabelTree,
   forcedLegalBases: Object.freeze(['SOL', 'LSS']),
   legalBasesPointer: '/legalBases',
   legalBaseRules: Object.freeze([
     Object.freeze({ legalBase: 'HSL', allowedClassificationCategories: Object.freeze(['CATEGORY/HSL']) }),
     Object.freeze({ legalBase: 'SOL', allowedClassificationCategories: Object.freeze(['CATEGORY/SOL_LSS']) }),
     Object.freeze({ legalBase: 'LSS', allowedClassificationCategories: Object.freeze(['CATEGORY/SOL_LSS']) }),
-  ]) satisfies readonly IafVofInvestigationClassificationLegalBaseRule[],
+  ]) satisfies readonly AvvikelseClassificationLegalBaseRule[],
 });
 
-type IafVofClassificationPolicy = typeof IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY;
-type ResolvedIafVofClassificationPolicy = IafVofClassificationPolicy &
+type AvvikelseClassificationPolicy = typeof AVVIKELSE_CLASSIFICATION_POLICY;
+type ResolvedAvvikelseClassificationPolicy = AvvikelseClassificationPolicy &
   Readonly<{
     defaultOwnerDocumentKey: string;
     reportedMisconductOwnerDocumentKey: string;
@@ -52,12 +52,12 @@ type ResolvedIafVofClassificationPolicy = IafVofClassificationPolicy &
  * payload that only avvikelse code reads - which is why shared consumers take the shared type and
  * never see this one.
  */
-export type IafVofClassificationPlacement = SupportErrandClassificationPlacement &
+export type AvvikelseClassificationPlacement = SupportErrandClassificationPlacement &
   (
-    | Readonly<{ owner: 'basics' | 'unavailable'; policy: IafVofClassificationPolicy }>
-    | Readonly<{ owner: 'investigation'; policy: ResolvedIafVofClassificationPolicy }>
+    | Readonly<{ owner: 'basics' | 'unavailable'; policy: AvvikelseClassificationPolicy }>
+    | Readonly<{ owner: 'investigation'; policy: ResolvedAvvikelseClassificationPolicy }>
   ) &
-  Readonly<{ labelTree: IafVofInvestigationClassificationLabelTree }>;
+  Readonly<{ labelTree: AvvikelseClassificationLabelTree }>;
 
 interface ClassificationPolicyProfile {
   readonly application: string;
@@ -81,15 +81,15 @@ interface ClassificationOwnerErrand {
   }[];
 }
 
-const iafVofBasicsPlacement: IafVofClassificationPlacement = Object.freeze({
+const iafVofBasicsPlacement: AvvikelseClassificationPlacement = Object.freeze({
   owner: 'basics',
-  labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree,
-  policy: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
+  labelTree: AVVIKELSE_CLASSIFICATION_POLICY.labelTree,
+  policy: AVVIKELSE_CLASSIFICATION_POLICY,
 });
-const iafVofUnavailablePlacement: IafVofClassificationPlacement = Object.freeze({
+const iafVofUnavailablePlacement: AvvikelseClassificationPlacement = Object.freeze({
   owner: 'unavailable',
-  labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree,
-  policy: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
+  labelTree: AVVIKELSE_CLASSIFICATION_POLICY.labelTree,
+  policy: AVVIKELSE_CLASSIFICATION_POLICY,
 });
 
 const normalizeApplication = (application: string | undefined): string => application?.trim().toUpperCase() ?? '';
@@ -109,7 +109,7 @@ const findUniqueDocumentKey = (
 export function resolveSupportErrandClassificationPlacement({
   application,
   profile,
-}: ResolveClassificationPlacementOptions): IafVofClassificationPlacement {
+}: ResolveClassificationPlacementOptions): AvvikelseClassificationPlacement {
   const normalizedApplication = normalizeApplication(application);
   if (!profile || profile.state === 'unavailable') return iafVofUnavailablePlacement;
   // Not a capability decision: the enabling flag already made that. This only catches a BFF
@@ -119,19 +119,19 @@ export function resolveSupportErrandClassificationPlacement({
 
   const defaultOwnerDocumentKey = findUniqueDocumentKey(
     profile.documents,
-    IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.defaultOwnerSchemaName
+    AVVIKELSE_CLASSIFICATION_POLICY.defaultOwnerSchemaName
   );
   const reportedMisconductOwnerDocumentKey = findUniqueDocumentKey(
     profile.documents,
-    IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.reportedMisconductOwnerSchemaName
+    AVVIKELSE_CLASSIFICATION_POLICY.reportedMisconductOwnerSchemaName
   );
   if (!defaultOwnerDocumentKey || !reportedMisconductOwnerDocumentKey) return iafVofBasicsPlacement;
 
   return Object.freeze({
     owner: 'investigation',
-    labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree,
+    labelTree: AVVIKELSE_CLASSIFICATION_POLICY.labelTree,
     policy: Object.freeze({
-      ...IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
+      ...AVVIKELSE_CLASSIFICATION_POLICY,
       defaultOwnerDocumentKey,
       reportedMisconductOwnerDocumentKey,
     }),
@@ -141,9 +141,9 @@ export function resolveSupportErrandClassificationPlacement({
 const normalizeCode = (value: string): string => value.trim().toUpperCase();
 const normalizeResourcePath = (value: string): string => normalizeSupportManagementResourcePath(value);
 
-export const isIafVofReportedMisconductErrand = (errand: ClassificationOwnerErrand | undefined): boolean => {
+export const isAvvikelseReportedMisconductErrand = (errand: ClassificationOwnerErrand | undefined): boolean => {
   if (!errand) return false;
-  const selector = IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.reportedMisconductSelector;
+  const selector = AVVIKELSE_CLASSIFICATION_POLICY.reportedMisconductSelector;
   const selectedValues = new Set<string>(selector.parameter.values);
   const matchesParameter =
     errand.parameters?.some(
@@ -164,10 +164,10 @@ export const isIafVofReportedMisconductErrand = (errand: ClassificationOwnerErra
   );
 };
 
-export const resolveIafVofInvestigationClassificationOwnerDocumentKey = (
-  placement: Extract<IafVofClassificationPlacement, { owner: 'investigation' }>,
+export const resolveAvvikelseClassificationOwnerDocumentKey = (
+  placement: Extract<AvvikelseClassificationPlacement, { owner: 'investigation' }>,
   errand: ClassificationOwnerErrand
 ): string =>
-  isIafVofReportedMisconductErrand(errand)
+  isAvvikelseReportedMisconductErrand(errand)
     ? placement.policy.reportedMisconductOwnerDocumentKey
     : placement.policy.defaultOwnerDocumentKey;

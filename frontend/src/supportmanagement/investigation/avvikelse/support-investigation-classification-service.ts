@@ -2,7 +2,7 @@ import type { Label } from '@common/data-contracts/supportmanagement/data-contra
 import { apiService } from '@common/services/api-service';
 import type { AxiosError } from 'axios';
 
-import type { IafLabelClassificationUpdate } from './label-classification';
+import type { AvvikelseLabelClassificationUpdate } from './label-classification';
 
 interface ErrandLabelReference {
   id: string;
@@ -42,7 +42,7 @@ const requireLabelReferences = (labels: readonly Label[]): ErrandLabelReference[
 };
 
 export const buildSupportInvestigationClassificationRequest = (
-  update: IafLabelClassificationUpdate,
+  update: AvvikelseLabelClassificationUpdate,
   expectedVersion: number | undefined,
   documentKey: string,
   documentETag: string | undefined

@@ -1,11 +1,11 @@
 'use client';
 
 import { useMetadataStore } from '@stores/index';
-import { IafLabelCategorization } from '@supportmanagement/investigation/avvikelse/iaf-label-categorization.component';
+import { AvvikelseLabelCategorization } from '@supportmanagement/investigation/avvikelse/avvikelse-label-categorization.component';
 import type { FC } from 'react';
 
 import type { InvestigationCategorizationControlProps } from '../investigation-variant';
-import { IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY } from './iaf-vof-investigation-classification-policy';
+import { AVVIKELSE_CLASSIFICATION_POLICY } from './avvikelse-classification-policy';
 
 /**
  * Adapts the avvikelse categorization control to the variant contract: Grundinformation passes only
@@ -16,9 +16,9 @@ export const AvvikelseCategorizationControl: FC<InvestigationCategorizationContr
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
 
   return (
-    <IafLabelCategorization
+    <AvvikelseLabelCategorization
       supportMetadata={supportMetadata}
-      labelTree={IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree}
+      labelTree={AVVIKELSE_CLASSIFICATION_POLICY.labelTree}
       disabled={disabled}
     />
   );

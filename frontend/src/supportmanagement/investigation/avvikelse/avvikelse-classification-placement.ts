@@ -2,9 +2,9 @@ import { getApplication } from '@common/services/application-service';
 
 import { useInvestigationProfileStore } from '../investigation-profile-store';
 import {
-  type IafVofClassificationPlacement,
+  type AvvikelseClassificationPlacement,
   resolveSupportErrandClassificationPlacement,
-} from './iaf-vof-investigation-classification-policy';
+} from './avvikelse-classification-policy';
 
 /**
  * getApplication() is passed only so the resolver can verify the profile it was handed belongs to
@@ -12,7 +12,7 @@ import {
  */
 export const resolveAvvikelseClassificationPlacement = (
   profile: Parameters<typeof resolveSupportErrandClassificationPlacement>[0]['profile']
-): IafVofClassificationPlacement =>
+): AvvikelseClassificationPlacement =>
   resolveSupportErrandClassificationPlacement({ application: getApplication(), profile });
 
 /**
@@ -23,5 +23,5 @@ export const resolveAvvikelseClassificationPlacement = (
  * module cycle and loses the concrete policy type on the way out. Shared consumers use the registry
  * adapter; avvikelse resolves its own placement directly.
  */
-export const getAvvikelseClassificationPlacement = (): IafVofClassificationPlacement =>
+export const getAvvikelseClassificationPlacement = (): AvvikelseClassificationPlacement =>
   resolveAvvikelseClassificationPlacement(useInvestigationProfileStore.getState().profile);

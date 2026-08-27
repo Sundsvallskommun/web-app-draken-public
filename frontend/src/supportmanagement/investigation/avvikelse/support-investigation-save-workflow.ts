@@ -2,17 +2,17 @@ import type { Label } from '@common/data-contracts/supportmanagement/data-contra
 import type { AxiosError } from 'axios';
 
 import type {
-  IafVofInvestigationClassificationLabelTree,
-  IafVofInvestigationClassificationLegalBaseRule,
-} from './iaf-vof-investigation-classification-policy';
+  AvvikelseClassificationLabelTree,
+  AvvikelseClassificationLegalBaseRule,
+} from './avvikelse-classification-policy';
 import type { InvestigationDocumentKey, InvestigationFormData } from './investigation-document';
 import {
-  applyIafLabelClassificationSelection,
-  createIafLabelClassificationModel,
-  getIafLabelClassificationSelection,
-  getPersistedIafLabelClassificationState,
-  type IafLabelClassificationModel,
-  type IafLabelClassificationUpdate,
+  applyAvvikelseLabelClassificationSelection,
+  type AvvikelseLabelClassificationModel,
+  type AvvikelseLabelClassificationUpdate,
+  createAvvikelseLabelClassificationModel,
+  getAvvikelseLabelClassificationSelection,
+  getPersistedAvvikelseLabelClassificationState,
 } from './label-classification';
 import {
   buildSupportInvestigationClassificationRequest,
@@ -35,24 +35,24 @@ export interface InvestigationClassificationDraft {
 }
 
 export interface PreparedInvestigationClassification {
-  readonly model: IafLabelClassificationModel;
-  readonly update: IafLabelClassificationUpdate;
+  readonly model: AvvikelseLabelClassificationModel;
+  readonly update: AvvikelseLabelClassificationUpdate;
 }
 
 interface PrepareClassificationInput {
   readonly required: boolean;
   readonly dirty: boolean;
-  readonly labelTree?: IafVofInvestigationClassificationLabelTree;
+  readonly labelTree?: AvvikelseClassificationLabelTree;
   readonly labelStructure: readonly Label[] | undefined;
   readonly legalBases: readonly string[];
-  readonly legalBaseRules: readonly IafVofInvestigationClassificationLegalBaseRule[];
+  readonly legalBaseRules: readonly AvvikelseClassificationLegalBaseRule[];
   readonly persistedClassification: InvestigationClassificationDraft;
   readonly triggerValidation: () => Promise<boolean>;
   readonly getDraft: () => InvestigationClassificationDraft;
 }
 
 const persistedClassificationError = (
-  state: ReturnType<typeof getPersistedIafLabelClassificationState>
+  state: ReturnType<typeof getPersistedAvvikelseLabelClassificationState>
 ): string | undefined => {
   if (state === 'known-valid' || state === 'legacy-unknown') return undefined;
   if (state === 'known-disallowed-legal-base') {
@@ -76,7 +76,7 @@ export async function prepareInvestigationClassification({
   if (!required) return undefined;
 
   if (!dirty && labelTree) {
-    const persistedState = getPersistedIafLabelClassificationState(
+    const persistedState = getPersistedAvvikelseLabelClassificationState(
       labelStructure,
       labelTree,
       legalBases,
@@ -100,12 +100,12 @@ export async function prepareInvestigationClassification({
   }
 
   const draft = getDraft();
-  const model = createIafLabelClassificationModel(labelStructure, labelTree, legalBases, legalBaseRules);
-  const selection = getIafLabelClassificationSelection(model, draft.labels, draft);
+  const model = createAvvikelseLabelClassificationModel(labelStructure, labelTree, legalBases, legalBaseRules);
+  const selection = getAvvikelseLabelClassificationSelection(model, draft.labels, draft);
 
   return {
     model,
-    update: applyIafLabelClassificationSelection(model, draft.labels, selection),
+    update: applyAvvikelseLabelClassificationSelection(model, draft.labels, selection),
   };
 }
 

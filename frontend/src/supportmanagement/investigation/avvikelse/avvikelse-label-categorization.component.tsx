@@ -1,10 +1,10 @@
 'use client';
 
-import type { IafVofInvestigationClassificationLabelTree } from '@supportmanagement/investigation/avvikelse/iaf-vof-investigation-classification-policy';
+import type { AvvikelseClassificationLabelTree } from '@supportmanagement/investigation/avvikelse/avvikelse-classification-policy';
 import {
-  applyIafLabelClassificationSelection,
-  createIafLabelClassificationModel,
-  getIafLabelClassificationSelection,
+  applyAvvikelseLabelClassificationSelection,
+  createAvvikelseLabelClassificationModel,
+  getAvvikelseLabelClassificationSelection,
   LabelClassification,
   type LabelClassificationLegalBaseRule,
 } from '@supportmanagement/investigation/avvikelse/label-classification';
@@ -13,7 +13,7 @@ import type { SupportMetadata } from '@supportmanagement/services/support-metada
 import { type FC, useEffect, useMemo, useRef } from 'react';
 import { type FieldError, useFormContext, useWatch } from 'react-hook-form';
 
-const iafClassificationContent = {
+const avvikelseClassificationContent = {
   typeLabel: 'Avvikelsetyp (obligatoriskt)',
   typePlaceholder: 'Välj avvikelsetyp',
   typeEmptyPlaceholder: 'Inga avvikelsetyper tillgängliga',
@@ -29,8 +29,8 @@ const errorMessage = (error: FieldError | undefined): string | undefined =>
   typeof error?.message === 'string' ? error.message : undefined;
 
 const requireLabelTree = (
-  labelTree: IafVofInvestigationClassificationLabelTree | undefined
-): IafVofInvestigationClassificationLabelTree => {
+  labelTree: AvvikelseClassificationLabelTree | undefined
+): AvvikelseClassificationLabelTree => {
   if (!labelTree) throw new Error('Klassificeringsprofilens labelträd saknas.');
   return labelTree;
 };
@@ -45,10 +45,10 @@ const parseLegalBasesKey = (key: string | undefined): string[] | undefined => {
   return key === '' ? [] : key.split('|');
 };
 
-export const IafLabelCategorization: FC<{
+export const AvvikelseLabelCategorization: FC<{
   supportMetadata?: SupportMetadata;
   disabled?: boolean;
-  labelTree?: IafVofInvestigationClassificationLabelTree;
+  labelTree?: AvvikelseClassificationLabelTree;
   legalBases?: readonly string[];
   legalBaseRules?: readonly LabelClassificationLegalBaseRule[];
   onClassificationChange?: () => void;
@@ -81,12 +81,12 @@ export const IafLabelCategorization: FC<{
   const legalBasesKey = legalBases === undefined ? undefined : [...legalBases].sort(compareLegalBases).join('|');
   const normalizedLegalBases = useMemo(() => parseLegalBasesKey(legalBasesKey), [legalBasesKey]);
   const completeModel = useMemo(
-    () => createIafLabelClassificationModel(supportMetadata?.labels?.labelStructure, configuredLabelTree),
+    () => createAvvikelseLabelClassificationModel(supportMetadata?.labels?.labelStructure, configuredLabelTree),
     [configuredLabelTree, supportMetadata?.labels?.labelStructure]
   );
   const model = useMemo(
     () =>
-      createIafLabelClassificationModel(
+      createAvvikelseLabelClassificationModel(
         supportMetadata?.labels?.labelStructure,
         configuredLabelTree,
         normalizedLegalBases,
@@ -95,15 +95,15 @@ export const IafLabelCategorization: FC<{
     [configuredLabelTree, legalBaseRules, normalizedLegalBases, supportMetadata?.labels?.labelStructure]
   );
   const selection = useMemo(
-    () => getIafLabelClassificationSelection(model, labels, { category, type, subType }),
+    () => getAvvikelseLabelClassificationSelection(model, labels, { category, type, subType }),
     [category, labels, model, subType, type]
   );
   const currentClassification = useMemo(
-    () => applyIafLabelClassificationSelection(model, labels, selection),
+    () => applyAvvikelseLabelClassificationSelection(model, labels, selection),
     [labels, model, selection]
   );
   const completeSelection = useMemo(
-    () => getIafLabelClassificationSelection(completeModel, labels, { category, type, subType }),
+    () => getAvvikelseLabelClassificationSelection(completeModel, labels, { category, type, subType }),
     [category, completeModel, labels, subType, type]
   );
   const previousLegalBasesKey = useRef(legalBasesKey);
@@ -113,7 +113,7 @@ export const IafLabelCategorization: FC<{
     previousLegalBasesKey.current = legalBasesKey;
     if (previousKey === legalBasesKey || !completeSelection.typeCode || selection.typeCode) return;
 
-    const update = applyIafLabelClassificationSelection(completeModel, labels, {});
+    const update = applyAvvikelseLabelClassificationSelection(completeModel, labels, {});
     onClassificationChange?.();
     setValue('labels', update.labels, { shouldDirty: true });
     setValue('category', update.category, { shouldDirty: true });
@@ -145,11 +145,11 @@ export const IafLabelCategorization: FC<{
   return (
     <section
       className="my-md w-full"
-      aria-labelledby="iaf-label-categorization-heading"
-      data-cy="iaf-label-categorization"
+      aria-labelledby="avvikelse-label-categorization-heading"
+      data-cy="avvikelse-label-categorization"
     >
       <div className="mb-lg">
-        <h3 id="iaf-label-categorization-heading" className="text-h4-md">
+        <h3 id="avvikelse-label-categorization-heading" className="text-h4-md">
           Kategorisering
         </h3>
         <p className="mt-xs">Välj avvikelsetyp och detaljerad typ för att klassificera ärendet.</p>
@@ -159,13 +159,13 @@ export const IafLabelCategorization: FC<{
         catalog={model.catalog}
         value={selection}
         disabled={disabled}
-        content={iafClassificationContent}
+        content={avvikelseClassificationContent}
         errors={{
           type: errorMessage(errors.category ?? (!selection.typeCode ? errors.type : undefined)),
           subtype: selection.typeCode ? errorMessage(errors.subType) : undefined,
         }}
         onChange={(nextSelection) => {
-          const update = applyIafLabelClassificationSelection(model, labels, nextSelection);
+          const update = applyAvvikelseLabelClassificationSelection(model, labels, nextSelection);
           // Mark the owning form dirty before publishing the individual field updates.
           onClassificationChange?.();
           setValue('labels', update.labels, { shouldDirty: true });
