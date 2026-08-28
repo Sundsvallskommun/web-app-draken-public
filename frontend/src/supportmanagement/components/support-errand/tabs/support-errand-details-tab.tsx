@@ -1,7 +1,6 @@
 import { JsonParametersDisplay } from '@common/components/json/schema/json-parameters-display.component';
 import { Table } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
-import { isInvestigationActive } from '@supportmanagement/investigation/investigation-profile';
 import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
 import { useMemo } from 'react';
@@ -9,21 +8,14 @@ import { useMemo } from 'react';
 export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const _supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
-  const investigationProfile = useInvestigationProfileStore((state) => state.profile);
-  const investigationDocumentLoadStates = useInvestigationProfileStore((state) => state.documentLoadStates);
+  const handledJsonParameterKeys = useInvestigationProfileStore((state) => state.handledJsonParameterKeys);
   const supportErrand = _supportErrand!;
-  const readonlyJsonParameters = useMemo(() => {
-    if (!isInvestigationActive(investigationProfile)) {
-      return supportErrand.jsonParameters ?? [];
-    }
-
-    const documentsHandledByInvestigationUi = new Set(
-      investigationProfile.documents
-        .filter(({ key }) => investigationDocumentLoadStates[key] === 'ready')
-        .map(({ key }) => key)
-    );
-    return (supportErrand.jsonParameters ?? []).filter(({ key }) => !documentsHandledByInvestigationUi.has(key));
-  }, [investigationDocumentLoadStates, investigationProfile, supportErrand.jsonParameters]);
+  // Hide only what another tab is currently rendering, so the same document is not shown twice.
+  // Which tab that is, and whether it is an investigation at all, is none of this tab's business.
+  const readonlyJsonParameters = useMemo(
+    () => (supportErrand.jsonParameters ?? []).filter(({ key }) => !handledJsonParameterKeys[key]),
+    [handledJsonParameterKeys, supportErrand.jsonParameters]
+  );
 
   const simpleParams = useMemo(
     () =>

@@ -1,9 +1,9 @@
-import { InvestigationSchemaLabClient } from '@supportmanagement/investigation/schema-lab/investigation-schema-lab-client.component';
+import { InvestigationSchemaLabClient } from '@supportmanagement/investigation/avvikelse/schema-lab/investigation-schema-lab-client.component';
 import { notFound } from 'next/navigation';
 
 /**
  * Developer sandbox for previewing the IAF/VOF investigation forms. See
- * `supportmanagement/investigation/README.md` for what it is for and how to run it.
+ * `supportmanagement/investigation/avvikelse/README.md` for what it is for and how to run it.
  *
  * The `.dev.tsx` extension keeps this route out of production builds entirely - `pageExtensions`
  * in next.config.js only accepts it outside production. The guard below is the second lock: it

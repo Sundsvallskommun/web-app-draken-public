@@ -2,6 +2,9 @@
   "name": "draken-frontend",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
   "scripts": {
     "env:dev:kc": "dotenv -e .env.kc",
     "env:dev:mex": "dotenv -e .env.mex",
@@ -19,6 +22,7 @@
     "dev:iaf": "dotenv -e .env.iaf -- next dev",
     "dev:vof": "dotenv -e .env.vof -- next dev",
     "dev:se": "dotenv -e .env.se -- next dev",
+    "dev:aot": "dotenv -e .env.aot -- next dev",
     "build:bou": "node ../scripts/generate-deploy-info.js && dotenv -e .env.bou -- next build",
     "build:lok": "node ../scripts/generate-deploy-info.js && dotenv -e .env.lok -- next build",
     "build:ik": "node ../scripts/generate-deploy-info.js && dotenv -e .env.ik -- next build",
@@ -32,6 +36,7 @@
     "build:iaf": "node ../scripts/generate-deploy-info.js && dotenv -e .env.iaf -- next build",
     "build:vof": "node ../scripts/generate-deploy-info.js && dotenv -e .env.vof -- next build",
     "build:se": "node ../scripts/generate-deploy-info.js && dotenv -e .env.se -- next build",
+    "build:aot": "node ../scripts/generate-deploy-info.js && dotenv -e .env.aot -- next build",
     "build": "dotenv -e .env.local -- next build",
     "start:bou": "dotenv -e .env.bou -- dotenv next start",
     "start:lok": "dotenv -e .env.lok -- dotenv next start",
@@ -46,6 +51,7 @@
     "start:iaf": "dotenv -e .env.iaf -- dotenv next start",
     "start:vof": "dotenv -e .env.vof -- dotenv next start",
     "start:se": "dotenv -e .env.se -- dotenv next start",
+    "start:aot": "dotenv -e .env.aot -- dotenv next start",
     "generate:contracts:lop": "dotenv -e .env.lop npx tsx ./src/swagger-typescript-api.ts",
     "generate:contracts:kc": "dotenv -e .env.kc npx tsx ./src/swagger-typescript-api.ts",
     "generate:contracts:ka": "dotenv -e .env.ka npx tsx ./src/swagger-typescript-api.ts",
@@ -55,8 +61,9 @@
     "lint": "eslint src/ e2e/",
     "lint:fix": "eslint src/ e2e/ --fix",
     "lint:strict": "eslint src/ e2e/ --max-warnings=0 --cache --cache-location node_modules/.cache/eslint/",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,mjs}\"",
     "type-check": "tsc --pretty --noEmit",
+    "type-check:test": "tsc -p tsconfig.test.json --pretty --noEmit",
     "knip": "knip",
     "knip:production": "knip --production",
     "analyze": "cross-env ANALYZE=true next build",
@@ -70,19 +77,18 @@
     "test:e2e:vof": "dotenv -e .env.vof -- playwright test --project=vof",
     "test:e2e:iaf": "dotenv -e .env.iaf -- playwright test --project=iaf",
     "test:e2e:iaf-schema-lab": "dotenv -e .env.iaf -- playwright test --project=iaf-schema-lab",
-    "test:categorization-control": "node --test src/supportmanagement/components/support-errand-basics-form/categorization-control.test.mjs",
-    "test:investigation-classification-policy": "node --test src/supportmanagement/investigation/iaf-vof-investigation-classification-policy.test.mjs",
-    "test:investigation-form-data": "node --test src/supportmanagement/investigation/investigation-form-data.test.mjs",
-    "test:investigation-profile": "node --test src/supportmanagement/investigation/investigation-profile.test.mjs",
-    "test:unit": "node --test",
+    "test:e2e:aot": "dotenv -e .env.aot -- playwright test --project=aot",
     "test:e2e:ui:mex": "dotenv -e .env.mex -- playwright test --project=mex --ui",
     "test:e2e:ui:pt": "dotenv -e .env.pt -- playwright test --project=pt --ui",
     "test:e2e:ui:kc": "dotenv -e .env.kc -- playwright test --project=kc --ui",
     "test:e2e:ui:lop": "dotenv -e .env.lop -- playwright test --project=lop --ui",
     "test:e2e:ui:vof": "dotenv -e .env.vof -- playwright test --project=vof --ui",
+    "test:e2e:ui:iaf": "dotenv -e .env.iaf -- playwright test --project=iaf --ui",
+    "test:e2e:ui:aot": "dotenv -e .env.aot -- playwright test --project=aot --ui",
     "test:e2e:report": "playwright show-report",
-    "test:investigation-schemas": "node --test src/supportmanagement/investigation/schemas/investigation-schemas.contract.test.mjs",
-    "test": "jest --watch"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -130,6 +136,7 @@
     "@types/sanitize-html": "^2.11.0",
     "@types/underscore.string": "^0.0.41",
     "@types/uuid": "^9.0.1",
+    "@vitest/coverage-v8": "^4.1.9",
     "autoprefixer": "^10.4.21",
     "cross-env": "^7.0.3",
     "dotenv": "^16.6.1",
@@ -146,7 +153,8 @@
     "prettier": "^2.4.1",
     "swagger-typescript-api": "13.2.8",
     "tailwindcss": "^3.4.17",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "^4.1.9"
   },
   "resolutions": {
     "form-data": "^4.0.4",

@@ -328,9 +328,21 @@ Testerna ligger i `backend/src/tests/` (`*.service.test.ts`).
 **Frontend** (kör från `frontend/`):
 
 ```bash
-yarn test:e2e:{drake}    # Playwright E2E (mex | pt | kc | lop)
-yarn test:e2e:ui:{drake} # Interaktivt (mex | pt | kc | lop)
+yarn test                       # Enhetstester (Vitest)
+yarn test:watch                 # Vitest i watch-läge
+yarn test:coverage              # Med täckningsrapport (v8)
+yarn type-check:test            # Typkontroll av testerna
+yarn test:e2e:{drake}           # Playwright E2E (mex | pt | kc | lop | iaf | vof)
+yarn test:e2e:iaf-schema-lab    # Playwright E2E för utvecklingslabbet
+yarn test:e2e:ui:{drake}        # Interaktivt (mex | pt | kc | lop | vof)
 ```
+
+Enhetstesterna ligger bredvid modulen de testar (`<modul>.test.ts`) och körs med Vitest,
+samma testkörare som backend. Assertions skrivs med `node:assert/strict` i stället för
+`expect`, och `globals` är avstängt — allt importeras explicit. Alias som `@common/*` löses
+upp av Vite direkt ur `tsconfig.json`, så även moduler med beroenden går att enhetstesta;
+allt som kräver rendering hör fortfarande hemma i Playwright. Testerna omfattas inte av
+`yarn type-check` utan av `yarn type-check:test` (se CLAUDE.md för varför).
 
 ### Feature-flaggor
 

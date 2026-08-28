@@ -4,19 +4,68 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Draken is a Swedish municipal administration application for Sundsvalls Kommun. It's a multi-tenant system supporting 13 different "drakar" (dragons/modules): **kc**, **ka**, **mex**, **pt**, **rob**, **lop**, **ik**, **msva**, **se**, **bou**, **lok**, **iaf**, **vof**. Each drake serves different municipal departments with distinct feature configurations.
+Draken is a Swedish municipal administration application for Sundsvalls Kommun. It's a multi-tenant system supporting 14 different "drakar" (dragons/modules): **kc**, **ka**, **mex**, **pt**, **rob**, **lop**, **ik**, **msva**, **se**, **bou**, **lok**, **iaf**, **vof**, **aot**. Each drake serves different municipal departments with distinct feature configurations.
 
 **Two main business domains:**
 
 - **CaseData** (Ärendehantering) - Case/errand management for MEX, PT
 - **SupportManagement** (Supporthantering) - Contact center/support tickets for KC, LOP, ROB, etc.
 
-IAF and VOF are the newest SupportManagement drakar. They share the investigation
-(utredning) feature and are treated as one variant in code via `isIAFOrVOF()`.
+## Investigation (utredning): two implementations, one seam
+
+IAF/VOF (**avvikelse**) and **AOT** both switch on the investigation feature, but they are separate
+implementations chosen at runtime by capability flag. This is the likeliest place for one team's
+work to break another's, so the boundary is explicit, and it is tested from both sides.
+
+`frontend/src/supportmanagement/investigation/` holds the contract (`investigation-variant.ts`), the
+registry (`investigation-variant-registry.ts`) and one directory per implementation — `avvikelse/`
+and `aot/`. A variant declares which capability flag enables it (`useAvvikelseInvestigation`,
+`useAotInvestigation`), where classification is persisted, and how to render its tab. Selection is
+first-wins over the registry array, and avvikelse is listed first on purpose: a deployment that
+wrongly enables both then degrades to today's behaviour rather than to a placeholder.
+
+**The rules that keep the two apart:**
+
+- **No cross-implementation imports.** `aot/` must never import from `avvikelse/`, nor the reverse.
+  They share the contract and no code. `investigation-variant-contract.test.ts` is written to prove
+  it: it builds two fixture variants without touching `avvikelse/`, so if the contract ever grows a
+  dependency on one implementation, that test can no longer be written and stops compiling.
+- **Investigation behaviour never branches on which application is running.** It is decided by
+  capability flags and the variant contract, never by `NEXT_PUBLIC_APPLICATION`, a drake name or
+  `isIAFOrVOF()`. Shared SupportManagement code does branch on drake elsewhere (`isKC()`, `isLOP()`,
+  `isLOK()`, and `NEXT_PUBLIC_APPLICATION` for i18n keys) — that is existing practice, but it must
+  not spread into investigation logic. `isIAFOrVOF()` survives in `support-errand.component.tsx`
+  for the summary panel; do not extend it.
+- **Optional slots stay optional.** A variant that supplies no `renderNotice`, no
+  `renderCategorizationControl` and no `labelTree` must leave Grundinformation's ordinary two-/three-
+  level categorization exactly as every other drake sees it. AOT is precisely that case.
+- **The tab is selected by flag, not by profile state.** AOT has no registered profile, so the BFF
+  always reports `state: 'inactive'` for it (`getSupportInvestigationProfile` falls through to an
+  empty profile). Gating the tab on profile state silently deletes it from every non-avvikelse drake.
+- **Avvikelse-only surface stays avvikelse-only.** Investigation documents (`json-parameters`), JSON
+  schemas, the profile's `labelFilter` (which replaces the overview's ordinary category filters with
+  avvikelse's own groups) and the classification PATCH
+  (`supporterrands/{municipalityId}/{errandId}/classification`, the atomic write used only when the
+  investigation owns classification) must never be reached by another drake.
+
+**When you change draken-global logic** — the shared support-errand components, the overview
+filters, the tabs wrapper, `appconfig` — both implementations have to survive it. Run both suites,
+not only the one you are working in:
+
+```bash
+cd frontend
+yarn test                                                   # seam contract + selection rules
+npx dotenv -e .env.vof -- playwright test --project=vof     # avvikelse, end to end
+npx dotenv -e .env.aot -- playwright test --project=aot     # a drake that is not avvikelse
+```
+
+Each e2e project needs that drake's dev server already running; the specs self-skip when
+`NEXT_PUBLIC_APPLICATION` does not match, so a wrong-server run reads as "skipped", not as passed.
+CI runs both as separate matrix jobs in `.github/workflows/playwright.yml`.
 
 ## Development Commands
 
-All commands require specifying a drake: `{drake}` = kc | ka | mex | pt | rob | lop | ik | msva | se | bou | lok | iaf | vof
+All commands require specifying a drake: `{drake}` = kc | ka | mex | pt | rob | lop | ik | msva | se | bou | lok | iaf | vof | aot
 
 ### Backend (run from `backend/`)
 
@@ -40,9 +89,13 @@ yarn dev:{drake}              # Start Next.js dev server
 yarn build:{drake}            # Build for production
 yarn start:{drake}            # Start production server
 yarn lint                     # Run ESLint
-yarn type-check               # TypeScript check only
-yarn cypress:{drake}          # Run Cypress tests (interactive)
-yarn cypress:headless:{drake} # Run Cypress tests (CI)
+yarn type-check               # TypeScript check only (app; excludes the colocated tests)
+yarn type-check:test          # TypeScript check for tests (tsconfig.test.json)
+yarn test                     # Vitest unit tests (run mode)
+yarn test:watch               # Vitest watch mode
+yarn test:coverage            # Vitest with v8 coverage
+yarn test:e2e:{drake}         # Playwright E2E (mex, pt, kc, lop, iaf, vof, aot)
+yarn test:e2e:iaf-schema-lab  # Playwright E2E for the development-only schema lab
 ```
 
 ### Environment Setup
@@ -149,24 +202,39 @@ Backend unit tests use **Vitest** (`backend/vitest.config.ts`), run from `backen
 
 **Test data**: never hardcode person numbers, organization numbers, phone numbers, party ids or similar identifiers in tests — import them from `src/tests/helpers/mock-data.ts`, which records each value's provenance (Skatteverket / PTS test ranges). That keeps one place to confirm no production-like identifier enters the repo.
 
-### Frontend
+### Frontend (unit)
 
-There are e2e tests in both Cypress and Playwright. The Cypress tests are the older original tests. The app will migrate to use Playwright shortly, and in the meantime tests are duplicated across them to evaluate equality.
+Frontend unit tests use **Vitest** (`frontend/vitest.config.mts`), run from `frontend/`.
+They previously ran on Node's built-in test runner from `.mjs` files; that was migrated so the
+runner matches the backend and so tests are no longer restricted to alias-free modules.
 
-#### Cypress E2E
+- **Location**: colocated, `<module>.test.ts` next to the `<module>.ts` it covers. This
+  deliberately differs from the backend layout: the backend keeps tests in `src/tests/` so the
+  per-drake production `tsc` never emits them, a constraint Next.js does not have.
+- **Shape**: `import { test } from 'vitest'` + `import assert from 'node:assert/strict'`, flat
+  top-level `test(...)` calls. Assertions are **`node:assert`, not `expect`** — `globals` is
+  off in the config, so nothing is injected and every import is explicit. No DOM, no React.
+- **Path aliases**: resolved natively by Vite via `resolve.tsconfigPaths`, which reads the
+  `paths` table in `tsconfig.json`. This works because that tsconfig sets `baseUrl`; the
+  backend's does not, which is why `backend/vitest.config.ts` needs a hand-written alias table
+  instead. Do not copy that pattern here.
+- **Environment**: `node`. The suites are pure functions; nothing renders. Component tests
+  would need `jsdom` plus `@testing-library/react`, which is a separate decision.
+- **Scope**: pure functions — parsers, projectors, policy resolvers
+  (`resolveCategorizationControl`, `parseInvestigationProfile`, `projectLabelFilterGroups`, …).
+  Anything needing rendering or navigation belongs in the Playwright suites below.
+- **Type-checking**: `yarn type-check` does **not** cover the tests — the root `tsconfig.json`
+  `include` entry `src/**/*.{ts,tsx}` uses brace expansion, which TypeScript's include globs do
+  not support, so it matches nothing and `src` is only reached transitively through imports.
+  Test files have no importer, so `tsconfig.test.json` includes them explicitly and
+  `yarn type-check:test` runs it. The test config disables incremental compilation so the
+  type-check does not create a generated `tsconfig.test.tsbuildinfo` artifact.
+- **CI**: `.github/workflows/frontend-unit.yml` runs `yarn type-check:test` and `yarn test` on
+  pull requests and pushes to `develop`/`main`.
+- **Test data**: the same rule as the backend applies — no real person numbers, organization
+  numbers or phone numbers. `.husky/pre-commit` scans `.ts`/`.tsx`/`.mjs` for them.
 
-Cypress E2E tests are organized by drake in `frontend/cypress/e2e/`:
-
-- `kontaktcenter/` - KC tests
-- `case-data/mex/` - MEX tests
-- `case-data/pt/` - PT tests
-- `lop/` - LOP tests
-
-Run with: `yarn cypress:headless:{drake}`
-
-Run for individual spec files with eg: `npx dotenv -e .env.kc -- cypress run --spec "cypress/e2e/kontaktcenter/errandPage-sidebar-kc.cy.ts"` (use app key of choice: kc, mex, pt etc)
-
-#### Playwright
+### Frontend (e2e)
 
 Playwright E2E tests are organized by drake in `frontend/e2e/`:
 
@@ -174,6 +242,10 @@ Playwright E2E tests are organized by drake in `frontend/e2e/`:
 - `case-data/mex/` - MEX tests
 - `case-data/pt/` - PT tests
 - `lop/` - LOP tests
+- `iaf/` - shared IAF/VOF investigation tests (avvikelse)
+- `aot/` - AOT smoke suite: proves the investigation seam stays inert for a drake that is not
+  avvikelse, so IAF/VOF work that leaks into shared code fails here
+- `schema-lab/` - development-only investigation schema lab tests
 
 Run with: `yarn test:e2e:{drake}`
 
