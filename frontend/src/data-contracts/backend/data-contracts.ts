@@ -156,30 +156,6 @@ export interface CPageBillingRecord {
   empty?: boolean;
 }
 
-export interface ExtraParametersDto {
-  "application.reason"?: string;
-  "application.role"?: ExtraParametersDtoApplicationRoleEnum;
-  "application.applicant.capacity"?: string;
-  "application.applicant.testimonial"?: ExtraParametersDtoApplicationApplicantTestimonialEnum;
-  "application.applicant.signingAbility"?: ExtraParametersDtoApplicationApplicantSigningAbilityEnum;
-  "disability.aid"?: string;
-  "disability.walkingAbility"?: ExtraParametersDtoDisabilityWalkingAbilityEnum;
-  "disability.walkingDistance.beforeRest"?: string;
-  "disability.walkingDistance.max"?: string;
-  "disability.duration"?: string;
-  "disability.canBeAloneWhileParking"?: ExtraParametersDtoDisabilityCanBeAloneWhileParkingEnum;
-  "disability.canBeAloneWhileParking.note"?: string;
-  "consent.contact.doctor"?: ExtraParametersDtoConsentContactDoctorEnum;
-  "consent.view.transportationServiceDetails"?: ExtraParametersDtoConsentViewTransportationServiceDetailsEnum;
-  "application.lostPermit.policeReportNumber"?: string;
-  "application.renewal.changedCircumstances"?: ExtraParametersDtoApplicationRenewalChangedCircumstancesEnum;
-  "application.renewal.expirationDate"?: string;
-  "application.renewal.medicalConfirmationRequired"?: string;
-  "artefact.permit.number"?: string;
-  "artefact.permit.status"?: string;
-  "application.supplement.dueDate"?: string;
-}
-
 export interface Attachment {
   id?: number;
   category: string;
@@ -193,7 +169,6 @@ export interface Attachment {
   extraParameters?: any;
   municipalityId?: string;
   errandId?: number;
-  /** Decision id associated with the attachment, null for attachments belonging directly to the errand */
   decisionId?: number;
   namespace?: string;
   channel?: AttachmentChannelEnum;
@@ -448,13 +423,6 @@ export interface CContactChannel {
   value?: string;
 }
 
-export interface CJsonParameter {
-  key: string;
-  value?: any;
-  schemaId: string;
-  version?: number;
-}
-
 export interface CSupportStakeholder {
   externalId?: string;
   externalIdType?: string;
@@ -474,6 +442,43 @@ export interface CSupportStakeholder {
 export interface Classification {
   category: string;
   type: string;
+}
+
+export interface RequiredClassificationDto {
+  /** @minLength 1 */
+  category: string;
+  /** @minLength 1 */
+  type: string;
+}
+
+export interface ClassificationLabelReferenceDto {
+  /** @minLength 1 */
+  id: string;
+}
+
+export interface UpdateSupportErrandClassificationDto {
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  expectedVersion: number;
+  classification: any;
+  /** @minItems 1 */
+  categoryLabels: any;
+  /** @minLength 1 */
+  documentKey: string;
+  /** @pattern ^"(0|[1-9]\d*)"$ */
+  documentETag: string;
+}
+
+export interface UpdateSupportErrandPhaseDto {
+  /**
+   * @min 0
+   * @max 9007199254740991
+   */
+  expectedVersion: number;
+  /** @minLength 1 */
+  transitionId: string;
 }
 
 export interface CSuspension {
@@ -507,6 +512,14 @@ export interface CNotification {
   errandNumber?: string;
 }
 
+export interface CErrandPhase {
+  phaseId?: string;
+  name?: string;
+  displayName?: string;
+  started?: string;
+  ended?: string;
+}
+
 export interface SupportErrandDto {
   id?: string;
   errandNumber?: string;
@@ -515,7 +528,6 @@ export interface SupportErrandDto {
   priority?: string;
   externalTags?: CExternalTag[];
   parameters?: CParameter[];
-  jsonParameters?: CJsonParameter[];
   classification?: Classification;
   status?: string;
   resolution?: string;
@@ -536,6 +548,8 @@ export interface SupportErrandDto {
   touched?: string;
   version?: number;
   actions?: CErrandAction[];
+  activePhaseId?: string;
+  phases?: CErrandPhase[];
 }
 
 export interface ForwardFormDto {
@@ -544,6 +558,117 @@ export interface ForwardFormDto {
   department: string;
   message: string;
   messageBodyPlaintext: string;
+}
+
+export interface SupportInvestigationDocumentProfileDto {
+  /**
+   * @minLength 1
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  key: string;
+  /**
+   * @minLength 1
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  schemaName: string;
+  /** @minLength 1 */
+  tabLabel: string;
+  /** @minLength 1 */
+  ownerLabel: string;
+}
+
+export interface SupportInvestigationProfileDto {
+  application: string;
+  documents: SupportInvestigationDocumentProfileDto[];
+}
+
+export interface SupportRegistrationCapabilityDto {
+  mode: SupportRegistrationCapabilityDtoModeEnum;
+}
+
+export interface SupportInvestigationDocumentPermissionsDto {
+  canRead: boolean;
+  canWrite: boolean;
+}
+
+export interface SupportInvestigationRuntimeDocumentProfileDto {
+  permissions: SupportInvestigationDocumentPermissionsDto;
+  /**
+   * @minLength 1
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  key: string;
+  /**
+   * @minLength 1
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  schemaName: string;
+  /** @minLength 1 */
+  tabLabel: string;
+  /** @minLength 1 */
+  ownerLabel: string;
+}
+
+export interface SupportManagementLabelFilterFieldProfileDto {
+  /**
+   * @minLength 1
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  key: string;
+  /** @minLength 1 */
+  label: string;
+  /** @minLength 1 */
+  classification: string;
+}
+
+export interface SupportManagementLabelFilterGroupProfileDto {
+  /**
+   * @minLength 1
+   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
+   */
+  key: string;
+  /** @minLength 1 */
+  label: string;
+  /** @minLength 1 */
+  rootResourcePath: string;
+  fields: SupportManagementLabelFilterFieldProfileDto[];
+}
+
+export interface SupportManagementLabelFilterProfileDto {
+  groups: SupportManagementLabelFilterGroupProfileDto[];
+}
+
+export interface SupportInvestigationRuntimeProfileDto {
+  state: SupportInvestigationRuntimeProfileDtoStateEnum;
+  registration: SupportRegistrationCapabilityDto;
+  documents: SupportInvestigationRuntimeDocumentProfileDto[];
+  labelFilter?: SupportManagementLabelFilterProfileDto;
+  application: string;
+}
+
+export interface UpdateSupportErrandJsonParameterDto {
+  /** @minLength 1 */
+  schemaId: string;
+  value: any;
+}
+
+export interface HandoverPreviewDto {
+  targetNamespace: string;
+  targetMunicipalityId: string;
+}
+
+export interface HandoverTargetDto {
+  namespace: string;
+  municipalityId?: string;
+}
+
+export interface HandoverErrandDto {
+  target: HandoverTargetDto;
+  mapping: object;
+  overrides?: object;
+  include?: object;
+  sourceHandling?: object;
+  message?: string;
 }
 
 export interface SupportMessageDto {
@@ -584,6 +709,119 @@ export interface CCommunication {
   ccRecipients?: string[];
   emailHeaders?: string;
   communicationAttachments: CCommunicationAttachment[];
+}
+
+export interface Type {
+  name: string;
+  displayName?: string;
+  escalationEmail?: string;
+  deprecated?: boolean;
+  created?: string;
+  modified?: string;
+}
+
+export interface Category {
+  id?: string;
+  name?: string;
+  displayName?: string;
+  sortOrder?: number;
+  deprecated?: boolean;
+  types?: Type[];
+  created?: string;
+  modified?: string;
+}
+
+export interface ExternalIdType {
+  id?: string;
+  name: string;
+  displayName?: string;
+  sortOrder?: number;
+  deprecated?: boolean;
+  created?: string;
+  modified?: string;
+}
+
+export interface LabelAttribute {
+  key: string;
+  value: string;
+}
+
+export interface Label {
+  id?: string;
+  classification: string;
+  displayName?: string;
+  resourcePath?: string;
+  resourceName: string;
+  deprecated?: boolean;
+  labels?: Label[];
+  attributes?: LabelAttribute[];
+}
+
+export interface Labels {
+  labelStructure?: Label[];
+}
+
+export interface Status {
+  id?: string;
+  name: string;
+  displayName?: string;
+  externalDisplayName?: string;
+  sortOrder?: number;
+  deprecated?: boolean;
+  created?: string;
+  modified?: string;
+}
+
+export interface Role {
+  id?: string;
+  name: string;
+  displayName?: string;
+  sortOrder?: number;
+  deprecated?: boolean;
+  created?: string;
+  modified?: string;
+}
+
+export interface ContactReason {
+  id?: string;
+  reason: string;
+  displayName?: string;
+  sortOrder?: number;
+  deprecated?: boolean;
+  created?: string;
+  modified?: string;
+}
+
+export interface PhaseTransition {
+  id?: string;
+  targetPhaseId: string;
+  targetPhaseName?: string;
+  targetPhaseDisplayName?: string;
+  description?: string;
+  deprecated?: boolean;
+}
+
+export interface Phase {
+  id?: string;
+  name: string;
+  displayName?: string;
+  description?: string;
+  phaseOrder?: number;
+  allowedStatuses?: string[];
+  transitions?: PhaseTransition[];
+  deprecated?: boolean;
+  created?: string;
+  modified?: string;
+}
+
+export interface MetadataResponse {
+  categories?: Category[];
+  externalIdTypes?: ExternalIdType[];
+  labels?: Labels;
+  statuses?: Status[];
+  roles?: Role[];
+  contactReasons?: ContactReason[];
+  phases?: Phase[];
 }
 
 export interface SupportNoteDto {
@@ -637,47 +875,6 @@ export enum CBillingRecordStatusEnum {
   REJECTED = "REJECTED",
 }
 
-export enum ExtraParametersDtoApplicationRoleEnum {
-  SELF = "SELF",
-  GUARDIAN = "GUARDIAN",
-  CUSTODIAN = "CUSTODIAN",
-}
-
-export enum ExtraParametersDtoApplicationApplicantTestimonialEnum {
-  True = "true",
-  False = "false",
-}
-
-export enum ExtraParametersDtoApplicationApplicantSigningAbilityEnum {
-  True = "true",
-  False = "false",
-}
-
-export enum ExtraParametersDtoDisabilityWalkingAbilityEnum {
-  True = "true",
-  False = "false",
-}
-
-export enum ExtraParametersDtoDisabilityCanBeAloneWhileParkingEnum {
-  True = "true",
-  False = "false",
-}
-
-export enum ExtraParametersDtoConsentContactDoctorEnum {
-  True = "true",
-  False = "false",
-}
-
-export enum ExtraParametersDtoConsentViewTransportationServiceDetailsEnum {
-  True = "true",
-  False = "false",
-}
-
-export enum ExtraParametersDtoApplicationRenewalChangedCircumstancesEnum {
-  Y = "Y",
-  N = "N",
-}
-
 export enum AttachmentChannelEnum {
   EMAIL = "EMAIL",
   ESERVICE = "ESERVICE",
@@ -690,6 +887,17 @@ export enum CreateAttachmentDtoChannelEnum {
   ESERVICE = "ESERVICE",
   WEB_UI = "WEB_UI",
   MY_PAGES = "MY_PAGES",
+}
+
+export enum SupportRegistrationCapabilityDtoModeEnum {
+  Enabled = "enabled",
+  Disabled = "disabled",
+}
+
+export enum SupportInvestigationRuntimeProfileDtoStateEnum {
+  Active = "active",
+  Inactive = "inactive",
+  Unavailable = "unavailable",
 }
 
 export enum CCommunicationDirectionEnum {

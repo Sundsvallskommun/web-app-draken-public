@@ -1,6 +1,6 @@
 'use client';
 
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
 
 export interface Data {
   error?: string;
@@ -29,7 +29,14 @@ const options = {
   withCredentials: true,
 };
 
-const get = <T>(url: string) => axios.get<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, options).catch(handleError);
+const get = <T>(url: string, customOptions: AxiosRequestConfig = {}) =>
+  axios
+    .get<T>(`${process.env.NEXT_PUBLIC_API_URL}/${url}`, {
+      ...options,
+      ...customOptions,
+      headers: { ...options.headers, ...customOptions.headers },
+    })
+    .catch(handleError);
 
 const post = <T, U>(url: string, data: U, customOptions: { [key: string]: any } = {}) => {
   return axios

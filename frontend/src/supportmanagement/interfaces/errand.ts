@@ -35,6 +35,8 @@ export interface ApiPagingData {
 
 export interface RegisterSupportErrandFormModel {
   id?: string;
+  /** Optimistic-locking version from the loaded Support Management errand. */
+  version?: number;
   caseId?: string;
   title?: string;
   priority?: Priority;

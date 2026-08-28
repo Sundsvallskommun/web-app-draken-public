@@ -1,14 +1,12 @@
-import { Config } from 'tailwindcss/types/config';
 import { preset } from '@sk-web-gui/core';
+import { Config } from 'tailwindcss/types/config';
 
 export default {
   mode: 'jit',
   content: [
     './node_modules/@sk-web-gui/*/dist/**/*.js',
-    './src/app/**/*.tsx',
-    './src/common/**/*.tsx',
-    './src/casedata/components/**/*.tsx',
-    './src/supportmanagement/components/**/*.tsx',
+    // Investigation UI schemas contain the same static design tokens as TSX and must be included in generated CSS.
+    './src/**/*.{js,ts,jsx,tsx,json}',
   ],
   safelist: ['text-error-surface-primary', 'text-vattjom-surface-primary', 'text-warning-surface-primary'],
   darkMode: 'class', // or 'media' or 'class'

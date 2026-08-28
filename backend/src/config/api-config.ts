@@ -34,7 +34,23 @@ export const APIS = [
   },
   {
     name: 'supportmanagement',
-    version: '14.15',
+    version: '15.1',
+  },
+  {
+    name: 'supportmanagement-sprint',
+    version: '15.1',
+    // Runtime transport target only. Application code imports the stable
+    // Support Management facade, so generating a second unused contract would
+    // create two competing TypeScript owners for the same domain.
+    generateDataContract: false,
+  },
+  {
+    name: 'support-management-alkt-sprint',
+    version: '15.1',
+    // Runtime transport target only. Application code imports the stable
+    // Support Management facade, so generating a second unused contract would
+    // create two competing TypeScript owners for the same domain.
+    generateDataContract: false,
   },
   {
     name: 'billingpreprocessor',
@@ -74,7 +90,27 @@ export const APIS = [
   },
 ];
 
+export const SUPPORT_MANAGEMENT_API_TARGETS = ['stable', 'sprint', 'alktsprint'] as const;
+
+export type SupportManagementApiTarget = (typeof SUPPORT_MANAGEMENT_API_TARGETS)[number];
+
+const SUPPORT_MANAGEMENT_SERVICE_BY_TARGET: Readonly<Record<SupportManagementApiTarget, string>> = {
+  stable: 'supportmanagement',
+  sprint: 'supportmanagement-sprint',
+  alktsprint: 'support-management-alkt-sprint',
+};
+
+export const resolveSupportManagementApiTarget = (configuredTarget = process.env.SUPPORTMANAGEMENT_API_TARGET): SupportManagementApiTarget => {
+  const target = configuredTarget?.trim().toLowerCase() || 'stable';
+  if ((SUPPORT_MANAGEMENT_API_TARGETS as readonly string[]).includes(target)) {
+    return target as SupportManagementApiTarget;
+  }
+
+  throw new Error(`Unsupported SUPPORTMANAGEMENT_API_TARGET "${configuredTarget}". Expected one of: ${SUPPORT_MANAGEMENT_API_TARGETS.join(', ')}`);
+};
+
 export function apiServiceName(name: string): string {
-  const api = APIS.find(a => a.name === name);
+  const resolvedName = name === 'supportmanagement' ? SUPPORT_MANAGEMENT_SERVICE_BY_TARGET[resolveSupportManagementApiTarget()] : name;
+  const api = APIS.find(a => a.name === resolvedName);
   return api ? `${api.name}/${api.version}` : name;
 }

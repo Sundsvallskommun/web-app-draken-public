@@ -2,6 +2,7 @@ import { HttpException } from '@exceptions/HttpException';
 import { User } from '@interfaces/users.interface';
 import { logger } from '@utils/logger';
 import { apiURL } from '@utils/util';
+import type { AxiosResponseHeaders, RawAxiosResponseHeaders } from 'axios';
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -10,11 +11,17 @@ import ApiTokenService from './api-token.service';
 export class ApiResponse<T> {
   data!: T;
   message!: string;
+  headers?: AxiosResponseHeaders | RawAxiosResponseHeaders;
+  status?: number;
 }
 
 // Extends AxiosRequestConfig with an opt-in flag. When `propagateClientError` is true, upstream
 // 4xx responses are re-thrown with their original status and message instead of a generic 500.
-export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & { propagateClientError?: boolean };
+export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & {
+  followLocation?: boolean;
+  includeResponseHeaders?: boolean;
+  propagateClientError?: boolean;
+};
 
 const apiTokenService = new ApiTokenService();
 
@@ -30,6 +37,31 @@ const describeRequestBody = (data: unknown): string => {
     return '';
   }
   return `[${data.constructor?.name ?? typeof data} body, not logged]`;
+};
+
+const logAxiosResponseError = (error: AxiosError): void => {
+  const { response } = error;
+  if (!response) {
+    logger.error(`API request failed without a response: ${error.message}`);
+    return;
+  }
+  logger.error(`ERROR: API request failed with status: ${response.status}`);
+  logger.error(`Error details: ${JSON.stringify(response.data)}`);
+  logger.error(`Error url: ${response.config.baseURL || ''}/${response.config.url}`);
+  logger.error(`Error data: ${describeRequestBody(response.config.data)}`);
+  logger.error(`Error method: ${response.config.method}`);
+  logger.error(`Error headers: ${response.config.headers}`);
+};
+
+const readUpstreamErrorMessage = (data: unknown): string => {
+  if (typeof data === 'string') return data.trim() ? data : 'Request failed';
+  if (typeof data !== 'object' || data === null) return 'Request failed';
+
+  const errorBody = data as { readonly detail?: unknown; readonly message?: unknown; readonly title?: unknown };
+  for (const candidate of [errorBody.detail, errorBody.message, errorBody.title]) {
+    if (typeof candidate === 'string' && candidate.trim()) return candidate;
+  }
+  return 'Request failed';
 };
 
 class ApiService {
@@ -79,10 +111,13 @@ class ApiService {
         if (response.headers.location && response.config.url?.includes('asset-drafts')) {
           response.headers.location = response.headers.location.replace('/asset-drafts/', '/assets/');
         }
-        if (response.headers.location && !response.config.url?.includes('messaging')) {
+        const followLocation = (response.config as ApiRequestConfig).followLocation !== false;
+        if (response.headers.location && followLocation && !response.config.url?.includes('messaging')) {
           logger.info(`Response contained location header: ${response.headers.location}`);
           logger.info(`Base URL was: ${response.config.baseURL}`);
-          return axios.get(response.headers.location, { baseURL: response.config.baseURL, headers: defaultHeaders }).catch(e => {
+          const sentBy = response.config.headers?.['X-Sent-By'];
+          const headers = sentBy === undefined ? defaultHeaders : { ...defaultHeaders, 'X-Sent-By': sentBy };
+          return axios.get(response.headers.location, { baseURL: response.config.baseURL, headers }).catch(e => {
             logger.error(`Error in location header request: ${e.details}`);
             logger.error(`Base URL was: ${e.config?.baseURL}`);
             logger.error(`URL was: ${e.config?.url}`);
@@ -98,7 +133,7 @@ class ApiService {
     );
   }
   private async request<T>(config: ApiRequestConfig, user: User): Promise<ApiResponse<T>> {
-    const { propagateClientError, ...axiosConfig } = config;
+    const { includeResponseHeaders, propagateClientError, ...axiosConfig } = config;
     const defaultParams = {};
     const preparedConfig: AxiosRequestConfig = {
       ...axiosConfig,
@@ -110,33 +145,26 @@ class ApiService {
     };
     try {
       const res = await this.instance(preparedConfig);
-      return { data: res.data, message: 'success' };
-    } catch (error: unknown | AxiosError) {
-      if (axios.isAxiosError(error) && (error as AxiosError).response?.status === 404) {
-        logger.error(`ERROR: API request failed with status: ${error.response?.status}`);
-        logger.error(`Error details: ${JSON.stringify(error.response!.data)}`);
-        logger.error(`Error url: ${error.response!.config.baseURL || ''}/${error.response!.config.url}`);
-        logger.error(`Error data: ${describeRequestBody(error.response!.config.data)}`);
-        logger.error(`Error method: ${error.response!.config.method}`);
-        logger.error(`Error headers: ${error.response!.config.headers}`);
-        throw new HttpException(404, 'Not found');
-      } else if (axios.isAxiosError(error) && (error as AxiosError).response?.data) {
-        logger.error(`ERROR: API request failed with status: ${error.response?.status}`);
-        logger.error(`Error details: ${JSON.stringify(error.response!.data)}`);
-        logger.error(`Error url: ${error.response!.config.baseURL || ''}/${error.response!.config.url}`);
-        logger.error(`Error data: ${describeRequestBody(error.response!.config.data)}`);
-        logger.error(`Error method: ${error.response!.config.method}`);
-        logger.error(`Error headers: ${error.response!.config.headers}`);
-        // Opt-in: surface upstream client errors (4xx) so callers can show the real message in
-        // context instead of an opaque 500. Server/network errors still become 500 below.
-        const status = error.response!.status;
-        if (propagateClientError && status >= 400 && status < 500) {
-          const data = error.response!.data as { detail?: string; message?: string; title?: string };
-          const message = (typeof data === 'object' && (data.detail || data.message || data.title)) || 'Request failed';
-          throw new HttpException(status, message);
-        }
-      } else {
+      return includeResponseHeaders
+        ? { data: res.data, message: 'success', headers: res.headers, status: res.status }
+        : { data: res.data, message: 'success' };
+    } catch (error: unknown) {
+      if (!axios.isAxiosError(error)) {
         logger.error(`Unknown error: ${error}`);
+        throw new HttpException(500, 'Internal server error');
+      }
+
+      logAxiosResponseError(error);
+      const { response } = error;
+      if (response?.status === 404) {
+        throw new HttpException(404, 'Not found');
+      }
+
+      // Opt-in: surface upstream client errors (4xx) so callers can show the real message in
+      // context instead of an opaque 500. Server/network errors still become 500 below.
+      const status = response?.status;
+      if (propagateClientError && status !== undefined && status >= 400 && status < 500) {
+        throw new HttpException(status, readUpstreamErrorMessage(response?.data));
       }
       throw new HttpException(500, 'Internal server error');
     }

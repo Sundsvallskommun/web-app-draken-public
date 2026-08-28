@@ -3,6 +3,8 @@
 const APP = String(process.env.NEXT_PUBLIC_APPLICATION || '');
 const ENV = String(process.env.NEXT_PUBLIC_ENVIRONMENT || '');
 
+export const getApplication = () => APP;
+
 export const isKC = () => APP === 'KC';
 
 export const isKA = () => APP === 'KA';
@@ -24,5 +26,7 @@ export const isSE = () => APP === 'SE';
 export const isBOU = () => APP === 'BOU';
 
 export const isLOK = () => APP === 'LOK';
+
+export const isIAFOrVOF = () => APP === 'IAF' || APP === 'VOF';
 
 export const getApplicationEnvironment = () => (ENV === 'TEST' ? 'TEST' : null);

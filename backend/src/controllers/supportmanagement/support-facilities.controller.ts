@@ -1,97 +1,132 @@
-import { Body, Controller, Param, Patch, Req, Res, UseBefore } from 'routing-controllers';
+import { IsArray, IsDefined, IsString, MaxLength } from 'class-validator';
+import { Response } from 'express';
+import { Body, Controller, HeaderParam, Param, Patch, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
+import { preservesIafVofInvestigationClassificationOwnerParameter } from '@/config/iaf-vof-investigation-classification';
+import { Errand, Parameter } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
+import { hasPermissions } from '@/middlewares/permissions.middleware';
+import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { stripParameterVersions } from '@/services/support-errand.service';
+import {
+  assertRequestedErrandVersion,
+  assertSupportErrandWritable,
+  getErrandVersion,
+  requireStrongErrandVersion,
+  stripParameterVersions,
+} from '@/services/support-errand.service';
+import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
-type Parameters = {
-  key: string;
-  displayName: string;
-  values: string[];
-  // Optimistic locking version, returned by SupportManagement but rejected when sent back on update
-  version?: number;
-}[];
+const PROPERTY_DESIGNATION = { key: 'propertyDesignation', displayName: 'Fastighetsbeteckning' } as const;
+const DISTRICT_NAME = { key: 'districtname', displayName: 'Distriktnamn' } as const;
+const STREET = { key: 'street', displayName: 'Adress' } as const;
+const FACILITY_PARAMETER_KEYS: ReadonlySet<string> = new Set([PROPERTY_DESIGNATION.key, DISTRICT_NAME.key, STREET.key]);
 
-interface FacilitiesPayload {
-  propertyDesignations: string[];
-  districtnames: string[];
-  streets: string[];
+export class SupportFacilitiesPayloadDto {
+  @IsDefined()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(3000, { each: true })
+  propertyDesignations!: string[];
+
+  @IsDefined()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(3000, { each: true })
+  districtnames!: string[];
+
+  @IsDefined()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(3000, { each: true })
+  streets!: string[];
 }
+
+type WritableParameter = Omit<Parameter, 'version'>;
 
 @Controller()
 export class SupportFacilitiesController {
   private apiService = new ApiService();
+  private investigationPolicyService = new SupportInvestigationPolicyService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   SERVICE = apiServiceName('supportmanagement');
 
   @Patch('/supporterrands/saveFacilities/:municipalityId/:id')
   @OpenAPI({ summary: 'Save facilities by errand' })
-  @UseBefore(authMiddleware)
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(SupportFacilitiesPayloadDto, 'body'))
   async saveFacility(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
     @Param('id') id: string,
-    @Body() facilities: FacilitiesPayload,
-    @Res() response: any,
-  ) {
+    @HeaderParam('If-Match') ifMatch: string,
+    @Body() facilities: SupportFacilitiesPayloadDto,
+    @Res() response: Response,
+  ): Promise<Response> {
     if (!municipalityId || !id) {
       throw new HttpException(400, 'Bad Request');
     }
 
-    const PROPERTY_DESIGNATION_KEY = 'propertyDesignation';
-    const PROPERTY_DESIGNATION_DISPLAY_NAME = 'Fastighetsbeteckning';
-    const DISTRICT_NAME_KEY = 'districtname';
-    const DISTRICT_NAME_DISPLAY_NAME = 'Distriktnamn';
-    const STREET_KEY = 'street';
-    const STREET_DISPLAY_NAME = 'Adress';
+    const requestedVersion = requireStrongErrandVersion(ifMatch);
+    const baseURL = apiURL(this.SERVICE);
+    const parentUrl = `${municipalityId}/${this.namespace}/errands/${id}`;
+    const currentErrandResponse = await this.apiService.get<Errand>(
+      { url: parentUrl, baseURL, includeResponseHeaders: true, propagateClientError: true },
+      req.user,
+    );
+    const currentErrand = currentErrandResponse.data;
+    const currentVersion = getErrandVersion(currentErrand, currentErrandResponse.headers?.etag);
+    assertRequestedErrandVersion(requestedVersion, currentVersion);
+    assertSupportErrandWritable(currentErrand, 'facility changes');
 
-    const supportErrandUrl = `${municipalityId}/${this.namespace}/errands/${id}/parameters`;
-    const supportBaseURL = apiURL(this.SERVICE);
-    const existingParametersResponse = await this.apiService.get<Parameters>({ url: supportErrandUrl, baseURL: supportBaseURL }, req.user);
-    const existingParameters = existingParametersResponse?.data;
-    if (!existingParameters) {
-      logger.error('No parameters found for errand with id', id);
-      return response.status(404).send('No parameters found for errand with id');
+    // The PATCH below replaces the whole collection, so an absent list must not be read as an
+    // empty one - that would drop every non-facility parameter on the errand.
+    if (!Array.isArray(currentErrand.parameters)) {
+      logger.error(`No parameters found for errand with id ${id}`);
+      throw new HttpException(502, 'Support Management response is missing the errand parameters');
     }
 
-    const filteredParameters = stripParameterVersions(
-      existingParameters.filter(p => p.key !== PROPERTY_DESIGNATION_KEY && p.key !== DISTRICT_NAME_KEY && p.key !== STREET_KEY),
-    );
-
-    const newParameters: Parameters = [
-      ...filteredParameters,
-      {
-        key: PROPERTY_DESIGNATION_KEY,
-        displayName: PROPERTY_DESIGNATION_DISPLAY_NAME,
-        values: facilities.propertyDesignations || [],
-      },
-      {
-        key: DISTRICT_NAME_KEY,
-        displayName: DISTRICT_NAME_DISPLAY_NAME,
-        values: facilities.districtnames || [],
-      },
-      {
-        key: STREET_KEY,
-        displayName: STREET_DISPLAY_NAME,
-        values: facilities.streets || [],
-      },
+    const preservedParameters = stripParameterVersions(currentErrand.parameters.filter(parameter => !FACILITY_PARAMETER_KEYS.has(parameter.key)));
+    const requestedParameters: WritableParameter[] = [
+      ...preservedParameters,
+      { ...PROPERTY_DESIGNATION, values: facilities.propertyDesignations },
+      { ...DISTRICT_NAME, values: facilities.districtnames },
+      { ...STREET, values: facilities.streets },
     ];
 
-    const url = `${municipalityId}/${this.namespace}/errands/${id}/parameters`;
-    const baseURL = apiURL(this.SERVICE);
-    const res = await this.apiService.patch<any, Parameters>({ url, baseURL, data: newParameters }, req.user).catch(e => {
-      logger.error('Error when patching support errand');
-      logger.error(e);
-      throw e;
-    });
+    const iafVofClassificationPolicy = this.investigationPolicyService.iafVofClassificationPolicy;
+    if (iafVofClassificationPolicy) {
+      const classificationOwner = await this.investigationPolicyService.getClassificationOwner(req.user);
+      if (classificationOwner === 'unavailable') {
+        throw new HttpException(503, 'Investigation classification ownership is temporarily unavailable');
+      }
+      if (
+        classificationOwner === 'investigation' &&
+        !preservesIafVofInvestigationClassificationOwnerParameter(currentErrand.parameters, requestedParameters)
+      ) {
+        throw new HttpException(409, 'The investigation classification owner parameter cannot be changed through the facilities endpoint');
+      }
+    }
 
-    return response.status(200).send(res.data);
+    const parameterUrl = `${parentUrl}/parameters`;
+    const savedParameters = await this.apiService.patch<Parameter[], WritableParameter[]>(
+      {
+        url: parameterUrl,
+        baseURL,
+        data: requestedParameters,
+        headers: { 'If-Match': `"${currentVersion}"` },
+        followLocation: false,
+        propagateClientError: true,
+      },
+      req.user,
+    );
+
+    return response.status(200).send(savedParameters.data);
   }
 }

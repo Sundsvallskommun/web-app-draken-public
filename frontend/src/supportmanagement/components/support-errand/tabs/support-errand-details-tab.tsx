@@ -1,13 +1,21 @@
 import { JsonParametersDisplay } from '@common/components/json/schema/json-parameters-display.component';
 import { Table } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
+import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
 import { useMemo } from 'react';
 
 export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const _supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  const handledJsonParameterKeys = useInvestigationProfileStore((state) => state.handledJsonParameterKeys);
   const supportErrand = _supportErrand!;
+  // Hide only what another tab is currently rendering, so the same document is not shown twice.
+  // Which tab that is, and whether it is an investigation at all, is none of this tab's business.
+  const readonlyJsonParameters = useMemo(
+    () => (supportErrand.jsonParameters ?? []).filter(({ key }) => !handledJsonParameterKeys[key]),
+    [handledJsonParameterKeys, supportErrand.jsonParameters]
+  );
 
   const simpleParams = useMemo(
     () =>
@@ -100,12 +108,9 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
             </Table>
           </div>
         ))}
-        {(supportErrand.jsonParameters?.length ?? 0) > 0 && municipalityId ? (
+        {readonlyJsonParameters.length > 0 && municipalityId ? (
           <div className="p-16">
-            <JsonParametersDisplay
-              jsonParameters={supportErrand.jsonParameters as any}
-              municipalityId={municipalityId}
-            />
+            <JsonParametersDisplay jsonParameters={readonlyJsonParameters} municipalityId={municipalityId} />
           </div>
         ) : null}
       </div>

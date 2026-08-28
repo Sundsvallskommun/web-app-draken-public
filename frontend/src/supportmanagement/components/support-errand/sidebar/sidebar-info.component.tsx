@@ -6,7 +6,6 @@ import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoi
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import {
-  defaultSupportErrandInformation,
   getSupportErrandById,
   isSupportErrandLocked,
   Resolution,
@@ -98,11 +97,18 @@ export const SidebarInfo: FC<{
 
   const { admin, status, priority } = watch();
 
+  const refreshCurrentErrand = async () => {
+    if (!supportErrand?.id) return;
+    const current = await getSupportErrandById(supportErrand.id, municipalityId);
+    if (!current.error) {
+      setSupportErrand(current.errand);
+      reset(current.errand);
+    }
+  };
+
   const onSubmit = async () => {
     setError(false);
     setIsLoading(true);
-
-    const municipalityId = defaultSupportErrandInformation.municipalityId;
 
     try {
       await updateSupportErrand(municipalityId, getValues());
@@ -129,7 +135,14 @@ export const SidebarInfo: FC<{
       // Handle facility save
       if (props.unsavedFacility) {
         try {
-          await saveFacilityInfo(supportErrand!.id!, getValues().facilities);
+          // Earlier commands in this save flow may have incremented the errand.
+          // Read its current version immediately before the facility command so
+          // the backend can protect the parameter replacement with If-Match.
+          const current = await getSupportErrandById(supportErrand!.id!, municipalityId);
+          if (current.error || !Number.isSafeInteger(current.errand?.version) || current.errand.version! < 0) {
+            throw new Error('Could not resolve the current support errand version');
+          }
+          await saveFacilityInfo(supportErrand!.id!, getValues().facilities, current.errand.version!);
           props.setUnsavedFacility(false);
         } catch {
           toastMessage({
@@ -138,6 +151,9 @@ export const SidebarInfo: FC<{
             message: 'Något gick fel när fastigheter i ärendet sparades',
             status: 'error',
           });
+          setError(true);
+          await refreshCurrentErrand();
+          return;
         }
       }
 
@@ -161,6 +177,7 @@ export const SidebarInfo: FC<{
         status: 'error',
       });
       setError(true);
+      await refreshCurrentErrand();
     } finally {
       setIsLoading(false);
     }
@@ -200,10 +217,11 @@ export const SidebarInfo: FC<{
         setSupportErrand(res.errand);
         reset(res.errand);
       })
-      .catch(() => {
+      .catch(async () => {
         fail();
         setError(true);
         setIsLoading(false);
+        await refreshCurrentErrand();
         return;
       });
   };

@@ -1,6 +1,5 @@
-import { ApiResponse, apiService } from '@common/services/api-service';
-
-import { ApiSupportErrand } from './support-errand-service';
+import type { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
+import { apiService } from '@common/services/api-service';
 
 export interface supportmanagementFacility {
   name: string;
@@ -23,8 +22,11 @@ interface Facility {
   };
 }
 
-export const saveFacilityInfo = (id: string, facilities: Facility[]) => {
+export const saveFacilityInfo = (id: string, facilities: Facility[], expectedVersion: number) => {
   const municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID;
+  if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 0) {
+    return Promise.reject(new Error('A valid support errand version is required to save facilities'));
+  }
   const url = `supporterrands/saveFacilities/${municipalityId}/${id}`;
   const payload: FacilitiesPayload = {
     propertyDesignations: facilities?.map((f) => f.address?.propertyDesignation || '') || [],
@@ -33,7 +35,9 @@ export const saveFacilityInfo = (id: string, facilities: Facility[]) => {
   };
 
   return apiService
-    .patch<ApiResponse<ApiSupportErrand>, FacilitiesPayload>(url, payload)
+    .patch<Parameter[], FacilitiesPayload>(url, payload, {
+      headers: { 'If-Match': `"${expectedVersion}"` },
+    })
     .then((res) => res.data)
     .catch((e) => {
       throw e;

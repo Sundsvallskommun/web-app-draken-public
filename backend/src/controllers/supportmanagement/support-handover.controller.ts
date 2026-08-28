@@ -1,11 +1,13 @@
 import { Type as TypeTransformer } from 'class-transformer';
-import { IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsBoolean, IsDefined, IsNotEmpty, IsObject, IsOptional, IsString, Matches, ValidateNested } from 'class-validator';
 import { Body, Controller, Get, HeaderParam, HttpCode, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
+import { SUPPORT_INVESTIGATION_HANDOVER_NAMESPACE_PATTERN } from '@/config/support-investigation-handover-targets';
 import {
+  Errand,
   HandoverErrand,
   HandoverErrandRequest,
   HandoverPreview,
@@ -13,30 +15,70 @@ import {
   MetadataResponse,
   NamespaceConfig,
 } from '@/data-contracts/supportmanagement/data-contracts';
+import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { User } from '@/interfaces/users.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
+import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
+import { SupportInvestigationHandoverTargetService } from '@/services/support-investigation-handover-target.service';
+import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
-class HandoverPreviewDto {
+export class HandoverPreviewDto {
   @IsString()
+  @IsNotEmpty()
+  @Matches(SUPPORT_INVESTIGATION_HANDOVER_NAMESPACE_PATTERN)
   targetNamespace!: string;
   @IsString()
+  @IsNotEmpty()
+  @Matches(/^\S+$/u)
   targetMunicipalityId!: string;
 }
 
 class HandoverTargetDto {
   @IsString()
+  @IsNotEmpty()
+  @Matches(SUPPORT_INVESTIGATION_HANDOVER_NAMESPACE_PATTERN)
   namespace!: string;
   @IsString()
+  @IsNotEmpty()
+  @Matches(/^\S+$/u)
   @IsOptional()
   municipalityId?: string;
 }
 
-class HandoverErrandDto {
+class HandoverIncludeDto {
+  @IsBoolean()
+  @IsOptional()
+  stakeholders?: boolean;
+  @IsBoolean()
+  @IsOptional()
+  externalTags?: boolean;
+  @IsBoolean()
+  @IsOptional()
+  parameters?: boolean;
+  @IsBoolean()
+  @IsOptional()
+  jsonParameters?: boolean;
+  @IsBoolean()
+  @IsOptional()
+  attachments?: boolean;
+  @IsBoolean()
+  @IsOptional()
+  businessRelated?: boolean;
+  @IsBoolean()
+  @IsOptional()
+  escalationEmail?: boolean;
+  @IsBoolean()
+  @IsOptional()
+  contactReasonDescription?: boolean;
+}
+
+export class HandoverErrandDto {
+  @IsDefined()
   @ValidateNested()
   @TypeTransformer(() => HandoverTargetDto)
   target!: HandoverTargetDto;
@@ -45,9 +87,11 @@ class HandoverErrandDto {
   @IsObject()
   @IsOptional()
   overrides?: object;
-  @IsObject()
   @IsOptional()
-  include?: object;
+  @IsObject()
+  @ValidateNested()
+  @TypeTransformer(() => HandoverIncludeDto)
+  include?: HandoverIncludeDto;
   @IsObject()
   @IsOptional()
   sourceHandling?: object;
@@ -57,11 +101,33 @@ class HandoverErrandDto {
   message?: string;
 }
 
+const requireIdempotencyKey = (value: string | undefined): string => {
+  const containsControlCharacter =
+    value?.split('').some(character => {
+      const codePoint = character.codePointAt(0) ?? 0;
+      return codePoint <= 31 || codePoint === 127;
+    }) ?? false;
+  if (!value?.trim() || value !== value.trim() || value.length > 128 || containsControlCharacter) {
+    throw new HttpException(400, 'Idempotency-Key must be a canonical non-empty value of at most 128 characters');
+  }
+  return value;
+};
+
 @Controller()
 export class SupportHandoverController {
   private apiService = new ApiService();
+  private readonly investigationPolicyService: SupportInvestigationPolicyService;
+  private readonly investigationHandoverTargetService: SupportInvestigationHandoverTargetService;
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private SERVICE = apiServiceName('supportmanagement');
+
+  constructor(
+    investigationPolicyService = new SupportInvestigationPolicyService(),
+    investigationHandoverTargetService = new SupportInvestigationHandoverTargetService(),
+  ) {
+    this.investigationPolicyService = investigationPolicyService;
+    this.investigationHandoverTargetService = investigationHandoverTargetService;
+  }
 
   @Get('/supportnamespaceconfigs/:municipalityId')
   @OpenAPI({ summary: 'Get namespace configurations for a municipality' })
@@ -105,6 +171,10 @@ export class SupportHandoverController {
     @Body() data: HandoverPreviewRequest,
     @Res() response: any,
   ): Promise<HandoverPreview> {
+    await this.assertCanTransferProtectedJsonParameters(req, municipalityId, id, {
+      municipalityId: data.targetMunicipalityId,
+      namespace: data.targetNamespace,
+    });
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/handover/preview`;
     const res = await this.apiService.post<HandoverPreview, HandoverPreviewRequest>({ url, data, propagateClientError: true }, req.user);
     return response.status(200).send(res.data);
@@ -113,7 +183,7 @@ export class SupportHandoverController {
   @Post('/supporterrands/:municipalityId/:id/handover')
   @HttpCode(201)
   @OpenAPI({ summary: 'Hand over a support errand to another namespace' })
-  @UseBefore(authMiddleware, validationMiddleware(HandoverErrandDto, 'body'))
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(HandoverErrandDto, 'body'))
   async handoverErrand(
     @Req() req: RequestWithUser,
     @Param('id') id: string,
@@ -122,6 +192,11 @@ export class SupportHandoverController {
     @Body() data: HandoverErrandRequest & { message?: string },
     @Res() response: any,
   ): Promise<HandoverErrand> {
+    const canonicalIdempotencyKey = requireIdempotencyKey(idempotencyKey);
+    if (data.include?.jsonParameters) {
+      await this.assertCanTransferProtectedJsonParameters(req, municipalityId, id, data.target);
+    }
+
     // `message` is consumed here (added as a conversation below) and not forwarded to the microservice.
     const { message, ...handoverRequest } = data;
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/handover/execute`;
@@ -130,7 +205,7 @@ export class SupportHandoverController {
         url,
         data: handoverRequest,
         // Reuse the client-generated idempotency key so retries do not create duplicate errands.
-        headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+        headers: { 'Idempotency-Key': canonicalIdempotencyKey },
         propagateClientError: true,
       },
       req.user,
@@ -148,6 +223,26 @@ export class SupportHandoverController {
     }
 
     return response.status(201).send(result);
+  }
+
+  private async assertCanTransferProtectedJsonParameters(
+    req: RequestWithUser,
+    municipalityId: string,
+    errandId: string,
+    target: { municipalityId?: string; namespace: string },
+  ): Promise<void> {
+    if (!this.investigationPolicyService.protectsJsonParameters) return;
+
+    const sourceUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${errandId}`;
+    const source = await this.apiService.get<Errand>({ url: sourceUrl, propagateClientError: true }, req.user);
+    if (!this.investigationPolicyService.hasProtectedJsonParameters(source.data)) return;
+
+    await this.investigationPolicyService.assertCanTransferProtectedJsonParameters(source.data, req.user);
+    this.investigationHandoverTargetService.assertCanReceiveProtectedDocuments(
+      municipalityId,
+      target,
+      this.investigationPolicyService.profile.documents.map(document => document.key),
+    );
   }
 
   /** Creates an internal "Överlämning" conversation on the handed-over errand and posts the message,

@@ -185,7 +185,7 @@ yarn install
 
 3. Skapa .env-filer
 
-**Tillgängliga drakar:** `kc`, `ka`, `mex`, `pt`, `rob`, `lop`, `ik`, `msva`, `se`, `bou`, `lok`
+**Tillgängliga drakar:** `kc`, `ka`, `mex`, `pt`, `rob`, `lop`, `ik`, `msva`, `se`, `bou`, `lok`, `iaf`, `vof`
 
 ### Skapa alla env-filer på en gång
 
@@ -202,7 +202,9 @@ cp .env.ik-example .env.ik && \
 cp .env.msva-example .env.msva && \
 cp .env.se-example .env.se && \
 cp .env.bou-example .env.bou && \
-cp .env.lok-example .env.lok
+cp .env.lok-example .env.lok && \
+cp .env.iaf-example .env.iaf && \
+cp .env.vof-example .env.vof
 ```
 
 Backend (kör från `backend/`):
@@ -218,7 +220,9 @@ cp .env.ik.example.local .env.ik.development.local && \
 cp .env.msva.example.local .env.msva.development.local && \
 cp .env.se.example.local .env.se.development.local && \
 cp .env.bou.example.local .env.bou.development.local && \
-cp .env.lok.example.local .env.lok.development.local
+cp .env.lok.example.local .env.lok.development.local && \
+cp .env.iaf.example.local .env.iaf.development.local && \
+cp .env.vof.example.local .env.vof.development.local
 ```
 
 ### Skapa för enskild drake
@@ -238,6 +242,50 @@ cd backend
 cp .env.{drake}.example.local .env.{drake}.development.local
 # Exempel: cp .env.se.example.local .env.se.development.local
 ```
+
+Support Management använder den stabila API-prenumerationen `supportmanagement/14.9` som standard. En drake som
+behöver sprintkontraktet (för närvarande IAF/VOF-utredning) ska välja det uttryckligen i backendmiljön:
+
+```env
+SUPPORTMANAGEMENT_API_TARGET=sprint
+```
+
+Tillåtna värden är `stable` och `sprint`. Ett okänt värde stoppar backend vid uppstart, så att en felstavad
+deploymentinställning inte tyst byter API-kontrakt för alla implementationer.
+
+Drakens ärende-, handläggar-, status- och fastighetskommandon kräver en exakt stark `If-Match` och skickar samma
+version vidare till Support Management. Den 24 augusti 2026 verifierades de publicerade OpenAPI-kontrakten för både
+`supportmanagement/14.9` och `supportmanagement-sprint/14.14`: båda deklarerar `If-Match`, svaren 409/412 och
+versionsfält på ärenden och JSON Parameters. Därmed använder stable- och sprintdeploymenterna samma atomiska
+skrivkontrakt utan en svag kompatibilitetsväg i Draken. Kontrollera kontrakten på nytt när någon prenumeration byter
+version; Drakens förkontroll av version och status ersätter inte atomisk versionskontroll i upstream.
+
+Statuskommandot validerar klientens källstatus och version mot ett färskt ärende samt målstatusen mot live metadata.
+Support Management 14.14 exponerar däremot ingen source→target-graf eller exekveringsroute för statusövergångar, så
+Draken kan inte auktorisera själva kanten utan att införa appspecifika regler. Den domänregeln behöver ägas av
+Support Management innan starkare generell transitionvalidering kan införas.
+
+Utredningsdokument aktiveras per app genom backendens runtimeprofil. Appar med dokument måste dessutom konfigurera
+åtkomst per dokument; saknad eller ofullständig konfiguration stänger utredningsflödet i stället för att falla tillbaka
+till den breda ärendebehörigheten:
+
+```env
+SUPPORT_INVESTIGATION_DOCUMENT_ACCESS={"utredning-enhetschef":{"readGroups":["ad-read-group","ad-write-group"],"writeGroups":["ad-write-group"]},"utredning-sol-lss":{"readGroups":["ad-read-group","ad-write-group"],"writeGroups":["ad-write-group"]},"utredning-hsl":{"readGroups":["ad-read-group","ad-write-group"],"writeGroups":["ad-write-group"]}}
+SUPPORT_INVESTIGATION_HANDOVER_TARGETS=[{"municipalityId":"2281","namespace":"target-namespace","documentKeys":["utredning-enhetschef","utredning-sol-lss","utredning-hsl"]}]
+```
+
+Konfigurationen ska innehålla exakt profilens dokumentnycklar. Gruppnamn jämförs skiftlägesokänsligt,
+`writeGroups` måste vara en delmängd av `readGroups` och jokertecknet `*` måste väljas uttryckligen. IAF/VOF med
+aktiverad utredning behöver både denna konfiguration och `SUPPORTMANAGEMENT_API_TARGET=sprint`. Transportkravet
+deklareras i utredningsprofilen och kontrolleras i runtimepolicyn; en felaktig stable-deployment annonserar därför
+utredningen och dess registrering som otillgängliga i stället för att försöka använda ett inkompatibelt API.
+
+`SUPPORT_INVESTIGATION_HANDOVER_TARGETS` är en explicit allowlist över de kommun- och namespace-par som är
+förberedda att ta emot skyddade utredningsdokument samt exakt vilka `documentKeys` målet stöder. När källprofilen
+utökas måste målcapabilityn därför uppdateras uttryckligen innan överföring tillåts. Saknad eller ogiltig konfiguration tillåter aldrig sådan
+överföring. Förhandsgranskning kräver läsåtkomst till alla skyddade dokument på källärendet; genomförandet kräver
+dessutom `canEditSupportManagement`. Vanliga JSON Parameters och överlämningar där `jsonParameters` inte väljs
+påverkas inte av allowlisten.
 
 4. Konfigurera env-filer
 
@@ -280,9 +328,21 @@ Testerna ligger i `backend/src/tests/` (`*.service.test.ts`).
 **Frontend** (kör från `frontend/`):
 
 ```bash
-yarn test:e2e:{drake}    # Playwright E2E (mex | pt | kc | lop)
-yarn test:e2e:ui:{drake} # Interaktivt (mex | pt | kc | lop)
+yarn test                       # Enhetstester (Vitest)
+yarn test:watch                 # Vitest i watch-läge
+yarn test:coverage              # Med täckningsrapport (v8)
+yarn type-check:test            # Typkontroll av testerna
+yarn test:e2e:{drake}           # Playwright E2E (mex | pt | kc | lop | iaf | vof)
+yarn test:e2e:iaf-schema-lab    # Playwright E2E för utvecklingslabbet
+yarn test:e2e:ui:{drake}        # Interaktivt (mex | pt | kc | lop | vof)
 ```
+
+Enhetstesterna ligger bredvid modulen de testar (`<modul>.test.ts`) och körs med Vitest,
+samma testkörare som backend. Assertions skrivs med `node:assert/strict` i stället för
+`expect`, och `globals` är avstängt — allt importeras explicit. Alias som `@common/*` löses
+upp av Vite direkt ur `tsconfig.json`, så även moduler med beroenden går att enhetstesta;
+allt som kräver rendering hör fortfarande hemma i Playwright. Testerna omfattas inte av
+`yarn type-check` utan av `yarn type-check:test` (se CLAUDE.md för varför).
 
 ### Feature-flaggor
 

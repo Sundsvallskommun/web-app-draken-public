@@ -15,7 +15,7 @@ const execFileAsync = promisify(execFile);
 
 const PATH_TO_OUTPUT_DIR = path.resolve(process.cwd(), './src/data-contracts');
 
-type Api = { name: string; version: string };
+type Api = { name: string; version: string; generateDataContract?: boolean };
 
 /**
  * Download the OpenAPI spec for a single API and generate its data contracts.
@@ -71,7 +71,7 @@ const generateForApi = async ({ name, version }: Api): Promise<void> => {
 
 const main = async () => {
   console.log('Downloading and generating api-docs..');
-  await Promise.all(APIS.map(generateForApi));
+  await Promise.all(APIS.filter(api => api.generateDataContract !== false).map(generateForApi));
 };
 
 main();

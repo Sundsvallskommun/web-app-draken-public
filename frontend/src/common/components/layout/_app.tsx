@@ -1,5 +1,6 @@
 'use client';
 
+import LoaderFullScreen from '@common/components/loader/loader-fullscreen';
 import { getFeatureFlags } from '@common/services/feature-flag-service';
 import { getAdminUsers, getMe } from '@common/services/user-service';
 import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
@@ -14,11 +15,13 @@ import { useConfigStore } from '@stores/config-store';
 import { useMetadataStore } from '@stores/metadata-store';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { useUserStore } from '@stores/user-store';
+import { getInvestigationProfile } from '@supportmanagement/investigation/investigation-profile-service';
+import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import dayjs from 'dayjs';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import utc from 'dayjs/plugin/utc';
-import { ReactNode, useEffect, useMemo, useSyncExternalStore } from 'react';
+import { ReactNode, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 dayjs.extend(utc);
 dayjs.locale('sv');
@@ -45,16 +48,34 @@ interface ClientApplicationProps {
   children: ReactNode;
 }
 
+function isInvestigationSchemaLabRoute(): boolean {
+  // The lab route is not compiled into production builds (see pageExtensions in next.config.js),
+  // so this branch folds away there instead of running its path check on every app bootstrap.
+  if (process.env.NODE_ENV === 'production') return false;
+  return globalThis.window?.location.pathname.endsWith('/schema-lab/utredning') ?? false;
+}
+
+function isAuthenticationRoute(): boolean {
+  return /\/(?:login|logout)\/?$/u.test(globalThis.window?.location.pathname ?? '');
+}
+
 function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
     () => false
   );
+  const schemaLabRoute = isInvestigationSchemaLabRoute();
+  const authenticationRoute = isAuthenticationRoute();
+  const [featureFlagsReady, setFeatureFlagsReady] = useState(schemaLabRoute);
+  const investigationProfileStatus = useInvestigationProfileStore((state) => state.status);
 
   useEffect(() => {
+    if (schemaLabRoute) return;
+
     const municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '';
     useConfigStore.getState().setMunicipalityId(municipalityId);
+    useInvestigationProfileStore.getState().reset();
 
     getMe()
       .then((user) => {
@@ -62,29 +83,64 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
       })
       .catch(() => {});
 
-    getFeatureFlags()
-      .then((res) => {
-        applyRuntimeFeatureFlags(res.data);
-      })
-      .catch(() => {});
+    const loadRuntimeConfiguration = async () => {
+      try {
+        const response = await getFeatureFlags();
+        applyRuntimeFeatureFlags(response.data);
+      } catch {
+        // Environment flags remain the fallback when Adminpanel is unavailable.
+      }
+
+      if (authenticationRoute || !appConfig.isSupportManagement) {
+        useInvestigationProfileStore.getState().setDisabled();
+        setFeatureFlagsReady(true);
+        return;
+      }
+
+      // The runtime flags decide whether this is a SupportManagement app, so metadata waits for
+      // them - but not for the profile behind them. Chaining the two would put a second request
+      // timeout in front of the first paint and delay metadata by that long again.
+      useInvestigationProfileStore.getState().startLoading();
+      setFeatureFlagsReady(true);
+      try {
+        const profile = await getInvestigationProfile(process.env.NEXT_PUBLIC_APPLICATION);
+        useInvestigationProfileStore.getState().setProfile(profile);
+      } catch (error) {
+        console.error('Failed to load the SupportManagement investigation profile.', error);
+        useInvestigationProfileStore.getState().setError();
+      }
+    };
+    void loadRuntimeConfiguration();
 
     getAdminUsers()
       .then((data) => {
         useUserStore.getState().setAdministrators(data);
       })
       .catch(() => {});
-  }, []);
+  }, [authenticationRoute, schemaLabRoute]);
 
   useEffect(() => {
+    if (schemaLabRoute || !featureFlagsReady) return;
+
     if (appConfig.isSupportManagement && process.env.NEXT_PUBLIC_MUNICIPALITY_ID) {
       getSupportMetadata(process.env.NEXT_PUBLIC_MUNICIPALITY_ID).then((res) => {
         useMetadataStore.getState().setSupportMetadata(res.metadata);
       });
     }
-  }, []);
+  }, [featureFlagsReady, schemaLabRoute]);
 
+  const investigationProfileReady =
+    schemaLabRoute ||
+    investigationProfileStatus === 'ready' ||
+    investigationProfileStatus === 'error' ||
+    investigationProfileStatus === 'disabled';
   if (!mounted) {
     return null;
+  }
+
+  // A slow Adminpanel or profile endpoint should show that the app is working, not a blank page.
+  if (!featureFlagsReady || !investigationProfileReady) {
+    return <LoaderFullScreen />;
   }
 
   return <>{children}</>;

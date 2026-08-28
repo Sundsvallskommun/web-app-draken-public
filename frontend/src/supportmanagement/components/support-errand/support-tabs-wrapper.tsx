@@ -4,6 +4,8 @@ import { cx, Tabs } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
+import { isInvestigationTabVisible } from '@supportmanagement/investigation/investigation-variant';
+import { getInvestigationVariant } from '@supportmanagement/investigation/investigation-variant-registry';
 import { countAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import {
   ConversationReadByCount,
@@ -20,8 +22,8 @@ import {
   groupByConversationIdSortedTree,
   MessageNode,
 } from '@supportmanagement/services/support-message-service';
-import { Dispatch, FC, ReactNode, SetStateAction, useEffect, useMemo, useState } from 'react';
-import { useFormContext, UseFormReturn } from 'react-hook-form';
+import { Dispatch, FC, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
+import { useFormContext, UseFormReturn, useFormState } from 'react-hook-form';
 
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
 import { SupportErrandServicesTab } from './tabs/services/support-errand-services-tab';
@@ -31,29 +33,35 @@ import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
 
 export const SupportTabsWrapper: FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
-}> = (props) => {
+  onUnsavedChangesChange: (hasUnsavedChanges: boolean) => void;
+}> = ({ setUnsavedFacility, onUnsavedChangesChange }) => {
   const [messages, setMessages] = useState<any>([]);
   const [supportConversations, setSupportConversations] = useState<any>([]);
   const [messageTree, setMessageTree] = useState<MessageNode[]>([]);
   const [conversationMessageTree, setConversationMessageTree] = useState<MessageNode[]>([]);
   const [conversationReadByCounts, setConversationReadByCounts] = useState<ConversationReadByCount[]>([]);
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  const investigationVariant = getInvestigationVariant();
   const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
 
-  const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const [tabUnsavedChanges, setTabUnsavedChanges] = useState(false);
+  const [investigationDirty, setInvestigationDirty] = useState<Partial<Record<string, boolean>>>({});
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
+  const { isDirty: isErrandDirty } = useFormState({ control: methods.control });
 
   const { activeTabKey, setActiveTabKey } = useSupportStore();
 
+  const unsavedChanges = isErrandDirty || tabUnsavedChanges || Object.values(investigationDirty).some(Boolean);
+
   useEffect(() => {
-    if (methods?.getValues as unknown) {
-      // Need to define these variables for validation/dirty check to work??
-      const _ = Object.keys(methods.formState.dirtyFields).length;
-      const __ = methods.formState.isDirty;
-      setUnsavedChanges(Object.keys(methods.formState.dirtyFields).length === 0 ? false : methods.formState.isDirty);
-    }
-  }, [methods]);
+    onUnsavedChangesChange(unsavedChanges);
+    return () => onUnsavedChangesChange(false);
+  }, [onUnsavedChangesChange, unsavedChanges]);
+
+  const setInvestigationDocumentDirty = useCallback((key: string, isDirty: boolean) => {
+    setInvestigationDirty((current) => (current[key] === isDirty ? current : { ...current, [key]: isDirty }));
+  }, []);
 
   const getMessagesAndConversations = () => {
     getSupportAttachments(supportErrand!.id!, municipalityId).then(setSupportAttachments);
@@ -119,9 +127,9 @@ export const SupportTabsWrapper: FC<{
         label: 'Grundinformation',
         content: supportErrand && (
           <SupportErrandBasicsTab
-            setUnsavedFacility={props.setUnsavedFacility}
+            setUnsavedFacility={setUnsavedFacility}
             errand={supportErrand}
-            setUnsaved={setUnsavedChanges}
+            setUnsaved={setTabUnsavedChanges}
             update={update}
           />
         ),
@@ -136,6 +144,13 @@ export const SupportTabsWrapper: FC<{
         visibleFor: appConfig.features.useDetailsTab,
       },
       {
+        key: 'investigation',
+        label: investigationVariant?.label ?? 'Utredning',
+        content: supportErrand && investigationVariant?.renderTab({ onDirtyChange: setInvestigationDocumentDirty }),
+        disabled: false,
+        visibleFor: isInvestigationTabVisible(appConfig.features, investigationVariant),
+      },
+      {
         key: 'messages',
         label: messageTabLabel,
         content: supportErrand && (
@@ -144,7 +159,7 @@ export const SupportTabsWrapper: FC<{
             messageTree={messageTree}
             supportConversations={supportConversations}
             conversationMessageTree={conversationMessageTree}
-            setUnsaved={setUnsavedChanges}
+            setUnsaved={setTabUnsavedChanges}
             update={update}
             municipalityId={municipalityId}
           />
@@ -173,7 +188,7 @@ export const SupportTabsWrapper: FC<{
       {
         key: 'recruitment',
         label: 'Rekryteringsprocess',
-        content: supportErrand && <SupportErrandRecruitmentTab setUnsaved={setUnsavedChanges} update={update} />,
+        content: supportErrand && <SupportErrandRecruitmentTab setUnsaved={setTabUnsavedChanges} update={update} />,
         disabled: false,
         visibleFor: appConfig.features.useRecruitment,
       },
@@ -181,7 +196,7 @@ export const SupportTabsWrapper: FC<{
         key: 'invoice',
         label: 'Fakturering',
         content: supportErrand && (
-          <SupportErrandInvoiceTab errand={supportErrand} setUnsaved={setUnsavedChanges} update={update} />
+          <SupportErrandInvoiceTab errand={supportErrand} setUnsaved={setTabUnsavedChanges} update={update} />
         ),
         disabled: false,
         visibleFor: appConfig.features.useBilling,
@@ -194,10 +209,12 @@ export const SupportTabsWrapper: FC<{
       messageTree,
       messages,
       municipalityId,
-      props.setUnsavedFacility,
+      investigationVariant,
+      setUnsavedFacility,
       supportAttachments,
       supportConversations,
       supportErrand,
+      setInvestigationDocumentDirty,
     ]
   );
 
@@ -211,6 +228,7 @@ export const SupportTabsWrapper: FC<{
   return (
     <>
       <div className="mb-xl">
+        {investigationVariant?.renderNotice?.()}
         <WarnIfUnsavedChanges showWarning={unsavedChanges}>
           <Tabs
             className="border-1 rounded-12 bg-background-content pt-22 pl-5"
