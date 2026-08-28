@@ -59,3 +59,22 @@ export enum DecisionOutcomeKey {
   'Ärendet avvisas' = 'DISMISSAL',
   'Okänt' = 'UNKNOWN_DECISION_OUTCOME',
 }
+
+// Mirrors DecisionChannelResult in backend/src/dtos/message.dto.ts - keep the two in sync.
+export type DecisionChannel = 'MINA_SIDOR' | 'KATLA' | 'DIGITAL_MAIL' | 'EMAIL' | 'WEBMESSAGE';
+export type DecisionSendStatus = 'sent' | 'failed' | 'skipped';
+
+export interface DecisionChannelResult {
+  channel: DecisionChannel;
+  status: DecisionSendStatus;
+  data: { messageId?: string; reason?: string };
+  message: string;
+}
+
+export const decisionChannelLabels: Record<DecisionChannel, string> = {
+  MINA_SIDOR: 'Mina sidor',
+  KATLA: 'Katla',
+  DIGITAL_MAIL: 'digital post',
+  EMAIL: 'e-post',
+  WEBMESSAGE: 'webbmeddelande',
+};
