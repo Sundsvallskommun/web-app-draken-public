@@ -3,6 +3,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, DatePicker, FormControl, FormLabel, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import { getSupportErrandById, setSuspension, Status } from '@supportmanagement/services/support-errand-service';
+import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import dayjs from 'dayjs';
 import { CirclePause } from 'lucide-react';
 import { useState } from 'react';
@@ -58,7 +59,7 @@ export const SupportSuspendErrandButtonComponent: React.FC<{ disabled: boolean }
         toastMessage({
           position: 'bottom',
           closeable: false,
-          message: 'Något gick fel när ärendet skulle parkeras',
+          message: supportErrandWriteErrorMessage(e, 'Något gick fel när ärendet skulle parkeras'),
           status: 'error',
         });
         setIsLoading(false);

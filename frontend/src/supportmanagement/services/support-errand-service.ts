@@ -819,15 +819,23 @@ interface UpdateResponse {
   errand: ApiSupportErrand | boolean;
 }
 
+/**
+ * Writes the edited form back to the errand.
+ *
+ * `expectedVersion` is a required argument rather than a form field: form state is only reset
+ * when the errand page loads, so any version carried in it is stale as soon as another action
+ * has written to the errand. Pass the version of the errand currently in the store.
+ */
 export const updateSupportErrand: (
   municipalityId: string,
-  formdata: Partial<RegisterSupportErrandFormModel>
-) => Promise<UpdateResponse> = async (municipalityId, formdata) => {
+  formdata: Partial<RegisterSupportErrandFormModel>,
+  expectedVersion: number | undefined
+) => Promise<UpdateResponse> = async (municipalityId, formdata, expectedVersion) => {
   if (!formdata.id) {
     throw new Error('A support errand id is required before writing');
   }
   const errandId = formdata.id;
-  const ifMatch = toStrongSupportErrandETag(formdata.version);
+  const ifMatch = toStrongSupportErrandETag(expectedVersion);
   const stakeholders = buildStakeholdersList(formdata);
   const data = buildSupportErrandUpdateData(formdata, stakeholders);
   const responseObj: UpdateResponse = {

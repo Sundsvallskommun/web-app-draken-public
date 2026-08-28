@@ -20,6 +20,7 @@ import {
   Status,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
+import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
 import { applicantHasContactChannel, getAdminName } from '@supportmanagement/services/support-stakeholder-service';
 import { ArrowLeft, Check } from 'lucide-react';
@@ -97,7 +98,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
       await closeSupportErrand(errandId, municipalityId, resolution);
     } catch (e) {
       console.error('Failed to close support errand', e);
-      showCloseErrorToast();
+      showCloseErrorToast(supportErrandWriteErrorMessage(e, 'Något gick fel när ärendet skulle avslutas'));
       setIsLoading(false);
       return;
     }

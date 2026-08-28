@@ -6,6 +6,7 @@ import {
   setSupportErrandStatus,
   Status,
 } from '@supportmanagement/services/support-errand-service';
+import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import dayjs from 'dayjs';
 import { Undo2 } from 'lucide-react';
 import { useState } from 'react';
@@ -39,11 +40,11 @@ export const SupportReopenErrandButton: React.FC<{ disabled?: boolean }> = ({ di
           setIsLoading(false);
         });
       })
-      .catch(() => {
+      .catch((e) => {
         toastMessage({
           position: 'bottom',
           closeable: false,
-          message: 'Något gick fel när ärendet återöppnades',
+          message: supportErrandWriteErrorMessage(e, 'Något gick fel när ärendet återöppnades'),
           status: 'error',
         });
         setIsLoading(false);

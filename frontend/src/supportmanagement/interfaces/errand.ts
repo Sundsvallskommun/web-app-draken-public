@@ -33,10 +33,14 @@ export interface ApiPagingData {
   empty: boolean;
 }
 
+/**
+ * The edited errand. It deliberately carries no optimistic-locking version: the form is only
+ * reset on load, so a version held here goes stale the moment any other action (status change,
+ * reopen, message, note) writes to the errand. Writes take their precondition from the loaded
+ * errand in the store instead.
+ */
 export interface RegisterSupportErrandFormModel {
   id?: string;
-  /** Optimistic-locking version from the loaded Support Management errand. */
-  version?: number;
   caseId?: string;
   title?: string;
   priority?: Priority;

@@ -2,7 +2,12 @@ import assert from 'node:assert/strict';
 
 import { test } from 'vitest';
 
-import { toStrongSupportErrandETag } from './support-errand-write-version';
+import {
+  isSupportErrandWriteConflict,
+  SUPPORT_ERRAND_WRITE_CONFLICT_MESSAGE,
+  supportErrandWriteErrorMessage,
+  toStrongSupportErrandETag,
+} from './support-errand-write-version';
 
 test('creates canonical strong ETags from valid support errand versions', () => {
   assert.equal(toStrongSupportErrandETag(0), '"0"');
@@ -24,4 +29,38 @@ test('rejects absent or non-canonical support errand versions before a write', (
   ]) {
     assert.throws(() => toStrongSupportErrandETag(version), /valid support errand version/u);
   }
+});
+
+test('treats the conditional-write rejections as conflicts', () => {
+  for (const status of [409, 412]) {
+    assert.equal(isSupportErrandWriteConflict({ response: { status } }), true);
+  }
+});
+
+test('leaves every other failure to its own message', () => {
+  for (const error of [
+    undefined,
+    null,
+    new Error('Support errand was updated, but note could not be saved'),
+    { response: { status: 400 } },
+    { response: { status: 428 } },
+    { response: { status: 500 } },
+    { response: {} },
+    { response: { status: '412' } },
+    { status: 412 },
+  ]) {
+    assert.equal(isSupportErrandWriteConflict(error), false);
+  }
+});
+
+test('replaces the message only for conflicts', () => {
+  assert.equal(
+    supportErrandWriteErrorMessage({ response: { status: 412 } }, 'fallback'),
+    SUPPORT_ERRAND_WRITE_CONFLICT_MESSAGE
+  );
+  assert.equal(
+    supportErrandWriteErrorMessage({ response: { status: 409 } }, 'fallback'),
+    SUPPORT_ERRAND_WRITE_CONFLICT_MESSAGE
+  );
+  assert.equal(supportErrandWriteErrorMessage(new Error('boom'), 'fallback'), 'fallback');
 });

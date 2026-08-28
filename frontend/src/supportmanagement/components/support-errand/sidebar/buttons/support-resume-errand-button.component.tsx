@@ -7,6 +7,7 @@ import {
   shouldShowResumeErrandButton,
   Status,
 } from '@supportmanagement/services/support-errand-service';
+import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import { CirclePlay } from 'lucide-react';
 import { useState } from 'react';
 
@@ -33,11 +34,11 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
           setIsLoading(false);
         });
       })
-      .catch(() => {
+      .catch((e) => {
         toastMessage({
           position: 'bottom',
           closeable: false,
-          message: 'Något gick fel när ärendet återupptogs',
+          message: supportErrandWriteErrorMessage(e, 'Något gick fel när ärendet återupptogs'),
           status: 'error',
         });
         setIsLoading(false);
