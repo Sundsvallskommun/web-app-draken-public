@@ -1,0 +1,148 @@
+{
+  "name": "utredning-hsl",
+  "version": "1.0",
+  "value": {
+    "$id": "https://schemas.sundsvall.se/2281/utredning-hsl/1.0",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Utredning HSL",
+    "description": "HSL-utredning för IAF- och VOF-ärenden. Åtgärder och handlingsplan lagras inte i detta dokument.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["ivoNotification", "public360CaseNumber"],
+    "properties": {
+      "assignment": {
+        "title": "Uppdrag",
+        "description": "Beskriv syftet med analysen, uppdragsgivaren, uppdragsdatum och startdatum.",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "analysisTeamParticipants": {
+        "title": "Deltagare i analysteam",
+        "description": "Personer som deltagit i analysteamet eller medverkat på annat sätt.",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role"],
+          "properties": {
+            "role": {
+              "title": "Roll",
+              "type": "string",
+              "minLength": 1
+            },
+            "unit": {
+              "title": "Enhet",
+              "type": "string"
+            }
+          }
+        }
+      },
+      "methodology": {
+        "title": "Beskrivning av metodik",
+        "description": "Beskriv analysmetod, källor och avgränsningar.",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "eventDescription": {
+        "title": "Händelsebeskrivning",
+        "description": "Presentera händelsen och händelseförloppet på ett sätt som kan förstås utan medicinsk specialkunskap.",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "identifiedCauses": {
+        "title": "Vilka orsaker till händelsen har identifierats?",
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "oneOf": [
+            { "const": "communication_information", "title": "Kommunikation och information" },
+            { "const": "education_competence", "title": "Utbildning och kompetens" },
+            { "const": "processes_routines_guidelines", "title": "Processer, rutiner och riktlinjer" },
+            { "const": "environment_organization", "title": "Omgivning och organisation" },
+            { "const": "technology_equipment", "title": "Teknik, utrustning och apparatur" }
+          ]
+        }
+      },
+      "underlyingCauses": {
+        "title": "Bakomliggande orsak",
+        "description": "Flerval enligt utredningsskissen.",
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "oneOf": [
+            { "const": "communication_failure", "title": "Brist i kommunikation" },
+            { "const": "time_pressure_workload", "title": "Tidsbrist / arbetsbelastning" },
+            { "const": "knowledge_gap", "title": "Kunskapsbrist" },
+            { "const": "routine_missing_not_followed", "title": "Rutin saknas eller följs inte" },
+            { "const": "technical_fault", "title": "Tekniskt fel" },
+            { "const": "other", "title": "Övrigt" }
+          ]
+        }
+      },
+      "contributingFactorsAndRisks": {
+        "title": "Bidragande faktorer och andra upptäckta risker",
+        "description": "Beskriv bakomliggande orsaker, bifynd, andra upptäckta risker samt vårdskade- eller kvalitetsbristkostnader.",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "analysisEvaluation": {
+        "title": "Analysutvärdering",
+        "description": "Bedöm robusthet, relevans, resursbehov, resultatmått och om föreslagna insatser riktar sig mot bakomliggande orsaker.",
+        "type": "string",
+        "contentMediaType": "text/html"
+      },
+      "ivoNotification": {
+        "title": "Ska ärendet anmälas till IVO?",
+        "$ref": "#/$defs/yesNo"
+      },
+      "ivoCaseNumber": {
+        "title": "IVO ärendenummer",
+        "description": "Obligatoriskt när ärendet ska anmälas till IVO.",
+        "type": "string",
+        "minLength": 1
+      },
+      "public360CaseNumber": {
+        "title": "Public 360 ärendenummer",
+        "description": "Obligatoriskt oavsett ställningstagande till IVO-anmälan.",
+        "type": "string",
+        "minLength": 1
+      },
+      "commissionerComment": {
+        "title": "Uppdragsgivarens kommentar",
+        "description": "Uppdragsgivarens kommentar på händelseanalysen.",
+        "type": "string",
+        "contentMediaType": "text/html"
+      }
+    },
+    "$defs": {
+      "yesNo": {
+        "type": "string",
+        "oneOf": [
+          { "const": "yes", "title": "Ja" },
+          { "const": "no", "title": "Nej" }
+        ]
+      }
+    },
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "ivoNotification": { "const": "yes" }
+          },
+          "required": ["ivoNotification"]
+        },
+        "then": {
+          "required": ["ivoCaseNumber"]
+        },
+        "else": {
+          "not": {
+            "required": ["ivoCaseNumber"]
+          }
+        }
+      }
+    ]
+  },
+  "description": "WSO2 request body for version 1.0 of the HSL investigation schema"
+}

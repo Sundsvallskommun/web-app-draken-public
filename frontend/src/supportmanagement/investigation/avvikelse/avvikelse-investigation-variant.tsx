@@ -1,12 +1,15 @@
 'use client';
 
-import { getApplication } from '@common/services/application-service';
 import { Spinner } from '@sk-web-gui/react';
 import dynamic from 'next/dynamic';
 
-import { resolveSupportErrandClassificationPlacement } from '../iaf-vof-investigation-classification-policy';
 import type { InvestigationProfile } from '../investigation-profile';
-import type { InvestigationTabProps, InvestigationVariantModule } from '../investigation-variant';
+import type {
+  InvestigationCategorizationControlProps,
+  InvestigationTabProps,
+  InvestigationVariantModule,
+} from '../investigation-variant';
+import { resolveAvvikelseClassificationPlacement } from './avvikelse-classification-placement';
 import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.component';
 
 /**
@@ -15,7 +18,7 @@ import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.c
  * owns classification. The dynamic import breaks that edge, and splits the tab into its own chunk.
  */
 const SupportErrandInvestigationTab = dynamic(
-  () => import('../support-errand-investigation-tab').then((module) => module.SupportErrandInvestigationTab),
+  () => import('./support-errand-investigation-tab').then((module) => module.SupportErrandInvestigationTab),
   {
     loading: () => (
       <div className="flex justify-center p-24">
@@ -23,6 +26,16 @@ const SupportErrandInvestigationTab = dynamic(
       </div>
     ),
   }
+);
+
+/**
+ * Lazy for code-splitting only - unlike the tab it closes no cycle. The registry is statically
+ * imported by Grundinformation, so anything this module imports statically lands in every drake's
+ * bundle whether or not the capability is on.
+ */
+const AvvikelseCategorizationControl = dynamic(
+  () => import('./avvikelse-categorization-control.component').then((module) => module.AvvikelseCategorizationControl),
+  { loading: () => null }
 );
 
 /**
@@ -37,9 +50,10 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
   label: 'Utredning',
   enabledBy: 'useAvvikelseInvestigation',
   resolveClassificationPlacement: (profile: InvestigationProfile | null | undefined) =>
-    // getApplication() is passed only so the resolver can verify the profile it was handed belongs
-    // to this deployment. It selects no functionality - the capability flag already did that.
-    resolveSupportErrandClassificationPlacement({ application: getApplication(), profile }),
+    resolveAvvikelseClassificationPlacement(profile),
   renderTab: (props: InvestigationTabProps) => <SupportErrandInvestigationTab {...props} />,
   renderNotice: () => <AvvikelseInvestigationNotice />,
+  renderCategorizationControl: ({ disabled }: InvestigationCategorizationControlProps) => (
+    <AvvikelseCategorizationControl disabled={disabled} />
+  ),
 });

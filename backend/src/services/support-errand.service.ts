@@ -232,6 +232,13 @@ export const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
     labels: { category: 'REPORT_TYPE', type: 'REPORT_TYPE/DEVIATION' },
     parameters: [{ key: 'eventType', displayName: 'Rapporttyp', values: ['AVVIKELSE'] }],
   },
+  // Deliberately empty. Presence here is what enables registration at all - an application missing
+  // from this table resolves to registration 'disabled', so the drake silently cannot create
+  // errands. AOT has no agreed taxonomy yet, and guessing label paths would be worse than leaving
+  // them out: unresolvable paths throw 502 from resolveDefaultLabels at registration time, which
+  // reads as a broken deployment rather than an unconfigured one. Every field is optional and the
+  // controller guards each, so this creates an uncategorized errand with no default labels.
+  AOT: {},
 };
 
 export const getNewErrandDefaults = (application?: string): NewErrandDefaults | undefined => NEW_ERRAND_DEFAULTS[application ?? ''];

@@ -176,17 +176,5 @@ export function parseInvestigationProfile(value: unknown, expectedApplication?: 
   });
 }
 
-export function hasInvestigationDocuments(
-  profile: InvestigationProfile | null | undefined
-): profile is InvestigationProfile {
-  return Boolean(profile?.documents.length);
-}
-
-export function isInvestigationActive(
-  profile: InvestigationProfile | null | undefined
-): profile is InvestigationProfile {
-  return profile?.state === 'active' && hasInvestigationDocuments(profile);
-}
-
 export const isSupportRegistrationEnabled = (profile: InvestigationProfile | null | undefined): boolean =>
   profile?.registration.mode === 'enabled';

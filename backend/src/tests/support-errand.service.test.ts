@@ -272,7 +272,16 @@ describe('support-errand.service', () => {
     });
 
     it('covers every configured drake', () => {
-      expect(Object.keys(NEW_ERRAND_DEFAULTS).sort()).toEqual(['BOU', 'IAF', 'IK', 'KA', 'KC', 'LOK', 'LOP', 'MSVA', 'ROB', 'SE', 'VOF']);
+      expect(Object.keys(NEW_ERRAND_DEFAULTS).sort()).toEqual(['AOT', 'BOU', 'IAF', 'IK', 'KA', 'KC', 'LOK', 'LOP', 'MSVA', 'ROB', 'SE', 'VOF']);
+    });
+
+    // Presence in the table, not its contents, is what enables registration: an application missing
+    // from it resolves to registration 'disabled' and silently cannot create errands. AOT is
+    // configured with no defaults at all, so this pins that an empty entry still counts as present.
+    it('treats an empty entry as configured registration with no defaults', () => {
+      expect(getNewErrandDefaults('AOT')).toEqual({});
+      expect(getNewErrandDefaults('AOT')).toBeDefined();
+      expect(getNewErrandDefaults('NOT_A_DRAKE')).toBeUndefined();
     });
 
     it.each(['IAF', 'VOF'])('seeds %s registration with an explicit ordinary-deviation contract', application => {

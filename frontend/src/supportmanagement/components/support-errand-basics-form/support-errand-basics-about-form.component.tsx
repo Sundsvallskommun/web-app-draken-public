@@ -5,6 +5,7 @@ import { appConfig } from '@config/appconfig';
 import { Checkbox, cx, FormControl, FormErrorMessage, FormLabel, Select, Textarea } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
 import { getSupportErrandClassificationPlacement } from '@supportmanagement/investigation/investigation-classification-ownership';
+import { getInvestigationVariant } from '@supportmanagement/investigation/investigation-variant-registry';
 import {
   ContactChannelType,
   getErrandParameterValue,
@@ -19,7 +20,6 @@ import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 import { resolveCategorizationControl, resolveCategorizationMode } from './categorization-control';
-import { IafLabelCategorization } from './iaf-label-categorization.component';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
 
@@ -80,13 +80,11 @@ export const SupportErrandBasicsAboutForm: FC<{
         </div>
       ) : null}
 
-      {categorizationControl.kind === 'avvikelse' ? (
-        <IafLabelCategorization
-          supportMetadata={supportMetadata}
-          labelTree={categorizationControl.labelTree}
-          disabled={categorizationControl.disabled || isSupportErrandLocked(supportErrand)}
-        />
-      ) : null}
+      {categorizationControl.kind === 'variant'
+        ? getInvestigationVariant()?.renderCategorizationControl?.({
+            disabled: categorizationControl.disabled || isSupportErrandLocked(supportErrand),
+          })
+        : null}
 
       {appConfig.features.useBusinessCase ? (
         <div className="flex gap-24">

@@ -32,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [mex, pt, kc, lop, iaf, vof, iaf-schema-lab]
+        app: [mex, pt, kc, lop, iaf, vof, iaf-schema-lab, aot]
         include:
           - app: mex
             build_cmd: yarn build:mex
@@ -114,6 +114,7 @@ jobs:
             NEXT_PUBLIC_USE_UI_PHASES: true
             NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: true
             NEXT_PUBLIC_USE_INVESTIGATION: true
+            NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION: true
           - app: vof
             build_cmd: yarn build:vof
             start_cmd: yarn start:vof
@@ -143,6 +144,26 @@ jobs:
             NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: true
             NEXT_PUBLIC_USE_INVESTIGATION: true
             NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION: true
+          # AOT är den minsta SupportManagement-draken och kör utredningssömmen med en annan
+          # implementation än avvikelse. Jobbet finns för att IAF/VOF-arbetet ska falla här om det
+          # läcker in i en drake som inte är avvikelse. Flaggorna speglar .env.aot-example.
+          - app: aot
+            build_cmd: yarn build:aot
+            start_cmd: yarn start:aot
+            NEXT_PUBLIC_APPLICATION: AOT
+            NEXT_PUBLIC_APPLICATION_NAME: "Alkohol och tobak"
+            NEXT_PUBLIC_API_URL: http://localhost:3001/AOT
+            NEXT_PUBLIC_BASEPATH: /AOT
+            NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: true
+            NEXT_PUBLIC_USE_DETAILS_TAB: true
+            NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: true
+            NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER: true
+            NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL: true
+            NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL: true
+            NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS: true
+            NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX: true
+            NEXT_PUBLIC_USE_INVESTIGATION: true
+            NEXT_PUBLIC_USE_AOT_INVESTIGATION: true
 
     name: E2E ${{ matrix.app }} on ubuntu-latest
     steps:
@@ -221,6 +242,8 @@ jobs:
           NEXT_PUBLIC_INVOICE_BREAK_DATE: ${{ matrix.NEXT_PUBLIC_INVOICE_BREAK_DATE || '' }}
           NEXT_PUBLIC_USE_HANDOVER: ${{ matrix.NEXT_PUBLIC_USE_HANDOVER || '' }}
           NEXT_PUBLIC_USE_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_INVESTIGATION || '' }}
+          NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION || '' }}
+          NEXT_PUBLIC_USE_AOT_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_AOT_INVESTIGATION || '' }}
 
       - name: Start server
         run: ${{ matrix.start_cmd }} &
@@ -290,6 +313,8 @@ jobs:
           NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: ${{ matrix.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '' }}
           NEXT_PUBLIC_INVOICE_BREAK_DATE: ${{ matrix.NEXT_PUBLIC_INVOICE_BREAK_DATE || '' }}
           NEXT_PUBLIC_USE_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_INVESTIGATION || '' }}
+          NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION || '' }}
+          NEXT_PUBLIC_USE_AOT_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_AOT_INVESTIGATION || '' }}
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
