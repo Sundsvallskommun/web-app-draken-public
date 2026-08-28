@@ -1,7 +1,4 @@
-import type {
-  IafVofInvestigationClassificationLabelTree,
-  SupportErrandClassificationPlacement,
-} from '@supportmanagement/investigation/iaf-vof-investigation-classification-policy';
+import type { SupportErrandClassificationPlacement } from '@supportmanagement/investigation/classification-placement';
 
 export type CategorizationMode = 'two-level' | 'three-level' | 'none';
 
@@ -14,11 +11,7 @@ export type CategorizationControl =
   | { readonly kind: 'none' }
   | { readonly kind: 'two-level' }
   | { readonly kind: 'three-level' }
-  | {
-      readonly kind: 'iaf-vof';
-      readonly disabled: boolean;
-      readonly labelTree: IafVofInvestigationClassificationLabelTree;
-    };
+  | { readonly kind: 'variant'; readonly disabled: boolean };
 
 /**
  * The deployment flags encode a single choice as two booleans, so both-true and
@@ -35,25 +28,28 @@ export const resolveCategorizationMode = ({
 };
 
 /**
- * Selects which categorization control Grundinformation renders, from the
- * deployment mode and the runtime classification placement. The IAF/VOF label
- * tree is a different vocabulary rather than a variant of the default one, so
- * the placement decides first and the mode only selects between default controls.
+ * Selects which categorization control Grundinformation renders, from the deployment mode and the
+ * runtime classification placement.
+ *
+ * A placement carrying its own label tree is a different vocabulary rather than a variant of the
+ * default one, so it decides first and the mode only selects between the default controls. This
+ * function names no variant: kind "variant" means the active investigation variant renders the
+ * control, and which one that is has already been settled by the capability flags.
  */
 export const resolveCategorizationControl = (
   mode: CategorizationMode,
   placement: SupportErrandClassificationPlacement
 ): CategorizationControl => {
-  if (placement.categorization === 'iaf-vof') {
+  if (placement.labelTree) {
     // The investigation document owns the control when it is active. While the
     // capability is unavailable the control stays visible but read-only, so a
     // required field is never silently absent.
     if (mode !== 'three-level' || placement.owner === 'investigation') return { kind: 'none' };
-    return { kind: 'iaf-vof', disabled: placement.owner === 'unavailable', labelTree: placement.policy.labelTree };
+    return { kind: 'variant', disabled: placement.owner === 'unavailable' };
   }
 
-  // Every non-IAF/VOF application resolves to owner "basics" today. The guard is
-  // kept so a future placement change fails closed instead of double-rendering.
+  // Without an investigation capability enabled, placement resolves to owner "basics". The
+  // guard is kept so a future placement change fails closed instead of double-rendering.
   if (placement.owner !== 'basics' || mode === 'none') return { kind: 'none' };
   return { kind: mode };
 };

@@ -60,14 +60,14 @@ const parseFeatureFlagResponse = (value: unknown): FeatureFlag[] => {
     if (!isRecord(candidate) || !Number.isInteger(candidate.id) || typeof candidate.enabled !== 'boolean') {
       throw new HttpException(502, `Adminpanel returned an invalid feature flag at index ${index}`);
     }
-    if (candidate.value !== undefined && typeof candidate.value !== 'string') {
+    if (candidate.value !== undefined && candidate.value !== null && typeof candidate.value !== 'string') {
       throw new HttpException(502, `Adminpanel returned an invalid feature flag value at index ${index}`);
     }
 
     return Object.freeze({
       id: candidate.id as number,
       name: readRequiredString(candidate.name, `[${index}].name`),
-      ...(candidate.value === undefined ? {} : { value: candidate.value }),
+      ...(!candidate.value ? {} : { value: candidate.value }),
       enabled: candidate.enabled,
       application: readRequiredString(candidate.application, `[${index}].application`),
       namespace: readRequiredString(candidate.namespace, `[${index}].namespace`),

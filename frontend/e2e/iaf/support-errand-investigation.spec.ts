@@ -59,6 +59,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
         { name: 'useTwoLevelCategorization', enabled: true },
         { name: 'useThreeLevelCategorization', enabled: true },
         { name: 'useInvestigation', enabled: true },
+        { name: 'useAvvikelseInvestigation', enabled: true },
       ],
     });
 
@@ -68,7 +69,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const basics = page.locator('[role="tabpanel"]:visible');
     await expect(basics.locator('[data-cy="category-input"]')).toHaveCount(0);
     await expect(basics.locator('[data-cy="type-input"]')).toHaveCount(0);
-    await expect(basics.locator('[data-cy="iaf-label-categorization"]')).toHaveCount(0);
+    await expect(basics.locator('[data-cy="avvikelse-label-categorization"]')).toHaveCount(0);
 
     await openInvestigation(page);
     await expect(page.locator(classificationFieldSelector)).toHaveCount(1);
@@ -168,7 +169,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     });
 
     await visitErrand(page, dismissCookieConsent);
-    await expect(page.locator('[data-cy="iaf-label-categorization"]')).toBeVisible();
+    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toBeVisible();
     await page
       .locator('[data-cy="label-classification-type"]')
       .selectOption(iafLabelFixture.classification.medication.resourcePath);
@@ -214,8 +215,10 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await visitErrand(page, dismissCookieConsent);
 
     await expect(page.locator('[data-cy="investigation-profile-error"]')).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
-    await expect(page.locator('[data-cy="iaf-label-categorization"]')).toBeVisible();
+    // Gated on the capability flag, not on the profile: the tab stays and explains itself,
+    // while the notice above the tab strip is what warns from any other tab.
+    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(1);
+    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toBeVisible();
     await expect(page.locator('[data-cy="label-classification-type"]')).toBeDisabled();
 
     await page.getByRole('tab', { name: 'Ärendeuppgifter', exact: true }).click();
@@ -234,7 +237,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await visitErrand(page, dismissCookieConsent);
 
     await expect(page.locator('[data-cy="investigation-profile-unavailable"]')).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(1);
     await expect(page.locator('[data-cy="label-classification-type"]')).toBeDisabled();
 
     await page.locator('[data-cy="channel-input"]').selectOption('PHONE');
@@ -247,6 +250,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.errandPatches[0]).toEqual(expect.objectContaining({ channel: 'PHONE' }));
     expect(trace.errandPatches[0]).not.toHaveProperty('classification');
     expect(trace.errandPatches[0]).not.toHaveProperty('labels');
+
+    // Asserted last on purpose: opening Utredning hides Grundinformation, and the steps
+    // above operate on it.
+    await page.getByRole('tab', { name: 'Utredning', exact: true }).click();
+    await expect(page.locator('[data-cy="investigation-tab-unavailable"]')).toBeVisible();
   });
 
   test('låter orelaterade ärendefält sparas när profilhämtningen misslyckas', async ({
@@ -258,7 +266,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await visitErrand(page, dismissCookieConsent);
 
     await expect(page.locator('[data-cy="investigation-profile-error"]')).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(1);
     await expect(page.locator('[data-cy="label-classification-type"]')).toBeDisabled();
 
     await page.locator('[data-cy="channel-input"]').selectOption('PHONE');
@@ -281,10 +289,14 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     await visitErrand(page, dismissCookieConsent);
 
-    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(1);
     await expect(page.locator('[data-cy="investigation-profile-error"]')).toHaveCount(0);
     await expect(page.locator('[data-cy="investigation-profile-unavailable"]')).toHaveCount(0);
-    await expect(page.locator('[data-cy="iaf-label-categorization"]')).toBeVisible();
+    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toBeVisible();
+
+    // Asserted last: opening Utredning hides Grundinformation's categorization control.
+    await page.getByRole('tab', { name: 'Utredning', exact: true }).click();
+    await expect(page.locator('[data-cy="investigation-tab-not-configured"]')).toBeVisible();
   });
 
   for (const ownerCase of [
@@ -529,6 +541,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
         { name: 'useDetailsTab', enabled: true },
         { name: 'useThreeLevelCategorization', enabled: true },
         { name: 'useInvestigation', enabled: false },
+        { name: 'useAvvikelseInvestigation', enabled: true },
       ],
     });
 
@@ -560,6 +573,64 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
         },
       })
     );
+  });
+
+  // The complement of the test above, and the case a new drake hits: the master switch is on, but
+  // no capability claims the investigation. The tab must disappear *and* Grundinformation must fall
+  // back to the ordinary three-level control - not to the avvikelse one, and not to nothing.
+  test('lämnar kategoriseringen orörd när ingen utredningskapabilitet är påslagen', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installIafApiMock(page, {
+      documents: { [managerKey]: existingManagerDocument() },
+      featureFlags: [
+        { name: 'isSupportManagement', enabled: true },
+        { name: 'useDetailsTab', enabled: true },
+        { name: 'useThreeLevelCategorization', enabled: true },
+        { name: 'useInvestigation', enabled: true },
+        { name: 'useAvvikelseInvestigation', enabled: false },
+      ],
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+
+    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
+    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toHaveCount(0);
+    await expect(page.locator('[data-cy="labelCategory-input"]')).toBeVisible();
+  });
+
+  // The seam's payoff: a second implementation, selected by its own capability, rendering in the
+  // real bundle. Grundinformation must keep the ordinary control, because the AOT variant brings no
+  // label tree of its own - the avvikelse vocabulary must not follow the tab around.
+  test('renderar en annan utredningsvariant när dess kapabilitet är påslagen', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installIafApiMock(page, {
+      documents: { [managerKey]: existingManagerDocument() },
+      featureFlags: [
+        { name: 'isSupportManagement', enabled: true },
+        { name: 'useDetailsTab', enabled: true },
+        { name: 'useThreeLevelCategorization', enabled: true },
+        { name: 'useInvestigation', enabled: true },
+        { name: 'useAvvikelseInvestigation', enabled: false },
+        { name: 'useAotInvestigation', enabled: true },
+      ],
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+
+    // Grundinformation first: opening the Utredning tab hides this panel.
+    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toHaveCount(0);
+    await expect(page.locator('[data-cy="labelCategory-input"]')).toBeVisible();
+
+    const investigationTab = page.getByRole('tab', { name: 'Utredning', exact: true });
+    await expect(investigationTab).toHaveCount(1);
+    await investigationTab.click();
+
+    await expect(page.locator('[data-cy="aot-investigation-tab"]')).toBeVisible();
+    await expect(page.locator('[data-cy="investigation-document-notice"]')).toHaveCount(0);
   });
 
   test('sparar endast aktiv dokumentnyckel med schemaId och If-Match', async ({ page, dismissCookieConsent }) => {

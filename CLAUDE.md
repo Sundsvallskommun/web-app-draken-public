@@ -4,19 +4,68 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Draken is a Swedish municipal administration application for Sundsvalls Kommun. It's a multi-tenant system supporting 13 different "drakar" (dragons/modules): **kc**, **ka**, **mex**, **pt**, **rob**, **lop**, **ik**, **msva**, **se**, **bou**, **lok**, **iaf**, **vof**. Each drake serves different municipal departments with distinct feature configurations.
+Draken is a Swedish municipal administration application for Sundsvalls Kommun. It's a multi-tenant system supporting 14 different "drakar" (dragons/modules): **kc**, **ka**, **mex**, **pt**, **rob**, **lop**, **ik**, **msva**, **se**, **bou**, **lok**, **iaf**, **vof**, **aot**. Each drake serves different municipal departments with distinct feature configurations.
 
 **Two main business domains:**
 
 - **CaseData** (Ärendehantering) - Case/errand management for MEX, PT
 - **SupportManagement** (Supporthantering) - Contact center/support tickets for KC, LOP, ROB, etc.
 
-IAF and VOF are the newest SupportManagement drakar. They share the investigation
-(utredning) feature and are treated as one variant in code via `isIAFOrVOF()`.
+## Investigation (utredning): two implementations, one seam
+
+IAF/VOF (**avvikelse**) and **AOT** both switch on the investigation feature, but they are separate
+implementations chosen at runtime by capability flag. This is the likeliest place for one team's
+work to break another's, so the boundary is explicit, and it is tested from both sides.
+
+`frontend/src/supportmanagement/investigation/` holds the contract (`investigation-variant.ts`), the
+registry (`investigation-variant-registry.ts`) and one directory per implementation — `avvikelse/`
+and `aot/`. A variant declares which capability flag enables it (`useAvvikelseInvestigation`,
+`useAotInvestigation`), where classification is persisted, and how to render its tab. Selection is
+first-wins over the registry array, and avvikelse is listed first on purpose: a deployment that
+wrongly enables both then degrades to today's behaviour rather than to a placeholder.
+
+**The rules that keep the two apart:**
+
+- **No cross-implementation imports.** `aot/` must never import from `avvikelse/`, nor the reverse.
+  They share the contract and no code. `investigation-variant-contract.test.ts` is written to prove
+  it: it builds two fixture variants without touching `avvikelse/`, so if the contract ever grows a
+  dependency on one implementation, that test can no longer be written and stops compiling.
+- **Investigation behaviour never branches on which application is running.** It is decided by
+  capability flags and the variant contract, never by `NEXT_PUBLIC_APPLICATION`, a drake name or
+  `isIAFOrVOF()`. Shared SupportManagement code does branch on drake elsewhere (`isKC()`, `isLOP()`,
+  `isLOK()`, and `NEXT_PUBLIC_APPLICATION` for i18n keys) — that is existing practice, but it must
+  not spread into investigation logic. `isIAFOrVOF()` survives in `support-errand.component.tsx`
+  for the summary panel; do not extend it.
+- **Optional slots stay optional.** A variant that supplies no `renderNotice`, no
+  `renderCategorizationControl` and no `labelTree` must leave Grundinformation's ordinary two-/three-
+  level categorization exactly as every other drake sees it. AOT is precisely that case.
+- **The tab is selected by flag, not by profile state.** AOT has no registered profile, so the BFF
+  always reports `state: 'inactive'` for it (`getSupportInvestigationProfile` falls through to an
+  empty profile). Gating the tab on profile state silently deletes it from every non-avvikelse drake.
+- **Avvikelse-only surface stays avvikelse-only.** Investigation documents (`json-parameters`), JSON
+  schemas, the profile's `labelFilter` (which replaces the overview's ordinary category filters with
+  avvikelse's own groups) and the classification PATCH
+  (`supporterrands/{municipalityId}/{errandId}/classification`, the atomic write used only when the
+  investigation owns classification) must never be reached by another drake.
+
+**When you change draken-global logic** — the shared support-errand components, the overview
+filters, the tabs wrapper, `appconfig` — both implementations have to survive it. Run both suites,
+not only the one you are working in:
+
+```bash
+cd frontend
+yarn test                                                   # seam contract + selection rules
+npx dotenv -e .env.vof -- playwright test --project=vof     # avvikelse, end to end
+npx dotenv -e .env.aot -- playwright test --project=aot     # a drake that is not avvikelse
+```
+
+Each e2e project needs that drake's dev server already running; the specs self-skip when
+`NEXT_PUBLIC_APPLICATION` does not match, so a wrong-server run reads as "skipped", not as passed.
+CI runs both as separate matrix jobs in `.github/workflows/playwright.yml`.
 
 ## Development Commands
 
-All commands require specifying a drake: `{drake}` = kc | ka | mex | pt | rob | lop | ik | msva | se | bou | lok | iaf | vof
+All commands require specifying a drake: `{drake}` = kc | ka | mex | pt | rob | lop | ik | msva | se | bou | lok | iaf | vof | aot
 
 ### Backend (run from `backend/`)
 
@@ -45,7 +94,7 @@ yarn type-check:test          # TypeScript check for tests (tsconfig.test.json)
 yarn test                     # Vitest unit tests (run mode)
 yarn test:watch               # Vitest watch mode
 yarn test:coverage            # Vitest with v8 coverage
-yarn test:e2e:{drake}         # Playwright E2E (mex, pt, kc, lop, iaf, vof)
+yarn test:e2e:{drake}         # Playwright E2E (mex, pt, kc, lop, iaf, vof, aot)
 yarn test:e2e:iaf-schema-lab  # Playwright E2E for the development-only schema lab
 ```
 
@@ -193,7 +242,9 @@ Playwright E2E tests are organized by drake in `frontend/e2e/`:
 - `case-data/mex/` - MEX tests
 - `case-data/pt/` - PT tests
 - `lop/` - LOP tests
-- `iaf/` - shared IAF/VOF investigation tests
+- `iaf/` - shared IAF/VOF investigation tests (avvikelse)
+- `aot/` - AOT smoke suite: proves the investigation seam stays inert for a drake that is not
+  avvikelse, so IAF/VOF work that leaks into shared code fails here
 - `schema-lab/` - development-only investigation schema lab tests
 
 Run with: `yarn test:e2e:{drake}`

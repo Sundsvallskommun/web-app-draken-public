@@ -1,30 +1,19 @@
 import assert from 'node:assert/strict';
 
-import type { SupportErrandClassificationPlacement } from '@supportmanagement/investigation/iaf-vof-investigation-classification-policy';
-import { IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY } from '@supportmanagement/investigation/iaf-vof-investigation-classification-policy';
+import type { SupportErrandClassificationPlacement } from '@supportmanagement/investigation/classification-placement';
 import { test } from 'vitest';
 
 import { resolveCategorizationControl, resolveCategorizationMode } from './categorization-control';
 
-const defaultBasics: SupportErrandClassificationPlacement = { owner: 'basics', categorization: 'default' };
+const defaultBasics: SupportErrandClassificationPlacement = { owner: 'basics' };
 
-const iafVofPlacement = (owner: 'basics' | 'unavailable'): SupportErrandClassificationPlacement => ({
+// Deliberately not a real variant's vocabulary. Grundinformation only needs to know that *a* label
+// tree came with the placement, so a fixture no variant would ever produce is the honest input:
+// if this suite ever needs a concrete variant's tree, the shared control has grown a coupling.
+const variantPlacement = (owner: 'basics' | 'unavailable' | 'investigation'): SupportErrandClassificationPlacement => ({
   owner,
-  categorization: 'iaf-vof',
-  policy: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
+  labelTree: { categoryClassification: 'FIXTURE_CATEGORY', typeClassification: 'FIXTURE_TYPE' },
 });
-
-// Only the investigation-owned placement carries the resolved document keys; the type
-// records that, so this variant cannot reuse the factory above.
-const iafVofInvestigationPlacement: SupportErrandClassificationPlacement = {
-  owner: 'investigation',
-  categorization: 'iaf-vof',
-  policy: {
-    ...IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY,
-    defaultOwnerDocumentKey: 'manager-document',
-    reportedMisconductOwnerDocumentKey: 'misconduct-document',
-  },
-};
 
 test('resolves the categorization mode from the deployment flags', () => {
   assert.equal(
@@ -62,46 +51,35 @@ test('renders nothing when no categorization is configured', () => {
   assert.deepEqual(resolveCategorizationControl('none', defaultBasics), { kind: 'none' });
 });
 
-test('renders the IAF/VOF control while Grundinformation owns classification', () => {
-  assert.deepEqual(resolveCategorizationControl('three-level', iafVofPlacement('basics')), {
-    kind: 'iaf-vof',
+test('defers to the variant while Grundinformation owns classification', () => {
+  assert.deepEqual(resolveCategorizationControl('three-level', variantPlacement('basics')), {
+    kind: 'variant',
     disabled: false,
-    labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree,
   });
 });
 
-test('renders the IAF/VOF control read-only when the capability is unavailable', () => {
+test('defers to the variant read-only when the capability is unavailable', () => {
   // Showing it disabled keeps a required field visible; hiding it would read as
   // "not required" while the errand still cannot be classified anywhere else.
-  assert.deepEqual(resolveCategorizationControl('three-level', iafVofPlacement('unavailable')), {
-    kind: 'iaf-vof',
+  assert.deepEqual(resolveCategorizationControl('three-level', variantPlacement('unavailable')), {
+    kind: 'variant',
     disabled: true,
-    labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_POLICY.labelTree,
   });
 });
 
 test('renders nothing when the investigation document owns classification', () => {
-  assert.deepEqual(resolveCategorizationControl('three-level', iafVofInvestigationPlacement), { kind: 'none' });
+  assert.deepEqual(resolveCategorizationControl('three-level', variantPlacement('investigation')), { kind: 'none' });
 });
 
-test('never renders a default-vocabulary control for an IAF/VOF placement', () => {
+test('never renders a default-vocabulary control for a placement with its own label tree', () => {
   // A two-level control would write the legacy category/type vocabulary onto an
-  // errand whose labels use the IAF/VOF tree.
-  assert.deepEqual(resolveCategorizationControl('two-level', iafVofPlacement('basics')), { kind: 'none' });
-  assert.deepEqual(resolveCategorizationControl('none', iafVofPlacement('basics')), { kind: 'none' });
+  // errand whose labels use the variant's tree.
+  assert.deepEqual(resolveCategorizationControl('two-level', variantPlacement('basics')), { kind: 'none' });
+  assert.deepEqual(resolveCategorizationControl('none', variantPlacement('basics')), { kind: 'none' });
 });
 
 test('renders nothing when a default placement is not owned by Grundinformation', () => {
-  // Unreachable today: every non-IAF/VOF application resolves to owner "basics".
+  // Unreachable today: an application with no investigation variant resolves to owner "basics".
   // The guard keeps a future placement change from double-rendering the control.
-  assert.deepEqual(
-    resolveCategorizationControl('three-level', {
-      owner: 'investigation',
-      categorization: 'default',
-      // SupportErrandClassificationPlacement has no such member, so the cast is what
-      // makes the case expressible at all. The guard defends against placements that
-      // reach the control from untyped data, not against anything TypeScript allows.
-    } as unknown as SupportErrandClassificationPlacement),
-    { kind: 'none' }
-  );
+  assert.deepEqual(resolveCategorizationControl('three-level', { owner: 'investigation' }), { kind: 'none' });
 });
