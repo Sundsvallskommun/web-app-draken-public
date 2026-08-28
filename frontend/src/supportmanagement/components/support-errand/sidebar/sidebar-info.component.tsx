@@ -16,6 +16,7 @@ import {
   updateSupportErrand,
   validateAction,
 } from '@supportmanagement/services/support-errand-service';
+import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
 import dayjs from 'dayjs';
 import { CirclePause, Mail } from 'lucide-react';
@@ -111,7 +112,7 @@ export const SidebarInfo: FC<{
     setIsLoading(true);
 
     try {
-      await updateSupportErrand(municipalityId, getValues());
+      await updateSupportErrand(municipalityId, getValues(), supportErrand?.version);
 
       // Handle admin change
       const newAdminAccount = administrators.find((a) => a.displayName === getValues().admin)?.adAccount;
@@ -173,7 +174,7 @@ export const SidebarInfo: FC<{
       toastMessage({
         position: 'bottom',
         closeable: false,
-        message: 'Något gick fel när ärendet uppdaterades',
+        message: supportErrandWriteErrorMessage(e, 'Något gick fel när ärendet uppdaterades'),
         status: 'error',
       });
       setError(true);
@@ -208,7 +209,7 @@ export const SidebarInfo: FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand, administrators]);
 
-  const handleAction = (action: () => Promise<boolean>, success: () => void, fail: () => void) => {
+  const handleAction = (action: () => Promise<boolean>, success: () => void, fail: (error: unknown) => void) => {
     return action()
       .then(async () => {
         success();
@@ -217,8 +218,8 @@ export const SidebarInfo: FC<{
         setSupportErrand(res.errand);
         reset(res.errand);
       })
-      .catch(async () => {
-        fail();
+      .catch(async (e) => {
+        fail(e);
         setError(true);
         setIsLoading(false);
         await refreshCurrentErrand();
@@ -241,7 +242,7 @@ export const SidebarInfo: FC<{
             admin?.adAccount!
           ),
         () => toast('success', 'Handläggare tilldelades'),
-        () => toast('error', 'Något gick fel när handläggare tilldelades')
+        (e) => toast('error', supportErrandWriteErrorMessage(e, 'Något gick fel när handläggare tilldelades'))
       );
     } else {
       toast('error', 'Något gick fel');
