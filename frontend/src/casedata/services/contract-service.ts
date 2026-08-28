@@ -2,8 +2,8 @@ import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/
 import {
   Address,
   AddressType,
-  Attachment,
   AttachmentCategory,
+  AttachmentMetadata,
   Contract,
   ContractType,
   ExtraParameterGroup,
@@ -27,13 +27,12 @@ import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts'
 import { EstateInfoSearch } from '@common/interfaces/estate-details';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
-import { base64ToFile } from '@common/services/attachment-service';
 import { getSingleFacilityByDesignation } from '@common/services/facilities-service';
-import { toBase64 } from '@common/utils/toBase64';
 import { UploadFile } from '@sk-web-gui/react';
 import { AxiosResponse } from 'axios';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 
+import { MAX_FILE_SIZE_MB, withRetries } from './casedata-attachment-service';
 import { saveExtraParameters } from './casedata-extra-parameters-service';
 
 export const contractTypes = [
@@ -680,64 +679,97 @@ export const fetchSignedContractAttachment: (
   municipalityId: string,
   contractId: string,
   attachmentId: number
-) => Promise<ApiResponse<Attachment>> = (municipalityId, contractId, attachmentId) => {
-  if (!attachmentId) {
-    console.error('No attachment id found, cannot fetch. Returning.');
+) => Promise<string> = (municipalityId, contractId, attachmentId) => {
+  if (!contractId) {
+    return Promise.reject(new Error('MISSING_CONTRACT_ID'));
   }
+  if (!attachmentId) {
+    return Promise.reject(new Error('No attachment id found, cannot fetch.'));
+  }
+  // The BFF answers with the raw base64-encoded bytes as plain text, not a JSON envelope.
   const url = `contracts/${municipalityId}/${contractId}/attachments/${attachmentId}`;
   return apiService
-    .get<ApiResponse<Attachment>>(url)
-    .then((res) => {
-      return res.data;
-    })
+    .get<string>(url)
+    .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when fetching attachment: ', attachmentId);
       throw e;
     });
 };
 
+/**
+ * The Contract API validates the mime-type as a bare `type/subtype` and rejects parameters, so a
+ * browser-supplied `text/plain;charset=utf-8` has to be trimmed down. Browsers also report an
+ * empty type for some files, Outlook messages in particular.
+ */
+const toContractMimeType = (file: File) => {
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+  if (extension === 'msg') {
+    return 'application/vnd.ms-outlook';
+  }
+  return file.type.split(';')[0].trim() || 'application/octet-stream';
+};
+
 export const saveSignedContractAttachment = (
   municipalityId: string,
   contractId: string,
-  attachment: UploadFile[],
-  note: string
+  attachments: UploadFile[],
+  note: string,
+  // Creating an attachment is not idempotent: a response lost after the server committed makes a
+  // retry create a second copy. Nothing is deleted on success here, so retrying is the safer
+  // default - see sendAttachments for the case where it is not.
+  retries = 3
 ) => {
-  const attachmentPromise = attachment.map(async (attachment) => {
-    console.log('Processing attachment', attachment);
-    const fileData = await toBase64(attachment.file);
+  // An unsaved contract has no id, which would build `contracts/{municipalityId}//attachments`.
+  // Express does not match an empty path segment, so that 404s - and withRetries would send the
+  // same doomed request four times. Reject before any of that happens.
+  if (!contractId) {
+    return Promise.reject(new Error('MISSING_CONTRACT_ID'));
+  }
 
-    const formData: Attachment = {
-      attachmentData: {
-        content: fileData,
-      },
-      metadata: {
-        category: AttachmentCategory.CONTRACT,
-        filename: attachment.file.name,
-        mimeType: attachment.file.type,
-        note: note,
-      },
-    };
+  // async so the guards below surface as a rejected promise rather than throwing synchronously
+  // out of saveSignedContractAttachment, past the caller's .catch().
+  const attachmentPromises = attachments.map(async (attachment) => {
+    const fileItem = attachment.file;
 
-    return apiService
-      .post<boolean, Attachment>(`contracts/${municipalityId}/${contractId}/attachments`, formData)
-      .then((res) => {
-        return res;
-      })
-      .catch((e) => {
-        console.error('Something went wrong when saving attachment');
-        throw e;
-      });
+    if (!fileItem) {
+      throw new Error('FILE_MISSING');
+    }
+
+    if (fileItem.size / 1024 / 1024 > MAX_FILE_SIZE_MB) {
+      throw new Error('MAX_SIZE');
+    }
+
+    // Field names have to match the BFF's @UploadedFiles('files') and its AttachmentMetadata body.
+    const formData = new FormData();
+    formData.append('files', fileItem, fileItem.name);
+    formData.append('category', AttachmentCategory.CONTRACT);
+    formData.append('filename', fileItem.name);
+    formData.append('mimeType', toContractMimeType(fileItem));
+    formData.append('note', note ?? '');
+
+    const postAttachment = () =>
+      apiService
+        .post<boolean, FormData>(`contracts/${municipalityId}/${contractId}/attachments`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        .catch((e) => {
+          console.error('Something went wrong when saving attachment');
+          throw e;
+        });
+
+    return withRetries(retries, postAttachment);
   });
 
-  return Promise.all(attachmentPromise).then(() => {
-    return true;
-  });
+  return Promise.all(attachmentPromises).then(() => true);
 };
 
 export const deleteSignedContractAttachment = (municipalityId: string, contractId: string, attachmentId: number) => {
+  if (!contractId) {
+    return Promise.reject(new Error('MISSING_CONTRACT_ID'));
+  }
   if (!attachmentId) {
-    console.error('No id found, cannot continue.');
-    return;
+    return Promise.reject(new Error('No attachment id found, cannot delete.'));
   }
 
   return apiService
@@ -751,37 +783,35 @@ export const deleteSignedContractAttachment = (municipalityId: string, contractI
     });
 };
 
-export function mapContractAttachmentToUploadFile<TExtraMeta extends object = object>(
-  attachment: Attachment
+/**
+ * Contract attachment content is fetched separately, so the metadata alone maps to an empty File.
+ * The full filename has to stay on that File: FileUpload derives the row's extension from
+ * `file.file.name` rather than from `meta.ending`.
+ */
+export function mapContractAttachmentMetadataToUploadFile<TExtraMeta extends object = object>(
+  metadata: AttachmentMetadata
 ): UploadFile<TExtraMeta> {
-  let file: File;
-  if (attachment.attachmentData.content) {
-    file = base64ToFile(
-      attachment.attachmentData.content,
-      `${attachment.metadata.filename}`,
-      attachment.metadata.mimeType
-    );
-  } else {
-    file = new File([], `${attachment.metadata.filename}`, { type: attachment.metadata.mimeType });
-  }
+  // Split on the last dot, the way FileUpload does, so `avtal.v2.pdf` keeps `pdf` as its ending.
+  const lastDotIndex = metadata.filename.lastIndexOf('.');
+  const name = lastDotIndex === -1 ? metadata.filename : metadata.filename.slice(0, lastDotIndex);
+  const ending = lastDotIndex === -1 ? '' : metadata.filename.slice(lastDotIndex + 1);
 
-  const a: UploadFile<TExtraMeta> = {
-    id: attachment.metadata.id?.toString() ?? crypto.randomUUID(),
-    file,
+  return {
+    id: metadata.id?.toString() ?? crypto.randomUUID(),
+    file: new File([], metadata.filename, { type: metadata.mimeType }),
     meta: {
-      name: attachment.metadata.filename.replace(/\.[^/.]+$/, ''),
-      ending: attachment.metadata.filename.split('.')?.[1] ?? '',
-      category: attachment.metadata.category,
-      note: attachment.metadata.note,
-      mimeType: attachment.metadata.mimeType,
+      name,
+      ending,
+      category: metadata.category,
+      note: metadata.note,
+      mimeType: metadata.mimeType,
       version: '',
-      created: attachment.metadata.created ?? '',
+      created: metadata.created ?? '',
       updated: '',
       ...({} as TExtraMeta),
-      isValidAttachment: attachment.attachmentData.content,
+      isValidAttachment: !!metadata.hash,
     },
   };
-  return a;
 }
 
 export const getErrandPropertyInformation: (errand: IErrand) => Promise<{ name: string; district: string }[]> = async (

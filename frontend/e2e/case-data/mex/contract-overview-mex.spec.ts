@@ -1,7 +1,6 @@
 import { expect, test } from '../../fixtures/base.fixture';
 import { mockNotifications } from '../../kontaktcenter/fixtures/mockSupportNotifications';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockContractAttachment } from '../fixtures/mockContract';
 import {
   mockContractDetailLeaseAgreement,
   mockContractDetailPurchaseAgreement,
@@ -406,11 +405,6 @@ test.describe('Contract Overview page', () => {
   });
 
   test.describe('Contract detail panel', () => {
-    test.beforeEach(async ({ mockRoute }) => {
-      // Intercept attachment requests to prevent 401 errors
-      await mockRoute('**/contracts/**/attachments/**', mockContractAttachment, { method: 'GET' }); // @getContractAttachment
-    });
-
     test('opens contract detail panel when clicking a row', async ({ page, mockRoute }) => {
       await mockRoute('**/contracts?*', mockContractDetailLeaseAgreement, { method: 'GET' }); // @getContracts
       await navigateToContractOverview(page);

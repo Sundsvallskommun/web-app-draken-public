@@ -12,7 +12,7 @@ import { mockOrganization } from '../fixtures/mockOrganization';
 import { mockPersonId } from '../fixtures/mockPersonId';
 import dayjs from 'dayjs';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockContractAttachment, mockLeaseAgreement, mockPurchaseAgreement } from '../fixtures/mockContract';
+import { mockLeaseAgreement, mockPurchaseAgreement } from '../fixtures/mockContract';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockMe } from '../fixtures/mockMe';
 import { mockMessages } from '../fixtures/mockMessages';
@@ -63,7 +63,6 @@ test.describe('Errand page', () => {
     await mockRoute('**/errands/**/extraparameters', { data: [], message: 'ok' }, { method: 'PATCH' }); // @saveExtraParameters
 
     await mockRoute('**/contracts/2024-01026', mockLeaseAgreement, { method: 'GET' }); // @getContract
-    await mockRoute('**/contracts/2281/2024-01026/attachments/1', mockContractAttachment, { method: 'GET' }); // @getContractAttachment
 
     await mockRoute('**/sourcerelations/**/**', mockRelations, { method: 'GET' }); // @getSourceRelations
     await mockRoute('**/targetrelations/**/**', mockRelations, { method: 'GET' }); // @getTargetRelations

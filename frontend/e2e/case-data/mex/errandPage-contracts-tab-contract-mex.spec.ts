@@ -14,7 +14,8 @@ import { mockHistory } from '../fixtures/mockHistory';
 import { mockPersonId } from '../fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockAsset } from '../fixtures/mockAsset';
-import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockPdfBase64 } from '../fixtures/mockAttachmentContent';
+import { mockLeaseAgreement } from '../fixtures/mockContract';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockMe } from '../fixtures/mockMe';
@@ -40,7 +41,17 @@ test.describe('Errand page contracts tab', () => {
     },
   };
 
+  // Attachment ids whose content was fetched, in request order. Content is no longer part of the
+  // contract payload and must only be requested when a file is actually opened.
+  let contentRequests: number[];
+  // Upload requests, so the multipart body can be inspected. Chromium streams file parts
+  // separately from the rest of the body, so neither the file bytes nor Content-Length are
+  // visible to Playwright - only the part headers and the plain fields can be asserted here.
+  let uploadedRequests: { body: string; contentType: string }[];
+
   test.beforeEach(async ({ page, mockRoute }) => {
+    contentRequests = [];
+    uploadedRequests = [];
     await mockRoute('**/messages/MEX-2024-000280*', mockMessages, { method: 'GET' });
     await mockRoute('**/users/admins', mockAdmins, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
@@ -62,8 +73,27 @@ test.describe('Errand page contracts tab', () => {
     await mockRoute('**/contracts/2024-01026', mockLeaseAgreement, { method: 'GET' }); // @getContract
     await mockRoute('**/contracts', contractText, { method: 'POST' }); // @postContract
     await mockRoute('**/contracts/2024-01026', contractText, { method: 'PUT' }); // @putContract
-    await mockRoute('**/contracts/2281/2024-01026/attachments/1', mockContractAttachment, { method: 'GET' }); // @getContractAttachment
-    await mockRoute('**/contracts/2281/2024-01026/attachments/1', {}, { method: 'DELETE' }); // @deleteContractAttachment
+    // Content of a single contract attachment: raw base64 as plain text, matching what the BFF
+    // sends. mockRoute cannot serve this - it always replies application/json.
+    await page.route(/\/contracts\/[^/]+\/[^/]+\/attachments\/\d+$/, async (route) => {
+      const id = Number(new URL(route.request().url()).pathname.split('/').pop());
+      if (route.request().method() === 'GET') {
+        contentRequests.push(id);
+        await route.fulfill({ status: 200, contentType: 'text/plain', body: mockPdfBase64 });
+        return;
+      }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: true, message: 'ok' }) });
+    }); // @contractAttachmentContent
+
+    await page.route(/\/contracts\/[^/]+\/[^/]+\/attachments$/, async (route) => {
+      if (route.request().method() === 'POST') {
+        uploadedRequests.push({
+          body: route.request().postData() ?? '',
+          contentType: route.request().headers()['content-type'] ?? '',
+        });
+      }
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ data: true, message: 'ok' }) });
+    }); // @postContractAttachment
 
     await mockRoute('**/errand/errandNumber/*', mockMexErrand_base, { method: 'GET' }); // @getErrand
     await mockRoute('**/sourcerelations/**/**', mockRelations, { method: 'GET' }); // @getSourceRelations
@@ -125,16 +155,16 @@ test.describe('Errand page contracts tab', () => {
 
   test('shows uploaded contracts', async ({ page, mockRoute, dismissCookieConsent }) => {
     await mockRoute('**/errand/101', mockMexErrand_base, { method: 'GET' }); // @getErrand
-    await mockRoute(
-      `**/contracts/${mockMexErrand_base.data.municipalityId}/${contractText.data.contractId}/attachments`,
-      {},
-      { method: 'POST' }
-    );
     await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
     await page.locator('[data-cy="bilagor-disclosure"] button.sk-disclosure-header-button').click();
 
     await expect(page.locator('[data-cy="contract-upload-field"]')).toBeVisible();
     await expect(page.locator('[data-cy="contract-attachment-item-1"]')).toBeVisible();
+
+    // The list is built from the metadata the contract already carries. Rendering it must not
+    // pull down the file itself - that is the whole point of the binary attachment migration.
+    expect(contentRequests).toEqual([]);
+
     await page.locator('[data-cy="contract-attachment-item-1"]').locator('.sk-form-file-upload-list-item-actions-more').click();
     await expect(page.locator('[data-cy="open-attachment-1"]')).toBeVisible();
     await page.locator('[data-cy="delete-attachment-1"]').click();
@@ -145,6 +175,60 @@ test.describe('Errand page contracts tab', () => {
     );
     await page.locator('article.sk-dialog').locator('button').filter({ hasText: 'Ja' }).click();
     expect((await deleteRequest).url()).toContain(contractText.data.contractId);
+  });
+
+  test('fetches contract attachment content only when the file is opened', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    await mockRoute('**/errand/101', mockMexErrand_base, { method: 'GET' }); // @getErrand
+    await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
+    await page.locator('[data-cy="bilagor-disclosure"] button.sk-disclosure-header-button').click();
+    await expect(page.locator('[data-cy="contract-attachment-item-1"]')).toBeVisible();
+
+    await page.locator('[data-cy="contract-attachment-item-1"]').locator('.sk-form-file-upload-list-item-actions-more').click();
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('[data-cy="open-attachment-1"]').click();
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toBe('mock-contract.pdf');
+    expect(contentRequests).toEqual([1]);
+
+    const chunks: Buffer[] = [];
+    const stream = await download.createReadStream();
+    for await (const chunk of stream) {
+      chunks.push(chunk as Buffer);
+    }
+    const downloaded = Buffer.concat(chunks);
+    expect(downloaded.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+    expect(downloaded.toString('base64')).toBe(mockPdfBase64);
+  });
+
+  test('uploads a contract attachment as multipart with the file attached', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    await mockRoute('**/errand/101', mockMexErrand_base, { method: 'GET' }); // @getErrand
+    await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
+    await page.locator('[data-cy="bilagor-disclosure"] button.sk-disclosure-header-button').click();
+
+    await page
+      .locator('[data-cy="contract-upload-field"] input[type=file]')
+      .setInputFiles('e2e/case-data/files/testpdf.pdf');
+
+    await expect(page.getByText('Bilagan/orna sparades')).toBeVisible();
+
+    expect(uploadedRequests).toHaveLength(1);
+    const [upload] = uploadedRequests;
+    expect(upload.contentType).toContain('multipart/form-data');
+    expect(upload.body).toContain('name="files"; filename="testpdf.pdf"');
+    expect(upload.body).toContain('name="category"');
+    expect(upload.body).toContain('CONTRACT');
+    expect(upload.body).toContain('name="filename"');
+    expect(upload.body).toContain('name="mimeType"');
+    expect(upload.body).toContain('application/pdf');
   });
 
   test('shows the correct contracts information', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -777,7 +861,6 @@ test.describe('Errand page contracts tab', () => {
       test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
         await mockRoute('**/errand/errandNumber/*', mockMexErrandWithActiveContract, { method: 'GET' }); // @getErrand
         await mockRoute(`**/contracts/${activeContractId}`, mockActiveLeaseAgreement, { method: 'GET' }); // @getActiveContract
-        await mockRoute(`**/contracts/2281/${activeContractId}/attachments/*`, mockContractAttachment, { method: 'GET' }); // @getActiveContractAttachment
 
         const errandResponse = page.waitForResponse(
           (resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200
@@ -916,7 +999,6 @@ test.describe('Errand page contracts tab', () => {
       test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
         await mockRoute('**/errand/errandNumber/*', mockMexErrandWithUniqueContract, { method: 'GET' }); // @getErrand
         await mockRoute(`**/contracts/${uniqueContractId}`, mockActiveContractWithErrandParties, { method: 'GET' }); // @getUniqueContract
-        await mockRoute(`**/contracts/2281/${uniqueContractId}/attachments/*`, mockContractAttachment, { method: 'GET' }); // @getUniqueContractAttachment
 
         const errandResponse = page.waitForResponse(
           (resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200
