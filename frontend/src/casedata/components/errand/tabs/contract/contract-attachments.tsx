@@ -35,8 +35,9 @@ export const ContractAttachments: FC<{
   );
 
   // Refetching the errand re-runs the contract fetch in casedata-contract-tab, which re-renders
-  // this component with fresh attachment metadata. Guarded because ContractForm also renders from
-  // the contract overview panel, where there is no errand in the store.
+  // this component with fresh attachment metadata. The read-only contract overview panel has no
+  // mutating actions and so never gets here, but the guard stays: there is no errand in the store
+  // there, and refreshing a stale unrelated errand would be worse than not refreshing at all.
   const refreshErrand = () => {
     if (!errand) {
       return Promise.resolve();
@@ -106,17 +107,19 @@ export const ContractAttachments: FC<{
               Öppna
             </Button>
           </PopupMenu.Item>
-          <PopupMenu.Item>
-            <Button
-              data-cy={`delete-attachment-${file.id}`}
-              leftIcon={<Trash />}
-              onClick={() => {
-                handleRemoveFile(file);
-              }}
-            >
-              Ta bort
-            </Button>
-          </PopupMenu.Item>
+          {!readOnly && (
+            <PopupMenu.Item>
+              <Button
+                data-cy={`delete-attachment-${file.id}`}
+                leftIcon={<Trash />}
+                onClick={() => {
+                  handleRemoveFile(file);
+                }}
+              >
+                Ta bort
+              </Button>
+            </PopupMenu.Item>
+          )}
         </PopupMenu.Group>
       </PopupMenu.Items>
     </PopupMenu.Panel>
@@ -124,45 +127,46 @@ export const ContractAttachments: FC<{
 
   return (
     <div className="my-16 flex flex-col gap-24 items-center">
-      {/* The library prints the raw accept list (MIME types) truncated with an ellipsis; hide that
-          row and describe the allowed formats in plain language below instead. */}
-      <FileUpload.Field
-        className="[&_.sk-form-file-upload-field-button-content-restrictions-mimetypes]:hidden"
-        data-cy={`contract-upload-field`}
-        accept={ACCEPTED_UPLOAD_FILETYPES}
-        maxFileSizeMB={MAX_FILE_SIZE_MB}
-        onChange={(e) => {
-          const uploads = e.target.value;
-          saveSignedContractAttachment(municipalityId, contractId, uploads, '')
-            .then((res) => {
-              if (!res) {
-                throw new Error('Error saving attachment');
-              }
-              return refreshErrand();
-            })
-            .then(() => {
-              toastMessage(
-                getToastOptions({
-                  message: 'Bilagan/orna sparades',
-                  status: 'success',
-                })
-              );
-            })
-            .catch((e) => {
-              toastMessage({
-                position: 'bottom',
-                closeable: false,
-                // An errand without a saved contract renders this section with no contract id,
-                // so say what to do about it rather than showing a generic failure.
-                message:
-                  e?.message === 'MISSING_CONTRACT_ID'
-                    ? 'Avtalet måste sparas innan bilagor kan laddas upp'
-                    : 'Något gick fel när bilagan/orna sparades',
-                status: 'error',
+      {/* The contract overview panel renders this read-only: it has no errand in the store, so a
+          successful upload could not refresh the list and would report a success the user cannot see.
+          Attachments are managed from the errand contract tab. */}
+      {!readOnly && (
+        <FileUpload.Field
+          className="[&_.sk-form-file-upload-field-button-content-restrictions-mimetypes]:hidden"
+          data-cy={`contract-upload-field`}
+          accept={ACCEPTED_UPLOAD_FILETYPES}
+          maxFileSizeMB={MAX_FILE_SIZE_MB}
+          onChange={(e) => {
+            const uploads = e.target.value;
+            saveSignedContractAttachment(municipalityId, contractId, uploads, '')
+              .then((res) => {
+                if (!res) {
+                  throw new Error('Error saving attachment');
+                }
+                return refreshErrand();
+              })
+              .then(() => {
+                toastMessage(
+                  getToastOptions({
+                    message: 'Bilagan/orna sparades',
+                    status: 'success',
+                  })
+                );
+              })
+              .catch((e) => {
+                toastMessage({
+                  position: 'bottom',
+                  closeable: false,
+                  message:
+                    e?.message === 'MISSING_CONTRACT_ID'
+                      ? 'Avtalet måste sparas innan bilagor kan laddas upp'
+                      : 'Något gick fel när bilagan/orna sparades',
+                  status: 'error',
+                });
               });
-            });
-        }}
-      ></FileUpload.Field>
+          }}
+        ></FileUpload.Field>
+      )}
       <small className="w-full">
         Tillåtna filtyper: bilder (jpeg, png, gif, tiff, bmp) samt dokument (pdf, Word, Excel, OpenDocument, txt m.fl.)
       </small>
@@ -191,7 +195,7 @@ export const ContractAttachments: FC<{
                 showRemove: false,
                 showMore: true,
                 morePopupMenuPanel: morePanel(file),
-                onRemove: handleRemoveFile,
+                onRemove: readOnly ? undefined : handleRemoveFile,
               }}
             />
           ))}

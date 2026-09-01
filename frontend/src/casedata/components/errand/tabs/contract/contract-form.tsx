@@ -1251,7 +1251,7 @@ export const ContractForm: FC<{
           <Disclosure.Button />
         </Disclosure.Header>
         <Disclosure.Content>
-          <ContractAttachments existingContract={existingContract} readOnly={!isEditable('general')} />
+          <ContractAttachments existingContract={existingContract} readOnly={contractOveriewMode} />
         </Disclosure.Content>
       </Disclosure>
 
