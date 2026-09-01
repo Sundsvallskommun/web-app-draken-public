@@ -10,6 +10,7 @@ import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import { mockSupportAttachments, mockSupportErrand, mockSupportMessages } from './fixtures/mockSupportErrands';
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
+import { mockSubscriptions } from './fixtures/mockSupportSubscriptions';
 import { MODAL_DIALOG } from '../utils/modal';
 
 test.describe('errand handover to another namespace', () => {
@@ -19,6 +20,7 @@ test.describe('errand handover to another namespace', () => {
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
+    await mockRoute('**/supportsubscriptions/2281', mockSubscriptions, { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
     await mockRoute(`**/supportmessage/2281/errands/${mockSupportErrand.id}/communication`, mockSupportMessages, {
       method: 'GET',

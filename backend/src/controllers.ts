@@ -38,6 +38,7 @@ import { SupportMessageController } from './controllers/supportmanagement/suppor
 import { SupportMetadataController } from './controllers/supportmanagement/support-metadata.controller';
 import { SupportNoteController } from './controllers/supportmanagement/support-note.controller';
 import { SupportNotificationController } from './controllers/supportmanagement/support-notification.controller';
+import { SupportSubscriptionController } from './controllers/supportmanagement/support-subscription.controller';
 import { TemplateController } from './controllers/template.controller';
 import { UserController } from './controllers/user.controller';
 
@@ -55,21 +56,30 @@ export const CONTROLLERS: NewableFunction[] = [
   BillingController,
   BillingDataCollectorController,
   CaseDataAttachmentController,
-  CasedataContractsController,
+  CaseDataConversationController,
   CaseDataDecisionAttachmentController,
   CaseDataDecisionsController,
   CaseDataErrandController,
   caseDataFacilitiesController,
   CaseDataHistoryController,
+  CasedataContractsController,
   CasedataNotesController,
   CasedataNotificationController,
   CasedataStakeholderController,
+  CaseStatusController,
+  EmployeeController,
   EstateInfoController,
   ExportController,
+  ExtraParameterController,
+  FeatureFlagController,
   HealthController,
   IndexController,
+  JsonSchemaController,
   MessageController,
+  OrganizationController,
+  RelationsController,
   SupportAttachmentController,
+  SupportConversationController,
   SupportErrandController,
   SupportExportController,
   SupportFacilitiesController,
@@ -79,15 +89,7 @@ export const CONTROLLERS: NewableFunction[] = [
   SupportMetadataController,
   SupportNoteController,
   SupportNotificationController,
+  SupportSubscriptionController,
   TemplateController,
   UserController,
-  RelationsController,
-  CaseStatusController,
-  CaseDataConversationController,
-  SupportConversationController,
-  JsonSchemaController,
-  ExtraParameterController,
-  FeatureFlagController,
-  EmployeeController,
-  OrganizationController,
 ];

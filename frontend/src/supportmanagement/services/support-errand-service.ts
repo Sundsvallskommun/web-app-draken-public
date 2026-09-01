@@ -21,6 +21,7 @@ import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
+import { ensureErrandSubscription } from './support-subscription-service';
 export interface Customer {
   id: string;
   type: 'PRIVATE' | 'ENTERPRISE' | 'EMPLOYEE';
@@ -904,6 +905,8 @@ export const updateSupportErrand: (
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${formdata.id}`, data)
     .then(() => {
       responseObj.errand = true;
+      // Editing an errand is taken as "keep me posted on this one".
+      void ensureErrandSubscription(municipalityId, formdata.id);
       return responseObj;
     })
     .catch((e) => {
@@ -934,6 +937,12 @@ export const setSupportErrandAdmin: (
   return apiService
     .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}/admin`, data)
     .then(() => {
+      // Taking an errand yourself is the clearest "this one is mine" signal there is, so subscribe.
+      // Assigning it to someone else cannot subscribe them from here: a subscription always belongs
+      // to the logged in user, so that case has to be handled by the API.
+      if (assigner && assignedUserId === assigner) {
+        void ensureErrandSubscription(municipalityId, errandId);
+      }
       return true;
     })
     .catch((e) => {

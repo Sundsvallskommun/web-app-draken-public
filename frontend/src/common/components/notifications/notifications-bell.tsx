@@ -1,14 +1,19 @@
 import { Badge, Button } from '@sk-web-gui/react';
 import { useSupportStore, useUserStore } from '@stores/index';
 import { Bell } from 'lucide-react';
+import { useMemo } from 'react';
 
 import { getFilteredNotifications } from './notification-utils';
 
 export const NotificationsBell = (props: { toggleShow: () => void }) => {
   const notifications = useSupportStore((s) => s.notifications);
   const user = useUserStore((s) => s.user);
-  const filteredNotifications = getFilteredNotifications(notifications, user?.username || '');
-  const newCount = filteredNotifications.filter((n) => !n.acknowledged).length;
+  // Filtering copies every notification to strip system events, so it is memoised rather than redone
+  // on each render of the surrounding sidebar.
+  const newCount = useMemo(
+    () => getFilteredNotifications(notifications, user?.username || '').filter((n) => !n.acknowledged).length,
+    [notifications, user?.username]
+  );
 
   return (
     <Button

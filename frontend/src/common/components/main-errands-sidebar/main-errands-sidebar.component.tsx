@@ -3,6 +3,7 @@ import { CasedataFilterSidebarStatusSelector } from '@casedata/components/caseda
 import { CaseStatusValues } from '@casedata/components/casedata-filtering/components/casedata-filter-status.component';
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
+import { useNotificationPoller } from '@common/hooks/useNotificationPoller';
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { attestationEnabled, contractsEnabled } from '@common/services/feature-flag-service';
 import { appConfig } from '@config/appconfig';
@@ -36,6 +37,8 @@ export const MainErrandsSidebar: FC<{
   const isLoading = useConfigStore((s) => s.isLoading);
   const [showNotifications, setShowNotifications] = useState(false);
   const applicationEnvironment = getApplicationEnvironment();
+  // Mounted once here, where both the bell and the panel live, so the whole app shares one poll loop.
+  const { refresh: refreshNotifications } = useNotificationPoller();
 
   const MainTitle = (open: boolean) => (
     <NextLink
@@ -175,7 +178,7 @@ export const MainErrandsSidebar: FC<{
         </div>
       </div>
 
-      <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} />
+      <NotificationsWrapper show={showNotifications} setShow={setShowNotifications} refresh={refreshNotifications} />
     </aside>
   );
 };

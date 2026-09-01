@@ -1,129 +1,106 @@
-import {
-  acknowledgeCasedataNotification,
-  getCasedataNotifications,
-} from '@casedata/services/casedata-notification-service';
-import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
-import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { sortBy } from '@common/services/helper-service';
-import { appConfig } from '@config/appconfig';
 import { Button, Checkbox, cx, Divider, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
-import {
-  acknowledgeSupportNotification,
-  getSupportNotifications,
-} from '@supportmanagement/services/support-notification-service';
+import { useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore } from '@stores/index';
 import { Bell, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { NotificationItem } from './notification-item';
+import { acknowledgeNotifications } from './notification-actions';
+import { NotificationGroupItem } from './notification-group-item';
 import { getFilteredNotifications } from './notification-utils';
+import { NotificationView } from './notification-view';
 
-export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boolean) => void }> = ({
-  show,
-  setShow,
-}) => {
+export const NotificationsWrapper: React.FC<{
+  show: boolean;
+  setShow: (arg0: boolean) => void;
+  refresh?: () => Promise<void>;
+}> = ({ show, setShow, refresh }) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const notifications = useSupportStore((s) => s.notifications);
-  const setNotifications = useSupportStore((s) => s.setNotifications);
   const user = useUserStore((s) => s.user);
   const toastMessage = useSnackbar();
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [isAcknowledging, setIsAcknowledging] = useState(false);
 
   useEffect(() => {
-    const getNotifications = appConfig.isCaseData ? getCasedataNotifications : getSupportNotifications;
-
-    municipalityId &&
-      getNotifications(municipalityId)
-        .then((res) => {
-          setNotifications(res);
-        })
-        .catch((e) => {
-          console.error('Something went wrong when fetching notifications');
-          return [] as (SupportNotification | CaseDataNotification)[];
-        });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [municipalityId, show]);
-
-  useEffect(() => {
-    if (!show) {
-      setSelectedIds(new Set());
+    if (show) {
+      void refresh?.();
+    } else {
+      setSelectedKeys(new Set());
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show]);
 
-  const filteredNotifications = getFilteredNotifications(notifications, user?.username || '');
-
-  const acknowledgedNotifications = sortBy(
-    filteredNotifications.filter((n) => n.acknowledged),
-    'created'
-  ).reverse();
-
-  const newNotifications = sortBy(
-    filteredNotifications.filter((n) => !n.acknowledged),
-    'created'
-  ).reverse();
+  // One row per notification, never merged in the client. Supportmanagement aggregates upstream, so
+  // a row can still cover several events; casedata emits one notification per event and each stays
+  // its own row. Sorted here because neither API guarantees an order.
+  const { newNotifications, acknowledgedNotifications } = useMemo(() => {
+    const filtered = getFilteredNotifications(notifications, user?.username || '');
+    return {
+      newNotifications: sortBy(
+        filtered.filter((n) => !n.acknowledged),
+        'created'
+      ).reverse(),
+      acknowledgedNotifications: sortBy(
+        filtered.filter((n) => n.acknowledged),
+        'created'
+      ).reverse(),
+    };
+  }, [notifications, user?.username]);
 
   const handleToggleSelect = (notificationId: string) => {
-    setSelectedIds((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(notificationId)) {
-        newSet.delete(notificationId);
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(notificationId)) {
+        next.delete(notificationId);
       } else {
-        newSet.add(notificationId);
+        next.add(notificationId);
       }
-      return newSet;
+      return next;
     });
   };
 
   const handleSelectAllNew = () => {
-    const allNewIds = newNotifications.map((n) => n.id).filter(Boolean) as string[];
-    const allSelected = allNewIds.every((id) => selectedIds.has(id));
+    const allIds = newNotifications.map((notification) => notification.id);
+    const allSelected = allIds.every((id) => selectedKeys.has(id));
 
-    if (allSelected) {
-      setSelectedIds((prev) => {
-        const newSet = new Set(prev);
-        allNewIds.forEach((id) => newSet.delete(id));
-        return newSet;
-      });
-    } else {
-      setSelectedIds((prev) => {
-        const newSet = new Set(prev);
-        allNewIds.forEach((id) => newSet.add(id));
-        return newSet;
-      });
-    }
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      allIds.forEach((id) => (allSelected ? next.delete(id) : next.add(id)));
+      return next;
+    });
   };
 
+  const selectedNotifications = newNotifications.filter((notification) => selectedKeys.has(notification.id));
+
   const handleAcknowledgeSelected = async () => {
-    if (selectedIds.size === 0) return;
+    if (!selectedNotifications.length) return;
 
+    const count = selectedNotifications.length;
     setIsAcknowledging(true);
-
     try {
-      const notificationsToAcknowledge = newNotifications.filter((n) => n.id && selectedIds.has(n.id));
+      const { failed } = await acknowledgeNotifications(municipalityId, selectedNotifications);
+      await refresh?.();
+      // Keep the failed ones selected so a retry does not mean re-ticking them.
+      setSelectedKeys(new Set(failed));
 
-      const acknowledgePromises = notificationsToAcknowledge.map((notification) => {
-        if (appConfig.isCaseData) {
-          return acknowledgeCasedataNotification(municipalityId, notification as CaseDataNotification);
-        } else {
-          return acknowledgeSupportNotification(municipalityId, notification as SupportNotification);
-        }
-      });
-
-      await Promise.all(acknowledgePromises);
-
-      const getNotifications = appConfig.isCaseData ? getCasedataNotifications : getSupportNotifications;
-      const updatedNotifications = await getNotifications(municipalityId);
-      setNotifications(updatedNotifications);
-
-      setSelectedIds(new Set());
+      if (failed.length) {
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message:
+            failed.length === count
+              ? 'Något gick fel när notifieringarna skulle kvitteras'
+              : `${count - failed.length} av ${count} notiser kvitterades`,
+          status: 'error',
+        });
+        return;
+      }
 
       toastMessage({
         position: 'bottom',
         closeable: true,
-        message: `${notificationsToAcknowledge.length} notis${
-          notificationsToAcknowledge.length > 1 ? 'er' : ''
-        } kvitterad${notificationsToAcknowledge.length > 1 ? 'e' : ''}`,
+        message: `${count} notis${count > 1 ? 'er' : ''} kvitterad${count > 1 ? 'e' : ''}`,
         status: 'success',
       });
     } catch (error) {
@@ -138,8 +115,25 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
     }
   };
 
-  const allNewSelected = newNotifications.length > 0 && newNotifications.every((n) => n.id && selectedIds.has(n.id));
-  const someNewSelected = newNotifications.some((n) => n.id && selectedIds.has(n.id));
+  const allNewSelected =
+    newNotifications.length > 0 && newNotifications.every((notification) => selectedKeys.has(notification.id));
+  const someNewSelected = newNotifications.some((notification) => selectedKeys.has(notification.id));
+
+  const renderNotifications = (list: NotificationView[], selectable: boolean) => (
+    <ul>
+      {list.map((notification) => (
+        <li key={notification.id}>
+          <NotificationGroupItem
+            notification={notification}
+            isSelected={selectedKeys.has(notification.id)}
+            onToggleSelect={() => handleToggleSelect(notification.id)}
+            showCheckbox={selectable}
+            refresh={refresh}
+          />
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
     <div className="static">
@@ -190,7 +184,7 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
                       <h2 className="text-h4-sm">Nya</h2>
                     </div>
                   </Divider.Section>
-                  {selectedIds.size > 0 && (
+                  {selectedNotifications.length > 0 && (
                     <Button
                       size="sm"
                       variant="primary"
@@ -198,25 +192,15 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
                       onClick={handleAcknowledgeSelected}
                       loading={isAcknowledging}
                       disabled={isAcknowledging}
+                      data-cy="acknowledge-selected-notifications"
                       className="absolute right-0 top-1/2 -translate-y-1/2"
                     >
-                      Markera som läst ({selectedIds.size})
+                      Markera som läst ({selectedNotifications.length})
                     </Button>
                   )}
                 </div>
                 {newNotifications.length > 0 ? (
-                  <ul>
-                    {newNotifications.map((notification) => (
-                      <li key={notification.id}>
-                        <NotificationItem
-                          notification={notification}
-                          isSelected={notification.id ? selectedIds.has(notification.id) : false}
-                          onToggleSelect={() => notification.id && handleToggleSelect(notification.id)}
-                          showCheckbox={true}
-                        />
-                      </li>
-                    ))}
-                  </ul>
+                  renderNotifications(newNotifications, true)
                 ) : (
                   <div className="m-md">Inga nya notifieringar</div>
                 )}
@@ -229,13 +213,7 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
                 </Divider.Section>
 
                 {acknowledgedNotifications.length > 0 ? (
-                  <ul>
-                    {acknowledgedNotifications.map((notification) => (
-                      <li key={notification.id}>
-                        <NotificationItem notification={notification} />
-                      </li>
-                    ))}
-                  </ul>
+                  renderNotifications(acknowledgedNotifications, false)
                 ) : (
                   <div className="m-md">Inga notifieringar</div>
                 )}
