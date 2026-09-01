@@ -1,8 +1,8 @@
 import { apiServiceName } from '@/config/api-config';
 import { SupportSubscriptionController } from '@/controllers/supportmanagement/support-subscription.controller';
-import { Subscriber, Subscription } from '@/data-contracts/supportmanagement/data-contracts';
+import { IdentifierTypeEnum, Subscriber, Subscription, SubscriptionTargetTypeEnum } from '@/data-contracts/supportmanagement/data-contracts';
 
-import { mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
+import { mockReq, mockRes, mockUser } from './helpers/http';
 import { mockAdUsername, mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';
 
 const SERVICE = apiServiceName('supportmanagement');
@@ -22,7 +22,7 @@ interface ApiStub {
 
 const existingSubscriber: Subscriber = {
   id: SUBSCRIBER_ID,
-  identifier: { type: 'adAccount', value: mockAdUsername } as Subscriber['identifier'],
+  identifier: { type: IdentifierTypeEnum.AdAccount, value: mockAdUsername },
 };
 
 /**
@@ -52,7 +52,7 @@ describe('SupportSubscriptionController', () => {
   describe('resolving the subscriber', () => {
     it('looks the subscriber up by the ad account of the logged in user', async () => {
       const { controller, api } = makeController();
-      const res: MockResponse = mockRes();
+      const res = mockRes<Subscriber>();
 
       await controller.fetchMySubscriber(mockReq(), MUNICIPALITY_ID, res);
 
@@ -66,7 +66,7 @@ describe('SupportSubscriptionController', () => {
       const { controller, api } = makeController();
       api.get.mockResolvedValueOnce({ data: [], message: 'success' });
       api.post.mockResolvedValueOnce({ data: existingSubscriber, message: 'success' });
-      const res: MockResponse = mockRes();
+      const res = mockRes<Subscriber>();
 
       await controller.fetchMySubscriber(mockReq(), MUNICIPALITY_ID, res);
 
@@ -75,14 +75,49 @@ describe('SupportSubscriptionController', () => {
       expect(config.url).toBe(SUBSCRIBERS_URL);
       expect(config.data.identifier).toEqual({ type: 'adAccount', value: mockAdUsername });
       expect(config.data.channels).toEqual([{ type: 'INTERNAL' }]);
+      // Read back through the list, not from the create response.
+      expect(api.get).toHaveBeenCalledTimes(2);
       expect(res.body).toEqual(existingSubscriber);
+    });
+
+    it('always picks the same subscriber when the user ended up with more than one', async () => {
+      const duplicate: Subscriber = { id: 'subscriber-0', identifier: existingSubscriber.identifier };
+      const { controller, api } = makeController();
+      const first = mockRes<Subscriber>();
+      const second = mockRes<Subscriber>();
+
+      api.get.mockResolvedValue({ data: [existingSubscriber, duplicate], message: 'success' });
+      await controller.fetchMySubscriber(mockReq(), MUNICIPALITY_ID, first);
+      // Same subscribers, other order.
+      api.get.mockResolvedValue({ data: [duplicate, existingSubscriber], message: 'success' });
+      await controller.fetchMySubscriber(mockReq(), MUNICIPALITY_ID, second);
+
+      expect(first.body).toEqual(duplicate);
+      expect(second.body).toEqual(duplicate);
+    });
+
+    it('shares one resolve between concurrent calls instead of creating two subscribers', async () => {
+      const { controller, api } = makeController();
+      api.get.mockResolvedValueOnce({ data: [], message: 'success' }).mockResolvedValue({ data: [existingSubscriber], message: 'success' });
+      api.post.mockResolvedValue({ data: '', message: 'success' });
+      const first = mockRes<Subscriber>();
+      const second = mockRes<Subscriber>();
+
+      await Promise.all([
+        controller.fetchMySubscriber(mockReq(), MUNICIPALITY_ID, first),
+        controller.fetchMySubscriber(mockReq(), MUNICIPALITY_ID, second),
+      ]);
+
+      expect(api.post).toHaveBeenCalledTimes(1);
+      expect(first.body).toEqual(existingSubscriber);
+      expect(second.body).toEqual(existingSubscriber);
     });
 
     it('reads the subscriber back when create answers without a body', async () => {
       const { controller, api } = makeController();
       api.get.mockResolvedValueOnce({ data: [], message: 'success' }).mockResolvedValueOnce({ data: [existingSubscriber], message: 'success' });
       api.post.mockResolvedValueOnce({ data: '', message: 'success' });
-      const res: MockResponse = mockRes();
+      const res = mockRes<Subscriber>();
 
       await controller.fetchMySubscriber(mockReq(), MUNICIPALITY_ID, res);
 
@@ -92,7 +127,7 @@ describe('SupportSubscriptionController', () => {
 
     it('uses the ad account of the calling user, not a shared one', async () => {
       const { controller, api } = makeController();
-      const res: MockResponse = mockRes();
+      const res = mockRes<Subscriber>();
 
       await controller.fetchMySubscriber(mockReq(mockUser({ username: 'xyz99xyz' })), MUNICIPALITY_ID, res);
 
@@ -101,13 +136,13 @@ describe('SupportSubscriptionController', () => {
   });
 
   describe('createSubscription', () => {
-    const errandTarget = { type: 'ERRAND', id: mockSupportErrandId } as const;
+    const errandTarget = { type: SubscriptionTargetTypeEnum.ERRAND, id: mockSupportErrandId };
 
     it('creates the subscription when the user has none for that errand', async () => {
       const { controller, api } = makeController();
       api.get.mockResolvedValueOnce({ data: [existingSubscriber], message: 'success' }).mockResolvedValueOnce({ data: [], message: 'success' });
       api.post.mockResolvedValueOnce({ data: { id: 'subscription-1', target: errandTarget }, message: 'success' });
-      const res: MockResponse = mockRes();
+      const res = mockRes<Subscription>();
 
       await controller.createSubscription(mockReq(), MUNICIPALITY_ID, { target: errandTarget }, res);
 
@@ -122,7 +157,7 @@ describe('SupportSubscriptionController', () => {
       api.get
         .mockResolvedValueOnce({ data: [existingSubscriber], message: 'success' })
         .mockResolvedValueOnce({ data: [existing], message: 'success' });
-      const res: MockResponse = mockRes();
+      const res = mockRes<Subscription>();
 
       await controller.createSubscription(mockReq(), MUNICIPALITY_ID, { target: errandTarget }, res);
 
@@ -132,13 +167,13 @@ describe('SupportSubscriptionController', () => {
     });
 
     it('does not treat a subscription for another errand as a duplicate', async () => {
-      const otherErrand: Subscription = { id: 'subscription-2', target: { type: 'ERRAND', id: 'another-errand' } };
+      const otherErrand: Subscription = { id: 'subscription-2', target: { type: SubscriptionTargetTypeEnum.ERRAND, id: 'another-errand' } };
       const { controller, api } = makeController();
       api.get
         .mockResolvedValueOnce({ data: [existingSubscriber], message: 'success' })
         .mockResolvedValueOnce({ data: [otherErrand], message: 'success' });
       api.post.mockResolvedValueOnce({ data: { id: 'subscription-3', target: errandTarget }, message: 'success' });
-      const res: MockResponse = mockRes();
+      const res = mockRes<Subscription>();
 
       await controller.createSubscription(mockReq(), MUNICIPALITY_ID, { target: errandTarget }, res);
 
@@ -146,13 +181,13 @@ describe('SupportSubscriptionController', () => {
     });
 
     it('treats a namespace subscription as distinct from an errand subscription', async () => {
-      const namespaceSubscription: Subscription = { id: 'subscription-4', target: { type: 'NAMESPACE' } };
+      const namespaceSubscription: Subscription = { id: 'subscription-4', target: { type: SubscriptionTargetTypeEnum.NAMESPACE } };
       const { controller, api } = makeController();
       api.get
         .mockResolvedValueOnce({ data: [existingSubscriber], message: 'success' })
         .mockResolvedValueOnce({ data: [namespaceSubscription], message: 'success' });
       api.post.mockResolvedValueOnce({ data: { id: 'subscription-5', target: errandTarget }, message: 'success' });
-      const res: MockResponse = mockRes();
+      const res = mockRes<Subscription>();
 
       await controller.createSubscription(mockReq(), MUNICIPALITY_ID, { target: errandTarget }, res);
 
@@ -163,7 +198,7 @@ describe('SupportSubscriptionController', () => {
   describe('deleteSubscription', () => {
     it('scopes the delete to the subscriber of the logged in user', async () => {
       const { controller, api } = makeController();
-      const res: MockResponse = mockRes();
+      const res = mockRes();
 
       await controller.deleteSubscription(mockReq(), MUNICIPALITY_ID, 'subscription-1', res);
 
@@ -175,7 +210,7 @@ describe('SupportSubscriptionController', () => {
   describe('updateMySubscriber', () => {
     it('patches the resolved subscriber', async () => {
       const { controller, api } = makeController();
-      const res: MockResponse = mockRes();
+      const res = mockRes<Subscriber>();
 
       await controller.updateMySubscriber(mockReq(), MUNICIPALITY_ID, { pausedFrom: '2026-01-01T00:00:00Z' }, res);
 

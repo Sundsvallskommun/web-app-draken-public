@@ -39,6 +39,7 @@ export const SidebarHistory: React.FC<{}> = () => {
   const [selectedChangeDetails, setSelectedChangeDetails] = useState<ParsedSupportRevisionDifference[]>();
   const [keyMapper, setKeyMapper] = useState<{ [key: string]: string }>();
   const highlightRef = useRef<HTMLDivElement>(null);
+  const hasLoadedNotifications = useRef(false);
 
   useEffect(() => {
     if (supportErrand && keyMapper && Object.keys(keyMapper).length > 1) {
@@ -111,18 +112,18 @@ export const SidebarHistory: React.FC<{}> = () => {
 
   const notificationId = searchParams?.get('notification');
 
-  /**
-   * Notifications are normally loaded by the poller on the overview, but a notification link opens
-   * the errand in a new tab where the store starts empty. Load them here so the deep link resolves.
-   */
+  /** Errands open in a new tab, so the store starts empty whether or not a notification link was used. */
   useEffect(() => {
-    if (notificationId && !notifications.some((notification) => notification.id === notificationId)) {
-      void refreshNotifications();
-    }
-    // Runs once per deep link. Depending on `notifications` would re-fetch forever when the
-    // notification is gone (expired or acknowledged away).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notificationId]);
+    if (!municipalityId || hasLoadedNotifications.current) return;
+    hasLoadedNotifications.current = true;
+    void refreshNotifications();
+  }, [municipalityId, refreshNotifications]);
+
+  /** Matching is a timestamp heuristic, so it has to be scoped to this errand. */
+  const errandNotifications = useMemo(
+    () => notifications.filter((notification) => notification.errandId === supportErrand?.id),
+    [notifications, supportErrand?.id]
+  );
 
   /**
    * The notification the user arrived from, if any. Following a notification should land on the very
@@ -130,20 +131,20 @@ export const SidebarHistory: React.FC<{}> = () => {
    */
   const originNotification = useMemo(() => {
     if (!notificationId) return undefined;
-    return notifications.find((notification) => notification.id === notificationId);
-  }, [notificationId, notifications]);
+    return errandNotifications.find((notification) => notification.id === notificationId);
+  }, [notificationId, errandNotifications]);
 
   /** Events that produced a notification for this user — the "you were told about this" marker. */
   const notifiedEventKeys = useMemo(() => {
     const keys = new Set<string>();
     groups.forEach((group) => {
       const notified = group.events.some((event) =>
-        notifications.some((notification) => matchEventToNotification(event, notification))
+        errandNotifications.some((notification) => matchEventToNotification(event, notification))
       );
       if (notified) keys.add(group.key);
     });
     return keys;
-  }, [groups, notifications]);
+  }, [groups, errandNotifications]);
 
   const highlightedKey = useMemo(() => {
     if (!originNotification) return undefined;

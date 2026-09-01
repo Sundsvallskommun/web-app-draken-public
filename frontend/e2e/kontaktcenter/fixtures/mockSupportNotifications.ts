@@ -1,3 +1,5 @@
+import { mockSupportErrand } from './mockSupportErrands';
+
 // Shape returned by the backend's SupportNotificationDto, i.e. the subscriber based notification
 // model. One notification per errand, carrying every event since the user last acknowledged, newest
 // first. `acknowledged` is a timestamp (absent while unacknowledged), not a boolean.
@@ -59,13 +61,14 @@ export const mockNotifications = [
 
 // The event deliberately lines up with the first event in mockSupportHistory (same subtype, same
 // timestamp) so the errand log can resolve which event the notification came from. Once upstream
-// puts an id on notification events this can point at the event directly instead.
+// puts an id on notification events this can point at the event directly instead. The errand id must
+// be the log's own errand; the log ignores other errands' notifications.
 export const mockNotificationsForErrandLog = [
   {
     id: 'dd893d57-04e9-44af-a271-aff5df530eea',
     created: '2024-05-22T10:58:50.405+02:00',
-    errandId: '2f9b1b3e-6b8e-4b7e-9c2a-2b8b8f4a5c6d',
-    errandNumber: 'KC-00000001',
+    errandId: mockSupportErrand.id,
+    errandNumber: mockSupportErrand.errandNumber,
     events: [
       {
         created: '2024-05-22T10:58:50.405+02:00',

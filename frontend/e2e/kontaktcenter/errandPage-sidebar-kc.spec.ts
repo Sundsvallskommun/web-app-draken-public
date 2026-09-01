@@ -34,6 +34,8 @@ test.describe('errand page', () => {
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
     await mockRoute('**/supportsubscriptions/2281', mockSubscriptions, { method: 'GET' });
+    // The errand log loads notifications to mark notified events.
+    await mockRoute('**/supportnotifications/2281', [], { method: 'GET' });
     await mockRoute('**/supportnamespaceconfigs/**', [], { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments/*', mockSupportAttachments[0], { method: 'GET' });

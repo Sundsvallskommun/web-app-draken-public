@@ -89,11 +89,18 @@ const DEFAULT_CHANNELS: NotificationChannel[] = [{ type: NotificationChannelType
 
 const sameTarget = (a?: SubscriptionTarget, b?: SubscriptionTarget): boolean => a?.type === b?.type && (a?.id ?? null) === (b?.id ?? null);
 
+/** Duplicates are possible and the list order undefined, so order by id to converge on one subscriber. */
+const pickSubscriber = (subscribers?: Subscriber[]): Subscriber | undefined =>
+  (subscribers ?? []).slice().sort((a, b) => (a.id ?? '').localeCompare(b.id ?? ''))[0];
+
 @Controller()
 export class SupportSubscriptionController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private SERVICE = apiServiceName('supportmanagement');
+
+  /** In-flight resolves, keyed by municipality and user. */
+  private pendingSubscribers = new Map<string, Promise<Subscriber>>();
 
   /**
    * Resolve the subscriber belonging to the logged in user, creating it on first use.
@@ -101,8 +108,25 @@ export class SupportSubscriptionController {
    * The subscriber is the anchor every subscription hangs off, so the frontend would otherwise have
    * to bootstrap it explicitly before it could subscribe to anything. Creating it lazily here keeps
    * that ceremony out of the client and makes every subscription call safe to fire blindly.
+   *
+   * Concurrent calls share one resolve: the frontend subscribes implicitly from several parallel
+   * calls, which would otherwise create two subscribers on a user's first action.
    */
-  private async resolveSubscriber(municipalityId: string, user: User): Promise<Subscriber> {
+  private resolveSubscriber(municipalityId: string, user: User): Promise<Subscriber> {
+    const key = `${municipalityId}:${user.username}`;
+    const pending = this.pendingSubscribers.get(key);
+    if (pending) {
+      return pending;
+    }
+
+    const resolving = this.loadOrCreateSubscriber(municipalityId, user).finally(() => {
+      this.pendingSubscribers.delete(key);
+    });
+    this.pendingSubscribers.set(key, resolving);
+    return resolving;
+  }
+
+  private async loadOrCreateSubscriber(municipalityId: string, user: User): Promise<Subscriber> {
     const query = new URLSearchParams({
       identifierType: IdentifierTypeEnum.AdAccount,
       identifierValue: user.username,
@@ -110,8 +134,9 @@ export class SupportSubscriptionController {
     const listUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/subscribers?${query}`;
 
     const existing = await this.apiService.get<Subscriber[]>({ url: listUrl }, user);
-    if (existing.data?.length) {
-      return existing.data[0];
+    const found = pickSubscriber(existing.data);
+    if (found) {
+      return found;
     }
 
     const data: Subscriber = {
@@ -120,22 +145,17 @@ export class SupportSubscriptionController {
       channels: DEFAULT_CHANNELS,
       eventFilters: [],
     };
-    const created = await this.apiService.post<Subscriber, Subscriber>(
-      { url: `${this.SERVICE}/${municipalityId}/${this.namespace}/subscribers`, data },
-      user,
-    );
-    if (created.data?.id) {
-      return created.data;
-    }
+    await this.apiService.post<Subscriber, Subscriber>({ url: `${this.SERVICE}/${municipalityId}/${this.namespace}/subscribers`, data }, user);
 
-    // The create endpoint answers 201 with an empty body. ApiService normally resolves that by
-    // following the location header, but if it is missing we read the subscriber back explicitly.
+    // Read back rather than trust the created body: create can answer 201 empty, and another
+    // instance may have created one at the same time.
     const reread = await this.apiService.get<Subscriber[]>({ url: listUrl }, user);
-    if (!reread.data?.length) {
+    const subscriber = pickSubscriber(reread.data);
+    if (!subscriber) {
       logger.error(`Subscriber for ${user.username} could not be read back after creation`);
       throw new Error('Subscriber could not be created');
     }
-    return reread.data[0];
+    return subscriber;
   }
 
   private subscriptionsUrl(municipalityId: string, subscriberId: string): string {

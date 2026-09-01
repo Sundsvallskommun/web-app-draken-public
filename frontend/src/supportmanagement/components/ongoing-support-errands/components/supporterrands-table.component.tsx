@@ -89,9 +89,14 @@ export const SupportErrandsTable: FC = () => {
 
   const openErrandeInNewWindow = async (errand: SupportErrand) => {
     if (errand.id && errand.activeNotifications && errand.activeNotifications.length > 0) {
-      await acknowledgeAllForErrand(municipalityId, errand.id).catch(() => {
-        throw new Error('Failed to acknowledge notification');
+      // Acknowledging must not block opening the errand; a failure just leaves them unread.
+      const result = await acknowledgeAllForErrand(municipalityId, errand.id).catch((e) => {
+        console.error('Something went wrong when acknowledging notifications for errand', e);
+        return undefined;
       });
+      if (result?.failed.length) {
+        console.error(`Could not acknowledge ${result.failed.length} notification(s) for errand ${errand.id}`);
+      }
       // The bell reads from the store, so it would keep showing the old count until the next poll.
       await refreshNotifications();
     }

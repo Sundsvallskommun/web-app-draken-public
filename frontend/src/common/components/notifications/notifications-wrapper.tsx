@@ -76,13 +76,27 @@ export const NotificationsWrapper: React.FC<{
   const handleAcknowledgeSelected = async () => {
     if (!selectedNotifications.length) return;
 
+    const count = selectedNotifications.length;
     setIsAcknowledging(true);
     try {
-      await acknowledgeNotifications(municipalityId, selectedNotifications);
+      const { failed } = await acknowledgeNotifications(municipalityId, selectedNotifications);
       await refresh?.();
-      setSelectedKeys(new Set());
+      // Keep the failed ones selected so a retry does not mean re-ticking them.
+      setSelectedKeys(new Set(failed));
 
-      const count = selectedNotifications.length;
+      if (failed.length) {
+        toastMessage({
+          position: 'bottom',
+          closeable: false,
+          message:
+            failed.length === count
+              ? 'Något gick fel när notifieringarna skulle kvitteras'
+              : `${count - failed.length} av ${count} notiser kvitterades`,
+          status: 'error',
+        });
+        return;
+      }
+
       toastMessage({
         position: 'bottom',
         closeable: true,

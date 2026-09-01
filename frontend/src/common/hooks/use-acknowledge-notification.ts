@@ -21,16 +21,21 @@ export const useAcknowledgeNotification = (
   const toastMessage = useSnackbar();
 
   return useCallback(async () => {
-    try {
-      await acknowledgeNotifications(municipalityId, [notification]);
-      await refresh?.();
-    } catch (error) {
+    const reportFailure = () =>
       toastMessage({
         position: 'bottom',
         closeable: false,
         message: 'Något gick fel när notifieringen skulle kvitteras',
         status: 'error',
       });
+
+    try {
+      // Failures come back in `failed`, not as a rejection.
+      const { failed } = await acknowledgeNotifications(municipalityId, [notification]);
+      await refresh?.();
+      if (failed.length) reportFailure();
+    } catch (error) {
+      reportFailure();
     }
   }, [municipalityId, notification, refresh, toastMessage]);
 };
