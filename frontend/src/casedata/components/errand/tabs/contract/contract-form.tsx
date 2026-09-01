@@ -16,10 +16,14 @@ import { validateAction } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
 import {
   getContractStakeholderName,
+  getDetailedDescriptionEntries,
   getErrandPropertyInformation,
   hasRecurringFee,
+  isDetailedDescriptionKey,
   isLeaseAgreement,
+  MAX_DETAILED_DESCRIPTION_LENGTH,
   prettyContractRoles,
+  toDetailedDescriptionParameters,
 } from '@casedata/services/contract-service';
 import { getKpiIndex } from '@common/services/billing-data-collector-service';
 import {
@@ -40,7 +44,7 @@ import {
 } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
 import dayjs from 'dayjs';
-import { Calendar, FilePen, Info, MapPin, Pencil, Receipt, Trash, Users, Wallet } from 'lucide-react';
+import { Calendar, FilePen, Info, MapPin, Pencil, Plus, Receipt, Trash, Users, Wallet } from 'lucide-react';
 import { ChangeEvent, FC, useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { CBillingRecord } from 'src/data-contracts/backend/data-contracts';
@@ -170,6 +174,13 @@ export const ContractForm: FC<{
   }, []);
 
   const indexAdjusted = watch('indexAdjusted');
+  const indexType = watch('fees.indexType');
+  const indexYear = watch('fees.indexYear');
+  const indexNumber = watch('fees.indexNumber');
+  const hasIndexDetails = Boolean(indexType && indexYear && indexNumber);
+  const indexAdjustmentHelpText = hasIndexDetails
+    ? `Indexreglering utgår från index enligt ${indexType} för oktober ${indexYear}: ${indexNumber}`
+    : 'Indexreglering baseras på föregående år (oktober månad)';
 
   useEffect(() => {
     if (indexAdjusted !== 'true' || !kpiData) return;
@@ -221,6 +232,33 @@ export const ContractForm: FC<{
       invoiceInfoIndex: invoiceIdx === -1 ? extraParams.length : invoiceIdx,
     };
   }, [existingContract]);
+
+  // Kompletterande avitexter live as detailedDescriptionNN keys in the InvoiceInfo
+  // extraParameter group. The inputs are controlled (watch/setValue rather than register) so rows
+  // can be added and removed while keeping the NN numbering contiguous. The group is looked up by
+  // name in the live form state — not via invoiceInfoIndex — since the group order in the form can
+  // be rewritten after load (see setErrandIdParameter in casedata-contract-tab).
+  const extraParameterGroups = watch('extraParameters');
+  const detailedDescriptionRows = useMemo(
+    () => getDetailedDescriptionEntries(extraParameterGroups?.find((g) => g.name === 'InvoiceInfo')?.parameters),
+    [extraParameterGroups]
+  );
+  const detailedDescriptions = detailedDescriptionRows.map(({ value }) => value);
+
+  const setDetailedDescriptions = (values: string[]) => {
+    const groups = getValues('extraParameters') ?? [];
+    const groupIndex = groups.findIndex((g) => g.name === 'InvoiceInfo');
+    const group = groupIndex === -1 ? { name: 'InvoiceInfo', parameters: {} } : groups[groupIndex];
+    const otherParameters = Object.fromEntries(
+      Object.entries(group.parameters ?? {}).filter(([key]) => !isDetailedDescriptionKey(key))
+    );
+    const nextGroup = { ...group, parameters: { ...otherParameters, ...toDetailedDescriptionParameters(values) } };
+    setValue(
+      'extraParameters',
+      groupIndex === -1 ? [...groups, nextGroup] : groups.map((g, i) => (i === groupIndex ? nextGroup : g)),
+      { shouldDirty: true }
+    );
+  };
 
   const toPropertyDesignation = (pd: { name?: string } | string): string =>
     typeof pd === 'object' && pd.name ? pd.name : typeof pd === 'string' ? pd : '';
@@ -986,7 +1024,9 @@ export const ContractForm: FC<{
                           Nej
                         </RadioButton>
                       </RadioButton.Group>
-                      {!contractOveriewMode && <small>Indexreglering baseras på nuvarande år (Oktober månad)</small>}
+                      {!contractOveriewMode && (
+                        <small data-cy="index-adjustment-help-text">{indexAdjustmentHelpText}</small>
+                      )}
                     </FormControl>
                   </div>
                   <div className="flex gap-18 justify-start">
@@ -1102,17 +1142,72 @@ export const ContractForm: FC<{
                     </FormControl>
                   </div>
                   <div className="flex gap-18 justify-start">
-                    <FormControl className="flex-grow">
+                    <FormControl className="w-full">
                       <FormLabel>Avitext</FormLabel>
                       <Textarea
-                        rows={3}
+                        rows={1}
                         className="w-full"
                         readOnly
                         {...register('fees.additionalInformation.0')}
                         data-cy="fees-additional-information-0-input"
                       ></Textarea>
+                      {!contractOveriewMode && (
+                        <small>Hämtas automatiskt från vald avtalstyp och kan inte ändras.</small>
+                      )}
                     </FormControl>
                   </div>
+                  {detailedDescriptionRows.map(({ key, value }, idx) => (
+                    <div className="flex gap-18 justify-start" key={key}>
+                      <FormControl className="w-full">
+                        <div className="flex w-full justify-between">
+                          <FormLabel>Kompletterande avitext {idx + 1}</FormLabel>
+                          <span className="text-small text-dark-secondary">
+                            {value.length}/{MAX_DETAILED_DESCRIPTION_LENGTH}
+                          </span>
+                        </div>
+                        <div className="flex w-full gap-8 items-center">
+                          <Input
+                            type="text"
+                            className="w-full"
+                            maxLength={MAX_DETAILED_DESCRIPTION_LENGTH}
+                            readOnly={!isEditable('billing')}
+                            value={value}
+                            onChange={(e) => {
+                              const next = [...detailedDescriptions];
+                              next[idx] = e.target.value;
+                              setDetailedDescriptions(next);
+                            }}
+                            data-cy={`detailed-description-input-${idx}`}
+                          />
+                          {isEditable('billing') && (
+                            <Button
+                              iconButton
+                              variant="ghost"
+                              size="sm"
+                              aria-label={`Ta bort kompletterande avitext ${idx + 1}`}
+                              data-cy={`remove-detailed-description-${idx}-button`}
+                              onClick={() => setDetailedDescriptions(detailedDescriptions.filter((_, i) => i !== idx))}
+                            >
+                              <Trash size={18} />
+                            </Button>
+                          )}
+                        </div>
+                      </FormControl>
+                    </div>
+                  ))}
+                  {isEditable('billing') && detailedDescriptions.length < 99 && (
+                    <div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        leftIcon={<Plus size={18} />}
+                        data-cy="add-detailed-description-button"
+                        onClick={() => setDetailedDescriptions([...detailedDescriptions, ''])}
+                      >
+                        Lägg till avitext
+                      </Button>
+                    </div>
+                  )}
                   <small>Fastighet behöver inte anges, hämtas automatiskt från ärendeuppgifter.</small>
                 </>
               ) : null}
@@ -1156,7 +1251,7 @@ export const ContractForm: FC<{
           <Disclosure.Button />
         </Disclosure.Header>
         <Disclosure.Content>
-          <ContractAttachments existingContract={existingContract} readOnly={!isEditable('general')} />
+          <ContractAttachments existingContract={existingContract} readOnly={contractOveriewMode} />
         </Disclosure.Content>
       </Disclosure>
 

@@ -287,6 +287,9 @@ export interface JsonNode {
   boolean?: boolean;
   nodeType?: JsonNodeNodeTypeEnum;
   integralNumber?: boolean;
+  missingNode?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -298,9 +301,6 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
-  missingNode?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -1633,6 +1633,69 @@ export interface MarkAsReadRequest {
   messageIds: string[];
 }
 
+/** Errand purge request model */
+export interface ErrandPurgeRequest {
+  /**
+   * Errands last touched before this point in time are purged
+   * @format date-time
+   */
+  olderThan: string;
+  /** When true, the run only counts the errands that would be purged and deletes nothing */
+  dryRun: boolean;
+  /**
+   * Highest number of errands to handle in this run. Unlimited when omitted.
+   * @format int32
+   * @min 1
+   */
+  maxErrands?: number;
+}
+
+/** Errand purge status model */
+export interface ErrandPurgeStatus {
+  /** Id of the purge job */
+  jobId?: string;
+  /** Namespace being purged */
+  namespace?: string;
+  /** Id of the municipality being purged */
+  municipalityId?: string;
+  /**
+   * Cutoff the run was started with
+   * @format date-time
+   */
+  olderThan?: string;
+  /** Whether the run only counts errands instead of deleting them */
+  dryRun?: boolean;
+  /** State of the run */
+  state?: ErrandPurgeStatusStateEnum;
+  /**
+   * Timestamp when the run started
+   * @format date-time
+   */
+  started?: string;
+  /**
+   * Timestamp when the run finished. Null while it is still running.
+   * @format date-time
+   */
+  finished?: string;
+  /**
+   * Number of errands handled so far, successfully or not
+   * @format int64
+   */
+  processed?: number;
+  /**
+   * Number of errands deleted so far. Stays at zero for a dry run.
+   * @format int64
+   */
+  deleted?: number;
+  /**
+   * Number of errands that could not be deleted. The log holds their ids.
+   * @format int64
+   */
+  failed?: number;
+  /** Reason the run aborted. Null unless the state is FAILED. */
+  message?: string;
+}
+
 /** Validation model */
 export interface Validation {
   /** Type of metadata that the validation applies to */
@@ -1741,13 +1804,13 @@ export interface PageSubscriberNotification {
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
   unpaged?: boolean;
+  sort?: SortObject;
 }
 
 export interface SortObject {
@@ -2401,6 +2464,14 @@ export enum NotificationChannelTypeEnum {
 export enum SubscriptionTargetTypeEnum {
   ERRAND = "ERRAND",
   NAMESPACE = "NAMESPACE",
+}
+
+/** State of the run */
+export enum ErrandPurgeStatusStateEnum {
+  RUNNING = "RUNNING",
+  COMPLETED = "COMPLETED",
+  STOPPED = "STOPPED",
+  FAILED = "FAILED",
 }
 
 /** Type of metadata that the validation applies to */

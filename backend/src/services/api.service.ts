@@ -12,9 +12,11 @@ export class ApiResponse<T> {
   message!: string;
 }
 
-// Extends AxiosRequestConfig with an opt-in flag. When `propagateClientError` is true, upstream
-// 4xx responses are re-thrown with their original status and message instead of a generic 500.
-export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & { propagateClientError?: boolean };
+// Extends AxiosRequestConfig with two per-request flags. When `propagateClientError` is true,
+// upstream 4xx responses are re-thrown with their original status and message instead of a generic
+// 500. When `followLocation` is false, a Location header on the response is not followed - needed
+// for endpoints whose created resource is a binary stream rather than JSON.
+export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & { propagateClientError?: boolean; followLocation?: boolean };
 
 const apiTokenService = new ApiTokenService();
 
@@ -79,7 +81,11 @@ class ApiService {
         if (response.headers.location && response.config.url?.includes('asset-drafts')) {
           response.headers.location = response.headers.location.replace('/asset-drafts/', '/assets/');
         }
-        if (response.headers.location && !response.config.url?.includes('messaging')) {
+        // `followLocation: false` opts a single request out. Unlike `propagateClientError` this
+        // flag is deliberately not stripped from the axios config, so it survives onto
+        // `response.config` and is readable here.
+        const followLocation = (response.config as ApiRequestConfig).followLocation !== false;
+        if (followLocation && response.headers.location && !response.config.url?.includes('messaging')) {
           logger.info(`Response contained location header: ${response.headers.location}`);
           logger.info(`Base URL was: ${response.config.baseURL}`);
           return axios.get(response.headers.location, { baseURL: response.config.baseURL, headers: defaultHeaders }).catch(e => {

@@ -2,7 +2,11 @@ import { test, expect } from '../fixtures/base.fixture';
 import type { Page } from '@playwright/test';
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
-import { mockConversationMessages, mockConversations } from './fixtures/mockConversations';
+import {
+  mockConversationMessages,
+  mockConversationReadByCounts,
+  mockConversations,
+} from './fixtures/mockConversations';
 import { mockMetaData } from './fixtures/mockMetadata';
 import { mockRelations } from './fixtures/mockRelations';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
@@ -111,6 +115,8 @@ test.describe('Message tab', () => {
     );
     await mockRoute('**/sourcerelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/targetrelations/**/**', mockRelations, { method: 'GET' });
+    await mockRoute('**/communication/conversations/count-read-by*', mockConversationReadByCounts, { method: 'GET' });
+    await mockRoute('**/communication/conversations/*/messages/mark-as-read', {}, { method: 'POST' });
     await mockRoute('**/namespace/errands/**/communication/conversations', mockConversations, { method: 'GET' });
     await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, { method: 'GET' });
   });

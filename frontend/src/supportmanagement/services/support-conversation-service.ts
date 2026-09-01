@@ -5,6 +5,27 @@ import { MessageNode } from '@supportmanagement/services/support-message-service
 import { SingleSupportAttachment } from './support-attachment-service';
 import { SupportErrand } from './support-errand-service';
 
+export interface ConversationReadByCount {
+  conversationId?: string;
+  messageCount?: number;
+  readByCount?: {
+    identifier?: {
+      type?: string;
+      value?: string;
+    };
+    count?: number;
+  }[];
+  readByPartCount?: {
+    part?: string;
+    count?: number;
+  }[];
+}
+
+export interface ConversationMessageCountSummary {
+  total: number;
+  unread: number;
+}
+
 export const getSupportConversations: (municipalityId: string, errandId: string) => Promise<ApiResponse<any[]>> = (
   municipalityId,
   errandId
@@ -44,6 +65,59 @@ export const getSupportConversationMessages: (
       throw e;
     });
 };
+
+export const getSupportConversationReadByCounts = (
+  municipalityId: string,
+  errandId: string,
+  conversationId?: string,
+  includeSystemMessages = false
+): Promise<ConversationReadByCount[]> => {
+  const query = new URLSearchParams({ includeSystemMessages: String(includeSystemMessages) });
+  if (conversationId) {
+    query.set('conversationId', conversationId);
+  }
+  const url = `supportmanagement/${municipalityId}/namespace/errands/${errandId}/communication/conversations/count-read-by?${query}`;
+
+  return apiService
+    .get<ConversationReadByCount[]>(url)
+    .then((res) => res.data)
+    .catch((error) => {
+      console.error('Something went wrong when fetching conversation read counts for errand: ', errandId);
+      throw error;
+    });
+};
+
+export const markSupportConversationMessagesAsRead = (
+  municipalityId: string,
+  errandId: string,
+  conversationId: string,
+  messageIds: string[]
+): Promise<void> => {
+  const url = `supportmanagement/${municipalityId}/namespace/errands/${errandId}/communication/conversations/${conversationId}/messages/mark-as-read`;
+  return apiService.post<void, { messageIds: string[] }>(url, { messageIds }).then(() => undefined);
+};
+
+export const getConversationMessageCountSummary = (
+  counts: ConversationReadByCount[],
+  errandNumber: string
+): ConversationMessageCountSummary =>
+  counts.reduce<ConversationMessageCountSummary>(
+    (summary, conversation) => {
+      const messageCount = Math.max(0, conversation.messageCount ?? 0);
+      const readCount = Math.min(
+        messageCount,
+        (conversation.readByPartCount ?? [])
+          .filter((entry) => entry.part === errandNumber)
+          .reduce((sum, entry) => sum + Math.max(0, entry.count ?? 0), 0)
+      );
+
+      return {
+        total: summary.total + messageCount,
+        unread: summary.unread + messageCount - readCount,
+      };
+    },
+    { total: 0, unread: 0 }
+  );
 
 export const createSupportConversation = async (
   municipalityId: string,

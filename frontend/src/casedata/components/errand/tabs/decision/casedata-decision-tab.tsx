@@ -3,7 +3,7 @@
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
 import { ContractData } from '@casedata/interfaces/contract-data';
-import { DecisionOutcomes } from '@casedata/interfaces/decision';
+import { decisionChannelLabels, DecisionOutcomes } from '@casedata/interfaces/decision';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { GenericExtraParameters } from '@casedata/interfaces/extra-parameters';
 import { Role } from '@casedata/interfaces/role';
@@ -365,12 +365,17 @@ export const CasedataDecisionTab: FC<{
 
       const renderedHtml = await renderHtml(errand, data, 'decision');
       // Channel selection and sending is handled by the backend for both MEX and PT.
-      await sendDecisionMessage(
+      const sendResults = await sendDecisionMessage(
         municipalityId,
         errand,
         base64Decode(renderedHtml.htmlBase64),
         data.descriptionPlaintext
       );
+      const failedChannels = sendResults.filter((r) => r.status === 'failed');
+      const sentChannels = sendResults.filter((r) => r.status === 'sent');
+      if (failedChannels.length && !sentChannels.length) {
+        throw new Error('Beslutet kunde inte skickas till någon kanal');
+      }
       await updateErrandStatus(municipalityId, errand.id.toString(), ErrandStatus.Beslutad);
       const drafts = await getDraftAssets({
         municipalityId,
@@ -387,10 +392,17 @@ export const CasedataDecisionTab: FC<{
       await refetchServices();
       await triggerPhaseChange();
       toastMessage(
-        getToastOptions({
-          message: 'Beslutet skickades',
-          status: 'success',
-        })
+        failedChannels.length
+          ? getToastOptions({
+              message: `Beslutet skickades, men leverans misslyckades: ${failedChannels
+                .map((r) => decisionChannelLabels[r.channel])
+                .join(', ')}`,
+              status: 'warning',
+            })
+          : getToastOptions({
+              message: 'Beslutet skickades',
+              status: 'success',
+            })
       );
     } catch (error) {
       toastMessage({

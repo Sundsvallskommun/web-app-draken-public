@@ -6,7 +6,10 @@ import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-e
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
 import { countAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import {
+  ConversationReadByCount,
+  getConversationMessageCountSummary,
   getSupportConversationMessages,
+  getSupportConversationReadByCounts,
   getSupportConversations,
 } from '@supportmanagement/services/support-conversation-service';
 import { getSupportErrandById, SupportErrand } from '@supportmanagement/services/support-errand-service';
@@ -33,6 +36,7 @@ export const SupportTabsWrapper: FC<{
   const [supportConversations, setSupportConversations] = useState<any>([]);
   const [messageTree, setMessageTree] = useState<MessageNode[]>([]);
   const [conversationMessageTree, setConversationMessageTree] = useState<MessageNode[]>([]);
+  const [conversationReadByCounts, setConversationReadByCounts] = useState<ConversationReadByCount[]>([]);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
 
@@ -58,6 +62,9 @@ export const SupportTabsWrapper: FC<{
       setMessageTree(tree);
       setMessages(res);
     });
+    getSupportConversationReadByCounts(municipalityId, supportErrand!.id!)
+      .then(setConversationReadByCounts)
+      .catch(() => setConversationReadByCounts([]));
     getSupportConversations(municipalityId, supportErrand!.id!).then((res) => {
       Promise.all(
         res.data.map((conversation: any) =>
@@ -88,6 +95,16 @@ export const SupportTabsWrapper: FC<{
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supportErrand]);
+
+  const conversationMessageCountSummary = useMemo(
+    () => getConversationMessageCountSummary(conversationReadByCounts, supportErrand?.errandNumber ?? ''),
+    [conversationReadByCounts, supportErrand?.errandNumber]
+  );
+  const totalMessageCount = messages.length + conversationMessageCountSummary.total;
+  const unreadMessageCount = countUnreadMessages(messages) + conversationMessageCountSummary.unread;
+  const messageTabLabel = `Meddelanden (${totalMessageCount}${
+    unreadMessageCount > 0 ? `, ${unreadMessageCount} ${unreadMessageCount === 1 ? 'oläst' : 'olästa'}` : ''
+  })`;
 
   const tabs: {
     key: string;
@@ -120,7 +137,7 @@ export const SupportTabsWrapper: FC<{
       },
       {
         key: 'messages',
-        label: `Meddelanden (${countUnreadMessages(messages)})`,
+        label: messageTabLabel,
         content: supportErrand && (
           <SupportMessagesTab
             messages={messages}
@@ -173,6 +190,7 @@ export const SupportTabsWrapper: FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       conversationMessageTree,
+      messageTabLabel,
       messageTree,
       messages,
       municipalityId,

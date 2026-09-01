@@ -10,7 +10,11 @@ import {
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
 //TODO:Update mockdata
-import { mockConversationMessages, mockConversations } from '../lop/fixtures/mockConversations';
+import {
+  mockConversationMessages,
+  mockConversationReadByCounts,
+  mockConversations,
+} from '../lop/fixtures/mockConversations';
 import { mockRelations } from '../lop/fixtures/mockRelations';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
 import { mockResolvedRelations } from '../case-data/fixtures/mockRelations';
@@ -51,6 +55,8 @@ test.describe('Message tab', () => {
     await mockRoute('**/targetrelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/resolvedrelations/**/**', mockResolvedRelations, { method: 'GET' });
     await mockRoute('**/party/*/statuses', mockStakeholderStatus, { method: 'GET' });
+    await mockRoute('**/communication/conversations/count-read-by*', mockConversationReadByCounts, { method: 'GET' });
+    await mockRoute('**/communication/conversations/*/messages/mark-as-read', {}, { method: 'POST' });
     await mockRoute('**/namespace/errands/**/communication/conversations', mockConversations, { method: 'GET' });
     await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, {
       method: 'GET',
@@ -95,6 +101,23 @@ test.describe('Message tab', () => {
         }
       }
     }
+  });
+
+  test('shows total and unread counts and marks the opened conversation message as read', async ({ page }) => {
+    await expect(page.getByRole('tab', { name: 'Meddelanden (5, 4 olästa)' })).toBeVisible();
+
+    const [request] = await Promise.all([
+      page.waitForRequest(
+        (candidate) =>
+          candidate.method() === 'POST' &&
+          candidate
+            .url()
+            .includes('/communication/conversations/abababab-ed21-4b30-9e0c-1252c878153f/messages/mark-as-read')
+      ),
+      page.locator('[data-cy="message-abababab-ed21-4b30-9e0c-1252c878153f"] button.sk-btn-ghost').first().click(),
+    ]);
+
+    expect(request.postDataJSON()).toEqual({ messageIds: ['d553003a-da2c-42d1-84aa-68b53aa7ea5f'] });
   });
 
   test('sends sms', async ({ page }) => {
