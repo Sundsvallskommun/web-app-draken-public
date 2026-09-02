@@ -56,6 +56,7 @@ import {
   setSupportErrandStatus,
   Status,
 } from '@supportmanagement/services/support-errand-service';
+import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import { buildSupportReplyContext } from '@supportmanagement/services/support-message-reply-context-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
@@ -364,7 +365,9 @@ export const SupportMessageForm: FC<{
         toastMessage({
           position: 'bottom',
           closeable: false,
-          message: 'Något gick fel när meddelandet skulle skickas',
+          // The status change after a send is a conditional errand write, so this catch also
+          // sees 409/412 - reporting those as a send failure hides that someone else saved first.
+          message: supportErrandWriteErrorMessage(e, 'Något gick fel när meddelandet skulle skickas'),
           status: 'error',
         });
       })

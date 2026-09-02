@@ -6,6 +6,7 @@ import {
   setSupportErrandStatus,
   Status,
 } from '@supportmanagement/services/support-errand-service';
+import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import { ArrowRight } from 'lucide-react';
 import { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -62,7 +63,11 @@ export const SupportStartProcessButtonComponent: FC<{
       toast({ message: 'Handläggning startad', status: 'success', position: 'bottom' });
     } catch (err) {
       console.error(err);
-      toast({ message: 'Något gick fel vid start av handläggning', status: 'error', position: 'bottom' });
+      toast({
+        message: supportErrandWriteErrorMessage(err, 'Något gick fel vid start av handläggning'),
+        status: 'error',
+        position: 'bottom',
+      });
     }
   };
 

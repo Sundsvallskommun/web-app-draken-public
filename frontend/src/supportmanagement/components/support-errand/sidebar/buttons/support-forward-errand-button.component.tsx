@@ -29,6 +29,7 @@ import {
   getSupportErrandById,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
+import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import { getEscalationEmails, getEscalationMessage } from '@supportmanagement/services/support-escalation-service';
 import { Forward } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -179,7 +180,10 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
         toastMessage({
           position: 'bottom',
           closeable: false,
-          message:
+          // The forward closes the errand, so a concurrent save surfaces here as 409/412 rather
+          // than as one of the validation codes above.
+          message: supportErrandWriteErrorMessage(
+            e,
             e.message === 'MISSING_NAME'
               ? 'Intressent saknar för- eller efternamn'
               : e.message === 'MISSING_PHONE'
@@ -188,7 +192,8 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
               ? 'Intressent saknar e-post'
               : e.message === 'ATTACHMENTS_FAILED'
               ? 'Ärendet vidarebefordrades men det gick inte att bifoga filer'
-              : 'Något gick fel när ärendet skulle vidarebefordras',
+              : 'Något gick fel när ärendet skulle vidarebefordras'
+          ),
           status: 'error',
         });
         setIsLoading(false);

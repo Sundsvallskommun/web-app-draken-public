@@ -150,11 +150,11 @@ export const SidebarInfo: FC<{
           }
           await saveFacilityInfo(supportErrand!.id!, getValues().facilities, current.errand.version!);
           props.setUnsavedFacility(false);
-        } catch {
+        } catch (e) {
           toastMessage({
             position: 'bottom',
             closeable: false,
-            message: 'Något gick fel när fastigheter i ärendet sparades',
+            message: supportErrandWriteErrorMessage(e, 'Något gick fel när fastigheter i ärendet sparades'),
             status: 'error',
           });
           setError(true);
