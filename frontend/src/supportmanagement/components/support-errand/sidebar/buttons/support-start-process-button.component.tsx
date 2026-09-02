@@ -41,6 +41,7 @@ export const SupportStartProcessButtonComponent: FC<{
             supportErrand!.id!,
             municipalityId,
             currentAdmin.adAccount,
+            afterSubmit.errand.version,
             assignmentStatus,
             currentAdmin.adAccount
           );
@@ -48,8 +49,10 @@ export const SupportStartProcessButtonComponent: FC<{
         }
       }
 
+      // Only reached when the assignment above did not run, so `afterSubmit` is still the
+      // version this flow last produced.
       if (!statusTransitionHandledByAssignment && afterSubmit.errand.status !== Status.ONGOING) {
-        await setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING);
+        await setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING, afterSubmit.errand);
       }
 
       const updated = await getSupportErrandById(supportErrand!.id!, municipalityId);

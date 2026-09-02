@@ -21,7 +21,7 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
 
   const activateErrand = () => {
     setIsLoading(true);
-    return setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING)
+    return setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING, supportErrand!)
       .then(() => {
         toastMessage(
           getToastOptions({

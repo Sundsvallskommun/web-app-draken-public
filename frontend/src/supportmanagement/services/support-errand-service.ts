@@ -21,6 +21,7 @@ import type { SupportErrandFilterQuery, SupportErrandSortQuery } from './support
 import { buildSupportErrandsCountSearchParameters, buildSupportErrandsSearchParameters } from './support-errand-query';
 import {
   buildSupportErrandStatusTransitionRequest,
+  SupportErrandStatusSnapshot,
   SupportErrandStatusTransitionChanges,
   SupportErrandStatusTransitionRequest,
 } from './support-errand-status-transition';
@@ -919,22 +920,49 @@ export const validateAction: (errand: SupportErrand, user: User) => boolean = (e
   return allowed;
 };
 
+/**
+ * Reads the errand's current concurrency state from the API.
+ *
+ * Only for a write that follows one of *our own* writes in the same flow: that earlier write
+ * already verified the version the user was looking at, so the version it produced is causally
+ * ours and re-reading cannot mask someone else's edit. The first write in a flow must instead
+ * pass the snapshot the view was loaded with - reading immediately before writing satisfies the
+ * precondition without ever checking it, which is optimistic locking in name only.
+ */
+export const readSupportErrandWriteSnapshot = async (
+  errandId: string,
+  municipalityId: string
+): Promise<SupportErrandStatusSnapshot> => {
+  const current = await apiService.get<ApiSupportErrand>(`supporterrands/${municipalityId}/${errandId}`);
+
+  return { status: current.data.status, version: current.data.version };
+};
+
+/**
+ * `expectedVersion` is the version of the errand the caller was looking at. Pass the value from
+ * the store, or from `readSupportErrandWriteSnapshot` when an earlier write in the same flow has
+ * already moved it on.
+ */
 export const setSupportErrandAdmin: (
   errandId: string,
   municipalityId: string,
   assignedUserId: string,
+  expectedVersion: number | undefined,
   status?: Status,
   assigner?: string
-) => Promise<boolean> = async (errandId, municipalityId, assignedUserId, status?, assigner?) => {
+) => Promise<boolean> = async (errandId, municipalityId, assignedUserId, expectedVersion, status?, assigner?) => {
   const data = { assignedUserId };
 
   try {
-    const current = await apiService.get<ApiSupportErrand>(`supporterrands/${municipalityId}/${errandId}`);
-    const ifMatch = toStrongSupportErrandETag(current.data.version);
+    const ifMatch = toStrongSupportErrandETag(expectedVersion);
     await apiService.patch<ApiSupportErrand, typeof data>(`supporterrands/${municipalityId}/${errandId}/admin`, data, {
       headers: { 'If-Match': ifMatch },
     });
-    return status === undefined ? true : transitionSupportErrandStatus(errandId, municipalityId, status);
+    if (status === undefined) return true;
+
+    // The assignment above is ours and succeeded, so it is the write that moved the version on.
+    const afterAssignment = await readSupportErrandWriteSnapshot(errandId, municipalityId);
+    return transitionSupportErrandStatus(errandId, municipalityId, status, afterAssignment);
   } catch (e) {
     console.error('Something went wrong when patching errand');
     throw e;
@@ -945,10 +973,10 @@ const transitionSupportErrandStatus = async (
   errandId: string,
   municipalityId: string,
   status: Status,
+  expected: SupportErrandStatusSnapshot,
   changes: SupportErrandStatusTransitionChanges = {}
 ): Promise<boolean> => {
-  const current = await apiService.get<ApiSupportErrand>(`supporterrands/${municipalityId}/${errandId}`);
-  const command = buildSupportErrandStatusTransitionRequest(current.data, status, changes);
+  const command = buildSupportErrandStatusTransitionRequest(expected, status, changes);
   await apiService.patch<ApiSupportErrand, SupportErrandStatusTransitionRequest>(
     `supporterrands/${municipalityId}/${errandId}/status`,
     command
@@ -959,9 +987,10 @@ const transitionSupportErrandStatus = async (
 export const setSupportErrandStatus: (
   errandId: string,
   municipalityId: string,
-  status: Status
-) => Promise<boolean> = async (errandId, municipalityId, status) => {
-  return transitionSupportErrandStatus(errandId, municipalityId, status, {
+  status: Status,
+  expected: SupportErrandStatusSnapshot
+) => Promise<boolean> = async (errandId, municipalityId, status, expected) => {
+  return transitionSupportErrandStatus(errandId, municipalityId, status, expected, {
     suspension: { suspendedFrom: undefined, suspendedTo: undefined },
   }).catch((e) => {
     console.error('Something went wrong when patching errand');
@@ -972,9 +1001,10 @@ export const setSupportErrandStatus: (
 export const closeSupportErrand: (
   errandId: string,
   municipalityId: string,
-  resolution: Resolution
-) => Promise<boolean> = async (errandId, municipalityId, resolution) => {
-  return transitionSupportErrandStatus(errandId, municipalityId, Status.SOLVED, { resolution }).catch((e) => {
+  resolution: Resolution,
+  expected: SupportErrandStatusSnapshot
+) => Promise<boolean> = async (errandId, municipalityId, resolution, expected) => {
+  return transitionSupportErrandStatus(errandId, municipalityId, Status.SOLVED, expected, { resolution }).catch((e) => {
     console.error('Something went wrong when patching errand');
     throw e;
   });
@@ -985,8 +1015,9 @@ export const setSuspension: (
   municipalityId: string,
   status: Status,
   date: string,
-  comment: string
-) => Promise<boolean> = async (errandId, municipalityId, status, date, comment) => {
+  comment: string,
+  expected: SupportErrandStatusSnapshot
+) => Promise<boolean> = async (errandId, municipalityId, status, date, comment, expected) => {
   if (status === Status.SUSPENDED && (date === '' || dayjs().isAfter(dayjs(date)))) {
     return Promise.reject('Invalid date');
   }
@@ -995,7 +1026,7 @@ export const setSuspension: (
     suspendedTo: status === Status.SUSPENDED ? dayjs(date).set('hour', 7).toISOString() : undefined,
   };
 
-  return transitionSupportErrandStatus(errandId, municipalityId, status, {
+  return transitionSupportErrandStatus(errandId, municipalityId, status, expected, {
     suspension: {
       ...suspension,
     },
@@ -1054,9 +1085,10 @@ export const forwardSupportErrand: (
   // The errand is closed when it's forwarded. If it has no handler (e.g. forwarded directly
   // from status NEW), assign the current user so the errand always has a responsible person.
   const assignSelfIfUnassigned = async () => {
-    if (!errand.assignedUserId) {
-      await setSupportErrandAdmin(errand.id!, municipalityId, user.username, undefined, user.username);
-    }
+    if (errand.assignedUserId) return;
+    // Follows the message or forward call above, so the loaded version may already be ours-but-stale.
+    const current = await readSupportErrandWriteSnapshot(errand.id!, municipalityId);
+    await setSupportErrandAdmin(errand.id!, municipalityId, user.username, current.version, undefined, user.username);
   };
 
   let attachmentId = [] as string[];
@@ -1087,7 +1119,8 @@ export const forwardSupportErrand: (
     }
     await sendMessage(message);
     await assignSelfIfUnassigned();
-    return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
+    const afterMessage = await readSupportErrandWriteSnapshot(errand.id, municipalityId);
+    return closeSupportErrand(errand.id, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM, afterMessage);
   } else if (data.recipient == 'DEPARTMENT' && data.department) {
     errand.stakeholders?.forEach((s) => {
       if (!s.firstName && !s.organizationName) {
@@ -1100,7 +1133,8 @@ export const forwardSupportErrand: (
       .post<ApiSupportErrand, Partial<ForwardFormProps>>(`supporterrands/${municipalityId}/${errand.id!}/forward`, data)
       .then(async () => {
         await assignSelfIfUnassigned();
-        return closeSupportErrand(errand.id!, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM);
+        const afterForward = await readSupportErrandWriteSnapshot(errand.id!, municipalityId);
+        return closeSupportErrand(errand.id!, municipalityId, Resolution.REGISTERED_EXTERNAL_SYSTEM, afterForward);
       })
       .catch((e: AxiosError) => {
         throw new Error(e.response?.data as string);
@@ -1153,7 +1187,9 @@ export const requestInfo: (
   if (!sendSuccess) {
     throw new Error('SENDING_FAILED');
   }
-  return setSupportErrandStatus(errand.id, municipalityId, Status.PENDING);
+  // The message send above is ours, so the version the caller loaded may already have moved on.
+  const afterMessage = await readSupportErrandWriteSnapshot(errand.id, municipalityId);
+  return setSupportErrandStatus(errand.id, municipalityId, Status.PENDING, afterMessage);
 };
 
 export const requestInternal: (
@@ -1200,5 +1236,7 @@ export const requestInternal: (
   if (!sendSuccess) {
     throw new Error('SENDING_FAILED');
   }
-  return setSupportErrandStatus(errand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
+  // The message send above is ours, so the version the caller loaded may already have moved on.
+  const afterMessage = await readSupportErrandWriteSnapshot(errand.id, municipalityId);
+  return setSupportErrandStatus(errand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE, afterMessage);
 };

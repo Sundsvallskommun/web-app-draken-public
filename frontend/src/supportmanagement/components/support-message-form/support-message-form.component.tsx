@@ -52,6 +52,7 @@ import {
   ExternalIdType,
   getSupportErrandById,
   isSupportErrandLocked,
+  readSupportErrandWriteSnapshot,
   setSupportErrandStatus,
   Status,
 } from '@supportmanagement/services/support-errand-service';
@@ -336,10 +337,11 @@ export const SupportMessageForm: FC<{
         props.setShowMessageForm(false);
         setValue('messageBody', emailBody);
 
-        if (typeOfMessage === 'infoCompletion') {
-          await setSupportErrandStatus(supportErrand.id!, municipalityId, Status.PENDING);
-        } else if (typeOfMessage === 'internalCompletion') {
-          await setSupportErrandStatus(supportErrand.id!, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
+        if (typeOfMessage === 'infoCompletion' || typeOfMessage === 'internalCompletion') {
+          // The send above is ours, so the version this form was opened with may already be stale.
+          const afterMessage = await readSupportErrandWriteSnapshot(supportErrand.id!, municipalityId);
+          const nextStatus = typeOfMessage === 'infoCompletion' ? Status.PENDING : Status.AWAITING_INTERNAL_RESPONSE;
+          await setSupportErrandStatus(supportErrand.id!, municipalityId, nextStatus, afterMessage);
         }
 
         const updated = await getSupportErrandById(supportErrand.id!, municipalityId);

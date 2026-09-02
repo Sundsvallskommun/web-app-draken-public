@@ -7,6 +7,7 @@ import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   closeSupportErrand,
   getSupportErrandById,
+  readSupportErrandWriteSnapshot,
   Resolution,
   ResolutionLabelBOU,
   ResolutionLabelIK,
@@ -20,6 +21,7 @@ import {
   Status,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
+import { SupportErrandStatusSnapshot } from '@supportmanagement/services/support-errand-status-transition';
 import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
 import { applicantHasContactChannel, getAdminName } from '@supportmanagement/services/support-stakeholder-service';
@@ -77,15 +79,31 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
 
   // When an errand is closed without a handler (e.g. directly from status NEW), the user who
   // closes it becomes the handler so the errand has a responsible person. Returns the resulting
-  // assigned user (the existing handler if one is already set).
-  const ensureHandlerAssigned = async (errandId: string): Promise<string | undefined> => {
-    if (supportErrand?.assignedUserId) return supportErrand.assignedUserId;
-    const currentAdmin = administrators.find((a) => a.adAccount === user.username);
-    if (currentAdmin) {
-      await setSupportErrandAdmin(errandId, municipalityId, currentAdmin.adAccount, undefined, currentAdmin.adAccount);
-      return currentAdmin.adAccount;
+  // assigned user (the existing handler if one is already set) together with the snapshot the
+  // close must be conditional on: the loaded errand when nothing was written, and the version our
+  // own assignment produced when it was.
+  const ensureHandlerAssigned = async (
+    errandId: string
+  ): Promise<{ assignedUserId?: string; expected: SupportErrandStatusSnapshot }> => {
+    if (supportErrand?.assignedUserId) {
+      return { assignedUserId: supportErrand.assignedUserId, expected: supportErrand };
     }
-    return undefined;
+    const currentAdmin = administrators.find((a) => a.adAccount === user.username);
+    if (!currentAdmin) return { assignedUserId: undefined, expected: supportErrand ?? {} };
+
+    await setSupportErrandAdmin(
+      errandId,
+      municipalityId,
+      currentAdmin.adAccount,
+      supportErrand?.version,
+      undefined,
+      currentAdmin.adAccount
+    );
+
+    return {
+      assignedUserId: currentAdmin.adAccount,
+      expected: await readSupportErrandWriteSnapshot(errandId, municipalityId),
+    };
   };
 
   const handleCloseErrand = async (resolution: Resolution, msg: boolean) => {
@@ -94,8 +112,9 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
     setIsLoading(true);
     let assignedUserId: string | undefined;
     try {
-      assignedUserId = await ensureHandlerAssigned(errandId);
-      await closeSupportErrand(errandId, municipalityId, resolution);
+      const assignment = await ensureHandlerAssigned(errandId);
+      assignedUserId = assignment.assignedUserId;
+      await closeSupportErrand(errandId, municipalityId, resolution, assignment.expected);
     } catch (e) {
       console.error('Failed to close support errand', e);
       showCloseErrorToast(supportErrandWriteErrorMessage(e, 'Något gick fel när ärendet skulle avslutas'));
@@ -206,8 +225,13 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
               leftIcon={<Check />}
               onClick={async () => {
                 try {
-                  await ensureHandlerAssigned(supportErrand.id ?? '');
-                  await setSupportErrandStatus(supportErrand.id ?? '', municipalityId, Status.SOLVED);
+                  const assignment = await ensureHandlerAssigned(supportErrand.id ?? '');
+                  await setSupportErrandStatus(
+                    supportErrand.id ?? '',
+                    municipalityId,
+                    Status.SOLVED,
+                    assignment.expected
+                  );
                   window.close();
                 } catch (e) {
                   showCloseErrorToast();

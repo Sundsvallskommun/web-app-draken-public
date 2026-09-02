@@ -43,7 +43,7 @@ export const SupportSuspendErrandButtonComponent: React.FC<{ disabled: boolean }
 
   const handleSuspendErrand = (data: SuspendFormProps) => {
     setIsLoading(true);
-    return setSuspension(supportErrand!.id!, municipalityId, Status.SUSPENDED, data.date, data.comment)
+    return setSuspension(supportErrand!.id!, municipalityId, Status.SUSPENDED, data.date, data.comment, supportErrand!)
       .then(() => {
         toastMessage(
           getToastOptions({

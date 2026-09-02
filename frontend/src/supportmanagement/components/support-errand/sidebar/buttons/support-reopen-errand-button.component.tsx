@@ -27,7 +27,7 @@ export const SupportReopenErrandButton: React.FC<{ disabled?: boolean }> = ({ di
 
   const reopenErrand = () => {
     setIsLoading(true);
-    return setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING)
+    return setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING, supportErrand!)
       .then(() => {
         toastMessage({
           position: 'bottom',

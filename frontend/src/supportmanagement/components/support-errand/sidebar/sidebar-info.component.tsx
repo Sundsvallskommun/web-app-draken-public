@@ -8,6 +8,7 @@ import { Priority } from '@supportmanagement/interfaces/priority';
 import {
   getSupportErrandById,
   isSupportErrandLocked,
+  readSupportErrandWriteSnapshot,
   Resolution,
   setSupportErrandAdmin,
   setSupportErrandStatus,
@@ -114,23 +115,27 @@ export const SidebarInfo: FC<{
     try {
       await updateSupportErrand(municipalityId, getValues(), supportErrand?.version);
 
-      // Handle admin change
+      // Handle admin change. The update above is ours and moved the version on, so the version
+      // the form was loaded with can no longer be used as the precondition here.
       const newAdminAccount = administrators.find((a) => a.displayName === getValues().admin)?.adAccount;
       if (supportErrand?.assignedUserId !== newAdminAccount) {
         const assigner = administrators.find((a) => a.adAccount === user.username);
         if (newAdminAccount && assigner) {
           const newStatus = newAdminAccount === assigner.adAccount ? Status.ONGOING : Status.ASSIGNED;
+          const afterUpdate = await readSupportErrandWriteSnapshot(supportErrand!.id!, municipalityId);
           await setSupportErrandAdmin(
             supportErrand!.id!,
             municipalityId,
             newAdminAccount,
+            afterUpdate.version,
             newStatus,
             assigner.adAccount
           );
         }
       } else if (supportErrand?.status !== getValues().status) {
         // Handle status change
-        await setSupportErrandStatus(supportErrand!.id!, municipalityId, getValues().status);
+        const afterUpdate = await readSupportErrandWriteSnapshot(supportErrand!.id!, municipalityId);
+        await setSupportErrandStatus(supportErrand!.id!, municipalityId, getValues().status, afterUpdate);
       }
 
       // Handle facility save
@@ -238,6 +243,7 @@ export const SidebarInfo: FC<{
             supportErrand!.id!,
             municipalityId,
             admin?.adAccount!,
+            supportErrand?.version,
             Status.ONGOING,
             admin?.adAccount!
           ),
