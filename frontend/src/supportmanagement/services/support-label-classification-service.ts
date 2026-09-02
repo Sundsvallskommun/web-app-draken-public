@@ -31,6 +31,16 @@ export const getLabelType = (errand: SupportErrandLabelSource | undefined): Labe
 export const getLabelSubType = (errand: SupportErrandLabelSource | undefined): Label | undefined =>
   findLabelByClassification(errand?.labels, 'SUBTYPE');
 
+/**
+ * The report-type label (Avvikelse / Missforhallande), which the avvikelse label tree carries as its
+ * own REPORT_TYPE classification alongside CATEGORY/TYPE rather than inside them.
+ *
+ * Returns undefined for every deployment whose tree has no such level, which is how callers tell
+ * the two apart without asking which application is running.
+ */
+export const getLabelReportType = (errand: SupportErrandLabelSource | undefined): Label | undefined =>
+  findLabelByClassification(errand?.labels, 'REPORT_TYPE');
+
 export const getErrandTypeLabel = (
   errand: SupportErrandLabelSource | undefined,
   metadata?: SupportMetadata,

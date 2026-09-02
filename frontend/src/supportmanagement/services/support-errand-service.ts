@@ -258,10 +258,12 @@ export {
   getErrandTypeLabel,
   getLabelCategory,
   getLabelCategoryFromName,
+  getLabelReportType,
   getLabelSubType,
   getLabelSubTypeFromName,
   getLabelType,
   getLabelTypeFromName,
+  getMappedLabelSubType,
 } from './support-label-classification-service';
 
 export enum Resolution {

@@ -8,8 +8,10 @@ import { All, Priority } from '@supportmanagement/interfaces/priority';
 import {
   Channels,
   getLabelCategory,
+  getLabelReportType,
   getLabelSubType,
   getLabelType,
+  getMappedLabelSubType,
   Status,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
@@ -142,7 +144,19 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <div className="max-w-[280px]">
-          {appConfig.features.useThreeLevelCategorization ? (
+          {/*
+            An errand carrying a REPORT_TYPE label comes from the avvikelse tree, where the type is
+            Avvikelse/Missforhallande and the level below it is the subcategory. That tree has no
+            SUBTYPE at all, so rendering CATEGORY/TYPE/SUBTYPE here left the errand type unshown and
+            the second line permanently empty. Keyed off the label the errand actually carries, so
+            every other deployment falls through to the three-level rendering unchanged.
+          */}
+          {getLabelReportType(errand) ? (
+            <div>
+              <div>{getLabelDisplayName(getLabelReportType(errand), supportMetadata)}</div>
+              <div>{getLabelDisplayName(getMappedLabelSubType(errand), supportMetadata)}</div>
+            </div>
+          ) : appConfig.features.useThreeLevelCategorization ? (
             <div>
               <div>{getLabelDisplayName(getLabelType(errand), supportMetadata)}</div>
               <div>{getLabelDisplayName(getLabelSubType(errand), supportMetadata)}</div>
