@@ -29,6 +29,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.status'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'status',
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <SupportStatusLabelComponent
@@ -42,6 +43,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.lastActivity'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'touched',
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => {
         const notification = sortBy(errand?.activeNotifications ?? [], 'created').reverse()[0];
@@ -70,6 +72,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       ),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'category',
       shownForStatus: All.ALL,
 
       render: (errand: SupportErrand) => (
@@ -95,6 +98,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       ),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'type',
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <div className="max-w-[280px]">
@@ -120,6 +124,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.incomingVia'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'channel',
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
@@ -134,6 +139,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.registered'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'created',
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
@@ -150,6 +156,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.priority'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'priority',
       shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED, Status.ASSIGNED],
       render: (errand: SupportErrand) => (
         <PriorityComponent priority={(Priority as Record<string, string>)[errand.priority!]} />
@@ -159,6 +166,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.reminder'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'suspendedTo',
       shownForStatus: [Status.SUSPENDED],
       render: (errand: SupportErrand) => (
         <time dateTime={errand.touched}>{prettyTime(errand.suspension?.suspendedTo!)}</time>
@@ -168,6 +176,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.responsible'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'assignedUserId',
       shownForStatus: Object.values(Status).filter((status) => status !== Status.NEW),
       render: (errand: SupportErrand) => {
         return <>{getAdminName(administrators?.find((a: Admin) => a?.adAccount === errand?.assignedUserId)!)}</>;

@@ -1,4 +1,3 @@
-import { isKC } from '@common/services/application-service';
 import { Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
 import { useConfigStore, useSupportStore } from '@stores/index';
@@ -34,54 +33,15 @@ export const SupportErrandsTable: FC = () => {
     desc: 'descending',
   };
 
-  const serverSideSortableColsKC: { [key: number]: string } = {
-    0: 'status',
-    1: 'touched',
-    2: 'category',
-    3: 'type',
-    4: 'channel',
-    5: 'created',
-    6: 'priority',
-    7: 'assignedUserId',
-  };
-
-  const serverSideSortableColsLOP: { [key: number]: string } =
-    data.errands && (data.errands[0]?.status === Status.SUSPENDED || data.errands[0]?.status === Status.ASSIGNED)
-      ? {
-          0: 'status',
-          1: 'touched',
-          2: 'category',
-          3: 'type',
-          4: 'channel',
-          5: 'created',
-          6: 'priority',
-          7: 'suspendedTo',
-          8: 'assignedUserId',
-        }
-      : {
-          0: 'status',
-          1: 'touched',
-          2: 'category',
-          3: 'type',
-          4: 'channel',
-          5: 'created',
-          6: 'priority',
-          7: 'assignedUserId',
-        };
-
-  const handleSort = (index: number) => {
-    if (isKC()) {
-      if (sortColumn === serverSideSortableColsKC[index]) {
-        setValue('sortOrder', sortOrder === 'desc' ? 'asc' : 'desc');
-      } else {
-        setValue('sortColumn', serverSideSortableColsKC[index]);
-      }
+  // Each column carries its own sort field. Keying this by column index instead meant the same
+  // index stood for a different column depending on the status filter - with only NEW selected
+  // the reminder and responsible columns drop out, so "Registrerad av" landed on the index that
+  // sorted by assignedUserId. That is also what forced a separate map per drake and per status.
+  const handleSort = (sortKey: string) => {
+    if (sortColumn === sortKey) {
+      setValue('sortOrder', sortOrder === 'desc' ? 'asc' : 'desc');
     } else {
-      if (sortColumn === serverSideSortableColsLOP[index]) {
-        setValue('sortOrder', sortOrder === 'desc' ? 'asc' : 'desc');
-      } else {
-        setValue('sortColumn', serverSideSortableColsLOP[index]);
-      }
+      setValue('sortColumn', sortKey);
     }
   };
 
@@ -100,13 +60,11 @@ export const SupportErrandsTable: FC = () => {
     <Table.HeaderColumn key={`header-${index}`}>
       {column.screenReaderOnly ? (
         <span className="sr-only">{column.label}</span>
-      ) : column.sortable ? (
+      ) : column.sortable && column.sortKey ? (
         <Table.SortButton
-          isActive={
-            isKC() ? sortColumn === serverSideSortableColsKC[index] : sortColumn === serverSideSortableColsLOP[index]
-          }
+          isActive={sortColumn === column.sortKey}
           sortOrder={sortOrders[sortOrder] as SortMode}
-          onClick={() => handleSort(index)}
+          onClick={() => handleSort(column.sortKey)}
         >
           {column.label}
         </Table.SortButton>
