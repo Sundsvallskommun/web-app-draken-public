@@ -1,11 +1,15 @@
+import { isIAFOrVOF } from '@common/services/application-service';
 import { Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore, useEmployeeNameStore, useSupportStore, useUserStore } from '@stores/index';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
-import { useSupportErrandTable } from '@supportmanagement/components/support-errand/useSupportErrandTable';
+import {
+  getUnresolvedReporterAccounts,
+  useSupportErrandTable,
+} from '@supportmanagement/components/support-errand/useSupportErrandTable';
 import { Status, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { globalAcknowledgeSupportNotification } from '@supportmanagement/services/support-notification-service';
-import { FC, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 import { TableForm } from '../ongoing-support-errands.component';
@@ -55,6 +59,17 @@ export const SupportErrandsTable: FC = () => {
   };
 
   const errandTableObject = useSupportErrandTable(selectedSupportErrandStatuses as Status[]);
+
+  // Only IAF/VOF show a registrar, and only the accounts the admin list cannot name need asking
+  // for. The store keeps answers and misses for the session, so paging back and forth costs
+  // nothing and a row that never resolves is not retried.
+  const administrators = useUserStore((s) => s.administrators);
+  const resolveEmployeeNames = useEmployeeNameStore((s) => s.resolveNames);
+
+  useEffect(() => {
+    if (!isIAFOrVOF()) return;
+    resolveEmployeeNames(getUnresolvedReporterAccounts(data.errands ?? [], administrators));
+  }, [data.errands, administrators, resolveEmployeeNames]);
 
   const headers = errandTableObject.map((column, index) => (
     <Table.HeaderColumn key={`header-${index}`}>
