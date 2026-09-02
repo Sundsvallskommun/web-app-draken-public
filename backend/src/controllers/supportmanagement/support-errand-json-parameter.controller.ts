@@ -81,7 +81,6 @@ export class SupportErrandJsonParameterController {
     if ((await this.policyService.getState(req.user)) === 'unavailable') {
       throw new HttpException(503, 'Investigation read policy is temporarily unavailable');
     }
-    this.policyService.assertCanReadDocument(req.user, definition.key);
     const result = await this.documentService.readJsonParameter({ definition, municipalityId, errandId, user: req.user });
 
     setETagHeader(response, result.etag, result.document.version);
@@ -110,8 +109,6 @@ export class SupportErrandJsonParameterController {
     if (state !== 'active') {
       throw new HttpException(409, 'Investigation documents are not active for this application');
     }
-    this.policyService.assertCanWriteDocument(req.user, definition.key);
-
     const result = await this.documentService.writeJsonParameter({
       definition,
       municipalityId,

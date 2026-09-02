@@ -104,7 +104,6 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
         schemaName: 'utredning-enhetschef',
         tabLabel: 'Profilstyrd utredning',
         ownerLabel: 'Testroll',
-        permissions: { canRead: true, canWrite: true },
       },
     ];
     const trace = await installIafApiMock(page, {
@@ -136,7 +135,6 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
         schemaName: 'utredning-enhetschef',
         tabLabel: 'Profilstyrd utredning',
         ownerLabel: 'Testroll',
-        permissions: { canRead: true, canWrite: true },
       },
     ];
     const existing = existingManagerDocument();
@@ -314,14 +312,12 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
           schemaName: 'utredning-enhetschef',
           tabLabel: 'Chefens utredning',
           ownerLabel: 'Enhetschef',
-          permissions: { canRead: true, canWrite: true },
         },
         {
           key: 'misconduct-investigation',
           schemaName: 'utredning-sol-lss',
           tabLabel: 'Missförhållandeutredning',
           ownerLabel: 'LEX-utredare',
-          permissions: { canRead: true, canWrite: true },
         },
       ];
       const sourceDocuments = allExistingInvestigationDocuments();
@@ -1212,6 +1208,25 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       await expect(page.locator(managerProbabilityGroup).getByLabel(/^1 –/u)).toBeDisabled();
     });
   }
+
+  test('visar Support Managements åtkomstbeslut när AccessMapper nekar dokumentet', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installIafApiMock(page, {
+      documentReadAccessDeniedFor: managerKey,
+      documents: { [managerKey]: existingManagerDocument() },
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
+    await expect(managerDocument.locator('[data-cy="investigation-document-notice"]')).toContainText(
+      'Support Management nekade åtkomst till det här utredningsdokumentet.'
+    );
+    await expect(managerDocument.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
+  });
 
   test('behåller Katlas JSON under Ärendeuppgifter men visar inte utredningsdokumenten där', async ({
     page,

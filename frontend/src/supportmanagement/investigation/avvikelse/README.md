@@ -66,11 +66,11 @@ ett enda redigeringsställe, även om samma externa fält kan deklareras av båd
 
 `GET supportmanagement/investigation-profile` är produktflödets runtimeprojektion av backendens kanoniska register för
 dokumentnyckel, schemanamn, fliketikett och ansvarig roll. Backend väger in feature-flaggen `useInvestigation` och
-åtkomstkonfigurationen i profilens `state` och dokumentbehörigheter. Profilen deklarerar även vilket Support
+applikationens tillgänglighet i profilens `state`. Profilen deklarerar även vilket Support
 Management-transportmål capabilityn kräver. Om deploymenten använder ett äldre mål blir state `unavailable` innan
-registrering eller dokumentanrop; kravet härleds alltså inte från appnamn i controllern. Huvudtabben `Utredning` visas bara när profilen
-är aktiv och innehåller minst ett dokument; dokumentbehörigheten avgör därefter vilka underflikar som kan läsas och
-skrivas. Vid saknad, ogiltig eller fel appbunden profil stängs flödet
+registrering eller dokumentanrop; kravet härleds alltså inte från appnamn i controllern. Huvudtabben `Utredning`
+visar de dokument som profilen konfigurerar. Den innehåller inte användarspecifika rättigheter; varje dokumentanrop
+får sitt åtkomstbeslut från Support Management. Vid saknad, ogiltig eller fel appbunden profil stängs flödet
 säkert och befintliga JSON Parameters döljs inte från `Ärendeuppgifter`.
 
 ### App-profiler och nya appar
@@ -88,17 +88,19 @@ En ny SupportManagement-app kan konfigurera valfritt antal dokument. Varje post 
   samma sträng som `key`.
 - `tabLabel` och `ownerLabel`: enbart presentation i klienten.
 
-Läs- och skrivrättigheter kommer separat från backendens `SUPPORT_INVESTIGATION_DOCUMENT_ACCESS`. Runtimeprofilen
-projicerar endast `canRead`/`canWrite` för den inloggade användaren; både GET- och PUT-routen kontrollerar samma
-serverägda regel. `canEditSupportManagement` krävs fortfarande för skrivning men ger aldrig ensam åtkomst till ett
-utredningsdokument.
+Läs- och skrivrättigheter ägs av Support Managements AccessMapper per namespace, resurstyp och dokumentnyckel.
+Draken skickar den inloggades AD-identitet i `X-Sent-By`, vidarebefordrar GET/PUT till den skyddade endpointen och
+visar ett tydligt meddelande när Support Management svarar 401/403. `canEditSupportManagement` krävs fortfarande
+för skrivning i Draken men ger aldrig ensam åtkomst till ett utredningsdokument.
 
 Skyddade dokument kan bara följa med en överlämning till mål som deploymenten uttryckligen har markerat som
 kompatibla i `SUPPORT_INVESTIGATION_HANDOVER_TARGETS`. Varje post innehåller `municipalityId`, `namespace` och
 målcapabilityns `documentKeys`; en ny dokumenttyp i källprofilen stänger överföringen tills målet deklarerats stödja den.
-Backend kontrollerar den faktiska källans dokumentnycklar och användarens läsåtkomst före både preview och execute;
-execute kräver också `canEditSupportManagement`. Saknad allowlist stänger endast överföringen av skyddade dokument,
-inte överlämningar utan JSON Parameters eller ärenden som bara innehåller generiska JSON Parameters.
+Backend provar samtliga profilnycklar genom Support Managements skyddade dokument-endpoint före både preview och
+execute; execute kräver också `canEditSupportManagement`. Support Management kontrollerar åtkomst före existens,
+så 404 betyder läsbar men saknad medan 401/403 blockerar överföringen. Saknad allowlist stänger endast överföringen
+av befintliga skyddade dokument, inte överlämningar utan JSON Parameters eller ärenden som bara innehåller generiska
+JSON Parameters.
 
 Standardbeteendet är att klassificeringen redigeras i `Grundinformation`. IAF och VOF har tills vidare en uttrycklig,
 fast specialregel i både backend och frontend: när utredningen är aktiv flyttas redigeringen till dokumentet med
@@ -118,9 +120,9 @@ Om profilen eller backendens ägarskapsbeslut är otillgängligt visas IAF/VOF-k
 `Grundinformation`. Den generiska ärende-PATCH:en utelämnar då `classification` och `labels`, så orelaterade
 ärendeändringar kan sparas utan att någon av skrivvägarna tar över klassificeringen.
 
-För att slå på en ny app läggs dess dokumentprofil till i backendkonfigurationen, dess
-dokumentåtkomst konfigureras, de namngivna JSON- och UI-schemana publiceras och `useInvestigation` aktiveras. Frontend
-har ingen separat app- eller dokumentlista att uppdatera. Flaggan, profilen, åtkomstkonfigurationen och
+För att slå på en ny app läggs dess dokumentprofil till i backendkonfigurationen, dokumentnycklarna konfigureras i
+Support Managements AccessMapper, de namngivna JSON- och UI-schemana publiceras och `useInvestigation` aktiveras. Frontend
+har ingen separat app- eller dokumentlista att uppdatera. Flaggan, profilen, AccessMapper-konfigurationen och
 schemapubliceringen är oberoende driftsförutsättningar; en lyckad profilrespons garanterar inte att ett schema är
 publicerat.
 

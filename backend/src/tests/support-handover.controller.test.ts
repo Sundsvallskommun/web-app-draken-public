@@ -10,9 +10,9 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
 import { FeatureFlagService } from '@/services/feature-flag.service';
-import { SupportInvestigationDocumentService } from '@/services/support-investigation-document.service';
 import { SupportInvestigationHandoverTargetService } from '@/services/support-investigation-handover-target.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
 import { mockReq, mockRes, mockUser } from './helpers/http';
 import { mockMunicipalityId, mockSupportErrandId } from './helpers/mock-data';
@@ -54,7 +54,7 @@ const makeController = ({
   const verifyReadableDocuments = verificationError
     ? vi.fn().mockRejectedValue(verificationError)
     : vi.fn().mockResolvedValue({ existingDocumentKeys });
-  const documentService = { verifyReadableDocuments } as unknown as SupportInvestigationDocumentService;
+  const documentService = { verifyReadableDocuments } as unknown as SupportJsonParameterService;
   const controller = new SupportHandoverController(policy, targets, documentService);
   const apiService = {
     get: vi.fn(),

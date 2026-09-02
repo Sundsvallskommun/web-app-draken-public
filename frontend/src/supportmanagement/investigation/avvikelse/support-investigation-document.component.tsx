@@ -40,6 +40,7 @@ import {
 } from './support-investigation-save-workflow';
 import {
   getSupportInvestigationDocument,
+  isSupportInvestigationAccessDenied,
   type SavedSupportInvestigationDocument,
   type SupportInvestigationDocument as SavedInvestigationDocument,
 } from './support-investigation-service';
@@ -172,8 +173,10 @@ export function SupportInvestigationDocument({
         setLoadState('error');
         useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, false);
         setNotice({
-          type: 'error',
-          message: 'Utredningen kunde inte laddas. Försök igen eller kontakta support om felet kvarstår.',
+          type: isSupportInvestigationAccessDenied(error) ? 'warning' : 'error',
+          message: isSupportInvestigationAccessDenied(error)
+            ? 'Support Management nekade åtkomst till det här utredningsdokumentet.'
+            : 'Utredningen kunde inte laddas. Försök igen eller kontakta support om felet kvarstår.',
         });
       }
     };

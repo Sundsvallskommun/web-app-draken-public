@@ -8,7 +8,6 @@ export interface InvestigationProfileDocument {
   readonly schemaName: string;
   readonly tabLabel: string;
   readonly ownerLabel: string;
-  readonly permissions: { readonly canRead: boolean; readonly canWrite: boolean };
 }
 
 export interface InvestigationProfile {
@@ -53,21 +52,11 @@ function readDocument(value: unknown, index: number): InvestigationProfileDocume
     throw new Error(`Utredningsprofilens documents[${index}] är ogiltigt.`);
   }
 
-  if (
-    !isRecord(value.permissions) ||
-    typeof value.permissions.canRead !== 'boolean' ||
-    typeof value.permissions.canWrite !== 'boolean' ||
-    (value.permissions.canWrite && !value.permissions.canRead)
-  ) {
-    throw new Error(`Utredningsprofilens documents[${index}].permissions är ogiltig.`);
-  }
-
   return Object.freeze({
     key: readProfileIdentifier(value.key, `documents[${index}].key`),
     schemaName: readProfileIdentifier(value.schemaName, `documents[${index}].schemaName`),
     tabLabel: readRequiredString(value.tabLabel, `documents[${index}].tabLabel`),
     ownerLabel: readRequiredString(value.ownerLabel, `documents[${index}].ownerLabel`),
-    permissions: Object.freeze({ canRead: value.permissions.canRead, canWrite: value.permissions.canWrite }),
   });
 }
 

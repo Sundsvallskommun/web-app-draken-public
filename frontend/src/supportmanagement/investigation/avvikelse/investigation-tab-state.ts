@@ -1,7 +1,7 @@
 import type { InvestigationProfile } from '../investigation-profile';
 import type { InvestigationProfileStatus } from '../investigation-profile-store';
 
-export type InvestigationTabState = 'loading' | 'error' | 'unavailable' | 'not-configured' | 'no-access' | 'ready';
+export type InvestigationTabState = 'loading' | 'error' | 'unavailable' | 'not-configured' | 'ready';
 
 /**
  * What an investigation tab shows once a capability flag has made it visible.
@@ -12,8 +12,7 @@ export type InvestigationTabState = 'loading' | 'error' | 'unavailable' | 'not-c
  */
 export const resolveInvestigationTabState = (
   status: InvestigationProfileStatus,
-  profile: InvestigationProfile | null | undefined,
-  readableDocumentCount: number
+  profile: InvestigationProfile | null | undefined
 ): InvestigationTabState => {
   if (status === 'idle' || status === 'loading') return 'loading';
   if (status === 'error') return 'error';
@@ -21,6 +20,5 @@ export const resolveInvestigationTabState = (
   if (status === 'disabled' || !profile) return 'not-configured';
   if (profile.state === 'unavailable') return 'unavailable';
   if (profile.state !== 'active' || profile.documents.length === 0) return 'not-configured';
-  if (readableDocumentCount === 0) return 'no-access';
   return 'ready';
 };

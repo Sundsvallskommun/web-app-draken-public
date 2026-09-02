@@ -44,6 +44,17 @@ export interface JsonParameterRequest<TKey extends string = string, TSchemaName 
   readonly user: User;
 }
 
+export interface VerifyReadableJsonParametersRequest {
+  readonly definitions: readonly JsonParameterDefinition[];
+  readonly municipalityId: string;
+  readonly errandId: string;
+  readonly user: User;
+}
+
+export interface VerifyReadableJsonParametersResult {
+  readonly existingDocumentKeys: readonly string[];
+}
+
 export interface ReadJsonParameterResult<TKey extends string = string> {
   readonly document: SupportJsonParameter<TKey>;
   readonly etag: StrongVersionETag;
@@ -262,6 +273,22 @@ export class SupportJsonParameterService {
     const result = await this.readRawDocument(request);
     await this.requireSchemaBinding(request, result.document.schemaId, 502);
     return result;
+  }
+
+  async verifyReadableDocuments(request: VerifyReadableJsonParametersRequest): Promise<VerifyReadableJsonParametersResult> {
+    const keys = await Promise.all(
+      request.definitions.map(async definition => {
+        try {
+          await this.readRawDocument({ ...request, definition });
+          return definition.key;
+        } catch (error) {
+          if (hasHttpStatus(error, 404)) return undefined;
+          throw error;
+        }
+      }),
+    );
+
+    return { existingDocumentKeys: keys.filter((key): key is string => key !== undefined) };
   }
 
   async writeJsonParameter<TKey extends string, TSchemaName extends string>(

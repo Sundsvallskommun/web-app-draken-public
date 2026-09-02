@@ -15,7 +15,6 @@ const stateNotices: Readonly<Record<Exclude<InvestigationTabState, 'loading' | '
   error: 'Utredningsprofilen kunde inte laddas. Utredningen kan därför inte visas.',
   unavailable: 'Utredningsfunktionen är tillfälligt otillgänglig. Försök igen senare.',
   'not-configured': 'Inga utredningsdokument är konfigurerade för den här applikationen.',
-  'no-access': 'Du saknar läsbehörighet till utredningsdokumenten.',
 };
 
 export function SupportErrandInvestigationTab({ onDirtyChange }: Readonly<InvestigationTabProps>) {
@@ -26,11 +25,8 @@ export function SupportErrandInvestigationTab({ onDirtyChange }: Readonly<Invest
   const profileStatus = useInvestigationProfileStore((state) => state.status);
   const readonly = !supportErrand || isSupportErrandLocked(supportErrand) || !canEditSupportManagement;
 
-  const readableDocuments = useMemo(
-    () => (profile?.documents ?? []).filter(({ permissions }) => permissions.canRead),
-    [profile]
-  );
-  const tabState = resolveInvestigationTabState(profileStatus, profile, readableDocuments.length);
+  const documents = useMemo(() => profile?.documents ?? [], [profile]);
+  const tabState = resolveInvestigationTabState(profileStatus, profile);
 
   const recordSavedDocument = useCallback(
     (document: SavedInvestigationDocument) => {
@@ -53,11 +49,11 @@ export function SupportErrandInvestigationTab({ onDirtyChange }: Readonly<Invest
 
   const dirtyCallbacks = useMemo(() => {
     const callbacks: Record<string, (isDirty: boolean) => void> = {};
-    for (const { key } of readableDocuments) {
+    for (const { key } of documents) {
       callbacks[key] = (isDirty: boolean) => onDirtyChange(key, isDirty);
     }
     return callbacks;
-  }, [onDirtyChange, readableDocuments]);
+  }, [documents, onDirtyChange]);
 
   return (
     <div className="min-w-0 max-w-full p-16 sm:p-24 md:p-32" data-cy="support-investigation-tab">
@@ -75,7 +71,7 @@ export function SupportErrandInvestigationTab({ onDirtyChange }: Readonly<Invest
       ) : null}
 
       {tabState !== 'loading' && tabState !== 'ready' ? (
-        <Alert type={tabState === 'no-access' || tabState === 'not-configured' ? 'info' : 'warning'}>
+        <Alert type={tabState === 'not-configured' ? 'info' : 'warning'}>
           <Alert.Icon />
           <Alert.Content>
             <Alert.Content.Description data-cy={`investigation-tab-${tabState}`}>
@@ -94,13 +90,13 @@ export function SupportErrandInvestigationTab({ onDirtyChange }: Readonly<Invest
           onTabChange={setActiveTab}
           size="sm"
         >
-          {readableDocuments.map((definition) => (
+          {documents.map((definition) => (
             <Tabs.Item key={definition.key}>
               <Tabs.Button data-cy={`${definition.key}-tab`}>{definition.tabLabel}</Tabs.Button>
               <Tabs.Content className="min-w-0 max-w-full">
                 <SupportInvestigationDocument
                   definition={definition}
-                  readonly={readonly || !definition.permissions.canWrite}
+                  readonly={readonly}
                   onDirtyChange={dirtyCallbacks[definition.key]}
                   onSaved={recordSavedDocument}
                 />

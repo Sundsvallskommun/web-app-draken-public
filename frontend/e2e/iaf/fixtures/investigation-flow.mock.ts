@@ -28,7 +28,6 @@ export interface MockInvestigationProfile {
     schemaName: InvestigationKey;
     tabLabel: string;
     ownerLabel: string;
-    permissions: { canRead: boolean; canWrite: boolean };
   }>;
 }
 
@@ -42,21 +41,18 @@ export const defaultInvestigationProfile = (): MockInvestigationProfile => ({
       schemaName: 'utredning-enhetschef',
       tabLabel: 'Utredning enhetschef',
       ownerLabel: 'Enhetschef',
-      permissions: { canRead: true, canWrite: true },
     },
     {
       key: 'utredning-sol-lss',
       schemaName: 'utredning-sol-lss',
       tabLabel: 'Utredning SoL/LSS',
       ownerLabel: 'LEX-utredare',
-      permissions: { canRead: true, canWrite: true },
     },
     {
       key: 'utredning-hsl',
       schemaName: 'utredning-hsl',
       tabLabel: 'Utredning HSL',
       ownerLabel: 'MAS/MAR',
-      permissions: { canRead: true, canWrite: true },
     },
   ],
 });
@@ -110,6 +106,7 @@ export interface IafApiScenario {
   errandStatus?: string;
   eventType?: 'AVVIKELSE' | 'MISSFORHALLANDE';
   documents?: Record<string, InvestigationDocument>;
+  documentReadAccessDeniedFor?: string;
   featureFlags?: Array<{ name: string; enabled: boolean; value?: string }>;
   putResult?: 'success' | 'conflict';
   classificationPatchResult?: 'success' | 'bad-request' | 'conflict' | 'server-error' | 'server-error-once';
@@ -773,6 +770,10 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
 
       if (method === 'GET') {
         trace.documentGets.push(key);
+        if (scenario.documentReadAccessDeniedFor === key) {
+          await fulfillJson(route, { message: 'Forbidden' }, 403);
+          return;
+        }
         const document = documents[key];
         if (!document) {
           await fulfillJson(route, { message: 'JSON parameter not found' }, 404);

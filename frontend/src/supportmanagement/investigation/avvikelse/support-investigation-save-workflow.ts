@@ -21,6 +21,7 @@ import {
   type SupportInvestigationClassificationResponse,
 } from './support-investigation-classification-service';
 import {
+  isSupportInvestigationAccessDenied,
   isSupportInvestigationConflict,
   type SavedSupportInvestigationDocument,
   saveSupportInvestigationDocument,
@@ -204,6 +205,9 @@ export function investigationSaveErrorMessage({
   classificationDirty,
   classificationRequired,
 }: SaveErrorMessageInput): string {
+  if (isSupportInvestigationAccessDenied(error)) {
+    return 'Support Management nekade åtkomst till det här utredningsdokumentet.';
+  }
   const classificationConflict = isSupportInvestigationClassificationConflict(error);
   if (classificationConflict && documentSavedForClassification && classificationDirty) {
     return 'Utredningen har sparats, men ärendets klassificering har ändrats av någon annan. Dina kategoriseringsval finns kvar här. Ladda om ärendet och jämför innan du sparar klassificeringen igen.';

@@ -8,8 +8,8 @@ import { DifferenceResponse, PageEvent } from '@/data-contracts/supportmanagemen
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
-import { SupportInvestigationDocumentService } from '@/services/support-investigation-document.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 const isAccessDenied = (error: unknown): boolean => isRecord(error) && (error.status === 401 || error.status === 403);
@@ -25,13 +25,13 @@ const redactJsonParameterRevisionOperations = (difference: DifferenceResponse): 
 export class SupportHistoryController {
   private apiService = new ApiService();
   private readonly investigationPolicyService: SupportInvestigationPolicyService;
-  private readonly investigationDocumentService: SupportInvestigationDocumentService;
+  private readonly investigationDocumentService: SupportJsonParameterService;
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private SERVICE = apiServiceName('supportmanagement');
 
   constructor(
     investigationPolicyService = new SupportInvestigationPolicyService(),
-    investigationDocumentService = new SupportInvestigationDocumentService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' }),
+    investigationDocumentService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' }),
   ) {
     this.investigationPolicyService = investigationPolicyService;
     this.investigationDocumentService = investigationDocumentService;

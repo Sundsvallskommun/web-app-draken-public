@@ -21,9 +21,9 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { SupportInvestigationDocumentService } from '@/services/support-investigation-document.service';
 import { SupportInvestigationHandoverTargetService } from '@/services/support-investigation-handover-target.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
@@ -118,14 +118,14 @@ export class SupportHandoverController {
   private apiService = new ApiService();
   private readonly investigationPolicyService: SupportInvestigationPolicyService;
   private readonly investigationHandoverTargetService: SupportInvestigationHandoverTargetService;
-  private readonly investigationDocumentService: SupportInvestigationDocumentService;
+  private readonly investigationDocumentService: SupportJsonParameterService;
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private SERVICE = apiServiceName('supportmanagement');
 
   constructor(
     investigationPolicyService = new SupportInvestigationPolicyService(),
     investigationHandoverTargetService = new SupportInvestigationHandoverTargetService(),
-    investigationDocumentService = new SupportInvestigationDocumentService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' }),
+    investigationDocumentService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' }),
   ) {
     this.investigationPolicyService = investigationPolicyService;
     this.investigationHandoverTargetService = investigationHandoverTargetService;

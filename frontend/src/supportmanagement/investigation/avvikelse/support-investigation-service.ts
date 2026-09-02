@@ -24,6 +24,11 @@ export interface SaveSupportInvestigationDocumentRequest {
 const documentUrl = (municipalityId: string, errandId: string, key: InvestigationDocumentKey): string =>
   `supporterrands/${municipalityId}/${errandId}/json-parameters/${encodeURIComponent(key)}`;
 
+const responseStatus = (error: unknown): number | undefined => {
+  if (typeof error !== 'object' || error === null) return undefined;
+  return (error as AxiosError).response?.status;
+};
+
 export async function getSupportInvestigationDocument(
   municipalityId: string,
   errandId: string,
@@ -33,7 +38,7 @@ export async function getSupportInvestigationDocument(
     const response = await apiService.get<SupportInvestigationDocument>(documentUrl(municipalityId, errandId, key));
     return parseSupportInvestigationDocument(response.data, key, response.headers.etag);
   } catch (error) {
-    if ((error as AxiosError).response?.status === 404) return undefined;
+    if (responseStatus(error) === 404) return undefined;
     throw error;
   }
 }
@@ -69,6 +74,11 @@ export async function saveSupportInvestigationDocument(
 }
 
 export function isSupportInvestigationConflict(error: unknown): boolean {
-  const status = (error as AxiosError).response?.status;
+  const status = responseStatus(error);
   return status === 409 || status === 412 || status === 428;
+}
+
+export function isSupportInvestigationAccessDenied(error: unknown): boolean {
+  const status = responseStatus(error);
+  return status === 401 || status === 403;
 }
