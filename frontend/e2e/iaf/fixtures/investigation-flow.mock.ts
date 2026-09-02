@@ -962,6 +962,11 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
       return;
     }
 
+    if (method === 'GET' && path.includes('/communication/conversations/count-read-by')) {
+      await fulfillJson(route, []);
+      return;
+    }
+
     if (method === 'GET' && path.includes('/communication/conversations')) {
       // The BFF conversation endpoint wraps its payload twice and the existing
       // frontend service returns the inner ApiResponse to its consumers.

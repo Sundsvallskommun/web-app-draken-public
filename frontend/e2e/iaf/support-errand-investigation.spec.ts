@@ -1221,11 +1221,10 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await visitErrand(page, dismissCookieConsent);
     await openInvestigation(page);
 
-    const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
-    await expect(managerDocument.locator('[data-cy="investigation-document-notice"]')).toContainText(
+    await expect(page.locator('[data-cy="investigation-document-notice"]:visible')).toContainText(
       'Support Management nekade åtkomst till det här utredningsdokumentet.'
     );
-    await expect(managerDocument.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
+    await expect(page.locator('[data-cy="schema-submit-button"]:visible')).toHaveCount(0);
   });
 
   test('behåller Katlas JSON under Ärendeuppgifter men visar inte utredningsdokumenten där', async ({
