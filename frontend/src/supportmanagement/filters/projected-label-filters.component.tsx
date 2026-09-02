@@ -36,51 +36,53 @@ export const ProjectedLabelFilters = ({ projections, selections, onChange }: Pro
             ).length;
 
             return (
-              <PopupMenu key={`${group.key}:${field.key}`}>
-                <PopupMenu.Button
-                  rightIcon={<ChevronDown />}
-                  variant="tertiary"
-                  showBackground={false}
-                  size="sm"
-                  data-group-key={group.key}
-                  data-field-key={field.key}
-                >
-                  {field.label}
-                  {selectedCount > 0 ? ` (${selectedCount})` : ''}
-                </PopupMenu.Button>
-                <PopupMenu.Panel className="max-h-[70vh] overflow-y-auto">
-                  <PopupMenu.Items autoFocus={false}>
-                    {choices.length > 0 ? (
-                      choices.map((choice) => (
-                        <PopupMenu.Item key={`${choice.groupKey}:${choice.fieldKey}:${choice.resourcePath}`}>
-                          <Checkbox
-                            labelPosition="left"
-                            value={choice.resourcePath}
-                            checked={isLabelFilterChoiceSelected(choice, normalizedSelections)}
-                            data-group-key={choice.groupKey}
-                            data-field-key={choice.fieldKey}
-                            data-resource-path={choice.resourcePath}
-                            onChange={(event) =>
-                              onChange(
-                                reduceLabelFilterSelection(
-                                  projections,
-                                  normalizedSelections,
-                                  choice,
-                                  event.target.checked
+              <div key={`${group.key}:${field.key}`} className="relative max-md:w-full">
+                <PopupMenu>
+                  <PopupMenu.Button
+                    rightIcon={<ChevronDown />}
+                    variant="tertiary"
+                    showBackground={false}
+                    size="sm"
+                    data-group-key={group.key}
+                    data-field-key={field.key}
+                  >
+                    {field.label}
+                    {selectedCount > 0 ? ` (${selectedCount})` : ''}
+                  </PopupMenu.Button>
+                  <PopupMenu.Panel className="max-h-[70vh] overflow-y-auto">
+                    <PopupMenu.Items autoFocus={false}>
+                      {choices.length > 0 ? (
+                        choices.map((choice) => (
+                          <PopupMenu.Item key={`${choice.groupKey}:${choice.fieldKey}:${choice.resourcePath}`}>
+                            <Checkbox
+                              labelPosition="left"
+                              value={choice.resourcePath}
+                              checked={isLabelFilterChoiceSelected(choice, normalizedSelections)}
+                              data-group-key={choice.groupKey}
+                              data-field-key={choice.fieldKey}
+                              data-resource-path={choice.resourcePath}
+                              onChange={(event) =>
+                                onChange(
+                                  reduceLabelFilterSelection(
+                                    projections,
+                                    normalizedSelections,
+                                    choice,
+                                    event.target.checked
+                                  )
                                 )
-                              )
-                            }
-                          >
-                            {choice.displayName}
-                          </Checkbox>
-                        </PopupMenu.Item>
-                      ))
-                    ) : (
-                      <span className="block p-12 text-small">Inga val tillgängliga</span>
-                    )}
-                  </PopupMenu.Items>
-                </PopupMenu.Panel>
-              </PopupMenu>
+                              }
+                            >
+                              {choice.displayName}
+                            </Checkbox>
+                          </PopupMenu.Item>
+                        ))
+                      ) : (
+                        <span className="block p-12 text-small">Inga val tillgängliga</span>
+                      )}
+                    </PopupMenu.Items>
+                  </PopupMenu.Panel>
+                </PopupMenu>
+              </div>
             );
           })}
         </fieldset>
