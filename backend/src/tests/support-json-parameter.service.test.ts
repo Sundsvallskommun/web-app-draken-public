@@ -127,6 +127,40 @@ describe('SupportJsonParameterService', () => {
     expect(api.getUsers).toEqual([USER, USER]);
   });
 
+  it('verifies configured document reads through Support Management without loading schemas', async () => {
+    const missingDefinition = { key: 'missing-document', schemaName: 'other-schema' } as const;
+    const { api, service } = makeSubject([response(document(7), 200, '"7"'), new HttpException(404, 'Not found')]);
+
+    await expect(
+      service.verifyReadableDocuments({
+        definitions: [DEFINITION, missingDefinition],
+        municipalityId: MUNICIPALITY_ID,
+        errandId: ERRAND_ID,
+        user: USER,
+      }),
+    ).resolves.toEqual({ existingDocumentKeys: [DEFINITION.key] });
+
+    expect(api.getCalls.map(call => call.url)).toEqual([DOCUMENT_URL, `${ERRAND_URL}/json-parameters/missing-document`]);
+    expect(api.getCalls).toEqual(
+      expect.arrayContaining([expect.objectContaining({ followLocation: false, includeResponseHeaders: true, propagateClientError: true })]),
+    );
+    expect(api.getCalls.some(call => call.url?.startsWith(JSON_SCHEMA_SERVICE))).toBe(false);
+  });
+
+  it('propagates Support Management authorization decisions while verifying document reads', async () => {
+    const forbidden = new HttpException(403, 'Forbidden');
+    const { service } = makeSubject([forbidden]);
+
+    await expect(
+      service.verifyReadableDocuments({
+        definitions: [DEFINITION],
+        municipalityId: MUNICIPALITY_ID,
+        errandId: ERRAND_ID,
+        user: USER,
+      }),
+    ).rejects.toBe(forbidden);
+  });
+
   it('updates with the exact preflight ETag and returns the upstream status, ETag and fresh parent version', async () => {
     const { api, service } = makeSubject(
       [

@@ -7,7 +7,6 @@ import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { SUPPORT_INVESTIGATION_HANDOVER_NAMESPACE_PATTERN } from '@/config/support-investigation-handover-targets';
 import {
-  Errand,
   HandoverErrand,
   HandoverErrandRequest,
   HandoverPreview,
@@ -22,6 +21,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
+import { SupportInvestigationDocumentService } from '@/services/support-investigation-document.service';
 import { SupportInvestigationHandoverTargetService } from '@/services/support-investigation-handover-target.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { logger } from '@/utils/logger';
@@ -118,15 +118,18 @@ export class SupportHandoverController {
   private apiService = new ApiService();
   private readonly investigationPolicyService: SupportInvestigationPolicyService;
   private readonly investigationHandoverTargetService: SupportInvestigationHandoverTargetService;
+  private readonly investigationDocumentService: SupportInvestigationDocumentService;
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private SERVICE = apiServiceName('supportmanagement');
 
   constructor(
     investigationPolicyService = new SupportInvestigationPolicyService(),
     investigationHandoverTargetService = new SupportInvestigationHandoverTargetService(),
+    investigationDocumentService = new SupportInvestigationDocumentService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' }),
   ) {
     this.investigationPolicyService = investigationPolicyService;
     this.investigationHandoverTargetService = investigationHandoverTargetService;
+    this.investigationDocumentService = investigationDocumentService;
   }
 
   @Get('/supportnamespaceconfigs/:municipalityId')
@@ -231,17 +234,25 @@ export class SupportHandoverController {
     errandId: string,
     target: { municipalityId?: string; namespace: string },
   ): Promise<void> {
-    if (!this.investigationPolicyService.protectsJsonParameters) return;
+    const documents = this.investigationPolicyService.profile.documents;
+    if (documents.length === 0) return;
 
-    const sourceUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${errandId}`;
-    const source = await this.apiService.get<Errand>({ url: sourceUrl, propagateClientError: true }, req.user);
-    if (!this.investigationPolicyService.hasProtectedJsonParameters(source.data)) return;
+    // Support Management checks key access before it checks whether the key exists. A 404 therefore
+    // proves both read access and absence, while a 401/403 cannot safely be treated as absence. The
+    // upstream handover reads raw JSON parameters, so any denied profile key must block the transfer.
+    const { existingDocumentKeys } = await this.investigationDocumentService.verifyReadableDocuments({
+      definitions: documents,
+      municipalityId,
+      errandId,
+      user: req.user,
+    });
+    if (existingDocumentKeys.length === 0) return;
 
-    await this.investigationPolicyService.assertCanTransferProtectedJsonParameters(source.data, req.user);
+    await this.investigationPolicyService.assertInvestigationTransferActive(req.user);
     this.investigationHandoverTargetService.assertCanReceiveProtectedDocuments(
       municipalityId,
       target,
-      this.investigationPolicyService.profile.documents.map(document => document.key),
+      documents.map(document => document.key),
     );
   }
 

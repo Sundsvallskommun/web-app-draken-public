@@ -265,27 +265,27 @@ Support Management 14.14 exponerar däremot ingen source→target-graf eller exe
 Draken kan inte auktorisera själva kanten utan att införa appspecifika regler. Den domänregeln behöver ägas av
 Support Management innan starkare generell transitionvalidering kan införas.
 
-Utredningsdokument aktiveras per app genom backendens runtimeprofil. Appar med dokument måste dessutom konfigurera
-åtkomst per dokument; saknad eller ofullständig konfiguration stänger utredningsflödet i stället för att falla tillbaka
-till den breda ärendebehörigheten:
+Utredningsdokument aktiveras per app genom backendens runtimeprofil. Läs- och skrivrättigheter för dokumentens
+JSON Parameter-nycklar konfigureras i Support Managements AccessMapper för aktuellt namespace. Draken skickar den
+inloggades AD-identitet i `X-Sent-By` och låter Support Management vara enda ägare till åtkomstbeslutet:
 
 ```env
-SUPPORT_INVESTIGATION_DOCUMENT_ACCESS={"utredning-enhetschef":{"readGroups":["ad-read-group","ad-write-group"],"writeGroups":["ad-write-group"]},"utredning-sol-lss":{"readGroups":["ad-read-group","ad-write-group"],"writeGroups":["ad-write-group"]},"utredning-hsl":{"readGroups":["ad-read-group","ad-write-group"],"writeGroups":["ad-write-group"]}}
 SUPPORT_INVESTIGATION_HANDOVER_TARGETS=[{"municipalityId":"2281","namespace":"target-namespace","documentKeys":["utredning-enhetschef","utredning-sol-lss","utredning-hsl"]}]
 ```
 
-Konfigurationen ska innehålla exakt profilens dokumentnycklar. Gruppnamn jämförs skiftlägesokänsligt,
-`writeGroups` måste vara en delmängd av `readGroups` och jokertecknet `*` måste väljas uttryckligen. IAF/VOF med
-aktiverad utredning behöver både denna konfiguration och `SUPPORTMANAGEMENT_API_TARGET=sprint`. Transportkravet
+IAF/VOF med aktiverad utredning behöver AccessMapper-regler för profilens dokumentnycklar och
+`SUPPORTMANAGEMENT_API_TARGET=sprint`. Transportkravet
 deklareras i utredningsprofilen och kontrolleras i runtimepolicyn; en felaktig stable-deployment annonserar därför
 utredningen och dess registrering som otillgängliga i stället för att försöka använda ett inkompatibelt API.
 
 `SUPPORT_INVESTIGATION_HANDOVER_TARGETS` är en explicit allowlist över de kommun- och namespace-par som är
 förberedda att ta emot skyddade utredningsdokument samt exakt vilka `documentKeys` målet stöder. När källprofilen
 utökas måste målcapabilityn därför uppdateras uttryckligen innan överföring tillåts. Saknad eller ogiltig konfiguration tillåter aldrig sådan
-överföring. Förhandsgranskning kräver läsåtkomst till alla skyddade dokument på källärendet; genomförandet kräver
-dessutom `canEditSupportManagement`. Vanliga JSON Parameters och överlämningar där `jsonParameters` inte väljs
-påverkas inte av allowlisten.
+överföring. Draken verifierar läsåtkomst via Support Managements skyddade dokument-endpoint före överföring;
+förhandsgranskning kräver läsåtkomst till profilens samtliga dokumentnycklar och genomförandet kräver
+dessutom `canEditSupportManagement`. Support Management kontrollerar åtkomst före existens, så en nekad nyckel kan
+inte säkert behandlas som ett saknat dokument när upstreams överlämning arbetar på rådata. Överlämningar där
+`jsonParameters` inte väljs påverkas inte av denna kontroll.
 
 4. Konfigurera env-filer
 

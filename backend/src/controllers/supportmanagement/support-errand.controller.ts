@@ -637,10 +637,9 @@ export class SupportErrandController {
    * the stakeholder without a personNumber rather than failing the whole response.
    */
   preparedErrandResponse = async (errandData: SupportErrand, req: any) => {
-    const visibleErrand = this.investigationPolicyService.filterProtectedJsonParameters(errandData, req.user);
-    const stakeholders = visibleErrand.stakeholders;
+    const stakeholders = errandData.stakeholders;
     if (!stakeholders?.length) {
-      return { data: visibleErrand, message: 'success' };
+      return { data: errandData, message: 'success' };
     }
 
     const personNumberOf = (s: SupportStakeholder) =>
@@ -673,7 +672,7 @@ export class SupportErrandController {
       }),
     );
 
-    return { data: { ...visibleErrand, stakeholders: enriched }, message: 'success' };
+    return { data: { ...errandData, stakeholders: enriched }, message: 'success' };
   };
 
   @Get('/supporterrands/errandnumber/:errandNumber')
@@ -769,11 +768,7 @@ export class SupportErrandController {
     if (sort) queryParams.set('sort', sort);
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands?${queryParams.toString()}`;
     const res = await this.apiService.get<PageErrand>({ url }, req.user);
-    const data = {
-      ...res.data,
-      content: res.data.content?.map(errand => this.investigationPolicyService.filterProtectedJsonParameters(errand, req.user)),
-    };
-    return response.status(200).send(data);
+    return response.status(200).send(res.data);
   }
 
   @Get('/countsupporterrands/:municipalityId')
@@ -952,7 +947,7 @@ export class SupportErrandController {
         logger.error(e);
         throw e;
       });
-    return response.status(200).send(this.investigationPolicyService.filterProtectedJsonParameters(res.data, req.user));
+    return response.status(200).send(res.data);
   }
 
   @Patch('/supporterrands/:municipalityId/:id/status')
@@ -1000,15 +995,10 @@ export class SupportErrandController {
       { url, baseURL, includeResponseHeaders: true, propagateClientError: true },
       req.user,
     );
-    return response.status(200).send(
-      this.investigationPolicyService.filterProtectedJsonParameters(
-        {
-          ...savedErrand.data,
-          version: getErrandVersion(savedErrand.data, savedErrand.headers?.etag),
-        },
-        req.user,
-      ),
-    );
+    return response.status(200).send({
+      ...savedErrand.data,
+      version: getErrandVersion(savedErrand.data, savedErrand.headers?.etag),
+    });
   }
 
   @Patch('/supporterrands/:municipalityId/:id/phase')
@@ -1056,15 +1046,10 @@ export class SupportErrandController {
       { url, baseURL, includeResponseHeaders: true, propagateClientError: true },
       req.user,
     );
-    return response.status(200).send(
-      this.investigationPolicyService.filterProtectedJsonParameters(
-        {
-          ...savedErrand.data,
-          version: getErrandVersion(savedErrand.data, savedErrand.headers?.etag),
-        },
-        req.user,
-      ),
-    );
+    return response.status(200).send({
+      ...savedErrand.data,
+      version: getErrandVersion(savedErrand.data, savedErrand.headers?.etag),
+    });
   }
 
   @Patch('/supporterrands/:municipalityId/:id/classification')
@@ -1098,7 +1083,6 @@ export class SupportErrandController {
     if (!definition) {
       throw new HttpException(400, 'Unsupported investigation classification document');
     }
-    this.investigationPolicyService.assertCanWriteDocument(req.user, definition.key);
     const url = `${municipalityId}/${this.namespace}/errands/${id}`;
     const metadataUrl = `${municipalityId}/${this.namespace}/metadata/labels`;
     const baseURL = apiURL(this.SERVICE);
@@ -1147,9 +1131,7 @@ export class SupportErrandController {
     );
     const savedVersion = getErrandVersion(savedErrand.data, savedErrand.headers?.etag);
 
-    return response
-      .status(200)
-      .send(this.investigationPolicyService.filterProtectedJsonParameters({ ...savedErrand.data, version: savedVersion }, req.user));
+    return response.status(200).send({ ...savedErrand.data, version: savedVersion });
   }
 
   @Patch('/supporterrands/:municipalityId/:id/admin')
@@ -1197,7 +1179,7 @@ export class SupportErrandController {
         logger.error(e);
         throw e;
       });
-    return response.status(200).send(this.investigationPolicyService.filterProtectedJsonParameters(res.data, req.user));
+    return response.status(200).send(res.data);
   }
 
   @Post('/supporterrands/:municipalityId/:id/forward')

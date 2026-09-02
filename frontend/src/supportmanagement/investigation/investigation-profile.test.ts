@@ -14,14 +14,12 @@ const validProfile = () => ({
       schemaName: 'utredning-enhetschef',
       tabLabel: 'Utredning enhetschef',
       ownerLabel: 'Enhetschef',
-      permissions: { canRead: true, canWrite: true },
     },
     {
       key: 'misconduct-document',
       schemaName: 'utredning-sol-lss',
       tabLabel: 'Utredning SoL/LSS',
       ownerLabel: 'LEX-utredare',
-      permissions: { canRead: true, canWrite: false },
     },
   ],
 });
@@ -33,7 +31,7 @@ test('parses, normalizes and freezes a valid application-bound document profile'
   assert.equal(profile.documents[0].schemaName, 'utredning-enhetschef');
   assert.ok(Object.isFrozen(profile));
   assert.ok(Object.isFrozen(profile.documents));
-  assert.ok(Object.isFrozen(profile.documents[0].permissions));
+  assert.deepEqual(Object.keys(profile.documents[0]).sort(), ['key', 'ownerLabel', 'schemaName', 'tabLabel']);
   assert.deepEqual(Object.keys(profile).sort(), ['application', 'documents', 'registration', 'state']);
 });
 

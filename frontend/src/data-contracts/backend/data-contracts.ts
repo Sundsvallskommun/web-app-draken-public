@@ -586,29 +586,6 @@ export interface SupportRegistrationCapabilityDto {
   mode: SupportRegistrationCapabilityDtoModeEnum;
 }
 
-export interface SupportInvestigationDocumentPermissionsDto {
-  canRead: boolean;
-  canWrite: boolean;
-}
-
-export interface SupportInvestigationRuntimeDocumentProfileDto {
-  permissions: SupportInvestigationDocumentPermissionsDto;
-  /**
-   * @minLength 1
-   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
-   */
-  key: string;
-  /**
-   * @minLength 1
-   * @pattern ^[a-z0-9]+(?:-[a-z0-9]+)*$
-   */
-  schemaName: string;
-  /** @minLength 1 */
-  tabLabel: string;
-  /** @minLength 1 */
-  ownerLabel: string;
-}
-
 export interface SupportManagementLabelFilterFieldProfileDto {
   /**
    * @minLength 1
@@ -641,7 +618,7 @@ export interface SupportManagementLabelFilterProfileDto {
 export interface SupportInvestigationRuntimeProfileDto {
   state: SupportInvestigationRuntimeProfileDtoStateEnum;
   registration: SupportRegistrationCapabilityDto;
-  documents: SupportInvestigationRuntimeDocumentProfileDto[];
+  documents: SupportInvestigationDocumentProfileDto[];
   labelFilter?: SupportManagementLabelFilterProfileDto;
   application: string;
 }

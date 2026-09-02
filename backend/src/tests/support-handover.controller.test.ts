@@ -10,21 +10,18 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
 import { FeatureFlagService } from '@/services/feature-flag.service';
-import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
+import { SupportInvestigationDocumentService } from '@/services/support-investigation-document.service';
 import { SupportInvestigationHandoverTargetService } from '@/services/support-investigation-handover-target.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 
 import { mockReq, mockRes, mockUser } from './helpers/http';
-import { mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';
+import { mockMunicipalityId, mockSupportErrandId } from './helpers/mock-data';
 
 const profile = createSupportInvestigationProfile({
   application: 'FUTURE',
   documents: [{ key: 'future-investigation', schemaName: 'future-schema', tabLabel: 'Future', ownerLabel: 'Owner' }],
 });
 
-const accessConfiguration = JSON.stringify({
-  'future-investigation': { readGroups: ['investigator'], writeGroups: ['investigator'] },
-});
 const targetConfiguration = JSON.stringify([
   { municipalityId: mockMunicipalityId, namespace: 'future-target', documentKeys: ['future-investigation'] },
 ]);
@@ -40,14 +37,27 @@ const handoverRequest = (jsonParameters: boolean): HandoverErrandRequest => ({
   include: { jsonParameters },
 });
 
-const makeController = (sourceJsonParameterKey = 'future-investigation', configuredTargets: string | undefined = targetConfiguration) => {
+interface ControllerOptions {
+  readonly existingDocumentKeys?: readonly string[];
+  readonly verificationError?: unknown;
+  readonly configuredTargets?: string;
+}
+
+const makeController = ({
+  existingDocumentKeys = ['future-investigation'],
+  verificationError,
+  configuredTargets = targetConfiguration,
+}: ControllerOptions = {}) => {
   const featureFlags = { getFreshFeatureEnabled: vi.fn(async () => true) } as unknown as FeatureFlagService;
-  const access = new SupportInvestigationAccessService(profile, accessConfiguration);
-  const policy = new SupportInvestigationPolicyService(featureFlags, profile, 'future-namespace', access);
+  const policy = new SupportInvestigationPolicyService(featureFlags, profile, 'future-namespace');
   const targets = new SupportInvestigationHandoverTargetService(configuredTargets);
-  const controller = new SupportHandoverController(policy, targets);
+  const verifyReadableDocuments = verificationError
+    ? vi.fn().mockRejectedValue(verificationError)
+    : vi.fn().mockResolvedValue({ existingDocumentKeys });
+  const documentService = { verifyReadableDocuments } as unknown as SupportInvestigationDocumentService;
+  const controller = new SupportHandoverController(policy, targets, documentService);
   const apiService = {
-    get: vi.fn(async () => ({ data: { id: mockSupportErrandId, jsonParameters: [{ key: sourceJsonParameterKey }] } })),
+    get: vi.fn(),
     post: vi.fn(async ({ url }: { url: string }) =>
       url.endsWith('/preview')
         ? { data: { sourceHandling: { statusCandidates: [] }, notCopyable: [], warnings: [] } }
@@ -55,7 +65,7 @@ const makeController = (sourceJsonParameterKey = 'future-investigation', configu
     ),
   };
   (controller as unknown as { apiService: ApiService }).apiService = apiService as unknown as ApiService;
-  return { controller, apiService, featureFlags };
+  return { controller, apiService, featureFlags, verifyReadableDocuments };
 };
 
 const routeMiddlewares = (method: 'previewHandover' | 'handoverErrand') =>
@@ -108,68 +118,55 @@ describe('SupportHandoverController route contracts', () => {
 });
 
 describe('SupportHandoverController investigation document protection', () => {
-  it('preflights preview and allows a custom future document with explicit read access', async () => {
-    const { controller, apiService } = makeController();
-    const req = mockReq(mockUser({ groups: ['INVESTIGATOR'] }));
+  it('preflights preview and allows a custom future document when Support Management permits the read', async () => {
+    const { controller, apiService, verifyReadableDocuments } = makeController();
+    const req = mockReq();
     const response = mockRes();
 
     await controller.previewHandover(req, mockSupportErrandId, mockMunicipalityId, previewRequest, response);
 
-    expect(apiService.get).toHaveBeenCalledWith(
-      {
-        url: expect.stringContaining(`/${mockMunicipalityId}/${mockSupportNamespace}/errands/${mockSupportErrandId}`),
-        propagateClientError: true,
-      },
-      req.user,
-    );
+    expect(verifyReadableDocuments).toHaveBeenCalledWith({
+      definitions: profile.documents,
+      municipalityId: mockMunicipalityId,
+      errandId: mockSupportErrandId,
+      user: req.user,
+    });
+    expect(apiService.get).not.toHaveBeenCalled();
     expect(apiService.post).toHaveBeenCalledOnce();
     expect(response.statusCode).toBe(200);
   });
 
   it('does not expose handover preview metadata for a protected document without read access', async () => {
-    const { controller, apiService } = makeController();
+    const denied = Object.assign(new Error('Forbidden'), { status: 403 });
+    const { controller, apiService } = makeController({ verificationError: denied });
 
-    await expect(
-      controller.previewHandover(mockReq(mockUser({ groups: ['other'] })), mockSupportErrandId, mockMunicipalityId, previewRequest, mockRes()),
-    ).rejects.toMatchObject({ status: 403, message: 'Missing investigation document read access' });
+    await expect(controller.previewHandover(mockReq(), mockSupportErrandId, mockMunicipalityId, previewRequest, mockRes())).rejects.toBe(denied);
 
     expect(apiService.post).not.toHaveBeenCalled();
   });
 
   it('blocks forwarding protected documents before executing the handover', async () => {
-    const { controller, apiService } = makeController();
+    const denied = Object.assign(new Error('Forbidden'), { status: 403 });
+    const { controller, apiService } = makeController({ verificationError: denied });
 
     await expect(
-      controller.handoverErrand(
-        mockReq(mockUser({ groups: ['other'] })),
-        mockSupportErrandId,
-        mockMunicipalityId,
-        'idempotency-key',
-        handoverRequest(true),
-        mockRes(),
-      ),
-    ).rejects.toMatchObject({ status: 403 });
+      controller.handoverErrand(mockReq(), mockSupportErrandId, mockMunicipalityId, 'idempotency-key', handoverRequest(true), mockRes()),
+    ).rejects.toBe(denied);
 
     expect(apiService.post).not.toHaveBeenCalled();
   });
 
   it('fails an untyped truthy JSON-parameter include closed before upstream coercion', async () => {
-    const { controller, apiService } = makeController();
+    const denied = Object.assign(new Error('Forbidden'), { status: 403 });
+    const { controller, apiService } = makeController({ verificationError: denied });
     const malformedRequest = {
       ...handoverRequest(false),
       include: { jsonParameters: 'true' },
     } as unknown as HandoverErrandRequest;
 
     await expect(
-      controller.handoverErrand(
-        mockReq(mockUser({ groups: ['other'] })),
-        mockSupportErrandId,
-        mockMunicipalityId,
-        'idempotency-key',
-        malformedRequest,
-        mockRes(),
-      ),
-    ).rejects.toMatchObject({ status: 403 });
+      controller.handoverErrand(mockReq(), mockSupportErrandId, mockMunicipalityId, 'idempotency-key', malformedRequest, mockRes()),
+    ).rejects.toBe(denied);
 
     expect(apiService.post).not.toHaveBeenCalled();
   });
@@ -178,49 +175,28 @@ describe('SupportHandoverController investigation document protection', () => {
     const { controller, apiService } = makeController();
     const response = mockRes();
 
-    await controller.handoverErrand(
-      mockReq(mockUser({ groups: ['investigator'] })),
-      mockSupportErrandId,
-      mockMunicipalityId,
-      'idempotency-key',
-      handoverRequest(true),
-      response,
-    );
+    await controller.handoverErrand(mockReq(), mockSupportErrandId, mockMunicipalityId, 'idempotency-key', handoverRequest(true), response);
 
-    expect(apiService.get).toHaveBeenCalledOnce();
+    expect(apiService.get).not.toHaveBeenCalled();
     expect(apiService.post).toHaveBeenCalledWith(expect.objectContaining({ headers: { 'Idempotency-Key': 'idempotency-key' } }), expect.anything());
     expect(response.statusCode).toBe(201);
   });
 
   it.each([undefined, '', ' idempotency-key ', 'x'.repeat(129)])('rejects an invalid Idempotency-Key %s before side effects', async key => {
-    const { controller, apiService } = makeController();
+    const { controller, apiService, verifyReadableDocuments } = makeController();
 
     await expect(
-      controller.handoverErrand(
-        mockReq(mockUser({ groups: ['investigator'] })),
-        mockSupportErrandId,
-        mockMunicipalityId,
-        key as string,
-        handoverRequest(true),
-        mockRes(),
-      ),
+      controller.handoverErrand(mockReq(), mockSupportErrandId, mockMunicipalityId, key as string, handoverRequest(true), mockRes()),
     ).rejects.toMatchObject({ status: 400, message: expect.stringContaining('Idempotency-Key') });
-    expect(apiService.get).not.toHaveBeenCalled();
+    expect(verifyReadableDocuments).not.toHaveBeenCalled();
     expect(apiService.post).not.toHaveBeenCalled();
   });
 
   it('fails closed when no target capability policy is configured', async () => {
-    const { controller, apiService } = makeController('future-investigation', '');
+    const { controller, apiService } = makeController({ configuredTargets: '' });
 
     await expect(
-      controller.handoverErrand(
-        mockReq(mockUser({ groups: ['investigator'] })),
-        mockSupportErrandId,
-        mockMunicipalityId,
-        'idempotency-key',
-        handoverRequest(true),
-        mockRes(),
-      ),
+      controller.handoverErrand(mockReq(), mockSupportErrandId, mockMunicipalityId, 'idempotency-key', handoverRequest(true), mockRes()),
     ).rejects.toMatchObject({ status: 503, message: 'Investigation handover target policy is unavailable' });
 
     expect(apiService.post).not.toHaveBeenCalled();
@@ -228,54 +204,50 @@ describe('SupportHandoverController investigation document protection', () => {
 
   it('rejects protected documents for a target outside the explicit capability allowlist', async () => {
     const deniedTargets = JSON.stringify([{ municipalityId: mockMunicipalityId, namespace: 'other-target', documentKeys: ['future-investigation'] }]);
-    const { controller, apiService } = makeController('future-investigation', deniedTargets);
+    const { controller, apiService } = makeController({ configuredTargets: deniedTargets });
 
-    await expect(
-      controller.previewHandover(mockReq(mockUser({ groups: ['investigator'] })), mockSupportErrandId, mockMunicipalityId, previewRequest, mockRes()),
-    ).rejects.toMatchObject({ status: 409, message: 'Target namespace is not configured to receive protected investigation documents' });
+    await expect(controller.previewHandover(mockReq(), mockSupportErrandId, mockMunicipalityId, previewRequest, mockRes())).rejects.toMatchObject({
+      status: 409,
+      message: 'Target namespace is not configured to receive protected investigation documents',
+    });
 
     expect(apiService.post).not.toHaveBeenCalled();
   });
 
   it('does not apply investigation policy when protected documents are not being copied', async () => {
-    const { controller, apiService, featureFlags } = makeController('future-investigation', '');
+    const { controller, apiService, featureFlags, verifyReadableDocuments } = makeController({ configuredTargets: '' });
 
-    await controller.handoverErrand(
-      mockReq(mockUser({ groups: ['other'] })),
-      mockSupportErrandId,
-      mockMunicipalityId,
-      'idempotency-key',
-      handoverRequest(false),
-      mockRes(),
-    );
+    await controller.handoverErrand(mockReq(), mockSupportErrandId, mockMunicipalityId, 'idempotency-key', handoverRequest(false), mockRes());
 
     expect(apiService.get).not.toHaveBeenCalled();
+    expect(verifyReadableDocuments).not.toHaveBeenCalled();
     expect(featureFlags.getFreshFeatureEnabled).not.toHaveBeenCalled();
     expect(apiService.post).toHaveBeenCalledOnce();
   });
 
   it('does not treat generic JSON parameters as protected profile documents', async () => {
-    const { controller, apiService, featureFlags } = makeController('legacy-document', '');
+    const { controller, apiService, featureFlags, verifyReadableDocuments } = makeController({
+      existingDocumentKeys: [],
+      configuredTargets: '',
+    });
 
-    await controller.handoverErrand(
-      mockReq(mockUser({ groups: ['other'] })),
-      mockSupportErrandId,
-      mockMunicipalityId,
-      'idempotency-key',
-      handoverRequest(true),
-      mockRes(),
-    );
+    await controller.handoverErrand(mockReq(), mockSupportErrandId, mockMunicipalityId, 'idempotency-key', handoverRequest(true), mockRes());
 
     expect(featureFlags.getFreshFeatureEnabled).not.toHaveBeenCalled();
+    expect(verifyReadableDocuments).toHaveBeenCalledOnce();
     expect(apiService.post).toHaveBeenCalledOnce();
   });
 
   it('previews generic JSON parameters without requiring a protected-document target policy', async () => {
-    const { controller, apiService, featureFlags } = makeController('legacy-document', '');
+    const { controller, apiService, featureFlags, verifyReadableDocuments } = makeController({
+      existingDocumentKeys: [],
+      configuredTargets: '',
+    });
 
-    await controller.previewHandover(mockReq(mockUser({ groups: ['other'] })), mockSupportErrandId, mockMunicipalityId, previewRequest, mockRes());
+    await controller.previewHandover(mockReq(), mockSupportErrandId, mockMunicipalityId, previewRequest, mockRes());
 
     expect(featureFlags.getFreshFeatureEnabled).not.toHaveBeenCalled();
+    expect(verifyReadableDocuments).toHaveBeenCalledOnce();
     expect(apiService.post).toHaveBeenCalledOnce();
   });
 });

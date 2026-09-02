@@ -4,11 +4,10 @@ import { createSupportInvestigationProfile } from '@/config/support-investigatio
 import { SupportHistoryController } from '@/controllers/supportmanagement/support-history.controller';
 import { DifferenceResponse } from '@/data-contracts/supportmanagement/data-contracts';
 import ApiService from '@/services/api.service';
-import { FeatureFlagService } from '@/services/feature-flag.service';
-import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
+import { SupportInvestigationDocumentService } from '@/services/support-investigation-document.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 
-import { mockReq, mockRes, mockUser } from './helpers/http';
+import { mockReq, mockRes } from './helpers/http';
 import { mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';
 
 const profile = createSupportInvestigationProfile({
@@ -19,11 +18,6 @@ const profile = createSupportInvestigationProfile({
   ],
 });
 
-const accessConfiguration = JSON.stringify({
-  'future-investigation': { readGroups: ['investigator'], writeGroups: ['investigator'] },
-  'future-review': { readGroups: ['investigator'], writeGroups: ['investigator'] },
-});
-
 const difference: DifferenceResponse = {
   operations: [
     { op: 'replace', path: '/jsonParameters/0/value/assessment', fromValue: 'secret-before', value: 'secret-after' },
@@ -31,23 +25,23 @@ const difference: DifferenceResponse = {
   ],
 };
 
-const makeController = () => {
-  const access = new SupportInvestigationAccessService(profile, accessConfiguration);
-  const featureFlags = {} as FeatureFlagService;
-  const policy = new SupportInvestigationPolicyService(featureFlags, profile, 'future-namespace', access);
-  const controller = new SupportHistoryController(policy);
+const makeController = (verifyReadableDocuments = vi.fn().mockResolvedValue({ existingDocumentKeys: profile.documents.map(({ key }) => key) })) => {
+  const policy = { profile } as SupportInvestigationPolicyService;
+  const documentService = { verifyReadableDocuments } as unknown as SupportInvestigationDocumentService;
+  const controller = new SupportHistoryController(policy, documentService);
   const apiService = { get: vi.fn(async () => ({ data: difference })) };
   (controller as unknown as { apiService: ApiService }).apiService = apiService as unknown as ApiService;
-  return { controller, apiService };
+  return { controller, apiService, verifyReadableDocuments };
 };
 
 describe('SupportHistoryController investigation document protection', () => {
-  it('keeps revision JSON-parameter values for a user with read access to every profile document', async () => {
-    const { controller } = makeController();
+  it('keeps revision JSON-parameter values when Support Management permits every profile document read', async () => {
+    const { controller, verifyReadableDocuments } = makeController();
     const response = mockRes();
+    const req = mockReq();
 
     await controller.fetchErrandRevisionsDiff(
-      mockReq(mockUser({ groups: ['INVESTIGATOR'] })),
+      req,
       mockSupportErrandId,
       mockMunicipalityId,
       2,
@@ -56,12 +50,19 @@ describe('SupportHistoryController investigation document protection', () => {
     );
 
     expect(response.body).toEqual(difference);
+    expect(verifyReadableDocuments).toHaveBeenCalledWith({
+      definitions: profile.documents,
+      municipalityId: mockMunicipalityId,
+      errandId: mockSupportErrandId,
+      user: req.user,
+    });
   });
 
-  it('removes nested values for custom future profile documents without hiding unrelated errand history', async () => {
-    const { controller, apiService } = makeController();
+  it('removes all JSON-parameter values when Support Management denies a configured document read', async () => {
+    const denied = Object.assign(new Error('Forbidden'), { status: 403 });
+    const { controller, apiService } = makeController(vi.fn().mockRejectedValue(denied));
     const response = mockRes();
-    const req = mockReq(mockUser({ groups: ['other'] }));
+    const req = mockReq();
 
     await controller.fetchErrandRevisionsDiff(
       req,
@@ -78,8 +79,25 @@ describe('SupportHistoryController investigation document protection', () => {
         url: expect.stringContaining(
           `/${mockMunicipalityId}/${mockSupportNamespace}/errands/${mockSupportErrandId}/revisions/difference?source=2&target=3`,
         ),
+        propagateClientError: true,
       },
       req.user,
     );
+  });
+
+  it('propagates document verification failures that are not authorization decisions', async () => {
+    const unavailable = Object.assign(new Error('Unavailable'), { status: 503 });
+    const { controller } = makeController(vi.fn().mockRejectedValue(unavailable));
+
+    await expect(
+      controller.fetchErrandRevisionsDiff(
+        mockReq(),
+        mockSupportErrandId,
+        mockMunicipalityId,
+        2,
+        3,
+        mockRes() as unknown as Response<DifferenceResponse>,
+      ),
+    ).rejects.toBe(unavailable);
   });
 });

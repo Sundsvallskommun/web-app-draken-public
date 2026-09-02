@@ -101,8 +101,6 @@ const makeController = (classificationOwner: SupportErrandClassificationOwner = 
     profile: configuredProfile,
     labelFilter: configuredProfile.labelFilter,
     iafVofClassificationPolicy: resolveIafVofInvestigationClassificationPolicy(configuredProfile),
-    assertCanWriteDocument: vi.fn(),
-    filterProtectedJsonParameters: vi.fn((errand: unknown) => errand),
   };
   const investigationDocument = {
     readJsonParameter: vi.fn(async () => ({
@@ -851,9 +849,10 @@ describe('SupportErrandController', () => {
   });
 
   describe('becomeAdminForSupportErrand', () => {
-    it('sends only assignedUserId and applies the document access projection to the response', async () => {
-      const { controller, api, investigationPolicy } = makeController();
+    it('sends only assignedUserId and returns the AccessMapper-filtered upstream response unchanged', async () => {
+      const { controller, api } = makeController();
       api.patch.mockResolvedValue({ data: { id: mockSupportErrandId }, message: 'success' });
+      const response = mockRes();
 
       await controller.becomeAdminForSupportErrand(
         mockReq(),
@@ -861,7 +860,7 @@ describe('SupportErrandController', () => {
         MUNICIPALITY_ID,
         '"7"',
         { assignedUserId: mockAdUsername },
-        mockRes(),
+        response,
       );
 
       expect(api.patch.mock.calls[0][0]).toEqual({
@@ -872,7 +871,7 @@ describe('SupportErrandController', () => {
         followLocation: false,
         propagateClientError: true,
       });
-      expect(investigationPolicy.filterProtectedJsonParameters).toHaveBeenCalledWith({ id: mockSupportErrandId }, mockReq().user);
+      expect(response.body).toEqual({ id: mockSupportErrandId });
     });
 
     it('rejects a missing assignment precondition before reading upstream', async () => {

@@ -16,7 +16,6 @@ import { logger } from '@/utils/logger';
 
 import { FeatureFlagService, featureFlagService } from './feature-flag.service';
 import { getNewErrandDefaults } from './support-errand.service';
-import { SupportInvestigationAccessService } from './support-investigation-access.service';
 
 export type SupportErrandClassificationOwner = 'generic-errand' | 'investigation' | 'unavailable';
 export type SupportRegistrationState = 'enabled' | 'disabled' | 'unavailable';
@@ -30,7 +29,6 @@ export class SupportInvestigationPolicyService {
   private readonly featureFlagService: FeatureFlagService;
   private readonly configuredProfile: SupportInvestigationProfile;
   private readonly namespace: string | undefined;
-  private readonly accessService: SupportInvestigationAccessService;
   private readonly supportManagementApiTarget: SupportManagementApiTarget;
   private readonly resolvedIafVofClassificationPolicy: IafVofInvestigationClassificationPolicy | undefined;
 
@@ -38,13 +36,11 @@ export class SupportInvestigationPolicyService {
     featureFlags: FeatureFlagService = featureFlagService,
     configuredProfile = getSupportInvestigationProfile(APPLICATION),
     namespace = SUPPORTMANAGEMENT_NAMESPACE,
-    accessService = new SupportInvestigationAccessService(configuredProfile),
     supportManagementApiTarget = resolveSupportManagementApiTarget(),
   ) {
     this.featureFlagService = featureFlags;
     this.configuredProfile = configuredProfile;
     this.namespace = namespace;
-    this.accessService = accessService;
     this.supportManagementApiTarget = supportManagementApiTarget;
     this.resolvedIafVofClassificationPolicy = resolveIafVofInvestigationClassificationPolicy(configuredProfile);
   }
@@ -63,7 +59,7 @@ export class SupportInvestigationPolicyService {
       const enabled = await this.featureFlagService.getFreshFeatureEnabled(user, 'useInvestigation', this.namespace);
       if (enabled === undefined) return 'inactive';
       if (!enabled) return 'inactive';
-      return this.accessService.configured ? 'active' : 'unavailable';
+      return 'active';
     } catch (error) {
       logger.error('Unable to resolve the SupportManagement investigation feature flag', error);
       return 'unavailable';
@@ -75,11 +71,7 @@ export class SupportInvestigationPolicyService {
     const registrationState = this.registrationStateForInvestigationState(state);
     return Object.freeze({
       application: this.configuredProfile.application,
-      documents: Object.freeze(
-        this.configuredProfile.documents.map(document =>
-          Object.freeze({ ...document, permissions: Object.freeze(this.accessService.permissionsFor(user, document.key)) }),
-        ),
-      ),
+      documents: this.configuredProfile.documents,
       ...(this.configuredProfile.labelFilter ? { labelFilter: this.configuredProfile.labelFilter } : {}),
       state,
       registration: Object.freeze({ mode: registrationState === 'enabled' ? 'enabled' : 'disabled' }),
@@ -119,39 +111,13 @@ export class SupportInvestigationPolicyService {
     return this.configuredProfile.labelFilter;
   }
 
-  get protectsJsonParameters(): boolean {
-    return this.configuredProfile.documents.length > 0;
-  }
-
-  hasProtectedJsonParameters<T extends { jsonParameters?: readonly { key?: string }[] }>(errand: T): boolean {
-    return this.accessService.protectedJsonParameterKeys(errand).length > 0;
-  }
-
-  assertCanReadDocument(user: User, key: string): void {
-    this.accessService.assertCanRead(user, key);
-  }
-
-  assertCanWriteDocument(user: User, key: string): void {
-    this.accessService.assertCanWrite(user, key);
-  }
-
-  filterProtectedJsonParameters<T extends { jsonParameters?: readonly { key?: string }[] }>(errand: T, user: User): T {
-    return this.accessService.filterProtectedJsonParameters(errand, user);
-  }
-
-  filterProtectedRevisionDifference<T extends { operations?: readonly { path?: string }[] }>(difference: T, user: User): T {
-    return this.accessService.filterProtectedRevisionDifference(difference, user);
-  }
-
   /**
-   * Handover copies JSON parameters as one all-or-nothing collection. A
-   * protected document may leave the application only while the investigation
-   * capability is active and the caller can read every protected document
-   * present on the source errand.
+   * Copying investigation JSON parameters is only valid while the application
+   * capability is active. Document authorization itself belongs to Support
+   * Management and is verified through its document endpoint by the handover
+   * controller.
    */
-  async assertCanTransferProtectedJsonParameters<T extends { jsonParameters?: readonly { key?: string }[] }>(errand: T, user: User): Promise<void> {
-    if (this.accessService.protectedJsonParameterKeys(errand).length === 0) return;
-
+  async assertInvestigationTransferActive(user: User): Promise<void> {
     const state = await this.getState(user);
     if (state === 'inactive') {
       throw new HttpException(409, 'Investigation document transfer is not active for this application');
@@ -159,8 +125,6 @@ export class SupportInvestigationPolicyService {
     if (state === 'unavailable') {
       throw new HttpException(503, 'Investigation document transfer policy is temporarily unavailable');
     }
-
-    this.accessService.assertCanReadProtectedJsonParameters(errand, user);
   }
 
   private registrationStateForInvestigationState(state: SupportInvestigationState): SupportRegistrationState {

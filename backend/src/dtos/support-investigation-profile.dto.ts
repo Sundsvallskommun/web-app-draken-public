@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsIn, IsOptional, IsString, Matches, MinLength, ValidateNested } from 'class-validator';
+import { IsArray, IsIn, IsOptional, IsString, Matches, MinLength, ValidateNested } from 'class-validator';
 
 const SUPPORT_INVESTIGATION_IDENTIFIER = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
@@ -39,19 +39,6 @@ export type SupportInvestigationState = (typeof SUPPORT_INVESTIGATION_STATES)[nu
 export class SupportRegistrationCapabilityDto {
   @IsIn(['enabled', 'disabled'])
   readonly mode!: 'enabled' | 'disabled';
-}
-
-export class SupportInvestigationDocumentPermissionsDto {
-  @IsBoolean()
-  readonly canRead!: boolean;
-  @IsBoolean()
-  readonly canWrite!: boolean;
-}
-
-export class SupportInvestigationRuntimeDocumentProfileDto extends SupportInvestigationDocumentProfileDto {
-  @ValidateNested()
-  @Type(() => SupportInvestigationDocumentPermissionsDto)
-  readonly permissions!: SupportInvestigationDocumentPermissionsDto;
 }
 
 export class SupportManagementLabelFilterFieldProfileDto {
@@ -106,8 +93,8 @@ export class SupportInvestigationRuntimeProfileDto extends SupportInvestigationP
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => SupportInvestigationRuntimeDocumentProfileDto)
-  declare readonly documents: readonly SupportInvestigationRuntimeDocumentProfileDto[];
+  @Type(() => SupportInvestigationDocumentProfileDto)
+  declare readonly documents: readonly SupportInvestigationDocumentProfileDto[];
 
   @IsOptional()
   @ValidateNested()

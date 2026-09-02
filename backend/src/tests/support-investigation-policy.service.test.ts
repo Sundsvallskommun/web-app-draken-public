@@ -1,6 +1,5 @@
 import { createSupportInvestigationProfile, getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import { FeatureFlagService } from '@/services/feature-flag.service';
-import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 
 import { mockReq, mockUser } from './helpers/http';
@@ -10,12 +9,6 @@ const profile = createSupportInvestigationProfile({
   documents: [{ key: 'investigation', schemaName: 'shared-schema', tabLabel: 'Investigation', ownerLabel: 'Owner' }],
 });
 
-const accessService = () =>
-  ({
-    configured: true,
-    permissionsFor: vi.fn(() => ({ canRead: true, canWrite: true })),
-  }) as unknown as SupportInvestigationAccessService;
-
 const serviceWith = (enabled: boolean | undefined | Error, configuredProfile = profile) => {
   const featureFlags = {
     getFreshFeatureEnabled: vi.fn(async () => {
@@ -24,7 +17,7 @@ const serviceWith = (enabled: boolean | undefined | Error, configuredProfile = p
     }),
   } as unknown as FeatureFlagService;
   return {
-    service: new SupportInvestigationPolicyService(featureFlags, configuredProfile, 'support', accessService()),
+    service: new SupportInvestigationPolicyService(featureFlags, configuredProfile, 'support'),
     featureFlags,
   };
 };
@@ -47,14 +40,6 @@ describe('SupportInvestigationPolicyService', () => {
     await expect(serviceWith(new Error('Adminpanel unavailable')).service.getState(mockReq().user)).resolves.toBe('unavailable');
   });
 
-  it('does not activate document routes when deployment access rules are missing', async () => {
-    const flags = { getFreshFeatureEnabled: vi.fn(async () => true) } as unknown as FeatureFlagService;
-    const unavailableAccess = { configured: false } as unknown as SupportInvestigationAccessService;
-    const service = new SupportInvestigationPolicyService(flags, profile, 'support', unavailableAccess);
-
-    await expect(service.getState(mockReq().user)).resolves.toBe('unavailable');
-  });
-
   it('is inactive without configured documents and does not query Adminpanel', async () => {
     const featureFlags = { getFreshFeatureEnabled: vi.fn() } as unknown as FeatureFlagService;
     const emptyProfile = createSupportInvestigationProfile({ application: 'KC', documents: [] });
@@ -68,7 +53,6 @@ describe('SupportInvestigationPolicyService', () => {
     const { service } = serviceWith(true);
     await expect(service.getRuntimeProfile(mockReq().user)).resolves.toEqual({
       ...profile,
-      documents: profile.documents.map(document => ({ ...document, permissions: { canRead: true, canWrite: true } })),
       state: 'active',
       registration: { mode: 'disabled' },
     });
@@ -125,7 +109,7 @@ describe('SupportInvestigationPolicyService', () => {
         throw new Error('down');
       }),
     } as unknown as FeatureFlagService;
-    const service = new SupportInvestigationPolicyService(featureFlags, iafProfile, 'support', accessService(), 'sprint');
+    const service = new SupportInvestigationPolicyService(featureFlags, iafProfile, 'support', 'sprint');
 
     await expect(service.getRegistrationState(mockReq().user)).resolves.toBe('unavailable');
     await expect(service.getRuntimeProfile(mockReq().user)).resolves.toMatchObject({
@@ -158,17 +142,11 @@ describe('SupportInvestigationPolicyService', () => {
     expect(serviceWith(true, documentsOnly).service.labelFilter).toBeUndefined();
   });
 
-  it('allows transfer of a future profile document only for active policy and explicit read access', async () => {
+  it('allows investigation transfer when the application capability is active', async () => {
     const featureFlags = { getFreshFeatureEnabled: vi.fn(async () => true) } as unknown as FeatureFlagService;
-    const access = new SupportInvestigationAccessService(
-      profile,
-      JSON.stringify({ investigation: { readGroups: ['investigator'], writeGroups: ['investigator'] } }),
-    );
-    const service = new SupportInvestigationPolicyService(featureFlags, profile, 'future-namespace', access);
-    const errand = { jsonParameters: [{ key: 'investigation' }, { key: 'legacy-document' }] };
+    const service = new SupportInvestigationPolicyService(featureFlags, profile, 'future-namespace');
 
-    await expect(service.assertCanTransferProtectedJsonParameters(errand, mockUser({ groups: ['INVESTIGATOR'] }))).resolves.toBeUndefined();
-    await expect(service.assertCanTransferProtectedJsonParameters(errand, mockUser({ groups: ['other'] }))).rejects.toMatchObject({ status: 403 });
+    await expect(service.assertInvestigationTransferActive(mockUser())).resolves.toBeUndefined();
   });
 
   it.each([
@@ -181,32 +159,15 @@ describe('SupportInvestigationPolicyService', () => {
         return enabled;
       }),
     } as unknown as FeatureFlagService;
-    const access = new SupportInvestigationAccessService(
-      profile,
-      JSON.stringify({ investigation: { readGroups: ['investigator'], writeGroups: ['investigator'] } }),
-    );
-    const service = new SupportInvestigationPolicyService(featureFlags, profile, 'future-namespace', access);
+    const service = new SupportInvestigationPolicyService(featureFlags, profile, 'future-namespace');
 
-    await expect(
-      service.assertCanTransferProtectedJsonParameters({ jsonParameters: [{ key: 'investigation' }] }, mockUser({ groups: ['investigator'] })),
-    ).rejects.toMatchObject({ status, message });
-  });
-
-  it('does not consult investigation runtime policy for generic JSON parameters', async () => {
-    const featureFlags = { getFreshFeatureEnabled: vi.fn() } as unknown as FeatureFlagService;
-    const access = new SupportInvestigationAccessService(profile, undefined);
-    const service = new SupportInvestigationPolicyService(featureFlags, profile, 'future-namespace', access);
-
-    await expect(
-      service.assertCanTransferProtectedJsonParameters({ jsonParameters: [{ key: 'legacy-document' }] }, mockUser()),
-    ).resolves.toBeUndefined();
-    expect(featureFlags.getFreshFeatureEnabled).not.toHaveBeenCalled();
+    await expect(service.assertInvestigationTransferActive(mockUser())).rejects.toMatchObject({ status, message });
   });
 
   it('fails a configured investigation capability closed when its Support Management API target is unavailable', async () => {
     const iafProfile = getSupportInvestigationProfile('IAF');
     const featureFlags = { getFreshFeatureEnabled: vi.fn(async () => true) } as unknown as FeatureFlagService;
-    const stableService = new SupportInvestigationPolicyService(featureFlags, iafProfile, 'support', accessService(), 'stable');
+    const stableService = new SupportInvestigationPolicyService(featureFlags, iafProfile, 'support', 'stable');
 
     await expect(stableService.getState(mockReq().user)).resolves.toBe('unavailable');
     await expect(stableService.getRegistrationState(mockReq().user)).resolves.toBe('unavailable');
@@ -216,7 +177,7 @@ describe('SupportInvestigationPolicyService', () => {
   it('activates a configured investigation capability on its declared Support Management API target', async () => {
     const iafProfile = getSupportInvestigationProfile('IAF');
     const featureFlags = { getFreshFeatureEnabled: vi.fn(async () => true) } as unknown as FeatureFlagService;
-    const sprintService = new SupportInvestigationPolicyService(featureFlags, iafProfile, 'support', accessService(), 'sprint');
+    const sprintService = new SupportInvestigationPolicyService(featureFlags, iafProfile, 'support', 'sprint');
 
     await expect(sprintService.getState(mockReq().user)).resolves.toBe('active');
     expect(featureFlags.getFreshFeatureEnabled).toHaveBeenCalledOnce();

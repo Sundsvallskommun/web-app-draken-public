@@ -24,8 +24,6 @@ const makeController = (application = 'IAF', state: 'active' | 'inactive' | 'una
   };
   const policyService = {
     getState: vi.fn(async () => state),
-    assertCanReadDocument: vi.fn(),
-    assertCanWriteDocument: vi.fn(),
   };
   const controller = new SupportErrandJsonParameterController(
     getSupportInvestigationProfile(application),
@@ -63,14 +61,13 @@ describe('SupportErrandJsonParameterController', () => {
       errandId: mockSupportErrandId,
       user: req.user,
     });
-    expect(policyService.assertCanReadDocument).toHaveBeenCalledWith(req.user, parameter.key);
     expect(res.statusCode).toBe(200);
     expect(res.headers.ETag).toBe('"3"');
     expect(res.body).toEqual(parameter);
   });
 
   it('fails closed before document reads when the runtime policy is unavailable', async () => {
-    const { controller, documentService, policyService } = makeController('IAF', 'unavailable');
+    const { controller, documentService } = makeController('IAF', 'unavailable');
 
     await expect(
       controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, 'utredning-enhetschef', resDouble()),
