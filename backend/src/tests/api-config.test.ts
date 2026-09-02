@@ -25,10 +25,19 @@ describe('apiServiceName', () => {
     expect(apiServiceName('supportmanagement')).toBe('supportmanagement-sprint/15.1');
   });
 
+  it('routes the AOT deployment through its explicit ALKT sprint API', () => {
+    process.env.SUPPORTMANAGEMENT_API_TARGET = 'alktsprint';
+
+    expect(resolveSupportManagementApiTarget()).toBe('alktsprint');
+    expect(apiServiceName('supportmanagement')).toBe('support-management-alkt-sprint/15.1');
+  });
+
   it('rejects misspelled targets instead of silently changing the upstream contract', () => {
     process.env.SUPPORTMANAGEMENT_API_TARGET = 'latest';
 
-    expect(() => resolveSupportManagementApiTarget()).toThrow('Unsupported SUPPORTMANAGEMENT_API_TARGET "latest". Expected one of: stable, sprint');
+    expect(() => resolveSupportManagementApiTarget()).toThrow(
+      'Unsupported SUPPORTMANAGEMENT_API_TARGET "latest". Expected one of: stable, sprint, alktsprint',
+    );
   });
 
   it('keeps regular configured and unknown service names unchanged', () => {

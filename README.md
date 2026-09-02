@@ -243,25 +243,25 @@ cp .env.{drake}.example.local .env.{drake}.development.local
 # Exempel: cp .env.se.example.local .env.se.development.local
 ```
 
-Support Management använder den stabila API-prenumerationen `supportmanagement/14.9` som standard. En drake som
+Support Management använder den stabila API-prenumerationen `supportmanagement/15.1` som standard. En drake som
 behöver sprintkontraktet (för närvarande IAF/VOF-utredning) ska välja det uttryckligen i backendmiljön:
 
 ```env
 SUPPORTMANAGEMENT_API_TARGET=sprint
 ```
 
-Tillåtna värden är `stable` och `sprint`. Ett okänt värde stoppar backend vid uppstart, så att en felstavad
+Tillåtna värden är `stable`, `sprint` och `alktsprint`. Ett okänt värde stoppar backend vid uppstart, så att en felstavad
 deploymentinställning inte tyst byter API-kontrakt för alla implementationer.
 
 Drakens ärende-, handläggar-, status- och fastighetskommandon kräver en exakt stark `If-Match` och skickar samma
-version vidare till Support Management. Den 24 augusti 2026 verifierades de publicerade OpenAPI-kontrakten för både
-`supportmanagement/14.9` och `supportmanagement-sprint/14.14`: båda deklarerar `If-Match`, svaren 409/412 och
+version vidare till Support Management. Den 2 september 2026 verifierades de publicerade OpenAPI-kontrakten för både
+`supportmanagement/15.1` och `supportmanagement-sprint/15.1`: båda deklarerar `If-Match`, svaren 409/412 och
 versionsfält på ärenden och JSON Parameters. Därmed använder stable- och sprintdeploymenterna samma atomiska
 skrivkontrakt utan en svag kompatibilitetsväg i Draken. Kontrollera kontrakten på nytt när någon prenumeration byter
 version; Drakens förkontroll av version och status ersätter inte atomisk versionskontroll i upstream.
 
 Statuskommandot validerar klientens källstatus och version mot ett färskt ärende samt målstatusen mot live metadata.
-Support Management 14.14 exponerar däremot ingen source→target-graf eller exekveringsroute för statusövergångar, så
+Support Management 15.1 exponerar däremot ingen source→target-graf eller exekveringsroute för statusövergångar, så
 Draken kan inte auktorisera själva kanten utan att införa appspecifika regler. Den domänregeln behöver ägas av
 Support Management innan starkare generell transitionvalidering kan införas.
 
