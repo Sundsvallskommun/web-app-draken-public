@@ -311,13 +311,16 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
   }, [router]);
 
   useEffect(() => {
-    if (errands) {
-      setSupportErrand(undefined as unknown as any);
-      setTableValue('page', errands.page!);
-      setTableValue('size', errands.size!);
-      setTableValue('totalPages', errands.totalPages!);
-      setTableValue('totalElements', errands.totalElements!);
-    }
+    if (!errands) return;
+    setSupportErrand(undefined as unknown as any);
+    // A failed request answers without any paging. Copying that undefined page into the form left
+    // the overview stuck for the rest of the session: the fetch effect skips an undefined page, so
+    // nothing was requested again - not even when the user changed the filter. Keep what we had.
+    if (errands.page === undefined) return;
+    setTableValue('page', errands.page);
+    setTableValue('size', errands.size!);
+    setTableValue('totalPages', errands.totalPages!);
+    setTableValue('totalElements', errands.totalElements!);
     //eslint-disable-next-line
   }, [errands]);
 

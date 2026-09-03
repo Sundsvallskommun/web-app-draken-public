@@ -12,7 +12,7 @@ import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagemen
 import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -456,8 +456,24 @@ export const useSupportErrands = (
   const setSolvedSupportErrands = useUiSettingsStore((s) => s.setClosedErrands);
   const solvedSupportErrands = useUiSettingsStore((s) => s.closedErrands);
 
+  // Each filter, sort or page change starts a new round of requests while the previous round may
+  // still be in flight, and the responses can land in any order. Whichever lands last used to win,
+  // so a slow earlier request overwrote the current one - and since the table only renders errands
+  // whose status the sidebar has selected, a result fetched for another status renders as an empty
+  // table next to a correct count. Only the newest round is allowed to write.
+  const latestRequestRef = useRef(0);
+
   const fetchErrands = useCallback(
     async (page: number = 0) => {
+      // An undefined filter means the overview has not composed one yet: fetching here would ask
+      // for every errand regardless of status, which is both the most expensive query we can make
+      // and the one most likely to come back last.
+      if (!filter) {
+        return;
+      }
+      const requestId = ++latestRequestRef.current;
+      const isLatestRequest = () => latestRequestRef.current === requestId;
+
       setIsLoading(true);
       setNewSupportErrands(null);
       setOngoingSupportErrands(null);
@@ -468,6 +484,7 @@ export const useSupportErrands = (
 
       const errandPromise = getSupportErrands(municipalityId, page, size, filter, sort)
         .then((res) => {
+          if (!isLatestRequest()) return;
           setSupportErrands({ ...res, isLoading: false });
         })
         .catch(() => {
@@ -482,9 +499,11 @@ export const useSupportErrands = (
       const sidebarUpdatePromises = [
         getSupportErrandsCount(municipalityId, { ...filter, status: Status.NEW })
           .then((res) => {
+            if (!isLatestRequest()) return;
             setNewSupportErrands(res);
           })
           .catch(() => {
+            if (!isLatestRequest()) return;
             setNewSupportErrands(0);
             toastMessage({
               position: 'bottom',
@@ -499,9 +518,11 @@ export const useSupportErrands = (
           status: isROB() ? ongoingStatusesROB.join(',') : ongoingStatuses.join(','),
         })
           .then((res) => {
+            if (!isLatestRequest()) return;
             setOngoingSupportErrands(res);
           })
           .catch(() => {
+            if (!isLatestRequest()) return;
             setOngoingSupportErrands(0);
             toastMessage({
               position: 'bottom',
@@ -513,9 +534,11 @@ export const useSupportErrands = (
 
         getSupportErrandsCount(municipalityId, { ...filter, status: `${Status.SUSPENDED}` })
           .then((res) => {
+            if (!isLatestRequest()) return;
             setSuspendedSupportErrands(res);
           })
           .catch(() => {
+            if (!isLatestRequest()) return;
             setSuspendedSupportErrands(0);
             toastMessage({
               position: 'bottom',
@@ -527,9 +550,11 @@ export const useSupportErrands = (
 
         getSupportErrandsCount(municipalityId, { ...filter, status: `${Status.ASSIGNED}` })
           .then((res) => {
+            if (!isLatestRequest()) return;
             setAssignedSupportErrands(res);
           })
           .catch(() => {
+            if (!isLatestRequest()) return;
             setAssignedSupportErrands(0);
             toastMessage({
               position: 'bottom',
@@ -541,9 +566,11 @@ export const useSupportErrands = (
 
         getSupportErrandsCount(municipalityId, { ...filter, status: Status.SOLVED })
           .then((res) => {
+            if (!isLatestRequest()) return;
             setSolvedSupportErrands(res);
           })
           .catch(() => {
+            if (!isLatestRequest()) return;
             setSolvedSupportErrands(0);
             toastMessage({
               position: 'bottom',
@@ -554,7 +581,12 @@ export const useSupportErrands = (
           }),
       ];
 
-      return Promise.allSettled([errandPromise, ...sidebarUpdatePromises]);
+      await Promise.allSettled([errandPromise, ...sidebarUpdatePromises]);
+      // A superseded round must not turn the loader off while the round that replaced it is still
+      // running.
+      if (isLatestRequest()) {
+        setIsLoading(false);
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -579,14 +611,14 @@ export const useSupportErrands = (
 
   useEffect(() => {
     if (typeof page !== 'undefined' && size && size > 0) {
-      fetchErrands().then(() => setIsLoading(false));
+      fetchErrands();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, size, sort]);
 
   useEffect(() => {
     if (supportErrands.page !== undefined && page !== supportErrands.page) {
-      fetchErrands(page).then(() => setIsLoading(false));
+      fetchErrands(page);
     }
     //eslint-disable-next-line
   }, [page]);
