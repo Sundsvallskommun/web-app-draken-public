@@ -40,6 +40,29 @@ export const isSupportErrandWriteConflict = (error: unknown): boolean => {
   return status !== undefined && SUPPORT_ERRAND_WRITE_CONFLICT_STATUSES.has(status);
 };
 
-/** Picks the user-facing message for a failed errand write: conflicts get the reload advice. */
-export const supportErrandWriteErrorMessage = (error: unknown, fallback: string): string =>
-  isSupportErrandWriteConflict(error) ? SUPPORT_ERRAND_WRITE_CONFLICT_MESSAGE : fallback;
+export const SUPPORT_ERRAND_STATUS_AFTER_ASSIGNMENT_MESSAGE =
+  'Handläggaren tilldelades, men ärendet kunde inte sättas till Pågående. Välj status manuellt och spara ärendet.';
+
+/**
+ * Taking an errand is two writes: the assignment, and the status change that follows it. The second
+ * one can fail on its own, and then "något gick fel" is not true - the errand is the handler's now,
+ * it is only still lying in Ny, where the message tab and the sidebar keep their actions shut. Say
+ * that instead, and point at the one control that finishes the job.
+ */
+export class SupportErrandStatusAfterAssignmentError extends Error {
+  constructor(readonly reason: unknown) {
+    super(SUPPORT_ERRAND_STATUS_AFTER_ASSIGNMENT_MESSAGE);
+    this.name = 'SupportErrandStatusAfterAssignmentError';
+  }
+}
+
+/**
+ * Picks the user-facing message for a failed errand write: conflicts get the reload advice, and a
+ * half-finished assignment says which half is missing. Reloading is the wrong advice there - the
+ * assignment already landed, so there is nothing to redo.
+ */
+export const supportErrandWriteErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof SupportErrandStatusAfterAssignmentError) return error.message;
+
+  return isSupportErrandWriteConflict(error) ? SUPPORT_ERRAND_WRITE_CONFLICT_MESSAGE : fallback;
+};

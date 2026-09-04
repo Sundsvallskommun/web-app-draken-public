@@ -4,7 +4,9 @@ import { test } from 'vitest';
 
 import {
   isSupportErrandWriteConflict,
+  SUPPORT_ERRAND_STATUS_AFTER_ASSIGNMENT_MESSAGE,
   SUPPORT_ERRAND_WRITE_CONFLICT_MESSAGE,
+  SupportErrandStatusAfterAssignmentError,
   supportErrandWriteErrorMessage,
   toStrongSupportErrandETag,
 } from './support-errand-write-version';
@@ -63,4 +65,15 @@ test('replaces the message only for conflicts', () => {
     SUPPORT_ERRAND_WRITE_CONFLICT_MESSAGE
   );
   assert.equal(supportErrandWriteErrorMessage(new Error('boom'), 'fallback'), 'fallback');
+});
+
+// The assignment landed, so "reload and redo the change" would be wrong advice however the status
+// change failed - including when it failed with a conflict of its own.
+test('says which half of taking an errand is missing', () => {
+  for (const reason of [new Error('boom'), { response: { status: 409 } }, { response: { status: 400 } }]) {
+    assert.equal(
+      supportErrandWriteErrorMessage(new SupportErrandStatusAfterAssignmentError(reason), 'fallback'),
+      SUPPORT_ERRAND_STATUS_AFTER_ASSIGNMENT_MESSAGE
+    );
+  }
 });

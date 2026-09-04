@@ -10,6 +10,7 @@ import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/buttons/support-forward-errand-button.component';
 import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
+import { basicsAcceptsClassification } from '@supportmanagement/investigation/investigation-classification-ownership';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef } from 'react';
@@ -17,6 +18,7 @@ import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-co
 import { v4 as uuidv4 } from 'uuid';
 
 import { saveSupportAttachments, SupportAttachment } from './support-attachment-service';
+import { isSupportErrandEmpty } from './support-errand-emptiness';
 import type { SupportErrandFilterQuery, SupportErrandSortQuery } from './support-errand-query';
 import { buildSupportErrandsCountSearchParameters, buildSupportErrandsSearchParameters } from './support-errand-query';
 import {
@@ -26,7 +28,7 @@ import {
   SupportErrandStatusTransitionRequest,
 } from './support-errand-status-transition';
 import { buildSupportErrandUpdateData } from './support-errand-update-data';
-import { toStrongSupportErrandETag } from './support-errand-write-version';
+import { SupportErrandStatusAfterAssignmentError, toStrongSupportErrandETag } from './support-errand-write-version';
 import { getMappedLabelSubType, shouldMapLabelSubType } from './support-label-classification-service';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { saveSupportNote } from './support-note-service';
@@ -665,21 +667,8 @@ export const getSupportErrandByErrandNumber: (
     );
 };
 
-export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand) => {
-  if (!errand) {
-    return true;
-  } else if (
-    !errand?.id ||
-    !errand?.classification ||
-    errand?.classification.category === 'NONE' ||
-    errand?.classification.type === 'NONE' ||
-    errand?.category === '' ||
-    errand?.type === ''
-  ) {
-    return true;
-  }
-  return false;
-};
+export const supportErrandIsEmpty: (errand: SupportErrand) => boolean = (errand) =>
+  isSupportErrandEmpty(errand, basicsAcceptsClassification());
 
 // Resolve a stakeholder's organization number: prefer the dedicated parameter (written on save),
 // and fall back to externalId for legacy COMPANY stakeholders saved before the org number was split out.
@@ -992,14 +981,22 @@ export const setSupportErrandAdmin: (
     await apiService.patch<ApiSupportErrand, typeof data>(`supporterrands/${municipalityId}/${errandId}/admin`, data, {
       headers: { 'If-Match': ifMatch },
     });
-    if (status === undefined) return true;
-
-    // The assignment above is ours and succeeded, so it is the write that moved the version on.
-    const afterAssignment = await readSupportErrandWriteSnapshot(errandId, municipalityId);
-    return transitionSupportErrandStatus(errandId, municipalityId, status, afterAssignment);
   } catch (e) {
     console.error('Something went wrong when patching errand');
     throw e;
+  }
+
+  if (status === undefined) return true;
+
+  try {
+    // The assignment above is ours and succeeded, so it is the write that moved the version on.
+    const afterAssignment = await readSupportErrandWriteSnapshot(errandId, municipalityId);
+    return await transitionSupportErrandStatus(errandId, municipalityId, status, afterAssignment);
+  } catch (e) {
+    // Reported apart from the assignment: that one landed, and an errand left in Ny needs a
+    // different answer from the user than one that was never assigned at all.
+    console.error('Support errand was assigned, but its status could not be changed');
+    throw new SupportErrandStatusAfterAssignmentError(e);
   }
 };
 

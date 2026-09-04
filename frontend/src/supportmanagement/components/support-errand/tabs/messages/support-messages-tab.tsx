@@ -3,7 +3,7 @@ import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-g
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportCommunicationType } from '@supportmanagement/services/support-communication-types';
 import { markSupportConversationMessagesAsRead } from '@supportmanagement/services/support-conversation-service';
-import { isSupportErrandLocked, Status, validateAction } from '@supportmanagement/services/support-errand-service';
+import { isSupportErrandLocked, validateAction } from '@supportmanagement/services/support-errand-service';
 import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
 import { Mail } from 'lucide-react';
 import { FC, useMemo, useState } from 'react';
@@ -102,7 +102,9 @@ export const SupportMessagesTab: FC<{
           <Button
             data-cy="new-message-button"
             type="button"
-            disabled={isSupportErrandLocked(supportErrand!) || !allowed || supportErrand?.status === Status.NEW}
+            // Ny does not disable writing: `allowed` already means the errand is assigned to this
+            // handler, and blocking there left an errand that is theirs with no way to answer it.
+            disabled={isSupportErrandLocked(supportErrand!) || !allowed}
             size="sm"
             variant="primary"
             color="vattjom"
