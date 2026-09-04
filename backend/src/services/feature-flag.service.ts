@@ -35,6 +35,9 @@ const DEFAULT_FRESH_TTL_MS = 30_000;
 const DEFAULT_STALE_TTL_MS = 5 * 60_000;
 const ADMINPANEL_TIMEOUT_MS = 3_000;
 
+/** `{{INSERT_SOMETHING}}` as it is shipped in the example env files, left unsubstituted. */
+const UNSUBSTITUTED_PLACEHOLDER = /^\{\{.*\}\}$/;
+
 const requireConfiguration = (value: string | undefined, name: string): string => {
   if (!value?.trim()) {
     throw new HttpException(500, `Missing feature flag configuration: ${name}`);
@@ -100,6 +103,20 @@ export class FeatureFlagService {
   constructor(apiService = new ApiService(), configuration: FeatureFlagServiceConfiguration = {}) {
     this.apiService = apiService;
     this.configuration = configuration;
+  }
+
+  /**
+   * Whether this deployment manages feature flags in Adminpanel at all. A deployment without an
+   * Adminpanel URL is not a deployment whose flags are temporarily unreachable - it has no flag
+   * source, and callers must decide from their own configuration rather than report an outage.
+   *
+   * An unsubstituted deploy placeholder counts as no URL. The example env files ship
+   * `{{INSERT_ADMINPANEL_URL}}`, and sending requests to that is not an outage either.
+   */
+  isConfigured(): boolean {
+    const adminpanelUrl = (this.configuration.adminpanelUrl ?? process.env.ADMINPANEL_URL)?.trim();
+
+    return Boolean(adminpanelUrl) && !UNSUBSTITUTED_PLACEHOLDER.test(adminpanelUrl!);
   }
 
   private resolveConfiguration(): ResolvedFeatureFlagConfiguration {

@@ -187,3 +187,15 @@ describe('FeatureFlagService', () => {
     expect(apiService.get).not.toHaveBeenCalled();
   });
 });
+
+// The example env files ship {{INSERT_ADMINPANEL_URL}}; a deployment that never substituted it has
+// no flag source, which is a different thing from one whose Adminpanel is down.
+describe('flag source configuration', () => {
+  it.each([undefined, '', '   ', '{{INSERT_ADMINPANEL_URL}}'])('reports %s as no flag source', adminpanelUrl => {
+    expect(new FeatureFlagService(undefined, { adminpanelUrl }).isConfigured()).toBe(false);
+  });
+
+  it('reports a real url as a flag source', () => {
+    expect(new FeatureFlagService(undefined, { adminpanelUrl: 'https://adminpanel.example/api' }).isConfigured()).toBe(true);
+  });
+});

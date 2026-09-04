@@ -9,8 +9,9 @@ const profile = createSupportInvestigationProfile({
   documents: [{ key: 'investigation', schemaName: 'shared-schema', tabLabel: 'Investigation', ownerLabel: 'Owner' }],
 });
 
-const serviceWith = (enabled: boolean | undefined | Error, configuredProfile = profile) => {
+const serviceWith = (enabled: boolean | undefined | Error, configuredProfile = profile, isConfigured = true) => {
   const featureFlags = {
+    isConfigured: vi.fn(() => isConfigured),
     getFreshFeatureEnabled: vi.fn(async () => {
       if (enabled instanceof Error) throw enabled;
       return enabled;
@@ -40,8 +41,17 @@ describe('SupportInvestigationPolicyService', () => {
     await expect(serviceWith(new Error('Adminpanel unavailable')).service.getState(mockReq().user)).resolves.toBe('unavailable');
   });
 
+  // A deployment that configures investigation but manages no flags in Adminpanel - every local
+  // setup, and any environment where flags come from the applications' own configuration.
+  it('runs on its own configuration when there is no Adminpanel to ask', async () => {
+    const { service, featureFlags } = serviceWith(undefined, profile, false);
+
+    await expect(service.getState(mockReq().user)).resolves.toBe('active');
+    expect(featureFlags.getFreshFeatureEnabled).not.toHaveBeenCalled();
+  });
+
   it('is inactive without configured documents and does not query Adminpanel', async () => {
-    const featureFlags = { getFreshFeatureEnabled: vi.fn() } as unknown as FeatureFlagService;
+    const featureFlags = { isConfigured: vi.fn(() => true), getFreshFeatureEnabled: vi.fn() } as unknown as FeatureFlagService;
     const emptyProfile = createSupportInvestigationProfile({ application: 'KC', documents: [] });
     const service = new SupportInvestigationPolicyService(featureFlags, emptyProfile, 'support');
 
@@ -105,6 +115,7 @@ describe('SupportInvestigationPolicyService', () => {
   it('disables registration in the runtime profile and command policy when investigation ownership is unavailable', async () => {
     const iafProfile = getSupportInvestigationProfile('IAF');
     const featureFlags = {
+      isConfigured: vi.fn(() => true),
       getFreshFeatureEnabled: vi.fn(async () => {
         throw new Error('down');
       }),
@@ -143,7 +154,7 @@ describe('SupportInvestigationPolicyService', () => {
   });
 
   it('allows investigation transfer when the application capability is active', async () => {
-    const featureFlags = { getFreshFeatureEnabled: vi.fn(async () => true) } as unknown as FeatureFlagService;
+    const featureFlags = { isConfigured: vi.fn(() => true), getFreshFeatureEnabled: vi.fn(async () => true) } as unknown as FeatureFlagService;
     const service = new SupportInvestigationPolicyService(featureFlags, profile, 'future-namespace');
 
     await expect(service.assertInvestigationTransferActive(mockUser())).resolves.toBeUndefined();
@@ -154,6 +165,7 @@ describe('SupportInvestigationPolicyService', () => {
     [new Error('feature source down'), 503, 'Investigation document transfer policy is temporarily unavailable'],
   ] as const)('fails protected transfer closed when runtime policy resolves from %s', async (enabled, status, message) => {
     const featureFlags = {
+      isConfigured: vi.fn(() => true),
       getFreshFeatureEnabled: vi.fn(async () => {
         if (enabled instanceof Error) throw enabled;
         return enabled;
@@ -166,7 +178,7 @@ describe('SupportInvestigationPolicyService', () => {
 
   it('fails a configured investigation capability closed when its Support Management API target is unavailable', async () => {
     const iafProfile = getSupportInvestigationProfile('IAF');
-    const featureFlags = { getFreshFeatureEnabled: vi.fn(async () => true) } as unknown as FeatureFlagService;
+    const featureFlags = { isConfigured: vi.fn(() => true), getFreshFeatureEnabled: vi.fn(async () => true) } as unknown as FeatureFlagService;
     const stableService = new SupportInvestigationPolicyService(featureFlags, iafProfile, 'support', 'stable');
 
     await expect(stableService.getState(mockReq().user)).resolves.toBe('unavailable');
@@ -176,7 +188,7 @@ describe('SupportInvestigationPolicyService', () => {
 
   it('activates a configured investigation capability on its declared Support Management API target', async () => {
     const iafProfile = getSupportInvestigationProfile('IAF');
-    const featureFlags = { getFreshFeatureEnabled: vi.fn(async () => true) } as unknown as FeatureFlagService;
+    const featureFlags = { isConfigured: vi.fn(() => true), getFreshFeatureEnabled: vi.fn(async () => true) } as unknown as FeatureFlagService;
     const sprintService = new SupportInvestigationPolicyService(featureFlags, iafProfile, 'support', 'sprint');
 
     await expect(sprintService.getState(mockReq().user)).resolves.toBe('active');
