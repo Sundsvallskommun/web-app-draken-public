@@ -52,6 +52,12 @@
       ],
       "@stores/*": [
         "src/stores/*"
+      ],
+      "@shell/*": [
+        "src/shell/*"
+      ],
+      "@dragons/*": [
+        "src/dragons/*"
       ]
       // "@services/*": ["src/services/*"],
       // "@common/components/*": ["src/components/*"],

@@ -1,8 +1,8 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-import { isROB } from '@common/services/application-service';
 import { Label } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
-import { Resolution, ResolutionLabelROB, Status } from '@supportmanagement/services/support-errand-service';
+import { getSupportErrandPolicy } from '@supportmanagement/policy/support-errand-policy';
+import { Resolution, Status } from '@supportmanagement/services/support-errand-service';
 import { Hourglass } from 'lucide-react';
 import { FC } from 'react';
 import { CErrandAction } from 'src/data-contracts/backend/data-contracts';
@@ -99,22 +99,10 @@ export const SupportStatusLabelComponent: FC<{
 
   const solvedErrandText = () => {
     if (status === Status.SOLVED && resolution) {
-      if (isROB()) {
-        return (ResolutionLabelROB as Record<string, string>)[resolution] ?? 'Löst';
-      }
-
-      switch (resolution) {
-        case Resolution.REGISTERED_EXTERNAL_SYSTEM:
-          return 'Överlämnat';
-        case Resolution.CLOSED:
-          return 'Avslutat';
-        case Resolution.BACK_TO_MANAGER:
-          return 'Åter till chef';
-        case Resolution.BACK_TO_HR:
-          return 'Åter till HR';
-        case Resolution.BACK_TO_CONTACT_SUNDSVALL:
-          return 'Felskickat';
-      }
+      // The running dragon decides what a solved errand's pill says; a resolution it has no text
+      // for falls through to the status's metadata display name like any other status.
+      const label = getSupportErrandPolicy().solvedStatusLabel(resolution);
+      if (label !== undefined) return label;
     }
 
     return supportMetadata?.statuses?.find((s) => s.name === status)?.displayName ?? status;
