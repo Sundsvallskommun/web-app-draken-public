@@ -1,0 +1,62 @@
+{
+  "src/casedata/components/casedata-filtering/components/casedata-filter-channel.component.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/casedata/components/errand/tabs/decision/casedata-decision-tab.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/casedata/components/errand/tabs/overview/casedata-form.component.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/casedata/hooks/useMessageTemplates.ts": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/stores/metadata-store.ts": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/stores/ui-settings-store.ts": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/supportmanagement/components/support-errand-basics-form/ThreeLevelCategorization.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/supportmanagement/components/support-errand-basics-form/TwoLevelCategorization.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/supportmanagement/components/support-errand-basics-form/support-errand-basics-about-form.component.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/supportmanagement/components/support-errand/useSupportErrandTable.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "src/supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-category.component.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "src/supportmanagement/services/support-message-service.ts": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  }
+}

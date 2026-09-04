@@ -50,6 +50,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Fetch base branch for the baseline guard
+        # The guard below compares the boundary baselines against the PR's base branch, which the
+        # shallow checkout does not have. Fetching one commit of it is enough (and cheaper than
+        # fetch-depth: 0). GITHUB_BASE_REF is only set on pull_request events.
+        if: github.event_name == 'pull_request'
+        run: git fetch --no-tags --depth=1 origin "+refs/heads/${GITHUB_BASE_REF}:refs/remotes/origin/${GITHUB_BASE_REF}"
+
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
@@ -59,11 +66,24 @@ jobs:
 
       - name: Install dependencies
         # --ignore-scripts: skip dependency lifecycle scripts (supply-chain hardening).
-        # Safe here: this job only lints/format-checks; no script-installed binaries needed.
+        # Safe here: this job only lints/format-checks/cruises; no script-installed binaries needed
+        # (dependency-cruiser has no install scripts).
         run: yarn --frozen-lockfile --silent --ignore-scripts
 
       - name: Run eslint (strict)
+        # Includes the NEXT_PUBLIC_APPLICATION read rule; pre-existing reads are baselined in
+        # eslint-suppressions.json (see docs/architecture/boundaries.md).
         run: yarn lint:strict
+
+      - name: Check import boundaries
+        # dependency-cruiser rules from .dependency-cruiser.cjs; pre-existing violations are
+        # baselined in .dependency-cruiser-known-violations.json.
+        run: yarn lint:deps
+
+      - name: Baseline may only shrink
+        # Fails when either baseline gained an entry compared to the base branch, so a red
+        # boundary check cannot be "fixed" by regenerating the baseline.
+        run: node ../scripts/boundaries-baseline-guard.mjs
 
       - name: Check formatting
         run: yarn format:check

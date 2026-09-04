@@ -4,6 +4,8 @@ import LoaderFullScreen from '@common/components/loader/loader-fullscreen';
 import { getFeatureFlags } from '@common/services/feature-flag-service';
 import { getAdminUsers, getMe } from '@common/services/user-service';
 import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
+import { APP_IDENTITY } from '@shell/app-identity';
+import { validateDragonConfiguration } from '@shell/compose-dragon';
 import {
   ColorSchemeMode,
   ConfirmationDialogContextProvider,
@@ -68,6 +70,7 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
   const schemaLabRoute = isInvestigationSchemaLabRoute();
   const authenticationRoute = isAuthenticationRoute();
   const [featureFlagsReady, setFeatureFlagsReady] = useState(schemaLabRoute);
+  const [configurationError, setConfigurationError] = useState<Error | null>(null);
   const investigationProfileStatus = useInvestigationProfileStore((state) => state.status);
 
   useEffect(() => {
@@ -91,6 +94,15 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
         // Environment flags remain the fallback when Adminpanel is unavailable.
       }
 
+      // bootstrap.ts validated the environment flags at startup. The runtime flags applied above
+      // can change the investigation-variant flags, so the same check runs again here.
+      try {
+        validateDragonConfiguration(appConfig.features);
+      } catch (error) {
+        setConfigurationError(error instanceof Error ? error : new Error(String(error)));
+        return;
+      }
+
       if (authenticationRoute || !appConfig.isSupportManagement) {
         useInvestigationProfileStore.getState().setDisabled();
         setFeatureFlagsReady(true);
@@ -103,7 +115,7 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
       useInvestigationProfileStore.getState().startLoading();
       setFeatureFlagsReady(true);
       try {
-        const profile = await getInvestigationProfile(process.env.NEXT_PUBLIC_APPLICATION);
+        const profile = await getInvestigationProfile(APP_IDENTITY);
         useInvestigationProfileStore.getState().setProfile(profile);
       } catch (error) {
         console.error('Failed to load the SupportManagement investigation profile.', error);
@@ -134,6 +146,13 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
     investigationProfileStatus === 'ready' ||
     investigationProfileStatus === 'error' ||
     investigationProfileStatus === 'disabled';
+  // Thrown from render on purpose. The validation runs inside an async effect, where a throw is
+  // only an unhandled promise rejection that React never sees; thrown here it reaches the nearest
+  // error boundary above this component. AppLayout renders in the root layout, above the
+  // `[locale]` segment, so that boundary is `src/app/global-error.tsx` - `[locale]/error.tsx`
+  // only covers the pages below the locale layout.
+  if (configurationError) throw configurationError;
+
   if (!mounted) {
     return null;
   }

@@ -1,15 +1,13 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
-import { isROB } from '@common/services/application-service';
 import { Badge, Button, Spinner } from '@sk-web-gui/react';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
+import { getSupportErrandPolicy } from '@supportmanagement/policy/support-errand-policy';
 import {
   assignedStatuses,
   closedStatuses,
   getStatusLabel,
   newStatuses,
-  ongoingStatuses,
-  ongoingStatusesROB,
   Status,
   suspendedStatuses,
 } from '@supportmanagement/services/support-errand-service';
@@ -48,6 +46,10 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
     }
   };
 
+  // Which statuses the "open" button covers is the running dragon's decision (ROB adds its
+  // recruitment steps); the other groups are the same everywhere.
+  const { ongoingStatuses } = getSupportErrandPolicy();
+
   const supportSidebarButtons = useMemo<SidebarButton[]>(
     () => [
       {
@@ -58,9 +60,9 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
         totalStatusErrands: newSupportErrands,
       },
       {
-        label: (isROB() ? getStatusLabel(ongoingStatusesROB) : getStatusLabel(ongoingStatuses)) ?? '',
-        key: isROB() ? ongoingStatusesROB[0] : ongoingStatuses[0],
-        statuses: isROB() ? ongoingStatusesROB : ongoingStatuses,
+        label: getStatusLabel(ongoingStatuses) ?? '',
+        key: ongoingStatuses[0],
+        statuses: ongoingStatuses,
         icon: 'clipboard-pen',
         totalStatusErrands: ongoingSupportErrands,
       },
@@ -86,7 +88,14 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
         totalStatusErrands: solvedSupportErrands,
       },
     ],
-    [newSupportErrands, ongoingSupportErrands, suspendedSupportErrands, assignedSupportErrands, solvedSupportErrands]
+    [
+      ongoingStatuses,
+      newSupportErrands,
+      ongoingSupportErrands,
+      suspendedSupportErrands,
+      assignedSupportErrands,
+      solvedSupportErrands,
+    ]
   );
 
   return (

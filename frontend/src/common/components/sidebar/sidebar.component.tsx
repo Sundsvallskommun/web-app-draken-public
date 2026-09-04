@@ -1,9 +1,7 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { isPT } from '@common/services/application-service';
-import { appConfig } from '@config/appconfig';
 import { Badge, Button, cx, useGui } from '@sk-web-gui/react';
-import { useBadgeStore, useSupportStore } from '@stores/index';
-import { supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
+import { useBadgeStore } from '@stores/index';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { FC, KeyboardEvent, ReactNode, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
@@ -29,7 +27,12 @@ export const Sidebar: FC<{
     icon: string;
     component: ReactNode;
   }[];
-}> = ({ buttons }) => {
+  /**
+   * True while the errand has not been registered yet. Every panel except the first works on a
+   * persisted errand, so they are disabled until then. The wrapper that owns the errand decides.
+   */
+  errandIsUnsaved: boolean;
+}> = ({ buttons, errandIsUnsaved }) => {
   const [open, setOpen] = useState(true);
   const [hover, setHover] = useState<SidebarButtonKey>();
   const [scrolled, setScrolled] = useState<number>(0);
@@ -39,7 +42,6 @@ export const Sidebar: FC<{
   const gui = useGui();
   const isLg = useMediaQuery(`screen and (min-width: ${gui.theme.screens.lg})`);
 
-  const supportErrand = useSupportStore((s) => s.supportErrand);
   const notesCount = useBadgeStore((s) => s.notesCount);
   const serviceNotesCount = useBadgeStore((s) => s.serviceNotesCount);
 
@@ -112,7 +114,7 @@ export const Sidebar: FC<{
                     setSelected(b.key as SidebarButtonKey);
                     setOpen(true);
                   }}
-                  disabled={appConfig.isSupportManagement ? idx !== 0 && supportErrandIsEmpty(supportErrand!) : false}
+                  disabled={idx !== 0 && errandIsUnsaved}
                   onKeyDown={(e) => handleKeyboard(e, idx)}
                   onMouseEnter={() => setHover(b.key)}
                   onMouseLeave={() => setHover(undefined)}

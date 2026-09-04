@@ -1,0 +1,1340 @@
+[
+  {
+    "type": "dependency",
+    "from": "src/casedata/components/casedata-filtering/casedata-filtering.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/components/casedata-filtering/components/casedata-filter-status.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/components/errand/casedata-tabs-wrapper.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/components/errand/forms/contact-relation-select.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/components/errand/phasechanger/phasechanger.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/components/errand/tabs/attachments/casedata-attachments.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/components/errand/tabs/attachments/upload-attachment-modal.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/components/errand/tabs/decision/casedata-decision-tab.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/components/errand/tabs/investigation/casedata-investigation-tab.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/components/errand/tabs/messages/message-composer.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/components/ongoing-casedata-errands/components/errands-table.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/services/casedata-attachment-service.ts",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/services/casedata-decision-service.ts",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/services/casedata-errand-service.ts",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/services/casedata-message-service.ts",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/file-upload/file-upload.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/main-errands-sidebar/main-errands-sidebar.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/sidebar/sidebar.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/services/feature-flag-service.ts",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "./application-service",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/components/ongoing-support-errands/components/supporterrands-table.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/components/support-errand-basics-form/support-errand-basics-about-form.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/components/support-errand/sidebar/sidebar-support-export.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/components/support-errand/support-errand.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/components/support-errand/tabs/support-errand-attachments-tab.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/components/support-errand/useSupportErrandTable.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/components/support-message-form/support-message-form.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component.tsx",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/components/templates/escalation-template.ts",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/investigation/avvikelse/avvikelse-classification-placement.ts",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/services/support-errand-service.ts",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/services/support-escalation-service.ts",
+    "to": "src/common/services/application-service.ts",
+    "unresolvedTo": "@common/services/application-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "application-service-is-shell-only"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/commonNestedEmailArrayV2.tsx",
+    "to": "src/casedata/interfaces/role.ts",
+    "unresolvedTo": "@casedata/interfaces/role",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/commonNestedEmailArrayV2.tsx",
+    "to": "src/supportmanagement/services/support-errand-service.ts",
+    "unresolvedTo": "@supportmanagement/services/support-errand-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/export-button/export-button.component.tsx",
+    "to": "src/casedata/interfaces/errand-status.ts",
+    "unresolvedTo": "@casedata/interfaces/errand-status",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/export-button/export-button.component.tsx",
+    "to": "src/casedata/interfaces/errand.ts",
+    "unresolvedTo": "@casedata/interfaces/errand",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/export/sidebar-export/sidebar-export.component.tsx",
+    "to": "src/casedata/interfaces/errand-status.ts",
+    "unresolvedTo": "@casedata/interfaces/errand-status",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/facilities/facilities.tsx",
+    "to": "src/casedata/services/casedata-errand-service.ts",
+    "unresolvedTo": "@casedata/services/casedata-errand-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/facilities/facilities.tsx",
+    "to": "src/supportmanagement/services/support-errand-service.ts",
+    "unresolvedTo": "@supportmanagement/services/support-errand-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/file-upload/file-upload.component.tsx",
+    "to": "src/casedata/interfaces/attachment.ts",
+    "unresolvedTo": "@casedata/interfaces/attachment",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/file-upload/file-upload.component.tsx",
+    "to": "src/casedata/services/casedata-attachment-service.ts",
+    "unresolvedTo": "@casedata/services/casedata-attachment-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/linked-errands-disclosure/linked-errands-disclosure.component.tsx",
+    "to": "src/casedata/interfaces/errand.ts",
+    "unresolvedTo": "@casedata/interfaces/errand",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/linked-errands-disclosure/linked-errands-disclosure.component.tsx",
+    "to": "src/casedata/services/casedata-stakeholder-service.ts",
+    "unresolvedTo": "@casedata/services/casedata-stakeholder-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/linked-errands-disclosure/linked-errands-disclosure.component.tsx",
+    "to": "src/supportmanagement/services/support-errand-service.ts",
+    "unresolvedTo": "@supportmanagement/services/support-errand-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/linked-errands-disclosure/linked-errands-disclosure.component.tsx",
+    "to": "src/supportmanagement/services/support-stakeholder-service.ts",
+    "unresolvedTo": "@supportmanagement/services/support-stakeholder-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/linked-errands-disclosure/relation-tables/relations-from-table.component.tsx",
+    "to": "src/casedata/interfaces/case-label.ts",
+    "unresolvedTo": "@casedata/interfaces/case-label",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/linked-errands-disclosure/relation-tables/relations-to-table.component.tsx",
+    "to": "src/casedata/interfaces/case-label.ts",
+    "unresolvedTo": "@casedata/interfaces/case-label",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/main-errands-sidebar/main-errands-sidebar.component.tsx",
+    "to": "src/casedata/components/casedata-filtering/casedata-filtering.component.tsx",
+    "unresolvedTo": "@casedata/components/casedata-filtering/casedata-filtering.component",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/main-errands-sidebar/main-errands-sidebar.component.tsx",
+    "to": "src/casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component.tsx",
+    "unresolvedTo": "@casedata/components/casedata-filtering/components/casedata-filter-sidebarstatus-selector.component",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/main-errands-sidebar/main-errands-sidebar.component.tsx",
+    "to": "src/casedata/components/casedata-filtering/components/casedata-filter-status.component.tsx",
+    "unresolvedTo": "@casedata/components/casedata-filtering/components/casedata-filter-status.component",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/main-errands-sidebar/main-errands-sidebar.component.tsx",
+    "to": "src/supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component.tsx",
+    "unresolvedTo": "@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-sidebarstatus-selector.component",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/main-errands-sidebar/main-errands-sidebar.component.tsx",
+    "to": "src/supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component.tsx",
+    "unresolvedTo": "@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/message/message-avatar.component.tsx",
+    "to": "src/casedata/services/casedata-message-service.ts",
+    "unresolvedTo": "@casedata/services/casedata-message-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/message/message-avatar.component.tsx",
+    "to": "src/supportmanagement/services/support-message-service.ts",
+    "unresolvedTo": "@supportmanagement/services/support-message-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/notifications/notification-item.tsx",
+    "to": "src/casedata/services/casedata-notification-service.ts",
+    "unresolvedTo": "@casedata/services/casedata-notification-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/notifications/notification-item.tsx",
+    "to": "src/supportmanagement/services/support-notification-service.ts",
+    "unresolvedTo": "@supportmanagement/services/support-notification-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/notifications/notifications-wrapper.tsx",
+    "to": "src/casedata/services/casedata-notification-service.ts",
+    "unresolvedTo": "@casedata/services/casedata-notification-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/notifications/notifications-wrapper.tsx",
+    "to": "src/supportmanagement/services/support-notification-service.ts",
+    "unresolvedTo": "@supportmanagement/services/support-notification-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/priority/priority.component.tsx",
+    "to": "src/casedata/interfaces/priority.ts",
+    "unresolvedTo": "@casedata/interfaces/priority",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/priority/priority.component.tsx",
+    "to": "src/supportmanagement/interfaces/priority.ts",
+    "unresolvedTo": "@supportmanagement/interfaces/priority",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/referred-from-errand-information/referred-from-errand-information.component.tsx",
+    "to": "src/supportmanagement/services/support-errand-service.ts",
+    "unresolvedTo": "@supportmanagement/services/support-errand-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/sidebar/sidebar.component.tsx",
+    "to": "src/casedata/components/errand/sidebar/sidebar-tooltip.component.tsx",
+    "unresolvedTo": "../../../casedata/components/errand/sidebar/sidebar-tooltip.component",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/components/template-preview/template-pdf-preview.component.tsx",
+    "to": "src/casedata/services/casedata-decision-service.ts",
+    "unresolvedTo": "@casedata/services/casedata-decision-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/interfaces/sidebar-button.ts",
+    "to": "src/casedata/interfaces/errand-status.ts",
+    "unresolvedTo": "@casedata/interfaces/errand-status",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/interfaces/sidebar-button.ts",
+    "to": "src/supportmanagement/services/support-errand-service.ts",
+    "unresolvedTo": "@supportmanagement/services/support-errand-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/services/export-service.ts",
+    "to": "src/casedata/interfaces/case-label.ts",
+    "unresolvedTo": "@casedata/interfaces/case-label",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/services/export-service.ts",
+    "to": "src/casedata/interfaces/errand.ts",
+    "unresolvedTo": "@casedata/interfaces/errand",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/services/export-service.ts",
+    "to": "src/casedata/services/casedata-extra-parameters-service.ts",
+    "unresolvedTo": "@casedata/services/casedata-extra-parameters-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/services/export-service.ts",
+    "to": "src/supportmanagement/services/support-errand-service.ts",
+    "unresolvedTo": "@supportmanagement/services/support-errand-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "type-only",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/common/services/relations-service.ts",
+    "to": "src/supportmanagement/interfaces/priority.ts",
+    "unresolvedTo": "@supportmanagement/interfaces/priority",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "core-does-not-import-domains"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/components/errand/tabs/billing/billing-status-label.component.tsx",
+    "to": "src/supportmanagement/services/support-billing-service.ts",
+    "unresolvedTo": "@supportmanagement/services/support-billing-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "domains-do-not-import-each-other"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/hooks/useMessageTemplates.ts",
+    "to": "src/supportmanagement/services/message-template-service.ts",
+    "unresolvedTo": "@supportmanagement/services/message-template-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "domains-do-not-import-each-other"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/services/casedata-decision-service.ts",
+    "to": "src/supportmanagement/services/message-template-service.ts",
+    "unresolvedTo": "@supportmanagement/services/message-template-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "domains-do-not-import-each-other"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/casedata/services/casedata-history-service.ts",
+    "to": "src/supportmanagement/interfaces/priority.ts",
+    "unresolvedTo": "@supportmanagement/interfaces/priority",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "domains-do-not-import-each-other"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component.tsx",
+    "to": "src/casedata/interfaces/errand.ts",
+    "unresolvedTo": "@casedata/interfaces/errand",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "domains-do-not-import-each-other"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/components/support-errand/sidebar/sidebar-generic-notes.component.tsx",
+    "to": "src/casedata/interfaces/errandNote.ts",
+    "unresolvedTo": "@casedata/interfaces/errandNote",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "domains-do-not-import-each-other"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/components/support-errand/sidebar/sidebar-generic-notes.component.tsx",
+    "to": "src/casedata/services/casedata-errand-notes-service.ts",
+    "unresolvedTo": "@casedata/services/casedata-errand-notes-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "domains-do-not-import-each-other"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/components/support-message-form/support-message-form.component.tsx",
+    "to": "src/casedata/hooks/useMessageTemplates.ts",
+    "unresolvedTo": "@casedata/hooks/useMessageTemplates",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "domains-do-not-import-each-other"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/components/support-message-form/support-message-form.component.tsx",
+    "to": "src/casedata/services/casedata-attachment-service.ts",
+    "unresolvedTo": "@casedata/services/casedata-attachment-service",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "domains-do-not-import-each-other"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "src/supportmanagement/services/support-billing-service.ts",
+    "to": "src/casedata/interfaces/priority.ts",
+    "unresolvedTo": "@casedata/interfaces/priority",
+    "dependencyTypes": [
+      "aliased",
+      "aliased-tsconfig",
+      "aliased-tsconfig-paths",
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "domains-do-not-import-each-other"
+    }
+  }
+]

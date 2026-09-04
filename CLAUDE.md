@@ -22,7 +22,10 @@ registry (`investigation-variant-registry.ts`) and one directory per implementat
 and `aot/`. A variant declares which capability flag enables it (`useAvvikelseInvestigation`,
 `useAotInvestigation`), where classification is persisted, and how to render its tab. Selection is
 first-wins over the registry array, and avvikelse is listed first on purpose: a deployment that
-wrongly enables both then degrades to today's behaviour rather than to a placeholder.
+wrongly enables both then degrades to today's behaviour rather than to a placeholder. That fallback
+is defense in depth only: the shell (`src/shell/compose-dragon.ts`, `validateDragonConfiguration`)
+treats both variants enabled as a configuration error, at startup and again after runtime feature
+flags are applied, so a misconfigured deployment fails loudly before first-wins ever matters.
 
 **The rules that keep the two apart:**
 
@@ -63,6 +66,52 @@ Each e2e project needs that drake's dev server already running; the specs self-s
 `NEXT_PUBLIC_APPLICATION` does not match, so a wrong-server run reads as "skipped", not as passed.
 CI runs both as separate matrix jobs in `.github/workflows/playwright.yml`.
 
+## Frontend layering and the dragon boundary
+
+The frontend is one Next.js app serving 14 dragons. Dragon-specific behaviour used to be
+`isKC()`-style branches in shared code; that is being replaced by a layered structure with
+CI-enforced import boundaries. The reference is `docs/architecture/boundaries.md`; the short
+version:
+
+```
+src/app, src/shell          composition: the ONLY reader of NEXT_PUBLIC_APPLICATION; wires dragons in
+src/dragons/<id>            one module per dragon: data + implementations of domain-owned contracts
+src/supportmanagement,      domains: own the contracts (e.g. supportmanagement/policy/support-errand-policy.ts)
+src/casedata
+src/common, src/config,     core: dragon-agnostic and domain-agnostic
+src/stores, src/utils
+```
+
+Imports point downward only. Enforced (all `error`): dragons never import each other; nothing
+below the shell imports the shell or a dragon; `src/common` never imports a domain; the domains
+never import each other; only the shell imports `application-service.ts`; only the shell reads
+`process.env.NEXT_PUBLIC_APPLICATION`. Pre-existing violations of the last four are recorded in
+two baseline files (`frontend/.dependency-cruiser-known-violations.json`,
+`frontend/eslint-suppressions.json`) that CI only lets shrink (`scripts/boundaries-baseline-guard.mjs`).
+
+**How to add dragon-specific behaviour.** Never with `isX()` or an env read. Declare a small,
+concrete contract in the domain that owns the concept (the model is `SupportErrandPolicy`:
+ongoing statuses, resolution labels, default resolution, solved-status label), give it a domain
+default, expose it through a getter the domain code reads, and put the dragon's implementation
+in `src/dragons/<id>/`. The shell merges it over the default in `compose-dragon.ts`. Contracts
+belong to domains, not to a central profile in core, so that adding one changes the owning
+domain and the dragon, never the kernel.
+
+**How to add a dragon.** Add the id to `DRAGON_IDS` in `src/dragons/dragon-module.ts`, create
+`src/dragons/<id>/index.ts` exporting its `DragonModule`, register it in
+`src/shell/dragon-registry.ts` (a missing entry is a type error), add the `.env.<id>-example`,
+package scripts and CI matrix entries. `src/dragons/README.md` and `src/shell/README.md` carry the
+details.
+
+**Bootstrap.** `src/app/layout.tsx` imports `@shell/bootstrap` (server-component graph) and renders
+`<DragonBootstrap />` (client/SSR graph); the policy getter throws if a graph was missed. During
+`next build` for the Docker image the identity is a placeholder, so bootstrap skips composition in
+that phase only (`src/shell/build-phase.ts`).
+
+**When a boundary check fails**, move the concept to the layer that owns it. Do not add a
+suppression, an `eslint-disable`, a rule exception or a baseline entry; the guard rejects a grown
+baseline anyway.
+
 ## Development Commands
 
 All commands require specifying a drake: `{drake}` = kc | ka | mex | pt | rob | lop | ik | msva | se | bou | lok | iaf | vof | aot
@@ -88,7 +137,10 @@ yarn generate:datacontracts:{drake}  # Generate API types from Swagger
 yarn dev:{drake}              # Start Next.js dev server
 yarn build:{drake}            # Build for production
 yarn start:{drake}            # Start production server
-yarn lint                     # Run ESLint
+yarn lint                     # Run ESLint (includes the NEXT_PUBLIC_APPLICATION read rule, suppressions applied)
+yarn lint:deps                # Import-boundary check (dependency-cruiser, baseline applied) - CI runs this
+yarn lint:deps:baseline       # Rewrite the boundary baseline; only after REMOVING violations
+yarn lint:prune-suppressions  # Drop stale ESLint suppressions; only after REMOVING reads
 yarn type-check               # TypeScript check only (app; excludes the colocated tests)
 yarn type-check:test          # TypeScript check for tests (tsconfig.test.json)
 yarn test                     # Vitest unit tests (run mode)
@@ -147,7 +199,11 @@ casedata/             # Case management module
   └── interfaces/     # TypeScript types
 supportmanagement/    # Support ticket module
   ├── components/     # Support errand forms, tabs
+  ├── policy/         # Domain-owned contracts dragons implement (SupportErrandPolicy)
   └── services/       # support-errand-service, etc.
+shell/                # Composition root: reads the app identity, wires dragons, validates config
+  └── layout/         # App composition components (AppLayout, page Layout)
+dragons/<id>/         # One module per dragon (kc, ka, ..., aot): data + contract implementations
 common/               # Shared utilities
   ├── components/     # Reusable UI (layout, sidebar, notifications)
   ├── services/       # api-service, auth-service, etc.
@@ -166,7 +222,7 @@ config/appconfig.tsx  # Feature flags configuration
 
 **Backend:** `@config`, `@controllers/*`, `@services/*`, `@interfaces/*`, `@middlewares/*`, `@utils/*`
 
-**Frontend:** `@casedata/*`, `@supportmanagement/*`, `@common/*`, `@config/*`, `@contexts/*`, `@styles/*`
+**Frontend:** `@casedata/*`, `@supportmanagement/*`, `@common/*`, `@config/*`, `@contexts/*`, `@styles/*`, `@shell/*`, `@dragons/*`
 
 ## External APIs
 
@@ -260,6 +316,8 @@ Run for individual spec files with eg: `npx dotenv -e .env.kc -- playwright test
 | `backend/src/services/api.service.ts`          | HTTP client with OAuth interceptors        |
 | `frontend/src/common/contexts/app.context.tsx` | Global state (AppContext)                  |
 | `frontend/src/config/appconfig.tsx`            | Feature flags configuration                |
+| `frontend/src/shell/compose-dragon.ts`         | Dragon composition and startup validation  |
+| `frontend/.dependency-cruiser.cjs`             | Import-boundary rules (docs/architecture)  |
 | `frontend/next.config.js`                      | Next.js configuration                      |
 
 ## Notes
