@@ -55,6 +55,11 @@ export class SupportInvestigationPolicyService {
       return 'unavailable';
     }
 
+    // Without a flag source the deployment's own configuration is the only answer there is: a
+    // profile with documents, a namespace and a matching API target is a deliberate decision to run
+    // investigation. Calling that an outage locks the errand page over a flag nobody can serve.
+    if (!this.featureFlagService.isConfigured()) return 'active';
+
     try {
       const enabled = await this.featureFlagService.getFreshFeatureEnabled(user, 'useInvestigation', this.namespace);
       if (enabled === undefined) return 'inactive';

@@ -259,6 +259,15 @@ export const SidebarInfo: FC<{
     return administrators.some((a) => a.adAccount === user.username);
   };
 
+  /**
+   * Taking an errand assigns it and moves it to Pågående, and those are two separate writes. When
+   * only the first one lands the errand is already the handler's, so hiding the action behind
+   * "someone else has it" strands it in Ny - where the message tab and the sidebar keep everything
+   * shut and nothing on screen runs the missing half again.
+   */
+  const errandIsAssignedToUser = supportErrand?.assignedUserId === user.username;
+  const canTakeErrand = !errandIsAssignedToUser || supportErrand?.status === Status.NEW;
+
   const solutionComponent = (label: string, info: string, icon: string) => (
     <>
       <div className="flex">
@@ -348,11 +357,14 @@ export const SidebarInfo: FC<{
     }
   };
 
+  // Ny is not a reason to keep the handler from writing: `allowed` already says the errand is
+  // theirs, and an errand that arrives from an e-service is a real errand from the first minute.
+  // The parked and closed states are locked for every action and stay that way.
   const messageSidebarIsDisabled =
     !supportErrand ||
     isSupportErrandLocked(supportErrand!) ||
     !allowed ||
-    [Status.NEW, Status.SUSPENDED, Status.ASSIGNED, Status.SOLVED].includes(supportErrand.status as Status);
+    [Status.SUSPENDED, Status.ASSIGNED, Status.SOLVED].includes(supportErrand.status as Status);
 
   const onError = () => {
     console.error('Something went wrong when saving');
@@ -373,9 +385,7 @@ export const SidebarInfo: FC<{
                 variant="link"
                 className="font-normal"
                 size="sm"
-                disabled={
-                  supportErrandIsEmpty(supportErrand!) || !isAdmin() || supportErrand?.assignedUserId === user.username
-                }
+                disabled={supportErrandIsEmpty(supportErrand!) || !isAdmin() || !canTakeErrand}
                 onClick={() => {
                   selfAssignSupportErrand();
                 }}

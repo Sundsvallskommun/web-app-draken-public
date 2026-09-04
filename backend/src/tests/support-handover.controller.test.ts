@@ -48,7 +48,7 @@ const makeController = ({
   verificationError,
   configuredTargets = targetConfiguration,
 }: ControllerOptions = {}) => {
-  const featureFlags = { getFreshFeatureEnabled: vi.fn(async () => true) } as unknown as FeatureFlagService;
+  const featureFlags = { isConfigured: vi.fn(() => true), getFreshFeatureEnabled: vi.fn(async () => true) } as unknown as FeatureFlagService;
   const policy = new SupportInvestigationPolicyService(featureFlags, profile, 'future-namespace');
   const targets = new SupportInvestigationHandoverTargetService(configuredTargets);
   const verifyReadableDocuments = verificationError

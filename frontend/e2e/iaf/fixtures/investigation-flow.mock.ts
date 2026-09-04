@@ -104,6 +104,11 @@ export interface IafApiTrace {
 export interface IafApiScenario {
   canEdit?: boolean;
   errandStatus?: string;
+  /** null leaves the errand unassigned, which is how it arrives before anyone has taken it. */
+  assignedUserId?: string | null;
+  /** Taking an errand assigns it and then moves it to Pågående; the two can fail separately. */
+  statusTransitionResult?: 'success' | 'bad-request';
+  administrators?: Array<{ name: string; displayName: string; guid: string }>;
   eventType?: 'AVVIKELSE' | 'MISSFORHALLANDE';
   documents?: Record<string, InvestigationDocument>;
   documentReadAccessDeniedFor?: string;
@@ -562,6 +567,9 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
   );
   let classificationPatchAttempts = 0;
   let errandVersion = 7;
+  let errandStatus = scenario.errandStatus ?? 'ONGOING';
+  let errandAssignedUserId =
+    scenario.assignedUserId === null ? undefined : scenario.assignedUserId ?? `${applicationSlug}.test`;
   const trace: IafApiTrace = {
     profileGets: 0,
     exactSchemaIds: [],
@@ -579,10 +587,10 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     title: `${application}-avvikelse för test`,
     description: '<p>Inrapporterad avvikelse.</p>',
     priority: 'MEDIUM',
-    status: scenario.errandStatus ?? 'ONGOING',
+    status: errandStatus,
     resolution: 'NONE',
     channel: 'WEB_UI',
-    assignedUserId: `${applicationSlug}.test`,
+    ...(errandAssignedUserId ? { assignedUserId: errandAssignedUserId } : {}),
     reporterUserId: `${applicationSlug}.reporter`,
     created: '2026-08-01T10:00:00.000+02:00',
     modified: '2026-08-12T09:00:00.000+02:00',
@@ -661,7 +669,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     }
 
     if (method === 'GET' && path.endsWith('/users/admins')) {
-      await fulfillJson(route, apiResponse([]));
+      await fulfillJson(route, apiResponse(scenario.administrators ?? []));
       return;
     }
 
@@ -722,6 +730,26 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         ...errandLabels.filter(({ resourcePath }) => !resourcePath?.toUpperCase().startsWith('CATEGORY/')),
         ...resolvedCategoryLabels.map((resolvedLabel) => structuredClone(resolvedLabel!)),
       ];
+      errandVersion += 1;
+      await fulfillJson(route, buildErrand());
+      return;
+    }
+
+    if (method === 'PATCH' && path.endsWith(`/supporterrands/${municipalityId}/${errandId}/admin`)) {
+      const body = requestBody(request) as { assignedUserId?: string } | undefined;
+      errandAssignedUserId = body?.assignedUserId;
+      errandVersion += 1;
+      await fulfillJson(route, buildErrand());
+      return;
+    }
+
+    if (method === 'PATCH' && path.endsWith(`/supporterrands/${municipalityId}/${errandId}/status`)) {
+      if (scenario.statusTransitionResult === 'bad-request') {
+        await fulfillJson(route, { message: 'Target status is not available in Support Management metadata' }, 400);
+        return;
+      }
+      const body = requestBody(request) as { status?: string } | undefined;
+      if (body?.status) errandStatus = body.status;
       errandVersion += 1;
       await fulfillJson(route, buildErrand());
       return;

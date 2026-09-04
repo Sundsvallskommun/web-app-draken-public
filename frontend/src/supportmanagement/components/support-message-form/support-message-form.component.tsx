@@ -285,7 +285,7 @@ export const SupportMessageForm: FC<{
 
     let sendPromise: Promise<any>;
 
-    if (contactMeans === 'draken' || contactMeans === 'minasidor') {
+    if (contactMeans === 'draken' || contactMeans === 'minasidor' || contactMeans === 'katla') {
       const conversationId = await getOrCreateSupportConversationId(
         municipalityId,
         supportErrand,
@@ -533,6 +533,20 @@ export const SupportMessageForm: FC<{
                 {...register('contactMeans')}
               >
                 Draken
+              </RadioButton>
+            )}
+            {/* Katla answers on the errand's own internal conversation, the one no errand relation
+                points at, so it needs neither a linked errand nor the relations feature. */}
+            {(Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE && (
+              <RadioButton
+                disabled={props.locked}
+                data-cy="useKatla-radiobutton-true"
+                className="mr-sm mt-4"
+                id="useKatla"
+                value="katla"
+                {...register('contactMeans')}
+              >
+                Katla
               </RadioButton>
             )}
             {appConfig.features.useMyPages &&

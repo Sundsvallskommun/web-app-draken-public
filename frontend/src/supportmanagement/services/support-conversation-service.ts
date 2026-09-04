@@ -221,13 +221,19 @@ export const getOrCreateSupportConversationId = async (
   relationErrands: RelationWithErrandNumber[],
   messageConversationId: string
 ): Promise<string> => {
-  const conversationType = contactMeans === 'draken' ? 'INTERNAL' : 'EXTERNAL';
+  const conversationType = contactMeans === 'draken' || contactMeans === 'katla' ? 'INTERNAL' : 'EXTERNAL';
   const selectedEntry = relationErrands.find((entry) => entry.otherResourceId === selectedRelationId);
 
   const conversations = await getSupportConversations(municipalityId, supportErrand.id!);
   const existingExternalConversation = conversations.data.find((c) => c.type === 'EXTERNAL');
   const existingInternalConversation = conversations.data.find(
     (conv: any) => conv.relationIds && conv.relationIds[0] === selectedEntry?.relation.id
+  );
+  // Katla's thread is the internal conversation that is tied to no errand relation at all, which
+  // is why it cannot be found by relation id like the others. Finding it is what keeps one thread
+  // per errand rather than a new one for every message sent.
+  const existingRelationlessConversation = conversations.data.find(
+    (conversation: any) => !conversation.relationIds?.length && conversation.type !== 'EXTERNAL'
   );
 
   let conversationId: string | undefined = undefined;
@@ -240,16 +246,24 @@ export const getOrCreateSupportConversationId = async (
     conversationId = existingExternalConversation.id;
   }
 
+  if (contactMeans === 'katla' && existingRelationlessConversation) {
+    conversationId = existingRelationlessConversation.id;
+  }
+
   if (messageConversationId) {
     conversationId = messageConversationId;
   }
 
   if (!conversationId) {
+    // Katla is answered without a relation even when the errand happens to have one: a linked
+    // errand is picked for Draken and that choice is kept in the form, so reading it here would
+    // quietly tie Katla's thread to whatever errand was linked last.
+    const relation = contactMeans === 'draken' ? selectedEntry : undefined;
     let topic;
     if (conversationType === 'EXTERNAL') {
       topic = `Mina sidor`;
     } else {
-      topic = `${supportErrand.errandNumber}${selectedEntry ? ` - ${selectedEntry.errandNumber}` : ''}`;
+      topic = `${supportErrand.errandNumber}${relation ? ` - ${relation.errandNumber}` : ''}`;
     }
 
     const newConversation = await createSupportConversation(
@@ -257,7 +271,7 @@ export const getOrCreateSupportConversationId = async (
       supportErrand.id!,
       topic,
       conversationType,
-      selectedEntry?.relation.id
+      relation?.relation.id
     );
     conversationId = newConversation.data.id;
   }

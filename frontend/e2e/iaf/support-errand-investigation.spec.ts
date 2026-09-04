@@ -1249,4 +1249,92 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(details).not.toContainText('SKA BARA VISAS UNDER UTREDNING HSL');
     expect(trace.exactSchemaIds).toContain(katlaSchemaId);
   });
+  /**
+   * The errand arrives from Katla unclassified, and its classification is written by the
+   * investigation document rather than in Grundinformation. Reading that as "not registered yet"
+   * left the whole errand page disabled: "Ta ärende", the tabs and every sidebar action. While the
+   * capability is unavailable the control is on screen but read-only, so it cannot take a
+   * classification either - the same errand must stay handleable there too.
+   */
+  /**
+   * Taking an errand is two writes and only the first one landed. The errand is the handler's now
+   * but still lies in Ny, where the message tab keeps "Nytt meddelande" shut - so the message has
+   * to say which half is missing, and the button has to be usable again to run the other one.
+   */
+  test('behåller tilldelningen och säger vad som fattas när statusbytet faller', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installIafApiMock(page, {
+      errandStatus: 'NEW',
+      assignedUserId: null,
+      administrators: [{ name: 'iaf.test', displayName: 'Testare Iaf', guid: 'admin-guid' }],
+      statusTransitionResult: 'bad-request',
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await page.locator('[data-cy="self-assign-errand-button"]').click();
+
+    await expect(page.getByText('Handläggaren tilldelades, men ärendet kunde inte sättas till Pågående')).toBeVisible();
+    await expect(page.locator('[data-cy="admin-input"]')).toHaveValue('Testare Iaf');
+    await expect(page.locator('[data-cy="self-assign-errand-button"]')).toBeEnabled();
+  });
+
+  /**
+   * The errand arrives from Katla as Ny and stays there until someone moves it. That is not a
+   * reason to keep its handler from answering it - being the assigned handler is the whole
+   * permission - and blocking on the status left the tab's only action dead.
+   */
+  test('låter handläggaren skriva meddelanden på ett ärende som ligger i Ny', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    // The mock signs in as iaf.test in both projects, and writing requires being the errand's own
+    // handler - so the errand has to be assigned to that account.
+    await installIafApiMock(page, {
+      errandStatus: 'NEW',
+      assignedUserId: 'iaf.test',
+      administrators: [{ name: 'iaf.test', displayName: 'Testare Iaf', guid: 'admin-guid' }],
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await page.getByRole('tab', { name: /Meddelanden/ }).click();
+
+    await expect(page.locator('[data-cy="new-message-button"]')).toBeEnabled();
+  });
+
+  for (const state of ['active', 'unavailable'] as const) {
+    test(`låter ett oklassificerat ärende tas och hanteras när utredningen är ${state}`, async ({
+      page,
+      dismissCookieConsent,
+    }) => {
+      const profile = defaultInvestigationProfile();
+      profile.state = state;
+      // The mock signs in as iaf.test in both projects; "Ta ärende" needs that account to be an
+      // administrator and the errand to be unassigned.
+      await installIafApiMock(page, {
+        investigationProfile: profile,
+        classification: { category: 'NONE', type: 'NONE' },
+        labels: [],
+        assignedUserId: null,
+        administrators: [{ name: 'iaf.test', displayName: 'Testare Iaf', guid: 'admin-guid' }],
+      });
+
+      await visitErrand(page, dismissCookieConsent);
+
+      await expect(page.locator('[data-cy="self-assign-errand-button"]')).toBeEnabled();
+      await expect(page.getByRole('heading', { name: 'Registrera nytt ärende' })).toHaveCount(0);
+      await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toBeEnabled();
+
+      // Editing anything else must be savable: the errand PATCH leaves classification alone in
+      // both states, so the form must not hold the button shut over a classification the user is
+      // not the one to give it.
+      const saveButton = page
+        .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')
+        .filter({ hasText: 'Spara ärende' });
+      await expect(saveButton).toBeDisabled();
+      await page.locator('[data-cy="channel-input"]').selectOption('PHONE');
+      await expect(saveButton).toBeEnabled();
+    });
+  }
 });
