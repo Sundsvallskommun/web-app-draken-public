@@ -85,9 +85,43 @@ const BASELINES = [
   },
 ];
 
+/**
+ * git is resolved from a fixed list of absolute locations rather than from PATH: the CI runners
+ * and the developer machines this repo targets all have /usr/bin/git, and Homebrew's is the usual
+ * override. Set GIT_BINARY to an absolute path to use another installation.
+ */
+const GIT_LOCATIONS = [
+  "/usr/bin/git",
+  "/usr/local/bin/git",
+  "/opt/homebrew/bin/git",
+];
+
+function resolveGitBinary() {
+  const override = process.env.GIT_BINARY;
+  if (override) {
+    if (!path.isAbsolute(override) || !existsSync(override)) {
+      throw new Error(
+        `GIT_BINARY must be an absolute path to an existing git executable, got "${override}"`
+      );
+    }
+    return override;
+  }
+  const found = GIT_LOCATIONS.find((candidate) => existsSync(candidate));
+  if (!found) {
+    throw new Error(
+      `git not found at ${GIT_LOCATIONS.join(
+        ", "
+      )}; set GIT_BINARY to its absolute path`
+    );
+  }
+  return found;
+}
+
+const gitBinary = resolveGitBinary();
+
 function git(args, { allowFailure = false } = {}) {
   try {
-    return execFileSync("git", ["-C", repoRoot, ...args], {
+    return execFileSync(gitBinary, ["-C", repoRoot, ...args], {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
     });
