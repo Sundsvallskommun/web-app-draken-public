@@ -1,8 +1,8 @@
 import '@shell/bootstrap';
 import '@styles/tailwind.scss';
 
-import AppLayout from '@common/components/layout/_app';
 import { DragonBootstrap } from '@shell/dragon-bootstrap.client';
+import AppLayout from '@shell/layout/app-layout';
 import { headers } from 'next/headers';
 import { ReactNode } from 'react';
 
