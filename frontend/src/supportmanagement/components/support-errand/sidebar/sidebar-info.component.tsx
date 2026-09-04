@@ -1,5 +1,5 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-import { deepFlattenToObject, prettyTime } from '@common/services/helper-service';
+import { hasDirtyFields, prettyTime } from '@common/services/helper-service';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
@@ -467,11 +467,7 @@ export const SidebarInfo: FC<{
             className="w-full my-8"
             data-cy="save-button"
             type="button"
-            disabled={
-              isSupportErrandLocked(supportErrand!) ||
-              !Object.values(deepFlattenToObject(formState.dirtyFields)).some((v) => v) ||
-              formIsNotValid
-            }
+            disabled={isSupportErrandLocked(supportErrand!) || !hasDirtyFields(formState.dirtyFields) || formIsNotValid}
             onClick={handleSubmit(() => {
               return onSubmit();
             }, onError)}
