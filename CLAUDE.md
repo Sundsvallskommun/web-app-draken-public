@@ -17,15 +17,11 @@ IAF/VOF (**avvikelse**) and **AOT** both switch on the investigation feature, bu
 implementations chosen at runtime by capability flag. This is the likeliest place for one team's
 work to break another's, so the boundary is explicit, and it is tested from both sides.
 
-`frontend/src/supportmanagement/investigation/` holds the contract (`investigation-variant.ts`), the
-registry (`investigation-variant-registry.ts`) and one directory per implementation — `avvikelse/`
-and `aot/`. A variant declares which capability flag enables it (`useAvvikelseInvestigation`,
-`useAotInvestigation`), where classification is persisted, and how to render its tab. Selection is
-first-wins over the registry array, and avvikelse is listed first on purpose: a deployment that
-wrongly enables both then degrades to today's behaviour rather than to a placeholder. That fallback
-is defense in depth only: the shell (`src/shell/compose-dragon.ts`, `validateDragonConfiguration`)
-treats both variants enabled as a configuration error, at startup and again after runtime feature
-flags are applied, so a misconfigured deployment fails loudly before first-wins ever matters.
+`frontend/src/supportmanagement/investigation/` owns the contract and registry only.
+`frontend/src/avvikelse/` implements Avvikelse; `frontend/src/dragons/aot/investigation/`
+implements AOT. Each dragon's `application.ts` supplies its variant at build time. Runtime
+flags may enable that variant but cannot load a different one. Enabling conflicting variants
+is rejected at startup and after Adminpanel flags are applied.
 
 **The rules that keep the two apart:**
 
@@ -82,8 +78,8 @@ src/common, src/config,     core: dragon-agnostic and domain-agnostic
 src/stores, src/utils
 ```
 
-Imports point downward only. Enforced (all `error`): dragons never import each other; nothing
-below the shell imports the shell or a dragon; `src/common` never imports a domain; the domains
+Dragon application entrypoints may reuse `shell/ui/`; domain/core code cannot import composition. Enforced (all `error`): dragons never import each other; nothing
+in domains or core imports the shell or a dragon; `src/common` never imports a domain; the domains
 never import each other; only the shell imports `application-service.ts`; only the shell reads
 `process.env.NEXT_PUBLIC_APPLICATION`. Pre-existing violations of the last four are recorded in
 two baseline files (`frontend/.dependency-cruiser-known-violations.json`,
@@ -97,11 +93,10 @@ in `src/dragons/<id>/`. The shell merges it over the default in `compose-dragon.
 belong to domains, not to a central profile in core, so that adding one changes the owning
 domain and the dragon, never the kernel.
 
-**How to add a dragon.** Add the id to `DRAGON_IDS` in `src/dragons/dragon-module.ts`, create
-`src/dragons/<id>/index.ts` exporting its `DragonModule`, register it in
-`src/shell/dragon-registry.ts` (a missing entry is a type error), add the `.env.<id>-example`,
-package scripts and CI matrix entries. `src/dragons/README.md` and `src/shell/README.md` carry the
-details.
+**How to add a dragon.** Follow `docs/architecture/dragon-development.md`. Add its catalog
+entry, frontend and backend `dragons/<id>/application.ts`, backend `server.ts`, env examples
+and typed test inventories. Frontend `index.ts` owns domain policy overrides. The CLI and CI
+build matrix discover the catalog automatically; no new build-family code is needed.
 
 **Bootstrap.** `src/app/layout.tsx` imports `@shell/bootstrap` (server-component graph) and renders
 `<DragonBootstrap />` (client/SSR graph); the policy getter throws if a graph was missed. During
@@ -159,7 +154,7 @@ yarn test:e2e:iaf-schema-lab  # Playwright E2E for the development-only schema l
 
 ## Tech Stack
 
-**Backend:** Node 20, Express 4, TypeScript, routing-controllers (decorator-based), SAML auth (passport-saml), Winston logging, Axios
+**Backend:** Node 22+, Express 4, TypeScript, routing-controllers (decorator-based), SAML auth (passport-saml), Winston logging, Axios
 
 **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS, @sk-web-gui (Sundsvall design system), react-hook-form + yup, i18next (Swedish only), @rjsf for dynamic JSON Schema forms
 
@@ -279,12 +274,10 @@ runner matches the backend and so tests are no longer restricted to alias-free m
 - **Scope**: pure functions — parsers, projectors, policy resolvers
   (`resolveCategorizationControl`, `parseInvestigationProfile`, `projectLabelFilterGroups`, …).
   Anything needing rendering or navigation belongs in the Playwright suites below.
-- **Type-checking**: `yarn type-check` does **not** cover the tests — the root `tsconfig.json`
-  `include` entry `src/**/*.{ts,tsx}` uses brace expansion, which TypeScript's include globs do
-  not support, so it matches nothing and `src` is only reached transitively through imports.
-  Test files have no importer, so `tsconfig.test.json` includes them explicitly and
-  `yarn type-check:test` runs it. The test config disables incremental compilation so the
-  type-check does not create a generated `tsconfig.test.tsbuildinfo` artifact.
+- **Type-checking**: the frontend config includes `src/**/*.ts` and `src/**/*.tsx` explicitly,
+  so application entrypoints and colocated unit tests are checked even when they have no importer.
+  Legacy `*.cy.tsx` component specs are excluded from this app check. `tsconfig.test.json`
+  additionally keeps the unit-test check usable without generated Next types.
 - **CI**: `.github/workflows/frontend-unit.yml` runs `yarn type-check:test` and `yarn test` on
   pull requests and pushes to `develop`/`main`.
 - **Test data**: the same rule as the backend applies — no real person numbers, organization
@@ -311,7 +304,7 @@ Run for individual spec files with eg: `npx dotenv -e .env.kc -- playwright test
 
 | File                                           | Purpose                                    |
 | ---------------------------------------------- | ------------------------------------------ |
-| `backend/src/server.ts`                        | Entry point, registers all controllers     |
+| `backend/src/dragons/<id>/server.ts`                        | Starts the selected dragon application     |
 | `backend/src/app.ts`                           | Express setup, middleware chain, SAML auth |
 | `backend/src/services/api.service.ts`          | HTTP client with OAuth interceptors        |
 | `frontend/src/common/contexts/app.context.tsx` | Global state (AppContext)                  |
@@ -326,3 +319,10 @@ Run for individual spec files with eg: `npx dotenv -e .env.kc -- playwright test
 - No database layer - all data via external APIs
 - Multi-tenant via environment configuration (one codebase, many deployments)
 - SAML SSO authentication with Active Directory group-based authorization
+
+**Dragon builds and onboarding.** Follow `docs/architecture/dragon-development.md`. The root
+`yarn dragon` CLI owns dev/build/start. Docker context is the repository root and
+`DRAKEN_BUILD_DRAGON` is mandatory. Only the selected dragon composes investigation variants
+and backend controllers; runtime flags cannot switch applications. Knip lists `nodemon` and
+`tsc-alias` as ignored dependencies because their actual caller is the root CLI outside the
+backend analysis scope.

@@ -1,41 +1,28 @@
 # Frontend import boundaries
 
-One Next.js frontend serves 14 dragons (kc, ka, mex, pt, rob, lop, ik, msva, se, bou, lok, iaf,
+One Next.js codebase with one build target per dragon serves 14 dragons (kc, ka, mex, pt, rob, lop, ik, msva, se, bou, lok, iaf,
 vof, aot). Variation between dragons used to be expressed as `isKC()`-style branches and direct
 reads of `process.env.NEXT_PUBLIC_APPLICATION` scattered through shared code. The layering below
 replaces that with one module per dragon and an explicit direction of dependencies. The layering is
 enforced by CI; this document is the reference for what the checks mean and what to do when one
 fails.
 
+Build entrypoints, backend route boundaries and the onboarding workflow are described in
+[dragon-development.md](dragon-development.md). The remaining import baseline is 38 (down from 79);
+direct imports between the two domains have been removed.
+
 ## Layers
 
-Imports point downward only.
+- `src/app/` and `src/shell/` host Next routes, lifecycle and reusable UI composition.
+- `src/dragons/<id>/application.ts` selects one application's domain UI and investigation;
+  its `index.ts` and policy files provide concrete domain overrides.
+- `src/avvikelse/` implements the shared IAF/VOF workflow **on top of** SM.
+- `src/supportmanagement/` and `src/casedata/` own reusable domain behavior and contracts.
+- `src/common/` and other shared code own concepts independent of a specific domain or dragon.
 
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│  shell            src/shell/**   src/app/** (Next.js routes)                  │
-│                   Composition root. The only layer that knows which dragon is │
-│                   running (reads NEXT_PUBLIC_APPLICATION), wires dragon       │
-│                   modules into domain contracts, validates config at startup. │
-├──────────────────────────────────────────────────────────────────────────────┤
-│  dragons          src/dragons/<id>/**   (kc, ka, mex, pt, rob, lop, ...)      │
-│                   One module per dragon: implementations of contracts the     │
-│                   domains own. src/dragons/dragon-module.ts is the shared     │
-│                   module type, not a dragon.                                  │
-├──────────────────────────────────────────────────────────────────────────────┤
-│  domains          src/supportmanagement/**        src/casedata/**             │
-│                   Business logic and UI per domain. Own the contracts that    │
-│                   dragons implement. Do not import each other.               │
-├──────────────────────────────────────────────────────────────────────────────┤
-│  core             src/common/**  src/config/**  src/stores/**  src/utils/**   │
-│                   src/interfaces/**                                           │
-│                   Shared, dragon-agnostic, domain-agnostic code.              │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
-
-Within a layer: dragons do not import other dragons, and the two investigation implementations
-(`src/supportmanagement/investigation/aot` and `.../avvikelse`) do not import each other (see the
-Investigation section of `CLAUDE.md`).
+Domain/core modules never import composition or dragons. Dragon application entrypoints may
+reuse `shell/ui/`. Dragons never import each other. SM never imports Avvikelse; it consumes
+its investigation contract. AOT's implementation is owned by `src/dragons/aot/investigation/`.
 
 ## Rules
 
@@ -43,12 +30,12 @@ Investigation section of `CLAUDE.md`).
 | --- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------- | ------------------ | -------- |
 | 1   | `src/dragons/<x>/**`                                              | `src/dragons/<y>/**` (y ≠ x)                                                                                    | forbidden              | dependency-cruiser | none     |
 | 1a  | `src/dragons/<x>/**`                                              | `src/dragons/dragon-module.ts` (any file directly under `src/dragons/`), domains, core                          | allowed                | —                  | —        |
-| 2   | anything except `src/shell/**`, `src/app/**`                      | `src/shell/**`                                                                                                  | forbidden              | dependency-cruiser | none     |
+| 2   | anything except `src/shell/**`, `src/app/**`, dragon `application.ts` | `src/shell/**`                                                                                                  | forbidden              | dependency-cruiser | none     |
 | 3   | `src/common`, `src/supportmanagement`, `src/casedata`, `src/config`, `src/stores`, `src/utils`, `src/interfaces` | `src/dragons/**`                                                                              | forbidden              | dependency-cruiser | none     |
 | 4   | `src/common/**`                                                   | `src/casedata/**`, `src/supportmanagement/**`                                                                   | forbidden              | dependency-cruiser | yes      |
 | 5   | `src/supportmanagement/**`                                        | `src/casedata/**` (and the reverse)                                                                             | forbidden              | dependency-cruiser | yes      |
 | 6   | anything except `src/shell/**`, `src/app/**`, the file itself     | `src/common/services/application-service.ts` (`isKC()` and friends)                                            | forbidden              | dependency-cruiser | yes      |
-| 7   | `src/supportmanagement/investigation/aot/**`                      | `src/supportmanagement/investigation/avvikelse/**` (and the reverse)                                            | forbidden              | dependency-cruiser | none     |
+| 7   | `src/dragons/aot/**`                      | `src/avvikelse/**` (and the reverse)                                            | forbidden              | dependency-cruiser | none     |
 | 8   | any `src/**` file                                                 | an import that does not resolve (typically a missing tsconfig path alias)                                       | forbidden              | dependency-cruiser | none     |
 | 9   | anything except `src/shell/**`, `src/app/**`, `application-service.ts` | reading `process.env.NEXT_PUBLIC_APPLICATION` (exact name; `NEXT_PUBLIC_APPLICATION_NAME` is unrelated)    | forbidden              | ESLint             | yes      |
 
@@ -62,12 +49,17 @@ Rule names as they appear in tool output (all `severity: error`):
 | 4   | `core-does-not-import-domains`                                                                  |
 | 5   | `domains-do-not-import-each-other`                                                              |
 | 6   | `application-service-is-shell-only`                                                             |
-| 7   | `investigation-variants-do-not-import-each-other`                                               |
+| 7   | `avvikelse-has-explicit-composition` + `domains-and-core-do-not-import-dragons`                                               |
 | 8   | `no-unresolvable-imports`                                                                       |
 | 9   | ESLint `no-restricted-syntax` in `frontend/eslint.config.mjs` (block with `files: ['src/**']`)  |
 
 "Baseline: yes" means the rule had violations when it was introduced. Those are recorded and
 tolerated; new ones fail. "Baseline: none" rules had zero violations and have no tolerance.
+
+`avvikelse-has-explicit-composition` restricts Avvikelse imports to application entrypoints,
+Avvikelse internals and development-only lab routes. `only-avvikelse-dragons-compose-avvikelse`
+restricts application imports to the dragons declaring Avvikelse in the catalog. These rules
+have no baseline. Shared SM only consumes the investigation contract/registry.
 
 ## Which tool enforces what, and why
 

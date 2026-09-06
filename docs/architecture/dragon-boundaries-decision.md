@@ -1,5 +1,10 @@
 # Beslut: en modul per drake bakom en CI-hållen gräns
 
+Uppdatering 2026-09-06: den införda modellen är **en applikation och ett byggmål per drake**.
+IAF och VOF komponerar Avvikelse ovanpå SupportManagement. Det tidigare mellansteget med tre
+byggfamiljer är ersatt. Följ [den aktuella utvecklingsguiden](dragon-development.md).
+Nedan bevaras det ursprungliga beslutsunderlaget; dess deployalternativ beskriver inte dagens bygge.
+
 |          |                                                                                                                      |
 | -------- | -------------------------------------------------------------------------------------------------------------------- |
 | Status   | Beslutat 2026-09-04, steg 1–3 införda i samma PR som detta dokument                                                  |

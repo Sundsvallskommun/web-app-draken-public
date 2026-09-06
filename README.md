@@ -1,5 +1,8 @@
 # Sundsvalls Kommun Draken
 
+Börja i [guiden för drakar, delat SM-stöd och Avvikelse](docs/architecture/dragon-development.md)
+för lokal start, kodägarskap, nya drakar och deployment. `yarn dragon list` visar applikationerna och deras domänstöd.
+
 ## APIer som används
 
 Dessa APIer används i projektet, applikationsanvändaren i WSO2 måste prenumerera på dessa.
