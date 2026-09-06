@@ -1,19 +1,15 @@
-import { Priority as CasedataPriority } from '@casedata/interfaces/priority';
+import { Priority } from '@common/interfaces/priority';
 import { Badge } from '@sk-web-gui/react';
-import { Priority as SupportPriority } from '@supportmanagement/interfaces/priority';
 import { FC } from 'react';
 
 export const PriorityComponent: FC<{ priority?: string }> = ({ priority = '' }) => {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case CasedataPriority.HIGH:
-      case SupportPriority.HIGH:
+      case Priority.HIGH:
         return 'error';
-      case CasedataPriority.MEDIUM:
-      case SupportPriority.MEDIUM:
+      case Priority.MEDIUM:
         return 'warning';
-      case CasedataPriority.LOW:
-      case SupportPriority.LOW:
+      case Priority.LOW:
         return 'vattjom';
       default:
         return 'vattjom';

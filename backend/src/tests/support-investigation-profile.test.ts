@@ -1,9 +1,6 @@
-import {
-  createSupportInvestigationProfile,
-  getSupportInvestigationProfile,
-  IAF_SUPPORT_INVESTIGATION_PROFILE,
-  VOF_SUPPORT_INVESTIGATION_PROFILE,
-} from '@/config/support-investigation-profile';
+import { IAF_SUPPORT_INVESTIGATION_PROFILE, VOF_SUPPORT_INVESTIGATION_PROFILE } from '@/avvikelse/investigation-profile';
+import { configureSupportInvestigationProfile, getSupportInvestigationProfile } from '@/config/support-investigation-profile';
+import { createSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import { SupportInvestigationProfileDto } from '@/dtos/support-investigation-profile.dto';
 
 const expectedDocuments = [
@@ -19,7 +16,7 @@ const expectDeepFrozen = (value: unknown): void => {
 };
 
 describe('support investigation profiles', () => {
-  it('builds separate immutable IAF and VOF document profiles without classification policy data', () => {
+  it('builds separate immutable IAF and VOF document profiles with server-only classification policy', () => {
     expect(IAF_SUPPORT_INVESTIGATION_PROFILE).toMatchObject({
       application: 'IAF',
       requiredSupportManagementApiTarget: 'sprint',
@@ -32,8 +29,9 @@ describe('support investigation profiles', () => {
         ],
       },
     });
-    expect('classificationPolicy' in IAF_SUPPORT_INVESTIGATION_PROFILE).toBe(false);
-    expect(VOF_SUPPORT_INVESTIGATION_PROFILE).toEqual({ ...IAF_SUPPORT_INVESTIGATION_PROFILE, application: 'VOF' });
+    expect(IAF_SUPPORT_INVESTIGATION_PROFILE.classificationPolicy).toBeDefined();
+    expect(VOF_SUPPORT_INVESTIGATION_PROFILE.documents).toEqual(IAF_SUPPORT_INVESTIGATION_PROFILE.documents);
+    expect(VOF_SUPPORT_INVESTIGATION_PROFILE.application).toBe('VOF');
     expect(IAF_SUPPORT_INVESTIGATION_PROFILE).not.toBe(VOF_SUPPORT_INVESTIGATION_PROFILE);
     expect(IAF_SUPPORT_INVESTIGATION_PROFILE.documents).not.toBe(VOF_SUPPORT_INVESTIGATION_PROFILE.documents);
     expect(IAF_SUPPORT_INVESTIGATION_PROFILE.labelFilter).not.toBe(VOF_SUPPORT_INVESTIGATION_PROFILE.labelFilter);
@@ -41,11 +39,15 @@ describe('support investigation profiles', () => {
     expectDeepFrozen(VOF_SUPPORT_INVESTIGATION_PROFILE);
   });
 
-  it('resolves applications case-insensitively and fails closed for unknown applications', () => {
+  it('serves only the profile selected by the application and fails closed for other identities', () => {
+    configureSupportInvestigationProfile(IAF_SUPPORT_INVESTIGATION_PROFILE);
     expect(getSupportInvestigationProfile(' iaf ')).toBe(IAF_SUPPORT_INVESTIGATION_PROFILE);
-    expect(getSupportInvestigationProfile('vof')).toBe(VOF_SUPPORT_INVESTIGATION_PROFILE);
-    expect(getSupportInvestigationProfile('KC')).toEqual({ application: 'KC', documents: [] });
+    expect(getSupportInvestigationProfile('VOF').documents).toEqual([]);
+    expect(getSupportInvestigationProfile('KC').documents).toEqual([]);
     expect(getSupportInvestigationProfile(undefined)).toEqual({ application: '', documents: [] });
+    configureSupportInvestigationProfile(VOF_SUPPORT_INVESTIGATION_PROFILE);
+    expect(getSupportInvestigationProfile('vof')).toBe(VOF_SUPPORT_INVESTIGATION_PROFILE);
+    expect(getSupportInvestigationProfile('IAF').documents).toEqual([]);
   });
 
   it('canonicalizes advertised fields before they become document allowlist values', () => {

@@ -13,7 +13,6 @@ import {
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { Priority } from '@casedata/interfaces/priority';
 import { Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact, StakeholderType } from '@casedata/interfaces/stakeholder';
 import { getErrand, saveErrand } from '@casedata/services/casedata-errand-service';
@@ -26,6 +25,7 @@ import {
   leaseTypes,
 } from '@casedata/services/contract-service';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
+import { Priority } from '@common/interfaces/priority';
 import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, Checkbox, FormControl, FormLabel, Modal, Select, useSnackbar } from '@sk-web-gui/react';

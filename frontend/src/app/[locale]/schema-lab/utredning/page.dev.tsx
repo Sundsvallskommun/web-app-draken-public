@@ -1,4 +1,4 @@
-import { InvestigationSchemaLabClient } from '@supportmanagement/investigation/avvikelse/schema-lab/investigation-schema-lab-client.component';
+import { InvestigationSchemaLabClient } from '@avvikelse/schema-lab/investigation-schema-lab-client.component';
 import { notFound } from 'next/navigation';
 
 /**

@@ -1,4 +1,4 @@
-import { SidebarExport } from '@common/components/export/sidebar-export/sidebar-export.component';
+import { SidebarExport } from '@casedata/components/export/sidebar-export.component';
 import { Sidebar, SidebarButtonKey } from '@common/components/sidebar/sidebar.component';
 import { ReactNode } from 'react';
 

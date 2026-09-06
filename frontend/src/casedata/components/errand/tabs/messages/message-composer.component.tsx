@@ -1,11 +1,11 @@
 'use client';
 
-import { useMessageTemplates } from '@casedata/hooks/useMessageTemplates';
+import { MEXAttachmentLabels, PTAttachmentLabels } from '@casedata/interfaces/attachment';
 import { Attachment } from '@casedata/interfaces/attachment';
 import { Channels } from '@casedata/interfaces/channels';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Role } from '@casedata/interfaces/role';
-import { ACCEPTED_UPLOAD_FILETYPES, getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
+import { getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
 import { getOrCreateConversationId, sendConversationMessage } from '@casedata/services/casedata-conversation-service';
 import { isMessagesLocked, setErrandStatus, validateAction } from '@casedata/services/casedata-errand-service';
 import { buildCasedataReplyContext } from '@casedata/services/casedata-message-reply-context-service';
@@ -22,7 +22,9 @@ import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
 import { useMessageBodyTemplateState } from '@common/hooks/use-message-body-template-state';
+import { useMessageTemplates } from '@common/hooks/useMessageTemplates';
 import { isMEX } from '@common/services/application-service';
+import { ACCEPTED_UPLOAD_FILETYPES } from '@common/services/attachment-upload-policy';
 import {
   invalidPhoneMessage,
   phonePattern,
@@ -897,6 +899,7 @@ export const MessageComposer: FC<{
           <FormControl id="newAttachments" className="w-full">
             <FormLabel className="flex-grow"></FormLabel>
             <FileUpload
+              attachmentLabels={isMEX() ? MEXAttachmentLabels : PTAttachmentLabels}
               editing={false}
               fieldName="newAttachments"
               fields={newAttachmentsFields}

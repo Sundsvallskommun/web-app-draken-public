@@ -1,8 +1,10 @@
-import { createSupportInvestigationProfile, getSupportInvestigationProfile } from '@/config/support-investigation-profile';
+import { createAvvikelseInvestigationProfile } from '@/avvikelse/investigation-profile';
+import { createSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import { FeatureFlagService } from '@/services/feature-flag.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 
 import { mockReq, mockUser } from './helpers/http';
+import { investigationProfileFixture } from './helpers/investigation-profiles';
 
 const profile = createSupportInvestigationProfile({
   application: 'FUTURE',
@@ -69,7 +71,7 @@ describe('SupportInvestigationPolicyService', () => {
   });
 
   it('moves classification ownership only for IAF/VOF with the fixed owner schema roles', async () => {
-    const iafProfile = createSupportInvestigationProfile({
+    const iafProfile = createAvvikelseInvestigationProfile({
       application: 'IAF',
       documents: [
         {
@@ -113,7 +115,7 @@ describe('SupportInvestigationPolicyService', () => {
   });
 
   it('disables registration in the runtime profile and command policy when investigation ownership is unavailable', async () => {
-    const iafProfile = getSupportInvestigationProfile('IAF');
+    const iafProfile = investigationProfileFixture('IAF');
     const featureFlags = {
       isConfigured: vi.fn(() => true),
       getFreshFeatureEnabled: vi.fn(async () => {
@@ -149,7 +151,7 @@ describe('SupportInvestigationPolicyService', () => {
     });
 
     await expect(serviceWith(true, documentsOnly).service.getClassificationOwner(mockReq().user)).resolves.toBe('generic-errand');
-    expect(serviceWith(true, documentsOnly).service.iafVofClassificationPolicy).toBeUndefined();
+    expect(serviceWith(true, documentsOnly).service.classificationPolicy).toBeUndefined();
     expect(serviceWith(true, documentsOnly).service.labelFilter).toBeUndefined();
   });
 
@@ -177,7 +179,7 @@ describe('SupportInvestigationPolicyService', () => {
   });
 
   it('fails a configured investigation capability closed when its Support Management API target is unavailable', async () => {
-    const iafProfile = getSupportInvestigationProfile('IAF');
+    const iafProfile = investigationProfileFixture('IAF');
     const featureFlags = { isConfigured: vi.fn(() => true), getFreshFeatureEnabled: vi.fn(async () => true) } as unknown as FeatureFlagService;
     const stableService = new SupportInvestigationPolicyService(featureFlags, iafProfile, 'support', 'stable');
 
@@ -187,7 +189,7 @@ describe('SupportInvestigationPolicyService', () => {
   });
 
   it('activates a configured investigation capability on its declared Support Management API target', async () => {
-    const iafProfile = getSupportInvestigationProfile('IAF');
+    const iafProfile = investigationProfileFixture('IAF');
     const featureFlags = { isConfigured: vi.fn(() => true), getFreshFeatureEnabled: vi.fn(async () => true) } as unknown as FeatureFlagService;
     const sprintService = new SupportInvestigationPolicyService(featureFlags, iafProfile, 'support', 'sprint');
 

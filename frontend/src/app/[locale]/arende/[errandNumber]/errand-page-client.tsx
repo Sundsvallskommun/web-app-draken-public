@@ -1,10 +1,9 @@
 'use client';
 
-import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
 import { appConfig } from '@config/appconfig';
+import { applicationUi } from '@dragon';
 import Layout from '@shell/layout/layout.component';
 import { useConfigStore } from '@stores/index';
-import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import NextLink from 'next/link';
 import { useRef } from 'react';
 
@@ -35,15 +34,7 @@ export function ErrandPageClient({ errandNumber }: Readonly<ErrandPageClientProp
           Hoppa till innehåll
         </NextLink>
 
-        {(() => {
-          if (appConfig.isCaseData) {
-            return <CasedataErrandComponent />;
-          }
-          if (appConfig.isSupportManagement) {
-            return !!municipalityId && <SupportErrandComponent />;
-          }
-          return null;
-        })()}
+        {!!municipalityId && <applicationUi.Errand />}
       </Layout>
     </div>
   );

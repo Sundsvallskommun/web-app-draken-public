@@ -3,11 +3,7 @@ import { validate } from 'class-validator';
 import { NextFunction, Response } from 'express';
 import { getMetadataArgsStorage } from 'routing-controllers';
 
-import {
-  IafVofInvestigationClassificationPolicy,
-  resolveIafVofInvestigationClassificationPolicy,
-} from '@/config/iaf-vof-investigation-classification';
-import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
+import { IafVofInvestigationClassificationPolicy, resolveIafVofInvestigationClassificationPolicy } from '@/avvikelse/classification-policy';
 import { SupportFacilitiesController, SupportFacilitiesPayloadDto } from '@/controllers/supportmanagement/support-facilities.controller';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
@@ -15,6 +11,7 @@ import ApiService from '@/services/api.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 
 import { ABSENT_HEADER, mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
+import { investigationProfileFixture } from './helpers/investigation-profiles';
 import { mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';
 
 interface ApiStub {
@@ -23,7 +20,7 @@ interface ApiStub {
 }
 
 const classificationPolicy = (): IafVofInvestigationClassificationPolicy =>
-  resolveIafVofInvestigationClassificationPolicy(getSupportInvestigationProfile('IAF'))!;
+  resolveIafVofInvestigationClassificationPolicy(investigationProfileFixture('IAF'))!;
 
 const facilities = (): SupportFacilitiesPayloadDto => ({
   propertyDesignations: ['SUNDSVALL BÖLE 1:1'],
@@ -56,7 +53,7 @@ const makeController = (
     patch: vi.fn(async (_config: unknown) => ({ data: [{ key: 'saved', values: ['true'] }], message: 'success' })),
   };
   const investigationPolicy = {
-    iafVofClassificationPolicy: options.policy,
+    classificationPolicy: options.policy,
     getClassificationOwner: vi.fn(async () => options.owner ?? 'investigation'),
   };
 

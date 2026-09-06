@@ -2,7 +2,11 @@ import Facilities from '@common/components/facilities/facilities';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { Disclosure } from '@sk-web-gui/react';
 import { useSupportStore } from '@stores/index';
-import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
+import {
+  isSupportErrandLocked,
+  SupportErrand,
+  supportErrandIsEmpty,
+} from '@supportmanagement/services/support-errand-service';
 import { MapPin } from 'lucide-react';
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -52,7 +56,12 @@ export const SupportErrandBasicsRealEstateDisclosure: FC<{
           <Disclosure.Button />
         </Disclosure.Header>
         <Disclosure.Content>
-          <Facilities setValue={setValue} setUnsaved={props.setUnsavedFacility} facilities={facilities}></Facilities>
+          <Facilities
+            editingLocked={!supportErrand || isSupportErrandLocked(supportErrand)}
+            setValue={setValue}
+            setUnsaved={props.setUnsavedFacility}
+            facilities={facilities}
+          ></Facilities>
         </Disclosure.Content>
       </Disclosure>
     </div>

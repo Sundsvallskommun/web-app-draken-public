@@ -1,5 +1,5 @@
-import { All } from '@casedata/interfaces/priority';
 import { PortalPersonData } from '@common/data-contracts/employee/data-contracts';
+import { All } from '@common/interfaces/priority';
 import { User } from '@common/interfaces/user';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { twoDecimals } from '@common/services/helper-service';
@@ -40,21 +40,6 @@ export interface CustomerIdentity {
   customerId: string;
   customerName: string;
 }
-
-export const billingrecordStatusToLabel = (status: string) => {
-  switch (status) {
-    case 'NEW':
-      return 'Ny';
-    case 'APPROVED':
-      return 'Godkänd';
-    case 'REJECTED':
-      return 'Avslagen';
-    case 'INVOICED':
-      return 'Fakturerad';
-    default:
-      return status;
-  }
-};
 
 export const billingFormSchema = yup.object({
   id: yup.string(),

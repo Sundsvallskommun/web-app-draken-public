@@ -9,68 +9,12 @@ import {
 } from '@casedata/interfaces/attachment';
 import { PTCaseType } from '@casedata/interfaces/case-type';
 import { IErrand } from '@casedata/interfaces/errand';
-import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64ToFile, mapAttachmentToUploadFile } from '@common/services/attachment-service';
+import { MAX_FILE_SIZE_MB } from '@common/services/attachment-upload-policy';
 import { UploadFile } from '@sk-web-gui/react';
 import { Attachment } from 'src/data-contracts/backend/data-contracts';
-
-export const MAX_FILE_SIZE_MB = 50;
-
-export const documentMimeTypes = [
-  'video/quicktime',
-  'video/mp4',
-  'video/mpeg',
-  'video/x-ms-wmv',
-  'video/x-msvideo',
-  'application/pdf',
-  'application/rtf',
-  'application/msword',
-  'application/x-tika-msoffice',
-  'text/plain',
-  'application/vnd.ms-excel',
-  'application/vnd.ms-outlook',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.oasis.opendocument.text',
-  'application/vnd.oasis.opendocument.spreadsheet',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-];
-
-export const ACCEPTED_UPLOAD_FILETYPES = [
-  'mov',
-  'mp4',
-  'mpeg',
-  'wmv',
-  'avi',
-  'bmp',
-  'gif',
-  'tif',
-  'tiff',
-  'jpeg',
-  'jpg',
-  'png',
-  'htm',
-  'html',
-  'pdf',
-  'rtf',
-  'docx',
-  'doc',
-  'txt',
-  'xlsx',
-  'xls',
-  'pptx',
-  'odt',
-  'ods',
-  'text/html',
-  'msg',
-  'heic',
-  'heif',
-  '',
-  ...imageMimeTypes,
-  ...documentMimeTypes,
-];
 
 export const getMEXAttachmentKey = (
   label: string

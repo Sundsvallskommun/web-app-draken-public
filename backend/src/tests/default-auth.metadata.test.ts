@@ -8,18 +8,18 @@
 // (default-auth.runtime.test.ts) proves the app-level guard actually denies these requests.
 
 import { PUBLIC_PATHS } from '@/config/public-paths';
-import { CONTROLLERS } from '@/controllers';
 
+import { APPLICATIONS } from './helpers/dragon-applications';
 import { collectRegisteredRoutes } from './helpers/routes';
 
-describe('default-deny auth (metadata)', () => {
-  const routes = collectRegisteredRoutes();
+describe.each(Object.entries(APPLICATIONS))('%s default-deny auth (metadata)', (_dragon, { controllers }) => {
+  const routes = collectRegisteredRoutes(controllers);
 
   it('registers routes for every mounted controller', () => {
     expect(routes.length).toBeGreaterThan(0);
 
     const controllersWithRoutes = new Set(routes.map(route => route.controllerName));
-    expect(controllersWithRoutes.size).toBe(CONTROLLERS.length);
+    expect(controllersWithRoutes.size).toBe(controllers.length);
   });
 
   it('has no route that is both unauthenticated and missing from the allow-list', () => {

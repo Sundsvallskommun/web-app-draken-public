@@ -14,6 +14,7 @@ import request from 'supertest';
 import { BASE_URL_PREFIX } from '@/config';
 import { PUBLIC_PATHS } from '@/config/public-paths';
 
+import { APPLICATIONS } from './helpers/dragon-applications';
 import { collectRegisteredRoutes, toConcretePath } from './helpers/routes';
 
 // Controllers construct an ApiService at module load and handlers call out over the network.
@@ -32,17 +33,18 @@ vi.mock('@/services/api.service', () => {
   };
 });
 
-describe('default-deny auth (runtime)', () => {
-  let server: import('express').Application;
+describe.each(Object.entries(APPLICATIONS))('%s default-deny auth (runtime)', (_dragon, { controllers }) => {
+  let server: import('node:http').Server;
 
   beforeAll(async () => {
     const { default: App } = await import('@/app');
-    const { CONTROLLERS } = await import('@/controllers');
-
-    server = new App(CONTROLLERS, new session.MemoryStore()).getServer();
+    server = new App(controllers, new session.MemoryStore()).getServer().listen(0, '127.0.0.1');
+    await new Promise<void>(resolve => server.once('listening', resolve));
   });
 
-  const routes = collectRegisteredRoutes();
+  afterAll(() => new Promise<void>((resolve, reject) => server.close(error => (error ? reject(error) : resolve()))));
+
+  const routes = collectRegisteredRoutes(controllers);
   const protectedRoutes = routes.filter(route => !PUBLIC_PATHS.includes(route.path));
   const publicRoutes = routes.filter(route => PUBLIC_PATHS.includes(route.path));
 

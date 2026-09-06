@@ -1,7 +1,6 @@
 import { Channels } from '@casedata/interfaces/channels';
 import { ErrandPhasePT } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { Priority } from '@casedata/interfaces/priority';
 import {
   assignedStatuses,
   closedStatuses,
@@ -9,6 +8,7 @@ import {
   findStatusKeyForStatusLabel,
   newStatuses,
 } from '@casedata/services/casedata-errand-service';
+import { Priority } from '@common/interfaces/priority';
 import { Admin } from '@common/services/user-service';
 import { Chip } from '@sk-web-gui/react';
 import { useUiSettingsStore } from '@stores/ui-settings-store';

@@ -1,16 +1,11 @@
-import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wrapper';
-import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
 import { PageHeader } from '@common/components/layout/page-header.component';
 import { userMenuGroups } from '@common/components/layout/userMenuGroups';
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
+import { applicationUi } from '@dragon';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
-import { useCasedataStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { useUserStore } from '@stores/index';
 import { AngeSymbol } from '@styles/ange-symbol';
-import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
-import { isSupportRegistrationEnabled } from '@supportmanagement/investigation/investigation-profile';
-import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
-import { getErrandTypeLabel } from '@supportmanagement/services/support-label-classification-service';
 import { ExternalLink, Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
@@ -20,15 +15,11 @@ export default function Layout({ title, children }: { title: string; children: R
   const user = useUserStore((s) => s.user);
   const applicationEnvironment = getApplicationEnvironment();
   const { isMinLargeDevice } = useThemeQueries();
-  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const pathName = usePathname() ?? '';
-  const errand = useCasedataStore((s) => s.errand);
-  const supportErrand = useSupportStore((s) => s.supportErrand);
   const params = useParams<{ errandNumber?: string }>();
   const errandNumber = params?.errandNumber;
   const [hostName, setHostName] = useState('');
-  const supportApplicationProfile = useInvestigationProfileStore((state) => state.profile);
-  const registrationEnabled = !appConfig.isSupportManagement || isSupportRegistrationEnabled(supportApplicationProfile);
+  const registrationEnabled = applicationUi.useRegistrationEnabled();
 
   useEffect(() => {
     setHostName(window.location.hostname);
@@ -66,40 +57,16 @@ export default function Layout({ title, children }: { title: string; children: R
         />
       </a>
       <span className="text-large">
-        {appConfig.isSupportManagement ? (
-          <>
-            <SupportStatusLabelComponent
-              status={supportErrand?.status ?? ''}
-              resolution={supportErrand?.resolution ?? ''}
-              actions={supportErrand?.actions ?? []}
-            />
-            <span className="font-bold ml-8">
-              {appConfig.features.useThreeLevelCategorization
-                ? getErrandTypeLabel(supportErrand, supportMetadata)?.displayName ?? '(Ärendetyp saknas)'
-                : supportMetadata?.categories
-                    ?.find((t) => t.name === supportErrand?.category)
-                    ?.types?.find((t) => t.name === supportErrand?.classification?.type)?.displayName ||
-                  supportErrand?.type}{' '}
-            </span>
-            <span className="text-small">({errandNumber})</span>
-          </>
-        ) : null}
-        {appConfig.isCaseData ? (
-          <>
-            <CasedataStatusLabelComponent status={errand?.status?.statusType ?? ''} />
-            <span className="font-bold ml-8">Ärende: </span>
-            {errandNumber}
-          </>
-        ) : null}
+        <applicationUi.ErrandTitle errandNumber={errandNumber ?? ''} />
       </span>
     </div>
   );
 
   // CaseData renders the phase handler in the header; SupportManagement renders it in the errand
   // body (above the errand information) — see support-errand.component.tsx.
-  const phaseHandler = <UiPhaseWrapper />;
+  const phaseHandler = applicationUi.HeaderPhase ? <applicationUi.HeaderPhase /> : null;
   const showPhaseHandler =
-    appConfig.isCaseData &&
+    !!applicationUi.HeaderPhase &&
     appConfig.features.useUiPhases &&
     (pathName === '/registrera' || pathName.includes('arende'));
 

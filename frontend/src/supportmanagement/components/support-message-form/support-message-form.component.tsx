@@ -1,13 +1,13 @@
 'use client';
 
-import { useMessageTemplates } from '@casedata/hooks/useMessageTemplates';
-import { ACCEPTED_UPLOAD_FILETYPES } from '@casedata/services/casedata-attachment-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useMessageBodyTemplateState } from '@common/hooks/use-message-body-template-state';
+import { useMessageTemplates } from '@common/hooks/useMessageTemplates';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
+import { ACCEPTED_UPLOAD_FILETYPES } from '@common/services/attachment-upload-policy';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
 import {
   buildMessageTemplateBody,

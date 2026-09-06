@@ -14,6 +14,9 @@ on:
     paths:
       - frontend/src/**
       - frontend/e2e/**
+      - frontend/next.config.js
+      - dragons.json
+      - scripts/dragon.mjs
 
 # En ny push gör tidigare körningar på samma ref inaktuella, men utan detta lever de kvar och
 # konkurrerar om jobbudgeten. Sex pushar på en branch gav sex matriser om fem jobb som alla

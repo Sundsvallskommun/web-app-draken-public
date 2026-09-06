@@ -2,10 +2,11 @@ import { CaseTypesHiddenFromRegistration } from '@casedata/interfaces/case-type'
 import { AppChannels, Channels } from '@casedata/interfaces/channels';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase } from '@casedata/interfaces/errand-phase';
-import { Priority } from '@casedata/interfaces/priority';
 import { Stakeholder } from '@casedata/interfaces/stakeholder';
 import { defaultMunicipality, getCaseLabels, isErrandLocked } from '@casedata/services/casedata-errand-service';
+import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { LinkedErrandsDisclosure } from '@common/components/linked-errands-disclosure/linked-errands-disclosure.component';
+import { Priority } from '@common/interfaces/priority';
 import { appConfig } from '@config/appconfig';
 import { cx, Disclosure, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
@@ -75,6 +76,8 @@ const CasedataForm: FC<CasedataFormProps> = ({
 
   const { caseType, priority } = watch();
   const caseTypesHiddenFromRegistation = Object.keys(CaseTypesHiddenFromRegistration);
+
+  const owner = errand ? getOwnerStakeholder(errand) : undefined;
 
   return (
     <div className="w-full py-24 px-32">
@@ -249,7 +252,12 @@ const CasedataForm: FC<CasedataFormProps> = ({
           />
         ) : null}
         {!registeringNewErrand && appConfig.features.useRelations && errand && (
-          <LinkedErrandsDisclosure errand={errand} />
+          <LinkedErrandsDisclosure
+            errand={errand}
+            relatedPerson={
+              owner ? { id: owner.personId || owner.organizationNumber || '', type: owner.stakeholderType } : undefined
+            }
+          />
         )}
       </div>
     </div>

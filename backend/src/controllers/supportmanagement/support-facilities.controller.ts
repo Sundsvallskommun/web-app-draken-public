@@ -5,7 +5,6 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { preservesIafVofInvestigationClassificationOwnerParameter } from '@/config/iaf-vof-investigation-classification';
 import { Errand, Parameter } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -100,16 +99,13 @@ export class SupportFacilitiesController {
       { ...STREET, values: facilities.streets },
     ];
 
-    const iafVofClassificationPolicy = this.investigationPolicyService.iafVofClassificationPolicy;
-    if (iafVofClassificationPolicy) {
+    const classificationPolicy = this.investigationPolicyService.classificationPolicy;
+    if (classificationPolicy) {
       const classificationOwner = await this.investigationPolicyService.getClassificationOwner(req.user);
       if (classificationOwner === 'unavailable') {
         throw new HttpException(503, 'Investigation classification ownership is temporarily unavailable');
       }
-      if (
-        classificationOwner === 'investigation' &&
-        !preservesIafVofInvestigationClassificationOwnerParameter(currentErrand.parameters, requestedParameters)
-      ) {
+      if (classificationOwner === 'investigation' && !classificationPolicy.preservesOwnerParameters(currentErrand.parameters, requestedParameters)) {
         throw new HttpException(409, 'The investigation classification owner parameter cannot be changed through the facilities endpoint');
       }
     }

@@ -1,10 +1,10 @@
+import { Priority } from '@common/interfaces/priority';
 import { Admin } from '@common/services/user-service';
 import { Chip } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import type { LabelFilterGroupProjection } from '@supportmanagement/filters/label-filter-projector';
 import { reduceLabelFilterSelection } from '@supportmanagement/filters/label-filter-selection';
-import { Priority } from '@supportmanagement/interfaces/priority';
 import { Channels, Status } from '@supportmanagement/services/support-errand-service';
 import { SupportType } from '@supportmanagement/services/support-metadata-service';
 import dayjs from 'dayjs';

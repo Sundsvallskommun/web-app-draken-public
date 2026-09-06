@@ -1,5 +1,6 @@
-import type { AppConfigFeatures } from '@config/appconfig';
-import { DRAGON_IDS, type DragonId, type DragonModule } from '@dragons/dragon-module';
+import { configureMessageTemplateNamespace } from '@common/services/message-template-body-service';
+import type { AppConfig, AppConfigFeatures } from '@config/appconfig';
+import { DRAGON_IDS, type DragonModule, getDragonDefinition } from '@dragons/dragon-module';
 import {
   configureSupportErrandPolicy,
   defaultSupportErrandPolicy,
@@ -7,22 +8,6 @@ import {
 } from '@supportmanagement/policy/support-errand-policy';
 
 import { isDragonId } from './app-identity';
-
-export type DragonRegistry = Readonly<Record<DragonId, DragonModule>>;
-
-/**
- * The composition steps, kept as pure functions of their inputs so they can be unit-tested with
- * fixtures. `bootstrap.ts` is the only caller that feeds them the real identity, registry and
- * feature flags. Every failure here throws: a misconfigured container must fail at startup, not
- * run as the wrong dragon.
- */
-
-export const resolveDragonModule = (identity: string, registry: DragonRegistry): DragonModule => {
-  if (!isDragonId(identity)) {
-    throw new Error(`Unknown dragon "${identity}". NEXT_PUBLIC_APPLICATION must be one of: ${DRAGON_IDS.join(', ')}.`);
-  }
-  return registry[identity];
-};
 
 /** The domain default with the dragon's overrides on top. */
 export const buildSupportErrandPolicy = (dragon: DragonModule): SupportErrandPolicy => {
@@ -38,9 +23,8 @@ export const buildSupportErrandPolicy = (dragon: DragonModule): SupportErrandPol
 };
 
 /**
- * Capability flags combine freely, with one exception: the investigation variants are mutually
- * exclusive implementations of the same tab. `investigation-variant-registry.ts` degrades a double
- * enable to first-wins so a bad deploy still renders; this check is the loud layer in front of it.
+ * Investigation variants are mutually exclusive implementations of the same tab.
+ * Invalid combinations are rejected before any variant is selected.
  * `bootstrap.ts` runs it against the environment flags at startup; `layout/app-layout.tsx` runs
  * it again after Adminpanel's runtime flags are applied, since those can flip the same two flags.
  */
@@ -52,16 +36,41 @@ export const validateDragonConfiguration = (features: AppConfigFeatures): void =
   }
 };
 
+/** Flags may enable features inside a build, but cannot replace the built application. */
+export const validateDragonDeployment = (identity: string, builtIdentity: string, config: AppConfig): void => {
+  if (!isDragonId(identity)) throw new Error(`Unknown dragon "${identity}".`);
+  if (identity !== builtIdentity) {
+    throw new Error(`Dragon ${identity} cannot run in a ${builtIdentity} frontend build.`);
+  }
+  const definition = getDragonDefinition(identity);
+  const caseData = definition.domain === 'casedata';
+  if (config.isCaseData !== caseData || config.isSupportManagement !== !caseData) {
+    throw new Error(
+      `Domain flags do not match the ${builtIdentity} frontend build. Check isCaseData and isSupportManagement.`
+    );
+  }
+  validateDragonConfiguration(config.features);
+  if (config.features.useAvvikelseInvestigation && definition.investigation !== 'avvikelse') {
+    throw new Error('Avvikelse investigation requires a dragon that composes Avvikelse.');
+  }
+  if (config.features.useAotInvestigation && definition.investigation !== 'aot') {
+    throw new Error('AOT investigation requires a dragon that composes AOT.');
+  }
+};
+
 export interface ComposeDragonInput {
   readonly identity: string;
-  readonly registry: DragonRegistry;
+  readonly dragon: DragonModule;
   readonly features: AppConfigFeatures;
 }
 
 /** Validates, resolves the dragon and hands its contracts to the domains. Returns the resolved module. */
-export const composeDragon = ({ identity, registry, features }: ComposeDragonInput): DragonModule => {
+export const composeDragon = ({ identity, dragon, features }: ComposeDragonInput): DragonModule => {
   validateDragonConfiguration(features);
-  const dragon = resolveDragonModule(identity, registry);
+  if (!isDragonId(identity))
+    throw new Error(`Unknown dragon "${identity}". NEXT_PUBLIC_APPLICATION must be one of: ${DRAGON_IDS.join(', ')}.`);
+  if (identity !== dragon.id) throw new Error(`Dragon ${identity} cannot run in a ${dragon.id} frontend build.`);
+  configureMessageTemplateNamespace(dragon.id.toLowerCase());
   configureSupportErrandPolicy(buildSupportErrandPolicy(dragon));
   return dragon;
 };

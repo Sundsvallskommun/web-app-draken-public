@@ -6,8 +6,9 @@
 
 import { getMetadataArgsStorage } from 'routing-controllers';
 
-import { CONTROLLERS } from '@/controllers';
 import authMiddleware from '@/middlewares/auth.middleware';
+
+import { APPLICATIONS } from './dragon-applications';
 
 export interface RegisteredRoute {
   controllerName: string;
@@ -35,9 +36,9 @@ const buildPath = (controllerRoute: unknown, actionRoute: unknown): string => {
  * both alone and alongside hasPermissions()/validationMiddleware(), so text matching would
  * produce false negatives.
  */
-export const collectRegisteredRoutes = (): RegisteredRoute[] => {
+export const collectRegisteredRoutes = (controllers: readonly NewableFunction[] = APPLICATIONS.KC.controllers): RegisteredRoute[] => {
   const storage = getMetadataArgsStorage();
-  const mounted = new Set<unknown>(CONTROLLERS);
+  const mounted = new Set<unknown>(controllers);
   const controllerRouteByTarget = new Map<unknown, unknown>(storage.controllers.map(controller => [controller.target, controller.route]));
 
   return storage.actions

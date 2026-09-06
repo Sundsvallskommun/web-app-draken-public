@@ -1,37 +1,30 @@
-import {
-  acknowledgeCasedataNotification,
-  getCasedataNotifications,
-} from '@casedata/services/casedata-notification-service';
-import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
-import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { sortBy } from '@common/services/helper-service';
-import { appConfig } from '@config/appconfig';
 import { Button, Checkbox, cx, Divider, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
-import {
-  acknowledgeSupportNotification,
-  getSupportNotifications,
-} from '@supportmanagement/services/support-notification-service';
+import { useConfigStore, useUserStore } from '@stores/index';
+import { useNotificationStore } from '@stores/notification-store';
 import { Bell, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { NotificationItem } from './notification-item';
+import type { NotificationSource } from './notification-source';
+import type { NotificationType } from './notification-utils';
 import { getFilteredNotifications } from './notification-utils';
 
-export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boolean) => void }> = ({
-  show,
-  setShow,
-}) => {
+export const NotificationsWrapper: React.FC<{
+  show: boolean;
+  setShow: (arg0: boolean) => void;
+  source: NotificationSource;
+}> = ({ show, source, setShow }) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
-  const notifications = useSupportStore((s) => s.notifications);
-  const setNotifications = useSupportStore((s) => s.setNotifications);
+  const notifications = useNotificationStore((s) => s.notifications);
+  const setNotifications = useNotificationStore((s) => s.setNotifications);
   const user = useUserStore((s) => s.user);
   const toastMessage = useSnackbar();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isAcknowledging, setIsAcknowledging] = useState(false);
 
   useEffect(() => {
-    const getNotifications = appConfig.isCaseData ? getCasedataNotifications : getSupportNotifications;
+    const getNotifications = source.list;
 
     municipalityId &&
       getNotifications(municipalityId)
@@ -40,7 +33,7 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
         })
         .catch((e) => {
           console.error('Something went wrong when fetching notifications');
-          return [] as (SupportNotification | CaseDataNotification)[];
+          return [] as NotificationType[];
         });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [municipalityId, show]);
@@ -102,17 +95,13 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
     try {
       const notificationsToAcknowledge = newNotifications.filter((n) => n.id && selectedIds.has(n.id));
 
-      const acknowledgePromises = notificationsToAcknowledge.map((notification) => {
-        if (appConfig.isCaseData) {
-          return acknowledgeCasedataNotification(municipalityId, notification as CaseDataNotification);
-        } else {
-          return acknowledgeSupportNotification(municipalityId, notification as SupportNotification);
-        }
-      });
+      const acknowledgePromises = notificationsToAcknowledge.map((notification) =>
+        source.acknowledge(municipalityId, notification)
+      );
 
       await Promise.all(acknowledgePromises);
 
-      const getNotifications = appConfig.isCaseData ? getCasedataNotifications : getSupportNotifications;
+      const getNotifications = source.list;
       const updatedNotifications = await getNotifications(municipalityId);
       setNotifications(updatedNotifications);
 
@@ -135,6 +124,20 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
       });
     } finally {
       setIsAcknowledging(false);
+    }
+  };
+
+  const acknowledgeNotification = async (notification: NotificationType): Promise<void> => {
+    try {
+      await source.acknowledge(municipalityId, notification);
+      setNotifications(await source.list(municipalityId));
+    } catch {
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: 'Något gick fel när notifieringen skulle kvitteras',
+        status: 'error',
+      });
     }
   };
 
@@ -209,6 +212,7 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
                     {newNotifications.map((notification) => (
                       <li key={notification.id}>
                         <NotificationItem
+                          onAcknowledge={acknowledgeNotification}
                           notification={notification}
                           isSelected={notification.id ? selectedIds.has(notification.id) : false}
                           onToggleSelect={() => notification.id && handleToggleSelect(notification.id)}
@@ -232,7 +236,7 @@ export const NotificationsWrapper: React.FC<{ show: boolean; setShow: (arg0: boo
                   <ul>
                     {acknowledgedNotifications.map((notification) => (
                       <li key={notification.id}>
-                        <NotificationItem notification={notification} />
+                        <NotificationItem onAcknowledge={acknowledgeNotification} notification={notification} />
                       </li>
                     ))}
                   </ul>

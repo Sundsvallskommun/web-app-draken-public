@@ -1,41 +1,34 @@
-#Backend
-# Install dependencies only when needed
-FROM node:22-slim AS deps
-
-RUN apt-get update
-RUN apt-get install -y openssl
-WORKDIR /app
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
-
-# Rebuild the source code only when needed
+# Build from the repository root with an explicit dragon.
 FROM node:22-slim AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+WORKDIR /app/backend
+COPY backend/package.json backend/yarn.lock ./
+RUN yarn install --frozen-lockfile
+COPY dragons.json /app/dragons.json
+COPY scripts/dragon.mjs /app/scripts/dragon.mjs
+COPY backend/ ./
+ARG DRAKEN_BUILD_DRAGON
+RUN node ../scripts/dragon.mjs build "$DRAKEN_BUILD_DRAGON" backend \
+ && mv "dist-$DRAKEN_BUILD_DRAGON" dist \
+ && node -e 'require("fs").writeFileSync("dist/server.js", `require("./dragons/${process.env.DRAKEN_BUILD_DRAGON.toLowerCase()}/server.js");\n`)'
 
-# RUN yarn build
-RUN yarn build 2>&1 || true && echo "---BUILD EXIT CODE: $?---" && ls -la ./dist/ || echo "dist/ does not exist"
+FROM node:22-slim AS production-deps
+WORKDIR /app/backend
+COPY backend/package.json backend/yarn.lock ./
+RUN yarn install --production --frozen-lockfile
 
-# Production image, copy all the files and run next
 FROM node:22-slim AS runner
-RUN apt-get update
-RUN apt-get install -y openssl
-WORKDIR /app
-
-ENV NODE_ENV production
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nodejs
-
-COPY --from=builder --chown=nodejs:nodejs /app/ ./
-
-#Temporary folder for sessions before redis is implemeted
-RUN mkdir -p /app/data/sessions /app/data/logs /app/data/database && chown -R nodejs:nodejs /app/data
-
+RUN apt-get update && apt-get install -y --no-install-recommends openssl \
+ && rm -rf /var/lib/apt/lists/*
+WORKDIR /app/backend
+ENV NODE_ENV=production
+ENV PORT=3000
+RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nodejs
+COPY --from=production-deps /app/backend/node_modules ./node_modules
+COPY --from=builder /app/backend/dist ./dist
+COPY --from=builder /app/backend/dist/dragon-build.json /app/dragon-build.json
+COPY dragons.json /app/dragons.json
+COPY scripts/assert-dragon-image.cjs /app/scripts/assert-dragon-image.cjs
+RUN mkdir -p data/sessions data/logs data/database && chown -R nodejs:nodejs data
 USER nodejs
-
 EXPOSE 3000
-ENV PORT 3000
-
-CMD ["node", "./dist/server.js"]
+CMD ["sh", "-c", "node /app/scripts/assert-dragon-image.cjs backend && exec node dist/server.js"]

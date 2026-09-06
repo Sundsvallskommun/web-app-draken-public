@@ -23,8 +23,34 @@
  *
  * @type {import('dependency-cruiser').IConfiguration}
  */
+const dragons = require('../dragons.json');
+const avvikelseDragons = Object.entries(dragons)
+  .filter(([, definition]) => definition.investigation === 'avvikelse')
+  .map(([id]) => id.toLowerCase())
+  .join('|');
+
 module.exports = {
   forbidden: [
+    {
+      name: 'avvikelse-does-not-import-casedata',
+      severity: 'error',
+      comment: 'Avvikelse builds on SupportManagement. Domain-independent concepts belong in common.',
+      from: { path: '^src/avvikelse/' },
+      to: { path: '^src/casedata/' },
+    },
+    {
+      name: 'avvikelse-has-explicit-composition',
+      severity: 'error',
+      comment: 'Avvikelse is composed by dragon entrypoints. Shared SM consumes the investigation contract.',
+      from: { pathNot: '^src/dragons/[^/]+/application\\.ts$|^src/avvikelse/|^src/app/.*\\.dev\\.tsx?$' },
+      to: { path: '^src/avvikelse/' },
+    },
+    {
+      name: 'only-avvikelse-dragons-compose-avvikelse',
+      severity: 'error',
+      from: { path: '^src/dragons/', pathNot: `^src/dragons/(${avvikelseDragons})/` },
+      to: { path: '^src/avvikelse/' },
+    },
     {
       name: 'no-cross-dragon-imports',
       severity: 'error',
@@ -50,7 +76,7 @@ module.exports = {
         'routes in src/app may import it. If a domain or core module needs something from the shell, ' +
         'the dependency is pointing the wrong way: define a contract (type/interface) in the domain, ' +
         'let the shell provide the implementation, and consume it via that contract.',
-      from: { pathNot: '^src/(shell|app)/' },
+      from: { pathNot: '^src/(shell|app)/|^src/dragons/[^/]+/application\\.ts$' },
       to: { path: '^src/shell/' },
     },
     {
@@ -61,7 +87,7 @@ module.exports = {
         'src/config, src/stores, src/utils, src/interfaces) must not import src/dragons. Dragon modules ' +
         'sit above the domains and implement contracts the domains own. If a domain needs dragon-specific ' +
         'behaviour, declare a contract in the domain and let the shell inject the dragon implementation.',
-      from: { path: '^src/(common|supportmanagement|casedata|config|stores|utils|interfaces)/' },
+      from: { path: '^src/(common|supportmanagement|casedata|avvikelse|config|stores|utils|interfaces)/' },
       to: { path: '^src/dragons/' },
     },
     {
@@ -101,20 +127,6 @@ module.exports = {
         'Existing violations are recorded in the baseline; do not add new ones.',
       from: { pathNot: '^src/(shell|app)/|^src/common/services/application-service\\.tsx?$' },
       to: { path: '^src/common/services/application-service\\.tsx?$' },
-    },
-    {
-      name: 'investigation-variants-do-not-import-each-other',
-      severity: 'error',
-      comment:
-        'The two investigation implementations (src/supportmanagement/investigation/aot and .../avvikelse) ' +
-        'share the variant contract and nothing else; see the "Investigation" section of CLAUDE.md. ' +
-        'Put shared code in the contract/registry level of src/supportmanagement/investigation, never in ' +
-        'the other implementation. There is no baseline for this rule.',
-      from: { path: '^src/supportmanagement/investigation/(aot|avvikelse)/' },
-      to: {
-        path: '^src/supportmanagement/investigation/(aot|avvikelse)/',
-        pathNot: '^src/supportmanagement/investigation/$1/',
-      },
     },
     {
       name: 'no-unresolvable-imports',

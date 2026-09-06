@@ -1,6 +1,6 @@
 import { Response } from 'express';
 
-import { createSupportInvestigationProfile, getSupportInvestigationProfile } from '@/config/support-investigation-profile';
+import { createSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import {
   SupportErrandJsonParameter,
   SupportErrandJsonParameterController,
@@ -10,6 +10,7 @@ import { SupportInvestigationPolicyService } from '@/services/support-investigat
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
 import { ABSENT_HEADER, mockReq, mockRes, MockResponse } from './helpers/http';
+import { investigationProfileFixture } from './helpers/investigation-profiles';
 import { mockMunicipalityId, mockSupportErrandId } from './helpers/mock-data';
 
 interface DocumentServiceStub {
@@ -26,7 +27,7 @@ const makeController = (application = 'IAF', state: 'active' | 'inactive' | 'una
     getState: vi.fn(async () => state),
   };
   const controller = new SupportErrandJsonParameterController(
-    getSupportInvestigationProfile(application),
+    investigationProfileFixture(application),
     documentService as unknown as SupportJsonParameterService,
     policyService as unknown as SupportInvestigationPolicyService,
   );

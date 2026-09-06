@@ -9,5 +9,7 @@ import { DRAGON_IDS, type DragonId } from '@dragons/dragon-module';
  * being constant-folded into a literal (the same trick `application-service.ts` uses).
  */
 export const APP_IDENTITY: string = String(process.env.NEXT_PUBLIC_APPLICATION || '');
+// next.config.js injects this as a fixed build value; entrypoint.sh never replaces it.
+export const BUILT_DRAGON_ID: string = process.env.DRAKEN_BUILD_DRAGON || '';
 
 export const isDragonId = (value: string): value is DragonId => (DRAGON_IDS as readonly string[]).includes(value);

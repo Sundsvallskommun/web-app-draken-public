@@ -1,4 +1,3 @@
-import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { EstateInformation, EstateInfoSearch } from '@common/interfaces/estate-details';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import {
@@ -9,7 +8,6 @@ import {
   removeMunicipalityName,
 } from '@common/services/facilities-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { appConfig } from '@config/appconfig';
 import {
   Button,
   FormControl,
@@ -22,30 +20,20 @@ import {
   Table,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useCasedataStore, useSupportStore } from '@stores/index';
-import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
 import { FC, useEffect, useState } from 'react';
 import { useForm, UseFormSetValue } from 'react-hook-form';
 
 import { FacilityDetails } from './facilities-details';
-import { FacilitiesErrandDomain, resolveFacilitiesEditingLock } from './facilities-lock-policy';
 
 const Facilities: FC<{
   setValue: UseFormSetValue<any>;
   setUnsaved: (unsaved: boolean) => void;
   facilities: FacilityDTO[];
+  editingLocked: boolean;
   onSave?: (estates: FacilityDTO[]) => Promise<void>;
 }> = (props) => {
-  const { setValue, setUnsaved } = props;
+  const { setValue, setUnsaved, editingLocked } = props;
   const toastMessage = useSnackbar();
-
-  const supportErrand = useSupportStore((s) => s.supportErrand) as any;
-  const errand = useCasedataStore((s) => s.errand) as any;
-  const errandDomain: FacilitiesErrandDomain = appConfig.isSupportManagement ? 'support-management' : 'case-data';
-  const editingLocked = resolveFacilitiesEditingLock(errandDomain, {
-    supportManagement: () => isSupportErrandLocked(supportErrand),
-    caseData: () => isErrandLocked(errand),
-  });
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchType, setSearchType] = useState<string>('');

@@ -2,8 +2,11 @@ import { createSupportManagementLabelFilterProfile } from '@/config/supportmanag
 import { SupportInvestigationProfileDto, SupportManagementLabelFilterProfileDto } from '@/dtos/support-investigation-profile.dto';
 
 import { SUPPORT_MANAGEMENT_API_TARGETS, SupportManagementApiTarget } from './api-config';
+import type { SupportInvestigationClassificationPolicy } from './support-investigation-classification';
 
 export interface SupportInvestigationProfile extends SupportInvestigationProfileDto {
+  /** Server-only business policy. The runtime DTO never serializes this contract. */
+  readonly classificationPolicy?: SupportInvestigationClassificationPolicy;
   readonly requiredSupportManagementApiTarget?: SupportManagementApiTarget;
   readonly labelFilter?: SupportManagementLabelFilterProfileDto;
 }
@@ -37,8 +40,8 @@ const requireProfileIdentifier = (value: string, field: string): string => {
 
 /**
  * Canonical owner for static investigation documents and transport requirements.
- * Application-specific classification behavior deliberately lives outside this
- * generic profile.
+ * The optional server-only classification contract is attached by the business module,
+ * after this generic document profile has been validated.
  */
 export const createSupportInvestigationProfile = (profile: SupportInvestigationProfileInput): SupportInvestigationProfile => {
   const application = requireNonEmptyProfileField(profile.application, 'application').toUpperCase();
@@ -76,74 +79,15 @@ export const createSupportInvestigationProfile = (profile: SupportInvestigationP
   });
 };
 
-const iafVofInvestigationProfileBase = {
-  requiredSupportManagementApiTarget: 'sprint',
-  documents: [
-    {
-      key: 'utredning-enhetschef',
-      schemaName: 'utredning-enhetschef',
-      tabLabel: 'Utredning enhetschef',
-      ownerLabel: 'Enhetschef',
-    },
-    {
-      key: 'utredning-sol-lss',
-      schemaName: 'utredning-sol-lss',
-      tabLabel: 'Utredning SoL/LSS',
-      ownerLabel: 'LEX-utredare',
-    },
-    {
-      key: 'utredning-hsl',
-      schemaName: 'utredning-hsl',
-      tabLabel: 'Utredning HSL',
-      ownerLabel: 'MAS/MAR',
-    },
-  ],
-  labelFilter: {
-    groups: [
-      {
-        key: 'provision',
-        label: 'Lagrum',
-        rootResourcePath: 'PROVISION',
-        fields: [{ key: 'provision', label: 'Lagrum', classification: 'PROVISION' }],
-      },
-      {
-        key: 'report-type',
-        label: 'Rapporttyp',
-        rootResourcePath: 'REPORT_TYPE',
-        fields: [{ key: 'report-type', label: 'Rapporttyp', classification: 'REPORT_TYPE' }],
-      },
-      {
-        key: 'classification',
-        label: 'Klassificering',
-        rootResourcePath: 'CATEGORY',
-        fields: [
-          { key: 'category', label: 'Avvikelsetyp', classification: 'CATEGORY' },
-          { key: 'type', label: 'Underkategori', classification: 'TYPE' },
-        ],
-      },
-    ],
-  },
-} as const satisfies Omit<SupportInvestigationProfileInput, 'application'>;
+let configuredProfile: SupportInvestigationProfile | undefined;
 
-const createIafVofInvestigationProfile = (application: 'IAF' | 'VOF'): SupportInvestigationProfile =>
-  createSupportInvestigationProfile({ application, ...iafVofInvestigationProfileBase });
-
-export const IAF_SUPPORT_INVESTIGATION_PROFILE = createIafVofInvestigationProfile('IAF');
-export const VOF_SUPPORT_INVESTIGATION_PROFILE = createIafVofInvestigationProfile('VOF');
-
-const supportInvestigationProfileRegistry: Readonly<Record<string, SupportInvestigationProfile>> = Object.freeze({
-  IAF: IAF_SUPPORT_INVESTIGATION_PROFILE,
-  VOF: VOF_SUPPORT_INVESTIGATION_PROFILE,
-});
-
-const createEmptySupportInvestigationProfile = (application: string): SupportInvestigationProfile =>
-  Object.freeze({ application, documents: Object.freeze([]) });
+/** Called by the selected dragon before controllers are instantiated. */
+export const configureSupportInvestigationProfile = (profile: SupportInvestigationProfile): void => {
+  configuredProfile = profile;
+};
 
 export const getSupportInvestigationProfile = (application: string | undefined): SupportInvestigationProfile => {
-  const normalizedApplication = application?.trim().toUpperCase() ?? '';
-  const configuredProfile = supportInvestigationProfileRegistry[normalizedApplication];
-
-  if (configuredProfile) return configuredProfile;
-
-  return createEmptySupportInvestigationProfile(normalizedApplication);
+  const identity = application?.trim().toUpperCase() ?? '';
+  if (configuredProfile?.application === identity) return configuredProfile;
+  return Object.freeze({ application: identity, documents: Object.freeze([]) });
 };

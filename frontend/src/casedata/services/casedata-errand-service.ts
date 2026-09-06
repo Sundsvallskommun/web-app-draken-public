@@ -20,7 +20,6 @@ import {
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
-import { All, ApiPriority, Priority } from '@casedata/interfaces/priority';
 import { Role } from '@casedata/interfaces/role';
 import { fetchErrandAttachments, validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import {
@@ -28,6 +27,7 @@ import {
   makeStakeholdersList,
   stakeholder2Contact,
 } from '@casedata/services/casedata-stakeholder-service';
+import { All, ApiPriority, Priority } from '@common/interfaces/priority';
 import { User } from '@common/interfaces/user';
 import { getApplicationEnvironment, isMEX, isPT } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';

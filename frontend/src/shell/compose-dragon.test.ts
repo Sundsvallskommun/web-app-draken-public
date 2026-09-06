@@ -7,32 +7,29 @@ import { defaultSupportErrandPolicy, getSupportErrandPolicy } from '@supportmana
 import { ongoingStatuses, Resolution, Status } from '@supportmanagement/services/support-errand-status';
 import { test } from 'vitest';
 
-import {
-  buildSupportErrandPolicy,
-  composeDragon,
-  resolveDragonModule,
-  validateDragonConfiguration,
-} from './compose-dragon';
-import { DRAGON_REGISTRY } from './dragon-registry';
+import { buildSupportErrandPolicy, composeDragon, validateDragonConfiguration } from './compose-dragon';
+import { DRAGON_REGISTRY } from './dragon-registry.test-fixture';
 
 // Only the variant flags matter to validation; the rest of the feature block is irrelevant here.
 const features = (enabled: Partial<AppConfigFeatures> = {}): AppConfigFeatures =>
   ({ useAvvikelseInvestigation: false, useAotInvestigation: false, ...enabled } as AppConfigFeatures);
 
 test('an unknown identity throws and lists the valid ids', () => {
-  assert.throws(() => resolveDragonModule('NOPE', DRAGON_REGISTRY), {
+  assert.throws(() => composeDragon({ identity: 'NOPE', dragon: DRAGON_REGISTRY.KC, features: features() }), {
     message: /Unknown dragon "NOPE".*KC, KA, MEX, PT, ROB, LOP, IK, MSVA, SE, BOU, LOK, IAF, VOF, AOT/,
   });
 });
 
 // An unset NEXT_PUBLIC_APPLICATION reads as '' and must fail the same way, not select a default.
 test('an empty identity throws', () => {
-  assert.throws(() => resolveDragonModule('', DRAGON_REGISTRY), { message: /Unknown dragon ""/ });
+  assert.throws(() => composeDragon({ identity: '', dragon: DRAGON_REGISTRY.KC, features: features() }), {
+    message: /Unknown dragon ""/,
+  });
 });
 
 test('every registered id resolves to the module carrying that id', () => {
   for (const id of DRAGON_IDS) {
-    assert.equal(resolveDragonModule(id, DRAGON_REGISTRY).id, id);
+    assert.equal(composeDragon({ identity: id, dragon: DRAGON_REGISTRY[id], features: features() }).id, id);
   }
 });
 
@@ -103,7 +100,7 @@ test('a single investigation variant, or none, passes validation', () => {
 });
 
 test('composeDragon hands the resolved dragon its policy', () => {
-  const dragon = composeDragon({ identity: 'ROB', registry: DRAGON_REGISTRY, features: features() });
+  const dragon = composeDragon({ identity: 'ROB', dragon: DRAGON_REGISTRY.ROB, features: features() });
 
   assert.equal(dragon, DRAGON_REGISTRY.ROB);
   assert.equal(
@@ -117,9 +114,16 @@ test('composeDragon validates before it resolves, so a conflict is reported even
     () =>
       composeDragon({
         identity: 'IAF',
-        registry: DRAGON_REGISTRY,
+        dragon: DRAGON_REGISTRY.IAF,
         features: features({ useAvvikelseInvestigation: true, useAotInvestigation: true }),
       }),
     { message: /mutually exclusive/ }
+  );
+});
+
+test('composition rejects another valid dragon even when it shares the same domain', () => {
+  assert.throws(
+    () => composeDragon({ identity: 'VOF', dragon: DRAGON_REGISTRY.IAF, features: features() }),
+    /cannot run/
   );
 });

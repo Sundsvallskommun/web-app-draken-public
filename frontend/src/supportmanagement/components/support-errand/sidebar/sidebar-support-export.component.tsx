@@ -1,9 +1,9 @@
+import { Priority } from '@common/interfaces/priority';
 import { isKC, isROB } from '@common/services/application-service';
-import { downloadPdf, exportSingleSupportErrand } from '@common/services/export-service';
+import { downloadPdf } from '@common/services/export-service';
 import { appConfig } from '@config/appconfig';
 import { Button, Checkbox, FormControl, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
-import { Priority } from '@supportmanagement/interfaces/priority';
 import {
   Channels,
   getLabelCategory,
@@ -11,6 +11,7 @@ import {
   getLabelType,
   Status,
 } from '@supportmanagement/services/support-errand-service';
+import { exportSingleSupportErrand } from '@supportmanagement/services/support-export-service';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 

@@ -1,9 +1,9 @@
 import { appConfig } from '@config/appconfig';
+import { configureApplication, dragon } from '@dragon';
 
-import { APP_IDENTITY } from './app-identity';
+import { APP_IDENTITY, BUILT_DRAGON_ID } from './app-identity';
 import { isProductionBuildPhase } from './build-phase';
-import { composeDragon } from './compose-dragon';
-import { DRAGON_REGISTRY } from './dragon-registry';
+import { composeDragon, validateDragonDeployment } from './compose-dragon';
 
 /**
  * Side-effect module: importing it composes the dragon for the importing module graph.
@@ -16,6 +16,8 @@ import { DRAGON_REGISTRY } from './dragon-registry';
  * `README.md` here for why there are three.
  */
 if (!isProductionBuildPhase(process.env.NEXT_PHASE)) {
+  validateDragonDeployment(APP_IDENTITY, BUILT_DRAGON_ID, appConfig);
   // Skipped only while `next build` evaluates the modules with placeholder values; see build-phase.ts.
-  composeDragon({ identity: APP_IDENTITY, registry: DRAGON_REGISTRY, features: appConfig.features });
+  composeDragon({ identity: APP_IDENTITY, dragon, features: appConfig.features });
+  configureApplication();
 }

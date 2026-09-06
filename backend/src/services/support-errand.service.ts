@@ -3,7 +3,7 @@ import FormData from 'form-data';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import type { IafVofInvestigationClassificationLabelTree } from '@/config/iaf-vof-investigation-classification';
+import type { SupportInvestigationClassificationLabelTree } from '@/config/support-investigation-classification';
 import { normalizeSupportManagementResourcePath } from '@/config/supportmanagement-path';
 import {
   AddressAddressCategoryEnum,
@@ -332,7 +332,7 @@ const requireMetadataLabelResource = (label: Label): string => {
   throw new HttpException(502, 'Support Management classification metadata contains a label without resource');
 };
 
-const findClassificationTypeLabels = (labels: readonly Label[] | undefined, labelTree: IafVofInvestigationClassificationLabelTree): Label[] => {
+const findClassificationTypeLabels = (labels: readonly Label[] | undefined, labelTree: SupportInvestigationClassificationLabelTree): Label[] => {
   const types: Label[] = [];
 
   const visit = (nodes: readonly Label[]) => {
@@ -352,7 +352,7 @@ const findClassificationTypeLabels = (labels: readonly Label[] | undefined, labe
 
 const getSupportErrandClassificationMetadata = (
   labelStructure: readonly Label[],
-  labelTree: IafVofInvestigationClassificationLabelTree,
+  labelTree: SupportInvestigationClassificationLabelTree,
 ): SupportErrandClassificationMetadata => {
   const bindings: SupportErrandClassificationBinding[] = [];
 
@@ -488,7 +488,7 @@ const resolveSubmittedClassificationLabelIds = (
 export const resolveSupportErrandClassification = (
   data: SupportErrandClassificationSelection,
   labelStructure: readonly Label[] | undefined,
-  labelTree: IafVofInvestigationClassificationLabelTree,
+  labelTree: SupportInvestigationClassificationLabelTree,
 ): ResolvedSupportErrandClassification => {
   if (!labelStructure) {
     throw new HttpException(502, 'Support Management classification metadata is unavailable');

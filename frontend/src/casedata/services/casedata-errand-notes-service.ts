@@ -1,4 +1,5 @@
-import { CreateErrandNoteDto, ErrandNote, NoteType } from '@casedata/interfaces/errandNote';
+import { CreateErrandNoteDto, ErrandNote } from '@casedata/interfaces/errandNote';
+import { noteIsComment, noteIsTjansteanteckning } from '@common/interfaces/note-visibility';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { AxiosResponse } from 'axios';
 
@@ -71,14 +72,6 @@ export const fetchNote: (
       console.error('Something went wrong when fetching note: ', noteId);
       throw e;
     });
-};
-
-export const noteIsComment = (noteType: NoteType): boolean => {
-  return noteType === 'INTERNAL';
-};
-
-export const noteIsTjansteanteckning = (noteType: NoteType): boolean => {
-  return noteType === 'PUBLIC';
 };
 
 export const getErrandNotes: (notes: ErrandNote[]) => Promise<{ comments: number; serviceNotes: number }> = (notes) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { renderTemplatePdf } from '@casedata/services/casedata-decision-service';
+import { renderTemplatePdf } from '@common/services/template-render-service';
 import { Disclosure } from '@sk-web-gui/react';
 import { FileText } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';

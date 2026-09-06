@@ -1,6 +1,6 @@
 import { Channels } from '@casedata/interfaces/channels';
 import { IErrand } from '@casedata/interfaces/errand';
-import { getErrand } from '@casedata/services/casedata-errand-service';
+import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import {
   EXTRAPARAMETER_SEPARATOR,
   extraParametersToUppgiftMapper,
@@ -199,6 +199,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 </Disclosure.Header>
                 <Disclosure.Content>
                   <Facilities
+                    editingLocked={!errand || isErrandLocked(errand)}
                     facilities={realEstates}
                     setUnsaved={props.setUnsaved}
                     setValue={setValue}

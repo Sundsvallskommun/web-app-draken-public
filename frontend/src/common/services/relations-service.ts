@@ -1,6 +1,6 @@
 import { Relation } from '@common/data-contracts/relations/data-contracts';
+import { All } from '@common/interfaces/priority';
 import { appConfig } from '@config/appconfig';
-import { All } from '@supportmanagement/interfaces/priority';
 
 import { ApiResponse, apiService } from './api-service';
 import { CaseStatusResponse } from './casestatus-service';

@@ -1,20 +1,15 @@
 import { appConfig } from '@config/appconfig';
 
-import { aotInvestigationVariant } from './aot/aot-investigation-variant';
-import { avvikelseInvestigationVariant } from './avvikelse/avvikelse-investigation-variant';
 import { type InvestigationVariantModule, resolveInvestigationVariant } from './investigation-variant';
 
-/**
- * Every investigation implementation. Adding one is adding a module here plus its capability flag.
- *
- * Order is load-bearing: selection is first-wins, so a deployment that wrongly enables two
- * capabilities keeps the behaviour of whichever is listed first. Avvikelse stays first so that
- * misconfiguration degrades to today's behaviour rather than to a placeholder.
- */
-const VARIANTS: readonly InvestigationVariantModule[] = Object.freeze([
-  avvikelseInvestigationVariant,
-  aotInvestigationVariant,
-]);
+/** Only the selected dragon supplies implementations. This module owns selection, not imports. */
+let variants: readonly InvestigationVariantModule[] | undefined;
 
-export const getInvestigationVariant = (): InvestigationVariantModule | null =>
-  resolveInvestigationVariant(appConfig.features, VARIANTS);
+export const configureInvestigationVariants = (implementations: readonly InvestigationVariantModule[]): void => {
+  variants = Object.freeze([...implementations]);
+};
+
+export const getInvestigationVariant = (): InvestigationVariantModule | null => {
+  if (!variants) throw new Error('Investigation variants have not been configured by the application shell');
+  return resolveInvestigationVariant(appConfig.features, variants);
+};

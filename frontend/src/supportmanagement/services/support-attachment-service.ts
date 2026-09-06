@@ -1,5 +1,9 @@
-import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { apiService } from '@common/services/api-service';
+import {
+  ACCEPTED_UPLOAD_FILETYPES as uploadFileTypes,
+  MAX_FILE_SIZE_MB,
+} from '@common/services/attachment-upload-policy';
+import { imageMimeTypes } from '@common/services/attachment-upload-policy';
 import { toBase64 } from '@common/utils/toBase64';
 
 export interface SupportAttachment {
@@ -37,60 +41,7 @@ export type AttachmentCategory =
   | 'SERVICE_RECEIPT'
   | 'OTHER_ATTACHMENT';
 
-export const MAX_FILE_SIZE_MB = 50;
-
-export const documentMimeTypes = [
-  'video/quicktime',
-  'video/mp4',
-  'video/mpeg',
-  'video/x-ms-wmv',
-  'video/x-msvideo',
-  'application/pdf',
-  'application/rtf',
-  'application/msword',
-  'application/x-tika-msoffice',
-  'text/plain',
-  'application/vnd.ms-excel',
-  'application/vnd.ms-outlook',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.oasis.opendocument.text',
-  'application/vnd.oasis.opendocument.spreadsheet',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-];
-
-export const ACCEPTED_UPLOAD_FILETYPES = [
-  'mov',
-  'mp4',
-  'mpeg',
-  'wmv',
-  'avi',
-  'bmp',
-  'gif',
-  'tif',
-  'tiff',
-  'jpeg',
-  'jpg',
-  'png',
-  'htm',
-  'html',
-  'pdf',
-  'rtf',
-  'docx',
-  'doc',
-  'txt',
-  'xlsx',
-  'xls',
-  'pptx',
-  'odt',
-  'ods',
-  'text/html',
-  'msg',
-  'heic',
-  'heif',
-  ...imageMimeTypes,
-  ...documentMimeTypes,
-];
+export const ACCEPTED_UPLOAD_FILETYPES = uploadFileTypes.filter((type) => type.length > 0);
 
 export const isImageAttachment: (a: SupportAttachment) => boolean = (a) => {
   return imageMimeTypes.includes(a.mimeType);

@@ -1,6 +1,7 @@
+import type { NoteType } from '@common/interfaces/note-visibility';
+
 import { GenericExtraParameters } from './extra-parameters';
 
-export type NoteType = 'PUBLIC' | 'INTERNAL' | 'UNKNOWN';
 export interface ErrandNote {
   id: string;
   created: string;

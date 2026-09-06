@@ -1,24 +1,12 @@
-import { MEXAttachmentLabels, PTAttachmentLabels } from '@casedata/interfaces/attachment';
-import { MAX_FILE_SIZE_MB } from '@casedata/services/casedata-attachment-service';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-import { isMEX } from '@common/services/application-service';
-import { appConfig } from '@config/appconfig';
+import { imageMimeTypes } from '@common/services/attachment-upload-policy';
+import { MAX_FILE_SIZE_MB } from '@common/services/attachment-upload-policy';
 import { Button, cx, FormControl, FormErrorMessage, FormHelperText, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { UploadCloud, X } from 'lucide-react';
 import { FC, KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { UseFormRegister, UseFormSetValue } from 'react-hook-form';
 
 import { useFileUpload } from './file-upload-dragdrop-context';
-
-export const imageMimeTypes = [
-  'image/jpeg',
-  'image/gif',
-  'image/png',
-  'image/tiff',
-  'image/bmp',
-  'image/heic',
-  'image/heif',
-];
 
 const FileUpload: FC<{
   dragDrop: boolean;
@@ -37,6 +25,7 @@ const FileUpload: FC<{
   allowMultiple?: boolean;
   allowNameChange?: boolean;
   helperText?: string;
+  attachmentLabels?: Readonly<Record<string, string>>;
 }> = (props) => {
   const {
     dragDrop,
@@ -55,6 +44,7 @@ const FileUpload: FC<{
     allowMultiple,
     allowNameChange = true,
     helperText,
+    attachmentLabels,
   } = props;
   const [error, setError] = useState<string>();
   const newItem: FileList = watch(`${fieldName}-newItem`);
@@ -158,7 +148,7 @@ const FileUpload: FC<{
   };
 
   const editFields = (index?: number) =>
-    appConfig.isCaseData && (
+    attachmentLabels && (
       <>
         {!dragDrop && editing && (
           <FormControl id="name" className="w-full">
@@ -187,7 +177,7 @@ const FileUpload: FC<{
               }
             >
               <Select.Option value="">Välj typ av bilaga</Select.Option>
-              {Object.entries(isMEX() ? MEXAttachmentLabels : PTAttachmentLabels)
+              {Object.entries(attachmentLabels)
                 .sort((a, b) => a[1].localeCompare(b[1]))
                 .map(([key, label]) => {
                   return (

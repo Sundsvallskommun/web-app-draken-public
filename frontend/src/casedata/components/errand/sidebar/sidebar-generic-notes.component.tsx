@@ -1,12 +1,9 @@
 import { UiPhase } from '@casedata/interfaces/errand-phase';
-import { CreateErrandNoteDto, ErrandNote, NoteType } from '@casedata/interfaces/errandNote';
-import {
-  deleteErrandNote,
-  noteIsComment,
-  noteIsTjansteanteckning,
-  saveErrandNote,
-} from '@casedata/services/casedata-errand-notes-service';
+import { CreateErrandNoteDto, ErrandNote } from '@casedata/interfaces/errandNote';
+import { deleteErrandNote, saveErrandNote } from '@casedata/services/casedata-errand-notes-service';
 import { getErrand, isErrandAdmin } from '@casedata/services/casedata-errand-service';
+import { NoteType } from '@common/interfaces/note-visibility';
+import { noteIsComment, noteIsTjansteanteckning } from '@common/interfaces/note-visibility';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';

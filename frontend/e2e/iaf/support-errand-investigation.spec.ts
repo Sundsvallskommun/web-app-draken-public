@@ -596,37 +596,22 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(page.locator('[data-cy="labelCategory-input"]')).toBeVisible();
   });
 
-  // The seam's payoff: a second implementation, selected by its own capability, rendering in the
-  // real bundle. Grundinformation must keep the ordinary control, because the AOT variant brings no
-  // label tree of its own - the avvikelse vocabulary must not follow the tab around.
-  test('renderar en annan utredningsvariant när dess kapabilitet är påslagen', async ({
-    page,
-    dismissCookieConsent,
-  }) => {
+  // Runtime capabilities cannot change the implementation selected at build time.
+  // AOT's positive rendering contract is covered by its own application browser suite.
+  test('avvisar en runtimeflagga som försöker byta till en annan drakes utredning', async ({ page }) => {
     await installIafApiMock(page, {
-      documents: { [managerKey]: existingManagerDocument() },
       featureFlags: [
         { name: 'isSupportManagement', enabled: true },
-        { name: 'useDetailsTab', enabled: true },
-        { name: 'useThreeLevelCategorization', enabled: true },
         { name: 'useInvestigation', enabled: true },
         { name: 'useAvvikelseInvestigation', enabled: false },
         { name: 'useAotInvestigation', enabled: true },
       ],
     });
 
-    await visitErrand(page, dismissCookieConsent);
-
-    // Grundinformation first: opening the Utredning tab hides this panel.
-    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toHaveCount(0);
-    await expect(page.locator('[data-cy="labelCategory-input"]')).toBeVisible();
-
-    const investigationTab = page.getByRole('tab', { name: 'Utredning', exact: true });
-    await expect(investigationTab).toHaveCount(1);
-    await investigationTab.click();
-
-    await expect(page.locator('[data-cy="aot-investigation-tab"]')).toBeVisible();
-    await expect(page.locator('[data-cy="investigation-document-notice"]')).toHaveCount(0);
+    await page.goto(`arende/${errandNumber}`);
+    await expect(page.getByRole('heading', { name: 'Ett oväntat fel uppstod' })).toBeVisible();
+    await expect(page.locator('[data-cy="aot-investigation-tab"]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Spara ärende', exact: true })).toHaveCount(0);
   });
 
   test('sparar endast aktiv dokumentnyckel med schemaId och If-Match', async ({ page, dismissCookieConsent }) => {

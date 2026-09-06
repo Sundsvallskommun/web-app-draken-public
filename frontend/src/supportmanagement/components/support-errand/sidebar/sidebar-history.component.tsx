@@ -1,7 +1,7 @@
+import { Priority } from '@common/interfaces/priority';
 import { sanitized } from '@common/services/sanitizer-service';
 import { Avatar, Button, Modal, Spinner } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
-import { Priority } from '@supportmanagement/interfaces/priority';
 import { ParsedSupportEvent } from '@supportmanagement/interfaces/supportEvent';
 import { ParsedSupportRevisionDifference } from '@supportmanagement/interfaces/supportRevisionDiff';
 import { defaultSupportErrandPolicy, getSupportErrandPolicy } from '@supportmanagement/policy/support-errand-policy';

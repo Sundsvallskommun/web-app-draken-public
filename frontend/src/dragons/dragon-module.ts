@@ -1,27 +1,16 @@
 import type { SupportErrandPolicy } from '@supportmanagement/policy/support-errand-policy';
 
+import dragons from '../../../dragons.json';
+
 /**
- * Every dragon Draken can run as. The order is cosmetic; the shell's registry is keyed by id, and
+ * Every dragon Draken can run as. The order is cosmetic; each build selects one application, and
  * `NEXT_PUBLIC_APPLICATION` must equal one of these exactly.
  */
-export const DRAGON_IDS = Object.freeze([
-  'KC',
-  'KA',
-  'MEX',
-  'PT',
-  'ROB',
-  'LOP',
-  'IK',
-  'MSVA',
-  'SE',
-  'BOU',
-  'LOK',
-  'IAF',
-  'VOF',
-  'AOT',
-] as const);
+export type DragonId = keyof typeof dragons;
 
-export type DragonId = (typeof DRAGON_IDS)[number];
+export const DRAGON_IDS = Object.freeze(Object.keys(dragons) as DragonId[]);
+
+export const getDragonDefinition = (id: DragonId) => dragons[id];
 
 /**
  * What one dragon supplies to the domains. A module is data and implementations of contracts the

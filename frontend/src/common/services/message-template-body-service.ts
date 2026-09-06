@@ -117,3 +117,16 @@ export const buildMessageTemplateBody = ({
 
   return content + templates.emailSignature + footer + history;
 };
+// The shell supplies the template namespace once per application module graph.
+// Template consumers need a namespace, not access to the deployment identity.
+let messageTemplateNamespace: string | undefined;
+
+export const configureMessageTemplateNamespace = (namespace: string): void => {
+  if (!/^[a-z][a-z0-9-]*$/u.test(namespace)) throw new Error('Invalid message template namespace');
+  messageTemplateNamespace = namespace;
+};
+
+export const getMessageTemplateNamespace = (): string => {
+  if (!messageTemplateNamespace) throw new Error('Message template namespace has not been configured by the shell');
+  return messageTemplateNamespace;
+};

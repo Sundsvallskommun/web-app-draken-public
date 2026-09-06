@@ -1,17 +1,5 @@
-import {
-  acknowledgeCasedataNotification,
-  getCasedataNotifications,
-} from '@casedata/services/casedata-notification-service';
-import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
-import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { prettyTime } from '@common/services/helper-service';
-import { appConfig } from '@config/appconfig';
-import { Checkbox, cx, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
-import {
-  acknowledgeSupportNotification,
-  getSupportNotifications,
-} from '@supportmanagement/services/support-notification-service';
+import { Checkbox, cx } from '@sk-web-gui/react';
 import NextLink from 'next/link';
 import { FC } from 'react';
 
@@ -20,6 +8,7 @@ import { getNotificationKey, labelBySubType, NotificationType, senderFallback } 
 
 interface NotificationItemProps {
   notification: NotificationType;
+  onAcknowledge: (notification: NotificationType) => Promise<void>;
   isSelected?: boolean;
   onToggleSelect?: () => void;
   showCheckbox?: boolean;
@@ -27,36 +16,11 @@ interface NotificationItemProps {
 
 export const NotificationItem: FC<NotificationItemProps> = ({
   notification,
+  onAcknowledge,
   isSelected = false,
   onToggleSelect,
   showCheckbox = false,
 }) => {
-  const municipalityId = useConfigStore((s) => s.municipalityId);
-  const setNotifications = useSupportStore((s) => s.setNotifications);
-  const toastMessage = useSnackbar();
-
-  const handleAcknowledge = async () => {
-    try {
-      if (appConfig.isCaseData) {
-        await acknowledgeCasedataNotification(municipalityId, notification as CaseDataNotification);
-      } else {
-        await acknowledgeSupportNotification(municipalityId, notification as SupportNotification);
-      }
-
-      const getNotifications = appConfig.isCaseData ? getCasedataNotifications : getSupportNotifications;
-
-      const notifications = await getNotifications(municipalityId);
-      setNotifications(notifications);
-    } catch (error) {
-      toastMessage({
-        position: 'bottom',
-        closeable: false,
-        message: 'Något gick fel när notifieringen skulle kvitteras',
-        status: 'error',
-      });
-    }
-  };
-
   const notificationKey = getNotificationKey(notification);
   const subTypeLabel = notificationKey ? labelBySubType[notificationKey] : undefined;
 
@@ -76,7 +40,7 @@ export const NotificationItem: FC<NotificationItemProps> = ({
           <NextLink
             href={`/arende/${notification.errandNumber}`}
             target="_blank"
-            onClick={handleAcknowledge}
+            onClick={() => void onAcknowledge(notification)}
             className="underline whitespace-nowrap"
           >
             {notification.errandNumber || 'Till ärendet'}

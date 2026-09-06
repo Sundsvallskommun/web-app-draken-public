@@ -35,9 +35,9 @@ describe('default-deny auth (swagger)', () => {
     process.env.SWAGGER_ENABLED = 'true';
 
     const { default: App } = await import('@/app');
-    const { CONTROLLERS } = await import('@/controllers');
+    const { application } = await import('@/dragons/kc/application');
 
-    server = new App(CONTROLLERS, new session.MemoryStore()).getServer();
+    server = new App(application.controllers, new session.MemoryStore()).getServer();
   });
 
   it('mounts swagger at all (guards the rest of this suite from passing vacuously)', async () => {

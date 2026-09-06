@@ -1,5 +1,3 @@
-import { Notification as CaseDataNotification } from '@common/data-contracts/case-data/data-contracts';
-import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import {
   SupportErrand,
@@ -14,7 +12,6 @@ interface SupportState {
   supportAttachments: SupportAttachment[] | undefined;
   stakeholderContacts: SupportStakeholderFormModel[];
   stakeholderCustomers: SupportStakeholderFormModel[];
-  notifications: (SupportNotification | CaseDataNotification)[];
   activeTabKey?: string;
 }
 
@@ -24,7 +21,6 @@ interface SupportActions {
   setSupportAttachments: (attachments: SupportAttachment[]) => void;
   setStakeholderContacts: (contacts: SupportStakeholderFormModel[]) => void;
   setStakeholderCustomers: (customers: SupportStakeholderFormModel[]) => void;
-  setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) => void;
   setActiveTabKey: (activeTabKey: string) => void;
   reset: () => void;
 }
@@ -39,7 +35,6 @@ const initialState: SupportState = {
   supportAttachments: undefined,
   stakeholderContacts: [],
   stakeholderCustomers: [],
-  notifications: [],
   activeTabKey: 'basics',
 };
 
@@ -50,7 +45,6 @@ export const useSupportStore = create<SupportStore>((set) => ({
   setSupportAttachments: (supportAttachments) => set({ supportAttachments }),
   setStakeholderContacts: (stakeholderContacts) => set({ stakeholderContacts }),
   setStakeholderCustomers: (stakeholderCustomers) => set({ stakeholderCustomers }),
-  setNotifications: (notifications) => set({ notifications }),
   setActiveTabKey: (activeTabKey) => set({ activeTabKey }),
   reset: () => set(initialState),
 }));

@@ -1,10 +1,10 @@
 import { PriorityComponent } from '@common/components/priority/priority.component';
+import { All, Priority } from '@common/interfaces/priority';
 import { isIAFOrVOF } from '@common/services/application-service';
 import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { useEmployeeNameStore, useMetadataStore, useUserStore } from '@stores/index';
-import { All, Priority } from '@supportmanagement/interfaces/priority';
 import {
   Channels,
   getLabelCategory,

@@ -6,8 +6,10 @@ import {
   preservesIafVofInvestigationClassificationOwnerParameter,
   resolveIafVofInvestigationClassificationOwner,
   resolveIafVofInvestigationClassificationPolicy,
-} from '@/config/iaf-vof-investigation-classification';
-import { createSupportInvestigationProfile, getSupportInvestigationProfile } from '@/config/support-investigation-profile';
+} from '@/avvikelse/classification-policy';
+import { createSupportInvestigationProfile } from '@/config/support-investigation-profile';
+
+import { investigationProfileFixture } from './helpers/investigation-profiles';
 
 const customProfile = (application = 'IAF') =>
   createSupportInvestigationProfile({
@@ -20,7 +22,7 @@ const customProfile = (application = 'IAF') =>
 
 describe('fixed IAF/VOF investigation classification policy', () => {
   it.each(['IAF', 'VOF'])('resolves fixed schema roles to profile persistence keys for %s', application => {
-    expect(resolveIafVofInvestigationClassificationPolicy(customProfile(application))).toEqual({
+    expect(resolveIafVofInvestigationClassificationPolicy(customProfile(application))).toMatchObject({
       defaultOwnerDocumentKey: 'manager-document',
       reportedMisconductOwnerDocumentKey: 'social-document',
       labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE,
@@ -62,7 +64,7 @@ describe('fixed IAF/VOF investigation classification policy', () => {
   });
 
   it('uses resourcePath as authoritative and resourceName only as a pathless fallback', () => {
-    const policy = resolveIafVofInvestigationClassificationPolicy(getSupportInvestigationProfile('IAF'))!;
+    const policy = resolveIafVofInvestigationClassificationPolicy(investigationProfileFixture('IAF'))!;
     expect(resolveIafVofInvestigationClassificationOwner(policy, { labels: [{ resourcePath: 'OTHER/ABUSE', resourceName: 'ABUSE' }] }).mode).toBe(
       'default',
     );

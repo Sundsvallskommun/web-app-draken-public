@@ -1,4 +1,5 @@
 import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import { All, Priority } from '@common/interfaces/priority';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
 import { isKC, isLOK } from '@common/services/application-service';
@@ -9,7 +10,6 @@ import { useConfigStore, useSupportStore } from '@stores/index';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/buttons/support-forward-errand-button.component';
 import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
-import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { basicsAcceptsClassification } from '@supportmanagement/investigation/investigation-classification-ownership';
 import { getSupportErrandPolicy } from '@supportmanagement/policy/support-errand-policy';
 import { AxiosError } from 'axios';

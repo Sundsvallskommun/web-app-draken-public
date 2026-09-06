@@ -4,8 +4,8 @@ import LoaderFullScreen from '@common/components/loader/loader-fullscreen';
 import { getFeatureFlags } from '@common/services/feature-flag-service';
 import { getAdminUsers, getMe } from '@common/services/user-service';
 import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
-import { APP_IDENTITY } from '@shell/app-identity';
-import { validateDragonConfiguration } from '@shell/compose-dragon';
+import { APP_IDENTITY, BUILT_DRAGON_ID } from '@shell/app-identity';
+import { validateDragonDeployment } from '@shell/compose-dragon';
 import {
   ColorSchemeMode,
   ConfirmationDialogContextProvider,
@@ -97,7 +97,7 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
       // bootstrap.ts validated the environment flags at startup. The runtime flags applied above
       // can change the investigation-variant flags, so the same check runs again here.
       try {
-        validateDragonConfiguration(appConfig.features);
+        validateDragonDeployment(APP_IDENTITY, BUILT_DRAGON_ID, appConfig);
       } catch (error) {
         setConfigurationError(error instanceof Error ? error : new Error(String(error)));
         return;

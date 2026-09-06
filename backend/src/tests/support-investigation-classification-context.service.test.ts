@@ -1,20 +1,16 @@
-import {
-  IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE,
-  IAF_VOF_INVESTIGATION_CLASSIFICATION_LEGAL_BASE_RULES,
-  IAF_VOF_INVESTIGATION_LEGAL_BASES_POINTER,
-  IAF_VOF_REPORTED_MISCONDUCT_FORCED_LEGAL_BASES,
-  type IafVofInvestigationClassificationPolicy,
-} from '@/config/iaf-vof-investigation-classification';
-import { assertSupportInvestigationClassificationContext } from '@/services/support-investigation-classification-context.service';
+import { assertSupportInvestigationClassificationContext } from '@/avvikelse/classification-context';
+import { resolveIafVofInvestigationClassificationPolicy } from '@/avvikelse/classification-policy';
+import { createAvvikelseInvestigationProfile } from '@/avvikelse/investigation-profile';
 
-const policy: IafVofInvestigationClassificationPolicy = {
-  defaultOwnerDocumentKey: 'manager-document',
-  reportedMisconductOwnerDocumentKey: 'social-document',
-  labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE,
-  forcedLegalBases: IAF_VOF_REPORTED_MISCONDUCT_FORCED_LEGAL_BASES,
-  legalBasesPointer: IAF_VOF_INVESTIGATION_LEGAL_BASES_POINTER,
-  legalBaseRules: IAF_VOF_INVESTIGATION_CLASSIFICATION_LEGAL_BASE_RULES,
-};
+const policy = resolveIafVofInvestigationClassificationPolicy(
+  createAvvikelseInvestigationProfile({
+    application: 'IAF',
+    documents: [
+      { key: 'manager-document', schemaName: 'utredning-enhetschef', tabLabel: 'Manager', ownerLabel: 'Manager' },
+      { key: 'social-document', schemaName: 'utredning-sol-lss', tabLabel: 'Social', ownerLabel: 'Investigator' },
+    ],
+  }),
+)!;
 
 const classification = (category: string) => ({ category, type: `${category}/CATEGORY` });
 const document = (...legalBases: string[]) => ({ legalBases });

@@ -23,10 +23,6 @@ import { OpenAPI } from 'routing-controllers-openapi';
 import { APPLICATION, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
-  preservesIafVofInvestigationClassificationOwnerParameter,
-  resolveIafVofInvestigationClassificationOwner,
-} from '@/config/iaf-vof-investigation-classification';
-import {
   Errand as CasedataErrandDTO,
   ErrandPriorityEnum as CasedataErrandDtoPriorityEnum,
   Stakeholder as CasedataStakeholderDTO,
@@ -83,7 +79,6 @@ import {
   toCasedataStakeholder,
   toFacilities,
 } from '@/services/support-errand.service';
-import { assertSupportInvestigationClassificationContext } from '@/services/support-investigation-classification-context.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 import {
@@ -884,7 +879,7 @@ export class SupportErrandController {
     data: Partial<SupportErrandDto>,
   ): Promise<void> {
     const classificationFieldsRequested = data.classification !== undefined || data.labels !== undefined;
-    const policy = this.investigationPolicyService.iafVofClassificationPolicy;
+    const policy = this.investigationPolicyService.classificationPolicy;
     if (!classificationFieldsRequested && (data.parameters === undefined || !policy)) return;
 
     const owner = await this.investigationPolicyService.getClassificationOwner(req.user);
@@ -895,7 +890,7 @@ export class SupportErrandController {
     if (classificationFieldsRequested) {
       throw new HttpException(409, 'Use the investigation classification endpoint to update classification and labels');
     }
-    if (policy && !preservesIafVofInvestigationClassificationOwnerParameter(currentErrand.parameters, data.parameters)) {
+    if (policy && !policy.preservesOwnerParameters(currentErrand.parameters, data.parameters)) {
       throw new HttpException(409, 'The investigation classification owner parameter cannot be changed through the generic errand endpoint');
     }
   }
@@ -1075,8 +1070,8 @@ export class SupportErrandController {
     if (classificationOwner !== 'investigation') {
       throw new HttpException(409, 'Investigation does not own classification for this application');
     }
-    const iafVofClassificationPolicy = this.investigationPolicyService.iafVofClassificationPolicy;
-    if (!iafVofClassificationPolicy) {
+    const classificationPolicy = this.investigationPolicyService.classificationPolicy;
+    if (!classificationPolicy) {
       throw new HttpException(409, 'Investigation classification policy is unavailable');
     }
     const definition = this.investigationPolicyService.profile.documents.find(document => document.key === data.documentKey);
@@ -1104,15 +1099,8 @@ export class SupportErrandController {
     if (classificationDocument.etag !== data.documentETag) {
       throw new HttpException(409, 'Investigation document has changed since classification was edited');
     }
-    const classificationOwnerSelection = resolveIafVofInvestigationClassificationOwner(iafVofClassificationPolicy, currentErrand.data);
-    assertSupportInvestigationClassificationContext(
-      iafVofClassificationPolicy,
-      classificationOwnerSelection,
-      definition.key,
-      classificationDocument.document.value,
-      data.classification,
-    );
-    const resolvedClassification = resolveSupportErrandClassification(data, labelMetadata.data?.labelStructure, iafVofClassificationPolicy.labelTree);
+    classificationPolicy.assertClassificationContext(currentErrand.data, definition.key, classificationDocument.document.value, data.classification);
+    const resolvedClassification = resolveSupportErrandClassification(data, labelMetadata.data?.labelStructure, classificationPolicy.labelTree);
     const body = buildSupportErrandClassificationUpdateBody(
       data,
       currentErrand.data.labels,

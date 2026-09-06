@@ -1,0 +1,67 @@
+name: Dragon build boundaries
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    outputs:
+      dragons: ${{ steps.catalog.outputs.dragons }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: catalog
+        run: echo "dragons=$(node scripts/dragon.mjs list --json)" >> "$GITHUB_OUTPUT"
+  applications:
+    needs: catalog
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dragon: ${{ fromJSON(needs.catalog.outputs.dragons) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: |
+            backend/yarn.lock
+            frontend/yarn.lock
+      - run: yarn --cwd backend install --frozen-lockfile
+      - run: yarn --cwd frontend install --frozen-lockfile
+      - run: node --test scripts/dragon.test.mjs scripts/frontend-runtime-env.test.mjs
+      - run: node scripts/dragon.mjs build ${{ matrix.dragon }} backend
+      - run: node scripts/check-backend-artifact.mjs ${{ matrix.dragon }}
+      # Compile the real application entrypoint with deployment placeholders, as in Docker.
+      - run: cp frontend/.env-cicd frontend/.env.local
+      - run: yarn --cwd frontend build
+        env:
+          DRAKEN_BUILD_DRAGON: ${{ matrix.dragon }}
+          DOCKER_BUILD: 'true'
+          NEXT_TELEMETRY_DISABLED: '1'
+  container-builds:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Packaging coverage for SM, Avvikelse on SM and CaseData; all apps compile above.
+        dragon: [KC, IAF, MEX]
+        side: [frontend, backend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.side }}/Dockerfile
+          build-args: DRAKEN_BUILD_DRAGON=${{ matrix.dragon }}
+          push: false
+          cache-from: type=gha,scope=${{ matrix.side }}-${{ matrix.dragon }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.side }}-${{ matrix.dragon }}

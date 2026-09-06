@@ -1,5 +1,3 @@
-import { IErrand } from '@casedata/interfaces/errand';
-import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { RelationsFromTable } from '@common/components/linked-errands-disclosure/relation-tables/relations-from-table.component';
 import { Relation } from '@common/data-contracts/relations/data-contracts';
 import {
@@ -13,16 +11,16 @@ import { createRelation, deleteRelation, getResolvedRelations } from '@common/se
 import { appConfig } from '@config/appconfig';
 import { Disclosure, SearchField, Spinner } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/index';
-import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
-import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { Link2 } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 
 import { RelationsToTable } from './relation-tables/relations-to-table.component';
 
 export const LinkedErrandsDisclosure: FC<{
-  errand: SupportErrand | IErrand;
-}> = ({ errand }) => {
+  errand: { id?: string | number };
+  relatedPerson?: { id: string; type: string };
+  disabled?: boolean;
+}> = ({ errand, relatedPerson, disabled = false }) => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const [isLoadingToErrands, setIsLoadingToErrands] = useState<boolean>(false);
   const [isLoadingFromErrands, setIsLoadingFromErrands] = useState<boolean>(false);
@@ -77,28 +75,9 @@ export const LinkedErrandsDisclosure: FC<{
         await refreshSourceRelations();
 
         if (appConfig.features.useStakeholderRelations) {
-          let relatedPerson: {
-            id: string;
-            type: string;
-          } = { id: '', type: '' };
-
-          if (appConfig.isSupportManagement) {
-            const supportStakeholder = getSupportOwnerStakeholder(errand as SupportErrand);
-            if (!supportStakeholder) {
-              setIsLoadingToErrands(false);
-              return;
-            }
-            relatedPerson.id = supportStakeholder?.externalId ?? '';
-            relatedPerson.type = supportStakeholder?.stakeholderType ?? '';
-          }
-          if (appConfig.isCaseData) {
-            const caseDataStakeholder = getOwnerStakeholder(errand as IErrand);
-            if (!caseDataStakeholder) {
-              setIsLoadingToErrands(false);
-              return;
-            }
-            relatedPerson.id = caseDataStakeholder?.personId || caseDataStakeholder?.organizationNumber || '';
-            relatedPerson.type = caseDataStakeholder.stakeholderType;
+          if (!relatedPerson?.id) {
+            setIsLoadingToErrands(false);
+            return;
           }
 
           const fetchedErrands =
@@ -136,11 +115,7 @@ export const LinkedErrandsDisclosure: FC<{
   }, [errand]);
 
   return (
-    <Disclosure
-      disabled={appConfig.isSupportManagement ? supportErrandIsEmpty(errand as SupportErrand) : false}
-      variant="alt"
-      data-cy={`connected-errands-disclosure`}
-    >
+    <Disclosure disabled={disabled} variant="alt" data-cy={`connected-errands-disclosure`}>
       <Disclosure.Header>
         <Disclosure.Icon icon={<Link2 />} />
         <Disclosure.Title>Kopplade ärenden</Disclosure.Title>

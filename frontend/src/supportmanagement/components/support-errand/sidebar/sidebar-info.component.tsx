@@ -1,10 +1,10 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
+import { Priority } from '@common/interfaces/priority';
 import { deepFlattenToObject, prettyTime } from '@common/services/helper-service';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
-import { Priority } from '@supportmanagement/interfaces/priority';
 import {
   getSupportErrandById,
   isSupportErrandLocked,

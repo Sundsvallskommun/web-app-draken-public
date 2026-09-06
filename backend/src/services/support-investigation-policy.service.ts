@@ -1,9 +1,6 @@
 import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { resolveSupportManagementApiTarget, SupportManagementApiTarget } from '@/config/api-config';
-import {
-  IafVofInvestigationClassificationPolicy,
-  resolveIafVofInvestigationClassificationPolicy,
-} from '@/config/iaf-vof-investigation-classification';
+import type { SupportInvestigationClassificationPolicy } from '@/config/support-investigation-classification';
 import { getSupportInvestigationProfile, SupportInvestigationProfile } from '@/config/support-investigation-profile';
 import {
   SupportInvestigationRuntimeProfileDto,
@@ -30,7 +27,7 @@ export class SupportInvestigationPolicyService {
   private readonly configuredProfile: SupportInvestigationProfile;
   private readonly namespace: string | undefined;
   private readonly supportManagementApiTarget: SupportManagementApiTarget;
-  private readonly resolvedIafVofClassificationPolicy: IafVofInvestigationClassificationPolicy | undefined;
+  private readonly resolvedClassificationPolicy: SupportInvestigationClassificationPolicy | undefined;
 
   constructor(
     featureFlags: FeatureFlagService = featureFlagService,
@@ -42,7 +39,7 @@ export class SupportInvestigationPolicyService {
     this.configuredProfile = configuredProfile;
     this.namespace = namespace;
     this.supportManagementApiTarget = supportManagementApiTarget;
-    this.resolvedIafVofClassificationPolicy = resolveIafVofInvestigationClassificationPolicy(configuredProfile);
+    this.resolvedClassificationPolicy = configuredProfile.classificationPolicy;
   }
 
   async getState(user: User): Promise<SupportInvestigationState> {
@@ -84,7 +81,7 @@ export class SupportInvestigationPolicyService {
   }
 
   async getClassificationOwner(user: User): Promise<SupportErrandClassificationOwner> {
-    if (!this.resolvedIafVofClassificationPolicy) return 'generic-errand';
+    if (!this.resolvedClassificationPolicy) return 'generic-errand';
 
     const state = await this.getState(user);
     if (state === 'active') return 'investigation';
@@ -100,7 +97,7 @@ export class SupportInvestigationPolicyService {
    */
   async getRegistrationState(user: User): Promise<SupportRegistrationState> {
     if (!getNewErrandDefaults(this.configuredProfile.application)) return 'disabled';
-    if (!this.resolvedIafVofClassificationPolicy) return 'enabled';
+    if (!this.resolvedClassificationPolicy) return 'enabled';
     return this.registrationStateForInvestigationState(await this.getState(user));
   }
 
@@ -108,8 +105,8 @@ export class SupportInvestigationPolicyService {
     return this.configuredProfile;
   }
 
-  get iafVofClassificationPolicy(): IafVofInvestigationClassificationPolicy | undefined {
-    return this.resolvedIafVofClassificationPolicy;
+  get classificationPolicy(): SupportInvestigationClassificationPolicy | undefined {
+    return this.resolvedClassificationPolicy;
   }
 
   get labelFilter(): SupportManagementLabelFilterProfileDto | undefined {
@@ -134,6 +131,6 @@ export class SupportInvestigationPolicyService {
 
   private registrationStateForInvestigationState(state: SupportInvestigationState): SupportRegistrationState {
     if (!getNewErrandDefaults(this.configuredProfile.application)) return 'disabled';
-    return this.resolvedIafVofClassificationPolicy && state === 'unavailable' ? 'unavailable' : 'enabled';
+    return this.resolvedClassificationPolicy && state === 'unavailable' ? 'unavailable' : 'enabled';
   }
 }

@@ -14,18 +14,18 @@ import {
   editDecisionAttachment,
   fetchAttachment,
   fetchDecisionAttachment,
-  MAX_FILE_SIZE_MB,
   onlyOneAllowed,
   replaceAttachmentFile,
 } from '@casedata/services/casedata-attachment-service';
 import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
-import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
 import { isCroppableImage } from '@common/components/image-cropper/crop-geometry';
 import { CroppedImage } from '@common/components/image-cropper/crop-image';
 import { useToastMessages } from '@common/hooks/use-toast-messages';
 import { getAttachmentChannelLabel, isKnownAttachmentChannel } from '@common/interfaces/attachment-channel';
 import { isMEX } from '@common/services/application-service';
 import { base64ToFile, mapAttachmentToUploadFile } from '@common/services/attachment-service';
+import { MAX_FILE_SIZE_MB } from '@common/services/attachment-upload-policy';
+import { imageMimeTypes } from '@common/services/attachment-upload-policy';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FileUpload, PopupMenu, UploadFile, useConfirm } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore } from '@stores/index';

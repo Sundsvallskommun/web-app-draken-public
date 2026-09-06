@@ -3,9 +3,8 @@ import { validate } from 'class-validator';
 import { NextFunction, Response } from 'express';
 import { getMetadataArgsStorage } from 'routing-controllers';
 
+import { resolveIafVofInvestigationClassificationPolicy } from '@/avvikelse/classification-policy';
 import { apiServiceName } from '@/config/api-config';
-import { resolveIafVofInvestigationClassificationPolicy } from '@/config/iaf-vof-investigation-classification';
-import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import {
   AssignSupportErrandDto,
   SupportErrandController,
@@ -24,6 +23,7 @@ import { SupportErrandClassificationOwner, SupportInvestigationPolicyService } f
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
 import { ABSENT_HEADER, mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
+import { investigationProfileFixture } from './helpers/investigation-profiles';
 import {
   mockAdUsername,
   mockAttachmentId,
@@ -94,13 +94,13 @@ const makeController = (classificationOwner: SupportErrandClassificationOwner = 
     getOrganizationNumberByPartyId: vi.fn(async () => ''),
     getPartyIdByOrganizationNumber: vi.fn(async () => ''),
   };
-  const configuredProfile = getSupportInvestigationProfile('IAF');
+  const configuredProfile = investigationProfileFixture('IAF');
   const investigationPolicy = {
     getClassificationOwner: vi.fn(async () => classificationOwner),
     getRegistrationState: vi.fn(async () => (classificationOwner === 'unavailable' ? 'unavailable' : 'enabled')),
     profile: configuredProfile,
     labelFilter: configuredProfile.labelFilter,
-    iafVofClassificationPolicy: resolveIafVofInvestigationClassificationPolicy(configuredProfile),
+    classificationPolicy: resolveIafVofInvestigationClassificationPolicy(configuredProfile),
   };
   const investigationDocument = {
     readJsonParameter: vi.fn(async () => ({
