@@ -1,6 +1,6 @@
 import { ApiErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase } from '@casedata/interfaces/errand-phase';
-import { Priority } from '@casedata/interfaces/priority';
+import { Priority } from '@common/interfaces/priority';
 import { Role } from '@casedata/interfaces/role';
 import { mockFinalDecision, mockProposedDecision, mockRecommendedDecision } from './mockDecisions';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
