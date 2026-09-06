@@ -158,3 +158,14 @@ export function twoDecimals(value: number) {
 }
 
 export const maybe: (s: any) => string = (s) => (s ? String(s) : '(saknas)');
+
+/**
+ * True when react-hook-form reports at least one field as changed by the user.
+ * Use this rather than formState.isDirty for save buttons and unsaved-changes
+ * warnings: isDirty compares all form values against defaultValues, so a
+ * setValue for a field that does not exist in defaultValues (eg the sidebar's
+ * admin/status/priority placeholders) makes it true without any user edit.
+ */
+export function hasDirtyFields(dirtyFields: Record<string, unknown> | undefined): boolean {
+  return dirtyFields ? Object.values(deepFlattenToObject(dirtyFields)).some(Boolean) : false;
+}

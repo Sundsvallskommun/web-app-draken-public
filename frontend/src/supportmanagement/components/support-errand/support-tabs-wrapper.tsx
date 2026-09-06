@@ -1,3 +1,4 @@
+import { hasDirtyFields } from '@common/services/helper-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs } from '@sk-web-gui/react';
@@ -48,11 +49,12 @@ export const SupportTabsWrapper: FC<{
   const [investigationDirty, setInvestigationDirty] = useState<Partial<Record<string, boolean>>>({});
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
-  const { isDirty: isErrandDirty } = useFormState({ control: methods.control });
+  const { dirtyFields } = useFormState({ control: methods.control });
 
   const { activeTabKey, setActiveTabKey } = useSupportStore();
 
-  const unsavedChanges = isErrandDirty || tabUnsavedChanges || Object.values(investigationDirty).some(Boolean);
+  const unsavedChanges =
+    hasDirtyFields(dirtyFields) || tabUnsavedChanges || Object.values(investigationDirty).some(Boolean);
 
   useEffect(() => {
     onUnsavedChangesChange(unsavedChanges);
