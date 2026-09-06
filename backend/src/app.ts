@@ -3,7 +3,6 @@ import 'reflect-metadata';
 import {
   BASE_URL_PREFIX,
   CREDENTIALS,
-  LOG_FORMAT,
   NODE_ENV,
   ORIGIN,
   PORT,
@@ -142,14 +141,12 @@ const samlStrategy = new Strategy(
       };
 
       logger.info(`Authenticated user ${findUser.username} (role: ${findUser.role})`);
-      logger.debug(`Found user: ${JSON.stringify(findUser)}`);
 
       done(null, findUser);
     } catch (err) {
       if (err instanceof HttpException && err?.status === 404) {
         // TODO: Handle missing person form Citizen?
-        logger.error('Error when calling Citizen:');
-        logger.error(err);
+        logger.error('Authentication failed while resolving the citizen profile');
       }
       done(err instanceof Error ? err : null);
     }
@@ -202,7 +199,8 @@ class App {
   }
 
   private initializeMiddlewares() {
-    this.app.use(morgan(LOG_FORMAT!, { stream, skip: req => req.url?.endsWith('/health/up') ?? false }));
+    // URLs may include personal identifiers and search terms. Keep access logs to metadata.
+    this.app.use(morgan(':method :status :response-time ms', { stream, skip: req => req.path?.endsWith('/health/up') ?? false }));
     this.app.use(hpp());
     this.app.use(helmet());
     this.app.use(compression());
@@ -285,7 +283,7 @@ class App {
         }
         samlStrategy.logout(req as any, (err: Error | null, url?: string | null) => {
           if (err || !url) {
-            logger.error('SAML logout URL generation failed; falling back to local logout', err);
+            logger.error('SAML logout URL generation failed; falling back to local logout');
             return req.logout(logoutErr => (logoutErr ? next(logoutErr) : res.redirect(successRedirect as string)));
           }
           req.logout(logoutErr => (logoutErr ? next(logoutErr) : res.redirect(url)));
@@ -349,7 +347,7 @@ class App {
 
       passport.authenticate('saml', (err: Error | null, user: Express.User | false | null) => {
         if (err) {
-          logger.warn(`SAML login callback failed: ${err.name}: ${err.message}`);
+          logger.warn('SAML login callback failed');
           const queries = new URLSearchParams(failureRedirect.searchParams);
           if (err?.name) {
             queries.append('failMessage', err.name);

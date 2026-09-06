@@ -3,7 +3,7 @@ import { User } from '@interfaces/users.interface';
 import { logger } from '@utils/logger';
 import { apiURL } from '@utils/util';
 import type { AxiosResponseHeaders, RawAxiosResponseHeaders } from 'axios';
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosError, AxiosHeaders, AxiosInstance, AxiosRequestConfig } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
 import ApiTokenService from './api-token.service';
@@ -17,7 +17,7 @@ export class ApiResponse<T> {
 
 // Extends AxiosRequestConfig with an opt-in flag. When `propagateClientError` is true, upstream
 // 4xx responses are re-thrown with their original status and message instead of a generic 500.
-export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & {
+export type ApiRequestConfig<D = unknown> = AxiosRequestConfig<D> & {
   followLocation?: boolean;
   includeResponseHeaders?: boolean;
   propagateClientError?: boolean;
@@ -25,32 +25,17 @@ export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & {
 
 const apiTokenService = new ApiTokenService();
 
-/**
- * Render a request body for the error log. Multipart requests carry a form-data
- * stream rather than a string, so it can only be described, not excerpted.
- */
-const describeRequestBody = (data: unknown): string => {
-  if (typeof data === 'string') {
-    return data.slice(0, 1500);
-  }
-  if (data === undefined || data === null) {
-    return '';
-  }
-  return `[${data.constructor?.name ?? typeof data} body, not logged]`;
-};
-
+// This transport handles protected documents as well as ordinary errands. Log only
+// protocol metadata: bodies, headers, URLs and even error messages may carry personal
+// data or credentials. The generated request id correlates failures with upstream logs.
 const logAxiosResponseError = (error: AxiosError): void => {
-  const { response } = error;
-  if (!response) {
-    logger.error(`API request failed without a response: ${error.message}`);
-    return;
-  }
-  logger.error(`ERROR: API request failed with status: ${response.status}`);
-  logger.error(`Error details: ${JSON.stringify(response.data)}`);
-  logger.error(`Error url: ${response.config.baseURL || ''}/${response.config.url}`);
-  logger.error(`Error data: ${describeRequestBody(response.config.data)}`);
-  logger.error(`Error method: ${response.config.method}`);
-  logger.error(`Error headers: ${response.config.headers}`);
+  const config = error.config;
+  const method = config?.method?.toUpperCase();
+  const safeMethod = method && ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(method) ? method : 'unknown';
+  const requestId = config?.headers?.['X-Request-Id'];
+  const safeRequestId = typeof requestId === 'string' && /^[a-f0-9-]{36}$/iu.test(requestId) ? requestId : 'unavailable';
+  const status = typeof error.response?.status === 'number' ? error.response.status : 'no-response';
+  logger.error(`API request failed: method=${safeMethod} status=${status} requestId=${safeRequestId}`);
 };
 
 const readUpstreamErrorMessage = (data: unknown): string => {
@@ -81,11 +66,9 @@ class ApiService {
         };
         const isSimulatorRequest = request.url?.includes('simulatorserver');
         if (!isSimulatorRequest) {
-          const fullUrl = `${request.baseURL || ''}/${request.url}`;
-          logger.info(`MAKING ${request.method?.toUpperCase()} REQUEST TO URL ${fullUrl}`);
-          logger.info(`x-request-id: ${defaultHeaders['X-Request-Id']}`);
+          logger.info(`API request: requestId=${defaultHeaders['X-Request-Id']}`);
         }
-        request.headers = { ...defaultHeaders, ...request.headers } as any;
+        request.headers = AxiosHeaders.concat(defaultHeaders, request.headers);
         request.headers['Content-Type'] = request.headers['Content-Type'] || defaultHeaders['Content-Type'];
         return request;
       },
@@ -113,15 +96,11 @@ class ApiService {
         }
         const followLocation = (response.config as ApiRequestConfig).followLocation !== false;
         if (response.headers.location && followLocation && !response.config.url?.includes('messaging')) {
-          logger.info(`Response contained location header: ${response.headers.location}`);
-          logger.info(`Base URL was: ${response.config.baseURL}`);
           const sentBy = response.config.headers?.['X-Sent-By'];
           const headers = sentBy === undefined ? defaultHeaders : { ...defaultHeaders, 'X-Sent-By': sentBy };
           return axios.get(response.headers.location, { baseURL: response.config.baseURL, headers }).catch(e => {
-            logger.error(`Error in location header request: ${e.details}`);
-            logger.error(`Base URL was: ${e.config?.baseURL}`);
-            logger.error(`URL was: ${e.config?.url}`);
-            logger.error(`Method was: ${e.config?.method}`);
+            if (axios.isAxiosError(e)) logAxiosResponseError(e);
+            else logger.error('API location request failed');
             return response;
           });
         }
@@ -150,7 +129,7 @@ class ApiService {
         : { data: res.data, message: 'success' };
     } catch (error: unknown) {
       if (!axios.isAxiosError(error)) {
-        logger.error(`Unknown error: ${error}`);
+        logger.error('API request failed before an upstream response could be handled');
         throw new HttpException(500, 'Internal server error');
       }
 

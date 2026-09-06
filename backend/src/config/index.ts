@@ -14,7 +14,6 @@ export const {
   NODE_ENV,
   PORT,
   API_BASE_URL,
-  LOG_FORMAT,
   LOG_DIR,
   ORIGIN,
   SECRET_KEY,

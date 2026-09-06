@@ -2,6 +2,7 @@ import axios, { AxiosAdapter, AxiosError } from 'axios';
 
 import ApiService from '@/services/api.service';
 import ApiTokenService from '@/services/api-token.service';
+import { logger } from '@/utils/logger';
 
 import { mockUser } from './helpers/http';
 
@@ -30,6 +31,50 @@ afterEach(() => {
 });
 
 describe('ApiService', () => {
+  it('keeps protected data and credentials out of transport logs on an upstream failure', async () => {
+    const errorLog = vi.spyOn(logger, 'error').mockImplementation(() => logger);
+    const infoLog = vi.spyOn(logger, 'info').mockImplementation(() => logger);
+    const secret = 'protected-investigation-content';
+    await expect(
+      new ApiService().put<unknown, { value: string }>(
+        {
+          adapter: failingAdapter(403, { detail: secret }, secret),
+          baseURL: `https://api.test.local/${secret}`,
+          url: `/documents?person=${secret}`,
+          headers: { Authorization: `Bearer ${secret}`, Cookie: secret },
+          data: { value: secret },
+          propagateClientError: true,
+        },
+        user,
+      ),
+    ).rejects.toMatchObject({ status: 403 });
+
+    const logs = JSON.stringify([...errorLog.mock.calls, ...infoLog.mock.calls]);
+    expect(logs).not.toContain(secret);
+    expect(logs).not.toContain(user.username);
+    expect(logs).toContain('status=403');
+    expect(logs).toContain('method=PUT');
+    expect(logs).toMatch(/requestId=[a-f0-9-]{36}/u);
+  });
+
+  it('does not log network error messages that may contain request data', async () => {
+    const errorLog = vi.spyOn(logger, 'error').mockImplementation(() => logger);
+    const secret = 'protected-network-error';
+    await expect(
+      new ApiService().get<unknown>(
+        {
+          url: TOKEN_URL,
+          adapter: async config => {
+            throw new AxiosError(secret, 'ECONNRESET', config);
+          },
+        },
+        user,
+      ),
+    ).rejects.toMatchObject({ status: 500 });
+    expect(JSON.stringify(errorLog.mock.calls)).not.toContain(secret);
+    expect(JSON.stringify(errorLog.mock.calls)).toContain('status=no-response');
+  });
+
   it('retains upstream response headers for BFF endpoints that need concurrency metadata', async () => {
     const response = await new ApiService().get<{ saved: boolean }>(
       { adapter: okAdapter({ saved: true }, { etag: '"4"' }), includeResponseHeaders: true, url: TOKEN_URL },
