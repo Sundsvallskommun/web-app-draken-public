@@ -5,8 +5,9 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dragons = JSON.parse(readFileSync(resolve(root, 'dragons.json'), 'utf8'));
-const id = process.argv[2]?.toUpperCase();
-assert.ok(id && Object.hasOwn(dragons, id), 'Specify a valid dragon');
+// Derive paths from the catalog key, never from the caller's spelling of it.
+const id = Object.keys(dragons).find((key) => key === process.argv[2]?.toUpperCase());
+assert.ok(id, 'Specify a valid dragon');
 const definition = dragons[id];
 const output = resolve(root, `backend/dist-${id}`);
 const has = (file) => existsSync(resolve(output, file));

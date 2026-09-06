@@ -178,14 +178,15 @@ export function InvestigationSchemaFormPanel({
           <Disclosure.Button aria-labelledby={`${jsonPreviewId}-title`} onClick={handleJsonPreviewButtonClick} />
         </Disclosure.Header>
         <Disclosure.Content>
-          <pre
+          {/* Keyboard users must be able to focus and scroll overflowing JSON. */}
+          <section
             className="max-w-full overflow-auto rounded-8 bg-background-100 p-16 text-small"
             data-cy="schema-form-data-preview"
             tabIndex={0}
             aria-label={`Lokalt JSON-värde för ${definition.tabLabel}`}
           >
-            {JSON.stringify(formData, null, 2)}
-          </pre>
+            <pre className="m-0">{JSON.stringify(formData, null, 2)}</pre>
+          </section>
         </Disclosure.Content>
       </Disclosure>
     </section>

@@ -1,9 +1,9 @@
 import { apiService } from '@common/services/api-service';
 import {
   ACCEPTED_UPLOAD_FILETYPES as uploadFileTypes,
+  imageMimeTypes,
   MAX_FILE_SIZE_MB,
 } from '@common/services/attachment-upload-policy';
-import { imageMimeTypes } from '@common/services/attachment-upload-policy';
 import { toBase64 } from '@common/utils/toBase64';
 
 export interface SupportAttachment {

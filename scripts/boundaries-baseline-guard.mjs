@@ -39,7 +39,7 @@ const repoRoot = path.resolve(
  */
 function dependencyCruiserEntries(json) {
   if (!Array.isArray(json)) {
-    throw new Error(
+    throw new TypeError(
       "expected an array of violations (dependency-cruiser --output-type baseline)"
     );
   }
@@ -59,7 +59,7 @@ function dependencyCruiserEntries(json) {
  */
 function eslintSuppressionEntries(json) {
   if (json === null || typeof json !== "object" || Array.isArray(json)) {
-    throw new Error(
+    throw new TypeError(
       "expected an object keyed by file (ESLint bulk suppressions)"
     );
   }
@@ -156,6 +156,46 @@ function total(entries) {
   return sum;
 }
 
+function checkBaseline(base, { file, unit, parse }) {
+  const baseText = git(["show", `${base.ref}:${file}`], {
+    allowFailure: true,
+  });
+  if (baseText === null) {
+    console.info(
+      `  ${file}: does not exist on ${base.ref}, nothing to compare against (first baseline), skipping.`
+    );
+    return true;
+  }
+  const baseEntries = readBaseline(
+    `${base.ref}:${file}`,
+    baseText,
+    parse,
+    file
+  );
+
+  const localPath = path.join(repoRoot, file);
+  const currentEntries = existsSync(localPath)
+    ? readBaseline(file, readFileSync(localPath, "utf8"), parse, file)
+    : new Map();
+
+  const grown = [];
+  for (const [key, count] of currentEntries) {
+    const before = baseEntries.get(key) ?? 0;
+    if (count > before) grown.push({ key, before, count });
+  }
+
+  const verdict = grown.length === 0 ? "OK" : "GREW";
+  console.info(
+    `  ${file}: ${total(baseEntries)} -> ${total(
+      currentEntries
+    )} ${unit}  ${verdict}`
+  );
+  for (const { key, before, count } of grown) {
+    console.info(`    + ${key}  (${before} -> ${count})`);
+  }
+  return grown.length === 0;
+}
+
 function main() {
   const requested = process.argv[2] ?? process.env.GITHUB_BASE_REF;
   if (!requested) {
@@ -177,46 +217,8 @@ function main() {
     `boundaries-baseline-guard: comparing against ${base.ref} (${base.sha})`
   );
 
-  let failed = false;
-  for (const { file, unit, parse } of BASELINES) {
-    const baseText = git(["show", `${base.ref}:${file}`], {
-      allowFailure: true,
-    });
-    if (baseText === null) {
-      console.info(
-        `  ${file}: does not exist on ${base.ref}, nothing to compare against (first baseline), skipping.`
-      );
-      continue;
-    }
-    const baseEntries = readBaseline(
-      `${base.ref}:${file}`,
-      baseText,
-      parse,
-      file
-    );
-
-    const localPath = path.join(repoRoot, file);
-    const currentEntries = existsSync(localPath)
-      ? readBaseline(file, readFileSync(localPath, "utf8"), parse, file)
-      : new Map();
-
-    const grown = [];
-    for (const [key, count] of currentEntries) {
-      const before = baseEntries.get(key) ?? 0;
-      if (count > before) grown.push({ key, before, count });
-    }
-
-    const verdict = grown.length === 0 ? "OK" : "GREW";
-    console.info(
-      `  ${file}: ${total(baseEntries)} -> ${total(
-        currentEntries
-      )} ${unit}  ${verdict}`
-    );
-    for (const { key, before, count } of grown) {
-      console.info(`    + ${key}  (${before} -> ${count})`);
-    }
-    if (grown.length > 0) failed = true;
-  }
+  // Evaluate every baseline so a failure still reports all new violations.
+  const failed = BASELINES.map((baseline) => checkBaseline(base, baseline)).includes(false);
 
   if (failed) {
     console.error(

@@ -1,6 +1,9 @@
 import { User } from '@common/interfaces/user';
-import { getMessageTemplateNamespace } from '@common/services/message-template-body-service';
-import { EMAIL_INFORMATION_TEXT, MessageTemplates } from '@common/services/message-template-body-service';
+import {
+  EMAIL_INFORMATION_TEXT,
+  getMessageTemplateNamespace,
+  MessageTemplates,
+} from '@common/services/message-template-body-service';
 import { fetchTemplatesWithMetadata, replaceTemplateParameters } from '@common/services/message-template-service';
 import { getTemplateRole, getTemplateType } from '@common/utils/template-metadata';
 import { useEffect, useState } from 'react';

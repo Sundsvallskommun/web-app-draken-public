@@ -3,8 +3,7 @@ import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dr
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { getAttachmentChannelLabel, isKnownAttachmentChannel } from '@common/interfaces/attachment-channel';
 import { isKC } from '@common/services/application-service';
-import { imageMimeTypes } from '@common/services/attachment-upload-policy';
-import { documentMimeTypes } from '@common/services/attachment-upload-policy';
+import { documentMimeTypes, imageMimeTypes } from '@common/services/attachment-upload-policy';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {

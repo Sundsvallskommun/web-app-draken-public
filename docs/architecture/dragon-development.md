@@ -161,6 +161,15 @@ docker build -f backend/Dockerfile --build-arg DRAKEN_BUILD_DRAGON=IAF -t draken
 Välj samma drake i frontend och backend, tagga med commit och leverera till drakens miljö.
 Compose kräver också `DRAKEN_BUILD_DRAGON`. Runtime-identiteten måste matcha imagen.
 Env-placeholders finns kvar för miljöberoende värden, och deras värden loggas inte vid ersättning.
+`scripts/replace-frontend-env.cjs` körs utan argument och arbetar bara i imagenens frontendkatalog.
+Endast applikationens `.next/` och `server.js` får skrivas om; symboliska länkar där avvisas.
+`node_modules` hoppas över helt, inklusive de paketlänkar som Next skapar i standalone-utdata.
+
+Docker och byggmatrisen installerar beroenden med `--frozen-lockfile --ignore-scripts`.
+Native-binära paket kommer från lockfilens optional dependencies. Nya beroenden som behöver ett
+installationsskript kräver en uttrycklig bygglösning och ett verifierat containerbygge; slå inte på
+alla livscykelskript igen. Yarn i frontendimagen har en fast version, och actions i byggmatrisen
+är låsta till verifierade commit-hashar. Uppdatera dem avsiktligt tillsammans med byggverifieringen.
 
 Externa Tekton-/driftpipelines behöver byta byggkontext till reporoten och ange drake före
 leverans. Backendens namngivna datavolym monteras på `/app/backend/data`; behåll dess innehåll.

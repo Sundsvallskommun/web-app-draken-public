@@ -277,6 +277,19 @@ test('exposes labels, descriptions, state and disclosure controls accessibly', a
 
   await page.getByRole('button', { name: 'Spara utkast lokalt' }).click();
   await expect(page.getByRole('status')).toContainText('Utkastet är sparat');
+
+  const previewButton = page.getByRole('button', { name: 'Visa lokalt JSON-värde' });
+  await previewButton.click();
+  await previewButton.focus();
+  await page.keyboard.press('Tab');
+  const preview = page.getByRole('region', { name: /Lokalt JSON-värde för/u });
+  await expect(preview).toBeFocused();
+  // Constrain the viewport so this also exercises actual keyboard scrolling.
+  await preview.evaluate((element) => {
+    element.style.maxHeight = '100px';
+  });
+  await page.keyboard.press('ArrowDown');
+  await expect.poll(() => preview.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
 });
 
 test('calculates risk values and restores a locally saved draft after reload', async ({ page }) => {

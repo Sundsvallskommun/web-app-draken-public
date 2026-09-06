@@ -1,7 +1,5 @@
-export type LabelClassificationCode = string;
-
 export interface LabelClassificationOption {
-  readonly code: LabelClassificationCode;
+  readonly code: string;
   readonly displayName: string;
 }
 
@@ -16,13 +14,13 @@ export interface LabelClassificationTypeOption extends LabelClassificationOption
  * supply the same shape when the local mock catalog is retired.
  */
 export interface LabelClassificationCatalog {
-  readonly code: LabelClassificationCode;
+  readonly code: string;
   readonly displayName: string;
   readonly types: readonly LabelClassificationTypeOption[];
 }
 
 /** Shared controlled value for the component, page state and persistence. */
 export interface LabelClassificationSelection {
-  readonly typeCode?: LabelClassificationCode;
-  readonly subtypeCode?: LabelClassificationCode;
+  readonly typeCode?: string;
+  readonly subtypeCode?: string;
 }

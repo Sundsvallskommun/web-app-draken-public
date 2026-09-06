@@ -1,6 +1,5 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-import { imageMimeTypes } from '@common/services/attachment-upload-policy';
-import { MAX_FILE_SIZE_MB } from '@common/services/attachment-upload-policy';
+import { imageMimeTypes, MAX_FILE_SIZE_MB } from '@common/services/attachment-upload-policy';
 import { Button, cx, FormControl, FormErrorMessage, FormHelperText, FormLabel, Input, Select } from '@sk-web-gui/react';
 import { UploadCloud, X } from 'lucide-react';
 import { FC, KeyboardEvent, useEffect, useRef, useState } from 'react';

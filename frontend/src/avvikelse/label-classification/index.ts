@@ -20,7 +20,6 @@ export type { LabelClassificationProps } from './label-classification.component'
 export { LabelClassification } from './label-classification.component';
 export type {
   LabelClassificationCatalog,
-  LabelClassificationCode,
   LabelClassificationOption,
   LabelClassificationSelection,
   LabelClassificationSubtypeOption,

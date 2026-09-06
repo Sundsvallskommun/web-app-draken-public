@@ -39,3 +39,13 @@ test('immutable image metadata restricts runtime identity for both services', ()
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('artifact checks reject unknown IDs and traversal before reading artifacts', () => {
+  const cli = join(root, 'scripts/check-backend-artifact.mjs');
+  for (const id of ['unknown', '../../../outside', 'IAF/../../outside', 'toString', '']) {
+    const result = spawnSync(process.execPath, [cli, id], { encoding: 'utf8' });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Specify a valid dragon/);
+    assert.doesNotMatch(result.stderr, /ENOENT/);
+  }
+});

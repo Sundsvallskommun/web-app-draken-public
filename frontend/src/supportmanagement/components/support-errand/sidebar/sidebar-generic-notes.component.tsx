@@ -1,5 +1,4 @@
-import { NoteType } from '@common/interfaces/note-visibility';
-import { noteIsComment, noteIsTjansteanteckning } from '@common/interfaces/note-visibility';
+import { noteIsComment, noteIsTjansteanteckning, NoteType } from '@common/interfaces/note-visibility';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';

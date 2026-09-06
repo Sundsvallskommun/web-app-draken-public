@@ -1,6 +1,6 @@
 import type { InvestigationProfileDocument } from '../supportmanagement/investigation/investigation-profile';
 
-export type InvestigationDocumentKey = string;
+export type InvestigationDocumentKey = InvestigationProfileDocument['key'];
 
 export type InvestigationFormData = Record<string, unknown>;
 

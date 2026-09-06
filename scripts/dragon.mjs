@@ -92,7 +92,8 @@ try {
   if (mode === 'list') {
     if (requested === '--json') process.stdout.write(JSON.stringify(Object.keys(dragons)) + '\n');
     else for (const [id, definition] of Object.entries(dragons)) {
-      process.stdout.write(`${id.padEnd(5)} ${definition.domain}${definition.investigation ? ` + ${definition.investigation}` : ''}\n`);
+      const investigation = definition.investigation ? ' + ' + definition.investigation : '';
+      process.stdout.write(`${id.padEnd(5)} ${definition.domain}${investigation}\n`);
     }
   } else {
     const id = requested?.toUpperCase();

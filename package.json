@@ -10,7 +10,7 @@
     "format": "yarn --cwd frontend format && yarn --cwd backend format",
     "test": "yarn test:architecture && yarn --cwd frontend test && yarn --cwd backend test",
     "verify": "yarn type-check && yarn lint && yarn knip && yarn test",
-    "test:architecture": "node --test scripts/dragon.test.mjs scripts/frontend-runtime-env.test.mjs"
+    "test:architecture": "node --test scripts/*.test.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",

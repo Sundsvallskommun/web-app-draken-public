@@ -5,7 +5,8 @@ RUN mkdir -p /app/frontend && chown -R 1001:0 /app
 USER 1001
 WORKDIR /app/frontend
 COPY --chown=1001:0 frontend/package.json frontend/yarn.lock ./
-RUN npm install -g yarn && yarn install --frozen-lockfile
+RUN npm install -g yarn@1.22.22 --ignore-scripts \
+ && yarn install --frozen-lockfile --ignore-scripts
 COPY --chown=1001:0 dragons.json /app/dragons.json
 COPY --chown=1001:0 frontend/ ./
 COPY --chown=1001:0 frontend/.env-cicd .env.local
@@ -15,7 +16,10 @@ ARG DRAKEN_BUILD_DRAGON
 ARG DEPLOY_COMMIT=""
 ARG DEPLOY_BRANCH=""
 RUN if [ -n "$DEPLOY_COMMIT" ]; then \
-  node -e 'require("fs").writeFileSync("public/deploy-info.json", JSON.stringify({commit: process.env.DEPLOY_COMMIT, branch: process.env.DEPLOY_BRANCH, updatedAt: new Date().toISOString()}))'; \
+  node -e 'require("fs").writeFileSync("public/deploy-info.json", JSON.stringify({ \
+    commit: process.env.DEPLOY_COMMIT, branch: process.env.DEPLOY_BRANCH, \
+    updatedAt: new Date().toISOString() \
+  }))'; \
   fi
 RUN yarn build \
  && node -e 'require("fs").writeFileSync("/app/dragon-build.json", JSON.stringify({id: process.env.DRAKEN_BUILD_DRAGON}))'

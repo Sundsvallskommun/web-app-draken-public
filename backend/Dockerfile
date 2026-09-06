@@ -2,7 +2,7 @@
 FROM node:22-slim AS builder
 WORKDIR /app/backend
 COPY backend/package.json backend/yarn.lock ./
-RUN yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile --ignore-scripts
 COPY dragons.json /app/dragons.json
 COPY scripts/dragon.mjs /app/scripts/dragon.mjs
 COPY backend/ ./
@@ -14,7 +14,7 @@ RUN node ../scripts/dragon.mjs build "$DRAKEN_BUILD_DRAGON" backend \
 FROM node:22-slim AS production-deps
 WORKDIR /app/backend
 COPY backend/package.json backend/yarn.lock ./
-RUN yarn install --production --frozen-lockfile
+RUN yarn install --production --frozen-lockfile --ignore-scripts
 
 FROM node:22-slim AS runner
 RUN apt-get update && apt-get install -y --no-install-recommends openssl \

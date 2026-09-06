@@ -1,7 +1,6 @@
 'use client';
 
-import { MEXAttachmentLabels, PTAttachmentLabels } from '@casedata/interfaces/attachment';
-import { Attachment } from '@casedata/interfaces/attachment';
+import { Attachment, MEXAttachmentLabels, PTAttachmentLabels } from '@casedata/interfaces/attachment';
 import { Channels } from '@casedata/interfaces/channels';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Role } from '@casedata/interfaces/role';
