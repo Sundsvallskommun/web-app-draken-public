@@ -86,3 +86,19 @@ jobs:
           cache-to: type=gha,mode=max,scope=backend-${{ matrix.dragon }}
       - name: Verify packaged startup, release pairing, prefixes and rejected configuration
         run: node scripts/dragon-container-smoke.mjs "${{ matrix.dragon }}" draken-frontend:smoke draken-backend:smoke "${{ github.sha }}"
+  all-dragon-builds:
+    name: All dragon builds
+    needs: [catalog, applications, container-builds]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every build and container check to pass
+        env:
+          CATALOG_RESULT: ${{ needs.catalog.result }}
+          APPLICATIONS_RESULT: ${{ needs.applications.result }}
+          CONTAINERS_RESULT: ${{ needs.container-builds.result }}
+        run: |
+          if [[ "$CATALOG_RESULT" != success || "$APPLICATIONS_RESULT" != success || "$CONTAINERS_RESULT" != success ]]; then
+            echo "Dragon builds failed: catalog=$CATALOG_RESULT applications=$APPLICATIONS_RESULT containers=$CONTAINERS_RESULT" >&2
+            exit 1
+          fi

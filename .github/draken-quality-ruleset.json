@@ -1,0 +1,41 @@
+{
+  "name": "Draken quality gates",
+  "target": "branch",
+  "enforcement": "active",
+  "bypass_actors": [],
+  "conditions": {
+    "ref_name": {
+      "include": ["~DEFAULT_BRANCH", "refs/heads/develop", "refs/heads/main"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "required_status_checks": [
+          { "context": "Lint Frontend", "integration_id": 15368 },
+          { "context": "Lint Backend", "integration_id": 15368 },
+          { "context": "Type Check Frontend", "integration_id": 15368 },
+          { "context": "Type Check Backend", "integration_id": 15368 },
+          { "context": "Unit Tests Frontend", "integration_id": 15368 },
+          { "context": "Unit Tests Backend", "integration_id": 15368 },
+          { "context": "All dragon builds", "integration_id": 15368 },
+          { "context": "All browser tests", "integration_id": 15368 }
+        ],
+        "strict_required_status_checks_policy": true,
+        "do_not_enforce_on_create": false
+      }
+    },
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 1,
+        "require_code_owner_review": true,
+        "dismiss_stale_reviews_on_push": true,
+        "require_last_push_approval": false,
+        "required_review_thread_resolution": false
+      }
+    }
+  ]
+}

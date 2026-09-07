@@ -316,3 +316,25 @@ jobs:
             frontend/playwright-report/
             frontend/playwright-server.log
           retention-days: 30
+  all-browser-tests:
+    name: All browser tests
+    needs: [smoke-catalog, smoke, test]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every browser check to pass
+        env:
+          CATALOG_RESULT: ${{ needs.smoke-catalog.result }}
+          SMOKE_PROJECTS: ${{ needs.smoke-catalog.outputs.dragons }}
+          SMOKE_RESULT: ${{ needs.smoke.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+        run: |
+          if [[ "$CATALOG_RESULT" != success || "$TEST_RESULT" != success ]]; then
+            echo "Browser tests failed: catalog=$CATALOG_RESULT integration=$TEST_RESULT" >&2
+            exit 1
+          fi
+          # A skipped matrix is legitimate only when the successful catalog explicitly returned [].
+          if [[ "$SMOKE_RESULT" != success && !( "$SMOKE_RESULT" == skipped && "$SMOKE_PROJECTS" == '[]' ) ]]; then
+            echo "Browser smoke failed: result=$SMOKE_RESULT projects=$SMOKE_PROJECTS" >&2
+            exit 1
+          fi

@@ -52,16 +52,23 @@ request, response och error. Testdata ska aldrig hämtas ur ett verkligt ärende
 
 ## Förslag till krav före merge
 
-Den lokala regeldefinitionen [Runtime logging safety](../../.github/runtime-logging-ruleset.json) är ett förslag
+Den lokala regeldefinitionen [Draken quality gates](../../.github/draken-quality-ruleset.json) är ett förslag
 för granskning i denna branch/PR. Den är inte aktiverad i GitHub. Om den godkänns skulle den kräva
-`Lint Frontend` och `Lint Backend` från GitHub Actions för `develop`, `main` och defaultgrenen.
+frontendens och backendens lint, typkontroll och enhetstester samt `All dragon builds` och
+`All browser tests` från GitHub Actions för `develop`, `main` och defaultgrenen.
 Grenen ska vara uppdaterad mot målgrenen. Regeln har inga undantagna aktörer; teamets övriga
-befintliga regler behåller sina tidigare inställningar. Dessa jobb kör källkodskontrollen,
+befintliga regler behåller sina tidigare inställningar. Ett godkännande från kodägare krävs,
+och ny kod upphäver tidigare godkännanden. Slutjobben kontrollerar hela bygg-/webbläsarmatrisen,
+så även en nytillagd drake omfattas utan nya statusnamn i GitHub-inställningarna.
+Lintjobben kör källkodskontrollen,
 dess regressionstester och tester av diagnostikens utdata tillsammans med ordinarie lint.
 En röd kontroll ska åtgärdas och köras om på den commit som ska slås samman.
 
 JSON-filen aktiverar inte en GitHub-regel genom att ligga i repot. Ändra inte gemensamma
 GitHub-inställningar före branchens godkännande och ett uttryckligt beslut om aktivering.
+De nya workflowsen och statusnamnen måste först finnas i basbranchen. För tidig aktivering
+skulle annars blockera andra PR:er som ännu inte kan producera dessa kontroller. En separat
+integrationsbranch behöver ett uttryckligt beslut om den också ska omfattas av reglerna.
 Efter en godkänd aktivering behöver drift verifiera inställningen i Settings → Rules → Rulesets.
 De nya provstegen körs när denna ändring finns i CI-checkouten; obligatorisk merge-spärr kräver
 dessutom den separat godkända GitHub-inställningen. En administratör kan ändra själva regeln,

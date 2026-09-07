@@ -13,7 +13,7 @@ Applikationens entrypoint får importera återanvändbar UI-sammansättning frå
 Domäner och delad kod importerar aldrig drakar. Delade regler hör hemma hos sin domän eller
 verksamhetsmodul; här väljs de, utan kopierade services eller `isKC()`-grenar.
 
-Rotens `dragons.json` är inventariet för identitet, domän och tillåtna utredningar. Next väljer
+Rotens `dragons.json` är inventariet för identitet och domän. Next väljer
 en enda `application.ts` genom `@dragon` vid build. Den typade registreringen i
 `shell/dragon-registry.test-fixture.ts` används endast i tester.
 

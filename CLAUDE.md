@@ -1,235 +1,76 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Working instructions for coding assistants in this repository. Human onboarding, architecture,
+build/start commands and release ownership are maintained in
+[the development guide](docs/architecture/dragon-development.md). Use that guide as the detailed
+source; [README](README.md) is the quickstart. The catalog in `dragons.json` lists current dragons
+and their domains, so do not maintain a second inventory here.
 
-## Project Overview
+## Ownership and changes
 
-Draken is a Swedish municipal administration application for Sundsvalls Kommun. It's a multi-tenant system supporting 14 different "drakar" (dragons/modules): **kc**, **ka**, **mex**, **pt**, **rob**, **lop**, **ik**, **msva**, **se**, **bou**, **lok**, **iaf**, **vof**, **aot**. Each drake serves different municipal departments with distinct feature configurations.
+Each dragon is a separately built application. SupportManagement and CaseData own reusable domain
+behavior. The technical base owns transport, authentication mechanics, diagnostics and lifecycle.
+Business modules such as Avvikelse implement domain contracts. Each dragon chooses its policies
+and implementations in `frontend/src/dragons/<id>/application.ts` and
+`backend/src/dragons/<id>/application.ts`. Shell composition connects these parts.
 
-**Two main business domains:**
+Before changing code, identify the existing owner, similar behavior and the smallest change that
+reuses or deepens that owner. Keep business decisions out of generic infrastructure. A new dragon
+must not require another name check in a shared service. See the guide's
+[boundary examples](docs/architecture/dragon-development.md#gränsen-mellan-bas-domän-och-applikation)
+and [onboarding checklist](docs/architecture/dragon-development.md#lägg-till-en-drake).
 
-- **CaseData** (Ärendehantering) - Case/errand management for MEX, PT
-- **SupportManagement** (Supporthantering) - Contact center/support tickets for KC, LOP, ROB, etc.
+Frontend import boundaries are defined in [boundaries.md](docs/architecture/boundaries.md).
+Existing identity reads and common-to-domain imports are baselined; the baselines may only shrink.
+Do not add suppressions or exceptions to make a boundary violation pass. Backend production builds
+start from the selected dragon's server and check its reachable modules. Shared contracts belong
+to their domain/DTO owner, never to a controller re-export or another dragon.
 
-## Investigation (utredning): two implementations, one seam
+## Investigation contract
 
-IAF/VOF (**avvikelse**) and **AOT** both switch on the investigation feature, but they are separate
-implementations chosen at runtime by capability flag. This is the likeliest place for one team's
-work to break another's, so the boundary is explicit, and it is tested from both sides.
+`frontend/src/supportmanagement/investigation/` owns `InvestigationModule` and its configured
+instance. There is no runtime registry selecting among implementations. IAF and VOF choose
+`frontend/src/avvikelse/`; AOT chooses `frontend/src/dragons/aot/investigation/` at build time.
+`useInvestigation` can enable the chosen implementation; it cannot replace it. Retired variant
+flags are rejected. Follow the [flag migration](docs/operations/investigation-flags.md).
 
-`frontend/src/supportmanagement/investigation/` owns the contract and registry only.
-`frontend/src/avvikelse/` implements Avvikelse; `frontend/src/dragons/aot/investigation/`
-implements AOT. Each dragon's `application.ts` supplies its variant at build time. Runtime
-flags may enable that variant but cannot load a different one. Enabling conflicting variants
-is rejected at startup and after Adminpanel flags are applied.
+Optional investigation slots must remain optional. AOT's implementation does not own Avvikelse's
+categorization or document policy. The configured UI tab and the backend document profile are
+separate capabilities: AOT has no investigation documents and reports document state `inactive`.
+Registration and label filters belong to the application profile independently of document state.
+See [investigation ownership](frontend/src/supportmanagement/investigation/README.md).
 
-**The rules that keep the two apart:**
+When changing shared SM behavior, prove both a consumer with Avvikelse and one without it still
+work. The domain's `investigation-module-contract.test.ts` tests the contract independently of
+Avvikelse. Browser tests must run against the selected dragon's server; a skipped test is not
+acceptance evidence. Current projects and coverage live in `frontend/e2e/dragon-coverage.json`
+and `frontend/playwright.config.ts`.
 
-- **No cross-implementation imports.** `aot/` must never import from `avvikelse/`, nor the reverse.
-  They share the contract and no code. `investigation-variant-contract.test.ts` is written to prove
-  it: it builds two fixture variants without touching `avvikelse/`, so if the contract ever grows a
-  dependency on one implementation, that test can no longer be written and stops compiling.
-- **Investigation behaviour never branches on which application is running.** It is decided by
-  capability flags and the variant contract, never by `NEXT_PUBLIC_APPLICATION`, a drake name or
-  `isIAFOrVOF()`. Shared SupportManagement code does branch on drake elsewhere (`isKC()`, `isLOP()`,
-  `isLOK()`, and `NEXT_PUBLIC_APPLICATION` for i18n keys) — that is existing practice, but it must
-  not spread into investigation logic. `isIAFOrVOF()` survives in `support-errand.component.tsx`
-  for the summary panel; do not extend it.
-- **Optional slots stay optional.** A variant that supplies no `renderNotice`, no
-  `renderCategorizationControl` and no `labelTree` must leave Grundinformation's ordinary two-/three-
-  level categorization exactly as every other drake sees it. AOT is precisely that case.
-- **The tab is selected by flag, not by profile state.** AOT has no registered profile, so the BFF
-  always reports `state: 'inactive'` for it (`getSupportInvestigationProfile` falls through to an
-  empty profile). Gating the tab on profile state silently deletes it from every non-avvikelse drake.
-- **Avvikelse-only surface stays avvikelse-only.** Investigation documents (`json-parameters`), JSON
-  schemas, the profile's `labelFilter` (which replaces the overview's ordinary category filters with
-  avvikelse's own groups) and the classification PATCH
-  (`supporterrands/{municipalityId}/{errandId}/classification`, the atomic write used only when the
-  investigation owns classification) must never be reached by another drake.
+## Verification and runtime
 
-**When you change draken-global logic** — the shared support-errand components, the overview
-filters, the tabs wrapper, `appconfig` — both implementations have to survive it. Run both suites,
-not only the one you are working in:
+Use Node 22.18 or later and Yarn Classic 1.22. CI runs Node 24. From the repository root:
 
-```bash
-cd frontend
-yarn test                                                   # seam contract + selection rules
-npx dotenv -e .env.vof -- playwright test --project=vof     # avvikelse, end to end
-npx dotenv -e .env.aot -- playwright test --project=aot     # a drake that is not avvikelse
+```sh
+yarn verify
+node scripts/boundaries-baseline-guard.mjs HEAD
+yarn dragon build KC
 ```
 
-Each e2e project needs that drake's dev server already running; the specs self-skip when
-`NEXT_PUBLIC_APPLICATION` does not match, so a wrong-server run reads as "skipped", not as passed.
-CI runs both as separate matrix jobs in `.github/workflows/playwright.yml`.
+`verify` runs type checks, strict lint/import boundaries, formatting checks and unit/script tests.
+Use the changed dragon and relevant consumers for additional builds and browser tests according
+to the development guide. `yarn knip` is a separate cleanup inventory with existing findings;
+its development entrypoints include `page.dev.tsx`. Do not delete working development routes
+based on a production-only unused-code report.
 
-## Frontend layering and the dragon boundary
+[The release contract](deployments/README.md) owns production configuration, image pairing,
+secret references and existing data volumes. API versions are defined in
+`backend/src/config/api-config.ts`; generated contracts are reviewed with their owning API change.
+Runtime flags do not grant access. Sessions, domain permissions and upstream authorization remain
+required independently of release compatibility checks.
 
-The frontend is one Next.js app serving 14 dragons. Dragon-specific behaviour used to be
-`isKC()`-style branches in shared code; that is being replaced by a layered structure with
-CI-enforced import boundaries. The reference is `docs/architecture/boundaries.md`; the short
-version:
-
-```
-src/app, src/shell          composition: the ONLY reader of NEXT_PUBLIC_APPLICATION; wires dragons in
-src/dragons/<id>            one module per dragon: data + implementations of domain-owned contracts
-src/supportmanagement,      domains: own the contracts (e.g. supportmanagement/policy/support-errand-policy.ts)
-src/casedata
-src/common, src/config,     core: dragon-agnostic and domain-agnostic
-src/stores, src/utils
-```
-
-Dragon application entrypoints may reuse `shell/ui/`; domain/core code cannot import composition. Enforced (all `error`): dragons never import each other; nothing
-in domains or core imports the shell or a dragon; `src/common` never imports a domain; the domains
-never import each other; only the shell imports `application-service.ts`; only the shell reads
-`process.env.NEXT_PUBLIC_APPLICATION`. Pre-existing violations of the last four are recorded in
-two baseline files (`frontend/.dependency-cruiser-known-violations.json`,
-`frontend/eslint-suppressions.json`) that CI only lets shrink (`scripts/boundaries-baseline-guard.mjs`).
-
-**How to add dragon-specific behaviour.** Never with `isX()` or an env read. Declare a small,
-concrete contract in the domain that owns the concept (the model is `SupportErrandPolicy`:
-ongoing statuses, resolution labels, default resolution, solved-status label), give it a domain
-default, expose it through a getter the domain code reads, and put the dragon's implementation
-in `src/dragons/<id>/`. The shell merges it over the default in `compose-dragon.ts`. Contracts
-belong to domains, not to a central profile in core, so that adding one changes the owning
-domain and the dragon, never the kernel.
-
-**How to add a dragon.** Follow `docs/architecture/dragon-development.md`. Add its catalog
-entry, frontend and backend `dragons/<id>/application.ts`, backend `server.ts`, env examples
-and typed test inventories. Frontend `index.ts` owns domain policy overrides. The CLI and CI
-build matrix discover the catalog automatically; no new build-family code is needed.
-
-**Bootstrap.** `src/app/layout.tsx` imports `@shell/bootstrap` (server-component graph) and renders
-`<DragonBootstrap />` (client/SSR graph); the policy getter throws if a graph was missed. During
-`next build` the selected dragon, domain and revision are baked into the artifact. Deployment
-values use runtime placeholders; flags cannot select a different dragon or domain.
-
-**When a boundary check fails**, move the concept to the layer that owns it. Do not add a
-suppression, an `eslint-disable`, a rule exception or a baseline entry; the guard rejects a grown
-baseline anyway.
-
-## Development Commands
-
-All commands require specifying a drake: `{drake}` = kc | ka | mex | pt | rob | lop | ik | msva | se | bou | lok | iaf | vof | aot
-
-### Backend (run from `backend/`)
-
-```bash
-yarn dev:{drake}              # Start dev server with hot reload
-yarn build:{drake}            # Build for production
-yarn start:{drake}            # Start production server
-yarn lint                     # Run ESLint
-yarn type-check               # TypeScript check only (app; excludes src/tests)
-yarn type-check:test          # TypeScript check for tests (src/tests/tsconfig.json)
-yarn test                     # Vitest unit tests (run mode)
-yarn test:watch               # Vitest watch mode
-yarn test:coverage            # Vitest with v8 coverage
-yarn generate:datacontracts:{drake}  # Generate API types from Swagger
-```
-
-### Frontend (run from `frontend/`)
-
-```bash
-yarn dev:{drake}              # Start Next.js dev server
-yarn build:{drake}            # Build for production
-yarn start:{drake}            # Start production server
-yarn lint                     # Run ESLint (includes the NEXT_PUBLIC_APPLICATION read rule, suppressions applied)
-yarn lint:deps                # Import-boundary check (dependency-cruiser, baseline applied) - CI runs this
-yarn lint:deps:baseline       # Rewrite the boundary baseline; only after REMOVING violations
-yarn lint:prune-suppressions  # Drop stale ESLint suppressions; only after REMOVING reads
-yarn type-check               # TypeScript check only (app; excludes the colocated tests)
-yarn type-check:test          # TypeScript check for tests (tsconfig.test.json)
-yarn test                     # Vitest unit tests (run mode)
-yarn test:watch               # Vitest watch mode
-yarn test:coverage            # Vitest with v8 coverage
-yarn test:e2e:{drake}         # Playwright E2E (mex, pt, kc, lop, iaf, vof, aot)
-yarn test:e2e:iaf-schema-lab  # Playwright E2E for the development-only schema lab
-```
-
-### Environment Setup
-
-```bash
-# Frontend: copy .env.{drake}-example to .env.{drake}
-# Backend: copy .env.{drake}.example.local to .env.{drake}.development.local
-```
-
-## Tech Stack
-
-**Backend:** Node 22+, Express 4, TypeScript, routing-controllers (decorator-based), SAML auth (passport-saml), Winston logging, Axios
-
-**Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS, @sk-web-gui (Sundsvall design system), react-hook-form + yup, i18next (Swedish only), @rjsf for dynamic JSON Schema forms
-
-## Architecture
-
-### Backend Structure (`backend/src/`)
-
-```
-controllers/           # HTTP handlers with @Controller() decorators
-  ├── casedata/       # Case management endpoints
-  └── supportmanagement/  # Support ticket endpoints
-services/             # Business logic (ApiService, errand.service, etc.)
-data-contracts/       # Auto-generated API types from Swagger specs
-middlewares/          # auth, permissions, validation, error handling
-interfaces/           # TypeScript type definitions
-dtos/                 # Data Transfer Objects for validation
-config/               # Environment configuration
-```
-
-**Key patterns:**
-
-- Routing Controllers with `@Controller()`, `@Get()`, `@Post()`, `@UseBefore()` decorators
-- `ApiService` wraps Axios with OAuth token injection via interceptors
-- `ApiTokenService` manages OAuth token lifecycle (auto-refresh)
-- Custom `HttpException` class for error handling
-
-### Frontend Structure (`frontend/src/`)
-
-```
-app/[locale]/         # Next.js App Router pages (sv locale only)
-  ├── oversikt/       # Dashboard/overview
-  ├── registrera/     # Registration
-  └── arende/[errandNumber]/  # Errand detail view
-casedata/             # Case management module
-  ├── components/     # Errand forms, tabs, filtering
-  ├── services/       # casedata-errand-service, etc.
-  └── interfaces/     # TypeScript types
-supportmanagement/    # Support ticket module
-  ├── components/     # Support errand forms, tabs
-  ├── policy/         # Domain-owned contracts dragons implement (SupportErrandPolicy)
-  └── services/       # support-errand-service, etc.
-shell/                # Composition root: reads the app identity, wires dragons, validates config
-  └── layout/         # App composition components (AppLayout, page Layout)
-dragons/<id>/         # One module per dragon (kc, ka, ..., aot): data + contract implementations
-common/               # Shared utilities
-  ├── components/     # Reusable UI (layout, sidebar, notifications)
-  ├── services/       # api-service, auth-service, etc.
-  └── contexts/       # AppContext (global state)
-config/appconfig.tsx  # Feature flags configuration
-```
-
-**Key patterns:**
-
-- `AppContext` provides global state (user, errand, messages, etc.)
-- Services use Axios-based `apiService` for API calls
-- Forms use react-hook-form with yup validation
-- Feature flags via `NEXT_PUBLIC_*` environment variables
-
-### Path Aliases
-
-**Backend:** `@config`, `@controllers/*`, `@services/*`, `@interfaces/*`, `@middlewares/*`, `@utils/*`
-
-**Frontend:** `@casedata/*`, `@supportmanagement/*`, `@common/*`, `@config/*`, `@contexts/*`, `@styles/*`, `@shell/*`, `@dragons/*`
-
-## External APIs
-
-The backend acts as a BFF (Backend For Frontend), consuming multiple Sundsvall municipal APIs via WSO2 API Gateway:
-
-- CaseData, SupportManagement - Main business APIs
-- ActiveDirectory, Employee - User/staff management
-- Citizen, LegalEntity - Person/organization data
-- Messaging, Templating - Communications
-- Contract, BillingPreprocessor - Contracts and billing
-
-API types are generated from Swagger specs into `data-contracts/` directories.
+Use the existing diagnostic owners, static operation names and allowed fields described in
+[the logging standard](docs/operations/logging.md). Do not log payloads, identifiers, headers,
+raw errors or secrets. Keep test values synthetic and sourced as described below.
 
 ## Testing
 
@@ -239,7 +80,7 @@ Backend unit tests use **Vitest** (`backend/vitest.config.ts`), run from `backen
 
 - **Location**: `backend/src/tests/`; file naming `<module>.service.test.ts` / `<module>.controller.test.ts` (one file per module under test). Shared helpers live in `backend/src/tests/helpers/`: `http.ts` (express request/response doubles for calling controller methods directly) and `mock-data.ts` (shared fixtures).
 - **Globals**: `globals: true`, so `describe`/`it`/`expect`/`vi` are available without importing. They are typed ambiently via `/// <reference types="vitest/globals" />` in `src/types/vitest.d.ts` — the tsconfig's explicit `typeRoots` prevents resolving `vitest/globals` through the `types` array, so a reference from an included source file is used instead.
-- **Transform**: tests are transformed with **SWC** via `unplugin-swc`, because routing-controllers/class-validator need `emitDecoratorMetadata`, which Vite 8's native Oxc/esbuild transform does not emit. The transform sets `swcrc: false` so it ignores the project's `.swcrc` (that file targets the `build:swc` production output — es2017/CJS — and would rewrite aliases).
+- **Transform**: tests are transformed with **SWC** via `unplugin-swc`, because routing-controllers/class-validator need `emitDecoratorMetadata`, which Vite 8's native Oxc/esbuild transform does not emit. The transform sets `swcrc: false` so test transformation is independent of other SWC configuration.
 - **Path aliases**: resolved by an explicit `alias` table in `vitest.config.ts` (mirroring `tsconfig.json`). Unlike some sibling apps, this project's `tsconfig.json` has **no `baseUrl`**, so `vite-tsconfig-paths` can't synthesize the aliases — hence the manual table. Keep it in sync when tsconfig paths change.
 - **Env bootstrap**: `backend/src/tests/setup.ts` (wired via `setupFiles`) imports `reflect-metadata` and seeds env vars **before any module loads**. This is required because `logger.ts` mkdirs `LOG_DIR` at import time, and `ad-role.service.ts` dereferences `DEVELOPER_GROUP`/`ADMIN_GROUP`/`SUPERADMIN_GROUP` (and `APPLICATION`) at import time — importing those modules throws if the vars are unset. Add other env defaults here when tests need them; keep it to env bootstrapping only (no fixtures, no mocks).
 - **Type-checking**: `src/tests` is **excluded from the root `tsconfig.json`** so the per-drake `tsc` production builds never emit test files. Tests get their own `backend/src/tests/tsconfig.json` (extends the root, `noEmit`, re-includes `src/tests` + the Vitest globals shim). This nested config is what makes the editor type test files correctly — VS Code auto-discovers the closest `tsconfig.json`, and the root one excludes tests, so without it `describe`/`it`/`expect` and `@/…` aliases show as unresolved. `yarn type-check:test` runs `tsc -p src/tests/tsconfig.json`.
@@ -299,33 +140,3 @@ Playwright E2E tests are organized by drake in `frontend/e2e/`:
 Run with: `yarn test:e2e:{drake}`
 
 Run for individual spec files with eg: `npx dotenv -e .env.kc -- playwright test --project=kc e2e/kontaktcenter/errandPage-base-info-tab-kc.spec.ts` (use app key of choice: kc, mex, pt etc)
-
-## Key Files
-
-| File                                           | Purpose                                    |
-| ---------------------------------------------- | ------------------------------------------ |
-| `backend/src/dragons/<id>/server.ts`                        | Starts the selected dragon application     |
-| `backend/src/app.ts`                           | Express setup, middleware chain, SAML auth |
-| `backend/src/services/api.service.ts`          | HTTP client with OAuth interceptors        |
-| `frontend/src/common/contexts/app.context.tsx` | Global state (AppContext)                  |
-| `frontend/src/config/appconfig.tsx`            | Feature flags configuration                |
-| `frontend/src/shell/compose-dragon.ts`         | Dragon composition and startup validation  |
-| `frontend/.dependency-cruiser.cjs`             | Import-boundary rules (docs/architecture)  |
-| `frontend/next.config.js`                      | Next.js configuration                      |
-
-## Notes
-
-- All text content is in Swedish
-- No database layer - all data via external APIs
-- Multi-tenant via environment configuration (one codebase, many deployments)
-- SAML SSO authentication with Active Directory group-based authorization
-
-**Dragon builds and onboarding.** Follow `docs/architecture/dragon-development.md`. The root
-`yarn dragon` CLI owns dev/build/start. Docker context is the repository root and
-`DRAKEN_BUILD_DRAGON` and a full `DEPLOY_COMMIT` are mandatory. Container startup requires the
-reviewed release manifest described in `deployments/README.md`; production backend never loads
-development env files. `docs/architecture/dragon-security.md` explains request compatibility and
-the privacy-preserving diagnostic fields. Only the selected dragon composes investigation variants
-and backend controllers; runtime flags cannot switch applications. Knip lists `nodemon` and
-`tsc-alias` as ignored dependencies because their actual caller is the root CLI outside the
-backend analysis scope.

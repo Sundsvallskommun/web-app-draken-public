@@ -6,6 +6,13 @@ och referenser till hemligheter. `scripts/dragon-deployment.cjs` validerar samma
 leveransverktyget, båda containrarna och backendens serverstart. `dragons.json` äger identitet,
 domän. Applikationskoden väljer utredningsimplementation.
 
+Releasevalidering och backendstart återanvänder samma obligatoriska fält och domänkrav genom
+`backendEnvironmentIssues` i `scripts/dragon-deployment.cjs`. Verktyget kontrollerar
+hemlighetsreferensernas närvaro; deras verkliga värden läses först vid start. Felmeddelanden
+anger fältnamn utan att återge värden. Valfria frontendvärden har en gemensam definition i
+`frontend-environment-defaults.json`, som även frontendkoden använder. Saknad konfiguration
+får därmed ett avsiktligt standardvärde eller ett startfel, aldrig kvarvarande platshållartext.
+
 `example-iaf-test.json` är en granskningsmall med avsiktliga exempeladresser och digests.
 Ersätt dem med verifierade värden och granska ändringen innan den används. Mallen bekräftar
 inte kommunens faktiska driftkonfiguration. Verkliga releasefiler ska versionsstyras i

@@ -44,8 +44,10 @@ kan inte byta dem. Se [leveranskontraktet](../../deployments/README.md).
 API-klienten skickar `X-Draken-Dragon`, `X-Draken-Revision` och `X-Draken-Deployment` på alla
 metoder. Domänservices kan inte överstyra dessa headers genom sina Axios-inställningar.
 Backend jämför dem med sin egen validerade deployment, inte med klientvalda namespace.
-Preflight, SAML-flöden och innehållsfria hälsoprober har sina egna livscykler och läser inte
-ärendeinnehåll genom detta kontrakt.
+Preflight, SAML-flöden, innehållsfria hälsoprober och GET av Swagger-specifikation/UI har sina
+egna livscykler och läser inte ärendeinnehåll genom detta kontrakt. Swagger beskriver de tre
+releaseheaders som obligatoriska API-parametrar med aktuell leverans som förvalt värde, så
+dess Try it-anrop passerar samma kompatibilitets- och behörighetskontroller som frontendens anrop.
 
 ## Vad skydden inte ersätter
 
