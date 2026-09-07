@@ -1,23 +1,25 @@
 import { Response } from 'express';
 
+import { resolveSupportInvestigationDocumentGroups } from '@/config/support-investigation-document-groups';
 import { createSupportInvestigationProfile, getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import {
   SupportErrandJsonParameter,
   SupportErrandJsonParameterController,
   UpdateSupportErrandJsonParameterDto,
 } from '@/controllers/supportmanagement/support-errand-json-parameter.controller';
+import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
-import { ABSENT_HEADER, mockReq, mockRes, MockResponse } from './helpers/http';
-import { mockMunicipalityId, mockSupportErrandId } from './helpers/mock-data';
+import { ABSENT_HEADER, mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
+import { MOCK_HSL_INVESTIGATOR_GROUP, MOCK_UNIT_MANAGER_GROUP, mockMunicipalityId, mockSupportErrandId } from './helpers/mock-data';
 
 interface DocumentServiceStub {
   readJsonParameter: ReturnType<typeof vi.fn>;
   writeJsonParameter: ReturnType<typeof vi.fn>;
 }
 
-const makeController = (application = 'IAF', state: 'active' | 'inactive' | 'unavailable' = 'active') => {
+const makeController = (application = 'IAF', state: 'active' | 'inactive' | 'unavailable' = 'active', configuredDocumentGroups = '') => {
   const documentService: DocumentServiceStub = {
     readJsonParameter: vi.fn(),
     writeJsonParameter: vi.fn(),
@@ -29,6 +31,7 @@ const makeController = (application = 'IAF', state: 'active' | 'inactive' | 'una
     getSupportInvestigationProfile(application),
     documentService as unknown as SupportJsonParameterService,
     policyService as unknown as SupportInvestigationPolicyService,
+    new SupportInvestigationAccessService(resolveSupportInvestigationDocumentGroups(configuredDocumentGroups)),
   );
   return { controller, documentService, policyService };
 };
@@ -152,6 +155,59 @@ describe('SupportErrandJsonParameterController', () => {
     ).rejects.toMatchObject({ status, message });
 
     expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
+  });
+
+  it('refuses both the write and the read of a document the user is not mapped to', async () => {
+    const configuredDocumentGroups = JSON.stringify([{ documentKey: 'utredning-hsl', groups: [MOCK_HSL_INVESTIGATOR_GROUP] }]);
+    const { controller, documentService } = makeController('IAF', 'active', configuredDocumentGroups);
+    const unitManager = mockReq(mockUser({ groups: [MOCK_UNIT_MANAGER_GROUP] }));
+
+    await expect(
+      controller.updateJsonParameter(
+        unitManager,
+        mockMunicipalityId,
+        mockSupportErrandId,
+        'utredning-hsl',
+        ABSENT_HEADER,
+        '*',
+        '10',
+        { schemaId: '2281_utredning-hsl_1.0', value: {} },
+        resDouble(),
+      ),
+    ).rejects.toMatchObject({ status: 403, message: 'Missing permissions for this investigation document' });
+
+    expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
+
+    await expect(
+      controller.getJsonParameter(unitManager, mockMunicipalityId, mockSupportErrandId, 'utredning-hsl', resDouble()),
+    ).rejects.toMatchObject({ status: 403, message: 'Missing permissions for this investigation document' });
+
+    expect(documentService.readJsonParameter).not.toHaveBeenCalled();
+  });
+
+  it('lets the mapped group write its own document', async () => {
+    const configuredDocumentGroups = JSON.stringify([{ documentKey: 'utredning-hsl', groups: [MOCK_HSL_INVESTIGATOR_GROUP] }]);
+    const { controller, documentService } = makeController('IAF', 'active', configuredDocumentGroups);
+    documentService.writeJsonParameter.mockResolvedValue({
+      document: { key: 'utredning-hsl', schemaId: '2281_utredning-hsl_1.0', value: {}, version: 2 },
+      etag: '"2"',
+      status: 200,
+      parentErrandVersion: 11,
+    });
+
+    await controller.updateJsonParameter(
+      mockReq(mockUser({ groups: [MOCK_HSL_INVESTIGATOR_GROUP] })),
+      mockMunicipalityId,
+      mockSupportErrandId,
+      'utredning-hsl',
+      ABSENT_HEADER,
+      '*',
+      '10',
+      { schemaId: '2281_utredning-hsl_1.0', value: {} },
+      resDouble(),
+    );
+
+    expect(documentService.writeJsonParameter).toHaveBeenCalledTimes(1);
   });
 
   it('rejects keys outside the configured profile before any upstream or policy call', async () => {

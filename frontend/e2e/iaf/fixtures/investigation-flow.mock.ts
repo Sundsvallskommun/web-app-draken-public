@@ -28,6 +28,7 @@ export interface MockInvestigationProfile {
     schemaName: InvestigationKey;
     tabLabel: string;
     ownerLabel: string;
+    access?: 'edit' | 'hidden';
   }>;
 }
 

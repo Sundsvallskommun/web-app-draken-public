@@ -7,7 +7,11 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { useInvestigationProfileStore } from '../investigation-profile-store';
 import type { InvestigationTabProps } from '../investigation-variant';
-import { type InvestigationTabState, resolveInvestigationTabState } from './investigation-tab-state';
+import {
+  type InvestigationTabState,
+  resolveInvestigationTabState,
+  visibleInvestigationDocuments,
+} from './investigation-tab-state';
 import { SupportInvestigationDocument } from './support-investigation-document.component';
 import type { SupportInvestigationDocument as SavedInvestigationDocument } from './support-investigation-service';
 
@@ -15,6 +19,7 @@ const stateNotices: Readonly<Record<Exclude<InvestigationTabState, 'loading' | '
   error: 'Utredningsprofilen kunde inte laddas. Utredningen kan därför inte visas.',
   unavailable: 'Utredningsfunktionen är tillfälligt otillgänglig. Försök igen senare.',
   'not-configured': 'Inga utredningsdokument är konfigurerade för den här applikationen.',
+  'no-access': 'Du har inte behörighet till någon del av den här utredningen.',
 };
 
 export function SupportErrandInvestigationTab({ onDirtyChange }: Readonly<InvestigationTabProps>) {
@@ -25,7 +30,7 @@ export function SupportErrandInvestigationTab({ onDirtyChange }: Readonly<Invest
   const profileStatus = useInvestigationProfileStore((state) => state.status);
   const readonly = !supportErrand || isSupportErrandLocked(supportErrand) || !canEditSupportManagement;
 
-  const documents = useMemo(() => profile?.documents ?? [], [profile]);
+  const documents = useMemo(() => visibleInvestigationDocuments(profile), [profile]);
   const tabState = resolveInvestigationTabState(profileStatus, profile);
 
   const recordSavedDocument = useCallback(

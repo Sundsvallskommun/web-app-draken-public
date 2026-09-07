@@ -23,6 +23,24 @@ export class SupportInvestigationDocumentProfileDto {
   readonly ownerLabel!: string;
 }
 
+export const SUPPORT_INVESTIGATION_DOCUMENT_ACCESS = ['edit', 'hidden'] as const;
+
+/**
+ * Whether the signed-in user reaches one investigation document at all. Access is binary on
+ * purpose: a handler either owns their part of the investigation or has no business seeing it.
+ */
+export type SupportInvestigationDocumentAccess = (typeof SUPPORT_INVESTIGATION_DOCUMENT_ACCESS)[number];
+
+/**
+ * A document as the runtime serves it: the configured document plus what this user may do with it.
+ * Access is resolved per request, so it belongs here rather than on the statically configured
+ * profile the application boots with.
+ */
+export class SupportInvestigationRuntimeDocumentProfileDto extends SupportInvestigationDocumentProfileDto {
+  @IsIn(SUPPORT_INVESTIGATION_DOCUMENT_ACCESS)
+  readonly access!: SupportInvestigationDocumentAccess;
+}
+
 export class SupportInvestigationProfileDto {
   @IsString()
   readonly application!: string;
@@ -93,8 +111,8 @@ export class SupportInvestigationRuntimeProfileDto extends SupportInvestigationP
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => SupportInvestigationDocumentProfileDto)
-  declare readonly documents: readonly SupportInvestigationDocumentProfileDto[];
+  @Type(() => SupportInvestigationRuntimeDocumentProfileDto)
+  declare readonly documents: readonly SupportInvestigationRuntimeDocumentProfileDto[];
 
   @IsOptional()
   @ValidateNested()

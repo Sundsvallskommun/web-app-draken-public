@@ -12,6 +12,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import { JsonObject } from '@/services/schema-bound-json.service';
+import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameter, SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
@@ -54,15 +55,18 @@ export class SupportErrandJsonParameterController {
   private readonly investigationProfile: SupportInvestigationProfileDto;
   private readonly documentService: SupportJsonParameterService;
   private readonly policyService: SupportInvestigationPolicyService;
+  private readonly accessService: SupportInvestigationAccessService;
 
   constructor(
     investigationProfile: SupportInvestigationProfileDto = getSupportInvestigationProfile(APPLICATION),
     documentService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' }),
     policyService = new SupportInvestigationPolicyService(undefined, investigationProfile),
+    accessService = new SupportInvestigationAccessService(),
   ) {
     this.investigationProfile = investigationProfile;
     this.documentService = documentService;
     this.policyService = policyService;
+    this.accessService = accessService;
   }
 
   @Get('/supporterrands/:municipalityId/:errandId/json-parameters/:key')
@@ -81,6 +85,7 @@ export class SupportErrandJsonParameterController {
     if ((await this.policyService.getState(req.user)) === 'unavailable') {
       throw new HttpException(503, 'Investigation read policy is temporarily unavailable');
     }
+    this.accessService.assertCanAccessDocument(req.user, definition.key);
     const result = await this.documentService.readJsonParameter({ definition, municipalityId, errandId, user: req.user });
 
     setETagHeader(response, result.etag, result.document.version);
@@ -109,6 +114,9 @@ export class SupportErrandJsonParameterController {
     if (state !== 'active') {
       throw new HttpException(409, 'Investigation documents are not active for this application');
     }
+    // Support Management authorizes the document itself from the forwarded AD account; refusing
+    // here keeps the BFF's answer a 403 about permissions instead of a relayed upstream failure.
+    this.accessService.assertCanAccessDocument(req.user, definition.key);
     const result = await this.documentService.writeJsonParameter({
       definition,
       municipalityId,

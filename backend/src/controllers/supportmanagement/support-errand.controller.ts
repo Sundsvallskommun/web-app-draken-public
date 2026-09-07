@@ -83,6 +83,7 @@ import {
   toCasedataStakeholder,
   toFacilities,
 } from '@/services/support-errand.service';
+import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { assertSupportInvestigationClassificationContext } from '@/services/support-investigation-classification-context.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
@@ -546,6 +547,7 @@ export class SupportErrandController {
   private apiService = new ApiService();
   private organizationService = new OrganizationService();
   private investigationPolicyService = new SupportInvestigationPolicyService();
+  private investigationAccessService = new SupportInvestigationAccessService();
   private jsonParameterService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' });
   private newErrandDefaults: NewErrandDefaults | undefined = getNewErrandDefaults(APPLICATION);
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
@@ -1083,6 +1085,9 @@ export class SupportErrandController {
     if (!definition) {
       throw new HttpException(400, 'Unsupported investigation classification document');
     }
+    // Classification is written together with the document that owns it, so it follows that
+    // document's access rather than carrying an access rule of its own.
+    this.investigationAccessService.assertCanAccessDocument(req.user, definition.key);
     const url = `${municipalityId}/${this.namespace}/errands/${id}`;
     const metadataUrl = `${municipalityId}/${this.namespace}/metadata/labels`;
     const baseURL = apiURL(this.SERVICE);

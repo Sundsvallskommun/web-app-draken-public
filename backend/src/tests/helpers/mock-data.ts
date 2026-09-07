@@ -85,3 +85,9 @@ export const MOCK_DEVELOPER_GROUP = 'draken_developers';
 export const MOCK_ADMIN_GROUP = 'draken_admins';
 export const MOCK_SUPERADMIN_GROUP = 'draken_superadmins';
 export const MOCK_AUTHORIZED_GROUPS = 'draken_users,draken_developers';
+
+// AD groups standing in for the ones a deployment maps to investigation documents. They are named
+// after the roles the avvikelse profile already declares as document owners.
+export const MOCK_UNIT_MANAGER_GROUP = 'draken_enhetschefer';
+export const MOCK_SOL_LSS_INVESTIGATOR_GROUP = 'draken_lex_utredare';
+export const MOCK_HSL_INVESTIGATOR_GROUP = 'draken_mas_mar';

@@ -1,5 +1,6 @@
 import { createSupportInvestigationProfile, getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import { FeatureFlagService } from '@/services/feature-flag.service';
+import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 
 import { mockReq, mockUser } from './helpers/http';
@@ -63,9 +64,23 @@ describe('SupportInvestigationPolicyService', () => {
     const { service } = serviceWith(true);
     await expect(service.getRuntimeProfile(mockReq().user)).resolves.toEqual({
       ...profile,
+      documents: [{ ...profile.documents[0], access: 'edit' }],
       state: 'active',
       registration: { mode: 'disabled' },
     });
+  });
+
+  it('stamps each document with what the signed-in user may do with it', async () => {
+    const featureFlags = { isConfigured: vi.fn(() => true), getFreshFeatureEnabled: vi.fn(async () => true) } as unknown as FeatureFlagService;
+    const accessService = {
+      resolveDocumentAccess: vi.fn(() => 'hidden' as const),
+    } as unknown as SupportInvestigationAccessService;
+    const service = new SupportInvestigationPolicyService(featureFlags, profile, 'support', undefined, accessService);
+
+    const runtimeProfile = await service.getRuntimeProfile(mockReq().user);
+
+    expect(runtimeProfile.documents).toEqual([{ ...profile.documents[0], access: 'hidden' }]);
+    expect(Object.isFrozen(runtimeProfile.documents[0])).toBe(true);
   });
 
   it('moves classification ownership only for IAF/VOF with the fixed owner schema roles', async () => {

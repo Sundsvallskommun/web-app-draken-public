@@ -429,6 +429,46 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.exactSchemaIds).toContain(existing.schemaId);
   });
 
+  test('döljer de utredningsdelar användaren saknar behörighet till', async ({ page, dismissCookieConsent }) => {
+    const profile = defaultInvestigationProfile();
+    await installIafApiMock(page, {
+      documents: { [managerKey]: existingManagerDocument() },
+      investigationProfile: {
+        ...profile,
+        documents: profile.documents.map((document) => ({
+          ...document,
+          access: document.key === managerKey ? ('edit' as const) : ('hidden' as const),
+        })),
+      },
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    const investigation = page.locator('[data-cy="support-investigation-tab"]');
+    await expect(investigation.getByRole('tab')).toHaveCount(1);
+    await expect(investigation.getByRole('tab', { name: 'Utredning enhetschef', exact: true })).toBeVisible();
+    await expect(investigation.getByRole('tab', { name: 'Utredning SoL/LSS', exact: true })).toHaveCount(0);
+    await expect(investigation.getByRole('tab', { name: 'Utredning HSL', exact: true })).toHaveCount(0);
+    await expect(page.locator('[data-cy="investigation-document-utredning-hsl"]')).toHaveCount(0);
+  });
+
+  test('förklarar sig när ingen del av utredningen tillhör användaren', async ({ page, dismissCookieConsent }) => {
+    const profile = defaultInvestigationProfile();
+    await installIafApiMock(page, {
+      investigationProfile: {
+        ...profile,
+        documents: profile.documents.map((document) => ({ ...document, access: 'hidden' as const })),
+      },
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    await expect(page.locator('[data-cy="investigation-tab-no-access"]')).toBeVisible();
+    await expect(page.locator('[data-cy="support-investigation-tab"]').getByRole('tab')).toHaveCount(0);
+  });
+
   test('visar ett uttryckligt fel när ett utredningsschema inte kan laddas', async ({ page, dismissCookieConsent }) => {
     await installIafApiMock(page, {
       documents: { [managerKey]: existingManagerDocument() },

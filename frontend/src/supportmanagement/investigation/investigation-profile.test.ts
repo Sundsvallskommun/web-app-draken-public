@@ -31,7 +31,7 @@ test('parses, normalizes and freezes a valid application-bound document profile'
   assert.equal(profile.documents[0].schemaName, 'utredning-enhetschef');
   assert.ok(Object.isFrozen(profile));
   assert.ok(Object.isFrozen(profile.documents));
-  assert.deepEqual(Object.keys(profile.documents[0]).sort(), ['key', 'ownerLabel', 'schemaName', 'tabLabel']);
+  assert.deepEqual(Object.keys(profile.documents[0]).sort(), ['access', 'key', 'ownerLabel', 'schemaName', 'tabLabel']);
   assert.deepEqual(Object.keys(profile).sort(), ['application', 'documents', 'registration', 'state']);
 });
 
@@ -140,4 +140,33 @@ test('rejects malformed documents, states and registration capabilities', () => 
   const unknownRegistration = validProfile();
   unknownRegistration.registration.mode = 'automatic';
   assert.throws(() => parseInvestigationProfile(unknownRegistration, 'IAF'), /registration är ogiltig/u);
+});
+
+/** The BFF resolves access per request, so a document's access is data the parser must carry through. */
+const profileWithDocumentAccess = (...accessByDocument: readonly string[]) => {
+  const source = validProfile();
+  return {
+    ...source,
+    documents: source.documents.map((document, index) => ({ ...document, access: accessByDocument[index] })),
+  };
+};
+
+test('defaults a document without an access field to editable', () => {
+  const profile = parseInvestigationProfile(validProfile(), 'IAF');
+
+  assert.equal(profile.documents[0].access, 'edit');
+});
+
+test('carries the per-document access the BFF resolved from the user groups', () => {
+  const profile = parseInvestigationProfile(profileWithDocumentAccess('hidden', 'edit'), 'IAF');
+
+  assert.equal(profile.documents[0].access, 'hidden');
+  assert.equal(profile.documents[1].access, 'edit');
+});
+
+test('rejects an access value outside the contract', () => {
+  assert.throws(
+    () => parseInvestigationProfile(profileWithDocumentAccess('read', 'edit'), 'IAF'),
+    /Utredningsprofilens documents\[0\]\.access är ogiltig\./
+  );
 });

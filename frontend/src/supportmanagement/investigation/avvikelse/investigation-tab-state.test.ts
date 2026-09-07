@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
 import type { InvestigationProfile } from '../investigation-profile';
-import { resolveInvestigationTabState } from './investigation-tab-state';
+import { resolveInvestigationTabState, visibleInvestigationDocuments } from './investigation-tab-state';
 
 const document = () => ({
   key: 'utredning-enhetschef',
@@ -47,4 +47,32 @@ test('an active profile with no documents reads as not configured', () => {
 
 test('an active profile with a configured document is ready', () => {
   assert.equal(resolveInvestigationTabState('ready', profile()), 'ready');
+});
+
+test('a profile whose documents are all hidden reads as no access, not as unconfigured', () => {
+  const hiddenDocument = { ...document(), access: 'hidden' };
+
+  assert.equal(
+    resolveInvestigationTabState('ready', profile({ documents: [hiddenDocument] } as Partial<InvestigationProfile>)),
+    'no-access'
+  );
+});
+
+test('only the documents the user reaches are offered as tabs', () => {
+  const documents = [
+    { ...document(), key: 'utredning-enhetschef', access: 'edit' },
+    { ...document(), key: 'utredning-hsl', access: 'hidden' },
+  ];
+  const activeProfile = profile({ documents } as Partial<InvestigationProfile>);
+
+  assert.deepEqual(
+    visibleInvestigationDocuments(activeProfile).map(({ key }) => key),
+    ['utredning-enhetschef']
+  );
+  assert.equal(resolveInvestigationTabState('ready', activeProfile), 'ready');
+});
+
+test('a document without an access field stays visible', () => {
+  assert.deepEqual(visibleInvestigationDocuments(profile()).length, 1);
+  assert.deepEqual(visibleInvestigationDocuments(null).length, 0);
 });

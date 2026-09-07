@@ -3,11 +3,21 @@ import type { LabelFilterGroupDefinition } from '../filters/label-filter-project
 export const INVESTIGATION_PROFILE_STATES = ['active', 'inactive', 'unavailable'] as const;
 export type InvestigationProfileState = (typeof INVESTIGATION_PROFILE_STATES)[number];
 
+export const INVESTIGATION_DOCUMENT_ACCESS = ['edit', 'hidden'] as const;
+
+/**
+ * Whether the signed-in user reaches one investigation document at all, as the BFF resolved it from
+ * their AD groups. A hidden document is left out of the tab strip entirely, and the BFF refuses to
+ * serve it, so the client never has its content to show.
+ */
+export type InvestigationDocumentAccess = (typeof INVESTIGATION_DOCUMENT_ACCESS)[number];
+
 export interface InvestigationProfileDocument {
   readonly key: string;
   readonly schemaName: string;
   readonly tabLabel: string;
   readonly ownerLabel: string;
+  readonly access: InvestigationDocumentAccess;
 }
 
 export interface InvestigationProfile {
@@ -47,6 +57,20 @@ function assertUnique(values: readonly string[], path: string): void {
   }
 }
 
+/**
+ * A BFF that predates per-document access sends no access field, and sent none because every
+ * document was editable. Defaulting to 'edit' keeps such a deployment working rather than silently
+ * locking every investigation form.
+ */
+function readDocumentAccess(value: unknown, index: number): InvestigationDocumentAccess {
+  if (value === undefined) return 'edit';
+  if (!INVESTIGATION_DOCUMENT_ACCESS.includes(value as InvestigationDocumentAccess)) {
+    throw new Error(`Utredningsprofilens documents[${index}].access är ogiltig.`);
+  }
+
+  return value as InvestigationDocumentAccess;
+}
+
 function readDocument(value: unknown, index: number): InvestigationProfileDocument {
   if (!isRecord(value)) {
     throw new Error(`Utredningsprofilens documents[${index}] är ogiltigt.`);
@@ -57,6 +81,7 @@ function readDocument(value: unknown, index: number): InvestigationProfileDocume
     schemaName: readProfileIdentifier(value.schemaName, `documents[${index}].schemaName`),
     tabLabel: readRequiredString(value.tabLabel, `documents[${index}].tabLabel`),
     ownerLabel: readRequiredString(value.ownerLabel, `documents[${index}].ownerLabel`),
+    access: readDocumentAccess(value.access, index),
   });
 }
 
