@@ -1,6 +1,6 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { fetchAttachment, fetchDecisionAttachment } from '@casedata/services/casedata-attachment-service';
-import { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
+import { imageMimeTypes } from '@common/services/attachment-upload-policy';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Attachment } from 'src/data-contracts/backend/data-contracts';
 

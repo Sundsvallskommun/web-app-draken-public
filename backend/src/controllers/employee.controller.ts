@@ -7,6 +7,7 @@ import { apiServiceName } from '@/config/api-config';
 import { Employeev2, EmploymentV2, PortalPersonData } from '@/data-contracts/employee/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import ApiService from '@/services/api.service';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 
 interface UserEmploymentDTO {
   orgId?: number;
@@ -73,7 +74,7 @@ export class EmployeeController {
 
       return response.send({ data: employments, message: 'success' });
     } catch (error: any) {
-      console.error('Failed to get employments:', error);
+      logApplicationFailure('Failed to get employments', error);
       return response.send({ data: [], message: 'success' });
     }
   }

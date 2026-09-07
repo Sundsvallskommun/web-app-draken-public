@@ -5,8 +5,8 @@ import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import { FeatureFlagDto } from '@/dtos/featureflag.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
-import { FeatureFlagService, featureFlagService } from '@/services/feature-flag.service';
-import { logger } from '@/utils/logger';
+import { FeatureFlagConfigurationError, FeatureFlagService, featureFlagService } from '@/services/feature-flag.service';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 
 @Controller()
 export class FeatureFlagController {
@@ -24,8 +24,9 @@ export class FeatureFlagController {
     try {
       return await this.featureFlagService.getFeatureFlags(req.user);
     } catch (error) {
-      logger.error('Error getting featureflags', error);
+      logApplicationFailure('Error getting featureflags', error);
 
+      if (error instanceof FeatureFlagConfigurationError) throw new HttpException(409, error.message);
       const httpError = error instanceof HttpException ? error : null;
       throw new HttpException(httpError?.status ?? 500, httpError?.message ?? 'Internal Server Error');
     }

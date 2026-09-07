@@ -1,10 +1,11 @@
 import { LinkedErrandsDisclosure } from '@common/components/linked-errands-disclosure/linked-errands-disclosure.component';
 import { appConfig } from '@config/appconfig';
-import { useSupportStore } from '@stores/index';
+import { useSupportStore } from '@stores/support-store';
 import { SupportContactsComponent } from '@supportmanagement/components/new-contacts/support-contacts.component';
 import { SupportErrandBasicsAboutDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-about-disclosure.component';
 import { SupportErrandBasicsRealEstateDisclosure } from '@supportmanagement/components/support-errand-basics-disclosure/support-errand-basics-realestate-disclosure.component';
-import { ApiSupportErrand } from '@supportmanagement/services/support-errand-service';
+import { ApiSupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
+import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { Dispatch, FC, SetStateAction } from 'react';
 export const SupportErrandBasicsTab: FC<{
   errand: ApiSupportErrand;
@@ -13,6 +14,8 @@ export const SupportErrandBasicsTab: FC<{
   update: () => void;
 }> = (props) => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
+
+  const owner = supportErrand ? getSupportOwnerStakeholder(supportErrand) : undefined;
 
   return (
     <div className="pt-xl pb-64 px-40 flex flex-col">
@@ -40,7 +43,11 @@ export const SupportErrandBasicsTab: FC<{
 
       {appConfig.features.useRelations ? (
         <div className="mt-md">
-          <LinkedErrandsDisclosure errand={supportErrand!} />
+          <LinkedErrandsDisclosure
+            errand={supportErrand!}
+            disabled={supportErrandIsEmpty(supportErrand!)}
+            relatedPerson={owner ? { id: owner.externalId ?? '', type: owner.stakeholderType ?? '' } : undefined}
+          />
         </div>
       ) : null}
     </div>

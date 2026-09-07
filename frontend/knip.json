@@ -1,22 +1,8 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": [
-    "e2e/**/*.spec.ts"
-  ],
-  "project": [
-    "src/**/*.{ts,tsx}",
-    "e2e/**/*.{ts,tsx}"
-  ],
-  "ignore": [
-    "src/data-contracts/**"
-  ],
-  "ignoreDependencies": [
-    "sharp",
-    "swagger-typescript-api",
-    "@tailwindcss/forms",
-    "@tailwindcss/container-queries"
-  ],
-  "ignoreBinaries": [
-    "tsx"
-  ]
+  "entry": ["e2e/**/*.spec.ts", "src/dragons/*/application.ts", "src/app/**/page.dev.tsx"],
+  "project": ["src/**/*.{ts,tsx}", "e2e/**/*.{ts,tsx}"],
+  "ignore": ["src/data-contracts/**"],
+  "ignoreDependencies": ["sharp", "swagger-typescript-api", "@tailwindcss/forms", "@tailwindcss/container-queries"],
+  "ignoreBinaries": ["tsx"]
 }

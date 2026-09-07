@@ -7,9 +7,10 @@ import {
   ParsedErrandHistory,
 } from '@casedata/interfaces/history';
 import { PrettyRole } from '@casedata/interfaces/role';
+import { Priority } from '@common/interfaces/priority';
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { getUserInfo } from '@common/services/user-service';
-import { Priority } from '@supportmanagement/interfaces/priority';
 import dayjs from 'dayjs';
 
 import { fetchErrandAttachments, getAttachmentLabel } from './casedata-attachment-service';
@@ -48,7 +49,7 @@ export const getErrandHistory: (municipalityId: string, errandId: string) => Pro
         .map(parseChange)
     )
     .catch((e) => {
-      console.error('Something went wrong when fetching errand history');
+      logClientFailure('casedata.casedata-history.getErrandHistory', e);
       throw e;
     });
 };

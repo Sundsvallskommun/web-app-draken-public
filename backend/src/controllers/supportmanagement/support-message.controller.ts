@@ -9,9 +9,9 @@ import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { validateSupportAction } from '@/services/support-errand.service';
 import { fileUploadOptions } from '@/utils/fileUploadOptions';
-import { logger } from '@/utils/logger';
 import { validateRequestBody } from '@/utils/validate';
 
 export { SingleSupportAttachment, SupportAttachment } from '@/dtos/support-message.dto';
@@ -45,8 +45,7 @@ export class SupportMessageController {
       throw new HttpException(403, 'Forbidden');
     }
     if (!municipalityId) {
-      console.error('No municipality id found, needed to send message.');
-      logger.error('No municipality id found, needed to send message.');
+      logApplicationFailure('No municipality id found, needed to send message.');
       return response.status(400).send('Municipality id missing');
     }
     await validateRequestBody(SupportMessageDto, messageDto);
@@ -93,7 +92,7 @@ export class SupportMessageController {
       } as WebMessageRequest;
       body = requestBody;
     } else {
-      logger.error('Trying to send message without means of contact specified');
+      logApplicationFailure('Trying to send message without means of contact specified');
       throw new Error('Means of contact missing, but be email or sms');
     }
 
@@ -103,8 +102,7 @@ export class SupportMessageController {
         return res.data;
       })
       .catch(e => {
-        logger.error('Error when sending support message');
-        logger.error(e);
+        logApplicationFailure('Error when sending support message', e);
         throw e;
       });
     return response.status(200).send(res.data);
@@ -169,8 +167,7 @@ export class SupportMessageController {
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${errandId}/communication/${communicationID}/attachments/${attachmentId}`;
 
     const res = await this.apiService.get<ArrayBuffer>({ url, responseType: 'arraybuffer' }, req.user).catch(e => {
-      logger.error('Something went wrong when fetching attachment for message');
-      logger.error(e);
+      logApplicationFailure('Something went wrong when fetching attachment for message', e);
       throw e;
     });
 

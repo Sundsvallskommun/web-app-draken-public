@@ -1,3 +1,5 @@
+import { logClientFailure } from '@common/services/client-diagnostics';
+
 import { ApiResponse, apiService } from './api-service';
 import { sortBy } from './helper-service';
 
@@ -44,7 +46,7 @@ export const getStatusesUsingPartyId = (municipalityId: string, partyId: string)
       return sortedData;
     })
     .catch((e) => {
-      console.error('Something went wrong when creating relation: ' + e);
+      logClientFailure('common.casestatus.getStatusesUsingPartyId', e);
       throw e;
     });
 };
@@ -62,7 +64,7 @@ export const getStatusesUsingOrganizationNumber = (municipalityId: string, organ
       return sortedData;
     })
     .catch((e) => {
-      console.error('Something went wrong when creating relation: ' + e);
+      logClientFailure('common.casestatus.getStatusesUsingOrganizationNumber', e);
       throw e;
     });
 };
@@ -77,7 +79,7 @@ export const getErrandStatus = (municipalityId: string, query: string) => {
       return sortedData;
     })
     .catch((e) => {
-      console.error('Something went wrong when creating relation: ' + e);
+      logClientFailure('common.casestatus.getErrandStatus', e);
       throw e;
     });
 };

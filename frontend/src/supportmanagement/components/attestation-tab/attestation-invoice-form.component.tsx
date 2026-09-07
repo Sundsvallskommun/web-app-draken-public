@@ -1,8 +1,10 @@
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { maybe, prettyTime } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Divider, FormErrorMessage, Select, Table, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useUserStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import {
   approveBillingRecord,
   billingFormSchema,
@@ -84,7 +86,7 @@ export const AttestationInvoiceForm: FC<{
   }, [handleChange, selectedRecord]);
 
   const onError = (error: Record<string, unknown>) => {
-    console.error('error', error);
+    logClientFailure('supportmanagement.attestation-invoice-form.onError', error);
   };
 
   const onSubmit = () => {

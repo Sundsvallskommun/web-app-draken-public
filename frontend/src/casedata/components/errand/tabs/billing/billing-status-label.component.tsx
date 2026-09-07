@@ -1,5 +1,5 @@
+import { billingrecordStatusToLabel } from '@common/services/billing-status';
 import { Label } from '@sk-web-gui/react';
-import { billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
 import { FC } from 'react';
 
 //TODO: Update colors?

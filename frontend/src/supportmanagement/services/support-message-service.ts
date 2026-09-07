@@ -1,11 +1,12 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
+import { getClosingTemplate } from '@common/services/message-template-service';
 import sanitized from '@common/services/sanitizer-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
 import { CCommunicationAttachment } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 
-import { getClosingTemplate } from './message-template-service';
 import { SingleSupportAttachment } from './support-attachment-service';
 import { SupportCommunicationType } from './support-communication-types';
 import { Channels, ContactChannelType, SupportErrand } from './support-errand-service';
@@ -54,7 +55,7 @@ const getClosingMessageBody = async (userName: string): Promise<string> => {
 
   const content = await getClosingTemplate(app, { user: userName });
   if (!content) {
-    console.error(`Could not get closing-template: neither ${app}.email.closing nor default.email.closing was found`);
+    logClientFailure('supportmanagement.support-message.getClosingMessageBody');
     return '';
   }
 
@@ -132,7 +133,7 @@ export const sendMessage = async (data: MessageRequest): Promise<boolean> => {
         const blob = new Blob([buf], { type: fileItem.type });
         return { name: fileItem.name, blob };
       } catch (error) {
-        console.error('Error while processing attachment:', error);
+        logClientFailure('supportmanagement.support-message.sendMessage', error);
         throw error;
       }
     });
@@ -178,11 +179,11 @@ export const sendMessage = async (data: MessageRequest): Promise<boolean> => {
 
         return true;
       } catch (error) {
-        console.error('Something went wrong when sending message to:', data.emails, data.phoneNumbers, error);
+        logClientFailure('supportmanagement.support-message.sendMessage', error);
         return false;
       }
     } catch (error) {
-      console.error('Error while processing attachments:', error);
+      logClientFailure('supportmanagement.support-message.sendMessage', error);
       throw error;
     }
   });
@@ -194,7 +195,7 @@ export const fetchSupportMessages: (errandId: string, municipalityId: string) =>
   municipalityId
 ) => {
   if (!errandId) {
-    console.error('No errand id found, cannot fetch messages. Returning.');
+    logClientFailure('supportmanagement.support-message.fetchSupportMessages');
   }
   return apiService
     .get<Message[]>(`supportmessage/${municipalityId}/errands/${errandId}/communication`)
@@ -205,7 +206,7 @@ export const fetchSupportMessages: (errandId: string, municipalityId: string) =>
       return list;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching messages for errand:', errandId);
+      logClientFailure('supportmanagement.support-message.fetchSupportMessages', e);
       throw e;
     });
 };
@@ -217,14 +218,14 @@ export const setMessageViewStatus: (
   isViewed: boolean
 ) => Promise<ApiResponse<any>> = (errandId, municipalityId, communicationID, isViewed) => {
   if (!communicationID) {
-    console.error('No communication id found, cannot fetch. Returning.');
+    logClientFailure('supportmanagement.support-message.setMessageViewStatus');
   }
   const url = `supportmessage/${municipalityId}/errands/${errandId}/communication/${communicationID}/viewed/${isViewed}`;
   return apiService
     .put<ApiResponse<any>, any>(url, {})
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when setting message isViewed status: ', communicationID);
+      logClientFailure('supportmanagement.support-message.setMessageViewStatus', e);
       throw e;
     });
 };
@@ -236,13 +237,13 @@ export const getMessageAttachment: (
   attachmentId: string
 ) => Promise<ApiResponse<string>> = (municipalityId, errandId, communicationID, attachmentId) => {
   if (!errandId) {
-    console.error('No errand id found, cannot fetch.');
+    logClientFailure('supportmanagement.support-message.getMessageAttachment');
   }
   if (!communicationID) {
-    console.error('No communication id found, cannot fetch.');
+    logClientFailure('supportmanagement.support-message.getMessageAttachment');
   }
   if (!attachmentId) {
-    console.error('No attachment id found, cannot fetch.');
+    logClientFailure('supportmanagement.support-message.getMessageAttachment');
   }
 
   const url = `supportmessage/${municipalityId}/errand/${errandId}/communication/${communicationID}/attachments/${attachmentId}`;
@@ -250,7 +251,7 @@ export const getMessageAttachment: (
     .get<ApiResponse<string>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching attachment');
+      logClientFailure('supportmanagement.support-message.getMessageAttachment', e);
       return { data: undefined as unknown as string, message: 'error' } as ApiResponse<string>;
     });
 };
@@ -318,7 +319,7 @@ export const buildTree = (_list: Message[]) => {
     if (parent) {
       const parentMsg = nodesMap.get(parent);
       if (!parentMsg) {
-        console.error('Parent message not found for message:', msg);
+        logClientFailure('supportmanagement.support-message.buildTree');
         const dummyParent: MessageNode = {
           communicationAttachments: [],
           communicationID: uuidv4(),

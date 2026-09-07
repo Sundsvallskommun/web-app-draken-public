@@ -1,8 +1,9 @@
-import FileUpload, { imageMimeTypes } from '@common/components/file-upload/file-upload.component';
+import FileUpload from '@common/components/file-upload/file-upload.component';
 import { FileUploadWrapper } from '@common/components/file-upload/file-upload-dragdrop-context';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { getAttachmentChannelLabel, isKnownAttachmentChannel } from '@common/interfaces/attachment-channel';
 import { isKC } from '@common/services/application-service';
+import { documentMimeTypes, imageMimeTypes } from '@common/services/attachment-upload-policy';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
@@ -18,11 +19,11 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
 import {
   ACCEPTED_UPLOAD_FILETYPES,
   deleteSupportAttachment,
-  documentMimeTypes,
   getSupportAttachment,
   saveSupportAttachments,
   SingleSupportAttachment,

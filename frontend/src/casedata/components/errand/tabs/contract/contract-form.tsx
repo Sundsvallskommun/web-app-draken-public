@@ -26,6 +26,7 @@ import {
   toDetailedDescriptionParameters,
 } from '@casedata/services/contract-service';
 import { getKpiIndex } from '@common/services/billing-data-collector-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import {
   Button,
   Checkbox,
@@ -42,7 +43,9 @@ import {
   Textarea,
   useConfirm,
 } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import dayjs from 'dayjs';
 import { Calendar, FilePen, Info, MapPin, Pencil, Plus, Receipt, Trash, Users, Wallet } from 'lucide-react';
 import { ChangeEvent, FC, useEffect, useMemo, useState } from 'react';
@@ -170,7 +173,7 @@ export const ContractForm: FC<{
   useEffect(() => {
     getKpiIndex()
       .then((data) => setKpiData(data))
-      .catch((e) => console.error('Failed to fetch KPI index:', e));
+      .catch((e) => logClientFailure('casedata.contract-form.ContractForm', e));
   }, []);
 
   const indexAdjusted = watch('indexAdjusted');
@@ -282,7 +285,7 @@ export const ContractForm: FC<{
                   });
                 },
                 (e) => {
-                  console.error('Something went wrong when saving:', e);
+                  logClientFailure('casedata.contract-form.saveButton', e);
                 }
               )}
             >

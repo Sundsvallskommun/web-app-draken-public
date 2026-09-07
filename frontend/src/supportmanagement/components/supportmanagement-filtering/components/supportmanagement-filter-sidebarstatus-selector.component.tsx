@@ -1,15 +1,14 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
-import { isROB } from '@common/services/application-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { Badge, Button, Spinner } from '@sk-web-gui/react';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
+import { getSupportErrandPolicy } from '@supportmanagement/policy/support-errand-policy';
 import {
   assignedStatuses,
   closedStatuses,
   getStatusLabel,
   newStatuses,
-  ongoingStatuses,
-  ongoingStatusesROB,
   Status,
   suspendedStatuses,
 } from '@supportmanagement/services/support-errand-service';
@@ -38,17 +37,21 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
   const suspendedSupportErrands = useUiSettingsStore((s) => s.suspendedErrands);
   const solvedSupportErrands = useUiSettingsStore((s) => s.closedErrands);
 
-  const updateStatusFilter = (ss: Status[]) => {
+  const updateStatusFilter = (ss: readonly Status[]) => {
     try {
       const status = ss.join(',');
       setFilter({ ...filter, status });
-      setSelectedErrandStatuses(ss);
+      setSelectedErrandStatuses([...ss]);
     } catch (error) {
-      console.error('Error updating status filter');
+      logClientFailure('supportmanagement.supportmanagement-filter-sidebarstatus-selector.updateStatusFilter', error);
     }
   };
 
-  const supportSidebarButtons = useMemo<SidebarButton[]>(
+  // Which statuses the "open" button covers is the running dragon's decision (ROB adds its
+  // recruitment steps); the other groups are the same everywhere.
+  const { ongoingStatuses } = getSupportErrandPolicy();
+
+  const supportSidebarButtons = useMemo<SidebarButton<Status>[]>(
     () => [
       {
         label: getStatusLabel(newStatuses) ?? '',
@@ -58,9 +61,9 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
         totalStatusErrands: newSupportErrands,
       },
       {
-        label: (isROB() ? getStatusLabel(ongoingStatusesROB) : getStatusLabel(ongoingStatuses)) ?? '',
-        key: isROB() ? ongoingStatusesROB[0] : ongoingStatuses[0],
-        statuses: isROB() ? ongoingStatusesROB : ongoingStatuses,
+        label: getStatusLabel(ongoingStatuses) ?? '',
+        key: ongoingStatuses[0],
+        statuses: ongoingStatuses,
         icon: 'clipboard-pen',
         totalStatusErrands: ongoingSupportErrands,
       },
@@ -86,17 +89,24 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
         totalStatusErrands: solvedSupportErrands,
       },
     ],
-    [newSupportErrands, ongoingSupportErrands, suspendedSupportErrands, assignedSupportErrands, solvedSupportErrands]
+    [
+      ongoingStatuses,
+      newSupportErrands,
+      ongoingSupportErrands,
+      suspendedSupportErrands,
+      assignedSupportErrands,
+      solvedSupportErrands,
+    ]
   );
 
   return (
     <>
       {supportSidebarButtons?.map((button) => {
-        const buttonIsActive = selectedErrandStatuses.includes(button.key as Status);
+        const buttonIsActive = selectedErrandStatuses.includes(button.key);
         return (
           <Button
             onClick={() => {
-              updateStatusFilter(button.statuses as Status[]);
+              updateStatusFilter(button.statuses);
               setSidebarLabel(button.label);
               setShowAttestationTable(false);
             }}

@@ -9,7 +9,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Errand as ErrandDTO, Stakeholder as StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
-import { logger } from '@/utils/logger';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL } from '@/utils/util';
 
 interface ResponseData {
@@ -37,7 +37,7 @@ export class CasedataStakeholderController {
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/stakeholders/${stakeholderId}`;
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService.patch<any, CreateStakeholderDto>({ url, baseURL, data: stakeholderData }, req.user).catch(e => {
-      logger.error('Error when adding stakeholder:', e);
+      logApplicationFailure('Error when adding stakeholder', e);
       throw e;
     });
     return { data: response.data, message: `Stakeholder ${stakeholderId} edited` };
@@ -56,8 +56,7 @@ export class CasedataStakeholderController {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/stakeholders/${stakeholderId}`;
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService.delete<ErrandDTO>({ url, baseURL }, req.user).catch(e => {
-      logger.error('Something went wrong when deleting stakeholder');
-      logger.error(e);
+      logApplicationFailure('Something went wrong when deleting stakeholder', e);
       throw e;
     });
     return { data: response.data, message: `Stakeholder removed from errand ${errandId}` };
@@ -92,8 +91,7 @@ export class CasedataStakeholderController {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/stakeholders`;
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService.patch<ErrandDTO, StakeholderDTO>({ url, baseURL, data: stakeholderData }, req.user).catch(e => {
-      logger.error('Something went wrong when patching stakeholder');
-      logger.error(e);
+      logApplicationFailure('Something went wrong when patching stakeholder', e);
       throw e;
     });
     return { data: response.data, message: `Stakeholder created on errand ${errandId}` };

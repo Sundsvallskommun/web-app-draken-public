@@ -6,8 +6,9 @@ import {
   deleteCasedataBillingRecord,
   updateCasedataBillingRecord,
 } from '@casedata/services/casedata-billing-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { Button, DatePicker, FormControl, FormLabel, Input, Table, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
 import { Pen, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { CBillingRecord, CBillingRecordStatusEnum, CInvoiceRow } from 'src/data-contracts/backend/data-contracts';
@@ -142,7 +143,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
         status: 'success',
       });
     } catch (error) {
-      console.error('Failed to update billing record:', error);
+      logClientFailure('casedata.billing-table.handleSave', error);
       toastMessage({
         position: 'bottom',
         closeable: true,
@@ -178,7 +179,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
         status: 'success',
       });
     } catch (error) {
-      console.error('Failed to approve billing record:', error);
+      logClientFailure('casedata.billing-table.handleApprove', error);
       toastMessage({
         position: 'bottom',
         closeable: true,
@@ -216,7 +217,7 @@ export const BillingTable: React.FC<BillingTableProps> = ({
         status: 'success',
       });
     } catch (error) {
-      console.error('Failed to delete billing record:', error);
+      logClientFailure('casedata.billing-table.handleDeleteRecord', error);
       toastMessage({
         position: 'bottom',
         closeable: true,

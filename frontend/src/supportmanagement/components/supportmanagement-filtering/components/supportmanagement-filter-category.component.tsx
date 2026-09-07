@@ -1,6 +1,6 @@
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
-import { useMetadataStore } from '@stores/index';
+import { useMetadataStore } from '@stores/metadata-store';
 import { ChevronDown } from 'lucide-react';
 import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';

@@ -10,7 +10,7 @@ import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { LEAddress, LegalEntity2, LEPostAddress } from '@/data-contracts/legalentity/data-contracts';
-import { logger } from '@/utils/logger';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { formatOrgNr, OrgNumberFormat } from '@/utils/util';
 
 class SsnPayload {
@@ -188,7 +188,7 @@ export class AddressController {
   ): Promise<{ data: EmployeeAddress; message: string } | undefined> {
     const baseUrl = `${this.EMPLOYEE_SERVICE}/${MUNICIPALITY_ID}/portalpersondata/PERSONAL/${loginName}`;
     const res = await this.apiService.get<EmployeeAddress>({ url: baseUrl }, req.user).catch(e => {
-      logger.error('Error when fetching user information');
+      logApplicationFailure('Error when fetching user information');
       throw e;
     });
     const personId = res.data?.personid;
@@ -196,7 +196,7 @@ export class AddressController {
     if (personId) {
       const empUrl = `${this.EMPLOYEE_SERVICE}/${MUNICIPALITY_ID}/employments?personId=${personId}`;
       const empRes = await this.apiService.get<any[]>({ url: empUrl }, req.user).catch(_e => {
-        logger.error('Error when fetching employment data');
+        logApplicationFailure('Error when fetching employment data');
         return { data: [] };
       });
       const data = empRes?.data?.[0];
@@ -229,7 +229,7 @@ export class AddressController {
     }
     const url = `${this.EMPLOYEE_SERVICE}/${MUNICIPALITY_ID}/employed/${guidRes.data}/accounts`;
     const res = await this.apiService.get<EmployedPersonData>({ url }, req.user).catch(e => {
-      logger.error('Error when fetching employed user information');
+      logApplicationFailure('Error when fetching employed user information');
       throw e;
     });
     return { data: res.data, message: 'success' };

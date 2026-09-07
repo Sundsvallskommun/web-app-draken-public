@@ -3,19 +3,16 @@ import { validate } from 'class-validator';
 import { NextFunction, Response } from 'express';
 import { getMetadataArgsStorage } from 'routing-controllers';
 
-import {
-  IafVofInvestigationClassificationPolicy,
-  resolveIafVofInvestigationClassificationPolicy,
-} from '@/config/iaf-vof-investigation-classification';
-import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
+import { IafVofInvestigationClassificationPolicy, resolveIafVofInvestigationClassificationPolicy } from '@/avvikelse/classification-policy';
 import { SupportFacilitiesController, SupportFacilitiesPayloadDto } from '@/controllers/supportmanagement/support-facilities.controller';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
-import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
 
 import { ABSENT_HEADER, mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
 import { mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';
+import { supportProfileFixture } from './helpers/support-application-profiles';
 
 interface ApiStub {
   get: ReturnType<typeof vi.fn>;
@@ -23,7 +20,7 @@ interface ApiStub {
 }
 
 const classificationPolicy = (): IafVofInvestigationClassificationPolicy =>
-  resolveIafVofInvestigationClassificationPolicy(getSupportInvestigationProfile('IAF'))!;
+  resolveIafVofInvestigationClassificationPolicy(supportProfileFixture('IAF'))!;
 
 const facilities = (): SupportFacilitiesPayloadDto => ({
   propertyDesignations: ['SUNDSVALL BÖLE 1:1'],
@@ -56,13 +53,13 @@ const makeController = (
     patch: vi.fn(async (_config: unknown) => ({ data: [{ key: 'saved', values: ['true'] }], message: 'success' })),
   };
   const investigationPolicy = {
-    iafVofClassificationPolicy: options.policy,
+    classificationPolicy: options.policy,
     getClassificationOwner: vi.fn(async () => options.owner ?? 'investigation'),
   };
 
   (controller as unknown as { apiService: ApiService }).apiService = api as unknown as ApiService;
-  (controller as unknown as { investigationPolicyService: SupportInvestigationPolicyService }).investigationPolicyService =
-    investigationPolicy as unknown as SupportInvestigationPolicyService;
+  (controller as unknown as { investigationPolicyService: SupportApplicationPolicyService }).investigationPolicyService =
+    investigationPolicy as unknown as SupportApplicationPolicyService;
 
   return { controller, api, investigationPolicy };
 };

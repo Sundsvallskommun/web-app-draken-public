@@ -7,7 +7,7 @@ import { CaseStatusResponse } from '@/data-contracts/casestatus/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
-import { logger } from '@/utils/logger';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL } from '@/utils/util';
 
 // Casestatus visibility is decided per request from the session permission canViewOtherNamespaces
@@ -50,7 +50,7 @@ export class CaseStatusController {
     const url = `${municipalityId}/party/${partyId}/statuses`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<any>({ url, baseURL }, req.user).catch(e => {
-      logger.error('Error when fetching relations: ', e);
+      logApplicationFailure('Error when fetching relations', e);
       throw e;
     });
     return { data: filterVisibleCases(res.data, req.user.permissions.canViewOtherNamespaces), message: 'success' };
@@ -69,7 +69,7 @@ export class CaseStatusController {
     const url = `${municipalityId}/${organizationNumber}/statuses`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<any>({ url, baseURL }, req.user).catch(e => {
-      logger.error('Error when fetching relations: ', e);
+      logApplicationFailure('Error when fetching relations', e);
       throw e;
     });
     return { data: filterVisibleCases(res.data, req.user.permissions.canViewOtherNamespaces), message: 'success' };
@@ -87,11 +87,11 @@ export class CaseStatusController {
     const urlPropertyDesignation = `${municipalityId}/errands/statuses?propertyDesignation=${query}`;
     const baseURL = apiURL(this.SERVICE);
     const resErrandNumber = await this.apiService.get<any>({ url: urlErrandNumber, baseURL }, req.user).catch(e => {
-      logger.error('Error when fetching relations: ', e);
+      logApplicationFailure('Error when fetching relations', e);
       throw e;
     });
     const resPropertyDesignation = await this.apiService.get<any>({ url: urlPropertyDesignation, baseURL }, req.user).catch(e => {
-      logger.error('Error when fetching relations: ', e);
+      logApplicationFailure('Error when fetching relations', e);
       throw e;
     });
     // Manual search is filtered by the same canViewOtherNamespaces permission as the lookups above.

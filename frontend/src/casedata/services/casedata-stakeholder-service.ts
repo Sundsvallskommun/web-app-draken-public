@@ -1,5 +1,5 @@
 import { IErrand } from '@casedata/interfaces/errand';
-import { MEXRelation, PTRelation, Role } from '@casedata/interfaces/role';
+import { MEXRelation, PrettyRole, PTRelation, Role } from '@casedata/interfaces/role';
 import {
   CasedataOwnerOrContact,
   ContactInfoType,
@@ -8,10 +8,21 @@ import {
   StakeholderType,
 } from '@casedata/interfaces/stakeholder';
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { formatOrgNr, latestBy, OrgNumberFormat } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 
 import { getErrand } from './casedata-errand-service';
+
+export const getStakeholderEmailOptions = (
+  stakeholders: readonly Pick<CasedataOwnerOrContact, 'emails' | 'roles'>[] = []
+) =>
+  stakeholders.flatMap((stakeholder) =>
+    (stakeholder.emails ?? []).map((email) => ({
+      email: email.value ?? '',
+      role: (PrettyRole as Partial<Record<Role, string>>)[stakeholder.roles[0]] ?? '',
+    }))
+  );
 
 export const getLastUpdatedAdministrator = (stakeholders: Stakeholder[]) => {
   return latestBy(
@@ -26,14 +37,14 @@ export const fetchStakeholder: (
   stakeholderId: string
 ) => Promise<ApiResponse<Stakeholder>> = (municipalityId, errandId, stakeholderId) => {
   if (!stakeholderId) {
-    console.error('No stakeholder id found, cannot fetch. Returning.');
+    logClientFailure('casedata.casedata-stakeholder.fetchStakeholder');
   }
   const url = `/casedata/${municipalityId}/errands/${errandId}/stakeholders/${stakeholderId}`;
   return apiService
     .get<ApiResponse<Stakeholder>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching stakeholder: ', stakeholderId);
+      logClientFailure('casedata.casedata-stakeholder.fetchStakeholder', e);
       throw e;
     });
 };
@@ -138,7 +149,7 @@ export const makeStakeholdersList: (data: Partial<IErrand>) => Partial<CreateSta
 export const editStakeholder = (municipalityId: string, errandId: string, contact: CasedataOwnerOrContact) => {
   const stakeholder = makeStakeholder(contact, contact.newRole);
   if (!stakeholder.id) {
-    console.error('No id found, cannot update stakeholder.');
+    logClientFailure('casedata.casedata-stakeholder.editStakeholder');
     return Promise.resolve(false);
   }
 
@@ -151,7 +162,7 @@ export const editStakeholder = (municipalityId: string, errandId: string, contac
       return res;
     })
     .catch((e) => {
-      console.error('Something went wrong when creating attachment ', stakeholder);
+      logClientFailure('casedata.casedata-stakeholder.editStakeholder', e);
       throw e;
     });
 };
@@ -168,7 +179,7 @@ export const addStakeholder = (municipalityId: string, errandId: string, contact
       return res;
     })
     .catch((e) => {
-      console.error('Something went wrong when creating stakeholder ', stakeholder);
+      logClientFailure('casedata.casedata-stakeholder.addStakeholder', e);
       throw e;
     });
 };
@@ -198,14 +209,14 @@ export const setAdministrator = async (municipalityId: string, errand: IErrand, 
     : `casedata/${municipalityId}/errands/${errand.id}/stakeholders`;
 
   return apiService.patch<boolean, Partial<CreateStakeholderDto>>(url, stakeholder).catch((e) => {
-    console.error('Something went wrong when setting administrator', stakeholder);
+    logClientFailure('casedata.casedata-stakeholder.setAdministrator', e);
     throw e;
   });
 };
 
 export const removeStakeholder = (municipalityId: string, errandId: string, stakeholderId: string) => {
   if (!stakeholderId) {
-    console.error('No id found, cannot continue.');
+    logClientFailure('casedata.casedata-stakeholder.removeStakeholder');
     return;
   }
   return apiService
@@ -214,7 +225,7 @@ export const removeStakeholder = (municipalityId: string, errandId: string, stak
       return res;
     })
     .catch((e) => {
-      console.error('Something went wrong when removing stakeholder ', stakeholderId);
+      logClientFailure('casedata.casedata-stakeholder.removeStakeholder', e);
       throw e;
     });
 };
@@ -305,7 +316,7 @@ export const getSSNFromPersonId: (municipalityId: string, personId: string) => P
       })
       .then((res) => res.data.data)
       .catch((e) => {
-        console.error('Something went wrong when fetching personnumber: ', personId);
+        logClientFailure('casedata.casedata-stakeholder.getSSNFromPersonId', e);
         throw e;
       });
   } else {

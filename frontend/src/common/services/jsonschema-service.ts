@@ -1,4 +1,5 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 
 export type JsonSchemaResponse = {
@@ -23,7 +24,7 @@ export const getSchema = (municipalityId: string, schemaId: string): Promise<Api
     .get<ApiResponse<JsonSchemaResponse>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching schema for id:', schemaId);
+      logClientFailure('common.jsonschema.getSchema', e);
       throw e;
     });
 };
@@ -38,7 +39,7 @@ export const getLatestSchema = (
     .get<ApiResponse<JsonSchemaResponse>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching latest schema for schemaName:', schemaName);
+      logClientFailure('common.jsonschema.getLatestSchema', e);
       throw e;
     });
 };
@@ -50,7 +51,7 @@ export const getUiSchema = (municipalityId: string, schemaId: string): Promise<A
     .get<ApiResponse<UiSchemaResponse>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching UI schema for schemaId:', schemaId);
+      logClientFailure('common.jsonschema.getUiSchema', e);
       throw e;
     });
 };

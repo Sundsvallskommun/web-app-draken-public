@@ -1,4 +1,4 @@
-import type { SupportManagementLabelFilterProfileDto } from '@/dtos/support-investigation-profile.dto';
+import type { SupportManagementLabelFilterProfileDto } from '@/dtos/support-application-profile.dto';
 
 const IDENTIFIER_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const RESOURCE_PATH_PATTERN = /^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/u;

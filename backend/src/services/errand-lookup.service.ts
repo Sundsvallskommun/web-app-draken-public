@@ -1,10 +1,10 @@
 import { User } from '@interfaces/users.interface';
-import { logger } from '@utils/logger';
 import { apiURL } from '@utils/util';
 
 import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { mapWithConcurrency } from '@/utils/concurrency';
 
 import ApiService from './api.service';
@@ -29,7 +29,7 @@ export const fetchErrandNumberById = async (
     const res = await apiService.get<ErrandDTO>({ url, baseURL }, user);
     return res.data?.errandNumber ?? undefined;
   } catch (e) {
-    logger.error(`Failed to fetch errandNumber for ${effectiveNamespace}/${errandId}: `, e);
+    logApplicationFailure('Resolving errand number', e);
     return undefined;
   }
 };

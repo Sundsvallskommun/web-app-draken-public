@@ -1,5 +1,5 @@
 'use client';
-
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { Button } from '@sk-web-gui/react';
 import { TriangleAlert } from 'lucide-react';
 import { useEffect } from 'react';
@@ -13,7 +13,7 @@ export default function ErrorPage({
 }>) {
   useEffect(() => {
     // Logga felet till konsolen (ersätt med extern felrapportering vid behov)
-    console.error('Ohanterat fel:', error);
+    logClientFailure('app.error.ErrorPage', error);
   }, [error]);
 
   return (

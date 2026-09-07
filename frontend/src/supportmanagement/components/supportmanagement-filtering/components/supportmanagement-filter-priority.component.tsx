@@ -1,6 +1,6 @@
 import { PriorityComponent } from '@common/components/priority/priority.component';
+import { Priority } from '@common/interfaces/priority';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
-import { Priority } from '@supportmanagement/interfaces/priority';
 import { ChevronDown } from 'lucide-react';
 import { FC } from 'react';
 import { useFormContext } from 'react-hook-form';

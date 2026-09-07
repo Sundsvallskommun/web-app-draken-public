@@ -13,10 +13,13 @@ import { saveFacilities } from '@casedata/services/casedata-facilities-service';
 import { editStakeholder, removeStakeholder, setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { FacilityDTO } from '@common/interfaces/facilities';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import { useFormContext } from 'react-hook-form';
 
 export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
@@ -188,7 +191,7 @@ export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {
 
       return true;
     } catch (e) {
-      console.error('Error when saving errand:', e);
+      logClientFailure('casedata.useSaveCasedataErrand.save', e);
       toastMessage({
         position: 'bottom',
         closeable: false,

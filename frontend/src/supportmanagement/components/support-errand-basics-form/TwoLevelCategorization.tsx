@@ -1,5 +1,6 @@
 import { FormControl, FormErrorMessage, FormLabel, Select } from '@sk-web-gui/react';
-import { useMetadataStore, useSupportStore } from '@stores/index';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useSupportStore } from '@stores/support-store';
 import { isSupportErrandLocked, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { useMemo } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';

@@ -1,5 +1,5 @@
+import { billingrecordStatusToLabel } from '@common/services/billing-status';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
-import { billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
 import { ChevronDown } from 'lucide-react';
 import { FC, useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';

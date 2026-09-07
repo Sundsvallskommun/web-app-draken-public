@@ -1,12 +1,9 @@
 import { MEXAllAttachmentLabels, PTAttachmentLabels } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
-import {
-  ACCEPTED_UPLOAD_FILETYPES,
-  MAX_FILE_SIZE_MB,
-  sendAttachments,
-} from '@casedata/services/casedata-attachment-service';
+import { sendAttachments } from '@casedata/services/casedata-attachment-service';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import { isMEX } from '@common/services/application-service';
+import { ACCEPTED_UPLOAD_FILETYPES, MAX_FILE_SIZE_MB } from '@common/services/attachment-upload-policy';
 import { Button, FileUpload, FormErrorMessage, Modal, useSnackbar } from '@sk-web-gui/react';
 import { FC, useState } from 'react';
 import { useFormContext } from 'react-hook-form';

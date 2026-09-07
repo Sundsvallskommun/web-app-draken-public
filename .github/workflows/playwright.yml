@@ -14,6 +14,10 @@ on:
     paths:
       - frontend/src/**
       - frontend/e2e/**
+      - frontend/next.config.js
+      - frontend/playwright.config.ts
+      - dragons.json
+      - scripts/dragon.mjs
 
 # En ny push gör tidigare körningar på samma ref inaktuella, men utan detta lever de kvar och
 # konkurrerar om jobbudgeten. Sex pushar på en branch gav sex matriser om fem jobb som alla
@@ -24,6 +28,66 @@ concurrency:
   cancel-in-progress: ${{ github.ref_name != 'develop' && github.ref_name != 'main' }}
 
 jobs:
+  smoke-catalog:
+    runs-on: ubuntu-latest
+    outputs:
+      dragons: ${{ steps.catalog.outputs.dragons }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - id: catalog
+        run: >-
+          echo "dragons=$(node -e 'console.log(JSON.stringify(Object.values(require("./frontend/e2e/dragon-coverage.json")).filter(entry => entry.suite === "smoke").map(entry => entry.project)))')"
+          >> "$GITHUB_OUTPUT"
+  smoke:
+    needs: smoke-catalog
+    if: needs.smoke-catalog.outputs.dragons != '[]'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    strategy:
+      fail-fast: false
+      matrix:
+        dragon: ${{ fromJSON(needs.smoke-catalog.outputs.dragons) }}
+    name: Deployment smoke ${{ matrix.dragon }}
+    env:
+      # Keep each dragon's checked-in capabilities and base path; only external endpoints and
+      # the local server address are replaced. Inherited shell variables win over the env file.
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api
+      DOMAIN_NAME: localhost
+      PORT: 3000
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+      - run: yarn --frozen-lockfile --silent --ignore-scripts
+      - run: ./node_modules/.bin/playwright install chromium
+      - run: cp .env.${{ matrix.dragon }}-example .env.${{ matrix.dragon }}
+      - run: node ../scripts/dragon.mjs build ${{ matrix.dragon }} frontend
+      - run: node ../scripts/dragon.mjs start ${{ matrix.dragon }} frontend > playwright-server.log 2>&1 &
+      - name: Wait for login page
+        run: >-
+          timeout 120 node --env-file=.env.${{ matrix.dragon }} -e '
+          (async () => {
+            const url = "http://localhost:3000" + (process.env.NEXT_PUBLIC_BASEPATH || "") + "/login";
+            while (true) {
+              try { if ((await fetch(url)).ok) return; } catch {}
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          })().catch(error => { console.error(error); process.exitCode = 1; });'
+      - run: node --env-file=.env.${{ matrix.dragon }} ./node_modules/@playwright/test/cli.js test --project=${{ matrix.dragon }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-smoke-${{ matrix.dragon }}
+          path: |
+            frontend/playwright-report/
+            frontend/playwright-server.log
+          retention-days: 30
   test:
     runs-on: ubuntu-latest
     defaults:
@@ -39,7 +103,6 @@ jobs:
             start_cmd: yarn start:mex
             env_file: .env.mex
             NEXT_PUBLIC_APPLICATION: MEX
-            NEXT_PUBLIC_IS_CASEDATA: true
             NEXT_PUBLIC_USE_FACILITIES: true
             NEXT_PUBLIC_USE_EXTRA_INFORMATION_STAKEHOLDERS: true
             NEXT_PUBLIC_USE_RELATIONS: true
@@ -55,7 +118,6 @@ jobs:
             start_cmd: yarn start:pt
             env_file: .env.pt
             NEXT_PUBLIC_APPLICATION: PT
-            NEXT_PUBLIC_IS_CASEDATA: true
             NEXT_PUBLIC_USE_MY_PAGES: true
             NEXT_PUBLIC_USE_RELATIONS: true
             NEXT_PUBLIC_USE_UI_PHASES: true
@@ -64,7 +126,6 @@ jobs:
             start_cmd: yarn start:kc
             env_file: .env.kc
             NEXT_PUBLIC_APPLICATION: KC
-            NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: true
             NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION: true
             NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE: true
             NEXT_PUBLIC_USE_REASON_FOR_CONTACT: true
@@ -88,7 +149,6 @@ jobs:
             # earlier list had been copied from a casedata app and used the
             # wrong categorization level and feature set.
             NEXT_PUBLIC_APPLICATION: LOP
-            NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: true
             NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: true
             NEXT_PUBLIC_USE_BILLING: true
             NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: true
@@ -108,13 +168,11 @@ jobs:
             NEXT_PUBLIC_APPLICATION_NAME: "Avvikelse IAF"
             NEXT_PUBLIC_API_URL: http://localhost:3001/iaf
             NEXT_PUBLIC_BASEPATH: /iaf
-            NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: true
             NEXT_PUBLIC_USE_DETAILS_TAB: true
             NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: true
             NEXT_PUBLIC_USE_UI_PHASES: true
             NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: true
             NEXT_PUBLIC_USE_INVESTIGATION: true
-            NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION: true
           - app: vof
             build_cmd: yarn build:vof
             start_cmd: yarn start:vof
@@ -122,13 +180,11 @@ jobs:
             NEXT_PUBLIC_APPLICATION_NAME: "Avvikelse VOF"
             NEXT_PUBLIC_API_URL: http://localhost:3001/vof
             NEXT_PUBLIC_BASEPATH: /vof
-            NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: true
             NEXT_PUBLIC_USE_DETAILS_TAB: true
             NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: true
             NEXT_PUBLIC_USE_UI_PHASES: true
             NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: true
             NEXT_PUBLIC_USE_INVESTIGATION: true
-            NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION: true
           - app: iaf-schema-lab
             build_cmd: yarn build:iaf
             # Schema-labben är avsiktligt development-only och exponeras inte av produktionsservern.
@@ -137,13 +193,11 @@ jobs:
             NEXT_PUBLIC_APPLICATION_NAME: "Avvikelse IAF"
             NEXT_PUBLIC_API_URL: http://localhost:3001/iaf
             NEXT_PUBLIC_BASEPATH: /iaf
-            NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: true
             NEXT_PUBLIC_USE_DETAILS_TAB: true
             NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: true
             NEXT_PUBLIC_USE_UI_PHASES: true
             NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: true
             NEXT_PUBLIC_USE_INVESTIGATION: true
-            NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION: true
           # AOT är den minsta SupportManagement-draken och kör utredningssömmen med en annan
           # implementation än avvikelse. Jobbet finns för att IAF/VOF-arbetet ska falla här om det
           # läcker in i en drake som inte är avvikelse. Flaggorna speglar .env.aot-example.
@@ -154,7 +208,6 @@ jobs:
             NEXT_PUBLIC_APPLICATION_NAME: "Alkohol och tobak"
             NEXT_PUBLIC_API_URL: http://localhost:3001/AOT
             NEXT_PUBLIC_BASEPATH: /AOT
-            NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: true
             NEXT_PUBLIC_USE_DETAILS_TAB: true
             NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: true
             NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER: true
@@ -163,15 +216,59 @@ jobs:
             NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS: true
             NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX: true
             NEXT_PUBLIC_USE_INVESTIGATION: true
-            NEXT_PUBLIC_USE_AOT_INVESTIGATION: true
 
     name: E2E ${{ matrix.app }} on ubuntu-latest
+    env:
+      NEXT_PUBLIC_APPLICATION: ${{ matrix.NEXT_PUBLIC_APPLICATION }}
+      NEXT_PUBLIC_APP_NAME: "Draken"
+      NEXT_PUBLIC_APPLICATION_NAME: ${{ matrix.NEXT_PUBLIC_APPLICATION_NAME || 'Draken' }}
+      NEXT_PUBLIC_API_URL: ${{ matrix.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api' }}
+      DOMAIN_NAME: localhost
+      BASE_PATH: ""
+      NEXT_PUBLIC_BASE_PATH: ""
+      NEXT_PUBLIC_BASEPATH: ${{ matrix.NEXT_PUBLIC_BASEPATH || '' }}
+      NEXT_PUBLIC_MUNICIPALITY_ID: 2281
+      NEXT_PUBLIC_ENVIRONMENT: TEST
+      HEALTH_AUTH: false
+      HEALTH_USERNAME: ""
+      HEALTH_PASSWORD: ""
+      NEXT_PUBLIC_USE_FACILITIES: ${{ matrix.NEXT_PUBLIC_USE_FACILITIES || '' }}
+      NEXT_PUBLIC_USE_EXTRA_INFORMATION_STAKEHOLDERS: ${{ matrix.NEXT_PUBLIC_USE_EXTRA_INFORMATION_STAKEHOLDERS || '' }}
+      NEXT_PUBLIC_USE_RELATIONS: ${{ matrix.NEXT_PUBLIC_USE_RELATIONS || '' }}
+      NEXT_PUBLIC_USE_ESCALATION: ${{ matrix.NEXT_PUBLIC_USE_ESCALATION || '' }}
+      NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER: ${{ matrix.NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER || '' }}
+      NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL: ${{ matrix.NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL || '' }}
+      NEXT_PUBLIC_USE_MY_PAGES: ${{ matrix.NEXT_PUBLIC_USE_MY_PAGES || '' }}
+      NEXT_PUBLIC_USE_UI_PHASES: ${{ matrix.NEXT_PUBLIC_USE_UI_PHASES || '' }}
+      NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION: ${{ matrix.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION || '' }}
+      NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE: ${{ matrix.NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE || '' }}
+      NEXT_PUBLIC_USE_REASON_FOR_CONTACT: ${{ matrix.NEXT_PUBLIC_USE_REASON_FOR_CONTACT || '' }}
+      NEXT_PUBLIC_USE_BUSINESS_CASE: ${{ matrix.NEXT_PUBLIC_USE_BUSINESS_CASE || '' }}
+      NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION: ${{ matrix.NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION || '' }}
+      NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL: ${{ matrix.NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL || '' }}
+      NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL: ${{ matrix.NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL || '' }}
+      NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS: ${{ matrix.NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS || '' }}
+      NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS: ${{ matrix.NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS || '' }}
+      NEXT_PUBLIC_USE_BILLING_RECORDS: ${{ matrix.NEXT_PUBLIC_USE_BILLING_RECORDS || '' }}
+      NEXT_PUBLIC_USE_UI_BILLING: ${{ matrix.NEXT_PUBLIC_USE_UI_BILLING || '' }}
+      NEXT_PUBLIC_USE_CONTRACTS: ${{ matrix.NEXT_PUBLIC_USE_CONTRACTS || '' }}
+      NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: ${{ matrix.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION || '' }}
+      NEXT_PUBLIC_USE_BILLING: ${{ matrix.NEXT_PUBLIC_USE_BILLING || '' }}
+      NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: ${{ matrix.NEXT_PUBLIC_USE_EMPLOYEE_SEARCH || '' }}
+      NEXT_PUBLIC_USE_DETAILS_TAB: ${{ matrix.NEXT_PUBLIC_USE_DETAILS_TAB || '' }}
+      NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX: ${{ matrix.NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX || '' }}
+      NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION: ${{ matrix.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION || '' }}
+      NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: ${{ matrix.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '' }}
+      NEXT_PUBLIC_INVOICE_BREAK_DATE: ${{ matrix.NEXT_PUBLIC_INVOICE_BREAK_DATE || '' }}
+      NEXT_PUBLIC_USE_HANDOVER: ${{ matrix.NEXT_PUBLIC_USE_HANDOVER || '' }}
+      NEXT_PUBLIC_USE_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_INVESTIGATION || '' }}
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
           cache: yarn
@@ -195,131 +292,49 @@ jobs:
         run: ./node_modules/.bin/playwright install chromium
 
       - name: Build
+        if: matrix.app != 'iaf-schema-lab'
         run: ${{ matrix.build_cmd }}
-        env:
-          NEXT_PUBLIC_APPLICATION: ${{ matrix.NEXT_PUBLIC_APPLICATION }}
-          NEXT_PUBLIC_APP_NAME: "Draken"
-          NEXT_PUBLIC_APPLICATION_NAME: ${{ matrix.NEXT_PUBLIC_APPLICATION_NAME || 'Draken' }}
-          NEXT_PUBLIC_API_URL: ${{ matrix.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api' }}
-          DOMAIN_NAME: localhost
-          BASE_PATH: ""
-          NEXT_PUBLIC_BASE_PATH: ""
-          NEXT_PUBLIC_BASEPATH: ${{ matrix.NEXT_PUBLIC_BASEPATH || '' }}
-          NEXT_PUBLIC_MUNICIPALITY_ID: 2281
-          NEXT_PUBLIC_ENVIRONMENT: TEST
-          HEALTH_AUTH: false
-          HEALTH_USERNAME: ""
-          HEALTH_PASSWORD: ""
-          NEXT_PUBLIC_IS_CASEDATA: ${{ matrix.NEXT_PUBLIC_IS_CASEDATA || '' }}
-          NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: ${{ matrix.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT || '' }}
-          NEXT_PUBLIC_USE_FACILITIES: ${{ matrix.NEXT_PUBLIC_USE_FACILITIES || '' }}
-          NEXT_PUBLIC_USE_EXTRA_INFORMATION_STAKEHOLDERS: ${{ matrix.NEXT_PUBLIC_USE_EXTRA_INFORMATION_STAKEHOLDERS || '' }}
-          NEXT_PUBLIC_USE_RELATIONS: ${{ matrix.NEXT_PUBLIC_USE_RELATIONS || '' }}
-          NEXT_PUBLIC_USE_ESCALATION: ${{ matrix.NEXT_PUBLIC_USE_ESCALATION || '' }}
-          NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER: ${{ matrix.NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER || '' }}
-          NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL: ${{ matrix.NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL || '' }}
-          NEXT_PUBLIC_USE_MY_PAGES: ${{ matrix.NEXT_PUBLIC_USE_MY_PAGES || '' }}
-          NEXT_PUBLIC_USE_UI_PHASES: ${{ matrix.NEXT_PUBLIC_USE_UI_PHASES || '' }}
-          NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION: ${{ matrix.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION || '' }}
-          NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE: ${{ matrix.NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE || '' }}
-          NEXT_PUBLIC_USE_REASON_FOR_CONTACT: ${{ matrix.NEXT_PUBLIC_USE_REASON_FOR_CONTACT || '' }}
-          NEXT_PUBLIC_USE_BUSINESS_CASE: ${{ matrix.NEXT_PUBLIC_USE_BUSINESS_CASE || '' }}
-          NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION: ${{ matrix.NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION || '' }}
-          NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL: ${{ matrix.NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL || '' }}
-          NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL: ${{ matrix.NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL || '' }}
-          NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS: ${{ matrix.NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS || '' }}
-          NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS: ${{ matrix.NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS || '' }}
-          NEXT_PUBLIC_USE_BILLING_RECORDS: ${{ matrix.NEXT_PUBLIC_USE_BILLING_RECORDS || '' }}
-          NEXT_PUBLIC_USE_UI_BILLING: ${{ matrix.NEXT_PUBLIC_USE_UI_BILLING || '' }}
-          NEXT_PUBLIC_USE_CONTRACTS: ${{ matrix.NEXT_PUBLIC_USE_CONTRACTS || '' }}
-          NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: ${{ matrix.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION || '' }}
-          NEXT_PUBLIC_USE_BILLING: ${{ matrix.NEXT_PUBLIC_USE_BILLING || '' }}
-          NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: ${{ matrix.NEXT_PUBLIC_USE_EMPLOYEE_SEARCH || '' }}
-          NEXT_PUBLIC_USE_DETAILS_TAB: ${{ matrix.NEXT_PUBLIC_USE_DETAILS_TAB || '' }}
-          NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX: ${{ matrix.NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX || '' }}
-          NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION: ${{ matrix.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION || '' }}
-          NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: ${{ matrix.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '' }}
-          NEXT_PUBLIC_INVOICE_BREAK_DATE: ${{ matrix.NEXT_PUBLIC_INVOICE_BREAK_DATE || '' }}
-          NEXT_PUBLIC_USE_HANDOVER: ${{ matrix.NEXT_PUBLIC_USE_HANDOVER || '' }}
-          NEXT_PUBLIC_USE_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_INVESTIGATION || '' }}
-          NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION || '' }}
-          NEXT_PUBLIC_USE_AOT_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_AOT_INVESTIGATION || '' }}
 
       - name: Start server
-        run: ${{ matrix.start_cmd }} &
-        env:
-          NEXT_PUBLIC_APPLICATION: ${{ matrix.NEXT_PUBLIC_APPLICATION }}
-          NEXT_PUBLIC_APP_NAME: "Draken"
-          NEXT_PUBLIC_APPLICATION_NAME: ${{ matrix.NEXT_PUBLIC_APPLICATION_NAME || 'Draken' }}
-          NEXT_PUBLIC_API_URL: ${{ matrix.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api' }}
-          DOMAIN_NAME: localhost
-          BASE_PATH: ""
-          NEXT_PUBLIC_BASE_PATH: ""
-          NEXT_PUBLIC_BASEPATH: ${{ matrix.NEXT_PUBLIC_BASEPATH || '' }}
-          NEXT_PUBLIC_MUNICIPALITY_ID: 2281
-          NEXT_PUBLIC_ENVIRONMENT: TEST
-          HEALTH_AUTH: false
-          HEALTH_USERNAME: ""
-          HEALTH_PASSWORD: ""
+        run: ${{ matrix.start_cmd }} > playwright-server.log 2>&1 &
 
       - name: Wait for server
         # Dependency-free wait loop: npx would fetch an unpinned package at job time.
-        run: timeout 60 bash -c 'until curl -sfo /dev/null http://localhost:3000${{ matrix.NEXT_PUBLIC_BASEPATH || '' }}; do sleep 2; done'
+        run: >-
+          timeout 120 bash -c 'until curl --fail --silent --show-error --max-time 45
+          -o /dev/null "http://localhost:3000${NEXT_PUBLIC_BASEPATH}/login"; do sleep 2; done'
 
       - name: Run Playwright tests
         run: ./node_modules/.bin/playwright test --project=${{ matrix.app }}
-        env:
-          NEXT_PUBLIC_APPLICATION: ${{ matrix.NEXT_PUBLIC_APPLICATION }}
-          NEXT_PUBLIC_APP_NAME: "Draken"
-          NEXT_PUBLIC_APPLICATION_NAME: ${{ matrix.NEXT_PUBLIC_APPLICATION_NAME || 'Draken' }}
-          NEXT_PUBLIC_API_URL: ${{ matrix.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api' }}
-          DOMAIN_NAME: localhost
-          BASE_PATH: ""
-          NEXT_PUBLIC_BASE_PATH: ""
-          NEXT_PUBLIC_BASEPATH: ${{ matrix.NEXT_PUBLIC_BASEPATH || '' }}
-          NEXT_PUBLIC_MUNICIPALITY_ID: 2281
-          NEXT_PUBLIC_ENVIRONMENT: TEST
-          HEALTH_AUTH: false
-          HEALTH_USERNAME: ""
-          HEALTH_PASSWORD: ""
-          NEXT_PUBLIC_IS_CASEDATA: ${{ matrix.NEXT_PUBLIC_IS_CASEDATA || '' }}
-          NEXT_PUBLIC_IS_SUPPORTMANAGEMENT: ${{ matrix.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT || '' }}
-          NEXT_PUBLIC_USE_FACILITIES: ${{ matrix.NEXT_PUBLIC_USE_FACILITIES || '' }}
-          NEXT_PUBLIC_USE_EXTRA_INFORMATION_STAKEHOLDERS: ${{ matrix.NEXT_PUBLIC_USE_EXTRA_INFORMATION_STAKEHOLDERS || '' }}
-          NEXT_PUBLIC_USE_RELATIONS: ${{ matrix.NEXT_PUBLIC_USE_RELATIONS || '' }}
-          NEXT_PUBLIC_USE_ESCALATION: ${{ matrix.NEXT_PUBLIC_USE_ESCALATION || '' }}
-          NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER: ${{ matrix.NEXT_PUBLIC_USE_ORGANIZATION_STAKEHOLDER || '' }}
-          NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL: ${{ matrix.NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL || '' }}
-          NEXT_PUBLIC_USE_MY_PAGES: ${{ matrix.NEXT_PUBLIC_USE_MY_PAGES || '' }}
-          NEXT_PUBLIC_USE_UI_PHASES: ${{ matrix.NEXT_PUBLIC_USE_UI_PHASES || '' }}
-          NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION: ${{ matrix.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION || '' }}
-          NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE: ${{ matrix.NEXT_PUBLIC_USE_EXPLANATION_OF_THE_CAUSE || '' }}
-          NEXT_PUBLIC_USE_REASON_FOR_CONTACT: ${{ matrix.NEXT_PUBLIC_USE_REASON_FOR_CONTACT || '' }}
-          NEXT_PUBLIC_USE_BUSINESS_CASE: ${{ matrix.NEXT_PUBLIC_USE_BUSINESS_CASE || '' }}
-          NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION: ${{ matrix.NEXT_PUBLIC_USE_DEPARTMENT_ESCALATION || '' }}
-          NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL: ${{ matrix.NEXT_PUBLIC_USE_EMAIL_CONTACT_CHANNEL || '' }}
-          NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL: ${{ matrix.NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL || '' }}
-          NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS: ${{ matrix.NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS || '' }}
-          NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS: ${{ matrix.NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS || '' }}
-          NEXT_PUBLIC_USE_BILLING_RECORDS: ${{ matrix.NEXT_PUBLIC_USE_BILLING_RECORDS || '' }}
-          NEXT_PUBLIC_USE_UI_BILLING: ${{ matrix.NEXT_PUBLIC_USE_UI_BILLING || '' }}
-          NEXT_PUBLIC_USE_CONTRACTS: ${{ matrix.NEXT_PUBLIC_USE_CONTRACTS || '' }}
-          NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION: ${{ matrix.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION || '' }}
-          NEXT_PUBLIC_USE_BILLING: ${{ matrix.NEXT_PUBLIC_USE_BILLING || '' }}
-          NEXT_PUBLIC_USE_EMPLOYEE_SEARCH: ${{ matrix.NEXT_PUBLIC_USE_EMPLOYEE_SEARCH || '' }}
-          NEXT_PUBLIC_USE_DETAILS_TAB: ${{ matrix.NEXT_PUBLIC_USE_DETAILS_TAB || '' }}
-          NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX: ${{ matrix.NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX || '' }}
-          NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION: ${{ matrix.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION || '' }}
-          NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT: ${{ matrix.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '' }}
-          NEXT_PUBLIC_INVOICE_BREAK_DATE: ${{ matrix.NEXT_PUBLIC_INVOICE_BREAK_DATE || '' }}
-          NEXT_PUBLIC_USE_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_INVESTIGATION || '' }}
-          NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION || '' }}
-          NEXT_PUBLIC_USE_AOT_INVESTIGATION: ${{ matrix.NEXT_PUBLIC_USE_AOT_INVESTIGATION || '' }}
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ !cancelled() }}
         with:
           name: playwright-report-${{ matrix.app }}
-          path: frontend/playwright-report/
+          path: |
+            frontend/playwright-report/
+            frontend/playwright-server.log
           retention-days: 30
+  all-browser-tests:
+    name: All browser tests
+    needs: [smoke-catalog, smoke, test]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every browser check to pass
+        env:
+          CATALOG_RESULT: ${{ needs.smoke-catalog.result }}
+          SMOKE_PROJECTS: ${{ needs.smoke-catalog.outputs.dragons }}
+          SMOKE_RESULT: ${{ needs.smoke.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+        run: |
+          if [[ "$CATALOG_RESULT" != success || "$TEST_RESULT" != success ]]; then
+            echo "Browser tests failed: catalog=$CATALOG_RESULT integration=$TEST_RESULT" >&2
+            exit 1
+          fi
+          # A skipped matrix is legitimate only when the successful catalog explicitly returned [].
+          if [[ "$SMOKE_RESULT" != success && !( "$SMOKE_RESULT" == skipped && "$SMOKE_PROJECTS" == '[]' ) ]]; then
+            echo "Browser smoke failed: result=$SMOKE_RESULT projects=$SMOKE_PROJECTS" >&2
+            exit 1
+          fi

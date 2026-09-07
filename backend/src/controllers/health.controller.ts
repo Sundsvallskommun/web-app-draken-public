@@ -3,7 +3,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { User } from '@/interfaces/users.interface';
 import ApiService from '@/services/api.service';
-import { logger } from '@/utils/logger';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 
 @Controller()
 export class HealthController {
@@ -35,7 +35,7 @@ export class HealthController {
       },
     };
     const res = await this.apiService.post<{ status: string }, { status: string }>({ url, data }, dummyUser).catch(e => {
-      logger.error('Error when doing health check:', e);
+      logApplicationFailure('Error when doing health check', e);
       return e;
     });
 

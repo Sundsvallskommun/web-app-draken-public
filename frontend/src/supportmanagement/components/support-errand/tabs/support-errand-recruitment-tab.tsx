@@ -1,6 +1,7 @@
 import { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Checkbox, Disclosure, FormControl, FormLabel, Input, Label, Textarea } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
 import { getRecruitmentParameters, saveParameters } from '@supportmanagement/services/support-parameter-service';
 import { Text } from 'lucide-react';
 import { FC, useMemo, useState } from 'react';

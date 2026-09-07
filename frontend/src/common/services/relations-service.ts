@@ -1,6 +1,7 @@
 import { Relation } from '@common/data-contracts/relations/data-contracts';
+import { All } from '@common/interfaces/priority';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { appConfig } from '@config/appconfig';
-import { All } from '@supportmanagement/interfaces/priority';
 
 import { ApiResponse, apiService } from './api-service';
 import { CaseStatusResponse } from './casestatus-service';
@@ -52,7 +53,7 @@ export const createRelation = (municipalityId: string, sourceId: string, targetE
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when creating relation: ' + e);
+      logClientFailure('common.relations.createRelation', e);
       throw e;
     });
 };
@@ -64,7 +65,7 @@ export const deleteRelation = (municipalityId: string, id: string) => {
     .deleteRequest<ApiResponse<boolean>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when deleting relation: ' + e);
+      logClientFailure('common.relations.deleteRelation', e);
       throw e;
     });
 };
@@ -178,7 +179,7 @@ export const getReferredFromErrands = (
     .get<ApiResponse<ReferredFromErrandResponse[]>>(url)
     .then((res) => res.data.data)
     .catch((e) => {
-      console.error('Error fetching referred-from errands: ' + e);
+      logClientFailure('common.relations.getReferredFromErrands', e);
       return [];
     });
 };

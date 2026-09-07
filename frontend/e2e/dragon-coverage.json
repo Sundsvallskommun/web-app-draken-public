@@ -1,0 +1,16 @@
+{
+  "KC": { "project": "kc", "suite": "integration" },
+  "KA": { "project": "ka", "suite": "smoke" },
+  "MEX": { "project": "mex", "suite": "integration" },
+  "PT": { "project": "pt", "suite": "integration" },
+  "ROB": { "project": "rob", "suite": "smoke" },
+  "LOP": { "project": "lop", "suite": "integration" },
+  "IK": { "project": "ik", "suite": "smoke" },
+  "MSVA": { "project": "msva", "suite": "smoke" },
+  "SE": { "project": "se", "suite": "smoke" },
+  "BOU": { "project": "bou", "suite": "smoke" },
+  "LOK": { "project": "lok", "suite": "smoke" },
+  "IAF": { "project": "iaf", "suite": "integration" },
+  "VOF": { "project": "vof", "suite": "integration" },
+  "AOT": { "project": "aot", "suite": "integration" }
+}

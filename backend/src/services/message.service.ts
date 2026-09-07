@@ -1,7 +1,5 @@
-import { AgnosticMessageResponse, DecisionChannelResult, LetterResponse, MessageClassification } from '@controllers/message.controller';
 import { Role } from '@interfaces/role';
 import { User } from '@interfaces/users.interface';
-import { logger } from '@utils/logger';
 import dayjs from 'dayjs';
 import NodeFormData from 'form-data';
 import { v4 as uuidv4 } from 'uuid';
@@ -32,8 +30,10 @@ import {
   WebMessageAttachment,
   WebMessageRequest,
 } from '@/data-contracts/messaging/data-contracts';
+import { AgnosticMessageResponse, DecisionChannelResult, LetterResponse, MessageClassification } from '@/dtos/message.dto';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { FTCaseType, MEXCaseType, PTCaseType } from '@/interfaces/case-type.interface';
+import { logApplicationEvent, logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL, base64Encode } from '@/utils/util';
 
 import ApiService, { ApiResponse } from './api.service';
@@ -90,12 +90,12 @@ export const sendSms = (municipalityId: string, message: SmsRequest, req: Reques
           };
         })
         .catch(e => {
-          logger.error('Error when saving message id:', e);
+          logApplicationFailure('Error when saving message id', e);
           return { data: res.data, message: `Message sent but id could not be stored` };
         });
     })
     .catch(e => {
-      logger.error('Error when sending message:', e);
+      logApplicationFailure('Error when sending message', e);
       throw e;
     });
 };
@@ -129,12 +129,12 @@ export const sendWebMessage = (municipalityId: string, message: WebMessageReques
           }
         })
         .catch(e => {
-          logger.error('Error when saving message id:', e);
+          logApplicationFailure('Error when saving message id', e);
           return { data: res.data, message: `Message sent but id could not be stored` };
         });
     })
     .catch(e => {
-      logger.error('Error when sending message:', e);
+      logApplicationFailure('Error when sending message', e);
       throw e;
     });
 };
@@ -181,12 +181,12 @@ export const sendEmail = (
           }
         })
         .catch(e => {
-          logger.error('Error when saving message id:', e);
+          logApplicationFailure('Error when saving message id', e);
           return { data: res.data, message: `Message sent but id could not be stored` };
         });
     })
     .catch(e => {
-      logger.error('Error when sending message:', e);
+      logApplicationFailure('Error when sending message', e);
       throw e;
     });
 };
@@ -230,12 +230,12 @@ export const sendDigitalMail = (
           }
         })
         .catch(e => {
-          logger.error('Error when saving message id:', e);
+          logApplicationFailure('Error when saving message id', e);
           return { data: { messageId: id }, message: `Message sent but id could not be stored` };
         });
     })
     .catch(e => {
-      logger.error('Error when sending message:', e);
+      logApplicationFailure('Error when sending message', e);
       throw e;
     });
 };
@@ -310,14 +310,13 @@ export const saveMessageOnErrand: (
       return res;
     })
     .catch(e => {
-      logger.error('Error when saving message on errand:', e);
-      logger.error(e);
+      logApplicationFailure('Error when saving message on errand', e);
       throw e;
     });
 
   if (saveMessage.direction === MessageRequestDirectionEnum.OUTBOUND) {
     await setMessageViewed(municipalityId, errand.id!, message.id, user).catch(e => {
-      logger.error('Error when saving viewed status:', e);
+      logApplicationFailure('Error when saving viewed status', e);
     });
   }
 
@@ -374,7 +373,7 @@ export const notifyContactPersons: (municipalityId: string, errand: ErrandDTO, u
   });
   return Promise.allSettled([...smsPromises, ...emailPromises]).then(res => {
     const succeeded = res.filter(r => r.status === 'fulfilled').length;
-    logger.info(`Sent ${succeeded} notifications to contact persons in errand ${errand.errandNumber}`);
+    logApplicationEvent('Contact notifications completed', { count: succeeded });
     return true;
   });
 };
@@ -472,7 +471,7 @@ export const sendDecisionToMinaSidor = async (
     await sendConversation(errandId, externalConversation!.id!, user, pdf, decisionId);
     return { channel: 'MINA_SIDOR', status: 'sent', data: { messageId: externalConversation!.id }, message: `Message sent to Mina sidor` };
   } catch (e) {
-    logger.error('Error when sending message to Mina sidor:', e);
+    logApplicationFailure('Error when sending message to Mina sidor', e);
     return { channel: 'MINA_SIDOR', status: 'failed', data: { reason: failureReason(e) }, message: `Message to Mina sidor failed` };
   }
 };
@@ -502,7 +501,7 @@ export const sendDecisionToKatla = async (
     await sendConversation(errand.id!.toString(), relationlessConversation!.id!, user, pdf, decisionId);
     return { channel: 'KATLA', status: 'sent', data: { messageId: relationlessConversation!.id }, message: `Message sent to Katla` };
   } catch (e) {
-    logger.error('Error when sending message to Katla:', e);
+    logApplicationFailure('Error when sending message to Katla', e);
     return { channel: 'KATLA', status: 'failed', data: { reason: failureReason(e) }, message: `Message to Katla failed` };
   }
 };
@@ -528,7 +527,7 @@ export const sendDecisionToDigitalMail = async (
   const apiService = new ApiService();
 
   if (!pdf.id) {
-    logger.error('Decision attachment is missing id, cannot fetch attachment content');
+    logApplicationFailure('Decision attachment is missing id, cannot fetch attachment content');
     return {
       channel: 'DIGITAL_MAIL',
       status: 'failed',
@@ -541,7 +540,7 @@ export const sendDecisionToDigitalMail = async (
   try {
     content = await getDecisionAttachmentAsBase64(MUNICIPALITY_ID!, errand.id!, decisionId, pdf.id, user);
   } catch (e) {
-    logger.error('Error when fetching decision attachment content:', e);
+    logApplicationFailure('Error when fetching decision attachment content', e);
     return { channel: 'DIGITAL_MAIL', status: 'failed', data: { reason: failureReason(e) }, message: `Digital mail failed` };
   }
 
@@ -600,7 +599,7 @@ export const sendDecisionToDigitalMail = async (
         })
         .catch(e => {
           // The letter was delivered, only the bookkeeping on the errand failed — still a send.
-          logger.error('Error when saving message id:', e);
+          logApplicationFailure('Error when saving message id', e);
           return {
             channel: 'DIGITAL_MAIL',
             status: 'sent',
@@ -610,7 +609,7 @@ export const sendDecisionToDigitalMail = async (
         });
     })
     .catch(e => {
-      logger.error('Error when sending digital mail:', e);
+      logApplicationFailure('Error when sending digital mail', e);
       return { channel: 'DIGITAL_MAIL', status: 'failed', data: { reason: failureReason(e) }, message: `Digital mail failed` };
     });
 };
@@ -640,7 +639,7 @@ export const sendDecisionForMex = async (
       const res = await sendWebMessage(municipalityId, message, req, errandData);
       return { channel: 'WEBMESSAGE', status: 'sent', data: { messageId: res.data.messageId }, message: res.message };
     } catch (e) {
-      logger.error('Error when sending decision as webmessage:', e);
+      logApplicationFailure('Error when sending decision as webmessage', e);
       return { channel: 'WEBMESSAGE', status: 'failed', data: { reason: failureReason(e) }, message: `Webmessage failed` };
     }
   }
@@ -670,7 +669,7 @@ export const sendDecisionForMex = async (
       const res = await sendEmail(municipalityId, message, req, errandData, MessageClassification.Informationsmeddelande);
       return { channel: 'EMAIL', status: 'sent', data: { messageId: res.data.messageId }, message: res.message };
     } catch (e) {
-      logger.error('Error when sending decision as email:', e);
+      logApplicationFailure('Error when sending decision as email', e);
       return { channel: 'EMAIL', status: 'failed', data: { reason: failureReason(e) }, message: `Email failed` };
     }
   }

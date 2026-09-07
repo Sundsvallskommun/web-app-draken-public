@@ -1,6 +1,8 @@
 import { Admin } from '@common/services/user-service';
 import { Button, cx, Link } from '@sk-web-gui/react';
-import { useUserStore } from '@stores/index';
+import { useUserStore } from '@stores/user-store';
+import { isSupportRegistrationEnabled } from '@supportmanagement/application/support-application-profile';
+import { useSupportApplicationProfileStore } from '@supportmanagement/application/support-application-profile-store';
 import {
   AttestationDatesFilter,
   AttestationDatesValues,
@@ -17,8 +19,6 @@ import {
   AttestationStatusValues,
 } from '@supportmanagement/components/attestation-tab/components/attestation-filtering/components/attestation-filter-status.component';
 import { SupportManagementFilterQuery } from '@supportmanagement/components/supportmanagement-filtering/components/supportmanagement-filter-query.component';
-import { isSupportRegistrationEnabled } from '@supportmanagement/investigation/investigation-profile';
-import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { ListFilter } from 'lucide-react';
 import { FC, useState } from 'react';
 export type AttestationFilter = AttestationInvoiceTypeFilter & AttestationStatusFilter & AttestationDatesFilter;
@@ -35,7 +35,7 @@ const AttestationsFilteringComponent: FC<{
 }> = ({ ownerFilterHandler = () => false, ownerFilter, administrators = [] }) => {
   const user = useUserStore((s) => s.user);
   const [show, setShow] = useState<boolean>(true);
-  const registrationEnabled = useInvestigationProfileStore((state) => isSupportRegistrationEnabled(state.profile));
+  const registrationEnabled = useSupportApplicationProfileStore((state) => isSupportRegistrationEnabled(state.profile));
   const [showCreateInvoice, setShowCreateInvoice] = useState<boolean>(false);
 
   const closeCreateInvoice = () => {

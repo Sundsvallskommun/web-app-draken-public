@@ -47,7 +47,7 @@ const labelStructure = [
   },
 ];
 
-const investigationProfile = {
+const supportProfile = {
   application: process.env.NEXT_PUBLIC_APPLICATION,
   state: 'active',
   registration: { mode: 'disabled' },
@@ -122,7 +122,7 @@ test.describe('Avvikelsens översikt, långsamma svar', () => {
       ],
       labels: { labelStructure },
     });
-    await jsonRoute(page, '**/supportmanagement/investigation-profile', investigationProfile);
+    await jsonRoute(page, '**/supportmanagement/application-profile', supportProfile);
   });
 
   test.afterEach(async ({ page }) => {

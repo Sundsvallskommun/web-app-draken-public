@@ -1,3 +1,4 @@
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { prettyTime } from '@common/services/helper-service';
 import { getReferredFromErrands, ReferredFromErrandResponse } from '@common/services/relations-service';
 import sanitized from '@common/services/sanitizer-service';
@@ -37,7 +38,7 @@ export const ReferredFromErrandInformation: FC<Props> = ({ municipalityId, erran
         setReferredFromErrands(data);
       })
       .catch((error) => {
-        console.error('Error fetching referred from errands:', error);
+        logClientFailure('common.referred-from-errand-information.ReferredFromErrandInformation', error);
       });
   }, [municipalityId, errandId]);
 

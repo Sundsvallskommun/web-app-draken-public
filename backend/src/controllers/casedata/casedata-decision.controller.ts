@@ -2,7 +2,6 @@ import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
-import { logger } from '@utils/logger';
 import { Body, Controller, Get, HttpCode, Param, Patch, Put, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
@@ -12,6 +11,7 @@ import { HttpException } from '@/exceptions/HttpException';
 import { DecisionDTO } from '@/interfaces/decision.interface';
 import { User } from '@/interfaces/users.interface';
 import { validateAction } from '@/services/errand.service';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL } from '@/utils/util';
 
 import { ResponseData } from './casedata-notes.controller';
@@ -59,7 +59,7 @@ export class CaseDataDecisionsController {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/decisions`;
     const baseURL = apiURL(this.SERVICE);
     await this.apiService.patch<any, Decision>({ url, baseURL, data: patchData }, req.user).catch(e => {
-      logger.error(`Error when patching decision: ${e}`);
+      logApplicationFailure('Patching decision', e);
       throw e;
     });
     return { data: 'true', message: `Decision created on errand ${errandId}` };
@@ -90,7 +90,7 @@ export class CaseDataDecisionsController {
     const putData: Decision = { ...decisionData };
     delete putData.attachments;
     await this.apiService.put<any, Decision>({ url, baseURL, data: putData }, req.user).catch(e => {
-      logger.error(`Error when putting decision: ${e}`);
+      logApplicationFailure('Updating decision', e);
       throw e;
     });
     return { data: 'true', message: `Decision ${decisionId} replaced on errand ${errandId}` };

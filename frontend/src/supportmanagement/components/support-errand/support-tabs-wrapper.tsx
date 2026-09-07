@@ -2,11 +2,12 @@ import { hasDirtyFields } from '@common/services/helper-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
-import { isInvestigationTabVisible } from '@supportmanagement/investigation/investigation-variant';
-import { getInvestigationVariant } from '@supportmanagement/investigation/investigation-variant-registry';
+import { getInvestigation } from '@supportmanagement/investigation/configured-investigation';
+import { isInvestigationTabVisible } from '@supportmanagement/investigation/investigation-module';
 import { countAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import {
   ConversationReadByCount,
@@ -42,7 +43,7 @@ export const SupportTabsWrapper: FC<{
   const [conversationMessageTree, setConversationMessageTree] = useState<MessageNode[]>([]);
   const [conversationReadByCounts, setConversationReadByCounts] = useState<ConversationReadByCount[]>([]);
   const municipalityId = useConfigStore((s) => s.municipalityId);
-  const investigationVariant = getInvestigationVariant();
+  const investigationVariant = getInvestigation();
   const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
 
   const [tabUnsavedChanges, setTabUnsavedChanges] = useState(false);

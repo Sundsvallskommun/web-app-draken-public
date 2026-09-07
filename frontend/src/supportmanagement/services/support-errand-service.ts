@@ -1,16 +1,19 @@
 import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import { All, Priority } from '@common/interfaces/priority';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
-import { isKC, isLOK, isROB } from '@common/services/application-service';
+import { isKC, isLOK } from '@common/services/application-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import sanitized from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/buttons/support-forward-errand-button.component';
 import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
-import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { basicsAcceptsClassification } from '@supportmanagement/investigation/investigation-classification-ownership';
+import { getSupportErrandPolicy } from '@supportmanagement/policy/support-errand-policy';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef } from 'react';
@@ -21,6 +24,14 @@ import { saveSupportAttachments, SupportAttachment } from './support-attachment-
 import { isSupportErrandEmpty } from './support-errand-emptiness';
 import type { SupportErrandFilterQuery, SupportErrandSortQuery } from './support-errand-query';
 import { buildSupportErrandsCountSearchParameters, buildSupportErrandsSearchParameters } from './support-errand-query';
+import {
+  assignedStatuses,
+  closedStatuses,
+  newStatuses,
+  Resolution,
+  Status,
+  suspendedStatuses,
+} from './support-errand-status';
 import {
   buildSupportErrandStatusTransitionRequest,
   SupportErrandStatusSnapshot,
@@ -168,24 +179,18 @@ export const municipalityIds = [
   { label: 'Timrå', id: '2262' },
 ];
 
-export enum Status {
-  NEW = 'NEW',
-  ONGOING = 'ONGOING',
-  PENDING = 'PENDING',
-  SUSPENDED = 'SUSPENDED',
-  ASSIGNED = 'ASSIGNED',
-  SOLVED = 'SOLVED',
-  AWAITING_INTERNAL_RESPONSE = 'AWAITING_INTERNAL_RESPONSE',
-  UPSTART = 'UPSTART',
-  PUBLISH_SELECTION = 'PUBLISH_SELECTION',
-  INTERNAL_CONTROL_AND_INTERVIEWS = 'INTERNAL_CONTROL_AND_INTERVIEWS',
-  REFERENCE_CHECK = 'REFERENCE_CHECK',
-  REVIEW = 'REVIEW',
-  SECURITY_CLEARENCE = 'SECURITY_CLEARENCE',
-  FEEDBACK_CLOSURE = 'FEEDBACK_CLOSURE',
-  SUBPACKAGE_HANDLED = 'SUBPACKAGE_HANDLED',
-  REOPENED = 'REOPENED',
-}
+// The status and resolution vocabulary lives in a dependency-free module so the errand policy and
+// the dragon modules can import it without this file's React/store/HTTP dependencies. Re-exported
+// here so existing importers keep working. Which statuses count as ongoing is deliberately not
+// among them: read `getSupportErrandPolicy().ongoingStatuses`, which is the running dragon's list.
+export {
+  assignedStatuses,
+  closedStatuses,
+  newStatuses,
+  Resolution,
+  Status,
+  suspendedStatuses,
+} from './support-errand-status';
 
 export const shouldShowResumeErrandButton = (status?: Status): boolean => {
   return (
@@ -205,32 +210,11 @@ export enum AttestationStatusLabel {
   NONE = 'Attestera',
 }
 
-export const newStatuses = [Status.NEW];
-
-export const ongoingStatuses = [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.REOPENED];
-
-export const ongoingStatusesROB = [
-  ...ongoingStatuses,
-  Status.UPSTART,
-  Status.PUBLISH_SELECTION,
-  Status.INTERNAL_CONTROL_AND_INTERVIEWS,
-  Status.REFERENCE_CHECK,
-  Status.REVIEW,
-  Status.SECURITY_CLEARENCE,
-  Status.FEEDBACK_CLOSURE,
-  Status.SUBPACKAGE_HANDLED,
-];
-
-export const suspendedStatuses = [Status.SUSPENDED];
-export const assignedStatuses = [Status.ASSIGNED];
-
-export const closedStatuses = [Status.SOLVED];
-
-export const getStatusLabel = (statuses: Status[]) => {
+export const getStatusLabel = (statuses: readonly Status[]) => {
   if (statuses.length > 0) {
     if (statuses.some((s) => newStatuses.includes(s))) {
       return 'Nya ärenden';
-    } else if (statuses.some((s) => (isROB() ? ongoingStatusesROB.includes(s) : ongoingStatuses.includes(s)))) {
+    } else if (statuses.some((s) => getSupportErrandPolicy().ongoingStatuses.includes(s))) {
       return 'Öppna ärenden';
     } else if (statuses.some((s) => suspendedStatuses.includes(s))) {
       return 'Parkerade ärenden';
@@ -268,83 +252,6 @@ export {
   getMappedLabelSubType,
 } from './support-label-classification-service';
 
-export enum Resolution {
-  SOLVED = 'SOLVED',
-  REFERRED_VIA_EXCHANGE = 'REFERRED_VIA_EXCHANGE',
-  CONNECTED = 'CONNECTED',
-  REGISTERED_EXTERNAL_SYSTEM = 'REGISTERED_EXTERNAL_SYSTEM',
-  SELF_SERVICE = 'SELF_SERVICE',
-  INTERNAL_SERVICE = 'INTERNAL_SERVICE',
-  CLOSED = 'CLOSED',
-  BACK_TO_MANAGER = 'BACK_TO_MANAGER',
-  BACK_TO_HR = 'BACK_TO_HR',
-  REFER_TO_CONTACTSUNDSVALL = 'REFER_TO_CONTACTSUNDSVALL',
-  REFER_TO_PHONE = 'REFER_TO_PHONE',
-  REGISTERED = 'REGISTERED',
-  SENT_MESSAGE = 'SENT_MESSAGE',
-  NEED_MET = 'NEED_MET',
-  RECRUITED_FEWER = 'RECRUITED_FEWER',
-  RECRUITED_MORE = 'RECRUITED_MORE',
-  CANCELLED = 'CANCELLED',
-  SECURE_APPBOX = 'SECURE_APPBOX',
-  BACK_TO_CONTACT_SUNDSVALL = 'BACK_TO_CONTACT_SUNDSVALL',
-  FORWARDED_TO_DRAKFASTIGHETER = 'FORWARDED_TO_DRAKFASTIGHETER',
-  FORWARDED_TO_EXTERNAL_LANDLORD = 'FORWARDED_TO_EXTERNAL_LANDLORD',
-  FORWARDED_TO_INTERNAL_CONTRACTOR = 'FORWARDED_TO_INTERNAL_CONTRACTOR',
-  FORWARDED_TO_EXTERNAL_CONTRACTOR = 'FORWARDED_TO_EXTERNAL_CONTRACTOR',
-}
-
-export enum ResolutionLabelLOP {
-  CLOSED = 'Avslutat',
-  BACK_TO_MANAGER = 'Åter till chef',
-  BACK_TO_HR = 'Åter till HR',
-  REGISTERED_EXTERNAL_SYSTEM = 'Registrerat i annat system',
-}
-
-export enum ResolutionLabelIK {
-  REFER_TO_CONTACTSUNDSVALL = 'Hänvisat till Kontakt Sundsvall',
-  SELF_SERVICE = 'Hänvisat till självservice',
-  SOLVED = 'Informerat / Intern Kundtjänst har löst ärendet',
-  REFER_TO_PHONE = 'Behöver återkomma/hänvisat till telefontid',
-  REGISTERED = 'Tagit emot/registrerat/paketerat ärende',
-  CONNECTED = 'Kopplat samtal',
-  SENT_MESSAGE = 'Skickat ett meddelande',
-}
-
-export enum ResolutionLabelKS {
-  SOLVED = 'Löst av Kontakt Sundsvall',
-  REFERRED_VIA_EXCHANGE = 'Vidarebefordrat via växelprogrammet',
-  CONNECTED = 'Kopplat samtal',
-  REGISTERED_EXTERNAL_SYSTEM = 'Registrerat i annat system',
-  SELF_SERVICE = 'Hänvisat till självservice',
-  INTERNAL_SERVICE = 'Hänvisat till intern service',
-  REFERRED_TO_RETURN = 'Hänvisat att återkomma',
-  SECURE_APPBOX = 'SecureAppbox',
-}
-
-export enum ResolutionLabelKA {
-  SOLVED = 'Löst av Kontaktcenter',
-  REGISTERED_EXTERNAL_SYSTEM = 'Vidarebefordrad (ärendet har överlämnats till annan funktion)',
-}
-export enum ResolutionLabelROB {
-  NEED_MET = 'Behov uppfyllt',
-  RECRUITED_FEWER = 'Rekryterat färre',
-  RECRUITED_MORE = 'Rekryterat fler',
-  CANCELLED = 'Avbruten',
-}
-
-export enum ResolutionLabelBOU {
-  SOLVED = 'Löst',
-  BACK_TO_CONTACT_SUNDSVALL = 'Åter till Kontakt Sundsvall',
-}
-
-export enum ResolutionLabelLOK {
-  SOLVED = 'Löst av VoF/IAF Lokalplanering',
-  FORWARDED_TO_DRAKFASTIGHETER = 'Vidarebefordrat till Drakfastigheter',
-  FORWARDED_TO_EXTERNAL_LANDLORD = 'Vidarebefordrat till extern hyresvärd',
-  FORWARDED_TO_INTERNAL_CONTRACTOR = 'Vidarebefordrat till intern entreprenör',
-  FORWARDED_TO_EXTERNAL_CONTRACTOR = 'Vidarebefordrat till extern entreprenör',
-}
 export interface SupportStakeholderFormModel extends SupportStakeholder {
   stakeholderType: SupportStakeholderType;
   internalId: string;
@@ -517,7 +424,7 @@ export const useSupportErrands = (
 
         getSupportErrandsCount(municipalityId, {
           ...filter,
-          status: isROB() ? ongoingStatusesROB.join(',') : ongoingStatuses.join(','),
+          status: getSupportErrandPolicy().ongoingStatuses.join(','),
         })
           .then((res) => {
             if (!isLatestRequest()) return;
@@ -763,7 +670,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
     };
     return ierrand;
   } catch (e) {
-    console.error('Error: could not map errands.', e);
+    logClientFailure('supportmanagement.support-errand.mapApiSupportErrandToSupportErrand', e);
     throw e;
   }
 };
@@ -799,7 +706,7 @@ export const getSupportErrands: (
       return response;
     })
     .catch((e) => {
-      console.error('Error: could not fetch errands.', e);
+      logClientFailure('supportmanagement.support-errand.getSupportErrands', e);
       return { errands: [], labels: [], error: e.response?.status ?? 'UNKNOWN ERROR' } as SupportErrandsData;
     });
 };
@@ -832,7 +739,7 @@ export const initiateSupportErrand: (municipalityId: string) => Promise<any | Pa
       return mapApiSupportErrandToSupportErrand(res.data);
     })
     .catch((e) => {
-      console.error('Something went wrong when initiating errand');
+      logClientFailure('supportmanagement.support-errand.initiateSupportErrand', e);
       throw e;
     });
 };
@@ -876,7 +783,7 @@ export const updateSupportErrand: (
     );
     responseObj.errand = true;
   } catch (e) {
-    console.error('Something went wrong when patching errand');
+    logClientFailure('supportmanagement.support-errand.updateSupportErrand', e);
     throw e;
   }
 
@@ -929,7 +836,7 @@ export const updateSupportErrandPhase = (
     )
     .then((response) => mapApiSupportErrandToSupportErrand(response.data))
     .catch((e) => {
-      console.error('Something went wrong when updating errand phase');
+      logClientFailure('supportmanagement.support-errand.updateSupportErrandPhase', e);
       throw e;
     });
 
@@ -982,7 +889,7 @@ export const setSupportErrandAdmin: (
       headers: { 'If-Match': ifMatch },
     });
   } catch (e) {
-    console.error('Something went wrong when patching errand');
+    logClientFailure('supportmanagement.support-errand.setSupportErrandAdmin', e);
     throw e;
   }
 
@@ -995,7 +902,7 @@ export const setSupportErrandAdmin: (
   } catch (e) {
     // Reported apart from the assignment: that one landed, and an errand left in Ny needs a
     // different answer from the user than one that was never assigned at all.
-    console.error('Support errand was assigned, but its status could not be changed');
+    logClientFailure('supportmanagement.support-errand.setSupportErrandAdmin', e);
     throw new SupportErrandStatusAfterAssignmentError(e);
   }
 };
@@ -1024,7 +931,7 @@ export const setSupportErrandStatus: (
   return transitionSupportErrandStatus(errandId, municipalityId, status, expected, {
     suspension: { suspendedFrom: undefined, suspendedTo: undefined },
   }).catch((e) => {
-    console.error('Something went wrong when patching errand');
+    logClientFailure('supportmanagement.support-errand.setSupportErrandStatus', e);
     throw e;
   });
 };
@@ -1036,7 +943,7 @@ export const closeSupportErrand: (
   expected: SupportErrandStatusSnapshot
 ) => Promise<boolean> = async (errandId, municipalityId, resolution, expected) => {
   return transitionSupportErrandStatus(errandId, municipalityId, Status.SOLVED, expected, { resolution }).catch((e) => {
-    console.error('Something went wrong when patching errand');
+    logClientFailure('supportmanagement.support-errand.closeSupportErrand', e);
     throw e;
   });
 };
@@ -1069,7 +976,7 @@ export const setSuspension: (
       return true;
     })
     .catch((e) => {
-      console.error('Something went wrong when suspending errand');
+      logClientFailure('supportmanagement.support-errand.setSuspension', e);
       throw e;
     });
 };
@@ -1091,7 +998,7 @@ export const setSupportErrandPriority: (
       return true;
     })
     .catch((e) => {
-      console.error('Something went wrong when patching errand');
+      logClientFailure('supportmanagement.support-errand.setSupportErrandPriority', e);
       throw e;
     });
 };

@@ -9,7 +9,8 @@ import {
 } from '@casedata/services/contract-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, FileUpload, PopupMenu, UploadFile, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
 import { Eye, FilePen, Trash } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 export const ContractAttachments: FC<{

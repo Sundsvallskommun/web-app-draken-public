@@ -7,6 +7,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 import { apiServiceName } from '@/config/api-config';
 import { Conversation, ConversationType, PageMessage } from '@/data-contracts/case-data/data-contracts';
 import { PortalPersonData } from '@/data-contracts/employee/data-contracts';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { fileUploadOptions } from '@/utils/fileUploadOptions';
 import { apiURL } from '@/utils/util';
 
@@ -129,7 +130,7 @@ export class CaseDataConversationController {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations`;
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService.post<any, any>({ url, baseURL, data: conversation }, req.user).catch(e => {
-      console.log('Something went wrong when creating conversation: ' + e);
+      logApplicationFailure('Something went wrong when creating conversation', e);
       throw e;
     });
     return { data: response.data, message: `Conversation created` };
@@ -163,7 +164,7 @@ export class CaseDataConversationController {
     const response = await this.apiService
       .post<any, any>({ url, baseURL, data: formData, headers: { 'Content-Type': 'multipart/form-data' } }, req.user)
       .catch(e => {
-        console.error('Error', e);
+        logApplicationFailure('Error', e);
       });
 
     return { data: { response, attachments }, message: 'Message created' };
@@ -185,7 +186,7 @@ export class CaseDataConversationController {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages/${messageId}/attachments/${attachmentId}`;
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService.get<any>({ url, baseURL, responseType: 'arraybuffer' }, req.user).catch(e => {
-      console.log('Something went wrong when getting conversation attachment: ' + e);
+      logApplicationFailure('Something went wrong when getting conversation attachment', e);
       throw e;
     });
     const binaryString = Array.from(new Uint8Array(response.data), v => String.fromCharCode(v)).join('');

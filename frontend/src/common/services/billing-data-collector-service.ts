@@ -1,3 +1,5 @@
+import { logClientFailure } from '@common/services/client-diagnostics';
+
 import { apiService } from './api-service';
 
 export interface KpiIndex {
@@ -17,7 +19,7 @@ export const getKpiIndex = (): Promise<KpiIndex> => {
       indexNumber: res.data.value,
     }))
     .catch((e) => {
-      console.error('Something went wrong when fetching KPI index: ' + e);
+      logClientFailure('common.billing-data-collector.getKpiIndex', e);
       throw e;
     });
 };
@@ -32,7 +34,7 @@ export const getNextScheduledBillingDate = (contractId: string): Promise<string 
     .get<string>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching next scheduled billing: ' + e);
+      logClientFailure('common.billing-data-collector.getNextScheduledBillingDate', e);
       throw e;
     });
 };

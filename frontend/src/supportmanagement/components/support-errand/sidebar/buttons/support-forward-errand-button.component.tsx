@@ -23,7 +23,10 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useSupportStore } from '@stores/support-store';
+import { useUserStore } from '@stores/user-store';
 import {
   forwardSupportErrand,
   getSupportErrandById,
@@ -31,6 +34,7 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import { getEscalationEmails, getEscalationMessage } from '@supportmanagement/services/support-escalation-service';
+import { getStakeholderEmailOptions } from '@supportmanagement/services/support-stakeholder-service';
 import { Forward } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
@@ -314,7 +318,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                 <FormControl id="email" className="w-full mb-md">
                   <CommonNestedEmailArrayV2
                     size="md"
-                    errand={supportErrand}
+                    listedEmails={getStakeholderEmailOptions(supportErrand?.stakeholders, supportMetadata?.roles)}
                     data-cy="email-input"
                     disabled={disabled}
                     {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}

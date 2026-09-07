@@ -13,11 +13,13 @@ import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-ser
 import { getUiPhase, phaseChangeInProgress } from '@casedata/services/process-service';
 import { isPT } from '@common/services/application-service';
 import { getAssets } from '@common/services/asset-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { Tabs, useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
@@ -92,7 +94,7 @@ export const CasedataTabsWrapper: React.FC = () => {
           });
           allMessages.push(...mappedMessages.flat());
         } catch (e) {
-          console.error(`Error fetching messages for conversation ${conversation.id}: `, e);
+          logClientFailure('casedata.casedata-tabs-wrapper.handleConversation', e);
         }
       }
 
@@ -100,7 +102,7 @@ export const CasedataTabsWrapper: React.FC = () => {
       setConversationTree(tree);
       setConversation(allMessages);
     } catch (e) {
-      console.error('Error fetching conversations: ', e);
+      logClientFailure('casedata.casedata-tabs-wrapper.handleConversation', e);
     }
   }
 

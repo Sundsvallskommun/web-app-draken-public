@@ -1,17 +1,16 @@
 import { UiPhase } from '@casedata/interfaces/errand-phase';
-import { CreateErrandNoteDto, ErrandNote, NoteType } from '@casedata/interfaces/errandNote';
-import {
-  deleteErrandNote,
-  noteIsComment,
-  noteIsTjansteanteckning,
-  saveErrandNote,
-} from '@casedata/services/casedata-errand-notes-service';
+import { CreateErrandNoteDto, ErrandNote } from '@casedata/interfaces/errandNote';
+import { deleteErrandNote, saveErrandNote } from '@casedata/services/casedata-errand-notes-service';
 import { getErrand, isErrandAdmin } from '@casedata/services/casedata-errand-service';
+import { noteIsComment, noteIsTjansteanteckning, NoteType } from '@common/interfaces/note-visibility';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Avatar, Button, cx, Divider, FormControl, Modal, PopupMenu, Textarea, useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import dayjs from 'dayjs';
 import { Ellipsis, Pencil, Trash } from 'lucide-react';
 import { FC, useEffect, useMemo, useState } from 'react';
@@ -101,7 +100,7 @@ export const SidebarGenericNotes: FC<{
   };
 
   const onError = () => {
-    console.error('Something went wrong when saving note');
+    logClientFailure('casedata.sidebar-generic-notes.onError');
   };
 
   const notes = useMemo(

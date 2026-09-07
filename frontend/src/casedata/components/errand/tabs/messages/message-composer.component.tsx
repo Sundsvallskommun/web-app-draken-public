@@ -1,11 +1,9 @@
 'use client';
-
-import { useMessageTemplates } from '@casedata/hooks/useMessageTemplates';
-import { Attachment } from '@casedata/interfaces/attachment';
+import { Attachment, MEXAttachmentLabels, PTAttachmentLabels } from '@casedata/interfaces/attachment';
 import { Channels } from '@casedata/interfaces/channels';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { Role } from '@casedata/interfaces/role';
-import { ACCEPTED_UPLOAD_FILETYPES, getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
+import { getAttachmentLabel } from '@casedata/services/casedata-attachment-service';
 import { getOrCreateConversationId, sendConversationMessage } from '@casedata/services/casedata-conversation-service';
 import { isMessagesLocked, setErrandStatus, validateAction } from '@casedata/services/casedata-errand-service';
 import { buildCasedataReplyContext } from '@casedata/services/casedata-message-reply-context-service';
@@ -15,14 +13,17 @@ import {
   sendMessage,
   sendSms,
 } from '@casedata/services/casedata-message-service';
-import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import { getOwnerStakeholder, getStakeholderEmailOptions } from '@casedata/services/casedata-stakeholder-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
 import { useMessageBodyTemplateState } from '@common/hooks/use-message-body-template-state';
+import { useMessageTemplates } from '@common/hooks/useMessageTemplates';
 import { isMEX } from '@common/services/application-service';
+import { ACCEPTED_UPLOAD_FILETYPES } from '@common/services/attachment-upload-policy';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import {
   invalidPhoneMessage,
   phonePattern,
@@ -54,7 +55,9 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import { File, Paperclip, X } from 'lucide-react';
 import { FC, useEffect, useMemo, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
@@ -303,7 +306,7 @@ export const MessageComposer: FC<{
             message: `Något gick fel när meddelandet skickades`,
             status: 'error',
           });
-          console.error('Något gick fel när meddelandet skickades', e);
+          logClientFailure('casedata.message-composer.onSubmit', e);
           setError(true);
           setIsLoading(false);
           return;
@@ -683,7 +686,7 @@ export const MessageComposer: FC<{
             <>
               <FormControl id="messageEmail" className="w-full">
                 <CommonNestedEmailArrayV2
-                  errand={errand!}
+                  listedEmails={getStakeholderEmailOptions(errand?.stakeholders)}
                   disabled={errand ? isMessagesLocked(errand) : false}
                   data-cy="email-input"
                   key={`nested-email-array`}
@@ -897,6 +900,7 @@ export const MessageComposer: FC<{
           <FormControl id="newAttachments" className="w-full">
             <FormLabel className="flex-grow"></FormLabel>
             <FileUpload
+              attachmentLabels={isMEX() ? MEXAttachmentLabels : PTAttachmentLabels}
               editing={false}
               fieldName="newAttachments"
               fields={newAttachmentsFields}

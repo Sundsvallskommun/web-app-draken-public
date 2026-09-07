@@ -1,5 +1,5 @@
 import { Disclosure } from '@sk-web-gui/react';
-import { useSupportStore } from '@stores/index';
+import { useSupportStore } from '@stores/support-store';
 import { ApiSupportErrand, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { Info } from 'lucide-react';
 import { FC, useEffect } from 'react';

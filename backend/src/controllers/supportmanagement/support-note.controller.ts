@@ -9,7 +9,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { logger } from '@/utils/logger';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 
 interface SupportNote {
   context: string;
@@ -123,12 +123,11 @@ export class SupportNoteController {
         createdBy: req.user.name,
       };
     } else {
-      logger.error('Trying to save note without body');
+      logApplicationFailure('Trying to save note without body');
       throw new Error('Note body missing');
     }
     const res = await this.apiService.post<any, SupportNoteDto>({ url, data }, req.user).catch(e => {
-      logger.error('Error when creating note');
-      logger.error(e);
+      logApplicationFailure('Error when creating note', e);
       throw e;
     });
     return response.status(201).send(res.data);
@@ -155,12 +154,11 @@ export class SupportNoteController {
         body: noteDto.body,
       };
     } else {
-      logger.error('Trying to save note without body');
+      logApplicationFailure('Trying to save note without body');
       throw new Error('Note body missing');
     }
     const res = await this.apiService.patch<any, SupportNoteUpdateDto>({ url, data }, req.user).catch(e => {
-      logger.error('Error when updaiing note');
-      logger.error(e);
+      logApplicationFailure('Error when updaiing note', e);
       throw e;
     });
     return response.status(200).send(res.data);

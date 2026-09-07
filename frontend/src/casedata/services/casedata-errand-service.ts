@@ -20,7 +20,6 @@ import {
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { CreateErrandNoteDto } from '@casedata/interfaces/errandNote';
-import { All, ApiPriority, Priority } from '@casedata/interfaces/priority';
 import { Role } from '@casedata/interfaces/role';
 import { fetchErrandAttachments, validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
 import {
@@ -28,11 +27,14 @@ import {
   makeStakeholdersList,
   stakeholder2Contact,
 } from '@casedata/services/casedata-stakeholder-service';
+import { All, ApiPriority, Priority } from '@common/interfaces/priority';
 import { User } from '@common/interfaces/user';
 import { getApplicationEnvironment, isMEX, isPT } from '@common/services/application-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import sanitized from '@common/services/sanitizer-service';
 import { useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
@@ -288,7 +290,7 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
     };
     return ierrand;
   } catch (err) {
-    console.error('Error: could not map errands.', err);
+    logClientFailure('casedata.casedata-errand.mapErrandToIErrand', err);
     throw err;
   }
 };
@@ -674,7 +676,7 @@ export const saveErrand: (data: Partial<IErrand> & { municipalityId: string }) =
           return result;
         })
         .catch((e) => {
-          console.error('Something went wrong when patching errand');
+          logClientFailure('casedata.casedata-errand.saveErrand', e);
           return Promise.reject(result);
         })
     : apiService
@@ -692,7 +694,7 @@ export const saveErrand: (data: Partial<IErrand> & { municipalityId: string }) =
           return result;
         })
         .catch((e) => {
-          console.error('Something went wrong when creating errand');
+          logClientFailure('casedata.casedata-errand.saveErrand', e);
           return Promise.reject(result);
         });
 };
@@ -708,7 +710,7 @@ export const updateErrandStatus = async (municipalityId: string, id: string, sta
       return res;
     })
     .catch((e) => {
-      console.error('Something went wrong when updating errand status', e);
+      logClientFailure('casedata.casedata-errand.updateErrandStatus', e);
       throw 'Något gick fel när ärendets status skulle uppdateras.';
     });
 };
@@ -724,7 +726,10 @@ export const validateStakeholdersForDecision: (e: IErrand) => { valid: boolean; 
   return { valid: true, reason: '' };
 };
 
-export const validateExtraParametersForDecision: (e: IErrand) => { valid: boolean; reason: string } = (e) => {
+export const validateExtraParametersForDecision = (
+  e: IErrand,
+  municipalityId: string
+): { valid: boolean; reason: string } => {
   const extraParameterLabels = (extraParametersToUppgiftMapper(e) ?? []).reduce((acc, curr) => {
     {
       if (curr?.field && curr?.label) {
@@ -734,9 +739,9 @@ export const validateExtraParametersForDecision: (e: IErrand) => { valid: boolea
     }
   }, {} as Record<string, string>);
   let requiredExtraParameters: string[] = [];
-  if (isPT() && process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260') {
+  if (isPT() && municipalityId === '2260') {
     requiredExtraParameters = ['application.applicant.capacity', 'application.applicant.signingAbility'];
-  } else if (isPT() && process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2281') {
+  } else if (isPT() && municipalityId === '2281') {
     if (e.caseType === PTCaseType.PARKING_PERMIT || e.caseType === PTCaseType.PARKING_PERMIT_RENEWAL) {
       requiredExtraParameters = ['disability.duration', 'disability.walkingAbility'];
       if (e.extraParameters?.find((p) => p.key === 'application.applicant.capacity')?.values?.[0] === 'PASSENGER') {
@@ -751,7 +756,7 @@ export const validateExtraParametersForDecision: (e: IErrand) => { valid: boolea
   }
   const missingExtraParameters: string[] = [];
   requiredExtraParameters.forEach((param) => {
-    if (e.extraParameters?.find((p) => p.key === param)?.values?.length === 0) {
+    if (!e.extraParameters?.find((p) => p.key === param)?.values?.some((value) => value.trim() !== '')) {
       missingExtraParameters.push(
         extraParameterLabels?.[param] ? `"${extraParameterLabels[param]}"` : 'Okänd parameter'
       );
@@ -763,12 +768,12 @@ export const validateExtraParametersForDecision: (e: IErrand) => { valid: boolea
   return { valid: true, reason: '' };
 };
 
-export const validateErrandForDecision: (e: IErrand) => boolean = (e) => {
+export const validateErrandForDecision = (e: IErrand, municipalityId: string): boolean => {
   return (
     validateStakeholdersForDecision(e).valid &&
     validateStatusForDecision(e).valid &&
     validateAttachmentsForDecision(e).valid &&
-    validateExtraParametersForDecision(e).valid
+    validateExtraParametersForDecision(e, municipalityId).valid
   );
 };
 
@@ -918,7 +923,7 @@ export const setErrandStatus = async (
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when suspending the errand', e);
+      logClientFailure('casedata.casedata-errand.setErrandStatus', e);
       throw new Error('Något gick fel när ärendet skulle parkeras.');
     });
 };
@@ -959,7 +964,7 @@ export const appealErrand: (data: Partial<IErrand> & { municipalityId: string })
       return result;
     })
     .catch((e) => {
-      console.error('Something went wrong when appealing errand');
+      logClientFailure('casedata.casedata-errand.appealErrand', e);
       return result;
     });
 };

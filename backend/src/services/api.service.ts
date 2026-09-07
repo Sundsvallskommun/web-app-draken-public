@@ -1,12 +1,13 @@
+import { performance } from 'node:perf_hooks';
+
 import { HttpException } from '@exceptions/HttpException';
 import { User } from '@interfaces/users.interface';
-import { logger } from '@utils/logger';
 import { apiURL } from '@utils/util';
-import type { AxiosResponseHeaders, RawAxiosResponseHeaders } from 'axios';
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
-import { v4 as uuidv4 } from 'uuid';
+import type { AxiosResponse, AxiosResponseHeaders, RawAxiosResponseHeaders } from 'axios';
+import axios, { AxiosHeaders, AxiosInstance, AxiosRequestConfig } from 'axios';
 
 import ApiTokenService from './api-token.service';
+import { createRequestDiagnostics, currentRequestDiagnostics, logUpstreamRequest, withRequestDiagnostics } from './request-diagnostics';
 
 export class ApiResponse<T> {
   data!: T;
@@ -17,41 +18,13 @@ export class ApiResponse<T> {
 
 // Extends AxiosRequestConfig with an opt-in flag. When `propagateClientError` is true, upstream
 // 4xx responses are re-thrown with their original status and message instead of a generic 500.
-export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & {
+export type ApiRequestConfig<D = unknown> = AxiosRequestConfig<D> & {
   followLocation?: boolean;
   includeResponseHeaders?: boolean;
   propagateClientError?: boolean;
 };
 
 const apiTokenService = new ApiTokenService();
-
-/**
- * Render a request body for the error log. Multipart requests carry a form-data
- * stream rather than a string, so it can only be described, not excerpted.
- */
-const describeRequestBody = (data: unknown): string => {
-  if (typeof data === 'string') {
-    return data.slice(0, 1500);
-  }
-  if (data === undefined || data === null) {
-    return '';
-  }
-  return `[${data.constructor?.name ?? typeof data} body, not logged]`;
-};
-
-const logAxiosResponseError = (error: AxiosError): void => {
-  const { response } = error;
-  if (!response) {
-    logger.error(`API request failed without a response: ${error.message}`);
-    return;
-  }
-  logger.error(`ERROR: API request failed with status: ${response.status}`);
-  logger.error(`Error details: ${JSON.stringify(response.data)}`);
-  logger.error(`Error url: ${response.config.baseURL || ''}/${response.config.url}`);
-  logger.error(`Error data: ${describeRequestBody(response.config.data)}`);
-  logger.error(`Error method: ${response.config.method}`);
-  logger.error(`Error headers: ${response.config.headers}`);
-};
 
 const readUpstreamErrorMessage = (data: unknown): string => {
   if (typeof data === 'string') return data.trim() ? data : 'Request failed';
@@ -70,6 +43,7 @@ class ApiService {
     this.instance = axios.create();
     this.instance.interceptors.request.use(
       async function (request) {
+        request.headers.set('X-Request-Id', currentRequestDiagnostics()?.requestId ?? createRequestDiagnostics().requestId, true);
         if (request.url === apiURL('token')) {
           return request;
         }
@@ -77,15 +51,8 @@ class ApiService {
         const defaultHeaders = {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'X-Request-Id': uuidv4(),
         };
-        const isSimulatorRequest = request.url?.includes('simulatorserver');
-        if (!isSimulatorRequest) {
-          const fullUrl = `${request.baseURL || ''}/${request.url}`;
-          logger.info(`MAKING ${request.method?.toUpperCase()} REQUEST TO URL ${fullUrl}`);
-          logger.info(`x-request-id: ${defaultHeaders['X-Request-Id']}`);
-        }
-        request.headers = { ...defaultHeaders, ...request.headers } as any;
+        request.headers = AxiosHeaders.concat(defaultHeaders, request.headers);
         request.headers['Content-Type'] = request.headers['Content-Type'] || defaultHeaders['Content-Type'];
         return request;
       },
@@ -93,81 +60,93 @@ class ApiService {
         return Promise.reject(error);
       },
     );
+  }
 
-    this.instance.interceptors.response.use(
-      async function (response) {
-        // TODO This is an ugly workaround for the fact that setting correct API version
-        // in the location header is difficult for some APIs, such as Messaging
-        // So, for Messaging specifically, we - for now - ignore the location header
-        const token = await apiTokenService.getToken();
-        const defaultHeaders = {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'X-Request-Id': uuidv4(),
-        };
-        // Rewerite location header to point to correct resource since the API response header
-        // contains an errouneous url - asset-drafts does not have an GET ../{id} endpoint.
-        // When this has been fixed, we can remove the rewrite.
-        if (response.headers.location && response.config.url?.includes('asset-drafts')) {
-          response.headers.location = response.headers.location.replace('/asset-drafts/', '/assets/');
-        }
-        const followLocation = (response.config as ApiRequestConfig).followLocation !== false;
-        if (response.headers.location && followLocation && !response.config.url?.includes('messaging')) {
-          logger.info(`Response contained location header: ${response.headers.location}`);
-          logger.info(`Base URL was: ${response.config.baseURL}`);
-          const sentBy = response.config.headers?.['X-Sent-By'];
-          const headers = sentBy === undefined ? defaultHeaders : { ...defaultHeaders, 'X-Sent-By': sentBy };
-          return axios.get(response.headers.location, { baseURL: response.config.baseURL, headers }).catch(e => {
-            logger.error(`Error in location header request: ${e.details}`);
-            logger.error(`Base URL was: ${e.config?.baseURL}`);
-            logger.error(`URL was: ${e.config?.url}`);
-            logger.error(`Method was: ${e.config?.method}`);
-            return response;
+  /** Follow a create response only after its own status and duration have been recorded. */
+  private async followLocation<T>(response: AxiosResponse<T>): Promise<AxiosResponse<T>> {
+    const diagnostics = currentRequestDiagnostics() ?? createRequestDiagnostics();
+    const token = await apiTokenService.getToken();
+    const defaultHeaders = {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'X-Request-Id': diagnostics.requestId,
+    };
+    // The upstream asset-drafts Location points to a route without GET support.
+    if (response.headers.location && response.config.url?.includes('asset-drafts')) {
+      response.headers.location = response.headers.location.replace('/asset-drafts/', '/assets/');
+    }
+    // Messaging's Location may carry the wrong API version. Preserve its original response.
+    const followLocation = (response.config as ApiRequestConfig).followLocation !== false;
+    if (!response.headers.location || !followLocation || response.config.url?.includes('messaging')) return response;
+
+    const sentBy = response.config.headers?.['X-Sent-By'];
+    const headers = sentBy === undefined ? defaultHeaders : { ...defaultHeaders, 'X-Sent-By': sentBy };
+    const startedAt = performance.now();
+    try {
+      const followed = await axios.get<T>(response.headers.location, { baseURL: response.config.baseURL, headers });
+      logUpstreamRequest(diagnostics, { method: 'GET', startedAt, status: followed.status });
+      return followed;
+    } catch (error) {
+      logUpstreamRequest(diagnostics, {
+        method: 'GET',
+        startedAt,
+        error,
+        ...(axios.isAxiosError(error) ? { status: error.response?.status } : {}),
+      });
+      return response;
+    }
+  }
+
+  private async request<T>(config: ApiRequestConfig, user: User): Promise<ApiResponse<T>> {
+    const diagnostics = currentRequestDiagnostics() ?? createRequestDiagnostics();
+    return withRequestDiagnostics(diagnostics, async () => {
+      const startedAt = performance.now();
+      const { includeResponseHeaders, propagateClientError, ...axiosConfig } = config;
+      const defaultParams = {};
+      const preparedConfig: AxiosRequestConfig = {
+        ...axiosConfig,
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+        headers: { ...axiosConfig.headers, 'X-Sent-By': [`type=adAccount; ${user.username}`] },
+        params: { ...defaultParams, ...axiosConfig.params },
+        url: axiosConfig.baseURL ? axiosConfig.url : apiURL(axiosConfig.url!),
+      };
+      let upstreamResponse: AxiosResponse<T> | undefined;
+      try {
+        upstreamResponse = await this.instance<T>(preparedConfig);
+        logUpstreamRequest(diagnostics, { method: config.method, startedAt, status: upstreamResponse.status });
+        const res = await this.followLocation(upstreamResponse);
+        return includeResponseHeaders
+          ? { data: res.data, message: 'success', headers: res.headers, status: res.status }
+          : { data: res.data, message: 'success' };
+      } catch (error: unknown) {
+        // Response handling can fail after a successful upstream call; do not relabel that call as failed.
+        if (!upstreamResponse) {
+          logUpstreamRequest(diagnostics, {
+            method: config.method,
+            startedAt,
+            error,
+            ...(axios.isAxiosError(error) ? { status: error.response?.status } : {}),
           });
         }
-        return response;
-      },
-      function (error) {
-        return Promise.reject(error);
-      },
-    );
-  }
-  private async request<T>(config: ApiRequestConfig, user: User): Promise<ApiResponse<T>> {
-    const { includeResponseHeaders, propagateClientError, ...axiosConfig } = config;
-    const defaultParams = {};
-    const preparedConfig: AxiosRequestConfig = {
-      ...axiosConfig,
-      maxContentLength: Infinity,
-      maxBodyLength: Infinity,
-      headers: { ...axiosConfig.headers, 'X-Sent-By': [`type=adAccount; ${user.username}`] },
-      params: { ...defaultParams, ...axiosConfig.params },
-      url: axiosConfig.baseURL ? axiosConfig.url : apiURL(axiosConfig.url!),
-    };
-    try {
-      const res = await this.instance(preparedConfig);
-      return includeResponseHeaders
-        ? { data: res.data, message: 'success', headers: res.headers, status: res.status }
-        : { data: res.data, message: 'success' };
-    } catch (error: unknown) {
-      if (!axios.isAxiosError(error)) {
-        logger.error(`Unknown error: ${error}`);
+        if (!axios.isAxiosError(error)) {
+          throw new HttpException(500, 'Internal server error');
+        }
+
+        const { response } = error;
+        if (response?.status === 404) {
+          throw new HttpException(404, 'Not found');
+        }
+
+        // Opt-in: surface upstream client errors (4xx) so callers can show the real message in
+        // context instead of an opaque 500. Server/network errors still become 500 below.
+        const status = response?.status;
+        if (propagateClientError && status !== undefined && status >= 400 && status < 500) {
+          throw new HttpException(status, readUpstreamErrorMessage(response?.data));
+        }
         throw new HttpException(500, 'Internal server error');
       }
-
-      logAxiosResponseError(error);
-      const { response } = error;
-      if (response?.status === 404) {
-        throw new HttpException(404, 'Not found');
-      }
-
-      // Opt-in: surface upstream client errors (4xx) so callers can show the real message in
-      // context instead of an opaque 500. Server/network errors still become 500 below.
-      const status = response?.status;
-      if (propagateClientError && status !== undefined && status >= 400 && status < 500) {
-        throw new HttpException(status, readUpstreamErrorMessage(response?.data));
-      }
-      throw new HttpException(500, 'Internal server error');
-    }
+    });
   }
 
   public async get<T>(config: ApiRequestConfig, user: User): Promise<ApiResponse<T>> {

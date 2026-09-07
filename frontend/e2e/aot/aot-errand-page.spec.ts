@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixtures/base.fixture';
-import { aotLabelFixture, application, errandNumber, installAotApiMock } from './fixtures/aot-app.mock';
+import { supportLabelFixture, application, errandNumber, installSupportAppMock } from '../fixtures/support-app.mock';
 
 /**
  * Ärendesidan är där utredningssömmen faktiskt syns. Varje test här beskriver en gräns som
@@ -21,18 +21,20 @@ async function visitErrand(page: Page, dismissCookieConsent: () => Promise<void>
 
 test.describe('AOT:s ärendesida', () => {
   test('kategoriserar i Grundinformation med den vanliga trenivåkontrollen', async ({ page, dismissCookieConsent }) => {
-    await installAotApiMock(page);
+    await installSupportAppMock(page);
     await visitErrand(page, dismissCookieConsent);
 
     await page.getByRole('tab', { name: 'Grundinformation', exact: true }).click();
     const basics = page.locator('[role="tabpanel"]:visible');
 
     await expect(basics.locator('[data-cy="labelCategory-input"]')).toBeVisible();
-    await expect(basics.locator('[data-cy="labelCategory-input"]')).toContainText(aotLabelFixture.category.displayName);
+    await expect(basics.locator('[data-cy="labelCategory-input"]')).toContainText(
+      supportLabelFixture.category.displayName
+    );
     // Combobox-platshållaren visar den djupaste valda nivån, så subtypen här bevisar att hela
     // trenivåkedjan lästes ur ärendets etiketter.
     await expect(
-      basics.locator(`[data-cy="labelType-input"][placeholder="${aotLabelFixture.subtype.displayName}"]`)
+      basics.locator(`[data-cy="labelType-input"][placeholder="${supportLabelFixture.subtype.displayName}"]`)
     ).toBeVisible();
 
     // AOT:s variant har ingen egen etikettvokabulär, så avvikelsens kontroll ska inte finnas någonstans.
@@ -40,7 +42,7 @@ test.describe('AOT:s ärendesida', () => {
   });
 
   test('visar AOT:s utredningsflik och inte avvikelsens', async ({ page, dismissCookieConsent }) => {
-    await installAotApiMock(page);
+    await installSupportAppMock(page);
     await visitErrand(page, dismissCookieConsent);
 
     await page.getByRole('tab', { name: 'Utredning', exact: true }).click();
@@ -58,7 +60,7 @@ test.describe('AOT:s ärendesida', () => {
     page,
     dismissCookieConsent,
   }) => {
-    await installAotApiMock(page);
+    await installSupportAppMock(page);
     await visitErrand(page, dismissCookieConsent);
 
     await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(1);
@@ -70,7 +72,7 @@ test.describe('AOT:s ärendesida', () => {
    * avvikelse. Spåret är tomt om sömmen håller.
    */
   test('rör inte avvikelsens dokument, scheman eller klassificerings-PATCH', async ({ page, dismissCookieConsent }) => {
-    const trace = await installAotApiMock(page);
+    const trace = await installSupportAppMock(page);
     await visitErrand(page, dismissCookieConsent);
 
     await page.getByRole('tab', { name: 'Utredning', exact: true }).click();
@@ -82,7 +84,7 @@ test.describe('AOT:s ärendesida', () => {
   });
 
   test('behåller de vanliga flikarna vid sidan av utredningen', async ({ page, dismissCookieConsent }) => {
-    await installAotApiMock(page);
+    await installSupportAppMock(page);
     await visitErrand(page, dismissCookieConsent);
 
     for (const name of ['Grundinformation', 'Ärendeuppgifter', 'Utredning']) {
@@ -92,4 +94,18 @@ test.describe('AOT:s ärendesida', () => {
     await expect(page.getByRole('tab', { name: /^Meddelanden/ })).toHaveCount(1);
     await expect(page.getByRole('tab', { name: /^Bilagor/ })).toHaveCount(1);
   });
+});
+
+test('enbart huvudflaggan aktiverar AOT:s fasta implementation', async ({ page, dismissCookieConsent }) => {
+  const trace = await installSupportAppMock(page, { featureFlags: [{ name: 'useInvestigation', enabled: true }] });
+  await visitErrand(page, dismissCookieConsent);
+  await page.getByRole('tab', { name: 'Utredning', exact: true }).click();
+  await expect(page.locator('[data-cy="aot-investigation-tab"]')).toBeVisible();
+  expect(trace.investigationDocumentRequests).toEqual([]);
+});
+
+test('huvudflaggan kan stänga av AOT:s utredningsflik', async ({ page, dismissCookieConsent }) => {
+  await installSupportAppMock(page, { featureFlags: [{ name: 'useInvestigation', enabled: false }] });
+  await visitErrand(page, dismissCookieConsent);
+  await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
 });

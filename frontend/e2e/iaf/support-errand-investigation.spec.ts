@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures/base.fixture';
 import {
   allExistingInvestigationDocuments,
-  defaultInvestigationProfile,
+  defaultSupportApplicationProfile,
   errandNumber,
   existingManagerDocument,
   iafLabelFixture,
@@ -59,7 +59,6 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
         { name: 'useTwoLevelCategorization', enabled: true },
         { name: 'useThreeLevelCategorization', enabled: true },
         { name: 'useInvestigation', enabled: true },
-        { name: 'useAvvikelseInvestigation', enabled: true },
       ],
     });
 
@@ -76,14 +75,14 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
   });
 
   test('renderar exakt de dokument som den aktuella appens profil tillåter', async ({ page, dismissCookieConsent }) => {
-    const profile = defaultInvestigationProfile();
+    const profile = defaultSupportApplicationProfile();
     const managerDocument = profile.documents.find(({ key }) => key === managerKey)!;
     const solLssDocument = profile.documents.find(({ key }) => key === solLssKey)!;
     profile.documents = [
       { ...solLssDocument, tabLabel: 'Först: SoL/LSS' },
       { ...managerDocument, tabLabel: 'Sedan: enhetschef' },
     ];
-    const trace = await installIafApiMock(page, { investigationProfile: profile });
+    const trace = await installIafApiMock(page, { supportProfile: profile });
 
     await visitErrand(page, dismissCookieConsent);
     await openInvestigation(page);
@@ -97,7 +96,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
   });
 
   test('håller dokumentnyckeln skild från schemanamnet', async ({ page, dismissCookieConsent }) => {
-    const profile = defaultInvestigationProfile();
+    const profile = defaultSupportApplicationProfile();
     profile.documents = [
       {
         key: 'manager-investigation',
@@ -108,7 +107,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     ];
     const trace = await installIafApiMock(page, {
       documents: {},
-      investigationProfile: profile,
+      supportProfile: profile,
     });
 
     await visitErrand(page, dismissCookieConsent);
@@ -128,7 +127,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     page,
     dismissCookieConsent,
   }) => {
-    const profile = defaultInvestigationProfile();
+    const profile = defaultSupportApplicationProfile();
     profile.documents = [
       {
         key: 'manager-investigation',
@@ -142,7 +141,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     existing.value.investigationText = '<p>SKA ENDAST VISAS UNDER PROFILENS UTREDNING</p>';
     await installIafApiMock(page, {
       documents: { 'manager-investigation': existing },
-      investigationProfile: profile,
+      supportProfile: profile,
     });
 
     await visitErrand(page, dismissCookieConsent);
@@ -159,11 +158,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     page,
     dismissCookieConsent,
   }) => {
-    const profile = defaultInvestigationProfile();
+    const profile = defaultSupportApplicationProfile();
     profile.documents = profile.documents.filter(({ schemaName }) => schemaName === 'utredning-enhetschef');
     const trace = await installIafApiMock(page, {
       documents: { [managerKey]: existingManagerDocument() },
-      investigationProfile: profile,
+      supportProfile: profile,
     });
 
     await visitErrand(page, dismissCookieConsent);
@@ -202,7 +201,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     existing.value.investigationText = '<p>BEFINTLIG UTREDNING SKA VARA SYNLIG</p>';
     const trace = await installIafApiMock(page, {
       documents: { [managerKey]: existing },
-      investigationProfileResponse: {
+      supportProfileResponse: {
         application: 'KC',
         state: 'inactive',
         registration: { mode: 'enabled' },
@@ -228,9 +227,9 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     page,
     dismissCookieConsent,
   }) => {
-    const profile = defaultInvestigationProfile();
+    const profile = defaultSupportApplicationProfile();
     profile.state = 'unavailable';
-    const trace = await installIafApiMock(page, { investigationProfile: profile });
+    const trace = await installIafApiMock(page, { supportProfile: profile });
 
     await visitErrand(page, dismissCookieConsent);
 
@@ -259,7 +258,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     page,
     dismissCookieConsent,
   }) => {
-    const trace = await installIafApiMock(page, { investigationProfileStatus: 500 });
+    const trace = await installIafApiMock(page, { supportProfileStatus: 500 });
 
     await visitErrand(page, dismissCookieConsent);
 
@@ -280,10 +279,10 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
   });
 
   test('behandlar en tom inaktiv profil som ett explicit legacyflöde', async ({ page, dismissCookieConsent }) => {
-    const profile = defaultInvestigationProfile();
+    const profile = defaultSupportApplicationProfile();
     profile.state = 'inactive';
     profile.documents = [];
-    await installIafApiMock(page, { investigationProfile: profile });
+    await installIafApiMock(page, { supportProfile: profile });
 
     await visitErrand(page, dismissCookieConsent);
 
@@ -305,7 +304,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       page,
       dismissCookieConsent,
     }) => {
-      const profile = defaultInvestigationProfile();
+      const profile = defaultSupportApplicationProfile();
       profile.documents = [
         {
           key: 'manager-investigation',
@@ -333,7 +332,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
           },
         },
         eventType: ownerCase.eventType,
-        investigationProfile: profile,
+        supportProfile: profile,
       });
 
       await visitErrand(page, dismissCookieConsent);
@@ -537,7 +536,6 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
         { name: 'useDetailsTab', enabled: true },
         { name: 'useThreeLevelCategorization', enabled: true },
         { name: 'useInvestigation', enabled: false },
-        { name: 'useAvvikelseInvestigation', enabled: true },
       ],
     });
 
@@ -571,62 +569,80 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     );
   });
 
-  // The complement of the test above, and the case a new drake hits: the master switch is on, but
-  // no capability claims the investigation. The tab must disappear *and* Grundinformation must fall
-  // back to the ordinary three-level control - not to the avvikelse one, and not to nothing.
-  test('lämnar kategoriseringen orörd när ingen utredningskapabilitet är påslagen', async ({
-    page,
-    dismissCookieConsent,
-  }) => {
+  // Runtime capabilities cannot change the implementation selected at build time.
+  // AOT's positive rendering contract is covered by its own application browser suite.
+  test('avvisar en runtimeflagga som försöker byta till en annan drakes utredning', async ({ page }) => {
     await installIafApiMock(page, {
-      documents: { [managerKey]: existingManagerDocument() },
       featureFlags: [
         { name: 'isSupportManagement', enabled: true },
-        { name: 'useDetailsTab', enabled: true },
-        { name: 'useThreeLevelCategorization', enabled: true },
         { name: 'useInvestigation', enabled: true },
-        { name: 'useAvvikelseInvestigation', enabled: false },
-      ],
-    });
-
-    await visitErrand(page, dismissCookieConsent);
-
-    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
-    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toHaveCount(0);
-    await expect(page.locator('[data-cy="labelCategory-input"]')).toBeVisible();
-  });
-
-  // The seam's payoff: a second implementation, selected by its own capability, rendering in the
-  // real bundle. Grundinformation must keep the ordinary control, because the AOT variant brings no
-  // label tree of its own - the avvikelse vocabulary must not follow the tab around.
-  test('renderar en annan utredningsvariant när dess kapabilitet är påslagen', async ({
-    page,
-    dismissCookieConsent,
-  }) => {
-    await installIafApiMock(page, {
-      documents: { [managerKey]: existingManagerDocument() },
-      featureFlags: [
-        { name: 'isSupportManagement', enabled: true },
-        { name: 'useDetailsTab', enabled: true },
-        { name: 'useThreeLevelCategorization', enabled: true },
-        { name: 'useInvestigation', enabled: true },
-        { name: 'useAvvikelseInvestigation', enabled: false },
         { name: 'useAotInvestigation', enabled: true },
       ],
     });
 
+    await page.goto(`arende/${errandNumber}`);
+    await expect(page.getByRole('heading', { name: 'Konfigurationen behöver rättas' })).toBeVisible();
+    await expect(page.locator('[data-cy="aot-investigation-tab"]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Spara ärende', exact: true })).toHaveCount(0);
+  });
+
+  test('gamla domänflaggor i Adminpanel kan inte ändra den byggda draken', async ({ page, dismissCookieConsent }) => {
+    await installIafApiMock(page, {
+      featureFlags: [
+        { name: 'isCaseData', enabled: true },
+        { name: 'isSupportManagement', enabled: false },
+        { name: 'useDetailsTab', enabled: true },
+        { name: 'useInvestigation', enabled: true },
+      ],
+    });
+
     await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+    await expect(page.getByRole('heading', { name: 'Ett oväntat fel uppstod' })).toHaveCount(0);
+  });
 
-    // Grundinformation first: opening the Utredning tab hides this panel.
-    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toHaveCount(0);
-    await expect(page.locator('[data-cy="labelCategory-input"]')).toBeVisible();
+  test('versionskonflikt mellan drakens leveranser kräver omladdning och spelar inte om sparningen', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await installIafApiMock(page, {
+      documents: { [managerKey]: existingManagerDocument() },
+      featureFlags: [
+        { name: 'useDetailsTab', enabled: true },
+        { name: 'useInvestigation', enabled: true },
+      ],
+    });
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+    let writes = 0;
+    await page.route('**/json-parameters/**', async (route) => {
+      if (route.request().method() !== 'PUT') return route.fallback();
+      writes += 1;
+      const headers = route.request().headers();
+      expect(headers['x-draken-dragon']).toBe(process.env.NEXT_PUBLIC_APPLICATION);
+      expect(headers['x-draken-revision']).toMatch(/^(?:[a-f0-9]{40}|development)$/u);
+      expect(headers['x-draken-deployment']).toMatch(/^(?:[a-f0-9]{64}|development)$/u);
+      await route.fulfill({
+        status: 409,
+        json: { code: 'DRAKEN_DEPLOYMENT_MISMATCH', message: 'DRAKEN_DEPLOYMENT_MISMATCH' },
+      });
+    });
 
-    const investigationTab = page.getByRole('tab', { name: 'Utredning', exact: true });
-    await expect(investigationTab).toHaveCount(1);
-    await investigationTab.click();
+    await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
+    await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
 
-    await expect(page.locator('[data-cy="aot-investigation-tab"]')).toBeVisible();
-    await expect(page.locator('[data-cy="investigation-document-notice"]')).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Sidan behöver laddas om' })).toBeVisible();
+    await expect(
+      page.getByRole('paragraph').filter({ hasText: 'Sidan och servern tillhör olika versioner eller drakar.' })
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Spara utredning', exact: true })).toHaveCount(0);
+    expect(writes).toBe(1);
+
+    // Next's development error overlay also observes the intentionally handled error.
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Ladda om', exact: true }).click();
+    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toBeVisible();
+    expect(writes).toBe(1);
   });
 
   test('sparar endast aktiv dokumentnyckel med schemaId och If-Match', async ({ page, dismissCookieConsent }) => {
@@ -1308,12 +1324,12 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       page,
       dismissCookieConsent,
     }) => {
-      const profile = defaultInvestigationProfile();
+      const profile = defaultSupportApplicationProfile();
       profile.state = state;
       // The mock signs in as iaf.test in both projects; "Ta ärende" needs that account to be an
       // administrator and the errand to be unassigned.
       await installIafApiMock(page, {
-        investigationProfile: profile,
+        supportProfile: profile,
         classification: { category: 'NONE', type: 'NONE' },
         labels: [],
         assignedUserId: null,
@@ -1338,3 +1354,47 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     });
   }
 });
+
+test('huvudflaggan stänger utredningen och lämnar klassificeringen i Grundinformation', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  const profile = defaultSupportApplicationProfile();
+  profile.state = 'inactive';
+  const trace = await installIafApiMock(page, {
+    supportProfile: profile,
+    featureFlags: [
+      { name: 'useInvestigation', enabled: false },
+      { name: 'useDetailsTab', enabled: true },
+      { name: 'useThreeLevelCategorization', enabled: true },
+    ],
+  });
+  await visitErrand(page, dismissCookieConsent);
+  await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
+  await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toBeVisible();
+  expect(trace.documentGets).toEqual([]);
+  expect(trace.puts).toEqual([]);
+});
+
+for (const source of ['old-snapshot', 'backend-rejection']) {
+  test(`gamla variantflaggor ger konfigurationsfel: ${source}`, async ({ page }) => {
+    await installIafApiMock(page);
+    await page.route('**/featureflags', async (route) => {
+      const body =
+        source === 'old-snapshot'
+          ? [
+              { name: 'useInvestigation', enabled: true },
+              { name: 'useAvvikelseInvestigation', enabled: false },
+            ]
+          : { message: 'INVESTIGATION_FLAGS_REQUIRE_MIGRATION' };
+      await route.fulfill({
+        status: source === 'old-snapshot' ? 200 : 409,
+        contentType: 'application/json',
+        body: JSON.stringify(body),
+      });
+    });
+    await page.goto(`arende/${errandNumber}`);
+    await expect(page.getByRole('heading', { name: 'Konfigurationen behöver rättas' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(0);
+  });
+}

@@ -8,9 +8,12 @@ import {
 } from '@casedata/services/casedata-billing-service';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Divider, FormErrorMessage, useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import { Plus } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -105,7 +108,7 @@ export const CaseDataBillingForm: React.FC = () => {
         setErrand(updatedErrand);
       }
     } catch (error) {
-      console.error('Failed to refresh errand:', error);
+      logClientFailure('casedata.casedata-billing-form.CaseDataBillingForm', error);
     }
   }, [municipalityId, errand?.id, setErrand]);
 
@@ -116,7 +119,7 @@ export const CaseDataBillingForm: React.FC = () => {
       const records = await getCasedataBillingRecordsForErrand(errand, municipalityId);
       setBillingRecords(records);
     } catch (error) {
-      console.error('Failed to fetch billing records:', error);
+      logClientFailure('casedata.casedata-billing-form.CaseDataBillingForm', error);
     }
   }, [municipalityId, errand]);
 
@@ -171,7 +174,7 @@ export const CaseDataBillingForm: React.FC = () => {
         try {
           resolvedRecipient.personalNumber = await getSSNFromPersonId(municipalityId, resolvedRecipient.personId);
         } catch (e) {
-          console.error('Failed to fetch personalNumber:', e);
+          logClientFailure('casedata.casedata-billing-form.onSubmit', e);
         }
       }
 
@@ -180,7 +183,7 @@ export const CaseDataBillingForm: React.FC = () => {
         try {
           partyId = await getOrganizationPartyId(resolvedRecipient.organizationNumber);
         } catch (error) {
-          console.error('Failed to fetch organization partyId:', error);
+          logClientFailure('casedata.casedata-billing-form.onSubmit', error);
         }
       }
 
@@ -195,7 +198,7 @@ export const CaseDataBillingForm: React.FC = () => {
             accountInformation: { ...service.accountInformation, counterpart },
           }));
         } catch (error) {
-          console.error('Failed to fetch counterpart, using default:', error);
+          logClientFailure('casedata.casedata-billing-form.onSubmit', error);
         }
       }
 
@@ -236,7 +239,7 @@ export const CaseDataBillingForm: React.FC = () => {
         setBillingRecords(records);
       }
     } catch (error) {
-      console.error('Failed to create invoice:', error);
+      logClientFailure('casedata.casedata-billing-form.onSubmit', error);
       toastMessage({
         position: 'bottom',
         closeable: true,

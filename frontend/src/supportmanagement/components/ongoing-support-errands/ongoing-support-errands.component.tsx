@@ -1,8 +1,12 @@
-import { ErrandsData } from '@casedata/interfaces/errand';
 import { attestationEnabled } from '@common/services/feature-flag-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { useBillingStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { useBillingStore } from '@stores/billing-store';
+import { useConfigStore } from '@stores/config-store';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useSupportStore } from '@stores/support-store';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
+import { useUserStore } from '@stores/user-store';
+import { useSupportApplicationProfileStore } from '@supportmanagement/application/support-application-profile-store';
 import {
   parsePersistedLabelFilterSelections,
   serializeLabelFilterSelections,
@@ -11,7 +15,6 @@ import {
 import type { LabelFilterSelection } from '@supportmanagement/filters/label-filter-projector';
 import { projectLabelFilterGroups } from '@supportmanagement/filters/label-filter-projector';
 import { normalizeLabelFilterSelections } from '@supportmanagement/filters/label-filter-selection';
-import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
 import {
   getLabelSubTypeFromName,
@@ -133,7 +136,7 @@ const restoreStoredFilter = ({
   };
 };
 
-export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
+export const OngoingSupportErrands: FC = () => {
   const filterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const {
     watch: watchFilter,
@@ -157,7 +160,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
   const { sortOrder, sortColumn, pageSize, page } = watchTable();
 
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
-  const labelFilterProfile = useInvestigationProfileStore((state) => state.profile?.labelFilter);
+  const labelFilterProfile = useSupportApplicationProfileStore((state) => state.profile?.labelFilter);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const administrators = useUserStore((s) => s.administrators);
   const municipalityId = useConfigStore((s) => s.municipalityId);

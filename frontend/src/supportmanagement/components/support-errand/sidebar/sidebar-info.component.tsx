@@ -1,10 +1,14 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
+import { Priority } from '@common/interfaces/priority';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { hasDirtyFields, prettyTime } from '@common/services/helper-service';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useSupportStore } from '@stores/support-store';
+import { useUserStore } from '@stores/user-store';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
-import { Priority } from '@supportmanagement/interfaces/priority';
 import {
   getSupportErrandById,
   isSupportErrandLocked,
@@ -175,7 +179,7 @@ export const SidebarInfo: FC<{
         status: 'success',
       });
     } catch (e) {
-      console.error('Error when updating errand:', e);
+      logClientFailure('supportmanagement.sidebar-info.onSubmit', e);
       toastMessage({
         position: 'bottom',
         closeable: false,
@@ -367,7 +371,7 @@ export const SidebarInfo: FC<{
     [Status.SUSPENDED, Status.ASSIGNED, Status.SOLVED].includes(supportErrand.status as Status);
 
   const onError = () => {
-    console.error('Something went wrong when saving');
+    logClientFailure('supportmanagement.sidebar-info.onError');
   };
 
   return (

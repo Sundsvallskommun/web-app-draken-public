@@ -1,21 +1,17 @@
-import { isBOU, isIK, isKA, isLOK, isLOP, isROB, isSE } from '@common/services/application-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { Button, Checkbox, Divider, FormControl, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
+import { useUserStore } from '@stores/user-store';
+import { getSupportErrandPolicy } from '@supportmanagement/policy/support-errand-policy';
 import {
   closeSupportErrand,
   getSupportErrandById,
   readSupportErrandWriteSnapshot,
   Resolution,
-  ResolutionLabelBOU,
-  ResolutionLabelIK,
-  ResolutionLabelKA,
-  ResolutionLabelKS,
-  ResolutionLabelLOK,
-  ResolutionLabelLOP,
-  ResolutionLabelROB,
   setSupportErrandAdmin,
   setSupportErrandStatus,
   Status,
@@ -32,24 +28,13 @@ import { useFormContext, UseFormReturn } from 'react-hook-form';
 const RESOLUTION_DESCRIPTION =
   'Du kan avsluta ärendet med nuvarande lösningskod, eller ändra om något i ärendet har påverkat lösningen.';
 
-const getResolutionLabels = (): Record<string, string> => {
-  if (isLOP()) return ResolutionLabelLOP;
-  if (isIK() || isSE()) return ResolutionLabelIK;
-  if (isKA()) return ResolutionLabelKA;
-  if (isROB()) return ResolutionLabelROB;
-  if (isBOU()) return ResolutionLabelBOU;
-  if (isLOK()) return ResolutionLabelLOK;
-  return ResolutionLabelKS;
-};
+// Which resolutions exist, and which one is preselected, is the running dragon's decision.
+const getResolutionLabels = (): Readonly<Record<string, string>> => getSupportErrandPolicy().resolutions;
 
 const getDefaultResolution = (errand: SupportErrand | undefined): Resolution => {
   if (!!errand?.resolution) return errand?.resolution as Resolution;
 
-  return isROB()
-    ? Resolution.NEED_MET
-    : appConfig.features.useClosedAsDefaultResolution
-    ? Resolution.CLOSED
-    : Resolution.SOLVED;
+  return getSupportErrandPolicy().defaultResolution(appConfig.features);
 };
 
 export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> = ({ disabled }) => {
@@ -116,7 +101,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
       assignedUserId = assignment.assignedUserId;
       await closeSupportErrand(errandId, municipalityId, resolution, assignment.expected);
     } catch (e) {
-      console.error('Failed to close support errand', e);
+      logClientFailure('supportmanagement.support-close-errand-button.handleCloseErrand', e);
       showCloseErrorToast(supportErrandWriteErrorMessage(e, 'Något gick fel när ärendet skulle avslutas'));
       setIsLoading(false);
       return;
@@ -128,7 +113,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
         const adminName = getAdminName(admin!);
         await sendClosingMessage(adminName, supportErrand, municipalityId);
       } catch (e) {
-        console.error('Failed to send closing message', e);
+        logClientFailure('supportmanagement.support-close-errand-button.handleCloseErrand', e);
         showCloseErrorToast('Ärendet avslutades men avslutningsmeddelandet kunde inte skickas');
         setIsLoading(false);
         getSupportErrandById(errandId, municipalityId).then((res) => setSupportErrand(res.errand));

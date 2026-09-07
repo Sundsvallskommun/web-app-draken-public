@@ -10,13 +10,13 @@ import {
   findSourceErrandsForAssets,
 } from '@services/asset-relations.service';
 import { fetchErrandNumberById, fetchErrandNumbersByIds } from '@services/errand-lookup.service';
-import { logger } from '@utils/logger';
 import { Body, Controller, Delete, Get, Param, Patch, Post, QueryParam, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Asset, AssetCreateRequest, AssetUpdateRequest, DraftAssetUpdateRequest, Status } from '@/data-contracts/partyassets/data-contracts';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL } from '@/utils/util';
 
 interface ResponseData<T> {
@@ -67,7 +67,7 @@ export class AssetController {
     try {
       await deleteErrandAssetRelationsForAsset(municipalityId, assetId, user);
     } catch (e) {
-      logger.error(`Asset ${assetId} was deleted, but errand→asset relation cleanup failed: `, e);
+      logApplicationFailure('Cleaning up relations after asset deletion', e);
     }
   }
 
@@ -94,7 +94,7 @@ export class AssetController {
         try {
           await this.deleteUpstreamAsset(req.user, municipalityId, createdId);
         } catch (rollbackError) {
-          logger.error(`Failed to rollback created ${path} asset ${createdId} after relation creation failed: `, rollbackError);
+          logApplicationFailure('Rolling back asset after relation failure', rollbackError);
         }
         throw e;
       }
@@ -247,7 +247,7 @@ export class AssetController {
         message: 'success',
       };
     } catch (e) {
-      logger.error(`Asset ${id} was fetched, but source errand enrichment failed: `, e);
+      logApplicationFailure('Enriching asset with source errand', e);
       return { data: res.data, message: 'success' };
     }
   }

@@ -23,8 +23,6 @@ export const isROB = () => APP === 'ROB';
 
 export const isSE = () => APP === 'SE';
 
-export const isBOU = () => APP === 'BOU';
-
 export const isLOK = () => APP === 'LOK';
 
 export const isIAFOrVOF = () => APP === 'IAF' || APP === 'VOF';

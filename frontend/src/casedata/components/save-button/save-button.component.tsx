@@ -4,7 +4,7 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { Button } from '@sk-web-gui/react';
-import { useCasedataStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
 import { ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { FC, JSX, useEffect, useState } from 'react';

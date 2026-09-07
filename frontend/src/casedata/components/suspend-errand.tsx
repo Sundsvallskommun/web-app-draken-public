@@ -3,7 +3,9 @@ import { getErrand, isErrandLocked, setErrandStatus } from '@casedata/services/c
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, DatePicker, FormControl, FormLabel, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import dayjs from 'dayjs';
 import { CirclePause } from 'lucide-react';
 import { useState } from 'react';

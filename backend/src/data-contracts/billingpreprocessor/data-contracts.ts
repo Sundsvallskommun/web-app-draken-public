@@ -44,8 +44,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  causeAsProblem?: ThrowableProblem;
   detail?: string;
+  causeAsProblem?: ThrowableProblem;
 }
 
 export interface ThrowableProblem {
@@ -246,19 +246,19 @@ export interface PageBillingRecord {
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  sort?: SortObject;
+  unpaged?: boolean;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
-  unpaged?: boolean;
-  sort?: SortObject;
   /** @format int32 */
   pageSize?: number;
 }
 
 export interface SortObject {
   empty?: boolean;
-  unsorted?: boolean;
   sorted?: boolean;
+  unsorted?: boolean;
 }
 
 export enum GetFileStatusesForMonthParamsMonthEnum {

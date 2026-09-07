@@ -1,6 +1,7 @@
 import { Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Admin } from '@common/services/user-service';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
+import type { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 
 import {
   ContactChannelType,
@@ -9,6 +10,19 @@ import {
   SupportStakeholderFormModel,
   SupportStakeholderTypeEnum,
 } from './support-errand-service';
+
+export const getStakeholderEmailOptions = (
+  stakeholders: SupportErrand['stakeholders'] = [],
+  roles: SupportMetadata['roles'] = []
+) =>
+  stakeholders.flatMap((stakeholder) =>
+    (stakeholder.contactChannels ?? [])
+      .filter((channel) => channel.type === ContactChannelType.EMAIL || channel.type === ContactChannelType.Email)
+      .map((channel) => ({
+        email: channel.value ?? '',
+        role: roles.find((role) => role.name === stakeholder.role)?.displayName ?? '',
+      }))
+  );
 
 export const getAdminName = (a: Admin) => {
   return a && a.firstName && a.lastName ? `${a.firstName} ${a.lastName} (${a.adAccount})` : ``;

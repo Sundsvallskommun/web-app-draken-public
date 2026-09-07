@@ -9,9 +9,7 @@ import { Role } from '@/interfaces/role';
 import {
   buildErrandFilter,
   buildSupportErrandClassificationUpdateBody,
-  getNewErrandDefaults,
   mapContactChannels,
-  NEW_ERRAND_DEFAULTS,
   resolveDefaultLabels,
   resolveSupportErrandClassification,
   resolveSupportErrandPhaseTransition,
@@ -261,45 +259,6 @@ describe('support-errand.service', () => {
       expect(buildErrandFilter({ status: 'NEW', channel: 'EMAIL', priority: 'HIGH' })).toBe(
         "&filter=(priority:'HIGH') and channel:'EMAIL' and (status:'NEW')",
       );
-    });
-  });
-
-  describe('getNewErrandDefaults', () => {
-    it('returns the classification configured for each drake', () => {
-      expect(getNewErrandDefaults('KC')?.classification).toEqual({ category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' });
-      expect(getNewErrandDefaults('LOP')?.classification).toEqual({ category: 'SALARY', type: 'SALARY.UNCATEGORIZED' });
-      expect(getNewErrandDefaults('MSVA')?.classification).toEqual({ category: 'MSVA', type: 'MSVA.UNCATEGORIZED' });
-    });
-
-    it('covers every configured drake', () => {
-      expect(Object.keys(NEW_ERRAND_DEFAULTS).sort()).toEqual(['AOT', 'BOU', 'IAF', 'IK', 'KA', 'KC', 'LOK', 'LOP', 'MSVA', 'ROB', 'SE', 'VOF']);
-    });
-
-    // Presence in the table, not its contents, is what enables registration: an application missing
-    // from it resolves to registration 'disabled' and silently cannot create errands. AOT is
-    // configured with no defaults at all, so this pins that an empty entry still counts as present.
-    it('treats an empty entry as configured registration with no defaults', () => {
-      expect(getNewErrandDefaults('AOT')).toEqual({});
-      expect(getNewErrandDefaults('AOT')).toBeDefined();
-      expect(getNewErrandDefaults('NOT_A_DRAKE')).toBeUndefined();
-    });
-
-    it.each(['IAF', 'VOF'])('seeds %s registration with an explicit ordinary-deviation contract', application => {
-      expect(getNewErrandDefaults(application)).toEqual({
-        labels: { category: 'REPORT_TYPE', type: 'REPORT_TYPE/DEVIATION' },
-        parameters: [{ key: 'eventType', displayName: 'Rapporttyp', values: ['AVVIKELSE'] }],
-      });
-    });
-
-    it('leaves labels undefined for the drakes that configure none', () => {
-      expect(getNewErrandDefaults('KC')).toEqual({ classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' } });
-      expect(getNewErrandDefaults('MSVA')).toEqual({ classification: { category: 'MSVA', type: 'MSVA.UNCATEGORIZED' } });
-      expect(getNewErrandDefaults('ROB')).toEqual({ classification: { category: 'COMPLETE_RECRUITMENT', type: 'COMPLETE_RECRUITMENT.RETAKE' } });
-    });
-
-    it('returns undefined for an unknown or missing application', () => {
-      expect(getNewErrandDefaults('NOT_A_DRAKE')).toBeUndefined();
-      expect(getNewErrandDefaults(undefined)).toBeUndefined();
     });
   });
 

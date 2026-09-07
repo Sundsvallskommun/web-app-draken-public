@@ -28,6 +28,7 @@ import { EstateInfoSearch } from '@common/interfaces/estate-details';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { base64ToFile } from '@common/services/attachment-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { getSingleFacilityByDesignation } from '@common/services/facilities-service';
 import { toBase64 } from '@common/utils/toBase64';
 import { UploadFile } from '@sk-web-gui/react';
@@ -221,7 +222,7 @@ export const defaultLagenhetsarrende: ContractData = {
 };
 
 export const saveContract: (contract: ContractData) => Promise<Contract> = (contract) => {
-  console.log('Saving contract', contract);
+  logClientFailure('casedata.contract.saveContract');
   try {
     let apiCall: Promise<AxiosResponse<ApiResponse<Contract>>>;
     const apiContract: Contract =
@@ -241,7 +242,7 @@ export const saveContract: (contract: ContractData) => Promise<Contract> = (cont
         return res.data.data;
       })
       .catch((e) => {
-        console.error('Something went wrong when adding/editing contract: ', contract);
+        logClientFailure('casedata.contract.saveContract', e);
         throw e;
       });
   } catch (error) {
@@ -251,18 +252,18 @@ export const saveContract: (contract: ContractData) => Promise<Contract> = (cont
 
 export const deleteContract: (contractId: string) => Promise<AxiosResponse<boolean>> = (contractId) => {
   if (!contractId) {
-    console.error('No contract id found, cannot delete. Returning.');
+    logClientFailure('casedata.contract.deleteContract');
   }
   const url = `contracts/${contractId}`;
   return apiService.deleteRequest<boolean>(url).catch((e) => {
-    console.error('Something went wrong when deleting contract: ', contractId);
+    logClientFailure('casedata.contract.deleteContract', e);
     throw e;
   });
 };
 
 export const fetchContract: (contractId: string) => Promise<ApiResponse<Contract>> = (contractId) => {
   if (!contractId) {
-    console.error('No contract id found, cannot fetch. Returning.');
+    logClientFailure('casedata.contract.fetchContract');
   }
   const url = `contracts/${contractId}`;
   return apiService
@@ -317,7 +318,7 @@ export const fetchContracts: (params?: ContractFilterParams) => Promise<PageCont
     .get<PageContract>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching contracts');
+      logClientFailure('casedata.contract.fetchContracts', e);
       throw e;
     });
 };
@@ -347,7 +348,7 @@ export const getErrandContract: (errand: IErrand) => Promise<ContractData> = (er
       } else if (isLeaseAgreement(res.data.type)) {
         return contractToLagenhetsArrende(res.data as Contract);
       } else {
-        console.error('Unknown contract type: ', res.data.type);
+        logClientFailure('casedata.contract.getErrandContract');
         throw new Error('Unknown contract type');
       }
     })
@@ -362,7 +363,7 @@ export const renderContractPdf: (
   isDraft: boolean
 ) => Promise<{ pdfBase64: string; error?: string }> = async (errand, contract, isDraft) => {
   if (!contract?.contractId) {
-    console.error('No contract id found. Cannot render contract pdf.');
+    logClientFailure('casedata.contract.renderContractPdf');
   }
 
   const templateIdentifier =
@@ -541,7 +542,7 @@ export const contractToKopeavtal = (contract: Contract): ContractData => {
 };
 
 export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
-  console.log('transforming to contract: ', data);
+  logClientFailure('casedata.contract.lagenhetsArrendeToContract');
   let fees: Fees | undefined = undefined;
   if (data.generateInvoice) {
     const feeDescription = getFeeDescription(data.type, data.leaseType);
@@ -682,7 +683,7 @@ export const fetchSignedContractAttachment: (
   attachmentId: number
 ) => Promise<ApiResponse<Attachment>> = (municipalityId, contractId, attachmentId) => {
   if (!attachmentId) {
-    console.error('No attachment id found, cannot fetch. Returning.');
+    logClientFailure('casedata.contract.fetchSignedContractAttachment');
   }
   const url = `contracts/${municipalityId}/${contractId}/attachments/${attachmentId}`;
   return apiService
@@ -691,7 +692,7 @@ export const fetchSignedContractAttachment: (
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching attachment: ', attachmentId);
+      logClientFailure('casedata.contract.fetchSignedContractAttachment', e);
       throw e;
     });
 };
@@ -703,7 +704,7 @@ export const saveSignedContractAttachment = (
   note: string
 ) => {
   const attachmentPromise = attachment.map(async (attachment) => {
-    console.log('Processing attachment', attachment);
+    logClientFailure('casedata.contract.saveSignedContractAttachment');
     const fileData = await toBase64(attachment.file);
 
     const formData: Attachment = {
@@ -724,7 +725,7 @@ export const saveSignedContractAttachment = (
         return res;
       })
       .catch((e) => {
-        console.error('Something went wrong when saving attachment');
+        logClientFailure('casedata.contract.saveSignedContractAttachment', e);
         throw e;
       });
   });
@@ -736,7 +737,7 @@ export const saveSignedContractAttachment = (
 
 export const deleteSignedContractAttachment = (municipalityId: string, contractId: string, attachmentId: number) => {
   if (!attachmentId) {
-    console.error('No id found, cannot continue.');
+    logClientFailure('casedata.contract.deleteSignedContractAttachment');
     return;
   }
 
@@ -746,7 +747,7 @@ export const deleteSignedContractAttachment = (municipalityId: string, contractI
       return res;
     })
     .catch((e) => {
-      console.error('Something went wrong when removing attachment ', attachmentId);
+      logClientFailure('casedata.contract.deleteSignedContractAttachment', e);
       throw e;
     });
 };
@@ -842,7 +843,7 @@ export const fetchContractInvoices: (
   size?: number
 ) => Promise<ContractInvoicesResponse> = async (municipalityId, contractId, page = 0, size = 10) => {
   if (!municipalityId || !contractId) {
-    console.error('Missing municipalityId or contractId for fetching contract invoices');
+    logClientFailure('casedata.contract.fetchContractInvoices');
     return { invoices: [], records: [], totalCount: 0, totalPages: 0 };
   }
 
@@ -875,7 +876,7 @@ export const fetchContractInvoices: (
       };
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching contract invoices:', e);
+      logClientFailure('casedata.contract.fetchContractInvoices', e);
       return { invoices: [], records: [], totalCount: 0, totalPages: 0 };
     });
 };

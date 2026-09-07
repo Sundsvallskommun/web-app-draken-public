@@ -1,5 +1,6 @@
 import { Notification as SupportNotification } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 
 import { SupportErrand } from './support-errand-service';
 
@@ -10,7 +11,7 @@ export const getSupportNotifications: (municipalityId: string) => Promise<Suppor
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching notifications');
+      logClientFailure('supportmanagement.support-notification.getSupportNotifications', e);
       throw e;
     });
 };
@@ -29,7 +30,7 @@ export const acknowledgeSupportNotification: (
       return true;
     })
     .catch((e) => {
-      console.error('Something went wrong when acknowledging notification');
+      logClientFailure('supportmanagement.support-notification.acknowledgeSupportNotification', e);
       throw e;
     });
 };
@@ -47,7 +48,7 @@ export const globalAcknowledgeSupportNotification: (
       return true;
     })
     .catch((e) => {
-      console.error('Something went wrong when acknowledging notification');
+      logClientFailure('supportmanagement.support-notification.globalAcknowledgeSupportNotification', e);
       throw e;
     });
 };

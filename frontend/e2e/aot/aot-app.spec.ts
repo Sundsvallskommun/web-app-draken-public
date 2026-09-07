@@ -1,5 +1,5 @@
 import { expect, test } from '../fixtures/base.fixture';
-import { application, installAotApiMock } from './fixtures/aot-app.mock';
+import { application, installSupportAppMock } from '../fixtures/support-app.mock';
 
 /**
  * AOT är den minsta SupportManagement-draken: trenivåkategorisering, ärendeuppgifter och en
@@ -11,7 +11,7 @@ test.skip(application !== 'AOT', 'Sviten beskriver AOT:s konfiguration och körs
 
 test.describe('AOT startar som en vanlig SupportManagement-drake', () => {
   test('hämtar inte den auth-skyddade profilen på login-sidan', async ({ page }) => {
-    const trace = await installAotApiMock(page);
+    const trace = await installSupportAppMock(page);
 
     await page.goto('login');
 
@@ -20,7 +20,7 @@ test.describe('AOT startar som en vanlig SupportManagement-drake', () => {
   });
 
   test('visar översikten med inloggad användare och ärendelista', async ({ page, dismissCookieConsent }) => {
-    await installAotApiMock(page);
+    await installSupportAppMock(page);
 
     const errands = page.waitForResponse(
       (response) => response.url().includes('supporterrands/') && response.status() === 200
@@ -40,7 +40,7 @@ test.describe('AOT startar som en vanlig SupportManagement-drake', () => {
    * aldrig dyka upp här - de renderas som fieldset med aria-label av projected-label-filters.
    */
   test('filtrerar med de vanliga filtren, inte med avvikelsens', async ({ page, dismissCookieConsent }) => {
-    await installAotApiMock(page);
+    await installSupportAppMock(page);
 
     await page.goto('oversikt/');
     await dismissCookieConsent();
@@ -57,7 +57,7 @@ test.describe('AOT startar som en vanlig SupportManagement-drake', () => {
    * tills profilen har landat, så en regression här ger en evig laddningsskärm snarare än ett fel.
    */
   test('målar färdigt trots att utredningsprofilen är tom', async ({ page, dismissCookieConsent }) => {
-    const trace = await installAotApiMock(page);
+    const trace = await installSupportAppMock(page);
 
     await page.goto('oversikt/');
     await dismissCookieConsent();

@@ -9,7 +9,7 @@ import { RenderRequest, RenderResponse } from '@/data-contracts/templating/data-
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
-import { logger } from '@/utils/logger';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL } from '@/utils/util';
 
 import { PROCESS_PARAMETER_KEYS } from './casedata/extraparameter.controller';
@@ -99,7 +99,7 @@ export class ExportController {
       const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${data.id}/messages`;
       const baseURL = apiURL(this.SERVICE);
       const res = await this.apiService.get<IMessageResponse[]>({ url, baseURL }, req.user).catch(e => {
-        logger.error('Error when fetching messages for errand: ', data.id);
+        logApplicationFailure('Error when fetching messages for errand', e);
         throw e;
       });
       messages = res.data;

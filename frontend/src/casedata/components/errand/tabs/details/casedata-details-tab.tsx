@@ -1,6 +1,6 @@
 import { Channels } from '@casedata/interfaces/channels';
 import { IErrand } from '@casedata/interfaces/errand';
-import { getErrand } from '@casedata/services/casedata-errand-service';
+import { getErrand, isErrandLocked } from '@casedata/services/casedata-errand-service';
 import {
   EXTRAPARAMETER_SEPARATOR,
   extraParametersToUppgiftMapper,
@@ -14,7 +14,8 @@ import { FacilityDTO } from '@common/interfaces/facilities';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { cx, Disclosure, FormControl, FormLabel, Input, useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
 import { MapPin } from 'lucide-react';
 import { IconName } from 'lucide-react/dynamic';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
@@ -199,6 +200,7 @@ export const CasedataDetailsTab: React.FC<CasedataDetailsProps> = (props) => {
                 </Disclosure.Header>
                 <Disclosure.Content>
                   <Facilities
+                    editingLocked={!errand || isErrandLocked(errand)}
                     facilities={realEstates}
                     setUnsaved={props.setUnsaved}
                     setValue={setValue}

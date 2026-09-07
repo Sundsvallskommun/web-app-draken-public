@@ -1,0 +1,104 @@
+name: Dragon build boundaries
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    outputs:
+      dragons: ${{ steps.catalog.outputs.dragons }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - id: catalog
+        run: echo "dragons=$(node scripts/dragon.mjs list --json)" >> "$GITHUB_OUTPUT"
+  applications:
+    needs: catalog
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dragon: ${{ fromJSON(needs.catalog.outputs.dragons) }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: |
+            backend/yarn.lock
+            frontend/yarn.lock
+      # Native binaries are installed through locked optionalDependencies.
+      - run: yarn --cwd backend install --frozen-lockfile --ignore-scripts
+      - run: yarn --cwd frontend install --frozen-lockfile --ignore-scripts
+      - run: node --test scripts/*.test.mjs
+      - run: node scripts/dragon.mjs build ${{ matrix.dragon }} backend
+      - run: node scripts/check-backend-artifact.mjs ${{ matrix.dragon }}
+      # Compile the real application entrypoint with deployment placeholders, as in Docker.
+      - run: cp frontend/.env-cicd frontend/.env.local
+      - run: yarn --cwd frontend build
+        env:
+          DRAKEN_BUILD_DRAGON: ${{ matrix.dragon }}
+          DEPLOY_COMMIT: ${{ github.sha }}
+          DOCKER_BUILD: 'true'
+          NEXT_TELEMETRY_DISABLED: '1'
+  container-builds:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Start real pairs for SM, Avvikelse and CaseData; all dragons compile above.
+        dragon: [KC, IAF, MEX]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Build frontend image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: frontend/Dockerfile
+          build-args: |
+            DRAKEN_BUILD_DRAGON=${{ matrix.dragon }}
+            DEPLOY_COMMIT=${{ github.sha }}
+          push: false
+          load: true
+          tags: draken-frontend:smoke
+          cache-from: type=gha,scope=frontend-${{ matrix.dragon }}
+          cache-to: type=gha,mode=max,scope=frontend-${{ matrix.dragon }}
+      - name: Build backend image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          file: backend/Dockerfile
+          build-args: |
+            DRAKEN_BUILD_DRAGON=${{ matrix.dragon }}
+            DEPLOY_COMMIT=${{ github.sha }}
+          push: false
+          load: true
+          tags: draken-backend:smoke
+          cache-from: type=gha,scope=backend-${{ matrix.dragon }}
+          cache-to: type=gha,mode=max,scope=backend-${{ matrix.dragon }}
+      - name: Verify packaged startup, release pairing, prefixes and rejected configuration
+        run: node scripts/dragon-container-smoke.mjs "${{ matrix.dragon }}" draken-frontend:smoke draken-backend:smoke "${{ github.sha }}"
+  all-dragon-builds:
+    name: All dragon builds
+    needs: [catalog, applications, container-builds]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every build and container check to pass
+        env:
+          CATALOG_RESULT: ${{ needs.catalog.result }}
+          APPLICATIONS_RESULT: ${{ needs.applications.result }}
+          CONTAINERS_RESULT: ${{ needs.container-builds.result }}
+        run: |
+          if [[ "$CATALOG_RESULT" != success || "$APPLICATIONS_RESULT" != success || "$CONTAINERS_RESULT" != success ]]; then
+            echo "Dragon builds failed: catalog=$CATALOG_RESULT applications=$APPLICATIONS_RESULT containers=$CONTAINERS_RESULT" >&2
+            exit 1
+          fi

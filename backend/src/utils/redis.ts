@@ -1,6 +1,6 @@
 import { createClient, RedisClientType } from 'redis';
 
-import { logger } from './logger';
+import { logApplicationEvent, logApplicationFailure } from '@/services/request-diagnostics';
 
 let redisClient: RedisClientType | null = null;
 
@@ -22,9 +22,9 @@ export async function getRedisClient(): Promise<RedisClientType | null> {
     password: redisPassword || undefined,
   }) as RedisClientType;
 
-  client.on('error', err => logger.error(`Redis error: ${err.message}`));
-  client.on('connect', () => logger.info(`Connected to Redis (${redisHost}:${redisPort})`));
-  client.on('reconnecting', () => logger.info('Redis reconnecting...'));
+  client.on('error', err => logApplicationFailure('Redis connection', err));
+  client.on('connect', () => logApplicationEvent('Connected to Redis'));
+  client.on('reconnecting', () => logApplicationEvent('Redis reconnecting...'));
 
   await client.connect();
   redisClient = client;

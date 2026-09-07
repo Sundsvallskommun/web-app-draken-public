@@ -1,5 +1,6 @@
 import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
+import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
@@ -15,15 +16,30 @@ import {
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { phaseChangeInProgress, triggerErrandPhaseChange } from '@casedata/services/process-service';
 import { isPT } from '@common/services/application-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, FormErrorMessage, Spinner, useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import { ArrowRight } from 'lucide-react';
 import { IconName } from 'lucide-react/dynamic';
 import { JSX, useEffect, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 
 import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
+
+const getDecisionDisabledMessage = (errand: IErrand, municipalityId: string): string | undefined => {
+  const attachments = validateAttachmentsForDecision(errand);
+  if (!attachments.valid) return `Ärendet har felaktiga bilagor: ${attachments.reason}`;
+  if (!validateStatusForDecision(errand).valid) {
+    return 'Ärendet har fel status för att beslut ska kunna fattas.';
+  }
+  if (!validateStakeholdersForDecision(errand).valid) return 'Ärendet saknar ärendeägare.';
+  const parameters = validateExtraParametersForDecision(errand, municipalityId);
+  if (!parameters.valid) return `Ärendeuppgifter saknas: ${parameters.reason}`;
+  return undefined;
+};
 
 export const PhaseChanger = () => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -88,16 +104,8 @@ export const PhaseChanger = () => {
             <p className="my-md">Är du säker på att du vill fortsätta?</p>
           </>
         ),
-        disabled: !validateErrandForDecision(errand),
-        disabledMessage: !validateAttachmentsForDecision(errand).valid
-          ? `Ärendet har felaktiga bilagor: ${validateAttachmentsForDecision(errand).reason}`
-          : !validateStatusForDecision(errand).valid
-          ? 'Ärendet har fel status för att beslut ska kunna fattas.'
-          : !validateStakeholdersForDecision(errand).valid
-          ? 'Ärendet saknar ärendeägare.'
-          : !validateExtraParametersForDecision(errand).valid
-          ? `Ärendeuppgifter saknas: ${validateExtraParametersForDecision(errand).reason}`
-          : undefined,
+        disabled: !validateErrandForDecision(errand, municipalityId),
+        disabledMessage: getDecisionDisabledMessage(errand, municipalityId),
       });
     } else if (uiPhase === UiPhase.beslut) {
       setPhaseChangeText({ icon: 'lightbulb', button: 'N/A', title: 'N/A?', message: <></> });
@@ -133,7 +141,7 @@ export const PhaseChanger = () => {
         message: <p>Vill du byta fas?</p>,
       });
     }
-  }, [errand, uiPhase]);
+  }, [errand, uiPhase, municipalityId]);
 
   const showSaveError = () => {
     toastMessage({
@@ -173,7 +181,7 @@ export const PhaseChanger = () => {
   };
 
   const onError = () => {
-    console.error('Something went wrong when saving');
+    logClientFailure('casedata.phasechanger.onError');
   };
 
   const errandSave = useSaveCasedataErrand(false);

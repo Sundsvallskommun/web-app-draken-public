@@ -20,12 +20,8 @@ import FormData from 'form-data';
 import { Body, Controller, Get, HeaderParam, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { APPLICATION, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import {
-  preservesIafVofInvestigationClassificationOwnerParameter,
-  resolveIafVofInvestigationClassificationOwner,
-} from '@/config/iaf-vof-investigation-classification';
 import {
   Errand as CasedataErrandDTO,
   ErrandPriorityEnum as CasedataErrandDtoPriorityEnum,
@@ -61,6 +57,8 @@ import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { createConversation, sendConversationTextMessage } from '@/services/message.service';
 import { OrganizationService } from '@/services/organization.service';
+import { logApplicationEvent, logApplicationFailure } from '@/services/request-diagnostics';
+import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
 import {
   assertRequestedErrandVersion,
   assertSupportErrandAdminAssignable,
@@ -69,8 +67,6 @@ import {
   buildSupportErrandClassificationUpdateBody,
   ErrandFilterInput,
   getErrandVersion,
-  getNewErrandDefaults,
-  NewErrandDefaults,
   requireStrongErrandVersion,
   resolveDefaultLabels,
   resolveSupportErrandClassification,
@@ -83,15 +79,12 @@ import {
   toCasedataStakeholder,
   toFacilities,
 } from '@/services/support-errand.service';
-import { assertSupportInvestigationClassificationContext } from '@/services/support-investigation-classification-context.service';
-import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 import {
   SupportManagementLabelFilterError,
   SupportManagementLabelFilterSelection,
   SupportManagementLabelFilterService,
 } from '@/services/supportmanagement-label-filter.service';
-import { logger } from '@/utils/logger';
 import { apiURL, formatOrgNr, luhnCheck, OrgNumberFormat, withRetries } from '@/utils/util';
 
 export { SupportStakeholderRole };
@@ -545,9 +538,8 @@ class ForwardFormDto {
 export class SupportErrandController {
   private apiService = new ApiService();
   private organizationService = new OrganizationService();
-  private investigationPolicyService = new SupportInvestigationPolicyService();
+  private investigationPolicyService = new SupportApplicationPolicyService();
   private jsonParameterService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' });
-  private newErrandDefaults: NewErrandDefaults | undefined = getNewErrandDefaults(APPLICATION);
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   SERVICE = apiServiceName('supportmanagement');
   CITIZEN_SERVICE = apiServiceName('citizen');
@@ -619,7 +611,7 @@ export class SupportErrandController {
     let organizationNumberSource = organizationNumberFromParameter;
     if (!organizationNumberSource && s.externalId) {
       organizationNumberSource = await this.organizationService.getOrganizationNumberByPartyId(municipalityId, s.externalId, req.user).catch(e => {
-        logger.error(`Error fetching organization number for partyId ${s.externalId}: `, e);
+        logApplicationFailure('Resolving organization number', e);
         return '';
       });
     }
@@ -684,8 +676,7 @@ export class SupportErrandController {
     @Res() response: any,
   ): Promise<SupportErrand> {
     if (!MUNICIPALITY_ID) {
-      console.error('No municipality id found, needed to fetch errands.');
-      logger.error('No municipality id found, needed to fetch errands.');
+      logApplicationFailure('No municipality id found, needed to fetch errands.');
       return response.status(400).send('Municipality id missing');
     }
     const url = `${this.SERVICE}/${MUNICIPALITY_ID}/${this.namespace}/errands?filter=errandNumber:'${errandNumber}'`;
@@ -704,8 +695,7 @@ export class SupportErrandController {
     @Res() response: any,
   ): Promise<SupportErrand> {
     if (!municipalityId) {
-      console.error('No municipality id found, needed to fetch errands.');
-      logger.error('No municipality id found, needed to fetch errands.');
+      logApplicationFailure('No municipality id found, needed to fetch errands.');
       return response.status(400).send('Municipality id missing');
     }
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}`;
@@ -741,8 +731,7 @@ export class SupportErrandController {
     @Res() response: any,
   ): Promise<PageErrand> {
     if (!municipalityId) {
-      console.error('No municipality id found, needed to fetch errands.');
-      logger.error('No municipality id found, needed to fetch errands.');
+      logApplicationFailure('No municipality id found, needed to fetch errands.');
       return response.status(400).send('Municipality id missing');
     }
 
@@ -794,8 +783,7 @@ export class SupportErrandController {
     @Res() response: any,
   ): Promise<any> {
     if (!municipalityId) {
-      console.error('No municipality id found, needed to fetch errands.');
-      logger.error('No municipality id found, needed to fetch errands.');
+      logApplicationFailure('No municipality id found, needed to fetch errands.');
       return response.status(400).send('Municipality id missing');
     }
 
@@ -835,18 +823,19 @@ export class SupportErrandController {
     @Res() response: any,
   ): Promise<{ data: SupportErrandDto; message: string }> {
     if (!municipalityId) {
-      console.error('No municipality id found, needed to fetch errands.');
-      logger.error('No municipality id found, needed to fetch errands.');
+      logApplicationFailure('No municipality id found, needed to fetch errands.');
       return response.status(400).send('Municipality id missing');
     }
 
     const registrationState = await this.investigationPolicyService.getRegistrationState(req.user);
+    const registration = this.investigationPolicyService.profile.registration;
     if (registrationState === 'unavailable') {
       throw new HttpException(503, 'Support errand registration policy is temporarily unavailable');
     }
-    if (registrationState === 'disabled' || !this.newErrandDefaults) {
+    if (registrationState === 'disabled' || registration.mode === 'disabled') {
       throw new HttpException(409, 'Registration is not configured for this application');
     }
+    const defaults = registration.defaults;
 
     // Fetch metadata for labels for new errand
     const metadataUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata/labels`;
@@ -857,22 +846,28 @@ export class SupportErrandController {
     const body: Partial<SupportErrandDto> = {
       reporterUserId: req.user.username,
       assignedUserId: req.user.username,
-      ...(this.newErrandDefaults.classification ? { classification: this.newErrandDefaults.classification } : {}),
-      labels: this.newErrandDefaults.labels ? resolveDefaultLabels(metadataRes.data.labelStructure, this.newErrandDefaults.labels) : [],
-      ...(this.newErrandDefaults.parameters ? { parameters: this.newErrandDefaults.parameters.map(parameter => ({ ...parameter })) } : {}),
+      ...(defaults.classification ? { classification: defaults.classification } : {}),
+      labels: defaults.labels ? resolveDefaultLabels(metadataRes.data.labelStructure, defaults.labels) : [],
+      ...(defaults.parameters
+        ? {
+            parameters: defaults.parameters.map(parameter => ({
+              key: parameter.key,
+              displayName: parameter.displayName,
+              values: parameter.values ? [...parameter.values] : undefined,
+            })),
+          }
+        : {}),
       priority: SupportPriority.MEDIUM,
       status: Status.NEW,
       channel: ContactChannelType.PHONE,
       title: 'Empty errand',
     };
     const res = await this.apiService.post<any, Partial<SupportErrandDto>>({ url, baseURL, data: body }, req.user).catch(e => {
-      logger.error('Error when initiating support errand');
-      logger.error(e);
+      logApplicationFailure('Error when initiating support errand', e);
       throw e;
     });
     if (!res.data || res.data === '') {
-      console.error('Something went wrong when initiating support errand');
-      logger.error('Something went wrong when initiating support errand');
+      logApplicationFailure('Something went wrong when initiating support errand');
       return response.status(500).send('Something went wrong when initiating support errand');
     }
     return response.status(201).send(res.data);
@@ -884,7 +879,7 @@ export class SupportErrandController {
     data: Partial<SupportErrandDto>,
   ): Promise<void> {
     const classificationFieldsRequested = data.classification !== undefined || data.labels !== undefined;
-    const policy = this.investigationPolicyService.iafVofClassificationPolicy;
+    const policy = this.investigationPolicyService.classificationPolicy;
     if (!classificationFieldsRequested && (data.parameters === undefined || !policy)) return;
 
     const owner = await this.investigationPolicyService.getClassificationOwner(req.user);
@@ -895,7 +890,7 @@ export class SupportErrandController {
     if (classificationFieldsRequested) {
       throw new HttpException(409, 'Use the investigation classification endpoint to update classification and labels');
     }
-    if (policy && !preservesIafVofInvestigationClassificationOwnerParameter(currentErrand.parameters, data.parameters)) {
+    if (policy && !policy.preservesOwnerParameters(currentErrand.parameters, data.parameters)) {
       throw new HttpException(409, 'The investigation classification owner parameter cannot be changed through the generic errand endpoint');
     }
   }
@@ -912,8 +907,7 @@ export class SupportErrandController {
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
     if (!municipalityId) {
-      console.error('No municipality id found, it is needed to fetch errands.');
-      logger.error('No municipality id found, it is needed to fetch errands.');
+      logApplicationFailure('No municipality id found, it is needed to fetch errands.');
       return response.status(400).send('Municipality id missing');
     }
     assertGenericUpdateFields(data);
@@ -943,8 +937,7 @@ export class SupportErrandController {
         req.user,
       )
       .catch(e => {
-        logger.error('Error when registering support errand');
-        logger.error(e);
+        logApplicationFailure('Error when registering support errand', e);
         throw e;
       });
     return response.status(200).send(res.data);
@@ -962,7 +955,7 @@ export class SupportErrandController {
     @Res() response: any,
   ): Promise<any> {
     if (!municipalityId) {
-      logger.error('No municipality id found, it is needed to update the errand status.');
+      logApplicationFailure('No municipality id found, it is needed to update the errand status.');
       return response.status(400).send('Municipality id missing');
     }
 
@@ -1013,7 +1006,7 @@ export class SupportErrandController {
     @Res() response: any,
   ): Promise<any> {
     if (!municipalityId) {
-      logger.error('No municipality id found, it is needed to update the errand phase.');
+      logApplicationFailure('No municipality id found, it is needed to update the errand phase.');
       return response.status(400).send('Municipality id missing');
     }
 
@@ -1064,8 +1057,7 @@ export class SupportErrandController {
     @Res() response: any,
   ): Promise<any> {
     if (!municipalityId) {
-      console.error('No municipality id found, it is needed to update errand classification.');
-      logger.error('No municipality id found, it is needed to update errand classification.');
+      logApplicationFailure('No municipality id found, it is needed to update errand classification.');
       return response.status(400).send('Municipality id missing');
     }
     const classificationOwner = await this.investigationPolicyService.getClassificationOwner(req.user);
@@ -1075,8 +1067,8 @@ export class SupportErrandController {
     if (classificationOwner !== 'investigation') {
       throw new HttpException(409, 'Investigation does not own classification for this application');
     }
-    const iafVofClassificationPolicy = this.investigationPolicyService.iafVofClassificationPolicy;
-    if (!iafVofClassificationPolicy) {
+    const classificationPolicy = this.investigationPolicyService.classificationPolicy;
+    if (!classificationPolicy) {
       throw new HttpException(409, 'Investigation classification policy is unavailable');
     }
     const definition = this.investigationPolicyService.profile.documents.find(document => document.key === data.documentKey);
@@ -1104,15 +1096,8 @@ export class SupportErrandController {
     if (classificationDocument.etag !== data.documentETag) {
       throw new HttpException(409, 'Investigation document has changed since classification was edited');
     }
-    const classificationOwnerSelection = resolveIafVofInvestigationClassificationOwner(iafVofClassificationPolicy, currentErrand.data);
-    assertSupportInvestigationClassificationContext(
-      iafVofClassificationPolicy,
-      classificationOwnerSelection,
-      definition.key,
-      classificationDocument.document.value,
-      data.classification,
-    );
-    const resolvedClassification = resolveSupportErrandClassification(data, labelMetadata.data?.labelStructure, iafVofClassificationPolicy.labelTree);
+    classificationPolicy.assertClassificationContext(currentErrand.data, definition.key, classificationDocument.document.value, data.classification);
+    const resolvedClassification = resolveSupportErrandClassification(data, labelMetadata.data?.labelStructure, classificationPolicy.labelTree);
     const body = buildSupportErrandClassificationUpdateBody(
       data,
       currentErrand.data.labels,
@@ -1146,8 +1131,7 @@ export class SupportErrandController {
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
     if (!municipalityId) {
-      console.error('No municipality id found, it is needed to update errand.');
-      logger.error('No municipality id found, it is needed to update errand.');
+      logApplicationFailure('No municipality id found, it is needed to update errand.');
       return response.status(400).send('Municipality id missing');
     }
     const requestedVersion = requireStrongErrandVersion(ifMatch);
@@ -1175,8 +1159,7 @@ export class SupportErrandController {
         req.user,
       )
       .catch(e => {
-        logger.error('Error when setting administrator for support errand');
-        logger.error(e);
+        logApplicationFailure('Error when setting administrator for support errand', e);
         throw e;
       });
     return response.status(200).send(res.data);
@@ -1193,13 +1176,11 @@ export class SupportErrandController {
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
     if (!municipalityId) {
-      console.error('No municipality id found, it is needed to forward errand.');
-      logger.error('No municipality id found, it is needed to forward errand.');
+      logApplicationFailure('No municipality id found, it is needed to forward errand.');
       return response.status(400).send('Municipality id missing');
     }
     if (!id) {
-      console.error('No errand id found, it is needed to forward errand.');
-      logger.error('No errand id found, it is needed to forward errand.');
+      logApplicationFailure('No errand id found, it is needed to forward errand.');
       return response.status(400).send('Errand id missing');
     }
     const supportErrandUrl = `${municipalityId}/${this.namespace}/errands/${id}`;
@@ -1210,8 +1191,7 @@ export class SupportErrandController {
     const stakeholders: CasedataStakeholderDTO[] = [];
     for (const s of existingSupportErrand.data.stakeholders ?? []) {
       if (!s.firstName && !s.organizationName) {
-        console.error('Missing required fields for stakeholder');
-        logger.error('Missing required fields for stakeholder');
+        logApplicationFailure('Missing required fields for stakeholder');
         return response.status(400).send('Missing required fields for stakeholder');
       }
       // TODO Check for email and phone?
@@ -1220,8 +1200,6 @@ export class SupportErrandController {
       //   !s.contactChannels.some(c => c.type === ContactChannelType.PHONE) ||
       //   !s.contactChannels.some(c => c.type === ContactChannelType.EMAIL)
       // ) {
-      //   console.error('Missing required contact channels for stakeholder');
-      //   logger.error('Missing required contact channels for stakeholder');
       //   return response.status(400).send('Missing required contact channels for stakeholder');
       // }
       const organizationNumber =
@@ -1244,7 +1222,7 @@ export class SupportErrandController {
       ],
       extraParameters: [{ key: 'supportManagementErrandNumber', values: [existingSupportErrand.data.errandNumber!] }],
     };
-    logger.info('Creating new errand in CaseData', caseDataErrand);
+    logApplicationEvent('Creating new errand in CaseData');
     const referredFrom = `REFERRED_FROM|${id};case;supportmanagement;${this.namespace}|`;
     const url = `${municipalityId}/${data.department}/errands`;
     const CASEDATA_SERVICE = apiServiceName('case-data');
@@ -1255,8 +1233,7 @@ export class SupportErrandController {
         return errandResponse.data;
       })
       .catch(e => {
-        logger.error('Error when creating errand');
-        logger.error(e);
+        logApplicationFailure('Error when creating errand', e);
         throw e;
       });
 
@@ -1297,17 +1274,17 @@ export class SupportErrandController {
           )
           .then(res => res.data)
           .catch(e => {
-            logger.error('Error when posting attachments for forwarded errand:', e);
+            logApplicationFailure('Error when posting attachments for forwarded errand', e);
             throw e;
           });
         return casedataAttachmentsResponse;
       });
       await Promise.all(postedAttachments).catch(e => {
-        logger.error('Error when posting attachments for forwarded errand');
+        logApplicationFailure('Error when posting attachments for forwarded errand');
         throw e;
       });
     } catch (e) {
-      logger.error('Error when copying attachments to forwarded errand:', e);
+      logApplicationFailure('Error when copying attachments to forwarded errand', e);
       return response.status(400).send('ATTACHMENTS_FAILED');
     }
 
@@ -1326,7 +1303,7 @@ export class SupportErrandController {
           await sendConversationTextMessage(errand.id!.toString(), conversation.id, req.user, data.message ?? '', data.department!);
         }
       } catch (error) {
-        logger.error('Error when creating conversation message for forwarded errand:', error);
+        logApplicationFailure('Error when creating conversation message for forwarded errand', error);
       }
     }
 

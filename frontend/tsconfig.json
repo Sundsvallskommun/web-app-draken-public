@@ -1,14 +1,8 @@
 {
   "compilerOptions": {
-    "types": [
-      "node"
-    ],
+    "types": ["node"],
     "target": "es6",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -23,36 +17,20 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@pages/*": [
-        "src/pages/*"
-      ],
-      "@public/*": [
-        "src/public/*"
-      ],
-      "@config/*": [
-        "src/config/*"
-      ],
-      "@contexts/*": [
-        "src/common/contexts/*"
-      ],
-      "@supportmanagement/*": [
-        "src/supportmanagement/*"
-      ],
-      "@casedata/*": [
-        "src/casedata/*"
-      ],
-      "@common/*": [
-        "src/common/*"
-      ],
-      "@styles/*": [
-        "src/styles/*"
-      ],
-      "@e2e/*": [
-        "e2e/*"
-      ],
-      "@stores/*": [
-        "src/stores/*"
-      ]
+      "@dragon": ["src/dragons/kc/application.ts"],
+      "@avvikelse/*": ["src/avvikelse/*"],
+      "@pages/*": ["src/pages/*"],
+      "@public/*": ["src/public/*"],
+      "@config/*": ["src/config/*"],
+      "@contexts/*": ["src/common/contexts/*"],
+      "@supportmanagement/*": ["src/supportmanagement/*"],
+      "@casedata/*": ["src/casedata/*"],
+      "@common/*": ["src/common/*"],
+      "@styles/*": ["src/styles/*"],
+      "@e2e/*": ["e2e/*"],
+      "@stores/*": ["src/stores/*"],
+      "@shell/*": ["src/shell/*"],
+      "@dragons/*": ["src/dragons/*"]
       // "@services/*": ["src/services/*"],
       // "@common/components/*": ["src/components/*"],
       // "@interfaces/*": ["src/interfaces/*"],
@@ -65,8 +43,9 @@
     ]
   },
   "include": [
-    "src/**/*.{ts,tsx}",
-    "e2e/**/*.{ts,tsx}",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+
     "next-env.d.ts",
     "node_modules/dayjs/plugin/utc.d.ts",
     "src/common/components/localization-provider",
@@ -101,7 +80,5 @@
     ".next-AOT/types/**/*.ts",
     ".next-AOT/dev/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules", "src/**/*.cy.tsx"]
 }

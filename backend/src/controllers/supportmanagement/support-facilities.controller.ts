@@ -5,7 +5,6 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { preservesIafVofInvestigationClassificationOwnerParameter } from '@/config/iaf-vof-investigation-classification';
 import { Errand, Parameter } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -13,6 +12,8 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
+import { logApplicationFailure } from '@/services/request-diagnostics';
+import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
 import {
   assertRequestedErrandVersion,
   assertSupportErrandWritable,
@@ -20,8 +21,6 @@ import {
   requireStrongErrandVersion,
   stripParameterVersions,
 } from '@/services/support-errand.service';
-import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
-import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
 const PROPERTY_DESIGNATION = { key: 'propertyDesignation', displayName: 'Fastighetsbeteckning' } as const;
@@ -54,7 +53,7 @@ type WritableParameter = Omit<Parameter, 'version'>;
 @Controller()
 export class SupportFacilitiesController {
   private apiService = new ApiService();
-  private investigationPolicyService = new SupportInvestigationPolicyService();
+  private investigationPolicyService = new SupportApplicationPolicyService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   SERVICE = apiServiceName('supportmanagement');
 
@@ -88,7 +87,7 @@ export class SupportFacilitiesController {
     // The PATCH below replaces the whole collection, so an absent list must not be read as an
     // empty one - that would drop every non-facility parameter on the errand.
     if (!Array.isArray(currentErrand.parameters)) {
-      logger.error(`No parameters found for errand with id ${id}`);
+      logApplicationFailure('Missing errand parameters');
       throw new HttpException(502, 'Support Management response is missing the errand parameters');
     }
 
@@ -100,16 +99,13 @@ export class SupportFacilitiesController {
       { ...STREET, values: facilities.streets },
     ];
 
-    const iafVofClassificationPolicy = this.investigationPolicyService.iafVofClassificationPolicy;
-    if (iafVofClassificationPolicy) {
+    const classificationPolicy = this.investigationPolicyService.classificationPolicy;
+    if (classificationPolicy) {
       const classificationOwner = await this.investigationPolicyService.getClassificationOwner(req.user);
       if (classificationOwner === 'unavailable') {
         throw new HttpException(503, 'Investigation classification ownership is temporarily unavailable');
       }
-      if (
-        classificationOwner === 'investigation' &&
-        !preservesIafVofInvestigationClassificationOwnerParameter(currentErrand.parameters, requestedParameters)
-      ) {
+      if (classificationOwner === 'investigation' && !classificationPolicy.preservesOwnerParameters(currentErrand.parameters, requestedParameters)) {
         throw new HttpException(409, 'The investigation classification owner parameter cannot be changed through the facilities endpoint');
       }
     }

@@ -1,11 +1,12 @@
 import { Badge, Button } from '@sk-web-gui/react';
-import { useSupportStore, useUserStore } from '@stores/index';
+import { useNotificationStore } from '@stores/notification-store';
+import { useUserStore } from '@stores/user-store';
 import { Bell } from 'lucide-react';
 
 import { getFilteredNotifications } from './notification-utils';
 
 export const NotificationsBell = (props: { toggleShow: () => void }) => {
-  const notifications = useSupportStore((s) => s.notifications);
+  const notifications = useNotificationStore((s) => s.notifications);
   const user = useUserStore((s) => s.user);
   const filteredNotifications = getFilteredNotifications(notifications, user?.username || '');
   const newCount = filteredNotifications.filter((n) => !n.acknowledged).length;

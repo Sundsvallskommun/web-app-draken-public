@@ -1,9 +1,8 @@
 import { Label } from '@common/data-contracts/supportmanagement/data-contracts';
+import { Priority } from '@common/interfaces/priority';
 import { SupportAttachment } from '@supportmanagement/services/support-attachment-service';
 import { ExternalTags, Status, SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
 import { CParameter } from 'src/data-contracts/backend/data-contracts';
-
-import { Priority } from './priority';
 
 export interface ApiPagingData {
   pageable: {

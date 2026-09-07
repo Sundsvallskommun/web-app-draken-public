@@ -21,10 +21,10 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
+import { logApplicationFailure } from '@/services/request-diagnostics';
+import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
 import { SupportInvestigationHandoverTargetService } from '@/services/support-investigation-handover-target.service';
-import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
-import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
 export class HandoverPreviewDto {
@@ -116,14 +116,14 @@ const requireIdempotencyKey = (value: string | undefined): string => {
 @Controller()
 export class SupportHandoverController {
   private apiService = new ApiService();
-  private readonly investigationPolicyService: SupportInvestigationPolicyService;
+  private readonly investigationPolicyService: SupportApplicationPolicyService;
   private readonly investigationHandoverTargetService: SupportInvestigationHandoverTargetService;
   private readonly investigationDocumentService: SupportJsonParameterService;
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private SERVICE = apiServiceName('supportmanagement');
 
   constructor(
-    investigationPolicyService = new SupportInvestigationPolicyService(),
+    investigationPolicyService = new SupportApplicationPolicyService(),
     investigationHandoverTargetService = new SupportInvestigationHandoverTargetService(),
     investigationDocumentService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' }),
   ) {
@@ -221,7 +221,7 @@ export class SupportHandoverController {
       try {
         await this.addHandoverConversation(municipalityId, result.target.namespace, result.newErrandId, result.relationId, message, req.user);
       } catch (error) {
-        logger.error(`Error creating handover conversation message: ${error}`);
+        logApplicationFailure('Creating handover conversation message', error);
       }
     }
 

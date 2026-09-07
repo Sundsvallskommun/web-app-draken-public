@@ -10,7 +10,7 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { logger } from '@/utils/logger';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL } from '@/utils/util';
 
 export class SupportNotificationDto {
@@ -95,8 +95,7 @@ export class SupportNotificationController {
       throw new HttpException(403, 'Forbidden');
     }
     if (!municipalityId) {
-      console.error('No municipality id found, it is needed to create notification.');
-      logger.error('No municipality id found, it is needed to create notification.');
+      logApplicationFailure('No municipality id found, it is needed to create notification.');
       return response.status(400).send('Municipality id missing');
     }
     const url = `${municipalityId}/${this.namespace}/notifications`;
@@ -105,8 +104,7 @@ export class SupportNotificationController {
       ...data,
     };
     const res = await this.apiService.patch<any, Partial<SupportNotificationDto>>({ url, baseURL, data: body }, req.user).catch(e => {
-      logger.error('Error when registering support errand');
-      logger.error(e);
+      logApplicationFailure('Error when registering support errand', e);
       throw e;
     });
     return response.status(200).send(res.data);
@@ -127,8 +125,7 @@ export class SupportNotificationController {
       throw new HttpException(403, 'Forbidden');
     }
     if (!municipalityId) {
-      console.error('No municipality id found, it is needed to update notification.');
-      logger.error('No municipality id found, it is needed to update notification.');
+      logApplicationFailure('No municipality id found, it is needed to update notification.');
       return response.status(400).send('Municipality id missing');
     }
     const url = `${municipalityId}/${this.namespace}/notifications`;
@@ -139,8 +136,7 @@ export class SupportNotificationController {
       },
     ];
     const res = await this.apiService.patch<any, Partial<SupportNotificationDto[]>>({ url, baseURL, data: body }, req.user).catch(e => {
-      logger.error('Error when registering support errand');
-      logger.error(e);
+      logApplicationFailure('Error when registering support errand', e);
       throw e;
     });
     return response.status(200).send(res.data);
@@ -161,15 +157,13 @@ export class SupportNotificationController {
       throw new HttpException(403, 'Forbidden');
     }
     if (!municipalityId) {
-      console.error('No municipality id found, it is needed to set global acknowledged.');
-      logger.error('No municipality id found, it is needed to set global acknowledged.');
+      logApplicationFailure('No municipality id found, it is needed to set global acknowledged.');
       return response.status(400).send('Municipality id missing');
     }
     const url = `${municipalityId}/${this.namespace}/errands/${errandId}/notifications/global-acknowledged`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.put({ url, baseURL }, req.user).catch(e => {
-      logger.error('Error when global acknowledging support notification');
-      logger.error(e);
+      logApplicationFailure('Error when global acknowledging support notification', e);
       throw e;
     });
     return response.status(200).send(res.data);

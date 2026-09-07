@@ -1,18 +1,16 @@
+import { Priority } from '@common/interfaces/priority';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { sanitized } from '@common/services/sanitizer-service';
 import { Avatar, Button, Modal, Spinner } from '@sk-web-gui/react';
-import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
-import { Priority } from '@supportmanagement/interfaces/priority';
+import { useConfigStore } from '@stores/config-store';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useSupportStore } from '@stores/support-store';
+import { useUserStore } from '@stores/user-store';
 import { ParsedSupportEvent } from '@supportmanagement/interfaces/supportEvent';
 import { ParsedSupportRevisionDifference } from '@supportmanagement/interfaces/supportRevisionDiff';
-import {
-  Channels,
-  ResolutionLabelBOU,
-  ResolutionLabelIK,
-  ResolutionLabelKA,
-  ResolutionLabelKS,
-  ResolutionLabelLOK,
-  ResolutionLabelLOP,
-} from '@supportmanagement/services/support-errand-service';
+import { getSupportErrandPolicy } from '@supportmanagement/policy/support-errand-policy';
+import { supportResolutionHistoryLabels } from '@supportmanagement/policy/support-resolution-history';
+import { Channels } from '@supportmanagement/services/support-errand-service';
 import { getSupportErrandEvents } from '@supportmanagement/services/support-history-service';
 import { fetchRevisionDiff } from '@supportmanagement/services/support-revision-service';
 import dayjs from 'dayjs';
@@ -52,16 +50,12 @@ export const SidebarHistory: React.FC<{}> = () => {
     supportMetadata?.statuses?.forEach((e) => {
       if (e.name && e.displayName) _km[e.name] = e.displayName;
     });
-    [
-      ...Object.entries(ResolutionLabelKS),
-      ...Object.entries(ResolutionLabelKA),
-      ...Object.entries(ResolutionLabelLOP),
-      ...Object.entries(ResolutionLabelIK),
-      ...Object.entries(ResolutionLabelLOK),
-      ...Object.entries(ResolutionLabelBOU),
-    ].forEach((e) => {
-      _km[e[0]] = e[1];
-    });
+    // Persisted codes remain readable even when they are absent from the current close dialog.
+    Object.entries({ ...supportResolutionHistoryLabels, ...getSupportErrandPolicy().resolutions }).forEach(
+      ([code, label]) => {
+        _km[code] = label;
+      }
+    );
     Object.entries(Priority).forEach((e) => {
       _km[e[0]] = e[1];
     });
@@ -90,7 +84,7 @@ export const SidebarHistory: React.FC<{}> = () => {
           setIsOpen(true);
         })
         .catch((e) => {
-          console.error('Could not fetch change data');
+          logClientFailure('supportmanagement.sidebar-history.SidebarHistory', e);
         })
         .finally(() => {
           setIsLoading(false);

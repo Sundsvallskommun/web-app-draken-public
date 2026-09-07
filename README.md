@@ -1,359 +1,61 @@
 # Sundsvalls Kommun Draken
 
-## APIer som används
+Draken består av applikationer för olika verksamheter. Varje drake har ett eget frontend- och
+backendbygge och återanvänder SupportManagement eller CaseData. `yarn dragon list` visar det
+aktuella inventariet; [dragons.json](dragons.json) äger identiteter och domän.
 
-Dessa APIer används i projektet, applikationsanvändaren i WSO2 måste prenumerera på dessa.
+## Kom igång
 
-För MEX (Mark och exploatering):
+Använd Node **22.18 eller senare** och Yarn Classic 1.22. CI kör Node 24. Kör från reporoten:
 
-| API                  | Version |
-| -------------------- | ------: |
-| ActiveDirectory      |     2.0 |
-| Citizen              |     3.0 |
-| CaseData             |   12.10 |
-| Messaging            |    7.10 |
-| Templating           |     2.1 |
-| Contract             |     7.0 |
-| Employee             |     2.0 |
-| Party                |     2.0 |
-| SimulatorServer      |     2.0 |
-| LegalEntity          |     2.0 |
-| Relations            |     1.1 |
-| CaseStatus           |     4.1 |
-| Estateinfo           |     2.2 |
-| BillingPreprocessor  |     4.5 |
-| BillingDataCollector |     2.1 |
-
-För KS (Kontakt Sundsvall):
-
-| API               | Version |
-| ----------------- | ------: |
-| CaseData          |   12.10 |
-| SupportManagement |    14.9 |
-| Citizen           |     3.0 |
-| ActiveDirectory   |     2.0 |
-| Templating        |     2.1 |
-| Estateinfo        |     2.2 |
-| Party             |     2.0 |
-| SimulatorServer   |     2.0 |
-| LegalEntity       |     2.0 |
-| Relations         |     1.1 |
-| CaseStatus        |     4.1 |
-| Employee          |     2.0 |
-
-För PT (Parkeringstillstånd):
-
-| API             | Version |
-| --------------- | ------: |
-| ActiveDirectory |     2.0 |
-| Citizen         |     3.0 |
-| CaseData        |   12.10 |
-| Messaging       |    7.10 |
-| Templating      |     2.1 |
-| Contract        |     7.0 |
-| Employee        |     2.0 |
-| SimulatorServer |     2.0 |
-| LegalEntity     |     2.0 |
-| Relations       |     1.1 |
-| CaseStatus      |     4.1 |
-| PartyAssets     |     3.2 |
-| JsonSchema      |     1.0 |
-
-För LOP (Lön och pension):
-
-| API                 | Version |
-| ------------------- | ------: |
-| SupportManagement   |    14.9 |
-| Citizen             |     3.0 |
-| ActiveDirectory     |     2.0 |
-| Templating          |     2.1 |
-| LegalEntity         |     2.0 |
-| Employee            |     2.0 |
-| BillingPreprocessor |     4.5 |
-| SimulatorServer     |     2.0 |
-
-För ROB (Rekrytering och bemanning):
-
-| API               | Version |
-| ----------------- | ------: |
-| ActiveDirectory   |     2.0 |
-| Citizen           |     3.0 |
-| Employee          |     2.0 |
-| LegalEntity       |     2.0 |
-| SimulatorServer   |     2.0 |
-| SupportManagement |    14.9 |
-| Templating        |     2.1 |
-
-För KA (Kontakt Ånge):
-
-| API               | Version |
-| ----------------- | ------: |
-| SupportManagement |    14.9 |
-| Citizen           |     3.0 |
-| ActiveDirectory   |     2.0 |
-| Templating        |     2.1 |
-| LegalEntity       |     2.0 |
-| Employee          |     2.0 |
-| SimulatorServer   |     2.0 |
-
-För IK (Intern kundtjänst):
-
-| API               | Version |
-| ----------------- | ------: |
-| SupportManagement |    14.9 |
-| Citizen           |     3.0 |
-| ActiveDirectory   |     2.0 |
-| Templating        |     2.1 |
-| LegalEntity       |     2.0 |
-| Employee          |     2.0 |
-| SimulatorServer   |     2.0 |
-
-För MSVA (MittSverige Vatten & avfall):
-
-| API               | Version |
-| ----------------- | ------: |
-| SupportManagement |    14.9 |
-| Citizen           |     3.0 |
-| ActiveDirectory   |     2.0 |
-| Templating        |     2.1 |
-| LegalEntity       |     2.0 |
-| Employee          |     2.0 |
-| SimulatorServer   |     2.0 |
-
-För SE (Servicecenter Ekonomi):
-
-| API               | Version |
-| ----------------- | ------: |
-| SupportManagement |    14.9 |
-| Citizen           |     3.0 |
-| ActiveDirectory   |     2.0 |
-| Templating        |     2.1 |
-| LegalEntity       |     2.0 |
-| Employee          |     2.0 |
-| SimulatorServer   |     2.0 |
-
-För BOU (Barn- och utbildningsförvaltningen):
-
-| API               | Version |
-| ----------------- | ------: |
-| SupportManagement |    14.9 |
-| Citizen           |     3.0 |
-| ActiveDirectory   |     2.0 |
-| Templating        |     2.1 |
-| LegalEntity       |     2.0 |
-| Employee          |     2.0 |
-| Relations         |     1.1 |
-| SimulatorServer   |     2.0 |
-
-För LOK (Lokalplanering):
-
-| API               | Version |
-| ----------------- | ------: |
-| SupportManagement |    14.9 |
-| Citizen           |     3.0 |
-| ActiveDirectory   |     2.0 |
-| Templating        |     2.1 |
-| LegalEntity       |     2.0 |
-| Employee          |     2.0 |
-| Relations         |     1.1 |
-| SimulatorServer   |     2.0 |
-
-## Utveckling
-
-### Krav
-
-- Node >= 20 LTS
-- Yarn
-
-### Steg för steg
-
-1. Klona ner repot.
-
-```
-git clone git@github.com:Sundsvallskommun/web-app-draken.git
+```sh
+git clone git@github.com:Sundsvallskommun/web-app-draken-public.git
+cd web-app-draken-public
+yarn install --frozen-lockfile
+yarn --cwd frontend install --frozen-lockfile
+yarn --cwd backend install --frozen-lockfile
+yarn dragon list
+cp frontend/.env.kc-example frontend/.env.kc
+cp backend/.env.kc.example.local backend/.env.kc.development.local
 ```
 
-2. Installera dependencies för både `backend` och `frontend`
+KC är ett exempel; byt `kc` mot vald drakes id i gemener. Fyll i tjänsternas lokala adresser,
+API-credentials och SAML-inställningar. Använd olika `PORT` i frontendens och backendens env-fil.
+Exemplen är mallar utan fungerande hemligheter. Starta därefter båda tjänsterna:
 
-```
-cd frontend
-yarn install
-
-cd backend
-yarn install
+```sh
+yarn dragon dev KC
 ```
 
-3. Skapa .env-filer
+[Utvecklingsguiden](docs/architecture/dragon-development.md) är den detaljerade källan för
+kodägarskap, nya drakar, miljöprioritet, byggning, API-kontrakt och verifiering.
 
-**Tillgängliga drakar:** `kc`, `ka`, `mex`, `pt`, `rob`, `lop`, `ik`, `msva`, `se`, `bou`, `lok`, `iaf`, `vof`
+## Hitta rätt
 
-### Skapa alla env-filer på en gång
+| Jag ska … | Börja här |
+| --- | --- |
+| Ändra en drake eller lägga till en ny | [Ägare och onboarding](docs/architecture/dragon-development.md) |
+| Avgöra vad som hör till basen, domänen eller appen | [Gränsen för delad och appspecifik logik](docs/architecture/dragon-development.md#gränsen-mellan-bas-domän-och-applikation) |
+| Förstå en förbjuden import | [Importregler och kvarvarande skuld](docs/architecture/boundaries.md) |
+| Ändra funktionsflaggor | [Flaggornas ägare och livscykel](docs/architecture/runtime-feature-flags.md) |
+| Bygga, leverera eller återställa ett par | [Release-manifest, images och volymer](deployments/README.md) |
+| Felsöka ett anrop | [Diagnostik och driftansvar](docs/operations/logging.md) |
+| Förstå säkerhetsgränserna | [Session, releasekontroll och upstreambehörigheter](docs/architecture/dragon-security.md) |
 
-Frontend (kör från `frontend/`):
+## Verifiera och generera kontrakt
 
-```bash
-cp .env.kc-example .env.kc && \
-cp .env.ka-example .env.ka && \
-cp .env.mex-example .env.mex && \
-cp .env.pt-example .env.pt && \
-cp .env.rob-example .env.rob && \
-cp .env.lop-example .env.lop && \
-cp .env.ik-example .env.ik && \
-cp .env.msva-example .env.msva && \
-cp .env.se-example .env.se && \
-cp .env.bou-example .env.bou && \
-cp .env.lok-example .env.lok && \
-cp .env.iaf-example .env.iaf && \
-cp .env.vof-example .env.vof
+```sh
+yarn verify                     # Typkontroll, strikt lint/importgränser, format och tester
+yarn dragon build KC            # Vald frontend och backend
+yarn knip                       # Separat inventering av oanvänd kod; innehåller kvarvarande skuld
 ```
 
-Backend (kör från `backend/`):
+Webbläsartester behöver en startad frontend för rätt drake. Se utvecklingsguiden för kommandon
+och CI:s täckning. Knip ingår inte i `verify`: dess befintliga städfynd ska åtgärdas hos rätt ägare,
+men får inte hindra att den ordinarie verifieringen genomförs.
 
-```bash
-cp .env.kc.example.local .env.kc.development.local && \
-cp .env.ka.example.local .env.ka.development.local && \
-cp .env.mex.example.local .env.mex.development.local && \
-cp .env.pt.example.local .env.pt.development.local && \
-cp .env.rob.example.local .env.rob.development.local && \
-cp .env.lop.example.local .env.lop.development.local && \
-cp .env.ik.example.local .env.ik.development.local && \
-cp .env.msva.example.local .env.msva.development.local && \
-cp .env.se.example.local .env.se.development.local && \
-cp .env.bou.example.local .env.bou.development.local && \
-cp .env.lok.example.local .env.lok.development.local && \
-cp .env.iaf.example.local .env.iaf.development.local && \
-cp .env.vof.example.local .env.vof.development.local
-```
-
-### Skapa för enskild drake
-
-Frontend:
-
-```bash
-cd frontend
-cp .env.{drake}-example .env.{drake}
-# Exempel: cp .env.se-example .env.se
-```
-
-Backend:
-
-```bash
-cd backend
-cp .env.{drake}.example.local .env.{drake}.development.local
-# Exempel: cp .env.se.example.local .env.se.development.local
-```
-
-Support Management använder den stabila API-prenumerationen `supportmanagement/15.1` som standard. En drake som
-behöver sprintkontraktet (för närvarande IAF/VOF-utredning) ska välja det uttryckligen i backendmiljön:
-
-```env
-SUPPORTMANAGEMENT_API_TARGET=sprint
-```
-
-Tillåtna värden är `stable`, `sprint` och `alktsprint`. Ett okänt värde stoppar backend vid uppstart, så att en felstavad
-deploymentinställning inte tyst byter API-kontrakt för alla implementationer.
-
-Drakens ärende-, handläggar-, status- och fastighetskommandon kräver en exakt stark `If-Match` och skickar samma
-version vidare till Support Management. Den 2 september 2026 verifierades de publicerade OpenAPI-kontrakten för både
-`supportmanagement/15.1` och `supportmanagement-sprint/15.1`: båda deklarerar `If-Match`, svaren 409/412 och
-versionsfält på ärenden och JSON Parameters. Därmed använder stable- och sprintdeploymenterna samma atomiska
-skrivkontrakt utan en svag kompatibilitetsväg i Draken. Kontrollera kontrakten på nytt när någon prenumeration byter
-version; Drakens förkontroll av version och status ersätter inte atomisk versionskontroll i upstream.
-
-Statuskommandot validerar klientens källstatus och version mot ett färskt ärende samt målstatusen mot live metadata.
-Support Management 15.1 exponerar däremot ingen source→target-graf eller exekveringsroute för statusövergångar, så
-Draken kan inte auktorisera själva kanten utan att införa appspecifika regler. Den domänregeln behöver ägas av
-Support Management innan starkare generell transitionvalidering kan införas.
-
-Utredningsdokument aktiveras per app genom backendens runtimeprofil. Läs- och skrivrättigheter för dokumentens
-JSON Parameter-nycklar konfigureras i Support Managements AccessMapper för aktuellt namespace. Draken skickar den
-inloggades AD-identitet i `X-Sent-By` och låter Support Management vara enda ägare till åtkomstbeslutet:
-
-```env
-SUPPORT_INVESTIGATION_HANDOVER_TARGETS=[{"municipalityId":"2281","namespace":"target-namespace","documentKeys":["utredning-enhetschef","utredning-sol-lss","utredning-hsl"]}]
-```
-
-IAF/VOF med aktiverad utredning behöver AccessMapper-regler för profilens dokumentnycklar och
-`SUPPORTMANAGEMENT_API_TARGET=sprint`. Transportkravet
-deklareras i utredningsprofilen och kontrolleras i runtimepolicyn; en felaktig stable-deployment annonserar därför
-utredningen och dess registrering som otillgängliga i stället för att försöka använda ett inkompatibelt API.
-
-`SUPPORT_INVESTIGATION_HANDOVER_TARGETS` är en explicit allowlist över de kommun- och namespace-par som är
-förberedda att ta emot skyddade utredningsdokument samt exakt vilka `documentKeys` målet stöder. När källprofilen
-utökas måste målcapabilityn därför uppdateras uttryckligen innan överföring tillåts. Saknad eller ogiltig konfiguration tillåter aldrig sådan
-överföring. Draken verifierar läsåtkomst via Support Managements skyddade dokument-endpoint före överföring;
-förhandsgranskning kräver läsåtkomst till profilens samtliga dokumentnycklar och genomförandet kräver
-dessutom `canEditSupportManagement`. Support Management kontrollerar åtkomst före existens, så en nekad nyckel kan
-inte säkert behandlas som ett saknat dokument när upstreams överlämning arbetar på rådata. Överlämningar där
-`jsonParameters` inte väljs påverkas inte av denna kontroll.
-
-4. Konfigurera env-filer
-
-Redigera env-filer efter behov. URLer, nycklar och cert behöver fyllas i korrekt.
-
-- `CLIENT_KEY` och `CLIENT_SECRET` måste fyllas i för att APIerna ska fungera, du måste ha en applikation från WSO2-portalen
-- `SAML_ENTRY_SSO` behöver pekas till en SAML IDP
-- `SAML_IDP_PUBLIC_CERT` ska stämma överens med IDPens cert
-- `SAML_PRIVATE_KEY` och `SAML_PUBLIC_KEY` behöver bara fyllas i korrekt om man kör mot en riktig IDP
-
-### Starta utvecklingsserver
-
-Backend (kör från `backend/`):
-
-```bash
-yarn dev:{drake}
-# Exempel: yarn dev:se
-```
-
-Frontend (kör från `frontend/`):
-
-```bash
-yarn dev:{drake}
-# Exempel: yarn dev:se
-```
-
-### Tester
-
-**Backend** (Vitest, kör från `backend/`):
-
-```bash
-yarn test           # Kör enhetstesterna en gång
-yarn test:watch     # Watch-läge
-yarn test:coverage  # Med täckningsrapport (v8)
-yarn type-check:test # Typkontroll av testerna
-```
-
-Testerna ligger i `backend/src/tests/` (`*.service.test.ts`).
-
-**Frontend** (kör från `frontend/`):
-
-```bash
-yarn test                       # Enhetstester (Vitest)
-yarn test:watch                 # Vitest i watch-läge
-yarn test:coverage              # Med täckningsrapport (v8)
-yarn type-check:test            # Typkontroll av testerna
-yarn test:e2e:{drake}           # Playwright E2E (mex | pt | kc | lop | iaf | vof)
-yarn test:e2e:iaf-schema-lab    # Playwright E2E för utvecklingslabbet
-yarn test:e2e:ui:{drake}        # Interaktivt (mex | pt | kc | lop | vof)
-```
-
-Enhetstesterna ligger bredvid modulen de testar (`<modul>.test.ts`) och körs med Vitest,
-samma testkörare som backend. Assertions skrivs med `node:assert/strict` i stället för
-`expect`, och `globals` är avstängt — allt importeras explicit. Alias som `@common/*` löses
-upp av Vite direkt ur `tsconfig.json`, så även moduler med beroenden går att enhetstesta;
-allt som kräver rendering hör fortfarande hemma i Playwright. Testerna omfattas inte av
-`yarn type-check` utan av `yarn type-check:test` (se CLAUDE.md för varför).
-
-### Feature-flaggor
-
-Feature-flaggor konfigureras i frontend `.env`-filerna. Se dokumentation:
-https://confluence.sundsvall.se/spaces/OA/pages/1259405457/Feature+flaggor+alla+drakar
-
-### Övriga kommandon
-
-| Kommando                              | Beskrivning                         |
-| ------------------------------------- | ----------------------------------- |
-| `yarn build:{drake}`                  | Bygger för produktion               |
-| `yarn start:{drake}`                  | Startar produktionsserver           |
-| `yarn test:e2e:{drake}`               | Kör Playwright E2E-tester           |
-| `yarn generate:datacontracts:{drake}` | Genererar TypeScript-typer från API |
+API-namn och versioner finns i [backendens API-konfiguration](backend/src/config/api-config.ts).
+Förnya backendens upstreamtyper med `yarn --cwd backend generate:datacontracts` (använder KC:s
+lokala backendmiljö). Förnya frontendens backendtyper med
+`yarn --cwd frontend generate:contracts:kc` mot en startad KC-backend med Swagger aktiverat.
+Granska genererade ändringar tillsammans med ändringen av det ägande API-kontraktet.

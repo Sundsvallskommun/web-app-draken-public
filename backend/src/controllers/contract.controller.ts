@@ -9,7 +9,7 @@ import { apiServiceName } from '@/config/api-config';
 import { Contract, PageContract } from '@/data-contracts/contract/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { validateContractAction } from '@/services/contract-service';
-import { logger } from '@/utils/logger';
+import { logApplicationEvent, logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL, luhnCheck } from '@/utils/util';
 
 export interface ResponseData {
@@ -119,9 +119,7 @@ export class CasedataContractsController {
       url += `&sort=${sortBy},${order}`;
     }
 
-    logger.info(
-      `Fetching contracts with params: page=${page}, size=${size}, sortBy=${sortBy}, sortOrder=${sortOrder}, query=${query}, status=${status}, contractType=${contractType}, leaseType=${leaseType}`,
-    );
+    logApplicationEvent('Fetching contracts');
 
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<PageContract>({ url, baseURL }, req.user);
@@ -145,8 +143,7 @@ export class CasedataContractsController {
     const url = `${MUNICIPALITY_ID}/contracts`;
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService.post<Contract, Contract>({ url, baseURL, data }, req.user).catch(e => {
-      logger.error('Something went wrong when creating contract');
-      logger.error(e);
+      logApplicationFailure('Something went wrong when creating contract', e);
       throw e;
     });
     return { data: response.data, message: `Contract created` };
@@ -233,8 +230,7 @@ export class CasedataContractsController {
     const url = `${MUNICIPALITY_ID}/contracts/${contractId}/attachments`;
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService.post<CasedataContractAttachment, CasedataContractAttachment>({ url, baseURL, data }, req.user).catch(e => {
-      logger.error('Something went wrong when saving signed contract attachment');
-      logger.error(e);
+      logApplicationFailure('Something went wrong when saving signed contract attachment', e);
       throw e;
     });
     return { data: response.data, message: `Signed contract attachment was saved` };

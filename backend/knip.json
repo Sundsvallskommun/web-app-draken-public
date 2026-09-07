@@ -1,20 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": [
-    "src/server.ts",
-    "src/types/**/*.d.ts"
-  ],
+  "entry": ["src/dragons/*/server.ts", "src/types/**/*.d.ts"],
   "project": ["src/**/*.ts"],
-  "ignore": [
-    "src/data-contracts/**"
-  ],
-  "ignoreDependencies": [
-    "cors",
-    "swagger-typescript-api",
-    "tsconfig-paths",
-    "@types/express-serve-static-core"
-  ],
-  "ignoreBinaries": [
-    "pm2"
-  ]
+  "ignore": ["src/data-contracts/**"],
+  "ignoreDependencies": ["cors", "swagger-typescript-api", "tsconfig-paths", "@types/express-serve-static-core", "nodemon", "tsc-alias"]
 }

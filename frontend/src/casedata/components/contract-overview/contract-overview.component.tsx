@@ -1,6 +1,7 @@
 import { Contract, PageContract } from '@casedata/interfaces/contracts';
 import { ContractFilterParams, fetchContracts } from '@casedata/services/contract-service';
 import { DetailPanelWrapper } from '@common/components/detail-panel-wrapper/detail-panel-wrapper.component';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { Button, Link, useSnackbar } from '@sk-web-gui/react';
 import { ArrowLeft } from 'lucide-react';
@@ -155,7 +156,7 @@ export const ContractOverview: FC = () => {
           setContractsResponse(res);
         })
         .catch((e) => {
-          console.error('Error fetching contracts:', e);
+          logClientFailure('casedata.contract-overview.ContractOverview', e);
           toastMessage({
             position: 'bottom',
             closeable: false,

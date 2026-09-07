@@ -1,17 +1,17 @@
 import type { Page, Request, Route } from '@playwright/test';
 
-import investigationCases from '../../../src/supportmanagement/investigation/avvikelse/schemas/fixtures/investigation-schema-cases.json';
-import managerSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-enhetschef.schema-request.json';
-import managerUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-enhetschef.ui-schema-request.json';
-import hslSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-hsl.schema-request.json';
-import hslUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-hsl.ui-schema-request.json';
-import solLssSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-sol-lss.schema-request.json';
-import solLssUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-sol-lss.ui-schema-request.json';
+import investigationCases from '../../../src/avvikelse/schemas/fixtures/investigation-schema-cases.json';
+import managerSchemaRequest from '../../../src/avvikelse/schemas/utredning-enhetschef.schema-request.json';
+import managerUiSchemaRequest from '../../../src/avvikelse/schemas/utredning-enhetschef.ui-schema-request.json';
+import hslSchemaRequest from '../../../src/avvikelse/schemas/utredning-hsl.schema-request.json';
+import hslUiSchemaRequest from '../../../src/avvikelse/schemas/utredning-hsl.ui-schema-request.json';
+import solLssSchemaRequest from '../../../src/avvikelse/schemas/utredning-sol-lss.schema-request.json';
+import solLssUiSchemaRequest from '../../../src/avvikelse/schemas/utredning-sol-lss.ui-schema-request.json';
 
 export const backendOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').origin;
 export const municipalityId = '2281';
 export const errandId = 'ca97b2be-dc37-4707-b5bb-bae98936a183';
-export const application = (process.env.NEXT_PUBLIC_APPLICATION ?? 'IAF').trim().toUpperCase();
+const application = (process.env.NEXT_PUBLIC_APPLICATION ?? 'IAF').trim().toUpperCase();
 const applicationSlug = application.toLowerCase();
 export const errandNumber = `${application}-2026-0001`;
 export const katlaSchemaId = `2281_katla-${applicationSlug}-report_1.0`;
@@ -19,7 +19,7 @@ export const katlaSchemaId = `2281_katla-${applicationSlug}-report_1.0`;
 export const investigationKeys = ['utredning-enhetschef', 'utredning-sol-lss', 'utredning-hsl'] as const;
 export type InvestigationKey = (typeof investigationKeys)[number];
 
-export interface MockInvestigationProfile {
+export interface MockSupportApplicationProfile {
   application: string;
   state: 'active' | 'inactive' | 'unavailable';
   registration: { mode: 'enabled' | 'disabled' };
@@ -31,7 +31,7 @@ export interface MockInvestigationProfile {
   }>;
 }
 
-export const defaultInvestigationProfile = (): MockInvestigationProfile => ({
+export const defaultSupportApplicationProfile = (): MockSupportApplicationProfile => ({
   application,
   state: 'active',
   registration: { mode: 'disabled' },
@@ -122,9 +122,9 @@ export interface IafApiScenario {
   labels?: MockLabel[];
   labelStructure?: MockLabel[];
   omitLabelResourcePaths?: boolean;
-  investigationProfile?: MockInvestigationProfile;
-  investigationProfileResponse?: unknown;
-  investigationProfileStatus?: number;
+  supportProfile?: MockSupportApplicationProfile;
+  supportProfileResponse?: unknown;
+  supportProfileStatus?: number;
 }
 
 const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
@@ -535,8 +535,8 @@ const isClassificationPatchBody = (body: unknown): body is ClassificationPatchBo
 };
 
 export async function installIafApiMock(page: Page, scenario: IafApiScenario = {}): Promise<IafApiTrace> {
-  const investigationProfile = scenario.investigationProfile ?? defaultInvestigationProfile();
-  const configuredDocumentKeys = new Set(investigationProfile.documents.map(({ key }) => key));
+  const supportProfile = scenario.supportProfile ?? defaultSupportApplicationProfile();
+  const configuredDocumentKeys = new Set(supportProfile.documents.map(({ key }) => key));
   const documents: Record<string, InvestigationDocument> = structuredClone(
     scenario.documents ?? { 'utredning-enhetschef': existingManagerDocument() }
   );
@@ -629,12 +629,10 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
       return;
     }
 
-    if (method === 'GET' && path.endsWith('/supportmanagement/investigation-profile')) {
+    if (method === 'GET' && path.endsWith('/supportmanagement/application-profile')) {
       trace.profileGets += 1;
       const configuredResponse =
-        scenario.investigationProfileResponse === undefined
-          ? investigationProfile
-          : scenario.investigationProfileResponse;
+        scenario.supportProfileResponse === undefined ? supportProfile : scenario.supportProfileResponse;
       const featureFlagState = scenario.featureFlags?.find(({ name }) => name === 'useInvestigation')?.enabled;
       const response =
         featureFlagState === false &&
@@ -643,7 +641,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         !Array.isArray(configuredResponse)
           ? { ...configuredResponse, state: 'inactive' }
           : configuredResponse;
-      await fulfillJson(route, response, scenario.investigationProfileStatus ?? 200);
+      await fulfillJson(route, response, scenario.supportProfileStatus ?? 200);
       return;
     }
 

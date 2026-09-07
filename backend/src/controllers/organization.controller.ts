@@ -7,6 +7,7 @@ import { apiServiceName } from '@/config/api-config';
 import { OrganizationTree } from '@/data-contracts/company/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import ApiService from '@/services/api.service';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 
 interface OrgLeafNodeDTO {
   orgId: number;
@@ -28,7 +29,7 @@ export class OrganizationController {
       const res = await this.apiService.get<OrganizationTree>({ url }, req.user);
       return response.send({ data: res.data || null, message: 'success' });
     } catch (error: any) {
-      console.error('Failed to get org tree:', error);
+      logApplicationFailure('Failed to get org tree', error);
       return response.send({ data: null, message: 'success' });
     }
   }
@@ -48,7 +49,7 @@ export class OrganizationController {
       const leafNodes = this.flattenToLeafNodes(res.data);
       return response.send({ data: leafNodes, message: 'success' });
     } catch (error: any) {
-      console.error('Failed to get leaf nodes:', error);
+      logApplicationFailure('Failed to get leaf nodes', error);
       return response.send({ data: [], message: 'success' });
     }
   }

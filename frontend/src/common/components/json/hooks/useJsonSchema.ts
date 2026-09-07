@@ -1,4 +1,5 @@
 import { getRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -33,7 +34,7 @@ export function useJsonSchema(municipalityId: string, schemaId: string): UseJson
         setUiSchema(null);
       }
     } catch (e) {
-      console.error('Failed to load schema:', schemaId, e);
+      logClientFailure('common.useJsonSchema.useJsonSchema', e);
       setError(`Failed to load schema: ${schemaId}`);
     } finally {
       setLoading(false);

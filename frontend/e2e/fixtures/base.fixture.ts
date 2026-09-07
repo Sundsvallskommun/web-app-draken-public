@@ -1,6 +1,6 @@
 import { test as base, Route } from '@playwright/test';
 import { mockEnv } from './mock-env';
-import { mockInvestigationProfile } from './mock-investigation-profile';
+import { mockSupportApplicationProfile } from './mock-support-application-profile';
 
 type MockRouteOptions = {
   method?: string;
@@ -8,15 +8,11 @@ type MockRouteOptions = {
 };
 
 type BaseFixtures = {
-  mockRoute: (
-    pattern: string | RegExp,
-    response: unknown,
-    options?: MockRouteOptions
-  ) => Promise<void>;
+  mockRoute: (pattern: string | RegExp, response: unknown, options?: MockRouteOptions) => Promise<void>;
   dismissCookieConsent: () => Promise<void>;
   waitForFonts: () => Promise<void>;
   env: typeof mockEnv;
-  investigationProfileRoute: void;
+  supportProfileRoute: void;
 };
 
 export const test = base.extend<BaseFixtures>({
@@ -26,13 +22,13 @@ export const test = base.extend<BaseFixtures>({
 
   // Registered before the test body, so a spec that routes the endpoint itself still wins:
   // Playwright runs the most recently registered handler first.
-  investigationProfileRoute: [
+  supportProfileRoute: [
     async ({ page }, use) => {
-      await page.route('**/supportmanagement/investigation-profile', async (route: Route) => {
+      await page.route('**/supportmanagement/application-profile', async (route: Route) => {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(mockInvestigationProfile()),
+          body: JSON.stringify(mockSupportApplicationProfile()),
         });
       });
       await use();
@@ -43,11 +39,7 @@ export const test = base.extend<BaseFixtures>({
   mockRoute: async ({ page }, use) => {
     const mocked: (() => Promise<void>)[] = [];
 
-    const mock = async (
-      pattern: string | RegExp,
-      response: unknown,
-      options: MockRouteOptions = {}
-    ) => {
+    const mock = async (pattern: string | RegExp, response: unknown, options: MockRouteOptions = {}) => {
       const { method, status = 200 } = options;
 
       await page.route(pattern, async (route: Route) => {

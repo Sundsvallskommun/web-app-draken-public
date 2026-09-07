@@ -1,10 +1,6 @@
-import { config } from 'dotenv';
-
 import { APIS } from './api-config';
 
 export { APIS };
-
-config({ path: `.env.${process.env.NODE_ENV || 'development'}.local` });
 
 export const CREDENTIALS = process.env.CREDENTIALS === 'true';
 export const SWAGGER_ENABLED = process.env.SWAGGER_ENABLED === 'true';
@@ -14,7 +10,6 @@ export const {
   NODE_ENV,
   PORT,
   API_BASE_URL,
-  LOG_FORMAT,
   LOG_DIR,
   ORIGIN,
   SECRET_KEY,

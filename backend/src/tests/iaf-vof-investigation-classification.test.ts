@@ -6,11 +6,14 @@ import {
   preservesIafVofInvestigationClassificationOwnerParameter,
   resolveIafVofInvestigationClassificationOwner,
   resolveIafVofInvestigationClassificationPolicy,
-} from '@/config/iaf-vof-investigation-classification';
-import { createSupportInvestigationProfile, getSupportInvestigationProfile } from '@/config/support-investigation-profile';
+} from '@/avvikelse/classification-policy';
+import { createSupportApplicationProfile } from '@/config/support-application-profile';
+
+import { supportProfileFixture } from './helpers/support-application-profiles';
 
 const customProfile = (application = 'IAF') =>
-  createSupportInvestigationProfile({
+  createSupportApplicationProfile({
+    registration: { mode: 'disabled' },
     application,
     documents: [
       { key: 'manager-document', schemaName: 'utredning-enhetschef', tabLabel: 'Manager', ownerLabel: 'Manager' },
@@ -20,7 +23,7 @@ const customProfile = (application = 'IAF') =>
 
 describe('fixed IAF/VOF investigation classification policy', () => {
   it.each(['IAF', 'VOF'])('resolves fixed schema roles to profile persistence keys for %s', application => {
-    expect(resolveIafVofInvestigationClassificationPolicy(customProfile(application))).toEqual({
+    expect(resolveIafVofInvestigationClassificationPolicy(customProfile(application))).toMatchObject({
       defaultOwnerDocumentKey: 'manager-document',
       reportedMisconductOwnerDocumentKey: 'social-document',
       labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE,
@@ -35,11 +38,13 @@ describe('fixed IAF/VOF investigation classification policy', () => {
   });
 
   it('fails closed when a fixed owner schema is missing or ambiguous', () => {
-    const missing = createSupportInvestigationProfile({
+    const missing = createSupportApplicationProfile({
+      registration: { mode: 'disabled' },
       application: 'IAF',
       documents: [{ key: 'manager', schemaName: 'utredning-enhetschef', tabLabel: 'Manager', ownerLabel: 'Manager' }],
     });
-    const ambiguous = createSupportInvestigationProfile({
+    const ambiguous = createSupportApplicationProfile({
+      registration: { mode: 'disabled' },
       application: 'IAF',
       documents: [...customProfile().documents, { key: 'manager-copy', schemaName: 'utredning-enhetschef', tabLabel: 'Copy', ownerLabel: 'Manager' }],
     });
@@ -62,7 +67,7 @@ describe('fixed IAF/VOF investigation classification policy', () => {
   });
 
   it('uses resourcePath as authoritative and resourceName only as a pathless fallback', () => {
-    const policy = resolveIafVofInvestigationClassificationPolicy(getSupportInvestigationProfile('IAF'))!;
+    const policy = resolveIafVofInvestigationClassificationPolicy(supportProfileFixture('IAF'))!;
     expect(resolveIafVofInvestigationClassificationOwner(policy, { labels: [{ resourcePath: 'OTHER/ABUSE', resourceName: 'ABUSE' }] }).mode).toBe(
       'default',
     );

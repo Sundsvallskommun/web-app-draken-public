@@ -2,7 +2,7 @@ import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import { Button, FormErrorMessage } from '@sk-web-gui/react';
-import { useCasedataStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
 import { Plus } from 'lucide-react';
 import { FC } from 'react';
 import { UseFormReturn } from 'react-hook-form';
@@ -79,7 +79,6 @@ export const SearchResult: FC<SearchResultProps> = ({
       <div className="my-md">
         <CommonNestedEmailArrayV2
           addingStakeholder={true}
-          errand={errand}
           disabled={disabled}
           error={!!formState.errors.emails}
           key={`nested-email-array`}

@@ -1,13 +1,13 @@
 'use client';
-
-import { useMessageTemplates } from '@casedata/hooks/useMessageTemplates';
-import { ACCEPTED_UPLOAD_FILETYPES } from '@casedata/services/casedata-attachment-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import TextEditor from '@common/components/dynamic-text-editor';
 import FileUpload from '@common/components/file-upload/file-upload.component';
 import { useMessageBodyTemplateState } from '@common/hooks/use-message-body-template-state';
+import { useMessageTemplates } from '@common/hooks/useMessageTemplates';
 import { isKA, isKC, isLOP } from '@common/services/application-service';
+import { ACCEPTED_UPLOAD_FILETYPES } from '@common/services/attachment-upload-policy';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { invalidPhoneMessage, supportManagementPhonePattern } from '@common/services/helper-service';
 import {
   buildMessageTemplateBody,
@@ -37,7 +37,10 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useSupportStore } from '@stores/support-store';
+import { useUserStore } from '@stores/user-store';
 import {
   getSupportAttachment,
   SingleSupportAttachment,
@@ -59,7 +62,10 @@ import {
 import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import { buildSupportReplyContext } from '@supportmanagement/services/support-message-reply-context-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
-import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
+import {
+  getStakeholderEmailOptions,
+  getSupportOwnerStakeholder,
+} from '@supportmanagement/services/support-stakeholder-service';
 import { File, Paperclip, X } from 'lucide-react';
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
@@ -154,6 +160,7 @@ export const SupportMessageForm: FC<{
   const _supportErrand = useSupportStore((s) => s.supportErrand);
   const _supportAttachments = useSupportStore((s) => s.supportAttachments);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const supportMetadata = useMetadataStore((state) => state.supportMetadata);
   const supportErrand = _supportErrand!;
   const supportAttachments = _supportAttachments ?? [];
 
@@ -359,7 +366,7 @@ export const SupportMessageForm: FC<{
         );
       })
       .catch((e) => {
-        console.error(e);
+        logClientFailure('supportmanagement.support-message-form.onSubmit', e);
         setIsSending(false);
         setMessageError(true);
         toastMessage({
@@ -732,7 +739,7 @@ export const SupportMessageForm: FC<{
               data-cy="email-input"
               key={`nested-email-array`}
               {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}
-              errand={supportErrand}
+              listedEmails={getStakeholderEmailOptions(supportErrand?.stakeholders, supportMetadata?.roles)}
             />
           )}
 

@@ -1,5 +1,4 @@
 'use client';
-
 import {
   findPlaceEmploymentMatch,
   findPlaceNode,
@@ -18,10 +17,11 @@ import {
   placeName,
   type PlaceNode,
 } from '@common/components/json/utils/place-structure';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { getUserEmployments, OrgManagerDTO } from '@common/services/employee-service';
 import { ariaDescribedByIds, type FieldProps } from '@rjsf/utils';
 import { Button, Combobox, FormControl, FormLabel, RadioButton } from '@sk-web-gui/react';
-import { useMetadataStore } from '@stores/index';
+import { useMetadataStore } from '@stores/metadata-store';
 import { Pen } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -135,7 +135,7 @@ export function FacilitySearchField(props: FieldProps) {
         const prefillNode = getEmploymentPrefillNode(match, orgName);
         if (prefillNode) selectPlace(prefillNode);
       } catch (error) {
-        console.error('Failed to load employments:', error);
+        logClientFailure('common.facility-search-field.componant.loadEmploymentMatch', error);
       }
     };
 

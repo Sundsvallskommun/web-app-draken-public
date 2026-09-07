@@ -4,9 +4,9 @@ import {
   resolveCategorizationMode,
 } from '@supportmanagement/components/support-errand-basics-form/categorization-control';
 
+import { useSupportApplicationProfileStore } from '../application/support-application-profile-store';
 import { defaultBasicsPlacement, type SupportErrandClassificationPlacement } from './classification-placement';
-import { useInvestigationProfileStore } from './investigation-profile-store';
-import { getInvestigationVariant } from './investigation-variant-registry';
+import { getInvestigation } from './configured-investigation';
 
 /**
  * Thin runtime adapter. Every consumer asks this function whether Grundinformation or an
@@ -17,10 +17,10 @@ import { getInvestigationVariant } from './investigation-variant-registry';
  * consulted at all.
  */
 export const getSupportErrandClassificationPlacement = (): SupportErrandClassificationPlacement => {
-  const variant = getInvestigationVariant();
+  const variant = getInvestigation();
   if (!variant) return defaultBasicsPlacement;
 
-  return variant.resolveClassificationPlacement(useInvestigationProfileStore.getState().profile);
+  return variant.resolveClassificationPlacement(useSupportApplicationProfileStore.getState().profile);
 };
 
 const basicsCategorizationControl = () =>

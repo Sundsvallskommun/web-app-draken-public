@@ -7,7 +7,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 import { apiServiceName } from '@/config/api-config';
 import { Facility as FacilityDTO } from '@/data-contracts/case-data/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
-import { logger } from '@/utils/logger';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL } from '@/utils/util';
 
 interface ResponseData {
@@ -43,8 +43,7 @@ export class caseDataFacilitiesController {
         return facilitiesResponse.data;
       })
       .catch(e => {
-        logger.error('Error when saving facilities');
-        logger.error(e);
+        logApplicationFailure('Error when saving facilities', e);
         throw e;
       });
 

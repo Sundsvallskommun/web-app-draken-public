@@ -1,5 +1,5 @@
-import { Priority } from '@casedata/interfaces/priority';
 import { PriorityComponent } from '@common/components/priority/priority.component';
+import { Priority } from '@common/interfaces/priority';
 import { Checkbox, PopupMenu } from '@sk-web-gui/react';
 import { ChevronDown } from 'lucide-react';
 import { FC } from 'react';

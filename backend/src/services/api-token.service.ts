@@ -1,9 +1,16 @@
 import { HttpException } from '@exceptions/HttpException';
-import { logger } from '@utils/logger';
 import { getRedisClient } from '@utils/redis';
 import { apiURL } from '@utils/util';
 import axios from 'axios';
 import qs from 'qs';
+
+import {
+  createRequestDiagnostics,
+  currentRequestDiagnostics,
+  logApplicationEvent,
+  logApplicationFailure,
+  logApplicationWarning,
+} from '@/services/request-diagnostics';
 
 export interface Token {
   access_token: string;
@@ -49,7 +56,7 @@ class ApiTokenService {
 
     if (acquired) {
       try {
-        logger.info('Acquired token lock, fetching new OAuth token');
+        logApplicationEvent('Acquired token lock, fetching new OAuth token');
         const newToken = await this.fetchTokenToRedis(redis);
         return newToken;
       } finally {
@@ -58,7 +65,7 @@ class ApiTokenService {
     }
 
     // Another pod is fetching — wait and read from Redis
-    logger.info('Token lock held by another pod, waiting...');
+    logApplicationEvent('Token lock held by another pod, waiting...');
     for (let attempt = 0; attempt < LOCK_MAX_RETRIES; attempt++) {
       await this.sleep(LOCK_WAIT_MS);
       const [waitToken, waitExpires] = await Promise.all([redis.get(REDIS_TOKEN_KEY), redis.get(REDIS_EXPIRES_KEY)]);
@@ -68,7 +75,7 @@ class ApiTokenService {
     }
 
     // Lock timed out without a valid token — fetch ourselves
-    logger.warn('Token lock wait timed out, fetching token directly');
+    logApplicationWarning('Token lock wait timed out, fetching token directly');
     return this.fetchTokenToRedis(redis);
   }
 
@@ -79,7 +86,7 @@ class ApiTokenService {
 
     await redis.set(REDIS_TOKEN_KEY, token.access_token, { EX: ttlSeconds });
     await redis.set(REDIS_EXPIRES_KEY, String(expiresAt), { EX: ttlSeconds });
-    logger.info(`Token cached in Redis, valid for ${token.expires_in}s`);
+    logApplicationEvent('OAuth token cached in Redis');
 
     return token.access_token;
   }
@@ -102,6 +109,7 @@ class ApiTokenService {
         headers: {
           Authorization: 'Basic ' + authString,
           'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Request-Id': currentRequestDiagnostics()?.requestId ?? createRequestDiagnostics().requestId,
         },
         data: qs.stringify({
           grant_type: 'client_credentials',
@@ -112,12 +120,11 @@ class ApiTokenService {
 
       if (!token) throw new HttpException(502, 'Bad Gateway');
 
-      logger.info(`Token valid for: ${token.expires_in}s`);
-      logger.info(`Token expires at: ${new Date(Date.now() + token.expires_in * 1000).toISOString()}`);
+      logApplicationEvent('OAuth token acquired');
 
       return token;
     } catch (error) {
-      console.error('failed to fetch access token', error);
+      logApplicationFailure('failed to fetch access token', error);
       throw new HttpException(502, 'Bad Gateway');
     }
   }

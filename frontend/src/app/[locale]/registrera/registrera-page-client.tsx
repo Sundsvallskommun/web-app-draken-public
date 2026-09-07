@@ -1,9 +1,8 @@
 'use client';
 
-import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
-import Layout from '@common/components/layout/layout.component';
 import { appConfig } from '@config/appconfig';
-import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
+import { applicationUi } from '@dragon';
+import Layout from '@shell/layout/layout.component';
 import NextLink from 'next/link';
 import { useRef } from 'react';
 
@@ -27,8 +26,7 @@ export function RegistreraPageClient() {
         >
           Hoppa till innehåll
         </NextLink>
-        {appConfig.isSupportManagement ? <SupportErrandComponent /> : null}
-        {appConfig.isCaseData ? <CasedataErrandComponent /> : null}
+        <applicationUi.Errand />
       </Layout>
     </div>
   );

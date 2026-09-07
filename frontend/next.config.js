@@ -2,6 +2,33 @@
 const envalid = require('envalid');
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('node:child_process');
+const dragons = require('../dragons.json');
+
+// The identity selects one concrete application entrypoint at build time.
+const identity = process.env.NEXT_PUBLIC_APPLICATION;
+const builtIdentity = process.env.DRAKEN_BUILD_DRAGON || identity;
+if (!builtIdentity || !Object.hasOwn(dragons, builtIdentity)) {
+  throw new Error(
+    'Set DRAKEN_BUILD_DRAGON or a valid NEXT_PUBLIC_APPLICATION from dragons.json before starting Next.js.'
+  );
+}
+if (identity && Object.hasOwn(dragons, identity) && identity !== builtIdentity) {
+  throw new Error(`Dragon ${identity} cannot run in a ${builtIdentity} frontend build.`);
+}
+const dragonEntry = `./src/dragons/${builtIdentity.toLowerCase()}/application.ts`;
+if (!fs.existsSync(path.resolve(__dirname, dragonEntry)))
+  throw new Error(`Missing frontend entrypoint for ${builtIdentity}`);
+const revision =
+  process.env.NODE_ENV === 'development'
+    ? 'development'
+    : process.env.DEPLOY_COMMIT ||
+      execFileSync('/usr/bin/git', ['rev-parse', 'HEAD'], {
+        cwd: path.resolve(__dirname, '..'),
+        encoding: 'utf8',
+      }).trim();
+if (revision !== 'development' && !/^[a-f0-9]{40}$/.test(revision))
+  throw new Error('DEPLOY_COMMIT must be a full commit SHA');
 
 // Generate raleway.scss from template with correct basePath (Turbopack doesn't support sassOptions.functions)
 const stylesDir = path.join(__dirname, 'src', 'styles');
@@ -34,19 +61,32 @@ envalid.cleanEnv(process.env, {
 const DEVELOPMENT_ONLY_PAGE_EXTENSIONS = ['dev.tsx', 'dev.ts'];
 const PAGE_EXTENSIONS = ['tsx', 'ts', 'jsx', 'js'];
 
+const developmentDistDir = identity ? `.next-${identity}` : '.next';
+
 module.exports = {
+  // Next 16 forwards browser logs through two independent development channels.
+  // MCP writes them to disk even when terminal forwarding is disabled.
+  logging: { browserToTerminal: false },
+  experimental: { mcpServer: false },
+  env: {
+    DRAKEN_BUILD_DRAGON: builtIdentity,
+    DRAKEN_BUILD_DOMAIN: dragons[builtIdentity].domain,
+    DRAKEN_BUILD_REVISION: revision,
+  },
   allowedDevOrigins: ['dev.test'],
   pageExtensions:
     process.env.NODE_ENV === 'production' ? PAGE_EXTENSIONS : [...DEVELOPMENT_ONLY_PAGE_EXTENSIONS, ...PAGE_EXTENSIONS],
-  // Keep Turbopack scoped to this Next.js app. Without an explicit root it can
-  // select a parent lockfile and index the whole home directory.
+  // Include the shared dragon catalog and keep tracing inside this repository.
   turbopack: {
-    root: __dirname,
+    root: path.resolve(__dirname, '..'),
+    resolveAlias: { '@dragon': dragonEntry },
   },
-  distDir:
-    process.env.DOCKER_BUILD === 'true'
-      ? '.next'
-      : `.next${process.env.NEXT_PUBLIC_APPLICATION ? `-${process.env.NEXT_PUBLIC_APPLICATION}` : ''}`,
+  outputFileTracingRoot: path.resolve(__dirname, '..'),
+  webpack(config) {
+    config.resolve.alias['@dragon'] = path.resolve(__dirname, dragonEntry);
+    return config;
+  },
+  distDir: process.env.DOCKER_BUILD === 'true' ? '.next' : developmentDistDir,
   output: 'standalone',
   images: {
     remotePatterns: process.env.DOMAIN_NAME ? [{ protocol: 'https', hostname: process.env.DOMAIN_NAME }] : [],

@@ -1,4 +1,5 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { RelationWithErrandNumber } from '@common/services/relations-service';
 import { MessageNode } from '@supportmanagement/services/support-message-service';
 
@@ -31,7 +32,7 @@ export const getSupportConversations: (municipalityId: string, errandId: string)
   errandId
 ) => {
   if (!errandId) {
-    console.error('No errand id found, cannot fetch. Returning.');
+    logClientFailure('supportmanagement.support-conversation.getSupportConversations');
   }
 
   const url = `supportmanagement/${municipalityId}/namespace/errands/${errandId}/communication/conversations`;
@@ -41,7 +42,7 @@ export const getSupportConversations: (municipalityId: string, errandId: string)
       return res.data.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching conversation for errand: ', errandId);
+      logClientFailure('supportmanagement.support-conversation.getSupportConversations', e);
       throw e;
     });
 };
@@ -52,7 +53,7 @@ export const getSupportConversationMessages: (
   conversationId: string
 ) => Promise<ApiResponse<MessageNode[]>> = (municipalityId, errandId, conversationId) => {
   if (!errandId) {
-    console.error('No errand id found, cannot fetch. Returning.');
+    logClientFailure('supportmanagement.support-conversation.getSupportConversationMessages');
   }
   const url = `supportmanagement/${municipalityId}/namespace/errands/${errandId}/communication/conversations/${conversationId}/messages`;
   return apiService
@@ -61,7 +62,7 @@ export const getSupportConversationMessages: (
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching conversation for errand: ', errandId);
+      logClientFailure('supportmanagement.support-conversation.getSupportConversationMessages', e);
       throw e;
     });
 };
@@ -82,7 +83,7 @@ export const getSupportConversationReadByCounts = (
     .get<ConversationReadByCount[]>(url)
     .then((res) => res.data)
     .catch((error) => {
-      console.error('Something went wrong when fetching conversation read counts for errand: ', errandId);
+      logClientFailure('supportmanagement.support-conversation.getSupportConversationReadByCounts', error);
       throw error;
     });
 };
@@ -140,7 +141,7 @@ export const createSupportConversation = async (
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when creating relation: ' + e);
+      logClientFailure('supportmanagement.support-conversation.createSupportConversation', e);
       throw e;
     });
 };
@@ -185,7 +186,7 @@ export const sendSupportConversationMessage = (
     })
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when creating relation: ' + e);
+      logClientFailure('supportmanagement.support-conversation.sendSupportConversationMessage', e);
       throw e;
     });
 };
@@ -198,7 +199,7 @@ export const getSupportConversationAttachment: (
   attachmentId: string
 ) => Promise<ApiResponse<any>> = (municipalityId, errandId, conversationId, messageId, attachmentId) => {
   if (!errandId) {
-    console.error('No errand id found, cannot fetch. Returning.');
+    logClientFailure('supportmanagement.support-conversation.getSupportConversationAttachment');
   }
 
   const url = `supportmanagement/${municipalityId}/namespace/errands/${errandId}/communication/conversations/${conversationId}/messages/${messageId}/attachments/${attachmentId}`;
@@ -208,7 +209,7 @@ export const getSupportConversationAttachment: (
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching conversation attachment for errand: ', errandId);
+      logClientFailure('supportmanagement.support-conversation.getSupportConversationAttachment', e);
       throw e;
     });
 };
