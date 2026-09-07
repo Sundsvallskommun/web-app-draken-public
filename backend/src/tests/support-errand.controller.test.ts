@@ -18,12 +18,11 @@ import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
+import { SupportApplicationPolicyService, SupportErrandClassificationOwner } from '@/services/support-application-policy.service';
 import { getNewErrandDefaults, NewErrandDefaults } from '@/services/support-errand.service';
-import { SupportErrandClassificationOwner, SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
 import { ABSENT_HEADER, mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
-import { investigationProfileFixture } from './helpers/investigation-profiles';
 import {
   mockAdUsername,
   mockAttachmentId,
@@ -50,6 +49,7 @@ import {
   mockSupportErrandNumber,
   mockSupportNamespace,
 } from './helpers/mock-data';
+import { supportProfileFixture } from './helpers/support-application-profiles';
 
 // createConversation/sendConversationTextMessage build their own ApiService internally,
 // so they cannot be stubbed through the controller's instance fields.
@@ -94,7 +94,7 @@ const makeController = (classificationOwner: SupportErrandClassificationOwner = 
     getOrganizationNumberByPartyId: vi.fn(async () => ''),
     getPartyIdByOrganizationNumber: vi.fn(async () => ''),
   };
-  const configuredProfile = investigationProfileFixture('IAF');
+  const configuredProfile = supportProfileFixture('IAF');
   const investigationPolicy = {
     getClassificationOwner: vi.fn(async () => classificationOwner),
     getRegistrationState: vi.fn(async () => (classificationOwner === 'unavailable' ? 'unavailable' : 'enabled')),
@@ -116,8 +116,8 @@ const makeController = (classificationOwner: SupportErrandClassificationOwner = 
   };
   (controller as unknown as { apiService: ApiStub }).apiService = api;
   (controller as unknown as { organizationService: OrgStub }).organizationService = organization;
-  (controller as unknown as { investigationPolicyService: SupportInvestigationPolicyService }).investigationPolicyService =
-    investigationPolicy as unknown as SupportInvestigationPolicyService;
+  (controller as unknown as { investigationPolicyService: SupportApplicationPolicyService }).investigationPolicyService =
+    investigationPolicy as unknown as SupportApplicationPolicyService;
   (controller as unknown as { jsonParameterService: SupportJsonParameterService }).jsonParameterService =
     investigationDocument as unknown as SupportJsonParameterService;
   return { controller, api, organization, investigationPolicy, investigationDocument };

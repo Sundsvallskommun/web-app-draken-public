@@ -100,8 +100,8 @@ build matrix discover the catalog automatically; no new build-family code is nee
 
 **Bootstrap.** `src/app/layout.tsx` imports `@shell/bootstrap` (server-component graph) and renders
 `<DragonBootstrap />` (client/SSR graph); the policy getter throws if a graph was missed. During
-`next build` for the Docker image the identity is a placeholder, so bootstrap skips composition in
-that phase only (`src/shell/build-phase.ts`).
+`next build` the selected dragon, domain and revision are baked into the artifact. Deployment
+values use runtime placeholders; flags cannot select a different dragon or domain.
 
 **When a boundary check fails**, move the concept to the layer that owns it. Do not add a
 suppression, an `eslint-disable`, a rule exception or a baseline entry; the guard rejects a grown
@@ -322,7 +322,10 @@ Run for individual spec files with eg: `npx dotenv -e .env.kc -- playwright test
 
 **Dragon builds and onboarding.** Follow `docs/architecture/dragon-development.md`. The root
 `yarn dragon` CLI owns dev/build/start. Docker context is the repository root and
-`DRAKEN_BUILD_DRAGON` is mandatory. Only the selected dragon composes investigation variants
+`DRAKEN_BUILD_DRAGON` and a full `DEPLOY_COMMIT` are mandatory. Container startup requires the
+reviewed release manifest described in `deployments/README.md`; production backend never loads
+development env files. `docs/architecture/dragon-security.md` explains request compatibility and
+the privacy-preserving diagnostic fields. Only the selected dragon composes investigation variants
 and backend controllers; runtime flags cannot switch applications. Knip lists `nodemon` and
 `tsc-alias` as ignored dependencies because their actual caller is the root CLI outside the
 backend analysis scope.

@@ -23,14 +23,27 @@
  *
  * @type {import('dependency-cruiser').IConfiguration}
  */
-const dragons = require('../dragons.json');
-const avvikelseDragons = Object.entries(dragons)
-  .filter(([, definition]) => definition.investigation === 'avvikelse')
-  .map(([id]) => id.toLowerCase())
-  .join('|');
-
 module.exports = {
   forbidden: [
+    {
+      name: 'stores-are-imported-from-their-owner',
+      severity: 'error',
+      comment: 'Import the individual store. A universal barrel eagerly couples unrelated domain state.',
+      from: {},
+      to: { path: '^src/stores/index\\.tsx?$' },
+    },
+    {
+      name: 'casedata-does-not-import-support-state',
+      severity: 'error',
+      from: { path: '^src/casedata/' },
+      to: { path: '^src/stores/(support|metadata)-store\\.ts$' },
+    },
+    {
+      name: 'support-does-not-import-casedata-state',
+      severity: 'error',
+      from: { path: '^src/(supportmanagement|avvikelse)/' },
+      to: { path: '^src/stores/casedata-store\\.ts$' },
+    },
     {
       name: 'avvikelse-does-not-import-casedata',
       severity: 'error',
@@ -43,12 +56,6 @@ module.exports = {
       severity: 'error',
       comment: 'Avvikelse is composed by dragon entrypoints. Shared SM consumes the investigation contract.',
       from: { pathNot: '^src/dragons/[^/]+/application\\.ts$|^src/avvikelse/|^src/app/.*\\.dev\\.tsx?$' },
-      to: { path: '^src/avvikelse/' },
-    },
-    {
-      name: 'only-avvikelse-dragons-compose-avvikelse',
-      severity: 'error',
-      from: { path: '^src/dragons/', pathNot: `^src/dragons/(${avvikelseDragons})/` },
       to: { path: '^src/avvikelse/' },
     },
     {

@@ -256,6 +256,13 @@ SUPPORTMANAGEMENT_API_TARGET=sprint
 Tillåtna värden är `stable`, `sprint` och `alktsprint`. Ett okänt värde stoppar backend vid uppstart, så att en felstavad
 deploymentinställning inte tyst byter API-kontrakt för alla implementationer.
 
+Produktionsleverans använder nu ett granskat release-manifest som binder frontend/backend till
+samma drake, commit, konfiguration och hemlighetsreferenser. Se
+[utveckling och onboarding](docs/architecture/dragon-development.md),
+[leverans och återställning](deployments/README.md) och
+[skydd mot sammanblandning och loggning](docs/architecture/dragon-security.md).
+Backendens produktionsstart kräver manifestet och laddar inte utvecklingsfiler.
+
 Drakens ärende-, handläggar-, status- och fastighetskommandon kräver en exakt stark `If-Match` och skickar samma
 version vidare till Support Management. Den 2 september 2026 verifierades de publicerade OpenAPI-kontrakten för både
 `supportmanagement/15.1` och `supportmanagement-sprint/15.1`: båda deklarerar `If-Match`, svaren 409/412 och

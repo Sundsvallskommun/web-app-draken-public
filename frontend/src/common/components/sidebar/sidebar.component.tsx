@@ -1,12 +1,12 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { isPT } from '@common/services/application-service';
 import { Badge, Button, cx, useGui } from '@sk-web-gui/react';
-import { useBadgeStore } from '@stores/index';
+import { useBadgeStore } from '@stores/badge-store';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { FC, KeyboardEvent, ReactNode, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
 
-import { SidebarTooltip } from '../../../casedata/components/errand/sidebar/sidebar-tooltip.component';
+import { SidebarTooltip } from './sidebar-tooltip.component';
 
 export type SidebarButtonKey =
   | 'notes'

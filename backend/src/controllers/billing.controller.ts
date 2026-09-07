@@ -12,7 +12,7 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasAnyPermission, hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { logger } from '@/utils/logger';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL, toOffsetDateTime } from '@/utils/util';
 
 @Controller()
@@ -41,8 +41,7 @@ export class BillingController {
     @Res() response: any,
   ): Promise<CPageBillingRecord> {
     if (!municipalityId) {
-      console.error('No municipality id found, needed to fetch billing records.');
-      logger.error('No municipality id found, needed to fetch billing records.');
+      logApplicationFailure('No municipality id found, needed to fetch billing records.');
       return response.status(400).send('Municipality id missing');
     }
     const filterList = [];
@@ -211,13 +210,11 @@ export class BillingController {
     @Res() response: any,
   ): Promise<CPageBillingRecord> {
     if (!municipalityId) {
-      console.error('No municipality id found, needed to fetch contract invoices.');
-      logger.error('No municipality id found, needed to fetch contract invoices.');
+      logApplicationFailure('No municipality id found, needed to fetch contract invoices.');
       return response.status(400).send('Municipality id missing');
     }
     if (!contractId) {
-      console.error('No contract id found, needed to fetch contract invoices.');
-      logger.error('No contract id found, needed to fetch contract invoices.');
+      logApplicationFailure('No contract id found, needed to fetch contract invoices.');
       return response.status(400).send('Contract id missing');
     }
 

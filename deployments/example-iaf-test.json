@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "dragon": "IAF",
+  "environment": "test",
+  "revision": "0000000000000000000000000000000000000000",
+  "configurationVersion": "iaf-test-example-1",
+  "dataVolume": "REPLACE_WITH_EXISTING_IAF_TEST_VOLUME",
+  "frontend": {
+    "image": "registry.example.invalid/draken/frontend@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "port": 3000,
+    "environment": {
+      "NEXT_PUBLIC_API_URL": "https://api.example.invalid/iaf",
+      "NEXT_PUBLIC_BASEPATH": "/iaf",
+      "NEXT_PUBLIC_MUNICIPALITY_ID": "2281",
+      "NEXT_PUBLIC_APPLICATION_NAME": "Avvikelse IAF",
+      "NEXT_PUBLIC_USE_INVESTIGATION": "true",
+      "NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION": "true",
+      "HEALTH_AUTH": "false"
+    },
+    "secrets": {}
+  },
+  "backend": {
+    "image": "registry.example.invalid/draken/backend@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "port": 3001,
+    "environment": {
+      "API_BASE_URL": "https://upstream.example.invalid",
+      "MUNICIPALITY_ID": "2281",
+      "SUPPORTMANAGEMENT_NAMESPACE": "HEALTHCAREDEVIATIONIAF",
+      "SUPPORTMANAGEMENT_API_TARGET": "sprint",
+      "BASE_URL_PREFIX": "/iaf",
+      "DOMAIN": "example.invalid",
+      "ORIGIN": "https://frontend.example.invalid",
+      "AUTHORIZED_GROUPS": "REPLACE_WITH_REVIEWED_GROUP",
+      "ADMIN_GROUP": "REPLACE_WITH_REVIEWED_ADMIN_GROUP",
+      "SUPERADMIN_GROUP": "REPLACE_WITH_REVIEWED_SUPERADMIN_GROUP",
+      "DEVELOPER_GROUP": "REPLACE_WITH_REVIEWED_DEVELOPER_GROUP",
+      "SUPPORTMANAGEMENT_TEST_EMAIL": "test@example.invalid",
+      "SUPPORTMANAGEMENT_SENDER_EMAIL": "sender@example.invalid",
+      "SUPPORTMANAGEMENT_SENDER_SMS": "Draken",
+      "SAML_CALLBACK_URL": "https://api.example.invalid/iaf/saml/login/callback",
+      "SAML_LOGOUT_CALLBACK_URL": "https://api.example.invalid/iaf/saml/logout/callback",
+      "SAML_SUCCESS_REDIRECT": "https://frontend.example.invalid/iaf/oversikt",
+      "SAML_FAILURE_REDIRECT": "https://frontend.example.invalid/iaf/login",
+      "SAML_FAILURE_REDIRECT_MESSAGE": "https://frontend.example.invalid/iaf/login",
+      "SAML_ENTRY_SSO": "https://idp.example.invalid/sso",
+      "SAML_ISSUER": "https://api.example.invalid/iaf",
+      "LOG_DIR": "../../data/logs",
+      "CREDENTIALS": "true"
+    },
+    "secrets": {
+      "CLIENT_KEY": "iaf/test/client-key",
+      "CLIENT_SECRET": "iaf/test/client-secret",
+      "SECRET_KEY": "iaf/test/session-key",
+      "SAML_PRIVATE_KEY": "iaf/test/saml-private-key",
+      "SAML_PUBLIC_KEY": "iaf/test/saml-public-key",
+      "SAML_IDP_PUBLIC_CERT": "iaf/test/saml-idp-cert"
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { SupportApplicationProfileController } from '@/controllers/supportmanagement/support-application-profile.controller';
 import { SupportAttachmentController } from '@/controllers/supportmanagement/support-attachment.controller';
 import { SupportConversationController } from '@/controllers/supportmanagement/support-conversation.controller';
 import { SupportErrandController } from '@/controllers/supportmanagement/support-errand.controller';
@@ -5,7 +6,6 @@ import { SupportExportController } from '@/controllers/supportmanagement/support
 import { SupportFacilitiesController } from '@/controllers/supportmanagement/support-facilities.controller';
 import { SupportHandoverController } from '@/controllers/supportmanagement/support-handover.controller';
 import { SupportHistoryController } from '@/controllers/supportmanagement/support-history.controller';
-import { SupportInvestigationProfileController } from '@/controllers/supportmanagement/support-investigation-profile.controller';
 import { SupportMessageController } from '@/controllers/supportmanagement/support-message.controller';
 import { SupportMetadataController } from '@/controllers/supportmanagement/support-metadata.controller';
 import { SupportNoteController } from '@/controllers/supportmanagement/support-note.controller';
@@ -21,7 +21,7 @@ export const SUPPORT_CONTROLLERS: NewableFunction[] = [
   SupportFacilitiesController,
   SupportHandoverController,
   SupportHistoryController,
-  SupportInvestigationProfileController,
+  SupportApplicationProfileController,
   SupportMessageController,
   SupportMetadataController,
   SupportNoteController,

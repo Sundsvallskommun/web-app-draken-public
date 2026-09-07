@@ -1,6 +1,7 @@
 import { appConfig } from '@config/appconfig';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
 import {
   getSupportErrandById,
   setSupportErrandStatus,

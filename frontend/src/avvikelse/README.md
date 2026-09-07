@@ -64,7 +64,7 @@ ett enda redigeringsställe, även om samma externa fält kan deklareras av båd
 
 ## Riktigt ärendeflöde
 
-`GET supportmanagement/investigation-profile` är produktflödets runtimeprojektion av backendens kanoniska register för
+`GET supportmanagement/application-profile` är produktflödets runtimeprojektion av backendens kanoniska register för
 dokumentnyckel, schemanamn, fliketikett och ansvarig roll. Backend väger in feature-flaggen `useInvestigation` och
 applikationens tillgänglighet i profilens `state`. Profilen deklarerar även vilket Support
 Management-transportmål capabilityn kräver. Om deploymenten använder ett äldre mål blir state `unavailable` innan
@@ -75,7 +75,7 @@ säkert och befintliga JSON Parameters döljs inte från `Ärendeuppgifter`.
 
 ### App-profiler och nya appar
 
-Backendregistret i `backend/src/config/support-investigation-profile.ts` är enda ägare till vilka dokument en app
+Backendregistret i `backend/src/avvikelse/application-profile.ts` är enda ägare till vilka dokument en app
 har i produktionsflödet. IAF och VOF har två separata, immutabla profiler som för närvarande skapas från samma
 gemensamma bas. De kan därför ändras oberoende senare utan att frontend eller den andra appens profil behöver
 förgrenas.

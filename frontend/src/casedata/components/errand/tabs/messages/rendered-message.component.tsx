@@ -13,7 +13,9 @@ import { MessageAvatar } from '@common/components/message/message-avatar.compone
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
 import sanitized, { formatMessage } from '@common/services/sanitizer-service';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import dayjs from 'dayjs';
 import {
   CornerDownRight,

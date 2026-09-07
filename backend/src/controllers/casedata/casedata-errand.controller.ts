@@ -8,7 +8,6 @@ import { hasPermissions } from '@middlewares/permissions.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
 import { makeErrandApiData } from '@services/errand.service';
-import { logger } from '@utils/logger';
 import dayjs from 'dayjs';
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
@@ -22,6 +21,7 @@ import {
   Stakeholder as StakeholderDTO,
   StakeholderTypeEnum,
 } from '@/data-contracts/case-data/data-contracts';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 
 import { apiURL, luhnCheck, withRetries } from '../../utils/util';
 
@@ -260,8 +260,7 @@ export class CaseDataErrandController {
         return errandResponse.data;
       })
       .catch(e => {
-        logger.error('Error when creating errand');
-        logger.error(e);
+        logApplicationFailure('Error when creating errand', e);
         throw e;
       });
     return { data: response, message: 'Errand created' };
@@ -298,8 +297,7 @@ export class CaseDataErrandController {
               const baseURL = apiURL(this.SERVICE);
               const patchStakeholder = () =>
                 this.apiService.patch<any, StakeholderDTO>({ url, baseURL, data: stakeholder }, req.user).catch(e => {
-                  logger.error('Something went wrong when patching stakeholder');
-                  logger.error(e);
+                  logApplicationFailure('Something went wrong when patching stakeholder', e);
                   throw e;
                 });
               return withRetries(0, patchStakeholder);
@@ -313,8 +311,7 @@ export class CaseDataErrandController {
               const baseURL = apiURL(this.SERVICE);
               const putStakeholder = () =>
                 this.apiService.put<any, StakeholderDTO>({ url, baseURL, data: stakeholder }, req.user).catch(e => {
-                  logger.error('Something went wrong when putting stakeholder');
-                  logger.error(e);
+                  logApplicationFailure('Something went wrong when putting stakeholder', e);
                   throw e;
                 });
               return withRetries(0, putStakeholder);
@@ -322,8 +319,7 @@ export class CaseDataErrandController {
         return Promise.all([...stakeholderPatchPromises, ...stakeholderPutPromises]).then(_res => errandPatchResponse);
       })
       .catch(e => {
-        logger.error('Something went wrong when patching errand');
-        logger.error(e);
+        logApplicationFailure('Something went wrong when patching errand', e);
         throw e;
       });
     return patchResponse;

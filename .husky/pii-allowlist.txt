@@ -24,6 +24,11 @@
 199001012386
 199001162396
 199909092380
+# Syntetiskt känsligt innehåll i diagnostikens sekretessprov.
+19900101-1234
+# Falska träffar: UUID med upprepade femmor och talet över MAX_SAFE_INTEGER.
+555555-5555
+199254740992
 # Publika organisationsnummer
 212000-2411
 556026-9986
@@ -44,6 +49,12 @@
 +46701740605
 +46701740635
 +46701740636
+# Syntetiska kontakter i diagnostik- och e-postalternativens tester.
++46709998877
++46701234567
+0701234567
+# Falsk träff: substräng av 9007199254740992 i test av ogiltig loggrotation.
+0719925474
 # Falska träffar: substrängar av test-ärendenummer/datum som telefon-regexen plockar
 015-0000000
 016-0000000

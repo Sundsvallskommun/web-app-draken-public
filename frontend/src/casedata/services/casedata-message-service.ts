@@ -12,6 +12,7 @@ import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX } from '@common/services/application-service';
 import { base64ToFile } from '@common/services/attachment-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { base64Decode } from '@common/services/helper-service';
 import { UploadFile } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
@@ -82,7 +83,7 @@ export const sendMessage: (
           if (result.status === 'fulfilled') {
             messageFormData.append(`files`, result.value, result.value.name);
           } else {
-            console.error(`Error: attachment could not be processed for the following reason: ${result.reason}`);
+            logClientFailure('casedata.casedata-message.sendMessage', result.reason);
           }
         });
       })
@@ -130,7 +131,7 @@ export const sendMessage: (
             return true;
           })
           .catch((e) => {
-            console.error('Something went wrong when sending message for errand:', errand);
+            logClientFailure('casedata.casedata-message.sendMessage', e);
             throw new Error('Något gick fel när beslutet skulle skickas');
           });
       });
@@ -158,7 +159,7 @@ export const sendSms: (
         return true;
       })
       .catch((e) => {
-        console.error('Something went wrong when sending message for errand:', errand);
+        logClientFailure('casedata.casedata-message.sendSms', e);
         throw e;
       });
   });
@@ -279,7 +280,7 @@ const buildTree = (_list: MessageResponse[]) => {
 
 const getErrandMessages = (municipalityId: string, errand: IErrand): Promise<MessageResponse[]> => {
   if (!errand?.errandNumber || !municipalityId) {
-    console.error('No errand id or municipality id found, cannot fetch messages. Returning.');
+    logClientFailure('casedata.casedata-message.getErrandMessages');
   }
 
   return apiService
@@ -298,7 +299,7 @@ export const fetchMessagesWithTree: (
       return { messages, messageTree };
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching messages for errand:', errand.id, e);
+      logClientFailure('casedata.casedata-message.fetchMessagesWithTree', e);
       throw e;
     });
 };
@@ -313,7 +314,7 @@ export const fetchMessagesTree: (municipalityId: string, errand: IErrand) => Pro
       return tree;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching messages for errand:', errand.id, e);
+      logClientFailure('casedata.casedata-message.fetchMessagesTree', e);
       throw e;
     });
 };
@@ -328,7 +329,7 @@ export const fetchMessages: (municipalityId: string, errand: IErrand) => Promise
       return list;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching messages for errand:', errand.errandNumber, e);
+      logClientFailure('casedata.casedata-message.fetchMessages', e);
       throw e;
     });
 };
@@ -338,14 +339,14 @@ export const fetchMessage: (municipalityId: string, messageId: string) => Promis
   messageId
 ) => {
   if (!messageId) {
-    console.error('No message id found, cannot fetch message. Returning.');
+    logClientFailure('casedata.casedata-message.fetchMessage');
   }
   const url = `casedata/${municipalityId}/messages/${messageId}`;
   return apiService
     .get<ApiResponse<Message>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching message: ', messageId);
+      logClientFailure('casedata.casedata-message.fetchMessage', e);
       throw e;
     });
 };
@@ -374,14 +375,14 @@ export const setMessageViewStatus: (
   isViewed: boolean
 ) => Promise<ApiResponse<any>> = (errandId, municipalityId, messageId, isViewed) => {
   if (!messageId) {
-    console.error('No message id found, cannot fetch. Returning.');
+    logClientFailure('casedata.casedata-message.setMessageViewStatus');
   }
   const url = `casedata/${municipalityId}/errand/${errandId}/messages/${messageId}/viewed/${isViewed}`;
   return apiService
     .put<ApiResponse<any>, any>(url, {})
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when setting messgae isViewed status: ', messageId);
+      logClientFailure('casedata.casedata-message.setMessageViewStatus', e);
       throw e;
     });
 };

@@ -29,11 +29,17 @@ jobs:
 
       - name: Install dependencies
         # --ignore-scripts: skip dependency lifecycle scripts (supply-chain hardening).
-        # Safe here: this job only lints/format-checks; no script-installed binaries needed.
+        # Safe here: lint and the narrow privacy tests use prebuilt optional binaries.
         run: yarn --frozen-lockfile --silent --ignore-scripts
 
       - name: Run eslint (strict)
         run: yarn lint:strict
+
+      - name: Check logging enforcement regressions
+        run: node --test --test-name-pattern='^backend:' ../scripts/check-runtime-logging.test.mjs
+
+      - name: Verify private data stays out of backend logs
+        run: yarn vitest run src/tests/error-logging.http.test.ts src/tests/api-token-logging.test.ts src/tests/diagnostic-sink.test.ts src/tests/logger-process.test.ts src/tests/logger-format.test.ts src/tests/api.service.test.ts src/tests/saml-rate-limit.http.test.ts
 
       - name: Check formatting
         run: yarn format:check
@@ -66,8 +72,7 @@ jobs:
 
       - name: Install dependencies
         # --ignore-scripts: skip dependency lifecycle scripts (supply-chain hardening).
-        # Safe here: this job only lints/format-checks/cruises; no script-installed binaries needed
-        # (dependency-cruiser has no install scripts).
+        # Safe here: lint, dependency-cruiser and the narrow privacy tests need no lifecycle scripts.
         run: yarn --frozen-lockfile --silent --ignore-scripts
 
       - name: Run eslint (strict)
@@ -84,6 +89,40 @@ jobs:
         # Fails when either baseline gained an entry compared to the base branch, so a red
         # boundary check cannot be "fixed" by regenerating the baseline.
         run: node ../scripts/boundaries-baseline-guard.mjs
+
+      - name: Check logging enforcement regressions
+        run: node --test --test-name-pattern='^frontend:' ../scripts/check-runtime-logging.test.mjs
+
+      - name: Verify private data stays out of client logs
+        run: yarn vitest run src/common/services/client-diagnostics.test.ts
+
+      - name: Install Chromium for development logging privacy
+        run: ./node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Verify Next development browser logs stay private
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+          NEXT_PUBLIC_API_URL: 'http://localhost:3001/iaf'
+          DOMAIN_NAME: localhost
+          PORT: '3000'
+          PLAYWRIGHT_REQUIRE_DEV_HMR: 'true'
+        run: |
+          node --env-file=.env.iaf-example ../scripts/dragon.mjs dev IAF frontend > playwright-dev-server.log 2>&1 &
+          draken_dev_pid=$!
+          trap 'kill "$draken_dev_pid" 2>/dev/null || true' EXIT
+          timeout 120 node --env-file=.env.iaf-example -e '(async () => { const url = "http://localhost:" + process.env.PORT + (process.env.NEXT_PUBLIC_BASEPATH || "") + "/login"; while (true) { try { if ((await fetch(url, { signal: AbortSignal.timeout(5000) })).ok) return; } catch {} await new Promise(resolve => setTimeout(resolve, 2000)); } })().catch(() => { process.exitCode = 1; });'
+          node --env-file=.env.iaf-example ./node_modules/@playwright/test/cli.js test --project=iaf e2e/iaf/client-logging-privacy.spec.ts --workers=1 --retries=0
+
+      - name: Save development privacy failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-logging-dev-failure
+          path: |
+            frontend/playwright-dev-server.log
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 7
 
       - name: Check formatting
         run: yarn format:check

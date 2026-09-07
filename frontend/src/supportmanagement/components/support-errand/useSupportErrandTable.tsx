@@ -4,7 +4,9 @@ import { isIAFOrVOF } from '@common/services/application-service';
 import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
-import { useEmployeeNameStore, useMetadataStore, useUserStore } from '@stores/index';
+import { useEmployeeNameStore } from '@stores/employee-name-store';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useUserStore } from '@stores/user-store';
 import {
   Channels,
   getLabelCategory,

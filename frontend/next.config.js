@@ -2,6 +2,7 @@
 const envalid = require('envalid');
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('node:child_process');
 const dragons = require('../dragons.json');
 
 // The identity selects one concrete application entrypoint at build time.
@@ -18,6 +19,10 @@ if (identity && Object.hasOwn(dragons, identity) && identity !== builtIdentity) 
 const dragonEntry = `./src/dragons/${builtIdentity.toLowerCase()}/application.ts`;
 if (!fs.existsSync(path.resolve(__dirname, dragonEntry)))
   throw new Error(`Missing frontend entrypoint for ${builtIdentity}`);
+const revision = process.env.NODE_ENV === 'development'
+  ? 'development'
+  : process.env.DEPLOY_COMMIT || execFileSync('git', ['rev-parse', 'HEAD'], { cwd: path.resolve(__dirname, '..'), encoding: 'utf8' }).trim();
+if (revision !== 'development' && !/^[a-f0-9]{40}$/.test(revision)) throw new Error('DEPLOY_COMMIT must be a full commit SHA');
 
 // Generate raleway.scss from template with correct basePath (Turbopack doesn't support sassOptions.functions)
 const stylesDir = path.join(__dirname, 'src', 'styles');
@@ -51,7 +56,15 @@ const DEVELOPMENT_ONLY_PAGE_EXTENSIONS = ['dev.tsx', 'dev.ts'];
 const PAGE_EXTENSIONS = ['tsx', 'ts', 'jsx', 'js'];
 
 module.exports = {
-  env: { DRAKEN_BUILD_DRAGON: builtIdentity },
+  // Next 16 forwards browser logs through two independent development channels.
+  // MCP writes them to disk even when terminal forwarding is disabled.
+  logging: { browserToTerminal: false },
+  experimental: { mcpServer: false },
+  env: {
+    DRAKEN_BUILD_DRAGON: builtIdentity,
+    DRAKEN_BUILD_DOMAIN: dragons[builtIdentity].domain,
+    DRAKEN_BUILD_REVISION: revision,
+  },
   allowedDevOrigins: ['dev.test'],
   pageExtensions:
     process.env.NODE_ENV === 'production' ? PAGE_EXTENSIONS : [...DEVELOPMENT_ONLY_PAGE_EXTENSIONS, ...PAGE_EXTENSIONS],

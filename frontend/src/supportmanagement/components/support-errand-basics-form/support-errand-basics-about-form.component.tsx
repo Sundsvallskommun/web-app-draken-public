@@ -3,9 +3,9 @@ import { ContactReason } from '@common/data-contracts/supportmanagement/data-con
 import { isLOK } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, cx, FormControl, FormErrorMessage, FormLabel, Select, Textarea } from '@sk-web-gui/react';
-import { useMetadataStore } from '@stores/index';
+import { useMetadataStore } from '@stores/metadata-store';
+import { getInvestigation } from '@supportmanagement/investigation/configured-investigation';
 import { getSupportErrandClassificationPlacement } from '@supportmanagement/investigation/investigation-classification-ownership';
-import { getInvestigationVariant } from '@supportmanagement/investigation/investigation-variant-registry';
 import {
   ContactChannelType,
   getErrandParameterValue,
@@ -81,7 +81,7 @@ export const SupportErrandBasicsAboutForm: FC<{
       ) : null}
 
       {categorizationControl.kind === 'variant'
-        ? getInvestigationVariant()?.renderCategorizationControl?.({
+        ? getInvestigation()?.renderCategorizationControl?.({
             disabled: categorizationControl.disabled || isSupportErrandLocked(supportErrand),
           })
         : null}

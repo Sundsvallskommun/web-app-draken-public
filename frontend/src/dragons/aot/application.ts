@@ -1,8 +1,8 @@
-import { configureInvestigationVariants } from '@supportmanagement/investigation/investigation-variant-registry';
+import { configureInvestigation } from '@supportmanagement/investigation/configured-investigation';
 
-import { aotInvestigationVariant } from './investigation/aot-investigation-variant';
+import { aotInvestigation } from './investigation/aot-investigation';
 
 export { aotDragon as dragon } from './index';
 export { supportUi as applicationUi } from '@shell/ui/support-ui';
 
-export const configureApplication = (): void => configureInvestigationVariants([aotInvestigationVariant]);
+export const configureApplication = (): void => configureInvestigation(aotInvestigation);

@@ -8,7 +8,7 @@ enforced by CI; this document is the reference for what the checks mean and what
 fails.
 
 Build entrypoints, backend route boundaries and the onboarding workflow are described in
-[dragon-development.md](dragon-development.md). The remaining import baseline is 38 (down from 79);
+[dragon-development.md](dragon-development.md). The remaining import baseline is 31 (down from 79, then 38);
 direct imports between the two domains have been removed.
 
 ## Layers
@@ -57,9 +57,16 @@ Rule names as they appear in tool output (all `severity: error`):
 tolerated; new ones fail. "Baseline: none" rules had zero violations and have no tolerance.
 
 `avvikelse-has-explicit-composition` restricts Avvikelse imports to application entrypoints,
-Avvikelse internals and development-only lab routes. `only-avvikelse-dragons-compose-avvikelse`
-restricts application imports to the dragons declaring Avvikelse in the catalog. These rules
-have no baseline. Shared SM only consumes the investigation contract/registry.
+Avvikelse internals and development-only lab routes. This rule has no baseline.
+The selected application's imports own composition; the catalog holds identity and domain only.
+Backend artifact validation compares emitted modules with the selected entrypoint's actual source graph.
+Shared SM consumes the investigation contract and fixed application configuration.
+
+The universal `src/stores/index.ts` barrel has been deleted. Import the existing owning store
+directly. `stores-are-imported-from-their-owner` prevents its return;
+`casedata-does-not-import-support-state` and `support-does-not-import-casedata-state`
+also block indirect domain coupling through stores. Shared message avatars accept presentation
+props, and the shared sidebar owns its generic tooltip and status contract.
 
 ## Which tool enforces what, and why
 

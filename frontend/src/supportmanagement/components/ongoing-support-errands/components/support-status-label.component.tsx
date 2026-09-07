@@ -1,6 +1,6 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { Label } from '@sk-web-gui/react';
-import { useMetadataStore } from '@stores/index';
+import { useMetadataStore } from '@stores/metadata-store';
 import { getSupportErrandPolicy } from '@supportmanagement/policy/support-errand-policy';
 import { Resolution, Status } from '@supportmanagement/services/support-errand-service';
 import { Hourglass } from 'lucide-react';

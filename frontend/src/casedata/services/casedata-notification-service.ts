@@ -1,5 +1,6 @@
 import { Errand, Notification as CasedataNotification } from '@common/data-contracts/case-data/data-contracts';
 import { apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { PatchNotificationDto } from 'src/data-contracts/backend/data-contracts';
 
 export const getCasedataNotifications: (municipalityId: string) => Promise<CasedataNotification[]> = (
@@ -11,7 +12,7 @@ export const getCasedataNotifications: (municipalityId: string) => Promise<Cased
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching notifications');
+      logClientFailure('casedata.casedata-notification.getCasedataNotifications', e);
       throw e;
     });
 };
@@ -39,7 +40,7 @@ export const acknowledgeCasedataNotification: (
       return true;
     })
     .catch((e) => {
-      console.error('Something went wrong when acknowledging notification');
+      logClientFailure('casedata.casedata-notification.acknowledgeCasedataNotification', e);
       throw e;
     });
 };
@@ -57,7 +58,7 @@ export const globalAcknowledgeCasedataNotification: (errand: Errand, municipalit
       return true;
     })
     .catch((e) => {
-      console.error('Something went wrong when acknowledging notification');
+      logClientFailure('casedata.casedata-notification.globalAcknowledgeCasedataNotification', e);
       throw e;
     });
 };

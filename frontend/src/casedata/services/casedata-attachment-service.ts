@@ -13,6 +13,7 @@ import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
 import { base64ToFile, mapAttachmentToUploadFile } from '@common/services/attachment-service';
 import { MAX_FILE_SIZE_MB } from '@common/services/attachment-upload-policy';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { UploadFile } from '@sk-web-gui/react';
 import { Attachment } from 'src/data-contracts/backend/data-contracts';
 
@@ -145,7 +146,7 @@ export const withRetries: <T>(retries: number, func: () => Promise<T>) => Promis
     if (retries > 0) {
       return withRetries(retries - 1, func);
     } else {
-      console.error('Out of retries, throwing original exception');
+      logClientFailure('casedata.casedata-attachment.withRetries', e);
       throw e;
     }
   });
@@ -171,7 +172,7 @@ export const editAttachment = (
       return res;
     })
     .catch((e) => {
-      console.error('Something went wrong when creating attachment ', obj.category);
+      logClientFailure('casedata.casedata-attachment.editAttachment', e);
       throw e;
     });
 };
@@ -227,7 +228,7 @@ export const sendAttachments = (
         })
         .then((res) => res)
         .catch((e) => {
-          console.error('Something went wrong when creating attachment ', obj.category);
+          logClientFailure('casedata.casedata-attachment.postAttachment', e);
           throw e;
         });
 
@@ -239,7 +240,7 @@ export const sendAttachments = (
 
 export const deleteAttachment = (municipalityId: string, errandId: number, attachment: UploadFile) => {
   if (!attachment?.id) {
-    console.error('No id found, cannot continue.');
+    logClientFailure('casedata.casedata-attachment.deleteAttachment');
     return;
   }
   const attachmentId = attachment.id;
@@ -250,7 +251,7 @@ export const deleteAttachment = (municipalityId: string, errandId: number, attac
       return res;
     })
     .catch((e) => {
-      console.error('Something went wrong when removing attachment ', attachmentId);
+      logClientFailure('casedata.casedata-attachment.deleteAttachment', e);
       throw e;
     });
 };
@@ -309,7 +310,7 @@ export const replaceAttachmentFile = async (
     await deleteAttachment(municipalityId, errandId, original);
     return { originalRemoved: true };
   } catch (e) {
-    console.error('Replacement attachment created but the original could not be removed ', attachment.id, e);
+    logClientFailure('casedata.casedata-attachment.replaceAttachmentFile', e);
     return { originalRemoved: false };
   }
 };
@@ -334,7 +335,7 @@ export const fetchAttachment: (
       return att;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching attachment');
+      logClientFailure('casedata.casedata-attachment.fetchAttachment', e);
       throw e;
     });
 };
@@ -371,7 +372,7 @@ export const sendDecisionAttachment = (
       )
       .then((res) => res)
       .catch((e) => {
-        console.error('Something went wrong when creating decision attachment');
+        logClientFailure('casedata.casedata-attachment.postDecisionAttachment', e);
         throw e;
       });
 
@@ -399,7 +400,7 @@ export const fetchDecisionAttachment: (
       return att;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching decision attachment');
+      logClientFailure('casedata.casedata-attachment.fetchDecisionAttachment', e);
       throw e;
     });
 };
@@ -416,7 +417,7 @@ export const deleteDecisionAttachment = (
     )
     .then((res) => res)
     .catch((e) => {
-      console.error('Something went wrong when removing decision attachment ', attachmentId);
+      logClientFailure('casedata.casedata-attachment.deleteDecisionAttachment', e);
       throw e;
     });
 };
@@ -440,7 +441,7 @@ export const editDecisionAttachment = (
     )
     .then((res) => res)
     .catch((e) => {
-      console.error('Something went wrong when editing decision attachment ', obj.category);
+      logClientFailure('casedata.casedata-attachment.editDecisionAttachment', e);
       throw e;
     });
 };
@@ -450,14 +451,14 @@ export const fetchErrandAttachments: (
   errandId: number
 ) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandId) => {
   if (!errandId) {
-    console.error('No errand id found, cannot fetch. Returning.');
+    logClientFailure('casedata.casedata-attachment.fetchErrandAttachments');
   }
   const url = `casedata/${municipalityId}/errand/${errandId}/attachments`;
   return apiService
     .get<ApiResponse<Attachment[]>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching attachments for errand: ', errandId);
+      logClientFailure('casedata.casedata-attachment.fetchErrandAttachments', e);
       return { data: [] as Attachment[], message: 'error' };
     });
 };
@@ -469,10 +470,10 @@ export const messageAttachment: (
   attachmentId: string
 ) => Promise<ApiResponse<Attachment[]>> = (municipalityId, errandId, messageId, attachmentId) => {
   if (!errandId) {
-    console.error('No errand id found, cannot fetch. Returning.');
+    logClientFailure('casedata.casedata-attachment.messageAttachment');
   }
   if (!attachmentId) {
-    console.error('No attachment id found, cannot fetch. Returning.');
+    logClientFailure('casedata.casedata-attachment.messageAttachment');
   }
 
   const url = `casedata/${municipalityId}/errand/${errandId}/messages/${messageId}/attachments/${attachmentId}`;
@@ -480,7 +481,7 @@ export const messageAttachment: (
     .get<any>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching attachment');
+      logClientFailure('casedata.casedata-attachment.messageAttachment', e);
       return { data: [] as Attachment[], message: 'error' };
     });
 };

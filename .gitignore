@@ -8,3 +8,9 @@ frontend/public/deploy-info.json
 .claude
 .playwright-mcp
 screenshots
+
+# Diagnostic output may contain data from older versions or third-party tooling.
+*.log
+*.log.*
+**/logs/
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json

@@ -2,7 +2,8 @@ import { API_BASE_URL } from '@config';
 import dayjs, { Dayjs } from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 
-import { logger } from './logger';
+import { logApplicationFailure } from '@/services/request-diagnostics';
+
 dayjs.extend(utc);
 /**
  * @method isEmpty
@@ -73,7 +74,7 @@ export const withRetries: <T>(retries: number, func: () => Promise<T>) => Promis
     if (retries > 0) {
       return withRetries(retries - 1, func);
     } else {
-      logger.error('Out of retries in withRetries, returning false');
+      logApplicationFailure('Out of retries in withRetries, returning false');
       return false;
     }
   });

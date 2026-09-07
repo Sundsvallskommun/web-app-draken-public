@@ -1,7 +1,8 @@
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, DatePicker, FormControl, FormLabel, Modal, Textarea, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
 import { getSupportErrandById, setSuspension, Status } from '@supportmanagement/services/support-errand-service';
 import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import dayjs from 'dayjs';

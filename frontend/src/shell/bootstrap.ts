@@ -1,5 +1,6 @@
 import { appConfig } from '@config/appconfig';
 import { configureApplication, dragon } from '@dragon';
+import { getInvestigation } from '@supportmanagement/investigation/configured-investigation';
 
 import { APP_IDENTITY, BUILT_DRAGON_ID } from './app-identity';
 import { isProductionBuildPhase } from './build-phase';
@@ -18,6 +19,7 @@ import { composeDragon, validateDragonDeployment } from './compose-dragon';
 if (!isProductionBuildPhase(process.env.NEXT_PHASE)) {
   validateDragonDeployment(APP_IDENTITY, BUILT_DRAGON_ID, appConfig);
   // Skipped only while `next build` evaluates the modules with placeholder values; see build-phase.ts.
-  composeDragon({ identity: APP_IDENTITY, dragon, features: appConfig.features });
+  composeDragon({ identity: APP_IDENTITY, dragon });
   configureApplication();
+  getInvestigation();
 }

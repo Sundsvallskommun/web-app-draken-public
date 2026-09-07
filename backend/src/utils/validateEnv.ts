@@ -1,7 +1,7 @@
 import { resolveSupportManagementApiTarget } from '@/config/api-config';
 import { resolveSupportInvestigationHandoverTargets } from '@/config/support-investigation-handover-targets';
 import { isContactSundsvall, isKC, isMEX, isPT } from '@/services/application.service';
-import { logger } from '@/utils/logger';
+import { logApplicationEvent, logApplicationFailure, logApplicationWarning } from '@/services/request-diagnostics';
 
 type EnvSpec = Record<string, { type: 'str' | 'port' | 'url' }>;
 
@@ -20,7 +20,7 @@ function warnMissingEnv(spec: EnvSpec): void {
     if (type === 'port') {
       const port = Number(value);
       if (isNaN(port) || port < 1 || port > 65535) {
-        invalid.push(`${key} (invalid port: "${value}")`);
+        invalid.push(key);
       }
     }
 
@@ -28,19 +28,19 @@ function warnMissingEnv(spec: EnvSpec): void {
       try {
         new URL(value);
       } catch {
-        invalid.push(`${key} (invalid url: "${value}")`);
+        invalid.push(key);
       }
     }
   }
 
   if (missing.length > 0) {
-    console.error(`\nMissing environment variables:\n${missing.map(k => `   - ${k}`).join('\n')}\n`);
+    logApplicationFailure('Required environment variables are missing', undefined, { configurationFields: missing });
   }
   if (invalid.length > 0) {
-    console.error(`\nInvalid environment variables:\n${invalid.map(k => `   - ${k}`).join('\n')}\n`);
+    logApplicationFailure('Required environment variables are invalid', undefined, { configurationFields: invalid });
   }
   if (missing.length === 0 && invalid.length === 0) {
-    console.info('✅ All required environment variables are set.');
+    logApplicationEvent('✅ All required environment variables are set.');
     return;
   }
   process.exit(1);
@@ -58,11 +58,11 @@ function validateSecretStrength(): void {
   }
   const secret = (process.env.SECRET_KEY ?? '').trim();
   if (secret === EXAMPLE_SECRET) {
-    console.error('\nInsecure SECRET_KEY: it is the shipped example value; set a strong unique secret.\n');
+    logApplicationFailure('Insecure SECRET_KEY: it is the shipped example value; set a strong unique secret.');
     process.exit(1);
   }
   if (secret.length < RECOMMENDED_SECRET_LENGTH) {
-    console.warn(`⚠️  SECRET_KEY is shorter than the recommended ${RECOMMENDED_SECRET_LENGTH} characters.`);
+    logApplicationWarning('SECRET_KEY is shorter than the recommended 32 characters');
   }
 }
 
@@ -70,7 +70,7 @@ const validateEnv = () => {
   const commonSpec: EnvSpec = {
     NODE_ENV: s(),
     SECRET_KEY: s(),
-    API_BASE_URL: s(),
+    API_BASE_URL: s('url'),
     CLIENT_KEY: s(),
     CLIENT_SECRET: s(),
     PORT: s('port'),
@@ -107,8 +107,8 @@ const validateEnv = () => {
     try {
       resolveSupportManagementApiTarget();
       resolveSupportInvestigationHandoverTargets();
-    } catch (error) {
-      console.error(`\n${error instanceof Error ? error.message : 'Invalid Support Management runtime configuration'}\n`);
+    } catch {
+      logApplicationFailure('Invalid Support Management runtime configuration; check the API target and handover target declarations.');
       process.exit(1);
     }
 
@@ -126,10 +126,7 @@ const validateEnv = () => {
   // supportmanagement namespace is also configured. Warn if the identity says KC but the namespace is
   // missing, so the resulting (silent) loss of cross-namespace access is visible instead of mysterious.
   if (isKC() && !isContactSundsvall()) {
-    logger.warn(
-      'APPLICATION is "KC" but SUPPORTMANAGEMENT_NAMESPACE is not "CONTACTSUNDSVALL". ' +
-        'Kontakt Sundsvall users will not be granted the canViewOtherNamespaces permission. Check the environment configuration.',
-    );
+    logApplicationWarning('KC configuration disables access to other namespaces');
   }
   validateSecretStrength();
 };

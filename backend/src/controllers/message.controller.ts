@@ -34,7 +34,7 @@ import {
 } from '@/dtos/message.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { isMEX } from '@/services/application.service';
-import { logger } from '@/utils/logger';
+import { logApplicationEvent, logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL, base64Encode } from '@/utils/util';
 
 export {
@@ -66,7 +66,8 @@ export class MessageController {
     const errandsUrl = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${messageDto.errandId}`;
     const errandData = await this.apiService.get<ErrandDTO>({ url: errandsUrl, baseURL }, req.user);
 
-    const logChannel = (result: DecisionChannelResult) => logger.info(`Decision channel ${result.channel}: ${result.status} - ${result.message}`);
+    const logChannel = (result: DecisionChannelResult) =>
+      logApplicationEvent('Decision channel completed', { channel: result.channel, deliveryStatus: result.status });
 
     let mexResult: DecisionChannelResult = { channel: 'EMAIL', status: 'skipped', data: {}, message: 'Not sent by email' };
     if (isMEX()) {
@@ -102,9 +103,9 @@ export class MessageController {
       minasidorResult = await sendDecisionToMinaSidor(baseURL, errandData.data.id!.toString(), req.user, pdf, decision!.id!);
       logChannel(minasidorResult);
     } else {
-      logger.info(`Decision channel DIGITAL_MAIL: skipped - No applicant stakeholder partyId found`);
+      logApplicationEvent('Decision channel DIGITAL_MAIL: skipped - No applicant stakeholder partyId found');
       digitalMailResult = { channel: 'DIGITAL_MAIL', status: 'skipped', data: {}, message: 'Not sent by digital mail' };
-      logger.info(`Decision channel MINA_SIDOR: skipped - No applicant stakeholder partyId found`);
+      logApplicationEvent('Decision channel MINA_SIDOR: skipped - No applicant stakeholder partyId found');
       minasidorResult = { channel: 'MINA_SIDOR', status: 'skipped', data: {}, message: 'Not sent to Mina sidor' };
     }
 
@@ -250,7 +251,7 @@ export class MessageController {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/messages`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<IMessageResponse[]>({ url, baseURL }, req.user).catch(e => {
-      logger.error('Error when fetching messages for errand: ', errandId);
+      logApplicationFailure('Error when fetching messages for errand', e);
       throw e;
     });
     return { data: res.data, message: 'success' };

@@ -1,17 +1,17 @@
 import { Response } from 'express';
 
-import { createSupportInvestigationProfile } from '@/config/support-investigation-profile';
+import { createSupportApplicationProfile } from '@/config/support-application-profile';
 import {
   SupportErrandJsonParameter,
   SupportErrandJsonParameterController,
   UpdateSupportErrandJsonParameterDto,
 } from '@/controllers/supportmanagement/support-errand-json-parameter.controller';
-import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
 import { ABSENT_HEADER, mockReq, mockRes, MockResponse } from './helpers/http';
-import { investigationProfileFixture } from './helpers/investigation-profiles';
 import { mockMunicipalityId, mockSupportErrandId } from './helpers/mock-data';
+import { supportProfileFixture } from './helpers/support-application-profiles';
 
 interface DocumentServiceStub {
   readJsonParameter: ReturnType<typeof vi.fn>;
@@ -27,9 +27,9 @@ const makeController = (application = 'IAF', state: 'active' | 'inactive' | 'una
     getState: vi.fn(async () => state),
   };
   const controller = new SupportErrandJsonParameterController(
-    investigationProfileFixture(application),
+    supportProfileFixture(application),
     documentService as unknown as SupportJsonParameterService,
-    policyService as unknown as SupportInvestigationPolicyService,
+    policyService as unknown as SupportApplicationPolicyService,
   );
   return { controller, documentService, policyService };
 };
@@ -190,7 +190,7 @@ describe('SupportErrandJsonParameterController', () => {
   });
 
   it('passes the complete injected definition for a future application without app-name branches', async () => {
-    const profile = createSupportInvestigationProfile({
+    const profile = createSupportApplicationProfile({
       application: 'FUTURE',
       documents: [{ key: 'custom-document', schemaName: 'shared-schema', tabLabel: 'Custom', ownerLabel: 'Owner' }],
     });
@@ -205,7 +205,7 @@ describe('SupportErrandJsonParameterController', () => {
     const controller = new SupportErrandJsonParameterController(
       profile,
       documentService,
-      policyService as unknown as SupportInvestigationPolicyService,
+      policyService as unknown as SupportApplicationPolicyService,
     );
 
     await controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, 'custom-document', resDouble());

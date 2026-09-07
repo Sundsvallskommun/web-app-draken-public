@@ -14,7 +14,8 @@ import {
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, Input } from '@sk-web-gui/react';
-import { useConfigStore, useMetadataStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useMetadataStore } from '@stores/metadata-store';
 import {
   emptyContact,
   ExternalIdType,

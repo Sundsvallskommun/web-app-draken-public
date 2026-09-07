@@ -4,7 +4,7 @@ import type {
 } from '@/config/support-investigation-classification';
 import { normalizeSupportManagementResourcePath } from '@/config/supportmanagement-path';
 import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
-import type { SupportInvestigationProfileDto } from '@/dtos/support-investigation-profile.dto';
+import type { SupportApplicationProfileDto } from '@/dtos/support-application-profile.dto';
 
 import { assertSupportInvestigationClassificationContext } from './classification-context';
 
@@ -53,7 +53,7 @@ export const IAF_VOF_INVESTIGATION_CLASSIFICATION_LEGAL_BASE_RULES: readonly Iaf
 export const IAF_VOF_INVESTIGATION_LEGAL_BASES_POINTER = '/legalBases';
 export const IAF_VOF_REPORTED_MISCONDUCT_FORCED_LEGAL_BASES = Object.freeze(['SOL', 'LSS']);
 
-const resolveUniqueDocumentKey = (profile: SupportInvestigationProfileDto, schemaName: string): string | undefined => {
+const resolveUniqueDocumentKey = (profile: SupportApplicationProfileDto, schemaName: string): string | undefined => {
   const matches = profile.documents.filter(document => document.schemaName === schemaName);
   return matches.length === 1 ? matches[0].key : undefined;
 };
@@ -63,7 +63,7 @@ const resolveUniqueDocumentKey = (profile: SupportInvestigationProfileDto, schem
  * Other applications deliberately have no investigation classification policy.
  */
 export const resolveIafVofInvestigationClassificationPolicy = (
-  profile: SupportInvestigationProfileDto,
+  profile: SupportApplicationProfileDto,
 ): IafVofInvestigationClassificationPolicy | undefined => {
   if (!IAF_VOF_APPLICATIONS.has(profile.application.trim().toUpperCase())) return undefined;
 

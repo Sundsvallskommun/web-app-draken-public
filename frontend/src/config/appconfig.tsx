@@ -1,9 +1,17 @@
+import { logClientWarning } from '@common/services/client-diagnostics';
 import { FeatureFlagDto } from 'src/data-contracts/backend/data-contracts';
+
+export class FeatureFlagConfigurationError extends Error {
+  constructor() {
+    super('Utredningens tidigare variantflaggor måste migreras innan applikationen kan användas.');
+    this.name = 'FeatureFlagConfigurationError';
+  }
+}
 
 export interface AppConfig {
   applicationName: string;
-  isCaseData: boolean;
-  isSupportManagement: boolean;
+  readonly isCaseData: boolean;
+  readonly isSupportManagement: boolean;
   reopenSupportErrandLimit: string;
   features: AppConfigFeatures;
 }
@@ -40,8 +48,6 @@ export interface AppConfigFeatures {
   useAppeal: boolean;
   useHandover: boolean;
   useInvestigation: boolean;
-  useAvvikelseInvestigation: boolean;
-  useAotInvestigation: boolean;
 }
 
 // JSON.parse prevents the minifier from folding placeholder comparisons at build time.
@@ -54,10 +60,17 @@ const envBool = (val: string | undefined): boolean => {
   }
 };
 
+const buildDomain = process.env.DRAKEN_BUILD_DOMAIN;
+
 export const appConfig: AppConfig = {
   applicationName: process.env.NEXT_PUBLIC_APPLICATION_NAME || 'appen',
-  isCaseData: envBool(process.env.NEXT_PUBLIC_IS_CASEDATA),
-  isSupportManagement: envBool(process.env.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT),
+  // Next bakes the catalog's domain into this application. Getters also prevent runtime writes.
+  get isCaseData() {
+    return buildDomain === 'casedata';
+  },
+  get isSupportManagement() {
+    return buildDomain === 'supportmanagement';
+  },
   reopenSupportErrandLimit: process.env.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '30',
   features: {
     useThreeLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION),
@@ -91,14 +104,10 @@ export const appConfig: AppConfig = {
     useAppeal: envBool(process.env.NEXT_PUBLIC_USE_APPEAL),
     useHandover: envBool(process.env.NEXT_PUBLIC_USE_HANDOVER),
     useInvestigation: envBool(process.env.NEXT_PUBLIC_USE_INVESTIGATION),
-    useAvvikelseInvestigation: envBool(process.env.NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION),
-    useAotInvestigation: envBool(process.env.NEXT_PUBLIC_USE_AOT_INVESTIGATION),
   },
 };
 
-function resetAllFlagsToFalse() {
-  appConfig.isCaseData = false;
-  appConfig.isSupportManagement = false;
+function resetRuntimeFeatures() {
   appConfig.reopenSupportErrandLimit = '30';
 
   (Object.keys(appConfig.features) as (keyof AppConfigFeatures)[]).forEach((key) => {
@@ -111,26 +120,18 @@ export function applyRuntimeFeatureFlags(flags: FeatureFlagDto[]) {
     return;
   }
 
-  resetAllFlagsToFalse();
+  if (flags.some((flag) => ['useAvvikelseInvestigation', 'useAotInvestigation'].includes(flag.name))) {
+    throw new FeatureFlagConfigurationError();
+  }
+  resetRuntimeFeatures();
 
   flags.forEach((flag) => {
-    if (
-      !(flag.name in appConfig.features) &&
-      flag.name !== 'isCaseData' &&
-      flag.name !== 'isSupportManagement' &&
-      flag.name !== 'reopenSupportErrandLimit'
-    ) {
-      console.warn('Unknown feature flag from backend:', flag.name);
-      return;
-    }
+    // Adminpanel already persisted these domain rows before per-dragon builds existed. They are
+    // obsolete configuration, not capabilities; partial or stale rows cannot replace the build.
+    if (flag.name === 'isCaseData' || flag.name === 'isSupportManagement') return;
 
-    if (flag.name === 'isCaseData') {
-      appConfig.isCaseData = flag.enabled;
-      return;
-    }
-
-    if (flag.name === 'isSupportManagement') {
-      appConfig.isSupportManagement = flag.enabled;
+    if (!Object.hasOwn(appConfig.features, flag.name) && flag.name !== 'reopenSupportErrandLimit') {
+      logClientWarning('config.appconfig.applyRuntimeFeatureFlags');
       return;
     }
 
@@ -139,7 +140,7 @@ export function applyRuntimeFeatureFlags(flags: FeatureFlagDto[]) {
       return;
     }
 
-    if (flag.name in appConfig.features) {
+    if (Object.hasOwn(appConfig.features, flag.name)) {
       appConfig.features[flag.name as keyof AppConfigFeatures] = flag.enabled;
     }
   });

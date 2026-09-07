@@ -14,8 +14,8 @@
  *
  * Parameters use {{key}} syntax and are replaced at runtime.
  */
-
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { base64Decode } from '@common/services/helper-service';
 import { EMAIL_INFORMATION_TEXT } from '@common/services/message-template-body-service';
 
@@ -47,7 +47,7 @@ async function fetchTemplate(identifier: string): Promise<string | null> {
     }
     return null;
   } catch (error) {
-    console.error(`Failed to fetch template: ${identifier}`, error);
+    logClientFailure('common.message-template.fetchTemplate', error);
     return null;
   }
 }
@@ -108,7 +108,7 @@ export async function fetchTemplatesWithMetadata(
 
     return { templates, byId };
   } catch (error) {
-    console.error(`Failed to fetch templates`, error);
+    logClientFailure('common.message-template.fetchTemplatesWithMetadata', error);
     return { templates: [], byId: {} };
   }
 }

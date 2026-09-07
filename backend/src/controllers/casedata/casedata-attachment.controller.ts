@@ -12,7 +12,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { AttachmentChannelEnum, Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
-import { logger } from '@/utils/logger';
+import { logApplicationEvent, logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL } from '@/utils/util';
 
 interface ResponseData<T> {
@@ -54,13 +54,13 @@ export class CaseDataAttachmentController {
       data.append(`file`, files[0].buffer, { filename: files[0].originalname });
       data.append('attachment', JSON.stringify(metadata));
     } else {
-      logger.error('Trying to save attachment without name or data');
+      logApplicationFailure('Trying to save attachment without name or data');
       throw new Error('File missing');
     }
     const response = await this.apiService
       .post<ErrandDTO, FormData>({ url, baseURL, data, headers: { 'Content-Type': data.getHeaders()['content-type'] } }, req.user)
       .catch(e => {
-        logger.error('Attachment post error:', e);
+        logApplicationFailure('Attachment post error', e);
         throw e;
       });
     return { data: response.data, message: `Attachment created on errand ${attachmentData.errandNumber}` };
@@ -112,10 +112,10 @@ export class CaseDataAttachmentController {
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<Attachment[]>({ url, baseURL }, req.user).catch(e => {
       if (e.status === 404) {
-        logger.error('Attachments not found (404) so returning empty list instead');
+        logApplicationFailure('Attachments not found (404) so returning empty list instead');
         return { data: [] };
       } else {
-        logger.error('Error response when fetching attachments: ', e);
+        logApplicationFailure('Error response when fetching attachments', e);
         throw e;
       }
     });
@@ -134,11 +134,10 @@ export class CaseDataAttachmentController {
   ): Promise<{ data: ErrandDTO; message: string }> {
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/attachments/${attachmentId}`;
     const baseURL = apiURL(this.SERVICE);
-    logger.info('Removing attachment:', attachmentId, 'from', baseURL, 'url:', url);
+    logApplicationEvent('Removing attachment:');
     // TODO validate action but we need errandId for that
     const response = await this.apiService.delete<ErrandDTO>({ url, baseURL }, req.user).catch(e => {
-      logger.error('Something went wrong when deleting attachment');
-      logger.error(e);
+      logApplicationFailure('Something went wrong when deleting attachment', e);
       throw e;
     });
     return { data: response.data, message: `Attachment ${attachmentId} removed` };
@@ -165,8 +164,7 @@ export class CaseDataAttachmentController {
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/attachments/${attachmentId}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<ArrayBuffer>({ url, baseURL, responseType: 'arraybuffer' }, req.user).catch(e => {
-      logger.error('Something went wrong when fetching attachment');
-      logger.error(e);
+      logApplicationFailure('Something went wrong when fetching attachment', e);
       throw e;
     });
 

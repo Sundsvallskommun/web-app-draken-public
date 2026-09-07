@@ -8,11 +8,11 @@ import { SupportFacilitiesController, SupportFacilitiesPayloadDto } from '@/cont
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
-import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
 
 import { ABSENT_HEADER, mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
-import { investigationProfileFixture } from './helpers/investigation-profiles';
 import { mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';
+import { supportProfileFixture } from './helpers/support-application-profiles';
 
 interface ApiStub {
   get: ReturnType<typeof vi.fn>;
@@ -20,7 +20,7 @@ interface ApiStub {
 }
 
 const classificationPolicy = (): IafVofInvestigationClassificationPolicy =>
-  resolveIafVofInvestigationClassificationPolicy(investigationProfileFixture('IAF'))!;
+  resolveIafVofInvestigationClassificationPolicy(supportProfileFixture('IAF'))!;
 
 const facilities = (): SupportFacilitiesPayloadDto => ({
   propertyDesignations: ['SUNDSVALL BÖLE 1:1'],
@@ -58,8 +58,8 @@ const makeController = (
   };
 
   (controller as unknown as { apiService: ApiService }).apiService = api as unknown as ApiService;
-  (controller as unknown as { investigationPolicyService: SupportInvestigationPolicyService }).investigationPolicyService =
-    investigationPolicy as unknown as SupportInvestigationPolicyService;
+  (controller as unknown as { investigationPolicyService: SupportApplicationPolicyService }).investigationPolicyService =
+    investigationPolicy as unknown as SupportApplicationPolicyService;
 
   return { controller, api, investigationPolicy };
 };

@@ -1,5 +1,8 @@
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { Button, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
+import { useUserStore } from '@stores/user-store';
 import {
   getSupportErrandById,
   setSupportErrandAdmin,
@@ -62,7 +65,7 @@ export const SupportStartProcessButtonComponent: FC<{
 
       toast({ message: 'Handläggning startad', status: 'success', position: 'bottom' });
     } catch (err) {
-      console.error(err);
+      logClientFailure('supportmanagement.support-start-process-button.handleStartProcess', err);
       toast({
         message: supportErrandWriteErrorMessage(err, 'Något gick fel vid start av handläggning'),
         status: 'error',

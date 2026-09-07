@@ -1,4 +1,5 @@
 import { User } from '@common/interfaces/user';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import {
   EMAIL_INFORMATION_TEXT,
   getMessageTemplateNamespace,
@@ -113,7 +114,7 @@ export function useMessageTemplates(user: User, shouldLoad: boolean): UseMessage
           app,
         });
       } catch (err) {
-        console.error('Failed to load templates', err);
+        logClientFailure('common.useMessageTemplates.loadTemplates', err);
         setError('Failed to load templates');
       } finally {
         setLoading(false);

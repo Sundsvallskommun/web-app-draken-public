@@ -1,3 +1,4 @@
+import { logClientFailure } from '@common/services/client-diagnostics';
 export const toBase64 = async (file: File): Promise<string> => {
   try {
     const reader = new FileReader();
@@ -14,7 +15,7 @@ export const toBase64 = async (file: File): Promise<string> => {
     });
     return result;
   } catch (error) {
-    console.error('Error while processing attachment:', error);
+    logClientFailure('common.toBase64.toBase64', error);
     throw error;
   }
 };

@@ -1,10 +1,7 @@
-import { ErrandStatus } from '@casedata/interfaces/errand-status';
-import { Status } from '@supportmanagement/services/support-errand-service';
-
-export interface SidebarButton {
+export interface SidebarButton<Status extends string> {
   label: string;
-  key: Status | ErrandStatus;
-  statuses: readonly Status[] | readonly ErrandStatus[];
+  key: Status;
+  statuses: readonly Status[];
   icon: string;
   totalStatusErrands: number | null;
 }

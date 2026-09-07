@@ -2,9 +2,11 @@ import { PortalPersonData } from '@common/data-contracts/employee/data-contracts
 import { All } from '@common/interfaces/priority';
 import { User } from '@common/interfaces/user';
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { twoDecimals } from '@common/services/helper-service';
 import { useSnackbar } from '@sk-web-gui/react';
-import { useBillingStore, useConfigStore } from '@stores/index';
+import { useBillingStore } from '@stores/billing-store';
+import { useConfigStore } from '@stores/config-store';
 import { useCallback, useEffect } from 'react';
 import {
   CBillingRecord,
@@ -142,12 +144,12 @@ export const getInvoiceRows = (
 ) => {
   const invoiceType = invoiceSettings.invoiceTypes.find((t) => t.invoiceType === description);
   if (!invoiceType) {
-    console.error('Could not find invoice type for description: ', description);
+    logClientFailure('supportmanagement.support-billing.getInvoiceRows');
     return [];
   }
   const { invoiceRows, accountInformation } = type === 'INTERNAL' ? invoiceType?.internal : invoiceType?.external;
   if (!invoiceRows || !accountInformation) {
-    console.error('Could not find invoice rows for description: ', description);
+    logClientFailure('supportmanagement.support-billing.getInvoiceRows');
     return [];
   }
   const counterpart =
@@ -246,7 +248,7 @@ export const setBillingRecordStatus: (
       return true;
     })
     .catch((e) => {
-      console.error('Something went wrong when updating billing record status');
+      logClientFailure('supportmanagement.support-billing.setBillingRecordStatus', e);
       throw e;
     });
 };
@@ -269,7 +271,7 @@ export const saveBillingRecord: (
         : true;
     })
     .catch((e) => {
-      console.error('Something went wrong when updating invoice');
+      logClientFailure('supportmanagement.support-billing.saveBillingRecord', e);
       throw e;
     });
 };
@@ -295,7 +297,7 @@ const saveBillingRecordReferenceToErrand: (
       return true;
     })
     .catch((e) => {
-      console.error('Something went wrong when updating errand with billing record id');
+      logClientFailure('supportmanagement.support-billing.saveBillingRecordReferenceToErrand', e);
       throw e;
     });
 };
@@ -332,7 +334,7 @@ export const getEmployeeData: (username: string, domain?: string) => Promise<Por
     .get<ApiResponse<PortalPersonData>>(`portalpersondata/${domain}/${username}`)
     .then((res) => res.data.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching AD-user');
+      logClientFailure('supportmanagement.support-billing.getEmployeeData', e);
       throw e;
     });
 };
@@ -440,7 +442,7 @@ export const getOrganization: (
       };
     })
     .catch((e): undefined => {
-      console.error('Something went wrong when fetching organization');
+      logClientFailure('supportmanagement.support-billing.getOrganization', e);
       return undefined;
     });
 };
@@ -456,7 +458,7 @@ export const getBillingRecord: (recordId: string, municipalityId: string) => Pro
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching billing records');
+      logClientFailure('supportmanagement.support-billing.getBillingRecord', e);
       throw e;
     });
 };
@@ -483,7 +485,7 @@ export const getBillingRecords: (
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching billing records');
+      logClientFailure('supportmanagement.support-billing.getBillingRecords', e);
       throw e;
     });
 };

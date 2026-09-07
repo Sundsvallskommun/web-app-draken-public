@@ -7,12 +7,12 @@ import {
   resolveIafVofInvestigationClassificationOwner,
   resolveIafVofInvestigationClassificationPolicy,
 } from '@/avvikelse/classification-policy';
-import { createSupportInvestigationProfile } from '@/config/support-investigation-profile';
+import { createSupportApplicationProfile } from '@/config/support-application-profile';
 
-import { investigationProfileFixture } from './helpers/investigation-profiles';
+import { supportProfileFixture } from './helpers/support-application-profiles';
 
 const customProfile = (application = 'IAF') =>
-  createSupportInvestigationProfile({
+  createSupportApplicationProfile({
     application,
     documents: [
       { key: 'manager-document', schemaName: 'utredning-enhetschef', tabLabel: 'Manager', ownerLabel: 'Manager' },
@@ -37,11 +37,11 @@ describe('fixed IAF/VOF investigation classification policy', () => {
   });
 
   it('fails closed when a fixed owner schema is missing or ambiguous', () => {
-    const missing = createSupportInvestigationProfile({
+    const missing = createSupportApplicationProfile({
       application: 'IAF',
       documents: [{ key: 'manager', schemaName: 'utredning-enhetschef', tabLabel: 'Manager', ownerLabel: 'Manager' }],
     });
-    const ambiguous = createSupportInvestigationProfile({
+    const ambiguous = createSupportApplicationProfile({
       application: 'IAF',
       documents: [...customProfile().documents, { key: 'manager-copy', schemaName: 'utredning-enhetschef', tabLabel: 'Copy', ownerLabel: 'Manager' }],
     });
@@ -64,7 +64,7 @@ describe('fixed IAF/VOF investigation classification policy', () => {
   });
 
   it('uses resourcePath as authoritative and resourceName only as a pathless fallback', () => {
-    const policy = resolveIafVofInvestigationClassificationPolicy(investigationProfileFixture('IAF'))!;
+    const policy = resolveIafVofInvestigationClassificationPolicy(supportProfileFixture('IAF'))!;
     expect(resolveIafVofInvestigationClassificationOwner(policy, { labels: [{ resourcePath: 'OTHER/ABUSE', resourceName: 'ABUSE' }] }).mode).toBe(
       'default',
     );

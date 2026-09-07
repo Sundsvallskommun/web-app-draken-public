@@ -3,10 +3,12 @@ import { All, Priority } from '@common/interfaces/priority';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
 import { isKC, isLOK } from '@common/services/application-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import sanitized from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { ForwardFormProps } from '@supportmanagement/components/support-errand/sidebar/buttons/support-forward-errand-button.component';
 import { ApiPagingData, RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
@@ -668,7 +670,7 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
     };
     return ierrand;
   } catch (e) {
-    console.error('Error: could not map errands.', e);
+    logClientFailure('supportmanagement.support-errand.mapApiSupportErrandToSupportErrand', e);
     throw e;
   }
 };
@@ -704,7 +706,7 @@ export const getSupportErrands: (
       return response;
     })
     .catch((e) => {
-      console.error('Error: could not fetch errands.', e);
+      logClientFailure('supportmanagement.support-errand.getSupportErrands', e);
       return { errands: [], labels: [], error: e.response?.status ?? 'UNKNOWN ERROR' } as SupportErrandsData;
     });
 };
@@ -737,7 +739,7 @@ export const initiateSupportErrand: (municipalityId: string) => Promise<any | Pa
       return mapApiSupportErrandToSupportErrand(res.data);
     })
     .catch((e) => {
-      console.error('Something went wrong when initiating errand');
+      logClientFailure('supportmanagement.support-errand.initiateSupportErrand', e);
       throw e;
     });
 };
@@ -781,7 +783,7 @@ export const updateSupportErrand: (
     );
     responseObj.errand = true;
   } catch (e) {
-    console.error('Something went wrong when patching errand');
+    logClientFailure('supportmanagement.support-errand.updateSupportErrand', e);
     throw e;
   }
 
@@ -834,7 +836,7 @@ export const updateSupportErrandPhase = (
     )
     .then((response) => mapApiSupportErrandToSupportErrand(response.data))
     .catch((e) => {
-      console.error('Something went wrong when updating errand phase');
+      logClientFailure('supportmanagement.support-errand.updateSupportErrandPhase', e);
       throw e;
     });
 
@@ -887,7 +889,7 @@ export const setSupportErrandAdmin: (
       headers: { 'If-Match': ifMatch },
     });
   } catch (e) {
-    console.error('Something went wrong when patching errand');
+    logClientFailure('supportmanagement.support-errand.setSupportErrandAdmin', e);
     throw e;
   }
 
@@ -900,7 +902,7 @@ export const setSupportErrandAdmin: (
   } catch (e) {
     // Reported apart from the assignment: that one landed, and an errand left in Ny needs a
     // different answer from the user than one that was never assigned at all.
-    console.error('Support errand was assigned, but its status could not be changed');
+    logClientFailure('supportmanagement.support-errand.setSupportErrandAdmin', e);
     throw new SupportErrandStatusAfterAssignmentError(e);
   }
 };
@@ -929,7 +931,7 @@ export const setSupportErrandStatus: (
   return transitionSupportErrandStatus(errandId, municipalityId, status, expected, {
     suspension: { suspendedFrom: undefined, suspendedTo: undefined },
   }).catch((e) => {
-    console.error('Something went wrong when patching errand');
+    logClientFailure('supportmanagement.support-errand.setSupportErrandStatus', e);
     throw e;
   });
 };
@@ -941,7 +943,7 @@ export const closeSupportErrand: (
   expected: SupportErrandStatusSnapshot
 ) => Promise<boolean> = async (errandId, municipalityId, resolution, expected) => {
   return transitionSupportErrandStatus(errandId, municipalityId, Status.SOLVED, expected, { resolution }).catch((e) => {
-    console.error('Something went wrong when patching errand');
+    logClientFailure('supportmanagement.support-errand.closeSupportErrand', e);
     throw e;
   });
 };
@@ -974,7 +976,7 @@ export const setSuspension: (
       return true;
     })
     .catch((e) => {
-      console.error('Something went wrong when suspending errand');
+      logClientFailure('supportmanagement.support-errand.setSuspension', e);
       throw e;
     });
 };
@@ -996,7 +998,7 @@ export const setSupportErrandPriority: (
       return true;
     })
     .catch((e) => {
-      console.error('Something went wrong when patching errand');
+      logClientFailure('supportmanagement.support-errand.setSupportErrandPriority', e);
       throw e;
     });
 };

@@ -1,6 +1,6 @@
 import { assetStatusLabels, assetTypeLabels } from '@common/interfaces/asset';
 import { AutoTable, AutoTableHeader } from '@sk-web-gui/react';
-import { useCasedataStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
 
 export const CasedataPermitServicesTab: React.FC<{}> = () => {
   const assets = useCasedataStore((s) => s.assets);

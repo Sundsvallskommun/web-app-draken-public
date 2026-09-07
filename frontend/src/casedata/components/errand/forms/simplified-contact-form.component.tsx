@@ -16,7 +16,7 @@ import {
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FormControl, Input } from '@sk-web-gui/react';
-import { useCasedataStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
 import { Pen } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';

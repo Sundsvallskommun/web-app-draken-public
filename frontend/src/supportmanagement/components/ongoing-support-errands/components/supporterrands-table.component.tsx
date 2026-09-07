@@ -1,8 +1,11 @@
 import { isIAFOrVOF } from '@common/services/application-service';
 import { Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
-import { useConfigStore, useEmployeeNameStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useEmployeeNameStore } from '@stores/employee-name-store';
+import { useSupportStore } from '@stores/support-store';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
+import { useUserStore } from '@stores/user-store';
 import {
   getUnresolvedReporterAccounts,
   useSupportErrandTable,

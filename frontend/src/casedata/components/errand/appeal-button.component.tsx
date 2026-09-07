@@ -1,8 +1,10 @@
 import { IErrand } from '@casedata/interfaces/errand';
 import { appealErrand, getErrand } from '@casedata/services/casedata-errand-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
@@ -46,7 +48,7 @@ export const AppealButtonComponent: React.FC<{ disabled: boolean }> = (props) =>
         return true;
       })
       .catch((e) => {
-        console.error('Error when updating errand:', e);
+        logClientFailure('casedata.appeal-button.onSubmit', e);
         toastMessage({
           position: 'bottom',
           closeable: false,

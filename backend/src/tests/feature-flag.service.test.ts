@@ -199,3 +199,59 @@ describe('flag source configuration', () => {
     expect(new FeatureFlagService(undefined, { adminpanelUrl: 'https://adminpanel.example/api' }).isConfigured()).toBe(true);
   });
 });
+
+describe('retired investigation flags', () => {
+  it.each(['useAvvikelseInvestigation', 'useAotInvestigation'])('rejects %s even when false and never uses a stale active snapshot', async name => {
+    let now = 0;
+    const apiService = {
+      get: vi
+        .fn()
+        .mockResolvedValueOnce({ data: { data: flags, message: 'success' }, message: 'success' })
+        .mockResolvedValue({ data: { data: [...flags, { ...flags[0], id: 5, name, enabled: false }], message: 'success' }, message: 'success' }),
+    };
+    const service = new FeatureFlagService(apiService as unknown as ApiService, {
+      ...configuration,
+      freshTtlMs: 30,
+      staleTtlMs: 300,
+      now: () => now,
+    });
+    const user = mockReq().user;
+    await expect(service.getFeatureEnabled(user, 'useInvestigation', 'supportmanagement')).resolves.toBe(true);
+    now = 31;
+    await expect(service.getFeatureFlags(user)).rejects.toThrow('INVESTIGATION_FLAGS_REQUIRE_MIGRATION');
+    await expect(service.getFreshFeatureEnabled(user, 'useInvestigation', 'supportmanagement')).rejects.toThrow(
+      'INVESTIGATION_FLAGS_REQUIRE_MIGRATION',
+    );
+  });
+
+  it('migration of another application or namespace cannot block this application', async () => {
+    const { service } = makeService([
+      ...flags,
+      { ...flags[0], name: 'useAvvikelseInvestigation', application: 'VOF' },
+      { ...flags[0], name: 'useAvvikelseInvestigation', namespace: 'other' },
+    ]);
+    await expect(service.getFreshFeatureEnabled(mockReq().user, 'useInvestigation', 'supportmanagement')).resolves.toBe(true);
+  });
+});
+
+it('keeps a known migration error through an outage and recovers only after a valid snapshot', async () => {
+  let now = 0;
+  const apiService = {
+    get: vi
+      .fn()
+      .mockResolvedValueOnce({ data: { data: flags, message: 'success' }, message: 'success' })
+      .mockResolvedValueOnce({
+        data: { data: [...flags, { ...flags[0], name: 'useAvvikelseInvestigation' }], message: 'success' },
+        message: 'success',
+      })
+      .mockRejectedValueOnce(new Error('Adminpanel unavailable'))
+      .mockResolvedValueOnce({ data: { data: [{ ...flags[0], enabled: false }], message: 'success' }, message: 'success' }),
+  };
+  const service = new FeatureFlagService(apiService as unknown as ApiService, { ...configuration, freshTtlMs: 30, staleTtlMs: 300, now: () => now });
+  const user = mockReq().user;
+  await expect(service.getFeatureEnabled(user, 'useInvestigation', 'supportmanagement')).resolves.toBe(true);
+  now = 31;
+  await expect(service.getFeatureFlags(user)).rejects.toThrow('INVESTIGATION_FLAGS_REQUIRE_MIGRATION');
+  await expect(service.getFeatureFlags(user)).rejects.toThrow('INVESTIGATION_FLAGS_REQUIRE_MIGRATION');
+  await expect(service.getFeatureEnabled(user, 'useInvestigation', 'supportmanagement')).resolves.toBe(false);
+});

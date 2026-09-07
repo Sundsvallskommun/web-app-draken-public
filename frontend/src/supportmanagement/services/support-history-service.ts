@@ -1,4 +1,5 @@
 import { apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { ParsedSupportEvent, SupportEvent, SupportEvents } from '@supportmanagement/interfaces/supportEvent';
 import dayjs from 'dayjs';
 
@@ -37,7 +38,7 @@ export const getSupportErrandEvents: (
       return Promise.all(ps);
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching errand events');
+      logClientFailure('supportmanagement.support-history.getSupportErrandEvents', e);
       throw e;
     });
 };

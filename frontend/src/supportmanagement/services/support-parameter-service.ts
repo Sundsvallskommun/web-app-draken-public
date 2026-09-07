@@ -1,5 +1,6 @@
 import { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 
 import { ApiSupportErrand } from './support-errand-service';
@@ -156,7 +157,7 @@ export const saveParameters = (
       { headers: { 'If-Match': ifMatch } }
     )
     .catch((e) => {
-      console.error('Something went wrong when patching errand');
+      logClientFailure('supportmanagement.support-parameter.saveParameters', e);
       throw e;
     });
 };

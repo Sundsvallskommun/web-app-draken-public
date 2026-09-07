@@ -1,9 +1,10 @@
 'use client';
-
 import LoaderFullScreen from '@common/components/loader/loader-fullscreen';
+import { getApiDeploymentError, subscribeApiDeploymentError } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { getFeatureFlags } from '@common/services/feature-flag-service';
 import { getAdminUsers, getMe } from '@common/services/user-service';
-import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
+import { appConfig, applyRuntimeFeatureFlags, FeatureFlagConfigurationError } from '@config/appconfig';
 import { APP_IDENTITY, BUILT_DRAGON_ID } from '@shell/app-identity';
 import { validateDragonDeployment } from '@shell/compose-dragon';
 import {
@@ -17,13 +18,15 @@ import { useConfigStore } from '@stores/config-store';
 import { useMetadataStore } from '@stores/metadata-store';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { useUserStore } from '@stores/user-store';
-import { getInvestigationProfile } from '@supportmanagement/investigation/investigation-profile-service';
-import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
+import { getSupportApplicationProfile } from '@supportmanagement/application/support-application-profile-service';
+import { useSupportApplicationProfileStore } from '@supportmanagement/application/support-application-profile-store';
+import { getInvestigation } from '@supportmanagement/investigation/configured-investigation';
 import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import dayjs from 'dayjs';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import utc from 'dayjs/plugin/utc';
 import { ReactNode, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import type { FeatureFlagDto } from 'src/data-contracts/backend/data-contracts';
 
 dayjs.extend(utc);
 dayjs.locale('sv');
@@ -62,6 +65,11 @@ function isAuthenticationRoute(): boolean {
 }
 
 function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
+  const apiDeploymentError = useSyncExternalStore(
+    subscribeApiDeploymentError,
+    getApiDeploymentError,
+    getApiDeploymentError
+  );
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -71,14 +79,14 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
   const authenticationRoute = isAuthenticationRoute();
   const [featureFlagsReady, setFeatureFlagsReady] = useState(schemaLabRoute);
   const [configurationError, setConfigurationError] = useState<Error | null>(null);
-  const investigationProfileStatus = useInvestigationProfileStore((state) => state.status);
+  const supportProfileStatus = useSupportApplicationProfileStore((state) => state.status);
 
   useEffect(() => {
     if (schemaLabRoute) return;
 
     const municipalityId = process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '';
     useConfigStore.getState().setMunicipalityId(municipalityId);
-    useInvestigationProfileStore.getState().reset();
+    useSupportApplicationProfileStore.getState().reset();
 
     getMe()
       .then((user) => {
@@ -87,39 +95,46 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
       .catch(() => {});
 
     const loadRuntimeConfiguration = async () => {
+      let flags: FeatureFlagDto[] | undefined;
       try {
         const response = await getFeatureFlags();
-        applyRuntimeFeatureFlags(response.data);
-      } catch {
+        flags = response.data;
+      } catch (error) {
+        if (error instanceof FeatureFlagConfigurationError) {
+          setConfigurationError(error);
+          return;
+        }
         // Environment flags remain the fallback when Adminpanel is unavailable.
       }
 
-      // bootstrap.ts validated the environment flags at startup. The runtime flags applied above
-      // can change the investigation-variant flags, so the same check runs again here.
+      // Bootstrap checked the environment. Runtime may change activation, so verify
+      // that this application supplies an implementation before rendering.
       try {
+        if (flags) applyRuntimeFeatureFlags(flags);
         validateDragonDeployment(APP_IDENTITY, BUILT_DRAGON_ID, appConfig);
+        getInvestigation();
       } catch (error) {
         setConfigurationError(error instanceof Error ? error : new Error(String(error)));
         return;
       }
 
       if (authenticationRoute || !appConfig.isSupportManagement) {
-        useInvestigationProfileStore.getState().setDisabled();
+        useSupportApplicationProfileStore.getState().setDisabled();
         setFeatureFlagsReady(true);
         return;
       }
 
-      // The runtime flags decide whether this is a SupportManagement app, so metadata waits for
-      // them - but not for the profile behind them. Chaining the two would put a second request
+      // Runtime capabilities are ready before metadata, but metadata does not wait for the
+      // profile behind them. Chaining the two would put a second request
       // timeout in front of the first paint and delay metadata by that long again.
-      useInvestigationProfileStore.getState().startLoading();
+      useSupportApplicationProfileStore.getState().startLoading();
       setFeatureFlagsReady(true);
       try {
-        const profile = await getInvestigationProfile(APP_IDENTITY);
-        useInvestigationProfileStore.getState().setProfile(profile);
+        const profile = await getSupportApplicationProfile(APP_IDENTITY);
+        useSupportApplicationProfileStore.getState().setProfile(profile);
       } catch (error) {
-        console.error('Failed to load the SupportManagement investigation profile.', error);
-        useInvestigationProfileStore.getState().setError();
+        logClientFailure('shell.app-layout.loadRuntimeConfiguration', error);
+        useSupportApplicationProfileStore.getState().setError();
       }
     };
     void loadRuntimeConfiguration();
@@ -141,16 +156,17 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
     }
   }, [featureFlagsReady, schemaLabRoute]);
 
-  const investigationProfileReady =
+  const supportProfileReady =
     schemaLabRoute ||
-    investigationProfileStatus === 'ready' ||
-    investigationProfileStatus === 'error' ||
-    investigationProfileStatus === 'disabled';
+    supportProfileStatus === 'ready' ||
+    supportProfileStatus === 'error' ||
+    supportProfileStatus === 'disabled';
   // Thrown from render on purpose. The validation runs inside an async effect, where a throw is
   // only an unhandled promise rejection that React never sees; thrown here it reaches the nearest
   // error boundary above this component. AppLayout renders in the root layout, above the
   // `[locale]` segment, so that boundary is `src/app/global-error.tsx` - `[locale]/error.tsx`
   // only covers the pages below the locale layout.
+  if (apiDeploymentError) throw apiDeploymentError;
   if (configurationError) throw configurationError;
 
   if (!mounted) {
@@ -158,7 +174,7 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
   }
 
   // A slow Adminpanel or profile endpoint should show that the app is working, not a blank page.
-  if (!featureFlagsReady || !investigationProfileReady) {
+  if (!featureFlagsReady || !supportProfileReady) {
     return <LoaderFullScreen />;
   }
 

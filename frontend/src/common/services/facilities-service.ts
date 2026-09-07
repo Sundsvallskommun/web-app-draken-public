@@ -1,6 +1,7 @@
 import { EstateInformation, EstateInfoSearch } from '@common/interfaces/estate-details';
 import { FacilityAddressDTO, FacilityDTO } from '@common/interfaces/facilities';
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 
 export const makeFacility: (estate: EstateInfoSearch) => FacilityDTO = (estate) => {
   return {
@@ -25,7 +26,7 @@ export const getFacilityByAddress = (query: string) => {
     .get<ApiResponse<EstateInfoSearch[]>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching estateInfo: ' + query);
+      logClientFailure('common.facilities.getFacilityByAddress', e);
       throw e;
     });
 };
@@ -37,7 +38,7 @@ export const getSingleFacilityByDesignation = (query: string) => {
     .get<ApiResponse<EstateInfoSearch[]>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching estateInfo: ' + query);
+      logClientFailure('common.facilities.getSingleFacilityByDesignation', e);
       throw e;
     });
 };
@@ -49,7 +50,7 @@ export const getFacilityByDesignation = (query: string) => {
     .get<ApiResponse<EstateInfoSearch[]>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching estateInfo: ' + query);
+      logClientFailure('common.facilities.getFacilityByDesignation', e);
       throw e;
     });
 };
@@ -61,7 +62,7 @@ export const getFacilityInfo = (designation: string) => {
     .get<ApiResponse<EstateInformation>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching estateInfo: ' + designation);
+      logClientFailure('common.facilities.getFacilityInfo', e);
       throw e;
     });
 };

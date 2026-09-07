@@ -1,16 +1,16 @@
 import { Response } from 'express';
 
-import { createSupportInvestigationProfile } from '@/config/support-investigation-profile';
+import { createSupportApplicationProfile } from '@/config/support-application-profile';
 import { SupportHistoryController } from '@/controllers/supportmanagement/support-history.controller';
 import { DifferenceResponse } from '@/data-contracts/supportmanagement/data-contracts';
 import ApiService from '@/services/api.service';
-import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
 import { mockReq, mockRes } from './helpers/http';
 import { mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';
 
-const profile = createSupportInvestigationProfile({
+const profile = createSupportApplicationProfile({
   application: 'FUTURE',
   documents: [
     { key: 'future-investigation', schemaName: 'future-schema', tabLabel: 'Future', ownerLabel: 'Owner' },
@@ -26,7 +26,7 @@ const difference: DifferenceResponse = {
 };
 
 const makeController = (verifyReadableDocuments = vi.fn().mockResolvedValue({ existingDocumentKeys: profile.documents.map(({ key }) => key) })) => {
-  const policy = { profile } as SupportInvestigationPolicyService;
+  const policy = { profile } as SupportApplicationPolicyService;
   const documentService = { verifyReadableDocuments } as unknown as SupportJsonParameterService;
   const controller = new SupportHistoryController(policy, documentService);
   const apiService = { get: vi.fn(async () => ({ data: difference })) };

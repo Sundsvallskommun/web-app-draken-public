@@ -2,7 +2,8 @@ import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { exportSingleErrand } from '@casedata/services/casedata-export-service';
 import { downloadPdf } from '@common/services/export-service';
 import { Button, Checkbox, FormControl, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 

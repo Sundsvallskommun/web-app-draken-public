@@ -6,11 +6,12 @@ import {
   getStatusesUsingOrganizationNumber,
   getStatusesUsingPartyId,
 } from '@common/services/casestatus-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { sortBy } from '@common/services/helper-service';
 import { createRelation, deleteRelation, getResolvedRelations } from '@common/services/relations-service';
 import { appConfig } from '@config/appconfig';
 import { Disclosure, SearchField, Spinner } from '@sk-web-gui/react';
-import { useConfigStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
 import { Link2 } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 
@@ -58,12 +59,12 @@ export const LinkedErrandsDisclosure: FC<{
     if (relations.some((relation) => relation.target.resourceId === id)) {
       deleteRelation(municipalityId, relations.find((relation) => relation.target.resourceId === id)!.id!)
         .then(() => refreshSourceRelations())
-        .catch((e) => console.error('Failed to delete relation:', e));
+        .catch((e) => logClientFailure('common.linked-errands-disclosure.handleLinkClick', e));
     } else {
       const targetErrand = [...relationToErrands, ...searchedErrands].find((errand) => errand.caseId === id);
       createRelation(municipalityId, errand.id!.toString(), targetErrand!)
         .then(() => refreshSourceRelations())
-        .catch((e) => console.error('Failed to create relation:', e));
+        .catch((e) => logClientFailure('common.linked-errands-disclosure.handleLinkClick', e));
     }
   };
 
@@ -88,7 +89,7 @@ export const LinkedErrandsDisclosure: FC<{
         }
         setIsLoadingToErrands(false);
       } catch (error) {
-        console.error('Error fetching errands or relations:', error);
+        logClientFailure('common.linked-errands-disclosure.fetchErrands', error);
         setIsLoadingToErrands(false);
       }
     };
@@ -105,7 +106,7 @@ export const LinkedErrandsDisclosure: FC<{
         setRelationFromErrands(caseStatuses);
         setIsLoadingFromErrands(false);
       } catch (error) {
-        console.error('Error fetching errands or relations:', error);
+        logClientFailure('common.linked-errands-disclosure.fetchErrands', error);
         setIsLoadingFromErrands(false);
       }
     };

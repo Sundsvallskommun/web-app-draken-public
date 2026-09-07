@@ -1,12 +1,13 @@
 'use client';
 
 import { Alert, Spinner, Tabs } from '@sk-web-gui/react';
-import { useSupportStore, useUserStore } from '@stores/index';
+import { useSupportStore } from '@stores/support-store';
+import { useUserStore } from '@stores/user-store';
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
 import { useCallback, useMemo, useState } from 'react';
 
-import { useInvestigationProfileStore } from '../supportmanagement/investigation/investigation-profile-store';
-import type { InvestigationTabProps } from '../supportmanagement/investigation/investigation-variant';
+import { useSupportApplicationProfileStore } from '../supportmanagement/application/support-application-profile-store';
+import type { InvestigationTabProps } from '../supportmanagement/investigation/investigation-module';
 import { type InvestigationTabState, resolveInvestigationTabState } from './investigation-tab-state';
 import { SupportInvestigationDocument } from './support-investigation-document.component';
 import type { SupportInvestigationDocument as SavedInvestigationDocument } from './support-investigation-service';
@@ -21,8 +22,8 @@ export function SupportErrandInvestigationTab({ onDirtyChange }: Readonly<Invest
   const [activeTab, setActiveTab] = useState(0);
   const supportErrand = useSupportStore((state) => state.supportErrand);
   const canEditSupportManagement = useUserStore((state) => state.user.permissions.canEditSupportManagement);
-  const profile = useInvestigationProfileStore((state) => state.profile);
-  const profileStatus = useInvestigationProfileStore((state) => state.status);
+  const profile = useSupportApplicationProfileStore((state) => state.profile);
+  const profileStatus = useSupportApplicationProfileStore((state) => state.status);
   const readonly = !supportErrand || isSupportErrandLocked(supportErrand) || !canEditSupportManagement;
 
   const documents = useMemo(() => profile?.documents ?? [], [profile]);

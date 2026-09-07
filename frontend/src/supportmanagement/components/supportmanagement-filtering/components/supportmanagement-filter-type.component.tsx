@@ -1,5 +1,5 @@
 import { Checkbox, PopupMenu, SearchField } from '@sk-web-gui/react';
-import { useMetadataStore } from '@stores/index';
+import { useMetadataStore } from '@stores/metadata-store';
 import { SupportType } from '@supportmanagement/services/support-metadata-service';
 import { ChevronDown } from 'lucide-react';
 import { FC, useEffect, useMemo, useState } from 'react';

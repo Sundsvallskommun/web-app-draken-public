@@ -1,4 +1,5 @@
 import { ApiResponse, apiService, Data } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { formatOrgNr, luhnCheck, OrgNumberFormat } from '@common/services/helper-service';
 import { CLegalEntity2WithId } from 'src/data-contracts/backend/data-contracts';
 
@@ -212,7 +213,7 @@ export const searchADUser: (
       } as AddressResult;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching AD-user');
+      logClientFailure('common.adress.searchADUser', e);
       throw e;
     });
 };
@@ -251,7 +252,7 @@ export const searchOrganization: (orgNr: string) => Promise<AddressResult | unde
         .then((res) => res.data.data)
         .then((res) => {
           if (!isValidOrganization(res)) {
-            console.error('Invalid address data for organization');
+            logClientFailure('common.adress.searchOrganization');
             throw 'Address not found';
           } else {
             const addressItem = {

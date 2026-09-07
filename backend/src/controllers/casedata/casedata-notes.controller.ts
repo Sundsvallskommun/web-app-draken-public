@@ -11,7 +11,7 @@ import { Errand as ErrandDTO, Note as NoteDTO } from '@/data-contracts/case-data
 import { CreateErrandNoteDto } from '@/interfaces/errand-note.interface';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import { noteIsTjansteanteckning } from '@/services/errand-note.service';
-import { logger } from '@/utils/logger';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL } from '@/utils/util';
 
 export interface ResponseData {
@@ -42,8 +42,7 @@ export class CasedataNotesController {
     const url = `${municipalityId}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/notes`;
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService.patch<ErrandDTO, CreateErrandNoteDto>({ url, baseURL, data: noteData }, req.user).catch(e => {
-      logger.error('Something went wrong when patching note');
-      logger.error(e);
+      logApplicationFailure('Something went wrong when patching note', e);
       throw e;
     });
     return { data: response.data, message: `Note created on errand ${errandId}` };

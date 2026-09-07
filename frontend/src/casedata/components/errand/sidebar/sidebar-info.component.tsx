@@ -33,7 +33,9 @@ import {
   Textarea,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import dayjs from 'dayjs';
 import { ArchiveX, CirclePause, Mail } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';

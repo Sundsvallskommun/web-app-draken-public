@@ -17,7 +17,7 @@ import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
 import { OrganizationService } from '@/services/organization.service';
-import { logger } from '@/utils/logger';
+import { logApplicationEvent, logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL, formatOrgNr, OrgNumberFormat } from '@/utils/util';
 
 interface ReferredFromStakeholder {
@@ -84,12 +84,12 @@ export class RelationsController {
       url = `${municipalityId}/${namespace}/errands/${resourceId}`;
       baseURL = apiURL(this.SUPPORTMANAGEMENT_SERVICE);
     } else {
-      logger.error(`Unknown service: ${service}`);
+      logApplicationFailure('Unsupported relation service', undefined);
       return '';
     }
 
     const res = await this.apiService.get<any>({ url, baseURL }, user).catch(e => {
-      logger.error(`Error fetching errand number for ${service}/${namespace}/${resourceId}: `, e);
+      logApplicationFailure('Resolving related errand number', e);
       return null;
     });
 
@@ -102,7 +102,7 @@ export class RelationsController {
     const url = `${municipalityId}/errands/statuses?errandNumber=${errandNumber}`;
     const baseURL = apiURL(this.CASESTATUS_SERVICE);
     const res = await this.apiService.get<CaseStatusResponse[]>({ url, baseURL }, user).catch(e => {
-      logger.error(`Error fetching case status for ${errandNumber}: `, e);
+      logApplicationFailure('Resolving related case status', e);
       return null;
     });
 
@@ -133,7 +133,7 @@ export class RelationsController {
     };
     const baseURL = apiURL(this.SERVICE);
     const response = await this.apiService.post<any, any>({ url, baseURL, data: modifiedRelationBody }, req.user).catch(e => {
-      console.log('Something went wrong when creating relation: ' + e);
+      logApplicationFailure('Something went wrong when creating relation', e);
       throw e;
     });
     return { data: response.data, message: `Relation created` };
@@ -150,7 +150,7 @@ export class RelationsController {
   ): Promise<{ data: boolean; message: string }> {
     const baseURL = apiURL(this.SERVICE);
     if (!id) {
-      console.log('Id not found. Cannot delete relation without id.');
+      logApplicationEvent('Id not found. Cannot delete relation without id.');
     }
     const url = `${municipalityId}/relations/${id}`;
     const response = await this.apiService.delete<boolean>({ url, baseURL }, req.user).catch(e => {
@@ -169,7 +169,7 @@ export class RelationsController {
     const url = `${municipalityId}/relations?filter=${direction}.resourceId%3A%27${query}%27&sortDirection=${sort}`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<RelationPagedResponse>({ url, baseURL }, user).catch(e => {
-      logger.error('Error when fetching relations: ', e);
+      logApplicationFailure('Error when fetching relations', e);
       throw e;
     });
 
@@ -212,7 +212,7 @@ export class RelationsController {
     const url = `${municipalityId}/${namespace}/errands/${resourceId}`;
     const baseURL = apiURL(this.SUPPORTMANAGEMENT_SERVICE);
     const res = await this.apiService.get<SupportManagementErrand>({ url, baseURL }, user).catch(e => {
-      logger.error(`Error fetching support management errand ${namespace}/${resourceId}: `, e);
+      logApplicationFailure('Fetching related support errand', e);
       return null;
     });
     return res?.data ?? null;
@@ -222,7 +222,7 @@ export class RelationsController {
     const url = `${municipalityId}/${namespace}/metadata`;
     const baseURL = apiURL(this.SUPPORTMANAGEMENT_SERVICE);
     const res = await this.apiService.get<MetadataResponse>({ url, baseURL }, user).catch(e => {
-      logger.error(`Error fetching support management metadata for namespace ${namespace}: `, e);
+      logApplicationFailure('Fetching related support metadata', e);
       return null;
     });
     return res?.data ?? null;
@@ -256,7 +256,7 @@ export class RelationsController {
   private async fetchPersonNumber(municipalityId: string, partyId: string, user: any): Promise<string> {
     const url = `${this.CITIZEN_SERVICE}/${municipalityId}/${partyId}/personnumber`;
     const res = await this.apiService.get<string>({ url }, user).catch(e => {
-      logger.error(`Error fetching person number for partyId ${partyId}: `, e);
+      logApplicationFailure('Resolving related person number', e);
       return null;
     });
     return res?.data ? `${res.data}` : '';
@@ -282,7 +282,7 @@ export class RelationsController {
         const organizationNumberFromLegalEntity =
           stakeholder.externalId && stakeholder.externalIdType === ExternalIdType.COMPANY
             ? await this.organizationService.getOrganizationNumberByPartyId(municipalityId, stakeholder.externalId, user).catch(e => {
-                logger.error(`Error fetching organization number for partyId ${stakeholder.externalId}: `, e);
+                logApplicationFailure('Resolving organization number', e);
                 return '';
               })
             : '';
@@ -322,7 +322,7 @@ export class RelationsController {
     const url = `${municipalityId}/relations?filter=target.resourceId%3A%27${resourceId}%27`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.get<RelationPagedResponse>({ url, baseURL }, req.user).catch(e => {
-      logger.error('Error fetching relations for referred-from: ', e);
+      logApplicationFailure('Error fetching relations for referred-from', e);
       throw e;
     });
 

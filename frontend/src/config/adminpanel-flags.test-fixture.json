@@ -1,0 +1,336 @@
+{
+  "capturedOn": "2026-09-07",
+  "source": "User-provided Adminpanel list. Row IDs and value fields were not included.",
+  "flags": [
+    {
+      "name": "isCaseData",
+      "application": "MEX",
+      "namespace": "SBK_MEX",
+      "enabled": true
+    },
+    {
+      "name": "isCaseData",
+      "application": "PT",
+      "namespace": "SBK_PARKING_PERMIT",
+      "enabled": true
+    },
+    {
+      "name": "isSupportManagement",
+      "application": "IAF",
+      "namespace": "HEALTHCAREDEVIATIONIAF",
+      "enabled": true
+    },
+    {
+      "name": "isSupportManagement",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "isSupportManagement",
+      "application": "ROB",
+      "namespace": "ROB",
+      "enabled": true
+    },
+    {
+      "name": "isSupportManagement",
+      "application": "VOF",
+      "namespace": "HEALTHCAREDEVIATIONVOF",
+      "enabled": true
+    },
+    {
+      "name": "reopenSupportErrandLimit",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useAppeal",
+      "application": "PT",
+      "namespace": "SBK_PARKING_PERMIT",
+      "enabled": true
+    },
+    {
+      "name": "useAvvikelseInvestigation",
+      "application": "IAF",
+      "namespace": "HEALTHCAREDEVIATIONIAF",
+      "enabled": true
+    },
+    {
+      "name": "useAvvikelseInvestigation",
+      "application": "VOF",
+      "namespace": "HEALTHCAREDEVIATIONVOF",
+      "enabled": true
+    },
+    {
+      "name": "useBilling",
+      "application": "MEX",
+      "namespace": "SBK_MEX",
+      "enabled": true
+    },
+    {
+      "name": "useBusinessCase",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useClosingMessageCheckbox",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useContracts",
+      "application": "MEX",
+      "namespace": "SBK_MEX",
+      "enabled": true
+    },
+    {
+      "name": "useDepartmentEscalation",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useDepartmentEscalation",
+      "application": "MEX",
+      "namespace": "SBK_MEX",
+      "enabled": false
+    },
+    {
+      "name": "useDetailsTab",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": false
+    },
+    {
+      "name": "useDetailsTab",
+      "application": "ROB",
+      "namespace": "ROB",
+      "enabled": true
+    },
+    {
+      "name": "useDetailsTab",
+      "application": "VOF",
+      "namespace": "HEALTHCAREDEVIATIONVOF",
+      "enabled": true
+    },
+    {
+      "name": "useEmailContactChannel",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useEmployeeSearch",
+      "application": "ROB",
+      "namespace": "ROB",
+      "enabled": true
+    },
+    {
+      "name": "useErrandExport",
+      "application": "MEX",
+      "namespace": "SBK_MEX",
+      "enabled": true
+    },
+    {
+      "name": "useErrandExport",
+      "application": "PT",
+      "namespace": "SBK_PARKING_PERMIT",
+      "enabled": true
+    },
+    {
+      "name": "useEscalation",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useEscalation",
+      "application": "MEX",
+      "namespace": "SBK_MEX",
+      "enabled": true
+    },
+    {
+      "name": "useExplanationOfTheCause",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useExtraInformationStakeholders",
+      "application": "MEX",
+      "namespace": "SBK_MEX",
+      "enabled": true
+    },
+    {
+      "name": "useFacilities",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useFacilities",
+      "application": "MEX",
+      "namespace": "SBK_MEX",
+      "enabled": true
+    },
+    {
+      "name": "useHandover",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useInvestigation",
+      "application": "IAF",
+      "namespace": "HEALTHCAREDEVIATIONIAF",
+      "enabled": true
+    },
+    {
+      "name": "useInvestigation",
+      "application": "VOF",
+      "namespace": "HEALTHCAREDEVIATIONVOF",
+      "enabled": true
+    },
+    {
+      "name": "useMyPages",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useMyPages",
+      "application": "MEX",
+      "namespace": "SBK_MEX",
+      "enabled": true
+    },
+    {
+      "name": "useMyPages",
+      "application": "PT",
+      "namespace": "SBK_PARKING_PERMIT",
+      "enabled": true
+    },
+    {
+      "name": "useOrganizationStakeholders",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useOrganizationStakeholders",
+      "application": "MEX",
+      "namespace": "SBK_MEX",
+      "enabled": true
+    },
+    {
+      "name": "useReasonForContact",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useRecruitment",
+      "application": "ROB",
+      "namespace": "ROB",
+      "enabled": true
+    },
+    {
+      "name": "useRelations",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useRelations",
+      "application": "MEX",
+      "namespace": "SBK_MEX",
+      "enabled": true
+    },
+    {
+      "name": "useRelations",
+      "application": "PT",
+      "namespace": "SBK_PARKING_PERMIT",
+      "enabled": true
+    },
+    {
+      "name": "useRelations",
+      "application": "ROB",
+      "namespace": "ROB",
+      "enabled": true
+    },
+    {
+      "name": "useRequireContactChannel",
+      "application": "MEX",
+      "namespace": "SBK_MEX",
+      "enabled": true
+    },
+    {
+      "name": "useRolesForStakeholders",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useRolesForStakeholders",
+      "application": "ROB",
+      "namespace": "ROB",
+      "enabled": true
+    },
+    {
+      "name": "useServices",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useSmsContactChannel",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useSmsContactChannel",
+      "application": "ROB",
+      "namespace": "ROB",
+      "enabled": true
+    },
+    {
+      "name": "useStakeholderRelations",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useStakeholderRelations",
+      "application": "ROB",
+      "namespace": "ROB",
+      "enabled": true
+    },
+    {
+      "name": "useTwoLevelCategorization",
+      "application": "KC",
+      "namespace": "CONTACTSUNDSVALL",
+      "enabled": true
+    },
+    {
+      "name": "useTwoLevelCategorization",
+      "application": "ROB",
+      "namespace": "ROB",
+      "enabled": true
+    },
+    {
+      "name": "useUiPhases",
+      "application": "MEX",
+      "namespace": "SBK_MEX",
+      "enabled": true
+    },
+    {
+      "name": "useUiPhases",
+      "application": "PT",
+      "namespace": "SBK_PARKING_PERMIT",
+      "enabled": true
+    }
+  ]
+}

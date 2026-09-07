@@ -3,7 +3,8 @@ import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV
 import { AddressResult } from '@common/services/adress-service';
 import { appConfig } from '@config/appconfig';
 import { Button, cx, FormControl, FormErrorMessage, FormLabel, Input, Modal, Select } from '@sk-web-gui/react';
-import { useMetadataStore, useSupportStore } from '@stores/index';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useSupportStore } from '@stores/support-store';
 import { ExternalIdType, SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
 import { Dispatch, FC, SetStateAction } from 'react';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
@@ -305,7 +306,6 @@ export const SupportContactModal: FC<SupportContactModalProps> = ({
         </>
         <CommonNestedEmailArrayV2
           required={false}
-          errand={supportErrand}
           addingStakeholder={true}
           disabled={disabled}
           error={!!form.formState.errors.emails}

@@ -1,6 +1,6 @@
-import { configureInvestigationVariants } from '@supportmanagement/investigation/investigation-variant-registry';
+import { configureInvestigation } from '@supportmanagement/investigation/configured-investigation';
 
 export { robDragon as dragon } from './index';
 export { supportUi as applicationUi } from '@shell/ui/support-ui';
 
-export const configureApplication = (): void => configureInvestigationVariants([]);
+export const configureApplication = (): void => configureInvestigation(null);

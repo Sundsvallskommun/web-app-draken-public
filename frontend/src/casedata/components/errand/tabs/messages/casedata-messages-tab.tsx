@@ -2,8 +2,11 @@ import { Channels } from '@casedata/interfaces/channels';
 import { isMessagesLocked, validateAction } from '@casedata/services/casedata-errand-service';
 import { fetchMessagesWithTree, MessageNode, setMessageViewStatus } from '@casedata/services/casedata-message-service';
 import { CasedataMessageType, isCasedataWebMessageType } from '@casedata/services/casedata-message-types';
+import { logClientWarning } from '@common/services/client-diagnostics';
 import { Button, Divider, FormLabel, Select, useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import { Mail } from 'lucide-react';
 import { FC, useCallback, useMemo, useState } from 'react';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
@@ -43,7 +46,7 @@ export const CasedataMessagesTab: FC<{
 
   const setMessageViewed = (msg: MessageNode) => {
     if (msg.conversationId) {
-      console.warn('Not implemented');
+      logClientWarning('casedata.casedata-messages-tab.setMessageViewed');
       return;
     }
     if (!errand) return;

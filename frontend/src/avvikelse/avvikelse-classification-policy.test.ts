@@ -33,9 +33,8 @@ test('moves classification to the investigation document for an active profile w
   }
 });
 
-// Which applications get this policy is decided by the capability flag, not here - see
-// investigation-variant.test.ts. The resolver runs only once that flag has selected it, so it no
-// longer inspects the application name to decide whether it applies.
+// The application composes this policy. The resolver uses the application profile
+// as its authority; runtime flags never select a different implementation.
 test('does not gate on the application name', () => {
   const placement = resolveSupportErrandClassificationPlacement({
     application: 'ANY-APPLICATION',

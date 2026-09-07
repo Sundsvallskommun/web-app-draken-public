@@ -19,7 +19,7 @@ export const katlaSchemaId = `2281_katla-${applicationSlug}-report_1.0`;
 export const investigationKeys = ['utredning-enhetschef', 'utredning-sol-lss', 'utredning-hsl'] as const;
 export type InvestigationKey = (typeof investigationKeys)[number];
 
-export interface MockInvestigationProfile {
+export interface MockSupportApplicationProfile {
   application: string;
   state: 'active' | 'inactive' | 'unavailable';
   registration: { mode: 'enabled' | 'disabled' };
@@ -31,7 +31,7 @@ export interface MockInvestigationProfile {
   }>;
 }
 
-export const defaultInvestigationProfile = (): MockInvestigationProfile => ({
+export const defaultSupportApplicationProfile = (): MockSupportApplicationProfile => ({
   application,
   state: 'active',
   registration: { mode: 'disabled' },
@@ -122,9 +122,9 @@ export interface IafApiScenario {
   labels?: MockLabel[];
   labelStructure?: MockLabel[];
   omitLabelResourcePaths?: boolean;
-  investigationProfile?: MockInvestigationProfile;
-  investigationProfileResponse?: unknown;
-  investigationProfileStatus?: number;
+  supportProfile?: MockSupportApplicationProfile;
+  supportProfileResponse?: unknown;
+  supportProfileStatus?: number;
 }
 
 const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
@@ -535,8 +535,8 @@ const isClassificationPatchBody = (body: unknown): body is ClassificationPatchBo
 };
 
 export async function installIafApiMock(page: Page, scenario: IafApiScenario = {}): Promise<IafApiTrace> {
-  const investigationProfile = scenario.investigationProfile ?? defaultInvestigationProfile();
-  const configuredDocumentKeys = new Set(investigationProfile.documents.map(({ key }) => key));
+  const supportProfile = scenario.supportProfile ?? defaultSupportApplicationProfile();
+  const configuredDocumentKeys = new Set(supportProfile.documents.map(({ key }) => key));
   const documents: Record<string, InvestigationDocument> = structuredClone(
     scenario.documents ?? { 'utredning-enhetschef': existingManagerDocument() }
   );
@@ -629,12 +629,10 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
       return;
     }
 
-    if (method === 'GET' && path.endsWith('/supportmanagement/investigation-profile')) {
+    if (method === 'GET' && path.endsWith('/supportmanagement/application-profile')) {
       trace.profileGets += 1;
       const configuredResponse =
-        scenario.investigationProfileResponse === undefined
-          ? investigationProfile
-          : scenario.investigationProfileResponse;
+        scenario.supportProfileResponse === undefined ? supportProfile : scenario.supportProfileResponse;
       const featureFlagState = scenario.featureFlags?.find(({ name }) => name === 'useInvestigation')?.enabled;
       const response =
         featureFlagState === false &&
@@ -643,7 +641,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         !Array.isArray(configuredResponse)
           ? { ...configuredResponse, state: 'inactive' }
           : configuredResponse;
-      await fulfillJson(route, response, scenario.investigationProfileStatus ?? 200);
+      await fulfillJson(route, response, scenario.supportProfileStatus ?? 200);
       return;
     }
 

@@ -1,7 +1,7 @@
-import type { InvestigationProfileDocument } from '../supportmanagement/investigation/investigation-profile';
+import type { SupportApplicationProfileDocument } from '../supportmanagement/application/support-application-profile';
 
-export type InvestigationDocumentKey = InvestigationProfileDocument['key'];
+export type InvestigationDocumentKey = SupportApplicationProfileDocument['key'];
 
 export type InvestigationFormData = Record<string, unknown>;
 
-export type InvestigationDocumentDefinition = InvestigationProfileDocument;
+export type InvestigationDocumentDefinition = SupportApplicationProfileDocument;

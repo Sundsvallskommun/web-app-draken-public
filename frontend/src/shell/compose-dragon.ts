@@ -1,5 +1,5 @@
 import { configureMessageTemplateNamespace } from '@common/services/message-template-body-service';
-import type { AppConfig, AppConfigFeatures } from '@config/appconfig';
+import type { AppConfig } from '@config/appconfig';
 import { DRAGON_IDS, type DragonModule, getDragonDefinition } from '@dragons/dragon-module';
 import {
   configureSupportErrandPolicy,
@@ -22,21 +22,7 @@ export const buildSupportErrandPolicy = (dragon: DragonModule): SupportErrandPol
   return Object.freeze(policy);
 };
 
-/**
- * Investigation variants are mutually exclusive implementations of the same tab.
- * Invalid combinations are rejected before any variant is selected.
- * `bootstrap.ts` runs it against the environment flags at startup; `layout/app-layout.tsx` runs
- * it again after Adminpanel's runtime flags are applied, since those can flip the same two flags.
- */
-export const validateDragonConfiguration = (features: AppConfigFeatures): void => {
-  if (features.useAvvikelseInvestigation && features.useAotInvestigation) {
-    throw new Error(
-      'Invalid dragon configuration: useAvvikelseInvestigation and useAotInvestigation are mutually exclusive investigation variants. Enable at most one.'
-    );
-  }
-};
-
-/** Flags may enable features inside a build, but cannot replace the built application. */
+/** Capabilities may enable features inside the catalog's fixed application and domain. */
 export const validateDragonDeployment = (identity: string, builtIdentity: string, config: AppConfig): void => {
   if (!isDragonId(identity)) throw new Error(`Unknown dragon "${identity}".`);
   if (identity !== builtIdentity) {
@@ -46,27 +32,18 @@ export const validateDragonDeployment = (identity: string, builtIdentity: string
   const caseData = definition.domain === 'casedata';
   if (config.isCaseData !== caseData || config.isSupportManagement !== !caseData) {
     throw new Error(
-      `Domain flags do not match the ${builtIdentity} frontend build. Check isCaseData and isSupportManagement.`
+      `Domain configuration does not match the ${builtIdentity} frontend build. Rebuild with the catalog's domain.`
     );
-  }
-  validateDragonConfiguration(config.features);
-  if (config.features.useAvvikelseInvestigation && definition.investigation !== 'avvikelse') {
-    throw new Error('Avvikelse investigation requires a dragon that composes Avvikelse.');
-  }
-  if (config.features.useAotInvestigation && definition.investigation !== 'aot') {
-    throw new Error('AOT investigation requires a dragon that composes AOT.');
   }
 };
 
 export interface ComposeDragonInput {
   readonly identity: string;
   readonly dragon: DragonModule;
-  readonly features: AppConfigFeatures;
 }
 
 /** Validates, resolves the dragon and hands its contracts to the domains. Returns the resolved module. */
-export const composeDragon = ({ identity, dragon, features }: ComposeDragonInput): DragonModule => {
-  validateDragonConfiguration(features);
+export const composeDragon = ({ identity, dragon }: ComposeDragonInput): DragonModule => {
   if (!isDragonId(identity))
     throw new Error(`Unknown dragon "${identity}". NEXT_PUBLIC_APPLICATION must be one of: ${DRAGON_IDS.join(', ')}.`);
   if (identity !== dragon.id) throw new Error(`Dragon ${identity} cannot run in a ${dragon.id} frontend build.`);

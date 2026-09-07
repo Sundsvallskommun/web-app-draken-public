@@ -1,5 +1,7 @@
 import { User } from '@common/interfaces/user';
-import { appConfig } from '@config/appconfig';
+import { logClientFailure } from '@common/services/client-diagnostics';
+import { appConfig, FeatureFlagConfigurationError } from '@config/appconfig';
+import axios from 'axios';
 import { FeatureFlagDto } from 'src/data-contracts/backend/data-contracts';
 
 import { apiService } from './api-service';
@@ -19,7 +21,18 @@ export const getFeatureFlags = async () => {
     })
     .catch((e) => {
       if (process.env.NODE_ENV === 'production') {
-        console.error('Something went wrong when fetching feature flags: ' + e);
+        logClientFailure('common.feature-flag.getFeatureFlags', e);
+      }
+      const body: unknown = axios.isAxiosError<unknown>(e) ? e.response?.data : undefined;
+      if (
+        axios.isAxiosError<unknown>(e) &&
+        e.response?.status === 409 &&
+        body &&
+        typeof body === 'object' &&
+        'message' in body &&
+        body.message === 'INVESTIGATION_FLAGS_REQUIRE_MIGRATION'
+      ) {
+        throw new FeatureFlagConfigurationError();
       }
       throw e;
     });

@@ -3,8 +3,10 @@
   "private": true,
   "scripts": {
     "dragon": "node scripts/dragon.mjs",
+    "dragon:release": "node scripts/dragon-release.mjs",
     "prepare": "husky",
     "type-check": "yarn --cwd frontend type-check && yarn --cwd frontend type-check:test && yarn --cwd backend type-check && yarn --cwd backend type-check:test",
+    "lint:logging": "node scripts/check-runtime-logging.mjs",
     "lint": "yarn --cwd frontend lint && yarn --cwd frontend lint:deps && yarn --cwd backend lint",
     "knip": "yarn --cwd frontend knip && yarn --cwd backend knip",
     "format": "yarn --cwd frontend format && yarn --cwd backend format",

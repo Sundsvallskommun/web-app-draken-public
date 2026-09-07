@@ -1,35 +1,30 @@
 import assert from 'node:assert/strict';
 
-import type { AppConfigFeatures } from '@config/appconfig';
 import { DRAGON_IDS, type DragonModule } from '@dragons/dragon-module';
 import { kontaktSundsvallResolutionLabels } from '@supportmanagement/policy/resolution-label-presets';
 import { defaultSupportErrandPolicy, getSupportErrandPolicy } from '@supportmanagement/policy/support-errand-policy';
 import { ongoingStatuses, Resolution, Status } from '@supportmanagement/services/support-errand-status';
 import { test } from 'vitest';
 
-import { buildSupportErrandPolicy, composeDragon, validateDragonConfiguration } from './compose-dragon';
+import { buildSupportErrandPolicy, composeDragon } from './compose-dragon';
 import { DRAGON_REGISTRY } from './dragon-registry.test-fixture';
 
-// Only the variant flags matter to validation; the rest of the feature block is irrelevant here.
-const features = (enabled: Partial<AppConfigFeatures> = {}): AppConfigFeatures =>
-  ({ useAvvikelseInvestigation: false, useAotInvestigation: false, ...enabled } as AppConfigFeatures);
-
 test('an unknown identity throws and lists the valid ids', () => {
-  assert.throws(() => composeDragon({ identity: 'NOPE', dragon: DRAGON_REGISTRY.KC, features: features() }), {
+  assert.throws(() => composeDragon({ identity: 'NOPE', dragon: DRAGON_REGISTRY.KC }), {
     message: /Unknown dragon "NOPE".*KC, KA, MEX, PT, ROB, LOP, IK, MSVA, SE, BOU, LOK, IAF, VOF, AOT/,
   });
 });
 
 // An unset NEXT_PUBLIC_APPLICATION reads as '' and must fail the same way, not select a default.
 test('an empty identity throws', () => {
-  assert.throws(() => composeDragon({ identity: '', dragon: DRAGON_REGISTRY.KC, features: features() }), {
+  assert.throws(() => composeDragon({ identity: '', dragon: DRAGON_REGISTRY.KC }), {
     message: /Unknown dragon ""/,
   });
 });
 
 test('every registered id resolves to the module carrying that id', () => {
   for (const id of DRAGON_IDS) {
-    assert.equal(composeDragon({ identity: id, dragon: DRAGON_REGISTRY[id], features: features() }).id, id);
+    assert.equal(composeDragon({ identity: id, dragon: DRAGON_REGISTRY[id] }).id, id);
   }
 });
 
@@ -78,6 +73,46 @@ test('IK and SE share the internal customer service resolution labels', () => {
   assert.equal(ik.resolutions[Resolution.SOLVED], 'Informerat / Intern Kundtjänst har löst ärendet');
 });
 
+test.each([
+  [
+    'KA',
+    {
+      SOLVED: 'Löst av Kontaktcenter',
+      REGISTERED_EXTERNAL_SYSTEM: 'Vidarebefordrad (ärendet har överlämnats till annan funktion)',
+    },
+  ],
+  ['BOU', { SOLVED: 'Löst', BACK_TO_CONTACT_SUNDSVALL: 'Åter till Kontakt Sundsvall' }],
+  [
+    'LOK',
+    {
+      SOLVED: 'Löst av VoF/IAF Lokalplanering',
+      FORWARDED_TO_DRAKFASTIGHETER: 'Vidarebefordrat till Drakfastigheter',
+      FORWARDED_TO_EXTERNAL_LANDLORD: 'Vidarebefordrat till extern hyresvärd',
+      FORWARDED_TO_INTERNAL_CONTRACTOR: 'Vidarebefordrat till intern entreprenör',
+      FORWARDED_TO_EXTERNAL_CONTRACTOR: 'Vidarebefordrat till extern entreprenör',
+    },
+  ],
+  [
+    'LOP',
+    {
+      CLOSED: 'Avslutat',
+      BACK_TO_MANAGER: 'Åter till chef',
+      BACK_TO_HR: 'Åter till HR',
+      REGISTERED_EXTERNAL_SYSTEM: 'Registrerat i annat system',
+    },
+  ],
+] as const)('%s exposes its own complete closing vocabulary', (id, labels) => {
+  assert.deepEqual(buildSupportErrandPolicy(DRAGON_REGISTRY[id]).resolutions, labels);
+});
+
+test.each(['MSVA', 'AOT', 'IAF', 'VOF'] as const)('%s retains the shared closing behavior', (id) => {
+  const policy = buildSupportErrandPolicy(DRAGON_REGISTRY[id]);
+  assert.equal(policy.resolutions.SOLVED, 'Löst av Kontakt Sundsvall');
+  assert.equal(policy.defaultResolution({ useClosedAsDefaultResolution: false }), Resolution.SOLVED);
+  assert.equal(policy.defaultResolution({ useClosedAsDefaultResolution: true }), Resolution.CLOSED);
+  assert.deepEqual(policy.ongoingStatuses, ongoingStatuses);
+});
+
 test('an override set to undefined is rejected instead of silently falling back', () => {
   const broken: DragonModule = { id: 'KC', supportErrandPolicy: { resolutions: undefined } };
 
@@ -86,21 +121,8 @@ test('an override set to undefined is rejected instead of silently falling back'
   });
 });
 
-test('enabling both investigation variants is a startup error', () => {
-  assert.throws(
-    () => validateDragonConfiguration(features({ useAvvikelseInvestigation: true, useAotInvestigation: true })),
-    { message: /mutually exclusive/ }
-  );
-});
-
-test('a single investigation variant, or none, passes validation', () => {
-  assert.doesNotThrow(() => validateDragonConfiguration(features({ useAvvikelseInvestigation: true })));
-  assert.doesNotThrow(() => validateDragonConfiguration(features({ useAotInvestigation: true })));
-  assert.doesNotThrow(() => validateDragonConfiguration(features()));
-});
-
 test('composeDragon hands the resolved dragon its policy', () => {
-  const dragon = composeDragon({ identity: 'ROB', dragon: DRAGON_REGISTRY.ROB, features: features() });
+  const dragon = composeDragon({ identity: 'ROB', dragon: DRAGON_REGISTRY.ROB });
 
   assert.equal(dragon, DRAGON_REGISTRY.ROB);
   assert.equal(
@@ -109,21 +131,6 @@ test('composeDragon hands the resolved dragon its policy', () => {
   );
 });
 
-test('composeDragon validates before it resolves, so a conflict is reported even for a valid dragon', () => {
-  assert.throws(
-    () =>
-      composeDragon({
-        identity: 'IAF',
-        dragon: DRAGON_REGISTRY.IAF,
-        features: features({ useAvvikelseInvestigation: true, useAotInvestigation: true }),
-      }),
-    { message: /mutually exclusive/ }
-  );
-});
-
 test('composition rejects another valid dragon even when it shares the same domain', () => {
-  assert.throws(
-    () => composeDragon({ identity: 'VOF', dragon: DRAGON_REGISTRY.IAF, features: features() }),
-    /cannot run/
-  );
+  assert.throws(() => composeDragon({ identity: 'VOF', dragon: DRAGON_REGISTRY.IAF }), /cannot run/);
 });

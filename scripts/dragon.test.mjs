@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
@@ -12,31 +12,10 @@ test('the CLI lists available dragons and rejects invalid build targets before r
   const cli = join(root, 'scripts/dragon.mjs');
   const list = spawnSync(process.execPath, [cli, 'list'], { encoding: 'utf8' });
   assert.equal(list.status, 0);
-  assert.match(list.stdout, /IAF\s+supportmanagement \+ avvikelse/);
+  assert.match(list.stdout, /IAF\s+supportmanagement/);
   for (const args of [['build', 'unknown'], ['build', 'IAF', 'unknown'], ['build-family', 'unknown']]) {
     const result = spawnSync(process.execPath, [cli, ...args], { encoding: 'utf8' });
     assert.notEqual(result.status, 0);
-  }
-});
-
-test('immutable image metadata restricts runtime identity for both services', () => {
-  const directory = mkdtempSync(join(tmpdir(), 'dragon-image-'));
-  try {
-    mkdirSync(join(directory, 'scripts'));
-    cpSync(join(root, 'scripts/assert-dragon-image.cjs'), join(directory, 'scripts/assert-dragon-image.cjs'));
-    cpSync(join(root, 'dragons.json'), join(directory, 'dragons.json'));
-    writeFileSync(join(directory, 'dragon-build.json'), JSON.stringify({ id: 'IAF' }));
-    for (const side of ['frontend', 'backend']) {
-      for (const identity of ['IAF', 'VOF', 'KC', 'MEX', 'unknown', '']) {
-        const result = spawnSync(process.execPath, [join(directory, 'scripts/assert-dragon-image.cjs'), side], {
-          env: { ...process.env, APPLICATION: identity, NEXT_PUBLIC_APPLICATION: identity, DRAKEN_BUILD_DRAGON: identity },
-          encoding: 'utf8',
-        });
-        assert.equal(result.status === 0, identity === 'IAF', `${side}: ${identity}`);
-      }
-    }
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
   }
 });
 
@@ -48,4 +27,76 @@ test('artifact checks reject unknown IDs and traversal before reading artifacts'
     assert.match(result.stderr, /Specify a valid dragon/);
     assert.doesNotMatch(result.stderr, /ENOENT/);
   }
+});
+
+test('artifact validation catches broken emitted imports before a container can start', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'draken-artifact-'));
+  try {
+    for (const path of ['scripts', 'backend/dist-KC/dragons/kc', 'backend/dist-KC/shell', 'backend/dist-KC/controllers/supportmanagement']) {
+      mkdirSync(join(directory, path), { recursive: true });
+    }
+    for (const file of ['scripts/check-backend-artifact.mjs', 'dragons.json', 'backend/tsconfig.json']) cpSync(join(root, file), join(directory, file));
+    symlinkSync(join(root, 'backend/node_modules'), join(directory, 'backend/node_modules'), 'dir');
+    cpSync(join(root, 'backend/package.json'), join(directory, 'backend/package.json'));
+    mkdirSync(join(directory, 'backend/src/dragons/kc'), { recursive: true });
+    mkdirSync(join(directory, 'backend/src/shell'), { recursive: true });
+    writeFileSync(join(directory, 'backend/src/dragons/kc/server.ts'), "import '../../shell/start-server';");
+    writeFileSync(join(directory, 'backend/src/shell/start-server.ts'), 'export {};');
+    const output = join(directory, 'backend/dist-KC');
+    writeFileSync(join(output, 'dragon-build.json'), JSON.stringify({ id: 'KC', revision: 'a'.repeat(40) }));
+    writeFileSync(join(output, 'shell/start-server.js'), 'module.exports = {};');
+    const server = join(output, 'dragons/kc/server.js');
+    const check = () => spawnSync(process.execPath, [join(directory, 'scripts/check-backend-artifact.mjs'), 'KC'], { encoding: 'utf8' });
+    writeFileSync(server, 'require("../../shell/start-server");');
+    assert.equal(check().status, 0);
+    writeFileSync(server, 'require("@/shell/start-server");');
+    const alias = check();
+    assert.notEqual(alias.status, 0);
+    assert.match(alias.stderr, /unresolved TypeScript alias/);
+    writeFileSync(server, 'require("../../shell/missing");');
+    const missing = check();
+    assert.notEqual(missing.status, 0);
+    assert.match(missing.stderr, /missing runtime module/);
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
+test('Next env files cannot activate verbose logging after the CLI checks inherited variables', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'draken-next-environment-'));
+  const marker = join(directory, 'frontend/next-started');
+  try {
+    for (const path of ['scripts', 'frontend/src/dragons/kc', 'frontend/node_modules/@next', 'frontend/node_modules/next/dist/bin']) {
+      mkdirSync(join(directory, path), { recursive: true });
+    }
+    for (const file of ['scripts/dragon.mjs', 'scripts/dragon-deployment.cjs', 'dragons.json']) cpSync(join(root, file), join(directory, file));
+    symlinkSync(join(root, 'frontend/node_modules/@next/env'), join(directory, 'frontend/node_modules/@next/env'), 'dir');
+    writeFileSync(join(directory, 'frontend/package.json'), '{}');
+    writeFileSync(join(directory, 'frontend/src/dragons/kc/application.ts'), 'export {};');
+    writeFileSync(join(directory, 'frontend/node_modules/next/dist/bin/next.js'), 'require("node:fs").writeFileSync("next-started", "started");');
+    const env = { ...process.env };
+    for (const key of ['DEBUG', 'NODE_DEBUG', 'NODE_DEBUG_NATIVE', 'DRAKEN_DEPLOYMENT_FILE']) delete env[key];
+    const start = () => spawnSync(process.execPath, [join(directory, 'scripts/dragon.mjs'), 'start', 'KC', 'frontend'], { encoding: 'utf8', env });
+    for (const file of ['.env.kc', '.env.local', '.env.production.local', '.env']) {
+      const path = join(directory, 'frontend', file);
+      writeFileSync(path, 'PRIVATE_VALUE=private-credential-canary\nDEBUG=${PRIVATE_VALUE}\n');
+      const result = start();
+      assert.notEqual(result.status, 0, file);
+      assert.match(result.stderr, /DEBUG|Next environment rejected/u);
+      assert.doesNotMatch(result.stdout + result.stderr, /private-credential-canary/u);
+      assert.equal(existsSync(marker), false);
+      rmSync(path);
+    }
+    for (const name of ['NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION', 'NEXT_PUBLIC_USE_AOT_INVESTIGATION']) {
+      const path = join(directory, 'frontend/.env.local');
+      writeFileSync(path, `${name}=false\n`);
+      const result = start();
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /Next environment rejected/u);
+      assert.equal(existsSync(marker), false);
+      rmSync(path);
+    }
+    writeFileSync(join(directory, 'frontend/.env.local'), 'DEBUG=\nNODE_DEBUG=\nNODE_DEBUG_NATIVE=\n');
+    const clean = start();
+    assert.equal(clean.status, 0, clean.stderr);
+    assert.equal(existsSync(marker), true);
+  } finally { rmSync(directory, { recursive: true, force: true }); }
 });

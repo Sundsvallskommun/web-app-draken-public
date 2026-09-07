@@ -1,5 +1,5 @@
 import { Sidebar, SidebarButtonKey } from '@common/components/sidebar/sidebar.component';
-import { useSupportStore } from '@stores/index';
+import { useSupportStore } from '@stores/support-store';
 import { supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import { Dispatch, FC, ReactNode, SetStateAction } from 'react';
 

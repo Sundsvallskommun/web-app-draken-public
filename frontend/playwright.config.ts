@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+import coverage from './e2e/dragon-coverage.json';
+
 const baseURL = `http://${process.env.DOMAIN_NAME || 'localhost'}:${process.env.PORT || '3000'}${
   process.env.NEXT_PUBLIC_BASEPATH || ''
 }/`;
@@ -27,6 +29,13 @@ export default defineConfig({
     },
   },
   projects: [
+    ...Object.values(coverage)
+      .filter(({ suite }) => suite === 'smoke')
+      .map(({ project }) => ({
+        name: project,
+        testDir: './e2e/dragon-smoke',
+        use: { ...devices['Desktop Chrome'] },
+      })),
     {
       name: 'mex',
       testDir: './e2e/case-data/mex',

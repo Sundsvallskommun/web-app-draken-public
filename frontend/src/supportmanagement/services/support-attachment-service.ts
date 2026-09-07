@@ -4,6 +4,7 @@ import {
   imageMimeTypes,
   MAX_FILE_SIZE_MB,
 } from '@common/services/attachment-upload-policy';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { toBase64 } from '@common/utils/toBase64';
 
 export interface SupportAttachment {
@@ -87,7 +88,7 @@ export const getSupportAttachment: (
       return att;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching attachment');
+      logClientFailure('supportmanagement.support-attachment.getSupportAttachment', e);
       throw e;
     });
 };
@@ -103,14 +104,14 @@ export const getSupportAttachments: (errandId: string, municipalityId: string) =
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching attachments');
+      logClientFailure('supportmanagement.support-attachment.getSupportAttachments', e);
       throw e;
     });
 };
 
 export const deleteSupportAttachment = (errandId: string, municipalityId: string, attachmentId: string) => {
   if (!attachmentId) {
-    console.error('No id found, cannot continue.');
+    logClientFailure('supportmanagement.support-attachment.deleteSupportAttachment');
     return;
   }
 
@@ -120,7 +121,7 @@ export const deleteSupportAttachment = (errandId: string, municipalityId: string
       return res;
     })
     .catch((e) => {
-      console.error('Something went wrong when removing attachment ', attachmentId);
+      logClientFailure('supportmanagement.support-attachment.deleteSupportAttachment', e);
       throw e;
     });
 };
@@ -157,7 +158,7 @@ export const saveSupportAttachments: (
         return res;
       })
       .catch((e) => {
-        console.error('Something went wrong when saving attachment', e);
+        logClientFailure('supportmanagement.support-attachment.saveSupportAttachments', e);
         throw e;
       });
   });

@@ -1,14 +1,19 @@
-import { MessageNode } from '@casedata/services/casedata-message-service';
 import { Avatar } from '@sk-web-gui/react';
-import { Message } from '@supportmanagement/services/support-message-service';
 import { FC } from 'react';
 
-const getSenderInitials = (msg: MessageNode | Message): string => {
-  if ('firstName' in msg && 'lastName' in msg) {
-    return `${msg.firstName?.[0]}${msg.lastName?.[0]}`;
+interface MessageSender {
+  direction?: string;
+  firstName?: string;
+  lastName?: string;
+  sender?: string;
+}
+
+export const getSenderInitials = (message: MessageSender): string => {
+  if ('firstName' in message && 'lastName' in message) {
+    return `${message.firstName?.[0] ?? ''}${message.lastName?.[0] ?? ''}` || '@';
   }
-  if ('sender' in msg && msg) {
-    const parts = msg.sender.trim().split(' ');
+  if (message.sender) {
+    const parts = message.sender.trim().split(/\s+/);
     if (parts.length >= 2) {
       const firstInitial = parts[0]?.[0] ?? '';
       const lastInitial = parts[1]?.[0] ?? '';
@@ -19,7 +24,7 @@ const getSenderInitials = (msg: MessageNode | Message): string => {
 };
 
 export const MessageAvatar: FC<{
-  message: MessageNode | Message;
+  message: MessageSender;
 }> = ({ message }) => {
   return (
     <Avatar

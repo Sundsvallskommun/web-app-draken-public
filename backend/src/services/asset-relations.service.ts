@@ -1,10 +1,10 @@
 import { User } from '@interfaces/users.interface';
-import { logger } from '@utils/logger';
 import { apiURL } from '@utils/util';
 
 import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Relation, RelationPagedResponse, ResourceIdentifier } from '@/data-contracts/relations/data-contracts';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { mapWithConcurrency } from '@/utils/concurrency';
 
 import ApiService from './api.service';
@@ -61,7 +61,7 @@ const listRelationsBy = async (
     }
     return relations;
   } catch (e) {
-    logger.error(`Error fetching relations by ${field}=${value}: `, e);
+    logApplicationFailure('Fetching asset relations', e);
     throw e;
   }
 };
@@ -80,7 +80,7 @@ export const createErrandAssetRelation = async (municipalityId: string, errandId
     const res = await apiService.post<Relation, Relation>({ url, baseURL, data: body }, user);
     return res.data ?? null;
   } catch (e) {
-    logger.error(`Failed to create errand→asset relation (errand=${errandId}, asset=${assetId}): `, e);
+    logApplicationFailure('Creating errand-asset relation', e);
     throw e;
   }
 };
@@ -131,7 +131,7 @@ export const deleteErrandAssetRelationsForAsset = async (municipalityId: string,
     .filter((entry): entry is { result: PromiseRejectedResult; id: string } => entry.result.status === 'rejected');
   if (failures.length > 0) {
     failures.forEach(failure => {
-      logger.error(`Failed to delete relation ${failure.id}: `, failure.result.reason);
+      logApplicationFailure('Deleting asset relation', failure.result.reason);
     });
     throw failures[0].result.reason;
   }

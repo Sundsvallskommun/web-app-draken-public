@@ -1,7 +1,9 @@
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { sortBy } from '@common/services/helper-service';
 import { Button, Checkbox, cx, Divider, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useUserStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
 import { useNotificationStore } from '@stores/notification-store';
+import { useUserStore } from '@stores/user-store';
 import { Bell, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -32,7 +34,7 @@ export const NotificationsWrapper: React.FC<{
           setNotifications(res);
         })
         .catch((e) => {
-          console.error('Something went wrong when fetching notifications');
+          logClientFailure('common.notifications-wrapper.NotificationsWrapper', e);
           return [] as NotificationType[];
         });
     // eslint-disable-next-line react-hooks/exhaustive-deps

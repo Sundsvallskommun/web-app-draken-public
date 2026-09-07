@@ -9,7 +9,7 @@ const support: AppConfig = {
   ...appConfig,
   isCaseData: false,
   isSupportManagement: true,
-  features: { ...appConfig.features, useAvvikelseInvestigation: false, useAotInvestigation: false },
+  features: { ...appConfig.features },
 };
 
 test('the Avvikelse deployment accepts its own identity and can disable investigation for recovery', () => {
@@ -17,7 +17,7 @@ test('the Avvikelse deployment accepts its own identity and can disable investig
   assert.doesNotThrow(() =>
     validateDragonDeployment('VOF', 'VOF', {
       ...support,
-      features: { ...support.features, useAvvikelseInvestigation: true },
+      features: { ...support.features, useInvestigation: true },
     })
   );
 });
@@ -29,50 +29,17 @@ test('a build cannot be repurposed as a dragon in another dragon', () => {
   assert.throws(() => validateDragonDeployment('UNKNOWN', 'KC', support), /Unknown dragon/);
 });
 
-test('runtime flags cannot enable another domain or investigation implementation', () => {
-  assert.throws(() => validateDragonDeployment('IAF', 'IAF', { ...support, isCaseData: true }), /Domain flags/);
+test('the built domain must match the application', () => {
+  assert.throws(() => validateDragonDeployment('IAF', 'IAF', { ...support, isCaseData: true }), /Domain configuration/);
   assert.throws(
     () => validateDragonDeployment('IAF', 'IAF', { ...support, isSupportManagement: false }),
-    /Domain flags/
-  );
-  assert.throws(
-    () =>
-      validateDragonDeployment('KC', 'KC', {
-        ...support,
-        features: { ...support.features, useAvvikelseInvestigation: true },
-      }),
-    /Avvikelse investigation requires/
-  );
-  assert.throws(
-    () =>
-      validateDragonDeployment('IAF', 'IAF', {
-        ...support,
-        features: { ...support.features, useAotInvestigation: true },
-      }),
-    /AOT investigation requires/
+    /Domain configuration/
   );
 });
 
-test('CaseData requires its own domain flags', () => {
+test('CaseData requires its catalog domain', () => {
   assert.doesNotThrow(() =>
     validateDragonDeployment('MEX', 'MEX', { ...support, isCaseData: true, isSupportManagement: false })
   );
-  assert.throws(() => validateDragonDeployment('MEX', 'MEX', support), /Domain flags/);
-});
-
-test('KC cannot enable AOT merely because both use SM', () => {
-  assert.throws(
-    () =>
-      validateDragonDeployment('KC', 'KC', {
-        ...support,
-        features: { ...support.features, useAotInvestigation: true },
-      }),
-    /AOT investigation requires/
-  );
-  assert.doesNotThrow(() =>
-    validateDragonDeployment('AOT', 'AOT', {
-      ...support,
-      features: { ...support.features, useAotInvestigation: true },
-    })
-  );
+  assert.throws(() => validateDragonDeployment('MEX', 'MEX', support), /Domain configuration/);
 });

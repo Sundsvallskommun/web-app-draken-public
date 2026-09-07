@@ -1,5 +1,5 @@
-import type { InvestigationProfile } from '../supportmanagement/investigation/investigation-profile';
-import type { InvestigationProfileStatus } from '../supportmanagement/investigation/investigation-profile-store';
+import type { SupportApplicationProfile } from '../supportmanagement/application/support-application-profile';
+import type { SupportApplicationProfileStatus } from '../supportmanagement/application/support-application-profile-store';
 
 export type InvestigationTabState = 'loading' | 'error' | 'unavailable' | 'not-configured' | 'ready';
 
@@ -11,8 +11,8 @@ export type InvestigationTabState = 'loading' | 'error' | 'unavailable' | 'not-c
  * is testable without rendering.
  */
 export const resolveInvestigationTabState = (
-  status: InvestigationProfileStatus,
-  profile: InvestigationProfile | null | undefined
+  status: SupportApplicationProfileStatus,
+  profile: SupportApplicationProfile | null | undefined
 ): InvestigationTabState => {
   if (status === 'idle' || status === 'loading') return 'loading';
   if (status === 'error') return 'error';

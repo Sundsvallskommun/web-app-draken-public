@@ -1,10 +1,10 @@
 'use client';
 
 import { AvvikelseLabelCategorization } from '@avvikelse/avvikelse-label-categorization.component';
-import { useMetadataStore } from '@stores/index';
+import { useMetadataStore } from '@stores/metadata-store';
 import type { FC } from 'react';
 
-import type { InvestigationCategorizationControlProps } from '../supportmanagement/investigation/investigation-variant';
+import type { InvestigationCategorizationControlProps } from '../supportmanagement/investigation/investigation-module';
 import { AVVIKELSE_CLASSIFICATION_POLICY } from './avvikelse-classification-policy';
 
 /**

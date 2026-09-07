@@ -2,6 +2,8 @@ import { isLOK } from '@common/services/application-service';
 import { Admin } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { Alert, Button, Checkbox, cx, Link } from '@sk-web-gui/react';
+import { isSupportRegistrationEnabled } from '@supportmanagement/application/support-application-profile';
+import { useSupportApplicationProfileStore } from '@supportmanagement/application/support-application-profile-store';
 import { labelFilterSelectionsEqual } from '@supportmanagement/filters/label-filter-persistence';
 import type {
   LabelFilterGroupProjection,
@@ -9,8 +11,6 @@ import type {
 } from '@supportmanagement/filters/label-filter-projector';
 import { normalizeLabelFilterSelections } from '@supportmanagement/filters/label-filter-selection';
 import { ProjectedLabelFilters } from '@supportmanagement/filters/projected-label-filters.component';
-import { isSupportRegistrationEnabled } from '@supportmanagement/investigation/investigation-profile';
-import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { ListFilter } from 'lucide-react';
 import { FC, useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -164,7 +164,7 @@ const SupportManagementFiltering: FC<{
   labelFilterState: SupportManagementLabelFilterState;
 }> = ({ numberOfFilters, ownerFilterHandler = () => false, ownerFilter, administrators = [], labelFilterState }) => {
   const [show, setShow] = useState<boolean>(true);
-  const registrationEnabled = useInvestigationProfileStore((state) => isSupportRegistrationEnabled(state.profile));
+  const registrationEnabled = useSupportApplicationProfileStore((state) => isSupportRegistrationEnabled(state.profile));
   const { setValue, watch } = useFormContext<SupportManagementFilter>();
   const labelFilterSelections = watch('labelFilter');
   const normalizedLabelFilterSelections = useMemo(

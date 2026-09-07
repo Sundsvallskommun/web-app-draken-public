@@ -1,13 +1,18 @@
 import { ReferredFromErrandInformation } from '@common/components/referred-from-errand-information/referred-from-errand-information.component';
 import { Category } from '@common/data-contracts/supportmanagement/data-contracts';
 import { isIAFOrVOF } from '@common/services/application-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Alert, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
-import { useBadgeStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
-import { isSupportRegistrationEnabled } from '@supportmanagement/investigation/investigation-profile';
-import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
+import { useBadgeStore } from '@stores/badge-store';
+import { useConfigStore } from '@stores/config-store';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useSupportStore } from '@stores/support-store';
+import { useUserStore } from '@stores/user-store';
+import { isSupportRegistrationEnabled } from '@supportmanagement/application/support-application-profile';
+import { useSupportApplicationProfileStore } from '@supportmanagement/application/support-application-profile-store';
 import {
   defaultSupportErrandInformation,
   getSupportErrandByErrandNumber,
@@ -41,7 +46,7 @@ export const SupportErrandComponent: FC = () => {
   const { setNotesCount } = useBadgeStore();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const toastMessage = useSnackbar();
-  const supportApplicationProfile = useInvestigationProfileStore((state) => state.profile);
+  const supportApplicationProfile = useSupportApplicationProfileStore((state) => state.profile);
   const registrationBlocked =
     !errandNumber && appConfig.isSupportManagement && !isSupportRegistrationEnabled(supportApplicationProfile);
 
@@ -108,7 +113,7 @@ export const SupportErrandComponent: FC = () => {
             }, 10)
           )
           .catch((e) => {
-            console.error('Error when initiating errand:', e);
+            logClientFailure('supportmanagement.support-errand.SupportErrandComponent', e);
             setIsLoading(false);
             toastMessage({
               position: 'bottom',

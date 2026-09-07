@@ -1,14 +1,10 @@
 import { AUTHORIZED_GROUPS } from '@config';
 import { InternalRole, Permissions } from '@interfaces/users.interface';
 
-import { logger } from '@/utils/logger';
-
 import { roleADMapping } from './ad-role.service';
 import { isContactSundsvall } from './application.service';
 
 export function authorizeGroups(groups: string) {
-  logger.debug(`authorizing groups ${groups}`);
-  logger.debug(`against ${AUTHORIZED_GROUPS}`);
   const authorizedGroupsList = AUTHORIZED_GROUPS!.split(',');
   const groupsList = groups.split(',').map((g: string) => g.toLowerCase());
   return authorizedGroupsList.some(authorizedGroup => groupsList.includes(authorizedGroup.toLowerCase()));

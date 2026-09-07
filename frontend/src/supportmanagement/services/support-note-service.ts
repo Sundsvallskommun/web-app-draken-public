@@ -1,4 +1,5 @@
 import { apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 
 export interface SupportNoteDto {
   context: string;
@@ -43,7 +44,7 @@ export const getSupportNotes: (errandId: string, municipalityId: string) => Prom
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching notes', e);
+      logClientFailure('supportmanagement.support-note.getSupportNotes', e);
       return { notes: [] } as unknown as SupportNoteData;
     });
 };
@@ -58,7 +59,7 @@ export const getSupportNotesCount: (errandId: string, municipalityId: string) =>
       return res.data.notes.length;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching notes', e);
+      logClientFailure('supportmanagement.support-note.getSupportNotesCount', e);
       return 0;
     });
 };
@@ -75,7 +76,7 @@ export const saveSupportNote: (
       return true;
     })
     .catch((e) => {
-      console.error('Something went wrong when creating note');
+      logClientFailure('supportmanagement.support-note.saveSupportNote', e);
       throw e;
     });
 };
@@ -92,7 +93,7 @@ export const updateSupportNote: (
       return true;
     })
     .catch((e) => {
-      console.error('Something went wrong when Updating note');
+      logClientFailure('supportmanagement.support-note.updateSupportNote', e);
       throw e;
     });
 };
@@ -108,7 +109,7 @@ export const deleteSupportNote: (errandId: string, municipalityId: string, noteI
       return true;
     })
     .catch((e) => {
-      console.error('Something went wrong when deleting note');
+      logClientFailure('supportmanagement.support-note.deleteSupportNote', e);
       throw e;
     });
 };

@@ -1,8 +1,11 @@
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { Button, Checkbox, Divider, FormControl, Modal, RadioButton, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
+import { useUserStore } from '@stores/user-store';
 import { getSupportErrandPolicy } from '@supportmanagement/policy/support-errand-policy';
 import {
   closeSupportErrand,
@@ -98,7 +101,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
       assignedUserId = assignment.assignedUserId;
       await closeSupportErrand(errandId, municipalityId, resolution, assignment.expected);
     } catch (e) {
-      console.error('Failed to close support errand', e);
+      logClientFailure('supportmanagement.support-close-errand-button.handleCloseErrand', e);
       showCloseErrorToast(supportErrandWriteErrorMessage(e, 'Något gick fel när ärendet skulle avslutas'));
       setIsLoading(false);
       return;
@@ -110,7 +113,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
         const adminName = getAdminName(admin!);
         await sendClosingMessage(adminName, supportErrand, municipalityId);
       } catch (e) {
-        console.error('Failed to send closing message', e);
+        logClientFailure('supportmanagement.support-close-errand-button.handleCloseErrand', e);
         showCloseErrorToast('Ärendet avslutades men avslutningsmeddelandet kunde inte skickas');
         setIsLoading(false);
         getSupportErrandById(errandId, municipalityId).then((res) => setSupportErrand(res.errand));

@@ -9,7 +9,7 @@ import { LinkedErrandsDisclosure } from '@common/components/linked-errands-discl
 import { Priority } from '@common/interfaces/priority';
 import { appConfig } from '@config/appconfig';
 import { cx, Disclosure, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
-import { useConfigStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
 import { CircleAlert } from 'lucide-react';
 import { Dispatch, FC, SetStateAction, useEffect } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';

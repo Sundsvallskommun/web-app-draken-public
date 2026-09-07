@@ -47,5 +47,5 @@ export const exportSingleSupportErrand: (
     })),
   };
 
-  return renderPdf(url, preparedErrand, includeParameters);
+  return renderPdf(url, preparedErrand);
 };

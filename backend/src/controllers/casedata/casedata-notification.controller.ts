@@ -9,7 +9,7 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { logger } from '@/utils/logger';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL } from '@/utils/util';
 
 export class CasedataNotificationDto implements CasedataNotification {
@@ -127,7 +127,7 @@ export class CasedataNotificationController {
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
     if (!municipalityId) {
-      logger.error('No municipality id found, it is needed to update notification.');
+      logApplicationFailure('No municipality id found, it is needed to update notification.');
       return response.status(400).send('Municipality id missing');
     }
     const url = `${municipalityId}/${this.namespace}/notifications`;
@@ -138,8 +138,7 @@ export class CasedataNotificationController {
       },
     ];
     const res = await this.apiService.patch<any, Partial<PatchNotificationDto[]>>({ url, baseURL, data: body }, req.user).catch(e => {
-      logger.error('Error when updating notification');
-      logger.error(e);
+      logApplicationFailure('Error when updating notification', e);
       throw e;
     });
     return response.status(200).send(res.data);
@@ -156,14 +155,13 @@ export class CasedataNotificationController {
     @Res() response: any,
   ): Promise<{ data: any; message: string }> {
     if (!municipalityId) {
-      logger.error('No municipality id found, it is needed to update notification.');
+      logApplicationFailure('No municipality id found, it is needed to update notification.');
       return response.status(400).send('Municipality id missing');
     }
     const url = `${municipalityId}/${this.namespace}/errands/${errandId}/notifications/global-acknowledged`;
     const baseURL = apiURL(this.SERVICE);
     const res = await this.apiService.put({ url, baseURL }, req.user).catch(e => {
-      logger.error('Error when updating notification');
-      logger.error(e);
+      logApplicationFailure('Error when updating notification', e);
       throw e;
     });
     return response.status(200).send(res.data);

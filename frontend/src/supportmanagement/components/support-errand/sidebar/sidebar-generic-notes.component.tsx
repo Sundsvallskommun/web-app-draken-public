@@ -1,4 +1,5 @@
 import { noteIsComment, noteIsTjansteanteckning, NoteType } from '@common/interfaces/note-visibility';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { sanitizedInline } from '@common/services/sanitizer-service';
 import { getInitialsFromADUsername } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
@@ -16,7 +17,9 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
+import { useUserStore } from '@stores/user-store';
 import { ErrandNotesTabFormModel, GenericNote } from '@supportmanagement/interfaces/genericNote';
 import { ExternalIdType, getSupportErrandById } from '@supportmanagement/services/support-errand-service';
 import {
@@ -109,7 +112,7 @@ export const SidebarGenericNotes: FC<{
   };
 
   const onError = () => {
-    console.error('Something went wrong when saving note');
+    logClientFailure('supportmanagement.sidebar-generic-notes.onError');
   };
 
   useEffect(() => {

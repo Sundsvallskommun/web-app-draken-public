@@ -1,5 +1,6 @@
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { twoDecimals } from '@common/services/helper-service';
 import {
   CBillingRecord,
@@ -231,21 +232,21 @@ export const saveCasedataBillingRecord = async (
       try {
         await saveBillingRecordIdToErrand(errand, municipalityId, res.data.id);
       } catch (e) {
-        console.error('Something went wrong when saving billing record id to errand', e);
+        logClientFailure('casedata.casedata-billing.saveCasedataBillingRecord', e);
         warnings.push('Kunde inte spara fakturanumret på ärendet');
       }
 
       try {
         await createContractBillingRelation(errand, municipalityId, res.data.id);
       } catch (e) {
-        console.error('Something went wrong when creating contract-billing relation', e);
+        logClientFailure('casedata.casedata-billing.saveCasedataBillingRecord', e);
         warnings.push('Kunde inte koppla fakturan till avtalet');
       }
     }
 
     return { record: res.data, warnings };
   } catch (e) {
-    console.error('Something went wrong when saving billing record');
+    logClientFailure('casedata.casedata-billing.saveCasedataBillingRecord', e);
     throw e;
   }
 };
@@ -256,7 +257,7 @@ export const getCasedataBillingRecord = async (recordId: string, municipalityId:
     const res = await apiService.get<CBillingRecord>(url);
     return res.data;
   } catch (e) {
-    console.error('Something went wrong when fetching billing record');
+    logClientFailure('casedata.casedata-billing.getCasedataBillingRecord', e);
     throw e;
   }
 };
@@ -278,7 +279,7 @@ export const getCasedataBillingRecordsForErrand = async (
 
     return records.filter((record): record is CBillingRecord => record !== null);
   } catch (e) {
-    console.error('Something went wrong when fetching billing records');
+    logClientFailure('casedata.casedata-billing.getCasedataBillingRecordsForErrand', e);
     throw e;
   }
 };
@@ -296,7 +297,7 @@ export const deleteCasedataBillingRecord = async (
 
     return true;
   } catch (e) {
-    console.error('Something went wrong when deleting billing record');
+    logClientFailure('casedata.casedata-billing.deleteCasedataBillingRecord', e);
     throw e;
   }
 };
@@ -312,7 +313,7 @@ export const updateCasedataBillingRecord = async (
     const res = await apiService.put<CBillingRecord, CBillingRecord>(url, data);
     return res.data;
   } catch (e) {
-    console.error('Something went wrong when updating billing record');
+    logClientFailure('casedata.casedata-billing.updateCasedataBillingRecord', e);
     throw e;
   }
 };
@@ -328,7 +329,7 @@ export const approveCasedataBillingRecord = async (
     const res = await apiService.put<CBillingRecord, CBillingRecord>(url, data);
     return res.data;
   } catch (e) {
-    console.error('Something went wrong when approving billing record');
+    logClientFailure('casedata.casedata-billing.approveCasedataBillingRecord', e);
     throw e;
   }
 };
@@ -338,7 +339,7 @@ export const getOrganizationPartyId = async (orgNr: string): Promise<string | un
     const res = await apiService.post<{ data: { partyId: string } }, { orgNr: string }>('organization', { orgNr });
     return res.data.data.partyId;
   } catch (error) {
-    console.error('Failed to fetch organization partyId:', error);
+    logClientFailure('casedata.casedata-billing.getOrganizationPartyId', error);
     return undefined;
   }
 };

@@ -52,9 +52,9 @@ describe('ApiService', () => {
     const logs = JSON.stringify([...errorLog.mock.calls, ...infoLog.mock.calls]);
     expect(logs).not.toContain(secret);
     expect(logs).not.toContain(user.username);
-    expect(logs).toContain('status=403');
-    expect(logs).toContain('method=PUT');
-    expect(logs).toMatch(/requestId=[a-f0-9-]{36}/u);
+    expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('"status":403'));
+    expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('"method":"PUT"'));
+    expect(errorLog).toHaveBeenCalledWith(expect.stringMatching(/"requestId":"[a-f0-9-]{36}"/u));
   });
 
   it('does not log network error messages that may contain request data', async () => {
@@ -72,7 +72,8 @@ describe('ApiService', () => {
       ),
     ).rejects.toMatchObject({ status: 500 });
     expect(JSON.stringify(errorLog.mock.calls)).not.toContain(secret);
-    expect(JSON.stringify(errorLog.mock.calls)).toContain('status=no-response');
+    expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('"status":"no-response"'));
+    expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('"errorCode":"ECONNRESET"'));
   });
 
   it('retains upstream response headers for BFF endpoints that need concurrency metadata', async () => {

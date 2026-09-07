@@ -1,8 +1,11 @@
 import { GenericChangeData, ParsedErrandChange, ParsedErrandHistory } from '@casedata/interfaces/history';
 import { fetchChangeData, getErrandHistory } from '@casedata/services/casedata-history-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { sanitized } from '@common/services/sanitizer-service';
 import { Button, cx, Modal, Spinner } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import dayjs from 'dayjs';
 import { History } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -37,7 +40,7 @@ export const SidebarHistory: React.FC<{}> = () => {
           setIsOpen(true);
         })
         .catch((e) => {
-          console.error('Could not fetch change data');
+          logClientFailure('casedata.sidebar-history.SidebarHistory', e);
         })
         .finally(() => {
           setIsLoading(false);

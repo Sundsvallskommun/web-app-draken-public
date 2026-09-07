@@ -8,6 +8,7 @@ import { Law } from '@common/data-contracts/case-data/data-contracts';
 import { Render, Template, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX, isPT } from '@common/services/application-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { base64Decode } from '@common/services/helper-service';
 import { TemplateApiResponse } from '@common/services/message-template-service';
 import { Service } from '@common/services/service-assets-service';
@@ -294,7 +295,7 @@ export const fetchInvestigationSkeleton: (errand: IErrand) => Promise<string> = 
     }
     return '';
   } catch (error) {
-    console.error(`Failed to fetch investigation skeleton: ${identifier}`, error);
+    logClientFailure('casedata.casedata-decision.fetchInvestigationSkeleton', error);
     return '';
   }
 };
@@ -488,7 +489,7 @@ export const renderHtml: (
       (templateType === 'investigation' && d.decisionType === 'PROPOSED')
   );
   if (!decision) {
-    console.error('No saved decision found. Rendering preview for current form values.');
+    logClientFailure('casedata.casedata-decision.renderHtml');
   }
   const identifier = `mex.decision`;
   const renderBody: TemplateSelector = {
@@ -518,14 +519,14 @@ export const renderHtml: (
 
 export const fetchDecision: (id: string) => Promise<ApiResponse<Decision>> = (id) => {
   if (!id) {
-    console.error('No decision id found, cannot fetch. Returning.');
+    logClientFailure('casedata.casedata-decision.fetchDecision');
   }
   const url = `decisions/${id}`;
   return apiService
     .get<ApiResponse<Decision>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching attachment: ', id);
+      logClientFailure('casedata.casedata-decision.fetchDecision', e);
       throw e;
     });
 };

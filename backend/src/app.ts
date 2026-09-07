@@ -21,26 +21,30 @@ import {
 } from '@config';
 import defaultAuthGuard from '@middlewares/default-auth.middleware';
 import errorMiddleware from '@middlewares/error.middleware';
+import requestDiagnosticsMiddleware from '@middlewares/request-diagnostics.middleware';
 import { Strategy, VerifiedCallback } from '@node-saml/passport-saml';
-import { logger, stream } from '@utils/logger';
 import bodyParser from 'body-parser';
 import { defaultMetadataStorage } from 'class-transformer/cjs/storage';
 import { validationMetadatasToSchemas } from 'class-validator-jsonschema';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
 import express from 'express';
-import { rateLimit } from 'express-rate-limit';
 import session from 'express-session';
 import { existsSync, mkdirSync } from 'fs';
 import helmet from 'helmet';
 import hpp from 'hpp';
-import morgan from 'morgan';
 import type { ReferenceObject, SchemaObject } from 'openapi3-ts';
 import passport from 'passport';
 import { join } from 'path';
 import { getMetadataArgsStorage, useExpressServer } from 'routing-controllers';
 import { routingControllersToSpec } from 'routing-controllers-openapi';
 import swaggerUi from 'swagger-ui-express';
+
+import type { DeploymentIdentity } from '@/config/dragon-deployment';
+import { dragonDeploymentMiddleware } from '@/middlewares/dragon-deployment.middleware';
+import { createSamlRateLimit } from '@/middlewares/saml-rate-limit.middleware';
+import { logApplicationEvent, logApplicationFailure, logApplicationWarning } from '@/services/request-diagnostics';
 
 import { HttpException } from './exceptions/HttpException';
 import { Profile } from './interfaces/profile.interface';
@@ -102,7 +106,7 @@ const samlStrategy = new Strategy(
     const username = profile['urn:oid:0.9.2342.19200300.100.1.1'];
 
     if (!givenName || !sn || !email || !groups || !username) {
-      logger.error(
+      logApplicationFailure(
         'Could not extract necessary profile data fields from the IDP profile. Does the Profile interface match the IDP profile response? The profile response may differ, for example Onegate vs ADFS.',
       );
       return done(null, undefined, {
@@ -112,7 +116,7 @@ const samlStrategy = new Strategy(
     }
 
     if (!authorizeGroups(groups)) {
-      logger.error('Group authorization failed. Is the user a member of the authorized groups?');
+      logApplicationFailure('Group authorization failed. Is the user a member of the authorized groups?');
       return done(null, undefined, {
         name: 'SAML_MISSING_GROUP',
         message: 'SAML_MISSING_GROUP',
@@ -140,13 +144,13 @@ const samlStrategy = new Strategy(
         permissions: getLoginPermissions(appGroups),
       };
 
-      logger.info(`Authenticated user ${findUser.username} (role: ${findUser.role})`);
+      logApplicationEvent('Authentication succeeded', { role: findUser.role });
 
       done(null, findUser);
     } catch (err) {
       if (err instanceof HttpException && err?.status === 404) {
         // TODO: Handle missing person form Citizen?
-        logger.error('Authentication failed while resolving the citizen profile');
+        logApplicationFailure('Authentication failed while resolving the citizen profile');
       }
       done(err instanceof Error ? err : null);
     }
@@ -165,6 +169,7 @@ class App {
   constructor(
     Controllers: NewableFunction[],
     private readonly sessionStore: session.Store,
+    private readonly deployment?: DeploymentIdentity,
   ) {
     this.app = express();
     this.env = NODE_ENV || 'development';
@@ -187,10 +192,7 @@ class App {
 
   public listen() {
     this.app.listen(this.port, () => {
-      logger.info(`=================================`);
-      logger.info(`======= ENV: ${this.env} =======`);
-      logger.info(`🚀 App listening on the port ${this.port}`);
-      logger.info(`=================================`);
+      logApplicationEvent('Server started', { environment: this.env, port: this.port });
     });
   }
 
@@ -199,8 +201,7 @@ class App {
   }
 
   private initializeMiddlewares() {
-    // URLs may include personal identifiers and search terms. Keep access logs to metadata.
-    this.app.use(morgan(':method :status :response-time ms', { stream, skip: req => req.path?.endsWith('/health/up') ?? false }));
+    this.app.use(requestDiagnosticsMiddleware);
     this.app.use(hpp());
     this.app.use(helmet());
     this.app.use(compression());
@@ -208,10 +209,7 @@ class App {
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use(cookieParser());
 
-    const samlLimiter = rateLimit({
-      windowMs: 60 * 1000,
-      limit: 100,
-    });
+    const samlLimiter = createSamlRateLimit();
     this.app.set('trust proxy', 1);
 
     this.app.use(
@@ -283,7 +281,7 @@ class App {
         }
         samlStrategy.logout(req as any, (err: Error | null, url?: string | null) => {
           if (err || !url) {
-            logger.error('SAML logout URL generation failed; falling back to local logout');
+            logApplicationFailure('SAML logout URL generation failed; falling back to local logout');
             return req.logout(logoutErr => (logoutErr ? next(logoutErr) : res.redirect(successRedirect as string)));
           }
           req.logout(logoutErr => (logoutErr ? next(logoutErr) : res.redirect(url)));
@@ -347,7 +345,7 @@ class App {
 
       passport.authenticate('saml', (err: Error | null, user: Express.User | false | null) => {
         if (err) {
-          logger.warn('SAML login callback failed');
+          logApplicationWarning('SAML login callback failed');
           const queries = new URLSearchParams(failureRedirect.searchParams);
           if (err?.name) {
             queries.append('failMessage', err.name);
@@ -382,14 +380,17 @@ class App {
   }
 
   private initializeRoutes(controllers: NewableFunction[]) {
-    useExpressServer(this.app, {
-      routePrefix: BASE_URL_PREFIX,
-      cors: {
+    this.app.use(
+      cors({
         origin: ORIGIN,
         credentials: CREDENTIALS,
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-        exposedHeaders: ['ETag', 'X-Errand-Version'],
-      },
+        exposedHeaders: ['ETag', 'X-Errand-Version', 'X-Request-Id'],
+      }),
+    );
+    if (this.deployment) this.app.use(BASE_URL_PREFIX!, dragonDeploymentMiddleware(this.deployment));
+    useExpressServer(this.app, {
+      routePrefix: BASE_URL_PREFIX,
       controllers: controllers,
       defaultErrorHandler: false,
     });

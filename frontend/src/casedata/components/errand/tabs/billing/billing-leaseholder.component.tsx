@@ -2,7 +2,7 @@ import { BillingFormData, BillingRecipient } from '@casedata/interfaces/billing'
 import { PrettyRole, Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact } from '@casedata/interfaces/stakeholder';
 import { FormControl, FormErrorMessage, FormLabel, Select } from '@sk-web-gui/react';
-import { useCasedataStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
 import { useEffect, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 interface BillingLeaseholderProps {

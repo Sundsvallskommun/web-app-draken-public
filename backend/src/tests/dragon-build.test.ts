@@ -3,8 +3,8 @@ import { useExpressServer } from 'routing-controllers';
 import request from 'supertest';
 
 import { assertDragonBuild } from '@/config/dragon-build';
-import { configureSupportInvestigationProfile, getSupportInvestigationProfile } from '@/config/support-investigation-profile';
-import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import { configureSupportApplicationProfile, getSupportApplicationProfile } from '@/config/support-application-profile';
+import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
 import { startServer } from '@/shell/start-server';
 
 import dragons from '../../../dragons.json';
@@ -28,7 +28,7 @@ describe('individual dragon deployment boundaries', () => {
     const routes = collectRegisteredRoutes(controllers);
     expect(routes.some(route => route.path.startsWith('/supporterrands/'))).toBe(support);
     expect(routes.some(route => route.path.startsWith('/casedata/'))).toBe(!support);
-    expect(routes.some(route => route.path.includes('/json-parameters/'))).toBe(definition.investigation === 'avvikelse');
+    expect(routes.some(route => route.path.includes('/json-parameters/'))).toBe(['IAF', 'VOF'].includes(id));
     expect(new Set(controllers).size).toBe(controllers.length);
 
     const app = express();
@@ -44,23 +44,33 @@ describe('individual dragon deployment boundaries', () => {
 
 describe('dragon-owned investigation composition', () => {
   it.each(Object.entries(APPLICATIONS))('%s selects its profile explicitly', (id, application) => {
-    expect(Boolean(application.investigationProfile)).toBe(dragons[id as keyof typeof dragons].investigation === 'avvikelse');
-    if (!application.investigationProfile) return;
-    configureSupportInvestigationProfile(application.investigationProfile);
-    const profile = getSupportInvestigationProfile(id);
+    expect(Boolean(application.supportProfile)).toBe(['IAF', 'VOF'].includes(id));
+    if (!application.supportProfile) return;
+    configureSupportApplicationProfile(application.supportProfile);
+    const profile = getSupportApplicationProfile(id);
     expect(profile.application).toBe(id);
     expect(profile.documents).toHaveLength(3);
-    expect(new SupportInvestigationPolicyService(undefined, profile).classificationPolicy).toBeDefined();
-    expect(getSupportInvestigationProfile(id === 'IAF' ? 'VOF' : 'IAF').documents).toEqual([]);
+    expect(new SupportApplicationPolicyService(undefined, profile).classificationPolicy).toBeDefined();
+    expect(getSupportApplicationProfile(id === 'IAF' ? 'VOF' : 'IAF').documents).toEqual([]);
   });
 });
 
 it('rejects a mismatched investigation profile before startup', async () => {
   vi.stubEnv('APPLICATION', 'IAF');
   try {
-    await expect(startServer({ ...APPLICATIONS.IAF, investigationProfile: APPLICATIONS.VOF.investigationProfile })).rejects.toThrow(
+    await expect(startServer({ ...APPLICATIONS.IAF, supportProfile: APPLICATIONS.VOF.supportProfile })).rejects.toThrow(
       'does not belong to dragon IAF',
     );
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
+
+it('validates application-owned API requirements before opening a server', async () => {
+  vi.stubEnv('APPLICATION', 'IAF');
+  vi.stubEnv('SUPPORTMANAGEMENT_API_TARGET', 'stable');
+  try {
+    await expect(startServer(APPLICATIONS.IAF)).rejects.toThrow('requires a different SupportManagement API target');
   } finally {
     vi.unstubAllEnvs();
   }

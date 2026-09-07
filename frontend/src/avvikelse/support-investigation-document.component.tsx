@@ -1,5 +1,4 @@
 'use client';
-
 import { AvvikelseLabelCategorization } from '@avvikelse/avvikelse-label-categorization.component';
 import {
   applyAvvikelseLabelClassificationSelection,
@@ -8,14 +7,17 @@ import {
 import { ArrayObjectFieldTemplate } from '@common/components/json/fields/array-object-field-template.componant';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { Alert, Label, Spinner } from '@sk-web-gui/react';
-import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useSupportStore } from '@stores/support-store';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 
-import { useInvestigationProfileStore } from '../supportmanagement/investigation/investigation-profile-store';
+import { useSupportApplicationProfileStore } from '../supportmanagement/application/support-application-profile-store';
 import { AVVIKELSE_CLASSIFICATION_POLICY } from './avvikelse-classification-policy';
 import {
   getInvestigationClassificationSchemaContract,
@@ -134,7 +136,7 @@ export function SupportInvestigationDocument({
       if (!municipalityId || !errandId) return;
 
       setLoadState('loading');
-      useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, false);
+      useSupportApplicationProfileStore.getState().setJsonParameterHandled(definition.key, false);
       setNotice(undefined);
       setDocumentDirty(false);
       setClassificationDirty(false);
@@ -166,12 +168,12 @@ export function SupportInvestigationDocument({
           etag: storedDocument?.etag,
         });
         setLoadState('ready');
-        useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, true);
+        useSupportApplicationProfileStore.getState().setJsonParameterHandled(definition.key, true);
       } catch (error) {
         if (cancelled) return;
-        console.error(`Failed to load investigation document ${definition.key}`, error);
+        logClientFailure('avvikelse.support-investigation-document.loadDocument', error);
         setLoadState('error');
-        useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, false);
+        useSupportApplicationProfileStore.getState().setJsonParameterHandled(definition.key, false);
         setNotice({
           type: isSupportInvestigationAccessDenied(error) ? 'warning' : 'error',
           message: isSupportInvestigationAccessDenied(error)
@@ -187,7 +189,7 @@ export function SupportInvestigationDocument({
       cancelled = true;
       // Without this an unmounted document stays marked as handled and its jsonParameter is
       // hidden from Ärendeuppgifter for the rest of the session.
-      useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, false);
+      useSupportApplicationProfileStore.getState().setJsonParameterHandled(definition.key, false);
     };
   }, [
     definition.key,

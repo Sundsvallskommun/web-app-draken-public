@@ -1,58 +1,44 @@
 {
   "KC": {
-    "domain": "supportmanagement",
-    "investigation": null
+    "domain": "supportmanagement"
   },
   "KA": {
-    "domain": "supportmanagement",
-    "investigation": null
+    "domain": "supportmanagement"
   },
   "MEX": {
-    "domain": "casedata",
-    "investigation": null
+    "domain": "casedata"
   },
   "PT": {
-    "domain": "casedata",
-    "investigation": null
+    "domain": "casedata"
   },
   "ROB": {
-    "domain": "supportmanagement",
-    "investigation": null
+    "domain": "supportmanagement"
   },
   "LOP": {
-    "domain": "supportmanagement",
-    "investigation": null
+    "domain": "supportmanagement"
   },
   "IK": {
-    "domain": "supportmanagement",
-    "investigation": null
+    "domain": "supportmanagement"
   },
   "MSVA": {
-    "domain": "supportmanagement",
-    "investigation": null
+    "domain": "supportmanagement"
   },
   "SE": {
-    "domain": "supportmanagement",
-    "investigation": null
+    "domain": "supportmanagement"
   },
   "BOU": {
-    "domain": "supportmanagement",
-    "investigation": null
+    "domain": "supportmanagement"
   },
   "LOK": {
-    "domain": "supportmanagement",
-    "investigation": null
+    "domain": "supportmanagement"
   },
   "IAF": {
-    "domain": "supportmanagement",
-    "investigation": "avvikelse"
+    "domain": "supportmanagement"
   },
   "VOF": {
-    "domain": "supportmanagement",
-    "investigation": "avvikelse"
+    "domain": "supportmanagement"
   },
   "AOT": {
-    "domain": "supportmanagement",
-    "investigation": "aot"
+    "domain": "supportmanagement"
   }
 }

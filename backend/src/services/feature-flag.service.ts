@@ -6,6 +6,13 @@ import { FeatureFlag } from '@/responses/featureflag.response';
 
 import ApiService from './api.service';
 
+/** Old variant rows must be migrated, never silently reinterpreted as enabled. */
+export class FeatureFlagConfigurationError extends Error {
+  constructor() {
+    super('INVESTIGATION_FLAGS_REQUIRE_MIGRATION');
+  }
+}
+
 interface FeatureFlagServiceConfiguration {
   readonly adminpanelUrl?: string;
   readonly application?: string;
@@ -99,6 +106,7 @@ export class FeatureFlagService {
   private readonly configuration: FeatureFlagServiceConfiguration;
   private snapshot?: FeatureFlagSnapshot;
   private inFlight?: Promise<readonly FeatureFlag[]>;
+  private configurationError?: FeatureFlagConfigurationError;
 
   constructor(apiService = new ApiService(), configuration: FeatureFlagServiceConfiguration = {}) {
     this.apiService = apiService;
@@ -149,9 +157,20 @@ export class FeatureFlagService {
       .then(result => {
         const flags = parseFeatureFlagResponse(result.data).filter(flag => flag.application === application && namespaces.has(flag.namespace));
         assertUniqueFlags(flags);
+        if (flags.some(flag => ['useAvvikelseInvestigation', 'useAotInvestigation'].includes(flag.name))) {
+          this.snapshot = undefined;
+          this.configurationError = new FeatureFlagConfigurationError();
+          throw this.configurationError;
+        }
         const immutableFlags = Object.freeze([...flags]);
         this.snapshot = { flags: immutableFlags, fetchedAt: now() };
+        this.configurationError = undefined;
         return immutableFlags;
+      })
+      .catch(error => {
+        // An outage after a known migration error is not evidence that configuration
+        // was repaired. Keep the explicit error until a valid snapshot arrives.
+        throw this.configurationError ?? error;
       })
       .finally(() => {
         this.inFlight = undefined;
@@ -168,6 +187,7 @@ export class FeatureFlagService {
     try {
       return [...(await this.refreshApplicationFlags(user, configuration))];
     } catch (error) {
+      if (error instanceof FeatureFlagConfigurationError) throw error;
       const staleAge = this.snapshot ? configuration.now() - this.snapshot.fetchedAt : Number.POSITIVE_INFINITY;
       if (this.snapshot && staleAge <= configuration.staleTtlMs) return [...this.snapshot.flags];
       throw error;

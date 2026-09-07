@@ -1,6 +1,7 @@
 import { Attachment } from '@casedata/interfaces/attachment';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { RelationWithErrandNumber } from '@common/services/relations-service';
 
 import { MessageNode } from './casedata-message-service';
@@ -30,7 +31,7 @@ export const getConversations: (municipalityId: string, errandId: number) => Pro
   errandId
 ) => {
   if (!errandId) {
-    console.error('No errand id found, cannot fetch. Returning.');
+    logClientFailure('casedata.casedata-conversation.getConversations');
   }
 
   const url = `casedata/${municipalityId}/namespace/errands/${errandId}/communication/conversations`;
@@ -40,7 +41,7 @@ export const getConversations: (municipalityId: string, errandId: number) => Pro
       return res.data.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching conversation for errand: ', errandId);
+      logClientFailure('casedata.casedata-conversation.getConversations', e);
       throw e;
     });
 };
@@ -51,7 +52,7 @@ export const getConversationMessages: (
   conversationId: string
 ) => Promise<ApiResponse<MessageNode[]>> = (municipalityId, errandId, conversationId) => {
   if (!errandId) {
-    console.error('No errand id found, cannot fetch. Returning.');
+    logClientFailure('casedata.casedata-conversation.getConversationMessages');
   }
   const url = `casedata/${municipalityId}/namespace/errands/${errandId}/communication/conversations/${conversationId}/messages`;
   return apiService
@@ -60,7 +61,7 @@ export const getConversationMessages: (
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching conversation for errand: ', errandId);
+      logClientFailure('casedata.casedata-conversation.getConversationMessages', e);
       throw e;
     });
 };
@@ -86,7 +87,7 @@ export const createConversation = async (
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when creating relation: ' + e);
+      logClientFailure('casedata.casedata-conversation.createConversation', e);
       throw e;
     });
 };
@@ -134,7 +135,7 @@ export const sendConversationMessage = (
     })
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when creating relation: ' + e);
+      logClientFailure('casedata.casedata-conversation.sendConversationMessage', e);
       throw e;
     });
 };
@@ -147,7 +148,7 @@ export const getConversationAttachment: (
   attachmentId: string
 ) => Promise<ApiResponse<any>> = (municipalityId, errandId, conversationId, messageId, attachmentId) => {
   if (!errandId) {
-    console.error('No errand id found, cannot fetch. Returning.');
+    logClientFailure('casedata.casedata-conversation.getConversationAttachment');
   }
 
   const url = `casedata/${municipalityId}/namespace/errands/${errandId}/communication/conversations/${conversationId}/messages/${messageId}/attachments/${attachmentId}`;
@@ -157,7 +158,7 @@ export const getConversationAttachment: (
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when fetching conversation attachment for errand: ', errandId);
+      logClientFailure('casedata.casedata-conversation.getConversationAttachment', e);
       throw e;
     });
 };

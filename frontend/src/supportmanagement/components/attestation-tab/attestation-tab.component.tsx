@@ -1,7 +1,10 @@
 import { DetailPanelWrapper } from '@common/components/detail-panel-wrapper/detail-panel-wrapper.component';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { useBillingStore, useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useBillingStore } from '@stores/billing-store';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
+import { useUserStore } from '@stores/user-store';
 import { AttestationInvoiceForm } from '@supportmanagement/components/attestation-tab/attestation-invoice-form.component';
 import AttestationsFilteringComponent, {
   AttestationFilter,

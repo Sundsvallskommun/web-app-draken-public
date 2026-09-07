@@ -5,6 +5,7 @@ import {
   invoiceStatusLabels,
 } from '@casedata/services/contract-service';
 import { getNextScheduledBillingDate } from '@common/services/billing-data-collector-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { formatCurrency } from '@common/services/helper-service';
 import { Button, FormLabel, Label, Pagination, Spinner, Table } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
@@ -45,7 +46,7 @@ export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({
       setTotalPages(result.totalPages);
       setTotalCount(result.totalCount);
     } catch (error) {
-      console.error('Failed to load contract invoices:', error);
+      logClientFailure('casedata.contract-invoices-table.ContractInvoicesTable', error);
       setInvoices([]);
       setRecords([]);
     } finally {
@@ -64,7 +65,7 @@ export const ContractInvoicesTable: FC<ContractInvoicesTableProps> = ({
         setNextBillingDate(date || '-');
       })
       .catch((error) => {
-        console.error('Failed to load next scheduled billing date:', error);
+        logClientFailure('casedata.contract-invoices-table.ContractInvoicesTable', error);
         setNextBillingDate('-');
       });
   }, [contractId]);

@@ -309,28 +309,6 @@
   },
   {
     "type": "dependency",
-    "from": "src/common/components/commonNestedEmailArrayV2.tsx",
-    "to": "src/casedata/interfaces/role.ts",
-    "unresolvedTo": "@casedata/interfaces/role",
-    "dependencyTypes": ["aliased", "aliased-tsconfig", "aliased-tsconfig-paths", "local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "core-does-not-import-domains"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/common/components/commonNestedEmailArrayV2.tsx",
-    "to": "src/supportmanagement/services/support-errand-service.ts",
-    "unresolvedTo": "@supportmanagement/services/support-errand-service",
-    "dependencyTypes": ["aliased", "aliased-tsconfig", "aliased-tsconfig-paths", "local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "core-does-not-import-domains"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/common/components/linked-errands-disclosure/relation-tables/relations-from-table.component.tsx",
     "to": "src/casedata/interfaces/case-label.ts",
     "unresolvedTo": "@casedata/interfaces/case-label",
@@ -353,62 +331,7 @@
   },
   {
     "type": "dependency",
-    "from": "src/common/components/message/message-avatar.component.tsx",
-    "to": "src/casedata/services/casedata-message-service.ts",
-    "unresolvedTo": "@casedata/services/casedata-message-service",
-    "dependencyTypes": ["aliased", "aliased-tsconfig", "aliased-tsconfig-paths", "local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "core-does-not-import-domains"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/common/components/message/message-avatar.component.tsx",
-    "to": "src/supportmanagement/services/support-message-service.ts",
-    "unresolvedTo": "@supportmanagement/services/support-message-service",
-    "dependencyTypes": ["aliased", "aliased-tsconfig", "aliased-tsconfig-paths", "local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "core-does-not-import-domains"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "src/common/components/referred-from-errand-information/referred-from-errand-information.component.tsx",
-    "to": "src/supportmanagement/services/support-errand-service.ts",
-    "unresolvedTo": "@supportmanagement/services/support-errand-service",
-    "dependencyTypes": ["aliased", "aliased-tsconfig", "aliased-tsconfig-paths", "local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "core-does-not-import-domains"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/common/components/sidebar/sidebar.component.tsx",
-    "to": "src/casedata/components/errand/sidebar/sidebar-tooltip.component.tsx",
-    "unresolvedTo": "../../../casedata/components/errand/sidebar/sidebar-tooltip.component",
-    "dependencyTypes": ["local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "core-does-not-import-domains"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/common/interfaces/sidebar-button.ts",
-    "to": "src/casedata/interfaces/errand-status.ts",
-    "unresolvedTo": "@casedata/interfaces/errand-status",
-    "dependencyTypes": ["aliased", "aliased-tsconfig", "aliased-tsconfig-paths", "local", "import"],
-    "rule": {
-      "severity": "error",
-      "name": "core-does-not-import-domains"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "src/common/interfaces/sidebar-button.ts",
     "to": "src/supportmanagement/services/support-errand-service.ts",
     "unresolvedTo": "@supportmanagement/services/support-errand-service",
     "dependencyTypes": ["aliased", "aliased-tsconfig", "aliased-tsconfig-paths", "local", "import"],

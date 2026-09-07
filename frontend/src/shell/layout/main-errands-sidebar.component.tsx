@@ -6,7 +6,9 @@ import { attestationEnabled, contractsEnabled } from '@common/services/feature-f
 import { appConfig } from '@config/appconfig';
 import { applicationUi } from '@dragon';
 import { Badge, Button, cx, Divider, Logo, UserMenu } from '@sk-web-gui/react';
-import { useBillingStore, useConfigStore, useUserStore } from '@stores/index';
+import { useBillingStore } from '@stores/billing-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { ChevronsLeft, ChevronsRight, FileText, SquarePen } from 'lucide-react';
 import NextLink from 'next/link';

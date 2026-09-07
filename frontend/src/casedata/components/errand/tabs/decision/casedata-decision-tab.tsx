@@ -1,5 +1,4 @@
 'use client';
-
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
 import { getLabelFromCaseType } from '@casedata/interfaces/case-label';
 import { ContractData } from '@casedata/interfaces/contract-data';
@@ -46,6 +45,7 @@ import { useErrandAssetServices } from '@common/hooks/use-asset-services';
 import { Template } from '@common/interfaces/template';
 import { isMEX, isPT } from '@common/services/application-service';
 import { deleteDraftAsset, getDraftAssets, updateAsset } from '@common/services/asset-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { base64Decode } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -67,7 +67,9 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import dayjs from 'dayjs';
 import { Download, Gavel, HandHelping, SendHorizontal } from 'lucide-react';
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
@@ -493,7 +495,7 @@ export const CasedataDecisionTab: FC<{
       });
   };
   const onError = (e: any) => {
-    console.error('Something went wrong when saving decision', e);
+    logClientFailure('casedata.casedata-decision-tab.onError', e);
   };
 
   useEffect(() => {

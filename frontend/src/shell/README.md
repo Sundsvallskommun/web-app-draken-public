@@ -33,10 +33,10 @@ again after Adminpanel flags are applied. See the [development guide](../../../d
 
 - **Identity** is one explicit value: which dragon this is. The build selects its application entrypoint.
   An unknown or empty value is a startup error, never a fallback to some default dragon.
-- **Variant** is exactly one of a set of mutually exclusive implementations, today the
-  investigation tab (`useAvvikelseInvestigation` vs `useAotInvestigation`). Enabling two is a
-  configuration conflict and startup/runtime validation rejects it. Only the implementation
-  supplied by the selected dragon is available.
+- **Implementation** is supplied directly by the selected application's `configureApplication`.
+  IAF/VOF bind Avvikelse, AOT binds its own investigation, other applications bind `null`.
+  The single `useInvestigation` flag controls activation. Enabling it without an implementation
+  is a configuration error. No flag or catalog property chooses the implementation.
 - **Capability** is an independent flag in `appConfig.features` that combines freely with the
   others (`useBilling`, `useClosingMessageCheckbox`, ...). Capabilities are rendering decisions.
 

@@ -1,4 +1,4 @@
-import { useInvestigationProfileStore } from '../supportmanagement/investigation/investigation-profile-store';
+import { useSupportApplicationProfileStore } from '../supportmanagement/application/support-application-profile-store';
 import {
   type AvvikelseClassificationPlacement,
   resolveSupportErrandClassificationPlacement,
@@ -27,4 +27,4 @@ export const resolveAvvikelseClassificationPlacement = (
  * adapter; avvikelse resolves its own placement directly.
  */
 export const getAvvikelseClassificationPlacement = (): AvvikelseClassificationPlacement =>
-  resolveAvvikelseClassificationPlacement(useInvestigationProfileStore.getState().profile);
+  resolveAvvikelseClassificationPlacement(useSupportApplicationProfileStore.getState().profile);

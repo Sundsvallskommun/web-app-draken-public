@@ -36,6 +36,7 @@ import { Channels } from '@casedata/interfaces/channels';
 import { IErrand } from '@casedata/interfaces/errand';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { apiService } from '@common/services/api-service';
+import { logClientWarning } from '@common/services/client-diagnostics';
 import escapeStringRegexp from 'escape-string-regexp';
 
 import { PROCESS_PARAMETER_KEYS } from './process-service';
@@ -309,7 +310,7 @@ export const extraParametersToUppgiftMapper: (errand: IErrand) => UppgiftField[]
         }
       }
     } catch (error) {
-      console.warn('Could not map extraParameter:', param, error);
+      logClientWarning('casedata.casedata-extra-parameters.extraParametersToUppgiftMapper', error);
     }
   });
 

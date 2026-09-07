@@ -30,9 +30,11 @@ import {
 import { All, ApiPriority, Priority } from '@common/interfaces/priority';
 import { User } from '@common/interfaces/user';
 import { getApplicationEnvironment, isMEX, isPT } from '@common/services/application-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import sanitized from '@common/services/sanitizer-service';
 import { useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
@@ -288,7 +290,7 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
     };
     return ierrand;
   } catch (err) {
-    console.error('Error: could not map errands.', err);
+    logClientFailure('casedata.casedata-errand.mapErrandToIErrand', err);
     throw err;
   }
 };
@@ -674,7 +676,7 @@ export const saveErrand: (data: Partial<IErrand> & { municipalityId: string }) =
           return result;
         })
         .catch((e) => {
-          console.error('Something went wrong when patching errand');
+          logClientFailure('casedata.casedata-errand.saveErrand', e);
           return Promise.reject(result);
         })
     : apiService
@@ -692,7 +694,7 @@ export const saveErrand: (data: Partial<IErrand> & { municipalityId: string }) =
           return result;
         })
         .catch((e) => {
-          console.error('Something went wrong when creating errand');
+          logClientFailure('casedata.casedata-errand.saveErrand', e);
           return Promise.reject(result);
         });
 };
@@ -708,7 +710,7 @@ export const updateErrandStatus = async (municipalityId: string, id: string, sta
       return res;
     })
     .catch((e) => {
-      console.error('Something went wrong when updating errand status', e);
+      logClientFailure('casedata.casedata-errand.updateErrandStatus', e);
       throw 'Något gick fel när ärendets status skulle uppdateras.';
     });
 };
@@ -918,7 +920,7 @@ export const setErrandStatus = async (
       return res.data;
     })
     .catch((e) => {
-      console.error('Something went wrong when suspending the errand', e);
+      logClientFailure('casedata.casedata-errand.setErrandStatus', e);
       throw new Error('Något gick fel när ärendet skulle parkeras.');
     });
 };
@@ -959,7 +961,7 @@ export const appealErrand: (data: Partial<IErrand> & { municipalityId: string })
       return result;
     })
     .catch((e) => {
-      console.error('Something went wrong when appealing errand');
+      logClientFailure('casedata.casedata-errand.appealErrand', e);
       return result;
     });
 };

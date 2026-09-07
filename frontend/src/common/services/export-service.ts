@@ -1,9 +1,9 @@
 import { Render } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 
-export const renderPdf = <T>(url: string, data: T, includeParameters?: string[]) =>
+export const renderPdf = <T>(url: string, data: T) =>
   apiService
-    .post<ApiResponse<Render>, T>(url, data, includeParameters)
+    .post<ApiResponse<Render>, T>(url, data)
     .then((res) => {
       const pdfBase64 = res.data.data.output;
 

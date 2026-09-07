@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 import { test } from 'vitest';
 
-import type { InvestigationProfile } from '../supportmanagement/investigation/investigation-profile';
+import type { SupportApplicationProfile } from '../supportmanagement/application/support-application-profile';
 import { resolveInvestigationTabState } from './investigation-tab-state';
 
 const document = () => ({
@@ -12,14 +12,14 @@ const document = () => ({
   ownerLabel: 'Enhetschef',
 });
 
-const profile = (overrides: Partial<InvestigationProfile> = {}): InvestigationProfile =>
+const profile = (overrides: Partial<SupportApplicationProfile> = {}): SupportApplicationProfile =>
   ({
     application: 'IAF',
     state: 'active',
     documents: [document()],
     registration: { mode: 'enabled' },
     ...overrides,
-  } as InvestigationProfile);
+  } as SupportApplicationProfile);
 
 test('an unsettled profile shows the loading state', () => {
   assert.equal(resolveInvestigationTabState('idle', null), 'loading');

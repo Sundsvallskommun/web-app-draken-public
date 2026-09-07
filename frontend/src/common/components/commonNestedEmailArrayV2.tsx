@@ -1,15 +1,10 @@
-import { PrettyRole } from '@casedata/interfaces/role';
-import { appConfig } from '@config/appconfig';
 import { Button, Chip, cx, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
-import { useMetadataStore } from '@stores/index';
-import { ContactChannelType } from '@supportmanagement/services/support-errand-service';
-import { useEffect, useState } from 'react';
 import { useFieldArray } from 'react-hook-form';
 
 type size = 'sm' | 'md' | 'lg';
 
 interface CommonNestedEmailArrayV2Props {
-  errand: any;
+  listedEmails?: readonly { email: string; role: string }[];
   register: any;
   errors: any;
   watch: any;
@@ -25,7 +20,7 @@ interface CommonNestedEmailArrayV2Props {
 }
 
 const CommonNestedEmailArrayV2 = ({
-  errand,
+  listedEmails = [],
   register,
   errors,
   watch,
@@ -39,47 +34,10 @@ const CommonNestedEmailArrayV2 = ({
   size = 'sm',
 }: CommonNestedEmailArrayV2Props) => {
   const { emails, existingEmail, newEmail } = watch();
-  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const { fields, remove, append } = useFieldArray<{ emails: { value: string }[] }>({
     control,
     name: 'emails',
   });
-
-  const [listedEmails, setListedEmails] = useState<{ email: string; role: string[] }[]>([]);
-
-  useEffect(() => {
-    const stakeholders: { email: string; role: string[] }[] = [];
-
-    if (appConfig.isCaseData) {
-      errand?.stakeholders?.map((stakeholder: any) => {
-        if (stakeholder?.emails?.length) {
-          stakeholder?.emails?.map((email: any) => {
-            stakeholders.push({
-              email: email.value ?? '',
-              role: [(PrettyRole as Record<string, string>)[stakeholder?.roles[0]] ?? ''],
-            });
-          });
-        }
-      });
-    } else {
-      errand?.stakeholders?.map((stakeholder: any) => {
-        if (stakeholder?.contactChannels?.length) {
-          stakeholder?.contactChannels?.map((channel: any) => {
-            if (channel.type === ContactChannelType.EMAIL || channel.type === ContactChannelType.Email) {
-              const role = supportMetadata?.roles?.find((r) => r.name === stakeholder.role)?.displayName;
-              stakeholders.push({
-                email: channel?.value ?? [],
-                role: [role ?? ''],
-              });
-            }
-          });
-        }
-      });
-    }
-
-    setListedEmails(stakeholders);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [errand?.stakeholders]);
 
   return (
     <FormControl id={'emails'} className="w-full" size={size as size}>

@@ -28,7 +28,7 @@ export const exportErrands: (
     caseLabel: getLabelFromCaseType(errand.caseType),
   }));
 
-  return renderPdf(url, { applicationName: appConfig.applicationName, errands: preparedErrands }, includeParameters);
+  return renderPdf(url, { applicationName: appConfig.applicationName, errands: preparedErrands });
 };
 
 export const exportSingleErrand: (
@@ -63,5 +63,5 @@ export const exportSingleErrand: (
       })),
   };
 
-  return renderPdf(url, preparedErrand, includeParameters);
+  return renderPdf(url, preparedErrand);
 };

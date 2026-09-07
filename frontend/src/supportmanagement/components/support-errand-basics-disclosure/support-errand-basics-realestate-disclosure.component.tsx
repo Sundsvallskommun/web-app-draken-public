@@ -1,7 +1,7 @@
 import Facilities from '@common/components/facilities/facilities';
 import { FacilityDTO } from '@common/interfaces/facilities';
 import { Disclosure } from '@sk-web-gui/react';
-import { useSupportStore } from '@stores/index';
+import { useSupportStore } from '@stores/support-store';
 import {
   isSupportErrandLocked,
   SupportErrand,

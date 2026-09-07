@@ -1,7 +1,7 @@
 import { Priority } from '@common/interfaces/priority';
 import { Admin } from '@common/services/user-service';
 import { Chip } from '@sk-web-gui/react';
-import { useMetadataStore } from '@stores/index';
+import { useMetadataStore } from '@stores/metadata-store';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import type { LabelFilterGroupProjection } from '@supportmanagement/filters/label-filter-projector';
 import { reduceLabelFilterSelection } from '@supportmanagement/filters/label-filter-selection';

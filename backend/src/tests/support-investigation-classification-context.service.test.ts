@@ -1,9 +1,9 @@
+import { createAvvikelseSupportApplicationProfile } from '@/avvikelse/application-profile';
 import { assertSupportInvestigationClassificationContext } from '@/avvikelse/classification-context';
 import { resolveIafVofInvestigationClassificationPolicy } from '@/avvikelse/classification-policy';
-import { createAvvikelseInvestigationProfile } from '@/avvikelse/investigation-profile';
 
 const policy = resolveIafVofInvestigationClassificationPolicy(
-  createAvvikelseInvestigationProfile({
+  createAvvikelseSupportApplicationProfile({
     application: 'IAF',
     documents: [
       { key: 'manager-document', schemaName: 'utredning-enhetschef', tabLabel: 'Manager', ownerLabel: 'Manager' },

@@ -9,6 +9,7 @@ import {
 } from '@casedata/services/casedata-errand-service';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { Badge, Button, Spinner } from '@sk-web-gui/react';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { FC, useMemo } from 'react';
@@ -28,7 +29,7 @@ export const CasedataFilterSidebarStatusSelector: FC<{
   const suspendedErrands = useUiSettingsStore((s) => s.suspendedErrands);
   const closedErrands = useUiSettingsStore((s) => s.closedErrands);
 
-  const updateStatusFilter = (ss: ErrandStatus[]) => {
+  const updateStatusFilter = (ss: readonly ErrandStatus[]) => {
     try {
       const labelsToKeys: Record<ErrandStatus, string> = {} as Record<ErrandStatus, string>;
       Object.entries(ErrandStatus).forEach(([k, v]) => {
@@ -39,11 +40,11 @@ export const CasedataFilterSidebarStatusSelector: FC<{
       setFilter({ ...filter, status });
       setSelectedErrandStatuses(statusKeys as ErrandStatus[]);
     } catch (error) {
-      console.error('Error updating status filter');
+      logClientFailure('casedata.casedata-filter-sidebarstatus-selector.updateStatusFilter', error);
     }
   };
 
-  const casedataSidebarButtons: SidebarButton[] = useMemo(
+  const casedataSidebarButtons: SidebarButton<ErrandStatus>[] = useMemo(
     () => [
       {
         label: getStatusLabel(newStatuses),
@@ -88,14 +89,12 @@ export const CasedataFilterSidebarStatusSelector: FC<{
     <>
       {casedataSidebarButtons?.map((button) => {
         const buttonIsActive = button.statuses.some((s) => {
-          return selectedErrandStatuses
-            .map((s) => ErrandStatus[s as keyof typeof ErrandStatus])
-            .includes(s as ErrandStatus);
+          return selectedErrandStatuses.map((s) => ErrandStatus[s as keyof typeof ErrandStatus]).includes(s);
         });
         return (
           <Button
             onClick={() => {
-              updateStatusFilter(button.statuses as ErrandStatus[]);
+              updateStatusFilter(button.statuses);
               setSidebarLabel(button.label);
               setShowContractTable(false);
             }}

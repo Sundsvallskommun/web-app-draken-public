@@ -1,6 +1,6 @@
 import { Badge, Button } from '@sk-web-gui/react';
-import { useUserStore } from '@stores/index';
 import { useNotificationStore } from '@stores/notification-store';
+import { useUserStore } from '@stores/user-store';
 import { Bell } from 'lucide-react';
 
 import { getFilteredNotifications } from './notification-utils';

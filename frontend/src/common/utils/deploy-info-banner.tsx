@@ -1,5 +1,5 @@
 'use client';
-
+import { logClientWarning } from '@common/services/client-diagnostics';
 import { useEffect, useState } from 'react';
 
 type DeployInfo = {
@@ -30,7 +30,7 @@ export function DeployInfoBanner() {
         .then((data) => {
           setInfo(data);
         })
-        .catch((err) => console.warn('Kunde inte läsa deploy-info.json', url, err));
+        .catch((err) => logClientWarning('common.deploy-info-banner.DeployInfoBanner', err));
     }
   }, []);
 

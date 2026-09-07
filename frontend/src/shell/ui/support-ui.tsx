@@ -6,6 +6,8 @@ import { useConfigStore } from '@stores/config-store';
 import { useMetadataStore } from '@stores/metadata-store';
 import { useSupportStore } from '@stores/support-store';
 import { useUserStore } from '@stores/user-store';
+import { isSupportRegistrationEnabled } from '@supportmanagement/application/support-application-profile';
+import { useSupportApplicationProfileStore } from '@supportmanagement/application/support-application-profile-store';
 import { AttestationTab } from '@supportmanagement/components/attestation-tab/attestation-tab.component';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 import { OngoingSupportErrands } from '@supportmanagement/components/ongoing-support-errands/ongoing-support-errands.component';
@@ -15,8 +17,6 @@ import {
   type SupportManagementFilter,
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
-import { isSupportRegistrationEnabled } from '@supportmanagement/investigation/investigation-profile';
-import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { getErrandTypeLabel } from '@supportmanagement/services/support-label-classification-service';
 import {
   acknowledgeSupportNotification,
@@ -68,7 +68,8 @@ export const supportUi: ApplicationUi = {
       </>
     );
   },
-  useRegistrationEnabled: () => isSupportRegistrationEnabled(useInvestigationProfileStore((state) => state.profile)),
+  useRegistrationEnabled: () =>
+    isSupportRegistrationEnabled(useSupportApplicationProfileStore((state) => state.profile)),
   notifications: {
     list: getSupportNotifications,
     acknowledge: (municipalityId, notification) =>

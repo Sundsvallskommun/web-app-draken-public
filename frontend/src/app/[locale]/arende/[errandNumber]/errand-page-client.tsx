@@ -3,7 +3,7 @@
 import { appConfig } from '@config/appconfig';
 import { applicationUi } from '@dragon';
 import Layout from '@shell/layout/layout.component';
-import { useConfigStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
 import NextLink from 'next/link';
 import { useRef } from 'react';
 

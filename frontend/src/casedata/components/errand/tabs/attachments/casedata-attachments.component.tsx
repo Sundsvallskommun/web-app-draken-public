@@ -27,7 +27,8 @@ import { base64ToFile, mapAttachmentToUploadFile } from '@common/services/attach
 import { imageMimeTypes, MAX_FILE_SIZE_MB } from '@common/services/attachment-upload-policy';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, FileUpload, PopupMenu, UploadFile, useConfirm } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
 import dayjs from 'dayjs';
 import { Eye, Pencil, Trash, Upload } from 'lucide-react';
 import { FC, Fragment, useEffect, useState } from 'react';

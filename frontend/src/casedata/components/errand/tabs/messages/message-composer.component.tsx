@@ -1,5 +1,4 @@
 'use client';
-
 import { Attachment, MEXAttachmentLabels, PTAttachmentLabels } from '@casedata/interfaces/attachment';
 import { Channels } from '@casedata/interfaces/channels';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
@@ -14,7 +13,7 @@ import {
   sendMessage,
   sendSms,
 } from '@casedata/services/casedata-message-service';
-import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
+import { getOwnerStakeholder, getStakeholderEmailOptions } from '@casedata/services/casedata-stakeholder-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import TextEditor from '@common/components/dynamic-text-editor';
@@ -24,6 +23,7 @@ import { useMessageBodyTemplateState } from '@common/hooks/use-message-body-temp
 import { useMessageTemplates } from '@common/hooks/useMessageTemplates';
 import { isMEX } from '@common/services/application-service';
 import { ACCEPTED_UPLOAD_FILETYPES } from '@common/services/attachment-upload-policy';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import {
   invalidPhoneMessage,
   phonePattern,
@@ -55,7 +55,9 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import { File, Paperclip, X } from 'lucide-react';
 import { FC, useEffect, useMemo, useState } from 'react';
 import { Resolver, useFieldArray, useForm } from 'react-hook-form';
@@ -304,7 +306,7 @@ export const MessageComposer: FC<{
             message: `Något gick fel när meddelandet skickades`,
             status: 'error',
           });
-          console.error('Något gick fel när meddelandet skickades', e);
+          logClientFailure('casedata.message-composer.onSubmit', e);
           setError(true);
           setIsLoading(false);
           return;
@@ -684,7 +686,7 @@ export const MessageComposer: FC<{
             <>
               <FormControl id="messageEmail" className="w-full">
                 <CommonNestedEmailArrayV2
-                  errand={errand!}
+                  listedEmails={getStakeholderEmailOptions(errand?.stakeholders)}
                   disabled={errand ? isMessagesLocked(errand) : false}
                   data-cy="email-input"
                   key={`nested-email-array`}

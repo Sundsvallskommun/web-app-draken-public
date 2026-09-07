@@ -15,9 +15,12 @@ import {
 import { setAdministrator } from '@casedata/services/casedata-stakeholder-service';
 import { phaseChangeInProgress, triggerErrandPhaseChange } from '@casedata/services/process-service';
 import { isPT } from '@common/services/application-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, FormErrorMessage, Spinner, useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import { ArrowRight } from 'lucide-react';
 import { IconName } from 'lucide-react/dynamic';
 import { JSX, useEffect, useState } from 'react';
@@ -173,7 +176,7 @@ export const PhaseChanger = () => {
   };
 
   const onError = () => {
-    console.error('Something went wrong when saving');
+    logClientFailure('casedata.phasechanger.onError');
   };
 
   const errandSave = useSaveCasedataErrand(false);

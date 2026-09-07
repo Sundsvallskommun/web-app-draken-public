@@ -1,4 +1,5 @@
 import { apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { Admin } from '@common/services/user-service';
 import { ParsedSupportEvent } from '@supportmanagement/interfaces/supportEvent';
 import {
@@ -6,6 +7,7 @@ import {
   RevisionDifferenceData,
   SupportRevisionDifference,
 } from '@supportmanagement/interfaces/supportRevisionDiff';
+import { escapeHTML } from 'underscore.string';
 
 import { Channels } from './support-errand-service';
 
@@ -108,15 +110,19 @@ const parseGenericStringDiff: (
 ) => { title: string; description: string } = (d, key, keyMapper) => {
   const operation = parseDiffOperation(d);
   const { value, fromValue } = extractValues(d);
-  const strVal = value as string;
+  const displayValue = (raw: string | undefined): string => {
+    if (!keyMapper) return raw ?? '(tomt)';
+    if (raw === undefined || raw === null || raw === '') return '(tomt)';
+    const code = String(raw);
+    // Keep unknown stored codes visible as text. Prototype members are not metadata labels.
+    return escapeHTML(Object.hasOwn(keyMapper, code) ? keyMapper[code] : code);
+  };
   const details =
     d.op === 'add'
-      ? `<p>${keyMapper ? keyMapper[strVal] : strVal}</p>`
+      ? `<p>${displayValue(value as string)}</p>`
       : d.op === 'replace'
-      ? `<div><p>Före: ${
-          keyMapper && fromValue ? keyMapper[fromValue] || '(tomt)' : fromValue ?? '(tomt)'
-        }</p><p>Efter: ${keyMapper ? keyMapper[strVal] : value}</p></div>`
-      : `<p>${value}</p>`;
+      ? `<div><p>Före: ${displayValue(fromValue)}</p><p>Efter: ${displayValue(value as string)}</p></div>`
+      : `<p>${displayValue(value as string)}</p>`;
   return { title: `${key} ${operation}`, description: `<p>${details}</p>` };
 };
 
@@ -248,7 +254,7 @@ export const fetchRevisionDiff: (
     .get<RevisionDifferenceData>(url)
     .then((res) => res.data.operations.map((diff) => parseDiff(diff, keyMapper, admins)))
     .catch((e) => {
-      console.error('Something went wrong when fetching revision difference', e);
+      logClientFailure('supportmanagement.support-revision.fetchRevisionDiff', e);
       throw e;
     });
 };

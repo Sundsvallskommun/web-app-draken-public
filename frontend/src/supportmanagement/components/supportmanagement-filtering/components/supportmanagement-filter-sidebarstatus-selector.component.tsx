@@ -1,5 +1,6 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { SidebarButton } from '@common/interfaces/sidebar-button';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { Badge, Button, Spinner } from '@sk-web-gui/react';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { getSupportErrandPolicy } from '@supportmanagement/policy/support-errand-policy';
@@ -36,13 +37,13 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
   const suspendedSupportErrands = useUiSettingsStore((s) => s.suspendedErrands);
   const solvedSupportErrands = useUiSettingsStore((s) => s.closedErrands);
 
-  const updateStatusFilter = (ss: Status[]) => {
+  const updateStatusFilter = (ss: readonly Status[]) => {
     try {
       const status = ss.join(',');
       setFilter({ ...filter, status });
-      setSelectedErrandStatuses(ss);
+      setSelectedErrandStatuses([...ss]);
     } catch (error) {
-      console.error('Error updating status filter');
+      logClientFailure('supportmanagement.supportmanagement-filter-sidebarstatus-selector.updateStatusFilter', error);
     }
   };
 
@@ -50,7 +51,7 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
   // recruitment steps); the other groups are the same everywhere.
   const { ongoingStatuses } = getSupportErrandPolicy();
 
-  const supportSidebarButtons = useMemo<SidebarButton[]>(
+  const supportSidebarButtons = useMemo<SidebarButton<Status>[]>(
     () => [
       {
         label: getStatusLabel(newStatuses) ?? '',
@@ -101,11 +102,11 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
   return (
     <>
       {supportSidebarButtons?.map((button) => {
-        const buttonIsActive = selectedErrandStatuses.includes(button.key as Status);
+        const buttonIsActive = selectedErrandStatuses.includes(button.key);
         return (
           <Button
             onClick={() => {
-              updateStatusFilter(button.statuses as Status[]);
+              updateStatusFilter(button.statuses);
               setSidebarLabel(button.label);
               setShowAttestationTable(false);
             }}

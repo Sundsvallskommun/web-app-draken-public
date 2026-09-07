@@ -33,7 +33,7 @@ import { Role } from '@/interfaces/role';
 import { ContactChannelType } from '@/interfaces/support-contactchannel';
 import { SupportManagementChannels } from '@/interfaces/supportmanagement-channel.interface';
 import { User } from '@/interfaces/users.interface';
-import { logger } from '@/utils/logger';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL, buildCategoryFilter, findLeafComponents, removeUnreachablePaths, toOffsetDateTime } from '@/utils/util';
 
 import ApiService from './api.service';
@@ -863,7 +863,7 @@ export const toAttachmentDto = (attachmentData: ErrandAttachment, fileData: Arra
     });
     data.append('attachment', JSON.stringify(metadata));
   } else {
-    logger.error('Trying to save attachment without name or data');
+    logApplicationFailure('Trying to save attachment without name or data');
     throw new Error('File missing');
   }
 

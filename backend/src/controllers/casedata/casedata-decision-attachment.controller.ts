@@ -13,7 +13,7 @@ import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { AttachmentChannelEnum, Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
-import { logger } from '@/utils/logger';
+import { logApplicationEvent, logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL } from '@/utils/util';
 
 interface ResponseData<T> {
@@ -60,13 +60,13 @@ export class CaseDataDecisionAttachmentController {
       data.append(`file`, files[0].buffer, { filename: files[0].originalname });
       data.append('attachment', JSON.stringify(metadata));
     } else {
-      logger.error('Trying to save decision attachment without name or data');
+      logApplicationFailure('Trying to save decision attachment without name or data');
       throw new Error('File missing');
     }
     const response = await this.apiService
       .post<ErrandDTO, FormData>({ url, baseURL, data, headers: { 'Content-Type': data.getHeaders()['content-type'] } }, req.user)
       .catch(e => {
-        logger.error('Decision attachment post error:', e);
+        logApplicationFailure('Decision attachment post error', e);
         throw e;
       });
     return { data: response.data, message: `Attachment created on decision ${decisionId}` };
@@ -120,10 +120,9 @@ export class CaseDataDecisionAttachmentController {
   ): Promise<ResponseData<string>> {
     const url = `${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/decisions/${decisionId}/attachments/${attachmentId}`;
     const baseURL = apiURL(this.SERVICE);
-    logger.info('Removing decision attachment:', attachmentId, 'from decision', decisionId);
+    logApplicationEvent('Removing decision attachment:');
     await this.apiService.delete<ErrandDTO>({ url, baseURL }, req.user).catch(e => {
-      logger.error('Something went wrong when deleting decision attachment');
-      logger.error(e);
+      logApplicationFailure('Something went wrong when deleting decision attachment', e);
       throw e;
     });
     return { data: 'ok', message: `Attachment ${attachmentId} removed` };

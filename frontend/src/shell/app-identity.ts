@@ -11,5 +11,9 @@ import { DRAGON_IDS, type DragonId } from '@dragons/dragon-module';
 export const APP_IDENTITY: string = String(process.env.NEXT_PUBLIC_APPLICATION || '');
 // next.config.js injects this as a fixed build value; entrypoint.sh never replaces it.
 export const BUILT_DRAGON_ID: string = process.env.DRAKEN_BUILD_DRAGON || '';
+export const BUILT_REVISION: string = process.env.DRAKEN_BUILD_REVISION || '';
+// Local dev and local production E2E builds have no reviewed deployment manifest. Images require
+// a manifest hash in their entrypoint before this runtime placeholder is substituted.
+export const DEPLOYMENT_ID: string = String(process.env.NEXT_PUBLIC_DEPLOYMENT_ID || 'development');
 
 export const isDragonId = (value: string): value is DragonId => (DRAGON_IDS as readonly string[]).includes(value);

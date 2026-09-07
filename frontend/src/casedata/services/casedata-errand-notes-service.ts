@@ -1,6 +1,7 @@
 import { CreateErrandNoteDto, ErrandNote } from '@casedata/interfaces/errandNote';
 import { noteIsComment, noteIsTjansteanteckning } from '@common/interfaces/note-visibility';
 import { ApiResponse, apiService } from '@common/services/api-service';
+import { logClientFailure } from '@common/services/client-diagnostics';
 import { AxiosResponse } from 'axios';
 
 export const saveErrandNote: (
@@ -17,7 +18,7 @@ export const saveErrandNote: (
     apiCall = apiService.patch<boolean, CreateErrandNoteDto>(url, note);
   }
   return apiCall.catch((e) => {
-    console.error('Something went wrong when adding/editing note: ', note);
+    logClientFailure('casedata.casedata-errand-notes.saveErrandNote', e);
     throw e;
   });
 };
@@ -28,11 +29,11 @@ export const deleteErrandNote: (
   noteId: string
 ) => Promise<AxiosResponse<boolean>> = (municipalityId, errandId, noteId) => {
   if (!noteId) {
-    console.error('No note id found, cannot delete. Returning.');
+    logClientFailure('casedata.casedata-errand-notes.deleteErrandNote');
   }
   const url = `casedata/${municipalityId}/errands/${errandId}/notes/${noteId}`;
   return apiService.deleteRequest<boolean>(url).catch((e) => {
-    console.error('Something went wrong when deleting note: ', noteId);
+    logClientFailure('casedata.casedata-errand-notes.deleteErrandNote', e);
     throw e;
   });
 };
@@ -43,7 +44,7 @@ export const signErrandNote: (
   note: CreateErrandNoteDto
 ) => Promise<AxiosResponse<boolean>> = (municipalityId, errandId, note) => {
   if (!note || !note.id) {
-    console.error('No note id found, cannot sign. Returning.');
+    logClientFailure('casedata.casedata-errand-notes.signErrandNote');
   }
   if (!note.extraParameters) {
     note.extraParameters = {};
@@ -51,7 +52,7 @@ export const signErrandNote: (
   note.extraParameters['signed'] = 'true';
   const url = `casedata/${municipalityId}/errands/${errandId}/notes/${note.id}`;
   return apiService.patch<boolean, CreateErrandNoteDto>(url, note).catch((e) => {
-    console.error('Something went wrong when signing note: ', note.id);
+    logClientFailure('casedata.casedata-errand-notes.signErrandNote', e);
     throw e;
   });
 };
@@ -62,14 +63,14 @@ export const fetchNote: (
   noteId: string
 ) => Promise<ApiResponse<ErrandNote>> = (municipalityId, errandId, noteId) => {
   if (!noteId) {
-    console.error('No note id found, cannot fetch. Returning.');
+    logClientFailure('casedata.casedata-errand-notes.fetchNote');
   }
   const url = `casedata/${municipalityId}/errands/${errandId}/notes/${noteId}`;
   return apiService
     .get<ApiResponse<ErrandNote>>(url)
     .then((res) => res.data)
     .catch((e) => {
-      console.error('Something went wrong when fetching note: ', noteId);
+      logClientFailure('casedata.casedata-errand-notes.fetchNote', e);
       throw e;
     });
 };

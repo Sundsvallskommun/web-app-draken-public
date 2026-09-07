@@ -2,15 +2,15 @@
 
 import { Alert } from '@sk-web-gui/react';
 
-import { useInvestigationProfileStore } from '../supportmanagement/investigation/investigation-profile-store';
+import { useSupportApplicationProfileStore } from '../supportmanagement/application/support-application-profile-store';
 
 /**
  * Rendered above the errand tab strip so a profile fault is visible from any tab, not only after
  * opening Utredning. The tab itself explains the same states again once opened.
  */
 export function AvvikelseInvestigationNotice() {
-  const profile = useInvestigationProfileStore((state) => state.profile);
-  const status = useInvestigationProfileStore((state) => state.status);
+  const profile = useSupportApplicationProfileStore((state) => state.profile);
+  const status = useSupportApplicationProfileStore((state) => state.status);
   const unavailable = status === 'ready' && profile?.state === 'unavailable';
 
   if (status !== 'error' && !unavailable) return null;

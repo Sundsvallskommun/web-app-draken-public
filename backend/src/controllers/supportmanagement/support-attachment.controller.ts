@@ -9,8 +9,8 @@ import { ErrandAttachmentChannelEnum } from '@/data-contracts/supportmanagement/
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
+import { logApplicationFailure } from '@/services/request-diagnostics';
 import { fileUploadOptions } from '@/utils/fileUploadOptions';
-import { logger } from '@/utils/logger';
 import { validateRequestBody } from '@/utils/validate';
 
 interface SupportAttachment {
@@ -106,14 +106,13 @@ export class SupportAttachmentController {
       data.append(`errandAttachment`, files[0].buffer, { filename: files[0].originalname });
       data.append('channel', ErrandAttachmentChannelEnum.WEB_UI);
     } else {
-      logger.error('Trying to save attachment without name or data');
+      logApplicationFailure('Trying to save attachment without name or data');
       throw new Error('File missing');
     }
     const res = await this.apiService
       .post<any, FormData>({ url, data, headers: { 'Content-Type': data.getHeaders()['content-type'] } }, req.user)
       .catch(e => {
-        logger.error(`Error when saving attachment on errand ${id}`);
-        logger.error(e);
+        logApplicationFailure('Saving support attachment', e);
         throw e;
       });
     return response.status(201).send(res.data);

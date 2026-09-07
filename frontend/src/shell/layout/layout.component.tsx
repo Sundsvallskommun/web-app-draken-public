@@ -4,7 +4,7 @@ import { getApplicationEnvironment } from '@common/services/application-service'
 import { appConfig } from '@config/appconfig';
 import { applicationUi } from '@dragon';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
-import { useUserStore } from '@stores/index';
+import { useUserStore } from '@stores/user-store';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { ExternalLink, Menu } from 'lucide-react';
 import NextLink from 'next/link';
