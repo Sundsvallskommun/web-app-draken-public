@@ -1,4 +1,5 @@
 import { CasedataMessageTabFormModel } from '@casedata/components/errand/tabs/messages/message-composer.component';
+import { DecisionChannelResult } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import {
   fetchAttachment,
@@ -16,14 +17,16 @@ import { UploadFile } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 
+// One result per channel the backend tried. Channel failures are data, not errors: only a failed
+// request throws.
 export const sendDecisionMessage: (
   municipalityId: string,
   errand: IErrand,
   html: string,
   plaintext: string
-) => Promise<boolean> = (municipalityId, errand, html, plaintext) => {
+) => Promise<DecisionChannelResult[]> = (municipalityId, errand, html, plaintext) => {
   return apiService
-    .post<ApiResponse<MessageResponse>[], { errandId: string; html: string; plaintext: string }>(
+    .post<DecisionChannelResult[], { errandId: string; html: string; plaintext: string }>(
       `casedata/${municipalityId}/message/decision`,
       {
         errandId: errand.id.toString(),
@@ -31,11 +34,7 @@ export const sendDecisionMessage: (
         plaintext,
       }
     )
-    .then((res) => {
-      const allSuccess = res.data.every((c) => c?.data?.messageId);
-      if (allSuccess) return true;
-      throw new Error('Not all channels returned a messageId');
-    })
+    .then((res) => res.data)
     .catch((e) => {
       throw new Error(e?.response?.data?.message || 'Något gick fel när beslutet skulle skickas');
     });

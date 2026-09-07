@@ -61,6 +61,10 @@ export const mockAttachmentId = 'att-1';
 export const mockRelationId = 'relation-1';
 export const mockConversationId = 'conversation-1';
 export const mockDepartment = 'MEX';
+// The message id Messaging returns, plus a decision and its attachment (CaseData numbers both)
+export const mockMessageId = 'message-1';
+export const mockDecisionId = 1;
+export const mockDecisionAttachmentId = 2;
 
 // Attachment fixtures
 export const mockFileName = 'brev.pdf';

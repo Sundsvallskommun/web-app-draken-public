@@ -44,8 +44,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
-  detail?: string;
   causeAsProblem?: ThrowableProblem;
+  detail?: string;
 }
 
 export interface ThrowableProblem {
@@ -225,21 +225,21 @@ export interface InvoiceFileStatus {
 }
 
 export interface PageBillingRecord {
-  /** @format int64 */
-  totalElements?: number;
   /** @format int32 */
   totalPages?: number;
+  /** @format int64 */
+  totalElements?: number;
   /** @format int32 */
   size?: number;
   content?: BillingRecord[];
   /** @format int32 */
   number?: number;
-  first?: boolean;
-  last?: boolean;
+  sort?: SortObject;
+  pageable?: PageableObject;
   /** @format int32 */
   numberOfElements?: number;
-  pageable?: PageableObject;
-  sort?: SortObject;
+  first?: boolean;
+  last?: boolean;
   empty?: boolean;
 }
 
@@ -249,16 +249,16 @@ export interface PageableObject {
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
+  unpaged?: boolean;
+  sort?: SortObject;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
-  unpaged?: boolean;
 }
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export enum GetFileStatusesForMonthParamsMonthEnum {

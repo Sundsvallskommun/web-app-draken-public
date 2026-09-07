@@ -13,7 +13,7 @@ För MEX (Mark och exploatering):
 | CaseData             |   12.10 |
 | Messaging            |    7.10 |
 | Templating           |     2.1 |
-| Contract             |     7.0 |
+| Contract             |    11.0 |
 | Employee             |     2.0 |
 | Party                |     2.0 |
 | SimulatorServer      |     2.0 |
@@ -50,7 +50,7 @@ För PT (Parkeringstillstånd):
 | CaseData        |   12.10 |
 | Messaging       |    7.10 |
 | Templating      |     2.1 |
-| Contract        |     7.0 |
+| Contract        |    11.0 |
 | Employee        |     2.0 |
 | SimulatorServer |     2.0 |
 | LegalEntity     |     2.0 |
