@@ -1,5 +1,7 @@
 //Subscribed APIS as lowercased
-export const APIS = [
+type Api = { name: string; service?: string; version: string };
+
+export const APIS: Api[] = [
   {
     name: 'activedirectory',
     version: '2.0',
@@ -34,7 +36,8 @@ export const APIS = [
   },
   {
     name: 'supportmanagement',
-    version: '14.9',
+    service: 'support-management-alkt-sprint',
+    version: '15.3',
   },
   {
     name: 'billingpreprocessor',
@@ -74,19 +77,7 @@ export const APIS = [
   },
 ];
 
-const serviceOverrideEnvKeys: Record<string, string> = {
-  supportmanagement: 'SUPPORTMANAGEMENT_SERVICE',
-};
-
-const getServiceOverride = (name: string): string | undefined => {
-  const envKey = serviceOverrideEnvKeys[name];
-  if (!envKey) return undefined;
-  return process.env[envKey]?.trim() || undefined;
-};
-
 export const apiServiceName = (name: string): string => {
-  const override = getServiceOverride(name);
-  if (override) return override;
   const api = APIS.find(a => a.name === name);
-  return api ? `${api.name}/${api.version}` : name;
+  return api ? `${api.service ?? api.name}/${api.version}` : name;
 };

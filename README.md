@@ -160,9 +160,11 @@ För LOK (Lokalplanering):
 
 För AOT (Alkohol och Tobak):
 
+> **PoC-branch (DRAKEN-4731) – driftsätts inte.** `APIS` i `backend/src/config/api-config.ts` pekar `supportmanagement` mot sprint-klonen `support-management-alkt-sprint/15.3` via fältet `service`. Versionen i `APIS` är global, så **alla drakar** går mot klonen på den här branchen. När ordinarie SupportManagement synkats mot alk-versionen blir detta i stället en vanlig versionsbump i `APIS`, och `service` utgår.
+
 | API               | Version |
 | ----------------- | ------: |
-| SupportManagement |    14.9 |
+| SupportManagement |    15.3 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
