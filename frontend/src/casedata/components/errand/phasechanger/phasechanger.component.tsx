@@ -1,5 +1,6 @@
 import useDisplayPhasePoller from '@casedata/hooks/displayPhasePoller';
 import { useSaveCasedataErrand } from '@casedata/hooks/useSaveCasedataErrand';
+import { IErrand } from '@casedata/interfaces/errand';
 import { ErrandPhase, UiPhase } from '@casedata/interfaces/errand-phase';
 import { ErrandStatus } from '@casedata/interfaces/errand-status';
 import { validateAttachmentsForDecision } from '@casedata/services/casedata-attachment-service';
@@ -27,6 +28,18 @@ import { JSX, useEffect, useState } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 
 import { PhaseChangerDialogComponent } from './phasechanger-dialog.component';
+
+const getDecisionDisabledMessage = (errand: IErrand, municipalityId: string): string | undefined => {
+  const attachments = validateAttachmentsForDecision(errand);
+  if (!attachments.valid) return `Ärendet har felaktiga bilagor: ${attachments.reason}`;
+  if (!validateStatusForDecision(errand).valid) {
+    return 'Ärendet har fel status för att beslut ska kunna fattas.';
+  }
+  if (!validateStakeholdersForDecision(errand).valid) return 'Ärendet saknar ärendeägare.';
+  const parameters = validateExtraParametersForDecision(errand, municipalityId);
+  if (!parameters.valid) return `Ärendeuppgifter saknas: ${parameters.reason}`;
+  return undefined;
+};
 
 export const PhaseChanger = () => {
   const municipalityId = useConfigStore((s) => s.municipalityId);
@@ -92,15 +105,7 @@ export const PhaseChanger = () => {
           </>
         ),
         disabled: !validateErrandForDecision(errand, municipalityId),
-        disabledMessage: !validateAttachmentsForDecision(errand).valid
-          ? `Ärendet har felaktiga bilagor: ${validateAttachmentsForDecision(errand).reason}`
-          : !validateStatusForDecision(errand).valid
-          ? 'Ärendet har fel status för att beslut ska kunna fattas.'
-          : !validateStakeholdersForDecision(errand).valid
-          ? 'Ärendet saknar ärendeägare.'
-          : !validateExtraParametersForDecision(errand, municipalityId).valid
-          ? `Ärendeuppgifter saknas: ${validateExtraParametersForDecision(errand, municipalityId).reason}`
-          : undefined,
+        disabledMessage: getDecisionDisabledMessage(errand, municipalityId),
       });
     } else if (uiPhase === UiPhase.beslut) {
       setPhaseChangeText({ icon: 'lightbulb', button: 'N/A', title: 'N/A?', message: <></> });
