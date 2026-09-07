@@ -3,7 +3,7 @@ import { performance } from 'node:perf_hooks';
 import { HttpException } from '@exceptions/HttpException';
 import { User } from '@interfaces/users.interface';
 import { apiURL } from '@utils/util';
-import type { AxiosResponseHeaders, RawAxiosResponseHeaders } from 'axios';
+import type { AxiosResponse, AxiosResponseHeaders, RawAxiosResponseHeaders } from 'axios';
 import axios, { AxiosHeaders, AxiosInstance, AxiosRequestConfig } from 'axios';
 
 import ApiTokenService from './api-token.service';
@@ -60,51 +60,43 @@ class ApiService {
         return Promise.reject(error);
       },
     );
-
-    this.instance.interceptors.response.use(
-      async function (response) {
-        // TODO This is an ugly workaround for the fact that setting correct API version
-        // in the location header is difficult for some APIs, such as Messaging
-        // So, for Messaging specifically, we - for now - ignore the location header
-        const diagnostics = currentRequestDiagnostics() ?? createRequestDiagnostics();
-        const token = await apiTokenService.getToken();
-        const defaultHeaders = {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'X-Request-Id': diagnostics.requestId,
-        };
-        // Rewerite location header to point to correct resource since the API response header
-        // contains an errouneous url - asset-drafts does not have an GET ../{id} endpoint.
-        // When this has been fixed, we can remove the rewrite.
-        if (response.headers.location && response.config.url?.includes('asset-drafts')) {
-          response.headers.location = response.headers.location.replace('/asset-drafts/', '/assets/');
-        }
-        const followLocation = (response.config as ApiRequestConfig).followLocation !== false;
-        if (response.headers.location && followLocation && !response.config.url?.includes('messaging')) {
-          const sentBy = response.config.headers?.['X-Sent-By'];
-          const headers = sentBy === undefined ? defaultHeaders : { ...defaultHeaders, 'X-Sent-By': sentBy };
-          const startedAt = performance.now();
-          try {
-            const followed = await axios.get(response.headers.location, { baseURL: response.config.baseURL, headers });
-            logUpstreamRequest(diagnostics, { method: 'GET', startedAt, status: followed.status });
-            return followed;
-          } catch (error) {
-            logUpstreamRequest(diagnostics, {
-              method: 'GET',
-              startedAt,
-              error,
-              ...(axios.isAxiosError(error) ? { status: error.response?.status } : {}),
-            });
-            return response;
-          }
-        }
-        return response;
-      },
-      function (error) {
-        return Promise.reject(error);
-      },
-    );
   }
+
+  /** Follow a create response only after its own status and duration have been recorded. */
+  private async followLocation<T>(response: AxiosResponse<T>): Promise<AxiosResponse<T>> {
+    const diagnostics = currentRequestDiagnostics() ?? createRequestDiagnostics();
+    const token = await apiTokenService.getToken();
+    const defaultHeaders = {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'X-Request-Id': diagnostics.requestId,
+    };
+    // The upstream asset-drafts Location points to a route without GET support.
+    if (response.headers.location && response.config.url?.includes('asset-drafts')) {
+      response.headers.location = response.headers.location.replace('/asset-drafts/', '/assets/');
+    }
+    // Messaging's Location may carry the wrong API version. Preserve its original response.
+    const followLocation = (response.config as ApiRequestConfig).followLocation !== false;
+    if (!response.headers.location || !followLocation || response.config.url?.includes('messaging')) return response;
+
+    const sentBy = response.config.headers?.['X-Sent-By'];
+    const headers = sentBy === undefined ? defaultHeaders : { ...defaultHeaders, 'X-Sent-By': sentBy };
+    const startedAt = performance.now();
+    try {
+      const followed = await axios.get<T>(response.headers.location, { baseURL: response.config.baseURL, headers });
+      logUpstreamRequest(diagnostics, { method: 'GET', startedAt, status: followed.status });
+      return followed;
+    } catch (error) {
+      logUpstreamRequest(diagnostics, {
+        method: 'GET',
+        startedAt,
+        error,
+        ...(axios.isAxiosError(error) ? { status: error.response?.status } : {}),
+      });
+      return response;
+    }
+  }
+
   private async request<T>(config: ApiRequestConfig, user: User): Promise<ApiResponse<T>> {
     const diagnostics = currentRequestDiagnostics() ?? createRequestDiagnostics();
     return withRequestDiagnostics(diagnostics, async () => {
@@ -119,24 +111,28 @@ class ApiService {
         params: { ...defaultParams, ...axiosConfig.params },
         url: axiosConfig.baseURL ? axiosConfig.url : apiURL(axiosConfig.url!),
       };
+      let upstreamResponse: AxiosResponse<T> | undefined;
       try {
-        const res = await this.instance(preparedConfig);
-        logUpstreamRequest(diagnostics, { method: config.method, startedAt, status: res.status });
+        upstreamResponse = await this.instance<T>(preparedConfig);
+        logUpstreamRequest(diagnostics, { method: config.method, startedAt, status: upstreamResponse.status });
+        const res = await this.followLocation(upstreamResponse);
         return includeResponseHeaders
           ? { data: res.data, message: 'success', headers: res.headers, status: res.status }
           : { data: res.data, message: 'success' };
       } catch (error: unknown) {
+        // Response handling can fail after a successful upstream call; do not relabel that call as failed.
+        if (!upstreamResponse) {
+          logUpstreamRequest(diagnostics, {
+            method: config.method,
+            startedAt,
+            error,
+            ...(axios.isAxiosError(error) ? { status: error.response?.status } : {}),
+          });
+        }
         if (!axios.isAxiosError(error)) {
-          logUpstreamRequest(diagnostics, { method: config.method, startedAt, error });
           throw new HttpException(500, 'Internal server error');
         }
 
-        logUpstreamRequest(diagnostics, {
-          method: config.method,
-          startedAt,
-          error,
-          status: error.response?.status,
-        });
         const { response } = error;
         if (response?.status === 404) {
           throw new HttpException(404, 'Not found');
