@@ -20,5 +20,6 @@ export function validateRelease(value: unknown): DragonRelease;
 export function readRelease(file: string): DragonRelease;
 export function readBuild(file: string): DragonBuild;
 export function assertSafeRuntimeEnvironment(environment: Readonly<Record<string, string | undefined>>): void;
+export function backendEnvironmentIssues(domain: 'casedata' | 'supportmanagement', environment: Readonly<Record<string, string | undefined>>): { missing: string[]; invalid: string[] };
 export function deploymentIdentity(release: DragonRelease): DeploymentIdentity;
 export function runtimeEnvironment(side: 'frontend' | 'backend', build: DragonBuild, release: DragonRelease, inherited: NodeJS.ProcessEnv, secretDirectory: string): NodeJS.ProcessEnv;

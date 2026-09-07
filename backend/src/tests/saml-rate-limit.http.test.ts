@@ -1,3 +1,5 @@
+import { once } from 'node:events';
+
 import express from 'express';
 import request from 'supertest';
 
@@ -47,12 +49,20 @@ it.each([
   ['198.51.100.1', '198.51.100.1', '198.51.100.2'],
   ['2001:db8:1234:5600::1', '2001:db8:1234:5600::2', '2001:db8:9999:5600::1'],
 ])('retains the 100-request limit and IP/subnet grouping for %s', async (address, sameBucket, otherBucket) => {
-  const app = createApp();
-  for (let index = 0; index < 100; index += 1) {
-    expect((await request(app).get('/saml/login').set('X-Forwarded-For', address)).status).toBe(200);
+  // One listener owns the whole sequence. Creating and closing a listener for each
+  // request can race pooled sockets when the full suite runs concurrently.
+  const server = createApp().listen(0);
+  await once(server, 'listening');
+  try {
+    const client = request(server);
+    for (let index = 0; index < 100; index += 1) {
+      expect((await client.get('/saml/login').set('X-Forwarded-For', address)).status).toBe(200);
+    }
+    expect((await client.get('/saml/login').set('X-Forwarded-For', sameBucket)).status).toBe(429);
+    expect((await client.get('/saml/login').set('X-Forwarded-For', otherBucket)).status).toBe(200);
+    expect(console.error).not.toHaveBeenCalled();
+    expect(console.warn).not.toHaveBeenCalled();
+  } finally {
+    await new Promise<void>((resolve, reject) => server.close(error => (error ? reject(error) : resolve())));
   }
-  expect((await request(app).get('/saml/login').set('X-Forwarded-For', sameBucket)).status).toBe(429);
-  expect((await request(app).get('/saml/login').set('X-Forwarded-For', otherBucket)).status).toBe(200);
-  expect(console.error).not.toHaveBeenCalled();
-  expect(console.warn).not.toHaveBeenCalled();
 });

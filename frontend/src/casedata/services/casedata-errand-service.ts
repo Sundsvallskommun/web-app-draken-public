@@ -726,7 +726,10 @@ export const validateStakeholdersForDecision: (e: IErrand) => { valid: boolean; 
   return { valid: true, reason: '' };
 };
 
-export const validateExtraParametersForDecision: (e: IErrand) => { valid: boolean; reason: string } = (e) => {
+export const validateExtraParametersForDecision = (
+  e: IErrand,
+  municipalityId: string
+): { valid: boolean; reason: string } => {
   const extraParameterLabels = (extraParametersToUppgiftMapper(e) ?? []).reduce((acc, curr) => {
     {
       if (curr?.field && curr?.label) {
@@ -736,9 +739,9 @@ export const validateExtraParametersForDecision: (e: IErrand) => { valid: boolea
     }
   }, {} as Record<string, string>);
   let requiredExtraParameters: string[] = [];
-  if (isPT() && process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260') {
+  if (isPT() && municipalityId === '2260') {
     requiredExtraParameters = ['application.applicant.capacity', 'application.applicant.signingAbility'];
-  } else if (isPT() && process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2281') {
+  } else if (isPT() && municipalityId === '2281') {
     if (e.caseType === PTCaseType.PARKING_PERMIT || e.caseType === PTCaseType.PARKING_PERMIT_RENEWAL) {
       requiredExtraParameters = ['disability.duration', 'disability.walkingAbility'];
       if (e.extraParameters?.find((p) => p.key === 'application.applicant.capacity')?.values?.[0] === 'PASSENGER') {
@@ -753,7 +756,7 @@ export const validateExtraParametersForDecision: (e: IErrand) => { valid: boolea
   }
   const missingExtraParameters: string[] = [];
   requiredExtraParameters.forEach((param) => {
-    if (e.extraParameters?.find((p) => p.key === param)?.values?.length === 0) {
+    if (!e.extraParameters?.find((p) => p.key === param)?.values?.some((value) => value.trim() !== '')) {
       missingExtraParameters.push(
         extraParameterLabels?.[param] ? `"${extraParameterLabels[param]}"` : 'Okänd parameter'
       );
@@ -765,12 +768,12 @@ export const validateExtraParametersForDecision: (e: IErrand) => { valid: boolea
   return { valid: true, reason: '' };
 };
 
-export const validateErrandForDecision: (e: IErrand) => boolean = (e) => {
+export const validateErrandForDecision = (e: IErrand, municipalityId: string): boolean => {
   return (
     validateStakeholdersForDecision(e).valid &&
     validateStatusForDecision(e).valid &&
     validateAttachmentsForDecision(e).valid &&
-    validateExtraParametersForDecision(e).valid
+    validateExtraParametersForDecision(e, municipalityId).valid
   );
 };
 

@@ -37,16 +37,6 @@ import { isMEX } from '@/services/application.service';
 import { logApplicationEvent, logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL, base64Encode } from '@/utils/util';
 
-export {
-  AgnosticMessageResponse,
-  DecisionChannel,
-  DecisionChannelResult,
-  DecisionSendStatus,
-  LetterResponse,
-  MessageClassification,
-  WebMessageResponse,
-} from '@/dtos/message.dto';
-
 @Controller()
 export class MessageController {
   private apiService = new ApiService();

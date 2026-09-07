@@ -3,6 +3,7 @@ import FormData from 'form-data';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
+import type { LabelSpec } from '@/config/support-application-profile';
 import type { SupportInvestigationClassificationLabelTree } from '@/config/support-investigation-classification';
 import { normalizeSupportManagementResourcePath } from '@/config/supportmanagement-path';
 import {
@@ -185,63 +186,6 @@ export const buildErrandFilter = (input: ErrandFilterInput): string => {
 
   return filterList.length > 0 ? `&filter=${filterList.join(' and ')}` : '';
 };
-
-export type LabelSpec = { category: string; type: string; subType?: string };
-
-export interface NewErrandDefaults {
-  classification?: { category: string; type: string };
-  labels?: LabelSpec;
-  parameters?: readonly Pick<Parameter, 'key' | 'displayName' | 'values'>[];
-}
-
-// Default classification and labels applied to a new empty errand, per application (drake).
-// Applications without a `labels` entry get no default labels.
-export const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
-  KC: { classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' } },
-  KA: {
-    classification: { category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER' },
-    labels: { category: 'ADMINISTRATION', type: 'ADMINISTRATION/CONTACT_CENTER', subType: 'ADMINISTRATION/CONTACT_CENTER/GENERAL' },
-  },
-  LOP: {
-    classification: { category: 'SALARY', type: 'SALARY.UNCATEGORIZED' },
-    labels: { category: 'SALARY', type: 'SALARY/UNCATEGORIZED', subType: 'SALARY/UNCATEGORIZED/UNCATEGORIZED' },
-  },
-  IK: {
-    classification: { category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER.UNCATEGORIZED' },
-    labels: { category: 'KSK_SERVICE_CENTER', type: 'KSK_SERVICE_CENTER/UNCATEGORIZED' },
-  },
-  MSVA: { classification: { category: 'MSVA', type: 'MSVA.UNCATEGORIZED' } },
-  ROB: { classification: { category: 'COMPLETE_RECRUITMENT', type: 'COMPLETE_RECRUITMENT.RETAKE' } },
-  SE: {
-    classification: { category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' },
-    labels: { category: 'UNCATEGORIZED', type: 'UNCATEGORIZED/UNCATEGORISED' },
-  },
-  BOU: {
-    classification: { category: 'BOU', type: 'BOU/UNCATEGORIZED' },
-    labels: { category: 'BOU', type: 'BOU/UNCATEGORIZED' },
-  },
-  LOK: {
-    classification: { category: 'IAF', type: 'IAF/WORK_AND_LIVELIHOOD' },
-    labels: { category: 'IAF', type: 'IAF/WORK_AND_LIVELIHOOD' },
-  },
-  IAF: {
-    labels: { category: 'REPORT_TYPE', type: 'REPORT_TYPE/DEVIATION' },
-    parameters: [{ key: 'eventType', displayName: 'Rapporttyp', values: ['AVVIKELSE'] }],
-  },
-  VOF: {
-    labels: { category: 'REPORT_TYPE', type: 'REPORT_TYPE/DEVIATION' },
-    parameters: [{ key: 'eventType', displayName: 'Rapporttyp', values: ['AVVIKELSE'] }],
-  },
-  // Deliberately empty. Presence here is what enables registration at all - an application missing
-  // from this table resolves to registration 'disabled', so the drake silently cannot create
-  // errands. AOT has no agreed taxonomy yet, and guessing label paths would be worse than leaving
-  // them out: unresolvable paths throw 502 from resolveDefaultLabels at registration time, which
-  // reads as a broken deployment rather than an unconfigured one. Every field is optional and the
-  // controller guards each, so this creates an uncategorized errand with no default labels.
-  AOT: {},
-};
-
-export const getNewErrandDefaults = (application?: string): NewErrandDefaults | undefined => NEW_ERRAND_DEFAULTS[application ?? ''];
 
 /** Resolves the complete configured registration label path or fails before creating a partial errand. */
 export const resolveDefaultLabels = (labelStructure: Label[] | undefined, names: LabelSpec): Label[] => {

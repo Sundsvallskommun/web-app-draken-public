@@ -6,8 +6,11 @@ import type { DeploymentIdentity } from '@/config/dragon-deployment';
 export const dragonDeploymentMiddleware =
   (expected: DeploymentIdentity): RequestHandler =>
   (req, res, next) => {
-    // Preflight and the content-free upstream probe do not access case data.
-    if (req.method === 'OPTIONS' || (req.method === 'GET' && req.path === '/health/up')) return next();
+    // Documentation is fetched by browsers and contract generators before they know the
+    // release headers. Its GET resources carry no case data; Try it requests still use
+    // the normal API routes and must present the headers documented in the spec.
+    const publicResource = req.path === '/health/up' || req.path === '/swagger.json' || req.path === '/api-docs' || req.path.startsWith('/api-docs/');
+    if (req.method === 'OPTIONS' || (req.method === 'GET' && publicResource)) return next();
     if (
       req.get('X-Draken-Dragon') !== expected.dragon ||
       req.get('X-Draken-Revision') !== expected.revision ||

@@ -44,13 +44,13 @@ describe('individual dragon deployment boundaries', () => {
 
 describe('dragon-owned investigation composition', () => {
   it.each(Object.entries(APPLICATIONS))('%s selects its profile explicitly', (id, application) => {
-    expect(Boolean(application.supportProfile)).toBe(['IAF', 'VOF'].includes(id));
+    expect(Boolean(application.supportProfile)).toBe(dragons[id as keyof typeof dragons].domain === 'supportmanagement');
     if (!application.supportProfile) return;
     configureSupportApplicationProfile(application.supportProfile);
     const profile = getSupportApplicationProfile(id);
     expect(profile.application).toBe(id);
-    expect(profile.documents).toHaveLength(3);
-    expect(new SupportApplicationPolicyService(undefined, profile).classificationPolicy).toBeDefined();
+    expect(profile.documents).toHaveLength(['IAF', 'VOF'].includes(id) ? 3 : 0);
+    expect(Boolean(new SupportApplicationPolicyService(undefined, profile).classificationPolicy)).toBe(['IAF', 'VOF'].includes(id));
     expect(getSupportApplicationProfile(id === 'IAF' ? 'VOF' : 'IAF').documents).toEqual([]);
   });
 });
@@ -74,4 +74,138 @@ it('validates application-owned API requirements before opening a server', async
   } finally {
     vi.unstubAllEnvs();
   }
+});
+
+it('rejects an SM composition that omitted its registration policy before startup', async () => {
+  vi.stubEnv('APPLICATION', 'KC');
+  try {
+    await expect(startServer({ ...APPLICATIONS.KC, supportProfile: undefined })).rejects.toThrow('requires an explicit application profile');
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
+
+it('rejects a CaseData composition carrying SupportManagement policy', async () => {
+  vi.stubEnv('APPLICATION', 'MEX');
+  try {
+    await expect(startServer({ ...APPLICATIONS.MEX, supportProfile: APPLICATIONS.KC.supportProfile })).rejects.toThrow(
+      'must not configure a SupportManagement application profile',
+    );
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
+
+// The existing applications retain their reviewed taxonomy after moving ownership out of the shared service.
+const existingRegistrationDefaults = {
+  KC: {
+    classification: {
+      category: 'CONTACT_SUNDSVALL',
+      type: 'UNCATEGORIZED',
+    },
+  },
+  KA: {
+    classification: {
+      category: 'ADMINISTRATION',
+      type: 'ADMINISTRATION/CONTACT_CENTER',
+    },
+    labels: {
+      category: 'ADMINISTRATION',
+      type: 'ADMINISTRATION/CONTACT_CENTER',
+      subType: 'ADMINISTRATION/CONTACT_CENTER/GENERAL',
+    },
+  },
+  LOP: {
+    classification: {
+      category: 'SALARY',
+      type: 'SALARY.UNCATEGORIZED',
+    },
+    labels: {
+      category: 'SALARY',
+      type: 'SALARY/UNCATEGORIZED',
+      subType: 'SALARY/UNCATEGORIZED/UNCATEGORIZED',
+    },
+  },
+  IK: {
+    classification: {
+      category: 'KSK_SERVICE_CENTER',
+      type: 'KSK_SERVICE_CENTER.UNCATEGORIZED',
+    },
+    labels: {
+      category: 'KSK_SERVICE_CENTER',
+      type: 'KSK_SERVICE_CENTER/UNCATEGORIZED',
+    },
+  },
+  MSVA: {
+    classification: {
+      category: 'MSVA',
+      type: 'MSVA.UNCATEGORIZED',
+    },
+  },
+  ROB: {
+    classification: {
+      category: 'COMPLETE_RECRUITMENT',
+      type: 'COMPLETE_RECRUITMENT.RETAKE',
+    },
+  },
+  SE: {
+    classification: {
+      category: 'UNCATEGORIZED',
+      type: 'UNCATEGORIZED/UNCATEGORISED',
+    },
+    labels: {
+      category: 'UNCATEGORIZED',
+      type: 'UNCATEGORIZED/UNCATEGORISED',
+    },
+  },
+  BOU: {
+    classification: {
+      category: 'BOU',
+      type: 'BOU/UNCATEGORIZED',
+    },
+    labels: {
+      category: 'BOU',
+      type: 'BOU/UNCATEGORIZED',
+    },
+  },
+  LOK: {
+    classification: {
+      category: 'IAF',
+      type: 'IAF/WORK_AND_LIVELIHOOD',
+    },
+    labels: {
+      category: 'IAF',
+      type: 'IAF/WORK_AND_LIVELIHOOD',
+    },
+  },
+  IAF: {
+    labels: {
+      category: 'REPORT_TYPE',
+      type: 'REPORT_TYPE/DEVIATION',
+    },
+    parameters: [
+      {
+        key: 'eventType',
+        displayName: 'Rapporttyp',
+        values: ['AVVIKELSE'],
+      },
+    ],
+  },
+  VOF: {
+    labels: {
+      category: 'REPORT_TYPE',
+      type: 'REPORT_TYPE/DEVIATION',
+    },
+    parameters: [
+      {
+        key: 'eventType',
+        displayName: 'Rapporttyp',
+        values: ['AVVIKELSE'],
+      },
+    ],
+  },
+  AOT: {},
+} as const;
+it.each(Object.entries(existingRegistrationDefaults))('%s preserves registration defaults in its application profile', (id, defaults) => {
+  expect(APPLICATIONS[id as keyof typeof APPLICATIONS].supportProfile?.registration).toEqual({ mode: 'enabled', defaults });
 });

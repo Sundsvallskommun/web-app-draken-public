@@ -91,15 +91,15 @@ export const PhaseChanger = () => {
             <p className="my-md">Är du säker på att du vill fortsätta?</p>
           </>
         ),
-        disabled: !validateErrandForDecision(errand),
+        disabled: !validateErrandForDecision(errand, municipalityId),
         disabledMessage: !validateAttachmentsForDecision(errand).valid
           ? `Ärendet har felaktiga bilagor: ${validateAttachmentsForDecision(errand).reason}`
           : !validateStatusForDecision(errand).valid
           ? 'Ärendet har fel status för att beslut ska kunna fattas.'
           : !validateStakeholdersForDecision(errand).valid
           ? 'Ärendet saknar ärendeägare.'
-          : !validateExtraParametersForDecision(errand).valid
-          ? `Ärendeuppgifter saknas: ${validateExtraParametersForDecision(errand).reason}`
+          : !validateExtraParametersForDecision(errand, municipalityId).valid
+          ? `Ärendeuppgifter saknas: ${validateExtraParametersForDecision(errand, municipalityId).reason}`
           : undefined,
       });
     } else if (uiPhase === UiPhase.beslut) {
@@ -136,7 +136,7 @@ export const PhaseChanger = () => {
         message: <p>Vill du byta fas?</p>,
       });
     }
-  }, [errand, uiPhase]);
+  }, [errand, uiPhase, municipalityId]);
 
   const showSaveError = () => {
     toastMessage({

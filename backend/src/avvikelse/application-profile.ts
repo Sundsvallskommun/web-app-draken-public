@@ -10,6 +10,13 @@ export const createAvvikelseSupportApplicationProfile = (input: SupportApplicati
 };
 
 const iafVofSupportApplicationProfileBase = {
+  registration: {
+    mode: 'enabled',
+    defaults: {
+      labels: { category: 'REPORT_TYPE', type: 'REPORT_TYPE/DEVIATION' },
+      parameters: [{ key: 'eventType', displayName: 'Rapporttyp', values: ['AVVIKELSE'] }],
+    },
+  },
   requiredSupportManagementApiTarget: 'sprint',
   documents: [
     {

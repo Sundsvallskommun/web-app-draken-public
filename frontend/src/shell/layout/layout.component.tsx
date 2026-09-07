@@ -4,6 +4,7 @@ import { getApplicationEnvironment } from '@common/services/application-service'
 import { appConfig } from '@config/appconfig';
 import { applicationUi } from '@dragon';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
+import { useConfigStore } from '@stores/config-store';
 import { useUserStore } from '@stores/user-store';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { ExternalLink, Menu } from 'lucide-react';
@@ -13,6 +14,7 @@ import { Fragment, useEffect, useState } from 'react';
 
 export default function Layout({ title, children }: { title: string; children: React.ReactNode }) {
   const user = useUserStore((s) => s.user);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const applicationEnvironment = getApplicationEnvironment();
   const { isMinLargeDevice } = useThemeQueries();
   const pathName = usePathname() ?? '';
@@ -36,7 +38,7 @@ export default function Layout({ title, children }: { title: string; children: R
       <Logo
         variant="service"
         title={'Draken'}
-        symbol={process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260' ? <AngeSymbol /> : undefined}
+        symbol={municipalityId === '2260' ? <AngeSymbol /> : undefined}
         subtitle={appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />
     </NextLink>
@@ -50,11 +52,7 @@ export default function Layout({ title, children }: { title: string; children: R
           appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')
         }. Gå till startsidan.`}
       >
-        <Logo
-          variant="symbol"
-          symbol={process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260' ? <AngeSymbol /> : undefined}
-          className="h-40"
-        />
+        <Logo variant="symbol" symbol={municipalityId === '2260' ? <AngeSymbol /> : undefined} className="h-40" />
       </a>
       <span className="text-large">
         <applicationUi.ErrandTitle errandNumber={errandNumber ?? ''} />

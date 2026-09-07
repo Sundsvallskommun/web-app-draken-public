@@ -6,7 +6,7 @@ import { dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { assertSafeRuntimeEnvironment, composeRelease, deploymentIdentity, runtimeEnvironment, validateRelease } from './dragon-deployment.cjs';
+import { assertSafeRuntimeEnvironment, backendEnvironmentIssues, composeRelease, deploymentIdentity, runtimeEnvironment, validateRelease } from './dragon-deployment.cjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const example = JSON.parse(readFileSync(join(root, 'deployments/example-iaf-test.json'), 'utf8'));
@@ -58,6 +58,107 @@ test('a reviewed release binds image digests, namespaces, municipality, API targ
     });
   }
 });
+
+function caseDataRelease() {
+  const release = fixture();
+  release.dragon = 'MEX';
+  for (const name of Object.keys(release.backend.environment)) {
+    if (name.startsWith('SUPPORTMANAGEMENT_') || name === 'SUPERADMIN_GROUP') delete release.backend.environment[name];
+  }
+  Object.assign(release.backend.environment, {
+    CASEDATA_NAMESPACE: 'MEX',
+    CASEDATA_SENDER_EMAIL: 'sender@example.invalid',
+    CASEDATA_REPLY_TO: 'reply@example.invalid',
+    CASEDATA_SENDER: 'Draken',
+    CASEDATA_SENDER_SMS: 'Draken',
+  });
+  for (const name of Object.keys(release.backend.secrets)) release.backend.secrets[name] = release.backend.secrets[name].replace('iaf/', 'mex/');
+  return release;
+}
+
+test('release validation and backend startup agree on required settings for both domains', () => {
+  for (const [release, domain, domainFields] of [
+    [fixture(), 'supportmanagement', ['SUPERADMIN_GROUP', 'SUPPORTMANAGEMENT_TEST_EMAIL', 'SUPPORTMANAGEMENT_SENDER_EMAIL', 'SUPPORTMANAGEMENT_SENDER_SMS']],
+    [caseDataRelease(), 'casedata', ['CASEDATA_SENDER_EMAIL', 'CASEDATA_REPLY_TO', 'CASEDATA_SENDER', 'CASEDATA_SENDER_SMS']],
+  ]) {
+    assert.equal(validateRelease(release), release);
+    const complete = { ...release.backend.environment, ...release.backend.secrets, APPLICATION: release.dragon, PORT: '3000', NODE_ENV: 'production' };
+    assert.deepEqual(backendEnvironmentIssues(domain, complete), { missing: [], invalid: [] });
+    for (const name of ['SAML_ENTRY_SSO', 'SAML_CALLBACK_URL', 'SAML_LOGOUT_CALLBACK_URL', 'SAML_SUCCESS_REDIRECT', 'SAML_FAILURE_REDIRECT', 'SAML_FAILURE_REDIRECT_MESSAGE', 'SAML_ISSUER', 'LOG_DIR', ...domainFields]) {
+      const incomplete = structuredClone(release);
+      delete incomplete.backend.environment[name];
+      assert.throws(() => validateRelease(incomplete), new RegExp(`missing required fields: ${name}`), name);
+      assert.deepEqual(backendEnvironmentIssues(domain, { ...complete, [name]: undefined }), { missing: [name], invalid: [] });
+    }
+    for (const name of ['CLIENT_KEY', 'CLIENT_SECRET', 'SECRET_KEY', 'SAML_PRIVATE_KEY', 'SAML_PUBLIC_KEY', 'SAML_IDP_PUBLIC_CERT']) {
+      const incomplete = structuredClone(release);
+      delete incomplete.backend.secrets[name];
+      assert.throws(() => validateRelease(incomplete), new RegExp(`missing required fields: ${name}`), name);
+    }
+    const invalid = structuredClone(release);
+    invalid.backend.environment.SAML_ENTRY_SSO = 'private-fixture-invalid-url';
+    assert.throws(() => validateRelease(invalid), error => {
+      assert.match(error.message, /invalid fields: SAML_ENTRY_SSO/);
+      assert.doesNotMatch(error.message, /private-fixture/);
+      return true;
+    });
+  }
+});
+
+test('the real backend startup validator rejects the same absent field without printing private values', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'draken-startup-validation-'));
+  try {
+    const release = fixture();
+    const environment = {
+      ...process.env,
+      ...release.backend.environment,
+      ...Object.fromEntries(Object.keys(release.backend.secrets).map(name => [name, 'private-fixture-strong-startup-secret'])),
+      APPLICATION: release.dragon,
+      PORT: '3000',
+      NODE_ENV: 'production',
+      LOG_DIR: directory,
+    };
+    const start = () => spawnSync(process.execPath, ['-r', 'ts-node/register/transpile-only', '-r', 'tsconfig-paths/register', '-e', 'require("./src/utils/validateEnv").default()'], {
+      cwd: join(root, 'backend'), env: environment, encoding: 'utf8', timeout: 10_000,
+    });
+    const complete = start();
+    assert.equal(complete.status, 0, complete.stderr);
+    delete environment.SAML_ENTRY_SSO;
+    delete release.backend.environment.SAML_ENTRY_SSO;
+    assert.throws(() => validateRelease(release), /missing required fields: SAML_ENTRY_SSO/);
+    const incomplete = start();
+    assert.equal(incomplete.status, 1, incomplete.stderr);
+    assert.match(incomplete.stdout, /"configurationFields":\["SAML_ENTRY_SSO"\]/);
+    assert.doesNotMatch(incomplete.stdout + incomplete.stderr, /private-fixture/);
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
+test('minimal frontend configuration resolves explicit defaults and rejects invalid limits or incomplete health credentials', () => withSecrets((release, directory) => {
+  release.frontend.environment = {
+    NEXT_PUBLIC_API_URL: release.frontend.environment.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_MUNICIPALITY_ID: '2281',
+    NEXT_PUBLIC_BASEPATH: '',
+  };
+  assert.equal(validateRelease(release), release);
+  const environment = runtimeEnvironment('frontend', build, release, {}, directory);
+  assert.equal(environment.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT, '30');
+  assert.equal(environment.NEXT_PUBLIC_APPLICATION_NAME, 'appen');
+  assert.equal(environment.NEXT_PUBLIC_PROTECTED_ROUTES, '');
+  assert.equal(environment.NEXT_PUBLIC_USE_INVESTIGATION, 'false');
+  release.frontend.environment.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT = '0';
+  assert.equal(validateRelease(release), release);
+  for (const value of ['', '-1', '1.5', 'invalid-fixture-limit']) {
+    release.frontend.environment.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT = value;
+    assert.throws(() => validateRelease(release), /must be a non-negative integer/);
+  }
+  delete release.frontend.environment.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT;
+  release.frontend.environment.HEALTH_AUTH = 'true';
+  assert.throws(() => validateRelease(release), /HEALTH_USERNAME is required/);
+  release.frontend.secrets.HEALTH_USERNAME = 'iaf/test/health-username';
+  assert.throws(() => validateRelease(release), /HEALTH_PASSWORD is required/);
+  release.frontend.secrets.HEALTH_PASSWORD = 'iaf/test/health-password';
+  assert.equal(validateRelease(release), release);
+}));
 
 test('the deployment id is stable for key order and changes for either image, config or secret reference', () => {
   const release = fixture();
@@ -178,6 +279,7 @@ test('image startup requires a reviewed release and immutable revision even if r
   mkdirSync(join(directory, 'scripts'));
   for (const file of ['assert-dragon-image.cjs', 'dragon-deployment.cjs']) cpSync(join(root, 'scripts', file), join(directory, 'scripts', file));
   cpSync(join(root, 'dragons.json'), join(directory, 'dragons.json'));
+  cpSync(join(root, 'frontend-environment-defaults.json'), join(directory, 'frontend-environment-defaults.json'));
   writeFileSync(join(directory, 'dragon-build.json'), JSON.stringify(build));
   writeFileSync(join(directory, 'release.json'), JSON.stringify(release));
   const cli = join(directory, 'scripts/assert-dragon-image.cjs');
@@ -204,6 +306,7 @@ test('the real image launcher rejects corrupt secrets without echoing them into 
     cpSync(join(root, 'scripts', file), join(directory, 'scripts', file));
   }
   cpSync(join(root, 'dragons.json'), join(directory, 'dragons.json'));
+  cpSync(join(root, 'frontend-environment-defaults.json'), join(directory, 'frontend-environment-defaults.json'));
   writeFileSync(join(directory, 'dragon-build.json'), JSON.stringify(build));
   release.frontend.secrets.HEALTH_PASSWORD = 'iaf/test/health-password';
   writeFileSync(join(directory, 'release.json'), JSON.stringify(release));

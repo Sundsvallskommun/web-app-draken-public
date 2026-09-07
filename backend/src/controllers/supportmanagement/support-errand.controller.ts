@@ -20,7 +20,7 @@ import FormData from 'form-data';
 import { Body, Controller, Get, HeaderParam, HttpCode, Param, Patch, Post, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { APPLICATION, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   Errand as CasedataErrandDTO,
@@ -67,8 +67,6 @@ import {
   buildSupportErrandClassificationUpdateBody,
   ErrandFilterInput,
   getErrandVersion,
-  getNewErrandDefaults,
-  NewErrandDefaults,
   requireStrongErrandVersion,
   resolveDefaultLabels,
   resolveSupportErrandClassification,
@@ -542,7 +540,6 @@ export class SupportErrandController {
   private organizationService = new OrganizationService();
   private investigationPolicyService = new SupportApplicationPolicyService();
   private jsonParameterService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' });
-  private newErrandDefaults: NewErrandDefaults | undefined = getNewErrandDefaults(APPLICATION);
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   SERVICE = apiServiceName('supportmanagement');
   CITIZEN_SERVICE = apiServiceName('citizen');
@@ -831,12 +828,14 @@ export class SupportErrandController {
     }
 
     const registrationState = await this.investigationPolicyService.getRegistrationState(req.user);
+    const registration = this.investigationPolicyService.profile.registration;
     if (registrationState === 'unavailable') {
       throw new HttpException(503, 'Support errand registration policy is temporarily unavailable');
     }
-    if (registrationState === 'disabled' || !this.newErrandDefaults) {
+    if (registrationState === 'disabled' || registration.mode === 'disabled') {
       throw new HttpException(409, 'Registration is not configured for this application');
     }
+    const defaults = registration.defaults;
 
     // Fetch metadata for labels for new errand
     const metadataUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata/labels`;
@@ -847,9 +846,17 @@ export class SupportErrandController {
     const body: Partial<SupportErrandDto> = {
       reporterUserId: req.user.username,
       assignedUserId: req.user.username,
-      ...(this.newErrandDefaults.classification ? { classification: this.newErrandDefaults.classification } : {}),
-      labels: this.newErrandDefaults.labels ? resolveDefaultLabels(metadataRes.data.labelStructure, this.newErrandDefaults.labels) : [],
-      ...(this.newErrandDefaults.parameters ? { parameters: this.newErrandDefaults.parameters.map(parameter => ({ ...parameter })) } : {}),
+      ...(defaults.classification ? { classification: defaults.classification } : {}),
+      labels: defaults.labels ? resolveDefaultLabels(metadataRes.data.labelStructure, defaults.labels) : [],
+      ...(defaults.parameters
+        ? {
+            parameters: defaults.parameters.map(parameter => ({
+              key: parameter.key,
+              displayName: parameter.displayName,
+              values: parameter.values ? [...parameter.values] : undefined,
+            })),
+          }
+        : {}),
       priority: SupportPriority.MEDIUM,
       status: Status.NEW,
       channel: ContactChannelType.PHONE,

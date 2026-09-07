@@ -191,6 +191,7 @@ describe('SupportErrandJsonParameterController', () => {
 
   it('passes the complete injected definition for a future application without app-name branches', async () => {
     const profile = createSupportApplicationProfile({
+      registration: { mode: 'disabled' },
       application: 'FUTURE',
       documents: [{ key: 'custom-document', schemaName: 'shared-schema', tabLabel: 'Custom', ownerLabel: 'Owner' }],
     });

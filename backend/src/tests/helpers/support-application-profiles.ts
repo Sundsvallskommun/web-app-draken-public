@@ -1,9 +1,10 @@
-import { IAF_SUPPORT_APPLICATION_PROFILE, VOF_SUPPORT_APPLICATION_PROFILE } from '@/avvikelse/application-profile';
+import type { DragonId } from '@/config/dragon-build';
 import { getSupportApplicationProfile } from '@/config/support-application-profile';
+
+import { APPLICATIONS } from './dragon-applications';
 
 export const supportProfileFixture = (application: string | undefined) => {
   const id = application?.trim().toUpperCase();
-  if (id === 'IAF') return IAF_SUPPORT_APPLICATION_PROFILE;
-  if (id === 'VOF') return VOF_SUPPORT_APPLICATION_PROFILE;
+  if (id && Object.hasOwn(APPLICATIONS, id)) return APPLICATIONS[id as DragonId].supportProfile ?? getSupportApplicationProfile(id);
   return getSupportApplicationProfile(application);
 };

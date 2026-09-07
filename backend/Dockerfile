@@ -3,7 +3,7 @@ FROM node:22-slim AS builder
 WORKDIR /app/backend
 COPY backend/package.json backend/yarn.lock ./
 RUN yarn install --frozen-lockfile --ignore-scripts
-COPY dragons.json /app/dragons.json
+COPY dragons.json frontend-environment-defaults.json /app/
 COPY scripts/check-runtime-logging.mjs /app/scripts/check-runtime-logging.mjs
 COPY scripts/dragon.mjs /app/scripts/dragon.mjs
 COPY scripts/check-backend-artifact.mjs /app/scripts/check-backend-artifact.mjs
@@ -35,7 +35,7 @@ RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nodejs
 COPY --from=production-deps /app/backend/node_modules ./node_modules
 COPY --from=builder /app/backend/dist ./dist
 COPY --from=builder /app/backend/dist/dragon-build.json /app/dragon-build.json
-COPY dragons.json /app/dragons.json
+COPY dragons.json frontend-environment-defaults.json /app/
 COPY scripts/assert-dragon-image.cjs /app/scripts/assert-dragon-image.cjs
 COPY scripts/dragon-deployment.cjs scripts/start-dragon.cjs scripts/replace-frontend-env.cjs /app/scripts/
 RUN mkdir -p data/sessions data/logs data/database && chown -R nodejs:nodejs data

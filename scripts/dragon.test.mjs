@@ -29,7 +29,7 @@ test('artifact checks reject unknown IDs and traversal before reading artifacts'
   }
 });
 
-test('artifact validation catches broken emitted imports before a container can start', () => {
+test('artifact validation catches broken imports and foreign controllers before a container can start', () => {
   const directory = mkdtempSync(join(tmpdir(), 'draken-artifact-'));
   try {
     for (const path of ['scripts', 'backend/dist-KC/dragons/kc', 'backend/dist-KC/shell', 'backend/dist-KC/controllers/supportmanagement']) {
@@ -57,6 +57,20 @@ test('artifact validation catches broken emitted imports before a container can 
     const missing = check();
     assert.notEqual(missing.status, 0);
     assert.match(missing.stderr, /missing runtime module/);
+
+    // A service can accidentally import a controller outside the domain folder.
+    // Its ownership still comes from the canonical CaseData composition.
+    mkdirSync(join(directory, 'backend/src/controllers'), { recursive: true });
+    writeFileSync(join(directory, 'backend/src/controllers/message.controller.ts'), 'export class MessageController {}');
+    writeFileSync(join(directory, 'backend/src/shell/casedata-controllers.ts'),
+      "import { MessageController } from '../controllers/message.controller'; export const CASEDATA_CONTROLLERS = [MessageController];");
+    writeFileSync(join(directory, 'backend/src/shell/start-server.ts'), "import '../controllers/message.controller';");
+    writeFileSync(server, 'require("../../shell/start-server");');
+    writeFileSync(join(output, 'shell/start-server.js'), 'require("../controllers/message.controller");');
+    writeFileSync(join(output, 'controllers/message.controller.js'), 'exports.MessageController = class {};');
+    const foreignController = check();
+    assert.notEqual(foreignController.status, 0);
+    assert.match(foreignController.stderr, /casedata controller must not ship in a supportmanagement application/);
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
 
@@ -67,7 +81,7 @@ test('Next env files cannot activate verbose logging after the CLI checks inheri
     for (const path of ['scripts', 'frontend/src/dragons/kc', 'frontend/node_modules/@next', 'frontend/node_modules/next/dist/bin']) {
       mkdirSync(join(directory, path), { recursive: true });
     }
-    for (const file of ['scripts/dragon.mjs', 'scripts/dragon-deployment.cjs', 'dragons.json']) cpSync(join(root, file), join(directory, file));
+    for (const file of ['scripts/dragon.mjs', 'scripts/dragon-deployment.cjs', 'dragons.json', 'frontend-environment-defaults.json']) cpSync(join(root, file), join(directory, file));
     symlinkSync(join(root, 'frontend/node_modules/@next/env'), join(directory, 'frontend/node_modules/@next/env'), 'dir');
     writeFileSync(join(directory, 'frontend/package.json'), '{}');
     writeFileSync(join(directory, 'frontend/src/dragons/kc/application.ts'), 'export {};');

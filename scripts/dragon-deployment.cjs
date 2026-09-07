@@ -3,6 +3,7 @@ const { readFileSync } = require('node:fs');
 const { resolve } = require('node:path');
 
 const dragons = require('../dragons.json');
+const frontendDefaults = require('../frontend-environment-defaults.json');
 const SIDES = new Set(['frontend', 'backend']);
 const SECRET_NAMES = new Set([
   'CLIENT_KEY',
@@ -15,7 +16,51 @@ const SECRET_NAMES = new Set([
   'HEALTH_USERNAME',
   'HEALTH_PASSWORD',
 ]);
-const REQUIRED_SECRETS = ['CLIENT_KEY', 'CLIENT_SECRET', 'SECRET_KEY', 'SAML_PRIVATE_KEY', 'SAML_PUBLIC_KEY', 'SAML_IDP_PUBLIC_CERT'];
+// Required application settings are shared by offline release validation and
+// backend startup. Domain requirements follow dragons.json, never a list of IDs.
+const BACKEND_REQUIRED_ENVIRONMENT = {
+  NODE_ENV: 'string',
+  SECRET_KEY: 'string',
+  API_BASE_URL: 'url',
+  CLIENT_KEY: 'string',
+  CLIENT_SECRET: 'string',
+  PORT: 'port',
+  BASE_URL_PREFIX: 'string',
+  SAML_CALLBACK_URL: 'url',
+  SAML_LOGOUT_CALLBACK_URL: 'url',
+  SAML_SUCCESS_REDIRECT: 'url',
+  SAML_FAILURE_REDIRECT: 'url',
+  SAML_FAILURE_REDIRECT_MESSAGE: 'url',
+  SAML_ENTRY_SSO: 'url',
+  SAML_ISSUER: 'string',
+  SAML_IDP_PUBLIC_CERT: 'string',
+  SAML_PRIVATE_KEY: 'string',
+  SAML_PUBLIC_KEY: 'string',
+  AUTHORIZED_GROUPS: 'string',
+  LOG_DIR: 'string',
+  ADMIN_GROUP: 'string',
+  DEVELOPER_GROUP: 'string',
+  APPLICATION: 'string',
+  MUNICIPALITY_ID: 'string',
+  DOMAIN: 'string',
+  ORIGIN: 'url',
+};
+const BACKEND_DOMAIN_ENVIRONMENT = {
+  casedata: {
+    CASEDATA_SENDER_EMAIL: 'string',
+    CASEDATA_REPLY_TO: 'string',
+    CASEDATA_SENDER: 'string',
+    CASEDATA_SENDER_SMS: 'string',
+    CASEDATA_NAMESPACE: 'string',
+  },
+  supportmanagement: {
+    SUPERADMIN_GROUP: 'string',
+    SUPPORTMANAGEMENT_NAMESPACE: 'string',
+    SUPPORTMANAGEMENT_TEST_EMAIL: 'string',
+    SUPPORTMANAGEMENT_SENDER_EMAIL: 'string',
+    SUPPORTMANAGEMENT_SENDER_SMS: 'string',
+  },
+};
 const UNSAFE_DEBUG_NAMES = ['DEBUG', 'NODE_DEBUG', 'NODE_DEBUG_NATIVE'];
 const RESERVED_NAMES = /^(?:DRAKEN_|DEPLOY_|NEXT_PUBLIC_DEPLOYMENT_ID$|NEXT_PUBLIC_APPLICATION$|APPLICATION$|NODE_ENV$|PORT$)/;
 const APPLICATION_PREFIXES = ['NEXT_PUBLIC_', 'SAML_', 'SUPPORTMANAGEMENT_', 'SUPPORT_INVESTIGATION_', 'CASEDATA_', 'HEALTH_', 'SESSION_', 'REDIS_'];
@@ -49,6 +94,25 @@ function isApplicationName(name) {
 
 function fail(message) {
   throw new Error(`Invalid dragon deployment: ${message}`);
+}
+
+/** Returns field names only: secret values and invalid input never enter diagnostics. */
+function backendEnvironmentIssues(domain, environment) {
+  if (!Object.hasOwn(BACKEND_DOMAIN_ENVIRONMENT, domain)) fail('unknown backend domain');
+  const missing = [];
+  const invalid = [];
+  for (const [name, type] of Object.entries({ ...BACKEND_REQUIRED_ENVIRONMENT, ...BACKEND_DOMAIN_ENVIRONMENT[domain] })) {
+    const value = environment[name];
+    if (typeof value !== 'string' || !value.trim()) {
+      missing.push(name);
+      continue;
+    }
+    if (type === 'port' && (!Number.isInteger(Number(value)) || Number(value) < 1 || Number(value) > 65535)) invalid.push(name);
+    if (type === 'url') {
+      try { new URL(value); } catch { invalid.push(name); }
+    }
+  }
+  return { missing, invalid };
 }
 
 /** Library debug modes can dump headers, payloads or the child process environment. */
@@ -160,27 +224,37 @@ function validateServiceIdentity(release) {
   const backend = release.backend.environment;
   if (release.frontend.port === release.backend.port) fail('frontend and backend host ports must differ');
   for (const name of ['NEXT_PUBLIC_API_URL', 'NEXT_PUBLIC_MUNICIPALITY_ID']) string(frontend[name], `frontend.${name}`);
-  for (const name of [
-    'API_BASE_URL',
-    'MUNICIPALITY_ID',
-    'AUTHORIZED_GROUPS',
-    'ADMIN_GROUP',
-    'DEVELOPER_GROUP',
-    'DOMAIN',
-    'ORIGIN',
-    'BASE_URL_PREFIX',
-  ])
-    string(backend[name], `backend.${name}`);
-  for (const name of REQUIRED_SECRETS) if (!release.backend.secrets[name]) fail(`backend.secrets.${name} is required`);
+  const domain = dragons[release.dragon].domain;
+  const issues = backendEnvironmentIssues(domain, {
+    ...backend,
+    // References prove presence here; the launcher reads and validates their values.
+    ...release.backend.secrets,
+    NODE_ENV: 'production',
+    PORT: '3000',
+    APPLICATION: release.dragon,
+  });
+  if (issues.missing.length) fail(`backend is missing required fields: ${issues.missing.join(', ')}`);
+  if (issues.invalid.length) fail(`backend contains invalid fields: ${issues.invalid.join(', ')}`);
   if (!/^\d{4}$/u.test(backend.MUNICIPALITY_ID) || frontend.NEXT_PUBLIC_MUNICIPALITY_ID !== backend.MUNICIPALITY_ID)
     fail('municipalities must match');
-  const domain = dragons[release.dragon].domain;
   const namespace = domain === 'casedata' ? 'CASEDATA_NAMESPACE' : 'SUPPORTMANAGEMENT_NAMESPACE';
   const other = domain === 'casedata' ? 'SUPPORTMANAGEMENT_NAMESPACE' : 'CASEDATA_NAMESPACE';
   if (!/^[A-Za-z0-9_-]+$/u.test(string(backend[namespace], `backend.${namespace}`))) fail('invalid namespace');
   if (Object.hasOwn(backend, other)) fail('a deployment may configure only its own domain namespace');
   if (domain === 'supportmanagement' && !['stable', 'sprint', 'alktsprint'].includes(backend.SUPPORTMANAGEMENT_API_TARGET))
     fail('explicit SupportManagement API target is required');
+}
+
+function validateFrontendEnvironment(release) {
+  const environment = { ...frontendDefaults, ...release.frontend.environment };
+  if (!/^\d+$/u.test(environment.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT) ||
+      !Number.isSafeInteger(Number(environment.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT)))
+    fail('frontend.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT must be a non-negative integer');
+  if (!['true', 'false'].includes(environment.HEALTH_AUTH)) fail('frontend.HEALTH_AUTH must be true or false');
+  if (environment.HEALTH_AUTH === 'true') {
+    for (const name of ['HEALTH_USERNAME', 'HEALTH_PASSWORD'])
+      if (!release.frontend.secrets[name]) fail(`frontend.secrets.${name} is required when HEALTH_AUTH is true`);
+  }
 }
 
 function validateServiceUrls(release) {
@@ -210,6 +284,7 @@ function validateRelease(value) {
   for (const side of SIDES) validateService(release, side);
   validateInvestigationAndLogging(release);
   validateServiceIdentity(release);
+  validateFrontendEnvironment(release);
   validateServiceUrls(release);
   return release;
 }
@@ -281,8 +356,9 @@ function runtimeEnvironment(side, build, release, inherited, secretDirectory) {
   if (build.id !== identity.dragon || build.revision !== identity.revision) fail('image identity or revision does not match the release');
   const service = release[side];
   const managed = {
+    ...(side === 'frontend' ? frontendDefaults : {}),
     ...service.environment,
-    ...(side === 'backend' ? { NEXT_PUBLIC_USE_INVESTIGATION: release.frontend.environment.NEXT_PUBLIC_USE_INVESTIGATION ?? 'false' } : {}),
+    ...(side === 'backend' ? { NEXT_PUBLIC_USE_INVESTIGATION: release.frontend.environment.NEXT_PUBLIC_USE_INVESTIGATION ?? frontendDefaults.NEXT_PUBLIC_USE_INVESTIGATION } : {}),
     NODE_ENV: 'production',
     PORT: '3000',
     [side === 'frontend' ? 'NEXT_PUBLIC_APPLICATION' : 'APPLICATION']: identity.dragon,
@@ -326,4 +402,4 @@ function composeRelease(release, releaseFile, secretDirectory) {
   };
 }
 
-module.exports = { validateRelease, readRelease, readBuild, deploymentIdentity, runtimeEnvironment, composeRelease, assertSafeRuntimeEnvironment };
+module.exports = { validateRelease, readRelease, readBuild, deploymentIdentity, runtimeEnvironment, composeRelease, assertSafeRuntimeEnvironment, backendEnvironmentIssues };

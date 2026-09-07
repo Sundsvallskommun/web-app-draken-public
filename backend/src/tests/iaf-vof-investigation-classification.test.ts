@@ -13,6 +13,7 @@ import { supportProfileFixture } from './helpers/support-application-profiles';
 
 const customProfile = (application = 'IAF') =>
   createSupportApplicationProfile({
+    registration: { mode: 'disabled' },
     application,
     documents: [
       { key: 'manager-document', schemaName: 'utredning-enhetschef', tabLabel: 'Manager', ownerLabel: 'Manager' },
@@ -38,10 +39,12 @@ describe('fixed IAF/VOF investigation classification policy', () => {
 
   it('fails closed when a fixed owner schema is missing or ambiguous', () => {
     const missing = createSupportApplicationProfile({
+      registration: { mode: 'disabled' },
       application: 'IAF',
       documents: [{ key: 'manager', schemaName: 'utredning-enhetschef', tabLabel: 'Manager', ownerLabel: 'Manager' }],
     });
     const ambiguous = createSupportApplicationProfile({
+      registration: { mode: 'disabled' },
       application: 'IAF',
       documents: [...customProfile().documents, { key: 'manager-copy', schemaName: 'utredning-enhetschef', tabLabel: 'Copy', ownerLabel: 'Manager' }],
     });

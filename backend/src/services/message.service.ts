@@ -1,4 +1,3 @@
-import { AgnosticMessageResponse, DecisionChannelResult, LetterResponse, MessageClassification } from '@controllers/message.controller';
 import { Role } from '@interfaces/role';
 import { User } from '@interfaces/users.interface';
 import dayjs from 'dayjs';
@@ -31,6 +30,7 @@ import {
   WebMessageAttachment,
   WebMessageRequest,
 } from '@/data-contracts/messaging/data-contracts';
+import { AgnosticMessageResponse, DecisionChannelResult, LetterResponse, MessageClassification } from '@/dtos/message.dto';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { FTCaseType, MEXCaseType, PTCaseType } from '@/interfaces/case-type.interface';
 import { logApplicationEvent, logApplicationFailure } from '@/services/request-diagnostics';

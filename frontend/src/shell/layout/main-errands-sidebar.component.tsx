@@ -25,6 +25,7 @@ export const MainErrandsSidebar: FC<{
   const user = useUserStore((s) => s.user);
   const billingRecords = useBillingStore((s) => s.billingRecords);
   const isLoading = useConfigStore((s) => s.isLoading);
+  const municipalityId = useConfigStore((s) => s.municipalityId);
   const [showNotifications, setShowNotifications] = useState(false);
   const applicationEnvironment = getApplicationEnvironment();
 
@@ -39,7 +40,7 @@ export const MainErrandsSidebar: FC<{
       <Logo
         className={cx(open ? '' : 'w-[2.8rem]')}
         variant={open ? 'service' : 'symbol'}
-        symbol={process.env.NEXT_PUBLIC_MUNICIPALITY_ID === '2260' ? <AngeSymbol /> : undefined}
+        symbol={municipalityId === '2260' ? <AngeSymbol /> : undefined}
         title={'Draken'}
         subtitle={appConfig.applicationName + (applicationEnvironment ? ` ${applicationEnvironment}` : '')}
       />

@@ -1,6 +1,8 @@
 import { logClientWarning } from '@common/services/client-diagnostics';
 import { FeatureFlagDto } from 'src/data-contracts/backend/data-contracts';
 
+import environmentDefaults from '../../../frontend-environment-defaults.json';
+
 export class FeatureFlagConfigurationError extends Error {
   constructor() {
     super('Utredningens tidigare variantflaggor måste migreras innan applikationen kan användas.');
@@ -63,7 +65,7 @@ const envBool = (val: string | undefined): boolean => {
 const buildDomain = process.env.DRAKEN_BUILD_DOMAIN;
 
 export const appConfig: AppConfig = {
-  applicationName: process.env.NEXT_PUBLIC_APPLICATION_NAME || 'appen',
+  applicationName: process.env.NEXT_PUBLIC_APPLICATION_NAME || environmentDefaults.NEXT_PUBLIC_APPLICATION_NAME,
   // Next bakes the catalog's domain into this application. Getters also prevent runtime writes.
   get isCaseData() {
     return buildDomain === 'casedata';
@@ -71,7 +73,8 @@ export const appConfig: AppConfig = {
   get isSupportManagement() {
     return buildDomain === 'supportmanagement';
   },
-  reopenSupportErrandLimit: process.env.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '30',
+  reopenSupportErrandLimit:
+    process.env.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || environmentDefaults.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT,
   features: {
     useThreeLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION),
     useTwoLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_TWO_LEVEL_CATEGORIZATION),
@@ -108,7 +111,7 @@ export const appConfig: AppConfig = {
 };
 
 function resetRuntimeFeatures() {
-  appConfig.reopenSupportErrandLimit = '30';
+  appConfig.reopenSupportErrandLimit = environmentDefaults.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT;
 
   (Object.keys(appConfig.features) as (keyof AppConfigFeatures)[]).forEach((key) => {
     appConfig.features[key] = false;
@@ -136,7 +139,7 @@ export function applyRuntimeFeatureFlags(flags: FeatureFlagDto[]) {
     }
 
     if (flag.name === 'reopenSupportErrandLimit' && flag.enabled) {
-      appConfig.reopenSupportErrandLimit = flag.value ?? '30';
+      appConfig.reopenSupportErrandLimit = flag.value ?? environmentDefaults.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT;
       return;
     }
 

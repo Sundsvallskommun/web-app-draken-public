@@ -91,7 +91,8 @@
     "test:e2e:report": "playwright show-report",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "format": "prettier --write \"src/**/*.{ts,tsx,mjs}\""
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

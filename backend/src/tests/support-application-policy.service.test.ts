@@ -7,6 +7,7 @@ import { mockReq, mockUser } from './helpers/http';
 import { supportProfileFixture } from './helpers/support-application-profiles';
 
 const profile = createSupportApplicationProfile({
+  registration: { mode: 'disabled' },
   application: 'FUTURE',
   documents: [{ key: 'investigation', schemaName: 'shared-schema', tabLabel: 'Investigation', ownerLabel: 'Owner' }],
 });
@@ -56,7 +57,7 @@ describe('SupportApplicationPolicyService', () => {
 
   it('is inactive without configured documents and does not query Adminpanel', async () => {
     const featureFlags = { isConfigured: vi.fn(() => true), getFreshFeatureEnabled: vi.fn() } as unknown as FeatureFlagService;
-    const emptyProfile = createSupportApplicationProfile({ application: 'KC', documents: [] });
+    const emptyProfile = createSupportApplicationProfile({ registration: { mode: 'disabled' }, application: 'KC', documents: [] });
     const service = new SupportApplicationPolicyService(featureFlags, emptyProfile, 'support');
 
     await expect(service.getState(mockReq().user)).resolves.toBe('inactive');
@@ -74,6 +75,7 @@ describe('SupportApplicationPolicyService', () => {
 
   it('moves classification ownership only for IAF/VOF with the fixed owner schema roles', async () => {
     const iafProfile = createAvvikelseSupportApplicationProfile({
+      registration: { mode: 'enabled', defaults: {} },
       application: 'IAF',
       documents: [
         {
@@ -135,6 +137,7 @@ describe('SupportApplicationPolicyService', () => {
 
   it('does not apply the fixed IAF/VOF rule to another application with the same document schemas', async () => {
     const documentsOnly = createSupportApplicationProfile({
+      registration: { mode: 'disabled' },
       application: 'FUTURE',
       documents: [
         {

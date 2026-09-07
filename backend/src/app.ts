@@ -426,8 +426,31 @@ class App {
       },
     });
 
-    this.app.use(`${BASE_URL_PREFIX}/swagger.json`, (req, res) => res.json(spec));
-    this.app.use(`${BASE_URL_PREFIX}/api-docs`, swaggerUi.serve, swaggerUi.setup(spec));
+    if (this.deployment) {
+      const deploymentHeaders = {
+        'X-Draken-Dragon': this.deployment.dragon,
+        'X-Draken-Revision': this.deployment.revision,
+        'X-Draken-Deployment': this.deployment.deployment,
+      };
+      for (const [path, definition] of Object.entries(spec.paths)) {
+        if (path === `${BASE_URL_PREFIX}/health/up`) continue;
+        // These are part of the API request contract, independently of authentication.
+        // OpenAPI defaults let Swagger's Try it requests use this server's release.
+        definition.parameters = [
+          ...(definition.parameters ?? []),
+          ...Object.entries(deploymentHeaders).map(([name, value]) => ({
+            name,
+            in: 'header',
+            required: true,
+            description: 'Must match the running dragon release. Reload the documentation after a deployment.',
+            schema: { type: 'string', default: value },
+          })),
+        ];
+      }
+    }
+
+    this.app.get(`${BASE_URL_PREFIX}/swagger.json`, (_req, res) => res.json(spec));
+    this.app.use(`${BASE_URL_PREFIX}/api-docs`, swaggerUi.serveFiles(spec), swaggerUi.setup(spec));
   }
 
   private initializeErrorHandling() {

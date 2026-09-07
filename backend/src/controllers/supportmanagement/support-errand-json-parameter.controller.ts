@@ -4,7 +4,7 @@ import { Body, Controller, Get, HeaderParam, Param, Put, Req, Res, UseBefore } f
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
-import { getSupportApplicationProfile } from '@/config/support-application-profile';
+import { getSupportApplicationProfile, SupportApplicationProfile } from '@/config/support-application-profile';
 import { SupportApplicationProfileDto, SupportInvestigationDocumentProfileDto } from '@/dtos/support-application-profile.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -56,7 +56,7 @@ export class SupportErrandJsonParameterController {
   private readonly policyService: SupportApplicationPolicyService;
 
   constructor(
-    supportProfile: SupportApplicationProfileDto = getSupportApplicationProfile(APPLICATION),
+    supportProfile: SupportApplicationProfile = getSupportApplicationProfile(APPLICATION),
     documentService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' }),
     policyService = new SupportApplicationPolicyService(undefined, supportProfile),
   ) {

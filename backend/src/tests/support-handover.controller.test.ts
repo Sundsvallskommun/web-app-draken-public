@@ -18,6 +18,7 @@ import { mockReq, mockRes, mockUser } from './helpers/http';
 import { mockMunicipalityId, mockSupportErrandId } from './helpers/mock-data';
 
 const profile = createSupportApplicationProfile({
+  registration: { mode: 'disabled' },
   application: 'FUTURE',
   documents: [{ key: 'future-investigation', schemaName: 'future-schema', tabLabel: 'Future', ownerLabel: 'Owner' }],
 });

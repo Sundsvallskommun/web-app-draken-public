@@ -171,6 +171,7 @@ for (const [target, { owner, operation, warning }] of Object.entries(sides)) {
     mkdirSync(join(root, 'scripts'));
     for (const file of ['dragon.mjs', 'dragon-deployment.cjs', 'check-runtime-logging.mjs']) cpSync(join(repository, 'scripts', file), join(root, 'scripts', file));
     cpSync(join(repository, 'dragons.json'), join(root, 'dragons.json'));
+    cpSync(join(repository, 'frontend-environment-defaults.json'), join(root, 'frontend-environment-defaults.json'));
     mkdirSync(join(root, target, 'node_modules'));
     symlinkSync(join(repository, target, 'node_modules/typescript'), join(root, target, 'node_modules/typescript'), 'dir');
     write(`src/dragons/kc/${target === 'frontend' ? 'application' : 'server'}.ts`, 'console.error(request.body);');

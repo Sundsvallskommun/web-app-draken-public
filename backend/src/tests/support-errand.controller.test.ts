@@ -5,6 +5,7 @@ import { getMetadataArgsStorage } from 'routing-controllers';
 
 import { resolveIafVofInvestigationClassificationPolicy } from '@/avvikelse/classification-policy';
 import { apiServiceName } from '@/config/api-config';
+import { createSupportApplicationProfile } from '@/config/support-application-profile';
 import {
   AssignSupportErrandDto,
   SupportErrandController,
@@ -19,7 +20,6 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { SupportApplicationPolicyService, SupportErrandClassificationOwner } from '@/services/support-application-policy.service';
-import { getNewErrandDefaults, NewErrandDefaults } from '@/services/support-errand.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
 import { ABSENT_HEADER, mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
@@ -83,7 +83,10 @@ interface OrgStub {
  * `apiService` and `organizationService` are plain instance properties (the `private` keyword is
  * erased at runtime), so they can be replaced directly instead of mocking the modules.
  */
-const makeController = (classificationOwner: SupportErrandClassificationOwner = 'investigation') => {
+const makeController = (
+  classificationOwner: SupportErrandClassificationOwner = 'investigation',
+  registration = supportProfileFixture('KC').registration,
+) => {
   const controller = new SupportErrandController();
   const api: ApiStub = {
     get: vi.fn(async () => ({ data: { version: 7, status: 'ONGOING' }, headers: { etag: '"7"' }, message: 'success' })),
@@ -94,7 +97,7 @@ const makeController = (classificationOwner: SupportErrandClassificationOwner = 
     getOrganizationNumberByPartyId: vi.fn(async () => ''),
     getPartyIdByOrganizationNumber: vi.fn(async () => ''),
   };
-  const configuredProfile = supportProfileFixture('IAF');
+  const configuredProfile = { ...supportProfileFixture('IAF'), registration };
   const investigationPolicy = {
     getClassificationOwner: vi.fn(async () => classificationOwner),
     getRegistrationState: vi.fn(async () => (classificationOwner === 'unavailable' ? 'unavailable' : 'enabled')),
@@ -496,6 +499,30 @@ describe('SupportErrandController', () => {
   });
 
   describe('registerSupportErrand', () => {
+    it('registers a new application using only the taxonomy declared in its profile', async () => {
+      const profile = createSupportApplicationProfile({
+        application: 'FUTURE_SM',
+        documents: [],
+        registration: {
+          mode: 'enabled',
+          defaults: {
+            classification: { category: 'FUTURE_CATEGORY', type: 'FUTURE_TYPE' },
+            parameters: [{ key: 'source', values: ['REGISTRATION'] }],
+          },
+        },
+      });
+      const { controller, api } = makeController();
+      Object.assign(controller, { investigationPolicyService: new SupportApplicationPolicyService(undefined, profile, 'future-sm') });
+
+      await controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, mockRes());
+
+      expect(api.post.mock.calls[0][0].data).toMatchObject({
+        classification: { category: 'FUTURE_CATEGORY', type: 'FUTURE_TYPE' },
+        parameters: [{ key: 'source', values: ['REGISTRATION'] }],
+        labels: [],
+      });
+    });
+
     const metadata = { data: { labelStructure: [] }, message: 'success' };
 
     it('creates an empty errand owned by the requesting user with the drake defaults', async () => {
@@ -524,8 +551,7 @@ describe('SupportErrandController', () => {
     });
 
     it('rejects applications without an approved registration seed before metadata or upstream creation', async () => {
-      const { controller, api } = makeController();
-      (controller as unknown as { newErrandDefaults: undefined }).newErrandDefaults = undefined;
+      const { controller, api } = makeController('generic-errand', { mode: 'disabled' });
 
       await expect(controller.registerSupportErrand(mockReq(), MUNICIPALITY_ID, mockRes())).rejects.toMatchObject({
         status: 409,
@@ -795,8 +821,7 @@ describe('SupportErrandController', () => {
     });
 
     it('creates IAF/VOF errands with an explicit deviation kind but leaves legal-base classification to the investigation', async () => {
-      const { controller, api } = makeController();
-      (controller as unknown as { newErrandDefaults: NewErrandDefaults }).newErrandDefaults = getNewErrandDefaults('IAF')!;
+      const { controller, api } = makeController('investigation', supportProfileFixture('IAF').registration);
       api.get.mockResolvedValue({
         data: {
           labelStructure: [

@@ -1,5 +1,6 @@
 const { lstatSync, readFileSync, readdirSync, writeFileSync } = require('node:fs');
 const { extname, join } = require('node:path');
+const defaults = require('../frontend-environment-defaults.json');
 
 function replaceBasePath(source, placeholder, encoded) {
   const parts = source.split(placeholder);
@@ -25,7 +26,7 @@ function replaceFrontendEnvironment(directory, environment) {
   if (!lstatSync(nextDirectory).isDirectory() || !lstatSync(server).isFile()) {
     throw new Error('Frontend configuration requires a regular .next directory and server.js file');
   }
-  const values = Object.entries(environment)
+  const values = Object.entries({ ...defaults, ...environment })
     .filter(([name]) => name.startsWith('NEXT_PUBLIC_') || ['DOMAIN_NAME', 'BASE_PATH', 'ADMIN_URL', 'HEALTH_USERNAME', 'HEALTH_PASSWORD'].includes(name))
     .map(([name, value]) => [
       `${name === 'NEXT_PUBLIC_BASEPATH' ? '/' : ''}${name}_PLACEHOLDER`,
@@ -48,6 +49,10 @@ function replaceFrontendEnvironment(directory, environment) {
       } else {
         result = result.split(placeholder).join(encoded);
       }
+    }
+    const unresolved = result.match(/(?:NEXT_PUBLIC_[A-Z0-9_]+|DOMAIN_NAME|BASE_PATH|ADMIN_URL|HEALTH_USERNAME|HEALTH_PASSWORD)_PLACEHOLDER/u);
+    if (unresolved) {
+      throw new Error(`Frontend build contains an unresolved environment placeholder for ${unresolved[0].slice(0, -'_PLACEHOLDER'.length)}; declare a value or an explicit default before startup`);
     }
     if (result !== source) writeFileSync(file, result);
   }

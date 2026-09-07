@@ -53,4 +53,19 @@ describe('release compatibility before case access', () => {
     expect((await request(app).post('/iaf/health/up')).status).toBe(409);
     expect((await request(app).get('/iaf/health/up/extra')).status).toBe(409);
   });
+
+  it('allows only documentation GET resources without release headers', async () => {
+    const app = express();
+    app.use('/iaf', dragonDeploymentMiddleware(expected));
+    app.all('*', (_req, res) => res.sendStatus(200));
+    for (const path of ['/swagger.json', '/api-docs', '/api-docs/', '/api-docs/swagger-ui.css']) {
+      expect((await request(app).get(`/iaf${path}`)).status).toBe(200);
+      for (const method of ['post', 'put', 'patch', 'delete'] as const) {
+        expect((await request(app)[method](`/iaf${path}`)).status).toBe(409);
+      }
+    }
+    for (const path of ['/swagger.json/errands', '/swagger.json-extra', '/api-docsomething', '/errands']) {
+      expect((await request(app).get(`/iaf${path}`)).status).toBe(409);
+    }
+  });
 });

@@ -7,7 +7,7 @@ WORKDIR /app/frontend
 COPY --chown=1001:0 frontend/package.json frontend/yarn.lock ./
 RUN npm install -g yarn@1.22.22 --ignore-scripts \
  && yarn install --frozen-lockfile --ignore-scripts
-COPY --chown=1001:0 dragons.json /app/dragons.json
+COPY --chown=1001:0 dragons.json frontend-environment-defaults.json /app/
 COPY --chown=1001:0 scripts/check-runtime-logging.mjs scripts/dragon.mjs scripts/dragon-deployment.cjs scripts/generate-deploy-info.js /app/scripts/
 COPY --chown=1001:0 frontend/ ./
 COPY --chown=1001:0 frontend/.env-cicd .env.local
@@ -36,7 +36,7 @@ COPY --from=builder --chown=0:0 /app/frontend/.next/standalone /app/
 COPY --from=builder --chown=0:0 /app/frontend/public ./public
 COPY --from=builder --chown=0:0 /app/frontend/.next/static ./.next/static
 COPY --from=builder --chown=0:0 /app/dragon-build.json /app/dragon-build.json
-COPY --chown=0:0 dragons.json /app/dragons.json
+COPY --chown=0:0 dragons.json frontend-environment-defaults.json /app/
 COPY --chown=0:0 scripts/assert-dragon-image.cjs /app/scripts/assert-dragon-image.cjs
 COPY --chown=0:0 scripts/replace-frontend-env.cjs /app/scripts/replace-frontend-env.cjs
 COPY --chown=0:0 scripts/dragon-deployment.cjs scripts/start-dragon.cjs /app/scripts/

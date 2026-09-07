@@ -4,6 +4,7 @@ import { resolveIafVofInvestigationClassificationPolicy } from '@/avvikelse/clas
 
 const policy = resolveIafVofInvestigationClassificationPolicy(
   createAvvikelseSupportApplicationProfile({
+    registration: { mode: 'enabled', defaults: {} },
     application: 'IAF',
     documents: [
       { key: 'manager-document', schemaName: 'utredning-enhetschef', tabLabel: 'Manager', ownerLabel: 'Manager' },

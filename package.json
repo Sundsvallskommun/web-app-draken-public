@@ -11,8 +11,10 @@
     "knip": "yarn --cwd frontend knip && yarn --cwd backend knip",
     "format": "yarn --cwd frontend format && yarn --cwd backend format",
     "test": "yarn test:architecture && yarn --cwd frontend test && yarn --cwd backend test",
-    "verify": "yarn type-check && yarn lint && yarn knip && yarn test",
-    "test:architecture": "node --test scripts/*.test.mjs"
+    "verify": "yarn type-check && yarn lint:strict && yarn format:check && yarn test",
+    "test:architecture": "node --test scripts/*.test.mjs",
+    "lint:strict": "yarn --cwd frontend lint:strict && yarn --cwd frontend lint:deps && yarn --cwd backend lint:strict",
+    "format:check": "yarn --cwd frontend format:check && yarn --cwd backend format:check"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",

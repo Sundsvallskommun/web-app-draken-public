@@ -29,9 +29,28 @@ const config = ts.readConfigFile(resolve(backendRoot, 'tsconfig.json'), ts.sys.r
 const { options } = ts.parseJsonConfigFileContent(config.config, ts.sys, backendRoot);
 const entrypoint = resolve(backendRoot, `src/dragons/${id.toLowerCase()}/server.ts`);
 const program = ts.createProgram([entrypoint], options);
+// Controller filenames do not define their domain: several CaseData controllers
+// live directly under controllers/. Derive ownership from the canonical compositions.
+const controllerOwners = new Map();
+for (const [composition, owner] of [['shared', 'shared'], ['casedata', 'casedata'], ['support', 'supportmanagement']]) {
+  const file = resolve(backendRoot, `src/shell/${composition}-controllers.ts`);
+  if (!existsSync(file)) continue;
+  const source = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
+  for (const node of source.statements) {
+    if (!ts.isImportDeclaration(node) || !ts.isStringLiteral(node.moduleSpecifier)) continue;
+    const imported = ts.resolveModuleName(node.moduleSpecifier.text, file, options, ts.sys).resolvedModule?.resolvedFileName;
+    if (!imported?.includes('/src/controllers/')) continue;
+    const previous = controllerOwners.get(imported);
+    assert.ok(!previous || previous === owner, `${imported}: controller has conflicting composition owners`);
+    controllerOwners.set(imported, owner);
+  }
+}
 const expectedModules = new Set();
 for (const source of program.getSourceFiles()) {
   if (!source.fileName.startsWith(resolve(backendRoot, 'src') + '/') || source.isDeclarationFile) continue;
+  const controllerOwner = controllerOwners.get(source.fileName);
+  assert.ok(!controllerOwner || controllerOwner === 'shared' || controllerOwner === definition.domain,
+    `${source.fileName}: ${controllerOwner} controller must not ship in a ${definition.domain} application`);
   expectedModules.add(source.fileName.slice(resolve(backendRoot, 'src').length + 1).replace(/\.ts$/u, '.js'));
   for (const node of source.statements) {
     const specifier = node.moduleSpecifier;

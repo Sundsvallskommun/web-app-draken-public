@@ -12,7 +12,6 @@ import { User } from '@/interfaces/users.interface';
 import { logApplicationFailure } from '@/services/request-diagnostics';
 
 import { FeatureFlagService, featureFlagService } from './feature-flag.service';
-import { getNewErrandDefaults } from './support-errand.service';
 
 export type SupportErrandClassificationOwner = 'generic-errand' | 'investigation' | 'unavailable';
 export type SupportRegistrationState = 'enabled' | 'disabled' | 'unavailable';
@@ -97,7 +96,7 @@ export class SupportApplicationPolicyService {
    * finish classifying, so fail closed before creating it.
    */
   async getRegistrationState(user: User): Promise<SupportRegistrationState> {
-    if (!getNewErrandDefaults(this.configuredProfile.application)) return 'disabled';
+    if (this.configuredProfile.registration.mode === 'disabled') return 'disabled';
     if (!this.resolvedClassificationPolicy) return 'enabled';
     return this.registrationStateForInvestigationState(await this.getState(user));
   }
@@ -131,7 +130,7 @@ export class SupportApplicationPolicyService {
   }
 
   private registrationStateForInvestigationState(state: SupportInvestigationState): SupportRegistrationState {
-    if (!getNewErrandDefaults(this.configuredProfile.application)) return 'disabled';
+    if (this.configuredProfile.registration.mode === 'disabled') return 'disabled';
     return this.resolvedClassificationPolicy && state === 'unavailable' ? 'unavailable' : 'enabled';
   }
 }

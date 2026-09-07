@@ -692,7 +692,7 @@ export const CasedataDecisionTab: FC<{
     isSaveAndSendLoading ||
     decisionIsReadOnly ||
     !formState.isValid ||
-    !validateErrandForDecision(errand) ||
+    !validateErrandForDecision(errand, municipalityId) ||
     !validateOwnerForSendingDecision(errand) ||
     !validateAttachmentsForDecision(errand).valid ||
     !allowed;

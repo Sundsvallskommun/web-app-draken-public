@@ -1,5 +1,9 @@
 import { IAF_SUPPORT_APPLICATION_PROFILE, VOF_SUPPORT_APPLICATION_PROFILE } from '@/avvikelse/application-profile';
-import { configureSupportApplicationProfile, getSupportApplicationProfile } from '@/config/support-application-profile';
+import {
+  configureSupportApplicationProfile,
+  getSupportApplicationProfile,
+  SupportApplicationProfileInput,
+} from '@/config/support-application-profile';
 import { createSupportApplicationProfile } from '@/config/support-application-profile';
 import { SupportApplicationProfileDto } from '@/dtos/support-application-profile.dto';
 
@@ -44,7 +48,7 @@ describe('support investigation profiles', () => {
     expect(getSupportApplicationProfile(' iaf ')).toBe(IAF_SUPPORT_APPLICATION_PROFILE);
     expect(getSupportApplicationProfile('VOF').documents).toEqual([]);
     expect(getSupportApplicationProfile('KC').documents).toEqual([]);
-    expect(getSupportApplicationProfile(undefined)).toEqual({ application: '', documents: [] });
+    expect(getSupportApplicationProfile(undefined)).toEqual({ application: '', documents: [], registration: { mode: 'disabled' } });
     configureSupportApplicationProfile(VOF_SUPPORT_APPLICATION_PROFILE);
     expect(getSupportApplicationProfile('vof')).toBe(VOF_SUPPORT_APPLICATION_PROFILE);
     expect(getSupportApplicationProfile('IAF').documents).toEqual([]);
@@ -53,11 +57,13 @@ describe('support investigation profiles', () => {
   it('canonicalizes advertised fields before they become document allowlist values', () => {
     expect(
       createSupportApplicationProfile({
+        registration: { mode: 'disabled' },
         application: ' future ',
         documents: [{ key: ' document-key ', schemaName: ' schema-name ', tabLabel: ' Tab ', ownerLabel: ' Owner ' }],
       }),
     ).toEqual({
       application: 'FUTURE',
+      registration: { mode: 'disabled' },
       documents: [{ key: 'document-key', schemaName: 'schema-name', tabLabel: 'Tab', ownerLabel: 'Owner' }],
     });
   });
@@ -69,7 +75,7 @@ describe('support investigation profiles', () => {
       tabLabel: `Document ${index + 1}`,
       ownerLabel: `Owner ${index + 1}`,
     }));
-    expect(createSupportApplicationProfile({ application: 'FUTURE', documents }).documents).toEqual(documents);
+    expect(createSupportApplicationProfile({ registration: { mode: 'disabled' }, application: 'FUTURE', documents }).documents).toEqual(documents);
   });
 
   it('deeply clones transport and label-filter data without introducing application behavior', () => {
@@ -85,6 +91,7 @@ describe('support investigation profiles', () => {
       ],
     };
     const profile = createSupportApplicationProfile({
+      registration: { mode: 'disabled' },
       application: 'FUTURE',
       requiredSupportManagementApiTarget: 'stable',
       documents,
@@ -100,13 +107,22 @@ describe('support investigation profiles', () => {
 
   it('rejects an unsupported runtime transport requirement', () => {
     expect(() =>
-      createSupportApplicationProfile({ application: 'FUTURE', documents: [], requiredSupportManagementApiTarget: 'future' as 'sprint' }),
+      createSupportApplicationProfile({
+        registration: { mode: 'disabled' },
+        application: 'FUTURE',
+        documents: [],
+        requiredSupportManagementApiTarget: 'future' as 'sprint',
+      }),
     ).toThrow('requires unsupported Support Management API target future');
   });
 
   it('rejects empty or unsafe document fields and duplicate keys', () => {
     const validDocument = expectedDocuments[0];
-    const profile = (documents: SupportApplicationProfileDto['documents']): SupportApplicationProfileDto => ({ application: 'IAF', documents });
+    const profile = (documents: SupportApplicationProfileDto['documents']): SupportApplicationProfileInput => ({
+      application: 'IAF',
+      documents,
+      registration: { mode: 'disabled' },
+    });
 
     expect(() => createSupportApplicationProfile(profile([{ ...validDocument, tabLabel: ' ' }]))).toThrow('documents[0].tabLabel must not be empty');
     expect(() => createSupportApplicationProfile(profile([validDocument, { ...validDocument, key: ` ${validDocument.key} ` }]))).toThrow(
@@ -119,6 +135,27 @@ describe('support investigation profiles', () => {
 
   it('allows several document keys to reuse the same schema template', () => {
     const sharedSchemaDocuments = [expectedDocuments[0], { ...expectedDocuments[1], schemaName: expectedDocuments[0].schemaName }];
-    expect(createSupportApplicationProfile({ application: 'FUTURE', documents: sharedSchemaDocuments }).documents).toEqual(sharedSchemaDocuments);
+    expect(
+      createSupportApplicationProfile({ registration: { mode: 'disabled' }, application: 'FUTURE', documents: sharedSchemaDocuments }).documents,
+    ).toEqual(sharedSchemaDocuments);
+  });
+
+  it('owns an immutable copy of registration defaults', () => {
+    const defaults = {
+      classification: { category: 'FUTURE', type: 'UNCLASSIFIED' },
+      parameters: [{ key: 'kind', values: ['INITIAL'] }],
+    };
+    const profile = createSupportApplicationProfile({
+      application: 'FUTURE',
+      documents: [],
+      registration: { mode: 'enabled', defaults },
+    });
+    defaults.classification.category = 'CHANGED';
+    defaults.parameters[0].values.push('CHANGED');
+    expect(profile.registration).toEqual({
+      mode: 'enabled',
+      defaults: { classification: { category: 'FUTURE', type: 'UNCLASSIFIED' }, parameters: [{ key: 'kind', values: ['INITIAL'] }] },
+    });
+    expectDeepFrozen(profile.registration);
   });
 });

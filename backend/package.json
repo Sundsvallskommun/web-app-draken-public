@@ -59,7 +59,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "knip": "knip",
-    "knip:production": "knip --production"
+    "knip:production": "knip --production",
+    "format": "prettier --write \"src/**/*.ts\""
   },
   "dependencies": {
     "@node-saml/passport-saml": "^5.1.0",
