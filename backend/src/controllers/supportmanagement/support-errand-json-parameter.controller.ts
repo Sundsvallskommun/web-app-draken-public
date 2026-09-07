@@ -85,7 +85,7 @@ export class SupportErrandJsonParameterController {
     if ((await this.policyService.getState(req.user)) === 'unavailable') {
       throw new HttpException(503, 'Investigation read policy is temporarily unavailable');
     }
-    this.accessService.assertCanAccessDocument(req.user, definition.key);
+    this.accessService.assertCanReadDocument(req.user, definition.key);
     const result = await this.documentService.readJsonParameter({ definition, municipalityId, errandId, user: req.user });
 
     setETagHeader(response, result.etag, result.document.version);
@@ -116,7 +116,8 @@ export class SupportErrandJsonParameterController {
     }
     // Support Management authorizes the document itself from the forwarded AD account; refusing
     // here keeps the BFF's answer a 403 about permissions instead of a relayed upstream failure.
-    this.accessService.assertCanAccessDocument(req.user, definition.key);
+    // A user who may only read the document is refused here rather than at the load.
+    this.accessService.assertCanWriteDocument(req.user, definition.key);
     const result = await this.documentService.writeJsonParameter({
       definition,
       municipalityId,

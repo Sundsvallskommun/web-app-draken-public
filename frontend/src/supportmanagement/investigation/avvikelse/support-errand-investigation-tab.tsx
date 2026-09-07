@@ -9,6 +9,7 @@ import { useInvestigationProfileStore } from '../investigation-profile-store';
 import type { InvestigationTabProps } from '../investigation-variant';
 import {
   type InvestigationTabState,
+  isInvestigationDocumentEditable,
   resolveInvestigationTabState,
   visibleInvestigationDocuments,
 } from './investigation-tab-state';
@@ -28,7 +29,8 @@ export function SupportErrandInvestigationTab({ onDirtyChange }: Readonly<Invest
   const canEditSupportManagement = useUserStore((state) => state.user.permissions.canEditSupportManagement);
   const profile = useInvestigationProfileStore((state) => state.profile);
   const profileStatus = useInvestigationProfileStore((state) => state.status);
-  const readonly = !supportErrand || isSupportErrandLocked(supportErrand) || !canEditSupportManagement;
+  // Errand-wide readonly. Each document adds its own read-only grant on top of it below.
+  const errandReadonly = !supportErrand || isSupportErrandLocked(supportErrand) || !canEditSupportManagement;
 
   const documents = useMemo(() => visibleInvestigationDocuments(profile), [profile]);
   const tabState = resolveInvestigationTabState(profileStatus, profile);
@@ -101,7 +103,7 @@ export function SupportErrandInvestigationTab({ onDirtyChange }: Readonly<Invest
               <Tabs.Content className="min-w-0 max-w-full">
                 <SupportInvestigationDocument
                   definition={definition}
-                  readonly={readonly}
+                  readonly={errandReadonly || !isInvestigationDocumentEditable(definition)}
                   onDirtyChange={dirtyCallbacks[definition.key]}
                   onSaved={recordSavedDocument}
                 />

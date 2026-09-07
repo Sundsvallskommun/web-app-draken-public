@@ -164,9 +164,16 @@ test('carries the per-document access the BFF resolved from the user groups', ()
   assert.equal(profile.documents[1].access, 'edit');
 });
 
+test('carries a read-only grant as its own level, distinct from edit and from hidden', () => {
+  const profile = parseInvestigationProfile(profileWithDocumentAccess('read', 'edit'), 'IAF');
+
+  assert.equal(profile.documents[0].access, 'read');
+  assert.equal(profile.documents[1].access, 'edit');
+});
+
 test('rejects an access value outside the contract', () => {
   assert.throws(
-    () => parseInvestigationProfile(profileWithDocumentAccess('read', 'edit'), 'IAF'),
+    () => parseInvestigationProfile(profileWithDocumentAccess('write', 'edit'), 'IAF'),
     /Utredningsprofilens documents\[0\]\.access är ogiltig\./
   );
 });

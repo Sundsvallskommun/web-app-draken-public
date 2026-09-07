@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
 import type { InvestigationProfile } from '../investigation-profile';
-import { resolveInvestigationTabState, visibleInvestigationDocuments } from './investigation-tab-state';
+import {
+  isInvestigationDocumentEditable,
+  resolveInvestigationTabState,
+  visibleInvestigationDocuments,
+} from './investigation-tab-state';
 
 const document = () => ({
   key: 'utredning-enhetschef',
@@ -75,4 +79,24 @@ test('only the documents the user reaches are offered as tabs', () => {
 test('a document without an access field stays visible', () => {
   assert.deepEqual(visibleInvestigationDocuments(profile()).length, 1);
   assert.deepEqual(visibleInvestigationDocuments(null).length, 0);
+});
+
+test('a read-only document is offered as a tab, unlike a hidden one', () => {
+  const documents = [
+    { ...document(), key: 'utredning-enhetschef', access: 'read' },
+    { ...document(), key: 'utredning-hsl', access: 'hidden' },
+  ];
+  const activeProfile = profile({ documents } as Partial<InvestigationProfile>);
+
+  assert.deepEqual(
+    visibleInvestigationDocuments(activeProfile).map(({ key }) => key),
+    ['utredning-enhetschef']
+  );
+  assert.equal(resolveInvestigationTabState('ready', activeProfile), 'ready');
+});
+
+test('only an explicit read grant makes a document uneditable', () => {
+  assert.equal(isInvestigationDocumentEditable({ ...document(), access: 'edit' } as never), true);
+  assert.equal(isInvestigationDocumentEditable({ ...document(), access: 'read' } as never), false);
+  assert.equal(isInvestigationDocumentEditable(document() as never), true);
 });

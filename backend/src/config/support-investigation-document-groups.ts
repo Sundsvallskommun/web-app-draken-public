@@ -1,11 +1,14 @@
 export interface SupportInvestigationDocumentGroupGrant {
   readonly documentKey: string;
   /** AD group names, lowercased to match the session's own normalization of the SAML assertion. */
-  readonly groups: readonly string[];
+  readonly editorGroups: readonly string[];
+  /** AD groups that reach the document read-only. Write always implies read, so an editor group need not be repeated here. */
+  readonly readerGroups: readonly string[];
 }
 
-const GRANT_KEYS = new Set(['documentKey', 'groups']);
+const GRANT_KEYS = new Set(['documentKey', 'groups', 'editorGroups', 'readerGroups']);
 const DOCUMENT_KEY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
+const NO_GROUPS: readonly string[] = Object.freeze([]);
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -30,11 +33,19 @@ const readGroups = (value: unknown, path: string): readonly string[] => {
   return Object.freeze(groups);
 };
 
+/** An omitted list is legal; a present one still has to name at least one group. */
+const readOptionalGroups = (value: unknown, path: string): readonly string[] | undefined =>
+  value === undefined ? undefined : readGroups(value, path);
+
 /**
  * Parses the deployment-owned mapping from investigation document to the AD groups whose members
  * reach it at all. Missing configuration is a legal state and deliberately distinct from an empty
  * mapping: only the applications that actually run investigation configure this, so requiring it
  * would make every other deployment carry a setting it has no use for.
+ *
+ * A grant separates the groups that may change the document from those that may only read it.
+ * `groups` remains accepted as the original spelling of `editorGroups`, so a deployment written
+ * before read access existed keeps meaning what it meant: those groups write.
  */
 export const resolveSupportInvestigationDocumentGroups = (
   configuredGroups = process.env.SUPPORT_INVESTIGATION_DOCUMENT_GROUPS,
@@ -69,7 +80,19 @@ export const resolveSupportInvestigationDocumentGroups = (
     if (documentKeys.has(documentKey)) throw new Error(`${path} duplicates document key ${documentKey}`);
     documentKeys.add(documentKey);
 
-    return Object.freeze({ documentKey, groups: readGroups(candidate.groups, `${path}.groups`) });
+    const legacyEditorGroups = readOptionalGroups(candidate.groups, `${path}.groups`);
+    const namedEditorGroups = readOptionalGroups(candidate.editorGroups, `${path}.editorGroups`);
+    if (legacyEditorGroups && namedEditorGroups) {
+      throw new Error(`${path} must not combine groups and editorGroups`);
+    }
+
+    const editorGroups = namedEditorGroups ?? legacyEditorGroups ?? NO_GROUPS;
+    const readerGroups = readOptionalGroups(candidate.readerGroups, `${path}.readerGroups`) ?? NO_GROUPS;
+    if (editorGroups.length === 0 && readerGroups.length === 0) {
+      throw new Error(`${path} must name editorGroups, readerGroups or groups`);
+    }
+
+    return Object.freeze({ documentKey, editorGroups, readerGroups });
   });
 
   return Object.freeze(grants);

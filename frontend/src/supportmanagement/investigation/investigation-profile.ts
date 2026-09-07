@@ -3,12 +3,13 @@ import type { LabelFilterGroupDefinition } from '../filters/label-filter-project
 export const INVESTIGATION_PROFILE_STATES = ['active', 'inactive', 'unavailable'] as const;
 export type InvestigationProfileState = (typeof INVESTIGATION_PROFILE_STATES)[number];
 
-export const INVESTIGATION_DOCUMENT_ACCESS = ['edit', 'hidden'] as const;
+export const INVESTIGATION_DOCUMENT_ACCESS = ['edit', 'read', 'hidden'] as const;
 
 /**
- * Whether the signed-in user reaches one investigation document at all, as the BFF resolved it from
+ * How far the signed-in user reaches into one investigation document, as the BFF resolved it from
  * their AD groups. A hidden document is left out of the tab strip entirely, and the BFF refuses to
- * serve it, so the client never has its content to show.
+ * serve it, so the client never has its content to show. A read document is offered as an ordinary
+ * tab that cannot be saved; the BFF refuses its write regardless of what the client renders.
  */
 export type InvestigationDocumentAccess = (typeof INVESTIGATION_DOCUMENT_ACCESS)[number];
 

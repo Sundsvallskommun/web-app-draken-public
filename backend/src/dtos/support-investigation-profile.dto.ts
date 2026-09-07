@@ -23,11 +23,12 @@ export class SupportInvestigationDocumentProfileDto {
   readonly ownerLabel!: string;
 }
 
-export const SUPPORT_INVESTIGATION_DOCUMENT_ACCESS = ['edit', 'hidden'] as const;
+export const SUPPORT_INVESTIGATION_DOCUMENT_ACCESS = ['edit', 'read', 'hidden'] as const;
 
 /**
- * Whether the signed-in user reaches one investigation document at all. Access is binary on
- * purpose: a handler either owns their part of the investigation or has no business seeing it.
+ * How far the signed-in user reaches into one investigation document: `edit` may change it, `read`
+ * may only look at it, and `hidden` is not served at all. Write implies read, so the three levels
+ * are ordered rather than independent flags.
  */
 export type SupportInvestigationDocumentAccess = (typeof SUPPORT_INVESTIGATION_DOCUMENT_ACCESS)[number];
 

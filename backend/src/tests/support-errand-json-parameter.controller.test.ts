@@ -174,7 +174,7 @@ describe('SupportErrandJsonParameterController', () => {
         { schemaId: '2281_utredning-hsl_1.0', value: {} },
         resDouble(),
       ),
-    ).rejects.toMatchObject({ status: 403, message: 'Missing permissions for this investigation document' });
+    ).rejects.toMatchObject({ status: 403, message: 'Missing write permissions for this investigation document' });
 
     expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
 
@@ -183,6 +183,41 @@ describe('SupportErrandJsonParameterController', () => {
     ).rejects.toMatchObject({ status: 403, message: 'Missing permissions for this investigation document' });
 
     expect(documentService.readJsonParameter).not.toHaveBeenCalled();
+  });
+
+  it('serves a read-only document but refuses its write', async () => {
+    const configuredDocumentGroups = JSON.stringify([
+      { documentKey: 'utredning-hsl', editorGroups: [MOCK_HSL_INVESTIGATOR_GROUP], readerGroups: [MOCK_UNIT_MANAGER_GROUP] },
+    ]);
+    const { controller, documentService } = makeController('IAF', 'active', configuredDocumentGroups);
+    const parameter: SupportErrandJsonParameter = {
+      key: 'utredning-hsl',
+      schemaId: '2281_utredning-hsl_1.0',
+      value: { summary: 'Test' },
+      version: 3,
+    };
+    documentService.readJsonParameter.mockResolvedValue({ document: parameter, etag: '"3"', status: 200 });
+    const unitManager = mockReq(mockUser({ groups: [MOCK_UNIT_MANAGER_GROUP] }));
+
+    await controller.getJsonParameter(unitManager, mockMunicipalityId, mockSupportErrandId, 'utredning-hsl', resDouble());
+
+    expect(documentService.readJsonParameter).toHaveBeenCalledTimes(1);
+
+    await expect(
+      controller.updateJsonParameter(
+        unitManager,
+        mockMunicipalityId,
+        mockSupportErrandId,
+        'utredning-hsl',
+        '"3"',
+        ABSENT_HEADER,
+        '10',
+        { schemaId: '2281_utredning-hsl_1.0', value: {} },
+        resDouble(),
+      ),
+    ).rejects.toMatchObject({ status: 403, message: 'Missing write permissions for this investigation document' });
+
+    expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
   });
 
   it('lets the mapped group write its own document', async () => {

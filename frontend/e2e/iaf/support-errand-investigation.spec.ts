@@ -453,6 +453,37 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(page.locator('[data-cy="investigation-document-utredning-hsl"]')).toHaveCount(0);
   });
 
+  test('visar en utredningsdel med enbart läsbehörighet skrivskyddad', async ({ page, dismissCookieConsent }) => {
+    const profile = defaultInvestigationProfile();
+    await installIafApiMock(page, {
+      documents: { [managerKey]: existingManagerDocument() },
+      investigationProfile: {
+        ...profile,
+        documents: profile.documents.map((document) => ({
+          ...document,
+          access: document.key === managerKey ? ('read' as const) : ('edit' as const),
+        })),
+      },
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    // A read grant keeps the tab, unlike a hidden one, and only takes the writing away.
+    const investigation = page.locator('[data-cy="support-investigation-tab"]');
+    await expect(investigation.getByRole('tab')).toHaveCount(profile.documents.length);
+
+    const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
+    await expect(managerDocument.getByText('Skrivskyddad', { exact: true })).toBeVisible();
+    await expect(managerDocument).toContainText('Utredningen kan läsas men inte ändras');
+    await expect(managerDocument.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
+
+    await investigation.getByRole('tab', { name: 'Utredning HSL', exact: true }).click();
+    const hslDocument = page.locator('[data-cy="investigation-document-utredning-hsl"]');
+    await expect(hslDocument.getByText('Redigerbar', { exact: true })).toBeVisible();
+    await expect(hslDocument.locator('[data-cy="schema-submit-button"]')).toHaveCount(1);
+  });
+
   test('förklarar sig när ingen del av utredningen tillhör användaren', async ({ page, dismissCookieConsent }) => {
     const profile = defaultInvestigationProfile();
     await installIafApiMock(page, {

@@ -1086,8 +1086,9 @@ export class SupportErrandController {
       throw new HttpException(400, 'Unsupported investigation classification document');
     }
     // Classification is written together with the document that owns it, so it follows that
-    // document's access rather than carrying an access rule of its own.
-    this.investigationAccessService.assertCanAccessDocument(req.user, definition.key);
+    // document's access rather than carrying an access rule of its own. Reading that document is
+    // therefore not enough: this is a write.
+    this.investigationAccessService.assertCanWriteDocument(req.user, definition.key);
     const url = `${municipalityId}/${this.namespace}/errands/${id}`;
     const metadataUrl = `${municipalityId}/${this.namespace}/metadata/labels`;
     const baseURL = apiURL(this.SERVICE);

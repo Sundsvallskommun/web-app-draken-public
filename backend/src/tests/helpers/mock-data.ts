@@ -91,3 +91,5 @@ export const MOCK_AUTHORIZED_GROUPS = 'draken_users,draken_developers';
 export const MOCK_UNIT_MANAGER_GROUP = 'draken_enhetschefer';
 export const MOCK_SOL_LSS_INVESTIGATOR_GROUP = 'draken_lex_utredare';
 export const MOCK_HSL_INVESTIGATOR_GROUP = 'draken_mas_mar';
+/** Stands in for the deployment group that is granted every investigation document, read and write. */
+export const MOCK_INVESTIGATION_ADMIN_GROUP = 'draken_avvikelse_admins';

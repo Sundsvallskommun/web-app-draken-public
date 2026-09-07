@@ -9,6 +9,14 @@ export const visibleInvestigationDocuments = (
 ): InvestigationProfile['documents'] => (profile?.documents ?? []).filter((document) => document.access !== 'hidden');
 
 /**
+ * Whether this user may change the document, as opposed to only reading it. Only an explicit read
+ * grant restricts, mirroring the visibility filter above: a profile that names no access at all
+ * predates per-document access and stays editable.
+ */
+export const isInvestigationDocumentEditable = (document: InvestigationProfile['documents'][number]): boolean =>
+  document.access !== 'read';
+
+/**
  * What an investigation tab shows once a capability flag has made it visible.
  *
  * Visibility no longer depends on the runtime profile, so every unusable profile has to explain
