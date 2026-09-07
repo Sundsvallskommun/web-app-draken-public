@@ -11,7 +11,7 @@ const dragons = JSON.parse(readFileSync(join(root, 'dragons.json'), 'utf8'));
 const children = new Set();
 
 function buildRevision() {
-  const revision = process.env.DEPLOY_COMMIT || execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+  const revision = process.env.DEPLOY_COMMIT || execFileSync('/usr/bin/git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
   if (!/^[a-f0-9]{40}$/u.test(revision)) throw new Error('DEPLOY_COMMIT must be a full commit SHA');
   return revision;
 }

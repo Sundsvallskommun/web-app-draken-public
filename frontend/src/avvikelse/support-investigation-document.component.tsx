@@ -74,15 +74,16 @@ interface SupportInvestigationDocumentProps {
 }
 
 function InvestigationAlert({ type, message }: Readonly<{ type: 'error' | 'warning' | 'success'; message: string }>) {
+  const Container = type === 'error' ? 'div' : 'output';
   return (
-    <div role={type === 'error' ? 'alert' : 'status'} aria-live={type === 'error' ? 'assertive' : 'polite'}>
+    <Container role={type === 'error' ? 'alert' : undefined} aria-live={type === 'error' ? 'assertive' : 'polite'}>
       <Alert type={type} className="mb-24" data-cy="investigation-document-notice">
         <Alert.Icon />
         <Alert.Content>
           <Alert.Content.Description>{message}</Alert.Content.Description>
         </Alert.Content>
       </Alert>
-    </div>
+    </Container>
   );
 }
 
@@ -245,10 +246,10 @@ export function SupportInvestigationDocument({
 
   if (loadState === 'loading') {
     return (
-      <div className="flex items-center gap-12 p-32" role="status">
+      <output className="flex items-center gap-12 p-32">
         <Spinner size={2} />
         <span>Laddar {definition.tabLabel.toLocaleLowerCase('sv')}...</span>
-      </div>
+      </output>
     );
   }
 

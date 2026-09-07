@@ -26,9 +26,10 @@ interface InvestigationSchemaFormPanelProps {
 }
 
 function LabAlert({ notice }: Readonly<{ notice: InvestigationLabNotice }>) {
+  const Container = notice.type === 'error' ? 'div' : 'output';
   return (
-    <div
-      role={notice.type === 'error' ? 'alert' : 'status'}
+    <Container
+      role={notice.type === 'error' ? 'alert' : undefined}
       aria-live={notice.type === 'error' ? 'assertive' : 'polite'}
     >
       <Alert type={notice.type} className="mb-24" data-cy="investigation-lab-notice">
@@ -37,7 +38,7 @@ function LabAlert({ notice }: Readonly<{ notice: InvestigationLabNotice }>) {
           <Alert.Content.Description>{notice.message}</Alert.Content.Description>
         </Alert.Content>
       </Alert>
-    </div>
+    </Container>
   );
 }
 
@@ -179,14 +180,14 @@ export function InvestigationSchemaFormPanel({
         </Disclosure.Header>
         <Disclosure.Content>
           {/* Keyboard users must be able to focus and scroll overflowing JSON. */}
-          <section
-            className="max-w-full overflow-auto rounded-8 bg-background-100 p-16 text-small"
+          <textarea
+            readOnly
+            rows={16}
+            value={JSON.stringify(formData, null, 2)}
+            className="w-full max-w-full resize-y overflow-auto rounded-8 border-0 bg-background-100 p-16 font-mono text-small"
             data-cy="schema-form-data-preview"
-            tabIndex={0}
             aria-label={`Lokalt JSON-värde för ${definition.tabLabel}`}
-          >
-            <pre className="m-0">{JSON.stringify(formData, null, 2)}</pre>
-          </section>
+          />
         </Disclosure.Content>
       </Disclosure>
     </section>

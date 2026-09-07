@@ -36,7 +36,9 @@ Detta är en **manuell införanderutin**. Ingen databas, Adminpanel, GitHub-rege
 ```
 
 ```sh
-node scripts/migrate-investigation-flags.mjs /secure/iaf-before.json /secure/iaf-proposal.json
+# Kör från exportkatalogen: båda filerna måste ligga under arbetskatalogen.
+cd /secure
+node /path/to/web-app-draken-public/scripts/migrate-investigation-flags.mjs iaf-before.json iaf-proposal.json
 ```
 
 Verktyget beräknar `gammal huvudflagga OCH gammal flagga för inkopplad implementation`.

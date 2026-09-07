@@ -19,10 +19,16 @@ if (identity && Object.hasOwn(dragons, identity) && identity !== builtIdentity) 
 const dragonEntry = `./src/dragons/${builtIdentity.toLowerCase()}/application.ts`;
 if (!fs.existsSync(path.resolve(__dirname, dragonEntry)))
   throw new Error(`Missing frontend entrypoint for ${builtIdentity}`);
-const revision = process.env.NODE_ENV === 'development'
-  ? 'development'
-  : process.env.DEPLOY_COMMIT || execFileSync('git', ['rev-parse', 'HEAD'], { cwd: path.resolve(__dirname, '..'), encoding: 'utf8' }).trim();
-if (revision !== 'development' && !/^[a-f0-9]{40}$/.test(revision)) throw new Error('DEPLOY_COMMIT must be a full commit SHA');
+const revision =
+  process.env.NODE_ENV === 'development'
+    ? 'development'
+    : process.env.DEPLOY_COMMIT ||
+      execFileSync('/usr/bin/git', ['rev-parse', 'HEAD'], {
+        cwd: path.resolve(__dirname, '..'),
+        encoding: 'utf8',
+      }).trim();
+if (revision !== 'development' && !/^[a-f0-9]{40}$/.test(revision))
+  throw new Error('DEPLOY_COMMIT must be a full commit SHA');
 
 // Generate raleway.scss from template with correct basePath (Turbopack doesn't support sassOptions.functions)
 const stylesDir = path.join(__dirname, 'src', 'styles');
@@ -55,6 +61,8 @@ envalid.cleanEnv(process.env, {
 const DEVELOPMENT_ONLY_PAGE_EXTENSIONS = ['dev.tsx', 'dev.ts'];
 const PAGE_EXTENSIONS = ['tsx', 'ts', 'jsx', 'js'];
 
+const developmentDistDir = identity ? `.next-${identity}` : '.next';
+
 module.exports = {
   // Next 16 forwards browser logs through two independent development channels.
   // MCP writes them to disk even when terminal forwarding is disabled.
@@ -78,10 +86,7 @@ module.exports = {
     config.resolve.alias['@dragon'] = path.resolve(__dirname, dragonEntry);
     return config;
   },
-  distDir:
-    process.env.DOCKER_BUILD === 'true'
-      ? '.next'
-      : `.next${process.env.NEXT_PUBLIC_APPLICATION ? `-${process.env.NEXT_PUBLIC_APPLICATION}` : ''}`,
+  distDir: process.env.DOCKER_BUILD === 'true' ? '.next' : developmentDistDir,
   output: 'standalone',
   images: {
     remotePatterns: process.env.DOMAIN_NAME ? [{ protocol: 'https', hostname: process.env.DOMAIN_NAME }] : [],

@@ -1,7 +1,5 @@
 import { expect, test } from '../fixtures/base.fixture';
-import { application, errandId, errandNumber, installIafApiMock } from './fixtures/investigation-flow.mock';
-
-test.skip(!['IAF', 'VOF'].includes(application), 'Det delade meddelandeflödet provas med IAF/VOF-fixturen.');
+import { errandId, errandNumber, installIafApiMock } from './fixtures/investigation-flow.mock';
 
 test('ett misslyckat meddelande loggar status och begärande-ID utan mottagare eller innehåll', async ({
   page,
@@ -51,12 +49,13 @@ test('ett misslyckat meddelande loggar status och begärande-ID utan mottagare e
   await dismissCookieConsent();
   await page.getByRole('tab', { name: /Meddelanden/ }).click();
   await page.locator('[data-cy="new-message-button"]').click();
-  await page.locator('[data-cy="useEmail-radiobutton-true"]').check({ force: true });
+  await page.locator('[data-cy="useEmail-radiobutton-true"]').check();
   await page.locator('[data-cy="new-email-input"]').first().fill(email);
   await page.locator('[data-cy="add-new-email-button"]').first().click();
   await page.locator('[data-cy="decision-richtext-wrapper"]').first().click();
   await page.keyboard.type(message);
 
+  await page.clock.install();
   const [request] = await Promise.all([
     page.waitForRequest((request) => request.method() === 'POST' && request.url().includes('/supportmessage/')),
     page.locator('[data-cy="send-message-button"]').first().click(),
@@ -73,7 +72,7 @@ test('ett misslyckat meddelande loggar status och begärande-ID utan mottagare e
 
   // Next's development log forwarding flushes after 100ms. Ordinary HMR stays enabled,
   // but neither its terminal channel nor MCP's independent file channel may receive logs.
-  await page.waitForTimeout(250);
+  await page.clock.runFor(250);
   const entries = await Promise.all(consoleEntries);
   const values = entries.flat();
   expect(values).toContainEqual({

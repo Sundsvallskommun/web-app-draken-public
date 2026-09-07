@@ -84,7 +84,7 @@ export class RelationsController {
       url = `${municipalityId}/${namespace}/errands/${resourceId}`;
       baseURL = apiURL(this.SUPPORTMANAGEMENT_SERVICE);
     } else {
-      logApplicationFailure('Unsupported relation service', undefined);
+      logApplicationFailure('Unsupported relation service');
       return '';
     }
 

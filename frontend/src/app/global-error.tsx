@@ -14,6 +14,15 @@ export default function GlobalError({
 }>) {
   const deploymentMismatch = error.name === 'ApiDeploymentMismatchError';
   const configurationError = ['FeatureFlagConfigurationError', 'InvestigationConfigurationError'].includes(error.name);
+  let title = 'Ett oväntat fel uppstod';
+  let message = 'Applikationen kunde inte laddas. Prova att ladda om sidan.';
+  if (deploymentMismatch) {
+    title = 'Sidan behöver laddas om';
+    message = DEPLOYMENT_MISMATCH_MESSAGE;
+  } else if (configurationError) {
+    title = 'Konfigurationen behöver rättas';
+    message = 'Applikationens konfiguration behöver rättas. Kontakta systemförvaltningen.';
+  }
   return (
     <html lang="sv">
       <body>
@@ -29,20 +38,8 @@ export default function GlobalError({
             padding: '24px',
           }}
         >
-          <h1 style={{ fontSize: '1.5rem', margin: 0 }}>
-            {deploymentMismatch
-              ? 'Sidan behöver laddas om'
-              : configurationError
-              ? 'Konfigurationen behöver rättas'
-              : 'Ett oväntat fel uppstod'}
-          </h1>
-          <p style={{ color: '#555', margin: 0 }}>
-            {deploymentMismatch
-              ? DEPLOYMENT_MISMATCH_MESSAGE
-              : configurationError
-              ? 'Applikationens konfiguration behöver rättas. Kontakta systemförvaltningen.'
-              : 'Applikationen kunde inte laddas. Prova att ladda om sidan.'}
-          </p>
+          <h1 style={{ fontSize: '1.5rem', margin: 0 }}>{title}</h1>
+          <p style={{ color: '#555', margin: 0 }}>{message}</p>
           {error.digest && (
             <p style={{ color: '#999', fontSize: '0.875rem', margin: 0 }}>Felreferens: {error.digest}</p>
           )}

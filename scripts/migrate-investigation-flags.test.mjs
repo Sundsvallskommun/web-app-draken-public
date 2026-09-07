@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import { migrateInvestigationFlags } from './migrate-investigation-flags.mjs';
+
+const migrationCli = fileURLToPath(new URL('./migrate-investigation-flags.mjs', import.meta.url));
 
 const row = (name, enabled, extra = {}) => ({ application: 'IAF', namespace: 'iaf', name, enabled, ...extra });
 const fixture = (changes = {}) => ({ version: 1, application: 'IAF', namespace: 'iaf', implementation: 'avvikelse', environment: {}, flags: [], ...changes });
@@ -89,7 +92,7 @@ test('CLI writes a separate proposal, never overwrites a file or prints exported
     const source = join(directory, 'source.json');
     const destination = join(directory, 'proposal.json');
     writeFileSync(source, JSON.stringify(fixture({ flags: [row('unrelated', true, { description: 'private-value' })] })));
-    const run = () => spawnSync(process.execPath, ['scripts/migrate-investigation-flags.mjs', source, destination], { encoding: 'utf8' });
+    const run = () => spawnSync(process.execPath, [migrationCli, source, destination], { cwd: directory, encoding: 'utf8' });
     const first = run();
     assert.equal(first.status, 0, first.stderr);
     assert.doesNotMatch(first.stdout + first.stderr, /private-value/u);
@@ -97,5 +100,34 @@ test('CLI writes a separate proposal, never overwrites a file or prints exported
     assert.equal(run().status, 1);
     assert.equal(readFileSync(destination, 'utf8'), proposal);
     assert.equal(JSON.parse(readFileSync(source, 'utf8')).version, 1);
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
+test('CLI rejects traversal and symlink escapes before reading or writing outside its working directory', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'investigation-migration-paths-'));
+  try {
+    const working = join(directory, 'working');
+    const outside = join(directory, 'working-sibling');
+    mkdirSync(working);
+    mkdirSync(outside);
+    const source = JSON.stringify(fixture());
+    writeFileSync(join(working, 'source.json'), source);
+    writeFileSync(join(outside, 'source.json'), source);
+    symlinkSync(outside, join(working, 'linked'));
+    for (const [input, output] of [
+      ['../working-sibling/source.json', 'proposal.json'],
+      [join(outside, 'source.json'), 'proposal.json'],
+      ['source.json', '../working-sibling/proposal.json'],
+      ['source.json', join(outside, 'proposal.json')],
+      ['linked/source.json', 'proposal.json'],
+      ['source.json', 'linked/proposal.json'],
+    ]) {
+      const result = spawnSync(process.execPath, [migrationCli, input, output], { cwd: working, encoding: 'utf8' });
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /must stay inside the working directory/);
+      assert.equal(readFileSync(join(outside, 'source.json'), 'utf8'), source);
+      assert.throws(() => readFileSync(join(outside, 'proposal.json')), { code: 'ENOENT' });
+      assert.throws(() => readFileSync(join(working, 'proposal.json')), { code: 'ENOENT' });
+    }
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });

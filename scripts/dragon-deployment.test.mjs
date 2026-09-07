@@ -62,6 +62,8 @@ test('a reviewed release binds image digests, namespaces, municipality, API targ
 test('the deployment id is stable for key order and changes for either image, config or secret reference', () => {
   const release = fixture();
   const expected = deploymentIdentity(release);
+  // Existing reviewed releases must keep their identity when serialization is refactored.
+  assert.equal(expected.deployment, '623609296854dacd5be76ccd2f641ac9cf86627d1460bdcb0fb18d1d3abdc8ad');
   assert.deepEqual(deploymentIdentity(Object.fromEntries(Object.entries(release).reverse())), expected);
   for (const mutate of [
     value => { value.frontend.image = value.frontend.image.replace(/0{64}$/u, 'a'.repeat(64)); },
@@ -218,3 +220,13 @@ test('the real image launcher rejects corrupt secrets without echoing them into 
   writeFileSync(join(directory, release.backend.secrets.SAML_PRIVATE_KEY), pem + '\n');
   assert.equal(runtimeEnvironment('backend', build, release, {}, directory).SAML_PRIVATE_KEY, pem);
 }));
+
+
+test('image launcher rejects directory traversal before reading deployment files or starting a process', () => {
+  for (const side of ['../outside', '/tmp', 'frontend/../../outside', 'unknown', '']) {
+    const result = spawnSync(process.execPath, [join(root, 'scripts/start-dragon.cjs'), side], { env: {}, encoding: 'utf8' });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Select frontend or backend/);
+    assert.doesNotMatch(result.stderr, /ENOENT|DRAKEN_DEPLOYMENT_FILE/);
+  }
+});

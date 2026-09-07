@@ -87,7 +87,7 @@ export class SupportFacilitiesController {
     // The PATCH below replaces the whole collection, so an absent list must not be read as an
     // empty one - that would drop every non-facility parameter on the errand.
     if (!Array.isArray(currentErrand.parameters)) {
-      logApplicationFailure('Missing errand parameters', undefined);
+      logApplicationFailure('Missing errand parameters');
       throw new HttpException(502, 'Support Management response is missing the errand parameters');
     }
 

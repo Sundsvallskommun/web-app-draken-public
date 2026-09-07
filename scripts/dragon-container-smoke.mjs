@@ -41,7 +41,7 @@ async function reservePort() {
   });
   const address = server.address();
   assert.ok(address && typeof address !== 'string');
-  return { port: address.port, release: () => server.listening ? new Promise(resolveClose => server.close(resolveClose)) : Promise.resolve() };
+  return { port: address.port, release: () => (server.listening ? new Promise(resolveClose => server.close(resolveClose)) : Promise.resolve()) };
 }
 
 function releaseFor(id, revision, basePath, frontendPort, backendPort, dataVolume) {
@@ -107,7 +107,7 @@ function releaseFor(id, revision, basePath, frontendPort, backendPort, dataVolum
   }
   for (const side of ['frontend', 'backend']) {
     release[side].secrets = Object.fromEntries(
-      Object.entries(release[side].secrets).map(([name, reference]) => [name, `${id.toLowerCase()}/test/${reference.split('/').at(-1)}`]),
+      Object.entries(release[side].secrets).map(([name, reference]) => [name, `${id.toLowerCase()}/test/${reference.split('/').at(-1)}`])
     );
   }
   deploymentIdentity(release);
@@ -116,7 +116,9 @@ function releaseFor(id, revision, basePath, frontendPort, backendPort, dataVolum
 
 async function createSecrets(directory, release, key, certificate) {
   for (const [name, reference] of Object.entries(release.backend.secrets)) {
-    const value = name === 'SAML_PRIVATE_KEY' ? key : name === 'SAML_PUBLIC_KEY' || name === 'SAML_IDP_PUBLIC_CERT' ? certificate : randomBytes(32).toString('hex');
+    let value = randomBytes(32).toString('hex');
+    if (name === 'SAML_PRIVATE_KEY') value = key;
+    else if (name === 'SAML_PUBLIC_KEY' || name === 'SAML_IDP_PUBLIC_CERT') value = certificate;
     const file = join(directory, reference);
     await mkdir(dirname(file), { recursive: true });
     // The enclosing temp directory is private. Read-only bind-mounted synthetic
@@ -144,11 +146,88 @@ async function waitForHttp(url, label) {
   throw new Error(`${label} did not become ready (${last})`);
 }
 
+async function verifyHttpPair(release, basePath) {
+  const backendOrigin = `http://127.0.0.1:${release.backend.port}`;
+  const frontendOrigin = `http://127.0.0.1:${release.frontend.port}`;
+  await waitForHttp(`${backendOrigin}/health`, 'backend');
+  const { response: page, body: html } = await waitForHttp(`${frontendOrigin}${basePath}/login`, 'frontend login');
+  assert.match(page.headers.get('content-type') ?? '', /text\/html/u);
+  assert.match(html, /<html/u);
+  const assetPath = [...html.matchAll(/(?:src|href)="([^"\s]*\/_next\/[^"\s]+)"/gu)].map(match => match[1])[0];
+  assert.ok(assetPath, 'login page must reference a built Next.js asset');
+  const asset = new URL(assetPath, frontendOrigin);
+  assert.equal(asset.origin, frontendOrigin, 'asset must remain local');
+  assert.ok(asset.pathname.startsWith(`${basePath}/_next/`), 'asset path must respect the configured base path');
+  assert.equal((await fetch(asset, { signal: AbortSignal.timeout(5_000) })).status, 200, 'built frontend asset must be served');
+
+  const identity = deploymentIdentity(release);
+  const headers = {
+    'X-Draken-Dragon': identity.dragon,
+    'X-Draken-Revision': identity.revision,
+    'X-Draken-Deployment': identity.deployment,
+    Origin: frontendOrigin,
+  };
+  const publicRoot = `${backendOrigin}${basePath}/api/`;
+  const matching = await fetch(publicRoot, { headers, signal: AbortSignal.timeout(5_000) });
+  assert.equal(matching.status, 200, 'matching frontend identity must reach the public controller');
+  assert.equal(await matching.text(), 'OK');
+  assert.equal(matching.headers.get('access-control-allow-origin'), frontendOrigin);
+  for (const incompatible of [{}, { ...headers, 'X-Draken-Deployment': 'stale-frontend' }]) {
+    const mismatch = await fetch(publicRoot, { headers: incompatible, signal: AbortSignal.timeout(5_000) });
+    assert.equal(mismatch.status, 409, 'missing or stale frontend identity must be rejected');
+    assert.equal((await mismatch.json()).code, 'DRAKEN_DEPLOYMENT_MISMATCH');
+  }
+}
+
+async function verifyStartupRejections(compose, release, releaseFile, secretDirectory, key, certificate, basePath) {
+  const id = release.dragon;
+  const revision = release.revision;
+  // These one-off containers use the real image startup, not an overridden
+  // command. They share only this smoke test's isolated volume and secrets.
+  const rejectStartup = async (side, description, args = []) => {
+    const result = await compose(['run', '--rm', '--no-deps', ...args, side], { allowFailure: true, timeout: 20_000 });
+    assert.notEqual(result.code, 0, `${side} must reject ${description}`);
+    assert.match(
+      `${result.stdout}\n${result.stderr}`,
+      /Invalid dragon deployment|immutable image identity/u,
+      `${side} must fail because of deployment validation`
+    );
+  };
+  const alteredRevision = `${revision[0] === '0' ? '1' : '0'}${revision.slice(1)}`;
+  await writeFile(releaseFile, JSON.stringify({ ...release, revision: alteredRevision }));
+  for (const side of ['frontend', 'backend']) await rejectStartup(side, 'a different image revision');
+
+  const otherId = id === 'KC' ? 'IAF' : 'KC';
+  const otherDragon = releaseFor(otherId, release.revision, basePath, release.frontend.port, release.backend.port, release.dataVolume);
+  await createSecrets(secretDirectory, otherDragon, key, certificate);
+  await writeFile(releaseFile, JSON.stringify(otherDragon));
+  for (const side of ['frontend', 'backend']) await rejectStartup(side, 'a different image dragon');
+
+  await writeFile(releaseFile, JSON.stringify(release));
+  const namespace = dragons[id].domain === 'casedata' ? 'CASEDATA_NAMESPACE' : 'SUPPORTMANAGEMENT_NAMESPACE';
+  await rejectStartup('backend', 'an unreviewed namespace override', ['-e', `${namespace}=SMOKE_WRONG_NAMESPACE`]);
+}
+
+function smokeConfiguration(release, releaseFile, secretDirectory, images, project) {
+  for (const side of ['frontend', 'backend'])
+    runtimeEnvironment(side, { id: release.dragon, revision: release.revision }, release, {}, secretDirectory);
+  const configuration = composeRelease(release, releaseFile, secretDirectory);
+  configuration.name = project;
+  for (const side of ['frontend', 'backend']) {
+    configuration.services[side].image = images[side];
+    configuration.services[side].pull_policy = 'never';
+    configuration.services[side].ports = [`127.0.0.1:${release[side].port}:3000`];
+  }
+  return configuration;
+}
+
 async function main() {
   const [requestedId, frontendImage, backendImage, revision] = process.argv.slice(2);
   const id = requestedId?.toUpperCase();
-  assert.ok(id && Object.hasOwn(dragons, id) && frontendImage && backendImage && /^[a-f0-9]{40}$/u.test(revision ?? ''),
-    'Usage: node scripts/dragon-container-smoke.mjs <DRAGON> <frontend-image> <backend-image> <revision>');
+  assert.ok(
+    id && Object.hasOwn(dragons, id) && frontendImage && backendImage && /^[a-f0-9]{40}$/u.test(revision ?? ''),
+    'Usage: node scripts/dragon-container-smoke.mjs <DRAGON> <frontend-image> <backend-image> <revision>'
+  );
   const images = { frontend: frontendImage, backend: backendImage };
   for (const [side, tag] of Object.entries(images)) {
     const result = await command('docker', ['image', 'inspect', tag]);
@@ -172,8 +251,21 @@ async function main() {
   try {
     await command('docker', ['volume', 'create', dataVolume]);
     volumeCreated = true;
-    await command('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-subj', '/CN=smoke.example.invalid',
-      '-keyout', join(temporary, 'key.pem'), '-out', join(temporary, 'certificate.pem')]);
+    await command('openssl', [
+      'req',
+      '-x509',
+      '-newkey',
+      'rsa:2048',
+      '-nodes',
+      '-days',
+      '1',
+      '-subj',
+      '/CN=smoke.example.invalid',
+      '-keyout',
+      join(temporary, 'key.pem'),
+      '-out',
+      join(temporary, 'certificate.pem'),
+    ]);
     const key = await readFile(join(temporary, 'key.pem'), 'utf8');
     const certificate = await readFile(join(temporary, 'certificate.pem'), 'utf8');
     await chmod(temporary, 0o700);
@@ -187,72 +279,16 @@ async function main() {
       const releaseFile = join(temporary, `release-${basePath ? 'prefixed' : 'root'}.json`);
       await createSecrets(secretDirectory, release, key, certificate);
       await writeFile(releaseFile, JSON.stringify(release));
-      for (const side of ['frontend', 'backend']) runtimeEnvironment(side, { id, revision }, release, {}, secretDirectory);
-      const configuration = composeRelease(release, releaseFile, secretDirectory);
-      configuration.name = project;
-      for (const side of ['frontend', 'backend']) {
-        configuration.services[side].image = images[side];
-        configuration.services[side].pull_policy = 'never';
-        configuration.services[side].ports = [`127.0.0.1:${side === 'frontend' ? frontend.port : backend.port}:3000`];
-      }
+      const configuration = smokeConfiguration(release, releaseFile, secretDirectory, images, project);
       await writeFile(composeFile, JSON.stringify(configuration));
       composeCreated = true;
       await Promise.all([frontend.release(), backend.release()]);
 
       process.stdout.write(`${id}: starting isolated container pair (base path ${basePath || '/'})\n`);
       await compose(['up', '--detach', '--pull', 'never']);
-      const backendOrigin = `http://127.0.0.1:${backend.port}`;
-      const frontendOrigin = `http://127.0.0.1:${frontend.port}`;
-      await waitForHttp(`${backendOrigin}/health`, 'backend');
-      const { response: page, body: html } = await waitForHttp(`${frontendOrigin}${basePath}/login`, 'frontend login');
-      assert.match(page.headers.get('content-type') ?? '', /text\/html/u);
-      assert.match(html, /<html/u);
-      const assetPath = [...html.matchAll(/(?:src|href)="([^"\s]*\/_next\/[^"\s]+)"/gu)].map(match => match[1])[0];
-      assert.ok(assetPath, 'login page must reference a built Next.js asset');
-      const asset = new URL(assetPath, frontendOrigin);
-      assert.equal(asset.origin, frontendOrigin, 'asset must remain local');
-      assert.ok(asset.pathname.startsWith(`${basePath}/_next/`), 'asset path must respect the configured base path');
-      assert.equal((await fetch(asset, { signal: AbortSignal.timeout(5_000) })).status, 200, 'built frontend asset must be served');
+      await verifyHttpPair(release, basePath);
 
-      const identity = deploymentIdentity(release);
-      const headers = {
-        'X-Draken-Dragon': identity.dragon,
-        'X-Draken-Revision': identity.revision,
-        'X-Draken-Deployment': identity.deployment,
-        Origin: frontendOrigin,
-      };
-      const publicRoot = `${backendOrigin}${basePath}/api/`;
-      const matching = await fetch(publicRoot, { headers, signal: AbortSignal.timeout(5_000) });
-      assert.equal(matching.status, 200, 'matching frontend identity must reach the public controller');
-      assert.equal(await matching.text(), 'OK');
-      assert.equal(matching.headers.get('access-control-allow-origin'), frontendOrigin);
-      for (const incompatible of [{}, { ...headers, 'X-Draken-Deployment': 'stale-frontend' }]) {
-        const mismatch = await fetch(publicRoot, { headers: incompatible, signal: AbortSignal.timeout(5_000) });
-        assert.equal(mismatch.status, 409, 'missing or stale frontend identity must be rejected');
-        assert.equal((await mismatch.json()).code, 'DRAKEN_DEPLOYMENT_MISMATCH');
-      }
-
-      // These one-off containers use the real image startup, not an overridden
-      // command. They share only this smoke test's isolated volume and secrets.
-      const rejectStartup = async (side, description, args = []) => {
-        const result = await compose(['run', '--rm', '--no-deps', ...args, side], { allowFailure: true, timeout: 20_000 });
-        assert.notEqual(result.code, 0, `${side} must reject ${description}`);
-        assert.match(`${result.stdout}\n${result.stderr}`, /Invalid dragon deployment|immutable image identity/u,
-          `${side} must fail because of deployment validation`);
-      };
-      const alteredRevision = `${revision[0] === '0' ? '1' : '0'}${revision.slice(1)}`;
-      await writeFile(releaseFile, JSON.stringify({ ...release, revision: alteredRevision }));
-      for (const side of ['frontend', 'backend']) await rejectStartup(side, 'a different image revision');
-
-      const otherId = id === 'KC' ? 'IAF' : 'KC';
-      const otherDragon = releaseFor(otherId, revision, basePath, frontend.port, backend.port, dataVolume);
-      await createSecrets(secretDirectory, otherDragon, key, certificate);
-      await writeFile(releaseFile, JSON.stringify(otherDragon));
-      for (const side of ['frontend', 'backend']) await rejectStartup(side, 'a different image dragon');
-
-      await writeFile(releaseFile, JSON.stringify(release));
-      const namespace = dragons[id].domain === 'casedata' ? 'CASEDATA_NAMESPACE' : 'SUPPORTMANAGEMENT_NAMESPACE';
-      await rejectStartup('backend', 'an unreviewed namespace override', ['-e', `${namespace}=SMOKE_WRONG_NAMESPACE`]);
+      await verifyStartupRejections(compose, release, releaseFile, secretDirectory, key, certificate, basePath);
       await compose(['down', '--volumes', '--remove-orphans']);
       process.stdout.write(`${id}: real frontend/backend, assets, compatibility checks and startup rejection passed (${basePath || '/'})\n`);
     }
@@ -273,7 +309,9 @@ async function main() {
   }
 }
 
-main().catch(error => {
+try {
+  await main();
+} catch (error) {
   process.stderr.write(`${error.message}\n`);
   process.exitCode = 1;
-});
+}

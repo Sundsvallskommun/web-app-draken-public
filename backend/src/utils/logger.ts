@@ -103,88 +103,76 @@ const allowed = (value: unknown, values: ReadonlySet<string>): string | undefine
   typeof value === 'string' && values.has(value) ? value : undefined;
 const invalidRecord = () => ({ event: 'logging.invalid_record', errorCode: 'INVALID_DIAGNOSTIC_RECORD' });
 
-/** Rebuild records from approved fields before serialization; never spread caller data. */
+function safeOperation(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length <= 240 && !/[\r\n\0]/u.test(value) ? value : undefined;
+}
+
+function safeRequestId(value: unknown): string | undefined {
+  return typeof value === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/u.test(value) ? value : undefined;
+}
+
+function safeRoute(value: unknown): string | undefined {
+  if (typeof value !== 'string' || value.length > 512) return undefined;
+  return /^\/[A-Za-z0-9_/:.*()\\-]*$/u.test(value) || ['<unmatched>', '<background>', '<pattern>'].includes(value) ? value : undefined;
+}
+
+function integerInRange(value: unknown, minimum: number, maximum: number): number | undefined {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= minimum && value <= maximum ? value : undefined;
+}
+
+function safeStatus(value: unknown): number | 'no-response' | undefined {
+  if (value === 'no-response') return value;
+  return integerInRange(value, 100, 599);
+}
+
+function safeDuration(value: unknown): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > Number.MAX_SAFE_INTEGER / 100) return undefined;
+  return Math.round(value * 100) / 100;
+}
+
+function safePort(value: unknown): number | undefined {
+  const port = typeof value === 'string' && /^\d{1,5}$/u.test(value) ? Number(value) : value;
+  return integerInRange(port, 1, 65535);
+}
+
+function safeConfigurationFields(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const fields = [
+    ...new Set(
+      Object.values(Object.getOwnPropertyDescriptors(value))
+        .map(descriptor => descriptor.value)
+        .filter((field): field is string => typeof field === 'string' && CONFIGURATION_FIELDS.has(field)),
+    ),
+  ];
+  return fields.length ? fields : undefined;
+}
+
+/** Rebuild records from approved data properties; never invoke accessors or spread caller data. */
 function safeRecord(value: unknown) {
   try {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return invalidRecord();
     const field = (key: keyof DiagnosticInput): unknown => Object.getOwnPropertyDescriptor(value, key)?.value;
-    const input: DiagnosticInput = {
-      event: field('event'),
-      operation: field('operation'),
-      requestId: field('requestId'),
-      route: field('route'),
-      method: field('method'),
-      status: field('status'),
-      durationMs: field('durationMs'),
-      errorKind: field('errorKind'),
-      errorCode: field('errorCode'),
-      environment: field('environment'),
-      port: field('port'),
-      role: field('role'),
-      count: field('count'),
-      channel: field('channel'),
-      deliveryStatus: field('deliveryStatus'),
-      configurationFields: field('configurationFields'),
-    };
-    const event = allowed(input.event, EVENTS);
+    const event = allowed(field('event'), EVENTS);
     if (!event) return invalidRecord();
-    const operation =
-      typeof input.operation === 'string' && input.operation.length <= 240 && !/[\r\n\0]/u.test(input.operation) ? input.operation : undefined;
-    const requestId =
-      typeof input.requestId === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/u.test(input.requestId)
-        ? input.requestId
-        : undefined;
-    const route =
-      typeof input.route === 'string' &&
-      input.route.length <= 512 &&
-      (/^\/[A-Za-z0-9_/:.*()\\-]*$/u.test(input.route) || ['<unmatched>', '<background>', '<pattern>'].includes(input.route))
-        ? input.route
-        : undefined;
-    const method = allowed(input.method, METHODS);
-    const status =
-      typeof input.status === 'number' && Number.isInteger(input.status) && input.status >= 100 && input.status <= 599
-        ? input.status
-        : input.status === 'no-response'
-          ? 'no-response'
-          : undefined;
-    const durationMs =
-      typeof input.durationMs === 'number' &&
-      Number.isFinite(input.durationMs) &&
-      input.durationMs >= 0 &&
-      input.durationMs <= Number.MAX_SAFE_INTEGER / 100
-        ? Math.round(input.durationMs * 100) / 100
-        : undefined;
-    const portNumber =
-      typeof input.port === 'number' ? input.port : typeof input.port === 'string' && /^\d{1,5}$/u.test(input.port) ? Number(input.port) : undefined;
-    const port = portNumber !== undefined && Number.isInteger(portNumber) && portNumber >= 1 && portNumber <= 65535 ? portNumber : undefined;
-    const count = typeof input.count === 'number' && Number.isSafeInteger(input.count) && input.count >= 0 ? input.count : undefined;
-    const configurationFields = Array.isArray(input.configurationFields)
-      ? [
-          ...new Set(
-            Object.values(Object.getOwnPropertyDescriptors(input.configurationFields))
-              .map(descriptor => descriptor.value)
-              .filter((field): field is string => typeof field === 'string' && CONFIGURATION_FIELDS.has(field)),
-          ),
-        ]
-      : undefined;
-    return {
+    const record = {
       event,
-      ...(operation !== undefined ? { operation } : {}),
-      ...(requestId !== undefined ? { requestId } : {}),
-      ...(route !== undefined ? { route } : {}),
-      ...(method !== undefined ? { method } : {}),
-      ...(status !== undefined ? { status } : {}),
-      ...(durationMs !== undefined ? { durationMs } : {}),
-      ...(allowed(input.errorKind, ERROR_KINDS) ? { errorKind: input.errorKind } : {}),
-      ...(allowed(input.errorCode, ERROR_CODES) ? { errorCode: input.errorCode } : {}),
-      ...(allowed(input.environment, ENVIRONMENTS) ? { environment: input.environment } : {}),
-      ...(port !== undefined ? { port } : {}),
-      ...(allowed(input.role, ROLES) ? { role: input.role } : {}),
-      ...(count !== undefined ? { count } : {}),
-      ...(allowed(input.channel, CHANNELS) ? { channel: input.channel } : {}),
-      ...(allowed(input.deliveryStatus, DELIVERY_STATUSES) ? { deliveryStatus: input.deliveryStatus } : {}),
-      ...(configurationFields?.length ? { configurationFields } : {}),
+      operation: safeOperation(field('operation')),
+      requestId: safeRequestId(field('requestId')),
+      route: safeRoute(field('route')),
+      method: allowed(field('method'), METHODS),
+      status: safeStatus(field('status')),
+      durationMs: safeDuration(field('durationMs')),
+      errorKind: allowed(field('errorKind'), ERROR_KINDS),
+      errorCode: allowed(field('errorCode'), ERROR_CODES),
+      environment: allowed(field('environment'), ENVIRONMENTS),
+      port: safePort(field('port')),
+      role: allowed(field('role'), ROLES),
+      count: integerInRange(field('count'), 0, Number.MAX_SAFE_INTEGER),
+      channel: allowed(field('channel'), CHANNELS),
+      deliveryStatus: allowed(field('deliveryStatus'), DELIVERY_STATUSES),
+      configurationFields: safeConfigurationFields(field('configurationFields')),
     };
+    return Object.fromEntries(Object.entries(record).filter(([, field]) => field !== undefined));
   } catch {
     return invalidRecord();
   }

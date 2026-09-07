@@ -16,7 +16,8 @@ ENV DOCKER_BUILD=true
 ARG DRAKEN_BUILD_DRAGON
 ARG DEPLOY_COMMIT
 ARG DEPLOY_BRANCH=""
-RUN node -e 'if (!/^[a-f0-9]{40}$/.test(process.env.DEPLOY_COMMIT || "")) throw new Error("DEPLOY_COMMIT must be a full commit SHA")' \
+RUN node -e 'if (!/^[a-f0-9]{40}$/.test(process.env.DEPLOY_COMMIT || "")) \
+    throw new Error("DEPLOY_COMMIT must be a full commit SHA")' \
  && yarn build \
  && cp .next/dragon-build.json /app/dragon-build.json
 

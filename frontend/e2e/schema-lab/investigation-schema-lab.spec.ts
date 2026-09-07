@@ -175,10 +175,10 @@ test('updates risks and label choices when the manager changes legal bases', asy
 
   await activePanel.getByText('Visa lokalt JSON-värde', { exact: true }).click();
   const preview = page.locator('[data-cy="schema-form-data-preview"]:visible');
-  await expect(preview).not.toContainText('riskAssessmentHsl');
-  await expect(preview).not.toContainText('riskAssessmentSolLss');
-  await expect(preview).not.toContainText('suspectedMisconduct');
-  await expect(preview).not.toContainText('investigationTemplate');
+  await expect(preview).not.toHaveValue(/riskAssessmentHsl/);
+  await expect(preview).not.toHaveValue(/riskAssessmentSolLss/);
+  await expect(preview).not.toHaveValue(/suspectedMisconduct/);
+  await expect(preview).not.toHaveValue(/investigationTemplate/);
 });
 
 test('mock roles make only the owned investigation editable', async ({ page }) => {
@@ -282,13 +282,14 @@ test('exposes labels, descriptions, state and disclosure controls accessibly', a
   await previewButton.click();
   await previewButton.focus();
   await page.keyboard.press('Tab');
-  const preview = page.getByRole('region', { name: /Lokalt JSON-värde för/u });
+  const preview = page.getByRole('textbox', { name: /Lokalt JSON-värde för/u });
   await expect(preview).toBeFocused();
+  await expect(preview).toHaveAttribute('readonly', '');
   // Constrain the viewport so this also exercises actual keyboard scrolling.
   await preview.evaluate((element) => {
     element.style.maxHeight = '100px';
   });
-  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('PageDown');
   await expect.poll(() => preview.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
 });
 
@@ -359,8 +360,8 @@ test('sanitizes legacy label fields and ignores malformed local timestamps', asy
   );
   await activePanel.getByText('Visa lokalt JSON-värde', { exact: true }).click();
   const managerPreview = page.locator('[data-cy="schema-form-data-preview"]:visible');
-  await expect(managerPreview).not.toContainText('deviationType');
-  await expect(managerPreview).not.toContainText('deviationSubtype');
+  await expect(managerPreview).not.toHaveValue(/deviationType/);
+  await expect(managerPreview).not.toHaveValue(/deviationSubtype/);
 
   await page.getByRole('button', { name: 'Spara utkast lokalt' }).click();
   const sanitizedDraft = await page.evaluate(() =>
@@ -402,7 +403,7 @@ test('shows the IVO number only for a positive IVO notification', async ({ page 
   await expect(page.locator(`#${hslIdPrefix}_ivoCaseNumber`)).toHaveCount(0);
 
   await activePanel.getByText('Visa lokalt JSON-värde', { exact: true }).click();
-  await expect(page.locator('[data-cy="schema-form-data-preview"]:visible')).not.toContainText('ivoCaseNumber');
+  await expect(page.locator('[data-cy="schema-form-data-preview"]:visible')).not.toHaveValue(/ivoCaseNumber/);
   await page.getByRole('button', { name: 'Spara utkast lokalt' }).click();
   const storedHslDraft = await page.evaluate(() =>
     window.localStorage.getItem('draken:investigation-schema-lab:utredning-hsl')

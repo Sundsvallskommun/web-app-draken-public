@@ -11,7 +11,7 @@ import solLssUiSchemaRequest from '../../../src/avvikelse/schemas/utredning-sol-
 export const backendOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').origin;
 export const municipalityId = '2281';
 export const errandId = 'ca97b2be-dc37-4707-b5bb-bae98936a183';
-export const application = (process.env.NEXT_PUBLIC_APPLICATION ?? 'IAF').trim().toUpperCase();
+const application = (process.env.NEXT_PUBLIC_APPLICATION ?? 'IAF').trim().toUpperCase();
 const applicationSlug = application.toLowerCase();
 export const errandNumber = `${application}-2026-0001`;
 export const katlaSchemaId = `2281_katla-${applicationSlug}-report_1.0`;
