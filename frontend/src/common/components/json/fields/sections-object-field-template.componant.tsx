@@ -313,13 +313,13 @@ function renderFields(
       return (
         <div
           key={rowKey}
-          className={`flex min-w-0 flex-col md:flex-row ${row.gap || 'gap-32'}`}
+          className={`schema-field-row flex min-w-0 flex-col ${row.gap || 'gap-32'}`}
           data-cy="schema-field-row"
         >
           {visibleRowFields.map((f) => {
             const prop = properties.find((p) => p.name === f);
             return prop ? (
-              <div key={f} className="w-full min-w-0 md:flex-1">
+              <div key={f} className="schema-field-cell w-full min-w-0">
                 {prop.content}
               </div>
             ) : null;

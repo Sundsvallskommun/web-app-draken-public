@@ -21,6 +21,7 @@ export function FieldTemplate(props: FieldTemplateProps) {
   // Get description from ui:description or schema.description
   const descriptionText = (uiSchema?.['ui:description'] as string) || (schema?.description as string) || '';
   const sanitizedDescription = sanitized(descriptionText);
+  const hasHeader = (displayLabel && !hideLabel) || (!descriptionBelow && sanitizedDescription && !hideDescription);
 
   const renderDescription = (position: 'above' | 'below') => {
     if (!sanitizedDescription || hideDescription) return null;
@@ -35,27 +36,32 @@ export function FieldTemplate(props: FieldTemplateProps) {
   };
 
   return (
-    <FormControl className={`${formControlClassName} min-w-0 max-w-full`} invalid={hasError}>
-      {displayLabel && !hideLabel && (
-        <FormLabel id={titleId(id)} htmlFor={id} className="schema-form-label max-w-full whitespace-normal">
-          {label}
-          {required ? ' *' : ''}
-        </FormLabel>
+    <FormControl className={`schema-field ${formControlClassName} min-w-0 max-w-full`} invalid={hasError}>
+      {hasHeader && (
+        <div className="schema-field-header flex min-w-0 flex-col gap-8">
+          {displayLabel && !hideLabel && (
+            <FormLabel id={titleId(id)} htmlFor={id} className="schema-form-label max-w-full whitespace-normal">
+              {label}
+              {required ? ' *' : ''}
+            </FormLabel>
+          )}
+          {!descriptionBelow && renderDescription('above')}
+        </div>
       )}
 
-      {!descriptionBelow && renderDescription('above')}
+      <div className="schema-field-body flex min-w-0 max-w-full flex-col gap-8">
+        {children}
 
-      {children}
+        {descriptionBelow && renderDescription('below')}
 
-      {descriptionBelow && renderDescription('below')}
+        {hasError && (
+          <FormErrorMessage id={errorId(id)} className="text-error">
+            {rawErrors[0]}
+          </FormErrorMessage>
+        )}
 
-      {hasError && (
-        <FormErrorMessage id={errorId(id)} className="text-error">
-          {rawErrors[0]}
-        </FormErrorMessage>
-      )}
-
-      {help}
+        {help}
+      </div>
     </FormControl>
   );
 }

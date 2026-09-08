@@ -145,6 +145,40 @@ main.container {
   overflow-wrap: anywhere;
 }
 
+// Fields declared together in ui:rows share the height of their labels and
+// above-field descriptions. Errors and below-field help stay with the input.
+// On mobile each field uses its own natural height in the stacked layout.
+@screen md {
+  .schema-field-row {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    row-gap: theme('spacing.8');
+
+    > .schema-field-cell {
+      display: grid;
+      grid-row: 1 / -1;
+      grid-template-rows: subgrid;
+
+      > .schema-field {
+        display: grid;
+        grid-row: 1 / -1;
+        grid-template-rows: subgrid;
+        row-gap: inherit;
+
+        > .schema-field-header {
+          grid-row: 1;
+        }
+
+        > .schema-field-body {
+          grid-row: 2;
+        }
+      }
+    }
+  }
+}
+
 // Disclosure titles are flex children next to a fixed-size toggle button.
 // min-width: auto would otherwise let long/spaced headings push that button
 // outside the schema form even when the page itself does not scroll.
