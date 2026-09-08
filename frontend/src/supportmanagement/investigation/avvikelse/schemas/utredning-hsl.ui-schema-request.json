@@ -27,18 +27,21 @@
       },
       {
         "id": "analysis-team-participants",
+        "defaultOpen": true,
         "title": "Deltagare i analysteam",
         "icon": "users",
         "fields": ["analysisTeamParticipants"]
       },
       {
         "id": "methodology",
+        "defaultOpen": true,
         "title": "Metodik",
         "icon": "file-text",
         "fields": ["methodology"]
       },
       {
         "id": "result",
+        "defaultOpen": true,
         "title": "Resultat",
         "icon": "info",
         "fields": [
@@ -51,12 +54,14 @@
       },
       {
         "id": "notification-and-documentation",
+        "defaultOpen": true,
         "title": "Anmälan och dokumentation",
         "icon": "file-text",
         "fields": ["public360CaseNumber", "ivoNotification", "ivoCaseNumber"]
       },
       {
         "id": "commissioner-comment",
+        "defaultOpen": true,
         "title": "Uppdragsgivarens kommentar",
         "icon": "pen",
         "fields": ["commissionerComment"]

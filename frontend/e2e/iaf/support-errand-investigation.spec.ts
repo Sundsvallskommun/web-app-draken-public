@@ -38,6 +38,71 @@ async function openInvestigation(page: Page) {
 }
 
 test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
+  for (const [key, tabName] of [
+    [managerKey, 'Utredning enhetschef'],
+    [solLssKey, 'Utredning SoL/LSS'],
+    ['utredning-hsl', 'Utredning HSL'],
+  ]) {
+    test(`${tabName}: obesvarade val är tomma och alla sektioner öppna från start`, async ({
+      page,
+      dismissCookieConsent,
+    }) => {
+      const trace = await installIafApiMock(page, { documents: {} });
+      await visitErrand(page, dismissCookieConsent);
+      await openInvestigation(page);
+      await page.getByRole('tab', { name: tabName, exact: true }).click();
+      const document = page.locator(`[data-cy="investigation-document-${key}"]`);
+      await expect(document).toBeVisible();
+
+      if (key === managerKey) {
+        await document.getByRole('checkbox', { name: /^HSL –/u }).press('Space');
+        await document.getByRole('checkbox', { name: /^SoL –/u }).press('Space');
+      }
+
+      const sectionButtons = document.locator('.schema-boundary-disclosure .sk-disclosure-header-button');
+      await expect(sectionButtons.first()).toBeVisible();
+      await expect(
+        document.locator('.schema-boundary-disclosure .sk-disclosure-header-button[aria-expanded="false"]')
+      ).toHaveCount(0);
+      await expect(document.getByRole('radio').first()).toBeVisible();
+      await expect(document.locator('input[type="radio"]:checked')).toHaveCount(0);
+
+      const firstRadio = document.getByRole('radio').first();
+      await firstRadio.check();
+      await expect(firstRadio).toBeChecked();
+      await expect(document.locator('input[type="radio"]:checked')).toHaveCount(1);
+
+      await sectionButtons.first().click();
+      await expect(sectionButtons.first()).toHaveAttribute('aria-expanded', 'false');
+      await sectionButtons.first().click();
+      await expect(sectionButtons.first()).toHaveAttribute('aria-expanded', 'true');
+      await expect(firstRadio).toBeChecked();
+      expect(trace.puts).toHaveLength(0);
+    });
+  }
+
+  test('bevarar sparade radioval i samtliga utredningsformulär', async ({ page, dismissCookieConsent }) => {
+    const documents = allExistingInvestigationDocuments();
+    documents[managerKey].value.suspectedMisconduct = 'no';
+    documents[solLssKey].value.individualNotified = 'no';
+    documents['utredning-hsl'].value.ivoNotification = 'no';
+    const trace = await installIafApiMock(page, { documents });
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    for (const [key, tabName, field] of [
+      [managerKey, 'Utredning enhetschef', 'suspectedMisconduct'],
+      [solLssKey, 'Utredning SoL/LSS', 'individualNotified'],
+      ['utredning-hsl', 'Utredning HSL', 'ivoNotification'],
+    ]) {
+      await page.getByRole('tab', { name: tabName, exact: true }).click();
+      const group = page.locator(`#${key}_${field}`);
+      await expect(group.getByRole('radio', { name: 'Nej', exact: true })).toBeChecked();
+      await expect(group.getByRole('radio', { name: 'Ja', exact: true })).not.toBeChecked();
+    }
+    expect(trace.puts).toHaveLength(0);
+  });
+
   test('hämtar inte den auth-skyddade profilen på login-sidan', async ({ page }) => {
     const trace = await installIafApiMock(page);
 

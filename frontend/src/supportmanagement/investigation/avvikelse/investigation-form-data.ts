@@ -1,6 +1,12 @@
-import type { RJSFSchema } from '@rjsf/utils';
+import type { Experimental_DefaultFormStateBehavior, RJSFSchema } from '@rjsf/utils';
 
 import type { InvestigationFormData } from './investigation-document';
+
+// A choice's first option is not an answer. Keep unanswered oneOf fields empty while preserving
+// saved answers and explicit schema defaults such as the SoL/LSS legal bases.
+export const investigationDefaultFormStateBehavior: Experimental_DefaultFormStateBehavior = Object.freeze({
+  constAsDefaults: 'skipOneOf',
+});
 
 interface CalculationMetadata {
   formula: 'probability * severity';

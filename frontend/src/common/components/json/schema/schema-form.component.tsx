@@ -44,6 +44,7 @@ type SchemaFormProps = {
   idPrefix?: string;
   disabled?: boolean;
   readonly?: boolean;
+  defaultFormStateBehavior?: FormProps['experimental_defaultFormStateBehavior'];
   submitButtonOptions?: SubmitButtonOptions;
   extraContent?: React.ReactNode;
   externalFields?: Readonly<Record<string, ReactNode>>;
@@ -60,6 +61,7 @@ export default function SchemaForm({
   idPrefix,
   disabled,
   readonly,
+  defaultFormStateBehavior,
   submitButtonOptions,
   extraContent,
   externalFields,
@@ -128,6 +130,7 @@ export default function SchemaForm({
     showErrorList: false,
     disabled,
     readonly,
+    experimental_defaultFormStateBehavior: defaultFormStateBehavior,
   };
 
   if (extraContent) {

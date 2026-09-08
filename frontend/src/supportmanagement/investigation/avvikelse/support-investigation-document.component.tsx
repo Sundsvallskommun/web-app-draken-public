@@ -27,7 +27,11 @@ import {
   normalizeContextualInvestigationFormData,
 } from './investigation-classification';
 import type { InvestigationDocumentDefinition, InvestigationFormData } from './investigation-document';
-import { getHslRiskValue, getInvestigationRenderingSchema } from './investigation-form-data';
+import {
+  getHslRiskValue,
+  getInvestigationRenderingSchema,
+  investigationDefaultFormStateBehavior,
+} from './investigation-form-data';
 import { type SupportInvestigationClassificationResponse } from './support-investigation-classification-service';
 import {
   type InvestigationClassificationDraft,
@@ -468,6 +472,7 @@ export function SupportInvestigationDocument({
 
       <SchemaForm
         schema={renderingSchema}
+        defaultFormStateBehavior={investigationDefaultFormStateBehavior}
         uiSchema={classificationUiSchema}
         idPrefix={definition.key}
         arrayFieldTemplate={ArrayObjectFieldTemplate}

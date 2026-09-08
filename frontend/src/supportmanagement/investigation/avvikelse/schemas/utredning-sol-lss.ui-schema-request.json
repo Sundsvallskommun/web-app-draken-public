@@ -52,6 +52,7 @@
       },
       {
         "id": "assessment-and-decision-proposal",
+        "defaultOpen": true,
         "title": "Bedömning och förslag till beslut",
         "icon": "file-text",
         "fields": ["proposedMisconductDegree", "proposalMotivation"]

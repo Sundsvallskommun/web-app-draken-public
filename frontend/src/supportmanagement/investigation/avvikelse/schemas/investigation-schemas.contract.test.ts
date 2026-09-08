@@ -130,6 +130,22 @@ test('UI schemas group every root field once and disable unsaved section complet
   }
 });
 
+test('every investigation section starts open', () => {
+  const assertOpenSections = (value: unknown, path: string): void => {
+    if (typeof value !== 'object' || value === null) return;
+    for (const [key, child] of Object.entries(value)) {
+      if (key === 'ui:sections') {
+        assert(Array.isArray(child), `${path}.${key} must be an array`);
+        for (const section of child) {
+          assert.equal(section.defaultOpen, true, `${path}.${section.id} must start open`);
+        }
+      }
+      assertOpenSections(child, `${path}.${key}`);
+    }
+  };
+  for (const artifact of artifacts) assertOpenSections(readJson(artifact.uiSchemaFile).value, artifact.name);
+});
+
 test('schemas contain investigation data only, without action plans or working notes', () => {
   for (const artifact of artifacts) {
     const schema = readJson(artifact.schemaFile).value;

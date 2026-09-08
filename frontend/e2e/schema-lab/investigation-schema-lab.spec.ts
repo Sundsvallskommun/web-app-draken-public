@@ -116,6 +116,32 @@ test.afterEach(async ({ page }) => {
   expect(backendRequestsByPage.get(page)).toEqual([]);
 });
 
+test('opens all investigation sections without turning an unanswered draft into radio answers', async ({ page }) => {
+  await page.evaluate(() => {
+    for (const [key, schemaVersion, formData] of [
+      ['utredning-enhetschef', '1.1', { legalBases: ['HSL', 'SOL'] }],
+      ['utredning-sol-lss', '1.1', {}],
+      ['utredning-hsl', '1.0', {}],
+    ]) {
+      localStorage.setItem(
+        `draken:investigation-schema-lab:${key}`,
+        JSON.stringify({ schemaKey: key, schemaVersion, savedAt: new Date().toISOString(), formData })
+      );
+    }
+  });
+  await page.reload();
+
+  for (const tabName of investigationTabNames) {
+    await page.getByRole('tab', { name: tabName }).click();
+    const panel = page.locator('[role="tabpanel"]:visible');
+    await expect(panel.getByRole('radio').first()).toBeVisible();
+    await expect(panel.locator('input[type="radio"]:checked')).toHaveCount(0);
+    await expect(
+      panel.locator('.schema-boundary-disclosure .sk-disclosure-header-button[aria-expanded="false"]')
+    ).toHaveCount(0);
+  }
+});
+
 test('is reachable with the standard IAF profile and renders three investigation schemas', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Lokal schema-labb · Utredning' })).toBeVisible();
   await expect(page.getByRole('tab')).toHaveCount(3);

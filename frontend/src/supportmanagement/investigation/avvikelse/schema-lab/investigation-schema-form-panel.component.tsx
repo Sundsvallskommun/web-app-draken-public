@@ -7,7 +7,11 @@ import { Save, Trash2 } from 'lucide-react';
 import { MouseEvent, ReactNode, useMemo, useState } from 'react';
 
 import { InvestigationFormData } from '../investigation-document';
-import { getHslRiskValue, getInvestigationRenderingSchema } from '../investigation-form-data';
+import {
+  getHslRiskValue,
+  getInvestigationRenderingSchema,
+  investigationDefaultFormStateBehavior,
+} from '../investigation-form-data';
 import { InvestigationLabNotice, InvestigationSchemaAccess } from './investigation-schema-lab.types';
 import { formatInvestigationLabTimestamp } from './investigation-schema-lab-time';
 import { InvestigationSchemaDefinition } from './investigation-schema-registry';
@@ -129,6 +133,7 @@ export function InvestigationSchemaFormPanel({
 
       <SchemaForm
         schema={renderingSchema}
+        defaultFormStateBehavior={investigationDefaultFormStateBehavior}
         uiSchema={definition.uiSchema}
         idPrefix={definition.key}
         arrayFieldTemplate={ArrayObjectFieldTemplate}
