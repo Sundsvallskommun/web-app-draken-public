@@ -8,3 +8,6 @@ frontend/public/deploy-info.json
 .claude
 .playwright-mcp
 screenshots
+
+# Local generated artifacts
+/output/
