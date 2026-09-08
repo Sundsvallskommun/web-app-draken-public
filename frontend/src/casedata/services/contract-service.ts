@@ -715,6 +715,8 @@ export const saveSignedContractAttachment = (
   contractId: string,
   attachments: UploadFile[],
   note: string,
+  // Authorises writes to a migrated contract, which carries no errandId of its own.
+  errandId?: string,
   // Creating an attachment is not idempotent: a response lost after the server committed makes a
   // retry create a second copy. Nothing is deleted on success here, so retrying is the safer
   // default - see sendAttachments for the case where it is not.
@@ -747,6 +749,9 @@ export const saveSignedContractAttachment = (
     formData.append('filename', fileItem.name);
     formData.append('mimeType', toContractMimeType(fileItem));
     formData.append('note', note ?? '');
+    if (errandId) {
+      formData.append('errandId', errandId);
+    }
 
     const postAttachment = () =>
       apiService
@@ -764,7 +769,12 @@ export const saveSignedContractAttachment = (
   return Promise.all(attachmentPromises).then(() => true);
 };
 
-export const deleteSignedContractAttachment = (municipalityId: string, contractId: string, attachmentId: number) => {
+export const deleteSignedContractAttachment = (
+  municipalityId: string,
+  contractId: string,
+  attachmentId: number,
+  errandId?: string
+) => {
   if (!contractId) {
     return Promise.reject(new Error('MISSING_CONTRACT_ID'));
   }
@@ -772,8 +782,9 @@ export const deleteSignedContractAttachment = (municipalityId: string, contractI
     return Promise.reject(new Error('No attachment id found, cannot delete.'));
   }
 
+  const query = errandId ? `?errandId=${encodeURIComponent(errandId)}` : '';
   return apiService
-    .deleteRequest<boolean>(`contracts/${municipalityId}/${contractId}/attachments/${attachmentId}`)
+    .deleteRequest<boolean>(`contracts/${municipalityId}/${contractId}/attachments/${attachmentId}${query}`)
     .then((res) => {
       return res;
     })
