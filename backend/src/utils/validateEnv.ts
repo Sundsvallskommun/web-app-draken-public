@@ -1,5 +1,6 @@
 import { APPLICATION } from '@/config';
 import { resolveSupportManagementApiTarget } from '@/config/api-config';
+import { resolveAssignableHandlerGroups } from '@/config/assignable-handler-groups';
 import {
   assertSupportInvestigationDocumentGroupsMatchProfile,
   resolveSupportInvestigationDocumentGroups,
@@ -91,6 +92,13 @@ function warnMissingInvestigationDocumentGroups(): void {
 }
 
 const validateEnv = () => {
+  try {
+    resolveAssignableHandlerGroups();
+  } catch (error) {
+    console.error(`\n${error instanceof Error ? error.message : 'Invalid assignable handler group configuration'}\n`);
+    process.exit(1);
+  }
+
   const commonSpec: EnvSpec = {
     NODE_ENV: s(),
     SECRET_KEY: s(),

@@ -160,6 +160,31 @@ För LOK (Lokalplanering):
 
 ## Utveckling
 
+### AD-grupper för handläggare och utredning
+
+Backendens `ASSIGNABLE_HANDLER_GROUPS` anger vilka AD-grupper som fyller handläggarlistan.
+Ange gruppnamnen kommaseparerat, exempelvis för lokal VOF mot testmiljön:
+
+```env
+ASSIGNABLE_HANDLER_GROUPS="SG_Appl_Draken_Enhetschef_Vof_Test,SG_Appl_Draken_LEX_Utredare_Vof_Test,SG_Appl_Draken_MAS_MAR_Vof_Test,SG_Appl_Draken_Avvikelse_Admin_Test"
+```
+
+Medlemmarna slås ihop utan dubbla AD-konton. Om inställningen är tom eller saknas används
+`ADMIN_GROUP`. Resultatet cachas i backend i en timme; om något gruppanrop misslyckas
+returneras ett fel i stället för en ofullständig lista. Starta om backendens
+`yarn dev:{drake}`-process efter en env-ändring och ladda om sidan.
+
+Gruppnamnen anges separat per miljö. Välj de faktiska test- eller produktionsgrupperna i env;
+koden ändrar inga suffix. Handläggarlistan ger inga inloggnings- eller skrivrättigheter:
+`AUTHORIZED_GROUPS` styr inloggning och `ADMIN_GROUP`, `SUPERADMIN_GROUP` samt
+`DEVELOPER_GROUP` behåller sina befintliga applikationsroller.
+
+`SUPPORT_INVESTIGATION_DOCUMENT_GROUPS` styr åtkomsten till varje utredningsdokument.
+`editorGroups` ger läs- och skrivrättigheter och `readerGroups` ger läsrättigheter;
+övriga användare ser inte dokumentet när mappningen är konfigurerad. Grupperna matchas
+mot användarens AD-grupper från inloggningen. Exempel med de tre dokumenten finns i
+`backend/.env.vof.example.local` och `backend/.env.iaf.example.local`.
+
 ### Krav
 
 - Node >= 20 LTS
