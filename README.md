@@ -165,6 +165,7 @@ För AOT (Alkohol och Tobak):
 | API               | Version |
 | ----------------- | ------: |
 | SupportManagement |    15.3 |
+| JsonSchema        |     1.0 |
 | Citizen           |     3.0 |
 | ActiveDirectory   |     2.0 |
 | Templating        |     2.1 |
