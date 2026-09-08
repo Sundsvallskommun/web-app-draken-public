@@ -51,6 +51,15 @@ describe('SupportInvestigationPolicyService', () => {
     expect(featureFlags.getFreshFeatureEnabled).not.toHaveBeenCalled();
   });
 
+  it('serves browser flags and enables the local VOF investigation profile without Adminpanel', async () => {
+    const featureFlags = new FeatureFlagService(undefined, { adminpanelUrl: '' });
+    const service = new SupportInvestigationPolicyService(featureFlags, getSupportInvestigationProfile('VOF'), 'HEALTHCAREDEVIATIONVOF', 'sprint');
+    const user = mockReq().user;
+
+    await expect(featureFlags.getFeatureFlags(user)).resolves.toEqual([]);
+    await expect(service.getRuntimeProfile(user)).resolves.toMatchObject({ application: 'VOF', state: 'active' });
+  });
+
   it('is inactive without configured documents and does not query Adminpanel', async () => {
     const featureFlags = { isConfigured: vi.fn(() => true), getFreshFeatureEnabled: vi.fn() } as unknown as FeatureFlagService;
     const emptyProfile = createSupportInvestigationProfile({ application: 'KC', documents: [] });

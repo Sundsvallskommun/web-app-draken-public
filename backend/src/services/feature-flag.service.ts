@@ -187,6 +187,9 @@ export class FeatureFlagService {
   }
 
   async getFeatureFlags(user: User): Promise<FeatureFlagDto[]> {
+    // No Adminpanel means no browser overrides; the frontend keeps its environment flags.
+    if (!this.isConfigured()) return [];
+
     return (await this.getApplicationFlags(user)).map(flag => ({
       name: flag.name,
       value: flag.value,

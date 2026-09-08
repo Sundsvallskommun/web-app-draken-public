@@ -173,14 +173,14 @@ describe('FeatureFlagService', () => {
     await expect(service.getFeatureFlags(mockReq().user)).rejects.toMatchObject({ status: 502 });
   });
 
-  it('fails explicitly when required source configuration is absent', async () => {
+  it('fails explicitly when a strict reader requests an unconfigured source', async () => {
     const apiService = { get: vi.fn() };
     const service = new FeatureFlagService(apiService as unknown as ApiService, {
       ...configuration,
       adminpanelUrl: ' ',
     });
 
-    await expect(service.getFeatureFlags(mockReq().user)).rejects.toMatchObject({
+    await expect(service.getFreshApplicationFlags(mockReq().user)).rejects.toMatchObject({
       status: 500,
       message: 'Missing feature flag configuration: ADMINPANEL_URL',
     });
@@ -191,8 +191,39 @@ describe('FeatureFlagService', () => {
 // The example env files ship {{INSERT_ADMINPANEL_URL}}; a deployment that never substituted it has
 // no flag source, which is a different thing from one whose Adminpanel is down.
 describe('flag source configuration', () => {
+  beforeEach(() => {
+    vi.stubEnv('ADMINPANEL_URL', undefined);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
   it.each([undefined, '', '   ', '{{INSERT_ADMINPANEL_URL}}'])('reports %s as no flag source', adminpanelUrl => {
     expect(new FeatureFlagService(undefined, { adminpanelUrl }).isConfigured()).toBe(false);
+  });
+
+  it.each([undefined, '', '   ', '{{INSERT_ADMINPANEL_URL}}'])(
+    'returns no browser overrides and makes no upstream request when ADMINPANEL_URL is %s',
+    async adminpanelUrl => {
+      vi.stubEnv('ADMINPANEL_URL', adminpanelUrl);
+      const apiService = new ApiService();
+      const get = vi.spyOn(apiService, 'get').mockRejectedValue(new Error('Unexpected Adminpanel request'));
+      const service = new FeatureFlagService(apiService);
+
+      await expect(service.getFeatureFlags(mockReq().user)).resolves.toEqual([]);
+      expect(get).not.toHaveBeenCalled();
+    },
+  );
+
+  it('surfaces an unavailable configured source instead of treating it as local configuration', async () => {
+    const apiService = new ApiService();
+    const error = new Error('Adminpanel unavailable');
+    vi.spyOn(apiService, 'get').mockRejectedValue(error);
+    const service = new FeatureFlagService(apiService, configuration);
+
+    await expect(service.getFeatureFlags(mockReq().user)).rejects.toBe(error);
   });
 
   it('reports a real url as a flag source', () => {
