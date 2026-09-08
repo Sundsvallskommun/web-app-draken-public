@@ -1,4 +1,6 @@
-import { apiServiceName, resolveSupportManagementApiTarget } from '@/config/api-config';
+import { APIS, apiServiceName, resolveSupportManagementApiTarget } from '@/config/api-config';
+
+const configuredVersions = new Map(APIS.map(({ name, version }) => [name, version]));
 
 describe('apiServiceName', () => {
   const originalTarget = process.env.SUPPORTMANAGEMENT_API_TARGET;
@@ -15,21 +17,21 @@ describe('apiServiceName', () => {
     delete process.env.SUPPORTMANAGEMENT_API_TARGET;
 
     expect(resolveSupportManagementApiTarget()).toBe('stable');
-    expect(apiServiceName('supportmanagement')).toBe('supportmanagement/15.1');
+    expect(apiServiceName('supportmanagement')).toBe(`supportmanagement/${configuredVersions.get('supportmanagement')}`);
   });
 
   it('routes only deployments that explicitly opt in through the sprint API', () => {
     process.env.SUPPORTMANAGEMENT_API_TARGET = 'sprint';
 
     expect(resolveSupportManagementApiTarget()).toBe('sprint');
-    expect(apiServiceName('supportmanagement')).toBe('supportmanagement-sprint/15.1');
+    expect(apiServiceName('supportmanagement')).toBe(`supportmanagement-sprint/${configuredVersions.get('supportmanagement-sprint')}`);
   });
 
   it('routes the AOT deployment through its explicit ALKT sprint API', () => {
     process.env.SUPPORTMANAGEMENT_API_TARGET = 'alktsprint';
 
     expect(resolveSupportManagementApiTarget()).toBe('alktsprint');
-    expect(apiServiceName('supportmanagement')).toBe('support-management-alkt-sprint/15.1');
+    expect(apiServiceName('supportmanagement')).toBe(`support-management-alkt-sprint/${configuredVersions.get('support-management-alkt-sprint')}`);
   });
 
   it('rejects misspelled targets instead of silently changing the upstream contract', () => {
@@ -41,7 +43,7 @@ describe('apiServiceName', () => {
   });
 
   it('keeps regular configured and unknown service names unchanged', () => {
-    expect(apiServiceName('citizen')).toBe('citizen/3.0');
+    expect(apiServiceName('citizen')).toBe(`citizen/${configuredVersions.get('citizen')}`);
     expect(apiServiceName('unknown-service')).toBe('unknown-service');
   });
 });
