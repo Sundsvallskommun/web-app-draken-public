@@ -26,6 +26,7 @@ const contracts = {
       ],
       currentRequestDiagnostics: ['src/middlewares/error.middleware.ts', 'src/services/api.service.ts', 'src/services/api-token.service.ts'],
       withRequestDiagnostics: ['src/middlewares/request-diagnostics.middleware.ts', 'src/services/api.service.ts'],
+      exitAfterDiagnosticFailure: ['src/utils/validateEnv.ts'],
     },
   },
 };

@@ -1,3 +1,6 @@
+import http from 'node:http';
+import type { AddressInfo } from 'node:net';
+
 import axios, { AxiosError } from 'axios';
 import express from 'express';
 import request from 'supertest';
@@ -210,4 +213,39 @@ it('reuses the generated id when following an upstream Location response', async
     expect.objectContaining({ headers: expect.objectContaining({ 'X-Request-Id': response.headers['x-request-id'] }) }),
   );
   expect(JSON.stringify(records())).not.toContain('private');
+});
+
+it('records a request whose client closed the socket before any response was written', async () => {
+  const app = express();
+  app.use(requestDiagnosticsMiddleware);
+  app.get('/slow/:id', () => {
+    /* never responds: the client gives up first */
+  });
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise<void>(resolve => server.once('listening', resolve));
+  const { port } = server.address() as AddressInfo;
+
+  await new Promise<void>(resolve => {
+    const client = http.request({ host: '127.0.0.1', port, path: '/slow/private-person-id', method: 'GET' });
+    client.on('error', () => undefined);
+    client.on('socket', socket =>
+      socket.once('connect', () =>
+        setTimeout(() => {
+          client.destroy();
+          resolve();
+        }, 50),
+      ),
+    );
+    client.end();
+  });
+
+  await vi.waitFor(() =>
+    expect(records()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ event: 'http.request.completed', method: 'GET', route: '/slow/:id', status: 'no-response' }),
+      ]),
+    ),
+  );
+  expect(JSON.stringify(records())).not.toContain('private-person-id');
+  await new Promise<void>(resolve => server.close(() => resolve()));
 });

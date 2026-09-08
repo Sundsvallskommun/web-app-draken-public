@@ -16,7 +16,9 @@ interface ConfigActions {
 type ConfigStore = ConfigState & ConfigActions;
 
 const initialState: ConfigState = {
-  municipalityId: '',
+  // Known at build time; the same value AppLayout later re-applies. Reading it here keeps the
+  // server render and the first client render identical to the hydrated state.
+  municipalityId: process.env.NEXT_PUBLIC_MUNICIPALITY_ID || '',
   isLoading: false,
   isCookieConsentOpen: true,
 };

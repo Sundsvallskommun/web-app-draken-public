@@ -7,7 +7,7 @@ import { HttpError } from 'routing-controllers';
 
 import type { DecisionChannel } from '@/dtos/message.dto';
 import type { InternalRole } from '@/interfaces/users.interface';
-import { writeDiagnosticRecord } from '@/utils/logger';
+import { exitAfterDiagnostics, writeDiagnosticRecord } from '@/utils/logger';
 
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'] as const;
 type HttpMethod = (typeof HTTP_METHODS)[number] | 'UNKNOWN';
@@ -113,7 +113,11 @@ export const logApplicationFailure = (operation: string, error?: unknown, metada
   });
 };
 
-export const logHttpRequest = (diagnostics: RequestDiagnostics, status: number, error?: unknown): void => {
+/** Startup validation exits through the same flush as fatal errors, so its records reach the log files. */
+export const exitAfterDiagnosticFailure = (): Promise<never> => exitAfterDiagnostics(1);
+
+/** `no-response` records a request whose socket closed before a response was written. */
+export const logHttpRequest = (diagnostics: RequestDiagnostics, status: number | 'no-response', error?: unknown): void => {
   const record = {
     event: error === undefined ? 'http.request.completed' : 'http.request.failed',
     ...diagnosticFields(diagnostics),

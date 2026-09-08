@@ -55,7 +55,7 @@ module.exports = {
       name: 'avvikelse-has-explicit-composition',
       severity: 'error',
       comment: 'Avvikelse is composed by dragon entrypoints. Shared SM consumes the investigation contract.',
-      from: { pathNot: '^src/dragons/[^/]+/application\\.ts$|^src/avvikelse/|^src/app/.*\\.dev\\.tsx?$' },
+      from: { pathNot: '^src/dragons/(iaf|vof)/application\\.ts$|^src/avvikelse/|^src/app/.*\\.dev\\.tsx?$' },
       to: { path: '^src/avvikelse/' },
     },
     {
@@ -85,6 +85,16 @@ module.exports = {
         'let the shell provide the implementation, and consume it via that contract.',
       from: { pathNot: '^src/(shell|app)/|^src/dragons/[^/]+/application\\.ts$' },
       to: { path: '^src/shell/' },
+    },
+    {
+      name: 'dragon-entrypoints-import-only-shell-ui',
+      severity: 'error',
+      comment:
+        'A dragon entrypoint (src/dragons/<id>/application.ts) may select its user interface from ' +
+        'src/shell/ui, nothing else in the shell. Anything else (the registry, composition, layout) ' +
+        'would let one dragon reach every other dragon through the shell.',
+      from: { path: '^src/dragons/[^/]+/application\\.ts$' },
+      to: { path: '^src/shell/', pathNot: '^src/shell/ui/' },
     },
     {
       name: 'domains-and-core-do-not-import-dragons',

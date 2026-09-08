@@ -42,6 +42,9 @@ export interface InvestigationModule {
 
 /** The selected implementation is fixed by the application; runtime only controls activation. */
 class InvestigationConfigurationError extends Error {
+  // Next.js strips message and name from errors thrown while rendering server components in
+  // production but forwards a digest, so global-error can still recognise the error there.
+  readonly digest = 'InvestigationConfigurationError';
   constructor() {
     super('Investigation is enabled but this application has no investigation implementation.');
     this.name = 'InvestigationConfigurationError';

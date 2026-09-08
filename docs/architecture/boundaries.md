@@ -31,6 +31,7 @@ its investigation contract. AOT's implementation is owned by `src/dragons/aot/in
 | 1   | `src/dragons/<x>/**`                                              | `src/dragons/<y>/**` (y ≠ x)                                                                                    | forbidden              | dependency-cruiser | none     |
 | 1a  | `src/dragons/<x>/**`                                              | `src/dragons/dragon-module.ts` (any file directly under `src/dragons/`), domains, core                          | allowed                | —                  | —        |
 | 2   | anything except `src/shell/**`, `src/app/**`, dragon `application.ts` | `src/shell/**`                                                                                                  | forbidden              | dependency-cruiser | none     |
+| 2a  | dragon `application.ts`                                           | `src/shell/**` except `src/shell/ui/**`                                                                          | forbidden              | dependency-cruiser | none     |
 | 3   | `src/common`, `src/supportmanagement`, `src/casedata`, `src/config`, `src/stores`, `src/utils`, `src/interfaces` | `src/dragons/**`                                                                              | forbidden              | dependency-cruiser | none     |
 | 4   | `src/common/**`                                                   | `src/casedata/**`, `src/supportmanagement/**`                                                                   | forbidden              | dependency-cruiser | yes      |
 | 5   | `src/supportmanagement/**`                                        | `src/casedata/**` (and the reverse)                                                                             | forbidden              | dependency-cruiser | yes      |
@@ -56,8 +57,9 @@ Rule names as they appear in tool output (all `severity: error`):
 "Baseline: yes" means the rule had violations when it was introduced. Those are recorded and
 tolerated; new ones fail. "Baseline: none" rules had zero violations and have no tolerance.
 
-`avvikelse-has-explicit-composition` restricts Avvikelse imports to application entrypoints,
-Avvikelse internals and development-only lab routes. This rule has no baseline.
+`avvikelse-has-explicit-composition` restricts Avvikelse imports to the IAF and VOF application
+entrypoints, Avvikelse internals and development-only lab routes; any other dragon importing
+Avvikelse fails the check. This rule has no baseline.
 The selected application's imports own composition; the catalog holds identity and domain only.
 Backend artifact validation compares emitted modules with the selected entrypoint's actual source graph.
 Shared SM consumes the investigation contract and fixed application configuration.

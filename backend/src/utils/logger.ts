@@ -255,27 +255,40 @@ export const writeDiagnosticRecord = (level: 'info' | 'warn' | 'error', record: 
 
 // Own the process lifecycle explicitly: never hand raw thrown/rejected values to
 // Winston's exception formatter, which reads arbitrary error messages and stacks.
-let fatalStarted = false;
+let exitStarted = false;
+
+/**
+ * Exit only after the file transports have flushed, so the record explaining the exit
+ * reaches the retained log files and not just stdout. Returns a promise that never
+ * settles: callers may `await` it to stop further startup work while the flush runs.
+ */
+export const exitAfterDiagnostics = (code: number): Promise<never> => {
+  if (!exitStarted) {
+    exitStarted = true;
+    process.exitCode = code;
+    const forceExit = setTimeout(() => process.exit(code), 1500);
+    const finish = () => {
+      clearTimeout(forceExit);
+      process.exit(code);
+    };
+    const fileTransports = logger.transports.filter((transport): transport is winstonDaily => transport instanceof winstonDaily);
+    const flushed = fileTransports.map(transport => new Promise<void>(resolve => transport.once('finish', resolve)));
+    // close() unpipes each transport; DailyRotateFile emits finish after the file
+    // stream's end callback. Ending the logger alone can exit before files flush.
+    logger.close();
+    Promise.all(flushed).then(() => process.stdout.write('', finish), finish);
+  }
+  return new Promise<never>(() => undefined);
+};
+
 const terminateAfterFatalDiagnostic = (event: 'process.uncaught_exception' | 'process.unhandled_rejection'): void => {
-  if (fatalStarted) return;
-  fatalStarted = true;
-  process.exitCode = 1;
-  const forceExit = setTimeout(() => process.exit(1), 1500);
-  const finish = () => {
-    clearTimeout(forceExit);
-    process.exit(1);
-  };
+  if (exitStarted) return;
   logger.error(
     JSON.stringify(
       safeRecord({ event, errorKind: 'fatal', errorCode: event === 'process.uncaught_exception' ? 'UNCAUGHT_EXCEPTION' : 'UNHANDLED_REJECTION' }),
     ),
   );
-  const fileTransports = logger.transports.filter((transport): transport is winstonDaily => transport instanceof winstonDaily);
-  const flushed = fileTransports.map(transport => new Promise<void>(resolve => transport.once('finish', resolve)));
-  // close() unpipes each transport; DailyRotateFile emits finish after the file
-  // stream's end callback. Ending the logger alone can exit before files flush.
-  logger.close();
-  Promise.all(flushed).then(() => process.stdout.write('', finish), finish);
+  void exitAfterDiagnostics(1);
 };
 
 process.on('uncaughtException', () => terminateAfterFatalDiagnostic('process.uncaught_exception'));

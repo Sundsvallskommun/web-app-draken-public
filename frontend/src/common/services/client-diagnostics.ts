@@ -5,7 +5,18 @@ interface ClientDiagnostic {
   errorKind: ClientErrorKind;
   status?: number;
   requestId?: string;
+  configurationField?: string;
 }
+
+/** Configuration identifiers are code-owned names (a feature flag, an environment key), never values. */
+export interface ClientDiagnosticMetadata {
+  readonly configurationField?: string;
+}
+
+const configurationField = (metadata: ClientDiagnosticMetadata | undefined): string | undefined => {
+  const candidate = dataProperty(metadata, 'configurationField');
+  return typeof candidate === 'string' && /^[a-z][a-z0-9_]{0,63}$/iu.test(candidate) ? candidate : undefined;
+};
 
 // Inspect only data properties. A thrown object may contain getters, a custom toJSON,
 // circular payloads or Axios request/response objects; none may enter the console.
@@ -37,7 +48,7 @@ const errorKind = (error: unknown, httpStatus: number | undefined): ClientErrorK
   }
 };
 
-const diagnostic = (operation: string, error: unknown): ClientDiagnostic => {
+const diagnostic = (operation: string, error: unknown, metadata?: ClientDiagnosticMetadata): ClientDiagnostic => {
   const response = dataProperty(error, 'response');
   const status = dataProperty(response, 'status') ?? dataProperty(error, 'status');
   const httpStatus =
@@ -58,15 +69,16 @@ const diagnostic = (operation: string, error: unknown): ClientDiagnostic => {
     errorKind: errorKind(error, httpStatus),
     ...(httpStatus === undefined ? {} : { status: httpStatus }),
     ...(requestId === undefined ? {} : { requestId }),
+    ...(configurationField(metadata) === undefined ? {} : { configurationField: configurationField(metadata) }),
   };
 };
 
 /** Use a static operation label owned by the callsite. Never pass payload metadata. */
-export const logClientFailure = (operation: string, error?: unknown): void => {
-  console.error('client.failure', diagnostic(operation, error));
+export const logClientFailure = (operation: string, error?: unknown, metadata?: ClientDiagnosticMetadata): void => {
+  console.error('client.failure', diagnostic(operation, error, metadata));
 };
 
 /** Warnings have the same privacy boundary as failures, including in development. */
-export const logClientWarning = (operation: string, error?: unknown): void => {
-  console.warn('client.warning', diagnostic(operation, error));
+export const logClientWarning = (operation: string, error?: unknown, metadata?: ClientDiagnosticMetadata): void => {
+  console.warn('client.warning', diagnostic(operation, error, metadata));
 };

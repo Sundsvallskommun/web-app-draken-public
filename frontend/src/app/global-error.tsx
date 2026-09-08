@@ -13,7 +13,11 @@ export default function GlobalError({
   reset: () => void;
 }>) {
   const deploymentMismatch = error.name === 'ApiDeploymentMismatchError';
-  const configurationError = ['FeatureFlagConfigurationError', 'InvestigationConfigurationError'].includes(error.name);
+  // A production server render replaces the thrown error with a generic one that keeps only
+  // the digest, so both identifiers are checked.
+  const configurationError = ['FeatureFlagConfigurationError', 'InvestigationConfigurationError'].some(
+    (name) => name === error.name || name === error.digest
+  );
   let title = 'Ett oväntat fel uppstod';
   let message = 'Applikationen kunde inte laddas. Prova att ladda om sidan.';
   if (deploymentMismatch) {

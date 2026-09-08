@@ -153,3 +153,16 @@ test('malformed operation text is never written to the console', () => {
   logClientWarning(sensitive);
   assert.deepEqual(output.mock.calls, [['client.warning', { operation: 'invalid-operation', errorKind: 'unknown' }]]);
 });
+
+test('a configuration field is kept only when it is a plain identifier', () => {
+  const output = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  logClientWarning('config.flags', undefined, { configurationField: 'useBillng' });
+  for (const configurationField of [sensitive, 'x'.repeat(65), '1flag', 'flag name', '', undefined]) {
+    logClientWarning('config.flags', undefined, { configurationField } as { configurationField?: string });
+  }
+  assert.deepEqual(output.mock.calls, [
+    ['client.warning', { operation: 'config.flags', errorKind: 'unknown', configurationField: 'useBillng' }],
+    ...Array.from({ length: 6 }, () => ['client.warning', { operation: 'config.flags', errorKind: 'unknown' }]),
+  ]);
+  assert.ok(!JSON.stringify(output.mock.calls).includes(sensitive));
+});

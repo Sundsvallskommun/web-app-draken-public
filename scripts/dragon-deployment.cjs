@@ -358,7 +358,11 @@ function runtimeEnvironment(side, build, release, inherited, secretDirectory) {
   const managed = {
     ...(side === 'frontend' ? frontendDefaults : {}),
     ...service.environment,
-    ...(side === 'backend' ? { NEXT_PUBLIC_USE_INVESTIGATION: release.frontend.environment.NEXT_PUBLIC_USE_INVESTIGATION ?? frontendDefaults.NEXT_PUBLIC_USE_INVESTIGATION } : {}),
+    // The backend never receives an implicit default: a dragon with investigation documents
+    // refuses to start unless the release declares the flag explicitly.
+    ...(side === 'backend' && release.frontend.environment.NEXT_PUBLIC_USE_INVESTIGATION !== undefined
+      ? { NEXT_PUBLIC_USE_INVESTIGATION: release.frontend.environment.NEXT_PUBLIC_USE_INVESTIGATION }
+      : {}),
     NODE_ENV: 'production',
     PORT: '3000',
     [side === 'frontend' ? 'NEXT_PUBLIC_APPLICATION' : 'APPLICATION']: identity.dragon,

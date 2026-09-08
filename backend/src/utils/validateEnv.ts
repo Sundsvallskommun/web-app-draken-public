@@ -2,11 +2,11 @@ import { resolveSupportManagementApiTarget } from '@/config/api-config';
 import { getDragonDomain } from '@/config/dragon-build';
 import { resolveSupportInvestigationHandoverTargets } from '@/config/support-investigation-handover-targets';
 import { isContactSundsvall, isKC } from '@/services/application.service';
-import { logApplicationEvent, logApplicationFailure, logApplicationWarning } from '@/services/request-diagnostics';
+import { exitAfterDiagnosticFailure, logApplicationEvent, logApplicationFailure, logApplicationWarning } from '@/services/request-diagnostics';
 
 import { backendEnvironmentIssues } from '../../../scripts/dragon-deployment.cjs';
 
-function reportEnvironmentIssues({ missing, invalid }: ReturnType<typeof backendEnvironmentIssues>): void {
+async function reportEnvironmentIssues({ missing, invalid }: ReturnType<typeof backendEnvironmentIssues>): Promise<void> {
   if (missing.length > 0) {
     logApplicationFailure('Required environment variables are missing', undefined, { configurationFields: missing });
   }
@@ -17,13 +17,13 @@ function reportEnvironmentIssues({ missing, invalid }: ReturnType<typeof backend
     logApplicationEvent('✅ All required environment variables are set.');
     return;
   }
-  process.exit(1);
+  await exitAfterDiagnosticFailure();
 }
 
 const EXAMPLE_SECRET = 'foobar'; // shipped in .env.*.example.local
 const RECOMMENDED_SECRET_LENGTH = 32; // ~256-bit when base64/hex
 
-function validateSecretStrength(): void {
+async function validateSecretStrength(): Promise<void> {
   // Enforce only in deployed envs (TEST/prod run NODE_ENV=production); local dev may keep the template value.
   if (process.env.NODE_ENV !== 'production') {
     return;
@@ -31,23 +31,23 @@ function validateSecretStrength(): void {
   const secret = (process.env.SECRET_KEY ?? '').trim();
   if (secret === EXAMPLE_SECRET) {
     logApplicationFailure('Insecure SECRET_KEY: it is the shipped example value; set a strong unique secret.');
-    process.exit(1);
+    await exitAfterDiagnosticFailure();
   }
   if (secret.length < RECOMMENDED_SECRET_LENGTH) {
     logApplicationWarning('SECRET_KEY is shorter than the recommended 32 characters');
   }
 }
 
-const validateEnv = () => {
+const validateEnv = async (): Promise<void> => {
   const domain = getDragonDomain(process.env.APPLICATION);
-  reportEnvironmentIssues(backendEnvironmentIssues(domain, process.env));
+  await reportEnvironmentIssues(backendEnvironmentIssues(domain, process.env));
   if (domain === 'supportmanagement') {
     try {
       resolveSupportManagementApiTarget();
       resolveSupportInvestigationHandoverTargets();
     } catch {
       logApplicationFailure('Invalid Support Management runtime configuration; check the API target and handover target declarations.');
-      process.exit(1);
+      await exitAfterDiagnosticFailure();
     }
   }
 
@@ -57,7 +57,7 @@ const validateEnv = () => {
   if (isKC() && !isContactSundsvall()) {
     logApplicationWarning('KC configuration disables access to other namespaces');
   }
-  validateSecretStrength();
+  await validateSecretStrength();
 };
 
 export default validateEnv;

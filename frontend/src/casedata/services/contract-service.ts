@@ -222,7 +222,6 @@ export const defaultLagenhetsarrende: ContractData = {
 };
 
 export const saveContract: (contract: ContractData) => Promise<Contract> = (contract) => {
-  logClientFailure('casedata.contract.saveContract');
   try {
     let apiCall: Promise<AxiosResponse<ApiResponse<Contract>>>;
     const apiContract: Contract =
@@ -542,7 +541,6 @@ export const contractToKopeavtal = (contract: Contract): ContractData => {
 };
 
 export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
-  logClientFailure('casedata.contract.lagenhetsArrendeToContract');
   let fees: Fees | undefined = undefined;
   if (data.generateInvoice) {
     const feeDescription = getFeeDescription(data.type, data.leaseType);
@@ -704,7 +702,6 @@ export const saveSignedContractAttachment = (
   note: string
 ) => {
   const attachmentPromise = attachment.map(async (attachment) => {
-    logClientFailure('casedata.contract.saveSignedContractAttachment');
     const fileData = await toBase64(attachment.file);
 
     const formData: Attachment = {

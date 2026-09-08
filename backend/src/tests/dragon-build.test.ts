@@ -76,6 +76,17 @@ it('validates application-owned API requirements before opening a server', async
   }
 });
 
+it('refuses to start an investigation dragon whose release did not declare the activation flag', async () => {
+  vi.stubEnv('APPLICATION', 'IAF');
+  vi.stubEnv('SUPPORTMANAGEMENT_API_TARGET', APPLICATIONS.IAF.supportProfile?.requiredSupportManagementApiTarget ?? 'stable');
+  vi.stubEnv('NEXT_PUBLIC_USE_INVESTIGATION', '');
+  try {
+    await expect(startServer(APPLICATIONS.IAF)).rejects.toThrow('NEXT_PUBLIC_USE_INVESTIGATION must be declared true or false');
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
+
 it('rejects an SM composition that omitted its registration policy before startup', async () => {
   vi.stubEnv('APPLICATION', 'KC');
   try {

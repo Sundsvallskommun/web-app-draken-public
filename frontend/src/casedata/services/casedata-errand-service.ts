@@ -756,7 +756,7 @@ export const validateExtraParametersForDecision = (
   }
   const missingExtraParameters: string[] = [];
   requiredExtraParameters.forEach((param) => {
-    if (!e.extraParameters?.find((p) => p.key === param)?.values?.some((value) => value.trim() !== '')) {
+    if (!e.extraParameters?.find((p) => p.key === param)?.values?.some((value) => typeof value === 'string' && value.trim() !== '')) {
       missingExtraParameters.push(
         extraParameterLabels?.[param] ? `"${extraParameterLabels[param]}"` : 'Okänd parameter'
       );

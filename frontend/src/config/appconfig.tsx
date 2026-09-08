@@ -4,6 +4,8 @@ import { FeatureFlagDto } from 'src/data-contracts/backend/data-contracts';
 import environmentDefaults from '../../../frontend-environment-defaults.json';
 
 export class FeatureFlagConfigurationError extends Error {
+  // Forwarded by Next.js even when a production server render redacts name and message.
+  readonly digest = 'FeatureFlagConfigurationError';
   constructor() {
     super('Utredningens tidigare variantflaggor måste migreras innan applikationen kan användas.');
     this.name = 'FeatureFlagConfigurationError';
@@ -134,7 +136,7 @@ export function applyRuntimeFeatureFlags(flags: FeatureFlagDto[]) {
     if (flag.name === 'isCaseData' || flag.name === 'isSupportManagement') return;
 
     if (!Object.hasOwn(appConfig.features, flag.name) && flag.name !== 'reopenSupportErrandLimit') {
-      logClientWarning('config.appconfig.applyRuntimeFeatureFlags');
+      logClientWarning('config.appconfig.applyRuntimeFeatureFlags', undefined, { configurationField: flag.name });
       return;
     }
 

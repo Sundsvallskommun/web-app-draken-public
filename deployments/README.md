@@ -117,7 +117,8 @@ och städar sina egna resurser. Det ersätter inte autentiserad integration i m�
 ## Utredningsflagga
 
 Ange `NEXT_PUBLIC_USE_INVESTIGATION` en gång i `frontend.environment`. Backend får samma värde
-från manifestet. Med Adminpanel styr `useInvestigation` den aktiva funktionen; skyddade
+från manifestet och inget standardvärde: en drake som komponerar utredningsdokument (IAF, VOF)
+vägrar starta om flaggan saknas, så att en glömd flagga inte ger en tyst inaktiv utredning. Med Adminpanel styr `useInvestigation` den aktiva funktionen; skyddade
 skrivningar använder backendens färska flaggbesked. Variantval ingår inte i manifestet.
 
 Befintliga installationer måste först få ett granskat [migreringsförslag](../docs/operations/investigation-flags.md).
