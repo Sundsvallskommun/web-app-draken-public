@@ -20,6 +20,7 @@ import { ExtraParameterController } from './controllers/casedata/extraparameter.
 import { CaseStatusController } from './controllers/casestatus.controller';
 import { CasedataContractsController } from './controllers/contract.controller';
 import { EmployeeController } from './controllers/employee.controller';
+import { ErrorReportController } from './controllers/error-report.controller';
 import { EstateInfoController } from './controllers/estateInfo.controller';
 import { FeatureFlagController } from './controllers/featureflag.controller';
 import { HealthController } from './controllers/health.controller';
@@ -89,5 +90,6 @@ export const CONTROLLERS: NewableFunction[] = [
   ExtraParameterController,
   FeatureFlagController,
   EmployeeController,
+  ErrorReportController,
   OrganizationController,
 ];
