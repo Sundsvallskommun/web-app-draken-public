@@ -776,6 +776,66 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(page.locator('[data-cy="investigation-document-notice"]')).toHaveCount(0);
   });
 
+  test('samlar alla valideringsfel och navigerar till fält i hopfällda avsnitt', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const trace = await installIafApiMock(page, { documents: { [managerKey]: existingManagerDocument() } });
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    const document = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
+    const assessedWith = document.locator(`#${managerKey}_riskAssessmentHsl_assessedWith`);
+    const typeSelect = document.locator('[data-cy="label-classification-type"]');
+    const subtypeSelect = document.locator('[data-cy="label-classification-subtype"]');
+    const saveButton = document.getByRole('button', { name: 'Spara utredning', exact: true });
+    const summary = document.locator('[data-cy="schema-form-error-summary"]');
+    await assessedWith.fill('');
+    await typeSelect.selectOption('');
+
+    const openSections = document.locator('.sk-disclosure-header-button[aria-expanded="true"]');
+    for (let remaining = await openSections.count(); remaining > 0; remaining--) {
+      await openSections.first().click();
+    }
+    await expect(assessedWith).not.toBeVisible();
+    await saveButton.click();
+    await expect(summary).toBeFocused();
+    await expect(summary.getByRole('link')).toHaveCount(2);
+    await expect(summary).toContainText('Legitimerad personal som medverkat i bedömningen');
+    await expect(summary).toContainText('Kategorisering');
+    expect(trace.puts).toHaveLength(0);
+    expect(trace.classificationPatches).toHaveLength(0);
+
+    const fieldLink = summary.getByRole('link', { name: /Legitimerad personal/u });
+    await fieldLink.click();
+    await expect(assessedWith).toBeVisible();
+    await expect(assessedWith).toBeFocused();
+    await document
+      .locator('.schema-boundary-disclosure')
+      .filter({ has: page.locator(`#${managerKey}_riskAssessmentHsl_assessedWith`) })
+      .locator('.sk-disclosure-header-button')
+      .first()
+      .click();
+    await fieldLink.click();
+    await expect(assessedWith).toBeFocused();
+    await assessedWith.fill('Anna Andersson');
+    await saveButton.click();
+    await expect(summary).toBeFocused();
+    await expect(summary.getByRole('link')).toHaveCount(1);
+    await expect(summary).not.toContainText('Legitimerad personal');
+
+    await summary.getByRole('link', { name: /^Kategorisering/u }).focus();
+    await page.keyboard.press('Enter');
+    await expect(typeSelect).toBeVisible();
+    await expect(typeSelect).toBeFocused();
+    await typeSelect.selectOption(iafLabelFixture.classification.medication.resourcePath);
+    await subtypeSelect.selectOption(iafLabelFixture.classification.incorrectAdministration.resourcePath);
+    await saveButton.click();
+    await expect(summary).toHaveCount(0);
+    await expect.poll(() => trace.puts.length).toBe(1);
+    await expect.poll(() => trace.classificationPatches.length).toBe(1);
+  });
+
   test('sparar endast aktiv dokumentnyckel med schemaId och If-Match', async ({ page, dismissCookieConsent }) => {
     const existing = existingManagerDocument();
     const trace = await installIafApiMock(page, { documents: { [managerKey]: existing } });
@@ -923,7 +983,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
     await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
 
-    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
+    await expect(page.locator('[data-cy="schema-form-error-summary"]')).toContainText(
       'Välj avvikelsetyp och underkategori innan utredningen sparas.'
     );
     expect(trace.puts).toHaveLength(0);
@@ -946,7 +1006,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.locator(`#${managerKey}_riskAssessmentSolLss_probability`).getByLabel(/^1 –/u).check();
     await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
 
-    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
+    await expect(page.locator('[data-cy="schema-form-error-summary"]')).toContainText(
       'Den befintliga kategoriseringen stämmer inte med valda lagrum. Välj en giltig avvikelsetyp och underkategori.'
     );
     expect(trace.puts).toHaveLength(0);
@@ -998,7 +1058,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
     await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
 
-    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText(
+    await expect(page.locator('[data-cy="schema-form-error-summary"]')).toContainText(
       'Välj underkategori innan utredningen sparas.'
     );
     expect(trace.puts).toHaveLength(0);

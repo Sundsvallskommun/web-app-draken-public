@@ -2,8 +2,9 @@
 
 import { ArrayObjectFieldTemplate } from '@common/components/json/fields/array-object-field-template.componant';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
+import { getSchemaFormErrors, type SchemaFormError } from '@common/components/json/utils/schema-form-error-handling';
 import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
-import type { RJSFSchema, UiSchema } from '@rjsf/utils';
+import type { RJSFSchema, RJSFValidationError, UiSchema } from '@rjsf/utils';
 import { Alert, Label, Spinner } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import { AvvikelseLabelCategorization } from '@supportmanagement/investigation/avvikelse/avvikelse-label-categorization.component';
@@ -12,7 +13,7 @@ import {
   getAvvikelseLabelClassificationSelection,
 } from '@supportmanagement/investigation/avvikelse/label-classification';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 
 import { useInvestigationProfileStore } from '../investigation-profile-store';
@@ -76,8 +77,20 @@ interface SupportInvestigationDocumentProps {
 }
 
 function InvestigationAlert({ type, message }: Readonly<{ type: 'error' | 'warning' | 'success'; message: string }>) {
+  const noticeRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (type !== 'error') return;
+    noticeRef.current?.focus({ preventScroll: true });
+    noticeRef.current?.scrollIntoView({ block: 'start' });
+  }, [message, type]);
+
   return (
-    <div role={type === 'error' ? 'alert' : 'status'} aria-live={type === 'error' ? 'assertive' : 'polite'}>
+    <div
+      ref={noticeRef}
+      tabIndex={-1}
+      role={type === 'error' ? 'alert' : 'status'}
+      aria-live={type === 'error' ? 'assertive' : 'polite'}
+    >
       <Alert type={type} className="mb-24" data-cy="investigation-document-notice">
         <Alert.Icon />
         <Alert.Content>
@@ -104,6 +117,8 @@ export function SupportInvestigationDocument({
   const [documentState, setDocumentState] = useState<InvestigationDocumentState>();
   const [notice, setNotice] = useState<{ type: 'error' | 'warning' | 'success'; message: string }>();
   const [isSaving, setIsSaving] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<SchemaFormError[]>([]);
+  const classificationFieldId = `${definition.key}_external_errandClassification`;
   const [isDirty, setIsDirty] = useState(false);
   const [classificationDirty, setClassificationDirty] = useState(false);
   const [documentSavedPendingClassification, setDocumentSavedPendingClassification] = useState(false);
@@ -140,6 +155,7 @@ export function SupportInvestigationDocument({
       setLoadState('loading');
       useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, false);
       setNotice(undefined);
+      setValidationErrors([]);
       setDocumentDirty(false);
       setClassificationDirty(false);
       setDocumentSavedPendingClassification(false);
@@ -322,7 +338,7 @@ export function SupportInvestigationDocument({
     resetErrandField('version', { defaultValue: savedErrand.version });
   };
 
-  const save = async (formData: InvestigationFormData) => {
+  const save = async (formData: InvestigationFormData, schemaErrors: RJSFValidationError[] = []) => {
     if (!municipalityId || !errandId || readonly || isSaving) return;
 
     const normalizedData = normalizeContextualInvestigationFormData(
@@ -338,17 +354,30 @@ export function SupportInvestigationDocument({
     let documentSavedForClassification = documentSavedPendingClassification;
 
     try {
-      const preparedClassification = await prepareInvestigationClassification({
-        required: classificationOwner,
-        dirty: classificationDirty,
-        labelTree: classificationLabelTree,
-        labelStructure: supportMetadata?.labels?.labelStructure,
-        legalBases: getInvestigationLegalBases(normalizedData),
-        legalBaseRules,
-        persistedClassification,
-        triggerValidation: () => triggerClassification(['category', 'type', 'subType']),
-        getDraft: getClassificationValues,
-      });
+      const errors = getSchemaFormErrors(renderingSchema, schemaErrors, definition.key);
+      let preparedClassification: PreparedInvestigationClassification | undefined;
+      try {
+        preparedClassification = await prepareInvestigationClassification({
+          required: classificationOwner,
+          dirty: classificationDirty,
+          labelTree: classificationLabelTree,
+          labelStructure: supportMetadata?.labels?.labelStructure,
+          legalBases: getInvestigationLegalBases(normalizedData),
+          legalBaseRules,
+          persistedClassification,
+          triggerValidation: () => triggerClassification(['category', 'type', 'subType']),
+          getDraft: getClassificationValues,
+        });
+      } catch (error) {
+        errors.push({
+          fieldId: classificationFieldId,
+          label: 'Kategorisering',
+          message: error instanceof Error ? error.message : 'Kontrollera avvikelsetyp och underkategori.',
+        });
+      }
+      setValidationErrors(errors);
+      if (errors.length > 0) return;
+
       const savedDocument = await saveInvestigationDocumentStep({
         municipalityId,
         errandId,
@@ -472,6 +501,8 @@ export function SupportInvestigationDocument({
 
       <SchemaForm
         schema={renderingSchema}
+        validationErrors={validationErrors}
+        onError={(errors) => void save(documentState.formData, errors)}
         defaultFormStateBehavior={investigationDefaultFormStateBehavior}
         uiSchema={classificationUiSchema}
         idPrefix={definition.key}
@@ -490,6 +521,7 @@ export function SupportInvestigationDocument({
           if (documentSavedPendingClassification) setDocumentSavedPendingClassification(false);
           setDocumentState((current) => (current ? { ...current, formData: normalizedData } : current));
           setDocumentDirty(true);
+          setValidationErrors([]);
           setNotice(undefined);
         }}
         onSubmit={(formData) => void save(formData)}
@@ -498,19 +530,22 @@ export function SupportInvestigationDocument({
           classificationOwner && classificationLabelTree
             ? {
                 errandClassification: (
-                  <FormProvider {...classificationMethods}>
-                    <AvvikelseLabelCategorization
-                      supportMetadata={supportMetadata}
-                      labelTree={classificationLabelTree}
-                      disabled={readonly || isSaving}
-                      legalBases={legalBases}
-                      legalBaseRules={legalBaseRules}
-                      onClassificationChange={() => {
-                        setClassificationDirty(true);
-                        setNotice(undefined);
-                      }}
-                    />
-                  </FormProvider>
+                  <div id={classificationFieldId} tabIndex={-1}>
+                    <FormProvider {...classificationMethods}>
+                      <AvvikelseLabelCategorization
+                        supportMetadata={supportMetadata}
+                        labelTree={classificationLabelTree}
+                        disabled={readonly || isSaving}
+                        legalBases={legalBases}
+                        legalBaseRules={legalBaseRules}
+                        onClassificationChange={() => {
+                          setClassificationDirty(true);
+                          setValidationErrors([]);
+                          setNotice(undefined);
+                        }}
+                      />
+                    </FormProvider>
+                  </div>
                 ),
               }
             : undefined

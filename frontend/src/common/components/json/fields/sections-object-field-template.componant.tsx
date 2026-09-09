@@ -5,6 +5,8 @@ import type { ObjectFieldTemplateProps, RJSFSchema, UiSchema } from '@rjsf/utils
 import { Checkbox, Disclosure, Divider, Label } from '@sk-web-gui/react';
 import { MouseEvent, ReactNode, useState } from 'react';
 
+import type { SchemaErrorNavigation } from '../schema/schema-form-error-summary.component';
+
 interface SchemaCondition {
   const?: unknown;
   enum?: unknown[];
@@ -42,6 +44,7 @@ interface FormContext {
   originalSchema?: RJSFSchema;
   idPrefix?: string;
   externalFields?: Readonly<Record<string, ReactNode>>;
+  errorNavigation?: SchemaErrorNavigation;
 }
 
 const externalFieldPrefix = '$external:';
@@ -141,6 +144,7 @@ interface SectionDisclosureProps {
   isReadonly: boolean;
   showCompletionControl: boolean;
   children: ReactNode;
+  errorNavigation?: SchemaErrorNavigation;
 }
 
 function SectionDisclosure({
@@ -149,9 +153,16 @@ function SectionDisclosure({
   isReadonly,
   showCompletionControl,
   children,
+  errorNavigation,
 }: Readonly<SectionDisclosureProps>) {
   const [open, setOpen] = useState(section.defaultOpen ?? false);
   const [doneMark, setDoneMark] = useState(false);
+  const [lastErrorNavigation, setLastErrorNavigation] = useState(errorNavigation);
+
+  if (errorNavigation !== lastErrorNavigation) {
+    setLastErrorNavigation(errorNavigation);
+    if (errorNavigation) setOpen(true);
+  }
 
   const handleDoneMarkChange = () => {
     const newDoneMark = !doneMark;
@@ -420,6 +431,16 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
             section={section}
             isReadonly={isReadonly}
             showCompletionControl={showCompletionControl}
+            errorNavigation={
+              section.fields.some((fieldName) => {
+                const fieldId = `${idSchema.$id}_${fieldName.replace('$external:', 'external_')}`;
+                return (
+                  ctx?.errorNavigation?.fieldId === fieldId || ctx?.errorNavigation?.fieldId.startsWith(`${fieldId}_`)
+                );
+              })
+                ? ctx?.errorNavigation
+                : undefined
+            }
           >
             <div className="flex min-w-0 max-w-full flex-col gap-32 py-16">
               {renderFields(
