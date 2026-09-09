@@ -19,9 +19,10 @@ import type {
 } from '@rjsf/utils';
 import { customizeValidator } from '@rjsf/validator-ajv8';
 import Ajv2020 from 'ajv/dist/2020';
-import { ComponentType, ReactNode, useCallback, useMemo, useState } from 'react';
+import { ComponentType, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import createJsonErrorTransformer from '../utils/schema-form-error-handling';
+import createJsonErrorTransformer, { type SchemaFormError } from '../utils/schema-form-error-handling';
+import { type SchemaErrorNavigation, SchemaFormErrorSummary } from './schema-form-error-summary.component';
 import { buildUiSchemaFromSchema } from './schema-form-ui-schema';
 
 // Schemas declare $schema: draft 2020-12, which the default AJV8 validator (draft-07) cannot compile.
@@ -48,6 +49,8 @@ type SchemaFormProps = {
   submitButtonOptions?: SubmitButtonOptions;
   extraContent?: React.ReactNode;
   externalFields?: Readonly<Record<string, ReactNode>>;
+  validationErrors?: readonly SchemaFormError[];
+  onError?: FormProps['onError'];
 };
 
 export default function SchemaForm({
@@ -65,7 +68,33 @@ export default function SchemaForm({
   submitButtonOptions,
   extraContent,
   externalFields,
+  validationErrors,
+  onError,
 }: SchemaFormProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [errorNavigation, setErrorNavigation] = useState<SchemaErrorNavigation>();
+
+  useEffect(() => {
+    if (!errorNavigation) return;
+    // Section disclosures consume the same request and open before the next paint.
+    const frame = requestAnimationFrame(() => {
+      const container = containerRef.current;
+      const target = container?.ownerDocument.getElementById(errorNavigation.fieldId);
+      const field = container?.ownerDocument.getElementById(`${errorNavigation.fieldId}__field`);
+      const boundary = field ?? target;
+      if (!container || !boundary || !container.contains(boundary)) return;
+      const controlSelector =
+        'input:not([type="hidden"]):not(:disabled), select:not(:disabled), textarea:not(:disabled), [contenteditable="true"]';
+      const control = target?.matches(controlSelector)
+        ? target
+        : boundary.querySelector<HTMLElement>('select[aria-invalid="true"]:not(:disabled)') ??
+          boundary.querySelector<HTMLElement>(controlSelector) ??
+          boundary.querySelector<HTMLElement>('button:not(:disabled)');
+      (control ?? boundary).focus({ preventScroll: true });
+      boundary.scrollIntoView({ block: 'center' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [errorNavigation]);
   const [localData, setLocalData] = useState<any>({});
   const data = formData ?? localData;
 
@@ -95,8 +124,8 @@ export default function SchemaForm({
 
   // Send original schema via formContext so ObjectFieldTemplate can read if/then conditions
   const formContext = useMemo(
-    () => ({ originalSchema: schema, submitButtonOptions, idPrefix, externalFields }),
-    [externalFields, idPrefix, schema, submitButtonOptions]
+    () => ({ originalSchema: schema, submitButtonOptions, idPrefix, externalFields, errorNavigation }),
+    [externalFields, idPrefix, schema, submitButtonOptions, errorNavigation]
   );
 
   const templates: NonNullable<FormProps['templates']> = {
@@ -121,6 +150,7 @@ export default function SchemaForm({
     formContext,
     onChange: handleChange,
     onSubmit: handleSubmit,
+    onError,
     validator,
     fields,
     widgets,
@@ -135,7 +165,8 @@ export default function SchemaForm({
 
   if (extraContent) {
     return (
-      <div className="w-full min-w-0 max-w-full">
+      <div ref={containerRef} className="w-full min-w-0 max-w-full">
+        {validationErrors && <SchemaFormErrorSummary errors={validationErrors} onNavigate={setErrorNavigation} />}
         <Form {...formProps} templates={{ ...templates, ButtonTemplates: { SubmitButton: () => null } }}>
           {extraContent}
           <SchemaSubmitButton options={submitButtonOptions} />
@@ -146,7 +177,8 @@ export default function SchemaForm({
 
   const formWithoutSubmit = disabled || readonly;
   return (
-    <div className="w-full min-w-0 max-w-full">
+    <div ref={containerRef} className="w-full min-w-0 max-w-full">
+      {validationErrors && <SchemaFormErrorSummary errors={validationErrors} onNavigate={setErrorNavigation} />}
       <Form
         {...formProps}
         templates={formWithoutSubmit ? { ...templates, ButtonTemplates: { SubmitButton: () => null } } : templates}

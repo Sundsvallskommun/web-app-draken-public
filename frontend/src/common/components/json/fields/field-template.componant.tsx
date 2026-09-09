@@ -49,7 +49,7 @@ export function FieldTemplate(props: FieldTemplateProps) {
         </div>
       )}
 
-      <div className="schema-field-body flex min-w-0 max-w-full flex-col gap-8">
+      <div id={`${id}__field`} tabIndex={-1} className="schema-field-body flex min-w-0 max-w-full flex-col gap-8">
         {children}
 
         {descriptionBelow && renderDescription('below')}
