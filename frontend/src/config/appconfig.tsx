@@ -42,6 +42,13 @@ export interface AppConfigFeatures {
   useInvestigation: boolean;
   useAvvikelseInvestigation: boolean;
   useAotInvestigation: boolean;
+  /**
+   * Hides Grundinformation's "Om ärendet" section - ämnesrad, kategorisering, ärendebeskrivning and
+   * inkom via - for a deployment that collects all of it somewhere else. Phrased as "hide" rather
+   * than "use" on purpose: a flag list that does not mention it leaves the section in place, so a
+   * drake can never lose it by omission (Adminpanel resets every unknown flag to false).
+   */
+  hideAboutErrandSection: boolean;
 }
 
 // JSON.parse prevents the minifier from folding placeholder comparisons at build time.
@@ -93,6 +100,7 @@ export const appConfig: AppConfig = {
     useInvestigation: envBool(process.env.NEXT_PUBLIC_USE_INVESTIGATION),
     useAvvikelseInvestigation: envBool(process.env.NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION),
     useAotInvestigation: envBool(process.env.NEXT_PUBLIC_USE_AOT_INVESTIGATION),
+    hideAboutErrandSection: envBool(process.env.NEXT_PUBLIC_HIDE_ABOUT_ERRAND_SECTION),
   },
 };
 

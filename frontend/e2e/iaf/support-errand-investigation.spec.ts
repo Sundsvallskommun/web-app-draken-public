@@ -125,6 +125,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
         { name: 'useThreeLevelCategorization', enabled: true },
         { name: 'useInvestigation', enabled: true },
         { name: 'useAvvikelseInvestigation', enabled: true },
+        { name: 'hideAboutErrandSection', enabled: true },
       ],
     });
 
@@ -135,6 +136,13 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(basics.locator('[data-cy="category-input"]')).toHaveCount(0);
     await expect(basics.locator('[data-cy="type-input"]')).toHaveCount(0);
     await expect(basics.locator('[data-cy="avvikelse-label-categorization"]')).toHaveCount(0);
+    // The whole "Om ärendet" section is left out where the deployment says so: its fields belong to
+    // the report and its categorization to the investigation.
+    await expect(basics.getByText('Om ärendet', { exact: true })).toHaveCount(0);
+    // The stakeholder section is named by SupportManagement's metadata, which calls the errand
+    // owner "Brukare" here - the frontend renders the role's displayName, it does not pick a word.
+    await expect(basics.getByText('Brukare', { exact: true })).toBeVisible();
+    await expect(basics.getByText('Ärendeägare', { exact: true })).toHaveCount(0);
 
     await openInvestigation(page);
     await expect(page.locator(classificationFieldSelector)).toHaveCount(1);
@@ -220,7 +228,12 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(details).not.toContainText('SKA ENDAST VISAS UNDER PROFILENS UTREDNING');
   });
 
-  test('behåller kategoriseringen i Grundinformation när IAF/VOF:s ägardokument saknas', async ({
+  /**
+   * Grundinformation has no "Om ärendet" section for avvikelse, so the categorization control it
+   * used to fall back into is gone with it. The errand must still be savable, and the save must
+   * leave the classification alone rather than resending a value nobody could see.
+   */
+  test('skriver ingen klassificering från Grundinformation när IAF/VOF:s ägardokument saknas', async ({
     page,
     dismissCookieConsent,
   }) => {
@@ -229,29 +242,24 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const trace = await installIafApiMock(page, {
       documents: { [managerKey]: existingManagerDocument() },
       investigationProfile: profile,
+      // Priority is a sidebar field, and the sidebar needs the errand to be the signed-in
+      // handler's own. The mock signs in as iaf.test in both projects.
+      assignedUserId: 'iaf.test',
     });
 
     await visitErrand(page, dismissCookieConsent);
-    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toBeVisible();
-    await page
-      .locator('[data-cy="label-classification-type"]')
-      .selectOption(iafLabelFixture.classification.medication.resourcePath);
-    await page
-      .locator('[data-cy="label-classification-subtype"]')
-      .selectOption(iafLabelFixture.classification.incorrectAdministration.resourcePath);
+    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toHaveCount(0);
+    await expect(page.locator('[data-cy="label-classification-type"]')).toHaveCount(0);
+
+    await page.locator('[data-cy="priority-input"]').selectOption('HIGH');
     await page
       .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')
       .filter({ hasText: 'Spara ärende' })
       .click();
     await expect.poll(() => trace.errandPatches.length).toBe(1);
-    expect(trace.errandPatches[0]).toEqual(
-      expect.objectContaining({
-        classification: {
-          category: iafLabelFixture.classification.hslOwner.resourcePath,
-          type: iafLabelFixture.classification.medication.resourcePath,
-        },
-      })
-    );
+    expect(trace.errandPatches[0]).toEqual(expect.objectContaining({ priority: 'HIGH' }));
+    expect(trace.errandPatches[0]).not.toHaveProperty('classification');
+    expect(trace.errandPatches[0]).not.toHaveProperty('labels');
 
     await openInvestigation(page);
     await expect(page.locator(classificationFieldSelector)).toHaveCount(0);
@@ -281,8 +289,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     // Gated on the capability flag, not on the profile: the tab stays and explains itself,
     // while the notice above the tab strip is what warns from any other tab.
     await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(1);
-    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toBeVisible();
-    await expect(page.locator('[data-cy="label-classification-type"]')).toBeDisabled();
+    // No categorization control is left to fall back to: avvikelse renders no "Om ärendet" at all.
+    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toHaveCount(0);
 
     await page.getByRole('tab', { name: 'Ärendeuppgifter', exact: true }).click();
     await expect(page.getByText('BEFINTLIG UTREDNING SKA VARA SYNLIG', { exact: false })).toBeVisible();
@@ -295,22 +303,24 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
   }) => {
     const profile = defaultInvestigationProfile();
     profile.state = 'unavailable';
-    const trace = await installIafApiMock(page, { investigationProfile: profile });
+    // Priority is a sidebar field, and the sidebar needs the errand to be the signed-in handler's
+    // own. The mock signs in as iaf.test in both projects.
+    const trace = await installIafApiMock(page, { investigationProfile: profile, assignedUserId: 'iaf.test' });
 
     await visitErrand(page, dismissCookieConsent);
 
     await expect(page.locator('[data-cy="investigation-profile-unavailable"]')).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(1);
-    await expect(page.locator('[data-cy="label-classification-type"]')).toBeDisabled();
+    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toHaveCount(0);
 
-    await page.locator('[data-cy="channel-input"]').selectOption('PHONE');
+    await page.locator('[data-cy="priority-input"]').selectOption('HIGH');
     await page
       .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')
       .filter({ hasText: 'Spara ärende' })
       .click();
 
     await expect.poll(() => trace.errandPatches.length).toBe(1);
-    expect(trace.errandPatches[0]).toEqual(expect.objectContaining({ channel: 'PHONE' }));
+    expect(trace.errandPatches[0]).toEqual(expect.objectContaining({ priority: 'HIGH' }));
     expect(trace.errandPatches[0]).not.toHaveProperty('classification');
     expect(trace.errandPatches[0]).not.toHaveProperty('labels');
 
@@ -324,22 +334,24 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     page,
     dismissCookieConsent,
   }) => {
-    const trace = await installIafApiMock(page, { investigationProfileStatus: 500 });
+    // Priority is a sidebar field, and the sidebar needs the errand to be the signed-in handler's
+    // own. The mock signs in as iaf.test in both projects.
+    const trace = await installIafApiMock(page, { investigationProfileStatus: 500, assignedUserId: 'iaf.test' });
 
     await visitErrand(page, dismissCookieConsent);
 
     await expect(page.locator('[data-cy="investigation-profile-error"]')).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(1);
-    await expect(page.locator('[data-cy="label-classification-type"]')).toBeDisabled();
+    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toHaveCount(0);
 
-    await page.locator('[data-cy="channel-input"]').selectOption('PHONE');
+    await page.locator('[data-cy="priority-input"]').selectOption('HIGH');
     await page
       .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')
       .filter({ hasText: 'Spara ärende' })
       .click();
 
     await expect.poll(() => trace.errandPatches.length).toBe(1);
-    expect(trace.errandPatches[0]).toEqual(expect.objectContaining({ channel: 'PHONE' }));
+    expect(trace.errandPatches[0]).toEqual(expect.objectContaining({ priority: 'HIGH' }));
     expect(trace.errandPatches[0]).not.toHaveProperty('classification');
     expect(trace.errandPatches[0]).not.toHaveProperty('labels');
   });
@@ -355,9 +367,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(page.getByRole('tab', { name: 'Utredning', exact: true })).toHaveCount(1);
     await expect(page.locator('[data-cy="investigation-profile-error"]')).toHaveCount(0);
     await expect(page.locator('[data-cy="investigation-profile-unavailable"]')).toHaveCount(0);
-    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toBeVisible();
+    await expect(page.locator('[data-cy="avvikelse-label-categorization"]')).toHaveCount(0);
 
-    // Asserted last: opening Utredning hides Grundinformation's categorization control.
     await page.getByRole('tab', { name: 'Utredning', exact: true }).click();
     await expect(page.locator('[data-cy="investigation-tab-not-configured"]')).toBeVisible();
   });
@@ -1464,12 +1475,19 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
       // Editing anything else must be savable: the errand PATCH leaves classification alone in
       // both states, so the form must not hold the button shut over a classification the user is
-      // not the one to give it.
+      // not the one to give it. Avvikelse renders no "Om ärendet", so the field edited here is a
+      // sidebar one - which needs the errand taken first.
       const saveButton = page
         .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')
         .filter({ hasText: 'Spara ärende' });
       await expect(saveButton).toBeDisabled();
-      await page.locator('[data-cy="channel-input"]').selectOption('PHONE');
+
+      await page.locator('[data-cy="self-assign-errand-button"]').click();
+      await expect(page.getByText('Handläggare tilldelades')).toBeVisible();
+
+      const priority = page.locator('[data-cy="priority-input"]');
+      await expect(priority).toBeEnabled();
+      await priority.selectOption('HIGH');
       await expect(saveButton).toBeEnabled();
     });
   }

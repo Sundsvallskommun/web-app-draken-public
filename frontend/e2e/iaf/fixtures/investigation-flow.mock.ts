@@ -377,6 +377,12 @@ const labelStructure: MockLabel[] = [
 const metadata = {
   categories: [],
   types: [],
+  // SupportManagement names the stakeholder roles, and IAF/VOF's metadata calls the errand owner
+  // "Brukare". Nothing in the frontend decides this - the section is named by whatever comes back.
+  roles: [
+    { name: 'PRIMARY', displayName: 'Brukare' },
+    { name: 'CONTACT', displayName: 'Övrig part' },
+  ],
   statuses: [
     { name: 'ONGOING', displayName: 'Pågående' },
     { name: 'SOLVED', displayName: 'Avslutat' },

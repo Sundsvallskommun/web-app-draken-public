@@ -1,5 +1,6 @@
 import { appConfig } from '@config/appconfig';
 import {
+  type CategorizationControl,
   resolveCategorizationControl,
   resolveCategorizationMode,
 } from '@supportmanagement/components/support-errand-basics-form/categorization-control';
@@ -23,11 +24,16 @@ export const getSupportErrandClassificationPlacement = (): SupportErrandClassifi
   return variant.resolveClassificationPlacement(useInvestigationProfileStore.getState().profile);
 };
 
-const basicsCategorizationControl = () =>
-  resolveCategorizationControl(
+const basicsCategorizationControl = (): CategorizationControl => {
+  // Every categorization control Grundinformation draws lives inside "Om ärendet", so a deployment
+  // that hides that section has taken the control off the page with it.
+  if (appConfig.features.hideAboutErrandSection) return { kind: 'none' };
+
+  return resolveCategorizationControl(
     resolveCategorizationMode(appConfig.features),
     getSupportErrandClassificationPlacement()
   );
+};
 
 /**
  * Whether the errand can be given a classification in Grundinformation right now.

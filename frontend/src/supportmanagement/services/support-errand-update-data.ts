@@ -1,4 +1,5 @@
 import type { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import { appConfig } from '@config/appconfig';
 import type { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { getSupportErrandClassificationPlacement } from '@supportmanagement/investigation/investigation-classification-ownership';
 import type { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
@@ -7,7 +8,11 @@ export const buildSupportErrandUpdateData = (
   formdata: Partial<RegisterSupportErrandFormModel>,
   stakeholders: SupportStakeholder[]
 ): Partial<SupportErrandDto> => {
-  const basicsOwnsClassification = getSupportErrandClassificationPlacement().owner === 'basics';
+  // A deployment that hides "Om ärendet" has taken the categorization control off the page, so
+  // Grundinformation neither shows a classification nor writes one back - otherwise "Spara ärende"
+  // would keep resending values the user has no way of seeing or changing.
+  const basicsOwnsClassification =
+    !appConfig.features.hideAboutErrandSection && getSupportErrandClassificationPlacement().owner === 'basics';
   const data: Partial<SupportErrandDto> = {
     ...(formdata.title && { title: formdata.title }),
     ...(formdata.priority && {

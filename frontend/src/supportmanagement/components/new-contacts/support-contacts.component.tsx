@@ -34,6 +34,9 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
   const setStakeholderCustomers = useSupportStore((s) => s.setStakeholderCustomers);
   const stakeholderCustomers = useSupportStore((s) => s.stakeholderCustomers);
   const avatarColorArray = ['vattjom', 'juniskar', 'gronsta', 'bjornstigen'];
+  // The deployment's metadata names the role - IAF/VOF call the errand owner "Brukare" there. The
+  // page waits for metadata before rendering, so the literal only covers a role without displayName.
+  const errandOwnerTitle = supportMetadata?.roles?.find((r) => r.name === 'PRIMARY')?.displayName ?? 'Ärendeägare';
 
   const { control, setValue, reset }: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
@@ -344,7 +347,7 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
         <Disclosure variant="alt" initalOpen>
           <Disclosure.Header>
             <Disclosure.Icon icon={<Users />} />
-            <Disclosure.Title>Ärendeägare</Disclosure.Title>
+            <Disclosure.Title>{errandOwnerTitle}</Disclosure.Title>
             <Disclosure.Button />
           </Disclosure.Header>
           <Disclosure.Content>
@@ -361,7 +364,7 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
                 </div>
               )}
               <div className="flex flex-row gap-12 flex-wrap">
-                {stakeholderCustomers.map((stakeholder, idx) => renderContact(stakeholder, idx, 'Ärendeägare'))}
+                {stakeholderCustomers.map((stakeholder, idx) => renderContact(stakeholder, idx, errandOwnerTitle))}
               </div>
               <div className="w-full">
                 {stakeholderCustomers.length === 0 ? (
@@ -371,7 +374,7 @@ export const SupportContactsComponent: FC<SupportContactsProps> = (props) => {
                     onSave={(contact) => addStakeholder(contact)}
                     contact={{ ...emptyContact, role: 'PRIMARY' }}
                     editing={false}
-                    label="Ärendeägare"
+                    label={errandOwnerTitle}
                     id="owner"
                   />
                 ) : null}
