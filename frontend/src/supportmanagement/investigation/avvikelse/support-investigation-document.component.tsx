@@ -33,6 +33,10 @@ import {
   getInvestigationRenderingSchema,
   investigationDefaultFormStateBehavior,
 } from './investigation-form-data';
+import {
+  investigationSchemaDebugIsVisible,
+  InvestigationSchemaDebugPanel,
+} from './investigation-schema-debug-panel.component';
 import { type SupportInvestigationClassificationResponse } from './support-investigation-classification-service';
 import {
   type InvestigationClassificationDraft,
@@ -219,13 +223,22 @@ export function SupportInvestigationDocument({
     setDocumentDirty,
   ]);
 
-  const renderingSchema = useMemo(
-    () =>
-      documentState
-        ? getInvestigationRenderingSchema(definition.schemaName, documentState.schema, documentState.formData)
-        : undefined,
-    [definition.schemaName, documentState]
-  );
+  // Schema documentation - the read/write state, the schema's own description, its owning role and
+  // its id - is for working on the schemas, not on the errand. Test and development show all of it,
+  // production none of it.
+  const showSchemaMetadata = investigationSchemaDebugIsVisible();
+
+  const renderingSchema = useMemo(() => {
+    if (!documentState) return undefined;
+
+    const schema = getInvestigationRenderingSchema(definition.schemaName, documentState.schema, documentState.formData);
+    if (showSchemaMetadata) return schema;
+
+    // FieldTemplate renders the root description above the form, so the schema's own documentation
+    // is dropped here rather than hidden in the markup.
+    const { description: _schemaDescription, ...schemaWithoutRootDescription } = schema;
+    return schemaWithoutRootDescription;
+  }, [definition.schemaName, documentState, showSchemaMetadata]);
   const hslRiskValue =
     definition.schemaName === 'utredning-enhetschef' && documentState
       ? getHslRiskValue(documentState.formData)
@@ -444,21 +457,23 @@ export function SupportInvestigationDocument({
             <h2 id={`${definition.key}-heading`} className="text-h3-md">
               {definition.tabLabel}
             </h2>
-            <Label rounded inverted color={readonly ? 'bjornstigen' : 'gronsta'}>
-              {readonly ? 'Skrivskyddad' : 'Redigerbar'}
-            </Label>
+            {showSchemaMetadata && (
+              <Label rounded inverted color={readonly ? 'bjornstigen' : 'gronsta'}>
+                {readonly ? 'Skrivskyddad' : 'Redigerbar'}
+              </Label>
+            )}
             {(isDirty || classificationDirty) && (
               <Label rounded inverted color="vattjom">
                 Osparade ändringar
               </Label>
             )}
           </div>
-          {typeof documentState.schema.description === 'string' && (
-            <p className="text-small text-dark-secondary">{documentState.schema.description}</p>
+          {showSchemaMetadata && (
+            <p className="mt-8 break-words text-small">
+              Ansvarig roll: {definition.ownerLabel} · Schema:{' '}
+              <code className="break-all">{documentState.schemaId}</code>
+            </p>
           )}
-          <p className="mt-8 break-words text-small">
-            Ansvarig roll: {definition.ownerLabel} · Schema: <code className="break-all">{documentState.schemaId}</code>
-          </p>
         </div>
       </div>
 
@@ -556,6 +571,12 @@ export function SupportInvestigationDocument({
           loading: isSaving,
           disabled: !isDirty && !classificationDirty,
         }}
+      />
+
+      <InvestigationSchemaDebugPanel
+        id={`${definition.key}-json-debug`}
+        label={definition.tabLabel}
+        formData={documentState.formData}
       />
     </section>
   );

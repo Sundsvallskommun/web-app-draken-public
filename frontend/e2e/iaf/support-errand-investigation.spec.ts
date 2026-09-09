@@ -17,6 +17,9 @@ const managerKey = 'utredning-enhetschef';
 const solLssKey = 'utredning-sol-lss';
 const managerProbabilityGroup = `#${managerKey}_riskAssessmentHsl_probability`;
 const classificationFieldSelector = '[data-cy="schema-external-field-errandClassification"]';
+// The schema debug surfaces follow NEXT_PUBLIC_ENVIRONMENT, so the same specs assert both
+// directions: visible under a TEST deployment, gone under any other.
+const schemaDebugIsVisible = process.env.NEXT_PUBLIC_ENVIRONMENT === 'TEST';
 
 test.skip(
   !['IAF', 'VOF'].includes(process.env.NEXT_PUBLIC_APPLICATION ?? ''),
@@ -148,6 +151,58 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(page.locator(classificationFieldSelector)).toHaveCount(1);
   });
 
+  /**
+   * The schema debug dump rides on NEXT_PUBLIC_ENVIRONMENT: every .env.<drake> sets TEST, so it is
+   * on here, and a production deployment substitutes another value and never renders it. It shows
+   * the document the page already holds - it makes no request of its own.
+   */
+  test('visar varje utrednings JSON-värde bara i test- och utvecklingsmiljö', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    // All three schemas, not only the manager's: they render through the same document component,
+    // so the gate has to hold for each of them.
+    const documents = allExistingInvestigationDocuments();
+    await installIafApiMock(page, { documents });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    for (const [key, tabName] of [
+      [managerKey, 'Utredning enhetschef'],
+      [solLssKey, 'Utredning SoL/LSS'],
+      ['utredning-hsl', 'Utredning HSL'],
+    ] as const) {
+      await page.getByRole('tab', { name: tabName, exact: true }).click();
+
+      // Every document tab is mounted, so the assertions are scoped to the one on screen.
+      const investigationDocument = page.locator(`[data-cy="investigation-document-${key}"]`);
+      const debugPanel = investigationDocument.locator('[data-cy="investigation-schema-debug"]');
+
+      if (!schemaDebugIsVisible) {
+        // Production shows the errand, not the schema behind it.
+        await expect(debugPanel).toHaveCount(0);
+        await expect(investigationDocument).not.toContainText('Schema:');
+        await expect(investigationDocument).not.toContainText('Ansvarig roll');
+        await expect(investigationDocument.getByText(/^(Skrivskyddad|Redigerbar)$/u)).toHaveCount(0);
+        continue;
+      }
+
+      await expect(debugPanel).toBeVisible();
+      await expect(investigationDocument).toContainText(`Schema: ${documents[key].schemaId}`);
+      await expect(investigationDocument).toContainText('Ansvarig roll');
+      await expect(investigationDocument.getByText(/^(Skrivskyddad|Redigerbar)$/u).first()).toBeVisible();
+
+      const disclosureButton = debugPanel.getByRole('button').first();
+      await expect(disclosureButton).toHaveAttribute('aria-expanded', 'false');
+      await disclosureButton.click();
+      await expect(disclosureButton).toHaveAttribute('aria-expanded', 'true');
+      // Asserted against this document's own data, since the three schemas share no field.
+      const [firstField] = Object.keys(documents[key].value);
+      await expect(debugPanel.locator('[data-cy="schema-form-data-preview"]')).toContainText(`"${firstField}"`);
+    }
+  });
+
   test('renderar exakt de dokument som den aktuella appens profil tillåter', async ({ page, dismissCookieConsent }) => {
     const profile = defaultInvestigationProfile();
     const managerDocument = profile.documents.find(({ key }) => key === managerKey)!;
@@ -190,9 +245,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const investigation = page.locator('[data-cy="support-investigation-tab"]');
     await expect(investigation.getByRole('tab')).toHaveCount(1);
     await expect(investigation.getByRole('tab', { name: 'Profilstyrd utredning', exact: true })).toBeVisible();
-    await expect(page.locator('[data-cy="investigation-document-manager-investigation"]')).toContainText(
-      'Ansvarig roll: Testroll'
-    );
+    await expect(page.locator('[data-cy="investigation-document-manager-investigation"]')).toBeVisible();
     await expect.poll(() => [...new Set(trace.documentGets)]).toEqual(['manager-investigation']);
     await expect.poll(() => [...new Set(trace.latestSchemaNames)]).toEqual(['utredning-enhetschef']);
   });
@@ -474,7 +527,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(investigation.getByRole('tab', { name: 'Utredning HSL', exact: true })).toBeVisible();
 
     const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
-    await expect(managerDocument).toContainText(`Schema: ${existing.schemaId}`);
+    if (schemaDebugIsVisible) {
+      await expect(managerDocument).toContainText(`Schema: ${existing.schemaId}`);
+    } else {
+      await expect(managerDocument).not.toContainText(`Schema: ${existing.schemaId}`);
+    }
     const classificationField = managerDocument.locator(classificationFieldSelector);
     await expect(classificationField).toBeVisible();
     await expect(classificationField.getByRole('heading', { name: 'Kategorisering', exact: true })).toBeVisible();
@@ -550,13 +607,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(investigation.getByRole('tab')).toHaveCount(profile.documents.length);
 
     const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
-    await expect(managerDocument.getByText('Skrivskyddad', { exact: true })).toBeVisible();
     await expect(managerDocument).toContainText('Utredningen kan läsas men inte ändras');
     await expect(managerDocument.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
 
     await investigation.getByRole('tab', { name: 'Utredning HSL', exact: true }).click();
     const hslDocument = page.locator('[data-cy="investigation-document-utredning-hsl"]');
-    await expect(hslDocument.getByText('Redigerbar', { exact: true })).toBeVisible();
     await expect(hslDocument.locator('[data-cy="schema-submit-button"]')).toHaveCount(1);
   });
 
@@ -1409,7 +1464,6 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       await openInvestigation(page);
 
       const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
-      await expect(managerDocument.getByText('Skrivskyddad', { exact: true })).toBeVisible();
       await expect(managerDocument).toContainText('Utredningen kan läsas men inte ändras');
       await expect(managerDocument.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
       await expect(page.locator(managerProbabilityGroup).getByLabel(/^1 –/u)).toBeDisabled();
