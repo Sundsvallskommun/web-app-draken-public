@@ -28,6 +28,9 @@ interface AppConfigFeatures {
   useStakeholderRelations: boolean;
   useRolesForStakeholders: boolean;
   useDetailsTab: boolean;
+  useInvestigationTab: boolean;
+  useDecisionTab: boolean;
+  useFollowUpTab: boolean;
   useEscalation: boolean;
   useRequireContactChannel: boolean;
   useRelations: boolean;
@@ -78,6 +81,9 @@ export const appConfig: AppConfig = {
     useStakeholderRelations: envBool(process.env.NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS),
     useRolesForStakeholders: envBool(process.env.NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS),
     useDetailsTab: envBool(process.env.NEXT_PUBLIC_USE_DETAILS_TAB),
+    useInvestigationTab: envBool(process.env.NEXT_PUBLIC_USE_INVESTIGATION_TAB),
+    useDecisionTab: envBool(process.env.NEXT_PUBLIC_USE_DECISION_TAB),
+    useFollowUpTab: envBool(process.env.NEXT_PUBLIC_USE_FOLLOWUP_TAB),
     useEscalation: envBool(process.env.NEXT_PUBLIC_USE_ESCALATION),
     useRequireContactChannel: envBool(process.env.NEXT_PUBLIC_USE_REQUIRE_CONTACT_CHANNEL),
     useRelations: envBool(process.env.NEXT_PUBLIC_USE_RELATIONS),

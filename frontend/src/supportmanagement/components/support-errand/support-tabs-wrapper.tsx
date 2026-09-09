@@ -19,12 +19,16 @@ import {
 } from '@supportmanagement/services/support-message-service';
 import { Dispatch, FC, ReactNode, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
 import { SupportErrandServicesTab } from './tabs/services/support-errand-services-tab';
 import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-tab';
 import { SupportErrandBasicsTab } from './tabs/support-errand-basics-tab';
+import { SupportErrandDecisionTab } from './tabs/support-errand-decision-tab';
 import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
+import { SupportErrandFollowUpTab } from './tabs/support-errand-followup-tab';
+import { SupportErrandInvestigationTab } from './tabs/support-errand-investigation-tab';
 
 export const SupportTabsWrapper: FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
@@ -34,6 +38,7 @@ export const SupportTabsWrapper: FC<{
   const [messageTree, setMessageTree] = useState<MessageNode[]>([]);
   const [conversationMessageTree, setConversationMessageTree] = useState<MessageNode[]>([]);
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  const { t } = useTranslation();
   const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
 
   const [unsavedChanges, setUnsavedChanges] = useState(false);
@@ -143,6 +148,27 @@ export const SupportTabsWrapper: FC<{
         visibleFor: true,
       },
       {
+        key: 'investigation',
+        label: t('common:tabs.investigation'),
+        content: supportErrand && <SupportErrandInvestigationTab />,
+        disabled: false,
+        visibleFor: appConfig.features.useInvestigationTab,
+      },
+      {
+        key: 'decision',
+        label: t('common:tabs.decision'),
+        content: supportErrand && <SupportErrandDecisionTab />,
+        disabled: false,
+        visibleFor: appConfig.features.useDecisionTab,
+      },
+      {
+        key: 'followup',
+        label: t('common:tabs.followup'),
+        content: supportErrand && <SupportErrandFollowUpTab />,
+        disabled: false,
+        visibleFor: appConfig.features.useFollowUpTab,
+      },
+      {
         key: 'services',
         label: 'Beslut och dokument',
         content: supportErrand && (
@@ -180,6 +206,7 @@ export const SupportTabsWrapper: FC<{
       supportAttachments,
       supportConversations,
       supportErrand,
+      t,
     ]
   );
 

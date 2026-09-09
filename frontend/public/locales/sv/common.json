@@ -45,5 +45,10 @@
     "priority": "Prioritet",
     "reminder": "Påminnelse",
     "responsible": "Ansvarig"
+  },
+  "tabs": {
+    "investigation": "Utredning",
+    "decision": "Beslut",
+    "followup": "Uppföljning"
   }
 }
