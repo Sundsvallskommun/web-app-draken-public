@@ -45,5 +45,18 @@
     "priority": "Prioritet",
     "reminder": "Påminnelse",
     "responsible": "Ansvarig"
+  },
+  "tabs": {
+    "investigation": "Utredning",
+    "decision": "Beslut",
+    "followup": "Uppföljning"
+  },
+  "ui_phases": {
+    "registered": "Registrerad",
+    "review": "Granskning",
+    "investigation": "Utredning",
+    "decision": "Beslut",
+    "follow_up": "Uppföljning",
+    "closed": "Avslut"
   }
 }
