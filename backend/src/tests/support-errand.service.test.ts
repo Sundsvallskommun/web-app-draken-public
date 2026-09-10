@@ -199,7 +199,7 @@ describe('support-errand.service', () => {
       expect(getNewErrandDefaults('KC')?.classification).toEqual({ category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' });
       expect(getNewErrandDefaults('LOP')?.classification).toEqual({ category: 'SALARY', type: 'SALARY.UNCATEGORIZED' });
       expect(getNewErrandDefaults('MSVA')?.classification).toEqual({ category: 'MSVA', type: 'MSVA.UNCATEGORIZED' });
-      expect(getNewErrandDefaults('AOT')?.classification).toEqual({ category: 'AOT', type: 'AOT.UNCATEGORIZED' });
+      expect(getNewErrandDefaults('AOT')?.classification).toEqual({ category: 'AOT', type: 'AOT/UNCATEGORIZED' });
     });
 
     it('covers every configured drake', () => {
