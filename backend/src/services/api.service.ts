@@ -21,6 +21,8 @@ export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & {
   followLocation?: boolean;
   includeResponseHeaders?: boolean;
   propagateClientError?: boolean;
+  /** Support Management uses 401 for resource denials; these must not expire the BFF session. */
+  mapUnauthorizedToForbidden?: boolean;
 };
 
 const apiTokenService = new ApiTokenService();
@@ -133,7 +135,7 @@ class ApiService {
     );
   }
   private async request<T>(config: ApiRequestConfig, user: User): Promise<ApiResponse<T>> {
-    const { includeResponseHeaders, propagateClientError, ...axiosConfig } = config;
+    const { includeResponseHeaders, propagateClientError, mapUnauthorizedToForbidden, ...axiosConfig } = config;
     const defaultParams = {};
     const preparedConfig: AxiosRequestConfig = {
       ...axiosConfig,
@@ -164,7 +166,7 @@ class ApiService {
       // context instead of an opaque 500. Server/network errors still become 500 below.
       const status = response?.status;
       if (propagateClientError && status !== undefined && status >= 400 && status < 500) {
-        throw new HttpException(status, readUpstreamErrorMessage(response?.data));
+        throw new HttpException(status === 401 && mapUnauthorizedToForbidden ? 403 : status, readUpstreamErrorMessage(response?.data));
       }
       throw new HttpException(500, 'Internal server error');
     }

@@ -30,6 +30,20 @@ afterEach(() => {
 });
 
 describe('ApiService', () => {
+  it.each([false, true])('maps an upstream resource denial to 403 only when opted in (%s)', async mapUnauthorizedToForbidden => {
+    await expect(
+      new ApiService().get(
+        {
+          adapter: failingAdapter(401, { detail: 'Key not writable' }, 'Unauthorized'),
+          url: TOKEN_URL,
+          propagateClientError: true,
+          mapUnauthorizedToForbidden,
+        },
+        user,
+      ),
+    ).rejects.toMatchObject({ status: mapUnauthorizedToForbidden ? 403 : 401, message: 'Key not writable' });
+  });
+
   it('retains upstream response headers for BFF endpoints that need concurrency metadata', async () => {
     const response = await new ApiService().get<{ saved: boolean }>(
       { adapter: okAdapter({ saved: true }, { etag: '"4"' }), includeResponseHeaders: true, url: TOKEN_URL },
