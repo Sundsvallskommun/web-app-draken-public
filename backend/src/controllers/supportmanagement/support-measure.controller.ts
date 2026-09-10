@@ -6,7 +6,7 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
-import { SupportMeasureService } from '@/services/support-measure.service';
+import { SupportMeasureService, type SupportMeasuresSnapshot } from '@/services/support-measure.service';
 
 // Write handlers return nothing. routing-controllers turns an undefined result into NotFoundError unless
 // @OnUndefined names the status, and that error carries no `status`/message, so it surfaced as an opaque 500.
@@ -17,7 +17,11 @@ export class SupportMeasureController {
   @Get('/supporterrands/:municipalityId/:errandId/measures')
   @OpenAPI({ summary: 'Read protected errand measures with the loaded errand version' })
   @UseBefore(authMiddleware)
-  async read(@Req() req: RequestWithUser, @Param('municipalityId') municipalityId: string, @Param('errandId') errandId: string) {
+  async read(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('errandId') errandId: string,
+  ): Promise<SupportMeasuresSnapshot> {
     return this.measures.read(municipalityId, errandId, req.user);
   }
 

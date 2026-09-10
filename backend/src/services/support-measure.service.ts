@@ -15,7 +15,7 @@ import {
   resolveSupportMeasureRegistration,
 } from './support-measure-registration';
 
-interface SupportMeasuresSnapshot {
+export interface SupportMeasuresSnapshot {
   measures: Measure[];
   errandVersion: number;
   metadata: { measureTypes: MeasureType[]; roles: Role[] };

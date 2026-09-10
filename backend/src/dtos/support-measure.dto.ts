@@ -18,16 +18,16 @@ class SupportMeasureDetailsDto {
 /** The browser selects a role; Draken sets addedByUser from its authenticated session. */
 export class CreateSupportMeasureDto extends SupportMeasureDetailsDto {
   @IsUUID()
-  measureTypeId: string;
+  measureTypeId!: string;
   @IsString()
   @Matches(/\S/)
-  addedByRole: string;
+  addedByRole!: string;
   @IsString()
   @Matches(/\S/)
-  goal: string;
+  goal!: string;
   @IsString()
   @Matches(/\S/)
-  description: string;
+  description!: string;
 }
 
 /** Basic edits cannot change a decision or its attribution. */
@@ -46,7 +46,7 @@ export class UpdateSupportMeasureDto extends SupportMeasureDetailsDto {
 /** A decision preserves the proposal. REWORK approves part of it as explained in the comment. */
 export class DecideSupportMeasureDto {
   @IsIn(['TRUE', 'FALSE', 'REWORK'])
-  accept: 'TRUE' | 'FALSE' | 'REWORK';
+  accept!: 'TRUE' | 'FALSE' | 'REWORK';
 
   @ValidateIf((decision: DecideSupportMeasureDto, value: unknown) => decision.accept !== 'TRUE' || value !== undefined)
   @IsString()
