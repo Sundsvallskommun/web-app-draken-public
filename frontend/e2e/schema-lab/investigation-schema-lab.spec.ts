@@ -142,12 +142,15 @@ test('opens all investigation sections without turning an unanswered draft into 
   }
 });
 
-test('is reachable with the standard IAF profile and renders three investigation schemas', async ({ page }) => {
+test('is reachable with the standard IAF profile and renders the investigation and decision schemas', async ({
+  page,
+}) => {
   await expect(page.getByRole('heading', { name: 'Lokal schema-labb · Utredning' })).toBeVisible();
-  await expect(page.getByRole('tab')).toHaveCount(3);
+  await expect(page.getByRole('tab')).toHaveCount(4);
   await expect(page.getByRole('tab', { name: 'Utredning enhetschef' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Utredning SoL/LSS' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Utredning HSL' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Beslut', exact: true })).toBeVisible();
 
   await expect(page.locator(`#${managerIdPrefix}_legalBases-group input:checked`)).toHaveCount(2);
   await expect(page.locator('[id$="_deviationType"]')).toHaveCount(0);

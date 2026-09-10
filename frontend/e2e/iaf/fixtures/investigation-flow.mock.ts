@@ -1,5 +1,7 @@
 import type { Page, Request, Route } from '@playwright/test';
 
+import decisionSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/beslut-missforhallande.schema-request.json';
+import decisionUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/beslut-missforhallande.ui-schema-request.json';
 import investigationCases from '../../../src/supportmanagement/investigation/avvikelse/schemas/fixtures/investigation-schema-cases.json';
 import managerSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-enhetschef.schema-request.json';
 import managerUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-enhetschef.ui-schema-request.json';
@@ -16,8 +18,16 @@ const applicationSlug = application.toLowerCase();
 export const errandNumber = `${application}-2026-0001`;
 export const katlaSchemaId = `2281_katla-${applicationSlug}-report_1.0`;
 
-export const investigationKeys = ['utredning-enhetschef', 'utredning-sol-lss', 'utredning-hsl'] as const;
+export const investigationKeys = [
+  'utredning-enhetschef',
+  'utredning-sol-lss',
+  'utredning-hsl',
+  'beslut-missforhallande',
+] as const;
 export type InvestigationKey = (typeof investigationKeys)[number];
+export const decisionKey = 'beslut-missforhallande' satisfies InvestigationKey;
+/** The documents the Utredning tab offers; the decision lives on its own tab. */
+export const investigationTabKeys = investigationKeys.filter((key) => key !== decisionKey);
 
 export interface MockInvestigationProfile {
   application: string;
@@ -28,7 +38,8 @@ export interface MockInvestigationProfile {
     schemaName: InvestigationKey;
     tabLabel: string;
     ownerLabel: string;
-    access?: 'edit' | 'read' | 'hidden';
+    placement?: 'investigation' | 'decision';
+    appliesTo?: 'all' | 'reported-misconduct';
   }>;
 }
 
@@ -47,13 +58,21 @@ export const defaultInvestigationProfile = (): MockInvestigationProfile => ({
       key: 'utredning-sol-lss',
       schemaName: 'utredning-sol-lss',
       tabLabel: 'Utredning SoL/LSS',
-      ownerLabel: 'LEX-utredare',
+      ownerLabel: 'Lex Sarah',
     },
     {
       key: 'utredning-hsl',
       schemaName: 'utredning-hsl',
       tabLabel: 'Utredning HSL',
       ownerLabel: 'MAS/MAR',
+    },
+    {
+      key: decisionKey,
+      schemaName: decisionKey,
+      tabLabel: 'Beslut',
+      ownerLabel: 'Beslutsfattare',
+      placement: 'decision',
+      appliesTo: 'reported-misconduct',
     },
   ],
 });
@@ -103,6 +122,8 @@ export interface IafApiTrace {
 }
 
 export interface IafApiScenario {
+  documentAccess?: Readonly<Record<string, 'edit' | 'read' | 'hidden'>>;
+  investigationAccessStatus?: number;
   canEdit?: boolean;
   errandStatus?: string;
   /** null leaves the errand unassigned, which is how it arrives before anyone has taken it. */
@@ -132,24 +153,28 @@ const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
   'utredning-enhetschef': managerSchemaRequest,
   'utredning-sol-lss': solLssSchemaRequest,
   'utredning-hsl': hslSchemaRequest,
+  'beslut-missforhallande': decisionSchemaRequest,
 };
 
 const uiSchemaRequests: Record<InvestigationKey, UiSchemaRequest> = {
   'utredning-enhetschef': managerUiSchemaRequest,
   'utredning-sol-lss': solLssUiSchemaRequest,
   'utredning-hsl': hslUiSchemaRequest,
+  'beslut-missforhallande': decisionUiSchemaRequest,
 };
 
 const validValues: Record<InvestigationKey, JsonObject> = {
   'utredning-enhetschef': investigationCases['utredning-enhetschef'].valid,
   'utredning-sol-lss': investigationCases['utredning-sol-lss'].valid,
   'utredning-hsl': investigationCases['utredning-hsl'].valid,
+  'beslut-missforhallande': investigationCases['beslut-missforhallande'].valid,
 };
 
 export const latestSchemaIds: Record<InvestigationKey, string> = {
   'utredning-enhetschef': '2281_utredning-enhetschef_1.1',
   'utredning-sol-lss': '2281_utredning-sol-lss_1.1',
   'utredning-hsl': '2281_utredning-hsl_1.0',
+  'beslut-missforhallande': '2281_beslut-missforhallande_1.0',
 };
 
 export const existingManagerDocument = (): InvestigationDocument => ({
@@ -633,6 +658,22 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
 
     if (method === 'GET' && path.endsWith('/featureflags')) {
       await fulfillJson(route, scenario.featureFlags ?? []);
+      return;
+    }
+
+    if (method === 'GET' && path.endsWith('/investigation-access')) {
+      await fulfillJson(
+        route,
+        {
+          municipalityId,
+          errandId,
+          documents: investigationProfile.documents.map(({ key }) => ({
+            key,
+            access: scenario.documentAccess ? scenario.documentAccess[key] ?? 'hidden' : 'edit',
+          })),
+        },
+        scenario.investigationAccessStatus ?? 200
+      );
       return;
     }
 

@@ -3,12 +3,14 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures/base.fixture';
 import {
   allExistingInvestigationDocuments,
+  decisionKey,
   defaultInvestigationProfile,
   errandNumber,
   existingManagerDocument,
   iafLabelFixture,
   installIafApiMock,
   investigationKeys,
+  investigationTabKeys,
   katlaSchemaId,
   type MockLabel,
 } from './fixtures/investigation-flow.mock';
@@ -446,7 +448,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
           key: 'misconduct-investigation',
           schemaName: 'utredning-sol-lss',
           tabLabel: 'Missförhållandeutredning',
-          ownerLabel: 'LEX-utredare',
+          ownerLabel: 'Lex Sarah',
         },
       ];
       const sourceDocuments = allExistingInvestigationDocuments();
@@ -554,7 +556,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await investigation.getByRole('tab', { name: 'Utredning HSL', exact: true }).click();
     await expect(page.locator('[data-cy="investigation-document-utredning-hsl"]')).toBeVisible();
 
-    await expect.poll(() => [...new Set(trace.documentGets)]).toEqual(investigationKeys);
+    await expect.poll(() => [...new Set(trace.documentGets)]).toEqual(investigationTabKeys);
     await expect
       .poll(() => [...new Set(trace.latestSchemaNames)].sort())
       .toEqual(['utredning-hsl', 'utredning-sol-lss'].sort());
@@ -566,13 +568,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const profile = defaultInvestigationProfile();
     await installIafApiMock(page, {
       documents: { [managerKey]: existingManagerDocument() },
-      investigationProfile: {
-        ...profile,
-        documents: profile.documents.map((document) => ({
-          ...document,
-          access: document.key === managerKey ? ('edit' as const) : ('hidden' as const),
-        })),
-      },
+      investigationProfile: profile,
+      documentAccess: { [managerKey]: 'edit' },
     });
 
     await visitErrand(page, dismissCookieConsent);
@@ -590,13 +587,10 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const profile = defaultInvestigationProfile();
     await installIafApiMock(page, {
       documents: { [managerKey]: existingManagerDocument() },
-      investigationProfile: {
-        ...profile,
-        documents: profile.documents.map((document) => ({
-          ...document,
-          access: document.key === managerKey ? ('read' as const) : ('edit' as const),
-        })),
-      },
+      investigationProfile: profile,
+      documentAccess: Object.fromEntries(
+        profile.documents.map(({ key }) => [key, key === managerKey ? 'read' : 'edit'])
+      ),
     });
 
     await visitErrand(page, dismissCookieConsent);
@@ -604,7 +598,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     // A read grant keeps the tab, unlike a hidden one, and only takes the writing away.
     const investigation = page.locator('[data-cy="support-investigation-tab"]');
-    await expect(investigation.getByRole('tab')).toHaveCount(profile.documents.length);
+    await expect(investigation.getByRole('tab')).toHaveCount(investigationTabKeys.length);
 
     const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
     await expect(managerDocument).toContainText('Utredningen kan läsas men inte ändras');
@@ -615,13 +609,106 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(hslDocument.locator('[data-cy="schema-submit-button"]')).toHaveCount(1);
   });
 
+  test('visar ingen beslutsflik för en vanlig avvikelse', async ({ page, dismissCookieConsent }) => {
+    const trace = await installIafApiMock(page, { documents: {}, eventType: 'AVVIKELSE' });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    // The decision is neither an errand tab nor a document under Utredning for an ordinary deviation.
+    await expect(page.getByRole('tab', { name: 'Beslut', exact: true })).toHaveCount(0);
+    await expect(page.locator('[data-cy="support-investigation-tab"]').getByRole('tab')).toHaveCount(
+      investigationTabKeys.length
+    );
+    await expect(page.locator('[data-cy="support-decision-tab"]')).toHaveCount(0);
+    expect(trace.documentGets).not.toContain(decisionKey);
+  });
+
+  test('sparar beslutet om ett missförhållande som ett eget dokument på fliken Beslut', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const trace = await installIafApiMock(page, { documents: {}, eventType: 'MISSFORHALLANDE' });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+    await expect(page.locator('[data-cy="support-investigation-tab"]').getByRole('tab')).toHaveCount(
+      investigationTabKeys.length
+    );
+    await expect(
+      page.locator('[data-cy="support-investigation-tab"]').getByRole('tab', { name: 'Beslut', exact: true })
+    ).toHaveCount(0);
+
+    await page.getByRole('tab', { name: 'Beslut', exact: true }).click();
+    const decisionTab = page.locator('[data-cy="support-decision-tab"]');
+    await expect(decisionTab).toBeVisible();
+    await expect(decisionTab.getByRole('tab')).toHaveCount(1);
+    const document = page.locator(`[data-cy="investigation-document-${decisionKey}"]`);
+    await expect(document).toBeVisible();
+    await expect(document).toContainText('Ansvarig roll: Beslutsfattare');
+    await expect.poll(() => trace.latestSchemaNames).toContain(decisionKey);
+
+    // The follow-up questions only appear once a misconduct is established.
+    const established = document.locator(`#${decisionKey}_misconductEstablished`);
+    const serious = document.locator(`#${decisionKey}_seriousMisconduct`);
+    await expect(serious).toHaveCount(0);
+    await established.getByRole('radio', { name: 'Nej', exact: true }).check();
+    await expect(serious).toHaveCount(0);
+    await expect(document.locator(`#${decisionKey}_misconductEstablishedMotivation`)).toHaveCount(1);
+    await established.getByRole('radio', { name: 'Ja', exact: true }).check();
+    await expect(serious).toHaveCount(1);
+    await expect(document.locator(`#${decisionKey}_misconductEstablishedMotivation`)).toHaveCount(0);
+
+    await document.locator(`#${decisionKey}_decisionDate`).fill('2026-09-01');
+    await serious.getByRole('radio', { name: 'Ja', exact: true }).check();
+    await document
+      .locator(`#${decisionKey}_tangibleRiskOfSeriousMisconduct`)
+      .getByRole('radio', { name: 'Ja', exact: true })
+      .check();
+    await document.locator(`#${decisionKey}_reportedToIvo`).getByRole('radio', { name: 'Ja', exact: true }).check();
+    await document.locator(`#${decisionKey}_ivoCaseNumber`).fill('IVO-2026-4321');
+    await document.getByRole('button', { name: 'Spara beslut', exact: true }).click();
+
+    await expect.poll(() => trace.puts.length).toBe(1);
+    expect(trace.puts[0].key).toBe(decisionKey);
+    expect(trace.puts[0].headers['if-none-match']).toBe('*');
+    expect(trace.puts[0].body).toEqual({
+      schemaId: `2281_${decisionKey}_1.0`,
+      value: {
+        decisionDate: '2026-09-01',
+        misconductEstablished: 'yes',
+        seriousMisconduct: 'yes',
+        tangibleRiskOfSeriousMisconduct: 'yes',
+        reportedToIvo: 'yes',
+        ivoCaseNumber: 'IVO-2026-4321',
+      },
+    });
+    expect(trace.classificationPatches).toHaveLength(0);
+    await expect(document.locator('[data-cy="investigation-document-notice"]')).toContainText('Beslutet har sparats.');
+  });
+
+  test('döljer beslutsfliken när användaren inte når beslutet', async ({ page, dismissCookieConsent }) => {
+    const profile = defaultInvestigationProfile();
+    await installIafApiMock(page, {
+      documents: {},
+      eventType: 'MISSFORHALLANDE',
+      investigationProfile: profile,
+      documentAccess: Object.fromEntries(
+        profile.documents.map(({ key }) => [key, key === decisionKey ? 'hidden' : 'edit'])
+      ),
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    await expect(page.getByRole('tab', { name: 'Beslut', exact: true })).toHaveCount(0);
+  });
+
   test('förklarar sig när ingen del av utredningen tillhör användaren', async ({ page, dismissCookieConsent }) => {
     const profile = defaultInvestigationProfile();
     await installIafApiMock(page, {
-      investigationProfile: {
-        ...profile,
-        documents: profile.documents.map((document) => ({ ...document, access: 'hidden' as const })),
-      },
+      investigationProfile: profile,
+      documentAccess: {},
     });
 
     await visitErrand(page, dismissCookieConsent);
@@ -1452,7 +1539,13 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
   for (const readonlyCase of [
     { title: 'låst ärende', scenario: { errandStatus: 'SOLVED', canEdit: true } },
-    { title: 'saknad skrivbehörighet', scenario: { errandStatus: 'ONGOING', canEdit: false } },
+    {
+      title: 'saknad skrivbehörighet',
+      scenario: {
+        errandStatus: 'ONGOING',
+        documentAccess: Object.fromEntries(investigationKeys.map((key) => [key, 'read' as const])),
+      },
+    },
   ] as const) {
     test(`visar utredningen skrivskyddad vid ${readonlyCase.title}`, async ({ page, dismissCookieConsent }) => {
       await installIafApiMock(page, {
