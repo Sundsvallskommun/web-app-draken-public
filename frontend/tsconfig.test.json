@@ -8,5 +8,5 @@
     "incremental": false,
     "noEmit": true
   },
-  "include": ["src/**/*.test.ts", "vitest.config.mts", "next-env.d.ts"]
+  "include": ["src/**/*.test.ts", "src/**/*.test.tsx", "vitest.config.mts", "next-env.d.ts"]
 }
