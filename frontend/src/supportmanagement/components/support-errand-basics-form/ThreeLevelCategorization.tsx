@@ -5,6 +5,7 @@ import {
   getLabelDisplayName,
   getSelectableLabels,
   getSelectableTypesForCategory,
+  withoutCategorizationLabels,
 } from '@supportmanagement/services/support-label-service';
 import { SupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import { ChangeEvent, FC, useEffect, useMemo, useState } from 'react';
@@ -93,11 +94,11 @@ export const ThreeLevelCategorization: FC<{
 
   useEffect(() => {
     if (selectedLabels.CATEGORY && selectedLabels.TYPE) {
-      const labels = [selectedLabels.CATEGORY, selectedLabels.TYPE];
+      const categorization = [selectedLabels.CATEGORY, selectedLabels.TYPE];
       if (selectedLabels.SUBTYPE) {
-        labels.push(selectedLabels.SUBTYPE);
+        categorization.push(selectedLabels.SUBTYPE);
       }
-      setValue('labels', labels);
+      setValue('labels', [...withoutCategorizationLabels(getValues('labels')), ...categorization]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLabels]);
