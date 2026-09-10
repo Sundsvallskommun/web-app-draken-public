@@ -14,7 +14,7 @@ import {
 import { isAxiosError } from 'axios';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 
-import type { MeasureDecisionInput } from '../measure-decision';
+import { measureCanBeDecided, type MeasureDecisionInput, measureDecisionPresentation } from '../measure-decision';
 
 const options: { value: MeasureDecisionInput['accept']; label: string; description: string }[] = [
   { value: 'TRUE', label: 'Godkänn', description: 'Förslaget får genomföras som det är.' },
@@ -51,6 +51,10 @@ export function AvvikelseMeasureDecisionDialog({
   const confirm = useConfirm();
   const dirty = Boolean(accept || comment);
   const commentRequired = accept === 'FALSE' || accept === 'REWORK';
+  // After a conflict the container swaps in the current measure. If someone else decided it meanwhile, saying so
+  // beats leaving a submit button that can only fail again - the comment stays readable until the user closes.
+  const settled = !measureCanBeDecided(measure);
+  const settledDecision = measureDecisionPresentation(measure);
 
   useEffect(() => {
     onDirtyChange(dirty);
@@ -79,7 +83,7 @@ export function AvvikelseMeasureDecisionDialog({
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (busy.current) return;
+    if (busy.current || settled) return;
     const motivation = comment.trim();
     const nextErrors = {
       accept: accept ? undefined : 'Välj ett beslut.',
@@ -144,6 +148,18 @@ export function AvvikelseMeasureDecisionDialog({
               <strong>Mål:</strong> {measure.goal}
             </p>
           </section>
+          {settled && (
+            <div role="status">
+              <Alert type="warning">
+                <Alert.Icon />
+                <Alert.Content>
+                  <Alert.Content.Title>Förslaget är redan avgjort</Alert.Content.Title>
+                  Någon annan hann fatta beslutet: {settledDecision.label.toLowerCase()}. Din kommentar ligger kvar så
+                  att du kan kopiera den innan du stänger.
+                </Alert.Content>
+              </Alert>
+            </div>
+          )}
           {(saveError || errors.accept || errors.comment) && (
             <div
               ref={errorSummary}
@@ -238,11 +254,13 @@ export function AvvikelseMeasureDecisionDialog({
             </FormControl>
           </fieldset>
           <div className="flex flex-wrap gap-12">
-            <Button type="submit" disabled={saving} loading={saving}>
-              Spara beslut
-            </Button>
+            {!settled && (
+              <Button type="submit" disabled={saving} loading={saving}>
+                Spara beslut
+              </Button>
+            )}
             <Button type="button" variant="secondary" disabled={saving} onClick={() => void requestClose()}>
-              Avbryt
+              {settled ? 'Stäng' : 'Avbryt'}
             </Button>
           </div>
         </form>

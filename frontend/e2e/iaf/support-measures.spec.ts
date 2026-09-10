@@ -22,6 +22,8 @@ async function installMeasures(
     enabled = true,
     canEdit = true,
     failWrite = false,
+    conflictOnce = false,
+    conflictDecidedBy,
     denyRead = false,
     noCreationRoles = false,
     singleCreationRole = false,
@@ -33,6 +35,10 @@ async function installMeasures(
     enabled?: boolean;
     canEdit?: boolean;
     failWrite?: boolean;
+    /** Someone else writes first: the next write is rejected once and the stored measure moves on. */
+    conflictOnce?: boolean;
+    /** The competing write is a decision, so the measure comes back settled and its content locked. */
+    conflictDecidedBy?: Measure['accept'];
     denyRead?: boolean;
     noCreationRoles?: boolean;
     singleCreationRole?: boolean;
@@ -54,6 +60,7 @@ async function installMeasures(
   });
   const writes: Array<{ method: string; data: unknown; version?: string }> = [];
   let reads = 0;
+  let conflicted = false;
   let errandVersion = 7;
   const measures: Measure[] = [
     {
@@ -134,6 +141,21 @@ async function installMeasures(
     }
     writes.push({ method: request.method(), data: request.postDataJSON(), version: request.headers()['if-match'] });
     if (failWrite) {
+      await route.fulfill({ status: 412, json: { message: 'Stale version' } });
+      return;
+    }
+    if ((conflictOnce || conflictDecidedBy) && !conflicted) {
+      conflicted = true;
+      // Apply the competing write before rejecting, so the reload the client performs sees what really changed.
+      measures[0] = conflictDecidedBy
+        ? {
+            ...measures[0],
+            accept: conflictDecidedBy,
+            acceptMotivation: 'Avgjort av någon annan.',
+            version: (measures[0].version ?? 0) + 1,
+          }
+        : { ...measures[0], goal: 'Mål satt av någon annan', version: (measures[0].version ?? 0) + 1 };
+      errandVersion++;
       await route.fulfill({ status: 412, json: { message: 'Stale version' } });
       return;
     }
@@ -322,6 +344,106 @@ test('keeps the draft and reports a version conflict', async ({ page, dismissCoo
   await expect(dialog.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true })).toHaveValue(
     'Mitt osparade mål'
   );
+});
+
+test('does not claim a rebase when a new measure conflicts with a moved errand', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  // A create has nothing to rebase onto: a conflict there means the errand itself moved on, so the merge
+  // wording would be false on every count and no retry can succeed.
+  await installMeasures(page, { singleCreationRole: true, failWrite: true });
+  await openMeasures(page, dismissCookieConsent);
+  await page.getByLabel('Åtgärd (Obligatoriskt)', { exact: true }).selectOption(firstTypeId);
+  await page.getByLabel('När ska åtgärden påbörjas? (Obligatoriskt)', { exact: true }).fill('2026-09-08');
+  await page.getByLabel('När ska åtgärden vara klar? (Obligatoriskt)', { exact: true }).fill('2026-09-10');
+  await page.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true }).fill('Ny åtgärd');
+  await page.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true }).fill('Nytt mål');
+  await page.getByRole('button', { name: /^Lägg till/ }).click();
+
+  const alert = measuresAlert(page).filter({ hasText: 'Åtgärden kunde inte sparas' });
+  await expect(alert).toContainText('uppdaterats av någon annan');
+  await expect(alert).not.toContainText('Fälten är uppdaterade');
+});
+
+test('rebases the open edit on the current measure so a retry succeeds', async ({ page, dismissCookieConsent }) => {
+  const state = await installMeasures(page, { conflictOnce: true });
+  await openMeasures(page, dismissCookieConsent);
+  await page.getByRole('button', { name: /^Redigera åtgärd/ }).click();
+  const dialog = editDialog(page);
+  await dialog.getByLabel('Beskriv åtgärden (Obligatoriskt)', { exact: true }).fill('Min ändrade beskrivning');
+  await dialog.getByRole('button', { name: 'Spara ändringar', exact: true }).click();
+
+  const alert = dialog.getByRole('alert');
+  await expect(alert).toContainText('Åtgärden har ändrats av någon annan');
+  await expect(alert).toContainText('Fälten är uppdaterade med den andra ändringen');
+  await expect(alert).toBeFocused();
+  // The typed field is kept, and the goal nobody here touched follows the competing writer instead of being
+  // silently restored to this user's stale copy on the retry.
+  await expect(dialog.getByLabel('Beskriv åtgärden (Obligatoriskt)', { exact: true })).toHaveValue(
+    'Min ändrade beskrivning'
+  );
+  await expect(dialog.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true })).toHaveValue(
+    'Mål satt av någon annan'
+  );
+
+  await dialog.getByRole('button', { name: 'Spara ändringar', exact: true }).click();
+  await expect(editDialog(page)).toBeHidden();
+  // The second patch carries the draft only: goal is absent because it now matches the rebased measure.
+  expect(state.writes).toEqual([
+    { method: 'PATCH', version: '"3"', data: { description: 'Min ändrade beskrivning' } },
+    { method: 'PATCH', version: '"4"', data: { description: 'Min ändrade beskrivning' } },
+  ]);
+});
+
+test('warns which field it will overwrite when both writers edited the same one', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  await installMeasures(page, { conflictOnce: true });
+  await openMeasures(page, dismissCookieConsent);
+  await page.getByRole('button', { name: /^Redigera åtgärd/ }).click();
+  const dialog = editDialog(page);
+  const goal = dialog.getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true });
+  await goal.fill('Mitt mål');
+  await dialog.getByRole('button', { name: 'Spara ändringar', exact: true }).click();
+
+  await expect(dialog.getByRole('alert')).toContainText('utom där ni båda skrivit: Mål');
+  await expect(goal).toHaveValue('Mitt mål');
+});
+
+test('explains that a decision locked the content instead of inviting a retry', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  await installMeasures(page, { conflictDecidedBy: 'FALSE' });
+  await openMeasures(page, dismissCookieConsent);
+  await page.getByRole('button', { name: /^Redigera åtgärd/ }).click();
+  const dialog = editDialog(page);
+  await dialog.getByLabel('Beskriv åtgärden (Obligatoriskt)', { exact: true }).fill('Min ändrade beskrivning');
+  await dialog.getByRole('button', { name: 'Spara ändringar', exact: true }).click();
+
+  const alert = dialog.getByRole('alert');
+  await expect(alert).toContainText('Åtgärden har ändrats av någon annan');
+  await expect(alert).toContainText('typ, beskrivning och mål är nu låsta');
+  await expect(dialog.getByRole('heading', { name: 'Motivering till avslag', exact: true })).toBeVisible();
+  await expect(dialog.getByLabel('Beskriv åtgärden (Obligatoriskt)', { exact: true })).toBeDisabled();
+});
+
+test('stops offering a decision that someone else already made', async ({ page, dismissCookieConsent }) => {
+  await installMeasures(page, { conflictDecidedBy: 'TRUE' });
+  await openMeasures(page, dismissCookieConsent);
+  await page.getByRole('button', { name: /^Bedöm förslag/ }).click();
+  const dialog = decisionDialog(page);
+  await dialog.getByRole('radio', { name: 'Avslå', exact: true }).check();
+  await dialog.getByLabel('Beslutskommentar (Obligatoriskt)', { exact: true }).fill('Min motivering');
+  await dialog.getByRole('button', { name: 'Spara beslut', exact: true }).click();
+
+  await expect(dialog.getByText('Förslaget är redan avgjort')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Spara beslut', exact: true })).toBeHidden();
+  await expect(dialog.getByLabel('Beslutskommentar (Obligatoriskt)', { exact: true })).toHaveValue('Min motivering');
+  await dialog.getByRole('button', { name: 'Stäng', exact: true }).click();
+  await expect(decisionDialog(page)).toBeHidden();
 });
 
 test('offers editing only for measures the current user registered', async ({ page, dismissCookieConsent }) => {

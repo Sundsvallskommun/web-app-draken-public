@@ -42,7 +42,7 @@ export function SupportMeasuresTab({
   }, [register]);
 
   const load = useCallback(
-    async (expectedErrandVersion?: number) => {
+    async (expectedErrandVersion?: number): Promise<MeasuresSnapshot | undefined> => {
       const request = ++generation.current;
       setState((current) =>
         current.status === 'ready' ? { ...current, refreshing: true, refreshError: undefined } : { status: 'loading' }
@@ -50,7 +50,7 @@ export function SupportMeasuresTab({
       try {
         if (!errand.id) throw new Error('Missing errand ID');
         const snapshot = await getSupportMeasures(municipalityId, errand.id);
-        if (request !== generation.current) return;
+        if (request !== generation.current) return undefined;
         if (expectedErrandVersion !== undefined) {
           // Advance the surrounding form only when our write was the sole version change.
           // Otherwise keep its older version so stale errand fields cannot overwrite someone else's edit.
@@ -66,14 +66,16 @@ export function SupportMeasuresTab({
           }
         }
         setState({ status: 'ready', snapshot, refreshing: false });
+        return snapshot;
       } catch (cause) {
-        if (request !== generation.current) return;
+        if (request !== generation.current) return undefined;
         const message = readErrorMessage(cause);
         setState((current) =>
           current.status === 'ready'
             ? { ...current, refreshing: false, refreshError: message }
             : { status: 'failed', message }
         );
+        return undefined;
       }
     },
     [errand.id, municipalityId, resetField, getValues]
@@ -86,6 +88,21 @@ export function SupportMeasuresTab({
     void load();
     return cancelLoad;
   }, [load, cancelLoad]);
+
+  // Measures are written by several people, so a view left open goes stale: its decide and edit buttons keep
+  // offering work that upstream has already taken. Writes stay guarded by If-Match either way; this only stops
+  // the list from lying while nobody is looking at it. Refreshing on return is enough - no polling, no socket.
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === 'visible') void load();
+    };
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [load]);
 
   let content: ReactNode;
   switch (state.status) {

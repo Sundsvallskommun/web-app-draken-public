@@ -12,7 +12,10 @@ import {
   Textarea,
   useConfirm,
 } from '@sk-web-gui/react';
-import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
+import {
+  isSupportErrandWriteConflict,
+  supportErrandWriteErrorMessage,
+} from '@supportmanagement/services/support-errand-write-version';
 import { isAxiosError } from 'axios';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -27,6 +30,7 @@ import {
   type MeasureForm,
   type MeasureFormErrors,
   measureFormErrors,
+  measureFormRebase,
   measureFormValues,
   todayIsoDate,
 } from './measure-form';
@@ -69,7 +73,8 @@ export function AvvikelseMeasureForm({
     watch,
     handleSubmit,
     setValue,
-    formState: { isDirty },
+    getValues,
+    formState: { isDirty, dirtyFields },
   } = useForm<MeasureForm>({ defaultValues: defaults });
   const timing = watch('timing');
   const roleName = watch('addedByRole');
@@ -91,6 +96,12 @@ export function AvvikelseMeasureForm({
   const detailsDisabled = saving || (!measure && !roleName);
   const [errors, setErrors] = useState<MeasureFormErrors>({});
   const [saveError, setSaveError] = useState<string>();
+  // Held apart from saveError because the container swaps in the current measure while this catch runs: the right
+  // wording depends on what the measure looks like after the rebase, so it is derived at render, not at catch.
+  const [conflict, setConflict] = useState<{ fields: string[] } | undefined>();
+  // The measure the open draft was started from. A rebase moves this forward; without it there is no way to
+  // tell a field the other writer changed from one this user simply never edited.
+  const baseline = useRef(measure);
   const heading = useRef<HTMLHeadingElement>(null);
   const errorSummary = useRef<HTMLDivElement>(null);
 
@@ -104,8 +115,29 @@ export function AvvikelseMeasureForm({
   }, [isDirty, onDirtyChange]);
 
   useEffect(() => {
-    if (saveError || Object.keys(errors).length > 0) errorSummary.current?.focus();
-  }, [errors, saveError]);
+    if (saveError || conflict || Object.keys(errors).length > 0) errorSummary.current?.focus();
+  }, [errors, saveError, conflict]);
+
+  // The container swaps in the current measure after a rejected write. The form is keyed by id, so it is not
+  // remounted and the draft survives - but its baseline has moved, and the fields nobody here touched have to
+  // follow it. Otherwise the retry would pass If-Match and quietly restore this user's stale values over the
+  // other writer's edit, which is the very thing the version check exists to prevent.
+  useEffect(() => {
+    if (!measure || measure === baseline.current || measure.version === baseline.current?.version) return;
+    const previous = baseline.current;
+    baseline.current = measure;
+    if (!previous) return;
+    const { adopt, conflicts } = measureFormRebase(getValues(), dirtyFields, previous, measure);
+    // Same widening as in measureFormRebase: the entries come from one MeasureForm, so each value fits its own
+    // field, but Object.entries flattens that into string. Left non-dirty so these stay the other writer's.
+    for (const [field, value] of Object.entries(adopt) as [keyof MeasureForm, MeasureForm['timing']][]) {
+      setValue(field, value, { shouldDirty: false });
+    }
+    // Only rebaseOnCurrent ever swaps this prop, and it only runs after a rejected write, so the rebase owns
+    // the conflict state outright. Making it depend on setConflict having landed first would tie the warning to
+    // two components' updates being batched together.
+    setConflict({ fields: conflicts });
+  }, [measure, getValues, dirtyFields, setValue]);
 
   // Validation runs in submit(); aria-required instead of the required attribute keeps the theme's :invalid
   // styling off untouched fields, so only reported errors render red.
@@ -128,12 +160,16 @@ export function AvvikelseMeasureForm({
     const nextErrors = measureFormErrors(values, measure, { canExecute });
     setErrors(nextErrors);
     setSaveError(undefined);
+    setConflict(undefined);
     if (Object.keys(nextErrors).length > 0) return;
     setSaving(true);
     try {
       await onSave(values);
     } catch (cause) {
-      setSaveError(measureSaveError(cause));
+      // Only an existing measure can be rebased. A create that conflicts means the errand itself moved on
+      // (status guard, 409), and there is nothing merged to report - say that instead.
+      if (measure && isSupportErrandWriteConflict(cause)) setConflict({ fields: [] });
+      else setSaveError(measureSaveError(cause));
     } finally {
       setSaving(false);
     }
@@ -183,7 +219,7 @@ export function AvvikelseMeasureForm({
           </p>
         )}
       </div>
-      {(saveError || Object.keys(errors).length > 0) && (
+      {(saveError || conflict || Object.keys(errors).length > 0) && (
         <div
           ref={errorSummary}
           tabIndex={-1}
@@ -192,14 +228,26 @@ export function AvvikelseMeasureForm({
           className="focus-visible:outline focus-visible:outline-2"
           data-cy="measure-form-error"
         >
-          <Alert type="error">
+          <Alert type={conflict ? 'warning' : 'error'}>
             <Alert.Icon />
             <Alert.Content>
               <Alert.Content.Title>
-                {saveError ? 'Åtgärden kunde inte sparas' : 'Kontrollera uppgifterna innan du sparar'}
+                {conflict
+                  ? 'Åtgärden har ändrats av någon annan'
+                  : saveError
+                  ? 'Åtgärden kunde inte sparas'
+                  : 'Kontrollera uppgifterna innan du sparar'}
               </Alert.Content.Title>
               <Alert.Content.Description>
-                {saveError}
+                {conflict
+                  ? contentLocked
+                    ? 'Ett beslut har fattats, så typ, beskrivning och mål är nu låsta. Dina övriga ändringar ligger kvar - kontrollera vad som fortfarande går att spara.'
+                    : conflict.fields.length > 0
+                    ? `Fälten är uppdaterade med den andra ändringen, utom där ni båda skrivit: ${conflict.fields.join(
+                        ', '
+                      )}. Där ligger din text kvar och ersätter den andras om du sparar.`
+                    : 'Fälten är uppdaterade med den andra ändringen och din text ligger kvar. Kontrollera dem och spara igen.'
+                  : saveError}
                 {Object.keys(errors).length > 0 && (
                   <ul className="list-disc ml-20 mt-8">
                     {(Object.keys(errors) as Array<keyof MeasureForm>).map((key) => (

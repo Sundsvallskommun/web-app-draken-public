@@ -2,6 +2,7 @@ import type { Measure } from '@common/data-contracts/supportmanagement/data-cont
 import { Modal, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useUserStore } from '@stores/user-store';
 import { isSupportErrandLocked, type SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { isSupportErrandWriteConflict } from '@supportmanagement/services/support-errand-write-version';
 import { useCallback, useRef, useState } from 'react';
 
 import { measureCanBeDecided, type MeasureDecisionInput } from '../measure-decision';
@@ -31,7 +32,8 @@ export function AvvikelseMeasures({
   errand: SupportErrand;
   municipalityId: string;
   onDirtyChange: (dirty: boolean) => void;
-  onSaved: () => Promise<void>;
+  /** Reloads the tab and hands back what it read, so a conflict can rebase on the current measure. */
+  onSaved: () => Promise<MeasuresSnapshot | undefined>;
 }) {
   const { metadata, creationRoles, registration } = snapshot;
   const user = useUserStore((state) => state.user);
@@ -66,17 +68,39 @@ export function AvvikelseMeasures({
     if (dirty && !(await confirmDiscardMeasureDraft(confirm, true))) return;
     closeEditing();
   };
+  /**
+   * A rejected write leaves the open dialog holding a version upstream has moved past, so every retry fails the
+   * same way and the draft is trapped. Reload and put the current measure under the dialog instead: the form is
+   * keyed by id, not version, so the typed values survive while measureFormChanges recomputes against the new
+   * baseline - fields the other writer already set to the same value drop out of the patch by themselves.
+   */
+  const rebaseOnCurrent = async (measureId: string, kind: 'edit' | 'decide') => {
+    const snapshot = await onSaved();
+    // A failed reload is not evidence the measure is gone, and closing here would discard the draft. Leave the
+    // dialog as it stands; the write error is already on screen and the tab shows its own reload failure.
+    if (!snapshot) return;
+    const current = snapshot.measures.find((measure) => measure.id === measureId);
+    if (current) setDialog({ kind, measure: current });
+    else setDialog(undefined);
+  };
+
   const save = async (values: MeasureForm) => {
     if (!canEdit || !errand.id) throw new Error('Measure is not writable');
     if (editing) {
       if (!editing.id) throw new Error('Measure is missing its identity');
-      await updateSupportMeasure(
-        municipalityId,
-        errand.id,
-        editing.id,
-        editing.version,
-        measureFormChanges(values, editing)
-      );
+      const measureId = editing.id;
+      try {
+        await updateSupportMeasure(
+          municipalityId,
+          errand.id,
+          measureId,
+          editing.version,
+          measureFormChanges(values, editing)
+        );
+      } catch (cause) {
+        if (isSupportErrandWriteConflict(cause)) await rebaseOnCurrent(measureId, 'edit');
+        throw cause;
+      }
     } else {
       await createSupportMeasure(municipalityId, errand.id, measureFormCreate(values));
     }
@@ -91,7 +115,15 @@ export function AvvikelseMeasures({
     const measure = dialog?.kind === 'decide' ? dialog.measure : undefined;
     if (!canDecide || !errand.id || !measure?.id || !measureCanBeDecided(measure))
       throw new Error('Measure is not decidable');
-    await decideSupportMeasure(municipalityId, errand.id, measure.id, measure.version, decision);
+    const measureId = measure.id;
+    try {
+      await decideSupportMeasure(municipalityId, errand.id, measureId, measure.version, decision);
+    } catch (cause) {
+      // The dialog stays open on its own error, and the refreshed measure tells it whether a decision is still
+      // open to make. Closing here would throw away a comment the user may want to keep.
+      if (isSupportErrandWriteConflict(cause)) await rebaseOnCurrent(measureId, 'decide');
+      throw cause;
+    }
     // Clear the dialog before reloading so a failed read never invites a second submission.
     setDialog(undefined);
     listHeading.current?.focus();
