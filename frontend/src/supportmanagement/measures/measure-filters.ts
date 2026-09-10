@@ -1,6 +1,6 @@
 import type { Measure, MeasureType, Role } from '@common/data-contracts/supportmanagement/data-contracts';
 
-import { type MeasureDecision,measureDecision } from './measure-decision';
+import { type MeasureDecision, measureDecision } from './measure-decision';
 import { measureTypeLabel } from './measure-types';
 
 export type MeasureStatus = 'planned' | 'executed' | 'unscheduled';
