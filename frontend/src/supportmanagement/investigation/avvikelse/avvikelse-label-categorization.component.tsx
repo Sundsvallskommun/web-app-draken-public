@@ -111,7 +111,7 @@ export const AvvikelseLabelCategorization: FC<{
   useEffect(() => {
     const previousKey = previousLegalBasesKey.current;
     previousLegalBasesKey.current = legalBasesKey;
-    if (previousKey === legalBasesKey || !completeSelection.typeCode || selection.typeCode) return;
+    if (disabled || previousKey === legalBasesKey || !completeSelection.typeCode || selection.typeCode) return;
 
     const update = applyAvvikelseLabelClassificationSelection(completeModel, labels, {});
     onClassificationChange?.();
@@ -122,6 +122,7 @@ export const AvvikelseLabelCategorization: FC<{
     setValue('classificationHasSubTypes', false, { shouldDirty: false });
     void trigger(['category', 'type', 'subType']);
   }, [
+    disabled,
     completeModel,
     completeSelection.typeCode,
     labels,

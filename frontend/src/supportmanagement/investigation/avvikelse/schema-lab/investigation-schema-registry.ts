@@ -1,6 +1,8 @@
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 
 import { InvestigationFormData } from '../investigation-document';
+import decisionSchemaRequest from '../schemas/beslut-missforhallande.schema-request.json';
+import decisionUiSchemaRequest from '../schemas/beslut-missforhallande.ui-schema-request.json';
 import investigationSchemaCases from '../schemas/fixtures/investigation-schema-cases.json';
 import managerSchemaRequest from '../schemas/utredning-enhetschef.schema-request.json';
 import managerUiSchemaRequest from '../schemas/utredning-enhetschef.ui-schema-request.json';
@@ -120,7 +122,7 @@ export const investigationSchemaDefinitions: readonly InvestigationSchemaDefinit
   createSchemaDefinition({
     key: 'utredning-sol-lss',
     tabLabel: 'Utredning SoL/LSS',
-    ownerLabel: 'LEX-utredare',
+    ownerLabel: 'Lex Sarah',
     schemaRequestValue: solLssSchemaRequest,
     uiSchemaRequestValue: solLssUiSchemaRequest,
   }),
@@ -130,6 +132,13 @@ export const investigationSchemaDefinitions: readonly InvestigationSchemaDefinit
     ownerLabel: 'MAS/MAR',
     schemaRequestValue: hslSchemaRequest,
     uiSchemaRequestValue: hslUiSchemaRequest,
+  }),
+  createSchemaDefinition({
+    key: 'beslut-missforhallande',
+    tabLabel: 'Beslut',
+    ownerLabel: 'Beslutsfattare',
+    schemaRequestValue: decisionSchemaRequest,
+    uiSchemaRequestValue: decisionUiSchemaRequest,
   }),
 ];
 

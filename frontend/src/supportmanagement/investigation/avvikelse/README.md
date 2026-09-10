@@ -1,10 +1,13 @@
 # Utredningsscheman för IAF/VOF
 
-Den här katalogen innehåller den lokala utvecklingsytan för tre separata JSON Parameters:
+Den här katalogen innehåller den lokala utvecklingsytan för fyra separata JSON Parameters:
 
 - `utredning-enhetschef`
 - `utredning-sol-lss`
 - `utredning-hsl`
+- `beslut-missforhallande` — beslutet enligt lex Sarah. Visas på den egna ärendefliken Beslut i stället för under
+  Utredning, och bara för ärenden med rapporttyp missförhållande (`placement: 'decision'`,
+  `appliesTo: 'reported-misconduct'` i runtimeprofilen). BFF:en avvisar dokumentet på alla andra ärenden.
 
 `schemas/` äger de versionssatta WSO2-requestartefakterna. Varje JSON Schema-request kan skickas som body till
 `POST /{municipalityId}/schemas` och motsvarande UI Schema-request som body till
@@ -167,9 +170,10 @@ All data som läses från RJSF eller localStorage normaliseras mot det aktuella 
 Okända fält tas bort, liksom villkorsstyrda värden som inte längre gäller (exempelvis IVO-ärendenummer när IVO är
 `Nej`). Riskvärden beräknas från respektive schemas `x-calculation` och samma produktregel valideras av JSON Schema.
 
-Åtgärder, handlingsplan, arbetsanteckningar, rapportgenerering och slutligt beslut ingår avsiktligt inte i dessa tre
-utredningsdokument. De hör till senare workflow-steg. Katlas inkommande ärendedata förblir en separat skrivskyddad
-JSON Parameter.
+Åtgärder, handlingsplan, arbetsanteckningar och rapportgenerering ingår avsiktligt inte i de tre
+utredningsdokumenten. Det slutliga beslutet om ett missförhållande är ett eget dokument, `beslut-missforhallande`,
+som utredarens förslag i SOL/LSS-utredningen inte kopieras till. Katlas inkommande ärendedata förblir en separat
+skrivskyddad JSON Parameter.
 
 De lokala artefakterna för `utredning-enhetschef` och `utredning-sol-lss` är version 1.1 och deklarerar
 `errandClassification`; `utredning-hsl` ligger kvar på version 1.0. För redan bundna manager- och SOL/LSS-dokument
@@ -197,3 +201,34 @@ Med labbservern startad kan webbläsarbeteendet verifieras med:
 yarn test:e2e:iaf-schema-lab
 yarn test:e2e:iaf
 ```
+
+
+### Ärendets dokumentbehörigheter
+
+Profilen beskriver dokumenten; rättigheter hämtas separat från backendens
+`supporterrands/{municipalityId}/{errandId}/investigation-access`, som projicerar
+Support Management Sprint 16.1 `/access`. Nyckeln i fältposten med
+`field: "jsonParameters"` och resursen `errand/json-parameter` måste båda tillåta åtkomst.
+`allKeys: true` omfattar nya dokument; annars måste nyckeln vara explicit listad.
+Ärendets nivå är en default, inte ett tak — den gäller de nycklar som saknar egen grant, som ett
+unix-filträd där en skrivbar katalog kan ligga under en läsbar förälder. En roll med `R`/`LR` på
+ärendet men `RW` på sin egen nyckel skriver alltså det dokumentet utan att få handlägga ärendet i
+övrigt. Med `allKeys: true` finns ingen sådan förfining, och ärendets nivå gäller varje nyckel.
+Resursen `errand/json-parameter` måste däremot alltid vara `RW` för att skrivvägen (PUT) ska vara
+öppen.
+
+Både `R` och `LR` returnerar `fields`. Skillnaden är att `LR` returnerar en *delmängd* av dem, och
+den delmängden är då det som gäller: en nyckel som finns med är läsbar med sin egen nivå, en nyckel
+som saknas är dold. `LR` är alltså inte en svagare läsning av samma dokument utan ett smalare urval
+av vilka dokument som finns för användaren, och en listad nyckel visar sitt innehåll precis som
+under `R`.
+
+UI:t delar en accesshämtning mellan Utredning och Beslut och visar aldrig rättigheter från ett
+annat ärende eller en annan användare. Ändrad ärendeversion, etiketter, fokus, återanslutning och
+nekade dokumentanrop utlöser omkontroll; varje GET/PUT kontrolleras även i backend.
+Nekad åtkomst blir 403, utan att skicka användaren till inloggningen.
+Dokumentkomponenterna behåller sina utkast medan innehållet döljs vid omkontroll eller nekad
+läsrätt. Även dolda utkast räknas som osparade ändringar och omfattas av omladdningsvarningen.
+De sparas endast i minnet för aktuell användare och aktuellt ärende. En beslutsflik med ett
+osparat utkast behålls för att kunna förklara spärren och erbjuda omkontroll.
+Vanliga ärendefält, inklusive kategorisering, använder fortsatt sina befintliga regler.

@@ -5,8 +5,13 @@ import { cx, Tabs } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
-import { isInvestigationTabVisible } from '@supportmanagement/investigation/investigation-variant';
+import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
+import {
+  isDecisionTabVisible,
+  isInvestigationTabVisible,
+} from '@supportmanagement/investigation/investigation-variant';
 import { getInvestigationVariant } from '@supportmanagement/investigation/investigation-variant-registry';
+import { useInvestigationAccess } from '@supportmanagement/investigation/use-investigation-access';
 import { SupportMeasuresTab } from '@supportmanagement/measures/support-measures-tab';
 import { countAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import {
@@ -44,7 +49,13 @@ export const SupportTabsWrapper: FC<{
   const [conversationReadByCounts, setConversationReadByCounts] = useState<ConversationReadByCount[]>([]);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const investigationVariant = getInvestigationVariant();
+  const investigationProfile = useInvestigationProfileStore((state) => state.profile);
   const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
+  const { access: investigationAccess, refresh: refreshInvestigationAccess } = useInvestigationAccess(
+    isInvestigationTabVisible(appConfig.features, investigationVariant) &&
+      investigationProfile?.state === 'active' &&
+      investigationProfile.documents.length > 0
+  );
 
   const [tabUnsavedChanges, setTabUnsavedChanges] = useState(false);
   const [measuresDirty, setMeasuresDirty] = useState(false);
@@ -146,16 +157,45 @@ export const SupportTabsWrapper: FC<{
       {
         key: 'details',
         label: 'Ärendeuppgifter',
-        content: supportErrand && <SupportErrandDetailsTab />,
+        content: supportErrand && <SupportErrandDetailsTab access={investigationAccess} />,
         disabled: false,
         visibleFor: appConfig.features.useDetailsTab,
       },
       {
         key: 'investigation',
         label: investigationVariant?.label ?? 'Utredning',
-        content: supportErrand && investigationVariant?.renderTab({ onDirtyChange: setInvestigationDocumentDirty }),
+        content:
+          supportErrand &&
+          investigationVariant?.renderTab({
+            onDirtyChange: setInvestigationDocumentDirty,
+            access: investigationAccess,
+            refreshAccess: refreshInvestigationAccess,
+          }),
         disabled: false,
         visibleFor: isInvestigationTabVisible(appConfig.features, investigationVariant),
+      },
+      {
+        key: 'decision',
+        label: investigationVariant?.decisionTab?.label ?? 'Beslut',
+        content:
+          supportErrand &&
+          investigationVariant?.decisionTab?.render({
+            onDirtyChange: setInvestigationDocumentDirty,
+            access: investigationAccess,
+            refreshAccess: refreshInvestigationAccess,
+          }),
+        disabled: false,
+        visibleFor:
+          isDecisionTabVisible(
+            appConfig.features,
+            investigationVariant,
+            supportErrand,
+            investigationProfile,
+            investigationAccess
+          ) ||
+          investigationProfile?.documents.some(
+            (document) => document.placement === 'decision' && investigationDirty[document.key]
+          ) === true,
       },
       {
         key: 'measures',
@@ -231,6 +271,10 @@ export const SupportTabsWrapper: FC<{
       messages,
       municipalityId,
       investigationVariant,
+      investigationProfile,
+      investigationAccess,
+      investigationDirty,
+      refreshInvestigationAccess,
       setUnsavedFacility,
       supportAttachments,
       supportConversations,

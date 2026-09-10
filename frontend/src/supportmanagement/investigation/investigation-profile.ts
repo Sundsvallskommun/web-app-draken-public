@@ -3,22 +3,26 @@ import type { LabelFilterGroupDefinition } from '../filters/label-filter-project
 export const INVESTIGATION_PROFILE_STATES = ['active', 'inactive', 'unavailable'] as const;
 export type InvestigationProfileState = (typeof INVESTIGATION_PROFILE_STATES)[number];
 
-export const INVESTIGATION_DOCUMENT_ACCESS = ['edit', 'read', 'hidden'] as const;
+export const INVESTIGATION_DOCUMENT_PLACEMENTS = ['investigation', 'decision'] as const;
+
+/** Which errand tab offers the document. The BFF omits the field for the ordinary investigation tab. */
+export type InvestigationDocumentPlacement = (typeof INVESTIGATION_DOCUMENT_PLACEMENTS)[number];
+
+export const INVESTIGATION_DOCUMENT_APPLICABILITIES = ['all', 'reported-misconduct'] as const;
 
 /**
- * How far the signed-in user reaches into one investigation document, as the BFF resolved it from
- * their AD groups. A hidden document is left out of the tab strip entirely, and the BFF refuses to
- * serve it, so the client never has its content to show. A read document is offered as an ordinary
- * tab that cannot be saved; the BFF refuses its write regardless of what the client renders.
+ * Which errands the document applies to. `all` is every errand; `reported-misconduct` is only the
+ * errands the variant's policy resolves as reported misconduct, and the BFF refuses it elsewhere.
  */
-export type InvestigationDocumentAccess = (typeof INVESTIGATION_DOCUMENT_ACCESS)[number];
+export type InvestigationDocumentApplicability = (typeof INVESTIGATION_DOCUMENT_APPLICABILITIES)[number];
 
 export interface InvestigationProfileDocument {
   readonly key: string;
   readonly schemaName: string;
   readonly tabLabel: string;
   readonly ownerLabel: string;
-  readonly access: InvestigationDocumentAccess;
+  readonly placement: InvestigationDocumentPlacement;
+  readonly appliesTo: InvestigationDocumentApplicability;
 }
 
 export interface InvestigationProfile {
@@ -59,17 +63,16 @@ function assertUnique(values: readonly string[], path: string): void {
 }
 
 /**
- * A BFF that predates per-document access sends no access field, and sent none because every
- * document was editable. Defaulting to 'edit' keeps such a deployment working rather than silently
- * locking every investigation form.
+ * Both optional fields default to the behaviour every document had before they existed: offered on
+ * the investigation tab, on every errand. A BFF that never sends them therefore changes nothing.
  */
-function readDocumentAccess(value: unknown, index: number): InvestigationDocumentAccess {
-  if (value === undefined) return 'edit';
-  if (!INVESTIGATION_DOCUMENT_ACCESS.includes(value as InvestigationDocumentAccess)) {
-    throw new Error(`Utredningsprofilens documents[${index}].access är ogiltig.`);
+function readDocumentChoice<T extends string>(value: unknown, choices: readonly T[], fallback: T, path: string): T {
+  if (value === undefined) return fallback;
+  if (!choices.includes(value as T)) {
+    throw new Error(`Utredningsprofilens ${path} är ogiltig.`);
   }
 
-  return value as InvestigationDocumentAccess;
+  return value as T;
 }
 
 function readDocument(value: unknown, index: number): InvestigationProfileDocument {
@@ -82,7 +85,18 @@ function readDocument(value: unknown, index: number): InvestigationProfileDocume
     schemaName: readProfileIdentifier(value.schemaName, `documents[${index}].schemaName`),
     tabLabel: readRequiredString(value.tabLabel, `documents[${index}].tabLabel`),
     ownerLabel: readRequiredString(value.ownerLabel, `documents[${index}].ownerLabel`),
-    access: readDocumentAccess(value.access, index),
+    placement: readDocumentChoice(
+      value.placement,
+      INVESTIGATION_DOCUMENT_PLACEMENTS,
+      'investigation',
+      `documents[${index}].placement`
+    ),
+    appliesTo: readDocumentChoice(
+      value.appliesTo,
+      INVESTIGATION_DOCUMENT_APPLICABILITIES,
+      'all',
+      `documents[${index}].appliesTo`
+    ),
   });
 }
 

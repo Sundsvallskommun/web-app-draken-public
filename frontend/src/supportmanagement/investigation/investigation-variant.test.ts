@@ -7,6 +7,7 @@ import { defaultBasicsPlacement } from './classification-placement';
 import {
   type InvestigationCapability,
   type InvestigationVariantModule,
+  isDecisionTabVisible,
   isInvestigationTabVisible,
   resolveInvestigationVariant,
 } from './investigation-variant';
@@ -57,4 +58,24 @@ test('the tab needs both the master switch and a claiming variant', () => {
   assert.equal(visible(false, variant), false);
   assert.equal(visible(true, null), false);
   assert.equal(visible(false, null), false);
+});
+
+// The decision tab is the variant's call per errand, behind the same master switch. A variant
+// without the slot never gets the tab, whatever the errand looks like.
+test('the decision tab needs the master switch, a slot, and the slot saying yes', () => {
+  const withoutSlot = stub('plain', 'useAvvikelseInvestigation');
+  const withSlot: InvestigationVariantModule = {
+    ...withoutSlot,
+    decisionTab: { label: 'Beslut', isVisible: (errand) => errand?.id === 'decided', render: () => null },
+  };
+  const decided = { id: 'decided' } as Parameters<typeof isDecisionTabVisible>[2];
+  const other = { id: 'other' } as Parameters<typeof isDecisionTabVisible>[2];
+  const on = { ...features({}), useInvestigation: true } as AppConfigFeatures;
+  const off = { ...features({}), useInvestigation: false } as AppConfigFeatures;
+
+  assert.equal(isDecisionTabVisible(on, withSlot, decided, null), true);
+  assert.equal(isDecisionTabVisible(on, withSlot, other, null), false);
+  assert.equal(isDecisionTabVisible(off, withSlot, decided, null), false);
+  assert.equal(isDecisionTabVisible(on, withoutSlot, decided, null), false);
+  assert.equal(isDecisionTabVisible(on, null, decided, null), false);
 });

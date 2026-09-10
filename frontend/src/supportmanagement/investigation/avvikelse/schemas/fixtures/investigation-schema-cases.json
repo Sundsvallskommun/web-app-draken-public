@@ -97,5 +97,84 @@
         }
       }
     ]
+  },
+  "beslut-missforhallande": {
+    "valid": {
+      "decisionDate": "2026-09-01",
+      "misconductEstablished": "yes",
+      "seriousMisconduct": "yes",
+      "tangibleRiskOfSeriousMisconduct": "no",
+      "tangibleRiskOfSeriousMisconductMotivation": "<p>Missförhållandet var allvarligt i sig; frågan om påtaglig risk är därmed inte tillämplig.</p>",
+      "reportedToIvo": "yes",
+      "ivoCaseNumber": "IVO-2026-4321",
+      "supplementaryInformation": "<p>Beslutet har meddelats den enskilde och verksamheten.</p>"
+    },
+    "invalid": [
+      {
+        "description": "Motivering krävs när utredningen inte visar något missförhållande",
+        "value": {
+          "decisionDate": "2026-09-01",
+          "misconductEstablished": "no",
+          "reportedToIvo": "no",
+          "reportedToIvoMotivation": "<p>Inget missförhållande.</p>"
+        }
+      },
+      {
+        "description": "Följdfrågorna krävs när ett missförhållande föreligger",
+        "value": {
+          "decisionDate": "2026-09-01",
+          "misconductEstablished": "yes",
+          "reportedToIvo": "no",
+          "reportedToIvoMotivation": "<p>Ej allvarligt.</p>"
+        }
+      },
+      {
+        "description": "Följdfrågorna får inte besvaras när inget missförhållande föreligger",
+        "value": {
+          "decisionDate": "2026-09-01",
+          "misconductEstablished": "no",
+          "misconductEstablishedMotivation": "<p>Händelsen utgör inte ett missförhållande.</p>",
+          "seriousMisconduct": "no",
+          "seriousMisconductMotivation": "<p>-</p>",
+          "reportedToIvo": "no",
+          "reportedToIvoMotivation": "<p>Inget missförhållande.</p>"
+        }
+      },
+      {
+        "description": "Motivering krävs när anmälan inte lämnas till IVO",
+        "value": {
+          "decisionDate": "2026-09-01",
+          "misconductEstablished": "yes",
+          "seriousMisconduct": "no",
+          "seriousMisconductMotivation": "<p>Ej allvarligt.</p>",
+          "tangibleRiskOfSeriousMisconduct": "no",
+          "tangibleRiskOfSeriousMisconductMotivation": "<p>Ingen påtaglig risk.</p>",
+          "reportedToIvo": "no"
+        }
+      },
+      {
+        "description": "IVO-ärendenummer får inte anges när anmälan inte lämnas till IVO",
+        "value": {
+          "decisionDate": "2026-09-01",
+          "misconductEstablished": "yes",
+          "seriousMisconduct": "no",
+          "seriousMisconductMotivation": "<p>Ej allvarligt.</p>",
+          "tangibleRiskOfSeriousMisconduct": "no",
+          "tangibleRiskOfSeriousMisconductMotivation": "<p>Ingen påtaglig risk.</p>",
+          "reportedToIvo": "no",
+          "reportedToIvoMotivation": "<p>Ej anmälningspliktigt.</p>",
+          "ivoCaseNumber": "IVO-2026-0001"
+        }
+      },
+      {
+        "description": "Beslutsdatum krävs",
+        "value": {
+          "misconductEstablished": "no",
+          "misconductEstablishedMotivation": "<p>Inget missförhållande.</p>",
+          "reportedToIvo": "no",
+          "reportedToIvoMotivation": "<p>Inget missförhållande.</p>"
+        }
+      }
+    ]
   }
 }

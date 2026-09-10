@@ -30,6 +30,13 @@ const artifacts = [
     schemaFile: 'utredning-hsl.schema-request.json',
     uiSchemaFile: 'utredning-hsl.ui-schema-request.json',
   },
+  {
+    name: 'beslut-missforhallande',
+    version: '1.0',
+    hasErrandClassification: false,
+    schemaFile: 'beslut-missforhallande.schema-request.json',
+    uiSchemaFile: 'beslut-missforhallande.ui-schema-request.json',
+  },
 ];
 
 // The artifacts are arbitrary JSON documents that the assertions walk structurally,
@@ -231,6 +238,11 @@ test('UI schemas keep the agreed Draken accordion structure', () => {
       { id: 'notification-and-documentation', title: 'Anmälan och dokumentation' },
       { id: 'commissioner-comment', title: 'Uppdragsgivarens kommentar' },
     ],
+    'beslut-missforhallande': [
+      { id: 'decision', title: 'Beslut' },
+      { id: 'ivo-report', title: 'Anmälan till IVO' },
+      { id: 'supplementary-information', title: 'Kompletterande information' },
+    ],
   };
 
   for (const artifact of artifacts) {
@@ -369,11 +381,103 @@ test('HSL requires Public 360 always and IVO case number only for a positive IVO
   );
 });
 
+test('the decision asks its follow-ups only once a misconduct is established and motivates every No', () => {
+  const schema = readJson('beslut-missforhallande.schema-request.json').value;
+  const { ajv, validate } = createValidator(schema);
+  const base = { decisionDate: '2026-09-01' };
+
+  assert.deepEqual(schema.required, ['decisionDate', 'misconductEstablished', 'reportedToIvo']);
+
+  assert.equal(
+    validate({
+      ...base,
+      misconductEstablished: 'no',
+      misconductEstablishedMotivation: '<p>Nej.</p>',
+      reportedToIvo: 'no',
+      reportedToIvoMotivation: '<p>Nej.</p>',
+    }),
+    true,
+    ajv.errorsText(validate.errors)
+  );
+  assert.equal(
+    validate({ ...base, misconductEstablished: 'no', reportedToIvo: 'no', reportedToIvoMotivation: '<p>Nej.</p>' }),
+    false
+  );
+  assert.equal(
+    validate({
+      ...base,
+      misconductEstablished: 'no',
+      misconductEstablishedMotivation: '',
+      reportedToIvo: 'no',
+      reportedToIvoMotivation: '<p>Nej.</p>',
+    }),
+    false
+  );
+  assert.equal(
+    validate({
+      ...base,
+      misconductEstablished: 'no',
+      misconductEstablishedMotivation: '<p>Nej.</p>',
+      seriousMisconduct: 'no',
+      reportedToIvo: 'no',
+      reportedToIvoMotivation: '<p>Nej.</p>',
+    }),
+    false
+  );
+
+  assert.equal(validate({ ...base, misconductEstablished: 'yes', reportedToIvo: 'yes' }), false);
+  assert.equal(
+    validate({
+      ...base,
+      misconductEstablished: 'yes',
+      seriousMisconduct: 'yes',
+      tangibleRiskOfSeriousMisconduct: 'yes',
+      reportedToIvo: 'yes',
+    }),
+    true,
+    ajv.errorsText(validate.errors)
+  );
+  assert.equal(
+    validate({
+      ...base,
+      misconductEstablished: 'yes',
+      seriousMisconduct: 'no',
+      tangibleRiskOfSeriousMisconduct: 'yes',
+      reportedToIvo: 'yes',
+    }),
+    false
+  );
+  assert.equal(
+    validate({
+      ...base,
+      misconductEstablished: 'yes',
+      seriousMisconduct: 'yes',
+      tangibleRiskOfSeriousMisconduct: 'yes',
+      reportedToIvo: 'yes',
+      reportedToIvoMotivation: '<p>Ja.</p>',
+    }),
+    false
+  );
+  assert.equal(
+    validate({
+      ...base,
+      misconductEstablished: 'yes',
+      seriousMisconduct: 'yes',
+      tangibleRiskOfSeriousMisconduct: 'yes',
+      reportedToIvo: 'no',
+      reportedToIvoMotivation: '<p>Nej.</p>',
+      ivoCaseNumber: 'IVO-1',
+    }),
+    false
+  );
+});
+
 test('all sketch multiselects are represented as unique arrays', () => {
   const expectedMultiselects: Record<string, string[]> = {
     'utredning-enhetschef': ['legalBases', 'causeAreas'],
     'utredning-sol-lss': ['eventTypes', 'causeAreas', 'primaryUnderlyingCauses'],
     'utredning-hsl': ['identifiedCauses', 'underlyingCauses'],
+    'beslut-missforhallande': [],
   };
 
   for (const artifact of artifacts) {

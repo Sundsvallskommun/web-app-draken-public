@@ -2,11 +2,12 @@
 
 Den här katalogen är den kanoniska lokala källan för den första schema-labben. Filerna är kompletta request bodies för JSON Schema-API:t, men labben läser dem direkt och publicerar ingenting.
 
-| Parameter key / schema name | Lokal version | JSON Schema POST body                      | UI Schema PUT body                            |
-| --------------------------- | ------------- | ------------------------------------------ | --------------------------------------------- |
-| `utredning-enhetschef`      | 1.1           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
-| `utredning-sol-lss`         | 1.1           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
-| `utredning-hsl`             | 1.0           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
+| Parameter key / schema name | Lokal version | JSON Schema POST body                        | UI Schema PUT body                              |
+| --------------------------- | ------------- | -------------------------------------------- | ----------------------------------------------- |
+| `utredning-enhetschef`      | 1.1           | `utredning-enhetschef.schema-request.json`   | `utredning-enhetschef.ui-schema-request.json`   |
+| `utredning-sol-lss`         | 1.1           | `utredning-sol-lss.schema-request.json`      | `utredning-sol-lss.ui-schema-request.json`      |
+| `utredning-hsl`             | 1.0           | `utredning-hsl.schema-request.json`          | `utredning-hsl.ui-schema-request.json`          |
+| `beslut-missforhallande`    | 1.0           | `beslut-missforhallande.schema-request.json` | `beslut-missforhallande.ui-schema-request.json` |
 
 Vid publicering skickas `*.schema-request.json` till `POST /2281/schemas`. Det skapade schema-ID:t används sedan med motsvarande `*.ui-schema-request.json` i `PUT /2281/schemas/{id}/ui-schema`.
 
@@ -22,7 +23,8 @@ Schema och UI Schema verifierades separat för varje ID. Inget har publicerats i
 
 Version 1.1 för `utredning-enhetschef` och `utredning-sol-lss` finns endast som lokala artefakter i repot. Att en
 requestartefakt finns här innebär inte att den har skickats till JsonSchema-API:t. `utredning-hsl` ligger kvar på
-version 1.0.
+version 1.0. `beslut-missforhallande` 1.0 är också bara en lokal artefakt; fliken Beslut läser schemat från
+JsonSchema-API:t vid körning, så schemat måste publiceras där innan beslutet kan sparas i en miljö.
 
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 

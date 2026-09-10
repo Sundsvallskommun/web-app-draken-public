@@ -2,101 +2,118 @@ import assert from 'node:assert/strict';
 
 import { test } from 'vitest';
 
-import type { InvestigationProfile } from '../investigation-profile';
+import { type InvestigationAccessState, parseInvestigationAccess } from '../investigation-access';
+import type { InvestigationProfile, InvestigationProfileDocument } from '../investigation-profile';
 import {
+  configuredInvestigationDocuments,
   isInvestigationDocumentEditable,
   resolveInvestigationTabState,
   visibleInvestigationDocuments,
 } from './investigation-tab-state';
 
-const document = () => ({
+const document = (): InvestigationProfileDocument => ({
   key: 'utredning-enhetschef',
   schemaName: 'utredning-enhetschef',
   tabLabel: 'Utredning enhetschef',
   ownerLabel: 'Enhetschef',
+  placement: 'investigation',
+  appliesTo: 'all',
+});
+const decision: InvestigationProfileDocument = {
+  ...document(),
+  key: 'beslut-missforhallande',
+  schemaName: 'beslut-missforhallande',
+  tabLabel: 'Beslut',
+  placement: 'decision',
+  appliesTo: 'reported-misconduct',
+};
+const profile = (overrides: Partial<InvestigationProfile> = {}): InvestigationProfile => ({
+  application: 'IAF',
+  state: 'active',
+  documents: [document()],
+  registration: { mode: 'enabled' },
+  ...overrides,
+});
+const access = (
+  grants: Record<string, 'edit' | 'read' | 'hidden'> = { 'utredning-enhetschef': 'edit' }
+): InvestigationAccessState => ({
+  status: 'ready',
+  access: parseInvestigationAccess(
+    {
+      municipalityId: '2281',
+      errandId: 'one',
+      documents: Object.entries(grants).map(([key, access]) => ({ key, access })),
+    },
+    '2281',
+    'one'
+  ),
 });
 
-const profile = (overrides: Partial<InvestigationProfile> = {}): InvestigationProfile =>
-  ({
-    application: 'IAF',
-    state: 'active',
-    documents: [document()],
-    registration: { mode: 'enabled' },
-    ...overrides,
-  } as InvestigationProfile);
-
-test('an unsettled profile shows the loading state', () => {
+test('profile failures, inactive features and absent documents remain distinct', () => {
   assert.equal(resolveInvestigationTabState('idle', null), 'loading');
   assert.equal(resolveInvestigationTabState('loading', null), 'loading');
-});
-
-test('a failed profile load shows the error state', () => {
   assert.equal(resolveInvestigationTabState('error', null), 'error');
-});
-
-// "disabled" means the profile was never requested, which is not a fault worth warning about.
-test('a profile that was never requested reads as not configured', () => {
   assert.equal(resolveInvestigationTabState('disabled', null), 'not-configured');
   assert.equal(resolveInvestigationTabState('ready', null), 'not-configured');
-});
-
-test('an unavailable profile is distinct from an inactive one', () => {
   assert.equal(resolveInvestigationTabState('ready', profile({ state: 'unavailable' })), 'unavailable');
   assert.equal(resolveInvestigationTabState('ready', profile({ state: 'inactive' })), 'not-configured');
-});
-
-test('an active profile with no documents reads as not configured', () => {
   assert.equal(resolveInvestigationTabState('ready', profile({ documents: [] })), 'not-configured');
 });
 
-test('an active profile with a configured document is ready', () => {
-  assert.equal(resolveInvestigationTabState('ready', profile()), 'ready');
+test('a configured document does not become visible or editable before errand access is resolved', () => {
+  assert.equal(resolveInvestigationTabState('ready', profile()), 'loading');
+  assert.equal(visibleInvestigationDocuments(profile()).length, 0);
+  assert.equal(isInvestigationDocumentEditable(document(), { status: 'loading' }), false);
 });
 
-test('a profile whose documents are all hidden reads as no access, not as unconfigured', () => {
-  const hiddenDocument = { ...document(), access: 'hidden' };
+test('an access failure is distinguished from an explicit denial', () => {
+  assert.equal(resolveInvestigationTabState('ready', profile(), { access: { status: 'error' } }), 'access-error');
+  assert.equal(resolveInvestigationTabState('ready', profile(), { access: { status: 'denied' } }), 'no-access');
+  assert.equal(resolveInvestigationTabState('ready', profile(), { access: access({}) }), 'no-access');
+});
 
+test('readers see the document but only editors can change it', () => {
+  for (const grant of ['read', 'edit'] as const) {
+    const state = access({ 'utredning-enhetschef': grant });
+    assert.equal(resolveInvestigationTabState('ready', profile(), { access: state }), 'ready');
+    assert.equal(visibleInvestigationDocuments(profile(), { access: state }).length, 1);
+    assert.equal(isInvestigationDocumentEditable(document(), state), grant === 'edit');
+  }
+  assert.equal(isInvestigationDocumentEditable(document(), access({})), false);
+});
+
+test('only granted documents belonging to this tab and errand are offered', () => {
+  const p = profile({ documents: [document(), decision] });
+  const state = access({ 'utredning-enhetschef': 'read', 'beslut-missforhallande': 'edit' });
+  assert.deepEqual(
+    visibleInvestigationDocuments(p, { access: state }).map((d) => d.key),
+    ['utredning-enhetschef']
+  );
+  assert.deepEqual(
+    visibleInvestigationDocuments(p, {
+      access: state,
+      placement: 'decision',
+      reportedMisconduct: true,
+    }).map((d) => d.key),
+    ['beslut-missforhallande']
+  );
   assert.equal(
-    resolveInvestigationTabState('ready', profile({ documents: [hiddenDocument] } as Partial<InvestigationProfile>)),
+    visibleInvestigationDocuments(p, { access: state, placement: 'decision', reportedMisconduct: false }).length,
+    0
+  );
+  assert.equal(configuredInvestigationDocuments(p, { placement: 'decision', reportedMisconduct: true }).length, 1);
+});
+
+test('decision access is independent of investigation access', () => {
+  const p = profile({ documents: [document(), decision] });
+  const state = access();
+  assert.equal(resolveInvestigationTabState('ready', p, { access: state }), 'ready');
+  assert.equal(
+    resolveInvestigationTabState('ready', p, {
+      access: state,
+      placement: 'decision',
+      reportedMisconduct: true,
+    }),
     'no-access'
   );
-});
-
-test('only the documents the user reaches are offered as tabs', () => {
-  const documents = [
-    { ...document(), key: 'utredning-enhetschef', access: 'edit' },
-    { ...document(), key: 'utredning-hsl', access: 'hidden' },
-  ];
-  const activeProfile = profile({ documents } as Partial<InvestigationProfile>);
-
-  assert.deepEqual(
-    visibleInvestigationDocuments(activeProfile).map(({ key }) => key),
-    ['utredning-enhetschef']
-  );
-  assert.equal(resolveInvestigationTabState('ready', activeProfile), 'ready');
-});
-
-test('a document without an access field stays visible', () => {
-  assert.deepEqual(visibleInvestigationDocuments(profile()).length, 1);
-  assert.deepEqual(visibleInvestigationDocuments(null).length, 0);
-});
-
-test('a read-only document is offered as a tab, unlike a hidden one', () => {
-  const documents = [
-    { ...document(), key: 'utredning-enhetschef', access: 'read' },
-    { ...document(), key: 'utredning-hsl', access: 'hidden' },
-  ];
-  const activeProfile = profile({ documents } as Partial<InvestigationProfile>);
-
-  assert.deepEqual(
-    visibleInvestigationDocuments(activeProfile).map(({ key }) => key),
-    ['utredning-enhetschef']
-  );
-  assert.equal(resolveInvestigationTabState('ready', activeProfile), 'ready');
-});
-
-test('only an explicit read grant makes a document uneditable', () => {
-  assert.equal(isInvestigationDocumentEditable({ ...document(), access: 'edit' } as never), true);
-  assert.equal(isInvestigationDocumentEditable({ ...document(), access: 'read' } as never), false);
-  assert.equal(isInvestigationDocumentEditable(document() as never), true);
 });

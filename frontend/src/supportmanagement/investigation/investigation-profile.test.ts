@@ -19,7 +19,7 @@ const validProfile = () => ({
       key: 'misconduct-document',
       schemaName: 'utredning-sol-lss',
       tabLabel: 'Utredning SoL/LSS',
-      ownerLabel: 'LEX-utredare',
+      ownerLabel: 'Lex Sarah',
     },
   ],
 });
@@ -31,7 +31,14 @@ test('parses, normalizes and freezes a valid application-bound document profile'
   assert.equal(profile.documents[0].schemaName, 'utredning-enhetschef');
   assert.ok(Object.isFrozen(profile));
   assert.ok(Object.isFrozen(profile.documents));
-  assert.deepEqual(Object.keys(profile.documents[0]).sort(), ['access', 'key', 'ownerLabel', 'schemaName', 'tabLabel']);
+  assert.deepEqual(Object.keys(profile.documents[0]).sort(), [
+    'appliesTo',
+    'key',
+    'ownerLabel',
+    'placement',
+    'schemaName',
+    'tabLabel',
+  ]);
   assert.deepEqual(Object.keys(profile).sort(), ['application', 'documents', 'registration', 'state']);
 });
 
@@ -43,6 +50,42 @@ test('accepts a valid inactive empty document profile', () => {
     ),
     { application: 'KC', state: 'inactive', registration: { mode: 'enabled' }, documents: [] }
   );
+});
+
+// A BFF that predates placement and applicability sends neither; every document then stays on the
+// investigation tab and on every errand, which is exactly what those deployments had.
+test('defaults placement and applicability to the investigation tab on every errand', () => {
+  const profile = parseInvestigationProfile(validProfile(), 'IAF');
+
+  assert.equal(profile.documents[0].placement, 'investigation');
+  assert.equal(profile.documents[0].appliesTo, 'all');
+});
+
+test('reads a decision document restricted to reported misconduct', () => {
+  const withDecision = validProfile();
+  withDecision.documents.push({
+    key: 'decision-document',
+    schemaName: 'beslut-missforhallande',
+    tabLabel: 'Beslut',
+    ownerLabel: 'Beslutsfattare',
+    placement: 'decision',
+    appliesTo: 'reported-misconduct',
+  } as (typeof withDecision.documents)[number]);
+
+  const profile = parseInvestigationProfile(withDecision, 'IAF');
+
+  assert.equal(profile.documents[2].placement, 'decision');
+  assert.equal(profile.documents[2].appliesTo, 'reported-misconduct');
+});
+
+test('rejects unknown placements and applicabilities rather than guessing', () => {
+  const unknownPlacement = validProfile();
+  Object.assign(unknownPlacement.documents[0], { placement: 'sidebar' });
+  assert.throws(() => parseInvestigationProfile(unknownPlacement, 'IAF'), /documents\[0\]\.placement är ogiltig/u);
+
+  const unknownApplicability = validProfile();
+  Object.assign(unknownApplicability.documents[0], { appliesTo: 'hsl' });
+  assert.throws(() => parseInvestigationProfile(unknownApplicability, 'IAF'), /documents\[0\]\.appliesTo är ogiltig/u);
 });
 
 test('rejects a profile for another application', () => {
@@ -142,38 +185,11 @@ test('rejects malformed documents, states and registration capabilities', () => 
   assert.throws(() => parseInvestigationProfile(unknownRegistration, 'IAF'), /registration är ogiltig/u);
 });
 
-/** The BFF resolves access per request, so a document's access is data the parser must carry through. */
-const profileWithDocumentAccess = (...accessByDocument: readonly string[]) => {
+test('does not carry global profile grants into an errand', () => {
   const source = validProfile();
-  return {
+  const profile = parseInvestigationProfile({
     ...source,
-    documents: source.documents.map((document, index) => ({ ...document, access: accessByDocument[index] })),
-  };
-};
-
-test('defaults a document without an access field to editable', () => {
-  const profile = parseInvestigationProfile(validProfile(), 'IAF');
-
-  assert.equal(profile.documents[0].access, 'edit');
-});
-
-test('carries the per-document access the BFF resolved from the user groups', () => {
-  const profile = parseInvestigationProfile(profileWithDocumentAccess('hidden', 'edit'), 'IAF');
-
-  assert.equal(profile.documents[0].access, 'hidden');
-  assert.equal(profile.documents[1].access, 'edit');
-});
-
-test('carries a read-only grant as its own level, distinct from edit and from hidden', () => {
-  const profile = parseInvestigationProfile(profileWithDocumentAccess('read', 'edit'), 'IAF');
-
-  assert.equal(profile.documents[0].access, 'read');
-  assert.equal(profile.documents[1].access, 'edit');
-});
-
-test('rejects an access value outside the contract', () => {
-  assert.throws(
-    () => parseInvestigationProfile(profileWithDocumentAccess('write', 'edit'), 'IAF'),
-    /Utredningsprofilens documents\[0\]\.access är ogiltig\./
-  );
+    documents: source.documents.map((document) => ({ ...document, access: 'edit' })),
+  });
+  assert.equal('access' in profile.documents[0], false);
 });

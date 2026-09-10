@@ -131,6 +131,48 @@ function normalizeHslConditions(formData: InvestigationFormData): InvestigationF
   return normalizedData;
 }
 
+const DECISION_SCHEMA_NAME = 'beslut-missforhallande';
+
+/**
+ * The decision's follow-up questions and motivations only exist for certain answers: a motivation
+ * is asked for a No, the degree questions only once a misconduct is established, and the IVO case
+ * number only once a report is made. The same list drives both what is stored and what is shown,
+ * so the form never asks for something the schema would then reject.
+ */
+function inapplicableDecisionFields(formData: InvestigationFormData): string[] {
+  const fields: string[] = [];
+  if (formData.misconductEstablished !== 'no') fields.push('misconductEstablishedMotivation');
+  if (formData.misconductEstablished !== 'yes') {
+    fields.push(
+      'seriousMisconduct',
+      'seriousMisconductMotivation',
+      'tangibleRiskOfSeriousMisconduct',
+      'tangibleRiskOfSeriousMisconductMotivation'
+    );
+  } else {
+    if (formData.seriousMisconduct !== 'no') fields.push('seriousMisconductMotivation');
+    if (formData.tangibleRiskOfSeriousMisconduct !== 'no') fields.push('tangibleRiskOfSeriousMisconductMotivation');
+  }
+  if (formData.reportedToIvo !== 'no') fields.push('reportedToIvoMotivation');
+  if (formData.reportedToIvo !== 'yes') fields.push('ivoCaseNumber');
+  return fields;
+}
+
+function normalizeDecisionConditions(formData: InvestigationFormData): InvestigationFormData {
+  const inapplicableFields = inapplicableDecisionFields(formData).filter((field) => hasOwn(formData, field));
+  if (inapplicableFields.length === 0) return formData;
+
+  const normalizedData = { ...formData };
+  for (const field of inapplicableFields) delete normalizedData[field];
+  return normalizedData;
+}
+
+function getDecisionRenderingSchema(schema: RJSFSchema, formData: InvestigationFormData): RJSFSchema {
+  const properties = { ...schema.properties };
+  for (const field of inapplicableDecisionFields(formData)) delete properties[field];
+  return { ...schema, properties };
+}
+
 function readCalculationMetadata(value: unknown): CalculationMetadata | undefined {
   if (!isRecord(value)) return undefined;
   if (value.formula !== 'probability * severity' || !Array.isArray(value.inputs) || value.inputs.length !== 2) {
@@ -188,19 +230,22 @@ export function normalizeInvestigationFormData(
   let conditionallyNormalizedData = schemaOwnedData;
   if (schemaName === 'utredning-enhetschef') conditionallyNormalizedData = normalizeManagerConditions(schemaOwnedData);
   if (schemaName === 'utredning-hsl') conditionallyNormalizedData = normalizeHslConditions(schemaOwnedData);
+  if (schemaName === DECISION_SCHEMA_NAME) conditionallyNormalizedData = normalizeDecisionConditions(schemaOwnedData);
 
   return applyDeclaredCalculations(schema, conditionallyNormalizedData);
 }
 
 /**
  * Narrows presentation choices to those that the canonical manager schema
- * accepts for the selected legal bases. The source schema remains untouched.
+ * accepts for the selected legal bases, and hides the decision's follow-up
+ * fields until their answers make them applicable. The source schema remains untouched.
  */
 export function getInvestigationRenderingSchema(
   schemaName: string,
   schema: RJSFSchema,
   formData: InvestigationFormData
 ): RJSFSchema {
+  if (schemaName === DECISION_SCHEMA_NAME) return getDecisionRenderingSchema(schema, formData);
   if (schemaName !== 'utredning-enhetschef') return schema;
 
   const properties = { ...schema.properties };

@@ -1,0 +1,107 @@
+{
+  "value": {
+    "ui:options": {
+      "showSectionCompletion": false
+    },
+    "ui:order": [
+      "decisionDate",
+      "misconductEstablished",
+      "misconductEstablishedMotivation",
+      "seriousMisconduct",
+      "seriousMisconductMotivation",
+      "tangibleRiskOfSeriousMisconduct",
+      "tangibleRiskOfSeriousMisconductMotivation",
+      "reportedToIvo",
+      "reportedToIvoMotivation",
+      "ivoCaseNumber",
+      "supplementaryInformation"
+    ],
+    "ui:sections": [
+      {
+        "id": "decision",
+        "title": "Beslut",
+        "icon": "gavel",
+        "defaultOpen": true,
+        "fields": [
+          "decisionDate",
+          "misconductEstablished",
+          "misconductEstablishedMotivation",
+          "seriousMisconduct",
+          "seriousMisconductMotivation",
+          "tangibleRiskOfSeriousMisconduct",
+          "tangibleRiskOfSeriousMisconductMotivation"
+        ]
+      },
+      {
+        "id": "ivo-report",
+        "title": "Anmälan till IVO",
+        "icon": "send",
+        "defaultOpen": true,
+        "fields": ["reportedToIvo", "reportedToIvoMotivation", "ivoCaseNumber"]
+      },
+      {
+        "id": "supplementary-information",
+        "title": "Kompletterande information",
+        "icon": "file-text",
+        "defaultOpen": true,
+        "fields": ["supplementaryInformation"]
+      }
+    ],
+    "decisionDate": {
+      "ui:widget": "DateWidget"
+    },
+    "misconductEstablished": {
+      "ui:widget": "RadiobuttonWidget"
+    },
+    "misconductEstablishedMotivation": {
+      "ui:widget": "TexteditorWidget",
+      "ui:options": {
+        "className": "w-full min-h-[14rem]",
+        "disableToolbar": false
+      }
+    },
+    "seriousMisconduct": {
+      "ui:widget": "RadiobuttonWidget"
+    },
+    "seriousMisconductMotivation": {
+      "ui:widget": "TexteditorWidget",
+      "ui:options": {
+        "className": "w-full min-h-[14rem]",
+        "disableToolbar": false
+      }
+    },
+    "tangibleRiskOfSeriousMisconduct": {
+      "ui:widget": "RadiobuttonWidget"
+    },
+    "tangibleRiskOfSeriousMisconductMotivation": {
+      "ui:widget": "TexteditorWidget",
+      "ui:options": {
+        "className": "w-full min-h-[14rem]",
+        "disableToolbar": false
+      }
+    },
+    "reportedToIvo": {
+      "ui:widget": "RadiobuttonWidget"
+    },
+    "reportedToIvoMotivation": {
+      "ui:widget": "TexteditorWidget",
+      "ui:options": {
+        "className": "w-full min-h-[14rem]",
+        "disableToolbar": false
+      }
+    },
+    "ivoCaseNumber": {
+      "ui:options": {
+        "className": "w-full max-w-[24rem]"
+      }
+    },
+    "supplementaryInformation": {
+      "ui:widget": "TexteditorWidget",
+      "ui:options": {
+        "className": "w-full min-h-[18rem]",
+        "disableToolbar": false
+      }
+    }
+  },
+  "description": "UI schema for version 1.0 of Beslut missförhållande in Draken"
+}
