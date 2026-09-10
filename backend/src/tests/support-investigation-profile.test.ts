@@ -6,10 +6,18 @@ import {
 } from '@/config/support-investigation-profile';
 import { SupportInvestigationProfileDto } from '@/dtos/support-investigation-profile.dto';
 
-const expectedDocuments = [
+const expectedDocuments: SupportInvestigationProfileDto['documents'][number][] = [
   { key: 'utredning-enhetschef', schemaName: 'utredning-enhetschef', tabLabel: 'Utredning enhetschef', ownerLabel: 'Enhetschef' },
-  { key: 'utredning-sol-lss', schemaName: 'utredning-sol-lss', tabLabel: 'Utredning SoL/LSS', ownerLabel: 'LEX-utredare' },
+  { key: 'utredning-sol-lss', schemaName: 'utredning-sol-lss', tabLabel: 'Utredning SoL/LSS', ownerLabel: 'Lex Sarah' },
   { key: 'utredning-hsl', schemaName: 'utredning-hsl', tabLabel: 'Utredning HSL', ownerLabel: 'MAS/MAR' },
+  {
+    key: 'beslut-missforhallande',
+    schemaName: 'beslut-missforhallande',
+    tabLabel: 'Beslut',
+    ownerLabel: 'Beslutsfattare',
+    placement: 'decision',
+    appliesTo: 'reported-misconduct',
+  },
 ];
 
 const expectDeepFrozen = (value: unknown): void => {
@@ -114,6 +122,23 @@ describe('support investigation profiles', () => {
     );
     expect(() => createSupportInvestigationProfile(profile([{ ...validDocument, key: '../unsafe' }]))).toThrow(
       'documents[0].key must be a lowercase kebab-case identifier',
+    );
+  });
+
+  it('carries placement and applicability only when configured, and rejects unknown values', () => {
+    const decision = { key: 'decision', schemaName: 'decision', tabLabel: 'Beslut', ownerLabel: 'Owner' };
+    const documents = createSupportInvestigationProfile({
+      application: 'FUTURE',
+      documents: [decision, { ...decision, key: 'restricted-decision', placement: 'decision', appliesTo: 'reported-misconduct' }],
+    }).documents;
+
+    expect(Object.keys(documents[0])).toEqual(['key', 'schemaName', 'tabLabel', 'ownerLabel']);
+    expect(documents[1]).toEqual({ ...decision, key: 'restricted-decision', placement: 'decision', appliesTo: 'reported-misconduct' });
+    expect(() =>
+      createSupportInvestigationProfile({ application: 'FUTURE', documents: [{ ...decision, placement: 'sidebar' as 'decision' }] }),
+    ).toThrow('documents[0].placement must be one of investigation, decision');
+    expect(() => createSupportInvestigationProfile({ application: 'FUTURE', documents: [{ ...decision, appliesTo: 'hsl' as 'all' }] })).toThrow(
+      'documents[0].appliesTo must be one of all, reported-misconduct',
     );
   });
 

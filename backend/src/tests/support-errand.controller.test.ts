@@ -20,6 +20,7 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { getNewErrandDefaults, NewErrandDefaults } from '@/services/support-errand.service';
+import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportErrandClassificationOwner, SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
@@ -1572,6 +1573,9 @@ describe('UpdateSupportErrandClassificationDto', () => {
 });
 
 describe('updateSupportErrandClassification', () => {
+  beforeEach(() => {
+    vi.spyOn(SupportInvestigationAccessService.prototype, 'assertCanWriteDocument').mockResolvedValue();
+  });
   const errandUrl = `${MUNICIPALITY_ID}/${NAMESPACE}/errands/${mockSupportErrandId}`;
 
   const update = (): UpdateSupportErrandClassificationDto => ({

@@ -1,5 +1,10 @@
 import { createSupportManagementLabelFilterProfile } from '@/config/supportmanagement-label-filter-profile';
-import { SupportInvestigationProfileDto, SupportManagementLabelFilterProfileDto } from '@/dtos/support-investigation-profile.dto';
+import {
+  SUPPORT_INVESTIGATION_DOCUMENT_APPLICABILITIES,
+  SUPPORT_INVESTIGATION_DOCUMENT_PLACEMENTS,
+  SupportInvestigationProfileDto,
+  SupportManagementLabelFilterProfileDto,
+} from '@/dtos/support-investigation-profile.dto';
 
 import { SUPPORT_MANAGEMENT_API_TARGETS, SupportManagementApiTarget } from './api-config';
 
@@ -35,6 +40,14 @@ const requireProfileIdentifier = (value: string, field: string): string => {
   return canonical;
 };
 
+const requireProfileChoice = <T extends string>(value: T | undefined, choices: readonly T[], field: string): T | undefined => {
+  if (value === undefined) return undefined;
+  if (!choices.includes(value)) {
+    throw new Error(`Support investigation profile field ${field} must be one of ${choices.join(', ')}`);
+  }
+  return value;
+};
+
 /**
  * Canonical owner for static investigation documents and transport requirements.
  * Application-specific classification behavior deliberately lives outside this
@@ -51,11 +64,17 @@ export const createSupportInvestigationProfile = (profile: SupportInvestigationP
   }
   const documentKeys = new Set<string>();
   const documents = profile.documents.map((document, index) => {
+    const placement = requireProfileChoice(document.placement, SUPPORT_INVESTIGATION_DOCUMENT_PLACEMENTS, `documents[${index}].placement`);
+    const appliesTo = requireProfileChoice(document.appliesTo, SUPPORT_INVESTIGATION_DOCUMENT_APPLICABILITIES, `documents[${index}].appliesTo`);
+    // The optional fields are only carried when configured, so a profile that never mentions them
+    // serializes exactly as before and their defaults stay a reader's decision.
     const canonicalDocument = {
       key: requireProfileIdentifier(document.key, `documents[${index}].key`),
       schemaName: requireProfileIdentifier(document.schemaName, `documents[${index}].schemaName`),
       tabLabel: requireNonEmptyProfileField(document.tabLabel, `documents[${index}].tabLabel`),
       ownerLabel: requireNonEmptyProfileField(document.ownerLabel, `documents[${index}].ownerLabel`),
+      ...(placement ? { placement } : {}),
+      ...(appliesTo ? { appliesTo } : {}),
     };
 
     if (documentKeys.has(canonicalDocument.key)) {
@@ -89,13 +108,23 @@ const iafVofInvestigationProfileBase = {
       key: 'utredning-sol-lss',
       schemaName: 'utredning-sol-lss',
       tabLabel: 'Utredning SoL/LSS',
-      ownerLabel: 'LEX-utredare',
+      ownerLabel: 'Lex Sarah',
     },
     {
       key: 'utredning-hsl',
       schemaName: 'utredning-hsl',
       tabLabel: 'Utredning HSL',
       ownerLabel: 'MAS/MAR',
+    },
+    // The lex Sarah decision. Rendered on the Beslut tab rather than under Utredning, and only
+    // offered on errands the IAF/VOF classification policy resolves as reported misconduct.
+    {
+      key: 'beslut-missforhallande',
+      schemaName: 'beslut-missforhallande',
+      tabLabel: 'Beslut',
+      ownerLabel: 'Beslutsfattare',
+      placement: 'decision',
+      appliesTo: 'reported-misconduct',
     },
   ],
   labelFilter: {

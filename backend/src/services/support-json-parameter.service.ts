@@ -275,6 +275,16 @@ export class SupportJsonParameterService {
     return result;
   }
 
+  /**
+   * The parent errand as Support Management holds it right now, for callers that decide whether a
+   * document applies to the errand at all. Deliberately a read of the errand rather than of the
+   * document, so the decision is made before any document is touched.
+   */
+  async readParentErrandSnapshot<TKey extends string, TSchemaName extends string>(request: JsonParameterRequest<TKey, TSchemaName>): Promise<Errand> {
+    const response = await this.readParentErrand(request, 'parent errand applicability check');
+    return response.data;
+  }
+
   async verifyReadableDocuments(request: VerifyReadableJsonParametersRequest): Promise<VerifyReadableJsonParametersResult> {
     const keys = await Promise.all(
       request.definitions.map(async definition => {
@@ -323,6 +333,7 @@ export class SupportJsonParameterService {
         followLocation: false,
         includeResponseHeaders: true,
         propagateClientError: true,
+        mapUnauthorizedToForbidden: true,
       },
       request.user,
     );
@@ -368,6 +379,7 @@ export class SupportJsonParameterService {
         followLocation: false,
         includeResponseHeaders: true,
         propagateClientError: true,
+        mapUnauthorizedToForbidden: true,
       },
       request.user,
     );
@@ -405,6 +417,7 @@ export class SupportJsonParameterService {
         followLocation: false,
         includeResponseHeaders: true,
         propagateClientError: true,
+        mapUnauthorizedToForbidden: true,
       },
       request.user,
     );

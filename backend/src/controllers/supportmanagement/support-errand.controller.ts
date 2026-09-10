@@ -1087,8 +1087,10 @@ export class SupportErrandController {
     }
     // Classification is written together with the document that owns it, so it follows that
     // document's access rather than carrying an access rule of its own. Reading that document is
-    // therefore not enough: this is a write.
-    this.investigationAccessService.assertCanWriteDocument(req.user, definition.key);
+    // therefore not enough: this is a write. The document grant stays the authority even when the
+    // errand's own level is R and this write reaches labels: /access is trusted as given, and a
+    // grant on the key is a grant to what writing that document entails.
+    await this.investigationAccessService.assertCanWriteDocument(req.user, municipalityId, id, definition.key);
     const url = `${municipalityId}/${this.namespace}/errands/${id}`;
     const metadataUrl = `${municipalityId}/${this.namespace}/metadata/labels`;
     const baseURL = apiURL(this.SERVICE);

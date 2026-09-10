@@ -127,6 +127,16 @@ describe('SupportJsonParameterService', () => {
     expect(api.getUsers).toEqual([USER, USER]);
   });
 
+  it('exposes the parent errand for applicability decisions without touching the document', async () => {
+    const { api, service } = makeSubject([writableParentResponse(3)]);
+
+    await expect(service.readParentErrandSnapshot(request)).resolves.toEqual(parentErrand(3));
+
+    expect(api.getCalls).toHaveLength(1);
+    expect(api.getCalls[0]).toMatchObject({ url: ERRAND_URL, followLocation: false, includeResponseHeaders: true, propagateClientError: true });
+    expect(api.getUsers).toEqual([USER]);
+  });
+
   it('verifies configured document reads through Support Management without loading schemas', async () => {
     const missingDefinition = { key: 'missing-document', schemaName: 'other-schema' } as const;
     const { api, service } = makeSubject([response(document(7), 200, '"7"'), new HttpException(404, 'Not found')]);

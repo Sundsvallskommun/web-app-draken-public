@@ -3,6 +3,23 @@ import { IsArray, IsIn, IsOptional, IsString, Matches, MinLength, ValidateNested
 
 const SUPPORT_INVESTIGATION_IDENTIFIER = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
+export const SUPPORT_INVESTIGATION_DOCUMENT_PLACEMENTS = ['investigation', 'decision'] as const;
+
+/**
+ * Which errand tab renders the document: the investigation tab (the default) or the decision tab.
+ * The tabs share the document machinery; this only says where the document is offered.
+ */
+export type SupportInvestigationDocumentPlacement = (typeof SUPPORT_INVESTIGATION_DOCUMENT_PLACEMENTS)[number];
+
+export const SUPPORT_INVESTIGATION_DOCUMENT_APPLICABILITIES = ['all', 'reported-misconduct'] as const;
+
+/**
+ * Which errands the document applies to. `all` (the default) offers it on every errand;
+ * `reported-misconduct` restricts it to errands the application's classification policy resolves
+ * as reported misconduct, and the BFF refuses it on any other errand.
+ */
+export type SupportInvestigationDocumentApplicability = (typeof SUPPORT_INVESTIGATION_DOCUMENT_APPLICABILITIES)[number];
+
 export class SupportInvestigationDocumentProfileDto {
   @IsString()
   @MinLength(1)
@@ -21,6 +38,14 @@ export class SupportInvestigationDocumentProfileDto {
   @IsString()
   @MinLength(1)
   readonly ownerLabel!: string;
+
+  @IsOptional()
+  @IsIn(SUPPORT_INVESTIGATION_DOCUMENT_PLACEMENTS)
+  readonly placement?: SupportInvestigationDocumentPlacement;
+
+  @IsOptional()
+  @IsIn(SUPPORT_INVESTIGATION_DOCUMENT_APPLICABILITIES)
+  readonly appliesTo?: SupportInvestigationDocumentApplicability;
 }
 
 export const SUPPORT_INVESTIGATION_DOCUMENT_ACCESS = ['edit', 'read', 'hidden'] as const;
@@ -32,14 +57,26 @@ export const SUPPORT_INVESTIGATION_DOCUMENT_ACCESS = ['edit', 'read', 'hidden'] 
  */
 export type SupportInvestigationDocumentAccess = (typeof SUPPORT_INVESTIGATION_DOCUMENT_ACCESS)[number];
 
-/**
- * A document as the runtime serves it: the configured document plus what this user may do with it.
- * Access is resolved per request, so it belongs here rather than on the statically configured
- * profile the application boots with.
- */
-export class SupportInvestigationRuntimeDocumentProfileDto extends SupportInvestigationDocumentProfileDto {
+/** Effective document grants belong to an errand, never the application-wide profile. */
+export class SupportInvestigationDocumentGrantDto {
+  @IsString()
+  readonly key!: string;
+
   @IsIn(SUPPORT_INVESTIGATION_DOCUMENT_ACCESS)
   readonly access!: SupportInvestigationDocumentAccess;
+}
+
+export class SupportInvestigationErrandAccessDto {
+  @IsString()
+  readonly municipalityId!: string;
+
+  @IsString()
+  readonly errandId!: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SupportInvestigationDocumentGrantDto)
+  readonly documents!: readonly SupportInvestigationDocumentGrantDto[];
 }
 
 export class SupportInvestigationProfileDto {
@@ -109,11 +146,6 @@ export class SupportInvestigationRuntimeProfileDto extends SupportInvestigationP
   @ValidateNested()
   @Type(() => SupportRegistrationCapabilityDto)
   readonly registration!: SupportRegistrationCapabilityDto;
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => SupportInvestigationRuntimeDocumentProfileDto)
-  declare readonly documents: readonly SupportInvestigationRuntimeDocumentProfileDto[];
 
   @IsOptional()
   @ValidateNested()

@@ -4,12 +4,12 @@ import { Body, Controller, Get, HeaderParam, Param, Put, Req, Res, UseBefore } f
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { resolveIafVofInvestigationClassificationOwner } from '@/config/iaf-vof-investigation-classification';
 import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import { SupportInvestigationDocumentProfileDto, SupportInvestigationProfileDto } from '@/dtos/support-investigation-profile.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
-import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import { JsonObject } from '@/services/schema-bound-json.service';
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
@@ -85,7 +85,8 @@ export class SupportErrandJsonParameterController {
     if ((await this.policyService.getState(req.user)) === 'unavailable') {
       throw new HttpException(503, 'Investigation read policy is temporarily unavailable');
     }
-    this.accessService.assertCanReadDocument(req.user, definition.key);
+    await this.accessService.assertCanReadDocument(req.user, municipalityId, errandId, definition.key);
+    await this.assertDocumentAppliesToErrand(req, definition, municipalityId, errandId);
     const result = await this.documentService.readJsonParameter({ definition, municipalityId, errandId, user: req.user });
 
     setETagHeader(response, result.etag, result.document.version);
@@ -94,7 +95,7 @@ export class SupportErrandJsonParameterController {
 
   @Put('/supporterrands/:municipalityId/:errandId/json-parameters/:key')
   @OpenAPI({ summary: 'Create or update one JSON parameter on a support errand' })
-  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(UpdateSupportErrandJsonParameterDto, 'body'))
+  @UseBefore(authMiddleware, validationMiddleware(UpdateSupportErrandJsonParameterDto, 'body'))
   async updateJsonParameter(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
@@ -117,7 +118,8 @@ export class SupportErrandJsonParameterController {
     // Support Management authorizes the document itself from the forwarded AD account; refusing
     // here keeps the BFF's answer a 403 about permissions instead of a relayed upstream failure.
     // A user who may only read the document is refused here rather than at the load.
-    this.accessService.assertCanWriteDocument(req.user, definition.key);
+    await this.accessService.assertCanWriteDocument(req.user, municipalityId, errandId, definition.key);
+    await this.assertDocumentAppliesToErrand(req, definition, municipalityId, errandId);
     const result = await this.documentService.writeJsonParameter({
       definition,
       municipalityId,
@@ -130,5 +132,29 @@ export class SupportErrandJsonParameterController {
     setETagHeader(response, result.etag, result.document.version);
     response.setHeader('X-Errand-Version', String(result.parentErrandVersion));
     return response.status(result.status).send(result.document);
+  }
+
+  /**
+   * A document declared for reported misconduct only is refused on every other errand, on reads as
+   * well as writes: the decision tab is hidden for such errands, so a request that still arrives is
+   * a client the profile does not describe. Access is checked before this so a user who may not
+   * see the document learns nothing about the errand from the answer.
+   */
+  private async assertDocumentAppliesToErrand(
+    req: RequestWithUser,
+    definition: SupportInvestigationDocumentProfileDto,
+    municipalityId: string,
+    errandId: string,
+  ): Promise<void> {
+    if ((definition.appliesTo ?? 'all') !== 'reported-misconduct') return;
+
+    const classificationPolicy = this.policyService.iafVofClassificationPolicy;
+    if (!classificationPolicy) {
+      throw new HttpException(409, 'Reported misconduct documents require an investigation classification policy');
+    }
+    const errand = await this.documentService.readParentErrandSnapshot({ definition, municipalityId, errandId, user: req.user });
+    if (resolveIafVofInvestigationClassificationOwner(classificationPolicy, errand).mode !== 'reported-misconduct') {
+      throw new HttpException(409, 'This investigation document applies to reported misconduct errands only');
+    }
   }
 }

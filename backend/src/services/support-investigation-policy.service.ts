@@ -16,7 +16,6 @@ import { logger } from '@/utils/logger';
 
 import { FeatureFlagService, featureFlagService } from './feature-flag.service';
 import { getNewErrandDefaults } from './support-errand.service';
-import { SupportInvestigationAccessService } from './support-investigation-access.service';
 
 export type SupportErrandClassificationOwner = 'generic-errand' | 'investigation' | 'unavailable';
 export type SupportRegistrationState = 'enabled' | 'disabled' | 'unavailable';
@@ -32,21 +31,18 @@ export class SupportInvestigationPolicyService {
   private readonly namespace: string | undefined;
   private readonly supportManagementApiTarget: SupportManagementApiTarget;
   private readonly resolvedIafVofClassificationPolicy: IafVofInvestigationClassificationPolicy | undefined;
-  private readonly accessService: SupportInvestigationAccessService;
 
   constructor(
     featureFlags: FeatureFlagService = featureFlagService,
     configuredProfile = getSupportInvestigationProfile(APPLICATION),
     namespace = SUPPORTMANAGEMENT_NAMESPACE,
     supportManagementApiTarget = resolveSupportManagementApiTarget(),
-    accessService = new SupportInvestigationAccessService(),
   ) {
     this.featureFlagService = featureFlags;
     this.configuredProfile = configuredProfile;
     this.namespace = namespace;
     this.supportManagementApiTarget = supportManagementApiTarget;
     this.resolvedIafVofClassificationPolicy = resolveIafVofInvestigationClassificationPolicy(configuredProfile);
-    this.accessService = accessService;
   }
 
   async getState(user: User): Promise<SupportInvestigationState> {
@@ -80,11 +76,7 @@ export class SupportInvestigationPolicyService {
     const registrationState = this.registrationStateForInvestigationState(state);
     return Object.freeze({
       application: this.configuredProfile.application,
-      documents: Object.freeze(
-        this.configuredProfile.documents.map(document =>
-          Object.freeze({ ...document, access: this.accessService.resolveDocumentAccess(user, document.key) }),
-        ),
-      ),
+      documents: this.configuredProfile.documents,
       ...(this.configuredProfile.labelFilter ? { labelFilter: this.configuredProfile.labelFilter } : {}),
       state,
       registration: Object.freeze({ mode: registrationState === 'enabled' ? 'enabled' : 'disabled' }),
