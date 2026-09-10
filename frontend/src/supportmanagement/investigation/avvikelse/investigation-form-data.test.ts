@@ -109,7 +109,8 @@ test('normalizes nested values through root-level local schema references', () =
   );
 });
 
-const decisionSchema = decisionSchemaRequest.value as RJSFSchema;
+// The published request keeps literal types; RJSF's JSONSchema7 needs the widened shape.
+const decisionSchema = decisionSchemaRequest.value as unknown as RJSFSchema;
 const decisionKey = 'beslut-missforhallande';
 
 // The decision asks its follow-up questions only once a misconduct is established, and asks for a
