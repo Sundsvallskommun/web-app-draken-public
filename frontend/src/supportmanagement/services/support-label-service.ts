@@ -16,6 +16,11 @@ import { SupportMetadata } from './support-metadata-service';
 
 const isLabelDeprecated = (label?: Label): boolean => label?.deprecated === true;
 
+const CATEGORIZATION_CLASSIFICATIONS = ['CATEGORY', 'TYPE', 'SUBTYPE'];
+
+export const withoutCategorizationLabels = (labels: Label[] | undefined): Label[] =>
+  (labels ?? []).filter((label) => !CATEGORIZATION_CLASSIFICATIONS.includes(label.classification));
+
 /**
  * Filters a list of labels down to the ones a user may pick.
  *
