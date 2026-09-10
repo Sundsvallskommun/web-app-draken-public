@@ -667,10 +667,9 @@ export interface MeasureType {
   /** Display name for the measure type */
   displayName?: string | null;
   /**
-   * Group that this measure type belongs to
-   * @minLength 1
+   * Groups that this measure type belongs to
    */
-  measureGroup: string;
+  measureGroups?: string[];
   /**
    * Sort order for the measure type
    * @format int32
@@ -992,6 +991,10 @@ export interface ExternalTag {
 export interface Measure {
   /** Measure ID */
   id?: string;
+  /** Metadata reference for the measure type. @format uuid */
+  measureTypeId?: string;
+  /** Optimistic locking version of the measure. @format int64 */
+  version?: number;
   /** Responsible user (ad-username) */
   responsibleUser?: string;
   /** Type of measure */

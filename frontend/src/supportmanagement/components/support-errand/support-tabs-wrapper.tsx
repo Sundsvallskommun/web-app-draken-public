@@ -7,6 +7,7 @@ import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-e
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
 import { isInvestigationTabVisible } from '@supportmanagement/investigation/investigation-variant';
 import { getInvestigationVariant } from '@supportmanagement/investigation/investigation-variant-registry';
+import { SupportMeasuresTab } from '@supportmanagement/measures/support-measures-tab';
 import { countAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import {
   ConversationReadByCount,
@@ -46,6 +47,7 @@ export const SupportTabsWrapper: FC<{
   const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
 
   const [tabUnsavedChanges, setTabUnsavedChanges] = useState(false);
+  const [measuresDirty, setMeasuresDirty] = useState(false);
   const [investigationDirty, setInvestigationDirty] = useState<Partial<Record<string, boolean>>>({});
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
@@ -54,7 +56,10 @@ export const SupportTabsWrapper: FC<{
   const { activeTabKey, setActiveTabKey } = useSupportStore();
 
   const unsavedChanges =
-    hasDirtyFields(dirtyFields) || tabUnsavedChanges || Object.values(investigationDirty).some(Boolean);
+    hasDirtyFields(dirtyFields) ||
+    tabUnsavedChanges ||
+    measuresDirty ||
+    Object.values(investigationDirty).some(Boolean);
 
   useEffect(() => {
     onUnsavedChangesChange(unsavedChanges);
@@ -151,6 +156,20 @@ export const SupportTabsWrapper: FC<{
         content: supportErrand && investigationVariant?.renderTab({ onDirtyChange: setInvestigationDocumentDirty }),
         disabled: false,
         visibleFor: isInvestigationTabVisible(appConfig.features, investigationVariant),
+      },
+      {
+        key: 'measures',
+        label: 'Åtgärder',
+        content: supportErrand && (
+          <SupportMeasuresTab
+            key={supportErrand.id}
+            errand={supportErrand}
+            municipalityId={municipalityId}
+            onDirtyChange={setMeasuresDirty}
+          />
+        ),
+        disabled: false,
+        visibleFor: appConfig.features.useMeasures,
       },
       {
         key: 'messages',

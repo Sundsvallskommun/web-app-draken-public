@@ -12,6 +12,7 @@ import {
   Label as ILabel,
   LabelAttribute as ILabelAttribute,
   Labels as ILabels,
+  MeasureType as IMeasureType,
   MetadataResponse as IMetadataResponse,
   Phase as IPhase,
   PhaseTransition as IPhaseTransition,
@@ -266,6 +267,33 @@ class Phase implements IPhase {
   modified?: string;
 }
 
+class MeasureType implements IMeasureType {
+  @IsString()
+  @IsOptional()
+  id?: string;
+  @IsString()
+  name!: string;
+  @IsString()
+  @IsOptional()
+  displayName?: string | null;
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  measureGroups?: string[];
+  @IsNumber()
+  @IsOptional()
+  sortOrder?: number | null;
+  @IsBoolean()
+  @IsOptional()
+  deprecated?: boolean;
+  @IsString()
+  @IsOptional()
+  created?: string;
+  @IsString()
+  @IsOptional()
+  modified?: string;
+}
+
 class MetadataResponse implements IMetadataResponse {
   @IsArray()
   @ValidateNested({ each: true })
@@ -301,6 +329,11 @@ class MetadataResponse implements IMetadataResponse {
   @TypeTransformer(() => Phase)
   @IsOptional()
   phases?: IPhase[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => MeasureType)
+  @IsOptional()
+  measureTypes?: IMeasureType[];
 }
 
 @Controller()

@@ -1,0 +1,207 @@
+import type { Measure } from '@common/data-contracts/supportmanagement/data-contracts';
+import { Modal, useConfirm, useSnackbar } from '@sk-web-gui/react';
+import { useUserStore } from '@stores/user-store';
+import { isSupportErrandLocked, type SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { useCallback, useRef, useState } from 'react';
+
+import { measureCanBeDecided, type MeasureDecisionInput } from '../measure-decision';
+import { MeasureFilterBar } from '../measure-filter-bar';
+import { emptyMeasureFilters, filterMeasures, isMeasureFilterActive, measureFilterOptions } from '../measure-filters';
+import { MeasureList } from '../measure-list';
+import { measureTypeLabel } from '../measure-types';
+import {
+  createSupportMeasure,
+  decideSupportMeasure,
+  type MeasuresSnapshot,
+  updateSupportMeasure,
+} from '../support-measure-service';
+import { AvvikelseMeasureDecisionDialog } from './avvikelse-measure-decision-dialog';
+import { AvvikelseMeasureForm, confirmDiscardMeasureDraft } from './avvikelse-measure-form';
+import { type MeasureForm, measureFormChanges, measureFormCreate } from './measure-form';
+
+/** Avvikelse owns its form and workflow; the tab flag and transport do not select business rules. */
+export function AvvikelseMeasures({
+  snapshot,
+  errand,
+  municipalityId,
+  onDirtyChange,
+  onSaved,
+}: {
+  snapshot: MeasuresSnapshot;
+  errand: SupportErrand;
+  municipalityId: string;
+  onDirtyChange: (dirty: boolean) => void;
+  onSaved: () => Promise<void>;
+}) {
+  const { metadata, creationRoles, registration } = snapshot;
+  const user = useUserStore((state) => state.user);
+  const snackbar = useSnackbar();
+  const confirm = useConfirm();
+  const [filters, setFilters] = useState(emptyMeasureFilters);
+  const [dialog, setDialog] = useState<{ kind: 'edit' | 'decide'; measure: Measure }>();
+  const editing = dialog?.kind === 'edit' ? dialog.measure : undefined;
+  const [revision, setRevision] = useState(0);
+  const [dirty, setDirty] = useState(false);
+  const listHeading = useRef<HTMLHeadingElement>(null);
+  const reportDirty = useCallback(
+    (value: boolean) => {
+      setDirty(value);
+      onDirtyChange(value);
+    },
+    [onDirtyChange]
+  );
+  const canEdit = user.permissions.canEditSupportManagement && !isSupportErrandLocked(errand);
+  const canDecide =
+    canEdit &&
+    registration.status === 'ready' &&
+    creationRoles.some((role) => registration.roleTypes.some((rule) => rule.roleName === role.name && rule.decides));
+
+  // The page form only ever creates; editing happens in a modal so the two are never confused.
+  const resetNewForm = () => {
+    setRevision((value) => value + 1);
+    listHeading.current?.focus();
+  };
+  const closeEditing = () => setDialog(undefined);
+  const requestCloseEditing = async () => {
+    if (dirty && !(await confirmDiscardMeasureDraft(confirm, true))) return;
+    closeEditing();
+  };
+  const save = async (values: MeasureForm) => {
+    if (!canEdit || !errand.id) throw new Error('Measure is not writable');
+    if (editing) {
+      if (!editing.id) throw new Error('Measure is missing its identity');
+      await updateSupportMeasure(
+        municipalityId,
+        errand.id,
+        editing.id,
+        editing.version,
+        measureFormChanges(values, editing)
+      );
+    } else {
+      await createSupportMeasure(municipalityId, errand.id, measureFormCreate(values));
+    }
+    // Retire the saved draft before reloading so a failed read does not cause a duplicate write.
+    if (editing) closeEditing();
+    else resetNewForm();
+    snackbar({ message: 'Åtgärden har sparats.', status: 'success' });
+    await onSaved();
+  };
+
+  const saveDecision = async (decision: MeasureDecisionInput) => {
+    const measure = dialog?.kind === 'decide' ? dialog.measure : undefined;
+    if (!canDecide || !errand.id || !measure?.id || !measureCanBeDecided(measure))
+      throw new Error('Measure is not decidable');
+    await decideSupportMeasure(municipalityId, errand.id, measure.id, measure.version, decision);
+    // Clear the dialog before reloading so a failed read never invites a second submission.
+    setDialog(undefined);
+    listHeading.current?.focus();
+    snackbar({ message: 'Beslutet har sparats.', status: 'success' });
+    await onSaved();
+  };
+
+  const shownMeasures = filterMeasures(snapshot.measures, filters, metadata.measureTypes ?? []);
+
+  return (
+    <div className="min-w-0 flex flex-col gap-32">
+      {canEdit && creationRoles.length === 0 && (
+        <div>
+          <h3 className="text-h3-sm mb-8">Lägg till åtgärder</h3>
+          <p role="status">{registrationMessage(registration.status)}</p>
+        </div>
+      )}
+      {canEdit && creationRoles.length > 0 && (
+        <AvvikelseMeasureForm
+          key={`new-${revision}`}
+          measureTypes={metadata.measureTypes}
+          creationRoles={creationRoles}
+          roles={metadata.roles}
+          registration={registration}
+          onSave={save}
+          onCancel={resetNewForm}
+          onDirtyChange={reportDirty}
+        />
+      )}
+      {/* Mounted only while editing: an always-mounted Headless UI Transition throws when the tab's subtree is
+          hidden and shown again during an in-place reload. */}
+      {canEdit && editing && (
+        <Modal
+          show
+          hideLabel
+          aria-label="Redigera åtgärd"
+          closeLabel="Stäng"
+          disableCloseOutside
+          className="w-full max-w-[84rem]"
+          onClose={() => void requestCloseEditing()}
+          data-cy="measure-edit-modal"
+        >
+          <Modal.Content>
+            {editing && (
+              <AvvikelseMeasureForm
+                key={editing.id}
+                measure={editing}
+                measureTypes={metadata.measureTypes}
+                creationRoles={creationRoles}
+                roles={metadata.roles}
+                registration={registration}
+                onSave={save}
+                onCancel={closeEditing}
+                onDirtyChange={reportDirty}
+              />
+            )}
+          </Modal.Content>
+        </Modal>
+      )}
+      {canDecide && dialog?.kind === 'decide' && (
+        <AvvikelseMeasureDecisionDialog
+          measure={dialog.measure}
+          title={measureTypeLabel(metadata.measureTypes, dialog.measure)}
+          onSave={saveDecision}
+          onClose={() => setDialog(undefined)}
+          onDirtyChange={reportDirty}
+        />
+      )}
+      {!canEdit && <p>Åtgärderna visas skrivskyddade.</p>}
+      <section aria-labelledby="measure-list-heading" className="border-t-1 pt-24 flex flex-col gap-16">
+        <h3
+          id="measure-list-heading"
+          ref={listHeading}
+          tabIndex={-1}
+          className="text-h3-sm focus-visible:outline focus-visible:outline-2"
+        >
+          Tillagda åtgärder ({snapshot.measures.length})
+        </h3>
+        {snapshot.measures.length > 0 && (
+          <MeasureFilterBar
+            filters={filters}
+            onChange={setFilters}
+            {...measureFilterOptions(snapshot.measures, metadata.measureTypes ?? [], metadata.roles ?? [])}
+            shown={shownMeasures.length}
+            total={snapshot.measures.length}
+          />
+        )}
+        <MeasureList
+          measures={shownMeasures}
+          emptyMessage={
+            isMeasureFilterActive(filters) ? 'Inga åtgärder matchar filtret.' : 'Det finns inga åtgärder registrerade.'
+          }
+          types={metadata.measureTypes ?? []}
+          roles={metadata.roles ?? []}
+          currentUser={user.username}
+          onEdit={canEdit && !dirty && !dialog ? (measure) => setDialog({ kind: 'edit', measure }) : undefined}
+          onDecide={canDecide && !dirty && !dialog ? (measure) => setDialog({ kind: 'decide', measure }) : undefined}
+        />
+      </section>
+    </div>
+  );
+}
+
+function registrationMessage(status: MeasuresSnapshot['registration']['status']): string {
+  switch (status) {
+    case 'unconfigured':
+      return 'Registrering av åtgärder är inte konfigurerad för den här verksamheten. Kontakta administratören. Du kan fortfarande läsa befintliga åtgärder.';
+    case 'invalid':
+      return 'Inställningarna för åtgärdernas roller och typer behöver ses över. Kontakta administratören. Du kan fortfarande läsa befintliga åtgärder.';
+    case 'ready':
+      return 'Du har ingen registreringsroll för åtgärder i den här verksamheten. Kontakta administratören om du behöver kunna lägga till åtgärder.';
+  }
+}
