@@ -210,7 +210,10 @@ describe('support-errand.service', () => {
       expect(getNewErrandDefaults('KC')).toEqual({ classification: { category: 'CONTACT_SUNDSVALL', type: 'UNCATEGORIZED' } });
       expect(getNewErrandDefaults('MSVA')).toEqual({ classification: { category: 'MSVA', type: 'MSVA.UNCATEGORIZED' } });
       expect(getNewErrandDefaults('ROB')).toEqual({ classification: { category: 'COMPLETE_RECRUITMENT', type: 'COMPLETE_RECRUITMENT.RETAKE' } });
-      expect(getNewErrandDefaults('AOT')).toEqual({ classification: { category: 'AOT', type: 'AOT.UNCATEGORIZED' } });
+      expect(getNewErrandDefaults('AOT')).toEqual({
+        classification: { category: 'AOT', type: 'AOT/UNCATEGORIZED' },
+        labels: { category: 'AOT', type: 'AOT/UNCATEGORIZED' },
+      });
     });
 
     it('returns undefined for an unknown or missing application', () => {
