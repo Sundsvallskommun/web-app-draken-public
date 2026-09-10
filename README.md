@@ -179,11 +179,32 @@ koden ändrar inga suffix. Handläggarlistan ger inga inloggnings- eller skrivr�
 `AUTHORIZED_GROUPS` styr inloggning och `ADMIN_GROUP`, `SUPERADMIN_GROUP` samt
 `DEVELOPER_GROUP` behåller sina befintliga applikationsroller.
 
-`SUPPORT_INVESTIGATION_DOCUMENT_GROUPS` styr åtkomsten till varje utredningsdokument.
-`editorGroups` ger läs- och skrivrättigheter och `readerGroups` ger läsrättigheter;
-övriga användare ser inte dokumentet när mappningen är konfigurerad. Grupperna matchas
-mot användarens AD-grupper från inloggningen. Exempel med de tre dokumenten finns i
-`backend/.env.vof.example.local` och `backend/.env.iaf.example.local`.
+Utrednings- och beslutsdokumentens rättigheter hämtas per användare och ärende från
+Support Management Sprint 16.1, `GET /{municipalityId}/{namespace}/errands/{errandId}/access`.
+Backend erbjuder projektionen som `GET /supporterrands/{municipalityId}/{errandId}/investigation-access`.
+Den globala utredningsprofilen beskriver dokument och scheman; den innehåller inga behörigheter.
+
+Draken tolkar endast den nycklade samlingen `jsonParameters` och resursen `errand/json-parameter`
+i detta flöde. Explicit skrivrätt ger redigering, läsrätt ger ett skrivskyddat formulär och en
+utelämnad nyckel döljer dokumentet. `allKeys` gäller även dokument som ännu inte skapats.
+Ärendets nivå är överordnad: `R` och `LR` blockerar skrivning även om en resurs eller nyckel har `RW`.
+Access hämtas när ärendet öppnas, dess version eller etiketter ändras, fönstret återfår fokus,
+anslutningen återkommer och efter nekade dokumentanrop. Backend kontrollerar på nytt vid varje
+dokumentläsning och skrivning. Felaktiga eller otillgängliga svar ger ingen åtkomst.
+
+Dokumentutkast behålls i komponenternas minne när access kontrolleras eller nekas. Innehållet
+döljs tills en aktuell läsrätt har verifierats; omkontroll kan göras utan omladdning. Varningen
+för osparade ändringar gäller även dolda utkast. Utkast sparas inte över omladdning och följer
+inte med till en annan användare eller ett annat ärende.
+
+`SUPPORT_INVESTIGATION_DOCUMENT_GROUPS` används inte längre. AD-grupper, roller och dokumentgrants
+administreras i AccessMapper och Support Management. IAF/VOF kräver sprint-API:t även för access;
+en deployment utan detta kontrakt ska inte falla tillbaka till env-baserade skrivrättigheter.
+Kategoriseringen skriver vanliga ärendefält och behåller `canEditSupportManagement` utöver
+skrivrätten till ägardokumentet. Dokumentredigerare utan kategoriseringsrätt får ändra dokumentet
+när den befintliga kategoriseringen är giltig. Ändringar av lagrum som skulle kräva omklassificering
+stoppas direkt med en förklaring; saknad eller ogiltig kategorisering förklaras innan redigering.
+Övriga applikationsrättigheter och handläggarlistor migreras separat.
 
 ### Krav
 
