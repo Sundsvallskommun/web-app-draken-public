@@ -289,7 +289,7 @@ test('exposes labels, descriptions, state and disclosure controls accessibly', a
   );
   await expect(page.locator(`#${managerIdPrefix}_investigationText__description`)).toBeVisible();
 
-  await expect(page.getByRole('radiogroup', { name: 'Sannolikhet för inträffande *' }).first()).toBeVisible();
+  await expect(page.getByRole('radiogroup', { name: 'Sannolikhet för inträffande (Obligatorisk)' }).first()).toBeVisible();
   await expect(page.getByRole('group', { name: /Vilket eller vilka lagrum gäller/u })).toBeVisible();
 
   const sectionButton = page.getByRole('button', { name: 'Kategorisering och dokumentation' });

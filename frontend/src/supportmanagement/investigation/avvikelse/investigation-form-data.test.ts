@@ -59,7 +59,8 @@ test('leaves unanswered investigation choices empty and invalid when required', 
   assert.deepEqual(data.legalBases, ['SOL', 'LSS']);
   const result = validator.validateFormData(data, choiceSchema);
   assert(result.errors.some((error) => error.name === 'required' && error.params.missingProperty === 'answer'));
-  assert(result.errors.some((error) => error.name === 'required' && error.params.missingProperty === 'severity'));
+  // No empty object is defaulted for the unanswered risk, so it is the object itself that is missing.
+  assert(result.errors.some((error) => error.name === 'required' && error.params.missingProperty === 'risk'));
 });
 
 test('preserves saved answers, including the first option, instead of treating them as unanswered', () => {
@@ -262,6 +263,26 @@ test('normalization drops server-controlled properties, whatever the form or the
     normalizeInvestigationFormData('utredning-hsl', solLssDecisionSchema, { ivoNotification: 'no', reports: [] }),
     {
       ivoNotification: 'no',
+    }
+  );
+});
+
+// Untouched multi-selects emit [] on mount; a stored document without those keys must not read
+// as changed, so an empty list normalizes to no answer at all.
+test('normalization drops empty root arrays and keeps answered ones', () => {
+  const schema: RJSFSchema = {
+    type: 'object',
+    properties: {
+      causeAreas: { type: 'array', items: { type: 'string' } },
+      legalBases: { type: 'array', items: { type: 'string' } },
+      note: { type: 'string' },
+    },
+  };
+  assert.deepEqual(
+    normalizeInvestigationFormData('utredning-hsl', schema, { causeAreas: [], legalBases: ['HSL'], note: '' }),
+    {
+      legalBases: ['HSL'],
+      note: '',
     }
   );
 });

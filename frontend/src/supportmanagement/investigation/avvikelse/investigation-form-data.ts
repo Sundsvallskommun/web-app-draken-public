@@ -2,10 +2,14 @@ import type { Experimental_DefaultFormStateBehavior, RJSFSchema } from '@rjsf/ut
 
 import type { InvestigationFormData } from './investigation-document';
 
-// A choice's first option is not an answer. Keep unanswered oneOf fields empty while preserving
-// saved answers and explicit schema defaults such as the SoL/LSS legal bases.
+// A choice's first option is not an answer, and an untouched list is not an empty list. Keep
+// unanswered oneOf fields empty and add no empty arrays or objects as defaults, while preserving
+// saved answers and explicit non-empty schema defaults such as the SoL/LSS legal bases. Without
+// this, RJSF fills every untouched array with [] on mount, and a stored document that lacks those
+// keys reads as changed the moment it is opened or saved.
 export const investigationDefaultFormStateBehavior: Experimental_DefaultFormStateBehavior = Object.freeze({
   constAsDefaults: 'skipOneOf',
+  emptyObjectFields: 'skipEmptyDefaults',
 });
 
 /** Investigation and decision forms spell the required marker out rather than using an asterisk. */
@@ -240,6 +244,22 @@ export const isServerControlledProperty = (property: unknown): boolean =>
     property['x-draken-server-revisions'] === true ||
     property['x-draken-server-owned'] === true);
 
+/**
+ * An empty list is no answer: the widgets emit `[]` for untouched multi-selects, and a stored
+ * document that lacks the key must not read as changed. Dropping empty root arrays makes the
+ * canonical form independent of which widget rendered it.
+ */
+function dropEmptyArrays(formData: InvestigationFormData): InvestigationFormData {
+  const emptyArrays = Object.entries(formData)
+    .filter(([, value]) => Array.isArray(value) && value.length === 0)
+    .map(([name]) => name);
+  if (emptyArrays.length === 0) return formData;
+
+  const answered = { ...formData };
+  for (const name of emptyArrays) delete answered[name];
+  return answered;
+}
+
 function dropServerControlledProperties(schema: RJSFSchema, formData: InvestigationFormData): InvestigationFormData {
   const serverControlled = Object.entries(schema.properties ?? {})
     .filter(([name, property]) => isServerControlledProperty(property) && hasOwn(formData, name))
@@ -262,7 +282,9 @@ export function normalizeInvestigationFormData(
   formData: InvestigationFormData
 ): InvestigationFormData {
   const prunedData = pruneValueToSchema(schema, formData, schema);
-  const schemaOwnedData = dropServerControlledProperties(schema, isRecord(prunedData) ? prunedData : {});
+  const schemaOwnedData = dropEmptyArrays(
+    dropServerControlledProperties(schema, isRecord(prunedData) ? prunedData : {})
+  );
   let conditionallyNormalizedData = schemaOwnedData;
   if (schemaName === 'utredning-enhetschef') conditionallyNormalizedData = normalizeManagerConditions(schemaOwnedData);
   if (IVO_INVESTIGATION_SCHEMA_NAMES.includes(schemaName)) {
