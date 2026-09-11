@@ -1,19 +1,24 @@
-import type { Measure, MeasureType, Role } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { MeasureType, Role } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getNameFromADUsername } from '@common/services/user-service';
-import { Button, Icon, Label } from '@sk-web-gui/react';
+import { Button, Checkbox, Icon, Label } from '@sk-web-gui/react';
 import { useUserStore } from '@stores/user-store';
 import dayjs from 'dayjs';
 import { ClipboardCheck, FileText, Pencil } from 'lucide-react';
 
 import { measureCanBeDecided, measureDecisionPresentation } from './measure-decision';
+import { measureCanBeFollowedUp, measureHasFollowUp, type SupportMeasure } from './measure-follow-up';
 import { isOwnMeasure } from './measure-ownership';
 import { measureTypeLabel } from './measure-types';
 
 const date = (value?: string) => (value ? dayjs(value).format('YYYY-MM-DD') : undefined);
 
-function timing(measure: Measure): { label: string; color: string; dateLine?: string } {
+function timing(measure: SupportMeasure): { label: string; color: string; dateLine?: string } {
   if (measure.executed)
-    return { label: 'Genomförd', color: 'gronsta', dateLine: `Genomfört datum: ${date(measure.executed)}` };
+    return {
+      label: measureHasFollowUp(measure) ? 'Utförd' : 'Genomförd',
+      color: 'gronsta',
+      dateLine: `Genomfört datum: ${date(measure.executed)}`,
+    };
   const start = date(measure.plannedStart);
   const complete = date(measure.plannedComplete);
   if (start || complete) {
@@ -30,15 +35,17 @@ export function MeasureList({
   currentUser,
   onEdit,
   onDecide,
+  onFollowUp,
   emptyMessage = 'Det finns inga åtgärder registrerade.',
 }: {
-  measures: readonly Measure[];
+  measures: readonly SupportMeasure[];
   types: readonly MeasureType[];
   roles: readonly Role[];
   /** Session username; only the person who registered a measure may edit it. */
   currentUser?: string;
-  onEdit?: (measure: Measure) => void;
-  onDecide?: (measure: Measure) => void;
+  onEdit?: (measure: SupportMeasure) => void;
+  onDecide?: (measure: SupportMeasure) => void;
+  onFollowUp?: (measure: SupportMeasure) => void;
   emptyMessage?: string;
 }) {
   const administrators = useUserStore((state) => state.administrators);
@@ -59,6 +66,9 @@ export function MeasureList({
         const role = roleLabel(measure.addedByRole);
         const created = measure.created ? dayjs(measure.created).format('YYYY-MM-DD HH:mm:ss') : undefined;
         const editable = Boolean(onEdit && measure.id && isOwnMeasure(measure, currentUser));
+        const canFollowUp = Boolean(
+          onFollowUp && measureCanBeFollowedUp(measure) && isOwnMeasure(measure, currentUser)
+        );
         const responsible = userLabel(measure.responsibleUser);
         return (
           <li
@@ -74,6 +84,11 @@ export function MeasureList({
             <div className="min-w-0 grow flex flex-col gap-8">
               <div className="flex flex-wrap items-center gap-12">
                 <h4 className="font-bold">{title}</h4>
+                {measureHasFollowUp(measure) && (measure.plannedStart || measure.plannedComplete) && (
+                  <Label rounded color="vattjom">
+                    Planerad
+                  </Label>
+                )}
                 <Label rounded color={status.color}>
                   {status.label}
                 </Label>
@@ -88,6 +103,13 @@ export function MeasureList({
                 </p>
               )}
               {status.dateLine && <p className="text-small">{status.dateLine}</p>}
+              {measure.executed && (measure.plannedStart || measure.plannedComplete) && (
+                <p className="text-small">
+                  {measure.plannedStart && `Påbörjas: ${date(measure.plannedStart)}`}
+                  {measure.plannedStart && measure.plannedComplete && ' • '}
+                  {measure.plannedComplete && `Klar senast: ${date(measure.plannedComplete)}`}
+                </p>
+              )}
               {responsible && (
                 <p className="text-small whitespace-pre-wrap break-words">
                   <strong>Ansvarig:</strong> <span>{responsible}</span>
@@ -99,14 +121,37 @@ export function MeasureList({
                   <p className="whitespace-pre-wrap break-words">{measure.acceptMotivation}</p>
                 </div>
               )}
+              {measure.followUp && (
+                <div className="rounded-8 border-1 border-gronsta-surface-primary bg-gronsta-background-100 p-12 flex flex-col gap-8">
+                  <p>
+                    <strong>Önskad effekt uppnådd:</strong> {measure.followUp.desiredEffectAchieved ? 'Ja' : 'Nej'}
+                  </p>
+                  <p className="whitespace-pre-wrap break-words">
+                    <strong>Vad har hänt:</strong> {measure.followUp.followUpDescription}
+                  </p>
+                  {measure.followUp.status === 'pending' && (
+                    <p role="status">
+                      Svaren är sparade. Genomförandet behöver bekräftas för att slutföra uppföljningen.
+                    </p>
+                  )}
+                  {measure.followUp.status === 'conflict' && (
+                    <p role="alert">Genomförandedatumet avviker från uppföljningen. Kontakta administratören.</p>
+                  )}
+                </div>
+              )}
               <p className="text-small text-dark-secondary">
                 {creator ? `Skapad av ${creator}` : 'Skapad'}
                 {role ? ` (${role})` : ''}
                 {created ? ` • ${created}` : ''}
               </p>
             </div>
-            {(editable || decidable) && (
+            {(editable || decidable || canFollowUp) && (
               <div className="col-start-2 sm:col-start-3 flex flex-wrap sm:flex-col items-start gap-8">
+                {canFollowUp && (
+                  <Checkbox checked={false} aria-label={`Utförd: ${title}`} onChange={() => onFollowUp?.(measure)}>
+                    Utförd
+                  </Checkbox>
+                )}
                 {decidable && (
                   <Button
                     type="button"

@@ -2,9 +2,10 @@ import type { Measure, MeasureType, Role } from '@common/data-contracts/supportm
 import { apiService } from '@common/services/api-service';
 
 import type { MeasureDecisionInput } from './measure-decision';
+import type { MeasureFollowUpInput, SupportMeasure } from './measure-follow-up';
 
 export interface MeasuresSnapshot {
-  measures: Measure[];
+  measures: SupportMeasure[];
   errandVersion: number;
   metadata: { measureTypes: MeasureType[]; roles: Role[] };
   creationRoles: Role[];
@@ -58,6 +59,20 @@ export async function decideSupportMeasure(
   await apiService.patch<void, MeasureDecisionInput>(
     `${measuresUrl(municipalityId, errandId)}/${encodeURIComponent(measureId)}/decision`,
     decision,
+    { headers: { 'If-Match': measureETag(version) } }
+  );
+}
+
+export async function followUpSupportMeasure(
+  municipalityId: string,
+  errandId: string,
+  measureId: string,
+  version: Measure['version'],
+  followUp: MeasureFollowUpInput
+): Promise<void> {
+  await apiService.patch<void, MeasureFollowUpInput>(
+    `${measuresUrl(municipalityId, errandId)}/${encodeURIComponent(measureId)}/follow-up`,
+    followUp,
     { headers: { 'If-Match': measureETag(version) } }
   );
 }

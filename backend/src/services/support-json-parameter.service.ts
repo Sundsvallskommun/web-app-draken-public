@@ -420,7 +420,22 @@ export class SupportJsonParameterService {
   async readJsonParameter<TKey extends string, TSchemaName extends string>(
     request: JsonParameterRequest<TKey, TSchemaName>,
   ): Promise<ReadJsonParameterResult<TKey>> {
-    const result = await this.readRawDocument(request);
+    const result = await this.readOptionalJsonParameter(request);
+    if (!result) throw new HttpException(404, 'JSON parameter not found');
+    return result;
+  }
+
+  /** Only a missing document is optional. A missing bound schema or denied read must still fail. */
+  async readOptionalJsonParameter<TKey extends string, TSchemaName extends string>(
+    request: JsonParameterRequest<TKey, TSchemaName>,
+  ): Promise<ReadJsonParameterResult<TKey> | undefined> {
+    let result: ReadJsonParameterResult<TKey>;
+    try {
+      result = await this.readRawDocument(request);
+    } catch (cause) {
+      if (hasHttpStatus(cause, 404)) return undefined;
+      throw cause;
+    }
     await this.requireSchemaBinding(request, result.document.schemaId, 502);
     return result;
   }

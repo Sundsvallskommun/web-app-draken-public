@@ -8,14 +8,18 @@
 
 import request from 'supertest';
 
+import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
+import schemaRequest from '@/schemas/measure-follow-up.schema-request.json';
+import type { SupportJsonParameter } from '@/services/support-json-parameter.service';
 
 import { mockUser } from './helpers/http';
 
-const { apiGet, apiPatch, apiPost } = vi.hoisted(() => ({
+const { apiGet, apiPatch, apiPost, apiPut } = vi.hoisted(() => ({
   apiGet: vi.fn(),
   apiPatch: vi.fn(),
   apiPost: vi.fn(),
+  apiPut: vi.fn(),
 }));
 
 vi.mock('@/middlewares/auth.middleware', () => ({
@@ -29,7 +33,7 @@ vi.mock('@/services/api.service', () => ({
     patch = apiPatch;
     post = apiPost;
     delete = vi.fn();
-    put = vi.fn();
+    put = apiPut;
   },
 }));
 
@@ -79,6 +83,7 @@ describe('measure write handlers (over HTTP)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     apiGet.mockImplementation(async (config: { url?: string }) => {
+      if (config.url?.includes('/json-parameters/')) throw new HttpException(404, 'Not found');
       if (config.url?.endsWith('/metadata')) return { data: metadata };
       if (config.url?.endsWith('/measures/measure-1')) return { data: measure };
       return { data: errand, headers: { etag: '"2"' } };
@@ -101,6 +106,46 @@ describe('measure write handlers (over HTTP)', () => {
     expect(response.text).toBe('');
     expect(apiPatch).toHaveBeenCalledTimes(1);
   });
+
+  it('saves the follow-up through its dedicated endpoint and preserves a negative answer', async () => {
+    const approved = { ...measure, accept: 'TRUE', plannedStart: '2026-09-08T00:00:00Z' };
+    const answers = { desiredEffectAchieved: false, followUpDescription: 'Ingen förbättring.' };
+    const schema = { ...schemaRequest, id: '2281_measure-follow-up_1.0' };
+    let document: SupportJsonParameter | undefined;
+    apiGet.mockImplementation(async (config: { url?: string }) => {
+      if (config.url?.includes('/schemas/')) return { data: schema, status: 200 };
+      if (config.url?.includes('/json-parameters/')) {
+        if (!document) throw new HttpException(404, 'Not found');
+        return { data: document, status: 200, headers: { etag: '"0"' } };
+      }
+      return { data: config.url?.endsWith('/measures/measure-1') ? approved : errand, status: 200 };
+    });
+    apiPut.mockImplementation(async ({ data }: { data: SupportJsonParameter }) => {
+      document = { ...data, version: 0 };
+      return { data: document, status: 201, headers: { etag: '"0"' } };
+    });
+    apiPatch.mockImplementation(async ({ data }: { data: { executed: string } }) => ({ data: { ...approved, ...data, version: 4 } }));
+    const response = await request(server).patch(`${measuresUrl}/measure-1/follow-up`).set('If-Match', '"3"').send(answers);
+    expect(response.status).toBe(204);
+    expect(document?.value).toMatchObject(answers);
+    expect(apiPatch.mock.calls[0][0]).toMatchObject({
+      url: expect.stringMatching(/\/measures\/measure-1$/),
+      data: { executed: expect.any(String) },
+      headers: { 'If-Match': '"3"' },
+    });
+  });
+
+  it.each([{ desiredEffectAchieved: undefined }, { followUpDescription: '  ' }, { goal: 'Nytt mål' }, { executed: '2026-09-11T12:00:00Z' }])(
+    'rejects incomplete follow-up or attempts to change other fields: %j',
+    async fields => {
+      const response = await request(server)
+        .patch(`${measuresUrl}/measure-1/follow-up`)
+        .set('If-Match', '"3"')
+        .send({ desiredEffectAchieved: true, followUpDescription: 'Utbildning genomförd.', ...fields });
+      expect(response.status).toBe(400);
+      expect(apiPatch).not.toHaveBeenCalled();
+    },
+  );
 
   it('still reports a stale version as 412 with its message', async () => {
     const response = await request(server).patch(`${measuresUrl}/measure-1`).set('If-Match', '"2"').send({ goal: 'x' });

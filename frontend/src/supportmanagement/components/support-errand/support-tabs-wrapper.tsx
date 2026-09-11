@@ -69,6 +69,7 @@ export const SupportTabsWrapper: FC<{
 
   const [tabUnsavedChanges, setTabUnsavedChanges] = useState(false);
   const [measuresDirty, setMeasuresDirty] = useState(false);
+  const [followUpDirty, setFollowUpDirty] = useState(false);
   const [investigationDirty, setInvestigationDirty] = useState<Partial<Record<string, boolean>>>({});
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
@@ -80,6 +81,7 @@ export const SupportTabsWrapper: FC<{
     hasDirtyFields(dirtyFields) ||
     tabUnsavedChanges ||
     measuresDirty ||
+    followUpDirty ||
     Object.values(investigationDirty).some(Boolean);
 
   useEffect(() => {
@@ -193,6 +195,7 @@ export const SupportTabsWrapper: FC<{
             errand={supportErrand}
             municipalityId={municipalityId}
             onDirtyChange={setMeasuresDirty}
+            isActive={activeTabKey === 'measures'}
           />
         ),
         disabled: false,
@@ -221,6 +224,22 @@ export const SupportTabsWrapper: FC<{
           investigationProfile?.documents.some(
             (document) => document.placement === 'decision' && investigationDirty[document.key]
           ) === true,
+      },
+      {
+        key: 'follow-up',
+        label: 'Uppföljning',
+        content: supportErrand && (
+          <SupportMeasuresTab
+            key={supportErrand.id}
+            errand={supportErrand}
+            municipalityId={municipalityId}
+            onDirtyChange={setFollowUpDirty}
+            isActive={activeTabKey === 'follow-up'}
+            followUp
+          />
+        ),
+        disabled: false,
+        visibleFor: appConfig.features.useMeasures,
       },
       {
         key: 'messages',
@@ -276,6 +295,7 @@ export const SupportTabsWrapper: FC<{
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
+      activeTabKey,
       conversationMessageTree,
       messageTabLabel,
       messageTree,

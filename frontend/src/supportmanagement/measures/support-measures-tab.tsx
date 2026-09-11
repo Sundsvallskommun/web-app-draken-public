@@ -27,10 +27,14 @@ export function SupportMeasuresTab({
   errand,
   municipalityId,
   onDirtyChange,
+  isActive,
+  followUp = false,
 }: {
   errand: SupportErrand;
   municipalityId: string;
   onDirtyChange: (dirty: boolean) => void;
+  isActive: boolean;
+  followUp?: boolean;
 }) {
   const [state, setState] = useState<MeasuresState>({ status: 'loading' });
   const { register, resetField, getValues } = useFormContext<SupportErrand>();
@@ -85,14 +89,15 @@ export function SupportMeasuresTab({
     generation.current++;
   }, []);
   useEffect(() => {
-    void load();
+    if (isActive) void load();
     return cancelLoad;
-  }, [load, cancelLoad]);
+  }, [load, cancelLoad, isActive]);
 
   // Measures are written by several people, so a view left open goes stale: its decide and edit buttons keep
   // offering work that upstream has already taken. Writes stay guarded by If-Match either way; this only stops
   // the list from lying while nobody is looking at it. Refreshing on return is enough - no polling, no socket.
   useEffect(() => {
+    if (!isActive) return;
     const refresh = () => {
       if (document.visibilityState === 'visible') void load();
     };
@@ -102,7 +107,7 @@ export function SupportMeasuresTab({
       document.removeEventListener('visibilitychange', refresh);
       window.removeEventListener('focus', refresh);
     };
-  }, [load]);
+  }, [load, isActive]);
 
   let content: ReactNode;
   switch (state.status) {
@@ -140,6 +145,7 @@ export function SupportMeasuresTab({
             municipalityId={municipalityId}
             onDirtyChange={onDirtyChange}
             onSaved={() => load(state.snapshot.errandVersion)}
+            followUp={followUp}
           />
         </div>
       );
@@ -147,10 +153,20 @@ export function SupportMeasuresTab({
   }
 
   return (
-    <section className="p-16 sm:p-32 flex flex-col gap-24" aria-label="Åtgärder" data-cy="support-measures-tab">
+    <section
+      className="p-16 sm:p-32 flex flex-col gap-24"
+      aria-label={followUp ? 'Uppföljning' : 'Åtgärder'}
+      data-cy={followUp ? 'support-follow-up-tab' : 'support-measures-tab'}
+    >
       <h2 ref={heading} tabIndex={-1} className="text-h2-md focus-visible:outline focus-visible:outline-2">
-        Åtgärder
+        {followUp ? 'Uppföljning' : 'Åtgärder'}
       </h2>
+      {followUp && (
+        <p>
+          Här följer du upp planerade åtgärder som har godkänts helt eller delvis. Markera Utförd och ange om åtgärden
+          har lett till önskad effekt samt vad som har hänt. Åtgärdens innehåll visas skrivskyddat.
+        </p>
+      )}
       {content}
     </section>
   );

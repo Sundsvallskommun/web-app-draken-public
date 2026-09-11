@@ -1,0 +1,21 @@
+{
+  "name": "measure-follow-up",
+  "version": "1.0",
+  "description": "Uppföljning av en planerad och godkänd åtgärd. Svaren sparas före genomförandet så att avbrutet sparande kan slutföras.",
+  "value": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Uppföljning av åtgärd",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["measureId", "measureVersion", "executed", "desiredEffectAchieved", "followUpDescription", "recordedBy", "recordedAt"],
+    "properties": {
+      "measureId": { "type": "string", "minLength": 1 },
+      "measureVersion": { "type": "integer", "minimum": 0 },
+      "executed": { "type": "string", "format": "date-time" },
+      "desiredEffectAchieved": { "type": "boolean", "title": "Har åtgärd lett till önskad effekt?" },
+      "followUpDescription": { "type": "string", "pattern": "\\S", "maxLength": 4000, "title": "Vad har hänt?" },
+      "recordedBy": { "type": "string", "pattern": "\\S" },
+      "recordedAt": { "type": "string", "format": "date-time" }
+    }
+  }
+}

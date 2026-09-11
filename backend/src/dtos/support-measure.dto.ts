@@ -1,4 +1,4 @@
-import { IsIn, IsISO8601, IsString, IsUUID, Matches, ValidateIf } from 'class-validator';
+import { IsBoolean, IsIn, IsISO8601, IsString, IsUUID, Matches, MaxLength, ValidateIf } from 'class-validator';
 
 class SupportMeasureDetailsDto {
   @ValidateIf((_, value: unknown) => value !== undefined)
@@ -52,4 +52,15 @@ export class DecideSupportMeasureDto {
   @IsString()
   @Matches(/\S/, { message: 'En kommentar krävs vid avslag eller delvis godkännande.' })
   acceptMotivation?: string;
+}
+
+/** One follow-up command; measure details cannot be supplied. */
+export class FollowUpSupportMeasureDto {
+  @IsBoolean()
+  desiredEffectAchieved!: boolean;
+
+  @IsString()
+  @Matches(/\S/)
+  @MaxLength(4000)
+  followUpDescription!: string;
 }

@@ -2,7 +2,7 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 
 import { Measure, MetadataResponse } from '@/data-contracts/supportmanagement/data-contracts';
-import { CreateSupportMeasureDto, DecideSupportMeasureDto, UpdateSupportMeasureDto } from '@/dtos/support-measure.dto';
+import { CreateSupportMeasureDto, DecideSupportMeasureDto, FollowUpSupportMeasureDto, UpdateSupportMeasureDto } from '@/dtos/support-measure.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import ApiService from '@/services/api.service';
 import { SupportMeasureService } from '@/services/support-measure.service';
@@ -60,11 +60,42 @@ const plannedProposal: CreateSupportMeasureDto = {
   plannedComplete: '2026-09-10T12:00:00+02:00',
 };
 
+const followUp: FollowUpSupportMeasureDto = { desiredEffectAchieved: false, followUpDescription: 'Ingen förbättring ännu.' };
+test.each([
+  { desiredEffectAchieved: undefined },
+  { desiredEffectAchieved: null },
+  { desiredEffectAchieved: 'false' },
+  { followUpDescription: undefined },
+  { followUpDescription: '  ' },
+  { followUpDescription: 'x'.repeat(4001) },
+  { description: 'Ersätt originalet' },
+  { executed: '2026-09-09T00:00:00Z' },
+  { accept: 'TRUE' },
+])('follow-up contract rejects missing answers and fields from other workflows: %j', async fields => {
+  const errors = await validate(plainToInstance(FollowUpSupportMeasureDto, { ...followUp, ...fields }), {
+    whitelist: true,
+    forbidNonWhitelisted: true,
+  });
+  expect(errors.length).toBeGreaterThan(0);
+});
+
+test.each([false, true])('follow-up accepts the explicit boolean answer %s', async desiredEffectAchieved => {
+  expect(
+    await validate(plainToInstance(FollowUpSupportMeasureDto, { ...followUp, desiredEffectAchieved }), {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  ).toEqual([]);
+});
+
 afterEach(() => vi.restoreAllMocks());
 
 function setup(configuration = registrationConfiguration) {
   const api = new ApiService();
-  const get = vi.spyOn(api, 'get').mockImplementation(async config => response(config.url?.endsWith('/metadata') ? metadata : current));
+  const get = vi.spyOn(api, 'get').mockImplementation(async config => {
+    if (config.url?.includes('/json-parameters/')) throw new HttpException(404, 'Not found');
+    return response(config.url?.endsWith('/metadata') ? metadata : current);
+  });
   const patch = vi.spyOn(api, 'patch').mockResolvedValue(response(undefined));
   const post = vi.spyOn(api, 'post').mockResolvedValue(response(undefined));
   return { service: new SupportMeasureService(api, configuration), get, patch, post };
@@ -89,7 +120,7 @@ test('reads protected measures with their own versions and keeps parent synchron
       ],
     },
   });
-  expect(get).toHaveBeenCalledTimes(3);
+  expect(get).toHaveBeenCalledTimes(4);
   expect(get.mock.calls[1][0]).toMatchObject({
     url: expect.stringContaining('/errands/' + mockSupportErrandId + '/measures'),
     propagateClientError: true,

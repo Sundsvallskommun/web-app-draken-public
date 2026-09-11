@@ -1,11 +1,38 @@
 import { apiService } from '@common/services/api-service';
 import { beforeEach, expect, test, vi } from 'vitest';
 
-import { createSupportMeasure, decideSupportMeasure, updateSupportMeasure } from './support-measure-service';
+import {
+  createSupportMeasure,
+  decideSupportMeasure,
+  followUpSupportMeasure,
+  updateSupportMeasure,
+} from './support-measure-service';
 
 vi.mock('@common/services/api-service', () => ({ apiService: { patch: vi.fn(), post: vi.fn() } }));
 
 beforeEach(() => vi.resetAllMocks());
+
+test('sends only follow-up answers to the dedicated route with the measure version', async () => {
+  const answers = { desiredEffectAchieved: false, followUpDescription: 'Ingen förbättring.' };
+  await followUpSupportMeasure('2281', 'errand/id', 'measure/id', 0, answers);
+  expect(apiService.patch).toHaveBeenCalledWith(
+    'supporterrands/2281/errand%2Fid/measures/measure%2Fid/follow-up',
+    answers,
+    {
+      headers: { 'If-Match': '"0"' },
+    }
+  );
+});
+
+test('does not follow up a measure without its version', async () => {
+  await expect(
+    followUpSupportMeasure('2281', 'errand', 'measure', undefined, {
+      desiredEffectAchieved: true,
+      followUpDescription: 'Klart.',
+    })
+  ).rejects.toThrow('measure version');
+  expect(apiService.patch).not.toHaveBeenCalled();
+});
 
 test('creates with a UUID and role key without an errand version or browser-supplied creator', async () => {
   const data = {

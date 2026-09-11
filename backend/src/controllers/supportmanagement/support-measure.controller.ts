@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HeaderParam, OnUndefined, Param, Patch, Post, Req, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { CreateSupportMeasureDto, DecideSupportMeasureDto, UpdateSupportMeasureDto } from '@/dtos/support-measure.dto';
+import { CreateSupportMeasureDto, DecideSupportMeasureDto, FollowUpSupportMeasureDto, UpdateSupportMeasureDto } from '@/dtos/support-measure.dto';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
@@ -67,5 +67,20 @@ export class SupportMeasureController {
     @Body() data: DecideSupportMeasureDto,
   ) {
     await this.measures.decide(municipalityId, errandId, measureId, ifMatch, data, req.user);
+  }
+
+  @Patch('/supporterrands/:municipalityId/:errandId/measures/:measureId/follow-up')
+  @OnUndefined(204)
+  @OpenAPI({ summary: 'Complete a planned approved measure and record its follow-up without changing its details' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(FollowUpSupportMeasureDto, 'body'))
+  async followUp(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('errandId') errandId: string,
+    @Param('measureId') measureId: string,
+    @HeaderParam('If-Match') ifMatch: string,
+    @Body() data: FollowUpSupportMeasureDto,
+  ) {
+    await this.measures.followUp(municipalityId, errandId, measureId, ifMatch, data, req.user);
   }
 }

@@ -1,22 +1,29 @@
-import type { Measure } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Modal, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useUserStore } from '@stores/user-store';
 import { isSupportErrandLocked, type SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { isSupportErrandWriteConflict } from '@supportmanagement/services/support-errand-write-version';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useId, useRef, useState } from 'react';
 
 import { measureCanBeDecided, type MeasureDecisionInput } from '../measure-decision';
 import { MeasureFilterBar } from '../measure-filter-bar';
 import { emptyMeasureFilters, filterMeasures, isMeasureFilterActive, measureFilterOptions } from '../measure-filters';
+import {
+  measureBelongsInFollowUp,
+  measureCanBeFollowedUp,
+  type MeasureFollowUpInput,
+  type SupportMeasure,
+} from '../measure-follow-up';
 import { MeasureList } from '../measure-list';
 import { measureTypeLabel } from '../measure-types';
 import {
   createSupportMeasure,
   decideSupportMeasure,
+  followUpSupportMeasure,
   type MeasuresSnapshot,
   updateSupportMeasure,
 } from '../support-measure-service';
 import { AvvikelseMeasureDecisionDialog } from './avvikelse-measure-decision-dialog';
+import { AvvikelseMeasureFollowUpDialog } from './avvikelse-measure-follow-up-dialog';
 import { AvvikelseMeasureForm, confirmDiscardMeasureDraft } from './avvikelse-measure-form';
 import { type MeasureForm, measureFormChanges, measureFormCreate } from './measure-form';
 
@@ -27,6 +34,7 @@ export function AvvikelseMeasures({
   municipalityId,
   onDirtyChange,
   onSaved,
+  followUp = false,
 }: {
   snapshot: MeasuresSnapshot;
   errand: SupportErrand;
@@ -34,17 +42,22 @@ export function AvvikelseMeasures({
   onDirtyChange: (dirty: boolean) => void;
   /** Reloads the tab and hands back what it read, so a conflict can rebase on the current measure. */
   onSaved: () => Promise<MeasuresSnapshot | undefined>;
+  followUp?: boolean;
 }) {
   const { metadata, creationRoles, registration } = snapshot;
   const user = useUserStore((state) => state.user);
   const snackbar = useSnackbar();
   const confirm = useConfirm();
   const [filters, setFilters] = useState(emptyMeasureFilters);
-  const [dialog, setDialog] = useState<{ kind: 'edit' | 'decide'; measure: Measure }>();
+  const [dialog, setDialog] = useState<
+    | { kind: 'edit' | 'decide'; measure: SupportMeasure }
+    | { kind: 'follow-up'; measure: SupportMeasure; unavailable?: boolean }
+  >();
   const editing = dialog?.kind === 'edit' ? dialog.measure : undefined;
   const [revision, setRevision] = useState(0);
   const [dirty, setDirty] = useState(false);
   const listHeading = useRef<HTMLHeadingElement>(null);
+  const listHeadingId = useId();
   const reportDirty = useCallback(
     (value: boolean) => {
       setDirty(value);
@@ -52,7 +65,8 @@ export function AvvikelseMeasures({
     },
     [onDirtyChange]
   );
-  const canEdit = user.permissions.canEditSupportManagement && !isSupportErrandLocked(errand);
+  const canWrite = user.permissions.canEditSupportManagement && !isSupportErrandLocked(errand);
+  const canEdit = !followUp && canWrite;
   const canDecide =
     canEdit &&
     registration.status === 'ready' &&
@@ -74,20 +88,23 @@ export function AvvikelseMeasures({
    * keyed by id, not version, so the typed values survive while measureFormChanges recomputes against the new
    * baseline - fields the other writer already set to the same value drop out of the patch by themselves.
    */
-  const rebaseOnCurrent = async (measureId: string, kind: 'edit' | 'decide') => {
+  const rebaseOnCurrent = async (measureId: string, kind: 'edit' | 'decide' | 'follow-up') => {
     const snapshot = await onSaved();
     // A failed reload is not evidence the measure is gone, and closing here would discard the draft. Leave the
     // dialog as it stands; the write error is already on screen and the tab shows its own reload failure.
     if (!snapshot) return;
     const current = snapshot.measures.find((measure) => measure.id === measureId);
     if (current) setDialog({ kind, measure: current });
-    else setDialog(undefined);
+    else if (kind === 'follow-up') {
+      // Preserve the answers even when the measure disappeared, and explicitly disable submission.
+      setDialog((open) => (open?.kind === 'follow-up' ? { ...open, unavailable: true } : open));
+    } else setDialog(undefined);
   };
 
   const save = async (values: MeasureForm) => {
-    if (!canEdit || !errand.id) throw new Error('Measure is not writable');
+    if (!canEdit || !errand.id) throw new Error('SupportMeasure is not writable');
     if (editing) {
-      if (!editing.id) throw new Error('Measure is missing its identity');
+      if (!editing.id) throw new Error('SupportMeasure is missing its identity');
       const measureId = editing.id;
       try {
         await updateSupportMeasure(
@@ -114,7 +131,7 @@ export function AvvikelseMeasures({
   const saveDecision = async (decision: MeasureDecisionInput) => {
     const measure = dialog?.kind === 'decide' ? dialog.measure : undefined;
     if (!canDecide || !errand.id || !measure?.id || !measureCanBeDecided(measure))
-      throw new Error('Measure is not decidable');
+      throw new Error('SupportMeasure is not decidable');
     const measureId = measure.id;
     try {
       await decideSupportMeasure(municipalityId, errand.id, measureId, measure.version, decision);
@@ -131,7 +148,26 @@ export function AvvikelseMeasures({
     await onSaved();
   };
 
-  const shownMeasures = filterMeasures(snapshot.measures, filters, metadata.measureTypes ?? []);
+  const saveFollowUp = async (values: MeasureFollowUpInput) => {
+    const measure = dialog?.kind === 'follow-up' && !dialog.unavailable ? dialog.measure : undefined;
+    if (!followUp || !canWrite || !errand.id || !measure?.id || !measureCanBeFollowedUp(measure)) {
+      throw new Error('Measure cannot be followed up');
+    }
+    try {
+      await followUpSupportMeasure(municipalityId, errand.id, measure.id, measure.version, values);
+    } catch (cause) {
+      // Any failure can be a confirmed document followed by an unconfirmed execution write.
+      await rebaseOnCurrent(measure.id, 'follow-up');
+      throw cause;
+    }
+    setDialog(undefined);
+    listHeading.current?.focus();
+    snackbar({ message: 'Åtgärden är markerad som utförd och uppföljningen har sparats.', status: 'success' });
+    await onSaved();
+  };
+
+  const measures = followUp ? snapshot.measures.filter(measureBelongsInFollowUp) : snapshot.measures;
+  const shownMeasures = filterMeasures(measures, filters, metadata.measureTypes ?? []);
 
   return (
     <div className="min-w-0 flex flex-col gap-32">
@@ -192,35 +228,54 @@ export function AvvikelseMeasures({
           onDirtyChange={reportDirty}
         />
       )}
-      {!canEdit && <p>Åtgärderna visas skrivskyddade.</p>}
-      <section aria-labelledby="measure-list-heading" className="border-t-1 pt-24 flex flex-col gap-16">
+      {followUp && canWrite && dialog?.kind === 'follow-up' && (
+        <AvvikelseMeasureFollowUpDialog
+          measure={dialog.measure}
+          unavailable={dialog.unavailable}
+          title={measureTypeLabel(metadata.measureTypes, dialog.measure)}
+          onSave={saveFollowUp}
+          onClose={() => setDialog(undefined)}
+          onDirtyChange={reportDirty}
+        />
+      )}
+      {!canWrite && <p>Åtgärderna visas skrivskyddade.</p>}
+      <section aria-labelledby={listHeadingId} className="border-t-1 pt-24 flex flex-col gap-16">
         <h3
-          id="measure-list-heading"
+          id={listHeadingId}
           ref={listHeading}
           tabIndex={-1}
           className="text-h3-sm focus-visible:outline focus-visible:outline-2"
         >
-          Tillagda åtgärder ({snapshot.measures.length})
+          {followUp ? 'Åtgärder att följa upp' : 'Tillagda åtgärder'} ({measures.length})
         </h3>
-        {snapshot.measures.length > 0 && (
+        {measures.length > 0 && (
           <MeasureFilterBar
             filters={filters}
             onChange={setFilters}
-            {...measureFilterOptions(snapshot.measures, metadata.measureTypes ?? [], metadata.roles ?? [])}
+            {...measureFilterOptions(measures, metadata.measureTypes ?? [], metadata.roles ?? [])}
             shown={shownMeasures.length}
-            total={snapshot.measures.length}
+            total={measures.length}
           />
         )}
         <MeasureList
           measures={shownMeasures}
           emptyMessage={
-            isMeasureFilterActive(filters) ? 'Inga åtgärder matchar filtret.' : 'Det finns inga åtgärder registrerade.'
+            isMeasureFilterActive(filters)
+              ? 'Inga åtgärder matchar filtret.'
+              : followUp
+              ? 'Det finns inga planerade och godkända åtgärder att följa upp.'
+              : 'Det finns inga åtgärder registrerade.'
           }
           types={metadata.measureTypes ?? []}
           roles={metadata.roles ?? []}
           currentUser={user.username}
           onEdit={canEdit && !dirty && !dialog ? (measure) => setDialog({ kind: 'edit', measure }) : undefined}
           onDecide={canDecide && !dirty && !dialog ? (measure) => setDialog({ kind: 'decide', measure }) : undefined}
+          onFollowUp={
+            followUp && canWrite && !dirty && !dialog
+              ? (measure) => setDialog({ kind: 'follow-up', measure })
+              : undefined
+          }
         />
       </section>
     </div>

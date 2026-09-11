@@ -158,6 +158,71 @@ Draken inför ingen egen API-behörighet genom gruppfiltreringen.
 `NEXT_PUBLIC_USE_MEASURES=true`; vid runtime används `useMeasures` i Adminpanel.
 Flaggan styr flikens synlighet oberoende av utredningsfliken.
 
+## Uppföljning
+
+`useMeasures` visar även **Uppföljning** direkt efter **Beslut** i flikordningen.
+Uppföljningen är tillgänglig direkt och kräver inte ett sparat beslutsdokument
+eller behörighet till beslutsfliken. Åtgärdernas befintliga besluts- och
+skrivregler avgör fortfarande vad användaren får göra.
+
+`SupportMeasuresTab`, `AvvikelseMeasures` och åtgärdskorten återanvänds.
+Uppföljning visar bara åtgärder med planerat start- eller slutdatum och beslut
+`TRUE` eller `REWORK`. `measure-follow-up.ts` äger detta urval i frontend.
+Ingen registrering, redigering eller bedömning erbjuds i denna vy.
+
+Skaparen kan, med vanlig skrivrätt till ett öppet ärende, kryssa i **Utförd**.
+En separat dialog kräver ett aktivt Ja/Nej-val på **Har åtgärd lett till önskad
+effekt?** och text i **Vad har hänt?** (högst 4000 tecken). Avbryt sparar inget.
+Svaren sparas först och genomförandet bekräftas därefter. Kortet behåller
+åtgärdens original, planering och beslut och visar sedan Utförd, önskad effekt
+och vad som hänt. En sparad uppföljning kan inte ändras i detta flöde. Äldre
+planerade åtgärder som redan har ett genomförandedatum men saknar svar kan följas
+upp; datumet bevaras.
+
+Drakens `PATCH .../measures/:measureId/follow-up` tar endast
+`desiredEffectAchieved: boolean` och `followUpDescription: string`.
+`SupportMeasureService` kontrollerar skapare, ärendestatus, planering, beslut
+och åtgärdens `If-Match`. Den använder **befintliga resurser i SM 16.1**:
+
+1. Svaren, åtgärds-ID/version, genomförandetid samt registrerande användare/tid
+   sparas som JSON-parametern `measure-follow-up-<measureId>` genom
+   `SupportJsonParameterService`. Dokumentet skapas en gång med tjänstens
+   create-only-villkor; sparade svar skrivs aldrig över.
+2. Åtgärdens vanliga `PATCH .../measures/:measureId` får endast `executed`
+   och åtgärdens versionsvillkor. Innehåll, planering och beslut bevaras.
+3. Läsningen sammanför åtgärden med dokumentet i Drakens `SupportMeasure.followUp`.
+   Fälten är inte tillägg till SM:s genererade Measure-kontrakt.
+
+Ett Nej är ett sparat svar, inte ett saknat värde. Om dokumentet sparats men
+åtgärdsskrivningen misslyckas visas status `pending` och **Slutför sparandet**.
+Svaren är då låsta och återförsöket använder åtgärdens omlästa version. Förlorade
+svar efter lyckade skrivningar hanteras genom omläsning och identiska återförsök.
+Ett avvikande genomförandedatum ger `conflict` och kräver utredning av
+administratör; dokumentet raderas inte. Två resurser innebär att sparandet inte
+är en gemensam databastransaktion. Ett avbrott kan lämna svar att slutföra.
+
+Den aktiva fliken läser om när den öppnas och när fönstret återfår fokus.
+Sparfel behåller dialogens svar och läser om åtgärden. Flikarnas osparade
+ändringar registreras separat i den gemensamma varningen. Ändras föräldraärendets
+version flera steg behålls formulärets gamla version för att skydda mot
+överskrivning av samtidiga ändringar; ärendet kan behöva laddas om före nästa
+ändring i det övergripande formuläret.
+
+**Införande:** registrera `backend/src/schemas/measure-follow-up.schema-request.json`
+via JsonSchema `POST /2281/schemas` före användning. Namnet är `measure-follow-up`,
+version `1.0`, ID `2281_measure-follow-up_1.0`. BFF skapar inte scheman automatiskt. Schemat registrerades och verifierades i
+`api-i-test.sundsvall.se` den 11 september 2026.
+API:ts vanliga läs-/skrivrättigheter för JSON-parametern gäller; nekad åtkomst
+visas som fel. Inget nytt SM-endpoint, ingen migration och ingen driftsättning av
+den tidigare förberedda API-worktreen `api-service-support-management-follow-up`
+behövs. Vid återställning av Draken behålls schema och sparade JSON-parametrar.
+
+`support-measure-follow-up.service.test.ts` testar båda befintliga resurserna
+med riktig schemavalidering, Nej, bevarade original, avbrott före/efter skrivning,
+identiska återförsök, versionskonflikter och saknat schema. Service- och HTTP-tester
+skyddar det smala kontraktet och behörigheterna. Komponenttesterna täcker urval,
+obligatoriska svar, avbryt, Ja/Nej, omläsning och slutförande av sparade svar.
+
 ## Beslut om förslag
 
 Användaren behöver vanlig skrivbehörighet till ett öppet ärende och medlemskap
