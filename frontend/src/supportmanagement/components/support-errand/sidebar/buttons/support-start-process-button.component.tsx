@@ -12,6 +12,7 @@ import {
   SupportErrandStatusAfterAssignmentError,
   supportErrandWriteErrorMessage,
 } from '@supportmanagement/services/support-errand-write-version';
+import { getSupportMetadata } from '@supportmanagement/services/support-metadata-service';
 import {
   getActiveSupportPhaseId,
   getSupportPhases,
@@ -34,8 +35,30 @@ export const SupportStartProcessButtonComponent: FC<{
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const toast = useSnackbar();
+  const setSupportMetadata = useMetadataStore((s) => s.setSupportMetadata);
   const { handleSubmit, reset } = useFormContext();
-  const phases = useMemo(() => getSupportPhases(supportMetadata?.phases), [supportMetadata?.phases]);
+  const cachedPhases = useMemo(() => getSupportPhases(supportMetadata?.phases), [supportMetadata?.phases]);
+
+  /**
+   * The workflow, read fresh rather than from the cached metadata.
+   *
+   * The metadata store is persisted in the browser and only refetched every half hour, so a session
+   * opened before the namespace configured its phases keeps a copy that has none - and a copy with
+   * no phases reads exactly like a deployment running no workflow: nothing to move the errand out
+   * of, and no phase to say which statuses it allows. That is the difference between moving the
+   * errand on and asking Support Management for a status the phase forbids, so this write asks for
+   * the current answer. A failed read falls back to what is cached rather than blocking the start.
+   */
+  const readPhases = async () => {
+    try {
+      const { metadata, error } = await getSupportMetadata(municipalityId);
+      if (error || !metadata) return cachedPhases;
+      setSupportMetadata(metadata);
+      return getSupportPhases(metadata.phases);
+    } catch {
+      return cachedPhases;
+    }
+  };
 
   const handleStartProcess = async () => {
     try {
@@ -76,6 +99,7 @@ export const SupportStartProcessButtonComponent: FC<{
       // moves it - and it has to move first. A phase declares which statuses it allows, and the
       // registered phase allows only Ny, so the status cannot be set until the errand has left it.
       // A workflow with no single next phase is left to the phase strip, which names the branches.
+      const phases = await readPhases();
       const advance = resolveStartProcessPhaseAdvance(getActiveSupportPhaseId(afterAssignment.errand.phases), phases);
       const moved =
         advance && typeof afterAssignment.errand.version === 'number'
