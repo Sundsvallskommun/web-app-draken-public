@@ -1,5 +1,5 @@
-import type { Measure } from '../../../src/common/data-contracts/supportmanagement/data-contracts';
-import type { MeasuresSnapshot } from '../../../src/supportmanagement/measures/support-measure-service';
+import type { Measure } from '../../src/common/data-contracts/supportmanagement/data-contracts';
+import type { MeasuresSnapshot } from '../../src/supportmanagement/measures/support-measure-service';
 import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixtures/base.fixture';

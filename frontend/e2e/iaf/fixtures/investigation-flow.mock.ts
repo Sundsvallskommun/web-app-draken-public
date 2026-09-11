@@ -95,7 +95,8 @@ export const defaultInvestigationProfile = (): MockInvestigationProfile => ({
 type JsonObject = Record<string, unknown>;
 
 interface SchemaRequest {
-  name: InvestigationKey;
+  // Imported JSON carries string names; the registry below constrains the supported document keys.
+  name: string;
   version: string;
   value: JsonObject;
   description: string;

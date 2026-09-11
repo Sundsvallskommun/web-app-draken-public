@@ -1,10 +1,10 @@
-import type { Measure } from '../../../src/common/data-contracts/supportmanagement/data-contracts';
-import type { MeasureDecisionInput } from '../../../src/supportmanagement/measures/measure-decision';
+import type { Measure } from '../../src/common/data-contracts/supportmanagement/data-contracts';
+import type { MeasureDecisionInput } from '../../src/supportmanagement/measures/measure-decision';
 import type {
   MeasureChanges,
   MeasuresSnapshot,
   NewMeasure,
-} from '../../../src/supportmanagement/measures/support-measure-service';
+} from '../../src/supportmanagement/measures/support-measure-service';
 import type { Page } from '@playwright/test';
 
 import { expect, test } from '../fixtures/base.fixture';
