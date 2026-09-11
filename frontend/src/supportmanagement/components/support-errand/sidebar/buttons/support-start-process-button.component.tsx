@@ -16,6 +16,7 @@ import { getSupportMetadata } from '@supportmanagement/services/support-metadata
 import {
   getActiveSupportPhaseId,
   getSupportPhases,
+  isInitialSupportPhase,
   isStatusAllowedInPhase,
   resolveStartProcessPhaseAdvance,
 } from '@supportmanagement/services/support-phase-service';
@@ -99,26 +100,42 @@ export const SupportStartProcessButtonComponent: FC<{
       // moves it - and it has to move first. A phase declares which statuses it allows, and the
       // registered phase allows only Ny, so the status cannot be set until the errand has left it.
       // A workflow with no single next phase is left to the phase strip, which names the branches.
+      // Taking the errand on is the same event as leaving the phase it was registered in, so the
+      // button moves it there. Two moves at most, because an errand that never entered the workflow
+      // needs both: entering lands it in the registered phase, which is where it should have been
+      // all along, so the same press continues out of it. Once the errand is past that phase,
+      // moving on is the handler's choice and this button makes none.
       const phases = await readPhases();
-      const advance = resolveStartProcessPhaseAdvance(getActiveSupportPhaseId(afterAssignment.errand.phases), phases);
-      const moved =
-        advance && typeof afterAssignment.errand.version === 'number'
-          ? await updateSupportErrandPhase(
-              municipalityId,
-              supportErrand!.id!,
-              advance.kind === 'transition' ? advance.transitionId : undefined,
-              afterAssignment.errand.version
-            )
-          : undefined;
+      let started = afterAssignment.errand;
+      for (let move = 0; move < 2; move += 1) {
+        const activePhaseId = getActiveSupportPhaseId(started.phases);
+        if (activePhaseId && !isInitialSupportPhase(activePhaseId, phases)) break;
 
-      // The phase it arrived in may already have put the errand in the status that phase wants, and
-      // it is the phase that says which statuses are available at all - so the ongoing status is
-      // written only where the errand is not already there and the phase allows it. A failure here
-      // leaves the errand assigned but lying in Ny, which is what the message for that half-finished
-      // state says.
-      const started = moved ?? afterAssignment.errand;
+        const advance = resolveStartProcessPhaseAdvance(activePhaseId, phases);
+        if (!advance) break;
+
+        const expectedVersion = typeof started.version === 'number' ? started.version : undefined;
+        if (expectedVersion === undefined) break;
+
+        started = await updateSupportErrandPhase(
+          municipalityId,
+          supportErrand!.id!,
+          advance.kind === 'transition' ? advance.transitionId : undefined,
+          expectedVersion
+        );
+      }
+
+      // Where a workflow is configured the status is the phase's to decide - each phase declares the
+      // statuses it allows, and Support Management sets the one that belongs to the phase the errand
+      // moves into. Writing an ongoing status on top of that is at best a no-op and at worst refused,
+      // since the status this application calls "ongoing" belongs to a phase further along. Only a
+      // deployment running no workflow has nothing to set it, and there the button still does.
       const startedPhaseId = getActiveSupportPhaseId(started.phases);
-      if (started.status !== getOngoingStatus() && isStatusAllowedInPhase(getOngoingStatus(), startedPhaseId, phases)) {
+      if (
+        phases.length === 0 &&
+        started.status !== getOngoingStatus() &&
+        isStatusAllowedInPhase(getOngoingStatus(), startedPhaseId, phases)
+      ) {
         try {
           await setSupportErrandStatus(supportErrand!.id!, municipalityId, getOngoingStatus(), started);
         } catch (statusError) {
