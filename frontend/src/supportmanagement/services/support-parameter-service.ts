@@ -2,7 +2,6 @@ import { Parameter } from '@common/data-contracts/supportmanagement/data-contrac
 import { apiService } from '@common/services/api-service';
 import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 
-import { ApiSupportErrand } from './support-errand-service';
 import { toStrongSupportErrandETag } from './support-errand-write-version';
 
 export interface ParametersObject {
@@ -145,18 +144,89 @@ export const saveParameters = (
   errandId: string,
   municipalityId: string,
   parameters: { [key: string]: Parameter[] },
-  expectedVersion: number
+  currentParameters: Parameter[] | undefined
 ) => {
   const paramsList = Object.values(parameters).flat(1);
-  const ifMatch = toStrongSupportErrandETag(expectedVersion);
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(
-      `supporterrands/${municipalityId}/${errandId}`,
-      { parameters: paramsList },
-      { headers: { 'If-Match': ifMatch } }
+  return saveChangedErrandParameters(municipalityId, errandId, currentParameters, paramsList).catch((e) => {
+    console.error('Something went wrong when saving errand parameters');
+    throw e;
+  });
+};
+
+/**
+ * One parameter write. `version` is the version the client loaded; leaving it out creates the
+ * parameter.
+ */
+export interface ErrandParameterWrite {
+  key: string;
+  values: string[];
+  displayName?: string;
+  group?: string;
+  version?: number;
+}
+
+/**
+ * Writes one parameter, conditioned on that parameter's own version.
+ *
+ * Support Management versions each parameter separately, so a conflict is decided where it happens.
+ * A concurrent edit to some other part of the errand neither fails this write nor is overwritten by
+ * it - which is what sending the whole parameter array used to do.
+ */
+export const saveErrandParameter = (
+  municipalityId: string,
+  errandId: string,
+  write: ErrandParameterWrite
+): Promise<Parameter> =>
+  apiService
+    .put<Parameter, Omit<ErrandParameterWrite, 'key' | 'version'>>(
+      `supporterrands/${municipalityId}/${errandId}/parameters/${encodeURIComponent(write.key)}`,
+      {
+        values: write.values,
+        ...(write.displayName ? { displayName: write.displayName } : {}),
+        ...(write.group ? { group: write.group } : {}),
+      },
+      {
+        headers:
+          typeof write.version === 'number'
+            ? { 'If-Match': toStrongSupportErrandETag(write.version) }
+            : { 'If-None-Match': '*' },
+      }
     )
-    .catch((e) => {
-      console.error('Something went wrong when patching errand');
-      throw e;
+    .then((response) => response.data);
+
+const sameValues = (left: string[] | undefined, right: string[] | undefined): boolean => {
+  const first = left ?? [];
+  const second = right ?? [];
+  return first.length === second.length && first.every((value, index) => value === second[index]);
+};
+
+/**
+ * Writes only the parameters whose values actually changed, one request each.
+ *
+ * Unchanged parameters are left alone rather than rewritten with the value they already have: a
+ * rewrite would move their version and could overwrite an edit somebody else made while this form
+ * was open. Parameters missing from `next` are left untouched - this saves what the form holds and
+ * is not a replacement of the collection.
+ */
+export const saveChangedErrandParameters = async (
+  municipalityId: string,
+  errandId: string,
+  currentParameters: Parameter[] | undefined,
+  nextParameters: Parameter[] | undefined
+): Promise<void> => {
+  const current = new Map((currentParameters ?? []).map((parameter) => [parameter.key, parameter]));
+
+  for (const next of nextParameters ?? []) {
+    if (!next.key) continue;
+    const existing = current.get(next.key);
+    if (existing && sameValues(existing.values, next.values)) continue;
+
+    await saveErrandParameter(municipalityId, errandId, {
+      key: next.key,
+      values: next.values ?? [],
+      displayName: next.displayName,
+      group: next.group,
+      ...(existing ? { version: existing.version } : {}),
     });
+  }
 };

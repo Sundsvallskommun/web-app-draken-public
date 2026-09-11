@@ -217,9 +217,7 @@ describe('SupportJsonParameterService', () => {
   });
 
   it.each([
-    { name: 'a missing parent version', preconditions: { ifMatch: '"7"', parentErrandVersion: undefined }, status: 428, getCalls: 0 },
     { name: 'a malformed parent version', preconditions: { ifMatch: '"7"', parentErrandVersion: '01' }, status: 400, getCalls: 0 },
-    { name: 'a stale parent version', preconditions: { ifMatch: '"7"', parentErrandVersion: '9' }, status: 412, getCalls: 1 },
     { name: 'a missing precondition', preconditions: {}, status: 428, getCalls: 2 },
     { name: 'a wildcard If-Match', preconditions: { ifMatch: '*' }, status: 400, getCalls: 0 },
     { name: 'a weak If-Match', preconditions: { ifMatch: 'W/"7"' }, status: 400, getCalls: 0 },
@@ -367,18 +365,43 @@ describe('SupportJsonParameterService', () => {
     expect(api.getCalls.map(call => call.url)).toEqual([ERRAND_URL, DOCUMENT_URL, SCHEMA_URL, ERRAND_URL]);
   });
 
-  it('rechecks parent status and version immediately before the child write', async () => {
+  // Version checks are scoped to the resource being written. The errand's version moving means
+  // somebody changed some other part of the errand, which this document write neither reads nor
+  // overwrites - the document's own ETag is what protects it.
+  it.each([
+    { name: 'moved between load and write', preconditions: { ifMatch: '"7"', parentErrandVersion: '3' } },
+    { name: 'was never sent', preconditions: { ifMatch: '"7"', parentErrandVersion: undefined } },
+  ])('writes the document when the parent errand version $name', async ({ preconditions }) => {
+    const { api, service } = makeSubject(
+      [
+        writableParentResponse(10),
+        response(document(7), 200, '"7"'),
+        response(schema(), 200),
+        writableParentResponse(11),
+        writableParentResponse(12),
+      ],
+      [response(document(8), 200, '"8"')],
+    );
+
+    await expect(service.writeJsonParameter(writeRequest(preconditions))).resolves.toMatchObject({
+      status: 200,
+      etag: '"8"',
+      parentErrandVersion: 12,
+    });
+
+    expect(api.putCalls).toHaveLength(1);
+    expect(api.putCalls[0]).toMatchObject({ url: DOCUMENT_URL, headers: { 'If-Match': '"7"' } });
+  });
+
+  it('still rechecks parent status immediately before the child write', async () => {
     const { api, service } = makeSubject([
       writableParentResponse(10),
       response(document(7), 200, '"7"'),
       response(schema(), 200),
-      writableParentResponse(11),
+      response({ ...parentErrand(11), status: 'SOLVED' }, 200, '"11"'),
     ]);
 
-    await expect(service.writeJsonParameter(writeRequest({ ifMatch: '"7"' }))).rejects.toMatchObject({
-      status: 412,
-      message: 'X-Errand-Version does not match the current parent errand version',
-    });
+    await expect(service.writeJsonParameter(writeRequest({ ifMatch: '"7"' }))).rejects.toMatchObject({ status: 409 });
     expect(api.getCalls.map(call => call.url)).toEqual([ERRAND_URL, DOCUMENT_URL, SCHEMA_URL, ERRAND_URL]);
     expect(api.putCalls).toHaveLength(0);
   });

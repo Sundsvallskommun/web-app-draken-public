@@ -60,6 +60,8 @@ export interface AdUser {
   ouPath: string;
   personId: string;
   schemaClassName: string;
+  /** Present only when the deployment configured handler roles. */
+  roleKeys?: string[];
 }
 
 export interface Admin {
@@ -68,6 +70,24 @@ export interface Admin {
   lastName: string;
   adAccount: string;
   id: string;
+  /**
+   * The handler roles this account holds. Absent when the deployment configured no roles at all,
+   * which is a different thing from holding none of them: the selector groups by role only when the
+   * deployment has roles to group by.
+   */
+  roleKeys?: string[];
+}
+
+/** One handler role. Presentation only - who may be assigned what is decided in the backend. */
+export interface HandlerRole {
+  key: string;
+  label: string;
+}
+
+export interface HandlerDirectory {
+  administrators: Admin[];
+  /** Absent when the deployment configured no roles, so the selector stays one flat list. */
+  roles?: HandlerRole[];
 }
 
 export interface EmployeeInfo {
@@ -92,18 +112,26 @@ export interface EmployeeInfo {
   loginName: string;
 }
 
-export const getAdminUsers: () => Promise<Admin[]> = () => {
+interface HandlerDirectoryResponse extends ApiResponse<AdUser[]> {
+  roles?: HandlerRole[];
+}
+
+const toHandlerDirectory = (body: HandlerDirectoryResponse): HandlerDirectory => ({
+  administrators: body.data.map((u) => ({
+    displayName: u.displayName,
+    firstName: u.displayName.split(' ')[1],
+    lastName: u.displayName.split(' ')[0],
+    adAccount: u.name,
+    id: u.guid,
+    ...(u.roleKeys ? { roleKeys: u.roleKeys } : {}),
+  })),
+  ...(body.roles ? { roles: body.roles } : {}),
+});
+
+export const getHandlerDirectory: () => Promise<HandlerDirectory> = () => {
   return apiService
-    .get<ApiResponse<AdUser[]>>(`users/admins`)
-    .then((res) =>
-      res.data.data.map((u) => ({
-        displayName: u.displayName,
-        firstName: u.displayName.split(' ')[1],
-        lastName: u.displayName.split(' ')[0],
-        adAccount: u.name,
-        id: u.guid,
-      }))
-    )
+    .get<HandlerDirectoryResponse>(`users/admins`)
+    .then((res) => toHandlerDirectory(res.data))
     .catch((err) => {
       return Promise.reject(err.response?.data?.message);
     });
@@ -141,3 +169,18 @@ export const getUserInfo: (adAccount: string) => Promise<EmployeeInfo> = (adAcco
       return Promise.reject(err.response?.data?.message);
     });
 };
+
+/**
+ * The handlers who can be assigned one specific errand.
+ *
+ * The ordinary handler directory is the same for every errand, so it keeps offering people who can
+ * no longer reach the one in front of you. This asks per errand instead, and a deployment with
+ * nothing to filter by simply gets the same list back.
+ */
+export const getAssignableHandlers: (municipalityId: string, errandId: string) => Promise<HandlerDirectory> = (
+  municipalityId,
+  errandId
+) =>
+  apiService
+    .get<HandlerDirectoryResponse>(`supporterrands/${municipalityId}/${errandId}/assignable-handlers`)
+    .then((res) => toHandlerDirectory(res.data));

@@ -211,7 +211,15 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       screenReaderOnly: false,
       sortable: true,
       sortKey: 'priority',
-      shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED, Status.ASSIGNED],
+      shownForStatus: [
+        Status.NEW,
+        Status.ONGOING,
+        Status.INQUIRY,
+        Status.PENDING,
+        Status.SOLVED,
+        Status.SUSPENDED,
+        Status.ASSIGNED,
+      ],
       render: (errand: SupportErrand) => (
         <PriorityComponent priority={(Priority as Record<string, string>)[errand.priority!]} />
       ),

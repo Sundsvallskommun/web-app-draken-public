@@ -207,10 +207,18 @@ const validateProvidedPreconditionSyntax = (preconditions: JsonParameterWritePre
   if (ifNoneMatch !== undefined && ifNoneMatch !== '*') {
     throw new HttpException(400, 'If-None-Match must be exactly *');
   }
-  if (parentErrandVersion === undefined) {
-    throw new HttpException(428, 'X-Errand-Version is required when writing a JSON parameter');
-  }
-  if (!VERSION_HEADER_PATTERN.test(parentErrandVersion) || !Number.isSafeInteger(Number(parentErrandVersion))) {
+  // The parent errand's version is not a precondition for writing a document: version checks are
+  // scoped to the resource being written, and the document's own ETag already covers that. Versions
+  // roll up rather than down - changing this document moves the errand's version too, but the
+  // errand's version moving says nothing about this document. Requiring them to match would reject
+  // a save over an unrelated field somebody else changed, without protecting anything.
+  //
+  // The header is still accepted, and still validated when present, because the client sends the
+  // version it loaded and a malformed one is worth reporting rather than ignoring.
+  if (
+    parentErrandVersion !== undefined &&
+    (!VERSION_HEADER_PATTERN.test(parentErrandVersion) || !Number.isSafeInteger(Number(parentErrandVersion)))
+  ) {
     throw new HttpException(400, 'X-Errand-Version must contain one canonical non-negative version');
   }
 };
@@ -295,8 +303,7 @@ export class SupportJsonParameterService {
     request: WriteJsonParameterRequest<TKey, TSchemaName>,
   ): Promise<WriteJsonParameterResult<TKey>> {
     validateProvidedPreconditionSyntax(request.preconditions);
-    const expectedParentErrandVersion = Number(request.preconditions.parentErrandVersion);
-    await this.assertExpectedWritableParent(request, expectedParentErrandVersion, 'parent errand preflight');
+    await this.assertWritableParent(request, 'parent errand preflight');
     const existing = await this.preflightDocument(request);
     const precondition = resolveWritePrecondition(existing, request.preconditions);
 
@@ -308,7 +315,7 @@ export class SupportJsonParameterService {
     // Schema/document preflight can involve several upstream reads. Recheck the
     // parent immediately before the child write to keep the unavoidable
     // non-atomic parent-status race as narrow as the upstream contract allows.
-    await this.assertExpectedWritableParent(request, expectedParentErrandVersion, 'parent errand write guard');
+    await this.assertWritableParent(request, 'parent errand write guard');
 
     const expectedStatus = precondition.mode === 'create' ? 201 : 200;
     const writeResponse = await this.apiService.put<SupportJsonParameter<TKey>, SupportJsonParameter<TKey>>(
@@ -335,16 +342,19 @@ export class SupportJsonParameterService {
     return { ...written, parentErrandVersion };
   }
 
-  private async assertExpectedWritableParent<TKey extends string, TSchemaName extends string>(
+  /**
+   * A document may only be written while its errand is open.
+   *
+   * The parent is read fresh for its *status*, not for its version: a locked or closed errand must
+   * not accept document changes, but an errand whose version moved for some unrelated reason has
+   * nothing to do with this document. Optimistic locking for the document itself is the document's
+   * own ETag, which is what the write is conditioned on.
+   */
+  private async assertWritableParent<TKey extends string, TSchemaName extends string>(
     request: JsonParameterRequest<TKey, TSchemaName>,
-    expectedVersion: number,
     operation: string,
   ): Promise<void> {
     const parent = await this.readParentErrand(request, operation);
-    const currentVersion = getErrandVersion(parent.data, readResponseHeader(parent.headers, 'etag'));
-    if (currentVersion !== expectedVersion) {
-      throw new HttpException(412, 'X-Errand-Version does not match the current parent errand version');
-    }
     assertSupportErrandWritable(parent.data, 'JSON parameter changes');
   }
 

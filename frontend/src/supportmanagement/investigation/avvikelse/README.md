@@ -133,11 +133,20 @@ senaste schema och fryser det ID:t vid första sparningen. Dokumentet kan inte s
 för uppdatering och create-only-precondition används vid första skrivningen; lokala formulärvärden behålls vid
 konflikt.
 
-Dokumentskrivningen skickar dessutom den föräldraärendeversion som formuläret laddades med. BFF:en jämför den mot
-ett färskt ärende, kontrollerar låst status och upprepar kontrollen direkt före dokument-PUT. Det stänger stale- och
-statusbypass i Draken, men Support Managements JSON Parameter-operation villkoras atomiskt endast med dokumentets
-egen ETag. Ett fullständigt skydd mot att föräldraärendet låses i det sista intervallet mellan kontroll och PUT kräver
-därför en atomisk parent-version/status-precondition i upstreamkontraktet.
+**Versionskontroller är scopade till den resurs som skrivs.** Dokumentets egen ETag är villkoret för
+dokumentskrivningen, och ingenting annat. Föräldraärendets version är inte en precondition: versioner rullar uppåt men
+inte nedåt — ändras dokumentet stiger även ärendets version, men att ärendets version har stigit säger ingenting om
+dokumentet. Att kräva att de stämmer överens skulle avvisa en sparning för att någon annan ändrat ett orelaterat fält,
+utan att skydda någonting. Klienten skickar ändå med den version formuläret laddades med i `X-Errand-Version` (den
+valideras om den finns), och får ärendets färska version tillbaka i svaret.
+
+Föräldraärendet läses däremot fortfarande färskt, för sin **status**: ett låst eller avslutat ärende tar inte emot
+dokumentändringar. Kontrollen upprepas direkt före dokument-PUT för att hålla det oundvikliga icke-atomiska
+statusglappet så smalt upstreamkontraktet tillåter. Ett fullständigt skydd mot att ärendet låses i just det
+intervallet kräver en atomisk status-precondition i upstreamkontraktet.
+
+De endpoints som faktiskt skriver på **ärendet** — `/classification`, `/admin`, `/status`, `/phase` och
+`/investigation-handover` — kräver fortsatt exakt ärendeversion, eftersom det är ärendet de villkorar.
 
 `Spara utredning` samordnar sparningen av utredningsdokumentet med en smal PATCH av ärendets klassificeringslabels.
 Dokumentet sparas först och label-PATCH:en skickar endast klassificering, labelreferenser, ägande `documentKey`,
@@ -197,3 +206,135 @@ Med labbservern startad kan webbläsarbeteendet verifieras med:
 yarn test:e2e:iaf-schema-lab
 yarn test:e2e:iaf
 ```
+
+## Tilldelningsflödet: från enhetschef till LEX och tillbaka
+
+Ett misstänkt missförhållande byter inte bara klassificering — det byter **åtkomst**. Support
+Managements AccessMapper matchar användarens konfigurerade labelmönster mot ärendets labels, så det
+är labeln `ACCESS/LEX` som faktiskt lämnar över ärendet: enhetschefen slutar se det och LEX-rollerna
+börjar. Draken implementerar därför ingen egen synlighetsregel; den skriver bara labeln.
+
+`ACCESS`-trädet innehåller i dag exakt den labeln. Det finns ingen motsvarighet för MAS/MAR — de når
+HSL-ärenden på annat sätt — så ett högt HSL-riskvärde har ingen label att skriva och inget
+överlämningssteg. Riskvärdet visas som en varning för enhetschefen och inget mer.
+
+Två namngivna steg finns, och klienten namnger steget i stället för att komponera skrivningen själv
+(`backend/src/config/investigation-handover-steps.ts`):
+
+| Steg | Utlöses av | Skriver |
+| --- | --- | --- |
+| `assign-lex` | `suspectedMisconduct === 'yes'` i enhetschefsutredningen | `assignedUserId` (LEX-ansvarig), `REPORT_TYPE/ABUSE` i stället för `REPORT_TYPE/DEVIATION`, `ACCESS/LEX` |
+| `return-to-manager` | LEX-utredaren är klar | `assignedUserId` (enhetschef för platsen), tar bort `ACCESS/LEX` |
+
+Inget av stegen ändrar **status**. `ASSIGNED` vore den naturliga statusen för en överlämning, men
+Draken behandlar den som ett *låst* tillstånd (`isSupportErrandLocked`), och enda vägen ur den är
+sidopanelens återuppta-knapp som går till `ONGOING` — en status avvikelsenamespacen inte har. Att
+sätta den lämnade alltså mottagaren med ett ärende de varken kunde redigera eller låsa upp. Ärendet
+behåller i stället den status det redan hade; det är handläggarbytet som signalerar överlämningen.
+
+Två saker följer av att åtkomsten är poängen med skrivningen:
+
+- **Ett enda PATCH uppströms.** Handläggare, labels och status skrivs tillsammans. Delas de upp
+  tappas läsrätten mitt i en sekvens som fortfarande har skrivningar kvar.
+- **Ingen återläsning efteråt.** Anroparen har just skrivit bort sig själv från ärendet, så den
+  bekräftande GET:en skulle misslyckas. Endpointen svarar `204` och klienten navigerar till
+  översikten i stället för att rendera om ett ärende den inte längre ser.
+
+Rapporttypen är enkelvärd, så `assign-lex` **byter ut** `REPORT_TYPE/DEVIATION` mot
+`REPORT_TYPE/ABUSE` i stället för att lägga till. Det sker i samma skrivning som `ACCESS/LEX`: delas
+de upp kan ärendet bli registrerat som ett missförhållande utan att någon i LEX når det, och
+enhetschefen som kunde rättat till det är då redan utskriven ur ärendet.
+
+Bytet har en följdverkan utanför labeln. `REPORT_TYPE/ABUSE` är en av de paths
+`resolveIafVofInvestigationClassificationOwner` läser, så klassificeringsägandet flyttas från
+enhetschefsutredningen till SoL/LSS-utredningen och SOL och LSS blir tvingade lagrum. Ärendets
+parameter `eventType` lämnas däremot orörd och står kvar som `AVVIKELSE`.
+
+En känd konsekvens av de tvingade lagrummen: ett ärende med både HSL och SOL/LSS som blir
+missförhållande får sina lagrum normaliserade till SOL/LSS nästa gång enhetschefsdokumentet **sparas**,
+vilket tar bort `riskAssessmentHsl`. I praktiken når det bara en investigation-admin, eftersom
+`SUPPORT_INVESTIGATION_DOCUMENT_GROUPS` ger LEX-rollerna läsrätt men inte skrivrätt på det
+dokumentet — men regeln är värd att känna till innan grupperna konfigureras om.
+
+### Ansvarig-listan är ärendespecifik
+
+`GET /users/admins` svarar "vilka finns i de konfigurerade AD-grupperna" och är identisk för alla
+ärenden — vilket är hur en enhetschef kunde stå kvar som valbar för ett ärende hen inte längre nådde.
+Sidopanelen frågar därför per ärende i stället, via
+`GET /supporterrands/:m/:id/assignable-handlers`:
+
+| Ärendets tillstånd | Listan innehåller |
+| --- | --- |
+| Bär `ACCESS/LEX` | LEX-ansvarig och LEX-utredare. **Inte** enhetschefer eller verksamhetschefer — de kan ändå inte agera förrän ärendet lämnats tillbaka |
+| Annars, med plats | Platsens chefer, upplösta med **exakt samma** regel som återlämningen använder |
+| Ingen plats, eller ingen avvikelse-capability | Oförändrad lista |
+
+Att båda vägarna delar `resolveManagersForErrand` är avsiktligt: en regel avgör vem som äger en
+plats, inte två som kan säga olika.
+
+Filtreringen styrs av capabilityn, aldrig av appnamn. En deployment utan AccessMapper-konfiguration
+har ingenting att filtrera mot, och en tom Ansvarig-lista skulle göra den oförmögen att tilldela
+någon alls. Klienten faller dessutom tillbaka på hela katalogen tills endpointen svarat — och om den
+inte svarar — så väljaren aldrig står tom.
+
+### Vem som kan tilldelas
+
+`HANDLER_GROUP_ROLES` är den rikare stavningen av `ASSIGNABLE_HANDLER_GROUPS`: den namnger samma
+AD-grupper och dessutom vilken roll varje grupp står för. `GET /users/admins` returnerar därför
+`roleKeys` per konto plus rollernas etiketter, och `Ansvarig`-listan grupperas med `Select.Optgroup`.
+Det är **data**, inte en drake-if: en deployment utan roller får exakt den platta lista den alltid
+har haft, vilket är varför den här ändringen kan ligga i delad kod.
+
+### Vilken plats ärendet gäller
+
+Två saker avgör vilken label som är platsen, och båda behövs.
+
+**Classification, inte path-prefix.** Platsen är den label vars `classification` är `location`.
+Hierarkin blandar sorter, och att matcha på att pathen börjar med platsroten skulle svepa in noder
+som inte är platser.
+
+**Djupast vinner.** Ärendet bär hela sin platssökväg, inte bara lövet: en plats fyra nivåer ned
+kommer som fyra labels, en per nivå. Att räkna dem är alltså inte vägen till platsen — platsen är
+den **djupaste** av dem. Varje förfader är ett bredare område, och att lösa ut chefen mot någon av
+dem skulle lämna ärendet till den som ansvarar för en hel region i stället för för enheten det
+gäller.
+
+Djupet kommer från metadataträdet, inte från att räkna snedstreck i pathen, så en resource path
+tolkas aldrig som en kedja av namn. Labelns identitet är dess `id`; ärendets egen `resourcePath`
+används bara när id saknas, eftersom det är metadatanoden som bär classification.
+
+Två labels på **samma** djup är däremot en verklig tvetydighet — två olika platser, inte två nivåer
+av samma — och rapporteras i stället för att gissas.
+
+### Vilka chefer platsen har
+
+Båda halvorna kommer ur AccessMapper, och ingen räcker ensam:
+
+**Vem når platsen.** `GET access-config/user?pattern=…` filtrerar på **exakt** lagrat mönster, så
+platsens eget mönster och varje förfaders frågas efter vid namn:
+
+```
+LOCATION/33/34/500020/10920/**   ← specificitet 5
+LOCATION/33/34/500020/**         ← 4
+…
+LOCATION/**                      ← 1
+```
+
+Att bara fråga efter det djupaste mönstret vore fel: en chef upplagd högre upp täcker platsen men
+skulle aldrig dyka upp, och felet ser ut som "ingen chef är konfigurerad". En person som finns på
+flera nivåer behåller sin mest specifika träff, och listan sorteras med den först.
+
+**Vem är chef.** `GET access/ad/{adId}?type=role` ger personens roller. `UNIT_MANAGER` och
+`HEAD_OF_OPERATION` är de som räknas (`investigation-manager-roles.ts`); en roll som inte står där
+är ingen chef i det här sammanhanget och kan alltså aldrig ta emot ett ärende. Rollen kommer från
+AccessMapper och inte från en AD-grupp, eftersom det är där personens åtkomst till platsen ändå
+konfigureras — två system skulle glida isär.
+
+**Namnet** finns inte i AccessMapper. Det hämtas ur Active Directory efteråt, och bara för de konton
+som blev kvar: handläggarcachen svarar gratis där den kan, övriga slås upp med `search/{domain}`.
+Uppslaget är best effort — ett konto utan namn visas med sitt AD-konto i stället för att fälla hela
+återlämningen, för ett visningsnamn är presentation.
+
+Kandidaterna returneras grupperade per roll, och klienten renderar dem med `Select.Optgroup` precis
+som handläggarlistan i sidopanelen. Utredaren väljer; backend löser upp samma lista igen vid
+skrivningen och avvisar alla utanför den, så väljaren kan inte bredda vem som får ta emot ärendet.

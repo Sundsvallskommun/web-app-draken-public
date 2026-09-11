@@ -2,6 +2,7 @@ import { appConfig } from '@config/appconfig';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import {
+  getOngoingStatus,
   getSupportErrandById,
   setSupportErrandStatus,
   Status,
@@ -27,7 +28,7 @@ export const SupportReopenErrandButton: React.FC<{ disabled?: boolean }> = ({ di
 
   const reopenErrand = () => {
     setIsLoading(true);
-    return setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING, supportErrand!)
+    return setSupportErrandStatus(supportErrand!.id!, municipalityId, getOngoingStatus(), supportErrand!)
       .then(() => {
         toastMessage({
           position: 'bottom',

@@ -46,7 +46,12 @@ wrongly enables both then degrades to today's behaviour rather than to a placeho
   schemas, the profile's `labelFilter` (which replaces the overview's ordinary category filters with
   avvikelse's own groups) and the classification PATCH
   (`supporterrands/{municipalityId}/{errandId}/classification`, the atomic write used only when the
-  investigation owns classification) must never be reached by another drake.
+  investigation owns classification) must never be reached by another drake. The same holds for the
+  handover routes (`.../investigation-handover/{step}` and `.../unit-manager`), which write the
+  `access/*` labels that move an errand between the unit manager and the LEX roles.
+- **Handler roles are data, not a drake.** `HANDLER_GROUP_ROLES` makes `/users/admins` return a role
+  per account, and the shared `Ansvarig` selector groups by those roles. A deployment that configures
+  none gets the flat list it always had — that is what lets the grouping live in shared code at all.
 
 **When you change draken-global logic** — the shared support-errand components, the overview
 filters, the tabs wrapper, `appconfig` — both implementations have to survive it. Run both suites,
@@ -261,6 +266,35 @@ Run for individual spec files with eg: `npx dotenv -e .env.kc -- playwright test
 | `frontend/src/common/contexts/app.context.tsx` | Global state (AppContext)                  |
 | `frontend/src/config/appconfig.tsx`            | Feature flags configuration                |
 | `frontend/next.config.js`                      | Next.js configuration                      |
+
+## Writing to a Support Errand: scope the version check to what you write
+
+Support Management versions an errand **and** the sub-resources beneath it. Versions roll up but not
+down: changing a parameter or a JSON parameter moves the errand's version too, while the errand's
+version moving says nothing about any particular child.
+
+So a write is conditioned on the version of **the resource it writes**, never on the errand around
+it. Conditioning a child write on the errand version rejects saves over fields nobody contended,
+and — worse — sending a whole collection rewrites entries another user just changed.
+
+| What you write | Route | Precondition |
+| --- | --- | --- |
+| One parameter | `PUT /supporterrands/:m/:id/parameters/:key` | that parameter's version |
+| One JSON parameter | `PUT /supporterrands/:m/:id/json-parameters/:key` | that document's ETag |
+| Errand-level fields (`title`, `stakeholders`, `labels`, `externalTags`, …) | `PATCH /supporterrands/:m/:id` | the errand's version |
+| Assignee / status / phase / classification / handover | their own command routes | the errand's version |
+
+Two consequences worth keeping:
+
+- **`parameters` must not go in the generic errand PATCH body.** It is written per key instead. The
+  errand is still read fresh before a child write, but only for its **status** — a locked or closed
+  errand accepts nothing.
+- **Only write what changed.** `saveChangedErrandParameters` skips parameters whose values are
+  unchanged: rewriting one with the value it already has moves its version and can clobber a
+  concurrent edit.
+
+`notes`, `attachments`, `measures` and `notifications` have their own routes but no version in the
+upstream model, so no conflict detection is available for them.
 
 ## Notes
 

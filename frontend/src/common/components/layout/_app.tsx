@@ -2,7 +2,7 @@
 
 import LoaderFullScreen from '@common/components/loader/loader-fullscreen';
 import { getFeatureFlags } from '@common/services/feature-flag-service';
-import { getAdminUsers, getMe } from '@common/services/user-service';
+import { getHandlerDirectory, getMe } from '@common/services/user-service';
 import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
 import {
   ColorSchemeMode,
@@ -112,11 +112,18 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
     };
     void loadRuntimeConfiguration();
 
-    getAdminUsers()
-      .then((data) => {
-        useUserStore.getState().setAdministrators(data);
+    getHandlerDirectory()
+      .then(({ administrators, roles }) => {
+        useUserStore.getState().setAdministrators(administrators);
+        useUserStore.getState().setHandlerRoles(roles ?? []);
+        useUserStore.getState().setHandlerDirectoryState('ready');
       })
-      .catch(() => {});
+      .catch((error) => {
+        // One unreachable AD group fails the whole lookup, so swallowing this silently leaves an
+        // empty handler list that reads as "nobody holds this role".
+        console.error('Failed to load the handler directory.', error);
+        useUserStore.getState().setHandlerDirectoryState('error');
+      });
   }, [authenticationRoute, schemaLabRoute]);
 
   useEffect(() => {

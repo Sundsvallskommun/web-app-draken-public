@@ -39,7 +39,9 @@ export const buildSupportErrandUpdateData = (
     ...(formdata.description && { description: formdata.description }),
     stakeholders,
     externalTags: (formdata.externalTags || []).filter((tag) => tag.key !== 'caseId'),
-    parameters: formdata.parameters || [],
+    // `parameters` is deliberately absent. Each parameter is versioned on its own and has its own
+    // endpoint, so it is written per key instead - sending the array here rewrote every parameter on
+    // the errand, including the ones somebody else had just changed.
   };
   if (formdata.caseId) {
     data.externalTags!.push({

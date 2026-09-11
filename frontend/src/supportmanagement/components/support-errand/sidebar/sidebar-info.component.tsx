@@ -1,11 +1,14 @@
+import { HandlerSelectOptions } from '@common/components/handler-select/handler-select-options.component';
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { hasDirtyFields, prettyTime } from '@common/services/helper-service';
+import { getAssignableHandlers, type HandlerDirectory } from '@common/services/user-service';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import {
+  getOngoingStatus,
   getSupportErrandById,
   isSupportErrandLocked,
   readSupportErrandWriteSnapshot,
@@ -39,7 +42,13 @@ export const SidebarInfo: FC<{
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const administrators = useUserStore((s) => s.administrators);
+  const handlerRoles = useUserStore((s) => s.handlerRoles);
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  // Who may be given *this* errand, which is not the same question as who is a handler at all.
+  // Until it answers - and if it cannot - the full directory stands, so the selector is never empty.
+  const [assignable, setAssignable] = useState<HandlerDirectory>();
+  const assignableHandlers = assignable?.administrators ?? administrators;
+  const assignableRoles = assignable?.roles ?? handlerRoles;
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const selectablePriorities = useMemo(() => {
     if (supportErrand?.priority && supportErrand?.status) {
@@ -99,6 +108,28 @@ export const SidebarInfo: FC<{
 
   const { admin, status, priority } = watch();
 
+  const errandId = supportErrand?.id;
+  useEffect(() => {
+    if (!errandId || !municipalityId) {
+      setAssignable(undefined);
+      return;
+    }
+
+    let cancelled = false;
+    getAssignableHandlers(municipalityId, errandId)
+      .then((directory) => {
+        if (!cancelled) setAssignable(directory);
+      })
+      .catch((error) => {
+        // The full directory is already what is on screen; saying so beats an empty selector.
+        console.error('Failed to load the handlers assignable to this errand.', error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [errandId, municipalityId]);
+
   const refreshCurrentErrand = async () => {
     if (!supportErrand?.id) return;
     const current = await getSupportErrandById(supportErrand.id, municipalityId);
@@ -113,15 +144,20 @@ export const SidebarInfo: FC<{
     setIsLoading(true);
 
     try {
-      await updateSupportErrand(municipalityId, getValues(), supportErrand?.version);
+      await updateSupportErrand(municipalityId, getValues(), supportErrand?.version, supportErrand?.parameters);
 
       // Handle admin change. The update above is ours and moved the version on, so the version
       // the form was loaded with can no longer be used as the precondition here.
-      const newAdminAccount = administrators.find((a) => a.displayName === getValues().admin)?.adAccount;
+      // Resolved from the list the selector actually offered: a manager reached through AccessMapper
+      // need not be in any configured handler group, so looking only in the full directory would
+      // silently find nobody and skip the assignment.
+      const newAdminAccount = [...assignableHandlers, ...administrators].find(
+        (a) => a.displayName === getValues().admin
+      )?.adAccount;
       if (supportErrand?.assignedUserId !== newAdminAccount) {
         const assigner = administrators.find((a) => a.adAccount === user.username);
         if (newAdminAccount && assigner) {
-          const newStatus = newAdminAccount === assigner.adAccount ? Status.ONGOING : Status.ASSIGNED;
+          const newStatus = newAdminAccount === assigner.adAccount ? getOngoingStatus() : Status.ASSIGNED;
           const afterUpdate = await readSupportErrandWriteSnapshot(supportErrand!.id!, municipalityId);
           await setSupportErrandAdmin(
             supportErrand!.id!,
@@ -141,14 +177,14 @@ export const SidebarInfo: FC<{
       // Handle facility save
       if (props.unsavedFacility) {
         try {
-          // Earlier commands in this save flow may have incremented the errand.
-          // Read its current version immediately before the facility command so
-          // the backend can protect the parameter replacement with If-Match.
+          // Each facility parameter is written on its own version, so what is needed here is the
+          // errand's current parameters rather than its version - and reading them fresh means the
+          // earlier commands in this save flow cannot leave them stale.
           const current = await getSupportErrandById(supportErrand!.id!, municipalityId);
-          if (current.error || !Number.isSafeInteger(current.errand?.version) || current.errand.version! < 0) {
-            throw new Error('Could not resolve the current support errand version');
+          if (current.error) {
+            throw new Error('Could not read the current support errand parameters');
           }
-          await saveFacilityInfo(supportErrand!.id!, getValues().facilities, current.errand.version!);
+          await saveFacilityInfo(supportErrand!.id!, getValues().facilities, current.errand.parameters);
           props.setUnsavedFacility(false);
         } catch (e) {
           toastMessage({
@@ -244,7 +280,7 @@ export const SidebarInfo: FC<{
             municipalityId,
             admin?.adAccount!,
             supportErrand?.version,
-            Status.ONGOING,
+            getOngoingStatus(),
             admin?.adAccount!
           ),
         () => toast('success', 'Handläggare tilldelades'),
@@ -404,13 +440,7 @@ export const SidebarInfo: FC<{
               value={admin}
             >
               {!supportErrand?.assignedUserId ? <Select.Option>Tilldela handläggare</Select.Option> : null}
-              {administrators
-                .sort((a, b) => (a.lastName > b.lastName ? 1 : -1))
-                .map((a) => (
-                  <Select.Option key={a.adAccount}>
-                    {/* TODO Avatar */} {a.displayName}
-                  </Select.Option>
-                ))}
+              <HandlerSelectOptions administrators={assignableHandlers} roles={assignableRoles} />
             </Select>
           </FormControl>
 

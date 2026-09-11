@@ -2,6 +2,7 @@ import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import {
+  getOngoingStatus,
   getSupportErrandById,
   setSupportErrandStatus,
   shouldShowResumeErrandButton,
@@ -21,7 +22,7 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
 
   const activateErrand = () => {
     setIsLoading(true);
-    return setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING, supportErrand!)
+    return setSupportErrandStatus(supportErrand!.id!, municipalityId, getOngoingStatus(), supportErrand!)
       .then(() => {
         toastMessage(
           getToastOptions({

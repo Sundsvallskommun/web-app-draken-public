@@ -68,13 +68,14 @@ import {
   buildErrandFilter,
   buildSupportErrandClassificationUpdateBody,
   ErrandFilterInput,
+  findInitialSupportErrandPhase,
   getErrandVersion,
   getNewErrandDefaults,
   NewErrandDefaults,
   requireStrongErrandVersion,
   resolveDefaultLabels,
+  resolvePhaseStatus,
   resolveSupportErrandClassification,
-  resolveSupportErrandPhaseTransition,
   resolveSupportErrandStatusTransition,
   stripErrandVersions,
   SupportStakeholderRole,
@@ -286,17 +287,6 @@ export class UpdateSupportErrandClassificationDto {
   @IsString()
   @Matches(/^"(0|[1-9]\d*)"$/u)
   documentETag!: string;
-}
-
-export class UpdateSupportErrandPhaseDto {
-  @IsInt()
-  @Min(0)
-  @Max(Number.MAX_SAFE_INTEGER)
-  expectedVersion!: number;
-
-  @IsString()
-  @MinLength(1)
-  transitionId!: string;
 }
 
 export class CSuspension implements Suspension {
@@ -850,9 +840,15 @@ export class SupportErrandController {
       throw new HttpException(409, 'Registration is not configured for this application');
     }
 
-    // Fetch metadata for labels for new errand
-    const metadataUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata/labels`;
-    const metadataRes = await this.apiService.get<{ labelStructure: Label[] }>({ url: metadataUrl }, req.user);
+    // The whole metadata rather than just its labels: a new errand also needs the phase it starts in.
+    const metadataUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata`;
+    const metadataRes = await this.apiService.get<SupportMetadata>({ url: metadataUrl }, req.user);
+
+    // An errand created without a phase stands outside the workflow, and the phase strip has nothing
+    // to advance from. A namespace with no phases configured simply has no workflow, and the errand
+    // is created without one as before.
+    const initialPhase = findInitialSupportErrandPhase(metadataRes.data.phases);
+    const initialStatus = initialPhase ? (resolvePhaseStatus(Status.NEW, initialPhase) ?? Status.NEW) : Status.NEW;
 
     const url = `${municipalityId}/${this.namespace}/errands`;
     const baseURL = apiURL(this.SERVICE);
@@ -860,10 +856,11 @@ export class SupportErrandController {
       reporterUserId: req.user.username,
       assignedUserId: req.user.username,
       ...(this.newErrandDefaults.classification ? { classification: this.newErrandDefaults.classification } : {}),
-      labels: this.newErrandDefaults.labels ? resolveDefaultLabels(metadataRes.data.labelStructure, this.newErrandDefaults.labels) : [],
+      labels: this.newErrandDefaults.labels ? resolveDefaultLabels(metadataRes.data.labels?.labelStructure, this.newErrandDefaults.labels) : [],
       ...(this.newErrandDefaults.parameters ? { parameters: this.newErrandDefaults.parameters.map(parameter => ({ ...parameter })) } : {}),
+      ...(initialPhase?.id ? { activePhaseId: initialPhase.id } : {}),
       priority: SupportPriority.MEDIUM,
-      status: Status.NEW,
+      status: initialStatus,
       channel: ContactChannelType.PHONE,
       title: 'Empty errand',
     };
@@ -986,57 +983,6 @@ export class SupportErrandController {
         url,
         baseURL,
         data: body,
-        headers: { 'If-Match': `"${currentVersion}"` },
-        followLocation: false,
-        propagateClientError: true,
-      },
-      req.user,
-    );
-
-    const savedErrand = await this.apiService.get<SupportErrand>(
-      { url, baseURL, includeResponseHeaders: true, propagateClientError: true },
-      req.user,
-    );
-    return response.status(200).send({
-      ...savedErrand.data,
-      version: getErrandVersion(savedErrand.data, savedErrand.headers?.etag),
-    });
-  }
-
-  @Patch('/supporterrands/:municipalityId/:id/phase')
-  @HttpCode(200)
-  @OpenAPI({ summary: 'Apply one explicit workflow transition to a support errand' })
-  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(UpdateSupportErrandPhaseDto, 'body'))
-  async updateSupportErrandPhase(
-    @Req() req: RequestWithUser,
-    @Param('id') id: string,
-    @Param('municipalityId') municipalityId: string,
-    @Body() data: UpdateSupportErrandPhaseDto,
-    @Res() response: any,
-  ): Promise<any> {
-    if (!municipalityId) {
-      logger.error('No municipality id found, it is needed to update the errand phase.');
-      return response.status(400).send('Municipality id missing');
-    }
-
-    const url = `${municipalityId}/${this.namespace}/errands/${id}`;
-    const metadataUrl = `${municipalityId}/${this.namespace}/metadata`;
-    const baseURL = apiURL(this.SERVICE);
-    const [currentErrand, metadata] = await Promise.all([
-      this.apiService.get<SupportErrand>({ url, baseURL, includeResponseHeaders: true, propagateClientError: true }, req.user),
-      this.apiService.get<SupportMetadata>({ url: metadataUrl, baseURL, propagateClientError: true }, req.user),
-    ]);
-    const currentVersion = getErrandVersion(currentErrand.data, currentErrand.headers?.etag);
-    if (currentVersion !== data.expectedVersion) {
-      throw new HttpException(409, 'Support errand phase has changed since it was loaded');
-    }
-
-    const transition = resolveSupportErrandPhaseTransition(currentErrand.data, metadata.data.phases, data.transitionId);
-    await this.apiService.patch<SupportErrand, Pick<SupportErrandDto, 'activePhaseId'>>(
-      {
-        url,
-        baseURL,
-        data: { activePhaseId: transition.targetPhaseId },
         headers: { 'If-Match': `"${currentVersion}"` },
         followLocation: false,
         propagateClientError: true,

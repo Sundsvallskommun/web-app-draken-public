@@ -43,12 +43,21 @@ export async function getSupportInvestigationDocument(
   }
 }
 
+/**
+ * Writes one investigation document.
+ *
+ * The document's own ETag is the precondition. The errand version the form was loaded with is sent
+ * along, but it is not a precondition: version checks are scoped to the resource being written, and
+ * an errand whose version moved because somebody edited an unrelated field has nothing to do with
+ * this document. The response carries the errand's fresh version back, because writing the document
+ * does move it.
+ */
 export async function saveSupportInvestigationDocument(
   municipalityId: string,
   errandId: string,
   key: InvestigationDocumentKey,
   data: SaveSupportInvestigationDocumentRequest,
-  expectedParentErrandVersion: number,
+  loadedParentErrandVersion: number | undefined,
   etag?: string
 ): Promise<SavedSupportInvestigationDocument> {
   const response = await apiService.put<SupportInvestigationDocument, SaveSupportInvestigationDocumentRequest>(
@@ -57,7 +66,9 @@ export async function saveSupportInvestigationDocument(
     {
       headers: {
         ...(etag ? { 'If-Match': etag } : { 'If-None-Match': '*' }),
-        'X-Errand-Version': String(expectedParentErrandVersion),
+        ...(typeof loadedParentErrandVersion === 'number'
+          ? { 'X-Errand-Version': String(loadedParentErrandVersion) }
+          : {}),
       },
     }
   );

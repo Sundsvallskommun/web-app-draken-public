@@ -11,7 +11,6 @@ import {
   SupportErrandController,
   SupportErrandDto,
   UpdateSupportErrandClassificationDto,
-  UpdateSupportErrandPhaseDto,
   UpdateSupportErrandStatusDto,
 } from '@/controllers/supportmanagement/support-errand.controller';
 import { Errand as SupportErrand, Label } from '@/data-contracts/supportmanagement/data-contracts';
@@ -280,7 +279,6 @@ describe('SupportErrandController', () => {
         (res: MockResponse) => controller.updateSupportErrand(req, mockSupportErrandId, '', ABSENT_HEADER, {}, res),
         (res: MockResponse) =>
           controller.updateSupportErrandStatus(req, mockSupportErrandId, '', { expectedVersion: 1, expectedStatus: 'NEW', status: 'ONGOING' }, res),
-        (res: MockResponse) => controller.updateSupportErrandPhase(req, mockSupportErrandId, '', { expectedVersion: 1, transitionId: 'next' }, res),
         (res: MockResponse) =>
           controller.becomeAdminForSupportErrand(req, mockSupportErrandId, '', ABSENT_HEADER, { assignedUserId: mockAdUsername }, res),
         (res: MockResponse) => controller.forwardSupportErrand(req, mockSupportErrandId, '', {}, res),
@@ -496,7 +494,7 @@ describe('SupportErrandController', () => {
   });
 
   describe('registerSupportErrand', () => {
-    const metadata = { data: { labelStructure: [] }, message: 'success' };
+    const metadata = { data: { labels: { labelStructure: [] } }, message: 'success' };
 
     it('creates an empty errand owned by the requesting user with the drake defaults', async () => {
       const { controller, api } = makeController();
@@ -546,14 +544,45 @@ describe('SupportErrandController', () => {
       expect(api.post).not.toHaveBeenCalled();
     });
 
-    it('fetches the label metadata before creating the errand', async () => {
+    it('fetches the namespace metadata before creating the errand', async () => {
       const { controller, api } = makeController();
       api.get.mockResolvedValue(metadata);
       api.post.mockResolvedValue({ data: { id: mockSupportErrandId }, message: 'success' });
 
       await controller.registerSupportErrand(mockReq(), MUNICIPALITY_ID, mockRes());
 
-      expect(api.get).toHaveBeenCalledWith({ url: `${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/metadata/labels` }, expect.anything());
+      expect(api.get).toHaveBeenCalledWith({ url: `${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/metadata` }, expect.anything());
+    });
+
+    // An errand created without a phase stands outside the workflow: the phase strip has nothing to
+    // advance from, and no transition can reach it either.
+    it('starts the errand in the first phase, with the status that phase allows', async () => {
+      const { controller, api } = makeController();
+      api.get.mockResolvedValue({
+        data: {
+          labels: { labelStructure: [] },
+          phases: [
+            { id: 'review', name: 'REVIEW', phaseOrder: 1, allowedStatuses: ['REVIEW'] },
+            { id: 'actualization', name: 'ACTUALIZATION', phaseOrder: 0, allowedStatuses: ['NEW'] },
+          ],
+        },
+        message: 'success',
+      });
+      api.post.mockResolvedValue({ data: { id: mockSupportErrandId }, message: 'success' });
+
+      await controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, mockRes());
+
+      expect(api.post.mock.calls[0][0].data).toMatchObject({ activePhaseId: 'actualization', status: 'NEW' });
+    });
+
+    it('creates the errand without a phase when the namespace has no workflow', async () => {
+      const { controller, api } = makeController();
+      api.get.mockResolvedValue(metadata);
+      api.post.mockResolvedValue({ data: { id: mockSupportErrandId }, message: 'success' });
+
+      await controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, mockRes());
+
+      expect(api.post.mock.calls[0][0].data).not.toHaveProperty('activePhaseId');
     });
 
     it('responds 500 when the API returns an empty body', async () => {
@@ -799,22 +828,24 @@ describe('SupportErrandController', () => {
       (controller as unknown as { newErrandDefaults: NewErrandDefaults }).newErrandDefaults = getNewErrandDefaults('IAF')!;
       api.get.mockResolvedValue({
         data: {
-          labelStructure: [
-            {
-              id: 'report-type-root',
-              classification: 'REPORT_TYPE_ROOT',
-              resourceName: 'REPORT_TYPE',
-              resourcePath: 'REPORT_TYPE',
-              labels: [
-                {
-                  id: 'deviation',
-                  classification: 'REPORT_TYPE',
-                  resourceName: 'DEVIATION',
-                  resourcePath: 'REPORT_TYPE/DEVIATION',
-                },
-              ],
-            },
-          ],
+          labels: {
+            labelStructure: [
+              {
+                id: 'report-type-root',
+                classification: 'REPORT_TYPE_ROOT',
+                resourceName: 'REPORT_TYPE',
+                resourcePath: 'REPORT_TYPE',
+                labels: [
+                  {
+                    id: 'deviation',
+                    classification: 'REPORT_TYPE',
+                    resourceName: 'DEVIATION',
+                    resourcePath: 'REPORT_TYPE/DEVIATION',
+                  },
+                ],
+              },
+            ],
+          },
         },
         message: 'success',
       });
@@ -1352,23 +1383,6 @@ describe('UpdateSupportErrandStatusDto', () => {
   });
 });
 
-describe('UpdateSupportErrandPhaseDto', () => {
-  it('requires a non-negative errand version and an explicit transition id', async () => {
-    const valid = plainToInstance(UpdateSupportErrandPhaseDto, { expectedVersion: 7, transitionId: 'start-investigation' });
-    const invalid = plainToInstance(UpdateSupportErrandPhaseDto, {
-      expectedVersion: -1,
-      transitionId: '',
-      activePhaseId: 'client-selected-target-is-not-accepted',
-    });
-
-    await expect(validate(valid, { whitelist: true, forbidNonWhitelisted: true })).resolves.toEqual([]);
-    const serializedErrors = JSON.stringify(await validate(invalid, { whitelist: true, forbidNonWhitelisted: true }));
-    expect(serializedErrors).toMatch(/expectedVersion/);
-    expect(serializedErrors).toMatch(/transitionId/);
-    expect(serializedErrors).toMatch(/activePhaseId/);
-  });
-});
-
 describe('updateSupportErrandStatus', () => {
   const errandUrl = `${MUNICIPALITY_ID}/${NAMESPACE}/errands/${mockSupportErrandId}`;
   const metadataUrl = `${MUNICIPALITY_ID}/${NAMESPACE}/metadata`;
@@ -1445,81 +1459,6 @@ describe('updateSupportErrandStatus', () => {
     await expect(controller.updateSupportErrandStatus(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, command, mockRes())).rejects.toMatchObject(
       expected,
     );
-    expect(api.patch).not.toHaveBeenCalled();
-  });
-});
-
-describe('updateSupportErrandPhase', () => {
-  const errandUrl = `${MUNICIPALITY_ID}/${NAMESPACE}/errands/${mockSupportErrandId}`;
-  const metadataUrl = `${MUNICIPALITY_ID}/${NAMESPACE}/metadata`;
-  const phases = [
-    {
-      id: 'received',
-      name: 'RECEIVED',
-      transitions: [
-        { id: 'start-investigation', targetPhaseId: 'investigation' },
-        { id: 'close-directly', targetPhaseId: 'closed' },
-      ],
-    },
-    { id: 'investigation', name: 'INVESTIGATION' },
-    { id: 'closed', name: 'CLOSED' },
-  ];
-
-  it('applies the selected transition with If-Match and returns the fresh errand version', async () => {
-    const { controller, api } = makeController();
-    let errandRead = 0;
-    api.get.mockImplementation(async (config: { url?: string }) => {
-      if (config.url === metadataUrl) return { data: { phases }, message: 'success' };
-      errandRead += 1;
-      return errandRead === 1
-        ? {
-            data: { id: mockSupportErrandId, activePhaseId: 'received', status: 'ONGOING', version: 7 },
-            message: 'success',
-            headers: { etag: '"7"' },
-          }
-        : {
-            data: { id: mockSupportErrandId, activePhaseId: 'closed', status: 'ONGOING', version: 8 },
-            message: 'success',
-            headers: { etag: '"8"' },
-          };
-    });
-    const req = mockReq();
-    const res = mockRes();
-
-    await controller.updateSupportErrandPhase(req, mockSupportErrandId, MUNICIPALITY_ID, { expectedVersion: 7, transitionId: 'close-directly' }, res);
-
-    expect(api.patch).toHaveBeenCalledTimes(1);
-    expect(api.patch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        url: errandUrl,
-        data: { activePhaseId: 'closed' },
-        headers: { 'If-Match': '"7"' },
-        followLocation: false,
-        propagateClientError: true,
-      }),
-      req.user,
-    );
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toMatchObject({ activePhaseId: 'closed', version: 8 });
-  });
-
-  it('rejects a stale request before applying a transition', async () => {
-    const { controller, api } = makeController();
-    api.get.mockImplementation(async (config: { url?: string }) =>
-      config.url === metadataUrl
-        ? { data: { phases }, message: 'success' }
-        : { data: { activePhaseId: 'received', status: 'ONGOING', version: 8 }, message: 'success' },
-    );
-
-    await expect(
-      controller.updateSupportErrandPhase(
-        mockReq(),
-        mockSupportErrandId,
-        MUNICIPALITY_ID,
-        { expectedVersion: 7, transitionId: 'start-investigation' },
-        mockRes(),
-      ),
-    ).rejects.toMatchObject({ status: 409, message: 'Support errand phase has changed since it was loaded' });
     expect(api.patch).not.toHaveBeenCalled();
   });
 });

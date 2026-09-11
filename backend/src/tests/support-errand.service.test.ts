@@ -588,28 +588,76 @@ describe('support-errand.service', () => {
     ];
 
     it('resolves the submitted transition id instead of relying on metadata order', () => {
-      expect(resolveSupportErrandPhaseTransition({ activePhaseId: 'received', status: 'ONGOING' }, phases, 'close-directly')).toEqual({
+      expect(resolveSupportErrandPhaseTransition({ phases: [{ phaseId: 'received' }], status: 'ONGOING' }, phases, 'close-directly')).toEqual({
         transitionId: 'close-directly',
         targetPhaseId: 'closed',
       });
     });
 
-    it('rejects unavailable transitions, locked errands and missing active phase state', () => {
-      expect(() => resolveSupportErrandPhaseTransition({ activePhaseId: 'received', status: 'ONGOING' }, phases, 'unknown')).toThrow(
+    it('rejects unavailable transitions and locked errands', () => {
+      expect(() => resolveSupportErrandPhaseTransition({ phases: [{ phaseId: 'received' }], status: 'ONGOING' }, phases, 'unknown')).toThrow(
         expect.objectContaining({ status: 400 }),
       );
-      expect(() => resolveSupportErrandPhaseTransition({ activePhaseId: 'received', status: 'SOLVED' }, phases, 'start-investigation')).toThrow(
-        expect.objectContaining({ status: 409 }),
+      expect(() =>
+        resolveSupportErrandPhaseTransition({ phases: [{ phaseId: 'received' }], status: 'SOLVED' }, phases, 'start-investigation'),
+      ).toThrow(expect.objectContaining({ status: 409 }));
+    });
+
+    it('requires a transition id from an errand that is already in a phase', () => {
+      expect(() => resolveSupportErrandPhaseTransition({ phases: [{ phaseId: 'received' }], status: 'ONGOING' }, phases, undefined)).toThrow(
+        expect.objectContaining({ status: 400 }),
       );
+    });
+
+    // An errand created outside the workflow - Katla sets the phase at intake, and anything older
+    // has none - can still join it. Entering is the only move it has, so it names no transition.
+    it('enters the first phase when the errand has none, and refuses a transition on the way in', () => {
+      expect(resolveSupportErrandPhaseTransition({ status: 'ONGOING' }, phases, undefined)).toEqual({ targetPhaseId: 'received' });
       expect(() => resolveSupportErrandPhaseTransition({ status: 'ONGOING' }, phases, 'start-investigation')).toThrow(
-        expect.objectContaining({ status: 409 }),
+        expect.objectContaining({ status: 400 }),
       );
+      expect(() => resolveSupportErrandPhaseTransition({ status: 'ONGOING' }, [], undefined)).toThrow(expect.objectContaining({ status: 409 }));
+    });
+
+    it('picks the first phase by phaseOrder rather than by metadata order', () => {
+      const unordered: Phase[] = [
+        { id: 'second', name: 'SECOND', phaseOrder: 1 },
+        { id: 'first', name: 'FIRST', phaseOrder: 0 },
+      ];
+
+      expect(resolveSupportErrandPhaseTransition({ status: 'ONGOING' }, unordered, undefined)).toEqual({ targetPhaseId: 'first' });
+    });
+
+    // A phase declares the statuses it allows, so the two move together - otherwise the errand ends
+    // up in a combination its own workflow does not have.
+    it('moves the status with the phase, and leaves an already allowed status alone', () => {
+      const withStatuses: Phase[] = [
+        {
+          id: 'received',
+          name: 'RECEIVED',
+          allowedStatuses: ['NEW'],
+          transitions: [{ id: 'start-investigation', targetPhaseId: 'investigation' }],
+        },
+        { id: 'investigation', name: 'INVESTIGATION', allowedStatuses: ['INQUIRY', 'PENDING'] },
+      ];
+
+      expect(resolveSupportErrandPhaseTransition({ phases: [{ phaseId: 'received' }], status: 'NEW' }, withStatuses, 'start-investigation')).toEqual({
+        transitionId: 'start-investigation',
+        targetPhaseId: 'investigation',
+        status: 'INQUIRY',
+      });
+      expect(
+        resolveSupportErrandPhaseTransition({ phases: [{ phaseId: 'received' }], status: 'PENDING' }, withStatuses, 'start-investigation'),
+      ).toEqual({
+        transitionId: 'start-investigation',
+        targetPhaseId: 'investigation',
+      });
     });
 
     it('fails explicitly when metadata points at a missing or deprecated target', () => {
       expect(() =>
         resolveSupportErrandPhaseTransition(
-          { activePhaseId: 'received', status: 'ONGOING' },
+          { phases: [{ phaseId: 'received' }], status: 'ONGOING' },
           phases.map(phase => (phase.id === 'closed' ? { ...phase, deprecated: true } : phase)),
           'close-directly',
         ),

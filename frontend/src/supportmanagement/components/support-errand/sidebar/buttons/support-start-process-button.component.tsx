@@ -1,6 +1,7 @@
 import { Button, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import {
+  getOngoingStatus,
   getSupportErrandById,
   setSupportErrandAdmin,
   setSupportErrandStatus,
@@ -37,7 +38,7 @@ export const SupportStartProcessButtonComponent: FC<{
       if (!afterSubmit.errand.assignedUserId) {
         const currentAdmin = administrators.find((a) => a.adAccount === user.username);
         if (currentAdmin) {
-          const assignmentStatus = afterSubmit.errand.status === Status.ONGOING ? undefined : Status.ONGOING;
+          const assignmentStatus = afterSubmit.errand.status === getOngoingStatus() ? undefined : getOngoingStatus();
           await setSupportErrandAdmin(
             supportErrand!.id!,
             municipalityId,
@@ -52,8 +53,8 @@ export const SupportStartProcessButtonComponent: FC<{
 
       // Only reached when the assignment above did not run, so `afterSubmit` is still the
       // version this flow last produced.
-      if (!statusTransitionHandledByAssignment && afterSubmit.errand.status !== Status.ONGOING) {
-        await setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING, afterSubmit.errand);
+      if (!statusTransitionHandledByAssignment && afterSubmit.errand.status !== getOngoingStatus()) {
+        await setSupportErrandStatus(supportErrand!.id!, municipalityId, getOngoingStatus(), afterSubmit.errand);
       }
 
       const updated = await getSupportErrandById(supportErrand!.id!, municipalityId);

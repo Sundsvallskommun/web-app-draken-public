@@ -27,7 +27,7 @@ export const SupportErrandRecruitmentTab: FC<{
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      await saveParameters(supportErrand!.id!, municipalityId, recruitmentForm.getValues(), supportErrand!.version!);
+      await saveParameters(supportErrand!.id!, municipalityId, recruitmentForm.getValues(), supportErrand!.parameters);
       props.setUnsaved(false);
       props.update();
     } finally {

@@ -133,3 +133,10 @@ export const preservesIafVofInvestigationClassificationOwnerParameter = (
   currentParameters: Errand['parameters'],
   requestedParameters: Errand['parameters'],
 ): boolean => selectorParameterSnapshot(currentParameters) === selectorParameterSnapshot(requestedParameters);
+
+/**
+ * The parameter key the classification owner rule reads. Command routes that write a single
+ * parameter refuse this one, so the owner selector can only change through the classification
+ * command that is built to move it.
+ */
+export const IAF_VOF_CLASSIFICATION_OWNER_PARAMETER_KEY = REPORTED_MISCONDUCT_PARAMETER.key;

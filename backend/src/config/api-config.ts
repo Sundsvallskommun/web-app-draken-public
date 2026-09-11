@@ -1,6 +1,10 @@
 //Subscribed APIS as lowercased
 export const APIS = [
   {
+    name: 'access-mapper',
+    version: '2.2',
+  },
+  {
     name: 'activedirectory',
     version: '2.0',
   },

@@ -1,0 +1,356 @@
+import { IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
+import { Body, Controller, Get, HttpCode, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
+import { OpenAPI } from 'routing-controllers-openapi';
+
+import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { apiServiceName } from '@/config/api-config';
+import { getInvestigationHandoverStep, InvestigationHandoverStepDefinition, LEX_HANDLER_ROLE_KEYS } from '@/config/investigation-handover-steps';
+import { findInvestigationManagerRole } from '@/config/investigation-manager-roles';
+import { AssignableHandlersResponse } from '@/controllers/active-directory.controller';
+import { Errand as SupportErrand, MetadataResponse as SupportMetadata } from '@/data-contracts/supportmanagement/data-contracts';
+import { HttpException } from '@/exceptions/HttpException';
+import { RequestWithUser } from '@/interfaces/auth.interface';
+import authMiddleware from '@/middlewares/auth.middleware';
+import { hasPermissions } from '@/middlewares/permissions.middleware';
+import { validationMiddleware } from '@/middlewares/validation.middleware';
+import { AccessMapperService, readAccessMapperRoles } from '@/services/access-mapper.service';
+import ApiService from '@/services/api.service';
+import { HandlerDirectoryService } from '@/services/handler-directory.service';
+import {
+  buildInvestigationHandoverLabelUpdate,
+  ErrandLocation,
+  hasInvestigationAccessLexLabel,
+  resolveErrandLocation,
+} from '@/services/investigation-handover-label.service';
+import { assertRequestedErrandVersion, assertSupportErrandAdminAssignable, getErrandVersion } from '@/services/support-errand.service';
+import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
+import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import { ManagerCandidate, ManagerRoleOption, managerRoleOptions, resolveLocationManagers } from '@/services/unit-manager-resolution';
+import { logger } from '@/utils/logger';
+import { apiURL } from '@/utils/util';
+
+export class InvestigationHandoverDto {
+  @IsInt()
+  @Min(0)
+  @Max(Number.MAX_SAFE_INTEGER)
+  expectedVersion!: number;
+
+  /** Required by steps whose assignee is picked by the caller; ignored by the others. */
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  assignedUserId?: string;
+}
+
+interface HandoverWriteBody {
+  assignedUserId?: string;
+  status?: string;
+  labels?: { id: string }[];
+}
+
+export interface UnitManagerResponse {
+  /** The managers for the place, most specific access first. The client groups them by role. */
+  candidates: ManagerCandidate[];
+  /** Role headings in display order, so the client does not carry its own copy of the labels. */
+  roles: ManagerRoleOption[];
+  locationResourcePath: string;
+  /** The place's name. The resource path is an identity; this is what a handler is shown. */
+  locationDisplayName: string;
+}
+
+/**
+ * The handovers that move an avvikelse errand between the roles investigating it.
+ *
+ * Access is the point of these writes, not a side effect of them: Support Management's AccessMapper
+ * matches a user's configured label patterns against the errand's labels, so adding `access/lex` is
+ * what takes the errand away from the unit manager and gives it to the LEX roles. Two consequences
+ * shape this controller.
+ *
+ * First, the assignee, the labels and the status go upstream in **one** PATCH. Splitting them would
+ * mean losing read access to the errand halfway through a sequence that still had writes left.
+ *
+ * Second, nothing is read back afterwards. The caller has usually just written themselves out of
+ * the errand, so the confirming GET would fail; these routes answer 204 and the client navigates
+ * away rather than re-rendering an errand it can no longer see.
+ */
+@Controller()
+@UseBefore(hasPermissions(['canEditSupportManagement']))
+export class SupportInvestigationAssignmentController {
+  private apiService = new ApiService();
+  private accessMapperService = new AccessMapperService();
+  private handlerDirectory = new HandlerDirectoryService();
+  private investigationPolicyService = new SupportInvestigationPolicyService();
+  private investigationAccessService = new SupportInvestigationAccessService();
+  private namespace = SUPPORTMANAGEMENT_NAMESPACE;
+  SERVICE = apiServiceName('supportmanagement');
+
+  @Get('/supporterrands/:municipalityId/:id/unit-manager')
+  @OpenAPI({ summary: "Resolve the unit manager owning the errand's location" })
+  @UseBefore(authMiddleware)
+  async getUnitManager(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('id') id: string,
+  ): Promise<UnitManagerResponse> {
+    const step = this.requireStep('return-to-manager');
+    await this.assertStepAllowed(req, step);
+
+    const { errand, metadata } = await this.readErrandAndMetadata(req, municipalityId, id);
+    const { location, managers } = await this.resolveManagersForErrand(req, municipalityId, errand, metadata);
+
+    return {
+      candidates: managers,
+      roles: managerRoleOptions(),
+      locationResourcePath: location.resourcePath,
+      locationDisplayName: location.displayName,
+    };
+  }
+
+  /**
+   * The handlers who can be given *this* errand.
+   *
+   * The ordinary handler list answers "who is in the configured AD groups" and is the same for every
+   * errand, which is how a manager stayed offered for an errand they could no longer reach. This
+   * answers per errand instead:
+   *
+   * - carrying the LEX access label, it belongs to the LEX roles - they are offered, the managers
+   *   are not, because the managers cannot act on it until it is handed back;
+   * - otherwise the managers for its place, resolved exactly the way the return handover resolves
+   *   them, so one rule decides who owns a place rather than two that can disagree;
+   * - and where none of that applies - no location, or a deployment without the avvikelse
+   *   capability - the unchanged list, so every other drake keeps the behaviour it has today.
+   */
+  @Get('/supporterrands/:municipalityId/:id/assignable-handlers')
+  @OpenAPI({ summary: 'Return the handlers who can be assigned this errand' })
+  @UseBefore(authMiddleware)
+  async getAssignableHandlers(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('id') id: string,
+  ): Promise<AssignableHandlersResponse> {
+    const unfiltered = async (): Promise<AssignableHandlersResponse> => {
+      const data = await this.handlerDirectory.listHandlers(req.user);
+      const roles = this.handlerDirectory.roles;
+      return { data, ...(roles ? { roles: roles.map(({ key, label }) => ({ key, label })) } : {}), message: 'ok' };
+    };
+
+    // Filtering is driven by the avvikelse capability, never by which application is running. A
+    // deployment without it has no AccessMapper configuration to filter against, and an empty
+    // Ansvarig list would leave it unable to assign anybody at all.
+    if (!this.investigationPolicyService.iafVofClassificationPolicy || !this.namespace?.trim()) return unfiltered();
+
+    const { errand, metadata } = await this.readErrandAndMetadata(req, municipalityId, id);
+    const labelStructure = metadata.labels?.labelStructure;
+
+    if (hasInvestigationAccessLexLabel(errand.labels, labelStructure)) {
+      const handlers = await this.handlerDirectory.listHandlers(req.user);
+      const lexRoles = (this.handlerDirectory.roles ?? []).filter(role => LEX_HANDLER_ROLE_KEYS.includes(role.key));
+      return {
+        data: handlers.filter(handler => handler.roleKeys?.some(roleKey => LEX_HANDLER_ROLE_KEYS.includes(roleKey))),
+        roles: lexRoles.map(({ key, label }) => ({ key, label })),
+        message: 'ok',
+      };
+    }
+
+    let managers: ManagerCandidate[];
+    try {
+      ({ managers } = await this.resolveManagersForErrand(req, municipalityId, errand, metadata));
+    } catch (error) {
+      // An errand with no place - or more than one - has no managers to offer, but it still has to
+      // be assignable. Falling back keeps the list usable instead of emptying it over a data problem.
+      if (error instanceof Object && (error as { status?: unknown }).status === 409) return unfiltered();
+      throw error;
+    }
+
+    return {
+      data: managers.map(manager => ({ displayName: manager.displayName, name: manager.adAccount, roleKeys: [manager.roleKey] })),
+      roles: managerRoleOptions().map(({ key, label }) => ({ key, label })),
+      message: 'ok',
+    };
+  }
+
+  @Post('/supporterrands/:municipalityId/:id/investigation-handover/:step')
+  @HttpCode(204)
+  @OpenAPI({ summary: 'Apply one named investigation handover step to a support errand' })
+  @UseBefore(authMiddleware, validationMiddleware(InvestigationHandoverDto, 'body'))
+  async applyHandover(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('id') id: string,
+    @Param('step') stepName: string,
+    @Body() data: InvestigationHandoverDto,
+    @Res() response: any,
+  ): Promise<any> {
+    const step = this.requireStep(stepName);
+    await this.assertStepAllowed(req, step);
+
+    const { errand, metadata, currentVersion } = await this.readErrandAndMetadata(req, municipalityId, id);
+    assertRequestedErrandVersion(data.expectedVersion, currentVersion);
+    assertSupportErrandAdminAssignable(errand, `the ${step.step} handover`);
+
+    const assignedUserId = await this.resolveAssignee(req, municipalityId, step, data, errand, metadata);
+    const labels = buildInvestigationHandoverLabelUpdate({
+      currentLabels: errand.labels,
+      labelStructure: metadata.labels?.labelStructure,
+      addResourcePaths: step.addLabelResourcePaths,
+      removeResourcePaths: step.removeLabelResourcePaths,
+    });
+
+    const body: HandoverWriteBody = {
+      ...(assignedUserId ? { assignedUserId } : {}),
+      ...(labels ? { labels } : {}),
+      ...(step.status ? { status: this.requireAvailableStatus(metadata, step.status) } : {}),
+    };
+    if (Object.keys(body).length === 0) {
+      // The errand already looks the way this step would leave it. Writing anyway would burn a
+      // version and, for a step that moves access, hand the errand over a second time.
+      return response.status(204).send();
+    }
+
+    await this.apiService.patch<SupportErrand, HandoverWriteBody>(
+      {
+        url: `${municipalityId}/${this.namespace}/errands/${id}`,
+        baseURL: apiURL(this.SERVICE),
+        data: body,
+        headers: { 'If-Match': `"${currentVersion}"` },
+        followLocation: false,
+        propagateClientError: true,
+      },
+      req.user,
+    );
+
+    logger.info(`Applied investigation handover ${step.step} to support errand ${id}`);
+    return response.status(204).send();
+  }
+
+  private requireStep(stepName: string): InvestigationHandoverStepDefinition {
+    const step = getInvestigationHandoverStep(stepName);
+    if (!step) throw new HttpException(400, `Unknown investigation handover step ${stepName}`);
+    return step;
+  }
+
+  /**
+   * A handover only exists where an investigation owns the errand, and only for somebody who may
+   * write the document the step belongs to. The capability decides this, never the application name.
+   */
+  private async assertStepAllowed(req: RequestWithUser, step: InvestigationHandoverStepDefinition): Promise<void> {
+    if (!this.namespace?.trim()) throw new HttpException(409, 'Support Management namespace is not configured');
+
+    const classificationOwner = await this.investigationPolicyService.getClassificationOwner(req.user);
+    if (classificationOwner === 'unavailable') {
+      throw new HttpException(503, 'Investigation policy is temporarily unavailable');
+    }
+    if (classificationOwner !== 'investigation') {
+      throw new HttpException(409, 'Investigation handovers are not available for this application');
+    }
+
+    const definition = this.investigationPolicyService.profile.documents.find(document => document.schemaName === step.authorizingSchemaName);
+    if (!definition) {
+      throw new HttpException(409, `This application has no ${step.authorizingSchemaName} investigation document`);
+    }
+    this.investigationAccessService.assertCanWriteDocument(req.user, definition.key);
+  }
+
+  private async readErrandAndMetadata(
+    req: RequestWithUser,
+    municipalityId: string,
+    id: string,
+  ): Promise<{ errand: SupportErrand; metadata: SupportMetadata; currentVersion: number }> {
+    const baseURL = apiURL(this.SERVICE);
+    const [errandResponse, metadataResponse] = await Promise.all([
+      this.apiService.get<SupportErrand>(
+        { url: `${municipalityId}/${this.namespace}/errands/${id}`, baseURL, includeResponseHeaders: true, propagateClientError: true },
+        req.user,
+      ),
+      this.apiService.get<SupportMetadata>({ url: `${municipalityId}/${this.namespace}/metadata`, baseURL, propagateClientError: true }, req.user),
+    ]);
+
+    return {
+      errand: errandResponse.data,
+      metadata: metadataResponse.data,
+      currentVersion: getErrandVersion(errandResponse.data, errandResponse.headers?.etag),
+    };
+  }
+
+  private async resolveAssignee(
+    req: RequestWithUser,
+    municipalityId: string,
+    step: InvestigationHandoverStepDefinition,
+    data: InvestigationHandoverDto,
+    errand: SupportErrand,
+    metadata: SupportMetadata,
+  ): Promise<string> {
+    if (step.assigneeSource === 'request') {
+      if (!data.assignedUserId?.trim()) {
+        throw new HttpException(400, `The ${step.step} handover requires an assigned user`);
+      }
+      if (!step.assigneeRoleKey) {
+        throw new HttpException(409, `The ${step.step} handover names no required handler role`);
+      }
+      const handler = await this.handlerDirectory.assertHandlerHoldsRole(req.user, data.assignedUserId, step.assigneeRoleKey);
+      return handler.name;
+    }
+
+    const { managers, location } = await this.resolveManagersForErrand(req, municipalityId, errand, metadata);
+    if (managers.length === 0) {
+      throw new HttpException(409, `No manager is configured for ${location.displayName}`);
+    }
+
+    // The caller picks from the managers this errand's place actually has. Validating the choice
+    // against that same list is what keeps a hand-written request from assigning anybody else.
+    if (!data.assignedUserId?.trim()) {
+      throw new HttpException(400, `The ${step.step} handover requires an assigned user`);
+    }
+    const chosen = managers.find(manager => manager.adAccount.toLowerCase() === data.assignedUserId!.trim().toLowerCase());
+    if (!chosen) {
+      throw new HttpException(400, `The selected handler is not a manager for ${location.displayName}`);
+    }
+    return chosen.adAccount;
+  }
+
+  /**
+   * The managers for the errand's place.
+   *
+   * Both halves come from AccessMapper: the access patterns say who reaches the place, and
+   * `access/ad/{adId}?type=role` says which of them is a manager. Names are not in AccessMapper, so
+   * they are read from Active Directory afterwards and only for the accounts that survived.
+   */
+  private async resolveManagersForErrand(
+    req: RequestWithUser,
+    municipalityId: string,
+    errand: SupportErrand,
+    metadata: SupportMetadata,
+  ): Promise<{ location: ErrandLocation; managers: ManagerCandidate[] }> {
+    const location = resolveErrandLocation(errand.labels, metadata.labels?.labelStructure);
+    const locationAccounts = await this.accessMapperService.findLocationAccessCandidates(
+      req.user,
+      municipalityId,
+      this.namespace!,
+      location.resourcePath,
+    );
+
+    const roleEntries = await Promise.all(
+      locationAccounts.map(
+        async account =>
+          [account.trim().toLowerCase(), await readAccessMapperRoles(this.apiService, req.user, municipalityId, this.namespace!, account)] as const,
+      ),
+    );
+    const rolesByAccount = new Map<string, readonly string[]>(roleEntries);
+
+    const managerAccounts = locationAccounts.filter(account =>
+      (rolesByAccount.get(account.trim().toLowerCase()) ?? []).some(findInvestigationManagerRole),
+    );
+    const displayNames = await this.handlerDirectory.lookupDisplayNames(req.user, managerAccounts);
+
+    return { location, managers: resolveLocationManagers({ locationAccounts, rolesByAccount, displayNames }) };
+  }
+
+  /** Support Management exposes no transition graph, so the target status is checked against metadata. */
+  private requireAvailableStatus(metadata: SupportMetadata, status: string): string {
+    if (!metadata.statuses) throw new HttpException(502, 'Support Management metadata is missing statuses');
+    if (!metadata.statuses.some(candidate => candidate.name === status && !candidate.deprecated)) {
+      throw new HttpException(400, `Status ${status} is not available in Support Management metadata`);
+    }
+    return status;
+  }
+}

@@ -5,7 +5,11 @@ import {
   SupportErrand,
   updateSupportErrandPhase,
 } from '@supportmanagement/services/support-errand-service';
-import { getAvailablePhaseTransitions, getSupportPhases } from '@supportmanagement/services/support-phase-service';
+import {
+  getActiveSupportPhaseId,
+  getAvailablePhaseTransitions,
+  getSupportPhases,
+} from '@supportmanagement/services/support-phase-service';
 import { ArrowRight } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -24,7 +28,7 @@ export const SupportUiPhaseWrapper = ({ hasUnsavedChanges }: { hasUnsavedChanges
   const [selectedTransitionId, setSelectedTransitionId] = useState('');
 
   const phases = useMemo(() => getSupportPhases(supportMetadata?.phases), [supportMetadata?.phases]);
-  const activePhaseId = supportErrand?.activePhaseId;
+  const activePhaseId = getActiveSupportPhaseId(supportErrand?.phases);
   const activeIndex = phases.findIndex((p) => p.id === activePhaseId);
   const availableTransitions = useMemo(
     () => getAvailablePhaseTransitions(activePhaseId, phases),
@@ -32,28 +36,28 @@ export const SupportUiPhaseWrapper = ({ hasUnsavedChanges }: { hasUnsavedChanges
   );
   const selectedTransition = availableTransitions.find(({ transition }) => transition.id === selectedTransitionId);
   const locked = !supportErrand || isSupportErrandLocked(supportErrand);
+  // An errand created outside the workflow has no phase to move from. Entering the first one is the
+  // only move it has, and it names no transition - so the button must not wait for one.
+  const entersWorkflow = phases.length > 0 && !activePhaseId;
 
   useEffect(() => {
     setSelectedTransitionId(availableTransitions.length === 1 ? availableTransitions[0].transition.id : '');
   }, [availableTransitions]);
 
+  // Three names fit; the window follows the active phase. An errand that has not entered the
+  // workflow has no active phase, and showing no names at all left the strip unreadable - it falls
+  // back to the first three, which is where such an errand is about to start.
   const labelWindowStart = Math.min(Math.max(activeIndex - 1, 0), Math.max(phases.length - 3, 0));
 
   const advancePhase = async () => {
-    if (
-      !municipalityId ||
-      !supportErrand?.id ||
-      typeof supportErrand.version !== 'number' ||
-      !selectedTransition?.transition.id
-    ) {
-      return;
-    }
+    if (!municipalityId || !supportErrand?.id || typeof supportErrand.version !== 'number') return;
+    if (!entersWorkflow && !selectedTransition?.transition.id) return;
     setIsSaving(true);
     try {
       const savedErrand = await updateSupportErrandPhase(
         municipalityId,
         supportErrand.id,
-        selectedTransition.transition.id,
+        entersWorkflow ? undefined : selectedTransition?.transition.id,
         supportErrand.version
       );
       setSupportErrand(savedErrand);
@@ -77,7 +81,7 @@ export const SupportUiPhaseWrapper = ({ hasUnsavedChanges }: { hasUnsavedChanges
   );
 
   const disabled =
-    !selectedTransition ||
+    (!entersWorkflow && !selectedTransition) ||
     !supportErrand?.id ||
     typeof supportErrand.version !== 'number' ||
     !canEditSupportManagement ||
@@ -95,7 +99,7 @@ export const SupportUiPhaseWrapper = ({ hasUnsavedChanges }: { hasUnsavedChanges
               number={index + 1}
               phase={phase.displayName ?? phase.name}
               active={phase.id === activePhaseId}
-              showLabel={activeIndex >= 0 && index >= labelWindowStart && index < labelWindowStart + 3}
+              showLabel={index >= labelWindowStart && index < labelWindowStart + 3}
               last={index === phases.length - 1}
             />
           </Fragment>
@@ -129,7 +133,7 @@ export const SupportUiPhaseWrapper = ({ hasUnsavedChanges }: { hasUnsavedChanges
           onClick={advancePhase}
           data-cy="next-phase-button"
         >
-          {availableTransitions.length > 1 ? 'Byt fas' : 'Nästa fas'}
+          {entersWorkflow ? 'Starta fasflödet' : availableTransitions.length > 1 ? 'Byt fas' : 'Nästa fas'}
         </Button>
       </div>
     </div>

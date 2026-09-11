@@ -666,25 +666,83 @@ export const resolveSupportErrandStatusTransition = (
 };
 
 export interface ResolvedSupportErrandPhaseTransition {
-  transitionId: string;
+  /** Absent when the errand is entering the workflow rather than moving within it. */
+  transitionId?: string;
   targetPhaseId: string;
+  /**
+   * The status the target phase requires, when the errand is not already in one it allows. A phase
+   * declares `allowedStatuses`, so moving the phase without the status would leave the errand in a
+   * state its own phase does not permit.
+   */
+  status?: string;
 }
+
+/**
+ * The phase an errand is currently in.
+ *
+ * `activePhaseId` is write-only upstream: it is how a phase is *set*, and it never comes back on a
+ * read. The readable side is the `phases` history, where the phase the errand has entered but not
+ * left is the one it is in. Reading `activePhaseId` off a fetched errand always yields undefined,
+ * which reads as "outside the workflow" for every errand there is.
+ */
+export const getActiveErrandPhaseId = (errand: Pick<Errand, 'phases'>): string | undefined => {
+  const open = (errand.phases ?? []).filter(phase => phase.phaseId && !phase.ended);
+  return open.length > 0 ? open[open.length - 1].phaseId : undefined;
+};
+
+/** The workflow's first phase: the lowest `phaseOrder`, with metadata order as the tie-break. */
+export const findInitialSupportErrandPhase = (phases: readonly Phase[] | undefined): Phase | undefined =>
+  (phases ?? [])
+    .filter(phase => !phase.deprecated && phase.id)
+    .reduce<Phase | undefined>((lowest, phase) => (!lowest || (phase.phaseOrder ?? 0) < (lowest.phaseOrder ?? 0) ? phase : lowest), undefined);
+
+/**
+ * The status a phase leaves the errand in.
+ *
+ * A phase that already allows the errand's current status changes nothing - the status is the
+ * handler's to set within a phase. Otherwise the phase decides, because `allowedStatuses` makes the
+ * two one state rather than two: an errand in `Beslut` whose status still says `INQUIRY` is in a
+ * combination its own workflow does not have.
+ */
+export const resolvePhaseStatus = (currentStatus: string | undefined, phase: Phase): string | undefined => {
+  const allowed = (phase.allowedStatuses ?? []).filter(status => typeof status === 'string' && status.trim());
+  if (allowed.length === 0) return undefined;
+  if (currentStatus && allowed.includes(currentStatus)) return undefined;
+  return allowed[0];
+};
 
 /**
  * Resolves an explicit workflow transition against the current errand and fresh metadata.
  * Metadata order is never used as a decision; branched workflows must submit a transition id.
+ *
+ * An errand with no active phase is outside the workflow, and the only move available to it is in:
+ * the first phase, with no transition to name because it is coming from nowhere. Without that, an
+ * errand created without a phase could never join the workflow at all.
  */
 export const resolveSupportErrandPhaseTransition = (
   errand: Errand,
   phases: readonly Phase[] | undefined,
-  transitionId: string,
+  transitionId: string | undefined,
 ): ResolvedSupportErrandPhaseTransition => {
   assertSupportErrandWritable(errand, 'phase transitions');
-  if (!errand.activePhaseId) {
-    throw new HttpException(409, 'Support errand has no active phase');
+  const activePhaseId = getActiveErrandPhaseId(errand);
+
+  if (!activePhaseId) {
+    const initialPhase = findInitialSupportErrandPhase(phases);
+    if (!initialPhase?.id) {
+      throw new HttpException(409, 'Support Management metadata has no phase to start the workflow in');
+    }
+    if (transitionId) {
+      throw new HttpException(400, 'Support errand has no active phase, so no transition can be applied');
+    }
+    return { targetPhaseId: initialPhase.id, ...withStatus(resolvePhaseStatus(errand.status, initialPhase)) };
   }
 
-  const activePhase = phases?.find(phase => phase.id === errand.activePhaseId && !phase.deprecated);
+  if (!transitionId) {
+    throw new HttpException(400, 'A transition id is required to move an errand that is already in a phase');
+  }
+
+  const activePhase = phases?.find(phase => phase.id === activePhaseId && !phase.deprecated);
   if (!activePhase) {
     throw new HttpException(502, 'Support Management metadata is missing the active phase');
   }
@@ -699,8 +757,10 @@ export const resolveSupportErrandPhaseTransition = (
     throw new HttpException(502, 'Support Management metadata contains an invalid phase transition target');
   }
 
-  return { transitionId, targetPhaseId: targetPhase.id };
+  return { transitionId, targetPhaseId: targetPhase.id, ...withStatus(resolvePhaseStatus(errand.status, targetPhase)) };
 };
+
+const withStatus = (status: string | undefined) => (status ? { status } : {});
 
 /** Maps SupportManagement contact channels onto CaseData contact information, dropping unknown types. */
 export const mapContactChannels = (channels?: ContactChannel[]): ContactInformation[] => {

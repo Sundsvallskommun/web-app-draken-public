@@ -32,6 +32,8 @@ export const SupportStatusLabelComponent: FC<{
       icon = solvedErrandIcon();
       break;
     case 'ONGOING':
+    // IAF/VOF work in INQUIRY rather than ONGOING; to a reader it is the same state.
+    case 'INQUIRY':
       color = 'gronsta';
       icon = 'pen';
       break;

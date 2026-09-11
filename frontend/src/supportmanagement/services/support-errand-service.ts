@@ -1,7 +1,7 @@
 import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
-import { isKC, isLOK, isROB } from '@common/services/application-service';
+import { isIAFOrVOF, isKC, isLOK, isROB } from '@common/services/application-service';
 import sanitized from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
@@ -32,6 +32,7 @@ import { SupportErrandStatusAfterAssignmentError, toStrongSupportErrandETag } fr
 import { getMappedLabelSubType, shouldMapLabelSubType } from './support-label-classification-service';
 import { MessageRequest, sendMessage } from './support-message-service';
 import { saveSupportNote } from './support-note-service';
+import { saveChangedErrandParameters } from './support-parameter-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 export interface Customer {
   id: string;
@@ -171,6 +172,8 @@ export const municipalityIds = [
 export enum Status {
   NEW = 'NEW',
   ONGOING = 'ONGOING',
+  /** IAF/VOF's working status. Their namespaces have no ONGOING. */
+  INQUIRY = 'INQUIRY',
   PENDING = 'PENDING',
   SUSPENDED = 'SUSPENDED',
   ASSIGNED = 'ASSIGNED',
@@ -207,7 +210,18 @@ export enum AttestationStatusLabel {
 
 export const newStatuses = [Status.NEW];
 
-export const ongoingStatuses = [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.REOPENED];
+/**
+ * The status an errand moves to when somebody takes it, resumes it or starts working on it.
+ *
+ * IAF/VOF's namespaces do not have `ONGOING` — their working status is `INQUIRY`. Every transition
+ * that used to hardcode `ONGOING` goes through this instead, so those drakar do not end up asking
+ * Support Management for a status their namespace has never heard of.
+ */
+export const getOngoingStatus = (): Status => (isIAFOrVOF() ? Status.INQUIRY : Status.ONGOING);
+
+export const ongoingStatuses = isIAFOrVOF()
+  ? [Status.INQUIRY, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.REOPENED]
+  : [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.REOPENED];
 
 export const ongoingStatusesROB = [
   ...ongoingStatuses,
@@ -853,8 +867,9 @@ interface UpdateResponse {
 export const updateSupportErrand: (
   municipalityId: string,
   formdata: Partial<RegisterSupportErrandFormModel>,
-  expectedVersion: number | undefined
-) => Promise<UpdateResponse> = async (municipalityId, formdata, expectedVersion) => {
+  expectedVersion: number | undefined,
+  currentParameters?: CParameter[]
+) => Promise<UpdateResponse> = async (municipalityId, formdata, expectedVersion, currentParameters) => {
   if (!formdata.id) {
     throw new Error('A support errand id is required before writing');
   }
@@ -879,6 +894,10 @@ export const updateSupportErrand: (
     console.error('Something went wrong when patching errand');
     throw e;
   }
+
+  // Parameters live outside the errand body: each is versioned separately and only the ones whose
+  // values changed are written, so this save leaves everybody else's parameter edits alone.
+  await saveChangedErrandParameters(municipalityId, errandId, currentParameters, formdata.parameters);
 
   if (formdata.notes) {
     try {
@@ -916,16 +935,21 @@ export const updateSupportErrand: (
   return responseObj;
 };
 
+/**
+ * Moves the errand through the workflow. `transitionId` is omitted only when the errand has no phase
+ * at all: it is then entering the workflow rather than moving within it, and the backend puts it in
+ * the first phase. The status follows the phase, since a phase declares which statuses it allows.
+ */
 export const updateSupportErrandPhase = (
   municipalityId: string,
   id: string,
-  transitionId: string,
+  transitionId: string | undefined,
   expectedVersion: number
 ): Promise<SupportErrand> =>
   apiService
-    .patch<ApiSupportErrand, { transitionId: string; expectedVersion: number }>(
+    .patch<ApiSupportErrand, { transitionId?: string; expectedVersion: number }>(
       `supporterrands/${municipalityId}/${id}/phase`,
-      { transitionId, expectedVersion }
+      { ...(transitionId ? { transitionId } : {}), expectedVersion }
     )
     .then((response) => mapApiSupportErrandToSupportErrand(response.data))
     .catch((e) => {

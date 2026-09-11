@@ -17,6 +17,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 
 import { useInvestigationProfileStore } from '../investigation-profile-store';
+import { HSL_RISK_ESCALATION_THRESHOLD } from './assignment/avvikelse-access-labels';
+import { isWithLexInvestigation, shouldPromptLexAssignment } from './assignment/avvikelse-assignment-policy';
+import { LexAssignmentPrompt } from './assignment/lex-assignment-prompt.component';
+import { ReturnToManagerButton } from './assignment/return-to-manager-button.component';
 import { AVVIKELSE_CLASSIFICATION_POLICY } from './avvikelse-classification-policy';
 import {
   getInvestigationClassificationSchemaContract,
@@ -126,6 +130,7 @@ export function SupportInvestigationDocument({
   const [isDirty, setIsDirty] = useState(false);
   const [classificationDirty, setClassificationDirty] = useState(false);
   const [documentSavedPendingClassification, setDocumentSavedPendingClassification] = useState(false);
+  const [showLexAssignmentPrompt, setShowLexAssignmentPrompt] = useState(false);
   const classificationMethods = useForm<InvestigationClassificationDraft>({
     defaultValues: getClassificationDraft(supportErrand),
     mode: 'onChange',
@@ -243,6 +248,13 @@ export function SupportInvestigationDocument({
     definition.schemaName === 'utredning-enhetschef' && documentState
       ? getHslRiskValue(documentState.formData)
       : undefined;
+  // The LEX investigation can be handed back only from the document that owns it, and only while the
+  // errand is actually with LEX - the access label is what says so.
+  const canReturnToManager =
+    definition.schemaName === 'utredning-sol-lss' &&
+    !readonly &&
+    Boolean(errandId) &&
+    isWithLexInvestigation(supportErrand?.labels, supportMetadata?.labels?.labelStructure);
   const classificationOwner = isInvestigationClassificationOwner(definition.key, supportErrand);
   const classificationLabelTree = classificationOwner ? AVVIKELSE_CLASSIFICATION_POLICY.labelTree : undefined;
   const classificationSchemaContract = documentState
@@ -351,6 +363,22 @@ export function SupportInvestigationDocument({
     resetErrandField('version', { defaultValue: savedErrand.version });
   };
 
+  /**
+   * A saved unit manager investigation that assesses a suspected misconduct has to be handed to a
+   * LEX manager, and the dialog that does it opens here rather than during the save itself - the
+   * investigation is already stored, and the handover is a separate write against its new version.
+   */
+  const promptLexAssignmentIfNeeded = (savedFormData: InvestigationFormData) => {
+    if (definition.schemaName !== 'utredning-enhetschef') return;
+
+    const needsLexAssignment = shouldPromptLexAssignment({
+      formData: savedFormData,
+      labels: useSupportStore.getState().supportErrand?.labels,
+      labelStructure: supportMetadata?.labels?.labelStructure,
+    });
+    if (needsLexAssignment) setShowLexAssignmentPrompt(true);
+  };
+
   const save = async (formData: InvestigationFormData, schemaErrors: RJSFValidationError[] = []) => {
     if (!municipalityId || !errandId || readonly || isSaving) return;
 
@@ -430,6 +458,8 @@ export function SupportInvestigationDocument({
         type: 'success',
         message: investigationSaveSuccessMessage(Boolean(savedDocument), Boolean(savedClassification)),
       });
+
+      promptLexAssignmentIfNeeded(normalizedData);
     } catch (error) {
       setNotice({
         type: 'error',
@@ -502,16 +532,27 @@ export function SupportInvestigationDocument({
         </Alert>
       )}
 
-      {hslRiskValue !== undefined && hslRiskValue >= 4 && (
+      {hslRiskValue !== undefined && hslRiskValue >= HSL_RISK_ESCALATION_THRESHOLD && (
         <Alert type="warning" className="mb-24" data-cy="hsl-risk-threshold-alert">
           <Alert.Icon />
           <Alert.Content>
             <Alert.Content.Title>HSL-riskvärde {hslRiskValue}</Alert.Content.Title>
             <Alert.Content.Description>
-              Gränsen 4 är uppnådd och ska hanteras vidare enligt verksamhetens process.
+              Gränsen {HSL_RISK_ESCALATION_THRESHOLD} är uppnådd och ska hanteras vidare enligt verksamhetens process.
             </Alert.Content.Description>
           </Alert.Content>
         </Alert>
+      )}
+
+      {canReturnToManager && (
+        <div className="mb-24">
+          <ReturnToManagerButton
+            municipalityId={municipalityId}
+            errandId={errandId!}
+            expectedVersion={supportErrand?.version}
+            disabled={isSaving || isDirty || classificationDirty}
+          />
+        </div>
       )}
 
       <SchemaForm
@@ -578,6 +619,15 @@ export function SupportInvestigationDocument({
         label={definition.tabLabel}
         formData={documentState.formData}
       />
+
+      {showLexAssignmentPrompt && (
+        <LexAssignmentPrompt
+          show
+          municipalityId={municipalityId}
+          errandId={errandId!}
+          expectedVersion={supportErrand?.version}
+        />
+      )}
     </section>
   );
 }

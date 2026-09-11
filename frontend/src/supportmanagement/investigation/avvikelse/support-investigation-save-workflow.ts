@@ -141,20 +141,20 @@ export async function saveInvestigationDocumentStep({
   const shouldWriteDocument = documentDirty || mustCreateDocumentBeforeClassification;
   if (documentSavedPendingClassification || !shouldWriteDocument) return undefined;
 
-  if (
-    typeof parentErrandVersion !== 'number' ||
-    !Number.isSafeInteger(parentErrandVersion) ||
-    parentErrandVersion < 0
-  ) {
-    throw new Error('Ärendets version saknas. Ladda om ärendet innan utredningen sparas.');
-  }
+  // The errand version is passed along but is not a precondition for the document write, so a
+  // missing one no longer blocks the save. The classification step still requires it, and refuses
+  // there, because that step writes the errand itself.
+  const loadedParentErrandVersion =
+    typeof parentErrandVersion === 'number' && Number.isSafeInteger(parentErrandVersion) && parentErrandVersion >= 0
+      ? parentErrandVersion
+      : undefined;
 
   return saveSupportInvestigationDocument(
     municipalityId,
     errandId,
     documentKey,
     { schemaId, value },
-    parentErrandVersion,
+    loadedParentErrandVersion,
     etag
   );
 }

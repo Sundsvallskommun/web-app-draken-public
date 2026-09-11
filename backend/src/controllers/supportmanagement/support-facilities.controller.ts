@@ -58,8 +58,21 @@ export class SupportFacilitiesController {
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   SERVICE = apiServiceName('supportmanagement');
 
+  /**
+   * TODO: probably dead - remove once the per-parameter route is confirmed in test.
+   *
+   * The client no longer calls this. Facilities are written through
+   * `PUT /supporterrands/:municipalityId/:id/parameters/:key`, one parameter at a time, each
+   * conditioned on its own version. This route replaces the errand's whole parameter collection,
+   * which is exactly the behaviour that move was made to get rid of: it rewrites every parameter on
+   * the errand, including ones another user has just changed.
+   *
+   * It is kept only as a fallback while the new path is being verified. Nothing should be built on
+   * it, and it should be deleted rather than reused. The Playwright specs for KC and LOP still mock
+   * `**\/saveFacilities/...`, so those mocks go with it.
+   */
   @Patch('/supporterrands/saveFacilities/:municipalityId/:id')
-  @OpenAPI({ summary: 'Save facilities by errand' })
+  @OpenAPI({ summary: 'Save facilities by errand (deprecated: use the per-parameter route)' })
   @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']), validationMiddleware(SupportFacilitiesPayloadDto, 'body'))
   async saveFacility(
     @Req() req: RequestWithUser,
