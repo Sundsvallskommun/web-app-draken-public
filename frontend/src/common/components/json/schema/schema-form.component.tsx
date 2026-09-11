@@ -47,6 +47,8 @@ type SchemaFormProps = {
   readonly?: boolean;
   defaultFormStateBehavior?: FormProps['experimental_defaultFormStateBehavior'];
   submitButtonOptions?: SubmitButtonOptions;
+  /** Rendered beside the submit button, for actions that belong with saving rather than above the form. */
+  submitButtonActions?: ReactNode;
   extraContent?: React.ReactNode;
   externalFields?: Readonly<Record<string, ReactNode>>;
   validationErrors?: readonly SchemaFormError[];
@@ -68,6 +70,7 @@ export default function SchemaForm({
   readonly,
   defaultFormStateBehavior,
   submitButtonOptions,
+  submitButtonActions,
   extraContent,
   externalFields,
   validationErrors,
@@ -130,12 +133,13 @@ export default function SchemaForm({
     () => ({
       originalSchema: schema,
       submitButtonOptions,
+      submitButtonActions,
       idPrefix,
       externalFields,
       errorNavigation,
       requiredIndicator,
     }),
-    [externalFields, idPrefix, schema, submitButtonOptions, errorNavigation, requiredIndicator]
+    [externalFields, idPrefix, schema, submitButtonOptions, submitButtonActions, errorNavigation, requiredIndicator]
   );
 
   const templates: NonNullable<FormProps['templates']> = {
@@ -179,7 +183,7 @@ export default function SchemaForm({
         {validationErrors && <SchemaFormErrorSummary errors={validationErrors} onNavigate={setErrorNavigation} />}
         <Form {...formProps} templates={{ ...templates, ButtonTemplates: { SubmitButton: () => null } }}>
           {extraContent}
-          <SchemaSubmitButton options={submitButtonOptions} />
+          <SchemaSubmitButton options={submitButtonOptions} actions={submitButtonActions} />
         </Form>
       </div>
     );
@@ -193,6 +197,11 @@ export default function SchemaForm({
         {...formProps}
         templates={formWithoutSubmit ? { ...templates, ButtonTemplates: { SubmitButton: () => null } } : templates}
       />
+      {/* The form renders no submit button when it is read-only, but the actions beside it are not
+          about saving and must stay reachable - a finished, locked document is handed on from here. */}
+      {formWithoutSubmit && submitButtonActions && (
+        <div className="mt-[3.2rem] flex flex-wrap items-center gap-16">{submitButtonActions}</div>
+      )}
     </div>
   );
 }

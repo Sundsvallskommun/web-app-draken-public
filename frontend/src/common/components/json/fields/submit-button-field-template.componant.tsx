@@ -1,6 +1,7 @@
 import { SubmitButtonProps } from '@rjsf/utils';
 import { Button } from '@sk-web-gui/react';
 import { Plus } from 'lucide-react';
+import { ReactNode } from 'react';
 
 export interface SubmitButtonOptions {
   label?: string;
@@ -14,6 +15,8 @@ export interface SubmitButtonOptions {
 
 type SchemaSubmitButtonProps = {
   options?: SubmitButtonOptions;
+  /** Actions that belong beside the submit button, such as handing the errand on when it is saved. */
+  actions?: ReactNode;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -58,7 +61,7 @@ function readSubmitButtonOptions(uiOptions: unknown, formOptions: unknown): Subm
   };
 }
 
-export function SchemaSubmitButton({ options = {} }: Readonly<SchemaSubmitButtonProps>) {
+export function SchemaSubmitButton({ options = {}, actions }: Readonly<SchemaSubmitButtonProps>) {
   const label = options.label || 'Lägg till';
   const variant = options.variant || 'primary';
   const className = options.className || 'mt-[3.2rem] min-w-0 max-w-full';
@@ -68,18 +71,21 @@ export function SchemaSubmitButton({ options = {} }: Readonly<SchemaSubmitButton
 
   return (
     <div className={className}>
-      <Button
-        type="submit"
-        className="h-auto max-w-full whitespace-normal"
-        data-cy="schema-submit-button"
-        variant={variant}
-        color={options.color}
-        leftIcon={leadingIcon ? <Plus /> : undefined}
-        loading={loading}
-        disabled={disabled}
-      >
-        {label}
-      </Button>
+      <div className="flex flex-wrap items-center gap-16">
+        <Button
+          type="submit"
+          className="h-auto max-w-full whitespace-normal"
+          data-cy="schema-submit-button"
+          variant={variant}
+          color={options.color}
+          leftIcon={leadingIcon ? <Plus /> : undefined}
+          loading={loading}
+          disabled={disabled}
+        >
+          {label}
+        </Button>
+        {actions}
+      </div>
     </div>
   );
 }
@@ -90,5 +96,5 @@ export function SubmitButtonFieldTemplate(props: SubmitButtonProps) {
     props.registry.formContext?.submitButtonOptions
   );
 
-  return <SchemaSubmitButton options={buttonOptions} />;
+  return <SchemaSubmitButton options={buttonOptions} actions={props.registry.formContext?.submitButtonActions} />;
 }

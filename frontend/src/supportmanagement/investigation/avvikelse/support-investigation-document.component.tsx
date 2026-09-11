@@ -815,17 +815,6 @@ export function SupportInvestigationDocument({
         </Alert>
       )}
 
-      {canReturnToManager && (
-        <div className="mb-24">
-          <ReturnToManagerButton
-            municipalityId={municipalityId}
-            errandId={errandId!}
-            expectedVersion={supportErrand?.version}
-            disabled={isSaving || isDirty || classificationDirty}
-          />
-        </div>
-      )}
-
       <SchemaForm
         schema={renderingSchema}
         validationErrors={validationErrors}
@@ -911,6 +900,18 @@ export function SupportInvestigationDocument({
           loading: isSaving,
           disabled: !isDirty && !classificationDirty,
         }}
+        // Handing the errand back belongs with saving it, not above the document: the investigator
+        // reaches it once the document is written, and it stays disabled while anything is unsaved.
+        submitButtonActions={
+          canReturnToManager ? (
+            <ReturnToManagerButton
+              municipalityId={municipalityId}
+              errandId={errandId!}
+              expectedVersion={supportErrand?.version}
+              disabled={isSaving || isDirty || classificationDirty}
+            />
+          ) : undefined
+        }
       />
 
       <InvestigationSchemaDebugPanel
