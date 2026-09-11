@@ -40,6 +40,7 @@ import { SupportInvestigationAssignmentController } from './controllers/supportm
 import { SupportInvestigationProfileController } from './controllers/supportmanagement/support-investigation-profile.controller';
 import { SupportInvestigationReportController } from './controllers/supportmanagement/support-investigation-report.controller';
 import { SupportMeasureController } from './controllers/supportmanagement/support-measure.controller';
+import { SupportMeasureActionPlanController } from './controllers/supportmanagement/support-measure-action-plan.controller';
 import { SupportMessageController } from './controllers/supportmanagement/support-message.controller';
 import { SupportMetadataController } from './controllers/supportmanagement/support-metadata.controller';
 import { SupportNoteController } from './controllers/supportmanagement/support-note.controller';
@@ -87,6 +88,7 @@ export const CONTROLLERS: NewableFunction[] = [
   SupportInvestigationAssignmentController,
   SupportInvestigationProfileController,
   SupportInvestigationReportController,
+  SupportMeasureActionPlanController,
   SupportMessageController,
   SupportMetadataController,
   SupportMeasureController,

@@ -767,3 +767,65 @@ test('partial approval locks the original content but lets its author report exe
     { method: 'PATCH', version: '"3"', data: { executed: expect.stringMatching(/^2026-09-09T00:00:00/) } },
   ]);
 });
+
+/** The BFF builds the plan from the stored measures; the browser only asks for it and reports the answer. */
+async function installActionPlan(page: Page, { status = 201 }: { status?: number } = {}) {
+  const requests: string[] = [];
+  await page.route(/\/supporterrands\/[^/]+\/[^/]+\/measures\/action-plan$/, async (route) => {
+    requests.push(route.request().method());
+    await route.fulfill(
+      status === 201
+        ? {
+            status,
+            json: {
+              data: { fileName: `Handlingsplan_${errandNumber}_1.pdf`, attachmentId: 'plan-1' },
+              message: 'Action plan attached',
+            },
+          }
+        : { status, json: { message: 'Det finns inga åtgärder att ta med i handlingsplanen.' } }
+    );
+  });
+  return { requests };
+}
+
+const actionPlanButton = (page: Page) => page.getByRole('button', { name: 'Skapa handlingsplan', exact: true });
+
+test('creates an action plan from the stored measures and attaches it as a PDF', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  const state = await installMeasures(page);
+  const plan = await installActionPlan(page);
+  await openMeasures(page, dismissCookieConsent);
+  await expect(actionPlanButton(page)).toBeEnabled();
+  await actionPlanButton(page).click();
+  await expect(
+    page.getByText(
+      `Handlingsplanen Handlingsplan_${errandNumber}_1.pdf har skapats och lagts som en bilaga på ärendet.`
+    )
+  ).toBeVisible();
+  expect(plan.requests).toEqual(['POST']);
+  // The plan is an attachment made by the BFF, never a measure write from the browser.
+  expect(state.writes).toEqual([]);
+  await expect(actionPlanButton(page)).toBeEnabled();
+});
+
+test('explains why an action plan could not be created and keeps the tab usable', async ({
+  page,
+  dismissCookieConsent,
+}) => {
+  await installMeasures(page);
+  const plan = await installActionPlan(page, { status: 409 });
+  await openMeasures(page, dismissCookieConsent);
+  await actionPlanButton(page).click();
+  await expect(page.getByText('Det finns inga åtgärder att ta med i handlingsplanen.')).toBeVisible();
+  expect(plan.requests).toEqual(['POST']);
+  await expect(actionPlanButton(page)).toBeEnabled();
+  await expect(page.getByRole('button', { name: /^Redigera åtgärd/ })).toBeVisible();
+});
+
+test('does not offer an action plan without write access', async ({ page, dismissCookieConsent }) => {
+  await installMeasures(page, { canEdit: false });
+  await openMeasures(page, dismissCookieConsent);
+  await expect(actionPlanButton(page)).toHaveCount(0);
+});
