@@ -134,6 +134,8 @@ export interface IafApiTrace {
   classificationPatches: ClassificationPatchTrace[];
   errandPatches: unknown[];
   writes: Array<'document' | 'classification'>;
+  /** Report requests, in order; a preview renders without attaching or recording. */
+  reports: Array<{ key: string; preview: boolean }>;
 }
 
 export interface IafApiScenario {
@@ -189,9 +191,9 @@ const validValues: Record<InvestigationKey, JsonObject> = {
 };
 
 export const latestSchemaIds: Record<InvestigationKey, string> = {
-  'utredning-enhetschef': '2281_utredning-enhetschef_1.1',
-  'utredning-sol-lss': '2281_utredning-sol-lss_1.1',
-  'utredning-hsl': '2281_utredning-hsl_1.1',
+  'utredning-enhetschef': '2281_utredning-enhetschef_1.2',
+  'utredning-sol-lss': '2281_utredning-sol-lss_1.2',
+  'utredning-hsl': '2281_utredning-hsl_1.2',
   'beslut-hsl': '2281_beslut-hsl_1.2',
   'beslut-sol-lss': '2281_beslut-sol-lss_1.3',
 };
@@ -642,6 +644,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     classificationPatches: [],
     errandPatches: [],
     writes: [],
+    reports: [],
   };
 
   const buildErrand = () => ({
@@ -864,6 +867,52 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         path.endsWith(`/supporterrands/${municipalityId}/${errandId}`))
     ) {
       await fulfillJson(route, buildErrand());
+      return;
+    }
+
+    const reportMatch = path.match(/\/json-parameters\/([^/]+)\/reports$/u);
+    if (method === 'POST' && reportMatch) {
+      const key = decodeURIComponent(reportMatch[1]);
+      const body = requestBody(request) as { preview?: boolean } | undefined;
+      const preview = body?.preview === true;
+      trace.reports.push({ key, preview });
+      const document = documents[key];
+      if (!document) {
+        await fulfillJson(route, { message: 'JSON parameter not found' }, 404);
+        return;
+      }
+      if (document.value.completed !== 'yes') {
+        await fulfillJson(route, { message: 'Mark the investigation as completed before generating a report' }, 409);
+        return;
+      }
+      const existingReports = Array.isArray(document.value.reports) ? (document.value.reports as JsonObject[]) : [];
+      const sequence = existingReports.length + 1;
+      const fileName = `Rapport_${sequence}.pdf`;
+      if (preview) {
+        await fulfillJson(route, { data: { fileName, pdfBase64: 'JVBERi0xLjQK' }, message: 'rendered' }, 200);
+        return;
+      }
+      const entry = {
+        generatedAt: '2026-09-11T12:30:00.000Z',
+        generatedBy: `${applicationSlug}.test`,
+        fileName,
+        attachmentId: `attachment-${sequence}`,
+      };
+      const nextVersion = document.version + 1;
+      const updated: InvestigationDocument = {
+        ...document,
+        value: { ...document.value, reports: [...existingReports, entry] },
+        version: nextVersion,
+        etag: `"${nextVersion}"`,
+      };
+      documents[key] = updated;
+      errandVersion += 1;
+      const { etag, ...responseDocument } = updated;
+      await fulfillJson(route, { data: { document: responseDocument, report: entry }, message: 'attached' }, 201, {
+        etag,
+        'x-errand-version': String(errandVersion),
+        'access-control-expose-headers': 'ETag, X-Errand-Version',
+      });
       return;
     }
 

@@ -796,6 +796,62 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.puts).toHaveLength(0);
   });
 
+  test('markerar HSL-utredningen klar, låser den, skapar numrerade rapporter och låser upp igen', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const trace = await installIafApiMock(page, { documents: {}, eventType: 'AVVIKELSE' });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+    await page
+      .locator('[data-cy="support-investigation-tab"]')
+      .getByRole('tab', { name: 'Utredning HSL', exact: true })
+      .click();
+    const document = page.locator('[data-cy="investigation-document-utredning-hsl"]');
+    await expect(document).toBeVisible();
+
+    // Nothing to report until the document is saved as completed.
+    const controls = document.locator('[data-cy="investigation-report-utredning-hsl"]');
+    await expect(controls).toBeVisible();
+    await expect(controls.locator('[data-cy="investigation-report-generate"]')).toBeDisabled();
+    await expect(controls.locator('[data-cy="investigation-report-unlock"]')).toHaveCount(0);
+    await expect(document.locator('[data-cy="investigation-document-locked"]')).toHaveCount(0);
+
+    await document.locator('#utredning-hsl_completed').getByRole('radio', { name: 'Ja', exact: true }).check();
+    await document.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+    await expect.poll(() => trace.puts.length).toBe(1);
+    expect(trace.puts[0].body).toEqual({ schemaId: '2281_utredning-hsl_1.2', value: { completed: 'yes' } });
+
+    // Saved as completed: locked, no save button, and the report can be generated.
+    await expect(document.locator('[data-cy="investigation-document-locked"]')).toBeVisible();
+    await expect(document.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
+    await expect(controls.locator('[data-cy="investigation-report-generate"]')).toBeEnabled();
+    await controls.locator('[data-cy="investigation-report-generate"]').click();
+    await expect.poll(() => trace.reports.length).toBe(1);
+    expect(trace.reports[0]).toEqual({ key: 'utredning-hsl', preview: false });
+    await expect(document.locator('[data-cy="investigation-document-notice"]')).toContainText(
+      'Rapporten Rapport_1.pdf har skapats'
+    );
+    await expect(controls.locator('[data-cy="investigation-report-list"]')).toContainText('Rapport_1.pdf');
+
+    // A second report gets the next number; the document stays locked in between.
+    await controls.locator('[data-cy="investigation-report-generate"]').click();
+    await expect.poll(() => trace.reports.length).toBe(2);
+    await expect(controls.locator('[data-cy="investigation-report-list"]')).toContainText('Rapport_2.pdf');
+    expect(trace.puts).toHaveLength(1);
+
+    // Unlocking is the one write a locked document accepts from the form.
+    await controls.locator('[data-cy="investigation-report-unlock"]').click();
+    await expect.poll(() => trace.puts.length).toBe(2);
+    expect(trace.puts[1].body).toEqual(
+      expect.objectContaining({ value: expect.objectContaining({ completed: 'no' }) })
+    );
+    await expect(document.locator('[data-cy="investigation-document-locked"]')).toHaveCount(0);
+    await expect(document.locator('[data-cy="schema-submit-button"]')).toHaveCount(1);
+    await expect(controls.locator('[data-cy="investigation-report-generate"]')).toBeDisabled();
+  });
+
   test('döljer beslutsfliken när användaren inte når beslutet', async ({ page, dismissCookieConsent }) => {
     const profile = defaultInvestigationProfile();
     await installIafApiMock(page, {

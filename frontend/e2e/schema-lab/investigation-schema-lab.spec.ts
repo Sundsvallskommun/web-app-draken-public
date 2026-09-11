@@ -120,9 +120,9 @@ test.afterEach(async ({ page }) => {
 test('opens all investigation sections without turning an unanswered draft into radio answers', async ({ page }) => {
   await page.evaluate(() => {
     for (const [key, schemaVersion, formData] of [
-      ['utredning-enhetschef', '1.1', { legalBases: ['HSL', 'SOL'] }],
-      ['utredning-sol-lss', '1.1', {}],
-      ['utredning-hsl', '1.1', {}],
+      ['utredning-enhetschef', '1.2', { legalBases: ['HSL', 'SOL'] }],
+      ['utredning-sol-lss', '1.2', {}],
+      ['utredning-hsl', '1.2', {}],
       ['beslut-hsl', '1.2', {}],
       ['beslut-sol-lss', '1.3', {}],
     ]) {
@@ -361,7 +361,7 @@ test('sanitizes legacy label fields and ignores malformed local timestamps', asy
       'draken:investigation-schema-lab:utredning-enhetschef',
       JSON.stringify({
         schemaKey: 'utredning-enhetschef',
-        schemaVersion: '1.1',
+        schemaVersion: '1.2',
         savedAt: '2026-08-11T10:00:00.000Z',
         formData: {
           legalBases: ['HSL'],
