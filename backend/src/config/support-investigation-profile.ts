@@ -66,6 +66,10 @@ export const createSupportInvestigationProfile = (profile: SupportInvestigationP
   const documents = profile.documents.map((document, index) => {
     const placement = requireProfileChoice(document.placement, SUPPORT_INVESTIGATION_DOCUMENT_PLACEMENTS, `documents[${index}].placement`);
     const appliesTo = requireProfileChoice(document.appliesTo, SUPPORT_INVESTIGATION_DOCUMENT_APPLICABILITIES, `documents[${index}].appliesTo`);
+    const prerequisiteDocumentKey =
+      document.prerequisiteDocumentKey === undefined
+        ? undefined
+        : requireProfileIdentifier(document.prerequisiteDocumentKey, `documents[${index}].prerequisiteDocumentKey`);
     // The optional fields are only carried when configured, so a profile that never mentions them
     // serializes exactly as before and their defaults stay a reader's decision.
     const canonicalDocument = {
@@ -75,6 +79,7 @@ export const createSupportInvestigationProfile = (profile: SupportInvestigationP
       ownerLabel: requireNonEmptyProfileField(document.ownerLabel, `documents[${index}].ownerLabel`),
       ...(placement ? { placement } : {}),
       ...(appliesTo ? { appliesTo } : {}),
+      ...(prerequisiteDocumentKey ? { prerequisiteDocumentKey } : {}),
     };
 
     if (documentKeys.has(canonicalDocument.key)) {
@@ -83,6 +88,14 @@ export const createSupportInvestigationProfile = (profile: SupportInvestigationP
     documentKeys.add(canonicalDocument.key);
 
     return Object.freeze(canonicalDocument);
+  });
+  // A prerequisite names another document of the same profile, so the reference is checked once
+  // every key is known.
+  documents.forEach((document, index) => {
+    if (document.prerequisiteDocumentKey === undefined) return;
+    if (document.prerequisiteDocumentKey === document.key || !documentKeys.has(document.prerequisiteDocumentKey)) {
+      throw new Error(`Support investigation profile field documents[${index}].prerequisiteDocumentKey must name another document in the profile`);
+    }
   });
   const frozenDocuments = Object.freeze(documents);
   const labelFilter = profile.labelFilter ? createSupportManagementLabelFilterProfile(profile.labelFilter) : undefined;
@@ -116,15 +129,27 @@ const iafVofInvestigationProfileBase = {
       tabLabel: 'Utredning HSL',
       ownerLabel: 'MAS/MAR',
     },
-    // The lex Sarah decision. Rendered on the Beslut tab rather than under Utredning, and only
-    // offered on errands the IAF/VOF classification policy resolves as reported misconduct.
+    // The decisions. Rendered on the Beslut tab rather than under Utredning, and each offered only
+    // on the errands the IAF/VOF classification policy resolves for it: the IVO decision on an
+    // ordinary deviation under HSL, the lex Sarah decision on a reported misconduct. The policy
+    // resolves one kind per errand, so an errand never gets both. The lex Sarah decision answers
+    // the SoL/LSS investigation, so that investigation has to be saved first.
     {
-      key: 'beslut-missforhallande',
-      schemaName: 'beslut-missforhallande',
-      tabLabel: 'Beslut',
-      ownerLabel: 'Beslutsfattare',
+      key: 'beslut-hsl',
+      schemaName: 'beslut-hsl',
+      tabLabel: 'Beslut HSL',
+      ownerLabel: 'MAS/MAR',
+      placement: 'decision',
+      appliesTo: 'hsl-deviation',
+    },
+    {
+      key: 'beslut-sol-lss',
+      schemaName: 'beslut-sol-lss',
+      tabLabel: 'Beslut SoL/LSS',
+      ownerLabel: 'LEX-ansvarig',
       placement: 'decision',
       appliesTo: 'reported-misconduct',
+      prerequisiteDocumentKey: 'utredning-sol-lss',
     },
   ],
   labelFilter: {

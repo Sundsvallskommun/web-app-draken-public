@@ -261,10 +261,15 @@ describe('SupportErrandJsonParameterController', () => {
   });
 
   describe('a document declared for reported misconduct only', () => {
-    const decisionKey = 'beslut-missforhallande';
-    const update = { schemaId: '2281_beslut-missforhallande_1.0', value: { decisionDate: '2026-09-01' } };
+    const decisionKey = 'beslut-sol-lss';
+    const update = { schemaId: '2281_beslut-sol-lss_1.1', value: { ivoNotification: 'no' } };
     const deviationErrand = { id: mockSupportErrandId, parameters: [{ key: 'eventType', values: ['AVVIKELSE'] }] };
-    const misconductErrand = { id: mockSupportErrandId, parameters: [{ key: 'eventType', values: ['MISSFORHALLANDE'] }] };
+    const savedInvestigation = { key: 'utredning-sol-lss', schemaId: '2281_utredning-sol-lss_1.0', value: {} };
+    const misconductErrand = {
+      id: mockSupportErrandId,
+      parameters: [{ key: 'eventType', values: ['MISSFORHALLANDE'] }],
+      jsonParameters: [savedInvestigation],
+    };
     const NOT_APPLICABLE_ERROR = { status: 409, message: 'This investigation document applies to reported misconduct errands only' };
 
     it('is served and written on a reported misconduct errand', async () => {
@@ -282,6 +287,7 @@ describe('SupportErrandJsonParameterController', () => {
       await controller.getJsonParameter(req, mockMunicipalityId, mockSupportErrandId, decisionKey, resDouble());
       await controller.updateJsonParameter(req, mockMunicipalityId, mockSupportErrandId, decisionKey, '"1"', ABSENT_HEADER, '4', update, resDouble());
 
+      // One parent read per call: the prerequisite check reuses the applicability snapshot.
       expect(documentService.readParentErrandSnapshot).toHaveBeenCalledTimes(2);
       expect(documentService.readParentErrandSnapshot).toHaveBeenCalledWith({
         definition: expect.objectContaining({ key: decisionKey, appliesTo: 'reported-misconduct', placement: 'decision' }),
@@ -305,6 +311,19 @@ describe('SupportErrandJsonParameterController', () => {
       ).rejects.toMatchObject(NOT_APPLICABLE_ERROR);
 
       expect(documentService.readJsonParameter).not.toHaveBeenCalled();
+      expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
+    });
+
+    it('is read but not written while the SoL/LSS investigation it answers is missing from the errand', async () => {
+      const { controller, documentService } = makeController();
+      documentService.readParentErrandSnapshot.mockResolvedValue({ ...misconductErrand, jsonParameters: [] });
+      documentService.readJsonParameter.mockResolvedValue({ document: { key: decisionKey, ...update, version: 1 }, etag: '"1"', status: 200 });
+
+      await controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, decisionKey, resDouble());
+      await expect(
+        controller.updateJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, decisionKey, ABSENT_HEADER, '*', '4', update, resDouble()),
+      ).rejects.toMatchObject({ status: 409, message: 'This investigation document requires utredning-sol-lss to be saved on the errand first' });
+
       expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
     });
 
@@ -340,9 +359,7 @@ describe('SupportErrandJsonParameterController', () => {
     it('fails closed when the application has no classification policy to decide applicability', async () => {
       const profile = createSupportInvestigationProfile({
         application: 'FUTURE',
-        documents: [
-          { key: decisionKey, schemaName: 'beslut-missforhallande', tabLabel: 'Beslut', ownerLabel: 'Owner', appliesTo: 'reported-misconduct' },
-        ],
+        documents: [{ key: decisionKey, schemaName: 'beslut-sol-lss', tabLabel: 'Beslut', ownerLabel: 'Owner', appliesTo: 'reported-misconduct' }],
       });
       const documentService = { readJsonParameter: vi.fn(), readParentErrandSnapshot: vi.fn() } as unknown as SupportJsonParameterService;
       const policyService = { getState: vi.fn().mockResolvedValue('active'), iafVofClassificationPolicy: undefined };
@@ -357,9 +374,72 @@ describe('SupportErrandJsonParameterController', () => {
 
       await expect(controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, decisionKey, resDouble())).rejects.toMatchObject({
         status: 409,
-        message: 'Reported misconduct documents require an investigation classification policy',
+        message: 'Restricted investigation documents require an investigation classification policy',
       });
       expect(documentService.readParentErrandSnapshot).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('a document declared for HSL deviations only', () => {
+    const decisionKey = 'beslut-hsl';
+    const update = { schemaId: '2281_beslut-hsl_1.0', value: { ivoNotification: 'no' } };
+    const hslLabel = { classification: 'PROVISION', resourcePath: 'PROVISION/HSL', resourceName: 'HSL' };
+    const solLabel = { classification: 'PROVISION', resourcePath: 'PROVISION/SOL', resourceName: 'SOL' };
+    const hslDeviation = { id: mockSupportErrandId, parameters: [{ key: 'eventType', values: ['AVVIKELSE'] }], labels: [hslLabel] };
+    const solDeviation = { id: mockSupportErrandId, parameters: [{ key: 'eventType', values: ['AVVIKELSE'] }], labels: [solLabel] };
+    const hslMisconduct = { id: mockSupportErrandId, parameters: [{ key: 'eventType', values: ['MISSFORHALLANDE'] }], labels: [hslLabel] };
+    const NOT_APPLICABLE_ERROR = { status: 409, message: 'This investigation document applies to HSL deviation errands only' };
+
+    it('is served and written on an ordinary deviation under HSL', async () => {
+      const { controller, documentService } = makeController();
+      documentService.readParentErrandSnapshot.mockResolvedValue(hslDeviation);
+      documentService.readJsonParameter.mockResolvedValue({ document: { key: decisionKey, ...update, version: 1 }, etag: '"1"', status: 200 });
+      documentService.writeJsonParameter.mockResolvedValue({
+        document: { key: decisionKey, ...update, version: 2 },
+        etag: '"2"',
+        status: 200,
+        parentErrandVersion: 5,
+      });
+      const req = mockReq();
+
+      await controller.getJsonParameter(req, mockMunicipalityId, mockSupportErrandId, decisionKey, resDouble());
+      await controller.updateJsonParameter(req, mockMunicipalityId, mockSupportErrandId, decisionKey, '"1"', ABSENT_HEADER, '4', update, resDouble());
+
+      expect(documentService.readParentErrandSnapshot).toHaveBeenCalledWith(
+        expect.objectContaining({ definition: expect.objectContaining({ key: decisionKey, appliesTo: 'hsl-deviation', placement: 'decision' }) }),
+      );
+      expect(documentService.readJsonParameter).toHaveBeenCalledTimes(1);
+      expect(documentService.writeJsonParameter).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+      ['a deviation without HSL', solDeviation],
+      ['a reported misconduct, even under HSL', hslMisconduct],
+    ])('is refused on %s before the document is touched', async (_case, errand) => {
+      const { controller, documentService } = makeController();
+      documentService.readParentErrandSnapshot.mockResolvedValue(errand);
+
+      await expect(controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, decisionKey, resDouble())).rejects.toMatchObject(
+        NOT_APPLICABLE_ERROR,
+      );
+      await expect(
+        controller.updateJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, decisionKey, ABSENT_HEADER, '*', '4', update, resDouble()),
+      ).rejects.toMatchObject(NOT_APPLICABLE_ERROR);
+
+      expect(documentService.readJsonParameter).not.toHaveBeenCalled();
+      expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
+    });
+
+    it('keeps the lex Sarah decision closed on the same HSL deviation', async () => {
+      const { controller, documentService } = makeController();
+      documentService.readParentErrandSnapshot.mockResolvedValue(hslDeviation);
+
+      await expect(
+        controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, 'beslut-sol-lss', resDouble()),
+      ).rejects.toMatchObject({
+        status: 409,
+        message: 'This investigation document applies to reported misconduct errands only',
+      });
     });
   });
 

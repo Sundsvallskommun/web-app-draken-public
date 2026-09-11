@@ -34,6 +34,13 @@ export type IafVofInvestigationClassificationOwnerSelection = Readonly<{
 
 type ClassificationOwnerErrand = Pick<Errand, 'parameters' | 'labels'>;
 
+/**
+ * Which restricted investigation document an errand takes, if any: the lex Sarah decision for a
+ * reported misconduct whatever its legal bases, the HSL decision for an ordinary deviation with HSL
+ * among its legal bases, nothing otherwise. One kind per errand, never two.
+ */
+export type IafVofInvestigationDocumentApplicability = 'reported-misconduct' | 'hsl-deviation';
+
 const IAF_VOF_APPLICATIONS = new Set(['IAF', 'VOF']);
 const DEFAULT_OWNER_SCHEMA_NAME = 'utredning-enhetschef';
 const REPORTED_MISCONDUCT_OWNER_SCHEMA_NAME = 'utredning-sol-lss';
@@ -41,6 +48,11 @@ const REPORTED_MISCONDUCT_PARAMETER = Object.freeze({ key: 'eventType', values: 
 const REPORTED_MISCONDUCT_LABELS = Object.freeze({
   resourcePaths: Object.freeze(['REPORT_TYPE/ABUSE', 'REPORT_TYPE/ADVERSE_INCIDENT']),
   resourceNames: Object.freeze(['ABUSE', 'ADVERSE_INCIDENT']),
+});
+const HSL_LEGAL_BASE_LABELS = Object.freeze({
+  classification: 'PROVISION',
+  resourcePaths: Object.freeze(['PROVISION/HSL']),
+  resourceNames: Object.freeze(['HSL']),
 });
 
 export const IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE: IafVofInvestigationClassificationLabelTree = Object.freeze({
@@ -108,6 +120,32 @@ const isReportedMisconduct = (errand: ClassificationOwnerErrand): boolean => {
       return typeof label.resourceName === 'string' && selectedNames.has(normalizeCode(label.resourceName));
     }) ?? false
   );
+};
+
+const hasHslLegalBase = (errand: ClassificationOwnerErrand): boolean => {
+  const selectedPaths = new Set(HSL_LEGAL_BASE_LABELS.resourcePaths.map(normalizeResourcePath));
+  const selectedNames = new Set(HSL_LEGAL_BASE_LABELS.resourceNames.map(normalizeCode));
+  return (
+    errand.labels?.some(label => {
+      const resourcePath = label.resourcePath?.trim();
+      if (resourcePath) return selectedPaths.has(normalizeResourcePath(resourcePath));
+      // Without a path the name alone is ambiguous - CATEGORY/HSL is also named HSL - so the
+      // fallback also requires the label to be a legal base.
+      return (
+        typeof label.classification === 'string' &&
+        normalizeCode(label.classification) === HSL_LEGAL_BASE_LABELS.classification &&
+        typeof label.resourceName === 'string' &&
+        selectedNames.has(normalizeCode(label.resourceName))
+      );
+    }) ?? false
+  );
+};
+
+export const resolveIafVofInvestigationDocumentApplicability = (
+  errand: ClassificationOwnerErrand,
+): IafVofInvestigationDocumentApplicability | undefined => {
+  if (isReportedMisconduct(errand)) return 'reported-misconduct';
+  return hasHslLegalBase(errand) ? 'hsl-deviation' : undefined;
 };
 
 export const resolveIafVofInvestigationClassificationOwner = (

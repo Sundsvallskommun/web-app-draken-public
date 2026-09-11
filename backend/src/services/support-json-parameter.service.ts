@@ -10,6 +10,7 @@ import {
   isJsonObject,
   isRecord,
   type JsonObject,
+  type JsonValue,
   requireResponseStatus,
   SchemaBoundJsonService,
   type SchemaBoundJsonServiceDependencies,
@@ -94,6 +95,8 @@ export interface SupportJsonParameterServiceDependencies extends SchemaBoundJson
   readonly apiService?: JsonParameterApiService;
   readonly supportManagementService?: string;
   readonly schemaService?: SchemaBoundJsonService;
+  /** The server clock, replaceable in tests. */
+  readonly clock?: () => Date;
 }
 
 interface ParsedStrongVersionETag {
@@ -246,14 +249,61 @@ const resolveWritePrecondition = (
   return { mode: 'create', headers: { 'If-Match': CREATE_ONLY_UPSTREAM_ETAG } };
 };
 
+export interface ServerStampContext {
+  /** The document as Support Management holds it before this write, if it exists. */
+  readonly existingValue: JsonObject | undefined;
+  readonly now: Date;
+  readonly savedBy: string;
+}
+
+/**
+ * Server-owned properties, declared on the schema and written by the BFF whatever the client sent:
+ * when a decision was made and by whom is not the browser's to record. Only root properties the
+ * schema declares are considered.
+ *
+ * - `x-draken-server-timestamp: 'created'` is stamped on the first write and then kept from the
+ *   stored document.
+ * - `x-draken-server-timestamp: 'updated'` is stamped on every write.
+ * - `x-draken-server-revisions: true` names an array the BFF extends with `{ savedAt, savedBy }` on
+ *   every write, starting from the stored array rather than the client's copy.
+ */
+export const applyServerStamps = (schema: JsonSchema, value: JsonObject, context: ServerStampContext): JsonObject => {
+  const properties = isRecord(schema.value) && isRecord(schema.value.properties) ? schema.value.properties : {};
+  const timestamp = context.now.toISOString();
+  const stamped: Record<string, JsonValue> = { ...value };
+  let changed = false;
+
+  for (const [name, property] of Object.entries(properties)) {
+    if (!isRecord(property)) continue;
+    const mode = property['x-draken-server-timestamp'];
+    if (mode === 'created') {
+      const existing = context.existingValue?.[name];
+      stamped[name] = typeof existing === 'string' && existing.length > 0 ? existing : timestamp;
+      changed = true;
+    } else if (mode === 'updated') {
+      stamped[name] = timestamp;
+      changed = true;
+    }
+    if (property['x-draken-server-revisions'] === true) {
+      const existing = context.existingValue?.[name];
+      stamped[name] = [...(Array.isArray(existing) ? existing : []), { savedAt: timestamp, savedBy: context.savedBy }];
+      changed = true;
+    }
+  }
+
+  return changed ? stamped : value;
+};
+
 export class SupportJsonParameterService {
   private readonly apiService: JsonParameterApiService;
   private readonly schemaService: SchemaBoundJsonService;
   private readonly namespace: string;
   private readonly supportManagementService: string;
+  private readonly clock: () => Date;
 
   constructor(dependencies: SupportJsonParameterServiceDependencies) {
     this.apiService = dependencies.apiService ?? new ApiService();
+    this.clock = dependencies.clock ?? (() => new Date());
     this.schemaService =
       dependencies.schemaService ??
       new SchemaBoundJsonService({
@@ -314,7 +364,12 @@ export class SupportJsonParameterService {
       throw new HttpException(409, 'A JSON parameter schemaId cannot be changed after creation');
     }
     const schema = await this.requireSchemaBinding(request, request.data.schemaId, existing ? 502 : 400);
-    this.schemaService.assertValueMatchesSchema(schema, request.data.value);
+    const value = applyServerStamps(schema, request.data.value, {
+      existingValue: existing?.document.value,
+      now: this.clock(),
+      savedBy: request.user.username,
+    });
+    this.schemaService.assertValueMatchesSchema(schema, value);
     // Schema/document preflight can involve several upstream reads. Recheck the
     // parent immediately before the child write to keep the unavoidable
     // non-atomic parent-status race as narrow as the upstream contract allows.
@@ -327,7 +382,7 @@ export class SupportJsonParameterService {
         data: {
           key: request.definition.key,
           schemaId: request.data.schemaId,
-          value: request.data.value,
+          value,
         },
         headers: precondition.headers,
         followLocation: false,

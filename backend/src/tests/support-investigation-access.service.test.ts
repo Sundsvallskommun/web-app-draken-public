@@ -5,7 +5,7 @@ import { SupportInvestigationAccessService } from '@/services/support-investigat
 import { mockUser } from './helpers/http';
 import { mockErrandAccess } from './helpers/support-errand-access';
 
-const documentKeys = ['utredning-hsl', 'utredning-sol-lss', 'beslut-missforhallande'];
+const documentKeys = ['utredning-hsl', 'utredning-sol-lss', 'beslut-sol-lss'];
 const setup = (data: unknown = mockErrandAccess()) => {
   const api = new ApiService();
   const get = vi.spyOn(api, 'get').mockResolvedValue({ data, status: 200, message: 'success' });
@@ -65,7 +65,7 @@ describe('SupportInvestigationAccessService', () => {
           allKeys: false,
           keys: [
             { key: 'utredning-hsl', level: 'R' },
-            { key: 'beslut-missforhallande', level: 'RW' },
+            { key: 'beslut-sol-lss', level: 'RW' },
           ],
         },
       ],

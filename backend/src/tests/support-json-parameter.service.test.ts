@@ -314,6 +314,124 @@ describe('SupportJsonParameterService', () => {
     expect(api.putCalls).toHaveLength(0);
   });
 
+  const stampedSchema = () =>
+    schema(DEFINITION.schemaName, SCHEMA_ID, {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        assessment: { type: 'string' },
+        decidedAt: { type: 'string', format: 'date-time', 'x-draken-server-timestamp': 'created' },
+        updatedAt: { type: 'string', format: 'date-time', 'x-draken-server-timestamp': 'updated' },
+        revisions: {
+          type: 'array',
+          'x-draken-server-revisions': true,
+          items: { type: 'object', required: ['savedAt', 'savedBy'], properties: { savedAt: { type: 'string' }, savedBy: { type: 'string' } } },
+        },
+        other: { type: 'string', 'x-draken-server-timestamp': false },
+      },
+    });
+  const stampedSubject = (getQueue: readonly QueuedResponse[], putQueue: readonly QueuedResponse[], now: string) => {
+    const api = new FakeApiService(getQueue, putQueue);
+    const service = new SupportJsonParameterService({
+      apiService: api,
+      namespace: NAMESPACE,
+      supportManagementService: SUPPORT_MANAGEMENT_SERVICE,
+      jsonSchemaService: JSON_SCHEMA_SERVICE,
+      clock: () => new Date(now),
+    });
+    return { api, service };
+  };
+
+  it('stamps the created and updated timestamps and the first revision on a create, whatever the client sent', async () => {
+    const { api, service } = stampedSubject(
+      [
+        writableParentResponse(),
+        new HttpException(404, 'Not found'),
+        response(stampedSchema(), 200),
+        writableParentResponse(),
+        writableParentResponse(11),
+      ],
+      [response(document(1), 201, '"1"')],
+      '2026-09-11T12:30:00.000Z',
+    );
+
+    await expect(
+      service.writeJsonParameter(
+        writeRequest({ ifNoneMatch: '*' }, SCHEMA_ID, {
+          assessment: 'saved',
+          decidedAt: '2001-01-01T00:00:00Z',
+          revisions: [{ savedAt: '2001-01-01T00:00:00Z', savedBy: 'forged' }],
+          other: 'kept',
+        }),
+      ),
+    ).resolves.toMatchObject({ status: 201 });
+
+    expect(api.putCalls[0]).toMatchObject({
+      data: {
+        value: {
+          assessment: 'saved',
+          decidedAt: '2026-09-11T12:30:00.000Z',
+          updatedAt: '2026-09-11T12:30:00.000Z',
+          revisions: [{ savedAt: '2026-09-11T12:30:00.000Z', savedBy: USER.username }],
+          other: 'kept',
+        },
+      },
+    });
+  });
+
+  it('keeps the stored created timestamp and extends the stored revisions on an update', async () => {
+    const stored = {
+      ...document(7),
+      value: {
+        assessment: 'version-7',
+        decidedAt: '2026-09-11T12:30:00.000Z',
+        updatedAt: '2026-09-11T12:30:00.000Z',
+        revisions: [{ savedAt: '2026-09-11T12:30:00.000Z', savedBy: 'first' }],
+      },
+    };
+    const { api, service } = stampedSubject(
+      [writableParentResponse(), response(stored, 200, '"7"'), response(stampedSchema(), 200), writableParentResponse(), writableParentResponse(11)],
+      [response(document(8), 200, '"8"')],
+      '2026-09-12T08:00:00.000Z',
+    );
+
+    await service.writeJsonParameter(
+      writeRequest({ ifMatch: '"7"' }, SCHEMA_ID, { assessment: 'changed', decidedAt: '1999-01-01T00:00:00Z', revisions: [] }),
+    );
+
+    expect(api.putCalls[0]).toMatchObject({
+      data: {
+        value: {
+          assessment: 'changed',
+          decidedAt: '2026-09-11T12:30:00.000Z',
+          updatedAt: '2026-09-12T08:00:00.000Z',
+          revisions: [
+            { savedAt: '2026-09-11T12:30:00.000Z', savedBy: 'first' },
+            { savedAt: '2026-09-12T08:00:00.000Z', savedBy: USER.username },
+          ],
+        },
+      },
+    });
+  });
+
+  it('leaves documents whose schema declares no server stamps exactly as sent', async () => {
+    const plainSchema = schema(DEFINITION.schemaName, SCHEMA_ID, { type: 'object', properties: { decidedAt: { type: 'string' } } });
+    const { api, service } = makeSubject(
+      [
+        writableParentResponse(),
+        new HttpException(404, 'Not found'),
+        response(plainSchema, 200),
+        writableParentResponse(),
+        writableParentResponse(11),
+      ],
+      [response(document(1), 201, '"1"')],
+    );
+
+    await service.writeJsonParameter(writeRequest({ ifNoneMatch: '*' }, SCHEMA_ID, { decidedAt: 'client-value' }));
+
+    expect(api.putCalls[0]).toMatchObject({ data: { value: { decidedAt: 'client-value' } } });
+  });
+
   it('enforces standard date formats at the backend trust boundary', async () => {
     const dateSchema = schema(DEFINITION.schemaName, SCHEMA_ID, {
       type: 'object',

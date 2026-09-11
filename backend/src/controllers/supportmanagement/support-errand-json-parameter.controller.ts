@@ -4,8 +4,9 @@ import { Body, Controller, Get, HeaderParam, Param, Put, Req, Res, UseBefore } f
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
-import { resolveIafVofInvestigationClassificationOwner } from '@/config/iaf-vof-investigation-classification';
+import { resolveIafVofInvestigationDocumentApplicability } from '@/config/iaf-vof-investigation-classification';
 import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
+import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 import { SupportInvestigationDocumentProfileDto, SupportInvestigationProfileDto } from '@/dtos/support-investigation-profile.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -40,6 +41,13 @@ const setETagHeader = (response: Response, etag: unknown, version?: number): voi
     response.setHeader('ETag', `"${version}"`);
   }
 };
+
+const NOT_APPLICABLE_MESSAGES: Readonly<Record<Exclude<SupportInvestigationDocumentProfileDto['appliesTo'] & string, 'all'>, string>> = Object.freeze(
+  {
+    'reported-misconduct': 'This investigation document applies to reported misconduct errands only',
+    'hsl-deviation': 'This investigation document applies to HSL deviation errands only',
+  },
+);
 
 const requireJsonParameterDefinition = (profile: SupportInvestigationProfileDto, key: string): SupportInvestigationDocumentProfileDto => {
   const definition = profile.documents.find(document => document.key === key);
@@ -119,7 +127,8 @@ export class SupportErrandJsonParameterController {
     // here keeps the BFF's answer a 403 about permissions instead of a relayed upstream failure.
     // A user who may only read the document is refused here rather than at the load.
     await this.accessService.assertCanWriteDocument(req.user, municipalityId, errandId, definition.key);
-    await this.assertDocumentAppliesToErrand(req, definition, municipalityId, errandId);
+    const snapshot = await this.assertDocumentAppliesToErrand(req, definition, municipalityId, errandId);
+    await this.assertPrerequisiteDocumentSaved(req, definition, municipalityId, errandId, snapshot);
     const result = await this.documentService.writeJsonParameter({
       definition,
       municipalityId,
@@ -145,16 +154,39 @@ export class SupportErrandJsonParameterController {
     definition: SupportInvestigationDocumentProfileDto,
     municipalityId: string,
     errandId: string,
-  ): Promise<void> {
-    if ((definition.appliesTo ?? 'all') !== 'reported-misconduct') return;
+  ): Promise<Errand | undefined> {
+    const appliesTo = definition.appliesTo ?? 'all';
+    if (appliesTo === 'all') return undefined;
 
-    const classificationPolicy = this.policyService.iafVofClassificationPolicy;
-    if (!classificationPolicy) {
-      throw new HttpException(409, 'Reported misconduct documents require an investigation classification policy');
+    // The applicability rule is the IAF/VOF classification policy's; an application without one
+    // has no way to decide, so its restricted documents stay closed.
+    if (!this.policyService.iafVofClassificationPolicy) {
+      throw new HttpException(409, 'Restricted investigation documents require an investigation classification policy');
     }
     const errand = await this.documentService.readParentErrandSnapshot({ definition, municipalityId, errandId, user: req.user });
-    if (resolveIafVofInvestigationClassificationOwner(classificationPolicy, errand).mode !== 'reported-misconduct') {
-      throw new HttpException(409, 'This investigation document applies to reported misconduct errands only');
+    if (resolveIafVofInvestigationDocumentApplicability(errand) !== appliesTo) {
+      throw new HttpException(409, NOT_APPLICABLE_MESSAGES[appliesTo]);
+    }
+    return errand;
+  }
+
+  /**
+   * A document that answers another one is written only once that one exists on the errand. The
+   * snapshot from the applicability check is reused when there is one, so the parent is read once.
+   */
+  private async assertPrerequisiteDocumentSaved(
+    req: RequestWithUser,
+    definition: SupportInvestigationDocumentProfileDto,
+    municipalityId: string,
+    errandId: string,
+    snapshot: Errand | undefined,
+  ): Promise<void> {
+    const prerequisiteKey = definition.prerequisiteDocumentKey;
+    if (!prerequisiteKey) return;
+
+    const errand = snapshot ?? (await this.documentService.readParentErrandSnapshot({ definition, municipalityId, errandId, user: req.user }));
+    if (!errand.jsonParameters?.some(parameter => parameter.key === prerequisiteKey)) {
+      throw new HttpException(409, `This investigation document requires ${prerequisiteKey} to be saved on the errand first`);
     }
   }
 }

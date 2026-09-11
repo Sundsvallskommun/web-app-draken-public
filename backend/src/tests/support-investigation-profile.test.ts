@@ -11,12 +11,21 @@ const expectedDocuments: SupportInvestigationProfileDto['documents'][number][] =
   { key: 'utredning-sol-lss', schemaName: 'utredning-sol-lss', tabLabel: 'Utredning SoL/LSS', ownerLabel: 'Lex Sarah' },
   { key: 'utredning-hsl', schemaName: 'utredning-hsl', tabLabel: 'Utredning HSL', ownerLabel: 'MAS/MAR' },
   {
-    key: 'beslut-missforhallande',
-    schemaName: 'beslut-missforhallande',
-    tabLabel: 'Beslut',
-    ownerLabel: 'Beslutsfattare',
+    key: 'beslut-hsl',
+    schemaName: 'beslut-hsl',
+    tabLabel: 'Beslut HSL',
+    ownerLabel: 'MAS/MAR',
+    placement: 'decision',
+    appliesTo: 'hsl-deviation',
+  },
+  {
+    key: 'beslut-sol-lss',
+    schemaName: 'beslut-sol-lss',
+    tabLabel: 'Beslut SoL/LSS',
+    ownerLabel: 'LEX-ansvarig',
     placement: 'decision',
     appliesTo: 'reported-misconduct',
+    prerequisiteDocumentKey: 'utredning-sol-lss',
   },
 ];
 
@@ -137,9 +146,25 @@ describe('support investigation profiles', () => {
     expect(() =>
       createSupportInvestigationProfile({ application: 'FUTURE', documents: [{ ...decision, placement: 'sidebar' as 'decision' }] }),
     ).toThrow('documents[0].placement must be one of investigation, decision');
-    expect(() => createSupportInvestigationProfile({ application: 'FUTURE', documents: [{ ...decision, appliesTo: 'hsl' as 'all' }] })).toThrow(
-      'documents[0].appliesTo must be one of all, reported-misconduct',
+    expect(() => createSupportInvestigationProfile({ application: 'FUTURE', documents: [{ ...decision, appliesTo: 'sol' as 'all' }] })).toThrow(
+      'documents[0].appliesTo must be one of all, reported-misconduct, hsl-deviation',
     );
+  });
+
+  it('carries a prerequisite only when it names another document of the profile', () => {
+    const investigation = { key: 'investigation', schemaName: 'investigation', tabLabel: 'Utredning', ownerLabel: 'Owner' };
+    const decision = { key: 'decision', schemaName: 'decision', tabLabel: 'Beslut', ownerLabel: 'Owner', prerequisiteDocumentKey: 'investigation' };
+
+    expect(createSupportInvestigationProfile({ application: 'FUTURE', documents: [investigation, decision] }).documents[1]).toEqual(decision);
+    expect(() => createSupportInvestigationProfile({ application: 'FUTURE', documents: [decision] })).toThrow(
+      'documents[0].prerequisiteDocumentKey must name another document in the profile',
+    );
+    expect(() =>
+      createSupportInvestigationProfile({ application: 'FUTURE', documents: [{ ...decision, prerequisiteDocumentKey: 'decision' }] }),
+    ).toThrow('documents[0].prerequisiteDocumentKey must name another document in the profile');
+    expect(() =>
+      createSupportInvestigationProfile({ application: 'FUTURE', documents: [investigation, { ...decision, prerequisiteDocumentKey: '../x' }] }),
+    ).toThrow('documents[1].prerequisiteDocumentKey must be a lowercase kebab-case identifier');
   });
 
   it('allows several document keys to reuse the same schema template', () => {
