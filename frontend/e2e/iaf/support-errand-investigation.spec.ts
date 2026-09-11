@@ -3,7 +3,9 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures/base.fixture';
 import {
   allExistingInvestigationDocuments,
-  decisionKey,
+  hslDecisionKey,
+  misconductDecisionKey,
+  solDeviationScenario,
   defaultInvestigationProfile,
   errandNumber,
   existingManagerDocument,
@@ -609,26 +611,103 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(hslDocument.locator('[data-cy="schema-submit-button"]')).toHaveCount(1);
   });
 
-  test('visar ingen beslutsflik för en vanlig avvikelse', async ({ page, dismissCookieConsent }) => {
-    const trace = await installIafApiMock(page, { documents: {}, eventType: 'AVVIKELSE' });
+  test('visar ingen beslutsflik för en vanlig avvikelse utan lagrum HSL', async ({ page, dismissCookieConsent }) => {
+    const trace = await installIafApiMock(page, { documents: {}, eventType: 'AVVIKELSE', ...solDeviationScenario() });
 
     await visitErrand(page, dismissCookieConsent);
     await openInvestigation(page);
 
-    // The decision is neither an errand tab nor a document under Utredning for an ordinary deviation.
+    // Neither decision is an errand tab nor a document under Utredning for a SoL deviation.
     await expect(page.getByRole('tab', { name: 'Beslut', exact: true })).toHaveCount(0);
     await expect(page.locator('[data-cy="support-investigation-tab"]').getByRole('tab')).toHaveCount(
       investigationTabKeys.length
     );
     await expect(page.locator('[data-cy="support-decision-tab"]')).toHaveCount(0);
-    expect(trace.documentGets).not.toContain(decisionKey);
+    expect(trace.documentGets).not.toContain(hslDecisionKey);
+    expect(trace.documentGets).not.toContain(misconductDecisionKey);
   });
 
-  test('sparar beslutet om ett missförhållande som ett eget dokument på fliken Beslut', async ({
+  test('sparar IVO-beslutet för en vanlig HSL-avvikelse och kräver Public 360 vid anmälan', async ({
     page,
     dismissCookieConsent,
   }) => {
-    const trace = await installIafApiMock(page, { documents: {}, eventType: 'MISSFORHALLANDE' });
+    // The default deviation carries the HSL legal base.
+    const trace = await installIafApiMock(page, { documents: {}, eventType: 'AVVIKELSE' });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+    await expect(page.locator('[data-cy="support-investigation-tab"]').getByRole('tab')).toHaveCount(
+      investigationTabKeys.length
+    );
+
+    await page.getByRole('tab', { name: 'Beslut', exact: true }).click();
+    const decisionTab = page.locator('[data-cy="support-decision-tab"]');
+    await expect(decisionTab).toBeVisible();
+    // Only the HSL decision applies; the lex Sarah decision is neither shown nor fetched.
+    await expect(decisionTab.getByRole('tab')).toHaveCount(1);
+    const document = page.locator(`[data-cy="investigation-document-${hslDecisionKey}"]`);
+    await expect(document).toBeVisible();
+    await expect(document).toContainText('Ansvarig roll: MAS/MAR');
+    await expect.poll(() => trace.latestSchemaNames).toContain(hslDecisionKey);
+    expect(trace.documentGets).not.toContain(misconductDecisionKey);
+    await expect(page.locator('[data-cy="investigation-decision-proposal"]')).toHaveCount(0);
+
+    // Both case numbers exist only once the errand is reported to IVO; Public 360 is then required.
+    // The decision timestamps and revisions are the server's and are never asked for.
+    const ivoNotification = document.locator(`#${hslDecisionKey}_ivoNotification`);
+    const public360 = document.locator(`#${hslDecisionKey}_public360CaseNumber`);
+    await expect(document.locator(`label[for="${hslDecisionKey}_ivoNotification"]`)).toContainText('(Obligatorisk)');
+    await expect(public360).toHaveCount(0);
+    await expect(document.locator(`#${hslDecisionKey}_ivoCaseNumber`)).toHaveCount(0);
+    for (const serverField of ['decidedAt', 'updatedAt', 'revisions']) {
+      await expect(document.locator(`#${hslDecisionKey}_${serverField}`)).toHaveCount(0);
+    }
+    await ivoNotification.getByRole('radio', { name: 'Nej', exact: true }).check();
+    await expect(public360).toHaveCount(0);
+    await ivoNotification.getByRole('radio', { name: 'Ja', exact: true }).check();
+    await expect(public360).toBeVisible();
+    await expect(document.locator(`label[for="${hslDecisionKey}_public360CaseNumber"]`)).toHaveText(
+      'Public 360 ärendenummer (Obligatorisk)'
+    );
+    await expect(document.locator(`#${hslDecisionKey}_ivoCaseNumber`)).toHaveCount(1);
+
+    // Reporting to IVO without a Public 360 number is refused before anything is written.
+    await document.getByRole('button', { name: 'Spara beslut', exact: true }).click();
+    await expect(document.locator('[data-cy="schema-form-error-summary"]')).toBeVisible();
+    expect(trace.puts).toHaveLength(0);
+
+    await document.locator(`#${hslDecisionKey}_public360CaseNumber`).fill('P360-2026-5678');
+    await document.locator(`#${hslDecisionKey}_ivoCaseNumber`).fill('IVO-2026-1234');
+    await document.getByRole('button', { name: 'Spara beslut', exact: true }).click();
+
+    await expect.poll(() => trace.puts.length).toBe(1);
+    expect(trace.puts[0].key).toBe(hslDecisionKey);
+    expect(trace.puts[0].headers['if-none-match']).toBe('*');
+    expect(trace.puts[0].body).toEqual({
+      schemaId: `2281_${hslDecisionKey}_1.2`,
+      value: {
+        ivoNotification: 'yes',
+        ivoCaseNumber: 'IVO-2026-1234',
+        public360CaseNumber: 'P360-2026-5678',
+      },
+    });
+    expect(trace.classificationPatches).toHaveLength(0);
+    await expect(document.locator('[data-cy="investigation-document-notice"]')).toContainText('Beslutet har sparats.');
+  });
+
+  test('sparar lex Sarah-beslutet om ett missförhållande med utredarens förslag intill', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const investigations = allExistingInvestigationDocuments();
+    const trace = await installIafApiMock(page, {
+      documents: { 'utredning-sol-lss': investigations['utredning-sol-lss'] },
+      eventType: 'MISSFORHALLANDE',
+      featureFlags: [
+        { name: 'isSupportManagement', enabled: true },
+        { name: 'useMeasures', enabled: true },
+      ],
+    });
 
     await visitErrand(page, dismissCookieConsent);
     await openInvestigation(page);
@@ -639,52 +718,80 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       page.locator('[data-cy="support-investigation-tab"]').getByRole('tab', { name: 'Beslut', exact: true })
     ).toHaveCount(0);
 
+    // The decision closes the case, so its tab follows the measures.
+    const errandTabNames = await page.getByRole('tablist').first().getByRole('tab').allInnerTexts();
+    expect(errandTabNames.indexOf('Åtgärder')).toBeGreaterThan(-1);
+    expect(errandTabNames.indexOf('Åtgärder')).toBeLessThan(errandTabNames.indexOf('Beslut'));
+
     await page.getByRole('tab', { name: 'Beslut', exact: true }).click();
     const decisionTab = page.locator('[data-cy="support-decision-tab"]');
     await expect(decisionTab).toBeVisible();
+    // Only the lex Sarah decision applies to a reported misconduct, whatever its legal bases.
     await expect(decisionTab.getByRole('tab')).toHaveCount(1);
-    const document = page.locator(`[data-cy="investigation-document-${decisionKey}"]`);
+    const document = page.locator(`[data-cy="investigation-document-${misconductDecisionKey}"]`);
     await expect(document).toBeVisible();
-    await expect(document).toContainText('Ansvarig roll: Beslutsfattare');
-    await expect.poll(() => trace.latestSchemaNames).toContain(decisionKey);
+    await expect(document).toContainText('Ansvarig roll: LEX-ansvarig');
+    await expect.poll(() => trace.latestSchemaNames).toContain(misconductDecisionKey);
+    expect(trace.documentGets).not.toContain(hslDecisionKey);
 
-    // The follow-up questions only appear once a misconduct is established.
-    const established = document.locator(`#${decisionKey}_misconductEstablished`);
-    const serious = document.locator(`#${decisionKey}_seriousMisconduct`);
-    await expect(serious).toHaveCount(0);
-    await established.getByRole('radio', { name: 'Nej', exact: true }).check();
-    await expect(serious).toHaveCount(0);
-    await expect(document.locator(`#${decisionKey}_misconductEstablishedMotivation`)).toHaveCount(1);
-    await established.getByRole('radio', { name: 'Ja', exact: true }).check();
-    await expect(serious).toHaveCount(1);
-    await expect(document.locator(`#${decisionKey}_misconductEstablishedMotivation`)).toHaveCount(0);
+    // The investigator's proposal from the SoL/LSS investigation is shown read-only, never copied.
+    const proposal = document.locator('[data-cy="investigation-decision-proposal"]');
+    await expect(proposal).toContainText('Förslag till beslut från utredning SoL/LSS');
+    await expect(proposal.locator('[data-cy="investigation-decision-proposal-degree"]')).toHaveText('Missförhållande');
+    await expect(proposal.locator('[data-cy="investigation-decision-proposal-motivation"]')).toContainText(
+      'Utredarens samlade motivering.'
+    );
+    await expect(document.locator('[data-cy="investigation-document-prerequisite"]')).toHaveCount(0);
 
-    await document.locator(`#${decisionKey}_decisionDate`).fill('2026-09-01');
-    await serious.getByRole('radio', { name: 'Ja', exact: true }).check();
+    // The case numbers only appear once the errand is reported to IVO.
+    await expect(document.locator(`#${misconductDecisionKey}_ivoCaseNumber`)).toHaveCount(0);
+    await expect(document.locator(`#${misconductDecisionKey}_public360CaseNumber`)).toHaveCount(0);
     await document
-      .locator(`#${decisionKey}_tangibleRiskOfSeriousMisconduct`)
+      .locator(`#${misconductDecisionKey}_decidedMisconductDegree`)
+      .selectOption('tangible_risk_of_serious_misconduct');
+    await document.locator(`#${misconductDecisionKey}_decisionMotivation`).fill('Risken var påtaglig.');
+    await document
+      .locator(`#${misconductDecisionKey}_ivoNotification`)
       .getByRole('radio', { name: 'Ja', exact: true })
       .check();
-    await document.locator(`#${decisionKey}_reportedToIvo`).getByRole('radio', { name: 'Ja', exact: true }).check();
-    await document.locator(`#${decisionKey}_ivoCaseNumber`).fill('IVO-2026-4321');
+    await expect(document.locator(`#${misconductDecisionKey}_ivoCaseNumber`)).toHaveCount(1);
+    await document.locator(`#${misconductDecisionKey}_public360CaseNumber`).fill('P360-2026-8765');
     await document.getByRole('button', { name: 'Spara beslut', exact: true }).click();
 
     await expect.poll(() => trace.puts.length).toBe(1);
-    expect(trace.puts[0].key).toBe(decisionKey);
+    expect(trace.puts[0].key).toBe(misconductDecisionKey);
     expect(trace.puts[0].headers['if-none-match']).toBe('*');
     expect(trace.puts[0].body).toEqual({
-      schemaId: `2281_${decisionKey}_1.0`,
+      schemaId: `2281_${misconductDecisionKey}_1.2`,
       value: {
-        decisionDate: '2026-09-01',
-        misconductEstablished: 'yes',
-        seriousMisconduct: 'yes',
-        tangibleRiskOfSeriousMisconduct: 'yes',
-        reportedToIvo: 'yes',
-        ivoCaseNumber: 'IVO-2026-4321',
+        decidedMisconductDegree: 'tangible_risk_of_serious_misconduct',
+        decisionMotivation: '<p>Risken var påtaglig.</p>',
+        ivoNotification: 'yes',
+        public360CaseNumber: 'P360-2026-8765',
       },
     });
     expect(trace.classificationPatches).toHaveLength(0);
     await expect(document.locator('[data-cy="investigation-document-notice"]')).toContainText('Beslutet har sparats.');
+  });
+
+  test('spärrar lex Sarah-beslutet tills utredningen SoL/LSS har sparats i ärendet', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    const trace = await installIafApiMock(page, { documents: {}, eventType: 'MISSFORHALLANDE' });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+    await page.getByRole('tab', { name: 'Beslut', exact: true }).click();
+
+    const document = page.locator(`[data-cy="investigation-document-${misconductDecisionKey}"]`);
+    await expect(document).toBeVisible();
+    await expect(document.locator('[data-cy="investigation-document-prerequisite"]')).toContainText(
+      'Beslutet kan fattas först när Utredning SoL/LSS har sparats i ärendet.'
+    );
+    await expect(document.locator('[data-cy="investigation-decision-proposal"]')).toHaveCount(0);
+    await expect(document.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
+    expect(trace.puts).toHaveLength(0);
   });
 
   test('döljer beslutsfliken när användaren inte når beslutet', async ({ page, dismissCookieConsent }) => {
@@ -694,7 +801,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       eventType: 'MISSFORHALLANDE',
       investigationProfile: profile,
       documentAccess: Object.fromEntries(
-        profile.documents.map(({ key }) => [key, key === decisionKey ? 'hidden' : 'edit'])
+        profile.documents.map(({ key }) => [key, key === misconductDecisionKey ? 'hidden' : 'edit'])
       ),
     });
 

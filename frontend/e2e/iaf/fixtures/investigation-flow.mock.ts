@@ -1,7 +1,9 @@
 import type { Page, Request, Route } from '@playwright/test';
 
-import decisionSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/beslut-missforhallande.schema-request.json';
-import decisionUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/beslut-missforhallande.ui-schema-request.json';
+import hslDecisionSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/beslut-hsl.schema-request.json';
+import hslDecisionUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/beslut-hsl.ui-schema-request.json';
+import solLssDecisionSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/beslut-sol-lss.schema-request.json';
+import solLssDecisionUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/beslut-sol-lss.ui-schema-request.json';
 import investigationCases from '../../../src/supportmanagement/investigation/avvikelse/schemas/fixtures/investigation-schema-cases.json';
 import managerSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-enhetschef.schema-request.json';
 import managerUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-enhetschef.ui-schema-request.json';
@@ -22,12 +24,17 @@ export const investigationKeys = [
   'utredning-enhetschef',
   'utredning-sol-lss',
   'utredning-hsl',
-  'beslut-missforhallande',
+  'beslut-hsl',
+  'beslut-sol-lss',
 ] as const;
 export type InvestigationKey = (typeof investigationKeys)[number];
-export const decisionKey = 'beslut-missforhallande' satisfies InvestigationKey;
-/** The documents the Utredning tab offers; the decision lives on its own tab. */
-export const investigationTabKeys = investigationKeys.filter((key) => key !== decisionKey);
+/** The IVO decision on an ordinary deviation under HSL. */
+export const hslDecisionKey = 'beslut-hsl' satisfies InvestigationKey;
+/** The lex Sarah decision on a reported misconduct. */
+export const misconductDecisionKey = 'beslut-sol-lss' satisfies InvestigationKey;
+const decisionKeys: readonly InvestigationKey[] = [hslDecisionKey, misconductDecisionKey];
+/** The documents the Utredning tab offers; the decisions live on their own tab. */
+export const investigationTabKeys = investigationKeys.filter((key) => !decisionKeys.includes(key));
 
 export interface MockInvestigationProfile {
   application: string;
@@ -39,7 +46,7 @@ export interface MockInvestigationProfile {
     tabLabel: string;
     ownerLabel: string;
     placement?: 'investigation' | 'decision';
-    appliesTo?: 'all' | 'reported-misconduct';
+    appliesTo?: 'all' | 'reported-misconduct' | 'hsl-deviation';
   }>;
 }
 
@@ -67,10 +74,18 @@ export const defaultInvestigationProfile = (): MockInvestigationProfile => ({
       ownerLabel: 'MAS/MAR',
     },
     {
-      key: decisionKey,
-      schemaName: decisionKey,
-      tabLabel: 'Beslut',
-      ownerLabel: 'Beslutsfattare',
+      key: hslDecisionKey,
+      schemaName: hslDecisionKey,
+      tabLabel: 'Beslut HSL',
+      ownerLabel: 'MAS/MAR',
+      placement: 'decision',
+      appliesTo: 'hsl-deviation',
+    },
+    {
+      key: misconductDecisionKey,
+      schemaName: misconductDecisionKey,
+      tabLabel: 'Beslut SoL/LSS',
+      ownerLabel: 'LEX-ansvarig',
       placement: 'decision',
       appliesTo: 'reported-misconduct',
     },
@@ -153,28 +168,32 @@ const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
   'utredning-enhetschef': managerSchemaRequest,
   'utredning-sol-lss': solLssSchemaRequest,
   'utredning-hsl': hslSchemaRequest,
-  'beslut-missforhallande': decisionSchemaRequest,
+  'beslut-hsl': hslDecisionSchemaRequest,
+  'beslut-sol-lss': solLssDecisionSchemaRequest,
 };
 
 const uiSchemaRequests: Record<InvestigationKey, UiSchemaRequest> = {
   'utredning-enhetschef': managerUiSchemaRequest,
   'utredning-sol-lss': solLssUiSchemaRequest,
   'utredning-hsl': hslUiSchemaRequest,
-  'beslut-missforhallande': decisionUiSchemaRequest,
+  'beslut-hsl': hslDecisionUiSchemaRequest,
+  'beslut-sol-lss': solLssDecisionUiSchemaRequest,
 };
 
 const validValues: Record<InvestigationKey, JsonObject> = {
   'utredning-enhetschef': investigationCases['utredning-enhetschef'].valid,
   'utredning-sol-lss': investigationCases['utredning-sol-lss'].valid,
   'utredning-hsl': investigationCases['utredning-hsl'].valid,
-  'beslut-missforhallande': investigationCases['beslut-missforhallande'].valid,
+  'beslut-hsl': investigationCases['beslut-hsl'].valid,
+  'beslut-sol-lss': investigationCases['beslut-sol-lss'].valid,
 };
 
 export const latestSchemaIds: Record<InvestigationKey, string> = {
   'utredning-enhetschef': '2281_utredning-enhetschef_1.1',
   'utredning-sol-lss': '2281_utredning-sol-lss_1.1',
-  'utredning-hsl': '2281_utredning-hsl_1.0',
-  'beslut-missforhallande': '2281_beslut-missforhallande_1.0',
+  'utredning-hsl': '2281_utredning-hsl_1.1',
+  'beslut-hsl': '2281_beslut-hsl_1.2',
+  'beslut-sol-lss': '2281_beslut-sol-lss_1.2',
 };
 
 export const existingManagerDocument = (): InvestigationDocument => ({
@@ -432,6 +451,18 @@ const misconductLabels = [
   legalCertainty,
   deficientHandling,
 ].map(withoutChildren);
+
+/**
+ * An ordinary deviation under SoL only. The default deviation is under HSL, so this is the errand
+ * that takes no decision at all.
+ */
+export const solDeviationScenario = (): Pick<IafApiScenario, 'labels' | 'classification'> => ({
+  labels: [provisionSol, reportDeviation, solLssOwner, legalCertainty, deficientHandling].map(withoutChildren),
+  classification: {
+    category: iafLabelFixture.classification.solLssOwner.resourcePath,
+    type: iafLabelFixture.classification.legalCertainty.resourcePath,
+  },
+});
 
 const allLabelsById = new Map<string, MockLabel>();
 const collectLabels = (labels: readonly MockLabel[]) => {
