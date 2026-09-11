@@ -181,6 +181,23 @@ export class AddressController {
     return { data: result, message: 'success' } as ResponseData;
   }
 
+  @Get('/legalentity/:partyId')
+  @OpenAPI({ summary: 'Return legal entity information for a given party id' })
+  @UseBefore(authMiddleware)
+  async legalEntityByPartyId(@Req() req: RequestWithUser, @Param('partyId') partyId: string): Promise<ResponseData> {
+    if (!isUUID(partyId)) {
+      throw new HttpException(400, 'Party id must be a uuid');
+    }
+
+    if (!MUNICIPALITY_ID) {
+      throw new HttpException(500, 'Municipality id is not configured');
+    }
+
+    const data = await this.organizationService.getOrganizationByPartyId(MUNICIPALITY_ID, partyId, req.user);
+
+    return { data, message: 'success' } as ResponseData;
+  }
+
   @Get('/legalentity/:partyId/engagements')
   @OpenAPI({ summary: 'Return people engaged in the company a given party id belongs to' })
   @UseBefore(authMiddleware)
