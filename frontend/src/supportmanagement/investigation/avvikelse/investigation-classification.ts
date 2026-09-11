@@ -5,8 +5,10 @@ import { getAvvikelseClassificationPlacement } from './avvikelse-classification-
 import {
   type AvvikelseClassificationLegalBaseRule,
   type AvvikelseClassificationPlacement,
+  type AvvikelseDocumentApplicability,
   isAvvikelseReportedMisconductErrand,
   resolveAvvikelseClassificationOwnerDocumentKey,
+  resolveAvvikelseDocumentApplicability,
 } from './avvikelse-classification-policy';
 import type { InvestigationDocumentKey, InvestigationFormData } from './investigation-document';
 import { normalizeInvestigationFormData } from './investigation-form-data';
@@ -105,6 +107,11 @@ export const getInvestigationLegalBaseRules = (): readonly AvvikelseClassificati
 
 export const isReportedMisconductErrand = (errand: SupportErrand | undefined): boolean =>
   isAvvikelseReportedMisconductErrand(errand);
+
+/** The one kind of restricted document this errand takes, if any. */
+export const getInvestigationDocumentApplicability = (
+  errand: SupportErrand | undefined
+): AvvikelseDocumentApplicability | undefined => resolveAvvikelseDocumentApplicability(errand);
 
 export const getInvestigationClassificationOwner = (
   errand: SupportErrand | undefined

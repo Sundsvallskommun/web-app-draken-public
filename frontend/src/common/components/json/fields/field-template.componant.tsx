@@ -4,6 +4,11 @@ import { FormControl, FormErrorMessage, FormLabel } from '@sk-web-gui/react';
 
 export function FieldTemplate(props: FieldTemplateProps) {
   const { id, label, required, displayLabel, help, children, uiSchema, rawErrors, schema } = props;
+  const formContext = props.registry?.formContext as { requiredIndicator?: string } | undefined;
+  const requiredIndicator = formContext?.requiredIndicator ?? ' *';
+  // A field may read as required although the schema only requires it conditionally, so that a
+  // disabled state does not look optional.
+  const showRequiredIndicator = required || uiSchema?.['ui:options']?.showRequiredIndicator === true;
 
   const hideLabel = uiSchema?.['ui:options']?.hideLabel;
   const hideDescription = uiSchema?.['ui:options']?.hideDescription;
@@ -42,7 +47,7 @@ export function FieldTemplate(props: FieldTemplateProps) {
           {displayLabel && !hideLabel && (
             <FormLabel id={titleId(id)} htmlFor={id} className="schema-form-label max-w-full whitespace-normal">
               {label}
-              {required ? ' *' : ''}
+              {showRequiredIndicator ? requiredIndicator : ''}
             </FormLabel>
           )}
           {!descriptionBelow && renderDescription('above')}

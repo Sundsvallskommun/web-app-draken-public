@@ -78,6 +78,33 @@ test('reads a decision document restricted to reported misconduct', () => {
   assert.equal(profile.documents[2].appliesTo, 'reported-misconduct');
 });
 
+test('reads a prerequisite only when it names another document of the profile', () => {
+  const withPrerequisite = validProfile();
+  withPrerequisite.documents.push({
+    key: 'decision-document',
+    schemaName: 'beslut-sol-lss',
+    tabLabel: 'Beslut',
+    ownerLabel: 'LEX-ansvarig',
+    placement: 'decision',
+    appliesTo: 'reported-misconduct',
+    prerequisiteDocumentKey: withPrerequisite.documents[0].key,
+  } as (typeof withPrerequisite.documents)[number]);
+  assert.equal(
+    parseInvestigationProfile(withPrerequisite, 'IAF').documents[2].prerequisiteDocumentKey,
+    withPrerequisite.documents[0].key
+  );
+  assert.equal(parseInvestigationProfile(withPrerequisite, 'IAF').documents[0].prerequisiteDocumentKey, undefined);
+
+  for (const prerequisiteDocumentKey of ['decision-document', 'missing-document', '../unsafe']) {
+    const invalid = validProfile();
+    invalid.documents.push({
+      ...withPrerequisite.documents[2],
+      prerequisiteDocumentKey,
+    } as (typeof invalid.documents)[number]);
+    assert.throws(() => parseInvestigationProfile(invalid, 'IAF'), /prerequisiteDocumentKey/u);
+  }
+});
+
 test('rejects unknown placements and applicabilities rather than guessing', () => {
   const unknownPlacement = validProfile();
   Object.assign(unknownPlacement.documents[0], { placement: 'sidebar' });

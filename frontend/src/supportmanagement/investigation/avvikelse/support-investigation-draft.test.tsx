@@ -64,6 +64,7 @@ vi.mock('@common/components/json/utils/schema-utils', () => ({
 }));
 vi.mock('./investigation-classification', () => ({
   isReportedMisconductErrand: () => false,
+  getInvestigationDocumentApplicability: () => undefined,
   isInvestigationClassificationOwner: () => false,
   getInvestigationClassificationSchemaContract: () => undefined,
   getInvestigationClassificationUiSchema: () => ({}),
@@ -78,8 +79,10 @@ vi.mock('./investigation-classification', () => ({
 }));
 vi.mock('./investigation-form-data', () => ({
   getInvestigationRenderingSchema: (_name: string, schema: unknown) => schema,
+  getInvestigationServerTimestamps: () => [],
   getHslRiskValue: () => undefined,
   investigationDefaultFormStateBehavior: {},
+  investigationRequiredIndicator: ' (Obligatorisk)',
 }));
 vi.mock('./investigation-schema-debug-panel.component', () => ({
   investigationSchemaDebugIsVisible: () => false,

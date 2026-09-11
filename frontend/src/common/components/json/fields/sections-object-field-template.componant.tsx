@@ -45,6 +45,7 @@ interface FormContext {
   idPrefix?: string;
   externalFields?: Readonly<Record<string, ReactNode>>;
   errorNavigation?: SchemaErrorNavigation;
+  requiredIndicator?: string;
 }
 
 const externalFieldPrefix = '$external:';
@@ -403,7 +404,7 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
         {title && (
           <legend className="box-border max-w-full break-words px-8 text-label-medium font-bold whitespace-normal">
             {title}
-            {required ? ' *' : ''}
+            {required ? ctx?.requiredIndicator ?? ' *' : ''}
           </legend>
         )}
         {description && <p className="mb-16 text-small text-dark-secondary">{description}</p>}

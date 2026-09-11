@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { test } from 'vitest';
 
@@ -25,19 +26,28 @@ const artifacts = [
   },
   {
     name: 'utredning-hsl',
-    version: '1.0',
+    version: '1.1',
     hasErrandClassification: false,
     schemaFile: 'utredning-hsl.schema-request.json',
     uiSchemaFile: 'utredning-hsl.ui-schema-request.json',
   },
   {
-    name: 'beslut-missforhallande',
-    version: '1.0',
+    name: 'beslut-hsl',
+    version: '1.2',
     hasErrandClassification: false,
-    schemaFile: 'beslut-missforhallande.schema-request.json',
-    uiSchemaFile: 'beslut-missforhallande.ui-schema-request.json',
+    schemaFile: 'beslut-hsl.schema-request.json',
+    uiSchemaFile: 'beslut-hsl.ui-schema-request.json',
+  },
+  {
+    name: 'beslut-sol-lss',
+    version: '1.2',
+    hasErrandClassification: false,
+    schemaFile: 'beslut-sol-lss.schema-request.json',
+    uiSchemaFile: 'beslut-sol-lss.ui-schema-request.json',
   },
 ];
+
+const decisionArtifacts = artifacts.filter(({ name }) => name.startsWith('beslut-'));
 
 // The artifacts are arbitrary JSON documents that the assertions walk structurally,
 // so the traversal helpers below are deliberately untyped.
@@ -48,6 +58,7 @@ function readJson(relativePath: string) {
 function createValidator(schema: any) {
   const ajv = new Ajv2020({ allErrors: true, strict: false });
   ajv.addFormat('date', /^\d{4}-\d{2}-\d{2}$/u);
+  ajv.addFormat('date-time', /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u);
   return { ajv, validate: ajv.compile(schema) };
 }
 
@@ -235,13 +246,12 @@ test('UI schemas keep the agreed Draken accordion structure', () => {
       { id: 'analysis-team-participants', title: 'Deltagare i analysteam' },
       { id: 'methodology', title: 'Metodik' },
       { id: 'result', title: 'Resultat' },
-      { id: 'notification-and-documentation', title: 'Anmälan och dokumentation' },
       { id: 'commissioner-comment', title: 'Uppdragsgivarens kommentar' },
     ],
-    'beslut-missforhallande': [
-      { id: 'decision', title: 'Beslut' },
+    'beslut-hsl': [{ id: 'decision', title: 'Beslut' }],
+    'beslut-sol-lss': [
+      { id: 'decision', title: 'Beslut om missförhållande' },
       { id: 'ivo-report', title: 'Anmälan till IVO' },
-      { id: 'supplementary-information', title: 'Kompletterande information' },
     ],
   };
 
@@ -253,11 +263,12 @@ test('UI schemas keep the agreed Draken accordion structure', () => {
     );
   }
 
-  const hslUiSchema = readJson('utredning-hsl.ui-schema-request.json').value;
-  assert.ok(
-    hslUiSchema['ui:order'].indexOf('public360CaseNumber') < hslUiSchema['ui:order'].indexOf('ivoNotification')
-  );
-  assert.ok(hslUiSchema['ui:order'].indexOf('ivoNotification') < hslUiSchema['ui:order'].indexOf('ivoCaseNumber'));
+  // The IVO question comes first; its case number and the Public 360 number follow it.
+  for (const artifact of decisionArtifacts) {
+    const order: string[] = readJson(artifact.uiSchemaFile).value['ui:order'];
+    assert.ok(order.indexOf('ivoNotification') < order.indexOf('ivoCaseNumber'), artifact.name);
+    assert.ok(order.indexOf('ivoCaseNumber') < order.indexOf('public360CaseNumber'), artifact.name);
+  }
 });
 
 test('valid fixtures satisfy their draft 2020-12 schemas', () => {
@@ -360,116 +371,131 @@ test('unit manager rejects fields and templates that do not match the selected l
   }
 });
 
-test('HSL requires Public 360 always and IVO case number only for a positive IVO decision', () => {
+test('the HSL investigation no longer carries the IVO decision', () => {
   const schema = readJson('utredning-hsl.schema-request.json').value;
+  const uiSchema = readJson('utredning-hsl.ui-schema-request.json').value;
+
+  for (const field of ['ivoNotification', 'ivoCaseNumber', 'public360CaseNumber']) {
+    assert.equal(field in schema.properties, false, `utredning-hsl still declares ${field}`);
+    assert.equal(field in uiSchema, false, `utredning-hsl UI schema still configures ${field}`);
+  }
+  assert.equal(schema.required, undefined);
+  assert.equal(schema.allOf, undefined);
+});
+
+// Both decisions share the IVO part: the Ja/Nej answer is required, the IVO case number is always
+// optional, and the Public 360 number exists exactly when the errand is reported to IVO - required
+// then, refused otherwise, since the field is disabled for a Nej.
+for (const artifact of decisionArtifacts) {
+  test(`${artifact.name} requires the IVO answer, and Public 360 exactly for a positive one`, () => {
+    const schema = readJson(artifact.schemaFile).value;
+    const { ajv, validate } = createValidator(schema);
+    const base = structuredClone(fixtures[artifact.name].valid);
+    delete base.decidedAt;
+    delete base.updatedAt;
+    delete base.revisions;
+    delete base.ivoNotification;
+    delete base.ivoCaseNumber;
+    delete base.public360CaseNumber;
+
+    assert.ok(schema.required.includes('ivoNotification'));
+    assert.equal(schema.required.includes('ivoCaseNumber'), false);
+    assert.equal(schema.required.includes('public360CaseNumber'), false);
+    assert.equal(schema.required.includes('decidedAt'), false);
+
+    assert.equal(validate({ ...base }), false, 'accepted a decision without an IVO answer');
+    assert.equal(validate({ ...base, ivoNotification: 'no' }), true, ajv.errorsText(validate.errors));
+    assert.equal(validate({ ...base, ivoNotification: 'no', public360CaseNumber: 'P360-1' }), false);
+    assert.equal(validate({ ...base, ivoNotification: 'no', ivoCaseNumber: 'IVO-stale' }), false);
+    assert.equal(validate({ ...base, ivoNotification: 'yes' }), false, 'accepted a report to IVO without Public 360');
+    assert.equal(validate({ ...base, ivoNotification: 'yes', ivoCaseNumber: 'IVO-1' }), false);
+    assert.equal(
+      validate({ ...base, ivoNotification: 'yes', public360CaseNumber: 'P360-1' }),
+      true,
+      ajv.errorsText(validate.errors)
+    );
+    assert.equal(
+      validate({ ...base, ivoNotification: 'yes', ivoCaseNumber: 'IVO-1', public360CaseNumber: 'P360-1' }),
+      true,
+      ajv.errorsText(validate.errors)
+    );
+    assert.equal(validate({ ...base, ivoNotification: 'no', decidedAt: '2026-09-11T12:30:00.000Z' }), true);
+    assert.equal(validate({ ...base, ivoNotification: 'no', decidedAt: '2026-09-11' }), false);
+  });
+
+  // When a decision was made, when it last changed and by whom are the server's to record: the
+  // schema marks the properties for the BFF to stamp, and the form never offers them as inputs.
+  test(`${artifact.name} leaves the decision timestamps and revisions to the server`, () => {
+    const schema = readJson(artifact.schemaFile).value;
+    const uiSchema = readJson(artifact.uiSchemaFile).value;
+    const { ajv, validate } = createValidator(schema);
+
+    assert.equal(schema.properties.decidedAt['x-draken-server-timestamp'], 'created');
+    assert.equal(schema.properties.updatedAt['x-draken-server-timestamp'], 'updated');
+    assert.equal(schema.properties.revisions['x-draken-server-revisions'], true);
+    for (const name of ['decidedAt', 'updatedAt']) {
+      assert.equal(schema.properties[name].type, 'string');
+      assert.equal(schema.properties[name].format, 'date-time');
+      assert.equal(schema.properties[name].readOnly, true);
+      assert.equal(uiSchema[name]['ui:widget'], 'hidden');
+    }
+    assert.equal(schema.properties.revisions.readOnly, true);
+    assert.deepEqual(schema.properties.revisions.items.required, ['savedAt', 'savedBy']);
+    assert.equal(schema.properties.revisions.items.additionalProperties, false);
+    assert.equal(uiSchema.revisions['ui:widget'], 'hidden');
+
+    const base = { ...fixtures[artifact.name].valid, revisions: [] };
+    assert.equal(validate(base), true, ajv.errorsText(validate.errors));
+    assert.equal(validate({ ...base, revisions: [{ savedAt: 'igår', savedBy: 'x' }] }), false);
+    assert.equal(validate({ ...base, revisions: [{ savedAt: '2026-09-11T12:30:00.000Z', savedBy: '' }] }), false);
+    assert.equal(
+      validate({ ...base, revisions: [{ savedAt: '2026-09-11T12:30:00.000Z', savedBy: 'x', extra: 1 }] }),
+      false
+    );
+  });
+}
+
+test('the lex Sarah decision classifies the report with the same degrees the investigator proposes', () => {
+  const schema = readJson('beslut-sol-lss.schema-request.json').value;
+  const proposalSchema = readJson('utredning-sol-lss.schema-request.json').value;
   const { ajv, validate } = createValidator(schema);
 
-  assert.ok(schema.required.includes('public360CaseNumber'));
-  assert.ok(schema.required.includes('ivoNotification'));
+  assert.deepEqual(schema.required, ['decidedMisconductDegree', 'decisionMotivation', 'ivoNotification']);
+  assert.deepEqual(
+    schema.properties.decidedMisconductDegree.oneOf,
+    proposalSchema.properties.proposedMisconductDegree.oneOf
+  );
+  assert.equal(schema.properties.decisionMotivation.contentMediaType, 'text/html');
 
   assert.equal(
-    validate({ ivoNotification: 'no', public360CaseNumber: 'P360-1' }),
+    validate({ decidedMisconductDegree: 'no_misconduct', decisionMotivation: '<p>Nej.</p>', ivoNotification: 'no' }),
     true,
     ajv.errorsText(validate.errors)
   );
-  assert.equal(validate({ ivoNotification: 'no', ivoCaseNumber: 'IVO-stale', public360CaseNumber: 'P360-1' }), false);
-  assert.equal(validate({ ivoNotification: 'yes', public360CaseNumber: 'P360-1' }), false);
+  assert.equal(validate({ decisionMotivation: '<p>Nej.</p>', ivoNotification: 'no' }), false);
+  assert.equal(validate({ decidedMisconductDegree: 'no_misconduct', ivoNotification: 'no' }), false);
   assert.equal(
-    validate({ ivoNotification: 'yes', ivoCaseNumber: 'IVO-1', public360CaseNumber: 'P360-1' }),
-    true,
-    ajv.errorsText(validate.errors)
+    validate({ decidedMisconductDegree: 'no_misconduct', decisionMotivation: '', ivoNotification: 'no' }),
+    false
+  );
+  assert.equal(
+    validate({ decidedMisconductDegree: 'other', decisionMotivation: '<p>-</p>', ivoNotification: 'no' }),
+    false
   );
 });
 
-test('the decision asks its follow-ups only once a misconduct is established and motivates every No', () => {
-  const schema = readJson('beslut-missforhallande.schema-request.json').value;
-  const { ajv, validate } = createValidator(schema);
-  const base = { decisionDate: '2026-09-01' };
+test('the HSL decision is the IVO decision alone', () => {
+  const schema = readJson('beslut-hsl.schema-request.json').value;
 
-  assert.deepEqual(schema.required, ['decisionDate', 'misconductEstablished', 'reportedToIvo']);
-
-  assert.equal(
-    validate({
-      ...base,
-      misconductEstablished: 'no',
-      misconductEstablishedMotivation: '<p>Nej.</p>',
-      reportedToIvo: 'no',
-      reportedToIvoMotivation: '<p>Nej.</p>',
-    }),
-    true,
-    ajv.errorsText(validate.errors)
-  );
-  assert.equal(
-    validate({ ...base, misconductEstablished: 'no', reportedToIvo: 'no', reportedToIvoMotivation: '<p>Nej.</p>' }),
-    false
-  );
-  assert.equal(
-    validate({
-      ...base,
-      misconductEstablished: 'no',
-      misconductEstablishedMotivation: '',
-      reportedToIvo: 'no',
-      reportedToIvoMotivation: '<p>Nej.</p>',
-    }),
-    false
-  );
-  assert.equal(
-    validate({
-      ...base,
-      misconductEstablished: 'no',
-      misconductEstablishedMotivation: '<p>Nej.</p>',
-      seriousMisconduct: 'no',
-      reportedToIvo: 'no',
-      reportedToIvoMotivation: '<p>Nej.</p>',
-    }),
-    false
-  );
-
-  assert.equal(validate({ ...base, misconductEstablished: 'yes', reportedToIvo: 'yes' }), false);
-  assert.equal(
-    validate({
-      ...base,
-      misconductEstablished: 'yes',
-      seriousMisconduct: 'yes',
-      tangibleRiskOfSeriousMisconduct: 'yes',
-      reportedToIvo: 'yes',
-    }),
-    true,
-    ajv.errorsText(validate.errors)
-  );
-  assert.equal(
-    validate({
-      ...base,
-      misconductEstablished: 'yes',
-      seriousMisconduct: 'no',
-      tangibleRiskOfSeriousMisconduct: 'yes',
-      reportedToIvo: 'yes',
-    }),
-    false
-  );
-  assert.equal(
-    validate({
-      ...base,
-      misconductEstablished: 'yes',
-      seriousMisconduct: 'yes',
-      tangibleRiskOfSeriousMisconduct: 'yes',
-      reportedToIvo: 'yes',
-      reportedToIvoMotivation: '<p>Ja.</p>',
-    }),
-    false
-  );
-  assert.equal(
-    validate({
-      ...base,
-      misconductEstablished: 'yes',
-      seriousMisconduct: 'yes',
-      tangibleRiskOfSeriousMisconduct: 'yes',
-      reportedToIvo: 'no',
-      reportedToIvoMotivation: '<p>Nej.</p>',
-      ivoCaseNumber: 'IVO-1',
-    }),
-    false
-  );
+  assert.deepEqual(schema.required, ['ivoNotification']);
+  assert.deepEqual(Object.keys(schema.properties), [
+    'decidedAt',
+    'updatedAt',
+    'revisions',
+    'ivoNotification',
+    'ivoCaseNumber',
+    'public360CaseNumber',
+  ]);
 });
 
 test('all sketch multiselects are represented as unique arrays', () => {
@@ -477,7 +503,8 @@ test('all sketch multiselects are represented as unique arrays', () => {
     'utredning-enhetschef': ['legalBases', 'causeAreas'],
     'utredning-sol-lss': ['eventTypes', 'causeAreas', 'primaryUnderlyingCauses'],
     'utredning-hsl': ['identifiedCauses', 'underlyingCauses'],
-    'beslut-missforhallande': [],
+    'beslut-hsl': [],
+    'beslut-sol-lss': [],
   };
 
   for (const artifact of artifacts) {
@@ -510,6 +537,17 @@ test('short multiselects use checkboxes while longer cause lists remain searchab
 
     for (const fieldName of expectedComboboxes[artifact.name] ?? []) {
       assert.equal(uiSchema[fieldName]['ui:widget'], 'ComboboxWidget');
+    }
+  }
+});
+
+// A section icon the icon map does not know renders as no icon at all, silently.
+test('every section icon the UI schemas name exists in the Draken icon map', () => {
+  for (const artifact of artifacts) {
+    const uiSchema = readJson(artifact.uiSchemaFile).value;
+    for (const section of uiSchema['ui:sections']) {
+      assert.equal(typeof section.icon, 'string', `${artifact.name}.${section.id} has no icon`);
+      assert.ok(section.icon in iconMap, `${artifact.name}.${section.id} names unknown icon ${section.icon}`);
     }
   }
 });

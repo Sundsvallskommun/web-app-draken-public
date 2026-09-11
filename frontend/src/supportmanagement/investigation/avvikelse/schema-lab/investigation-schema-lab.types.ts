@@ -2,7 +2,8 @@ export const localInvestigationDocumentKeys = [
   'utredning-enhetschef',
   'utredning-sol-lss',
   'utredning-hsl',
-  'beslut-missforhallande',
+  'beslut-hsl',
+  'beslut-sol-lss',
 ] as const;
 
 export type LocalInvestigationDocumentKey = (typeof localInvestigationDocumentKeys)[number];

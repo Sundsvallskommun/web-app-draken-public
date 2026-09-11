@@ -36,13 +36,15 @@ export function ArrayObjectFieldTemplate(props: ArrayFieldTemplateProps) {
   const description =
     stringOption(uiOptions, 'description') ?? (typeof schema.description === 'string' ? schema.description : undefined);
   const isLocked = Boolean(disabled || readonly);
+  const formContext = props.registry?.formContext as { requiredIndicator?: string } | undefined;
+  const requiredIndicator = formContext?.requiredIndicator ?? ' *';
 
   return (
     <fieldset id={idSchema.$id} className={cx('w-full min-w-0 max-w-full', className)}>
       {title && (
         <legend className="mb-4 box-border max-w-full break-words text-label-medium font-bold whitespace-normal">
           {title}
-          {required ? ' *' : ''}
+          {required ? requiredIndicator : ''}
         </legend>
       )}
       {description && <p className="mb-12 text-small text-dark-secondary">{description}</p>}

@@ -28,7 +28,8 @@ delad kod erbjuder:
   Krävs exakt när `resolveClassificationPlacement` returnerar en placement med `labelTree`: en variant som tar med
   sig eget ordförråd måste också ta med kontrollen som redigerar det.
 - `resolveClassificationPlacement` — var kategoriseringen redigeras, och i vilket ordförråd.
-- `decisionTab` — valfri andra ärendeflik, Beslut, för en utredning som avslutas med ett registrerat beslut. Till
+- `decisionTab` — valfri andra ärendeflik, Beslut, för en utredning som avslutas med ett registrerat beslut
+  (för avvikelse: lex Sarah-beslutet vid missförhållande eller IVO-beslutet vid HSL-avvikelse, aldrig båda). Till
   skillnad från Utredningsfliken, som kapabilitetsflaggan ensam tänder, avgör varianten själv per ärende och
   runtimeprofil om fliken finns (`isVisible`). Utan slot, ingen flik — och ingen förändring för andra varianter.
 

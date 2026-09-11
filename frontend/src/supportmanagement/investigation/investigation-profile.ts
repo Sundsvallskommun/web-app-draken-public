@@ -8,11 +8,13 @@ export const INVESTIGATION_DOCUMENT_PLACEMENTS = ['investigation', 'decision'] a
 /** Which errand tab offers the document. The BFF omits the field for the ordinary investigation tab. */
 export type InvestigationDocumentPlacement = (typeof INVESTIGATION_DOCUMENT_PLACEMENTS)[number];
 
-export const INVESTIGATION_DOCUMENT_APPLICABILITIES = ['all', 'reported-misconduct'] as const;
+export const INVESTIGATION_DOCUMENT_APPLICABILITIES = ['all', 'reported-misconduct', 'hsl-deviation'] as const;
 
 /**
- * Which errands the document applies to. `all` is every errand; `reported-misconduct` is only the
- * errands the variant's policy resolves as reported misconduct, and the BFF refuses it elsewhere.
+ * Which errands the document applies to. `all` is every errand. The other values name one kind of
+ * errand as the variant's policy resolves it - `reported-misconduct` for a reported misconduct,
+ * `hsl-deviation` for an ordinary deviation under HSL - and the BFF refuses the document elsewhere.
+ * A policy resolves at most one kind per errand, so two restricted documents never apply together.
  */
 export type InvestigationDocumentApplicability = (typeof INVESTIGATION_DOCUMENT_APPLICABILITIES)[number];
 
@@ -23,6 +25,8 @@ export interface InvestigationProfileDocument {
   readonly ownerLabel: string;
   readonly placement: InvestigationDocumentPlacement;
   readonly appliesTo: InvestigationDocumentApplicability;
+  /** Another document of the profile that must be saved on the errand before this one is written. */
+  readonly prerequisiteDocumentKey?: string;
 }
 
 export interface InvestigationProfile {
@@ -97,6 +101,14 @@ function readDocument(value: unknown, index: number): InvestigationProfileDocume
       'all',
       `documents[${index}].appliesTo`
     ),
+    ...(value.prerequisiteDocumentKey === undefined
+      ? {}
+      : {
+          prerequisiteDocumentKey: readProfileIdentifier(
+            value.prerequisiteDocumentKey,
+            `documents[${index}].prerequisiteDocumentKey`
+          ),
+        }),
   });
 }
 
@@ -196,6 +208,15 @@ export function parseInvestigationProfile(value: unknown, expectedApplication?: 
     documents.map(({ key }) => key),
     'document keys'
   );
+  const documentKeys = new Set(documents.map(({ key }) => key));
+  documents.forEach((document, index) => {
+    if (document.prerequisiteDocumentKey === undefined) return;
+    if (document.prerequisiteDocumentKey === document.key || !documentKeys.has(document.prerequisiteDocumentKey)) {
+      throw new Error(
+        `Utredningsprofilens documents[${index}].prerequisiteDocumentKey pekar inte på ett annat dokument.`
+      );
+    }
+  });
   return Object.freeze({
     application,
     state: state as InvestigationProfileState,

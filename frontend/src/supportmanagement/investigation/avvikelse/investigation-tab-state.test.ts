@@ -21,11 +21,18 @@ const document = (): InvestigationProfileDocument => ({
 });
 const decision: InvestigationProfileDocument = {
   ...document(),
-  key: 'beslut-missforhallande',
-  schemaName: 'beslut-missforhallande',
-  tabLabel: 'Beslut',
+  key: 'beslut-sol-lss',
+  schemaName: 'beslut-sol-lss',
+  tabLabel: 'Beslut SoL/LSS',
   placement: 'decision',
   appliesTo: 'reported-misconduct',
+};
+const hslDecision: InvestigationProfileDocument = {
+  ...decision,
+  key: 'beslut-hsl',
+  schemaName: 'beslut-hsl',
+  tabLabel: 'Beslut HSL',
+  appliesTo: 'hsl-deviation',
 };
 const profile = (overrides: Partial<InvestigationProfile> = {}): InvestigationProfile => ({
   application: 'IAF',
@@ -83,8 +90,8 @@ test('readers see the document but only editors can change it', () => {
 });
 
 test('only granted documents belonging to this tab and errand are offered', () => {
-  const p = profile({ documents: [document(), decision] });
-  const state = access({ 'utredning-enhetschef': 'read', 'beslut-missforhallande': 'edit' });
+  const p = profile({ documents: [document(), decision, hslDecision] });
+  const state = access({ 'utredning-enhetschef': 'read', 'beslut-sol-lss': 'edit', 'beslut-hsl': 'edit' });
   assert.deepEqual(
     visibleInvestigationDocuments(p, { access: state }).map((d) => d.key),
     ['utredning-enhetschef']
@@ -93,15 +100,29 @@ test('only granted documents belonging to this tab and errand are offered', () =
     visibleInvestigationDocuments(p, {
       access: state,
       placement: 'decision',
-      reportedMisconduct: true,
+      applicability: 'reported-misconduct',
     }).map((d) => d.key),
-    ['beslut-missforhallande']
+    ['beslut-sol-lss']
   );
+  assert.deepEqual(
+    visibleInvestigationDocuments(p, { access: state, placement: 'decision', applicability: 'hsl-deviation' }).map(
+      (d) => d.key
+    ),
+    ['beslut-hsl']
+  );
+  assert.equal(visibleInvestigationDocuments(p, { access: state, placement: 'decision' }).length, 0);
   assert.equal(
-    visibleInvestigationDocuments(p, { access: state, placement: 'decision', reportedMisconduct: false }).length,
-    0
+    configuredInvestigationDocuments(p, { placement: 'decision', applicability: 'reported-misconduct' }).length,
+    1
   );
-  assert.equal(configuredInvestigationDocuments(p, { placement: 'decision', reportedMisconduct: true }).length, 1);
+});
+
+test('a document that applies to every errand is offered whatever the errand kind', () => {
+  const p = profile({ documents: [document(), { ...decision, appliesTo: 'all' }] });
+  const state = access({ 'beslut-sol-lss': 'read' });
+  for (const applicability of ['reported-misconduct', 'hsl-deviation', undefined] as const) {
+    assert.equal(visibleInvestigationDocuments(p, { access: state, placement: 'decision', applicability }).length, 1);
+  }
 });
 
 test('decision access is independent of investigation access', () => {
@@ -112,7 +133,7 @@ test('decision access is independent of investigation access', () => {
     resolveInvestigationTabState('ready', p, {
       access: state,
       placement: 'decision',
-      reportedMisconduct: true,
+      applicability: 'reported-misconduct',
     }),
     'no-access'
   );

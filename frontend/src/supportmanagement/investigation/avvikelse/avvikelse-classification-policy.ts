@@ -25,6 +25,14 @@ export const AVVIKELSE_CLASSIFICATION_POLICY = Object.freeze({
       resourceNames: Object.freeze(['ABUSE', 'ADVERSE_INCIDENT']),
     }),
   }),
+  /** The errand's legal base labels; an HSL label marks the errand for the HSL decision. */
+  hslLegalBaseSelector: Object.freeze({
+    labels: Object.freeze({
+      classification: 'PROVISION',
+      resourcePaths: Object.freeze(['PROVISION/HSL']),
+      resourceNames: Object.freeze(['HSL']),
+    }),
+  }),
   labelTree: Object.freeze({
     root: Object.freeze({ resource: 'CATEGORY', classification: 'CATEGORY_ROOT' }),
     ownerClassification: 'PROVISION_CATEGORY',
@@ -76,10 +84,18 @@ interface ClassificationOwnerErrand {
     readonly values?: readonly string[];
   }[];
   readonly labels?: readonly {
+    readonly classification?: string;
     readonly resourcePath?: string;
     readonly resourceName?: string;
   }[];
 }
+
+/**
+ * Which decision an errand takes, if any. Reported misconduct always takes the lex Sarah decision,
+ * whatever its legal bases; an ordinary deviation takes the HSL decision when HSL is one of its
+ * legal bases; every other errand takes none. One decision per errand, never two.
+ */
+export type AvvikelseDocumentApplicability = 'reported-misconduct' | 'hsl-deviation';
 
 const iafVofBasicsPlacement: AvvikelseClassificationPlacement = Object.freeze({
   owner: 'basics',
@@ -162,6 +178,34 @@ export const isAvvikelseReportedMisconductErrand = (errand: ClassificationOwnerE
       return typeof label.resourceName === 'string' && selectedNames.has(normalizeCode(label.resourceName));
     }) ?? false
   );
+};
+
+const hasAvvikelseHslLegalBase = (errand: ClassificationOwnerErrand): boolean => {
+  const selector = AVVIKELSE_CLASSIFICATION_POLICY.hslLegalBaseSelector.labels;
+  const selectedPaths = new Set<string>(selector.resourcePaths);
+  const selectedNames = new Set<string>(selector.resourceNames);
+  return (
+    errand.labels?.some((label) => {
+      const resourcePath = label.resourcePath?.trim();
+      if (resourcePath) return selectedPaths.has(normalizeResourcePath(resourcePath));
+      // Without a path the name alone is ambiguous - CATEGORY/HSL is also named HSL - so the
+      // fallback also requires the label to be a legal base.
+      return (
+        typeof label.classification === 'string' &&
+        normalizeCode(label.classification) === selector.classification &&
+        typeof label.resourceName === 'string' &&
+        selectedNames.has(normalizeCode(label.resourceName))
+      );
+    }) ?? false
+  );
+};
+
+export const resolveAvvikelseDocumentApplicability = (
+  errand: ClassificationOwnerErrand | undefined
+): AvvikelseDocumentApplicability | undefined => {
+  if (!errand) return undefined;
+  if (isAvvikelseReportedMisconductErrand(errand)) return 'reported-misconduct';
+  return hasAvvikelseHslLegalBase(errand) ? 'hsl-deviation' : undefined;
 };
 
 export const resolveAvvikelseClassificationOwnerDocumentKey = (

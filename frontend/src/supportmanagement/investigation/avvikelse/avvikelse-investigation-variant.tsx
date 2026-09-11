@@ -12,7 +12,7 @@ import type {
   InvestigationVariantModule,
 } from '../investigation-variant';
 import { resolveAvvikelseClassificationPlacement } from './avvikelse-classification-placement';
-import { isAvvikelseReportedMisconductErrand } from './avvikelse-classification-policy';
+import { resolveAvvikelseDocumentApplicability } from './avvikelse-classification-policy';
 import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.component';
 import { visibleInvestigationDocuments } from './investigation-tab-state';
 
@@ -61,8 +61,9 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
     <AvvikelseCategorizationControl disabled={disabled} />
   ),
   /**
-   * The lex Sarah decision. Offered only on a reported misconduct errand, and only when the
-   * profile has a decision document this user reaches: a handler who is not mapped to the decision
+   * The decision that closes the investigation: lex Sarah for a reported misconduct, the IVO
+   * decision for an HSL deviation. Offered only when the profile has a decision document that
+   * applies to this errand and that this user reaches: a handler who is not mapped to the decision
    * gets no tab rather than a tab that explains it is not theirs.
    */
   decisionTab: {
@@ -72,8 +73,11 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
       profile: InvestigationProfile | null | undefined,
       access: InvestigationAccessState
     ) =>
-      isAvvikelseReportedMisconductErrand(errand ?? {}) &&
-      visibleInvestigationDocuments(profile, { placement: 'decision', reportedMisconduct: true, access }).length > 0,
+      visibleInvestigationDocuments(profile, {
+        placement: 'decision',
+        applicability: resolveAvvikelseDocumentApplicability(errand),
+        access,
+      }).length > 0,
     render: (props: InvestigationTabProps) => <SupportErrandInvestigationTab {...props} placement="decision" />,
   },
 });

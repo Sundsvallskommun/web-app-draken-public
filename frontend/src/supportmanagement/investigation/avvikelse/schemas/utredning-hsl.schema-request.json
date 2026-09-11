@@ -1,14 +1,13 @@
 {
   "name": "utredning-hsl",
-  "version": "1.0",
+  "version": "1.1",
   "value": {
-    "$id": "https://schemas.sundsvall.se/2281/utredning-hsl/1.0",
+    "$id": "https://schemas.sundsvall.se/2281/utredning-hsl/1.1",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Utredning HSL",
-    "description": "HSL-utredning för IAF- och VOF-ärenden. Åtgärder och handlingsplan lagras inte i detta dokument.",
+    "description": "HSL-utredning för IAF- och VOF-ärenden. Beslutet om anmälan till IVO, åtgärder och handlingsplan lagras inte i detta dokument.",
     "type": "object",
     "additionalProperties": false,
-    "required": ["ivoNotification", "public360CaseNumber"],
     "properties": {
       "assignment": {
         "title": "Uppdrag",
@@ -93,56 +92,13 @@
         "type": "string",
         "contentMediaType": "text/html"
       },
-      "ivoNotification": {
-        "title": "Ska ärendet anmälas till IVO?",
-        "$ref": "#/$defs/yesNo"
-      },
-      "ivoCaseNumber": {
-        "title": "IVO ärendenummer",
-        "description": "Obligatoriskt när ärendet ska anmälas till IVO.",
-        "type": "string",
-        "minLength": 1
-      },
-      "public360CaseNumber": {
-        "title": "Public 360 ärendenummer",
-        "description": "Obligatoriskt oavsett ställningstagande till IVO-anmälan.",
-        "type": "string",
-        "minLength": 1
-      },
       "commissionerComment": {
         "title": "Uppdragsgivarens kommentar",
         "description": "Uppdragsgivarens kommentar på händelseanalysen.",
         "type": "string",
         "contentMediaType": "text/html"
       }
-    },
-    "$defs": {
-      "yesNo": {
-        "type": "string",
-        "oneOf": [
-          { "const": "yes", "title": "Ja" },
-          { "const": "no", "title": "Nej" }
-        ]
-      }
-    },
-    "allOf": [
-      {
-        "if": {
-          "properties": {
-            "ivoNotification": { "const": "yes" }
-          },
-          "required": ["ivoNotification"]
-        },
-        "then": {
-          "required": ["ivoCaseNumber"]
-        },
-        "else": {
-          "not": {
-            "required": ["ivoCaseNumber"]
-          }
-        }
-      }
-    ]
+    }
   },
-  "description": "WSO2 request body for version 1.0 of the HSL investigation schema"
+  "description": "WSO2 request body for version 1.1 of the HSL investigation schema"
 }

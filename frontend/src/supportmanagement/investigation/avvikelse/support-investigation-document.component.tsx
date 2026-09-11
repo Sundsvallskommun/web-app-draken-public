@@ -13,6 +13,7 @@ import {
   getAvvikelseLabelClassificationSelection,
 } from '@supportmanagement/investigation/avvikelse/label-classification';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 
@@ -27,11 +28,19 @@ import {
   isReportedMisconductErrand,
   normalizeContextualInvestigationFormData,
 } from './investigation-classification';
+import {
+  AVVIKELSE_DECISION_PROPOSAL_SOURCE,
+  readInvestigationDecisionProposal,
+  resolveDecisionProposalDegreeTitle,
+} from './investigation-decision-proposal';
+import { InvestigationDecisionProposal } from './investigation-decision-proposal.component';
 import type { InvestigationDocumentDefinition, InvestigationFormData } from './investigation-document';
 import {
   getHslRiskValue,
   getInvestigationRenderingSchema,
+  getInvestigationServerTimestamps,
   investigationDefaultFormStateBehavior,
+  investigationRequiredIndicator,
 } from './investigation-form-data';
 import {
   investigationSchemaDebugIsVisible,
@@ -86,7 +95,11 @@ interface SupportInvestigationDocumentProps {
   onSaved: (document: SavedInvestigationDocument) => void;
 }
 
-function InvestigationAlert({ type, message }: Readonly<{ type: 'error' | 'warning' | 'success'; message: string }>) {
+function InvestigationAlert({
+  type,
+  message,
+  dataCy = 'investigation-document-notice',
+}: Readonly<{ type: 'error' | 'warning' | 'success'; message: string; dataCy?: string }>) {
   const noticeRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (type !== 'error') return;
@@ -101,7 +114,7 @@ function InvestigationAlert({ type, message }: Readonly<{ type: 'error' | 'warni
       role={type === 'error' ? 'alert' : 'status'}
       aria-live={type === 'error' ? 'assertive' : 'polite'}
     >
-      <Alert type={type} className="mb-24" data-cy="investigation-document-notice">
+      <Alert type={type} className="mb-24" data-cy={dataCy}>
         <Alert.Icon />
         <Alert.Content>
           <Alert.Content.Description>{message}</Alert.Content.Description>
@@ -125,8 +138,19 @@ export function SupportInvestigationDocument({
   const supportMetadata = useMetadataStore((state) => state.supportMetadata);
   const { register: registerErrandField, resetField: resetErrandField } = useFormContext<SupportErrand>();
   const errandId = supportErrand?.id;
+  const profile = useInvestigationProfileStore((state) => state.profile);
   const reportedMisconduct = isReportedMisconductErrand(supportErrand);
   const isDecision = (definition.placement ?? 'investigation') === 'decision';
+  // The decision on a reported misconduct answers the investigator's proposal, so it is shown first.
+  const showsDecisionProposal = isDecision && definition.appliesTo === 'reported-misconduct';
+  // A document that answers another one waits for it: the BFF refuses the write, and the form
+  // says why instead of offering a save that would fail.
+  const prerequisite = definition.prerequisiteDocumentKey
+    ? profile?.documents.find((document) => document.key === definition.prerequisiteDocumentKey)
+    : undefined;
+  const prerequisiteMissing =
+    definition.prerequisiteDocumentKey !== undefined &&
+    !supportErrand?.jsonParameters?.some((parameter) => parameter.key === definition.prerequisiteDocumentKey);
   // What the handler is told the document is. The investigation wording predates the decision tab.
   const wording = isDecision ? decisionDocumentWording : investigationDocumentWording;
   const [loadState, setLoadState] = useState<LoadState>('loading');
@@ -283,7 +307,7 @@ export function SupportInvestigationDocument({
     persistedClassification,
   };
   const classificationWriteBlock = investigationClassificationWriteBlock(classificationPrerequisites);
-  const formReadonly = readonly || Boolean(classificationWriteBlock);
+  const formReadonly = readonly || Boolean(classificationWriteBlock) || prerequisiteMissing;
   const classificationUiSchema = useMemo(
     () =>
       documentState
@@ -296,6 +320,9 @@ export function SupportInvestigationDocument({
         : undefined,
     [definition.key, documentState, reportedMisconduct]
   );
+  const serverTimestamps = documentState
+    ? getInvestigationServerTimestamps(documentState.schema, documentState.formData)
+    : [];
 
   useEffect(() => {
     if (!classificationOwner) return;
@@ -527,10 +554,26 @@ export function SupportInvestigationDocument({
               <code className="break-all">{documentState.schemaId}</code>
             </p>
           )}
+          {serverTimestamps.map((timestamp) => (
+            <p key={timestamp.name} className="mt-8 text-small" data-cy={`investigation-document-${timestamp.name}`}>
+              {timestamp.label}:{' '}
+              <time dateTime={timestamp.value}>{dayjs(timestamp.value).format('YYYY-MM-DD HH:mm')}</time>
+            </p>
+          ))}
         </div>
       </div>
 
       {notice && <InvestigationAlert {...notice} />}
+
+      {prerequisiteMissing && (
+        <InvestigationAlert
+          type="warning"
+          dataCy="investigation-document-prerequisite"
+          message={`${wording.noun} kan fattas först när ${
+            prerequisite?.tabLabel ?? definition.prerequisiteDocumentKey
+          } har sparats i ärendet.`}
+        />
+      )}
 
       {classificationWriteBlock && <InvestigationAlert type="warning" message={classificationWriteBlock} />}
       {!readonly && classificationOwner && classificationReadonly && !classificationWriteBlock && (
@@ -563,6 +606,22 @@ export function SupportInvestigationDocument({
         </Alert>
       )}
 
+      {showsDecisionProposal &&
+        !prerequisiteMissing &&
+        (() => {
+          const proposal = readInvestigationDecisionProposal(supportErrand, profile);
+          return (
+            <InvestigationDecisionProposal
+              proposal={proposal}
+              degreeTitle={resolveDecisionProposalDegreeTitle(
+                documentState.schema,
+                AVVIKELSE_DECISION_PROPOSAL_SOURCE.decisionDegreeField,
+                proposal?.degree
+              )}
+            />
+          );
+        })()}
+
       {hslRiskValue !== undefined && hslRiskValue >= 4 && (
         <Alert type="warning" className="mb-24" data-cy="hsl-risk-threshold-alert">
           <Alert.Icon />
@@ -582,6 +641,7 @@ export function SupportInvestigationDocument({
         defaultFormStateBehavior={investigationDefaultFormStateBehavior}
         uiSchema={classificationUiSchema}
         idPrefix={definition.key}
+        requiredIndicator={investigationRequiredIndicator}
         arrayFieldTemplate={ArrayObjectFieldTemplate}
         formData={documentState.formData}
         onChange={(formData) => {

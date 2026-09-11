@@ -1,5 +1,9 @@
 import { type InvestigationAccessState, investigationDocumentAccess } from '../investigation-access';
-import type { InvestigationDocumentPlacement, InvestigationProfile } from '../investigation-profile';
+import type {
+  InvestigationDocumentApplicability,
+  InvestigationDocumentPlacement,
+  InvestigationProfile,
+} from '../investigation-profile';
 import type { InvestigationProfileStatus } from '../investigation-profile-store';
 
 export type InvestigationTabState =
@@ -13,13 +17,13 @@ export type InvestigationTabState =
 
 /**
  * Which tab is asking, and for which errand. The investigation tab is the default so existing
- * callers keep their meaning; a document restricted to reported misconduct only applies when the
- * caller says the errand is one.
+ * callers keep their meaning; a restricted document only applies when the caller says the errand
+ * is of that kind. `applicability` is the one kind the policy resolved for the errand, or nothing.
  */
 export interface InvestigationDocumentContext {
   readonly access?: InvestigationAccessState;
   readonly placement?: InvestigationDocumentPlacement;
-  readonly reportedMisconduct?: boolean;
+  readonly applicability?: Exclude<InvestigationDocumentApplicability, 'all'>;
 }
 
 const appliesToErrand = (
@@ -27,7 +31,7 @@ const appliesToErrand = (
   context: InvestigationDocumentContext
 ): boolean =>
   (document.placement ?? 'investigation') === (context.placement ?? 'investigation') &&
-  ((document.appliesTo ?? 'all') === 'all' || context.reportedMisconduct === true);
+  ((document.appliesTo ?? 'all') === 'all' || document.appliesTo === context.applicability);
 
 /** The documents configured for this tab and errand, before the user's access is considered. */
 export const configuredInvestigationDocuments = (

@@ -1,13 +1,31 @@
 # Utredningsscheman för IAF/VOF
 
-Den här katalogen innehåller den lokala utvecklingsytan för fyra separata JSON Parameters:
+Den här katalogen innehåller den lokala utvecklingsytan för fem separata JSON Parameters:
 
 - `utredning-enhetschef`
 - `utredning-sol-lss`
 - `utredning-hsl`
-- `beslut-missforhallande` — beslutet enligt lex Sarah. Visas på den egna ärendefliken Beslut i stället för under
-  Utredning, och bara för ärenden med rapporttyp missförhållande (`placement: 'decision'`,
-  `appliesTo: 'reported-misconduct'` i runtimeprofilen). BFF:en avvisar dokumentet på alla andra ärenden.
+- `beslut-hsl` — beslutet om anmälan till IVO för en vanlig avvikelse med lagrum HSL (`placement: 'decision'`,
+  `appliesTo: 'hsl-deviation'` i runtimeprofilen).
+- `beslut-sol-lss` — beslutet enligt lex Sarah för ett rapporterat missförhållande, oavsett lagrum
+  (`placement: 'decision'`, `appliesTo: 'reported-misconduct'`).
+
+Besluten visas på den egna ärendefliken Beslut i stället för under Utredning, efter Åtgärder, eftersom beslutet
+avslutar ärendet. Den fasta IAF/VOF-regeln avgör
+vilket av dem ett ärende tar: missförhållande ger alltid lex Sarah-beslutet, en vanlig avvikelse ger HSL-beslutet
+bara när HSL är ett av lagrummen, och ett ärende tar aldrig båda. Regeln finns i både backend och frontend
+(`resolveIafVofInvestigationDocumentApplicability` respektive `resolveAvvikelseDocumentApplicability`), och BFF:en
+avvisar ett beslutsdokument på ett ärende det inte gäller.
+
+Ett dokument kan i profilen peka ut ett `prerequisiteDocumentKey`: ett annat dokument som måste vara sparat i
+ärendet innan det får skrivas. `beslut-sol-lss` kräver `utredning-sol-lss`. BFF:en avvisar skrivningen med 409
+annars, och formuläret visar en spärr i stället för spara-knappen. Serverägda schemaegenskaper sätts av BFF:en
+oavsett vad klienten skickar: `x-draken-server-timestamp: "created"` stämplas vid första sparningen och bevaras
+sedan, `"updated"` stämplas vid varje sparning, och en array märkt `x-draken-server-revisions` får en post
+`{ savedAt, savedBy }` per sparning (beslutens `decidedAt`, `updatedAt` och `revisions`). Utrednings- och
+beslutsformulären markerar obligatoriska fält med texten "(Obligatorisk)" i stället för en asterisk
+(`requiredIndicator` på `SchemaForm`); ett fält kan dessutom alltid visas som obligatoriskt via
+`ui:options.showRequiredIndicator`.
 
 `schemas/` äger de versionssatta WSO2-requestartefakterna. Varje JSON Schema-request kan skickas som body till
 `POST /{municipalityId}/schemas` och motsvarande UI Schema-request som body till
@@ -171,12 +189,13 @@ Okända fält tas bort, liksom villkorsstyrda värden som inte längre gäller (
 `Nej`). Riskvärden beräknas från respektive schemas `x-calculation` och samma produktregel valideras av JSON Schema.
 
 Åtgärder, handlingsplan, arbetsanteckningar och rapportgenerering ingår avsiktligt inte i de tre
-utredningsdokumenten. Det slutliga beslutet om ett missförhållande är ett eget dokument, `beslut-missforhallande`,
-som utredarens förslag i SOL/LSS-utredningen inte kopieras till. Katlas inkommande ärendedata förblir en separat
-skrivskyddad JSON Parameter.
+utredningsdokumenten. Besluten är egna dokument: `beslut-sol-lss` visar utredarens förslag från SOL/LSS-utredningen
+skrivskyddat (läst från ärendets JSON Parameters via profilens dokumentnyckel) men kopierar det inte, och
+`beslut-hsl` tar över IVO- och Public 360-fälten som till och med schema 1.0 låg i HSL-utredningen. Katlas
+inkommande ärendedata förblir en separat skrivskyddad JSON Parameter.
 
 De lokala artefakterna för `utredning-enhetschef` och `utredning-sol-lss` är version 1.1 och deklarerar
-`errandClassification`; `utredning-hsl` ligger kvar på version 1.0. För redan bundna manager- och SOL/LSS-dokument
+`errandClassification`; `utredning-hsl` 1.1 saknar beslutsfälten. För redan bundna manager- och SOL/LSS-dokument
 med schema till och med version 1.0 injicerar runtime samma externa placering som en bakåtkompatibel fallback.
 Ägarskapet bestäms dock centralt av den fasta IAF/VOF-regeln tillsammans med runtimeprofilens dokumentnycklar, inte
 av en enskild schemadeklaration. Om
@@ -202,7 +221,6 @@ yarn test:e2e:iaf-schema-lab
 yarn test:e2e:iaf
 ```
 
-
 ### Ärendets dokumentbehörigheter
 
 Profilen beskriver dokumenten; rättigheter hämtas separat från backendens
@@ -217,7 +235,7 @@ unix-filträd där en skrivbar katalog kan ligga under en läsbar förälder. En
 Resursen `errand/json-parameter` måste däremot alltid vara `RW` för att skrivvägen (PUT) ska vara
 öppen.
 
-Både `R` och `LR` returnerar `fields`. Skillnaden är att `LR` returnerar en *delmängd* av dem, och
+Både `R` och `LR` returnerar `fields`. Skillnaden är att `LR` returnerar en _delmängd_ av dem, och
 den delmängden är då det som gäller: en nyckel som finns med är läsbar med sin egen nivå, en nyckel
 som saknas är dold. `LR` är alltså inte en svagare läsning av samma dokument utan ett smalare urval
 av vilka dokument som finns för användaren, och en listad nyckel visar sitt innehåll precis som

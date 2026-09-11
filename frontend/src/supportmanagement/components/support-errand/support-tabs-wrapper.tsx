@@ -175,6 +175,20 @@ export const SupportTabsWrapper: FC<{
         visibleFor: isInvestigationTabVisible(appConfig.features, investigationVariant),
       },
       {
+        key: 'measures',
+        label: 'Åtgärder',
+        content: supportErrand && (
+          <SupportMeasuresTab
+            key={supportErrand.id}
+            errand={supportErrand}
+            municipalityId={municipalityId}
+            onDirtyChange={setMeasuresDirty}
+          />
+        ),
+        disabled: false,
+        visibleFor: appConfig.features.useMeasures,
+      },
+      {
         key: 'decision',
         label: investigationVariant?.decisionTab?.label ?? 'Beslut',
         content:
@@ -196,20 +210,6 @@ export const SupportTabsWrapper: FC<{
           investigationProfile?.documents.some(
             (document) => document.placement === 'decision' && investigationDirty[document.key]
           ) === true,
-      },
-      {
-        key: 'measures',
-        label: 'Åtgärder',
-        content: supportErrand && (
-          <SupportMeasuresTab
-            key={supportErrand.id}
-            errand={supportErrand}
-            municipalityId={municipalityId}
-            onDirtyChange={setMeasuresDirty}
-          />
-        ),
-        disabled: false,
-        visibleFor: appConfig.features.useMeasures,
       },
       {
         key: 'messages',

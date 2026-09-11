@@ -8,6 +8,9 @@ export const investigationDefaultFormStateBehavior: Experimental_DefaultFormStat
   constAsDefaults: 'skipOneOf',
 });
 
+/** Investigation and decision forms spell the required marker out rather than using an asterisk. */
+export const investigationRequiredIndicator = ' (Obligatorisk)';
+
 interface CalculationMetadata {
   formula: 'probability * severity';
   inputs: readonly [string, string];
@@ -123,54 +126,65 @@ function normalizeManagerConditions(formData: InvestigationFormData): Investigat
   return normalizedData;
 }
 
-function normalizeHslConditions(formData: InvestigationFormData): InvestigationFormData {
-  if (formData.ivoNotification === 'yes') return formData;
+/**
+ * The IVO case number only exists once the errand is reported to IVO. The HSL investigation carried
+ * this decision up to schema 1.0, so documents still bound to that version keep the rule; from 1.1
+ * it lives in the decision documents, where the Public 360 number follows the same answer.
+ */
+const IVO_INVESTIGATION_SCHEMA_NAMES: readonly string[] = ['utredning-hsl'];
+
+/** The decision documents: IVO and Public 360 case numbers exist only for a report to IVO. */
+const DECISION_SCHEMA_NAMES: readonly string[] = ['beslut-hsl', 'beslut-sol-lss'];
+
+const isReportedToIvo = (formData: InvestigationFormData): boolean => formData.ivoNotification === 'yes';
+
+function dropUnlessReportedToIvo(formData: InvestigationFormData, fields: readonly string[]): InvestigationFormData {
+  if (isReportedToIvo(formData)) return formData;
+  const present = fields.filter((field) => hasOwn(formData, field));
+  if (present.length === 0) return formData;
 
   const normalizedData = { ...formData };
-  delete normalizedData.ivoCaseNumber;
+  for (const field of present) delete normalizedData[field];
   return normalizedData;
 }
-
-const DECISION_SCHEMA_NAME = 'beslut-missforhallande';
 
 /**
- * The decision's follow-up questions and motivations only exist for certain answers: a motivation
- * is asked for a No, the degree questions only once a misconduct is established, and the IVO case
- * number only once a report is made. The same list drives both what is stored and what is shown,
- * so the form never asks for something the schema would then reject.
+ * The decision schemas keep both case numbers ordinary optional properties, so the sections
+ * template has no conditional rule to hide them by. Hiding them here keeps the form from showing
+ * fields the normalization above would then drop.
  */
-function inapplicableDecisionFields(formData: InvestigationFormData): string[] {
-  const fields: string[] = [];
-  if (formData.misconductEstablished !== 'no') fields.push('misconductEstablishedMotivation');
-  if (formData.misconductEstablished !== 'yes') {
-    fields.push(
-      'seriousMisconduct',
-      'seriousMisconductMotivation',
-      'tangibleRiskOfSeriousMisconduct',
-      'tangibleRiskOfSeriousMisconductMotivation'
-    );
-  } else {
-    if (formData.seriousMisconduct !== 'no') fields.push('seriousMisconductMotivation');
-    if (formData.tangibleRiskOfSeriousMisconduct !== 'no') fields.push('tangibleRiskOfSeriousMisconductMotivation');
-  }
-  if (formData.reportedToIvo !== 'no') fields.push('reportedToIvoMotivation');
-  if (formData.reportedToIvo !== 'yes') fields.push('ivoCaseNumber');
-  return fields;
-}
-
-function normalizeDecisionConditions(formData: InvestigationFormData): InvestigationFormData {
-  const inapplicableFields = inapplicableDecisionFields(formData).filter((field) => hasOwn(formData, field));
-  if (inapplicableFields.length === 0) return formData;
-
-  const normalizedData = { ...formData };
-  for (const field of inapplicableFields) delete normalizedData[field];
-  return normalizedData;
-}
-
 function getDecisionRenderingSchema(schema: RJSFSchema, formData: InvestigationFormData): RJSFSchema {
+  if (isReportedToIvo(formData)) return schema;
+
   const properties = { ...schema.properties };
-  for (const field of inapplicableDecisionFields(formData)) delete properties[field];
+  delete properties.ivoCaseNumber;
+  delete properties.public360CaseNumber;
   return { ...schema, properties };
+}
+
+export interface InvestigationServerTimestamp {
+  readonly name: string;
+  readonly label: string;
+  readonly value: string;
+}
+
+const SERVER_TIMESTAMP_MODES: readonly unknown[] = ['created', 'updated'];
+
+/**
+ * The properties the schema marks `x-draken-server-timestamp` (`created` is stamped once, `updated`
+ * on every write), with the values the document carries. The BFF stamps them; the form only
+ * reports them.
+ */
+export function getInvestigationServerTimestamps(
+  schema: RJSFSchema,
+  formData: InvestigationFormData
+): InvestigationServerTimestamp[] {
+  return Object.entries(schema.properties ?? {}).flatMap(([name, property]) => {
+    if (!isRecord(property) || !SERVER_TIMESTAMP_MODES.includes(property['x-draken-server-timestamp'])) return [];
+    const value = formData[name];
+    if (typeof value !== 'string' || value.trim().length === 0) return [];
+    return [{ name, label: typeof property.title === 'string' ? property.title : name, value }];
+  });
 }
 
 function readCalculationMetadata(value: unknown): CalculationMetadata | undefined {
@@ -229,23 +243,27 @@ export function normalizeInvestigationFormData(
   const schemaOwnedData = isRecord(prunedData) ? prunedData : {};
   let conditionallyNormalizedData = schemaOwnedData;
   if (schemaName === 'utredning-enhetschef') conditionallyNormalizedData = normalizeManagerConditions(schemaOwnedData);
-  if (schemaName === 'utredning-hsl') conditionallyNormalizedData = normalizeHslConditions(schemaOwnedData);
-  if (schemaName === DECISION_SCHEMA_NAME) conditionallyNormalizedData = normalizeDecisionConditions(schemaOwnedData);
+  if (IVO_INVESTIGATION_SCHEMA_NAMES.includes(schemaName)) {
+    conditionallyNormalizedData = dropUnlessReportedToIvo(schemaOwnedData, ['ivoCaseNumber']);
+  }
+  if (DECISION_SCHEMA_NAMES.includes(schemaName)) {
+    conditionallyNormalizedData = dropUnlessReportedToIvo(schemaOwnedData, ['ivoCaseNumber', 'public360CaseNumber']);
+  }
 
   return applyDeclaredCalculations(schema, conditionallyNormalizedData);
 }
 
 /**
  * Narrows presentation choices to those that the canonical manager schema
- * accepts for the selected legal bases, and hides the decision's follow-up
- * fields until their answers make them applicable. The source schema remains untouched.
+ * accepts for the selected legal bases, and hides a decision's IVO case number
+ * until the errand is reported to IVO. The source schema remains untouched.
  */
 export function getInvestigationRenderingSchema(
   schemaName: string,
   schema: RJSFSchema,
   formData: InvestigationFormData
 ): RJSFSchema {
-  if (schemaName === DECISION_SCHEMA_NAME) return getDecisionRenderingSchema(schema, formData);
+  if (DECISION_SCHEMA_NAMES.includes(schemaName)) return getDecisionRenderingSchema(schema, formData);
   if (schemaName !== 'utredning-enhetschef') return schema;
 
   const properties = { ...schema.properties };

@@ -6,6 +6,7 @@ import {
   AVVIKELSE_CLASSIFICATION_POLICY,
   isAvvikelseReportedMisconductErrand,
   resolveAvvikelseClassificationOwnerDocumentKey,
+  resolveAvvikelseDocumentApplicability,
   resolveSupportErrandClassificationPlacement,
 } from './avvikelse-classification-policy';
 
@@ -110,5 +111,44 @@ test('does not accept selector suffixes or another label path', () => {
     { labels: [{ resourceName: 'OTHER_ABUSE' }] },
   ]) {
     assert.equal(isAvvikelseReportedMisconductErrand(errand), false);
+  }
+});
+
+// One decision per errand: reported misconduct takes the lex Sarah decision whatever its legal
+// bases, an ordinary deviation takes the HSL decision only when HSL is one of them.
+test('resolves at most one decision applicability per errand, misconduct first', () => {
+  const hslLabel = { classification: 'PROVISION', resourcePath: 'PROVISION/HSL', resourceName: 'HSL' };
+  const solLabel = { classification: 'PROVISION', resourcePath: 'PROVISION/SOL', resourceName: 'SOL' };
+  const deviation = { parameters: [{ key: 'eventType', values: ['AVVIKELSE'] }] };
+  const misconduct = { parameters: [{ key: 'eventType', values: ['MISSFORHALLANDE'] }] };
+
+  assert.equal(resolveAvvikelseDocumentApplicability(undefined), undefined);
+  assert.equal(resolveAvvikelseDocumentApplicability({ ...deviation, labels: [solLabel] }), undefined);
+  assert.equal(resolveAvvikelseDocumentApplicability({ ...deviation, labels: [hslLabel] }), 'hsl-deviation');
+  assert.equal(resolveAvvikelseDocumentApplicability({ ...deviation, labels: [solLabel, hslLabel] }), 'hsl-deviation');
+  assert.equal(resolveAvvikelseDocumentApplicability({ ...misconduct, labels: [solLabel] }), 'reported-misconduct');
+  assert.equal(
+    resolveAvvikelseDocumentApplicability({ ...misconduct, labels: [hslLabel, solLabel] }),
+    'reported-misconduct'
+  );
+});
+
+test('recognises the HSL legal base by path, and by name only for a pathless legal base label', () => {
+  assert.equal(
+    resolveAvvikelseDocumentApplicability({ labels: [{ resourcePath: '/provision/hsl/' }] }),
+    'hsl-deviation'
+  );
+  assert.equal(
+    resolveAvvikelseDocumentApplicability({ labels: [{ classification: 'provision', resourceName: ' hsl ' }] }),
+    'hsl-deviation'
+  );
+  for (const errand of [
+    // The category branch for HSL is also named HSL; it is not a legal base.
+    { labels: [{ classification: 'CATEGORY', resourcePath: 'CATEGORY/HSL', resourceName: 'HSL' }] },
+    { labels: [{ classification: 'CATEGORY', resourceName: 'HSL' }] },
+    { labels: [{ resourceName: 'HSL' }] },
+    { labels: [{ resourcePath: 'OTHER/PROVISION/HSL' }] },
+  ]) {
+    assert.equal(resolveAvvikelseDocumentApplicability(errand), undefined);
   }
 });

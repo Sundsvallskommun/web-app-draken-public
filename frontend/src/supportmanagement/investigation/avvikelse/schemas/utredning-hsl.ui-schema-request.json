@@ -12,9 +12,6 @@
       "underlyingCauses",
       "contributingFactorsAndRisks",
       "analysisEvaluation",
-      "public360CaseNumber",
-      "ivoNotification",
-      "ivoCaseNumber",
       "commissionerComment"
     ],
     "ui:sections": [
@@ -51,13 +48,6 @@
           "contributingFactorsAndRisks",
           "analysisEvaluation"
         ]
-      },
-      {
-        "id": "notification-and-documentation",
-        "defaultOpen": true,
-        "title": "Anmälan och dokumentation",
-        "icon": "file-text",
-        "fields": ["public360CaseNumber", "ivoNotification", "ivoCaseNumber"]
       },
       {
         "id": "commissioner-comment",
@@ -135,17 +125,6 @@
         "disableToolbar": false
       }
     },
-    "ivoNotification": {
-      "ui:widget": "RadiobuttonWidget"
-    },
-    "ivoCaseNumber": {
-      "ui:widget": "TextWidget",
-      "ui:placeholder": "Ange IVO ärendenummer"
-    },
-    "public360CaseNumber": {
-      "ui:widget": "TextWidget",
-      "ui:placeholder": "Ange Public 360 ärendenummer"
-    },
     "commissionerComment": {
       "ui:widget": "TextareaWidget",
       "ui:placeholder": "Skriv uppdragsgivarens kommentar",
@@ -154,5 +133,5 @@
       }
     }
   },
-  "description": "UI schema for version 1.0 of Utredning HSL in Draken"
+  "description": "UI schema for version 1.1 of Utredning HSL in Draken"
 }

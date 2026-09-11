@@ -77,102 +77,142 @@
       "underlyingCauses": ["communication_failure", "technical_fault"],
       "contributingFactorsAndRisks": "<p>Bidragande faktorer, bifynd och kostnader.</p>",
       "analysisEvaluation": "<p>Analysteamets utvärdering.</p>",
-      "ivoNotification": "yes",
-      "ivoCaseNumber": "IVO-2026-1234",
-      "public360CaseNumber": "P360-2026-5678",
       "commissionerComment": "<p>Uppdragsgivaren har tagit del av analysen.</p>"
     },
     "invalid": [
       {
-        "description": "IVO-ärendenummer krävs när IVO-anmälan är Ja",
+        "description": "Beslutet om IVO-anmälan hör till beslutsdokumentet, inte utredningen",
         "value": {
           "ivoNotification": "yes",
           "public360CaseNumber": "P360-2026-5678"
         }
+      }
+    ]
+  },
+  "beslut-hsl": {
+    "valid": {
+      "decidedAt": "2026-09-11T12:30:00.000Z",
+      "updatedAt": "2026-09-12T08:00:00.000Z",
+      "revisions": [
+        {
+          "savedAt": "2026-09-11T12:30:00.000Z",
+          "savedBy": "iaf.test"
+        },
+        {
+          "savedAt": "2026-09-12T08:00:00.000Z",
+          "savedBy": "iaf.test"
+        }
+      ],
+      "ivoNotification": "yes",
+      "ivoCaseNumber": "IVO-2026-1234",
+      "public360CaseNumber": "P360-2026-5678"
+    },
+    "invalid": [
+      {
+        "description": "Ställningstagandet till IVO-anmälan krävs",
+        "value": {
+          "public360CaseNumber": "P360-2026-5678"
+        }
       },
       {
-        "description": "Public 360-ärendenummer krävs även när IVO-anmälan är Nej",
+        "description": "Public 360-ärendenummer krävs när ärendet ska anmälas till IVO",
         "value": {
+          "ivoNotification": "yes",
+          "ivoCaseNumber": "IVO-2026-1234"
+        }
+      },
+      {
+        "description": "IVO-ärendenummer får inte anges när ärendet inte ska anmälas till IVO",
+        "value": {
+          "ivoNotification": "no",
+          "ivoCaseNumber": "IVO-2026-1234"
+        }
+      },
+      {
+        "description": "Public 360-ärendenummer får inte anges när ärendet inte ska anmälas till IVO",
+        "value": {
+          "ivoNotification": "no",
+          "public360CaseNumber": "P360-2026-5678"
+        }
+      },
+      {
+        "description": "Beslutstidpunkten måste vara en tidpunkt",
+        "value": {
+          "decidedAt": "2026-09-11",
+          "ivoNotification": "no"
+        }
+      },
+      {
+        "description": "En sparning måste ange både tidpunkt och användare",
+        "value": {
+          "revisions": [
+            {
+              "savedAt": "2026-09-11T12:30:00.000Z"
+            }
+          ],
           "ivoNotification": "no"
         }
       }
     ]
   },
-  "beslut-missforhallande": {
+  "beslut-sol-lss": {
     "valid": {
-      "decisionDate": "2026-09-01",
-      "misconductEstablished": "yes",
-      "seriousMisconduct": "yes",
-      "tangibleRiskOfSeriousMisconduct": "no",
-      "tangibleRiskOfSeriousMisconductMotivation": "<p>Missförhållandet var allvarligt i sig; frågan om påtaglig risk är därmed inte tillämplig.</p>",
-      "reportedToIvo": "yes",
+      "decidedAt": "2026-09-11T12:30:00.000Z",
+      "updatedAt": "2026-09-12T08:00:00.000Z",
+      "revisions": [
+        {
+          "savedAt": "2026-09-11T12:30:00.000Z",
+          "savedBy": "iaf.test"
+        },
+        {
+          "savedAt": "2026-09-12T08:00:00.000Z",
+          "savedBy": "iaf.test"
+        }
+      ],
+      "decidedMisconductDegree": "serious_misconduct",
+      "decisionMotivation": "<p>Rapporten utgjorde ett allvarligt missförhållande.</p>",
+      "ivoNotification": "yes",
       "ivoCaseNumber": "IVO-2026-4321",
-      "supplementaryInformation": "<p>Beslutet har meddelats den enskilde och verksamheten.</p>"
+      "public360CaseNumber": "P360-2026-8765"
     },
     "invalid": [
       {
-        "description": "Motivering krävs när utredningen inte visar något missförhållande",
+        "description": "Klassificering och motivering krävs",
         "value": {
-          "decisionDate": "2026-09-01",
-          "misconductEstablished": "no",
-          "reportedToIvo": "no",
-          "reportedToIvoMotivation": "<p>Inget missförhållande.</p>"
+          "ivoNotification": "no"
         }
       },
       {
-        "description": "Följdfrågorna krävs när ett missförhållande föreligger",
+        "description": "Motiveringen får inte vara tom",
         "value": {
-          "decisionDate": "2026-09-01",
-          "misconductEstablished": "yes",
-          "reportedToIvo": "no",
-          "reportedToIvoMotivation": "<p>Ej allvarligt.</p>"
+          "decidedMisconductDegree": "no_misconduct",
+          "decisionMotivation": "",
+          "ivoNotification": "no"
         }
       },
       {
-        "description": "Följdfrågorna får inte besvaras när inget missförhållande föreligger",
+        "description": "Public 360-ärendenummer krävs när ärendet ska anmälas till IVO",
         "value": {
-          "decisionDate": "2026-09-01",
-          "misconductEstablished": "no",
-          "misconductEstablishedMotivation": "<p>Händelsen utgör inte ett missförhållande.</p>",
-          "seriousMisconduct": "no",
-          "seriousMisconductMotivation": "<p>-</p>",
-          "reportedToIvo": "no",
-          "reportedToIvoMotivation": "<p>Inget missförhållande.</p>"
+          "decidedMisconductDegree": "serious_misconduct",
+          "decisionMotivation": "<p>Allvarligt.</p>",
+          "ivoNotification": "yes"
         }
       },
       {
-        "description": "Motivering krävs när anmälan inte lämnas till IVO",
+        "description": "IVO-ärendenummer får inte anges när ärendet inte ska anmälas till IVO",
         "value": {
-          "decisionDate": "2026-09-01",
-          "misconductEstablished": "yes",
-          "seriousMisconduct": "no",
-          "seriousMisconductMotivation": "<p>Ej allvarligt.</p>",
-          "tangibleRiskOfSeriousMisconduct": "no",
-          "tangibleRiskOfSeriousMisconductMotivation": "<p>Ingen påtaglig risk.</p>",
-          "reportedToIvo": "no"
-        }
-      },
-      {
-        "description": "IVO-ärendenummer får inte anges när anmälan inte lämnas till IVO",
-        "value": {
-          "decisionDate": "2026-09-01",
-          "misconductEstablished": "yes",
-          "seriousMisconduct": "no",
-          "seriousMisconductMotivation": "<p>Ej allvarligt.</p>",
-          "tangibleRiskOfSeriousMisconduct": "no",
-          "tangibleRiskOfSeriousMisconductMotivation": "<p>Ingen påtaglig risk.</p>",
-          "reportedToIvo": "no",
-          "reportedToIvoMotivation": "<p>Ej anmälningspliktigt.</p>",
+          "decidedMisconductDegree": "misconduct",
+          "decisionMotivation": "<p>Missförhållande.</p>",
+          "ivoNotification": "no",
           "ivoCaseNumber": "IVO-2026-0001"
         }
       },
       {
-        "description": "Beslutsdatum krävs",
+        "description": "Okänd klassificering avvisas",
         "value": {
-          "misconductEstablished": "no",
-          "misconductEstablishedMotivation": "<p>Inget missförhållande.</p>",
-          "reportedToIvo": "no",
-          "reportedToIvoMotivation": "<p>Inget missförhållande.</p>"
+          "decidedMisconductDegree": "unknown",
+          "decisionMotivation": "<p>-</p>",
+          "ivoNotification": "no"
         }
       }
     ]

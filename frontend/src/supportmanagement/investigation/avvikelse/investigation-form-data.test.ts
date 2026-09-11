@@ -6,10 +6,12 @@ import { test } from 'vitest';
 
 import {
   getInvestigationRenderingSchema,
+  getInvestigationServerTimestamps,
   investigationDefaultFormStateBehavior,
   normalizeInvestigationFormData,
 } from './investigation-form-data';
-import decisionSchemaRequest from './schemas/beslut-missforhallande.schema-request.json';
+import hslDecisionSchemaRequest from './schemas/beslut-hsl.schema-request.json';
+import solLssDecisionSchemaRequest from './schemas/beslut-sol-lss.schema-request.json';
 
 const choiceSchema: RJSFSchema = {
   type: 'object',
@@ -109,82 +111,103 @@ test('normalizes nested values through root-level local schema references', () =
   );
 });
 
-// The published request keeps literal types; RJSF's JSONSchema7 needs the widened shape.
-const decisionSchema = decisionSchemaRequest.value as unknown as RJSFSchema;
-const decisionKey = 'beslut-missforhallande';
+// The published requests keep literal types; RJSF's JSONSchema7 needs the widened shape.
+const hslDecisionSchema = hslDecisionSchemaRequest.value as unknown as RJSFSchema;
+const solLssDecisionSchema = solLssDecisionSchemaRequest.value as unknown as RJSFSchema;
+const decisions = [
+  { key: 'beslut-hsl', schema: hslDecisionSchema, answers: {} },
+  {
+    key: 'beslut-sol-lss',
+    schema: solLssDecisionSchema,
+    answers: { decidedMisconductDegree: 'misconduct', decisionMotivation: '<p>Missförhållande.</p>' },
+  },
+] as const;
 
-// The decision asks its follow-up questions only once a misconduct is established, and asks for a
-// motivation only for a No. Whatever the form still holds from an earlier answer is dropped.
-test('decision normalization drops the follow-ups and motivations the answers make inapplicable', () => {
-  const noMisconduct = normalizeInvestigationFormData(decisionKey, decisionSchema, {
-    decisionDate: '2026-09-01',
-    misconductEstablished: 'no',
-    misconductEstablishedMotivation: '<p>Inget missförhållande.</p>',
-    seriousMisconduct: 'no',
-    seriousMisconductMotivation: '<p>Kvar från ett tidigare svar.</p>',
-    tangibleRiskOfSeriousMisconduct: 'yes',
-    reportedToIvo: 'yes',
-    reportedToIvoMotivation: '<p>Kvar från ett tidigare svar.</p>',
-    ivoCaseNumber: 'IVO-1',
+// The IVO and Public 360 case numbers only exist once the errand is reported to IVO. Whatever
+// the form still holds from an earlier answer is dropped.
+for (const decision of decisions) {
+  test(`${decision.key} normalization drops both case numbers unless the errand is reported to IVO`, () => {
+    const notReported = normalizeInvestigationFormData(decision.key, decision.schema, {
+      ...decision.answers,
+      decidedAt: '2026-09-11T12:30:00.000Z',
+      ivoNotification: 'no',
+      ivoCaseNumber: 'IVO-stale',
+      public360CaseNumber: 'P360-stale',
+    });
+    assert.deepEqual(notReported, {
+      ...decision.answers,
+      decidedAt: '2026-09-11T12:30:00.000Z',
+      ivoNotification: 'no',
+    });
+
+    const reported = {
+      ...decision.answers,
+      ivoNotification: 'yes',
+      ivoCaseNumber: 'IVO-1',
+      public360CaseNumber: 'P360-1',
+    };
+    assert.deepEqual(normalizeInvestigationFormData(decision.key, decision.schema, reported), reported);
+
+    const unanswered = normalizeInvestigationFormData(decision.key, decision.schema, {
+      ...decision.answers,
+      ivoCaseNumber: 'IVO-early',
+      public360CaseNumber: 'P360-early',
+      unknown: 1,
+    });
+    assert.deepEqual(unanswered, decision.answers);
   });
 
-  assert.deepEqual(noMisconduct, {
-    decisionDate: '2026-09-01',
-    misconductEstablished: 'no',
-    misconductEstablishedMotivation: '<p>Inget missförhållande.</p>',
-    reportedToIvo: 'yes',
-    ivoCaseNumber: 'IVO-1',
-  });
+  test(`the ${decision.key} rendering schema hides the case numbers the normalization drops`, () => {
+    const fields = (formData: Record<string, unknown>) =>
+      Object.keys(getInvestigationRenderingSchema(decision.key, decision.schema, formData).properties ?? {});
+    const allFields = Object.keys(decision.schema.properties ?? {});
+    const withoutCaseNumbers = allFields.filter(
+      (field) => field !== 'ivoCaseNumber' && field !== 'public360CaseNumber'
+    );
 
-  const misconduct = normalizeInvestigationFormData(decisionKey, decisionSchema, {
-    misconductEstablished: 'yes',
-    misconductEstablishedMotivation: '<p>Kvar från ett tidigare svar.</p>',
-    seriousMisconduct: 'yes',
-    seriousMisconductMotivation: '<p>Kvar från ett tidigare svar.</p>',
-    tangibleRiskOfSeriousMisconduct: 'no',
-    tangibleRiskOfSeriousMisconductMotivation: '<p>Skadan var redan skedd.</p>',
-    reportedToIvo: 'no',
-    reportedToIvoMotivation: '<p>Ej anmälningspliktigt.</p>',
-    ivoCaseNumber: 'IVO-stale',
+    assert.deepEqual(fields({}), withoutCaseNumbers);
+    assert.deepEqual(fields({ ivoNotification: 'no' }), withoutCaseNumbers);
+    assert.deepEqual(fields({ ivoNotification: 'yes' }), allFields);
+    // The source schema is not touched.
+    assert.ok(decision.schema.properties && 'public360CaseNumber' in decision.schema.properties);
   });
+}
 
-  assert.deepEqual(misconduct, {
-    misconductEstablished: 'yes',
-    seriousMisconduct: 'yes',
-    tangibleRiskOfSeriousMisconduct: 'no',
-    tangibleRiskOfSeriousMisconductMotivation: '<p>Skadan var redan skedd.</p>',
-    reportedToIvo: 'no',
-    reportedToIvoMotivation: '<p>Ej anmälningspliktigt.</p>',
-  });
+test('the HSL investigation keeps only the IVO case number rule, for documents still bound to 1.0', () => {
+  const legacyHsl: RJSFSchema = {
+    type: 'object',
+    properties: {
+      ivoNotification: { type: 'string' },
+      ivoCaseNumber: { type: 'string' },
+      public360CaseNumber: { type: 'string' },
+    },
+  };
+  assert.deepEqual(
+    normalizeInvestigationFormData('utredning-hsl', legacyHsl, {
+      ivoNotification: 'no',
+      ivoCaseNumber: 'IVO-stale',
+      public360CaseNumber: 'P360-kept',
+    }),
+    { ivoNotification: 'no', public360CaseNumber: 'P360-kept' }
+  );
 });
 
-test('decision normalization keeps an unanswered form untouched apart from unknown fields', () => {
-  assert.deepEqual(normalizeInvestigationFormData(decisionKey, decisionSchema, { unknown: 1 }), {});
-});
-
-test('the decision rendering schema hides the same fields the normalization drops', () => {
-  const fields = (formData: Record<string, unknown>) =>
-    Object.keys(getInvestigationRenderingSchema(decisionKey, decisionSchema, formData).properties ?? {});
-
-  assert.deepEqual(fields({}), ['decisionDate', 'misconductEstablished', 'reportedToIvo', 'supplementaryInformation']);
-  assert.deepEqual(fields({ misconductEstablished: 'no', reportedToIvo: 'no' }), [
-    'decisionDate',
-    'misconductEstablished',
-    'misconductEstablishedMotivation',
-    'reportedToIvo',
-    'reportedToIvoMotivation',
-    'supplementaryInformation',
-  ]);
-  assert.deepEqual(fields({ misconductEstablished: 'yes', seriousMisconduct: 'no', reportedToIvo: 'yes' }), [
-    'decisionDate',
-    'misconductEstablished',
-    'seriousMisconduct',
-    'seriousMisconductMotivation',
-    'tangibleRiskOfSeriousMisconduct',
-    'reportedToIvo',
-    'ivoCaseNumber',
-    'supplementaryInformation',
-  ]);
-  // The source schema is not touched.
-  assert.ok(decisionSchema.properties && 'seriousMisconduct' in decisionSchema.properties);
+test('reports the server-stamped timestamps the schema declares and the document carries', () => {
+  assert.deepEqual(getInvestigationServerTimestamps(solLssDecisionSchema, {}), []);
+  assert.deepEqual(
+    getInvestigationServerTimestamps(solLssDecisionSchema, {
+      decidedAt: '2026-09-11T12:30:00.000Z',
+      updatedAt: '2026-09-12T08:00:00.000Z',
+      revisions: [{ savedAt: '2026-09-12T08:00:00.000Z', savedBy: 'iaf.test' }],
+    }),
+    [
+      { name: 'decidedAt', label: 'Beslutat', value: '2026-09-11T12:30:00.000Z' },
+      { name: 'updatedAt', label: 'Senast ändrat', value: '2026-09-12T08:00:00.000Z' },
+    ]
+  );
+  assert.deepEqual(
+    getInvestigationServerTimestamps(solLssDecisionSchema, { decidedAt: '  ', ivoNotification: 'no' }),
+    []
+  );
+  assert.deepEqual(getInvestigationServerTimestamps(choiceSchema, { answer: 'yes' }), []);
 });

@@ -8,7 +8,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { InvestigationDocumentPlacement } from '../investigation-profile';
 import { useInvestigationProfileStore } from '../investigation-profile-store';
 import type { InvestigationTabProps } from '../investigation-variant';
-import { isReportedMisconductErrand } from './investigation-classification';
+import { getInvestigationDocumentApplicability } from './investigation-classification';
 import {
   type InvestigationDocumentContext,
   type InvestigationTabState,
@@ -49,7 +49,7 @@ const tabCopy: Readonly<Record<InvestigationDocumentPlacement, TabCopy>> = {
   decision: {
     heading: 'Beslut',
     description:
-      'Dokumentera beslutet om det rapporterade missförhållandet. Beslutet sparas separat från utredningen och behåller sin schemaversion.',
+      'Dokumentera beslutet som avslutar utredningen, inklusive ställningstagandet till anmälan till IVO. Beslutet sparas separat från utredningen och behåller sin schemaversion.',
     dataCy: 'support-decision-tab',
     noticePrefix: 'decision-tab',
     notices: {
@@ -90,10 +90,10 @@ function InvestigationDocuments({
   // Errand-wide readonly. Each document adds its own read-only grant on top of it below.
   const errandReadonly = !supportErrand || isSupportErrandLocked(supportErrand);
   const copy = tabCopy[placement];
-  const reportedMisconduct = isReportedMisconductErrand(supportErrand);
+  const applicability = getInvestigationDocumentApplicability(supportErrand);
   const documentContext = useMemo<InvestigationDocumentContext>(
-    () => ({ placement, reportedMisconduct, access }),
-    [placement, reportedMisconduct, access]
+    () => ({ placement, applicability, access }),
+    [placement, applicability, access]
   );
 
   // Keep a stable panel for each configured document. Access controls its content, not the
