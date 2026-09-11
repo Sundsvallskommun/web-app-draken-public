@@ -38,7 +38,8 @@ delad kod erbjuder:
 
 Två flaggor styr fliken: kapabilitetsflaggan väljer _vilken_ implementation, och `useInvestigation`
 är huvudströmbrytaren som släcker fliken för alla varianter samtidigt. Ovanpå flaggorna ligger fasgrinden
-(`investigation-phase.ts`): faserna kommer ur namespacets `supportmetadata`, och vilken fas ärendet är i läses
+(`hasReachedSupportPhase` i `services/support-phase-service.ts`, delad med Åtgärder och Uppföljning):
+faserna kommer ur namespacets `supportmetadata`, och vilken fas ärendet är i läses
 ur dess `phases`-historik — `activePhaseId` är skrivvägen och kommer aldrig tillbaka vid läsning. Grinden
 jämför `phaseOrder`, matchar fasen på `name` eller `displayName`, och släpper igenom när det inte finns något
 att jämföra: en deployment utan fasmodell, eller med andra fasnamn, behåller de flikar den alltid haft. Det som

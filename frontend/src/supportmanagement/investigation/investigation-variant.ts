@@ -1,10 +1,10 @@
 import type { AppConfigFeatures } from '@config/appconfig';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { hasReachedSupportPhase, type SupportPhaseContext } from '@supportmanagement/services/support-phase-service';
 import type { ReactNode } from 'react';
 
 import type { SupportErrandClassificationPlacement } from './classification-placement';
 import type { InvestigationAccessState } from './investigation-access';
-import { hasReachedInvestigationPhase, type InvestigationPhaseContext } from './investigation-phase';
 import type { InvestigationProfile } from './investigation-profile';
 
 /**
@@ -106,9 +106,9 @@ export const resolveInvestigationVariant = (
 export const isInvestigationTabVisible = (
   features: AppConfigFeatures,
   variant: InvestigationVariantModule | null,
-  phases: InvestigationPhaseContext
+  phases: SupportPhaseContext
 ): boolean =>
-  features.useInvestigation && variant !== null && hasReachedInvestigationPhase(variant.requiredPhaseName, phases);
+  features.useInvestigation && variant !== null && hasReachedSupportPhase(variant.requiredPhaseName, phases);
 
 /**
  * The master switch and the phase gate apply to the decision tab exactly as they apply to the
@@ -120,9 +120,9 @@ export const isDecisionTabVisible = (
   variant: InvestigationVariantModule | null,
   errand: SupportErrand | undefined,
   profile: InvestigationProfile | null | undefined,
-  phases: InvestigationPhaseContext,
+  phases: SupportPhaseContext,
   access: InvestigationAccessState = { status: 'loading' }
 ): boolean =>
   features.useInvestigation &&
   variant?.decisionTab?.isVisible(errand, profile, access) === true &&
-  hasReachedInvestigationPhase(variant.decisionTab.requiredPhaseName, phases);
+  hasReachedSupportPhase(variant.decisionTab.requiredPhaseName, phases);

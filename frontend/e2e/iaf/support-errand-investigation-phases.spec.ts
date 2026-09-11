@@ -10,6 +10,14 @@ test.skip(
 
 const investigationTab = (page: Page) => page.getByRole('tab', { name: 'Utredning', exact: true });
 const decisionTab = (page: Page) => page.getByRole('tab', { name: 'Beslut', exact: true });
+const measuresTab = (page: Page) => page.getByRole('tab', { name: 'Åtgärder', exact: true });
+const followUpTab = (page: Page) => page.getByRole('tab', { name: 'Uppföljning', exact: true });
+
+/** Åtgärder and Uppföljning are behind their own flag, which the phase gate sits on top of. */
+const measuresEnabled = [
+  { name: 'isSupportManagement', enabled: true },
+  { name: 'useMeasures', enabled: true },
+];
 
 async function visitErrand(page: Page, dismissCookieConsent: () => Promise<void>) {
   const errandResponse = page.waitForResponse(
@@ -34,6 +42,7 @@ test.describe('Utrednings- och beslutsflikarna följer ärendets fas', () => {
   }) => {
     await installIafApiMock(page, {
       documents: {},
+      featureFlags: measuresEnabled,
       metadataPhases: investigationPhases,
       activePhaseId: 'phase-received',
     });
@@ -42,11 +51,15 @@ test.describe('Utrednings- och beslutsflikarna följer ärendets fas', () => {
 
     await expect(investigationTab(page)).toHaveCount(0);
     await expect(decisionTab(page)).toHaveCount(0);
+    // The measures follow the same rule: decided under Utredning, followed up under Beslut.
+    await expect(measuresTab(page)).toHaveCount(0);
+    await expect(followUpTab(page)).toHaveCount(0);
   });
 
   test('utredningen visas i utredningsfasen, beslutet först i beslutsfasen', async ({ page, dismissCookieConsent }) => {
     await installIafApiMock(page, {
       documents: {},
+      featureFlags: measuresEnabled,
       metadataPhases: investigationPhases,
       activePhaseId: 'phase-investigation',
     });
@@ -56,6 +69,8 @@ test.describe('Utrednings- och beslutsflikarna följer ärendets fas', () => {
     await investigationTab(page).click();
     await expect(page.locator('[data-cy="support-investigation-tab"]')).toBeVisible();
     await expect(decisionTab(page)).toHaveCount(0);
+    await expect(measuresTab(page)).toHaveCount(1);
+    await expect(followUpTab(page)).toHaveCount(0);
   });
 
   test('beslutsfliken visas när ärendet nått beslutsfasen, och utredningen finns kvar', async ({
@@ -64,6 +79,7 @@ test.describe('Utrednings- och beslutsflikarna följer ärendets fas', () => {
   }) => {
     await installIafApiMock(page, {
       documents: {},
+      featureFlags: measuresEnabled,
       metadataPhases: investigationPhases,
       activePhaseId: 'phase-decision',
     });
@@ -71,17 +87,21 @@ test.describe('Utrednings- och beslutsflikarna följer ärendets fas', () => {
     await visitErrand(page, dismissCookieConsent);
 
     await expect(investigationTab(page)).toHaveCount(1);
+    await expect(measuresTab(page)).toHaveCount(1);
+    await expect(followUpTab(page)).toHaveCount(1);
     await decisionTab(page).click();
     await expect(page.locator('[data-cy="support-decision-tab"]')).toBeVisible();
   });
 
   // A namespace that runs no workflow has no phase to wait for, and keeps the tabs it always had.
   test('utan fasmodell är flikarna kvar som förut', async ({ page, dismissCookieConsent }) => {
-    await installIafApiMock(page, { documents: {} });
+    await installIafApiMock(page, { documents: {}, featureFlags: measuresEnabled });
 
     await visitErrand(page, dismissCookieConsent);
 
     await expect(investigationTab(page)).toHaveCount(1);
     await expect(decisionTab(page)).toHaveCount(1);
+    await expect(measuresTab(page)).toHaveCount(1);
+    await expect(followUpTab(page)).toHaveCount(1);
   });
 });

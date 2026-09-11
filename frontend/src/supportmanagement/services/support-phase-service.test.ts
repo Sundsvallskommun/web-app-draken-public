@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 
+import type { Phase } from '@common/data-contracts/supportmanagement/data-contracts';
 import { test } from 'vitest';
 
 import {
   getAvailablePhaseTransitions,
   getSupportPhases,
+  hasReachedSupportPhase,
   isInitialSupportPhase,
   isStatusAllowedInPhase,
   resolveStartProcessPhaseAdvance,
@@ -109,4 +111,91 @@ test('a status is available only where the active phase lists it', () => {
   // A phase listing no statuses constrains nothing, and neither does a workflow that is not there.
   assert.equal(isStatusAllowedInPhase('INQUIRY', 'unconstrained', workflow), true);
   assert.equal(isStatusAllowedInPhase('INQUIRY', undefined, []), true);
+});
+
+const gatePhases: Phase[] = [
+  { id: 'received', name: 'RECEIVED', displayName: 'Inkommet', phaseOrder: 1 },
+  { id: 'investigation', name: 'UTREDNING', displayName: 'Utredning', phaseOrder: 2 },
+  { id: 'decision', name: 'BESLUT', displayName: 'Beslut', phaseOrder: 3 },
+  { id: 'closed', name: 'CLOSED', displayName: 'Avslutat', phaseOrder: 4 },
+];
+
+/** The readable side of the errand: the phase it has entered and not left is the one it is in. */
+const inPhase = (phaseId: string) => ({ metadataPhases: gatePhases, errandPhases: [{ phaseId }] });
+
+test('the phase being waited for counts as reached, and so does every later one', () => {
+  assert.equal(hasReachedSupportPhase('Utredning', inPhase('received')), false);
+  assert.equal(hasReachedSupportPhase('Utredning', inPhase('investigation')), true);
+  assert.equal(hasReachedSupportPhase('Utredning', inPhase('decision')), true);
+  assert.equal(hasReachedSupportPhase('Utredning', inPhase('closed')), true);
+});
+
+test('the decision phase is reached later than the investigation phase', () => {
+  assert.equal(hasReachedSupportPhase('Beslut', inPhase('investigation')), false);
+  assert.equal(hasReachedSupportPhase('Beslut', inPhase('decision')), true);
+});
+
+// The namespace names its phases; Draken reads the model rather than prescribing a spelling.
+test('the phase resolves from either the technical name or the name handlers read', () => {
+  assert.equal(hasReachedSupportPhase('UTREDNING', inPhase('investigation')), true);
+  assert.equal(hasReachedSupportPhase('  utredning  ', inPhase('investigation')), true);
+});
+
+// An errand created outside the workflow has entered no phase at all, so it is before every one of
+// them - the tab that waits for a phase stays away until somebody starts the flow.
+test('an errand that has not entered the workflow has reached no phase', () => {
+  assert.equal(hasReachedSupportPhase('Utredning', { metadataPhases: gatePhases, errandPhases: undefined }), false);
+  assert.equal(hasReachedSupportPhase('Utredning', { metadataPhases: gatePhases, errandPhases: [] }), false);
+  assert.equal(
+    hasReachedSupportPhase('Utredning', {
+      metadataPhases: gatePhases,
+      errandPhases: [{ phaseId: 'received', ended: '1' }],
+    }),
+    false
+  );
+});
+
+// Configuration nobody made must not take a tab away: a namespace running no workflow, or one whose
+// phases are named differently, keeps what it had before the gate existed.
+test('a phase the deployment does not run gates nothing', () => {
+  assert.equal(hasReachedSupportPhase('Utredning', { metadataPhases: undefined, errandPhases: undefined }), true);
+  assert.equal(hasReachedSupportPhase('Utredning', { metadataPhases: [], errandPhases: undefined }), true);
+  assert.equal(hasReachedSupportPhase('Handläggning', inPhase('received')), true);
+});
+
+test('a tab naming no phase is never gated', () => {
+  assert.equal(hasReachedSupportPhase(undefined, inPhase('received')), true);
+  assert.equal(hasReachedSupportPhase('   ', inPhase('received')), true);
+});
+
+// A retired phase is not one to wait for, but an errand can still be sitting in one, and its order
+// is what places it against the phase being waited for.
+test('a deprecated phase still orders the errand it holds', () => {
+  const withRetired: Phase[] = [
+    ...gatePhases,
+    { id: 'retired-investigation', name: 'UTREDNING GAMMAL', phaseOrder: 2, deprecated: true },
+  ];
+
+  assert.equal(
+    hasReachedSupportPhase('Utredning', {
+      metadataPhases: withRetired,
+      errandPhases: [{ phaseId: 'retired-investigation' }],
+    }),
+    true
+  );
+  assert.equal(
+    hasReachedSupportPhase('Beslut', {
+      metadataPhases: withRetired,
+      errandPhases: [{ phaseId: 'retired-investigation' }],
+    }),
+    false
+  );
+  // The retired phase cannot be the one a tab waits for, so naming it gates nothing.
+  assert.equal(hasReachedSupportPhase('UTREDNING GAMMAL', inPhase('received')), true);
+});
+
+// The errand is in the workflow but in a phase the model no longer describes: nothing can be
+// ordered against it, and a tab is not taken away over metadata that has moved on.
+test('a phase missing from the model does not lock the errand out', () => {
+  assert.equal(hasReachedSupportPhase('Utredning', inPhase('phase-nobody-configured')), true);
 });

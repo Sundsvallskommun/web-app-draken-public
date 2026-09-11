@@ -5,7 +5,6 @@ import { cx, Tabs } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
-import type { InvestigationPhaseContext } from '@supportmanagement/investigation/investigation-phase';
 import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import {
   isDecisionTabVisible,
@@ -13,6 +12,7 @@ import {
 } from '@supportmanagement/investigation/investigation-variant';
 import { getInvestigationVariant } from '@supportmanagement/investigation/investigation-variant-registry';
 import { useInvestigationAccess } from '@supportmanagement/investigation/use-investigation-access';
+import { MEASURE_FOLLOW_UP_PHASE_NAME, MEASURES_PHASE_NAME } from '@supportmanagement/measures/measure-phases';
 import { SupportMeasuresTab } from '@supportmanagement/measures/support-measures-tab';
 import { countAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import {
@@ -30,6 +30,7 @@ import {
   groupByConversationIdSortedTree,
   MessageNode,
 } from '@supportmanagement/services/support-message-service';
+import { hasReachedSupportPhase, type SupportPhaseContext } from '@supportmanagement/services/support-phase-service';
 import { Dispatch, FC, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn, useFormState } from 'react-hook-form';
 
@@ -56,7 +57,7 @@ export const SupportTabsWrapper: FC<{
   // Where the errand stands in the workflow, for the tabs that wait for a phase. The access request
   // is deliberately not gated on it: what the handler may read of an already written document does
   // not change with the phase, and Ärendeuppgifter asks the same answer from any phase.
-  const investigationPhases: InvestigationPhaseContext = useMemo(
+  const errandPhases: SupportPhaseContext = useMemo(
     () => ({ metadataPhases: supportMetadata?.phases, errandPhases: supportErrand?.phases }),
     [supportErrand?.phases, supportMetadata?.phases]
   );
@@ -184,7 +185,7 @@ export const SupportTabsWrapper: FC<{
             refreshAccess: refreshInvestigationAccess,
           }),
         disabled: false,
-        visibleFor: isInvestigationTabVisible(appConfig.features, investigationVariant, investigationPhases),
+        visibleFor: isInvestigationTabVisible(appConfig.features, investigationVariant, errandPhases),
       },
       {
         key: 'measures',
@@ -199,7 +200,7 @@ export const SupportTabsWrapper: FC<{
           />
         ),
         disabled: false,
-        visibleFor: appConfig.features.useMeasures,
+        visibleFor: appConfig.features.useMeasures && hasReachedSupportPhase(MEASURES_PHASE_NAME, errandPhases),
       },
       {
         key: 'decision',
@@ -218,7 +219,7 @@ export const SupportTabsWrapper: FC<{
             investigationVariant,
             supportErrand,
             investigationProfile,
-            investigationPhases,
+            errandPhases,
             investigationAccess
           ) ||
           investigationProfile?.documents.some(
@@ -239,7 +240,8 @@ export const SupportTabsWrapper: FC<{
           />
         ),
         disabled: false,
-        visibleFor: appConfig.features.useMeasures,
+        visibleFor:
+          appConfig.features.useMeasures && hasReachedSupportPhase(MEASURE_FOLLOW_UP_PHASE_NAME, errandPhases),
       },
       {
         key: 'messages',
@@ -305,7 +307,7 @@ export const SupportTabsWrapper: FC<{
       investigationProfile,
       investigationAccess,
       investigationDirty,
-      investigationPhases,
+      errandPhases,
       refreshInvestigationAccess,
       setUnsavedFacility,
       supportAttachments,

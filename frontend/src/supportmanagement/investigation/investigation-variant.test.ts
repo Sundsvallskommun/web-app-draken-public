@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 
 import type { AppConfigFeatures } from '@config/appconfig';
+import type { SupportPhaseContext } from '@supportmanagement/services/support-phase-service';
 import { test } from 'vitest';
 
 import { defaultBasicsPlacement } from './classification-placement';
-import type { InvestigationPhaseContext } from './investigation-phase';
 import {
   type InvestigationCapability,
   type InvestigationVariantModule,
@@ -26,7 +26,7 @@ const stub = (id: string, enabledBy: InvestigationCapability): InvestigationVari
 });
 
 /** A deployment running no workflow: the phase gate has nothing to compare and lets every tab past. */
-const noPhases: InvestigationPhaseContext = { metadataPhases: undefined, errandPhases: undefined };
+const noPhases: SupportPhaseContext = { metadataPhases: undefined, errandPhases: undefined };
 
 test('no enabled capability resolves to no variant', () => {
   assert.equal(resolveInvestigationVariant(features({}), [stub('avvikelse', 'useAvvikelseInvestigation')]), null);
@@ -92,7 +92,7 @@ test('a tab waiting for a phase stays away until the errand reaches it', () => {
     { id: 'investigation', name: 'Utredning', phaseOrder: 2 },
     { id: 'decision', name: 'Beslut', phaseOrder: 3 },
   ];
-  const inPhase = (phaseId: string): InvestigationPhaseContext => ({
+  const inPhase = (phaseId: string): SupportPhaseContext => ({
     metadataPhases,
     errandPhases: [{ phaseId }],
   });
