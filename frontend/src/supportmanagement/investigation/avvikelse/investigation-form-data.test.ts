@@ -137,9 +137,9 @@ for (const decision of decisions) {
       ivoCaseNumber: 'IVO-stale',
       public360CaseNumber: 'P360-stale',
     });
+    // The server's timestamp is dropped along with the case numbers; the BFF stamps it anew.
     assert.deepEqual(notReported, {
       ...decision.answers,
-      decidedAt: '2026-09-11T12:30:00.000Z',
       ivoNotification: 'no',
     });
 
@@ -235,4 +235,33 @@ test('reads the completion declaration, the completed state and the report log t
     [report, { ...report, attachmentId: 'a-1' }]
   );
   assert.deepEqual(getInvestigationReports(choiceSchema, { reports: [report] }), []);
+});
+
+// The server's own properties never ride along in the form: RJSF would default the report log to
+// an empty list and the BFF would strip it again, which read as an unsaved change after every save.
+test('normalization drops server-controlled properties, whatever the form or the server holds', () => {
+  const schema: RJSFSchema = {
+    type: 'object',
+    properties: {
+      note: { type: 'string' },
+      reports: { type: 'array', 'x-draken-server-owned': true },
+      decidedAt: { type: 'string', 'x-draken-server-timestamp': 'created' },
+      revisions: { type: 'array', 'x-draken-server-revisions': true },
+    },
+  } as RJSFSchema;
+  assert.deepEqual(
+    normalizeInvestigationFormData('utredning-hsl', schema, {
+      note: 'kept',
+      reports: [],
+      decidedAt: '2026-09-11T12:30:00.000Z',
+      revisions: [{ savedAt: 'x', savedBy: 'y' }],
+    }),
+    { note: 'kept' }
+  );
+  assert.deepEqual(
+    normalizeInvestigationFormData('utredning-hsl', solLssDecisionSchema, { ivoNotification: 'no', reports: [] }),
+    {
+      ivoNotification: 'no',
+    }
+  );
 });

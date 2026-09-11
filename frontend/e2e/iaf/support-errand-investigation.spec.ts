@@ -821,7 +821,12 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await document.locator('#utredning-hsl_completed').getByRole('radio', { name: 'Ja', exact: true }).check();
     await document.getByRole('button', { name: 'Spara utredning', exact: true }).click();
     await expect.poll(() => trace.puts.length).toBe(1);
-    expect(trace.puts[0].body).toEqual({ schemaId: '2281_utredning-hsl_1.2', value: { completed: 'yes' } });
+    // The form never sends the server-owned report log, whatever RJSF defaulted it to.
+    expect(trace.puts[0].body).toEqual({
+      schemaId: '2281_utredning-hsl_1.2',
+      value: expect.objectContaining({ completed: 'yes' }),
+    });
+    expect(trace.puts[0].body).not.toHaveProperty(['value', 'reports']);
 
     // Saved as completed: locked, no save button, and the report can be generated.
     await expect(document.locator('[data-cy="investigation-document-locked"]')).toBeVisible();

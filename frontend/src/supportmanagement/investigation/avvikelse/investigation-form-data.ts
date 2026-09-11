@@ -230,8 +230,30 @@ function applyDeclaredCalculations(schema: RJSFSchema, formData: InvestigationFo
 }
 
 /**
+ * The root properties the server writes: timestamps, revision logs and server-owned values such as
+ * the report log. They are read from the stored document, never carried in the form, so the form
+ * neither sends them nor treats the server's copy of them as an unsaved change.
+ */
+export const isServerControlledProperty = (property: unknown): boolean =>
+  isRecord(property) &&
+  (property['x-draken-server-timestamp'] !== undefined ||
+    property['x-draken-server-revisions'] === true ||
+    property['x-draken-server-owned'] === true);
+
+function dropServerControlledProperties(schema: RJSFSchema, formData: InvestigationFormData): InvestigationFormData {
+  const serverControlled = Object.entries(schema.properties ?? {})
+    .filter(([name, property]) => isServerControlledProperty(property) && hasOwn(formData, name))
+    .map(([name]) => name);
+  if (serverControlled.length === 0) return formData;
+
+  const clientData = { ...formData };
+  for (const name of serverControlled) delete clientData[name];
+  return clientData;
+}
+
+/**
  * Canonical adapter from untrusted browser/RJSF values to one investigation
- * document. Unknown and conditionally inapplicable values are removed before
+ * document. Unknown, server-controlled and conditionally inapplicable values are removed before
  * calculations declared by the schema are applied.
  */
 export function normalizeInvestigationFormData(
@@ -240,7 +262,7 @@ export function normalizeInvestigationFormData(
   formData: InvestigationFormData
 ): InvestigationFormData {
   const prunedData = pruneValueToSchema(schema, formData, schema);
-  const schemaOwnedData = isRecord(prunedData) ? prunedData : {};
+  const schemaOwnedData = dropServerControlledProperties(schema, isRecord(prunedData) ? prunedData : {});
   let conditionallyNormalizedData = schemaOwnedData;
   if (schemaName === 'utredning-enhetschef') conditionallyNormalizedData = normalizeManagerConditions(schemaOwnedData);
   if (IVO_INVESTIGATION_SCHEMA_NAMES.includes(schemaName)) {

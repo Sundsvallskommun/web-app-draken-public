@@ -243,7 +243,9 @@ export function SupportInvestigationDocument({
           uiSchema,
           schemaId: loadedSchema.schemaId,
           formData: loadedFormData,
-          persistedFormData: loadedFormData,
+          // The stored document as is, server-owned values included; the form data above is
+          // the client's normalized view of it.
+          persistedFormData: storedDocument?.document.value ?? {},
           persisted: Boolean(storedDocument),
           etag: storedDocument?.etag,
         });
@@ -349,7 +351,7 @@ export function SupportInvestigationDocument({
     [definition.key, documentState, reportedMisconduct]
   );
   const serverTimestamps = documentState
-    ? getInvestigationServerTimestamps(documentState.schema, documentState.formData)
+    ? getInvestigationServerTimestamps(documentState.schema, documentState.persistedFormData)
     : [];
 
   useEffect(() => {
@@ -397,7 +399,14 @@ export function SupportInvestigationDocument({
       current
         ? {
             ...current,
-            formData: saved.document.value,
+            // Normalized like a load, so the server's own properties do not read as edits.
+            formData: normalizeContextualInvestigationFormData(
+              definition.key,
+              definition.schemaName,
+              current.schema,
+              saved.document.value,
+              reportedMisconduct
+            ),
             persistedFormData: saved.document.value,
             schemaId: saved.document.schemaId,
             persisted: true,
