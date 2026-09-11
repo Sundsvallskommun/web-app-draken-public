@@ -42,7 +42,7 @@
       "ui:widget": "select",
       "ui:placeholder": "Välj klassificering",
       "ui:options": {
-        "className": "w-full max-w-[48rem]"
+        "className": "w-full"
       }
     },
     "decisionMotivation": {
@@ -70,5 +70,5 @@
       }
     }
   },
-  "description": "UI schema for version 1.2 of Beslut SoL/LSS in Draken"
+  "description": "UI schema for version 1.3 of Beslut SoL/LSS in Draken"
 }

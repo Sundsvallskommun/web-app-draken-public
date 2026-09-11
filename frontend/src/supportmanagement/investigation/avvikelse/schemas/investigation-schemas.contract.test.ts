@@ -40,7 +40,7 @@ const artifacts = [
   },
   {
     name: 'beslut-sol-lss',
-    version: '1.2',
+    version: '1.3',
     hasErrandClassification: false,
     schemaFile: 'beslut-sol-lss.schema-request.json',
     uiSchemaFile: 'beslut-sol-lss.ui-schema-request.json',
@@ -550,4 +550,11 @@ test('every section icon the UI schemas name exists in the Draken icon map', () 
       assert.ok(section.icon in iconMap, `${artifact.name}.${section.id} names unknown icon ${section.icon}`);
     }
   }
+});
+
+// The decision's classification is the form's main choice and spans the form like every other
+// field; the investigation's proposal field, which it copies its choices from, is narrower.
+test('the lex Sarah classification select takes the full form width', () => {
+  const uiSchema = readJson('beslut-sol-lss.ui-schema-request.json').value;
+  assert.equal(uiSchema.decidedMisconductDegree['ui:options'].className, 'w-full');
 });

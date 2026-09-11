@@ -124,7 +124,7 @@ test('opens all investigation sections without turning an unanswered draft into 
       ['utredning-sol-lss', '1.1', {}],
       ['utredning-hsl', '1.1', {}],
       ['beslut-hsl', '1.2', {}],
-      ['beslut-sol-lss', '1.2', {}],
+      ['beslut-sol-lss', '1.3', {}],
     ]) {
       localStorage.setItem(
         `draken:investigation-schema-lab:${key}`,

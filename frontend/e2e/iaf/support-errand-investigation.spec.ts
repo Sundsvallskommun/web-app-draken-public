@@ -762,7 +762,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.puts[0].key).toBe(misconductDecisionKey);
     expect(trace.puts[0].headers['if-none-match']).toBe('*');
     expect(trace.puts[0].body).toEqual({
-      schemaId: `2281_${misconductDecisionKey}_1.2`,
+      schemaId: `2281_${misconductDecisionKey}_1.3`,
       value: {
         decidedMisconductDegree: 'tangible_risk_of_serious_misconduct',
         decisionMotivation: '<p>Risken var påtaglig.</p>',

@@ -8,7 +8,7 @@ Den här katalogen är den kanoniska lokala källan för den första schema-labb
 | `utredning-sol-lss`         | 1.1           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
 | `utredning-hsl`             | 1.1           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
 | `beslut-hsl`                | 1.2           | `beslut-hsl.schema-request.json`           | `beslut-hsl.ui-schema-request.json`           |
-| `beslut-sol-lss`            | 1.2           | `beslut-sol-lss.schema-request.json`       | `beslut-sol-lss.ui-schema-request.json`       |
+| `beslut-sol-lss`            | 1.3           | `beslut-sol-lss.schema-request.json`       | `beslut-sol-lss.ui-schema-request.json`       |
 
 Vid publicering skickas `*.schema-request.json` till `POST /2281/schemas`. Det skapade schema-ID:t används sedan med motsvarande `*.ui-schema-request.json` i `PUT /2281/schemas/{id}/ui-schema`.
 
@@ -31,7 +31,8 @@ Den 10 september 2026 publicerades och lästes tillbaka från samma testmiljö:
 Den 11 september 2026 publicerades version 1.1 av båda besluten (`2281_beslut-hsl_1.1`, `2281_beslut-sol-lss_1.1`),
 som ersätter 1.0: beslutsdatumet blev en serverstämplad tidpunkt och Public 360-regeln ändrades. Inga dokument
 hade sparats mot 1.0. Samma dag publicerades version 1.2 (`2281_beslut-hsl_1.2`, `2281_beslut-sol-lss_1.2`) med
-`updatedAt` och `revisions`; inga dokument hade sparats mot 1.1.
+`updatedAt` och `revisions`; inga dokument hade sparats mot 1.1. `2281_beslut-sol-lss_1.3` publicerades samma dag med
+klassificeringsfältet i full bredd; inga dokument hade sparats mot 1.2.
 
 Version 1.1 för `utredning-enhetschef` och `utredning-sol-lss` finns endast som lokala artefakter i repot. Att en
 requestartefakt finns här innebär inte att den har skickats till JsonSchema-API:t. Fliken Beslut läser

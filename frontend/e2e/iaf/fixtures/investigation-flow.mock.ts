@@ -193,7 +193,7 @@ export const latestSchemaIds: Record<InvestigationKey, string> = {
   'utredning-sol-lss': '2281_utredning-sol-lss_1.1',
   'utredning-hsl': '2281_utredning-hsl_1.1',
   'beslut-hsl': '2281_beslut-hsl_1.2',
-  'beslut-sol-lss': '2281_beslut-sol-lss_1.2',
+  'beslut-sol-lss': '2281_beslut-sol-lss_1.3',
 };
 
 export const existingManagerDocument = (): InvestigationDocument => ({

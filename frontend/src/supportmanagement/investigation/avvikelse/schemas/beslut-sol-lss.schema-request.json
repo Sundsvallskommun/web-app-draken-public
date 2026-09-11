@@ -1,8 +1,8 @@
 {
   "name": "beslut-sol-lss",
-  "version": "1.2",
+  "version": "1.3",
   "value": {
-    "$id": "https://schemas.sundsvall.se/2281/beslut-sol-lss/1.2",
+    "$id": "https://schemas.sundsvall.se/2281/beslut-sol-lss/1.3",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Beslut SoL/LSS",
     "description": "Beslut enligt lex Sarah för IAF- och VOF-ärenden med rapporttyp missförhållande. Utredarens förslag till beslut ligger i SoL/LSS-utredningen och kopieras inte hit.",
@@ -113,5 +113,5 @@
       }
     ]
   },
-  "description": "WSO2 request body for version 1.2 of the SoL/LSS (lex Sarah) decision schema"
+  "description": "WSO2 request body for version 1.3 of the SoL/LSS (lex Sarah) decision schema"
 }
