@@ -18,7 +18,7 @@ const validProfile = () => ({
     {
       key: 'misconduct-document',
       schemaName: 'utredning-sol-lss',
-      tabLabel: 'Utredning SoL/LSS',
+      tabLabel: 'Utredning Lex Sarah',
       ownerLabel: 'Lex Sarah',
     },
   ],

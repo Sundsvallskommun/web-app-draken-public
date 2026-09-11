@@ -68,12 +68,20 @@ for (const decision of [
       );
 
       expect(screen.queryByRole('group', { name: 'Sparningar' })).toBeNull();
-      expect(isInaccessible(screen.getByText('Sparningar'))).toBe(true);
-      expect(isInaccessible(screen.getByText(decision.schema.value.properties.revisions.description))).toBe(true);
-      if (!revisions?.length) {
-        expect(isInaccessible(screen.getByText('Inga poster har lagts till.'))).toBe(true);
-      } else {
-        expect(isInaccessible(screen.getByDisplayValue('test-user'))).toBe(true);
+      expect(screen.queryByText('Sparningar')).toBeNull();
+      expect(screen.queryByText(decision.schema.value.properties.revisions.description)).toBeNull();
+      expect(screen.queryByText('Inga poster har lagts till.')).toBeNull();
+      expect(screen.queryByDisplayValue('test-user')).toBeNull();
+      // Each layout child must contain a visible field, rather than an empty metadata wrapper.
+      const section = screen
+        .getByRole('heading', {
+          name: decision.schema.name === 'beslut-hsl' ? 'Beslut' : 'Beslut om missförhållande',
+        })
+        .closest('.schema-boundary-disclosure');
+      const layout = section?.querySelector('.sk-disclosure-body .gap-32');
+      if (!layout) throw new Error('Decision section layout is missing');
+      for (const child of layout.children) {
+        expect(child.querySelector('input:not([type="hidden"]), select, textarea')).not.toBeNull();
       }
 
       fireEvent.change(screen.getByRole('textbox', { name: 'IVO ärendenummer' }), { target: { value: 'IVO-456' } });
@@ -108,3 +116,51 @@ test('ordinary arrays remain visible and editable', async () => {
   await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce());
   expect(onSubmit.mock.calls[0][0].formData).toEqual({ notes: ['En anteckning'] });
 });
+
+test.each([false, true])(
+  'hidden fields leave no empty layouts and preserve data (sections: %s)',
+  async (withSections) => {
+    const onSubmit = vi.fn();
+    const metadata = { savedBy: 'test-user' };
+    render(
+      <Form
+        schema={{
+          type: 'object',
+          properties: {
+            metadata: { type: 'object', properties: { savedBy: { type: 'string' } } },
+            timestamp: { type: 'string' },
+            answer: { type: 'string', title: 'Svar' },
+          },
+        }}
+        uiSchema={{
+          metadata: { 'ui:widget': 'hidden' },
+          timestamp: { 'ui:widget': 'hidden' },
+          'ui:rows': [{ fields: ['timestamp', 'answer'] }],
+          'ui:options': { showSectionCompletion: false },
+          ...(withSections
+            ? {
+                'ui:sections': [
+                  { id: 'metadata', title: 'Dold metadata', fields: ['metadata'] },
+                  { id: 'answer', title: 'Synlig sektion', fields: ['timestamp', 'answer'], defaultOpen: true },
+                ],
+              }
+            : {}),
+        }}
+        formData={{ metadata, timestamp: savedAt }}
+        validator={validator}
+        templates={templates}
+        onSubmit={onSubmit}
+      >
+        <button type="submit">Spara</button>
+      </Form>
+    );
+
+    expect(screen.queryByRole('heading', { name: 'Dold metadata' })).toBeNull();
+    expect(screen.queryByDisplayValue('test-user')).toBeNull();
+    expect(screen.queryByDisplayValue(savedAt)).toBeNull();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Svar' }), { target: { value: 'Ändrat' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Spara' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce());
+    expect(onSubmit.mock.calls[0][0].formData).toEqual({ metadata, timestamp: savedAt, answer: 'Ändrat' });
+  }
+);

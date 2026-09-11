@@ -106,7 +106,7 @@ test('schemafält behåller linjeringen när endast ena fältet har ett valideri
   await page.goto(`arende/${errandNumber}`);
   await dismissCookieConsent();
   await page.getByRole('tab', { name: 'Utredning', exact: true }).click();
-  await page.getByRole('tab', { name: 'Utredning SoL/LSS', exact: true }).click();
+  await page.getByRole('tab', { name: 'Utredning Lex Sarah', exact: true }).click();
   await waitForFonts();
 
   const document = page.locator(`[data-cy="investigation-document-${key}"]`);

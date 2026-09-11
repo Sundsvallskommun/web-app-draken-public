@@ -123,14 +123,14 @@ export const investigationSchemaDefinitions: readonly InvestigationSchemaDefinit
   }),
   createSchemaDefinition({
     key: 'utredning-sol-lss',
-    tabLabel: 'Utredning SoL/LSS',
+    tabLabel: 'Utredning Lex Sarah',
     ownerLabel: 'Lex Sarah',
     schemaRequestValue: solLssSchemaRequest,
     uiSchemaRequestValue: solLssUiSchemaRequest,
   }),
   createSchemaDefinition({
     key: 'utredning-hsl',
-    tabLabel: 'Utredning HSL',
+    tabLabel: 'Händelseanalys HSL',
     ownerLabel: 'MAS/MAR',
     schemaRequestValue: hslSchemaRequest,
     uiSchemaRequestValue: hslUiSchemaRequest,

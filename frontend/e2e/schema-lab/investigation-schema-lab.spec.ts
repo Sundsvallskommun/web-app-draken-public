@@ -5,7 +5,7 @@ const managerIdPrefix = 'utredning-enhetschef';
 const solLssIdPrefix = 'utredning-sol-lss';
 const hslIdPrefix = 'utredning-hsl';
 const hslDecisionIdPrefix = 'beslut-hsl';
-const investigationTabNames = ['Utredning enhetschef', 'Utredning SoL/LSS', 'Utredning HSL'] as const;
+const investigationTabNames = ['Utredning enhetschef', 'Utredning Lex Sarah', 'Händelseanalys HSL'] as const;
 const backendRequestsByPage = new WeakMap<Page, string[]>();
 
 async function openAllDisclosures(page: Page) {
@@ -151,8 +151,8 @@ test('is reachable with the standard IAF profile and renders the investigation a
   await expect(page.getByRole('heading', { name: 'Lokal schema-labb · Utredning' })).toBeVisible();
   await expect(page.getByRole('tab')).toHaveCount(5);
   await expect(page.getByRole('tab', { name: 'Utredning enhetschef' })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Utredning SoL/LSS' })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Utredning HSL' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Utredning Lex Sarah' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Händelseanalys HSL' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Beslut', exact: true })).toBeVisible();
 
   await expect(page.locator(`#${managerIdPrefix}_legalBases-group input:checked`)).toHaveCount(2);

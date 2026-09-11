@@ -313,7 +313,7 @@ function renderFields(
       ) : null;
     }
 
-    const row = rows.find((r) => r.fields[0] === fieldName);
+    const row = rows.find((r) => r.fields.find((field) => visibleFields.has(field)) === fieldName);
     if (row) {
       const rowKey = row.fields.join('-');
       if (renderedRows.has(rowKey)) return null;
@@ -373,6 +373,8 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
 
   const visibleFields = new Set<string>();
   for (const prop of properties) {
+    // Hidden fields must not leave wrappers, row gaps or empty sections in the layout.
+    if (prop.hidden) continue;
     const conditions = conditionalFields.get(prop.name);
     if (conditions) {
       if (conditions.some((condition) => isConditionMet(condition, formData || {}))) {
@@ -443,7 +445,7 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
                 : undefined
             }
           >
-            <div className="flex min-w-0 max-w-full flex-col gap-32 py-16">
+            <div className="flex min-w-0 max-w-full flex-col gap-32">
               {renderFields(
                 sectionFieldsInOrder,
                 properties,

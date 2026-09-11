@@ -197,6 +197,15 @@ main.container {
   }
 }
 
+// The section stack owns spacing between disclosures; library margins would add to its gap.
+.rjsf .schema-boundary-disclosure {
+  margin-block: 0;
+
+  > .sk-disclosure-body {
+    margin-bottom: 0;
+  }
+}
+
 @media (max-width: 47.99rem) {
   // Desktop disclosure indentation consumes too much of a 320 px viewport.
   // Keep the hierarchy in the header while letting form content use the full
