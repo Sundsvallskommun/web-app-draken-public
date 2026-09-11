@@ -91,7 +91,7 @@ const build = (value: JsonObject) =>
   });
 
 describe('investigation report model', () => {
-  it('renders every placed field under its section with codes translated and the errand classification inlined', () => {
+  it('renders every placed field under its section with codes translated and nothing from the errand but its number', () => {
     const model = build({
       legalBases: ['HSL', 'SOL'],
       eventDescription: '<p>Fall i duschen.</p>',
@@ -104,19 +104,12 @@ describe('investigation report model', () => {
       unplaced: 'kvar',
     });
 
-    expect(model.errand).toEqual({
-      errandNumber: 'IAF-2026-0001',
-      title: 'Avvikelse på boendet',
-      reportType: 'Avvikelse',
-      classification: 'Rehab / Utebliven bedömning',
-      legalBases: 'HSL, SoL',
-    });
+    expect(model.errand).toEqual({ errandNumber: 'IAF-2026-0001' });
     expect(model.title).toBe('Utredning test');
     expect(model.sequence).toBe(2);
     expect(model.sections.map(section => section.title)).toEqual(['Kategorisering', 'Händelsen', 'Övrigt']);
     expect(model.sections[0].fields).toEqual([
       { label: 'Lagrum', kind: 'list', items: ['HSL', 'SoL'] },
-      { label: 'Kategorisering', kind: 'text', text: 'Rehab / Utebliven bedömning' },
       { label: 'Är den enskilde underrättad?', kind: 'text', text: 'Ja' },
     ]);
     expect(model.sections[1].fields).toEqual([
@@ -139,7 +132,7 @@ describe('investigation report model', () => {
   it('reports missing answers as not given rather than dropping the field', () => {
     const model = build({});
     expect(model.sections[0].fields[0]).toEqual({ label: 'Lagrum', kind: 'list', items: [] });
-    expect(model.sections[0].fields[2]).toEqual({ label: 'Är den enskilde underrättad?', kind: 'text', text: EMPTY_VALUE });
+    expect(model.sections[0].fields[1]).toEqual({ label: 'Är den enskilde underrättad?', kind: 'text', text: EMPTY_VALUE });
     expect(model.sections[1].fields[0]).toEqual({ label: 'Händelsebeskrivning', kind: 'text', text: EMPTY_VALUE });
     expect(model.sections[2].fields[0]).toEqual({ label: 'Oplacerat fält', kind: 'text', text: EMPTY_VALUE });
     expect(
@@ -153,13 +146,7 @@ describe('investigation report model', () => {
         generatedAt: '',
         generatedBy: '',
       }).errand,
-    ).toEqual({
-      errandNumber: EMPTY_VALUE,
-      title: EMPTY_VALUE,
-      reportType: EMPTY_VALUE,
-      classification: EMPTY_VALUE,
-      legalBases: EMPTY_VALUE,
-    });
+    ).toEqual({ errandNumber: EMPTY_VALUE });
   });
 
   it('numbers report files after the tab label without characters a file name cannot carry', () => {

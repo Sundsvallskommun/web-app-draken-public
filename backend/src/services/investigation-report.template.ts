@@ -15,9 +15,6 @@ export const INVESTIGATION_REPORT_TEMPLATE = `<!DOCTYPE html>
   h2 { font-size: 13pt; margin: 9mm 0 3mm 0; padding-bottom: 1.5mm; border-bottom: 1px solid #b9b9b9; }
   h3 { font-size: 10.5pt; margin: 4mm 0 1mm 0; }
   .meta { color: #555; font-size: 9.5pt; margin: 0 0 6mm 0; }
-  table.facts { border-collapse: collapse; width: 100%; margin-bottom: 4mm; }
-  table.facts th { text-align: left; width: 34%; padding: 1.2mm 2mm 1.2mm 0; vertical-align: top; font-weight: bold; }
-  table.facts td { padding: 1.2mm 0; vertical-align: top; }
   .field { margin: 0 0 3.5mm 0; }
   .field .label { font-weight: bold; display: block; margin-bottom: 0.6mm; }
   .field .value p { margin: 0 0 1.5mm 0; }
@@ -33,14 +30,7 @@ export const INVESTIGATION_REPORT_TEMPLATE = `<!DOCTYPE html>
 <body>
   <h1>{{ report.title }}</h1>
   <p class="meta">Rapport {{ report.sequence }} · Ärende {{ report.errand.errandNumber }} · Ansvarig roll: {{ report.ownerLabel }}</p>
-
-  <table class="facts">
-    <tr><th>Ärende</th><td>{{ report.errand.title }}</td></tr>
-    <tr><th>Rapporttyp</th><td>{{ report.errand.reportType }}</td></tr>
-    <tr><th>Lagrum</th><td>{{ report.errand.legalBases }}</td></tr>
-    <tr><th>Kategorisering</th><td>{{ report.errand.classification }}</td></tr>
-    <tr><th>Genererad</th><td>{{ report.generatedAt }} av {{ report.generatedBy }}</td></tr>
-  </table>
+  <p class="meta">Genererad {{ report.generatedAt }} av {{ report.generatedBy }}</p>
 
   {% for section in report.sections %}
   <h2>{{ section.title }}</h2>

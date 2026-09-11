@@ -7,8 +7,9 @@ import { readDocumentCompletion } from './support-json-parameter.service';
 /**
  * The report is built from the document's own schema and UI schema, so a new schema version needs
  * no new template: every section in the UI schema's order, every field under its own title, codes
- * translated to their titles. Server-owned properties, hidden widgets and the completion fields are
- * not part of the report; the errand's classification, which lives on the errand, is.
+ * translated to their titles. Server-owned properties, hidden widgets, the completion fields and the
+ * external fields that live on the errand rather than in the document are not part of the report:
+ * the report is the investigation document and nothing else, with the errand number for context.
  */
 export interface InvestigationReportField {
   readonly label: string;
@@ -34,10 +35,6 @@ export interface InvestigationReportModel {
   readonly generatedBy: string;
   readonly errand: {
     readonly errandNumber: string;
-    readonly title: string;
-    readonly reportType: string;
-    readonly classification: string;
-    readonly legalBases: string;
   };
   readonly sections: readonly InvestigationReportSection[];
 }
@@ -55,7 +52,6 @@ export interface BuildInvestigationReportModelInput {
 
 export const EMPTY_VALUE = 'Ej angivet';
 const EXTERNAL_PREFIX = '$external:';
-const CLASSIFICATION_EXTERNAL_FIELD = `${EXTERNAL_PREFIX}errandClassification`;
 
 const resolveReference = (property: Record<string, unknown>, root: Record<string, unknown>): Record<string, unknown> => {
   if (typeof property.$ref !== 'string' || !property.$ref.startsWith('#/$defs/')) return property;
@@ -84,23 +80,6 @@ const scalarText = (property: Record<string, unknown>, value: unknown): string =
 };
 
 const isHtmlProperty = (property: Record<string, unknown>): boolean => property.contentMediaType === 'text/html';
-
-const labelDisplayName = (errand: Errand, classification: string): string | undefined => {
-  const label = errand.labels?.find(candidate => candidate.classification === classification);
-  return label?.displayName ?? label?.resourceName;
-};
-
-const errandLegalBases = (errand: Errand): string => {
-  const names = (errand.labels ?? [])
-    .filter(label => label.classification === 'PROVISION')
-    .map(label => label.displayName ?? label.resourceName ?? '');
-  return names.filter(name => name.length > 0).join(', ') || EMPTY_VALUE;
-};
-
-const errandClassification = (errand: Errand): string => {
-  const parts = [labelDisplayName(errand, 'CATEGORY'), labelDisplayName(errand, 'TYPE')].filter((part): part is string => Boolean(part));
-  return parts.length > 0 ? parts.join(' / ') : EMPTY_VALUE;
-};
 
 const buildField = (name: string, property: Record<string, unknown>, value: unknown, root: Record<string, unknown>): InvestigationReportField => {
   const resolved = resolveReference(property, root);
@@ -155,9 +134,6 @@ export const buildInvestigationReportModel = (input: BuildInvestigationReportMod
   const placed = new Set<string>();
 
   const fieldFor = (name: string): InvestigationReportField | undefined => {
-    if (name === CLASSIFICATION_EXTERNAL_FIELD) {
-      return { label: 'Kategorisering', kind: 'text', text: errandClassification(input.errand) };
-    }
     if (name.startsWith(EXTERNAL_PREFIX) || excluded.has(name) || hiddenWidget(input.uiSchema, name)) return undefined;
     const property = properties[name];
     if (!isRecord(property) || serverControlled(property)) return undefined;
@@ -183,10 +159,6 @@ export const buildInvestigationReportModel = (input: BuildInvestigationReportMod
     generatedBy: input.generatedBy,
     errand: {
       errandNumber: input.errand.errandNumber ?? EMPTY_VALUE,
-      title: input.errand.title ?? EMPTY_VALUE,
-      reportType: labelDisplayName(input.errand, 'REPORT_TYPE') ?? EMPTY_VALUE,
-      classification: errandClassification(input.errand),
-      legalBases: errandLegalBases(input.errand),
     },
     sections: reportSections,
   };
