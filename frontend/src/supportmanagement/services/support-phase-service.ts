@@ -64,10 +64,14 @@ export type SupportPhaseAdvance = { kind: 'enter' } | { kind: 'transition'; tran
  * The move starting handläggning makes through the workflow, or null when it makes none.
  *
  * Starting handläggning is the handler taking the errand on, which is the same event as leaving the
- * phase it was registered in - so the button performs both rather than leaving the phase behind.
- * Nothing is moved where the move would be a guess: a deployment running no workflow has no phase to
- * enter, and a phase branching into several has no single next one. A branch is chosen in the phase
- * strip, which names the transitions.
+ * phase it was registered in - so the button performs both rather than leaving the phase behind. A
+ * deployment running no workflow has no phase to enter and moves nothing.
+ *
+ * The one transition out of the phase is the move when there is one. A phase that branches - the
+ * registered phase typically also offers closing the errand directly - is not a free choice here:
+ * starting handläggning means going on with the errand, so the branch that leads to the next phase
+ * of the workflow is taken and the others are left to the phase strip, which names them. A branch
+ * with no such next phase, or several leading to the same order, stays the strip's decision.
  */
 export const resolveStartProcessPhaseAdvance = (
   activePhaseId: string | undefined,
@@ -77,7 +81,19 @@ export const resolveStartProcessPhaseAdvance = (
   if (!activePhaseId) return { kind: 'enter' };
 
   const available = getAvailablePhaseTransitions(activePhaseId, phases);
-  return available.length === 1 ? { kind: 'transition', transitionId: available[0].transition.id } : null;
+  if (available.length === 1) return { kind: 'transition', transitionId: available[0].transition.id };
+  if (available.length === 0) return null;
+
+  const currentOrder = phases.find((phase) => phase.id === activePhaseId)?.phaseOrder ?? 0;
+  const forward = available
+    .map((candidate) => ({ candidate, order: candidate.target.phaseOrder ?? 0 }))
+    .filter(({ order }) => order > currentOrder)
+    .sort((first, second) => first.order - second.order);
+  if (forward.length === 0) return null;
+  // Two branches at the same distance are a real choice between them, not a next step.
+  if (forward.length > 1 && forward[0].order === forward[1].order) return null;
+
+  return { kind: 'transition', transitionId: forward[0].candidate.transition.id };
 };
 
 /**

@@ -109,6 +109,14 @@ export const SupportStartProcessButtonComponent: FC<{
       toast({ message: 'Handläggning startad', status: 'success', position: 'bottom' });
     } catch (err) {
       console.error(err);
+      // Part of the flow may have landed - the assignment in particular - and every later write is
+      // conditioned on the version those produced. Reloading leaves the user on a current errand, so
+      // the next attempt, here or from the phase strip, is not refused over a stale version.
+      const current = await getSupportErrandById(supportErrand!.id!, municipalityId);
+      if (!current.error) {
+        setSupportErrand(current.errand);
+        reset(current.errand);
+      }
       toast({
         message: supportErrandWriteErrorMessage(err, 'Något gick fel vid start av handläggning'),
         status: 'error',
