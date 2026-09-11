@@ -39,3 +39,48 @@ export const getActiveSupportPhaseId = (phases: readonly CErrandPhase[] | undefi
   const open = (phases ?? []).filter((phase) => phase.phaseId && !phase.ended);
   return open.length > 0 ? open[open.length - 1].phaseId : undefined;
 };
+
+/**
+ * The workflow's first phase - where an errand is registered, and the one it leaves by starting
+ * handläggning. `getSupportPhases` has already ordered them, so it is the first of the list.
+ */
+export const isInitialSupportPhase = (activePhaseId: string | undefined, phases: readonly Phase[]): boolean =>
+  Boolean(activePhaseId) && phases[0]?.id === activePhaseId;
+
+export type SupportPhaseAdvance = { kind: 'enter' } | { kind: 'transition'; transitionId: string };
+
+/**
+ * The move starting handläggning makes through the workflow, or null when it makes none.
+ *
+ * Starting handläggning is the handler taking the errand on, which is the same event as leaving the
+ * phase it was registered in - so the button performs both rather than leaving the phase behind.
+ * Nothing is moved where the move would be a guess: a deployment running no workflow has no phase to
+ * enter, and a phase branching into several has no single next one. A branch is chosen in the phase
+ * strip, which names the transitions.
+ */
+export const resolveStartProcessPhaseAdvance = (
+  activePhaseId: string | undefined,
+  phases: readonly Phase[]
+): SupportPhaseAdvance | null => {
+  if (phases.length === 0) return null;
+  if (!activePhaseId) return { kind: 'enter' };
+
+  const available = getAvailablePhaseTransitions(activePhaseId, phases);
+  return available.length === 1 ? { kind: 'transition', transitionId: available[0].transition.id } : null;
+};
+
+/**
+ * Whether a phase lets the errand have this status.
+ *
+ * `allowedStatuses` makes phase and status one state rather than two, and Support Management refuses
+ * a status the active phase does not list. A phase that lists none constrains nothing, which is also
+ * what a deployment running no workflow looks like from here.
+ */
+export const isStatusAllowedInPhase = (
+  status: string,
+  activePhaseId: string | undefined,
+  phases: readonly Phase[]
+): boolean => {
+  const allowed = phases.find((phase) => phase.id === activePhaseId)?.allowedStatuses ?? [];
+  return allowed.length === 0 || allowed.includes(status);
+};

@@ -2,6 +2,7 @@ import { Button, FormControl, FormLabel, Select, useSnackbar } from '@sk-web-gui
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   isSupportErrandLocked,
+  Status,
   SupportErrand,
   updateSupportErrandPhase,
 } from '@supportmanagement/services/support-errand-service';
@@ -9,6 +10,8 @@ import {
   getActiveSupportPhaseId,
   getAvailablePhaseTransitions,
   getSupportPhases,
+  isInitialSupportPhase,
+  resolveStartProcessPhaseAdvance,
 } from '@supportmanagement/services/support-phase-service';
 import { ArrowRight } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useState } from 'react';
@@ -39,6 +42,15 @@ export const SupportUiPhaseWrapper = ({ hasUnsavedChanges }: { hasUnsavedChanges
   // An errand created outside the workflow has no phase to move from. Entering the first one is the
   // only move it has, and it names no transition - so the button must not wait for one.
   const entersWorkflow = phases.length > 0 && !activePhaseId;
+  // The registered errand leaves its first phase by being taken on, which "Starta handläggning" in
+  // the sidebar does - so the strip does not offer the same step twice. It gives way only while that
+  // button is actually there to press (the errand is still new) and the move out of the phase is the
+  // one it makes. Once the errand is under way, or the first phase branches into several, the strip
+  // is the only way on and stays.
+  const startProcessLeavesFirstPhase =
+    isInitialSupportPhase(activePhaseId, phases) &&
+    supportErrand?.status === Status.NEW &&
+    resolveStartProcessPhaseAdvance(activePhaseId, phases) !== null;
 
   useEffect(() => {
     setSelectedTransitionId(availableTransitions.length === 1 ? availableTransitions[0].transition.id : '');
@@ -106,7 +118,7 @@ export const SupportUiPhaseWrapper = ({ hasUnsavedChanges }: { hasUnsavedChanges
         ))}
       </div>
       <div className="flex shrink-0 items-end gap-8">
-        {availableTransitions.length > 1 ? (
+        {availableTransitions.length > 1 && !startProcessLeavesFirstPhase ? (
           <FormControl>
             <FormLabel>Välj nästa fas</FormLabel>
             <Select
@@ -124,17 +136,19 @@ export const SupportUiPhaseWrapper = ({ hasUnsavedChanges }: { hasUnsavedChanges
             </Select>
           </FormControl>
         ) : null}
-        <Button
-          className="shrink-0"
-          color="primary"
-          rightIcon={<ArrowRight />}
-          loading={isSaving}
-          disabled={disabled}
-          onClick={advancePhase}
-          data-cy="next-phase-button"
-        >
-          {entersWorkflow ? 'Starta fasflödet' : availableTransitions.length > 1 ? 'Byt fas' : 'Nästa fas'}
-        </Button>
+        {!startProcessLeavesFirstPhase && (
+          <Button
+            className="shrink-0"
+            color="primary"
+            rightIcon={<ArrowRight />}
+            loading={isSaving}
+            disabled={disabled}
+            onClick={advancePhase}
+            data-cy="next-phase-button"
+          >
+            {entersWorkflow ? 'Starta fasflödet' : availableTransitions.length > 1 ? 'Byt fas' : 'Nästa fas'}
+          </Button>
+        )}
       </div>
     </div>
   );

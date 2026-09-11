@@ -1,15 +1,25 @@
 import { Button, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   getOngoingStatus,
   getSupportErrandById,
   setSupportErrandAdmin,
   setSupportErrandStatus,
   Status,
+  updateSupportErrandPhase,
 } from '@supportmanagement/services/support-errand-service';
-import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
+import {
+  SupportErrandStatusAfterAssignmentError,
+  supportErrandWriteErrorMessage,
+} from '@supportmanagement/services/support-errand-write-version';
+import {
+  getActiveSupportPhaseId,
+  getSupportPhases,
+  isStatusAllowedInPhase,
+  resolveStartProcessPhaseAdvance,
+} from '@supportmanagement/services/support-phase-service';
 import { ArrowRight } from 'lucide-react';
-import { FC } from 'react';
+import { FC, useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 export const SupportStartProcessButtonComponent: FC<{
@@ -22,8 +32,10 @@ export const SupportStartProcessButtonComponent: FC<{
   const administrators = useUserStore((s) => s.administrators);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const toast = useSnackbar();
   const { handleSubmit, reset } = useFormContext();
+  const phases = useMemo(() => getSupportPhases(supportMetadata?.phases), [supportMetadata?.phases]);
 
   const handleStartProcess = async () => {
     try {
@@ -34,27 +46,60 @@ export const SupportStartProcessButtonComponent: FC<{
         throw new Error('Could not reload the support errand before starting it');
       }
 
-      let statusTransitionHandledByAssignment = false;
+      let assigned = false;
       if (!afterSubmit.errand.assignedUserId) {
         const currentAdmin = administrators.find((a) => a.adAccount === user.username);
         if (currentAdmin) {
-          const assignmentStatus = afterSubmit.errand.status === getOngoingStatus() ? undefined : getOngoingStatus();
+          // Assignment only: the status is left to the steps below, because it is the phase that
+          // declares which statuses the errand may have, and the phase an errand is registered in
+          // allows nothing but Ny.
           await setSupportErrandAdmin(
             supportErrand!.id!,
             municipalityId,
             currentAdmin.adAccount,
             afterSubmit.errand.version,
-            assignmentStatus,
+            undefined,
             currentAdmin.adAccount
           );
-          statusTransitionHandledByAssignment = assignmentStatus !== undefined;
+          assigned = true;
         }
       }
 
-      // Only reached when the assignment above did not run, so `afterSubmit` is still the
-      // version this flow last produced.
-      if (!statusTransitionHandledByAssignment && afterSubmit.errand.status !== getOngoingStatus()) {
-        await setSupportErrandStatus(supportErrand!.id!, municipalityId, getOngoingStatus(), afterSubmit.errand);
+      const afterAssignment = assigned
+        ? await getSupportErrandById(supportErrand!.id!, municipalityId)
+        : { errand: afterSubmit.errand, error: undefined as string | undefined };
+      if (afterAssignment.error) {
+        throw new Error('Could not reload the support errand after assigning it');
+      }
+
+      // Taking the errand on is also leaving the phase it was registered in, so the same button
+      // moves it - and it has to move first. A phase declares which statuses it allows, and the
+      // registered phase allows only Ny, so the status cannot be set until the errand has left it.
+      // A workflow with no single next phase is left to the phase strip, which names the branches.
+      const advance = resolveStartProcessPhaseAdvance(getActiveSupportPhaseId(afterAssignment.errand.phases), phases);
+      const moved =
+        advance && typeof afterAssignment.errand.version === 'number'
+          ? await updateSupportErrandPhase(
+              municipalityId,
+              supportErrand!.id!,
+              advance.kind === 'transition' ? advance.transitionId : undefined,
+              afterAssignment.errand.version
+            )
+          : undefined;
+
+      // The phase it arrived in may already have put the errand in the status that phase wants, and
+      // it is the phase that says which statuses are available at all - so the ongoing status is
+      // written only where the errand is not already there and the phase allows it. A failure here
+      // leaves the errand assigned but lying in Ny, which is what the message for that half-finished
+      // state says.
+      const started = moved ?? afterAssignment.errand;
+      const startedPhaseId = getActiveSupportPhaseId(started.phases);
+      if (started.status !== getOngoingStatus() && isStatusAllowedInPhase(getOngoingStatus(), startedPhaseId, phases)) {
+        try {
+          await setSupportErrandStatus(supportErrand!.id!, municipalityId, getOngoingStatus(), started);
+        } catch (statusError) {
+          throw assigned ? new SupportErrandStatusAfterAssignmentError(statusError) : statusError;
+        }
       }
 
       const updated = await getSupportErrandById(supportErrand!.id!, municipalityId);
