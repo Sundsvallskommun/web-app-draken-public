@@ -78,6 +78,15 @@ export interface WriteJsonParameterRequest<TKey extends string = string, TSchema
     readonly value: JsonObject;
   };
   readonly preconditions: JsonParameterWritePreconditions;
+  /**
+   * For the BFF's own writes only, never a client's: values for server-owned properties, and
+   * leave to write a document its completion has locked. The report endpoint appends a report
+   * to a completed document this way.
+   */
+  readonly internal?: {
+    readonly serverOwnedOverrides?: JsonObject;
+    readonly allowLocked?: boolean;
+  };
 }
 
 export interface WriteJsonParameterResult<TKey extends string = string> {
@@ -254,7 +263,76 @@ export interface ServerStampContext {
   readonly existingValue: JsonObject | undefined;
   readonly now: Date;
   readonly savedBy: string;
+  /** Values the BFF itself supplies for `x-draken-server-owned` properties. */
+  readonly serverOwnedOverrides?: JsonObject;
 }
+
+/**
+ * A document whose schema declares `x-draken-completion` can be marked completed by its owner:
+ * once the completion field is `yes`, the document is locked and the BFF refuses every write except
+ * the one that sets it back to `no` without changing anything else. The reports field lists the
+ * reports generated from it; it is server-owned.
+ */
+export interface DocumentCompletion {
+  readonly field: string;
+  readonly reportsField: string;
+}
+
+export const readDocumentCompletion = (schema: JsonSchema): DocumentCompletion | undefined => {
+  const declaration = isRecord(schema.value) ? schema.value['x-draken-completion'] : undefined;
+  if (!isRecord(declaration) || typeof declaration.field !== 'string' || typeof declaration.reportsField !== 'string') {
+    return undefined;
+  }
+  return { field: declaration.field, reportsField: declaration.reportsField };
+};
+
+export const isDocumentCompleted = (schema: JsonSchema, value: JsonObject | undefined): boolean => {
+  const completion = readDocumentCompletion(schema);
+  return completion !== undefined && value?.[completion.field] === 'yes';
+};
+
+const schemaProperties = (schema: JsonSchema): Record<string, unknown> =>
+  isRecord(schema.value) && isRecord(schema.value.properties) ? schema.value.properties : {};
+
+/** The properties a client never writes: server stamps, server-owned values and the completion field. */
+const serverControlledProperties = (schema: JsonSchema): Set<string> => {
+  const controlled = new Set<string>();
+  for (const [name, property] of Object.entries(schemaProperties(schema))) {
+    if (!isRecord(property)) continue;
+    if (
+      property['x-draken-server-timestamp'] !== undefined ||
+      property['x-draken-server-revisions'] === true ||
+      property['x-draken-server-owned'] === true
+    ) {
+      controlled.add(name);
+    }
+  }
+  const completion = readDocumentCompletion(schema);
+  if (completion) {
+    controlled.add(completion.field);
+    controlled.add(completion.reportsField);
+  }
+  return controlled;
+};
+
+const withoutProperties = (value: JsonObject, names: ReadonlySet<string>): JsonObject =>
+  Object.fromEntries(Object.entries(value).filter(([name]) => !names.has(name)));
+
+/**
+ * A locked document accepts exactly one write from a client: the unlock, which sets the completion
+ * field to `no` and leaves every other user-editable property as stored.
+ */
+export const assertLockedDocumentWrite = (schema: JsonSchema, existingValue: JsonObject | undefined, value: JsonObject): void => {
+  const completion = readDocumentCompletion(schema);
+  if (!completion || !existingValue || existingValue[completion.field] !== 'yes') return;
+  if (value[completion.field] === 'yes') {
+    throw new HttpException(409, 'This investigation document is completed and locked; unlock it before changing it');
+  }
+  const controlled = serverControlledProperties(schema);
+  if (JSON.stringify(withoutProperties(existingValue, controlled)) !== JSON.stringify(withoutProperties(value, controlled))) {
+    throw new HttpException(409, 'Unlocking a completed investigation document may not change it');
+  }
+};
 
 /**
  * Server-owned properties, declared on the schema and written by the BFF whatever the client sent:
@@ -266,6 +344,8 @@ export interface ServerStampContext {
  * - `x-draken-server-timestamp: 'updated'` is stamped on every write.
  * - `x-draken-server-revisions: true` names an array the BFF extends with `{ savedAt, savedBy }` on
  *   every write, starting from the stored array rather than the client's copy.
+ * - `x-draken-server-owned: true` names a value only the BFF writes, kept from the stored document
+ *   unless the BFF's own caller overrides it.
  */
 export const applyServerStamps = (schema: JsonSchema, value: JsonObject, context: ServerStampContext): JsonObject => {
   const properties = isRecord(schema.value) && isRecord(schema.value.properties) ? schema.value.properties : {};
@@ -289,6 +369,16 @@ export const applyServerStamps = (schema: JsonSchema, value: JsonObject, context
       stamped[name] = [...(Array.isArray(existing) ? existing : []), { savedAt: timestamp, savedBy: context.savedBy }];
       changed = true;
     }
+    // A server-owned value is whatever the BFF says it is, else whatever is stored; a client's copy
+    // is dropped either way.
+    if (property['x-draken-server-owned'] === true) {
+      const override = context.serverOwnedOverrides?.[name];
+      const existing = context.existingValue?.[name];
+      if (override !== undefined) stamped[name] = override;
+      else if (existing !== undefined) stamped[name] = existing;
+      else delete stamped[name];
+      changed = true;
+    }
   }
 
   return changed ? stamped : value;
@@ -299,11 +389,13 @@ export class SupportJsonParameterService {
   private readonly schemaService: SchemaBoundJsonService;
   private readonly namespace: string;
   private readonly supportManagementService: string;
+  private readonly jsonSchemaService: string;
   private readonly clock: () => Date;
 
   constructor(dependencies: SupportJsonParameterServiceDependencies) {
     this.apiService = dependencies.apiService ?? new ApiService();
     this.clock = dependencies.clock ?? (() => new Date());
+    this.jsonSchemaService = trimSupportManagementPath(dependencies.jsonSchemaService ?? apiServiceName('jsonschema'));
     this.schemaService =
       dependencies.schemaService ??
       new SchemaBoundJsonService({
@@ -335,6 +427,40 @@ export class SupportJsonParameterService {
     return response.data;
   }
 
+  /** The parent errand together with its current optimistic-locking version. */
+  async readParentErrandWithVersion<TKey extends string, TSchemaName extends string>(
+    request: JsonParameterRequest<TKey, TSchemaName>,
+  ): Promise<{ errand: Errand; version: number }> {
+    const response = await this.readParentErrand(request, 'parent errand report read');
+    return { errand: response.data, version: getErrandVersion(response.data, readResponseHeader(response.headers, 'etag')) };
+  }
+
+  /** The bound schema of a stored document, for callers that render it rather than write it. */
+  async readBoundSchema<TKey extends string, TSchemaName extends string>(
+    request: JsonParameterRequest<TKey, TSchemaName>,
+    schemaId: string,
+  ): Promise<JsonSchema> {
+    return this.requireSchemaBinding(request, schemaId, 502);
+  }
+
+  /** The UI schema published for a schema id; an empty object when none is published. */
+  async readUiSchema<TKey extends string, TSchemaName extends string>(
+    request: JsonParameterRequest<TKey, TSchemaName>,
+    schemaId: string,
+  ): Promise<JsonObject> {
+    const response = await this.apiService.get<unknown>(
+      {
+        url: `${this.jsonSchemaService}/${encodeURIComponent(request.municipalityId)}/schemas/${encodeURIComponent(schemaId)}/ui-schema`,
+        followLocation: false,
+        propagateClientError: true,
+        mapUnauthorizedToForbidden: true,
+      },
+      request.user,
+    );
+    const payload = isRecord(response.data) && isJsonObject(response.data.value) ? response.data.value : response.data;
+    return isJsonObject(payload) ? payload : {};
+  }
+
   async verifyReadableDocuments(request: VerifyReadableJsonParametersRequest): Promise<VerifyReadableJsonParametersResult> {
     const keys = await Promise.all(
       request.definitions.map(async definition => {
@@ -364,10 +490,12 @@ export class SupportJsonParameterService {
       throw new HttpException(409, 'A JSON parameter schemaId cannot be changed after creation');
     }
     const schema = await this.requireSchemaBinding(request, request.data.schemaId, existing ? 502 : 400);
+    if (!request.internal?.allowLocked) assertLockedDocumentWrite(schema, existing?.document.value, request.data.value);
     const value = applyServerStamps(schema, request.data.value, {
       existingValue: existing?.document.value,
       now: this.clock(),
       savedBy: request.user.username,
+      serverOwnedOverrides: request.internal?.serverOwnedOverrides,
     });
     this.schemaService.assertValueMatchesSchema(schema, value);
     // Schema/document preflight can involve several upstream reads. Recheck the

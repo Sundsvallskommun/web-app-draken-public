@@ -559,3 +559,79 @@ describe('SupportJsonParameterService', () => {
     expect(api.getCalls).toHaveLength(1);
   });
 });
+
+describe('server-owned values and completion locks', () => {
+  const completionSchema = () =>
+    schema(DEFINITION.schemaName, SCHEMA_ID, {
+      type: 'object',
+      additionalProperties: false,
+      'x-draken-completion': { field: 'completed', reportsField: 'reports' },
+      properties: {
+        assessment: { type: 'string' },
+        completed: { type: 'string', enum: ['yes', 'no'] },
+        reports: { type: 'array', 'x-draken-server-owned': true },
+      },
+    });
+  const stored = (value: JsonObject) => ({ ...document(7), value });
+  const subject = (storedValue: JsonObject) =>
+    makeSubject(
+      [
+        writableParentResponse(),
+        response(stored(storedValue), 200, '"7"'),
+        response(completionSchema(), 200),
+        writableParentResponse(),
+        writableParentResponse(11),
+      ],
+      [response(document(8), 200, '"8"')],
+    );
+
+  it('keeps a server-owned value from the stored document and drops the client copy', async () => {
+    const { api, service } = subject({ assessment: 'a', completed: 'no', reports: [{ fileName: 'kept' }] });
+
+    await service.writeJsonParameter(
+      writeRequest({ ifMatch: '"7"' }, SCHEMA_ID, { assessment: 'b', completed: 'no', reports: [{ fileName: 'forged' }] }),
+    );
+
+    expect(api.putCalls[0]).toMatchObject({ data: { value: { assessment: 'b', completed: 'no', reports: [{ fileName: 'kept' }] } } });
+  });
+
+  it('lets the BFF override a server-owned value and write a locked document', async () => {
+    const { api, service } = subject({ assessment: 'a', completed: 'yes', reports: [] });
+
+    await service.writeJsonParameter({
+      ...writeRequest({ ifMatch: '"7"' }, SCHEMA_ID, { assessment: 'a', completed: 'yes' }),
+      internal: { serverOwnedOverrides: { reports: [{ fileName: 'new' }] }, allowLocked: true },
+    });
+
+    expect(api.putCalls[0]).toMatchObject({ data: { value: { assessment: 'a', completed: 'yes', reports: [{ fileName: 'new' }] } } });
+  });
+
+  it('refuses every client write to a completed document except the unlock that changes nothing else', async () => {
+    const locked = { assessment: 'a', completed: 'yes', reports: [] };
+
+    await expect(
+      subject(locked).service.writeJsonParameter(writeRequest({ ifMatch: '"7"' }, SCHEMA_ID, { assessment: 'b', completed: 'yes' })),
+    ).rejects.toMatchObject({
+      status: 409,
+      message: 'This investigation document is completed and locked; unlock it before changing it',
+    });
+    await expect(
+      subject(locked).service.writeJsonParameter(writeRequest({ ifMatch: '"7"' }, SCHEMA_ID, { assessment: 'b', completed: 'no' })),
+    ).rejects.toMatchObject({
+      status: 409,
+      message: 'Unlocking a completed investigation document may not change it',
+    });
+
+    const { api, service } = subject(locked);
+    await service.writeJsonParameter(writeRequest({ ifMatch: '"7"' }, SCHEMA_ID, { assessment: 'a', completed: 'no', reports: [] }));
+    expect(api.putCalls[0]).toMatchObject({ data: { value: { assessment: 'a', completed: 'no', reports: [] } } });
+  });
+
+  it('leaves an unlocked document free to change, completion included', async () => {
+    const { api, service } = subject({ assessment: 'a', completed: 'no' });
+
+    await service.writeJsonParameter(writeRequest({ ifMatch: '"7"' }, SCHEMA_ID, { assessment: 'b', completed: 'yes' }));
+
+    expect(api.putCalls[0]).toMatchObject({ data: { value: { assessment: 'b', completed: 'yes' } } });
+  });
+});
