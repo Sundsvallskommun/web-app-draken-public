@@ -98,6 +98,8 @@ export interface FieldAccess {
   field: FieldAccessFieldEnum;
   /** Keys to expose when the field is a keyed collection. The whole collection is exposed when left empty */
   keys?: string[];
+  /** What the holder may do with the field, narrowing it below the level the errand itself is held at. Left unset the field simply follows the errand, which is what every grant did before this was added, and a level may only ever restrict further - it can never make a readable errand writable. Only a field holding a keyed collection may carry one, and limited read is not a level a field can be held at */
+  level?: FieldAccessLevelEnum;
 }
 
 /** What limited read means within the namespace */
@@ -290,7 +292,9 @@ export interface JsonNode {
   number?: boolean;
   string?: boolean;
   boolean?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   missingNode?: boolean;
+  integralNumber?: boolean;
   valueNode?: boolean;
   container?: boolean;
   pojo?: boolean;
@@ -304,8 +308,6 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  integralNumber?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 
@@ -1607,6 +1609,48 @@ export interface EmailRequest {
   attachmentIds?: string[];
 }
 
+/** BulkEmailRequest model */
+export interface BulkEmailRequest {
+  /**
+   * Email address for sender
+   * @format email
+   * @example "sender@sender.se"
+   */
+  sender: string;
+  /**
+   * Optional display name of sender on email. If left out, email will be displayed as sender name.
+   * @example "Firstname Lastname"
+   */
+  senderName?: string;
+  /** @minItems 1 */
+  recipients: string[];
+  /**
+   * Subject
+   * @minLength 1
+   * @example "Subject"
+   */
+  subject: string;
+  /**
+   * Message in html (optionally in BASE64 encoded format)
+   * @minLength 1
+   * @example "<html>HTML-formatted message</html>"
+   */
+  htmlMessage: string;
+  /**
+   * Message in plain text
+   * @minLength 1
+   * @example "Message in plain text"
+   */
+  message: string;
+  /**
+   * Headers for keeping track of email conversations
+   * @example {"IN_REPLY_TO":["reply-to@example.com"],"REFERENCES":["reference1","reference2"],"MESSAGE_ID":["123456789"]}
+   */
+  emailHeaders?: Record<string, string[]>;
+  attachments?: EmailAttachment[];
+  attachmentIds?: string[];
+}
+
 /** ConversationRequest model */
 export interface ConversationRequest {
   /**
@@ -1808,8 +1852,8 @@ export interface PageSubscriberNotification {
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
-  sort?: SortObject;
   unpaged?: boolean;
+  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
@@ -1819,8 +1863,8 @@ export interface PageableObject {
 
 export interface SortObject {
   empty?: boolean;
-  sorted?: boolean;
   unsorted?: boolean;
+  sorted?: boolean;
 }
 
 export interface SubscriberNotification {
@@ -2343,6 +2387,13 @@ export enum FieldAccessFieldEnum {
   PARAMETERS = "PARAMETERS",
   JSON_PARAMETERS = "JSON_PARAMETERS",
   EXTERNAL_TAGS = "EXTERNAL_TAGS",
+}
+
+/** What the holder may do with the field, narrowing it below the level the errand itself is held at. Left unset the field simply follows the errand, which is what every grant did before this was added, and a level may only ever restrict further - it can never make a readable errand writable. Only a field holding a keyed collection may carry one, and limited read is not a level a field can be held at */
+export enum FieldAccessLevelEnum {
+  LR = "LR",
+  R = "R",
+  RW = "RW",
 }
 
 export enum LimitedReadAccessResourcesEnum {
