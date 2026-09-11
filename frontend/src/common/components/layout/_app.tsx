@@ -1,6 +1,7 @@
 'use client';
 
 import LoaderFullScreen from '@common/components/loader/loader-fullscreen';
+import { UnderConstructionBanner } from '@common/components/under-construction/under-construction-banner.component';
 import { getFeatureFlags } from '@common/services/feature-flag-service';
 import { getHandlerDirectory, getMe } from '@common/services/user-service';
 import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
@@ -69,6 +70,7 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
   const authenticationRoute = isAuthenticationRoute();
   const [featureFlagsReady, setFeatureFlagsReady] = useState(schemaLabRoute);
   const investigationProfileStatus = useInvestigationProfileStore((state) => state.status);
+  const demoMode = useUiSettingsStore((state) => state.demoMode);
 
   useEffect(() => {
     if (schemaLabRoute) return;
@@ -150,7 +152,12 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
     return <LoaderFullScreen />;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {demoMode && <UnderConstructionBanner />}
+      {children}
+    </>
+  );
 }
 
 function AppLayout({ children }: ClientApplicationProps) {

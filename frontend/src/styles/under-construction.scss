@@ -1,0 +1,251 @@
+// Temporary "UNDER UPPBYGGNAD" decorations: the top banner plus the two mascots.
+// Everything here is scoped under .under-construction-* so it can be deleted in one go
+// when the rebuild is finished.
+
+.under-construction-banner {
+  // Keeps room for the mascots even when the message is a single line.
+  min-height: 11.2rem;
+  background-image: repeating-linear-gradient(45deg, #f5c400 0, #f5c400 2rem, #1a1a1a 2rem, #1a1a1a 4rem);
+}
+
+.under-construction-banner-text {
+  background-color: #f5c400;
+  color: #1a1a1a;
+}
+
+// The mascots stand on the bottom edge of the banner. z-index lifts them over the
+// message so the monster's balloon may reach across it.
+.under-construction-mascot {
+  position: absolute;
+  bottom: 0;
+  z-index: 1;
+  display: none;
+  pointer-events: none;
+}
+
+@media (min-width: 48rem) {
+  .under-construction-mascot {
+    display: flex;
+  }
+}
+
+// The builder wears his sign above him; the monster speaks sideways, which keeps the
+// banner short.
+.under-construction-mascot--worker {
+  right: 0.8rem;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+}
+
+.under-construction-mascot--monster {
+  left: 0.8rem;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.under-construction-mascot svg {
+  height: 8rem;
+  width: auto;
+}
+
+.under-construction-bubble {
+  position: relative;
+  color: #1a1a1a;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+// The builder's is a small site sign.
+.under-construction-bubble--plain {
+  border: 2px solid #1a1a1a;
+  border-radius: 0.8rem;
+  background-color: #f7f2e7;
+  padding: 0.2rem 0.8rem;
+  font-size: 1.1rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+// Its tail sits under the edge nearest the mascot it belongs to.
+.under-construction-bubble--plain::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  width: 0;
+  height: 0;
+  border-left: 0.5rem solid transparent;
+  border-right: 0.5rem solid transparent;
+  border-top: 0.6rem solid #1a1a1a;
+}
+
+.under-construction-mascot--monster .under-construction-bubble--plain::after {
+  left: 1.6rem;
+}
+
+.under-construction-mascot--worker .under-construction-bubble--plain::after {
+  right: 1.6rem;
+}
+
+// The monster's is a comic-book balloon: heavy outline, oval body, spiked tail aimed
+// left at his head, and the whole thing tilted off square.
+.under-construction-bubble--comic {
+  margin-top: 0.4rem;
+  border: 3px solid #1a1a1a;
+  border-radius: 50%;
+  background-color: #ffffff;
+  padding: 0.9rem 1.6rem;
+  font-family: raleway, sans-serif;
+  font-size: 1.2rem;
+  line-height: 1.15;
+  letter-spacing: 0.06em;
+  text-align: center;
+  white-space: nowrap;
+  transform: rotate(-4deg);
+  filter: drop-shadow(0.3rem 0.3rem 0 rgba(26, 26, 26, 0.25));
+}
+
+// Two stacked triangles: the outer one is the balloon's outline, the inner one covers
+// it back up to the fill colour.
+.under-construction-bubble--comic::before,
+.under-construction-bubble--comic::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.under-construction-bubble--comic::before {
+  top: 38%;
+  left: -2rem;
+  border-top: 0.5rem solid transparent;
+  border-bottom: 1.2rem solid transparent;
+  border-right: 2.2rem solid #1a1a1a;
+}
+
+.under-construction-bubble--comic::after {
+  top: calc(38% + 0.3rem);
+  left: -1.5rem;
+  border-top: 0.4rem solid transparent;
+  border-bottom: 0.9rem solid transparent;
+  border-right: 1.7rem solid #ffffff;
+}
+
+.under-construction-hammer-arm {
+  transform-origin: 88px 104px;
+  animation: under-construction-swing 0.85s ease-in-out infinite;
+}
+
+.under-construction-impact {
+  transform-origin: 124px 168px;
+  animation: under-construction-impact 0.85s ease-in-out infinite;
+}
+
+.under-construction-worker-body {
+  transform-origin: 70px 186px;
+  animation: under-construction-recoil 0.85s ease-in-out infinite;
+}
+
+.under-construction-monster-body {
+  transform-origin: 70px 190px;
+  animation: under-construction-lumber 3.2s ease-in-out infinite;
+}
+
+.under-construction-monster-eye {
+  transform-origin: center;
+  animation: under-construction-blink 4.1s ease-in-out infinite;
+}
+
+.under-construction-monster-spark {
+  animation: under-construction-spark 1.7s steps(1, end) infinite;
+}
+
+@keyframes under-construction-swing {
+  0%,
+  100% {
+    transform: rotate(-52deg);
+  }
+  55% {
+    transform: rotate(6deg);
+  }
+  70% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes under-construction-impact {
+  0%,
+  52% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  58% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  75%,
+  100% {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+}
+
+@keyframes under-construction-recoil {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  58% {
+    transform: translateY(2px);
+  }
+}
+
+@keyframes under-construction-lumber {
+  0%,
+  100% {
+    transform: rotate(-3deg) translateY(0);
+  }
+  50% {
+    transform: rotate(3deg) translateY(-3px);
+  }
+}
+
+@keyframes under-construction-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes under-construction-spark {
+  0%,
+  70%,
+  100% {
+    opacity: 0;
+  }
+  75%,
+  85% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .under-construction-hammer-arm,
+  .under-construction-impact,
+  .under-construction-worker-body,
+  .under-construction-monster-body,
+  .under-construction-monster-eye,
+  .under-construction-monster-spark {
+    animation: none;
+  }
+
+  .under-construction-impact {
+    opacity: 0;
+  }
+}
