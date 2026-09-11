@@ -1,11 +1,13 @@
 import { JsonParametersDisplay } from '@common/components/json/schema/json-parameters-display.component';
 import { useCompanyEngagements } from '@common/hooks/use-company-engagements';
+import { useCompanyProfile } from '@common/hooks/use-company-profile';
 import { appConfig } from '@config/appconfig';
 import { Table } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
+import { SupportErrandBusinessDescriptionDrawer } from './support-errand-business-description-drawer.component';
 import { SupportErrandCompanyEngagements } from './support-errand-company-engagements.component';
 
 export const SupportErrandDetailsTab: React.FC<{}> = () => {
@@ -15,14 +17,17 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
 
   const showsJsonParameters = (supportErrand.jsonParameters?.length ?? 0) > 0 && !!municipalityId;
 
-  const organizationPartyId = supportErrand.stakeholders?.find(
+  const organizationStakeholder = supportErrand.stakeholders?.find(
     (stakeholder) => stakeholder.role === 'PRIMARY' && stakeholder.externalIdType === 'COMPANY'
-  )?.externalId;
+  );
+  const organizationPartyId = organizationStakeholder?.externalId;
 
   const companyEngagements = useCompanyEngagements(
     appConfig.features.useCompanyInformation ? organizationPartyId : undefined
   );
   const showsCompanyEngagements = companyEngagements.length > 0;
+  const companyProfile = useCompanyProfile(appConfig.features.useCompanyInformation ? organizationPartyId : undefined);
+  const [showsBusinessDescription, setShowsBusinessDescription] = useState(false);
 
   const simpleParams = useMemo(
     () =>
@@ -125,8 +130,20 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
         ) : null}
         {showsCompanyEngagements ? (
           <div className={showsJsonParameters ? 'px-16 pb-16' : 'p-16'}>
-            <SupportErrandCompanyEngagements engagements={companyEngagements} initiallyOpen={!showsJsonParameters} />
+            <SupportErrandCompanyEngagements
+              engagements={companyEngagements}
+              initiallyOpen={!showsJsonParameters}
+              companyName={companyProfile?.name ?? organizationStakeholder?.organizationName}
+              onShowBusinessDescription={companyProfile ? () => setShowsBusinessDescription(true) : undefined}
+            />
           </div>
+        ) : null}
+        {companyProfile && showsBusinessDescription ? (
+          <SupportErrandBusinessDescriptionDrawer
+            show={showsBusinessDescription}
+            profile={companyProfile}
+            onClose={() => setShowsBusinessDescription(false)}
+          />
         ) : null}
       </div>
     </div>
