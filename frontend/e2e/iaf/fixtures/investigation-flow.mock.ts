@@ -136,6 +136,8 @@ export interface IafApiTrace {
   writes: Array<'document' | 'classification'>;
   /** Report requests, in order; a preview renders without attaching or recording. */
   reports: Array<{ key: string; preview: boolean }>;
+  /** Phase transition requests, in order, as the BFF received them. */
+  phasePatches: Array<{ transitionId?: string; expectedVersion?: number }>;
 }
 
 /** One phase of the namespace's workflow, as `supportmetadata` describes it. */
@@ -157,6 +159,65 @@ export const investigationPhases: MockPhase[] = [
   { id: 'phase-decision', name: 'Beslut', phaseOrder: 3 },
   { id: 'phase-closed', name: 'Avslutat', phaseOrder: 4 },
 ];
+
+export type WorkflowPhaseName = 'ACTUALIZATION' | 'REVIEW' | 'INVESTIGATION' | 'DECISION' | 'FOLLOW_UP' | 'END';
+
+interface WorkflowPhase {
+  id: string;
+  name: WorkflowPhaseName;
+  displayName: string;
+  phaseOrder: number;
+  allowedStatuses: string[];
+  transitions: Array<{
+    id: string;
+    targetPhaseId: string;
+    targetPhaseName: WorkflowPhaseName;
+    targetPhaseDisplayName: string;
+    description: string;
+  }>;
+}
+
+const workflowPhaseId = (name: WorkflowPhaseName) => `phase-${name.toLowerCase().replace('_', '-')}`;
+export const workflowTransitionId = (target: WorkflowPhaseName) =>
+  `transition-to-${target.toLowerCase().replace('_', '-')}`;
+
+const workflowChain: Array<[WorkflowPhaseName, string, string, string]> = [
+  ['ACTUALIZATION', 'Registrerat', 'NEW', 'Skicka till granskning'],
+  ['REVIEW', 'Granskning', 'REVIEW', 'Skicka till utredning'],
+  ['INVESTIGATION', 'Utredning', 'INQUIRY', 'Skicka till beslut'],
+  ['DECISION', 'Beslut', 'DECISION', 'Skicka till uppföljning'],
+  ['FOLLOW_UP', 'Uppföljning', 'FOLLOW_UP', 'Skicka till avslut'],
+  ['END', 'Avsluta', 'SOLVED', ''],
+];
+
+/**
+ * The avvikelse workflow as the test namespace declares it (read 2026-09-11): one linear chain where
+ * each phase allows exactly one status and offers exactly one transition. Ids are fixed so a spec
+ * can name the transition it expects the BFF to receive.
+ */
+export const workflowPhases: WorkflowPhase[] = workflowChain.map(
+  ([name, displayName, status, transitionDescription], index) => {
+    const next = workflowChain[index + 1];
+    return {
+      id: workflowPhaseId(name),
+      name,
+      displayName,
+      phaseOrder: index,
+      allowedStatuses: [status],
+      transitions: next
+        ? [
+            {
+              id: workflowTransitionId(next[0]),
+              targetPhaseId: workflowPhaseId(next[0]),
+              targetPhaseName: next[0],
+              targetPhaseDisplayName: next[1],
+              description: transitionDescription,
+            },
+          ]
+        : [],
+    };
+  }
+);
 
 export interface IafApiScenario {
   documentAccess?: Readonly<Record<string, 'edit' | 'read' | 'hidden'>>;
@@ -191,6 +252,13 @@ export interface IafApiScenario {
   metadataPhases?: MockPhase[];
   /** The phase the errand is in: `activePhaseId` never comes back on a read, the history does. */
   activePhaseId?: string;
+  /**
+   * Puts the errand in this workflow phase, with the phases before it in its history, and makes the
+   * metadata carry the whole avvikelse workflow. Left out, neither the metadata nor the errand has
+   * any phase at all, which is what every spec that is not about phases expects.
+   */
+  activePhaseName?: WorkflowPhaseName;
+
 }
 
 const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
@@ -662,6 +730,8 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
   let errandStatus = scenario.errandStatus ?? 'ONGOING';
   let errandAssignedUserId =
     scenario.assignedUserId === null ? undefined : scenario.assignedUserId ?? `${applicationSlug}.test`;
+  let activePhaseName = scenario.activePhaseName;
+  const scenarioPhases = scenario.metadataPhases ?? (activePhaseName ? workflowPhases : undefined);
   const trace: IafApiTrace = {
     profileGets: 0,
     exactSchemaIds: [],
@@ -672,6 +742,23 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     errandPatches: [],
     writes: [],
     reports: [],
+    phasePatches: [],
+  };
+
+  // Support Management reports the phase an errand is in as the one entry of its history that has
+  // started but not ended; `activePhaseId` itself never comes back on a read.
+  const phaseHistory = () => {
+    if (!activePhaseName) return {};
+    const activeIndex = workflowPhases.findIndex(({ name }) => name === activePhaseName);
+    return {
+      phases: workflowPhases.slice(0, activeIndex + 1).map((phase, index) => ({
+        phaseId: phase.id,
+        name: phase.name,
+        displayName: phase.displayName,
+        started: `2026-08-0${index + 1}T10:00:00.000+02:00`,
+        ...(index < activeIndex ? { ended: `2026-08-0${index + 2}T10:00:00.000+02:00` } : {}),
+      })),
+    };
   };
 
   const buildErrand = () => ({
@@ -697,6 +784,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
       : {}),
     classification: structuredClone(errandClassification),
     labels: structuredClone(errandLabels),
+    ...phaseHistory(),
     actions: [],
     parameters: [{ key: 'eventType', displayName: 'Rapporttyp', values: [eventType] }],
     stakeholders: [
@@ -792,13 +880,32 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     if (method === 'GET' && path.endsWith(`/supportmetadata/${municipalityId}`)) {
       await fulfillJson(route, {
         ...metadata,
-        ...(scenario.metadataPhases ? { phases: scenario.metadataPhases } : {}),
+        ...(scenarioPhases ? { phases: scenarioPhases } : {}),
         labels: {
           labelStructure:
             scenario.labelStructure ??
             (scenario.omitLabelResourcePaths ? withoutResourcePaths(labelStructure) : labelStructure),
         },
       });
+      return;
+    }
+
+    if (method === 'PATCH' && path.endsWith(`/supporterrands/${municipalityId}/${errandId}/phase`)) {
+      const body = requestBody(request) as { transitionId?: string; expectedVersion?: number } | undefined;
+      trace.phasePatches.push({ transitionId: body?.transitionId, expectedVersion: body?.expectedVersion });
+      if (body?.expectedVersion !== errandVersion) {
+        await fulfillJson(route, { message: 'Support errand phase has changed since it was loaded' }, 409);
+        return;
+      }
+      const activePhase = workflowPhases.find(({ name }) => name === activePhaseName);
+      const transition = activePhase?.transitions.find(({ id }) => id === body?.transitionId);
+      if (!transition) {
+        await fulfillJson(route, { message: 'Unknown phase transition' }, 400);
+        return;
+      }
+      activePhaseName = transition.targetPhaseName;
+      errandVersion += 1;
+      await fulfillJson(route, buildErrand());
       return;
     }
 

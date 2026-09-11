@@ -1,5 +1,7 @@
-import { Button, FormControl, FormLabel, Select, useSnackbar } from '@sk-web-gui/react';
+import { appConfig } from '@config/appconfig';
+import { Button, FormControl, FormLabel, Select, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { getSupportMeasures } from '@supportmanagement/measures/support-measure-service';
 import {
   isSupportErrandLocked,
   Status,
@@ -10,6 +12,7 @@ import {
   getActiveSupportPhaseId,
   getAvailablePhaseTransitions,
   getSupportPhases,
+  isDecisionPhase,
   isInitialSupportPhase,
   resolveStartProcessPhaseAdvance,
 } from '@supportmanagement/services/support-phase-service';
@@ -27,6 +30,7 @@ export const SupportUiPhaseWrapper = ({ hasUnsavedChanges }: { hasUnsavedChanges
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const form = useFormContext<SupportErrand>();
   const toastMessage = useSnackbar();
+  const confirm = useConfirm();
   const [isSaving, setIsSaving] = useState(false);
   const [selectedTransitionId, setSelectedTransitionId] = useState('');
 
@@ -61,11 +65,44 @@ export const SupportUiPhaseWrapper = ({ hasUnsavedChanges }: { hasUnsavedChanges
   // back to the first three, which is where such an errand is about to start.
   const labelWindowStart = Math.min(Math.max(activeIndex - 1, 0), Math.max(phases.length - 3, 0));
 
+  /**
+   * Entering the decision phase with no measure registered is asked about first: there is nothing
+   * to decide on yet, and the phase change is a deliberate step past that. The measures are read
+   * fresh at the moment of the click, since the tab may have added one since the page loaded. A
+   * lookup that fails leaves the phase alone rather than guessing either way; the user retries.
+   * Measures are only a thing where the feature is on, so without it no lookup is made at all.
+   */
+  const confirmMissingMeasures = async (errandId: string): Promise<boolean> => {
+    if (!appConfig.features.useMeasures || !isDecisionPhase(selectedTransition?.target)) return true;
+    let measureCount: number;
+    try {
+      measureCount = (await getSupportMeasures(municipalityId, errandId)).measures.length;
+    } catch {
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: 'Ärendets åtgärder kunde inte kontrolleras. Fasen ändrades inte.',
+        status: 'error',
+      });
+      return false;
+    }
+    if (measureCount > 0) return true;
+    return confirm.showConfirmation(
+      'Gå till beslutsfasen?',
+      'Ärendet har inga registrerade åtgärder. Vill du verkligen gå till beslutsfasen utan att ha skapat några åtgärder?',
+      'Ja, byt fas',
+      'Nej',
+      'warning',
+      'question'
+    );
+  };
+
   const advancePhase = async () => {
     if (!municipalityId || !supportErrand?.id || typeof supportErrand.version !== 'number') return;
     if (!entersWorkflow && !selectedTransition?.transition.id) return;
     setIsSaving(true);
     try {
+      if (!(await confirmMissingMeasures(supportErrand.id))) return;
       const savedErrand = await updateSupportErrandPhase(
         municipalityId,
         supportErrand.id,
@@ -103,7 +140,7 @@ export const SupportUiPhaseWrapper = ({ hasUnsavedChanges }: { hasUnsavedChanges
 
   return (
     <div className="flex items-center gap-16 w-full min-w-0">
-      <div className="flex items-center border-2 rounded-button h-[40px] min-w-0 grow">
+      <div className="flex items-center border-2 rounded-button h-[40px] min-w-0 grow" data-cy="phase-strip">
         {phases.map((phase, index) => (
           <Fragment key={phase.id ?? index}>
             {index > 0 ? arrow : null}

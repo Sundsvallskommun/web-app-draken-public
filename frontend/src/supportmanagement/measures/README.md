@@ -277,6 +277,17 @@ ingen ny feature-flagga eller API-tabell krävs för detta beslutsflöde. Vid
 återställda versionen tolkar `REWORK` som delvis godkänd och skyddar beslutat
 innehåll; en äldre klient med annan tolkning är inte en säker återställning.
 
+## Fasbyte till beslut
+
+Vid byte till fasen med namnet `DECISION` (`isDecisionPhase` i
+`support-phase-service.ts`) läser fasväxlaren ärendets åtgärder på nytt i
+klickögonblicket. Saknas åtgärder frågar Draken först om användaren verkligen
+vill gå till beslutsfasen utan åtgärder; Nej lämnar fasen orörd. Kan åtgärderna
+inte läsas ändras fasen inte heller, och ett fel visas. Kontrollen görs bara när
+`useMeasures` är på; utan åtgärdsfliken finns inget att fråga om. Fasnamnet
+matchas exakt mot metadatans `name`, aldrig mot visningsnamnet, så ett namespace
+utan en sådan fas berörs inte.
+
 ## Verifiering och införande
 
 Testkällor täcker explicit gruppmatchning, delade typer, dynamiska metadataändringar,

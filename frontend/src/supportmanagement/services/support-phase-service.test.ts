@@ -5,6 +5,7 @@ import { test } from 'vitest';
 import {
   getAvailablePhaseTransitions,
   getSupportPhases,
+  isDecisionPhase,
   isInitialSupportPhase,
   isStatusAllowedInPhase,
   resolveStartProcessPhaseAdvance,
@@ -109,4 +110,13 @@ test('a status is available only where the active phase lists it', () => {
   // A phase listing no statuses constrains nothing, and neither does a workflow that is not there.
   assert.equal(isStatusAllowedInPhase('INQUIRY', 'unconstrained', workflow), true);
   assert.equal(isStatusAllowedInPhase('INQUIRY', undefined, []), true);
+});
+
+test('recognises the decision phase by its technical name only', () => {
+  assert.equal(isDecisionPhase({ name: 'DECISION' }), true);
+  // The display name is free text and never matched; only the key is.
+  assert.equal(isDecisionPhase({ name: 'BESLUT' }), false);
+  assert.equal(isDecisionPhase({ name: 'INVESTIGATION' }), false);
+  assert.equal(isDecisionPhase({ name: 'decision' }), false);
+  assert.equal(isDecisionPhase(undefined), false);
 });
