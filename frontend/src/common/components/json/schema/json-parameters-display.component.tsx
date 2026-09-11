@@ -1,5 +1,6 @@
 'use client';
 
+import { SectionOpening } from '@common/components/json/fields/sections-object-field-template.componant';
 import { useJsonSchema } from '@common/components/json/hooks/useJsonSchema';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { JsonParameter } from '@common/data-contracts/supportmanagement/data-contracts';
@@ -8,9 +9,10 @@ import { FC } from 'react';
 interface JsonParameterItemProps {
   param: JsonParameter;
   municipalityId: string;
+  sectionOpening: SectionOpening;
 }
 
-const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId }) => {
+const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId, sectionOpening }) => {
   const { schema, uiSchema, loading, error } = useJsonSchema(municipalityId, param.schemaId);
 
   if (loading) {
@@ -28,7 +30,13 @@ const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId }
 
   return (
     <div className="mb-16">
-      <SchemaForm schema={schema} uiSchema={uiSchema ?? undefined} formData={param.value} disabled />
+      <SchemaForm
+        schema={schema}
+        uiSchema={uiSchema ?? undefined}
+        formData={param.value}
+        sectionOpening={sectionOpening}
+        disabled
+      />
     </div>
   );
 };
@@ -50,6 +58,7 @@ export const JsonParametersDisplay: FC<JsonParametersDisplayProps> = ({ jsonPara
           key={`${param.key}-${param.schemaId}-${idx}`}
           param={param}
           municipalityId={municipalityId}
+          sectionOpening={idx === 0 ? 'first' : 'none'}
         />
       ))}
     </div>

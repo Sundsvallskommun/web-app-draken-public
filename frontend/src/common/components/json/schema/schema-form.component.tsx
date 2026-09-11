@@ -2,7 +2,10 @@
 
 import { FacilitySearchField } from '@common/components/json/fields/facility-search-field.componant';
 import { FieldTemplate } from '@common/components/json/fields/field-template.componant';
-import { SectionsObjectFieldTemplate } from '@common/components/json/fields/sections-object-field-template.componant';
+import {
+  SectionOpening,
+  SectionsObjectFieldTemplate,
+} from '@common/components/json/fields/sections-object-field-template.componant';
 import { SubmitButtonFieldTemplate } from '@common/components/json/fields/submit-button-field-template.componant';
 import { jsonWidgets } from '@common/components/json/widgets/index.componant';
 import Form, { FormProps, IChangeEvent } from '@rjsf/core';
@@ -41,6 +44,7 @@ type SchemaFormProps = {
   disabled?: boolean;
   submitButtonOptions?: { label?: string; leadingIcon?: boolean; loading?: boolean; disabled?: boolean };
   extraContent?: React.ReactNode;
+  sectionOpening?: SectionOpening;
 };
 
 const hasType = (p: AnyProp | undefined, t: string) =>
@@ -97,6 +101,7 @@ export default function SchemaForm({
   disabled,
   submitButtonOptions,
   extraContent,
+  sectionOpening,
 }: SchemaFormProps) {
   const [localData, setLocalData] = useState<any>({});
   const data = formData ?? localData;
@@ -126,7 +131,10 @@ export default function SchemaForm({
   const effectiveUiSchema = uiSchema ?? autoUi;
 
   // Send original schema via formContext so ObjectFieldTemplate can read if/then conditions
-  const formContext = useMemo(() => ({ originalSchema: schema, submitButtonOptions }), [schema, submitButtonOptions]);
+  const formContext = useMemo(
+    () => ({ originalSchema: schema, submitButtonOptions, sectionOpening }),
+    [schema, submitButtonOptions, sectionOpening]
+  );
 
   const templates: any = {
     FieldTemplate,

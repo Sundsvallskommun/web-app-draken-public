@@ -3,13 +3,15 @@ import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
 import { Type as TypeTransformer } from 'class-transformer';
-import { IsString, ValidateNested } from 'class-validator';
+import { IsString, isUUID, ValidateNested } from 'class-validator';
 import { Body, Controller, Get, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { LEAddress, LegalEntity2, LEPostAddress } from '@/data-contracts/legalentity/data-contracts';
+import { LEAddress, LegalEntity2, LEPostAddress, OrganizationEngagements } from '@/data-contracts/legalentity/data-contracts';
+import { HttpException } from '@/exceptions/HttpException';
+import { OrganizationService } from '@/services/organization.service';
 import { logger } from '@/utils/logger';
 import { formatOrgNr, OrgNumberFormat } from '@/utils/util';
 
@@ -135,7 +137,7 @@ class CLegalEntity2WithId extends CLegalEntity2 implements LegalEntity2WithId {
 }
 
 interface ResponseData {
-  data: Citizenaddress | LegalEntity2;
+  data: Citizenaddress | LegalEntity2 | OrganizationEngagements;
   message: string;
 }
 
@@ -146,6 +148,7 @@ export class AddressController {
   EMPLOYEE_SERVICE = apiServiceName('employee');
   LEGALENTITY_SERVICE = apiServiceName('legalentity');
   PARTY_SERVICE = apiServiceName('party');
+  private organizationService = new OrganizationService();
 
   @Post('/address/')
   @OpenAPI({ summary: 'Return adress for given person number' })
@@ -176,6 +179,23 @@ export class AddressController {
     const result: LegalEntity2WithId = { ...res.data, partyId: guidRes.data };
 
     return { data: result, message: 'success' } as ResponseData;
+  }
+
+  @Get('/legalentity/:partyId/engagements')
+  @OpenAPI({ summary: 'Return people engaged in the company a given party id belongs to' })
+  @UseBefore(authMiddleware)
+  async legalEntityEngagements(@Req() req: RequestWithUser, @Param('partyId') partyId: string): Promise<ResponseData> {
+    if (!isUUID(partyId)) {
+      throw new HttpException(400, 'Party id must be a uuid');
+    }
+
+    if (!MUNICIPALITY_ID) {
+      throw new HttpException(500, 'Municipality id is not configured');
+    }
+
+    const data = await this.organizationService.getOrganizationEngagements(MUNICIPALITY_ID, partyId, req.user);
+
+    return { data, message: 'success' } as ResponseData;
   }
 
   @Get('/portalpersondata/personal/:loginName')
