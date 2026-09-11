@@ -23,6 +23,7 @@ import { useInvestigationProfileStore } from '../investigation-profile-store';
 import { HSL_RISK_ESCALATION_THRESHOLD } from './assignment/avvikelse-access-labels';
 import { isWithLexInvestigation, shouldPromptLexAssignment } from './assignment/avvikelse-assignment-policy';
 import { LexAssignmentPrompt } from './assignment/lex-assignment-prompt.component';
+import { MoveLocationButton } from './assignment/move-location-button.component';
 import { ReturnToManagerButton } from './assignment/return-to-manager-button.component';
 import { AVVIKELSE_CLASSIFICATION_POLICY } from './avvikelse-classification-policy';
 import {
@@ -326,6 +327,14 @@ export function SupportInvestigationDocument({
     !readonly &&
     Boolean(errandId) &&
     isWithLexInvestigation(supportErrand?.labels, supportMetadata?.labels?.labelStructure);
+  // A wrongly routed errand is moved from the document of the manager who wrongly received it, and
+  // not while it is with LEX: the LEX label, not the place, is what gives them access, and the
+  // manager the move would assign could not act on it until it was handed back.
+  const canMoveLocation =
+    definition.schemaName === 'utredning-enhetschef' &&
+    !readonly &&
+    Boolean(errandId) &&
+    !isWithLexInvestigation(supportErrand?.labels, supportMetadata?.labels?.labelStructure);
   const classificationOwner = isInvestigationClassificationOwner(definition.key, supportErrand);
   const classificationLabelTree = classificationOwner ? AVVIKELSE_CLASSIFICATION_POLICY.labelTree : undefined;
   const classificationSchemaContract = documentState
@@ -813,6 +822,17 @@ export function SupportInvestigationDocument({
             </Alert.Content.Description>
           </Alert.Content>
         </Alert>
+      )}
+
+      {canMoveLocation && (
+        <div className="mb-24">
+          <MoveLocationButton
+            municipalityId={municipalityId}
+            errandId={errandId!}
+            expectedVersion={supportErrand?.version}
+            disabled={isSaving || isDirty || classificationDirty}
+          />
+        </div>
       )}
 
       <SchemaForm

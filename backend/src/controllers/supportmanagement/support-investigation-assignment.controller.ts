@@ -18,9 +18,12 @@ import ApiService from '@/services/api.service';
 import { HandlerDirectoryService } from '@/services/handler-directory.service';
 import {
   buildInvestigationHandoverLabelUpdate,
+  buildInvestigationLocationLabelUpdate,
   ErrandLocation,
   hasInvestigationAccessLexLabel,
+  InvestigationLocationTarget,
   resolveErrandLocation,
+  resolveInvestigationLocationTarget,
 } from '@/services/investigation-handover-label.service';
 import { assertRequestedErrandVersion, assertSupportErrandAdminAssignable, getErrandVersion } from '@/services/support-errand.service';
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
@@ -40,6 +43,15 @@ export class InvestigationHandoverDto {
   @IsString()
   @MinLength(1)
   assignedUserId?: string;
+
+  /**
+   * The place the errand is moved to, as a label id from the metadata tree. Required by
+   * `move-location`, ignored by every other step.
+   */
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  locationLabelId?: string;
 }
 
 interface HandoverWriteBody {
@@ -103,6 +115,38 @@ export class SupportInvestigationAssignmentController {
       roles: managerRoleOptions(),
       locationResourcePath: location.resourcePath,
       locationDisplayName: location.displayName,
+    };
+  }
+
+  /**
+   * The managers of a place the errand is about to be moved to, so the choice can be shown before it
+   * is made. The backend resolves the same list again when the move is applied.
+   *
+   * The move is authorized like the step it previews: whoever may write the unit manager's
+   * investigation may move the errand. A wrongly routed errand is first seen by the manager it
+   * wrongly reached, and that is the person who has to be able to send it on.
+   */
+  @Get('/supporterrands/:municipalityId/:id/location-managers/:labelId')
+  @OpenAPI({ summary: 'Resolve the managers of the place an errand would be moved to' })
+  @UseBefore(authMiddleware)
+  async getLocationManagers(
+    @Req() req: RequestWithUser,
+    @Param('municipalityId') municipalityId: string,
+    @Param('id') id: string,
+    @Param('labelId') labelId: string,
+  ): Promise<UnitManagerResponse> {
+    const step = this.requireStep('move-location');
+    await this.assertStepAllowed(req, municipalityId, id, step);
+
+    const { errand, metadata } = await this.readErrandAndMetadata(req, municipalityId, id);
+    const target = this.requireLocationTarget(errand, metadata, labelId);
+    const managers = await this.resolveManagersForLocation(req, municipalityId, target.location);
+
+    return {
+      candidates: managers,
+      roles: managerRoleOptions(),
+      locationResourcePath: target.location.resourcePath,
+      locationDisplayName: target.location.displayName,
     };
   }
 
@@ -188,13 +232,26 @@ export class SupportInvestigationAssignmentController {
     assertRequestedErrandVersion(data.expectedVersion, currentVersion);
     assertSupportErrandAdminAssignable(errand, `the ${step.step} handover`);
 
-    const assignedUserId = await this.resolveAssignee(req, municipalityId, step, data, errand, metadata);
-    const labels = buildInvestigationHandoverLabelUpdate({
-      currentLabels: errand.labels,
-      labelStructure: metadata.labels?.labelStructure,
-      addResourcePaths: step.addLabelResourcePaths,
-      removeResourcePaths: step.removeLabelResourcePaths,
-    });
+    let assignedUserId: string;
+    let labels: { id: string }[] | undefined;
+    if (step.assigneeSource === 'target-location') {
+      // The place is the input here, not the labels: the caller names where the errand goes, and
+      // the whole location chain is derived from the metadata tree. Nothing else on the errand
+      // moves - in particular not the incoming JSON parameter, which stays the record of what was
+      // reported even when it names the wrong unit.
+      const target = this.requireLocationTarget(errand, metadata, data.locationLabelId);
+      const managers = await this.resolveManagersForLocation(req, municipalityId, target.location);
+      assignedUserId = this.pickManager(step, data, managers, target.location);
+      labels = buildInvestigationLocationLabelUpdate({ currentLabels: errand.labels, labelStructure: metadata.labels?.labelStructure, target });
+    } else {
+      assignedUserId = await this.resolveAssignee(req, municipalityId, step, data, errand, metadata);
+      labels = buildInvestigationHandoverLabelUpdate({
+        currentLabels: errand.labels,
+        labelStructure: metadata.labels?.labelStructure,
+        addResourcePaths: step.addLabelResourcePaths,
+        removeResourcePaths: step.removeLabelResourcePaths,
+      });
+    }
 
     const body: HandoverWriteBody = {
       ...(assignedUserId ? { assignedUserId } : {}),
@@ -297,12 +354,22 @@ export class SupportInvestigationAssignmentController {
     }
 
     const { managers, location } = await this.resolveManagersForErrand(req, municipalityId, errand, metadata);
+    return this.pickManager(step, data, managers, location);
+  }
+
+  /**
+   * The caller picks from the managers a place actually has. Validating the choice against that
+   * same list is what keeps a hand-written request from assigning anybody else.
+   */
+  private pickManager(
+    step: InvestigationHandoverStepDefinition,
+    data: InvestigationHandoverDto,
+    managers: readonly ManagerCandidate[],
+    location: ErrandLocation,
+  ): string {
     if (managers.length === 0) {
       throw new HttpException(409, `No manager is configured for ${location.displayName}`);
     }
-
-    // The caller picks from the managers this errand's place actually has. Validating the choice
-    // against that same list is what keeps a hand-written request from assigning anybody else.
     if (!data.assignedUserId?.trim()) {
       throw new HttpException(400, `The ${step.step} handover requires an assigned user`);
     }
@@ -311,6 +378,24 @@ export class SupportInvestigationAssignmentController {
       throw new HttpException(400, `The selected handler is not a manager for ${location.displayName}`);
     }
     return chosen.adAccount;
+  }
+
+  /**
+   * The place a move goes to, checked against the errand it is applied to.
+   *
+   * An errand with the LEX roles is not moved: the LEX label, not the location, is what gives them
+   * access, and the manager the move would assign could not act on it until it was handed back.
+   * The investigator returns it first, and the manager who receives it moves it.
+   */
+  private requireLocationTarget(errand: SupportErrand, metadata: SupportMetadata, locationLabelId: string | undefined): InvestigationLocationTarget {
+    if (!locationLabelId?.trim()) {
+      throw new HttpException(400, 'The move-location handover requires a target place');
+    }
+    const labelStructure = metadata.labels?.labelStructure;
+    if (hasInvestigationAccessLexLabel(errand.labels, labelStructure)) {
+      throw new HttpException(409, 'The errand is with the LEX roles; it has to be returned to a manager before it can be moved');
+    }
+    return resolveInvestigationLocationTarget(labelStructure, locationLabelId.trim());
   }
 
   /**
@@ -327,6 +412,11 @@ export class SupportInvestigationAssignmentController {
     metadata: SupportMetadata,
   ): Promise<{ location: ErrandLocation; managers: ManagerCandidate[] }> {
     const location = resolveErrandLocation(errand.labels, metadata.labels?.labelStructure);
+    return { location, managers: await this.resolveManagersForLocation(req, municipalityId, location) };
+  }
+
+  /** The managers for one place, whether it is the errand's current place or the one it is moved to. */
+  private async resolveManagersForLocation(req: RequestWithUser, municipalityId: string, location: ErrandLocation): Promise<ManagerCandidate[]> {
     const locationAccounts = await this.accessMapperService.findLocationAccessCandidates(
       req.user,
       municipalityId,
@@ -347,7 +437,7 @@ export class SupportInvestigationAssignmentController {
     );
     const displayNames = await this.handlerDirectory.lookupDisplayNames(req.user, managerAccounts);
 
-    return { location, managers: resolveLocationManagers({ locationAccounts, rolesByAccount, displayNames }) };
+    return resolveLocationManagers({ locationAccounts, rolesByAccount, displayNames });
   }
 
   /** Support Management exposes no transition graph, so the target status is checked against metadata. */

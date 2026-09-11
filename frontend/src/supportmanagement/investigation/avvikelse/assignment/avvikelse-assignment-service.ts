@@ -2,7 +2,7 @@ import { apiService } from '@common/services/api-service';
 import type { AxiosError } from 'axios';
 
 /** The named handovers the backend implements. The client names the step and never composes it. */
-export type InvestigationHandoverStep = 'assign-lex' | 'return-to-manager';
+export type InvestigationHandoverStep = 'assign-lex' | 'return-to-manager' | 'move-location';
 
 export interface UnitManagerCandidate {
   adAccount: string;
@@ -36,6 +36,26 @@ export const getUnitManager = (municipalityId: string, errandId: string): Promis
     .then((res) => res.data);
 
 /**
+ * Resolves the managers of a place the errand would be moved to, so the choice can be shown before
+ * it is made. Like the return preview, the backend resolves the list again when the move is applied.
+ */
+export const getLocationManagers = (
+  municipalityId: string,
+  errandId: string,
+  locationLabelId: string
+): Promise<UnitManagerResponse> =>
+  apiService
+    .get<UnitManagerResponse>(
+      `supporterrands/${municipalityId}/${errandId}/location-managers/${encodeURIComponent(locationLabelId)}`
+    )
+    .then((res) => res.data);
+
+export interface InvestigationHandoverOptions {
+  /** The place the errand is moved to. Only `move-location` reads it. */
+  readonly locationLabelId?: string;
+}
+
+/**
  * Applies one handover step.
  *
  * Answers 204 and returns nothing to read back: a step that moves access has usually just taken the
@@ -47,9 +67,14 @@ export const applyInvestigationHandover = async (
   errandId: string,
   step: InvestigationHandoverStep,
   expectedVersion: number,
-  assignedUserId?: string
+  assignedUserId?: string,
+  options: InvestigationHandoverOptions = {}
 ): Promise<void> => {
-  const body = { expectedVersion, ...(assignedUserId ? { assignedUserId } : {}) };
+  const body = {
+    expectedVersion,
+    ...(assignedUserId ? { assignedUserId } : {}),
+    ...(options.locationLabelId ? { locationLabelId: options.locationLabelId } : {}),
+  };
   await apiService.post<void, typeof body>(
     `supporterrands/${municipalityId}/${errandId}/investigation-handover/${step}`,
     body

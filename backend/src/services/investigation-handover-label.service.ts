@@ -193,3 +193,183 @@ export const hasInvestigationAccessLexLabel = (currentLabels: Errand['labels'], 
     resourcePath => normalizeSupportManagementResourcePath(resourcePath) === wanted,
   );
 };
+
+/** A place an errand can be moved to, resolved from the metadata tree. */
+export interface InvestigationLocationTarget {
+  /** The target node's own id. */
+  readonly labelId: string;
+  /** What the handler picked, by name. */
+  readonly displayName: string;
+  /**
+   * The labels the errand will carry for the place: every level below the tree's top node, down to
+   * and including the target. The top node itself is the structure, not a place, and an errand does
+   * not carry it.
+   */
+  readonly chainIds: readonly string[];
+  /** The top-level node the target sits under. Everything beneath it is the location structure. */
+  readonly rootId: string;
+  /** The AccessMapper-matched place within the chain: the deepest node classified as a location. */
+  readonly location: ErrandLocation;
+}
+
+interface LabelTreeMatch {
+  readonly node: Label;
+  /** From the top-level node down to the target's parent. */
+  readonly ancestors: readonly Label[];
+}
+
+const findLabelTreeMatches = (labelStructure: readonly Label[] | undefined, labelId: string): LabelTreeMatch[] => {
+  const matches: LabelTreeMatch[] = [];
+  const visit = (nodes: readonly Label[] | undefined, ancestors: readonly Label[]): void => {
+    for (const node of nodes ?? []) {
+      if (node.id === labelId) matches.push({ node, ancestors });
+      visit(node.labels, [...ancestors, node]);
+    }
+  };
+  visit(labelStructure, []);
+  return matches;
+};
+
+/**
+ * Resolves the place an errand is being moved to.
+ *
+ * The target is named by label id, because that is the identity a label has; the path is looked up
+ * from it, never reconstructed from names. Three things are checked, and each one refuses rather
+ * than guesses:
+ *
+ * - the id must be in the metadata tree, exactly once;
+ * - it must be a leaf. Katla offers only the units with no sub-units as places, and an errand moved
+ *   to a level above one would carry a place its own reporter could not have chosen;
+ * - the path down to it must pass through a node classified as a location, or there is nothing for
+ *   AccessMapper to match and no manager to resolve - the errand would be moved to nowhere.
+ */
+export const resolveInvestigationLocationTarget = (labelStructure: readonly Label[] | undefined, labelId: string): InvestigationLocationTarget => {
+  const matches = findLabelTreeMatches(labelStructure, labelId);
+  if (matches.length === 0) {
+    throw new HttpException(400, 'The selected place does not exist in Support Management metadata');
+  }
+  if (matches.length > 1) {
+    throw new HttpException(502, `Label id ${labelId} resolved ${matches.length} times in Support Management metadata`);
+  }
+
+  const { node, ancestors } = matches[0];
+  if ((node.labels?.length ?? 0) > 0) {
+    throw new HttpException(400, 'The selected place has sub-places; choose the unit the errand concerns');
+  }
+  if (ancestors.length === 0) {
+    throw new HttpException(400, 'The selected label is the top of the structure, not a place');
+  }
+
+  const path = [...ancestors, node];
+  const rootId = requireLabelId(ancestors[0], 'label metadata');
+  const chainIds = path.slice(1).map(label => requireLabelId(label, 'label metadata'));
+
+  const locations = path.filter(label => isInvestigationLocationLabelClassification(label.classification));
+  const deepestLocation = locations.at(-1);
+  if (!deepestLocation) {
+    throw new HttpException(400, 'The selected label is not a place: no level on its path is classified as a location');
+  }
+  const locationResourcePath = typeof deepestLocation.resourcePath === 'string' ? deepestLocation.resourcePath.trim() : '';
+  if (locationResourcePath.length === 0) {
+    throw new HttpException(502, 'Support Management label metadata contains a location without resourcePath');
+  }
+
+  return {
+    labelId: requireLabelId(node, 'label metadata'),
+    displayName: node.displayName || node.resourceName || locationResourcePath,
+    chainIds,
+    rootId,
+    location: {
+      resourcePath: normalizeSupportManagementResourcePath(locationResourcePath),
+      displayName: deepestLocation.displayName || locationResourcePath,
+    },
+  };
+};
+
+interface LocationLabelUpdateInput {
+  readonly currentLabels: Errand['labels'];
+  readonly labelStructure: readonly Label[] | undefined;
+  readonly target: InvestigationLocationTarget;
+}
+
+/** Label ids by normalized resource path, for errand labels that arrive without an id. */
+const indexLabelIdsByPath = (labelStructure: readonly Label[] | undefined): Map<string, string> => {
+  const idByPath = new Map<string, string>();
+  const visit = (nodes: readonly Label[] | undefined): void => {
+    for (const node of nodes ?? []) {
+      const resourcePath = typeof node.resourcePath === 'string' ? node.resourcePath.trim() : '';
+      if (resourcePath.length > 0 && typeof node.id === 'string' && node.id.length > 0) {
+        idByPath.set(normalizeSupportManagementResourcePath(resourcePath), node.id);
+      }
+      visit(node.labels);
+    }
+  };
+  visit(labelStructure);
+  return idByPath;
+};
+
+/** Every id strictly beneath one node of the tree. */
+const collectDescendantIds = (labelStructure: readonly Label[] | undefined, rootId: string): Set<string> => {
+  const ids = new Set<string>();
+  const collect = (nodes: readonly Label[] | undefined): void => {
+    for (const node of nodes ?? []) {
+      if (typeof node.id === 'string' && node.id.length > 0) ids.add(node.id);
+      collect(node.labels);
+    }
+  };
+  const visit = (nodes: readonly Label[] | undefined): void => {
+    for (const node of nodes ?? []) {
+      if (node.id === rootId) collect(node.labels);
+      else visit(node.labels);
+    }
+  };
+  visit(labelStructure);
+  return ids;
+};
+
+/**
+ * Builds the complete label id list for moving an errand to another place.
+ *
+ * Only the location changes. Every label outside the location structure - classification, report
+ * type, the LEX access label if the errand carries it - passes through untouched, so this cannot
+ * become a second way to reclassify an errand. Within the structure the whole chain is replaced:
+ * every level the errand carried for the old place goes, every level down to the new place comes,
+ * because AccessMapper's patterns are written against ancestors as well as the place itself and a
+ * leftover level would keep the old unit's managers on the errand.
+ *
+ * The top-level node is left as it was, carried or not: it is the structure rather than a place,
+ * and whether a deployment writes it onto errands is not this function's decision.
+ *
+ * Returns `undefined` when the errand already carries exactly the target's chain, so a move to
+ * where the errand already is does not spend an errand version.
+ */
+export const buildInvestigationLocationLabelUpdate = ({
+  currentLabels,
+  labelStructure,
+  target,
+}: LocationLabelUpdateInput): { id: string }[] | undefined => {
+  const { byId } = indexMetadataLabels(labelStructure);
+  const idByPath = indexLabelIdsByPath(labelStructure);
+  const structureIds = collectDescendantIds(labelStructure, target.rootId);
+
+  const currentIds = (currentLabels ?? []).map(label => {
+    if (typeof label.id === 'string' && label.id.length > 0) return label.id;
+    // The id is what goes upstream. A label that arrived without one is only usable if the metadata
+    // can name it by path; otherwise this write would silently drop it.
+    const resourcePath = typeof label.resourcePath === 'string' ? label.resourcePath.trim() : '';
+    const resolvedId = resourcePath.length > 0 ? idByPath.get(normalizeSupportManagementResourcePath(resourcePath)) : undefined;
+    if (!resolvedId) throw new HttpException(502, 'Support Management errand response contains a label without id');
+    return resolvedId;
+  });
+
+  const isLocationLabel = (id: string): boolean => structureIds.has(id) || isInvestigationLocationLabelClassification(byId.get(id)?.classification);
+
+  const keptIds = currentIds.filter(id => !isLocationLabel(id));
+  const updatedIds = [...new Set([...keptIds, ...target.chainIds])];
+
+  const unchanged =
+    updatedIds.length === currentIds.length && new Set(currentIds).size === updatedIds.length && updatedIds.every(id => currentIds.includes(id));
+  if (unchanged) return undefined;
+
+  return updatedIds.map(id => ({ id }));
+};
