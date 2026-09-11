@@ -1,6 +1,5 @@
 import { IsBoolean, IsObject, IsOptional, IsString, MinLength } from 'class-validator';
 import { Response } from 'express';
-import FormData from 'form-data';
 import { Body, Controller, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
@@ -8,8 +7,6 @@ import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import { trimSupportManagementPath } from '@/config/supportmanagement-path';
-import { ErrandAttachmentChannelEnum } from '@/data-contracts/supportmanagement/data-contracts';
-import type { DirectRenderRequest, RenderResponse } from '@/data-contracts/templating/data-contracts';
 import { SupportInvestigationDocumentProfileDto, SupportInvestigationProfileDto } from '@/dtos/support-investigation-profile.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -22,6 +19,7 @@ import { isJsonObject, isRecord, type JsonObject } from '@/services/schema-bound
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { isDocumentCompleted, readDocumentCompletion, SupportJsonParameterService } from '@/services/support-json-parameter.service';
+import { attachPdfToSupportErrand, type PdfAttachmentApiService, renderPdfWithTemplating } from '@/services/support-pdf-attachment.service';
 
 export class CreateSupportInvestigationReportDto {
   /** Render the PDF and return it without attaching it to the errand or recording it. */
@@ -51,7 +49,7 @@ export interface SupportInvestigationReportEntry {
   readonly attachmentId?: string;
 }
 
-type ReportApiService = Pick<ApiService, 'post'>;
+type ReportApiService = PdfAttachmentApiService;
 
 export interface SupportInvestigationReportControllerDependencies {
   readonly investigationProfile?: SupportInvestigationProfileDto;
@@ -72,15 +70,6 @@ const requireDefinition = (profile: SupportInvestigationProfileDto, key: string)
 };
 
 const formatTimestamp = (iso: string): string => iso.replace('T', ' ').slice(0, 16);
-
-const attachmentIdFrom = (data: unknown, location: unknown): string | undefined => {
-  if (isRecord(data) && typeof data.id === 'string' && data.id.length > 0) return data.id;
-  if (typeof location === 'string') {
-    const match = location.match(/\/attachments\/([^/?#]+)/u);
-    if (match) return decodeURIComponent(match[1]);
-  }
-  return undefined;
-};
 
 /**
  * Renders one completed investigation document as a PDF from its own schema, and attaches it to
@@ -166,13 +155,30 @@ export class SupportInvestigationReportController {
       generatedBy: req.user.name || req.user.username,
     });
 
-    const pdfBase64 = await this.renderPdf(req, municipalityId, model);
+    const pdfBase64 = await renderPdfWithTemplating({
+      apiService: this.apiService,
+      templatingService: this.templatingService,
+      municipalityId,
+      template: renderInvestigationReportTemplate(),
+      parameters: { report: model },
+      subject: 'the investigation report',
+      user: req.user,
+    });
     if (preview) {
       return response.status(200).send({ data: { fileName, pdfBase64 }, message: 'Investigation report rendered' });
     }
 
     if (!stored) throw new HttpException(404, 'Investigation document not found');
-    const attachmentId = await this.attachPdf(req, municipalityId, errandId, fileName, pdfBase64);
+    const attachmentId = await attachPdfToSupportErrand({
+      apiService: this.apiService,
+      supportManagementService: this.supportManagementService,
+      namespace: this.namespace,
+      municipalityId,
+      errandId,
+      fileName,
+      pdfBase64,
+      user: req.user,
+    });
     const entry: SupportInvestigationReportEntry = { generatedAt, generatedBy: req.user.username, fileName, ...(attachmentId && { attachmentId }) };
     const written = await this.documentService.writeJsonParameter({
       ...request,
@@ -196,52 +202,5 @@ export class SupportInvestigationReportController {
       if (isRecord(error) && error.status === 404) return undefined;
       throw error;
     }
-  }
-
-  private async renderPdf(req: RequestWithUser, municipalityId: string, report: unknown): Promise<string> {
-    const renderRequest: DirectRenderRequest = {
-      content: Buffer.from(renderInvestigationReportTemplate(), 'utf8').toString('base64'),
-      parameters: { report },
-    };
-    const rendered = await this.apiService
-      .post<RenderResponse, DirectRenderRequest>(
-        {
-          url: `${this.templatingService}/${encodeURIComponent(municipalityId)}/render/direct/pdf`,
-          data: renderRequest,
-          propagateClientError: true,
-        },
-        req.user,
-      )
-      .catch((error: unknown) => {
-        // Templating authenticates the application. Its denial is not a denial of the
-        // handler's document access and must not trigger an access refresh in the UI.
-        if (isRecord(error) && (error.status === 401 || error.status === 403)) {
-          throw new HttpException(502, 'Rapporttjänsten nekade applikationens åtkomst. Kontakta support.');
-        }
-        throw error;
-      });
-    const output = rendered.data?.output;
-    if (typeof output !== 'string' || output.length === 0) {
-      throw new HttpException(502, 'Templating returned no PDF for the investigation report');
-    }
-    return output;
-  }
-
-  private async attachPdf(
-    req: RequestWithUser,
-    municipalityId: string,
-    errandId: string,
-    fileName: string,
-    pdfBase64: string,
-  ): Promise<string | undefined> {
-    const data = new FormData();
-    data.append('errandAttachment', Buffer.from(pdfBase64, 'base64'), { filename: fileName, contentType: 'application/pdf' });
-    data.append('channel', ErrandAttachmentChannelEnum.WEB_UI);
-    const url = `${this.supportManagementService}/${encodeURIComponent(municipalityId)}/${encodeURIComponent(this.namespace)}/errands/${encodeURIComponent(errandId)}/attachments`;
-    const uploaded = await this.apiService.post<unknown, FormData>(
-      { url, data, headers: { 'Content-Type': data.getHeaders()['content-type'] }, includeResponseHeaders: true, propagateClientError: true },
-      req.user,
-    );
-    return attachmentIdFrom(uploaded.data, uploaded.headers?.location);
   }
 }

@@ -4,6 +4,7 @@ import { isSupportErrandLocked, type SupportErrand } from '@supportmanagement/se
 import { isSupportErrandWriteConflict } from '@supportmanagement/services/support-errand-write-version';
 import { useCallback, useId, useRef, useState } from 'react';
 
+import { MeasureActionPlanButton } from '../measure-action-plan-button';
 import { measureCanBeDecided, type MeasureDecisionInput } from '../measure-decision';
 import { MeasureFilterBar } from '../measure-filter-bar';
 import { emptyMeasureFilters, filterMeasures, isMeasureFilterActive, measureFilterOptions } from '../measure-filters';
@@ -240,14 +241,20 @@ export function AvvikelseMeasures({
       )}
       {!canWrite && <p>Åtgärderna visas skrivskyddade.</p>}
       <section aria-labelledby={listHeadingId} className="border-t-1 pt-24 flex flex-col gap-16">
-        <h3
-          id={listHeadingId}
-          ref={listHeading}
-          tabIndex={-1}
-          className="text-h3-sm focus-visible:outline focus-visible:outline-2"
-        >
-          {followUp ? 'Åtgärder att följa upp' : 'Tillagda åtgärder'} ({measures.length})
-        </h3>
+        <div className="flex flex-wrap items-start justify-between gap-16">
+          <h3
+            id={listHeadingId}
+            ref={listHeading}
+            tabIndex={-1}
+            className="text-h3-sm focus-visible:outline focus-visible:outline-2"
+          >
+            {followUp ? 'Åtgärder att följa upp' : 'Tillagda åtgärder'} ({measures.length})
+          </h3>
+          {/* The plan is made from the stored measures by the BFF; follow-up shows the same list but offers no plan. */}
+          {!followUp && canWrite && (
+            <MeasureActionPlanButton errand={errand} municipalityId={municipalityId} measureCount={measures.length} />
+          )}
+        </div>
         {measures.length > 0 && (
           <MeasureFilterBar
             filters={filters}

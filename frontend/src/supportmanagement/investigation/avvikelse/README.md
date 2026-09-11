@@ -281,6 +281,7 @@ Två namngivna steg finns, och klienten namnger steget i stället för att kompo
 | --- | --- | --- |
 | `assign-lex` | `suspectedMisconduct === 'yes'` i enhetschefsutredningen | `assignedUserId` (LEX-ansvarig), `REPORT_TYPE/ABUSE` i stället för `REPORT_TYPE/DEVIATION`, `ACCESS/LEX` |
 | `return-to-manager` | LEX-utredaren är klar | `assignedUserId` (enhetschef för platsen), tar bort `ACCESS/LEX` |
+| `move-location` | Ärendet har kommit till fel enhet; enhetschefen väljer rätt plats (`locationLabelId`) | `assignedUserId` (chef för den **nya** platsen), byter ut hela platskedjan i labels mot den nya platsens; se [Fel plats](#fel-plats-flytta-ärendet-utan-att-ändra-det-inrapporterade) |
 
 Inget av stegen ändrar **status**. `ASSIGNED` vore den naturliga statusen för en överlämning, men
 Draken behandlar den som ett *låst* tillstånd (`isSupportErrandLocked`), och enda vägen ur den är
@@ -311,6 +312,43 @@ missförhållande får sina lagrum normaliserade till SOL/LSS nästa gång enhet
 vilket tar bort `riskAssessmentHsl`. I praktiken når det bara den som har skrivrätt på
 enhetschefsdokumentet, och den rätten ägs av Support Managements AccessMapper — men regeln är värd
 att känna till innan åtkomsten konfigureras om.
+
+### Fel plats: flytta ärendet utan att ändra det inrapporterade
+
+Katla skriver platsen två gånger. Rapportörens val ligger i den inkommande JSON-parametern
+(`orgName`/`parentOrgName`, renderat i Ärendeuppgifter av `FacilitySearchField`), och samma plats
+ligger som ärendets LOCATION-labels — hela kedjan, en label per nivå. De två stämmer överens när
+ärendet routats rätt och skiljer sig åt när det inte gjort det, och det är **bara labels som flyttas**.
+JSON-parametern är facit på vad som skickades in och ändras aldrig; labels är det AccessMapper
+matchar på och därmed det som avgör vem som når ärendet. Ett ärende som hamnat hos fel enhet rättas
+alltså genom att byta plats-labels, inte genom att redigera rapporten.
+
+Steget `move-location` gör det. Klienten namnger målplatsen med label-id (`locationLabelId`), och
+backend löser ut resten ur metadataträdet (`resolveInvestigationLocationTarget`):
+
+- målet måste finnas exakt en gång i trädet, vara ett **löv** (Katla erbjuder bara enheterna längst
+  ned som platser) och ha en nivå med classification `LOCATION` på sin väg — annars finns inget för
+  AccessMapper att matcha och ingen chef att lösa ut;
+- den nya labellistan (`buildInvestigationLocationLabelUpdate`) tar bort varje label under
+  platsstrukturens toppnod och varje LOCATION-klassad label, och lägger till hela kedjan ned till
+  målet. Alla andra labels — klassificering, rapporttyp, `ACCESS/LEX` — passerar orörda, så vägen
+  kan inte bli ett andra sätt att omklassificera. Toppnoden själv lämnas som den bars: den är
+  strukturen, inte en plats;
+- chefen väljs ur den **nya** platsens chefer, upplösta med exakt samma regel som återlämningen
+  (`resolveManagersForLocation`), och förhandsvisas via
+  `GET /supporterrands/:m/:id/location-managers/:labelId`. Den som flyttar skriver bort sig själv
+  från ärendet, så någon i andra änden måste kunna se det.
+
+Steget auktoriseras av skrivrätt på `utredning-enhetschef`: den chef som felaktigt fick ärendet är
+den som ser det först och ska kunna skicka det vidare. Ett ärende som bär `ACCESS/LEX` flyttas inte
+(409) — det är LEX-labeln, inte platsen, som ger LEX åtkomst, och chefen flytten skulle tilldela
+kunde inte agera förrän ärendet lämnats tillbaka. Utredaren återlämnar först; mottagaren flyttar.
+
+Kortet **Ärendets plats** överst i enhetschefsutredningen (`MoveLocationButton`) visar platsen enligt
+labels — inte platsen i Ärendeuppgifter — och öppnar flytten (`MoveLocationModal`): sök plats som i
+Katla, välj chef, bekräfta. Efter flytten navigerar klienten till översikten av samma skäl som de
+andra stegen. `resolveErrandPlace` i `assignment/errand-location.ts` är den rena upplösningen från
+labels till platsstrukturnod, delad med `place-structure.ts` som Ärendeuppgifter redan använder.
 
 ### Ansvarig-listan är ärendespecifik
 

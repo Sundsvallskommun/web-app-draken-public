@@ -6,5 +6,5 @@
  * from the phase metadata; a deployment whose phase model does not use them, or runs no workflow at
  * all, keeps both tabs exactly as it had them before the phases existed.
  */
-export const MEASURES_PHASE_NAME = 'Utredning';
-export const MEASURE_FOLLOW_UP_PHASE_NAME = 'Beslut';
+export const MEASURES_PHASE_NAME = 'INVESTIGATION';
+export const MEASURE_FOLLOW_UP_PHASE_NAME = 'DECISION';

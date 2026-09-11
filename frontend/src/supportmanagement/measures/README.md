@@ -277,6 +277,17 @@ ingen ny feature-flagga eller API-tabell krävs för detta beslutsflöde. Vid
 återställda versionen tolkar `REWORK` som delvis godkänd och skyddar beslutat
 innehåll; en äldre klient med annan tolkning är inte en säker återställning.
 
+## Fasbyte till beslut
+
+Vid byte till fasen med namnet `DECISION` (`isDecisionPhase` i
+`support-phase-service.ts`) läser fasväxlaren ärendets åtgärder på nytt i
+klickögonblicket. Saknas åtgärder frågar Draken först om användaren verkligen
+vill gå till beslutsfasen utan åtgärder; Nej lämnar fasen orörd. Kan åtgärderna
+inte läsas ändras fasen inte heller, och ett fel visas. Kontrollen görs bara när
+`useMeasures` är på; utan åtgärdsfliken finns inget att fråga om. Fasnamnet
+matchas exakt mot metadatans `name`, aldrig mot visningsnamnet, så ett namespace
+utan en sådan fas berörs inte.
+
 ## Verifiering och införande
 
 Testkällor täcker explicit gruppmatchning, delade typer, dynamiska metadataändringar,
@@ -295,3 +306,32 @@ Inför kodändringen tillsammans med den nya backendkonfigurationen. Gamla
 `measureGroup: string`-svar stöds inte. Vid återställning måste klientkontrakt,
 backendkonfiguration och API-version hållas samordnade; återställ inte bara
 klientens gamla typfält mot API:ts nya svar.
+
+## Handlingsplan
+
+Knappen **Skapa handlingsplan** på fliken Åtgärder samlar ärendets samtliga sparade åtgärder i en
+PDF och lägger den som bilaga på ärendet. Planen byggs av BFF:en
+(`POST /supporterrands/:municipalityId/:errandId/measures/action-plan`,
+`support-measure-action-plan.controller.ts`) ur det Support Management håller i anropsögonblicket:
+åtgärderna, typ- och rollnamn ur namespace-metadatan och visningsnamn ur handläggarkatalogen.
+Listan i webbläsaren skickas aldrig med. Renderingen går via Templating `render/direct/pdf` med
+mallen i `backend/src/services/measure-action-plan.template.ts`, genom samma
+render-och-bifoga-steg som utredningsrapporten (`support-pdf-attachment.service.ts`).
+
+- Ordning, status (Planerad, Genomförd, Ej tidsatt) och beslutsetiketter (Förslag, Godkänd,
+  Avslagen, Delvis godkänd) är desamma som i fliken; `measure-action-plan.service.ts` speglar
+  `measure-decision.ts` och listans tidsangivelser. Datum visas i svensk lokal tid.
+- Alla åtgärder tas med oavsett beslut och genomförande. Beslut och beslutskommentar redovisas
+  per åtgärd; avslagna förslag är alltså med, märkta som avslagna.
+- Filnamnet är `Handlingsplan_<ärendenummer>_<n>.pdf`. Löpnumret läses ur bilagorna som redan
+  finns på ärendet (högsta befintliga nummer plus ett); ingen separat räknare lagras.
+- Knappen visas bara med skrivbehörighet på ett öppet ärende och är inaktiv utan åtgärder.
+  Backend följer samma statusregel som övriga åtgärdsskrivningar och svarar 409 utan åtgärder.
+- Uppföljningsfliken visar samma lista men erbjuder ingen handlingsplan.
+- Visningsnamn slås upp i samma handläggarkatalog som fliken (`/users/admins`). Kan katalogen
+  inte läsas visas kontonamnet; planen skapas ändå.
+
+Efter en skapad plan läses ärendets bilagor om så att fliken Bilagor visar den direkt.
+`measure-action-plan-button.test.tsx` täcker knappens tillstånd och felmeddelanden;
+`support-measures.spec.ts` täcker flödet i webbläsaren och `support-measure-action-plan.controller.test.ts`
+BFF:ens läsning, rendering, bifogning och avvisningar.

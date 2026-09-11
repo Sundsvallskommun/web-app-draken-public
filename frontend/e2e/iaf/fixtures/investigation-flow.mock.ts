@@ -95,7 +95,8 @@ export const defaultInvestigationProfile = (): MockInvestigationProfile => ({
 type JsonObject = Record<string, unknown>;
 
 interface SchemaRequest {
-  name: InvestigationKey;
+  // Imported JSON carries string names; the registry below constrains the supported document keys.
+  name: string;
   version: string;
   value: JsonObject;
   description: string;
@@ -136,6 +137,12 @@ export interface IafApiTrace {
   writes: Array<'document' | 'classification'>;
   /** Report requests, in order; a preview renders without attaching or recording. */
   reports: Array<{ key: string; preview: boolean }>;
+  /** Phase transition requests, in order, as the BFF received them. */
+  phasePatches: Array<{ transitionId?: string; expectedVersion?: number }>;
+  /** Handover steps, in order, exactly as the client named them. */
+  handovers: Array<{ step: string; expectedVersion?: number; assignedUserId?: string; locationLabelId?: string }>;
+  /** Places whose managers were previewed, by label id. */
+  locationManagerGets: string[];
 }
 
 /** One phase of the namespace's workflow, as `supportmetadata` describes it. */
@@ -157,6 +164,65 @@ export const investigationPhases: MockPhase[] = [
   { id: 'phase-decision', name: 'Beslut', phaseOrder: 3 },
   { id: 'phase-closed', name: 'Avslutat', phaseOrder: 4 },
 ];
+
+export type WorkflowPhaseName = 'ACTUALIZATION' | 'REVIEW' | 'INVESTIGATION' | 'DECISION' | 'FOLLOW_UP' | 'END';
+
+interface WorkflowPhase {
+  id: string;
+  name: WorkflowPhaseName;
+  displayName: string;
+  phaseOrder: number;
+  allowedStatuses: string[];
+  transitions: Array<{
+    id: string;
+    targetPhaseId: string;
+    targetPhaseName: WorkflowPhaseName;
+    targetPhaseDisplayName: string;
+    description: string;
+  }>;
+}
+
+const workflowPhaseId = (name: WorkflowPhaseName) => `phase-${name.toLowerCase().replace('_', '-')}`;
+export const workflowTransitionId = (target: WorkflowPhaseName) =>
+  `transition-to-${target.toLowerCase().replace('_', '-')}`;
+
+const workflowChain: Array<[WorkflowPhaseName, string, string, string]> = [
+  ['ACTUALIZATION', 'Registrerat', 'NEW', 'Skicka till granskning'],
+  ['REVIEW', 'Granskning', 'REVIEW', 'Skicka till utredning'],
+  ['INVESTIGATION', 'Utredning', 'INQUIRY', 'Skicka till beslut'],
+  ['DECISION', 'Beslut', 'DECISION', 'Skicka till uppföljning'],
+  ['FOLLOW_UP', 'Uppföljning', 'FOLLOW_UP', 'Skicka till avslut'],
+  ['END', 'Avsluta', 'SOLVED', ''],
+];
+
+/**
+ * The avvikelse workflow as the test namespace declares it (read 2026-09-11): one linear chain where
+ * each phase allows exactly one status and offers exactly one transition. Ids are fixed so a spec
+ * can name the transition it expects the BFF to receive.
+ */
+export const workflowPhases: WorkflowPhase[] = workflowChain.map(
+  ([name, displayName, status, transitionDescription], index) => {
+    const next = workflowChain[index + 1];
+    return {
+      id: workflowPhaseId(name),
+      name,
+      displayName,
+      phaseOrder: index,
+      allowedStatuses: [status],
+      transitions: next
+        ? [
+            {
+              id: workflowTransitionId(next[0]),
+              targetPhaseId: workflowPhaseId(next[0]),
+              targetPhaseName: next[0],
+              targetPhaseDisplayName: next[1],
+              description: transitionDescription,
+            },
+          ]
+        : [],
+    };
+  }
+);
 
 export interface IafApiScenario {
   documentAccess?: Readonly<Record<string, 'edit' | 'read' | 'hidden'>>;
@@ -191,6 +257,16 @@ export interface IafApiScenario {
   metadataPhases?: MockPhase[];
   /** The phase the errand is in: `activePhaseId` never comes back on a read, the history does. */
   activePhaseId?: string;
+  /**
+   * Puts the errand in this workflow phase, with the phases before it in its history, and makes the
+   * metadata carry the whole avvikelse workflow. Left out, neither the metadata nor the errand has
+   * any phase at all, which is what every spec that is not about phases expects.
+   */
+  activePhaseName?: WorkflowPhaseName;
+  /** The managers AccessMapper knows for a place, by the place's label id. Absent places have none. */
+  locationManagers?: Record<string, Array<{ adAccount: string; displayName: string; roleKey: string }>>;
+  /** What a handover step answers; a conflict is what a stale errand version gets. */
+  handoverResult?: 'success' | 'conflict';
 }
 
 const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
@@ -447,6 +523,106 @@ const labelStructure: MockLabel[] = [
   ]),
 ];
 
+const deviationLabelsSource = [provisionHsl, reportDeviation, hslOwner, rehab, missedAssessment];
+
+/**
+ * The place structure the way Katla's reporter sees it, and the way Support Management stores it:
+ * one top node, departments beneath it, and the units at the bottom as the places an errand can be
+ * at. Ids and paths are what the tests assert on; "Blå" exists under both homes on purpose, since a
+ * name is not an identity.
+ */
+export const iafPlaceFixture = {
+  root: { id: 'place-root-id', resourcePath: 'LOCATION' },
+  area: { id: 'place-area-id', resourcePath: 'LOCATION/NORTH' },
+  operation: { id: 'place-operation-id', resourcePath: 'LOCATION/NORTH/ELDERLY_CARE' },
+  unit: { id: 'place-unit-id', resourcePath: 'LOCATION/NORTH/ELDERLY_CARE/UNIT_1' },
+  northHome: {
+    id: 'place-north-home-id',
+    displayName: 'Norra hemmet',
+    resourcePath: 'LOCATION/NORTH/ELDERLY_CARE/UNIT_1/NORTH_HOME',
+  },
+  northBlue: {
+    id: 'place-north-blue-id',
+    displayName: 'Blå',
+    resourcePath: 'LOCATION/NORTH/ELDERLY_CARE/UNIT_1/NORTH_HOME/BLUE',
+  },
+  southHome: {
+    id: 'place-south-home-id',
+    displayName: 'Södra hemmet',
+    resourcePath: 'LOCATION/NORTH/ELDERLY_CARE/UNIT_1/SOUTH_HOME',
+  },
+  southBlue: {
+    id: 'place-south-blue-id',
+    displayName: 'Blå',
+    resourcePath: 'LOCATION/NORTH/ELDERLY_CARE/UNIT_1/SOUTH_HOME/BLUE',
+  },
+  accessLex: { id: 'access-lex-id', resourcePath: 'ACCESS/LEX' },
+} as const;
+
+const northBlue = label(
+  iafPlaceFixture.northBlue.id,
+  'LOCATION',
+  'Blå',
+  'BLUE',
+  iafPlaceFixture.northBlue.resourcePath
+);
+const northHome = label(
+  iafPlaceFixture.northHome.id,
+  'LOCATION',
+  'Norra hemmet',
+  'NORTH_HOME',
+  iafPlaceFixture.northHome.resourcePath,
+  [northBlue]
+);
+const southBlue = label(
+  iafPlaceFixture.southBlue.id,
+  'LOCATION',
+  'Blå',
+  'BLUE',
+  iafPlaceFixture.southBlue.resourcePath
+);
+const southHome = label(
+  iafPlaceFixture.southHome.id,
+  'LOCATION',
+  'Södra hemmet',
+  'SOUTH_HOME',
+  iafPlaceFixture.southHome.resourcePath,
+  [southBlue]
+);
+const placeUnit = label(iafPlaceFixture.unit.id, 'DEPARTMENT', 'Enhet 1', 'UNIT_1', iafPlaceFixture.unit.resourcePath, [
+  northHome,
+  southHome,
+]);
+const placeOperation = label(
+  iafPlaceFixture.operation.id,
+  'DEPARTMENT',
+  'Äldreomsorg',
+  'ELDERLY_CARE',
+  iafPlaceFixture.operation.resourcePath,
+  [placeUnit]
+);
+const placeArea = label(
+  iafPlaceFixture.area.id,
+  'DEPARTMENT',
+  'Norra området',
+  'NORTH',
+  iafPlaceFixture.area.resourcePath,
+  [placeOperation]
+);
+const placeRoot = label(
+  iafPlaceFixture.root.id,
+  'LOCATION_ROOT',
+  'Platsstruktur',
+  'platsstruktur',
+  iafPlaceFixture.root.resourcePath,
+  [placeArea]
+);
+const accessLex = label(iafPlaceFixture.accessLex.id, 'ACCESS', 'LEX', 'LEX', iafPlaceFixture.accessLex.resourcePath);
+const accessRoot = label('access-root-id', 'ACCESS_ROOT', 'Åtkomst', 'ACCESS', 'ACCESS', [accessLex]);
+
+/** The chain an errand at Norra hemmet / Blå carries: every level below the top node, one label each. */
+const northBlueChain = [placeArea, placeOperation, placeUnit, northHome, northBlue];
+
 const metadata = {
   categories: [],
   types: [],
@@ -465,13 +641,22 @@ const metadata = {
 
 const withoutChildren = ({ labels: _labels, ...selectedLabel }: MockLabel): MockLabel => selectedLabel;
 
+/**
+ * A deviation errand that Katla routed to Norra hemmet, with the place structure in the metadata.
+ * The default fixtures carry no place at all, which is what every spec not about places expects.
+ */
+export const withPlaceStructure = ({ withLex = false } = {}): Pick<IafApiScenario, 'labels' | 'labelStructure'> => ({
+  labelStructure: [...labelStructure, placeRoot, accessRoot],
+  labels: [...deviationLabelsSource, ...northBlueChain, ...(withLex ? [accessLex] : [])].map(withoutChildren),
+});
+
 const withoutResourcePaths = (labels: readonly MockLabel[]): MockLabel[] =>
   labels.map(({ resourcePath: _resourcePath, labels: children, ...currentLabel }) => ({
     ...currentLabel,
     ...(children ? { labels: withoutResourcePaths(children) } : {}),
   }));
 
-const deviationLabels = [provisionHsl, reportDeviation, hslOwner, rehab, missedAssessment].map(withoutChildren);
+const deviationLabels = deviationLabelsSource.map(withoutChildren);
 const misconductLabels = [
   provisionSol,
   provisionLss,
@@ -501,6 +686,7 @@ const collectLabels = (labels: readonly MockLabel[]) => {
   });
 };
 collectLabels(labelStructure);
+collectLabels([placeRoot, accessRoot]);
 
 const katlaParameter = {
   key: `katla-${applicationSlug}-report`,
@@ -662,6 +848,8 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
   let errandStatus = scenario.errandStatus ?? 'ONGOING';
   let errandAssignedUserId =
     scenario.assignedUserId === null ? undefined : scenario.assignedUserId ?? `${applicationSlug}.test`;
+  let activePhaseName = scenario.activePhaseName;
+  const scenarioPhases = scenario.metadataPhases ?? (activePhaseName ? workflowPhases : undefined);
   const trace: IafApiTrace = {
     profileGets: 0,
     exactSchemaIds: [],
@@ -672,6 +860,25 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     errandPatches: [],
     writes: [],
     reports: [],
+    phasePatches: [],
+    handovers: [],
+    locationManagerGets: [],
+  };
+
+  // Support Management reports the phase an errand is in as the one entry of its history that has
+  // started but not ended; `activePhaseId` itself never comes back on a read.
+  const phaseHistory = () => {
+    if (!activePhaseName) return {};
+    const activeIndex = workflowPhases.findIndex(({ name }) => name === activePhaseName);
+    return {
+      phases: workflowPhases.slice(0, activeIndex + 1).map((phase, index) => ({
+        phaseId: phase.id,
+        name: phase.name,
+        displayName: phase.displayName,
+        started: `2026-08-0${index + 1}T10:00:00.000+02:00`,
+        ...(index < activeIndex ? { ended: `2026-08-0${index + 2}T10:00:00.000+02:00` } : {}),
+      })),
+    };
   };
 
   const buildErrand = () => ({
@@ -697,6 +904,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
       : {}),
     classification: structuredClone(errandClassification),
     labels: structuredClone(errandLabels),
+    ...phaseHistory(),
     actions: [],
     parameters: [{ key: 'eventType', displayName: 'Rapporttyp', values: [eventType] }],
     stakeholders: [
@@ -792,13 +1000,32 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     if (method === 'GET' && path.endsWith(`/supportmetadata/${municipalityId}`)) {
       await fulfillJson(route, {
         ...metadata,
-        ...(scenario.metadataPhases ? { phases: scenario.metadataPhases } : {}),
+        ...(scenarioPhases ? { phases: scenarioPhases } : {}),
         labels: {
           labelStructure:
             scenario.labelStructure ??
             (scenario.omitLabelResourcePaths ? withoutResourcePaths(labelStructure) : labelStructure),
         },
       });
+      return;
+    }
+
+    if (method === 'PATCH' && path.endsWith(`/supporterrands/${municipalityId}/${errandId}/phase`)) {
+      const body = requestBody(request) as { transitionId?: string; expectedVersion?: number } | undefined;
+      trace.phasePatches.push({ transitionId: body?.transitionId, expectedVersion: body?.expectedVersion });
+      if (body?.expectedVersion !== errandVersion) {
+        await fulfillJson(route, { message: 'Support errand phase has changed since it was loaded' }, 409);
+        return;
+      }
+      const activePhase = workflowPhases.find(({ name }) => name === activePhaseName);
+      const transition = activePhase?.transitions.find(({ id }) => id === body?.transitionId);
+      if (!transition) {
+        await fulfillJson(route, { message: 'Unknown phase transition' }, 400);
+        return;
+      }
+      activePhaseName = transition.targetPhaseName;
+      errandVersion += 1;
+      await fulfillJson(route, buildErrand());
       return;
     }
 
@@ -869,6 +1096,82 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
       if (body?.status) errandStatus = body.status;
       errandVersion += 1;
       await fulfillJson(route, buildErrand());
+      return;
+    }
+
+    const locationManagersMatch = path.match(
+      new RegExp(`/supporterrands/${municipalityId}/${errandId}/location-managers/([^/]+)$`, 'u')
+    );
+    if (method === 'GET' && locationManagersMatch) {
+      const labelId = decodeURIComponent(locationManagersMatch[1]);
+      trace.locationManagerGets.push(labelId);
+      const place = allLabelsById.get(labelId);
+      if (!place) {
+        await fulfillJson(route, { message: 'The selected place does not exist in Support Management metadata' }, 400);
+        return;
+      }
+      await fulfillJson(route, {
+        candidates: scenario.locationManagers?.[labelId] ?? [],
+        roles: [
+          { key: 'UNIT_MANAGER', label: 'Enhetschef' },
+          { key: 'HEAD_OF_OPERATION', label: 'Verksamhetschef' },
+        ],
+        locationResourcePath: place.resourcePath,
+        locationDisplayName: place.displayName,
+      });
+      return;
+    }
+
+    const handoverMatch = path.match(
+      new RegExp(`/supporterrands/${municipalityId}/${errandId}/investigation-handover/([^/]+)$`, 'u')
+    );
+    if (method === 'POST' && handoverMatch) {
+      const step = decodeURIComponent(handoverMatch[1]);
+      const body = (requestBody(request) ?? {}) as {
+        expectedVersion?: number;
+        assignedUserId?: string;
+        locationLabelId?: string;
+      };
+      trace.handovers.push({ step, ...body });
+      if (scenario.handoverResult === 'conflict' || body.expectedVersion !== errandVersion) {
+        await fulfillJson(route, { message: 'If-Match does not match the current support errand version' }, 412);
+        return;
+      }
+      if (step === 'move-location') {
+        // The BFF's rule, mirrored: every label under the place structure goes, the target's whole
+        // chain comes, everything else stays. The JSON parameters are never touched.
+        const target = body.locationLabelId ? allLabelsById.get(body.locationLabelId) : undefined;
+        if (!target) {
+          await fulfillJson(
+            route,
+            { message: 'The selected place does not exist in Support Management metadata' },
+            400
+          );
+          return;
+        }
+        const placeIds = new Set<string>();
+        const collectIds = (nodes: readonly MockLabel[]) =>
+          nodes.forEach((node) => {
+            placeIds.add(node.id);
+            if (node.labels) collectIds(node.labels);
+          });
+        collectIds(placeRoot.labels ?? []);
+        const chain: MockLabel[] = [];
+        const findChain = (nodes: readonly MockLabel[], ancestors: MockLabel[]): boolean =>
+          nodes.some((node) => {
+            const path = [...ancestors, node];
+            if (node.id === target.id) {
+              chain.push(...path);
+              return true;
+            }
+            return node.labels ? findChain(node.labels, path) : false;
+          });
+        findChain(placeRoot.labels ?? [], []);
+        errandLabels = [...errandLabels.filter(({ id }) => !placeIds.has(id)), ...chain.map(withoutChildren)];
+      }
+      if (body.assignedUserId) errandAssignedUserId = body.assignedUserId;
+      errandVersion += 1;
+      await route.fulfill({ status: 204 });
       return;
     }
 

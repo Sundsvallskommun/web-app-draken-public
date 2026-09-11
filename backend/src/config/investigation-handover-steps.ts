@@ -12,7 +12,7 @@ import {
  * combination the business process does not have - such as taking the LEX label off without giving
  * the errand back to somebody who can still see it.
  */
-export const INVESTIGATION_HANDOVER_STEPS = ['assign-lex', 'return-to-manager'] as const;
+export const INVESTIGATION_HANDOVER_STEPS = ['assign-lex', 'return-to-manager', 'move-location'] as const;
 
 export type InvestigationHandoverStep = (typeof INVESTIGATION_HANDOVER_STEPS)[number];
 
@@ -36,8 +36,12 @@ export interface InvestigationHandoverStepDefinition {
    * where their access to the place is configured.
    */
   readonly assigneeRoleKey?: string;
-  /** How the assignee is decided: picked by the caller, or resolved from the errand's location. */
-  readonly assigneeSource: 'request' | 'location';
+  /**
+   * How the assignee is decided: picked by the caller, resolved from the errand's current location,
+   * or picked from the managers of a target place the caller names (`locationLabelId`). The last
+   * also rewrites the errand's location labels to that place's path.
+   */
+  readonly assigneeSource: 'request' | 'location' | 'target-location';
   readonly addLabelResourcePaths: readonly string[];
   readonly removeLabelResourcePaths: readonly string[];
   /**
@@ -79,6 +83,20 @@ const definitions: Readonly<Record<InvestigationHandoverStep, InvestigationHando
     assigneeSource: 'location',
     addLabelResourcePaths: Object.freeze([]),
     removeLabelResourcePaths: Object.freeze([INVESTIGATION_ACCESS_LEX_LABEL]),
+  }),
+  // The errand reached the wrong unit. Katla records the place twice - as the reporter's own words
+  // in the incoming JSON parameter, and as the LOCATION label chain AccessMapper matches on - and
+  // only the labels move. The JSON parameter is the record of what was reported and stays exactly
+  // as it arrived; the labels are what decide who reaches the errand, so they are what a wrong
+  // routing has to change. The assignee is picked from the managers of the *target* place, because
+  // the mover is writing the errand out of their own reach and somebody at the other end has to be
+  // able to see it. The location labels are computed from the target rather than listed here.
+  'move-location': Object.freeze({
+    step: 'move-location',
+    authorizingSchemaName: 'utredning-enhetschef',
+    assigneeSource: 'target-location',
+    addLabelResourcePaths: Object.freeze([]),
+    removeLabelResourcePaths: Object.freeze([]),
   }),
 });
 

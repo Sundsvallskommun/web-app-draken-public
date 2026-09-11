@@ -50,8 +50,11 @@ wrongly enables both then degrades to today's behaviour rather than to a placeho
   avvikelse's own groups) and the classification PATCH
   (`supporterrands/{municipalityId}/{errandId}/classification`, the atomic write used only when the
   investigation owns classification) must never be reached by another drake. The same holds for the
-  handover routes (`.../investigation-handover/{step}` and `.../unit-manager`), which write the
-  `access/*` labels that move an errand between the unit manager and the LEX roles.
+  handover routes (`.../investigation-handover/{step}`, `.../unit-manager` and
+  `.../location-managers/{labelId}`), which write the `access/*` labels that move an errand between
+  the unit manager and the LEX roles, and the `LOCATION` label chain that moves a wrongly routed
+  errand to the unit it concerns. A wrong routing is corrected in the labels only; the incoming
+  JSON parameter stays the record of what was reported.
 - **Handler roles are data, not a drake.** `HANDLER_GROUP_ROLES` makes `/users/admins` return a role
   per account, and the shared `Ansvarig` selector groups by those roles. A deployment that configures
   none gets the flat list it always had — that is what lets the grouping live in shared code at all.

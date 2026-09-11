@@ -27,6 +27,17 @@ export const getAvailablePhaseTransitions = (
 };
 
 /**
+ * The workflow phase whose entry Draken guards: moving an errand into it while no measure has been
+ * registered is asked about first. Phase names are the technical keys of Support Management's phase
+ * metadata (`INVESTIGATION`, `DECISION`, ...), so this is an exact match on `name`; the display name
+ * is free text and is never matched. A namespace whose workflow has no phase of this name simply
+ * never triggers the guard.
+ */
+export const DECISION_PHASE_NAME = 'DECISION';
+
+export const isDecisionPhase = (phase: Pick<Phase, 'name'> | undefined): boolean => phase?.name === DECISION_PHASE_NAME;
+
+/**
  * The phase an errand is currently in.
  *
  * `activePhaseId` is write-only in Support Management: it is how a phase is *set*, and it never

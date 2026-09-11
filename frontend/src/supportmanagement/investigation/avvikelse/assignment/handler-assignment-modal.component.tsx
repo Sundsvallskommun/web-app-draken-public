@@ -1,18 +1,14 @@
-import { Alert, Button, FormControl, Modal, Select, Spinner } from '@sk-web-gui/react';
+import { Alert, Button, Modal, Spinner } from '@sk-web-gui/react';
 import { FC, useMemo, useState } from 'react';
 
-export interface AssignableCandidate {
-  adAccount: string;
-  displayName: string;
-  /** Which group heading the candidate belongs under. Absent for a picker without groups. */
-  roleKey?: string;
-}
+import {
+  type AssignableCandidate,
+  type AssignableRole,
+  HandlerCandidateSelect,
+  sortCandidates,
+} from './handler-candidate-select.component';
 
-/** One group heading, in display order. An empty list renders the candidates as one flat list. */
-export interface AssignableRole {
-  key: string;
-  label: string;
-}
+export type { AssignableCandidate, AssignableRole } from './handler-candidate-select.component';
 
 interface HandlerAssignmentModalProps {
   show: boolean;
@@ -60,22 +56,7 @@ export const HandlerAssignmentModal: FC<HandlerAssignmentModalProps> = ({
   onAssign,
   onClose,
 }) => {
-  const sortedCandidates = useMemo(
-    () => [...(candidates ?? [])].sort((first, second) => first.displayName.localeCompare(second.displayName, 'sv')),
-    [candidates]
-  );
-  // Grouped exactly like the handler list in the sidebar: a heading per role, in the order the
-  // backend sent them, and roles nobody holds are left out rather than shown empty.
-  const groups = useMemo(
-    () =>
-      (roles ?? [])
-        .map((role) => ({
-          ...role,
-          members: sortedCandidates.filter((candidate) => candidate.roleKey === role.key),
-        }))
-        .filter((group) => group.members.length > 0),
-    [roles, sortedCandidates]
-  );
+  const sortedCandidates = useMemo(() => sortCandidates(candidates), [candidates]);
   // A list of one is an answer rather than a question, so the first candidate stands as the
   // selection until somebody picks another. Deriving it means no effect has to keep a piece of
   // state in step with a list that arrives later.
@@ -124,34 +105,16 @@ export const HandlerAssignmentModal: FC<HandlerAssignmentModalProps> = ({
         )}
 
         {sortedCandidates.length > 0 && (
-          <FormControl id="handler-assignment" className="w-full">
-            {/* No visible label: the description above already says what is being chosen, and the
-                group headings name the roles. It stays as the accessible name for the select. */}
-            <Select
-              className="w-full"
-              size="sm"
-              data-cy="handler-assignment-input"
-              aria-label={selectLabel}
-              value={selected}
-              onChange={(event) => setChosen(event.currentTarget.value)}
-            >
-              {groups.length > 0
-                ? groups.map((group) => (
-                    <Select.Optgroup key={group.key} label={group.label}>
-                      {group.members.map((candidate) => (
-                        <Select.Option key={`${group.key}-${candidate.adAccount}`} value={candidate.adAccount}>
-                          {candidate.displayName}
-                        </Select.Option>
-                      ))}
-                    </Select.Optgroup>
-                  ))
-                : sortedCandidates.map((candidate) => (
-                    <Select.Option key={candidate.adAccount} value={candidate.adAccount}>
-                      {candidate.displayName}
-                    </Select.Option>
-                  ))}
-            </Select>
-          </FormControl>
+          // No visible label: the description above already says what is being chosen, and the
+          // group headings name the roles. It stays as the accessible name for the select.
+          <HandlerCandidateSelect
+            id="handler-assignment"
+            selectLabel={selectLabel}
+            candidates={sortedCandidates}
+            roles={roles}
+            value={selected}
+            onChange={setChosen}
+          />
         )}
 
         {error && (

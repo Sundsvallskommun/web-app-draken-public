@@ -7,6 +7,7 @@ import {
   getAvailablePhaseTransitions,
   getSupportPhases,
   hasReachedSupportPhase,
+  isDecisionPhase,
   isInitialSupportPhase,
   isStatusAllowedInPhase,
   resolveStartProcessPhaseAdvance,
@@ -198,4 +199,13 @@ test('a deprecated phase still orders the errand it holds', () => {
 // ordered against it, and a tab is not taken away over metadata that has moved on.
 test('a phase missing from the model does not lock the errand out', () => {
   assert.equal(hasReachedSupportPhase('Utredning', inPhase('phase-nobody-configured')), true);
+});
+
+test('recognises the decision phase by its technical name only', () => {
+  assert.equal(isDecisionPhase({ name: 'DECISION' }), true);
+  // The display name is free text and never matched; only the key is.
+  assert.equal(isDecisionPhase({ name: 'BESLUT' }), false);
+  assert.equal(isDecisionPhase({ name: 'INVESTIGATION' }), false);
+  assert.equal(isDecisionPhase({ name: 'decision' }), false);
+  assert.equal(isDecisionPhase(undefined), false);
 });

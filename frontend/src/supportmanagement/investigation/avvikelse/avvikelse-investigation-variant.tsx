@@ -49,8 +49,8 @@ const AvvikelseCategorizationControl = dynamic(
  * keeps the tabs from being reachable before the errand is there - a namespace whose phase model
  * does not use these names simply runs ungated, as it did before the phases existed.
  */
-const INVESTIGATION_PHASE_NAME = 'Utredning';
-const DECISION_PHASE_NAME = 'Beslut';
+const INVESTIGATION_PHASE_NAME = 'INVESTIGATION';
+const DECISION_PHASE_NAME = 'DECISION';
 
 /**
  * The avvikelse utredning: the Utredning tab and its documents, the avvikelse label tree, and
