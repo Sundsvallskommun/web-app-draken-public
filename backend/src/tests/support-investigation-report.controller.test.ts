@@ -2,6 +2,7 @@ import { Response } from 'express';
 
 import { createSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import { SupportInvestigationReportController } from '@/controllers/supportmanagement/support-investigation-report.controller';
+import { HttpException } from '@/exceptions/HttpException';
 import ApiService from '@/services/api.service';
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
@@ -90,6 +91,7 @@ describe('SupportInvestigationReportController', () => {
     expect(apiService.post).toHaveBeenCalledTimes(2);
     const [renderCall, attachCall] = apiService.post.mock.calls.map(([config]) => config);
     expect(renderCall.url).toBe(`templating/2.0/${mockMunicipalityId}/render/direct/pdf`);
+    expect(renderCall.propagateClientError).toBe(true);
     expect(renderCall.data.parameters.report).toMatchObject({
       title: 'Utredning HSL',
       sequence: 2,
@@ -148,6 +150,18 @@ describe('SupportInvestigationReportController', () => {
       message: 'Mark the investigation as completed before generating a report',
     });
     expect(apiService.post).not.toHaveBeenCalled();
+    expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
+  });
+
+  it.each([true, false])('reports a Templating subscription denial without writing anything (preview: %s)', async preview => {
+    const { controller, documentService, apiService } = makeController({ completed: 'yes' });
+    apiService.post.mockRejectedValueOnce(new HttpException(403, 'API Subscription validation failed.'));
+
+    await expect(controller.createReport(mockReq(), mockMunicipalityId, mockSupportErrandId, KEY, { preview }, resDouble())).rejects.toMatchObject({
+      status: 502,
+      message: 'Rapporttjänsten nekade applikationens åtkomst. Kontakta support.',
+    });
+    expect(apiService.post).toHaveBeenCalledTimes(1);
     expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
   });
 

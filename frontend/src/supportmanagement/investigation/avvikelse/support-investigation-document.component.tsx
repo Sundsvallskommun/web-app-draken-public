@@ -14,6 +14,7 @@ import {
 } from '@supportmanagement/investigation/avvikelse/label-classification';
 import { getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { isAxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
@@ -472,7 +473,14 @@ export function SupportInvestigationDocument({
       setNotice({ type: 'warning', message: `Support Management nekade åtkomst till det här ${wording.kind}.` });
       return;
     }
-    setNotice({ type: 'error', message: error instanceof Error && error.message ? error.message : fallback });
+    const serverMessage = isAxiosError<{ message?: unknown }>(error) ? error.response?.data?.message : undefined;
+    const message =
+      typeof serverMessage === 'string' && serverMessage.trim()
+        ? serverMessage
+        : !isAxiosError(error) && error instanceof Error && error.message
+        ? error.message
+        : fallback;
+    setNotice({ type: 'error', message });
   };
 
   const unlockDocument = async () => {

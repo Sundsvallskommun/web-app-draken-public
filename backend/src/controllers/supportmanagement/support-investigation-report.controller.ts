@@ -173,10 +173,23 @@ export class SupportInvestigationReportController {
       content: Buffer.from(renderInvestigationReportTemplate(), 'utf8').toString('base64'),
       parameters: { report },
     };
-    const rendered = await this.apiService.post<RenderResponse, DirectRenderRequest>(
-      { url: `${this.templatingService}/${encodeURIComponent(municipalityId)}/render/direct/pdf`, data: renderRequest },
-      req.user,
-    );
+    const rendered = await this.apiService
+      .post<RenderResponse, DirectRenderRequest>(
+        {
+          url: `${this.templatingService}/${encodeURIComponent(municipalityId)}/render/direct/pdf`,
+          data: renderRequest,
+          propagateClientError: true,
+        },
+        req.user,
+      )
+      .catch((error: unknown) => {
+        // Templating authenticates the application. Its denial is not a denial of the
+        // handler's document access and must not trigger an access refresh in the UI.
+        if (isRecord(error) && (error.status === 401 || error.status === 403)) {
+          throw new HttpException(502, 'Rapporttjänsten nekade applikationens åtkomst. Kontakta support.');
+        }
+        throw error;
+      });
     const output = rendered.data?.output;
     if (typeof output !== 'string' || output.length === 0) {
       throw new HttpException(502, 'Templating returned no PDF for the investigation report');

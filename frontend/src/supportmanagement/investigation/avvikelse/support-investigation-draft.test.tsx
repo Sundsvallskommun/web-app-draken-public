@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { act, createElement, useCallback, useState } from 'react';
+import { AxiosError, AxiosHeaders } from 'axios';
+import { act, createElement, Fragment, type ReactNode, useCallback, useState } from 'react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import WarnIfUnsavedChanges from '../../../common/utils/warnIfUnsavedChanges';
@@ -14,6 +15,9 @@ import { SupportErrandInvestigationTab } from './support-errand-investigation-ta
 
 const mocks = vi.hoisted(() => ({
   read: vi.fn(),
+  preview: vi.fn(),
+  generate: vi.fn(),
+  completion: vi.fn<() => { field: string; reportsField: string } | undefined>(),
   refresh: vi.fn(),
   router: { push: vi.fn(), replace: vi.fn() },
 }));
@@ -44,18 +48,25 @@ vi.mock('@common/components/json/schema/schema-form.component', () => ({
     onChange,
     readonly,
     idPrefix,
+    externalFields,
   }: {
     formData: InvestigationFormData;
     onChange: (data: InvestigationFormData) => void;
     readonly: boolean;
     idPrefix: string;
+    externalFields?: Readonly<Record<string, ReactNode>>;
   }) =>
-    createElement('textarea', {
-      'aria-label': idPrefix,
-      value: String(formData.answer ?? ''),
-      readOnly: readonly,
-      onChange: (event: { target: { value: string } }) => onChange({ ...formData, answer: event.target.value }),
-    }),
+    createElement(
+      Fragment,
+      null,
+      createElement('textarea', {
+        'aria-label': idPrefix,
+        value: String(formData.answer ?? ''),
+        readOnly: readonly,
+        onChange: (event: { target: { value: string } }) => onChange({ ...formData, answer: event.target.value }),
+      }),
+      externalFields?.investigationReport
+    ),
 }));
 vi.mock('@common/components/json/utils/schema-utils', () => ({
   getRjsfSchema: async () => ({ type: 'object' }),
@@ -80,7 +91,7 @@ vi.mock('./investigation-classification', () => ({
 vi.mock('./investigation-form-data', () => ({
   getInvestigationRenderingSchema: (_name: string, schema: unknown) => schema,
   getInvestigationServerTimestamps: () => [],
-  getInvestigationCompletion: () => undefined,
+  getInvestigationCompletion: mocks.completion,
   getInvestigationReports: () => [],
   getHslRiskValue: () => undefined,
   investigationDefaultFormStateBehavior: {},
@@ -98,6 +109,8 @@ vi.mock('./support-investigation-service', () => ({
   isSupportInvestigationAccessDenied: () => false,
   isSupportInvestigationConflict: () => false,
   saveSupportInvestigationDocument: vi.fn(),
+  createSupportInvestigationReport: mocks.generate,
+  previewSupportInvestigationReport: mocks.preview,
 }));
 
 const grants = (
@@ -128,6 +141,10 @@ function Harness({ access }: { access: InvestigationAccessState }) {
 }
 
 beforeEach(() => {
+  HTMLElement.prototype.scrollIntoView = vi.fn();
+  mocks.completion.mockReset();
+  mocks.preview.mockReset();
+  mocks.generate.mockReset();
   mocks.read.mockReset().mockImplementation(async (_municipality: string, _errand: string, key: string) => ({
     document: { key, schemaId: 'schema', value: { answer: `Saved ${key}` } },
     etag: '"1"',
@@ -156,6 +173,30 @@ beforeEach(() => {
   });
 });
 afterEach(cleanup);
+
+test.each(['Skapa rapport', 'Förhandsgranska rapport'])('shows the report service error for %s', async (button) => {
+  mocks.completion.mockReturnValue({ field: 'completed', reportsField: 'reports' });
+  mocks.read.mockImplementation(async (_municipality: string, _errand: string, key: string) => ({
+    document: { key, schemaId: 'schema', value: { answer: `Saved ${key}`, completed: 'yes' } },
+    etag: '"1"',
+  }));
+  const message = 'Rapporttjänsten nekade applikationens åtkomst. Kontakta support.';
+  const error = new AxiosError('Request failed with status code 502', 'ERR_BAD_RESPONSE', undefined, undefined, {
+    status: 502,
+    statusText: 'Bad Gateway',
+    headers: new AxiosHeaders(),
+    config: { headers: new AxiosHeaders() },
+    data: { message },
+  });
+  mocks.preview.mockRejectedValue(error);
+  mocks.generate.mockRejectedValue(error);
+  render(createElement(Harness, { access: grants() }));
+  await screen.findByDisplayValue('Saved first');
+  fireEvent.click(screen.getAllByRole('button', { name: button })[0]);
+  expect(await screen.findByText(message)).toBeTruthy();
+  expect(mocks.refresh).not.toHaveBeenCalled();
+  expect(screen.queryByText('Request failed with status code 502')).toBeNull();
+});
 
 test('an access failure hides data, retains the draft and keeps the reload warning active', async () => {
   const { rerender } = render(createElement(Harness, { access: grants() }));
