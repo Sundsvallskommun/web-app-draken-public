@@ -818,7 +818,14 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(controls.locator('[data-cy="investigation-report-unlock"]')).toHaveCount(0);
     await expect(document.locator('[data-cy="investigation-document-locked"]')).toHaveCount(0);
 
+    await expect(controls.locator('[data-cy="investigation-report-completed-notice"]')).toHaveCount(0);
     await document.locator('#utredning-hsl_completed').getByRole('radio', { name: 'Ja', exact: true }).check();
+    // Answering Ja explains the next step at once, before the save that enables the report.
+    await expect(controls.locator('[data-cy="investigation-report-completed-notice"]')).toContainText(
+      'skapa en rapport och tilldela ärendet till LEX-ansvarig'
+    );
+    await expect(controls.locator('[data-cy="investigation-report-save-hint"]')).toBeVisible();
+    await expect(controls.locator('[data-cy="investigation-report-generate"]')).toBeDisabled();
     await document.getByRole('button', { name: 'Spara utredning', exact: true }).click();
     await expect.poll(() => trace.puts.length).toBe(1);
     // The form never sends the server-owned report log, whatever RJSF defaulted it to.

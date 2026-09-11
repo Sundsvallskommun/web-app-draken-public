@@ -841,6 +841,7 @@ export function SupportInvestigationDocument({
                 investigationReport: (
                   <InvestigationReportControls
                     documentKey={definition.key}
+                    completedInDraft={completion !== undefined && documentState.formData[completion.field] === 'yes'}
                     locked={locked}
                     dirty={isDirty || classificationDirty}
                     busy={isReporting || isSaving}

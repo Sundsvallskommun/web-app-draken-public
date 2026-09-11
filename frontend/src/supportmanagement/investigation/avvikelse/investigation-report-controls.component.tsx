@@ -1,12 +1,15 @@
 'use client';
 
-import { Button } from '@sk-web-gui/react';
+import { Alert, Button } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
+import { Eye, FileText } from 'lucide-react';
 
 import type { InvestigationReport } from './investigation-form-data';
 
 interface InvestigationReportControlsProps {
   readonly documentKey: string;
+  /** The form currently answers Ja to the completion question, saved or not. */
+  readonly completedInDraft: boolean;
   /** The stored document is marked completed, so it is locked and may be reported. */
   readonly locked: boolean;
   readonly dirty: boolean;
@@ -25,6 +28,7 @@ interface InvestigationReportControlsProps {
  */
 export function InvestigationReportControls({
   documentKey,
+  completedInDraft,
   locked,
   dirty,
   busy,
@@ -35,19 +39,33 @@ export function InvestigationReportControls({
   onUnlock,
 }: Readonly<InvestigationReportControlsProps>) {
   const canReport = locked && !dirty && !busy;
-  const guidance = !locked
-    ? 'Markera utredningen som klar och spara den för att kunna skapa en rapport. Rapporten läggs som en bilaga på ärendet.'
-    : dirty
-    ? 'Spara utredningen innan du skapar en rapport.'
-    : 'Utredningen är klar och låst. Rapporten skapas från den sparade utredningen och läggs som en bilaga på ärendet.';
 
   return (
     <div className="flex flex-col gap-16" data-cy={`investigation-report-${documentKey}`}>
-      <p className="text-small">{guidance}</p>
+      {completedInDraft && (
+        <Alert type="info" data-cy="investigation-report-completed-notice">
+          <Alert.Icon />
+          <Alert.Content>
+            <Alert.Content.Description>
+              När du är klar med din utredning, ska du skapa en rapport och tilldela ärendet till LEX-ansvarig.
+            </Alert.Content.Description>
+          </Alert.Content>
+        </Alert>
+      )}
+      <p className="text-small">
+        När du har färdigställt utredningen kan du skapa en rapport. Rapporten kommer att läggas till som en bilaga på
+        ärendet.
+      </p>
+      {completedInDraft && !canReport && !busy && (
+        <p className="text-small" data-cy="investigation-report-save-hint">
+          Spara utredningen först, så kan rapporten skapas.
+        </p>
+      )}
       <div className="flex flex-wrap items-center gap-12">
         <Button
           type="button"
           variant="primary"
+          leftIcon={<FileText />}
           disabled={!canReport || !canEdit}
           loading={busy}
           onClick={onGenerate}
@@ -57,7 +75,8 @@ export function InvestigationReportControls({
         </Button>
         <Button
           type="button"
-          variant="secondary"
+          variant="link"
+          leftIcon={<Eye />}
           disabled={!canReport}
           onClick={onPreview}
           data-cy="investigation-report-preview"
