@@ -16,15 +16,18 @@ interface InvestigationReportControlsProps {
   readonly busy: boolean;
   readonly canEdit: boolean;
   readonly reports: readonly InvestigationReport[];
-  readonly onGenerate: () => void;
+  /** Saves the form as completed if it is not already, then creates the report. */
+  readonly onGenerate: (form: HTMLFormElement | null) => void;
+  /** Renders the form as it currently is, without saving it. */
   readonly onPreview: () => void;
   readonly onUnlock: () => void;
 }
 
 /**
- * The report controls at the end of an investigation document. A report is generated from the
- * stored document, so the document has to be saved as completed first; once it is, it is locked
- * and the owner can unlock it to change it and generate another, numbered report.
+ * The report controls at the end of an investigation document. Answering Ja enables Skapa rapport,
+ * which saves the document as completed and creates the report in one go; the document is then
+ * locked, and the owner can unlock it to change it and generate another, numbered report. The
+ * preview renders the form as it is, saved or not.
  */
 export function InvestigationReportControls({
   documentKey,
@@ -38,7 +41,7 @@ export function InvestigationReportControls({
   onPreview,
   onUnlock,
 }: Readonly<InvestigationReportControlsProps>) {
-  const canReport = locked && !dirty && !busy;
+  const canGenerate = completedInDraft && canEdit && !busy;
 
   return (
     <div className="flex flex-col gap-16" data-cy={`investigation-report-${documentKey}`}>
@@ -56,19 +59,14 @@ export function InvestigationReportControls({
         När du har färdigställt utredningen kan du skapa en rapport. Rapporten kommer att läggas till som en bilaga på
         ärendet.
       </p>
-      {completedInDraft && !canReport && !busy && (
-        <p className="text-small" data-cy="investigation-report-save-hint">
-          Spara utredningen först, så kan rapporten skapas.
-        </p>
-      )}
       <div className="flex flex-wrap items-center gap-12">
         <Button
           type="button"
           variant="primary"
           leftIcon={<FileText />}
-          disabled={!canReport || !canEdit}
+          disabled={!canGenerate}
           loading={busy}
-          onClick={onGenerate}
+          onClick={(event) => onGenerate(event.currentTarget.form)}
           data-cy="investigation-report-generate"
         >
           Skapa rapport
@@ -77,7 +75,7 @@ export function InvestigationReportControls({
           type="button"
           variant="link"
           leftIcon={<Eye />}
-          disabled={!canReport}
+          disabled={busy}
           onClick={onPreview}
           data-cy="investigation-report-preview"
         >

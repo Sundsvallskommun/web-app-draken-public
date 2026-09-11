@@ -47,8 +47,8 @@ async function openInvestigation(page: Page) {
 test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
   for (const [key, tabName] of [
     [managerKey, 'Utredning enhetschef'],
-    [solLssKey, 'Utredning SoL/LSS'],
-    ['utredning-hsl', 'Utredning HSL'],
+    [solLssKey, 'Utredning Lex Sarah'],
+    ['utredning-hsl', 'Händelseanalys HSL'],
   ]) {
     test(`${tabName}: obesvarade val är tomma och alla sektioner öppna från start`, async ({
       page,
@@ -99,8 +99,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     for (const [key, tabName, field] of [
       [managerKey, 'Utredning enhetschef', 'suspectedMisconduct'],
-      [solLssKey, 'Utredning SoL/LSS', 'individualNotified'],
-      ['utredning-hsl', 'Utredning HSL', 'ivoNotification'],
+      [solLssKey, 'Utredning Lex Sarah', 'individualNotified'],
+      ['utredning-hsl', 'Händelseanalys HSL', 'ivoNotification'],
     ]) {
       await page.getByRole('tab', { name: tabName, exact: true }).click();
       const group = page.locator(`#${key}_${field}`);
@@ -174,8 +174,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     for (const [key, tabName] of [
       [managerKey, 'Utredning enhetschef'],
-      [solLssKey, 'Utredning SoL/LSS'],
-      ['utredning-hsl', 'Utredning HSL'],
+      [solLssKey, 'Utredning Lex Sarah'],
+      ['utredning-hsl', 'Händelseanalys HSL'],
     ] as const) {
       await page.getByRole('tab', { name: tabName, exact: true }).click();
 
@@ -224,7 +224,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(investigation.getByRole('tab')).toHaveCount(2);
     await expect(investigation.getByRole('tab').nth(0)).toHaveText('Först: SoL/LSS');
     await expect(investigation.getByRole('tab').nth(1)).toHaveText('Sedan: enhetschef');
-    await expect(investigation.getByRole('tab', { name: 'Utredning HSL', exact: true })).toHaveCount(0);
+    await expect(investigation.getByRole('tab', { name: 'Händelseanalys HSL', exact: true })).toHaveCount(0);
     await expect.poll(() => [...new Set(trace.documentGets)].sort()).toEqual([managerKey, solLssKey].sort());
   });
 
@@ -527,8 +527,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const investigation = page.locator('[data-cy="support-investigation-tab"]');
     await expect(investigation.getByRole('tab')).toHaveCount(3);
     await expect(investigation.getByRole('tab', { name: 'Utredning enhetschef', exact: true })).toBeVisible();
-    await expect(investigation.getByRole('tab', { name: 'Utredning SoL/LSS', exact: true })).toBeVisible();
-    await expect(investigation.getByRole('tab', { name: 'Utredning HSL', exact: true })).toBeVisible();
+    await expect(investigation.getByRole('tab', { name: 'Utredning Lex Sarah', exact: true })).toBeVisible();
+    await expect(investigation.getByRole('tab', { name: 'Händelseanalys HSL', exact: true })).toBeVisible();
 
     const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
     if (schemaDebugIsVisible) {
@@ -553,9 +553,9 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       'Enhetschefens samlade utredning.'
     );
 
-    await investigation.getByRole('tab', { name: 'Utredning SoL/LSS', exact: true }).click();
+    await investigation.getByRole('tab', { name: 'Utredning Lex Sarah', exact: true }).click();
     await expect(page.locator('[data-cy="investigation-document-utredning-sol-lss"]')).toBeVisible();
-    await investigation.getByRole('tab', { name: 'Utredning HSL', exact: true }).click();
+    await investigation.getByRole('tab', { name: 'Händelseanalys HSL', exact: true }).click();
     await expect(page.locator('[data-cy="investigation-document-utredning-hsl"]')).toBeVisible();
 
     await expect.poll(() => [...new Set(trace.documentGets)]).toEqual(investigationTabKeys);
@@ -580,8 +580,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const investigation = page.locator('[data-cy="support-investigation-tab"]');
     await expect(investigation.getByRole('tab')).toHaveCount(1);
     await expect(investigation.getByRole('tab', { name: 'Utredning enhetschef', exact: true })).toBeVisible();
-    await expect(investigation.getByRole('tab', { name: 'Utredning SoL/LSS', exact: true })).toHaveCount(0);
-    await expect(investigation.getByRole('tab', { name: 'Utredning HSL', exact: true })).toHaveCount(0);
+    await expect(investigation.getByRole('tab', { name: 'Utredning Lex Sarah', exact: true })).toHaveCount(0);
+    await expect(investigation.getByRole('tab', { name: 'Händelseanalys HSL', exact: true })).toHaveCount(0);
     await expect(page.locator('[data-cy="investigation-document-utredning-hsl"]')).toHaveCount(0);
   });
 
@@ -606,7 +606,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(managerDocument).toContainText('Utredningen kan läsas men inte ändras');
     await expect(managerDocument.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
 
-    await investigation.getByRole('tab', { name: 'Utredning HSL', exact: true }).click();
+    await investigation.getByRole('tab', { name: 'Händelseanalys HSL', exact: true }).click();
     const hslDocument = page.locator('[data-cy="investigation-document-utredning-hsl"]');
     await expect(hslDocument.locator('[data-cy="schema-submit-button"]')).toHaveCount(1);
   });
@@ -789,7 +789,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const document = page.locator(`[data-cy="investigation-document-${misconductDecisionKey}"]`);
     await expect(document).toBeVisible();
     await expect(document.locator('[data-cy="investigation-document-prerequisite"]')).toContainText(
-      'Beslutet kan fattas först när Utredning SoL/LSS har sparats i ärendet.'
+      'Beslutet kan fattas först när Utredning Lex Sarah har sparats i ärendet.'
     );
     await expect(document.locator('[data-cy="investigation-decision-proposal"]')).toHaveCount(0);
     await expect(document.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
@@ -806,7 +806,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await openInvestigation(page);
     await page
       .locator('[data-cy="support-investigation-tab"]')
-      .getByRole('tab', { name: 'Utredning HSL', exact: true })
+      .getByRole('tab', { name: 'Händelseanalys HSL', exact: true })
       .click();
     const document = page.locator('[data-cy="investigation-document-utredning-hsl"]');
     await expect(document).toBeVisible();
@@ -824,9 +824,9 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(controls.locator('[data-cy="investigation-report-completed-notice"]')).toContainText(
       'skapa en rapport och tilldela ärendet till LEX-ansvarig'
     );
-    await expect(controls.locator('[data-cy="investigation-report-save-hint"]')).toBeVisible();
-    await expect(controls.locator('[data-cy="investigation-report-generate"]')).toBeDisabled();
-    await document.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+    // One click saves the form as completed and creates the report.
+    await expect(controls.locator('[data-cy="investigation-report-generate"]')).toBeEnabled();
+    await controls.locator('[data-cy="investigation-report-generate"]').click();
     await expect.poll(() => trace.puts.length).toBe(1);
     // The form never sends the server-owned report log, whatever RJSF defaulted it to.
     expect(trace.puts[0].body).toEqual({
@@ -835,11 +835,9 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     });
     expect(trace.puts[0].body).not.toHaveProperty(['value', 'reports']);
 
-    // Saved as completed: locked, no save button, and the report can be generated.
+    // Saved as completed: locked, no save button, and the report followed the save.
     await expect(document.locator('[data-cy="investigation-document-locked"]')).toBeVisible();
     await expect(document.locator('[data-cy="schema-submit-button"]')).toHaveCount(0);
-    await expect(controls.locator('[data-cy="investigation-report-generate"]')).toBeEnabled();
-    await controls.locator('[data-cy="investigation-report-generate"]').click();
     await expect.poll(() => trace.reports.length).toBe(1);
     expect(trace.reports[0]).toEqual({ key: 'utredning-hsl', preview: false });
     await expect(document.locator('[data-cy="investigation-document-notice"]')).toContainText(
@@ -861,6 +859,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     );
     await expect(document.locator('[data-cy="investigation-document-locked"]')).toHaveCount(0);
     await expect(document.locator('[data-cy="schema-submit-button"]')).toHaveCount(1);
+    // Unlocked and answered Nej again: the report has to wait for a new Ja.
     await expect(controls.locator('[data-cy="investigation-report-generate"]')).toBeDisabled();
   });
 
@@ -1634,7 +1633,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(managerSol).toBeDisabled();
     await expect(managerDocument.locator(classificationFieldSelector)).toHaveCount(0);
 
-    await page.getByRole('tab', { name: 'Utredning SoL/LSS', exact: true }).click();
+    await page.getByRole('tab', { name: 'Utredning Lex Sarah', exact: true }).click();
     const solLssDocument = page.locator(`[data-cy="investigation-document-${solLssKey}"]`);
     const classificationField = solLssDocument.locator(classificationFieldSelector);
     await expect(classificationField).toBeVisible();
@@ -1683,7 +1682,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     await visitErrand(page, dismissCookieConsent);
     await openInvestigation(page);
-    await page.getByRole('tab', { name: 'Utredning SoL/LSS', exact: true }).click();
+    await page.getByRole('tab', { name: 'Utredning Lex Sarah', exact: true }).click();
 
     const solLssDocument = page.locator(`[data-cy="investigation-document-${solLssKey}"]`);
     const eventTypeCheckbox = solLssDocument.getByRole('checkbox', { name: 'Fysisk eller psykisk kränkning' });

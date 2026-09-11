@@ -180,6 +180,8 @@ export function SupportInvestigationDocument({
   const [notice, setNotice] = useState<{ type: 'error' | 'warning' | 'success'; message: string }>();
   const [isSaving, setIsSaving] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
+  // Skapa rapport on an unsaved form submits the form first; the report follows the save.
+  const reportAfterSave = useRef(false);
   const [validationErrors, setValidationErrors] = useState<SchemaFormError[]>([]);
   const classificationFieldId = `${definition.key}_external_errandClassification`;
   const [isDirty, setIsDirty] = useState(false);
@@ -537,8 +539,8 @@ export function SupportInvestigationDocument({
     }
   };
 
-  const generateReport = async () => {
-    if (!municipalityId || !errandId || !locked || isDirty || isReporting || isSaving) return;
+  const generateReportNow = async () => {
+    if (!municipalityId || !errandId || isReporting) return;
     setIsReporting(true);
     setNotice(undefined);
     try {
@@ -557,12 +559,35 @@ export function SupportInvestigationDocument({
     }
   };
 
+  /**
+   * One click: a locked document is reported at once; anything else is submitted through the form
+   * so it is validated and saved as completed first, and the report follows in `save`.
+   */
+  const generateReport = (form: HTMLFormElement | null) => {
+    if (isReporting || isSaving) return;
+    if (locked && !isDirty) {
+      void generateReportNow();
+      return;
+    }
+    reportAfterSave.current = true;
+    form?.requestSubmit();
+  };
+
   const previewReport = async () => {
-    if (!municipalityId || !errandId || !locked || isDirty || isReporting) return;
+    if (!municipalityId || !errandId || isReporting) return;
     setIsReporting(true);
     setNotice(undefined);
     try {
-      const preview = await previewSupportInvestigationReport(municipalityId, errandId, definition.key);
+      const preview = await previewSupportInvestigationReport(municipalityId, errandId, definition.key, {
+        schemaId: documentState.schemaId,
+        value: normalizeContextualInvestigationFormData(
+          definition.key,
+          definition.schemaName,
+          documentState.schema,
+          documentState.formData,
+          reportedMisconduct
+        ),
+      });
       openPdfInNewTab(preview.pdfBase64);
     } catch (error) {
       reportFailureNotice(error, 'Rapporten kunde inte förhandsgranskas. Försök igen.');
@@ -572,6 +597,8 @@ export function SupportInvestigationDocument({
   };
 
   const save = async (formData: InvestigationFormData, schemaErrors: RJSFValidationError[] = []) => {
+    const reportRequested = reportAfterSave.current;
+    reportAfterSave.current = false;
     if (!municipalityId || !errandId || !readable || formReadonly || isSaving) return;
 
     const normalizedData = normalizeContextualInvestigationFormData(
@@ -652,6 +679,7 @@ export function SupportInvestigationDocument({
         message: investigationSaveSuccessMessage(Boolean(savedDocument), Boolean(savedClassification), wording),
       });
 
+      if (reportRequested) await generateReportNow();
       promptLexAssignmentIfNeeded(normalizedData);
     } catch (error) {
       if (isSupportInvestigationAccessDenied(error)) refreshAccess();
@@ -847,7 +875,7 @@ export function SupportInvestigationDocument({
                     busy={isReporting || isSaving}
                     canEdit={!readonly && !prerequisiteMissing}
                     reports={reports}
-                    onGenerate={() => void generateReport()}
+                    onGenerate={generateReport}
                     onPreview={() => void previewReport()}
                     onUnlock={() => void unlockDocument()}
                   />

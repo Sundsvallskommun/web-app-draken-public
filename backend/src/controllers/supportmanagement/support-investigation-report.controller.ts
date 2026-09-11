@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsBoolean, IsObject, IsOptional, IsString, MinLength } from 'class-validator';
 import { Response } from 'express';
 import FormData from 'form-data';
 import { Body, Controller, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
@@ -18,7 +18,7 @@ import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { buildInvestigationReportModel, investigationReportFileName } from '@/services/investigation-report.service';
 import { renderInvestigationReportTemplate } from '@/services/investigation-report.template';
-import { isRecord, type JsonObject } from '@/services/schema-bound-json.service';
+import { isJsonObject, isRecord, type JsonObject } from '@/services/schema-bound-json.service';
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { isDocumentCompleted, readDocumentCompletion, SupportJsonParameterService } from '@/services/support-json-parameter.service';
@@ -28,6 +28,20 @@ export class CreateSupportInvestigationReportDto {
   @IsOptional()
   @IsBoolean()
   preview?: boolean;
+
+  /**
+   * Preview only: the form as the handler currently sees it, rendered instead of the stored
+   * document so a draft can be previewed before it is saved. Ignored for a real report, which is
+   * always made from what Support Management holds.
+   */
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  schemaId?: string;
+
+  @IsOptional()
+  @IsObject()
+  value?: JsonObject;
 }
 
 export interface SupportInvestigationReportEntry {
@@ -118,19 +132,25 @@ export class SupportInvestigationReportController {
     else await this.accessService.assertCanWriteDocument(req.user, municipalityId, errandId, definition.key);
 
     const request = { definition, municipalityId, errandId, user: req.user };
-    const stored = await this.documentService.readJsonParameter(request);
-    const schema = await this.documentService.readBoundSchema(request, stored.document.schemaId);
+    const draft =
+      preview && typeof body.schemaId === 'string' && isJsonObject(body.value) ? { schemaId: body.schemaId, value: body.value } : undefined;
+    // A draft may belong to a document that was never saved; a real report needs the stored one.
+    const stored = draft ? await this.readStoredDocumentIfAny(request) : await this.documentService.readJsonParameter(request);
+    if (!stored && !draft) throw new HttpException(404, 'Investigation document not found');
+    const schemaId = draft?.schemaId ?? stored?.document.schemaId ?? '';
+    const value = draft?.value ?? stored?.document.value ?? {};
+    const schema = await this.documentService.readBoundSchema(request, schemaId);
     const completion = readDocumentCompletion(schema);
     if (!completion) throw new HttpException(409, 'This investigation document cannot be reported');
-    if (!isDocumentCompleted(schema, stored.document.value)) {
+    if (!preview && !isDocumentCompleted(schema, value)) {
       throw new HttpException(409, 'Mark the investigation as completed before generating a report');
     }
 
     const [uiSchema, parent] = await Promise.all([
-      this.documentService.readUiSchema(request, stored.document.schemaId),
+      this.documentService.readUiSchema(request, schemaId),
       this.documentService.readParentErrandWithVersion(request),
     ]);
-    const existingReports = stored.document.value[completion.reportsField];
+    const existingReports = stored?.document.value[completion.reportsField];
     const reports: SupportInvestigationReportEntry[] = Array.isArray(existingReports) ? (existingReports as SupportInvestigationReportEntry[]) : [];
     const sequence = reports.length + 1;
     const generatedAt = this.clock().toISOString();
@@ -138,7 +158,7 @@ export class SupportInvestigationReportController {
     const model = buildInvestigationReportModel({
       schema,
       uiSchema,
-      value: stored.document.value,
+      value,
       errand: parent.errand,
       definition,
       sequence,
@@ -151,6 +171,7 @@ export class SupportInvestigationReportController {
       return response.status(200).send({ data: { fileName, pdfBase64 }, message: 'Investigation report rendered' });
     }
 
+    if (!stored) throw new HttpException(404, 'Investigation document not found');
     const attachmentId = await this.attachPdf(req, municipalityId, errandId, fileName, pdfBase64);
     const entry: SupportInvestigationReportEntry = { generatedAt, generatedBy: req.user.username, fileName, ...(attachmentId && { attachmentId }) };
     const written = await this.documentService.writeJsonParameter({
@@ -166,6 +187,15 @@ export class SupportInvestigationReportController {
       data: { document: written.document, report: entry },
       message: 'Investigation report attached',
     });
+  }
+
+  private async readStoredDocumentIfAny(request: Parameters<SupportJsonParameterService['readJsonParameter']>[0]) {
+    try {
+      return await this.documentService.readJsonParameter(request);
+    } catch (error) {
+      if (isRecord(error) && error.status === 404) return undefined;
+      throw error;
+    }
   }
 
   private async renderPdf(req: RequestWithUser, municipalityId: string, report: unknown): Promise<string> {

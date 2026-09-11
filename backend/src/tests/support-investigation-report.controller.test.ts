@@ -142,6 +142,46 @@ describe('SupportInvestigationReportController', () => {
     expect(res.send).toHaveBeenCalledWith(expect.objectContaining({ data: { fileName: 'Utredning HSL_1.pdf', pdfBase64: 'UERG' } }));
   });
 
+  it('previews a draft in place of the stored document, even one that was never saved', async () => {
+    const { controller, documentService, apiService } = makeController({ completed: 'no', assignment: 'Stored' });
+    documentService.readJsonParameter.mockRejectedValueOnce({ status: 404, message: 'Not found' });
+    const res = resDouble();
+
+    await controller.createReport(
+      mockReq(),
+      mockMunicipalityId,
+      mockSupportErrandId,
+      KEY,
+      { preview: true, schemaId: schema.id, value: { assignment: 'Draft', completed: 'no' } },
+      res,
+    );
+
+    expect(apiService.post).toHaveBeenCalledTimes(1);
+    const [renderCall] = apiService.post.mock.calls.map(([config]) => config);
+    expect(renderCall.data.parameters.report).toMatchObject({
+      sequence: 1,
+      sections: [{ title: 'Uppdrag', fields: [{ label: 'Uppdrag', kind: 'text', text: 'Draft' }] }],
+    });
+    expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  it('makes a real report from the stored document only, whatever draft the client sends', async () => {
+    const { controller, apiService } = makeController({ completed: 'yes', assignment: 'Stored' });
+
+    await controller.createReport(
+      mockReq(),
+      mockMunicipalityId,
+      mockSupportErrandId,
+      KEY,
+      { schemaId: schema.id, value: { assignment: 'Draft', completed: 'yes' } },
+      resDouble(),
+    );
+
+    const [renderCall] = apiService.post.mock.calls.map(([config]) => config);
+    expect(renderCall.data.parameters.report.sections[0].fields[0]).toEqual({ label: 'Uppdrag', kind: 'text', text: 'Stored' });
+  });
+
   it('refuses a report for a document that is not marked completed', async () => {
     const { controller, documentService, apiService } = makeController({ completed: 'no' });
 

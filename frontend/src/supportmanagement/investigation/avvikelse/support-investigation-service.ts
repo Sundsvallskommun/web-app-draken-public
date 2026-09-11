@@ -152,15 +152,21 @@ export async function createSupportInvestigationReport(
   };
 }
 
-/** Renders the report without attaching or recording it. */
+export interface SupportInvestigationReportDraft {
+  readonly schemaId: string;
+  readonly value: InvestigationFormData;
+}
+
+/** Renders the form as it currently is, saved or not, without attaching or recording anything. */
 export async function previewSupportInvestigationReport(
   municipalityId: string,
   errandId: string,
-  key: InvestigationDocumentKey
+  key: InvestigationDocumentKey,
+  draft: SupportInvestigationReportDraft
 ): Promise<{ fileName: string; pdfBase64: string }> {
-  const response = await apiService.post<ReportResponseBody, { preview: true }>(
+  const response = await apiService.post<ReportResponseBody, { preview: true } & SupportInvestigationReportDraft>(
     `${documentUrl(municipalityId, errandId, key)}/reports`,
-    { preview: true }
+    { preview: true, ...draft }
   );
   const fileName = response.data.data?.fileName;
   const pdfBase64 = response.data.data?.pdfBase64;
