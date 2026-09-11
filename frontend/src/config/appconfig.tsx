@@ -27,6 +27,8 @@ interface AppConfigFeatures {
   useSmsContactChannel: boolean;
   useStakeholderRelations: boolean;
   useRolesForStakeholders: boolean;
+  useCompanyInformation: boolean;
+  useSingleErrandTypeLabel: boolean;
   useDetailsTab: boolean;
   useInvestigationTab: boolean;
   useDecisionTab: boolean;
@@ -80,6 +82,8 @@ export const appConfig: AppConfig = {
     useSmsContactChannel: envBool(process.env.NEXT_PUBLIC_USE_SMS_CONTACT_CHANNEL),
     useStakeholderRelations: envBool(process.env.NEXT_PUBLIC_USE_STAKEHOLDER_RELATIONS),
     useRolesForStakeholders: envBool(process.env.NEXT_PUBLIC_USE_ROLES_FOR_STAKEHOLDERS),
+    useCompanyInformation: envBool(process.env.NEXT_PUBLIC_USE_COMPANY_INFORMATION),
+    useSingleErrandTypeLabel: envBool(process.env.NEXT_PUBLIC_USE_SINGLE_ERRAND_TYPE_LABEL),
     useDetailsTab: envBool(process.env.NEXT_PUBLIC_USE_DETAILS_TAB),
     useInvestigationTab: envBool(process.env.NEXT_PUBLIC_USE_INVESTIGATION_TAB),
     useDecisionTab: envBool(process.env.NEXT_PUBLIC_USE_DECISION_TAB),

@@ -1,13 +1,28 @@
 import { JsonParametersDisplay } from '@common/components/json/schema/json-parameters-display.component';
+import { useCompanyEngagements } from '@common/hooks/use-company-engagements';
+import { appConfig } from '@config/appconfig';
 import { Table } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
 import { useMemo } from 'react';
 
+import { SupportErrandCompanyEngagements } from './support-errand-company-engagements.component';
+
 export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const _supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = _supportErrand!;
+
+  const showsJsonParameters = (supportErrand.jsonParameters?.length ?? 0) > 0 && !!municipalityId;
+
+  const organizationPartyId = supportErrand.stakeholders?.find(
+    (stakeholder) => stakeholder.role === 'PRIMARY' && stakeholder.externalIdType === 'COMPANY'
+  )?.externalId;
+
+  const companyEngagements = useCompanyEngagements(
+    appConfig.features.useCompanyInformation ? organizationPartyId : undefined
+  );
+  const showsCompanyEngagements = companyEngagements.length > 0;
 
   const simpleParams = useMemo(
     () =>
@@ -100,12 +115,17 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
             </Table>
           </div>
         ))}
-        {(supportErrand.jsonParameters?.length ?? 0) > 0 && municipalityId ? (
-          <div className="p-16">
+        {showsJsonParameters && municipalityId ? (
+          <div className={showsCompanyEngagements ? 'px-16 pt-16' : 'p-16'}>
             <JsonParametersDisplay
               jsonParameters={supportErrand.jsonParameters as any}
               municipalityId={municipalityId}
             />
+          </div>
+        ) : null}
+        {showsCompanyEngagements ? (
+          <div className={showsJsonParameters ? 'px-16 pb-16' : 'p-16'}>
+            <SupportErrandCompanyEngagements engagements={companyEngagements} initiallyOpen={!showsJsonParameters} />
           </div>
         ) : null}
       </div>

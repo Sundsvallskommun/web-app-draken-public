@@ -241,6 +241,8 @@ export const getLabelSubType = (errand: SupportErrand) => {
   return errand.labels?.find((label) => label.classification === 'SUBTYPE');
 };
 
+export const getMostSpecificLabelType = (errand: SupportErrand) => getLabelSubType(errand) ?? getLabelType(errand);
+
 export const getLabelTypeFromName = (name: string, metadata: SupportMetadata): Label | undefined => {
   const allTypesFlattened = (metadata?.labels?.labelStructure?.flatMap((l) => l.labels ?? []) ?? []) as Label[];
   return allTypesFlattened.find((t) => t?.resourcePath === name);

@@ -28,8 +28,11 @@ interface SectionDefinition {
   defaultOpen?: boolean;
 }
 
+export type SectionOpening = 'first' | 'none';
+
 interface FormContext {
   originalSchema?: RJSFSchema;
+  sectionOpening?: SectionOpening;
 }
 
 function isConditionMet(condition: ConditionalRule['if'], formData: Record<string, unknown>): boolean {
@@ -82,14 +85,21 @@ function getSectionDefinitions(uiSchema: UiSchema | undefined): SectionDefinitio
   return (uiSchema?.['ui:sections'] ?? []) as SectionDefinition[];
 }
 
+const resolveInitiallyOpen = (section: SectionDefinition, index: number, sectionOpening?: SectionOpening): boolean => {
+  if (sectionOpening === 'first') return index === 0;
+  if (sectionOpening === 'none') return false;
+  return section.defaultOpen ?? false;
+};
+
 interface SectionDisclosureProps {
   section: SectionDefinition;
+  initiallyOpen: boolean;
   isReadonly: boolean;
   children: ReactNode;
 }
 
-function SectionDisclosure({ section, isReadonly, children }: SectionDisclosureProps) {
-  const [open, setOpen] = useState(section.defaultOpen ?? false);
+function SectionDisclosure({ section, initiallyOpen, isReadonly, children }: SectionDisclosureProps) {
+  const [open, setOpen] = useState(initiallyOpen);
   const [doneMark, setDoneMark] = useState(false);
 
   const handleDoneMarkChange = () => {
@@ -250,22 +260,28 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
 
   const sectionFieldNames = new Set(sections.flatMap((s) => s.fields));
   const unsectionedFields = order.filter((f) => !sectionFieldNames.has(f) && visibleFields.has(f));
+  const renderableSections = sections
+    .map((section) => ({
+      section,
+      fieldNames: order.filter((f) => section.fields.includes(f) && visibleFields.has(f)),
+    }))
+    .filter(({ fieldNames }) => fieldNames.length > 0);
   const renderedRows = new Set<string>();
 
   return (
     <div className="flex flex-col gap-32">
-      {sections.map((section) => {
-        const sectionFieldsInOrder = order.filter((f) => section.fields.includes(f) && visibleFields.has(f));
-        if (sectionFieldsInOrder.length === 0) return null;
-
-        return (
-          <SectionDisclosure key={section.id} section={section} isReadonly={isReadonly}>
-            <div className="flex flex-col gap-32 py-16">
-              {renderFields(sectionFieldsInOrder, properties, visibleFields, rows, rowFieldNames, renderedRows)}
-            </div>
-          </SectionDisclosure>
-        );
-      })}
+      {renderableSections.map(({ section, fieldNames }, index) => (
+        <SectionDisclosure
+          key={section.id}
+          section={section}
+          initiallyOpen={resolveInitiallyOpen(section, index, ctx?.sectionOpening)}
+          isReadonly={isReadonly}
+        >
+          <div className="flex flex-col gap-32 py-16">
+            {renderFields(fieldNames, properties, visibleFields, rows, rowFieldNames, renderedRows)}
+          </div>
+        </SectionDisclosure>
+      ))}
 
       {unsectionedFields.length > 0 && (
         <div className="flex flex-col gap-32">

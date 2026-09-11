@@ -9,6 +9,7 @@ import {
   getLabelCategory,
   getLabelSubType,
   getLabelType,
+  getMostSpecificLabelType,
   Status,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
@@ -98,7 +99,10 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <div className="max-w-[280px]">
-          {appConfig.features.useThreeLevelCategorization ? (
+          {appConfig.features.useThreeLevelCategorization && appConfig.features.useSingleErrandTypeLabel ? (
+            <div>{getLabelDisplayName(getMostSpecificLabelType(errand), supportMetadata)}</div>
+          ) : null}
+          {appConfig.features.useThreeLevelCategorization && !appConfig.features.useSingleErrandTypeLabel ? (
             <div>
               <div>{getLabelDisplayName(getLabelType(errand), supportMetadata)}</div>
               <div>{getLabelDisplayName(getLabelSubType(errand), supportMetadata)}</div>
