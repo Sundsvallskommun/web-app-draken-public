@@ -12,22 +12,25 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const artifacts = [
   {
     name: 'utredning-enhetschef',
-    version: '1.1',
+    version: '1.2',
     hasErrandClassification: true,
+    hasReport: true,
     schemaFile: 'utredning-enhetschef.schema-request.json',
     uiSchemaFile: 'utredning-enhetschef.ui-schema-request.json',
   },
   {
     name: 'utredning-sol-lss',
-    version: '1.1',
+    version: '1.2',
     hasErrandClassification: true,
+    hasReport: true,
     schemaFile: 'utredning-sol-lss.schema-request.json',
     uiSchemaFile: 'utredning-sol-lss.ui-schema-request.json',
   },
   {
     name: 'utredning-hsl',
-    version: '1.1',
+    version: '1.2',
     hasErrandClassification: false,
+    hasReport: true,
     schemaFile: 'utredning-hsl.schema-request.json',
     uiSchemaFile: 'utredning-hsl.ui-schema-request.json',
   },
@@ -35,6 +38,7 @@ const artifacts = [
     name: 'beslut-hsl',
     version: '1.2',
     hasErrandClassification: false,
+    hasReport: false,
     schemaFile: 'beslut-hsl.schema-request.json',
     uiSchemaFile: 'beslut-hsl.ui-schema-request.json',
   },
@@ -42,6 +46,7 @@ const artifacts = [
     name: 'beslut-sol-lss',
     version: '1.3',
     hasErrandClassification: false,
+    hasReport: false,
     schemaFile: 'beslut-sol-lss.schema-request.json',
     uiSchemaFile: 'beslut-sol-lss.ui-schema-request.json',
   },
@@ -189,14 +194,16 @@ test('schemas declare errand classification externally only where it is edited',
       .flatMap((section: any) => section.fields)
       .filter((fieldName: string) => fieldName.startsWith('$external:'));
 
+    // The report controls are an external field too, on every investigation but never on a decision.
+    const reportFields = artifact.hasReport ? ['$external:investigationReport'] : [];
     if (artifact.hasErrandClassification) {
       assert.deepEqual(schema['x-draken-external-fields'], {
         errandClassification: expectedDeclaration,
       });
-      assert.deepEqual(externalFields, ['$external:errandClassification']);
+      assert.deepEqual(externalFields, ['$external:errandClassification', ...reportFields]);
     } else {
       assert.equal(schema['x-draken-external-fields'], undefined);
-      assert.deepEqual(externalFields, []);
+      assert.deepEqual(externalFields, reportFields);
     }
   }
 });
@@ -235,11 +242,15 @@ test('errand classification values stay outside investigation JSON properties an
 
 test('UI schemas keep the agreed Draken accordion structure', () => {
   const expectedSections: Record<string, { id: string; title: string }[]> = {
-    'utredning-enhetschef': [{ id: 'categorization-and-documentation', title: 'Kategorisering och dokumentation' }],
+    'utredning-enhetschef': [
+      { id: 'categorization-and-documentation', title: 'Kategorisering och dokumentation' },
+      { id: 'report', title: 'Utredningen klar och rapport' },
+    ],
     'utredning-sol-lss': [
       { id: 'categorization', title: 'Kategorisering' },
       { id: 'event-information', title: 'Information om händelsen' },
       { id: 'assessment-and-decision-proposal', title: 'Bedömning och förslag till beslut' },
+      { id: 'report', title: 'Utredningen klar och rapport' },
     ],
     'utredning-hsl': [
       { id: 'assignment', title: 'Uppdrag' },
@@ -247,6 +258,7 @@ test('UI schemas keep the agreed Draken accordion structure', () => {
       { id: 'methodology', title: 'Metodik' },
       { id: 'result', title: 'Resultat' },
       { id: 'commissioner-comment', title: 'Uppdragsgivarens kommentar' },
+      { id: 'report', title: 'Utredningen klar och rapport' },
     ],
     'beslut-hsl': [{ id: 'decision', title: 'Beslut' }],
     'beslut-sol-lss': [
@@ -558,3 +570,45 @@ test('the lex Sarah classification select takes the full form width', () => {
   const uiSchema = readJson('beslut-sol-lss.ui-schema-request.json').value;
   assert.equal(uiSchema.decidedMisconductDegree['ui:options'].className, 'w-full');
 });
+
+// Every investigation can be marked completed by its owner, which locks it and allows a PDF
+// report; the reports are recorded by the server. Decisions have no such section.
+for (const artifact of artifacts) {
+  test(`${artifact.name} ${artifact.hasReport ? 'declares' : 'has no'} completion and report log`, () => {
+    const schema = readJson(artifact.schemaFile).value;
+    const uiSchema = readJson(artifact.uiSchemaFile).value;
+
+    if (!artifact.hasReport) {
+      assert.equal(schema['x-draken-completion'], undefined);
+      assert.equal('completed' in schema.properties, false);
+      return;
+    }
+
+    assert.deepEqual(schema['x-draken-completion'], { field: 'completed', reportsField: 'reports' });
+    assert.deepEqual(schema.properties.completed.$ref, '#/$defs/yesNo');
+    assert.equal(
+      schema.required?.includes('completed') ?? false,
+      false,
+      'an unanswered document is simply not completed'
+    );
+    assert.equal(schema.properties.reports['x-draken-server-owned'], true);
+    assert.equal(schema.properties.reports.readOnly, true);
+    assert.deepEqual(schema.properties.reports.items.required, ['generatedAt', 'generatedBy', 'fileName']);
+    assert.equal(uiSchema.completed['ui:widget'], 'RadiobuttonWidget');
+    assert.equal(uiSchema.reports['ui:widget'], 'hidden');
+    const reportSection = uiSchema['ui:sections'].at(-1);
+    assert.deepEqual(reportSection.fields, ['completed', '$external:investigationReport', 'reports']);
+
+    const { ajv, validate } = createValidator(schema);
+    const valid = fixtures[artifact.name].valid;
+    assert.equal(validate(valid), true, ajv.errorsText(validate.errors));
+    assert.equal(validate({ ...valid, completed: 'maybe' }), false);
+    assert.equal(
+      validate({
+        ...valid,
+        reports: [{ generatedAt: '2026-09-11T12:30:00.000Z', generatedBy: 'x', fileName: 'r.pdf', extra: 1 }],
+      }),
+      false
+    );
+  });
+}

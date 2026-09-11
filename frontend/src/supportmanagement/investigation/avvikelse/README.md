@@ -194,8 +194,11 @@ skrivskyddat (läst från ärendets JSON Parameters via profilens dokumentnyckel
 `beslut-hsl` tar över IVO- och Public 360-fälten som till och med schema 1.0 låg i HSL-utredningen. Katlas
 inkommande ärendedata förblir en separat skrivskyddad JSON Parameter.
 
-De lokala artefakterna för `utredning-enhetschef` och `utredning-sol-lss` är version 1.1 och deklarerar
-`errandClassification`; `utredning-hsl` 1.1 saknar beslutsfälten. För redan bundna manager- och SOL/LSS-dokument
+De lokala artefakterna för de tre utredningarna är version 1.2: enhetschefs- och SoL/LSS-utredningen deklarerar
+`errandClassification`, HSL-utredningen saknar beslutsfälten sedan 1.1, och alla tre har sektionen Utredningen klar
+och rapport (`x-draken-completion`, se `schemas/README.md`). En utredning som sparats som klar är låst i både BFF
+och formulär tills ägaren låser upp den; BFF:en skapar PDF-rapporten ur det sparade dokumentet, lägger den som
+numrerad bilaga och registrerar den i det serverägda `reports`-fältet. För redan bundna manager- och SOL/LSS-dokument
 med schema till och med version 1.0 injicerar runtime samma externa placering som en bakåtkompatibel fallback.
 Ägarskapet bestäms dock centralt av den fasta IAF/VOF-regeln tillsammans med runtimeprofilens dokumentnycklar, inte
 av en enskild schemadeklaration. Om

@@ -1,13 +1,14 @@
 {
   "name": "utredning-enhetschef",
-  "version": "1.1",
+  "version": "1.2",
   "value": {
-    "$id": "https://schemas.sundsvall.se/2281/utredning-enhetschef/1.1",
+    "$id": "https://schemas.sundsvall.se/2281/utredning-enhetschef/1.2",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Utredning enhetschef",
     "description": "Utredningsuppgifter som dokumenteras av enhetschef för IAF- och VOF-ärenden.",
     "type": "object",
     "additionalProperties": false,
+    "x-draken-completion": { "field": "completed", "reportsField": "reports" },
     "required": ["legalBases"],
     "x-draken-external-fields": {
       "errandClassification": {
@@ -173,9 +174,55 @@
             "title": "Nej"
           }
         ]
+      },
+      "completed": {
+        "title": "Är utredningen klar?",
+        "description": "Ja låser utredningen för ändringar och gör det möjligt att skapa en rapport. Lås upp utredningen för att ändra den igen.",
+        "$ref": "#/$defs/yesNo"
+      },
+      "reports": {
+        "title": "Rapporter",
+        "description": "En post per rapport som skapats från utredningen, med tidpunkt, användare och bilagans filnamn. Servern lägger till posterna; de kan inte anges av användaren.",
+        "type": "array",
+        "readOnly": true,
+        "x-draken-server-owned": true,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["generatedAt", "generatedBy", "fileName"],
+          "properties": {
+            "generatedAt": {
+              "title": "Skapad",
+              "type": "string",
+              "format": "date-time"
+            },
+            "generatedBy": {
+              "title": "Skapad av",
+              "type": "string",
+              "minLength": 1
+            },
+            "fileName": {
+              "title": "Filnamn",
+              "type": "string",
+              "minLength": 1
+            },
+            "attachmentId": {
+              "title": "Bilaga",
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
       }
     },
     "$defs": {
+      "yesNo": {
+        "type": "string",
+        "oneOf": [
+          { "const": "yes", "title": "Ja" },
+          { "const": "no", "title": "Nej" }
+        ]
+      },
       "riskValueConsistency": {
         "allOf": [
           {
@@ -694,5 +741,5 @@
       }
     ]
   },
-  "description": "WSO2 request body for version 1.1 of the unit manager investigation schema"
+  "description": "WSO2 request body for version 1.2 of the unit manager investigation schema"
 }

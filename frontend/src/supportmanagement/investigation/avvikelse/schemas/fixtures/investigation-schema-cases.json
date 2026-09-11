@@ -16,7 +16,16 @@
         "severity": 2,
         "calculatedRiskValue": 6
       },
-      "suspectedMisconduct": "no"
+      "suspectedMisconduct": "no",
+      "completed": "no",
+      "reports": [
+        {
+          "generatedAt": "2026-09-11T12:30:00.000Z",
+          "generatedBy": "iaf.test",
+          "fileName": "Utredning enhetschef_1.pdf",
+          "attachmentId": "attachment-1"
+        }
+      ]
     },
     "invalid": [
       {
@@ -29,6 +38,16 @@
             "severity": 3,
             "calculatedRiskValue": 15
           }
+        }
+      },
+      {
+        "description": "En rapportpost måste ange tidpunkt, användare och filnamn",
+        "value": {
+          "reports": [
+            {
+              "generatedAt": "2026-09-11T12:30:00.000Z"
+            }
+          ]
         }
       }
     ]
@@ -50,7 +69,16 @@
       "documentationMotivation": "<p>Dokumenterat i personakt.</p>",
       "requiresPoliceReport": "no",
       "proposedMisconductDegree": "misconduct",
-      "proposalMotivation": "<p>Utredarens samlade motivering.</p>"
+      "proposalMotivation": "<p>Utredarens samlade motivering.</p>",
+      "completed": "no",
+      "reports": [
+        {
+          "generatedAt": "2026-09-11T12:30:00.000Z",
+          "generatedBy": "iaf.test",
+          "fileName": "Utredning SoL-LSS_1.pdf",
+          "attachmentId": "attachment-1"
+        }
+      ]
     },
     "invalid": [
       {
@@ -58,6 +86,16 @@
         "value": {
           "legalBases": ["SOL", "LSS"],
           "eventTypes": ["physical_or_psychological_violation", "physical_or_psychological_violation"]
+        }
+      },
+      {
+        "description": "En rapportpost måste ange tidpunkt, användare och filnamn",
+        "value": {
+          "reports": [
+            {
+              "generatedAt": "2026-09-11T12:30:00.000Z"
+            }
+          ]
         }
       }
     ]
@@ -77,7 +115,16 @@
       "underlyingCauses": ["communication_failure", "technical_fault"],
       "contributingFactorsAndRisks": "<p>Bidragande faktorer, bifynd och kostnader.</p>",
       "analysisEvaluation": "<p>Analysteamets utvärdering.</p>",
-      "commissionerComment": "<p>Uppdragsgivaren har tagit del av analysen.</p>"
+      "commissionerComment": "<p>Uppdragsgivaren har tagit del av analysen.</p>",
+      "completed": "no",
+      "reports": [
+        {
+          "generatedAt": "2026-09-11T12:30:00.000Z",
+          "generatedBy": "iaf.test",
+          "fileName": "Utredning HSL_1.pdf",
+          "attachmentId": "attachment-1"
+        }
+      ]
     },
     "invalid": [
       {
@@ -85,6 +132,16 @@
         "value": {
           "ivoNotification": "yes",
           "public360CaseNumber": "P360-2026-5678"
+        }
+      },
+      {
+        "description": "En rapportpost måste ange tidpunkt, användare och filnamn",
+        "value": {
+          "reports": [
+            {
+              "generatedAt": "2026-09-11T12:30:00.000Z"
+            }
+          ]
         }
       }
     ]

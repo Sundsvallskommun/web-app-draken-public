@@ -12,6 +12,7 @@ import {
   applyAvvikelseLabelClassificationSelection,
   getAvvikelseLabelClassificationSelection,
 } from '@supportmanagement/investigation/avvikelse/label-classification';
+import { getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -37,11 +38,14 @@ import { InvestigationDecisionProposal } from './investigation-decision-proposal
 import type { InvestigationDocumentDefinition, InvestigationFormData } from './investigation-document';
 import {
   getHslRiskValue,
+  getInvestigationCompletion,
   getInvestigationRenderingSchema,
+  getInvestigationReports,
   getInvestigationServerTimestamps,
   investigationDefaultFormStateBehavior,
   investigationRequiredIndicator,
 } from './investigation-form-data';
+import { InvestigationReportControls } from './investigation-report-controls.component';
 import {
   investigationSchemaDebugIsVisible,
   InvestigationSchemaDebugPanel,
@@ -60,9 +64,12 @@ import {
   saveInvestigationDocumentStep,
 } from './support-investigation-save-workflow';
 import {
+  createSupportInvestigationReport,
   getSupportInvestigationDocument,
   isSupportInvestigationAccessDenied,
+  previewSupportInvestigationReport,
   type SavedSupportInvestigationDocument,
+  saveSupportInvestigationDocument,
   type SupportInvestigationDocument as SavedInvestigationDocument,
 } from './support-investigation-service';
 
@@ -73,9 +80,19 @@ interface InvestigationDocumentState {
   uiSchema: UiSchema;
   schemaId: string;
   formData: InvestigationFormData;
+  /** The document as Support Management holds it; the lock and the report log read this, not the draft. */
+  persistedFormData: InvestigationFormData;
   persisted: boolean;
   etag?: string;
 }
+
+/** Opens a rendered PDF in a new tab; the object URL is released once the tab has had time to load it. */
+const openPdfInNewTab = (pdfBase64: string): void => {
+  const bytes = Uint8Array.from(atob(pdfBase64), (character) => character.charCodeAt(0));
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+  window.open(url, '_blank', 'noopener');
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+};
 
 const getClassificationDraft = (errand: SupportErrand | undefined): InvestigationClassificationDraft => ({
   labels: errand?.labels ?? [],
@@ -157,6 +174,7 @@ export function SupportInvestigationDocument({
   const [documentState, setDocumentState] = useState<InvestigationDocumentState>();
   const [notice, setNotice] = useState<{ type: 'error' | 'warning' | 'success'; message: string }>();
   const [isSaving, setIsSaving] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<SchemaFormError[]>([]);
   const classificationFieldId = `${definition.key}_external_errandClassification`;
   const [isDirty, setIsDirty] = useState(false);
@@ -213,17 +231,19 @@ export function SupportInvestigationDocument({
         const uiSchema = await getUiSchemaForSchema(municipalityId, loadedSchema.schemaId);
 
         if (cancelled) return;
+        const loadedFormData = normalizeContextualInvestigationFormData(
+          definition.key,
+          definition.schemaName,
+          loadedSchema.schema,
+          storedDocument?.document.value ?? {},
+          reportedMisconduct
+        );
         setDocumentState({
           schema: loadedSchema.schema,
           uiSchema,
           schemaId: loadedSchema.schemaId,
-          formData: normalizeContextualInvestigationFormData(
-            definition.key,
-            definition.schemaName,
-            loadedSchema.schema,
-            storedDocument?.document.value ?? {},
-            reportedMisconduct
-          ),
+          formData: loadedFormData,
+          persistedFormData: loadedFormData,
           persisted: Boolean(storedDocument),
           etag: storedDocument?.etag,
         });
@@ -307,7 +327,15 @@ export function SupportInvestigationDocument({
     persistedClassification,
   };
   const classificationWriteBlock = investigationClassificationWriteBlock(classificationPrerequisites);
-  const formReadonly = readonly || Boolean(classificationWriteBlock) || prerequisiteMissing;
+  // A document saved as completed is locked: the form turns read-only and only the report
+  // controls act on it, until the owner unlocks it.
+  const completion = documentState ? getInvestigationCompletion(documentState.schema) : undefined;
+  const locked = Boolean(
+    completion && documentState?.persisted && documentState.persistedFormData[completion.field] === 'yes'
+  );
+  const reports =
+    documentState && completion ? getInvestigationReports(documentState.schema, documentState.persistedFormData) : [];
+  const formReadonly = readonly || Boolean(classificationWriteBlock) || prerequisiteMissing || locked;
   const classificationUiSchema = useMemo(
     () =>
       documentState
@@ -370,6 +398,7 @@ export function SupportInvestigationDocument({
         ? {
             ...current,
             formData: saved.document.value,
+            persistedFormData: saved.document.value,
             schemaId: saved.document.schemaId,
             persisted: true,
             etag: saved.etag,
@@ -426,6 +455,75 @@ export function SupportInvestigationDocument({
     resetErrandField('subType', { defaultValue: savedDraft.subType });
     resetErrandField('classificationHasSubTypes', { defaultValue: savedDraft.classificationHasSubTypes });
     resetErrandField('version', { defaultValue: savedErrand.version });
+  };
+
+  const reportFailureNotice = (error: unknown, fallback: string) => {
+    if (isSupportInvestigationAccessDenied(error)) {
+      refreshAccess();
+      setNotice({ type: 'warning', message: `Support Management nekade åtkomst till det här ${wording.kind}.` });
+      return;
+    }
+    setNotice({ type: 'error', message: error instanceof Error && error.message ? error.message : fallback });
+  };
+
+  const unlockDocument = async () => {
+    if (!municipalityId || !errandId || !completion || !documentState.persisted || isReporting || isSaving) return;
+    if (typeof supportErrand?.version !== 'number') {
+      setNotice({ type: 'error', message: 'Ärendets version saknas. Ladda om ärendet innan utredningen låses upp.' });
+      return;
+    }
+    setIsReporting(true);
+    setNotice(undefined);
+    try {
+      const saved = await saveSupportInvestigationDocument(
+        municipalityId,
+        errandId,
+        definition.key,
+        { schemaId: documentState.schemaId, value: { ...documentState.persistedFormData, [completion.field]: 'no' } },
+        supportErrand.version,
+        documentState.etag
+      );
+      applySavedDocument(saved);
+      setNotice({ type: 'success', message: `${wording.noun} är upplåst och kan ändras igen.` });
+    } catch (error) {
+      reportFailureNotice(error, `${wording.noun} kunde inte låsas upp. Försök igen.`);
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
+  const generateReport = async () => {
+    if (!municipalityId || !errandId || !locked || isDirty || isReporting || isSaving) return;
+    setIsReporting(true);
+    setNotice(undefined);
+    try {
+      const created = await createSupportInvestigationReport(municipalityId, errandId, definition.key);
+      applySavedDocument(created);
+      setNotice({
+        type: 'success',
+        message: `Rapporten ${created.report.fileName} har skapats och lagts som en bilaga på ärendet.`,
+      });
+      const attachments = await getSupportAttachments(errandId, municipalityId);
+      useSupportStore.getState().setSupportAttachments(attachments);
+    } catch (error) {
+      reportFailureNotice(error, 'Rapporten kunde inte skapas. Försök igen eller kontakta support om felet kvarstår.');
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
+  const previewReport = async () => {
+    if (!municipalityId || !errandId || !locked || isDirty || isReporting) return;
+    setIsReporting(true);
+    setNotice(undefined);
+    try {
+      const preview = await previewSupportInvestigationReport(municipalityId, errandId, definition.key);
+      openPdfInNewTab(preview.pdfBase64);
+    } catch (error) {
+      reportFailureNotice(error, 'Rapporten kunde inte förhandsgranskas. Försök igen.');
+    } finally {
+      setIsReporting(false);
+    }
   };
 
   const save = async (formData: InvestigationFormData, schemaErrors: RJSFValidationError[] = []) => {
@@ -565,6 +663,14 @@ export function SupportInvestigationDocument({
 
       {notice && <InvestigationAlert {...notice} />}
 
+      {locked && (
+        <InvestigationAlert
+          type="warning"
+          dataCy="investigation-document-locked"
+          message={`${wording.noun} är markerad som klar och är låst för ändringar. Lås upp den om du behöver ändra något.`}
+        />
+      )}
+
       {prerequisiteMissing && (
         <InvestigationAlert
           type="warning"
@@ -671,8 +777,25 @@ export function SupportInvestigationDocument({
         }}
         onSubmit={(formData) => void save(formData)}
         readonly={formReadonly || isSaving}
-        externalFields={
-          classificationOwner && classificationLabelTree
+        externalFields={{
+          ...(completion
+            ? {
+                investigationReport: (
+                  <InvestigationReportControls
+                    documentKey={definition.key}
+                    locked={locked}
+                    dirty={isDirty || classificationDirty}
+                    busy={isReporting || isSaving}
+                    canEdit={!readonly && !prerequisiteMissing}
+                    reports={reports}
+                    onGenerate={() => void generateReport()}
+                    onPreview={() => void previewReport()}
+                    onUnlock={() => void unlockDocument()}
+                  />
+                ),
+              }
+            : {}),
+          ...(classificationOwner && classificationLabelTree
             ? {
                 errandClassification: (
                   <div id={classificationFieldId} tabIndex={-1}>
@@ -693,8 +816,8 @@ export function SupportInvestigationDocument({
                   </div>
                 ),
               }
-            : undefined
-        }
+            : {}),
+        }}
         submitButtonOptions={{
           label: isDecision ? 'Spara beslut' : 'Spara utredning',
           leadingIcon: false,

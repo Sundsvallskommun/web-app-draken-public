@@ -80,9 +80,14 @@ vi.mock('./investigation-classification', () => ({
 vi.mock('./investigation-form-data', () => ({
   getInvestigationRenderingSchema: (_name: string, schema: unknown) => schema,
   getInvestigationServerTimestamps: () => [],
+  getInvestigationCompletion: () => undefined,
+  getInvestigationReports: () => [],
   getHslRiskValue: () => undefined,
   investigationDefaultFormStateBehavior: {},
   investigationRequiredIndicator: ' (Obligatorisk)',
+}));
+vi.mock('@supportmanagement/services/support-attachment-service', () => ({
+  getSupportAttachments: vi.fn(async () => []),
 }));
 vi.mock('./investigation-schema-debug-panel.component', () => ({
   investigationSchemaDebugIsVisible: () => false,

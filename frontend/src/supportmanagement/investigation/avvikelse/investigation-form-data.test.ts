@@ -5,9 +5,12 @@ import validator from '@rjsf/validator-ajv8';
 import { test } from 'vitest';
 
 import {
+  getInvestigationCompletion,
   getInvestigationRenderingSchema,
+  getInvestigationReports,
   getInvestigationServerTimestamps,
   investigationDefaultFormStateBehavior,
+  isInvestigationCompleted,
   normalizeInvestigationFormData,
 } from './investigation-form-data';
 import hslDecisionSchemaRequest from './schemas/beslut-hsl.schema-request.json';
@@ -210,4 +213,26 @@ test('reports the server-stamped timestamps the schema declares and the document
     []
   );
   assert.deepEqual(getInvestigationServerTimestamps(choiceSchema, { answer: 'yes' }), []);
+});
+
+test('reads the completion declaration, the completed state and the report log the schema declares', () => {
+  const schema: RJSFSchema = {
+    type: 'object',
+    'x-draken-completion': { field: 'completed', reportsField: 'reports' },
+    properties: { completed: { type: 'string' }, reports: { type: 'array' } },
+  } as RJSFSchema;
+  const report = { generatedAt: '2026-09-11T12:30:00.000Z', generatedBy: 'iaf.test', fileName: 'Utredning HSL_1.pdf' };
+
+  assert.deepEqual(getInvestigationCompletion(schema), { field: 'completed', reportsField: 'reports' });
+  assert.equal(getInvestigationCompletion(choiceSchema), undefined);
+  assert.equal(isInvestigationCompleted(schema, { completed: 'yes' }), true);
+  assert.equal(isInvestigationCompleted(schema, { completed: 'no' }), false);
+  assert.equal(isInvestigationCompleted(schema, {}), false);
+  assert.equal(isInvestigationCompleted(choiceSchema, { completed: 'yes' }), false);
+  assert.deepEqual(getInvestigationReports(schema, {}), []);
+  assert.deepEqual(
+    getInvestigationReports(schema, { reports: [report, { fileName: 'broken' }, { ...report, attachmentId: 'a-1' }] }),
+    [report, { ...report, attachmentId: 'a-1' }]
+  );
+  assert.deepEqual(getInvestigationReports(choiceSchema, { reports: [report] }), []);
 });

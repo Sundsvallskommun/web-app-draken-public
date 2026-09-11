@@ -414,8 +414,14 @@ export function InvestigationSchemaLab() {
                     formData={drafts[definition.key]}
                     savedAt={savedAt[definition.key]}
                     notice={notices[definition.key]}
-                    externalFields={
-                      classificationCatalog
+                    externalFields={{
+                      investigationReport: (
+                        <p className="text-small">
+                          Rapporter skapas från ärendet i Draken, inte från labben. Här går det bara att prova
+                          markeringen.
+                        </p>
+                      ),
+                      ...(classificationCatalog
                         ? {
                             [INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD]: (
                               <InvestigationLabelClassificationPanel
@@ -431,8 +437,8 @@ export function InvestigationSchemaLab() {
                               />
                             ),
                           }
-                        : undefined
-                    }
+                        : {}),
+                    }}
                     onChange={(formData) => updateDraft(definition.key, formData)}
                     onSaveDraft={() =>
                       persistDraft(definition.key, definition.schemaVersion, drafts[definition.key], false)

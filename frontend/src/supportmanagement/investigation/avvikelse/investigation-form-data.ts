@@ -311,3 +311,57 @@ export function getHslRiskValue(formData: InvestigationFormData): number | undef
 
   return typeof riskAssessment.calculatedRiskValue === 'number' ? riskAssessment.calculatedRiskValue : undefined;
 }
+
+/**
+ * A schema that declares `x-draken-completion` lets its owner mark the document completed, which
+ * locks it and allows a PDF report; the reports field is the server-owned log of those reports.
+ */
+export interface InvestigationCompletion {
+  readonly field: string;
+  readonly reportsField: string;
+}
+
+export function getInvestigationCompletion(schema: RJSFSchema): InvestigationCompletion | undefined {
+  const declaration = (schema as Record<string, unknown>)['x-draken-completion'];
+  if (!isRecord(declaration) || typeof declaration.field !== 'string' || typeof declaration.reportsField !== 'string') {
+    return undefined;
+  }
+  return { field: declaration.field, reportsField: declaration.reportsField };
+}
+
+export const isInvestigationCompleted = (schema: RJSFSchema, formData: InvestigationFormData): boolean => {
+  const completion = getInvestigationCompletion(schema);
+  return completion !== undefined && formData[completion.field] === 'yes';
+};
+
+export interface InvestigationReport {
+  readonly generatedAt: string;
+  readonly generatedBy: string;
+  readonly fileName: string;
+  readonly attachmentId?: string;
+}
+
+/** The reports the document records, oldest first; malformed entries are left out rather than shown. */
+export function getInvestigationReports(schema: RJSFSchema, formData: InvestigationFormData): InvestigationReport[] {
+  const completion = getInvestigationCompletion(schema);
+  const entries = completion ? formData[completion.reportsField] : undefined;
+  if (!Array.isArray(entries)) return [];
+  return entries.flatMap((entry) => {
+    if (
+      !isRecord(entry) ||
+      typeof entry.generatedAt !== 'string' ||
+      typeof entry.generatedBy !== 'string' ||
+      typeof entry.fileName !== 'string'
+    ) {
+      return [];
+    }
+    return [
+      {
+        generatedAt: entry.generatedAt,
+        generatedBy: entry.generatedBy,
+        fileName: entry.fileName,
+        ...(typeof entry.attachmentId === 'string' ? { attachmentId: entry.attachmentId } : {}),
+      },
+    ];
+  });
+}

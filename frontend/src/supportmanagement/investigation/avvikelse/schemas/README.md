@@ -4,9 +4,9 @@ Den här katalogen är den kanoniska lokala källan för den första schema-labb
 
 | Parameter key / schema name | Lokal version | JSON Schema POST body                      | UI Schema PUT body                            |
 | --------------------------- | ------------- | ------------------------------------------ | --------------------------------------------- |
-| `utredning-enhetschef`      | 1.1           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
-| `utredning-sol-lss`         | 1.1           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
-| `utredning-hsl`             | 1.1           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
+| `utredning-enhetschef`      | 1.2           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
+| `utredning-sol-lss`         | 1.2           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
+| `utredning-hsl`             | 1.2           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
 | `beslut-hsl`                | 1.2           | `beslut-hsl.schema-request.json`           | `beslut-hsl.ui-schema-request.json`           |
 | `beslut-sol-lss`            | 1.3           | `beslut-sol-lss.schema-request.json`       | `beslut-sol-lss.ui-schema-request.json`       |
 
@@ -34,12 +34,33 @@ hade sparats mot 1.0. Samma dag publicerades version 1.2 (`2281_beslut-hsl_1.2`,
 `updatedAt` och `revisions`; inga dokument hade sparats mot 1.1. `2281_beslut-sol-lss_1.3` publicerades samma dag med
 klassificeringsfältet i full bredd; inga dokument hade sparats mot 1.2.
 
-Version 1.1 för `utredning-enhetschef` och `utredning-sol-lss` finns endast som lokala artefakter i repot. Att en
-requestartefakt finns här innebär inte att den har skickats till JsonSchema-API:t. Fliken Beslut läser
-beslutsschemana från JsonSchema-API:t vid körning, så de måste publiceras i varje miljö innan ett beslut kan sparas
-där.
+Den 11 september 2026 publicerades också version 1.2 av de tre utredningarna (`2281_utredning-enhetschef_1.2`,
+`2281_utredning-sol-lss_1.2`, `2281_utredning-hsl_1.2`) med sektionen Utredningen klar och rapport. Version 1.1 av
+enhetschefs- och SoL/LSS-utredningen fanns bara som lokala artefakter och hoppades över. Att en requestartefakt
+finns här innebär inte att den har skickats till JsonSchema-API:t. Formulären läser schemana från JsonSchema-API:t
+vid körning, så en ny version måste publiceras i varje miljö innan den används där.
 
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
+
+## Utredningen klar och rapport
+
+Varje utredning slutar med sektionen Utredningen klar och rapport. Schemat deklarerar
+`x-draken-completion: { "field": "completed", "reportsField": "reports" }`:
+
+- `completed` (Ja/Nej, Nej när inget är angivet) är utredarens markering. Ett dokument som sparats med Ja är
+  låst: BFF:en avvisar varje skrivning utom den som sätter Nej utan att ändra något annat, och formuläret blir
+  skrivskyddat med knappen Lås upp utredningen.
+- `reports` är serverägd (`x-draken-server-owned`): en post `{ generatedAt, generatedBy, fileName, attachmentId }`
+  per rapport, som BFF:en lägger till när rapporten skapas. Klientens kopia av fältet ignoreras.
+- `$external:investigationReport` i UI-schemat är platsen där Draken visar knapparna Skapa rapport,
+  Förhandsgranska rapport och Lås upp utredningen samt listan över skapade rapporter.
+
+Rapporten skapas av BFF:en (`POST .../json-parameters/{key}/reports`) ur det sparade dokumentet: sektioner och fält
+i UI-schemats ordning, koder översatta till sina titlar, ärendets kategorisering från etiketterna. Den renderas
+via Templating-API:ts `render/direct/pdf` med mallen i `backend/src/services/investigation-report.template.ts`,
+läggs som bilaga på ärendet med löpnummer (`Utredning SoL-LSS_2.pdf`) och registreras i `reports`. Förhandsgranskning
+renderar utan att bifoga eller registrera. Efter upplåsning kan utredningen ändras och en ny numrerad rapport
+skapas; äldre rapporter ligger kvar som bilagor.
 
 ## Besluten
 
