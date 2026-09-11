@@ -8,8 +8,8 @@ import { SupportInvestigationProfileDto } from '@/dtos/support-investigation-pro
 
 const expectedDocuments: SupportInvestigationProfileDto['documents'][number][] = [
   { key: 'utredning-enhetschef', schemaName: 'utredning-enhetschef', tabLabel: 'Utredning enhetschef', ownerLabel: 'Enhetschef' },
-  { key: 'utredning-sol-lss', schemaName: 'utredning-sol-lss', tabLabel: 'Utredning SoL/LSS', ownerLabel: 'Lex Sarah' },
-  { key: 'utredning-hsl', schemaName: 'utredning-hsl', tabLabel: 'Utredning HSL', ownerLabel: 'MAS/MAR' },
+  { key: 'utredning-sol-lss', schemaName: 'utredning-sol-lss', tabLabel: 'Utredning Lex Sarah', ownerLabel: 'Lex Sarah' },
+  { key: 'utredning-hsl', schemaName: 'utredning-hsl', tabLabel: 'Händelseanalys HSL', ownerLabel: 'MAS/MAR' },
   {
     key: 'beslut-hsl',
     schemaName: 'beslut-hsl',

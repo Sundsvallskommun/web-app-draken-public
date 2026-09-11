@@ -149,9 +149,16 @@ describe('investigation report model', () => {
     ).toEqual({ errandNumber: EMPTY_VALUE });
   });
 
-  it('numbers report files after the tab label without characters a file name cannot carry', () => {
-    expect(investigationReportFileName('Utredning SoL/LSS', 2)).toBe('Utredning SoL-LSS_2.pdf');
-    expect(investigationReportFileName('Utredning HSL', 1)).toBe('Utredning HSL_1.pdf');
+  it.each([
+    ['Utredning Lex Sarah', 'Utredning_Lex_Sarah_2.pdf'],
+    ['Händelseanalys HSL', 'Handelseanalys_HSL_2.pdf'],
+    ['Utredning SoL/LSS', 'Utredning_SoL_LSS_2.pdf'],
+    ['  Åtgärd\tÖversyn\u00a0 HSL  ', 'Atgard_Oversyn_HSL_2.pdf'],
+    ['Ha\u0308ndelseanalys HSL', 'Handelseanalys_HSL_2.pdf'],
+    ['../Beslut\\ "Lex":*?<>|\r\nSarah%20.pdf', 'Beslut_Lex_Sarah_20_pdf_2.pdf'],
+    ['___', 'Utredning_2.pdf'],
+  ])('normalizes %j into an ASCII attachment name', (label, expected) => {
+    expect(investigationReportFileName(label, 2)).toBe(expected);
   });
 
   it('expands the field fragment into the template with one loop variable per nesting level', () => {

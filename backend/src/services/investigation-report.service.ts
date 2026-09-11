@@ -164,6 +164,12 @@ export const buildInvestigationReportModel = (input: BuildInvestigationReportMod
   };
 };
 
-/** The file name a report gets as an errand attachment: the tab label and the running number. */
-export const investigationReportFileName = (tabLabel: string, sequence: number): string =>
-  `${tabLabel.replace(/[\\/:*?"<>|]+/gu, '-').trim()}_${sequence}.pdf`;
+/** ASCII attachment names avoid whitespace and Unicode encoding differences in multipart headers. */
+export const investigationReportFileName = (tabLabel: string, sequence: number): string => {
+  const name = tabLabel
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[^a-zA-Z0-9]+/gu, '_')
+    .replace(/^_+|_+$/gu, '');
+  return `${name || 'Utredning'}_${sequence}.pdf`;
+};

@@ -120,13 +120,13 @@ const iafVofInvestigationProfileBase = {
     {
       key: 'utredning-sol-lss',
       schemaName: 'utredning-sol-lss',
-      tabLabel: 'Utredning SoL/LSS',
+      tabLabel: 'Utredning Lex Sarah',
       ownerLabel: 'Lex Sarah',
     },
     {
       key: 'utredning-hsl',
       schemaName: 'utredning-hsl',
-      tabLabel: 'Utredning HSL',
+      tabLabel: 'Händelseanalys HSL',
       ownerLabel: 'MAS/MAR',
     },
     // The decisions. Rendered on the Beslut tab rather than under Utredning, and each offered only

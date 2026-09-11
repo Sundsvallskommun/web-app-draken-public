@@ -58,7 +58,10 @@ Varje utredning slutar med sektionen Utredningen klar och rapport. Schemat dekla
 Rapporten skapas av BFF:en (`POST .../json-parameters/{key}/reports`) ur det sparade dokumentet: sektioner och fält
 i UI-schemats ordning, koder översatta till sina titlar, ärendets kategorisering från etiketterna. Den renderas
 via Templating-API:ts `render/direct/pdf` med mallen i `backend/src/services/investigation-report.template.ts`,
-läggs som bilaga på ärendet med löpnummer (`Utredning SoL-LSS_2.pdf`) och registreras i `reports`. Förhandsgranskning
+läggs som bilaga på ärendet med löpnummer (`Utredning_Lex_Sarah_2.pdf`) och registreras i `reports`. Filnamnet
+byggs av fliknamnet med ASCII-bokstäver, siffror och understreck (å/ä/ö blir a/a/o), så att multipart-uppladdningen
+inte behöver hantera mellanslag eller Unicode i filnamnet. PDF-rubriken följer fortfarande schemats `title`.
+Förhandsgranskning
 renderar utan att bifoga eller registrera. Efter upplåsning kan utredningen ändras och en ny numrerad rapport
 skapas; äldre rapporter ligger kvar som bilagor.
 

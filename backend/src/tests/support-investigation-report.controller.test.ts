@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import FormData from 'form-data';
 
 import { createSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import { SupportInvestigationReportController } from '@/controllers/supportmanagement/support-investigation-report.controller';
@@ -15,7 +16,7 @@ import { mockErrandAccess } from './helpers/support-errand-access';
 const KEY = 'utredning-hsl';
 const profile = createSupportInvestigationProfile({
   application: 'IAF',
-  documents: [{ key: KEY, schemaName: KEY, tabLabel: 'Utredning HSL', ownerLabel: 'MAS/MAR' }],
+  documents: [{ key: KEY, schemaName: KEY, tabLabel: 'Händelseanalys HSL', ownerLabel: 'MAS/MAR' }],
 });
 const schema = {
   id: '2281_utredning-hsl_1.2',
@@ -101,6 +102,10 @@ describe('SupportInvestigationReportController', () => {
     });
     expect(Buffer.from(renderCall.data.content, 'base64').toString('utf8')).toContain('{{ report.title }}');
     expect(attachCall.url).toBe(`supportmanagement/1.0/${mockMunicipalityId}/NS/errands/${mockSupportErrandId}/attachments`);
+    expect(attachCall.data).toBeInstanceOf(FormData);
+    const multipart = (attachCall.data as FormData).getBuffer().toString('utf8');
+    expect(multipart).toContain('name="errandAttachment"; filename="Handelseanalys_HSL_2.pdf"\r\n');
+    expect(multipart).toContain('Content-Type: application/pdf\r\n');
 
     expect(documentService.writeJsonParameter).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -114,7 +119,7 @@ describe('SupportInvestigationReportController', () => {
               {
                 generatedAt: '2026-09-11T12:30:00.000Z',
                 generatedBy: mockReq().user.username,
-                fileName: 'Utredning HSL_2.pdf',
+                fileName: 'Handelseanalys_HSL_2.pdf',
                 attachmentId: 'attachment-1',
               },
             ],
@@ -126,7 +131,7 @@ describe('SupportInvestigationReportController', () => {
     expect(res.setHeader).toHaveBeenCalledWith('ETag', '"4"');
     expect(res.setHeader).toHaveBeenCalledWith('X-Errand-Version', '10');
     expect(res.send).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ report: expect.objectContaining({ fileName: 'Utredning HSL_2.pdf' }) }) }),
+      expect.objectContaining({ data: expect.objectContaining({ report: expect.objectContaining({ fileName: 'Handelseanalys_HSL_2.pdf' }) }) }),
     );
   });
 
@@ -139,7 +144,7 @@ describe('SupportInvestigationReportController', () => {
     expect(apiService.post).toHaveBeenCalledTimes(1);
     expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({ data: { fileName: 'Utredning HSL_1.pdf', pdfBase64: 'UERG' } }));
+    expect(res.send).toHaveBeenCalledWith(expect.objectContaining({ data: { fileName: 'Handelseanalys_HSL_1.pdf', pdfBase64: 'UERG' } }));
   });
 
   it('previews a draft in place of the stored document, even one that was never saved', async () => {
