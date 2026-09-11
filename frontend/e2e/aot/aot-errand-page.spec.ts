@@ -88,6 +88,8 @@ test.describe('AOT:s ärendesida', () => {
     for (const name of ['Grundinformation', 'Ärendeuppgifter', 'Utredning']) {
       await expect(page.getByRole('tab', { name, exact: true })).toHaveCount(1);
     }
+    // The decision tab is an avvikelse slot; a variant without it gets no tab.
+    await expect(page.getByRole('tab', { name: 'Beslut', exact: true })).toHaveCount(0);
     // Meddelanden och Bilagor bär en räknare i etiketten.
     await expect(page.getByRole('tab', { name: /^Meddelanden/ })).toHaveCount(1);
     await expect(page.getByRole('tab', { name: /^Bilagor/ })).toHaveCount(1);

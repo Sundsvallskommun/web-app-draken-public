@@ -16,7 +16,16 @@
         "severity": 2,
         "calculatedRiskValue": 6
       },
-      "suspectedMisconduct": "no"
+      "suspectedMisconduct": "no",
+      "completed": "no",
+      "reports": [
+        {
+          "generatedAt": "2026-09-11T12:30:00.000Z",
+          "generatedBy": "iaf.test",
+          "fileName": "Utredning enhetschef_1.pdf",
+          "attachmentId": "attachment-1"
+        }
+      ]
     },
     "invalid": [
       {
@@ -29,6 +38,16 @@
             "severity": 3,
             "calculatedRiskValue": 15
           }
+        }
+      },
+      {
+        "description": "En rapportpost måste ange tidpunkt, användare och filnamn",
+        "value": {
+          "reports": [
+            {
+              "generatedAt": "2026-09-11T12:30:00.000Z"
+            }
+          ]
         }
       }
     ]
@@ -50,7 +69,16 @@
       "documentationMotivation": "<p>Dokumenterat i personakt.</p>",
       "requiresPoliceReport": "no",
       "proposedMisconductDegree": "misconduct",
-      "proposalMotivation": "<p>Utredarens samlade motivering.</p>"
+      "proposalMotivation": "<p>Utredarens samlade motivering.</p>",
+      "completed": "no",
+      "reports": [
+        {
+          "generatedAt": "2026-09-11T12:30:00.000Z",
+          "generatedBy": "iaf.test",
+          "fileName": "Utredning SoL-LSS_1.pdf",
+          "attachmentId": "attachment-1"
+        }
+      ]
     },
     "invalid": [
       {
@@ -58,6 +86,16 @@
         "value": {
           "legalBases": ["SOL", "LSS"],
           "eventTypes": ["physical_or_psychological_violation", "physical_or_psychological_violation"]
+        }
+      },
+      {
+        "description": "En rapportpost måste ange tidpunkt, användare och filnamn",
+        "value": {
+          "reports": [
+            {
+              "generatedAt": "2026-09-11T12:30:00.000Z"
+            }
+          ]
         }
       }
     ]
@@ -77,22 +115,160 @@
       "underlyingCauses": ["communication_failure", "technical_fault"],
       "contributingFactorsAndRisks": "<p>Bidragande faktorer, bifynd och kostnader.</p>",
       "analysisEvaluation": "<p>Analysteamets utvärdering.</p>",
-      "ivoNotification": "yes",
-      "ivoCaseNumber": "IVO-2026-1234",
-      "public360CaseNumber": "P360-2026-5678",
-      "commissionerComment": "<p>Uppdragsgivaren har tagit del av analysen.</p>"
+      "commissionerComment": "<p>Uppdragsgivaren har tagit del av analysen.</p>",
+      "completed": "no",
+      "reports": [
+        {
+          "generatedAt": "2026-09-11T12:30:00.000Z",
+          "generatedBy": "iaf.test",
+          "fileName": "Utredning HSL_1.pdf",
+          "attachmentId": "attachment-1"
+        }
+      ]
     },
     "invalid": [
       {
-        "description": "IVO-ärendenummer krävs när IVO-anmälan är Ja",
+        "description": "Beslutet om IVO-anmälan hör till beslutsdokumentet, inte utredningen",
         "value": {
           "ivoNotification": "yes",
           "public360CaseNumber": "P360-2026-5678"
         }
       },
       {
-        "description": "Public 360-ärendenummer krävs även när IVO-anmälan är Nej",
+        "description": "En rapportpost måste ange tidpunkt, användare och filnamn",
         "value": {
+          "reports": [
+            {
+              "generatedAt": "2026-09-11T12:30:00.000Z"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "beslut-hsl": {
+    "valid": {
+      "decidedAt": "2026-09-11T12:30:00.000Z",
+      "updatedAt": "2026-09-12T08:00:00.000Z",
+      "revisions": [
+        {
+          "savedAt": "2026-09-11T12:30:00.000Z",
+          "savedBy": "iaf.test"
+        },
+        {
+          "savedAt": "2026-09-12T08:00:00.000Z",
+          "savedBy": "iaf.test"
+        }
+      ],
+      "ivoNotification": "yes",
+      "ivoCaseNumber": "IVO-2026-1234",
+      "public360CaseNumber": "P360-2026-5678"
+    },
+    "invalid": [
+      {
+        "description": "Ställningstagandet till IVO-anmälan krävs",
+        "value": {
+          "public360CaseNumber": "P360-2026-5678"
+        }
+      },
+      {
+        "description": "Public 360-ärendenummer krävs när ärendet ska anmälas till IVO",
+        "value": {
+          "ivoNotification": "yes",
+          "ivoCaseNumber": "IVO-2026-1234"
+        }
+      },
+      {
+        "description": "IVO-ärendenummer får inte anges när ärendet inte ska anmälas till IVO",
+        "value": {
+          "ivoNotification": "no",
+          "ivoCaseNumber": "IVO-2026-1234"
+        }
+      },
+      {
+        "description": "Public 360-ärendenummer får inte anges när ärendet inte ska anmälas till IVO",
+        "value": {
+          "ivoNotification": "no",
+          "public360CaseNumber": "P360-2026-5678"
+        }
+      },
+      {
+        "description": "Beslutstidpunkten måste vara en tidpunkt",
+        "value": {
+          "decidedAt": "2026-09-11",
+          "ivoNotification": "no"
+        }
+      },
+      {
+        "description": "En sparning måste ange både tidpunkt och användare",
+        "value": {
+          "revisions": [
+            {
+              "savedAt": "2026-09-11T12:30:00.000Z"
+            }
+          ],
+          "ivoNotification": "no"
+        }
+      }
+    ]
+  },
+  "beslut-sol-lss": {
+    "valid": {
+      "decidedAt": "2026-09-11T12:30:00.000Z",
+      "updatedAt": "2026-09-12T08:00:00.000Z",
+      "revisions": [
+        {
+          "savedAt": "2026-09-11T12:30:00.000Z",
+          "savedBy": "iaf.test"
+        },
+        {
+          "savedAt": "2026-09-12T08:00:00.000Z",
+          "savedBy": "iaf.test"
+        }
+      ],
+      "decidedMisconductDegree": "serious_misconduct",
+      "decisionMotivation": "<p>Rapporten utgjorde ett allvarligt missförhållande.</p>",
+      "ivoNotification": "yes",
+      "ivoCaseNumber": "IVO-2026-4321",
+      "public360CaseNumber": "P360-2026-8765"
+    },
+    "invalid": [
+      {
+        "description": "Klassificering och motivering krävs",
+        "value": {
+          "ivoNotification": "no"
+        }
+      },
+      {
+        "description": "Motiveringen får inte vara tom",
+        "value": {
+          "decidedMisconductDegree": "no_misconduct",
+          "decisionMotivation": "",
+          "ivoNotification": "no"
+        }
+      },
+      {
+        "description": "Public 360-ärendenummer krävs när ärendet ska anmälas till IVO",
+        "value": {
+          "decidedMisconductDegree": "serious_misconduct",
+          "decisionMotivation": "<p>Allvarligt.</p>",
+          "ivoNotification": "yes"
+        }
+      },
+      {
+        "description": "IVO-ärendenummer får inte anges när ärendet inte ska anmälas till IVO",
+        "value": {
+          "decidedMisconductDegree": "misconduct",
+          "decisionMotivation": "<p>Missförhållande.</p>",
+          "ivoNotification": "no",
+          "ivoCaseNumber": "IVO-2026-0001"
+        }
+      },
+      {
+        "description": "Okänd klassificering avvisas",
+        "value": {
+          "decidedMisconductDegree": "unknown",
+          "decisionMotivation": "<p>-</p>",
           "ivoNotification": "no"
         }
       }

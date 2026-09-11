@@ -38,7 +38,10 @@ wrongly enables both then degrades to today's behaviour rather than to a placeho
   for the summary panel; do not extend it.
 - **Optional slots stay optional.** A variant that supplies no `renderNotice`, no
   `renderCategorizationControl` and no `labelTree` must leave Grundinformation's ordinary two-/three-
-  level categorization exactly as every other drake sees it. AOT is precisely that case.
+  level categorization exactly as every other drake sees it. AOT is precisely that case. The same
+  holds for `decisionTab`: avvikelse fills it with the Beslut errand tab, offered only when a decision
+  document applies to the errand and the user reaches it (the lex Sarah decision on a reported
+  misconduct, the IVO decision on an HSL deviation, never both); a variant without the slot gets no tab.
 - **The tab is selected by flag, not by profile state.** AOT has no registered profile, so the BFF
   always reports `state: 'inactive'` for it (`getSupportInvestigationProfile` falls through to an
   empty profile). Gating the tab on profile state silently deletes it from every non-avvikelse drake.

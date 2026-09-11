@@ -5,14 +5,17 @@ import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { getSchemaFormErrors, type SchemaFormError } from '@common/components/json/utils/schema-form-error-handling';
 import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@common/components/json/utils/schema-utils';
 import type { RJSFSchema, RJSFValidationError, UiSchema } from '@rjsf/utils';
-import { Alert, Label, Spinner } from '@sk-web-gui/react';
+import { Alert, Button, Label, Spinner } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import { AvvikelseLabelCategorization } from '@supportmanagement/investigation/avvikelse/avvikelse-label-categorization.component';
 import {
   applyAvvikelseLabelClassificationSelection,
   getAvvikelseLabelClassificationSelection,
 } from '@supportmanagement/investigation/avvikelse/label-classification';
+import { getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { isAxiosError } from 'axios';
+import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 
@@ -31,19 +34,33 @@ import {
   isReportedMisconductErrand,
   normalizeContextualInvestigationFormData,
 } from './investigation-classification';
+import {
+  AVVIKELSE_DECISION_PROPOSAL_SOURCE,
+  readInvestigationDecisionProposal,
+  resolveDecisionProposalDegreeTitle,
+} from './investigation-decision-proposal';
+import { InvestigationDecisionProposal } from './investigation-decision-proposal.component';
 import type { InvestigationDocumentDefinition, InvestigationFormData } from './investigation-document';
 import {
   getHslRiskValue,
+  getInvestigationCompletion,
   getInvestigationRenderingSchema,
+  getInvestigationReports,
+  getInvestigationServerTimestamps,
   investigationDefaultFormStateBehavior,
+  investigationRequiredIndicator,
 } from './investigation-form-data';
+import { InvestigationReportControls } from './investigation-report-controls.component';
 import {
   investigationSchemaDebugIsVisible,
   InvestigationSchemaDebugPanel,
 } from './investigation-schema-debug-panel.component';
 import { type SupportInvestigationClassificationResponse } from './support-investigation-classification-service';
 import {
+  decisionDocumentWording,
   type InvestigationClassificationDraft,
+  investigationClassificationWriteBlock,
+  investigationDocumentWording,
   investigationSaveErrorMessage,
   investigationSaveSuccessMessage,
   type PreparedInvestigationClassification,
@@ -52,9 +69,12 @@ import {
   saveInvestigationDocumentStep,
 } from './support-investigation-save-workflow';
 import {
+  createSupportInvestigationReport,
   getSupportInvestigationDocument,
   isSupportInvestigationAccessDenied,
+  previewSupportInvestigationReport,
   type SavedSupportInvestigationDocument,
+  saveSupportInvestigationDocument,
   type SupportInvestigationDocument as SavedInvestigationDocument,
 } from './support-investigation-service';
 
@@ -65,9 +85,19 @@ interface InvestigationDocumentState {
   uiSchema: UiSchema;
   schemaId: string;
   formData: InvestigationFormData;
+  /** The document as Support Management holds it; the lock and the report log read this, not the draft. */
+  persistedFormData: InvestigationFormData;
   persisted: boolean;
   etag?: string;
 }
+
+/** Opens a rendered PDF in a new tab; the object URL is released once the tab has had time to load it. */
+const openPdfInNewTab = (pdfBase64: string): void => {
+  const bytes = Uint8Array.from(atob(pdfBase64), (character) => character.charCodeAt(0));
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+  window.open(url, '_blank', 'noopener');
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+};
 
 const getClassificationDraft = (errand: SupportErrand | undefined): InvestigationClassificationDraft => ({
   labels: errand?.labels ?? [],
@@ -79,12 +109,19 @@ const getClassificationDraft = (errand: SupportErrand | undefined): Investigatio
 
 interface SupportInvestigationDocumentProps {
   definition: InvestigationDocumentDefinition;
+  readable: boolean;
   readonly: boolean;
+  classificationReadonly: boolean;
+  refreshAccess: () => void;
   onDirtyChange: (isDirty: boolean) => void;
   onSaved: (document: SavedInvestigationDocument) => void;
 }
 
-function InvestigationAlert({ type, message }: Readonly<{ type: 'error' | 'warning' | 'success'; message: string }>) {
+function InvestigationAlert({
+  type,
+  message,
+  dataCy = 'investigation-document-notice',
+}: Readonly<{ type: 'error' | 'warning' | 'success'; message: string; dataCy?: string }>) {
   const noticeRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (type !== 'error') return;
@@ -99,7 +136,7 @@ function InvestigationAlert({ type, message }: Readonly<{ type: 'error' | 'warni
       role={type === 'error' ? 'alert' : 'status'}
       aria-live={type === 'error' ? 'assertive' : 'polite'}
     >
-      <Alert type={type} className="mb-24" data-cy="investigation-document-notice">
+      <Alert type={type} className="mb-24" data-cy={dataCy}>
         <Alert.Icon />
         <Alert.Content>
           <Alert.Content.Description>{message}</Alert.Content.Description>
@@ -111,7 +148,10 @@ function InvestigationAlert({ type, message }: Readonly<{ type: 'error' | 'warni
 
 export function SupportInvestigationDocument({
   definition,
+  readable,
   readonly,
+  classificationReadonly,
+  refreshAccess,
   onDirtyChange,
   onSaved,
 }: Readonly<SupportInvestigationDocumentProps>) {
@@ -120,11 +160,26 @@ export function SupportInvestigationDocument({
   const supportMetadata = useMetadataStore((state) => state.supportMetadata);
   const { register: registerErrandField, resetField: resetErrandField } = useFormContext<SupportErrand>();
   const errandId = supportErrand?.id;
+  const profile = useInvestigationProfileStore((state) => state.profile);
   const reportedMisconduct = isReportedMisconductErrand(supportErrand);
+  const isDecision = (definition.placement ?? 'investigation') === 'decision';
+  // The decision on a reported misconduct answers the investigator's proposal, so it is shown first.
+  const showsDecisionProposal = isDecision && definition.appliesTo === 'reported-misconduct';
+  // A document that answers another one waits for it: the BFF refuses the write, and the form
+  // says why instead of offering a save that would fail.
+  const prerequisite = definition.prerequisiteDocumentKey
+    ? profile?.documents.find((document) => document.key === definition.prerequisiteDocumentKey)
+    : undefined;
+  const prerequisiteMissing =
+    definition.prerequisiteDocumentKey !== undefined &&
+    !supportErrand?.jsonParameters?.some((parameter) => parameter.key === definition.prerequisiteDocumentKey);
+  // What the handler is told the document is. The investigation wording predates the decision tab.
+  const wording = isDecision ? decisionDocumentWording : investigationDocumentWording;
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [documentState, setDocumentState] = useState<InvestigationDocumentState>();
   const [notice, setNotice] = useState<{ type: 'error' | 'warning' | 'success'; message: string }>();
   const [isSaving, setIsSaving] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<SchemaFormError[]>([]);
   const classificationFieldId = `${definition.key}_external_errandClassification`;
   const [isDirty, setIsDirty] = useState(false);
@@ -156,13 +211,15 @@ export function SupportInvestigationDocument({
   );
 
   useEffect(() => {
+    // Access may disappear during a refresh or be revoked. Keep the draft and RHF state;
+    // only a component identity change (user/errand/document) ends their lifetime.
+    if (!readable || documentState || loadState === 'error') return;
     let cancelled = false;
 
     const loadDocument = async () => {
       if (!municipalityId || !errandId) return;
 
       setLoadState('loading');
-      useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, false);
       setNotice(undefined);
       setValidationErrors([]);
       setDocumentDirty(false);
@@ -180,43 +237,42 @@ export function SupportInvestigationDocument({
         const uiSchema = await getUiSchemaForSchema(municipalityId, loadedSchema.schemaId);
 
         if (cancelled) return;
+        const loadedFormData = normalizeContextualInvestigationFormData(
+          definition.key,
+          definition.schemaName,
+          loadedSchema.schema,
+          storedDocument?.document.value ?? {},
+          reportedMisconduct
+        );
         setDocumentState({
           schema: loadedSchema.schema,
           uiSchema,
           schemaId: loadedSchema.schemaId,
-          formData: normalizeContextualInvestigationFormData(
-            definition.key,
-            definition.schemaName,
-            loadedSchema.schema,
-            storedDocument?.document.value ?? {},
-            reportedMisconduct
-          ),
+          formData: loadedFormData,
+          // The stored document as is, server-owned values included; the form data above is
+          // the client's normalized view of it.
+          persistedFormData: storedDocument?.document.value ?? {},
           persisted: Boolean(storedDocument),
           etag: storedDocument?.etag,
         });
         setLoadState('ready');
-        useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, true);
       } catch (error) {
         if (cancelled) return;
         console.error(`Failed to load investigation document ${definition.key}`, error);
         setLoadState('error');
-        useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, false);
+        if (isSupportInvestigationAccessDenied(error)) refreshAccess();
         setNotice({
           type: isSupportInvestigationAccessDenied(error) ? 'warning' : 'error',
           message: isSupportInvestigationAccessDenied(error)
-            ? 'Support Management nekade åtkomst till det här utredningsdokumentet.'
-            : 'Utredningen kunde inte laddas. Försök igen eller kontakta support om felet kvarstår.',
+            ? `Support Management nekade åtkomst till det här ${wording.kind}.`
+            : `${wording.noun} kunde inte laddas. Försök igen eller kontakta support om felet kvarstår.`,
         });
       }
     };
 
-    resetClassification(getClassificationDraft(useSupportStore.getState().supportErrand));
     void loadDocument();
     return () => {
       cancelled = true;
-      // Without this an unmounted document stays marked as handled and its jsonParameter is
-      // hidden from Ärendeuppgifter for the rest of the session.
-      useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, false);
     };
   }, [
     definition.key,
@@ -224,9 +280,22 @@ export function SupportInvestigationDocument({
     errandId,
     municipalityId,
     reportedMisconduct,
-    resetClassification,
     setDocumentDirty,
+    wording,
+    readable,
+    documentState,
+    loadState,
+    refreshAccess,
   ]);
+
+  useEffect(() => {
+    if (!classificationDirty) resetClassification(persistedClassification);
+  }, [classificationDirty, persistedClassification, resetClassification]);
+
+  useEffect(() => {
+    useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, readable && loadState === 'ready');
+    return () => useInvestigationProfileStore.getState().setJsonParameterHandled(definition.key, false);
+  }, [definition.key, readable, loadState]);
 
   // Schema documentation - the read/write state, the schema's own description, its owning role and
   // its id - is for working on the schemas, not on the errand. Test and development show all of it,
@@ -262,6 +331,26 @@ export function SupportInvestigationDocument({
     : undefined;
   const legalBases = documentState ? getInvestigationLegalBases(documentState.formData) : [];
   const legalBaseRules = getInvestigationLegalBaseRules();
+  const classificationPrerequisites = {
+    required: classificationOwner,
+    canEditClassification: !classificationReadonly,
+    dirty: classificationDirty,
+    labelTree: classificationLabelTree,
+    labelStructure: supportMetadata?.labels?.labelStructure,
+    legalBases,
+    legalBaseRules,
+    persistedClassification,
+  };
+  const classificationWriteBlock = investigationClassificationWriteBlock(classificationPrerequisites);
+  // A document saved as completed is locked: the form turns read-only and only the report
+  // controls act on it, until the owner unlocks it.
+  const completion = documentState ? getInvestigationCompletion(documentState.schema) : undefined;
+  const locked = Boolean(
+    completion && documentState?.persisted && documentState.persistedFormData[completion.field] === 'yes'
+  );
+  const reports =
+    documentState && completion ? getInvestigationReports(documentState.schema, documentState.persistedFormData) : [];
+  const formReadonly = readonly || Boolean(classificationWriteBlock) || prerequisiteMissing || locked;
   const classificationUiSchema = useMemo(
     () =>
       documentState
@@ -274,6 +363,9 @@ export function SupportInvestigationDocument({
         : undefined,
     [definition.key, documentState, reportedMisconduct]
   );
+  const serverTimestamps = documentState
+    ? getInvestigationServerTimestamps(documentState.schema, documentState.persistedFormData)
+    : [];
 
   useEffect(() => {
     if (!classificationOwner) return;
@@ -286,6 +378,9 @@ export function SupportInvestigationDocument({
     registerErrandField('classificationHasSubTypes');
   }, [classificationOwner, registerErrandField]);
 
+  // Do not leave a revoked document's values in the DOM. Hooks above keep its in-memory draft.
+  if (!readable) return null;
+
   if (loadState === 'loading') {
     return (
       <div className="flex items-center gap-12 p-32" role="status">
@@ -296,7 +391,20 @@ export function SupportInvestigationDocument({
   }
 
   if (loadState === 'error' || !documentState || !renderingSchema) {
-    return <div className="p-32">{notice && <InvestigationAlert {...notice} />}</div>;
+    return (
+      <div className="p-32">
+        {notice && <InvestigationAlert {...notice} />}
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setLoadState('loading');
+            refreshAccess();
+          }}
+        >
+          Försök igen
+        </Button>
+      </div>
+    );
   }
 
   const applySavedDocument = (saved: SavedSupportInvestigationDocument) => {
@@ -304,7 +412,15 @@ export function SupportInvestigationDocument({
       current
         ? {
             ...current,
-            formData: saved.document.value,
+            // Normalized like a load, so the server's own properties do not read as edits.
+            formData: normalizeContextualInvestigationFormData(
+              definition.key,
+              definition.schemaName,
+              current.schema,
+              saved.document.value,
+              reportedMisconduct
+            ),
+            persistedFormData: saved.document.value,
             schemaId: saved.document.schemaId,
             persisted: true,
             etag: saved.etag,
@@ -379,8 +495,84 @@ export function SupportInvestigationDocument({
     if (needsLexAssignment) setShowLexAssignmentPrompt(true);
   };
 
+  const reportFailureNotice = (error: unknown, fallback: string) => {
+    if (isSupportInvestigationAccessDenied(error)) {
+      refreshAccess();
+      setNotice({ type: 'warning', message: `Support Management nekade åtkomst till det här ${wording.kind}.` });
+      return;
+    }
+    const serverMessage = isAxiosError<{ message?: unknown }>(error) ? error.response?.data?.message : undefined;
+    const message =
+      typeof serverMessage === 'string' && serverMessage.trim()
+        ? serverMessage
+        : !isAxiosError(error) && error instanceof Error && error.message
+        ? error.message
+        : fallback;
+    setNotice({ type: 'error', message });
+  };
+
+  const unlockDocument = async () => {
+    if (!municipalityId || !errandId || !completion || !documentState.persisted || isReporting || isSaving) return;
+    if (typeof supportErrand?.version !== 'number') {
+      setNotice({ type: 'error', message: 'Ärendets version saknas. Ladda om ärendet innan utredningen låses upp.' });
+      return;
+    }
+    setIsReporting(true);
+    setNotice(undefined);
+    try {
+      const saved = await saveSupportInvestigationDocument(
+        municipalityId,
+        errandId,
+        definition.key,
+        { schemaId: documentState.schemaId, value: { ...documentState.persistedFormData, [completion.field]: 'no' } },
+        supportErrand.version,
+        documentState.etag
+      );
+      applySavedDocument(saved);
+      setNotice({ type: 'success', message: `${wording.noun} är upplåst och kan ändras igen.` });
+    } catch (error) {
+      reportFailureNotice(error, `${wording.noun} kunde inte låsas upp. Försök igen.`);
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
+  const generateReport = async () => {
+    if (!municipalityId || !errandId || !locked || isDirty || isReporting || isSaving) return;
+    setIsReporting(true);
+    setNotice(undefined);
+    try {
+      const created = await createSupportInvestigationReport(municipalityId, errandId, definition.key);
+      applySavedDocument(created);
+      setNotice({
+        type: 'success',
+        message: `Rapporten ${created.report.fileName} har skapats och lagts som en bilaga på ärendet.`,
+      });
+      const attachments = await getSupportAttachments(errandId, municipalityId);
+      useSupportStore.getState().setSupportAttachments(attachments);
+    } catch (error) {
+      reportFailureNotice(error, 'Rapporten kunde inte skapas. Försök igen eller kontakta support om felet kvarstår.');
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
+  const previewReport = async () => {
+    if (!municipalityId || !errandId || !locked || isDirty || isReporting) return;
+    setIsReporting(true);
+    setNotice(undefined);
+    try {
+      const preview = await previewSupportInvestigationReport(municipalityId, errandId, definition.key);
+      openPdfInNewTab(preview.pdfBase64);
+    } catch (error) {
+      reportFailureNotice(error, 'Rapporten kunde inte förhandsgranskas. Försök igen.');
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
   const save = async (formData: InvestigationFormData, schemaErrors: RJSFValidationError[] = []) => {
-    if (!municipalityId || !errandId || readonly || isSaving) return;
+    if (!municipalityId || !errandId || !readable || formReadonly || isSaving) return;
 
     const normalizedData = normalizeContextualInvestigationFormData(
       definition.key,
@@ -400,6 +592,7 @@ export function SupportInvestigationDocument({
       try {
         preparedClassification = await prepareInvestigationClassification({
           required: classificationOwner,
+          canEditClassification: !classificationReadonly,
           dirty: classificationDirty,
           labelTree: classificationLabelTree,
           labelStructure: supportMetadata?.labels?.labelStructure,
@@ -456,11 +649,12 @@ export function SupportInvestigationDocument({
       setDocumentDirty(false);
       setNotice({
         type: 'success',
-        message: investigationSaveSuccessMessage(Boolean(savedDocument), Boolean(savedClassification)),
+        message: investigationSaveSuccessMessage(Boolean(savedDocument), Boolean(savedClassification), wording),
       });
 
       promptLexAssignmentIfNeeded(normalizedData);
     } catch (error) {
+      if (isSupportInvestigationAccessDenied(error)) refreshAccess();
       setNotice({
         type: 'error',
         message: investigationSaveErrorMessage({
@@ -468,6 +662,7 @@ export function SupportInvestigationDocument({
           documentSavedForClassification,
           classificationDirty,
           classificationRequired: classificationOwner,
+          wording,
         }),
       });
     } finally {
@@ -488,8 +683,8 @@ export function SupportInvestigationDocument({
               {definition.tabLabel}
             </h2>
             {showSchemaMetadata && (
-              <Label rounded inverted color={readonly ? 'bjornstigen' : 'gronsta'}>
-                {readonly ? 'Skrivskyddad' : 'Redigerbar'}
+              <Label rounded inverted color={formReadonly ? 'bjornstigen' : 'gronsta'}>
+                {formReadonly ? 'Skrivskyddad' : 'Redigerbar'}
               </Label>
             )}
             {(isDirty || classificationDirty) && (
@@ -504,10 +699,42 @@ export function SupportInvestigationDocument({
               <code className="break-all">{documentState.schemaId}</code>
             </p>
           )}
+          {serverTimestamps.map((timestamp) => (
+            <p key={timestamp.name} className="mt-8 text-small" data-cy={`investigation-document-${timestamp.name}`}>
+              {timestamp.label}:{' '}
+              <time dateTime={timestamp.value}>{dayjs(timestamp.value).format('YYYY-MM-DD HH:mm')}</time>
+            </p>
+          ))}
         </div>
       </div>
 
       {notice && <InvestigationAlert {...notice} />}
+
+      {locked && (
+        <InvestigationAlert
+          type="warning"
+          dataCy="investigation-document-locked"
+          message={`${wording.noun} är markerad som klar och är låst för ändringar. Lås upp den om du behöver ändra något.`}
+        />
+      )}
+
+      {prerequisiteMissing && (
+        <InvestigationAlert
+          type="warning"
+          dataCy="investigation-document-prerequisite"
+          message={`${wording.noun} kan fattas först när ${
+            prerequisite?.tabLabel ?? definition.prerequisiteDocumentKey
+          } har sparats i ärendet.`}
+        />
+      )}
+
+      {classificationWriteBlock && <InvestigationAlert type="warning" message={classificationWriteBlock} />}
+      {!readonly && classificationOwner && classificationReadonly && !classificationWriteBlock && (
+        <InvestigationAlert
+          type="warning"
+          message="Du kan ändra dokumentet men inte ärendets kategorisering. Ändringar av lagrum måste stämma med den befintliga kategoriseringen."
+        />
+      )}
 
       {classificationOwner && classificationSchemaContract === 'missing-declaration' && (
         <Alert type="warning" className="mb-24" data-cy="investigation-classification-schema-warning">
@@ -526,11 +753,27 @@ export function SupportInvestigationDocument({
           <Alert.Icon />
           <Alert.Content>
             <Alert.Content.Description>
-              Utredningen kan läsas men inte ändras med din behörighet eller i ärendets nuvarande status.
+              {wording.noun} kan läsas men inte ändras med din behörighet eller i ärendets nuvarande status.
             </Alert.Content.Description>
           </Alert.Content>
         </Alert>
       )}
+
+      {showsDecisionProposal &&
+        !prerequisiteMissing &&
+        (() => {
+          const proposal = readInvestigationDecisionProposal(supportErrand, profile);
+          return (
+            <InvestigationDecisionProposal
+              proposal={proposal}
+              degreeTitle={resolveDecisionProposalDegreeTitle(
+                documentState.schema,
+                AVVIKELSE_DECISION_PROPOSAL_SOURCE.decisionDegreeField,
+                proposal?.degree
+              )}
+            />
+          );
+        })()}
 
       {hslRiskValue !== undefined && hslRiskValue >= HSL_RISK_ESCALATION_THRESHOLD && (
         <Alert type="warning" className="mb-24" data-cy="hsl-risk-threshold-alert">
@@ -562,10 +805,11 @@ export function SupportInvestigationDocument({
         defaultFormStateBehavior={investigationDefaultFormStateBehavior}
         uiSchema={classificationUiSchema}
         idPrefix={definition.key}
+        requiredIndicator={investigationRequiredIndicator}
         arrayFieldTemplate={ArrayObjectFieldTemplate}
         formData={documentState.formData}
         onChange={(formData) => {
-          if (isSaving) return;
+          if (formReadonly || isSaving) return;
           const normalizedData = normalizeContextualInvestigationFormData(
             definition.key,
             definition.schemaName,
@@ -573,6 +817,15 @@ export function SupportInvestigationDocument({
             formData,
             reportedMisconduct
           );
+          const writeBlock = investigationClassificationWriteBlock({
+            ...classificationPrerequisites,
+            legalBases: getInvestigationLegalBases(normalizedData),
+          });
+          if (writeBlock) {
+            setDocumentState((current) => (current ? { ...current, formData: { ...current.formData } } : current));
+            setNotice({ type: 'warning', message: writeBlock });
+            return;
+          }
           if (JSON.stringify(normalizedData) === JSON.stringify(documentState.formData)) return;
           if (documentSavedPendingClassification) setDocumentSavedPendingClassification(false);
           setDocumentState((current) => (current ? { ...current, formData: normalizedData } : current));
@@ -581,9 +834,26 @@ export function SupportInvestigationDocument({
           setNotice(undefined);
         }}
         onSubmit={(formData) => void save(formData)}
-        readonly={readonly || isSaving}
-        externalFields={
-          classificationOwner && classificationLabelTree
+        readonly={formReadonly || isSaving}
+        externalFields={{
+          ...(completion
+            ? {
+                investigationReport: (
+                  <InvestigationReportControls
+                    documentKey={definition.key}
+                    locked={locked}
+                    dirty={isDirty || classificationDirty}
+                    busy={isReporting || isSaving}
+                    canEdit={!readonly && !prerequisiteMissing}
+                    reports={reports}
+                    onGenerate={() => void generateReport()}
+                    onPreview={() => void previewReport()}
+                    onUnlock={() => void unlockDocument()}
+                  />
+                ),
+              }
+            : {}),
+          ...(classificationOwner && classificationLabelTree
             ? {
                 errandClassification: (
                   <div id={classificationFieldId} tabIndex={-1}>
@@ -591,7 +861,7 @@ export function SupportInvestigationDocument({
                       <AvvikelseLabelCategorization
                         supportMetadata={supportMetadata}
                         labelTree={classificationLabelTree}
-                        disabled={readonly || isSaving}
+                        disabled={formReadonly || classificationReadonly || isSaving}
                         legalBases={legalBases}
                         legalBaseRules={legalBaseRules}
                         onClassificationChange={() => {
@@ -604,10 +874,10 @@ export function SupportInvestigationDocument({
                   </div>
                 ),
               }
-            : undefined
-        }
+            : {}),
+        }}
         submitButtonOptions={{
-          label: 'Spara utredning',
+          label: isDecision ? 'Spara beslut' : 'Spara utredning',
           leadingIcon: false,
           loading: isSaving,
           disabled: !isDirty && !classificationDirty,

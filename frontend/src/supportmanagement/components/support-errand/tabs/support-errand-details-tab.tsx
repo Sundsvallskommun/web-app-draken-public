@@ -1,20 +1,27 @@
 import { JsonParametersDisplay } from '@common/components/json/schema/json-parameters-display.component';
 import { Table } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
+import {
+  type InvestigationAccessState,
+  isInvestigationParameterReadable,
+} from '@supportmanagement/investigation/investigation-access';
 import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
 import { useMemo } from 'react';
 
-export const SupportErrandDetailsTab: React.FC<{}> = () => {
+export const SupportErrandDetailsTab = ({ access }: { readonly access: InvestigationAccessState }) => {
   const _supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  const profile = useInvestigationProfileStore((state) => state.profile);
   const handledJsonParameterKeys = useInvestigationProfileStore((state) => state.handledJsonParameterKeys);
   const supportErrand = _supportErrand!;
-  // Hide only what another tab is currently rendering, so the same document is not shown twice.
-  // Which tab that is, and whether it is an investigation at all, is none of this tab's business.
+  // Avoid both duplicate rendering and exposing a hidden document from an older errand snapshot.
   const readonlyJsonParameters = useMemo(
-    () => (supportErrand.jsonParameters ?? []).filter(({ key }) => !handledJsonParameterKeys[key]),
-    [handledJsonParameterKeys, supportErrand.jsonParameters]
+    () =>
+      (supportErrand.jsonParameters ?? []).filter(
+        ({ key }) => !handledJsonParameterKeys[key] && isInvestigationParameterReadable(profile, access, key)
+      ),
+    [access, profile, handledJsonParameterKeys, supportErrand.jsonParameters]
   );
 
   const simpleParams = useMemo(

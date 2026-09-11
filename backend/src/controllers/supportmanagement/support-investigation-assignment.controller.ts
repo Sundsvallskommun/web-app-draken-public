@@ -93,7 +93,7 @@ export class SupportInvestigationAssignmentController {
     @Param('id') id: string,
   ): Promise<UnitManagerResponse> {
     const step = this.requireStep('return-to-manager');
-    await this.assertStepAllowed(req, step);
+    await this.assertStepAllowed(req, municipalityId, id, step);
 
     const { errand, metadata } = await this.readErrandAndMetadata(req, municipalityId, id);
     const { location, managers } = await this.resolveManagersForErrand(req, municipalityId, errand, metadata);
@@ -182,7 +182,7 @@ export class SupportInvestigationAssignmentController {
     @Res() response: any,
   ): Promise<any> {
     const step = this.requireStep(stepName);
-    await this.assertStepAllowed(req, step);
+    await this.assertStepAllowed(req, municipalityId, id, step);
 
     const { errand, metadata, currentVersion } = await this.readErrandAndMetadata(req, municipalityId, id);
     assertRequestedErrandVersion(data.expectedVersion, currentVersion);
@@ -233,7 +233,12 @@ export class SupportInvestigationAssignmentController {
    * A handover only exists where an investigation owns the errand, and only for somebody who may
    * write the document the step belongs to. The capability decides this, never the application name.
    */
-  private async assertStepAllowed(req: RequestWithUser, step: InvestigationHandoverStepDefinition): Promise<void> {
+  private async assertStepAllowed(
+    req: RequestWithUser,
+    municipalityId: string,
+    errandId: string,
+    step: InvestigationHandoverStepDefinition,
+  ): Promise<void> {
     if (!this.namespace?.trim()) throw new HttpException(409, 'Support Management namespace is not configured');
 
     const classificationOwner = await this.investigationPolicyService.getClassificationOwner(req.user);
@@ -248,7 +253,7 @@ export class SupportInvestigationAssignmentController {
     if (!definition) {
       throw new HttpException(409, `This application has no ${step.authorizingSchemaName} investigation document`);
     }
-    this.investigationAccessService.assertCanWriteDocument(req.user, definition.key);
+    await this.investigationAccessService.assertCanWriteDocument(req.user, municipalityId, errandId, definition.key);
   }
 
   private async readErrandAndMetadata(

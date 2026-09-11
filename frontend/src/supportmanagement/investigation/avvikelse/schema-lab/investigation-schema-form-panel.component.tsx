@@ -11,6 +11,7 @@ import {
   getHslRiskValue,
   getInvestigationRenderingSchema,
   investigationDefaultFormStateBehavior,
+  investigationRequiredIndicator,
 } from '../investigation-form-data';
 import { InvestigationLabNotice, InvestigationSchemaAccess } from './investigation-schema-lab.types';
 import { formatInvestigationLabTimestamp } from './investigation-schema-lab-time';
@@ -142,6 +143,7 @@ export function InvestigationSchemaFormPanel({
         onSubmit={onValidatedSave}
         readonly={!access.canWrite}
         externalFields={externalFields}
+        requiredIndicator={investigationRequiredIndicator}
         submitButtonOptions={{ label: 'Validera och spara lokalt', leadingIcon: false }}
         extraContent={
           access.canWrite ? (

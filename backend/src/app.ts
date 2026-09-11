@@ -1,5 +1,3 @@
-import 'reflect-metadata';
-
 import {
   BASE_URL_PREFIX,
   CREDENTIALS,

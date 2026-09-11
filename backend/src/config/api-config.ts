@@ -42,7 +42,7 @@ export const APIS = [
   },
   {
     name: 'supportmanagement-sprint',
-    version: '16.0',
+    version: '16.1',
     // Runtime transport target only. Application code imports the stable
     // Support Management facade, so generating a second unused contract would
     // create two competing TypeScript owners for the same domain.

@@ -15,7 +15,8 @@ function validate(schema: RJSFSchema, data: Record<string, unknown>) {
 }
 
 test('summarizes nested investigation errors with Swedish titles and navigable field ids', () => {
-  const schema = managerSchema.value as RJSFSchema;
+  // The published request keeps literal types; RJSF's JSONSchema7 needs the widened shape.
+  const schema = managerSchema.value as unknown as RJSFSchema;
   const errors = validate(schema, { legalBases: ['HSL'], riskAssessmentHsl: {} });
   const summary = getSchemaFormErrors(schema, errors, 'utredning-enhetschef');
 

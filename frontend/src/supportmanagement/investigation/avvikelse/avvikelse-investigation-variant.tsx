@@ -1,8 +1,10 @@
 'use client';
 
 import { Spinner } from '@sk-web-gui/react';
+import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import dynamic from 'next/dynamic';
 
+import type { InvestigationAccessState } from '../investigation-access';
 import type { InvestigationProfile } from '../investigation-profile';
 import type {
   InvestigationCategorizationControlProps,
@@ -10,7 +12,9 @@ import type {
   InvestigationVariantModule,
 } from '../investigation-variant';
 import { resolveAvvikelseClassificationPlacement } from './avvikelse-classification-placement';
+import { resolveAvvikelseDocumentApplicability } from './avvikelse-classification-policy';
 import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.component';
+import { visibleInvestigationDocuments } from './investigation-tab-state';
 
 /**
  * Loaded lazily on purpose. A static import would close a module cycle - the registry imports this
@@ -56,4 +60,24 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
   renderCategorizationControl: ({ disabled }: InvestigationCategorizationControlProps) => (
     <AvvikelseCategorizationControl disabled={disabled} />
   ),
+  /**
+   * The decision that closes the investigation: lex Sarah for a reported misconduct, the IVO
+   * decision for an HSL deviation. Offered only when the profile has a decision document that
+   * applies to this errand and that this user reaches: a handler who is not mapped to the decision
+   * gets no tab rather than a tab that explains it is not theirs.
+   */
+  decisionTab: {
+    label: 'Beslut',
+    isVisible: (
+      errand: SupportErrand | undefined,
+      profile: InvestigationProfile | null | undefined,
+      access: InvestigationAccessState
+    ) =>
+      visibleInvestigationDocuments(profile, {
+        placement: 'decision',
+        applicability: resolveAvvikelseDocumentApplicability(errand),
+        access,
+      }).length > 0,
+    render: (props: InvestigationTabProps) => <SupportErrandInvestigationTab {...props} placement="decision" />,
+  },
 });

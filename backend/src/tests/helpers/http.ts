@@ -3,19 +3,22 @@
 // so controller methods can be invoked as plain functions with these stand-ins.
 
 import { RequestWithUser } from '@/interfaces/auth.interface';
-import { User } from '@/interfaces/users.interface';
+import { Permissions, User } from '@/interfaces/users.interface';
 
 import { mockAdUsername, mockFirstName, mockLastName } from './mock-data';
 
-export const mockUser = (overrides: Partial<User> = {}): User =>
+/** Permissions are named one flag at a time, so a test states only the one it depends on. */
+type MockUserOverrides = Partial<Omit<User, 'permissions'>> & { permissions?: Partial<Permissions> };
+
+export const mockUser = ({ permissions, ...overrides }: MockUserOverrides = {}): User =>
   ({
     username: mockAdUsername,
     name: `${mockFirstName} ${mockLastName}`,
     givenName: mockFirstName,
     surname: mockLastName,
     groups: [],
-    permissions: {},
     ...overrides,
+    permissions: { ...permissions },
   }) as User;
 
 export const mockReq = (user: User = mockUser()): RequestWithUser => ({ user }) as RequestWithUser;

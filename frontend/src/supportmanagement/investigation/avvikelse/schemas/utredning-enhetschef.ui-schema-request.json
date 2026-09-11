@@ -10,7 +10,9 @@
       "causeAreas",
       "riskAssessmentHsl",
       "riskAssessmentSolLss",
-      "suspectedMisconduct"
+      "suspectedMisconduct",
+      "completed",
+      "reports"
     ],
     "ui:sections": [
       {
@@ -28,6 +30,13 @@
           "riskAssessmentSolLss",
           "suspectedMisconduct"
         ]
+      },
+      {
+        "id": "report",
+        "title": "Utredningen klar och rapport",
+        "icon": "file-text",
+        "defaultOpen": true,
+        "fields": ["completed", "$external:investigationReport", "reports"]
       }
     ],
     "legalBases": {
@@ -98,7 +107,9 @@
     },
     "suspectedMisconduct": {
       "ui:widget": "RadiobuttonWidget"
-    }
+    },
+    "completed": { "ui:widget": "RadiobuttonWidget" },
+    "reports": { "ui:widget": "hidden" }
   },
-  "description": "UI schema for version 1.1 of Utredning enhetschef in Draken"
+  "description": "UI schema for version 1.2 of Utredning enhetschef in Draken"
 }

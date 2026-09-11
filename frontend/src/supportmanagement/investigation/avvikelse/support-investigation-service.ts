@@ -93,3 +93,79 @@ export function isSupportInvestigationAccessDenied(error: unknown): boolean {
   const status = responseStatus(error);
   return status === 401 || status === 403;
 }
+
+export interface SupportInvestigationReportEntry {
+  readonly generatedAt: string;
+  readonly generatedBy: string;
+  readonly fileName: string;
+  readonly attachmentId?: string;
+}
+
+export interface CreatedSupportInvestigationReport extends SavedSupportInvestigationDocument {
+  readonly report: SupportInvestigationReportEntry;
+}
+
+interface ReportResponseBody {
+  data?: { document?: unknown; report?: unknown; fileName?: unknown; pdfBase64?: unknown };
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const parseReportEntry = (value: unknown): SupportInvestigationReportEntry => {
+  if (
+    !isRecord(value) ||
+    typeof value.generatedAt !== 'string' ||
+    typeof value.generatedBy !== 'string' ||
+    typeof value.fileName !== 'string'
+  ) {
+    throw new Error('Rapportsvaret från servern är ogiltigt.');
+  }
+  return {
+    generatedAt: value.generatedAt,
+    generatedBy: value.generatedBy,
+    fileName: value.fileName,
+    ...(typeof value.attachmentId === 'string' ? { attachmentId: value.attachmentId } : {}),
+  };
+};
+
+/**
+ * Renders the completed document as a PDF, attaches it to the errand and records it on the
+ * document. The BFF makes the write; the response carries the document as it is afterwards.
+ */
+export async function createSupportInvestigationReport(
+  municipalityId: string,
+  errandId: string,
+  key: InvestigationDocumentKey
+): Promise<CreatedSupportInvestigationReport> {
+  const response = await apiService.post<ReportResponseBody, Record<string, never>>(
+    `${documentUrl(municipalityId, errandId, key)}/reports`,
+    {}
+  );
+  if (response.status !== 201) {
+    throw new Error(`Rapporten returnerade oväntad status ${response.status}.`);
+  }
+  return {
+    ...parseSupportInvestigationDocument(response.data.data?.document, key, response.headers.etag),
+    parentErrandVersion: parseParentErrandVersion(response.headers['x-errand-version']),
+    report: parseReportEntry(response.data.data?.report),
+  };
+}
+
+/** Renders the report without attaching or recording it. */
+export async function previewSupportInvestigationReport(
+  municipalityId: string,
+  errandId: string,
+  key: InvestigationDocumentKey
+): Promise<{ fileName: string; pdfBase64: string }> {
+  const response = await apiService.post<ReportResponseBody, { preview: true }>(
+    `${documentUrl(municipalityId, errandId, key)}/reports`,
+    { preview: true }
+  );
+  const fileName = response.data.data?.fileName;
+  const pdfBase64 = response.data.data?.pdfBase64;
+  if (typeof fileName !== 'string' || typeof pdfBase64 !== 'string' || pdfBase64.length === 0) {
+    throw new Error('Förhandsgranskningen returnerade ingen PDF.');
+  }
+  return { fileName, pdfBase64 };
+}

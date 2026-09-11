@@ -1,10 +1,31 @@
 # Utredningsscheman för IAF/VOF
 
-Den här katalogen innehåller den lokala utvecklingsytan för tre separata JSON Parameters:
+Den här katalogen innehåller den lokala utvecklingsytan för fem separata JSON Parameters:
 
 - `utredning-enhetschef`
 - `utredning-sol-lss`
 - `utredning-hsl`
+- `beslut-hsl` — beslutet om anmälan till IVO för en vanlig avvikelse med lagrum HSL (`placement: 'decision'`,
+  `appliesTo: 'hsl-deviation'` i runtimeprofilen).
+- `beslut-sol-lss` — beslutet enligt lex Sarah för ett rapporterat missförhållande, oavsett lagrum
+  (`placement: 'decision'`, `appliesTo: 'reported-misconduct'`).
+
+Besluten visas på den egna ärendefliken Beslut i stället för under Utredning, efter Åtgärder, eftersom beslutet
+avslutar ärendet. Den fasta IAF/VOF-regeln avgör
+vilket av dem ett ärende tar: missförhållande ger alltid lex Sarah-beslutet, en vanlig avvikelse ger HSL-beslutet
+bara när HSL är ett av lagrummen, och ett ärende tar aldrig båda. Regeln finns i både backend och frontend
+(`resolveIafVofInvestigationDocumentApplicability` respektive `resolveAvvikelseDocumentApplicability`), och BFF:en
+avvisar ett beslutsdokument på ett ärende det inte gäller.
+
+Ett dokument kan i profilen peka ut ett `prerequisiteDocumentKey`: ett annat dokument som måste vara sparat i
+ärendet innan det får skrivas. `beslut-sol-lss` kräver `utredning-sol-lss`. BFF:en avvisar skrivningen med 409
+annars, och formuläret visar en spärr i stället för spara-knappen. Serverägda schemaegenskaper sätts av BFF:en
+oavsett vad klienten skickar: `x-draken-server-timestamp: "created"` stämplas vid första sparningen och bevaras
+sedan, `"updated"` stämplas vid varje sparning, och en array märkt `x-draken-server-revisions` får en post
+`{ savedAt, savedBy }` per sparning (beslutens `decidedAt`, `updatedAt` och `revisions`). Utrednings- och
+beslutsformulären markerar obligatoriska fält med texten "(Obligatorisk)" i stället för en asterisk
+(`requiredIndicator` på `SchemaForm`); ett fält kan dessutom alltid visas som obligatoriskt via
+`ui:options.showRequiredIndicator`.
 
 `schemas/` äger de versionssatta WSO2-requestartefakterna. Varje JSON Schema-request kan skickas som body till
 `POST /{municipalityId}/schemas` och motsvarande UI Schema-request som body till
@@ -176,12 +197,17 @@ All data som läses från RJSF eller localStorage normaliseras mot det aktuella 
 Okända fält tas bort, liksom villkorsstyrda värden som inte längre gäller (exempelvis IVO-ärendenummer när IVO är
 `Nej`). Riskvärden beräknas från respektive schemas `x-calculation` och samma produktregel valideras av JSON Schema.
 
-Åtgärder, handlingsplan, arbetsanteckningar, rapportgenerering och slutligt beslut ingår avsiktligt inte i dessa tre
-utredningsdokument. De hör till senare workflow-steg. Katlas inkommande ärendedata förblir en separat skrivskyddad
-JSON Parameter.
+Åtgärder, handlingsplan, arbetsanteckningar och rapportgenerering ingår avsiktligt inte i de tre
+utredningsdokumenten. Besluten är egna dokument: `beslut-sol-lss` visar utredarens förslag från SOL/LSS-utredningen
+skrivskyddat (läst från ärendets JSON Parameters via profilens dokumentnyckel) men kopierar det inte, och
+`beslut-hsl` tar över IVO- och Public 360-fälten som till och med schema 1.0 låg i HSL-utredningen. Katlas
+inkommande ärendedata förblir en separat skrivskyddad JSON Parameter.
 
-De lokala artefakterna för `utredning-enhetschef` och `utredning-sol-lss` är version 1.1 och deklarerar
-`errandClassification`; `utredning-hsl` ligger kvar på version 1.0. För redan bundna manager- och SOL/LSS-dokument
+De lokala artefakterna för de tre utredningarna är version 1.2: enhetschefs- och SoL/LSS-utredningen deklarerar
+`errandClassification`, HSL-utredningen saknar beslutsfälten sedan 1.1, och alla tre har sektionen Utredningen klar
+och rapport (`x-draken-completion`, se `schemas/README.md`). En utredning som sparats som klar är låst i både BFF
+och formulär tills ägaren låser upp den; BFF:en skapar PDF-rapporten ur det sparade dokumentet, lägger den som
+numrerad bilaga och registrerar den i det serverägda `reports`-fältet. För redan bundna manager- och SOL/LSS-dokument
 med schema till och med version 1.0 injicerar runtime samma externa placering som en bakåtkompatibel fallback.
 Ägarskapet bestäms dock centralt av den fasta IAF/VOF-regeln tillsammans med runtimeprofilens dokumentnycklar, inte
 av en enskild schemadeklaration. Om
@@ -206,6 +232,36 @@ Med labbservern startad kan webbläsarbeteendet verifieras med:
 yarn test:e2e:iaf-schema-lab
 yarn test:e2e:iaf
 ```
+
+### Ärendets dokumentbehörigheter
+
+Profilen beskriver dokumenten; rättigheter hämtas separat från backendens
+`supporterrands/{municipalityId}/{errandId}/investigation-access`, som projicerar
+Support Management Sprint 16.1 `/access`. Nyckeln i fältposten med
+`field: "jsonParameters"` och resursen `errand/json-parameter` måste båda tillåta åtkomst.
+`allKeys: true` omfattar nya dokument; annars måste nyckeln vara explicit listad.
+Ärendets nivå är en default, inte ett tak — den gäller de nycklar som saknar egen grant, som ett
+unix-filträd där en skrivbar katalog kan ligga under en läsbar förälder. En roll med `R`/`LR` på
+ärendet men `RW` på sin egen nyckel skriver alltså det dokumentet utan att få handlägga ärendet i
+övrigt. Med `allKeys: true` finns ingen sådan förfining, och ärendets nivå gäller varje nyckel.
+Resursen `errand/json-parameter` måste däremot alltid vara `RW` för att skrivvägen (PUT) ska vara
+öppen.
+
+Både `R` och `LR` returnerar `fields`. Skillnaden är att `LR` returnerar en _delmängd_ av dem, och
+den delmängden är då det som gäller: en nyckel som finns med är läsbar med sin egen nivå, en nyckel
+som saknas är dold. `LR` är alltså inte en svagare läsning av samma dokument utan ett smalare urval
+av vilka dokument som finns för användaren, och en listad nyckel visar sitt innehåll precis som
+under `R`.
+
+UI:t delar en accesshämtning mellan Utredning och Beslut och visar aldrig rättigheter från ett
+annat ärende eller en annan användare. Ändrad ärendeversion, etiketter, fokus, återanslutning och
+nekade dokumentanrop utlöser omkontroll; varje GET/PUT kontrolleras även i backend.
+Nekad åtkomst blir 403, utan att skicka användaren till inloggningen.
+Dokumentkomponenterna behåller sina utkast medan innehållet döljs vid omkontroll eller nekad
+läsrätt. Även dolda utkast räknas som osparade ändringar och omfattas av omladdningsvarningen.
+De sparas endast i minnet för aktuell användare och aktuellt ärende. En beslutsflik med ett
+osparat utkast behålls för att kunna förklara spärren och erbjuda omkontroll.
+Vanliga ärendefält, inklusive kategorisering, använder fortsatt sina befintliga regler.
 
 ## Tilldelningsflödet: från enhetschef till LEX och tillbaka
 
@@ -252,9 +308,9 @@ parameter `eventType` lämnas däremot orörd och står kvar som `AVVIKELSE`.
 
 En känd konsekvens av de tvingade lagrummen: ett ärende med både HSL och SOL/LSS som blir
 missförhållande får sina lagrum normaliserade till SOL/LSS nästa gång enhetschefsdokumentet **sparas**,
-vilket tar bort `riskAssessmentHsl`. I praktiken når det bara en investigation-admin, eftersom
-`SUPPORT_INVESTIGATION_DOCUMENT_GROUPS` ger LEX-rollerna läsrätt men inte skrivrätt på det
-dokumentet — men regeln är värd att känna till innan grupperna konfigureras om.
+vilket tar bort `riskAssessmentHsl`. I praktiken når det bara den som har skrivrätt på
+enhetschefsdokumentet, och den rätten ägs av Support Managements AccessMapper — men regeln är värd
+att känna till innan åtkomsten konfigureras om.
 
 ### Ansvarig-listan är ärendespecifik
 

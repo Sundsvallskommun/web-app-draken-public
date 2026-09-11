@@ -13,13 +13,18 @@ export const investigationLabRoleOptions: readonly InvestigationLabRoleOption[] 
   },
   {
     value: 'lexInvestigator',
-    label: 'LEX-utredare',
+    label: 'Lex Sarah',
     description: 'Kan redigera utredningen enligt SoL/LSS.',
   },
   {
     value: 'masMar',
     label: 'MAS/MAR',
-    description: 'Kan redigera utredningen enligt HSL.',
+    description: 'Kan redigera utredningen och beslutet enligt HSL.',
+  },
+  {
+    value: 'decisionMaker',
+    label: 'LEX-ansvarig',
+    description: 'Kan redigera beslutet enligt lex Sarah om ett missförhållande.',
   },
   {
     value: 'reader',
@@ -32,6 +37,8 @@ const schemaOwnerByKey: Record<LocalInvestigationDocumentKey, Exclude<Investigat
   'utredning-enhetschef': 'unitManager',
   'utredning-sol-lss': 'lexInvestigator',
   'utredning-hsl': 'masMar',
+  'beslut-hsl': 'masMar',
+  'beslut-sol-lss': 'decisionMaker',
 };
 
 /**

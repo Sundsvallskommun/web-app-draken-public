@@ -1,14 +1,14 @@
 {
   "name": "utredning-hsl",
-  "version": "1.0",
+  "version": "1.2",
   "value": {
-    "$id": "https://schemas.sundsvall.se/2281/utredning-hsl/1.0",
+    "$id": "https://schemas.sundsvall.se/2281/utredning-hsl/1.2",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Utredning HSL",
-    "description": "HSL-utredning för IAF- och VOF-ärenden. Åtgärder och handlingsplan lagras inte i detta dokument.",
+    "description": "HSL-utredning för IAF- och VOF-ärenden. Beslutet om anmälan till IVO, åtgärder och handlingsplan lagras inte i detta dokument.",
     "type": "object",
     "additionalProperties": false,
-    "required": ["ivoNotification", "public360CaseNumber"],
+    "x-draken-completion": { "field": "completed", "reportsField": "reports" },
     "properties": {
       "assignment": {
         "title": "Uppdrag",
@@ -93,27 +93,50 @@
         "type": "string",
         "contentMediaType": "text/html"
       },
-      "ivoNotification": {
-        "title": "Ska ärendet anmälas till IVO?",
-        "$ref": "#/$defs/yesNo"
-      },
-      "ivoCaseNumber": {
-        "title": "IVO ärendenummer",
-        "description": "Obligatoriskt när ärendet ska anmälas till IVO.",
-        "type": "string",
-        "minLength": 1
-      },
-      "public360CaseNumber": {
-        "title": "Public 360 ärendenummer",
-        "description": "Obligatoriskt oavsett ställningstagande till IVO-anmälan.",
-        "type": "string",
-        "minLength": 1
-      },
       "commissionerComment": {
         "title": "Uppdragsgivarens kommentar",
         "description": "Uppdragsgivarens kommentar på händelseanalysen.",
         "type": "string",
         "contentMediaType": "text/html"
+      },
+      "completed": {
+        "title": "Är utredningen klar?",
+        "description": "Ja låser utredningen för ändringar och gör det möjligt att skapa en rapport. Lås upp utredningen för att ändra den igen.",
+        "$ref": "#/$defs/yesNo"
+      },
+      "reports": {
+        "title": "Rapporter",
+        "description": "En post per rapport som skapats från utredningen, med tidpunkt, användare och bilagans filnamn. Servern lägger till posterna; de kan inte anges av användaren.",
+        "type": "array",
+        "readOnly": true,
+        "x-draken-server-owned": true,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["generatedAt", "generatedBy", "fileName"],
+          "properties": {
+            "generatedAt": {
+              "title": "Skapad",
+              "type": "string",
+              "format": "date-time"
+            },
+            "generatedBy": {
+              "title": "Skapad av",
+              "type": "string",
+              "minLength": 1
+            },
+            "fileName": {
+              "title": "Filnamn",
+              "type": "string",
+              "minLength": 1
+            },
+            "attachmentId": {
+              "title": "Bilaga",
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
       }
     },
     "$defs": {
@@ -124,25 +147,7 @@
           { "const": "no", "title": "Nej" }
         ]
       }
-    },
-    "allOf": [
-      {
-        "if": {
-          "properties": {
-            "ivoNotification": { "const": "yes" }
-          },
-          "required": ["ivoNotification"]
-        },
-        "then": {
-          "required": ["ivoCaseNumber"]
-        },
-        "else": {
-          "not": {
-            "required": ["ivoCaseNumber"]
-          }
-        }
-      }
-    ]
+    }
   },
-  "description": "WSO2 request body for version 1.0 of the HSL investigation schema"
+  "description": "WSO2 request body for version 1.2 of the HSL investigation schema"
 }

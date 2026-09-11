@@ -1,7 +1,9 @@
 import type { AppConfigFeatures } from '@config/appconfig';
+import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import type { ReactNode } from 'react';
 
 import type { SupportErrandClassificationPlacement } from './classification-placement';
+import type { InvestigationAccessState } from './investigation-access';
 import type { InvestigationProfile } from './investigation-profile';
 
 /**
@@ -11,11 +13,31 @@ import type { InvestigationProfile } from './investigation-profile';
 export type InvestigationCapability = 'useAvvikelseInvestigation' | 'useAotInvestigation';
 
 export interface InvestigationTabProps {
+  readonly access: InvestigationAccessState;
+  readonly refreshAccess: () => void;
   onDirtyChange: (key: string, isDirty: boolean) => void;
 }
 
 export interface InvestigationCategorizationControlProps {
   readonly disabled: boolean;
+}
+
+/**
+ * A second errand tab a variant may fill, for the decision that closes an investigation.
+ *
+ * Unlike the investigation tab, which a capability flag alone turns on, a decision tab exists only
+ * for the errands the variant says it does: the variant decides from the errand and the runtime
+ * profile, shared code only asks. A variant with no decision omits the slot and gets no tab.
+ */
+export interface InvestigationDecisionTabSlot {
+  /** Label for the errand tab. */
+  readonly label: string;
+  readonly isVisible: (
+    errand: SupportErrand | undefined,
+    profile: InvestigationProfile | null | undefined,
+    access: InvestigationAccessState
+  ) => boolean;
+  readonly render: (props: InvestigationTabProps) => ReactNode;
 }
 
 /**
@@ -46,6 +68,8 @@ export interface InvestigationVariantModule {
    * A variant categorizing from the default tree omits this and gets the ordinary controls.
    */
   renderCategorizationControl?: (props: InvestigationCategorizationControlProps) => ReactNode;
+  /** The decision tab, for a variant whose investigation ends in a recorded decision. */
+  readonly decisionTab?: InvestigationDecisionTabSlot;
 }
 
 /**
@@ -70,3 +94,15 @@ export const isInvestigationTabVisible = (
   features: AppConfigFeatures,
   variant: InvestigationVariantModule | null
 ): boolean => features.useInvestigation && variant !== null;
+
+/**
+ * The master switch gates the decision tab exactly as it gates the investigation tab; beyond that
+ * the variant's own slot decides, per errand and profile. No slot, no tab.
+ */
+export const isDecisionTabVisible = (
+  features: AppConfigFeatures,
+  variant: InvestigationVariantModule | null,
+  errand: SupportErrand | undefined,
+  profile: InvestigationProfile | null | undefined,
+  access: InvestigationAccessState = { status: 'loading' }
+): boolean => features.useInvestigation && variant?.decisionTab?.isVisible(errand, profile, access) === true;

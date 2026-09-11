@@ -3,6 +3,25 @@ import { IsArray, IsIn, IsOptional, IsString, Matches, MinLength, ValidateNested
 
 const SUPPORT_INVESTIGATION_IDENTIFIER = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
+export const SUPPORT_INVESTIGATION_DOCUMENT_PLACEMENTS = ['investigation', 'decision'] as const;
+
+/**
+ * Which errand tab renders the document: the investigation tab (the default) or the decision tab.
+ * The tabs share the document machinery; this only says where the document is offered.
+ */
+export type SupportInvestigationDocumentPlacement = (typeof SUPPORT_INVESTIGATION_DOCUMENT_PLACEMENTS)[number];
+
+export const SUPPORT_INVESTIGATION_DOCUMENT_APPLICABILITIES = ['all', 'reported-misconduct', 'hsl-deviation'] as const;
+
+/**
+ * Which errands the document applies to. `all` (the default) offers it on every errand. The other
+ * values restrict it to one kind of errand as the application's classification policy resolves it
+ * - `reported-misconduct` for a reported misconduct, `hsl-deviation` for an ordinary deviation
+ * under HSL - and the BFF refuses it on any other errand. The policy resolves at most one kind per
+ * errand, so two restricted documents never apply to the same errand.
+ */
+export type SupportInvestigationDocumentApplicability = (typeof SUPPORT_INVESTIGATION_DOCUMENT_APPLICABILITIES)[number];
+
 export class SupportInvestigationDocumentProfileDto {
   @IsString()
   @MinLength(1)
@@ -21,6 +40,24 @@ export class SupportInvestigationDocumentProfileDto {
   @IsString()
   @MinLength(1)
   readonly ownerLabel!: string;
+
+  @IsOptional()
+  @IsIn(SUPPORT_INVESTIGATION_DOCUMENT_PLACEMENTS)
+  readonly placement?: SupportInvestigationDocumentPlacement;
+
+  @IsOptional()
+  @IsIn(SUPPORT_INVESTIGATION_DOCUMENT_APPLICABILITIES)
+  readonly appliesTo?: SupportInvestigationDocumentApplicability;
+
+  /**
+   * The key of another document in the same profile that must already be saved on the errand
+   * before this one may be written: a decision that answers an investigation cannot precede it.
+   */
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @Matches(SUPPORT_INVESTIGATION_IDENTIFIER)
+  readonly prerequisiteDocumentKey?: string;
 }
 
 export const SUPPORT_INVESTIGATION_DOCUMENT_ACCESS = ['edit', 'read', 'hidden'] as const;
@@ -32,14 +69,26 @@ export const SUPPORT_INVESTIGATION_DOCUMENT_ACCESS = ['edit', 'read', 'hidden'] 
  */
 export type SupportInvestigationDocumentAccess = (typeof SUPPORT_INVESTIGATION_DOCUMENT_ACCESS)[number];
 
-/**
- * A document as the runtime serves it: the configured document plus what this user may do with it.
- * Access is resolved per request, so it belongs here rather than on the statically configured
- * profile the application boots with.
- */
-export class SupportInvestigationRuntimeDocumentProfileDto extends SupportInvestigationDocumentProfileDto {
+/** Effective document grants belong to an errand, never the application-wide profile. */
+export class SupportInvestigationDocumentGrantDto {
+  @IsString()
+  readonly key!: string;
+
   @IsIn(SUPPORT_INVESTIGATION_DOCUMENT_ACCESS)
   readonly access!: SupportInvestigationDocumentAccess;
+}
+
+export class SupportInvestigationErrandAccessDto {
+  @IsString()
+  readonly municipalityId!: string;
+
+  @IsString()
+  readonly errandId!: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SupportInvestigationDocumentGrantDto)
+  readonly documents!: readonly SupportInvestigationDocumentGrantDto[];
 }
 
 export class SupportInvestigationProfileDto {
@@ -109,11 +158,6 @@ export class SupportInvestigationRuntimeProfileDto extends SupportInvestigationP
   @ValidateNested()
   @Type(() => SupportRegistrationCapabilityDto)
   readonly registration!: SupportRegistrationCapabilityDto;
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => SupportInvestigationRuntimeDocumentProfileDto)
-  declare readonly documents: readonly SupportInvestigationRuntimeDocumentProfileDto[];
 
   @IsOptional()
   @ValidateNested()

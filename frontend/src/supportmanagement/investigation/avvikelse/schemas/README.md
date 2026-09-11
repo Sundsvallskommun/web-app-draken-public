@@ -4,9 +4,11 @@ Den här katalogen är den kanoniska lokala källan för den första schema-labb
 
 | Parameter key / schema name | Lokal version | JSON Schema POST body                      | UI Schema PUT body                            |
 | --------------------------- | ------------- | ------------------------------------------ | --------------------------------------------- |
-| `utredning-enhetschef`      | 1.1           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
-| `utredning-sol-lss`         | 1.1           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
-| `utredning-hsl`             | 1.0           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
+| `utredning-enhetschef`      | 1.2           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
+| `utredning-sol-lss`         | 1.2           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
+| `utredning-hsl`             | 1.2           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
+| `beslut-hsl`                | 1.2           | `beslut-hsl.schema-request.json`           | `beslut-hsl.ui-schema-request.json`           |
+| `beslut-sol-lss`            | 1.3           | `beslut-sol-lss.schema-request.json`       | `beslut-sol-lss.ui-schema-request.json`       |
 
 Vid publicering skickas `*.schema-request.json` till `POST /2281/schemas`. Det skapade schema-ID:t används sedan med motsvarande `*.ui-schema-request.json` i `PUT /2281/schemas/{id}/ui-schema`.
 
@@ -20,11 +22,73 @@ Version 1.0 publicerades och lästes tillbaka från JsonSchema-API:ts testmiljö
 
 Schema och UI Schema verifierades separat för varje ID. Inget har publicerats i produktionsmiljön.
 
-Version 1.1 för `utredning-enhetschef` och `utredning-sol-lss` finns endast som lokala artefakter i repot. Att en
-requestartefakt finns här innebär inte att den har skickats till JsonSchema-API:t. `utredning-hsl` ligger kvar på
-version 1.0.
+Den 10 september 2026 publicerades och lästes tillbaka från samma testmiljö:
+
+- `2281_utredning-hsl_1.1`
+- `2281_beslut-hsl_1.0`
+- `2281_beslut-sol-lss_1.0`
+
+Den 11 september 2026 publicerades version 1.1 av båda besluten (`2281_beslut-hsl_1.1`, `2281_beslut-sol-lss_1.1`),
+som ersätter 1.0: beslutsdatumet blev en serverstämplad tidpunkt och Public 360-regeln ändrades. Inga dokument
+hade sparats mot 1.0. Samma dag publicerades version 1.2 (`2281_beslut-hsl_1.2`, `2281_beslut-sol-lss_1.2`) med
+`updatedAt` och `revisions`; inga dokument hade sparats mot 1.1. `2281_beslut-sol-lss_1.3` publicerades samma dag med
+klassificeringsfältet i full bredd; inga dokument hade sparats mot 1.2.
+
+Den 11 september 2026 publicerades också version 1.2 av de tre utredningarna (`2281_utredning-enhetschef_1.2`,
+`2281_utredning-sol-lss_1.2`, `2281_utredning-hsl_1.2`) med sektionen Utredningen klar och rapport. Version 1.1 av
+enhetschefs- och SoL/LSS-utredningen fanns bara som lokala artefakter och hoppades över. Att en requestartefakt
+finns här innebär inte att den har skickats till JsonSchema-API:t. Formulären läser schemana från JsonSchema-API:t
+vid körning, så en ny version måste publiceras i varje miljö innan den används där.
 
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
+
+## Utredningen klar och rapport
+
+Varje utredning slutar med sektionen Utredningen klar och rapport. Schemat deklarerar
+`x-draken-completion: { "field": "completed", "reportsField": "reports" }`:
+
+- `completed` (Ja/Nej, Nej när inget är angivet) är utredarens markering. Ett dokument som sparats med Ja är
+  låst: BFF:en avvisar varje skrivning utom den som sätter Nej utan att ändra något annat, och formuläret blir
+  skrivskyddat med knappen Lås upp utredningen.
+- `reports` är serverägd (`x-draken-server-owned`): en post `{ generatedAt, generatedBy, fileName, attachmentId }`
+  per rapport, som BFF:en lägger till när rapporten skapas. Klientens kopia av fältet ignoreras.
+- `$external:investigationReport` i UI-schemat är platsen där Draken visar knapparna Skapa rapport,
+  Förhandsgranska rapport och Lås upp utredningen samt listan över skapade rapporter.
+
+Rapporten skapas av BFF:en (`POST .../json-parameters/{key}/reports`) ur det sparade dokumentet: sektioner och fält
+i UI-schemats ordning, koder översatta till sina titlar, ärendets kategorisering från etiketterna. Den renderas
+via Templating-API:ts `render/direct/pdf` med mallen i `backend/src/services/investigation-report.template.ts`,
+läggs som bilaga på ärendet med löpnummer (`Utredning SoL-LSS_2.pdf`) och registreras i `reports`. Förhandsgranskning
+renderar utan att bifoga eller registrera. Efter upplåsning kan utredningen ändras och en ny numrerad rapport
+skapas; äldre rapporter ligger kvar som bilagor.
+
+## Besluten
+
+Beslutet om anmälan till IVO är ett eget dokument, skilt från utredningen, och finns i två varianter som aldrig
+gäller samma ärende:
+
+- `beslut-hsl` för en vanlig avvikelse med lagrum HSL: ställningstagandet till IVO-anmälan (obligatoriskt),
+  IVO-ärendenummer (alltid frivilligt) och Public 360-ärendenummer.
+- `beslut-sol-lss` för ett rapporterat missförhållande, oavsett lagrum: samma IVO-del, plus LEX-ansvarigs
+  klassificering av rapporten (samma fem grader som utredarens förslag i `utredning-sol-lss`) med obligatorisk
+  motivering. Utredarens förslag visas skrivskyddat ovanför beslutet och kopieras inte in i det, och beslutet kan
+  inte sparas förrän `utredning-sol-lss` finns i ärendet (`prerequisiteDocumentKey` i runtimeprofilen).
+
+IVO- och Public 360-ärendenummer finns bara när ärendet ska anmälas till IVO: vid Ja visas båda och Public 360
+krävs, vid Nej döljs de, rensas ur formuläret och får inte finnas i dokumentet.
+
+Besluten bär tre serverägda egenskaper som formuläret aldrig erbjuder som inmatning, eftersom ett beslut kan
+sparas om i efterhand, till exempel när IVO:s ärendenummer kommer:
+
+- `decidedAt` (`x-draken-server-timestamp: "created"`): tidpunkten då beslutet fattades, satt vid första
+  sparningen och därefter bevarad från det lagrade dokumentet.
+- `updatedAt` (`x-draken-server-timestamp: "updated"`): tidpunkten för den senaste sparningen.
+- `revisions` (`x-draken-server-revisions: true`): en post `{ savedAt, savedBy }` per sparning, som BFF:en lägger
+  till utifrån det lagrade dokumentet och den inloggades användarnamn.
+
+BFF:en sätter alla tre oavsett vad klienten skickar; formuläret döljer fälten och visar Beslutat och Senast ändrat i
+dokumentets huvud. Från `utredning-hsl` 1.1 ligger IVO- och Public 360-fälten inte längre i utredningen; dokument
+som redan är bundna till 1.0 behåller sina fält och sin regel.
 
 I version 1.1 deklarerar enhetschefs- och SOL/LSS-schemana det externa fältet
 `x-draken-external-fields.errandClassification`. Respektive UI Schema placerar

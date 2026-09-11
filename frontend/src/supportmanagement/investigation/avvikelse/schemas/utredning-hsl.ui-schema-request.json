@@ -12,10 +12,9 @@
       "underlyingCauses",
       "contributingFactorsAndRisks",
       "analysisEvaluation",
-      "public360CaseNumber",
-      "ivoNotification",
-      "ivoCaseNumber",
-      "commissionerComment"
+      "commissionerComment",
+      "completed",
+      "reports"
     ],
     "ui:sections": [
       {
@@ -53,18 +52,18 @@
         ]
       },
       {
-        "id": "notification-and-documentation",
-        "defaultOpen": true,
-        "title": "Anmälan och dokumentation",
-        "icon": "file-text",
-        "fields": ["public360CaseNumber", "ivoNotification", "ivoCaseNumber"]
-      },
-      {
         "id": "commissioner-comment",
         "defaultOpen": true,
         "title": "Uppdragsgivarens kommentar",
         "icon": "pen",
         "fields": ["commissionerComment"]
+      },
+      {
+        "id": "report",
+        "title": "Utredningen klar och rapport",
+        "icon": "file-text",
+        "defaultOpen": true,
+        "fields": ["completed", "$external:investigationReport", "reports"]
       }
     ],
     "assignment": {
@@ -135,24 +134,15 @@
         "disableToolbar": false
       }
     },
-    "ivoNotification": {
-      "ui:widget": "RadiobuttonWidget"
-    },
-    "ivoCaseNumber": {
-      "ui:widget": "TextWidget",
-      "ui:placeholder": "Ange IVO ärendenummer"
-    },
-    "public360CaseNumber": {
-      "ui:widget": "TextWidget",
-      "ui:placeholder": "Ange Public 360 ärendenummer"
-    },
     "commissionerComment": {
       "ui:widget": "TextareaWidget",
       "ui:placeholder": "Skriv uppdragsgivarens kommentar",
       "ui:options": {
         "className": "w-full min-h-[10rem]"
       }
-    }
+    },
+    "completed": { "ui:widget": "RadiobuttonWidget" },
+    "reports": { "ui:widget": "hidden" }
   },
-  "description": "UI schema for version 1.0 of Utredning HSL in Draken"
+  "description": "UI schema for version 1.2 of Utredning HSL in Draken"
 }

@@ -19,7 +19,9 @@
       "documentationMotivation",
       "requiresPoliceReport",
       "proposedMisconductDegree",
-      "proposalMotivation"
+      "proposalMotivation",
+      "completed",
+      "reports"
     ],
     "ui:sections": [
       {
@@ -56,6 +58,13 @@
         "title": "Bedömning och förslag till beslut",
         "icon": "file-text",
         "fields": ["proposedMisconductDegree", "proposalMotivation"]
+      },
+      {
+        "id": "report",
+        "title": "Utredningen klar och rapport",
+        "icon": "file-text",
+        "defaultOpen": true,
+        "fields": ["completed", "$external:investigationReport", "reports"]
       }
     ],
     "ui:rows": [
@@ -155,7 +164,9 @@
         "className": "w-full min-h-[18rem]",
         "disableToolbar": false
       }
-    }
+    },
+    "completed": { "ui:widget": "RadiobuttonWidget" },
+    "reports": { "ui:widget": "hidden" }
   },
-  "description": "UI schema for version 1.1 of Utredning SOL/LSS in Draken"
+  "description": "UI schema for version 1.2 of Utredning SOL/LSS in Draken"
 }

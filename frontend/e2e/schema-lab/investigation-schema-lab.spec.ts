@@ -4,6 +4,7 @@ const backendOrigin = 'http://localhost:3001';
 const managerIdPrefix = 'utredning-enhetschef';
 const solLssIdPrefix = 'utredning-sol-lss';
 const hslIdPrefix = 'utredning-hsl';
+const hslDecisionIdPrefix = 'beslut-hsl';
 const investigationTabNames = ['Utredning enhetschef', 'Utredning SoL/LSS', 'Utredning HSL'] as const;
 const backendRequestsByPage = new WeakMap<Page, string[]>();
 
@@ -119,9 +120,11 @@ test.afterEach(async ({ page }) => {
 test('opens all investigation sections without turning an unanswered draft into radio answers', async ({ page }) => {
   await page.evaluate(() => {
     for (const [key, schemaVersion, formData] of [
-      ['utredning-enhetschef', '1.1', { legalBases: ['HSL', 'SOL'] }],
-      ['utredning-sol-lss', '1.1', {}],
-      ['utredning-hsl', '1.0', {}],
+      ['utredning-enhetschef', '1.2', { legalBases: ['HSL', 'SOL'] }],
+      ['utredning-sol-lss', '1.2', {}],
+      ['utredning-hsl', '1.2', {}],
+      ['beslut-hsl', '1.2', {}],
+      ['beslut-sol-lss', '1.3', {}],
     ]) {
       localStorage.setItem(
         `draken:investigation-schema-lab:${key}`,
@@ -142,12 +145,15 @@ test('opens all investigation sections without turning an unanswered draft into 
   }
 });
 
-test('is reachable with the standard IAF profile and renders three investigation schemas', async ({ page }) => {
+test('is reachable with the standard IAF profile and renders the investigation and decision schemas', async ({
+  page,
+}) => {
   await expect(page.getByRole('heading', { name: 'Lokal schema-labb · Utredning' })).toBeVisible();
-  await expect(page.getByRole('tab')).toHaveCount(3);
+  await expect(page.getByRole('tab')).toHaveCount(5);
   await expect(page.getByRole('tab', { name: 'Utredning enhetschef' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Utredning SoL/LSS' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Utredning HSL' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Beslut', exact: true })).toBeVisible();
 
   await expect(page.locator(`#${managerIdPrefix}_legalBases-group input:checked`)).toHaveCount(2);
   await expect(page.locator('[id$="_deviationType"]')).toHaveCount(0);
@@ -283,7 +289,7 @@ test('exposes labels, descriptions, state and disclosure controls accessibly', a
   );
   await expect(page.locator(`#${managerIdPrefix}_investigationText__description`)).toBeVisible();
 
-  await expect(page.getByRole('radiogroup', { name: 'Sannolikhet för inträffande *' }).first()).toBeVisible();
+  await expect(page.getByRole('radiogroup', { name: 'Sannolikhet för inträffande (Obligatorisk)' }).first()).toBeVisible();
   await expect(page.getByRole('group', { name: /Vilket eller vilka lagrum gäller/u })).toBeVisible();
 
   const sectionButton = page.getByRole('button', { name: 'Kategorisering och dokumentation' });
@@ -355,7 +361,7 @@ test('sanitizes legacy label fields and ignores malformed local timestamps', asy
       'draken:investigation-schema-lab:utredning-enhetschef',
       JSON.stringify({
         schemaKey: 'utredning-enhetschef',
-        schemaVersion: '1.1',
+        schemaVersion: '1.2',
         savedAt: '2026-08-11T10:00:00.000Z',
         formData: {
           legalBases: ['HSL'],
@@ -389,7 +395,7 @@ test('sanitizes legacy label fields and ignores malformed local timestamps', asy
         schemaKey: 'utredning-hsl',
         schemaVersion: '1.0',
         savedAt: 'not-a-date',
-        formData: { ivoNotification: 'no', public360CaseNumber: 'P360-legacy' },
+        formData: { methodology: '<p>Legacy</p>' },
       })
     );
   });
@@ -398,27 +404,43 @@ test('sanitizes legacy label fields and ignores malformed local timestamps', asy
   await expect(page.locator('[data-cy="investigation-lab-notice"]')).toContainText(
     'annan schemaversion eller är ogiltigt'
   );
-  await expect(page.locator(`#${hslIdPrefix}_public360CaseNumber`)).toHaveValue('P360-2026-5678');
+  await expect(page.locator(`#${hslIdPrefix}_analysisTeamParticipants_0_role`)).toHaveValue('Analysledare');
 });
 
-test('shows the IVO number only for a positive IVO notification', async ({ page }) => {
+test('the HSL investigation no longer asks about IVO; the HSL decision does', async ({ page }) => {
   await page.locator('[data-cy="investigation-lab-role"]').selectOption('masMar');
   await page.locator('[data-cy="utredning-hsl-tab"]').click();
+  await openAllDisclosures(page);
+  await expect(page.locator(`#${hslIdPrefix}_ivoNotification`)).toHaveCount(0);
+  await expect(page.locator(`#${hslIdPrefix}_public360CaseNumber`)).toHaveCount(0);
+
+  await page.locator('[data-cy="beslut-hsl-tab"]').click();
   const activePanel = page.locator('[role="tabpanel"]:visible');
-  await activePanel.getByText('Anmälan och dokumentation', { exact: true }).click();
+  await openAllDisclosures(page);
 
-  await expect(page.locator(`#${hslIdPrefix}_public360CaseNumber`)).toBeVisible();
-  await expect(page.locator(`#${hslIdPrefix}_ivoCaseNumber`)).toBeVisible();
+  // The example is reported to IVO, so both case numbers are offered and Public 360 is required.
+  const public360 = page.locator(`#${hslDecisionIdPrefix}_public360CaseNumber`);
+  await expect(public360).toBeVisible();
+  await expect(page.locator(`label[for="${hslDecisionIdPrefix}_public360CaseNumber"]`)).toHaveText(
+    'Public 360 ärendenummer (Obligatorisk)'
+  );
+  await expect(page.locator(`#${hslDecisionIdPrefix}_ivoCaseNumber`)).toBeVisible();
+  // The decision timestamps and revisions are the server's; the form never asks for them.
+  for (const serverField of ['decidedAt', 'updatedAt', 'revisions']) {
+    await expect(page.locator(`#${hslDecisionIdPrefix}_${serverField}`)).toHaveCount(0);
+  }
 
-  await page.locator(`#${hslIdPrefix}_ivoNotification`).getByLabel('Nej').check();
-  await expect(page.locator(`#${hslIdPrefix}_public360CaseNumber`)).toBeVisible();
-  await expect(page.locator(`#${hslIdPrefix}_ivoCaseNumber`)).toHaveCount(0);
+  // A Nej removes both case numbers.
+  await page.locator(`#${hslDecisionIdPrefix}_ivoNotification`).getByLabel('Nej').check();
+  await expect(public360).toHaveCount(0);
+  await expect(page.locator(`#${hslDecisionIdPrefix}_ivoCaseNumber`)).toHaveCount(0);
 
   await activePanel.getByText('Visa lokalt JSON-värde', { exact: true }).click();
   await expect(page.locator('[data-cy="schema-form-data-preview"]:visible')).not.toContainText('ivoCaseNumber');
   await page.getByRole('button', { name: 'Spara utkast lokalt' }).click();
   const storedHslDraft = await page.evaluate(() =>
-    window.localStorage.getItem('draken:investigation-schema-lab:utredning-hsl')
+    window.localStorage.getItem('draken:investigation-schema-lab:beslut-hsl')
   );
   expect(storedHslDraft).not.toContain('ivoCaseNumber');
+  expect(storedHslDraft).not.toContain('public360CaseNumber');
 });

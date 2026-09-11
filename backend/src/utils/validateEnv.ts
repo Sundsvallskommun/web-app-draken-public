@@ -1,12 +1,6 @@
-import { APPLICATION } from '@/config';
 import { resolveSupportManagementApiTarget } from '@/config/api-config';
 import { resolveAssignableHandlerGroups } from '@/config/assignable-handler-groups';
-import {
-  assertSupportInvestigationDocumentGroupsMatchProfile,
-  resolveSupportInvestigationDocumentGroups,
-} from '@/config/support-investigation-document-groups';
 import { resolveSupportInvestigationHandoverTargets } from '@/config/support-investigation-handover-targets';
-import { getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import { isContactSundsvall, isKC, isMEX, isPT } from '@/services/application.service';
 import { logger } from '@/utils/logger';
 
@@ -73,24 +67,6 @@ function validateSecretStrength(): void {
   }
 }
 
-/**
- * The document-to-group mapping is optional: only a deployment that actually runs investigation has
- * documents to map. A malformed or profile-mismatched value is fatal, but an absent one only warns,
- * and leaves every document editable exactly as it was before per-document access existed.
- */
-function warnMissingInvestigationDocumentGroups(): void {
-  const documentKeys = getSupportInvestigationProfile(APPLICATION).documents.map(document => document.key);
-  const grants = resolveSupportInvestigationDocumentGroups();
-  assertSupportInvestigationDocumentGroupsMatchProfile(documentKeys, grants);
-
-  if (documentKeys.length > 0 && !grants) {
-    logger.warn(
-      'SUPPORT_INVESTIGATION_DOCUMENT_GROUPS is not set while investigation documents are configured. ' +
-        'Every investigation document stays visible and editable for all handlers. Check the environment configuration.',
-    );
-  }
-}
-
 const validateEnv = () => {
   try {
     resolveAssignableHandlerGroups();
@@ -139,7 +115,6 @@ const validateEnv = () => {
     try {
       resolveSupportManagementApiTarget();
       resolveSupportInvestigationHandoverTargets();
-      warnMissingInvestigationDocumentGroups();
     } catch (error) {
       console.error(`\n${error instanceof Error ? error.message : 'Invalid Support Management runtime configuration'}\n`);
       process.exit(1);

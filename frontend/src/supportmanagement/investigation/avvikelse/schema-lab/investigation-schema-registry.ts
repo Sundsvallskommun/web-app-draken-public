@@ -1,6 +1,10 @@
 import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 
 import { InvestigationFormData } from '../investigation-document';
+import hslDecisionSchemaRequest from '../schemas/beslut-hsl.schema-request.json';
+import hslDecisionUiSchemaRequest from '../schemas/beslut-hsl.ui-schema-request.json';
+import solLssDecisionSchemaRequest from '../schemas/beslut-sol-lss.schema-request.json';
+import solLssDecisionUiSchemaRequest from '../schemas/beslut-sol-lss.ui-schema-request.json';
 import investigationSchemaCases from '../schemas/fixtures/investigation-schema-cases.json';
 import managerSchemaRequest from '../schemas/utredning-enhetschef.schema-request.json';
 import managerUiSchemaRequest from '../schemas/utredning-enhetschef.ui-schema-request.json';
@@ -120,7 +124,7 @@ export const investigationSchemaDefinitions: readonly InvestigationSchemaDefinit
   createSchemaDefinition({
     key: 'utredning-sol-lss',
     tabLabel: 'Utredning SoL/LSS',
-    ownerLabel: 'LEX-utredare',
+    ownerLabel: 'Lex Sarah',
     schemaRequestValue: solLssSchemaRequest,
     uiSchemaRequestValue: solLssUiSchemaRequest,
   }),
@@ -130,6 +134,20 @@ export const investigationSchemaDefinitions: readonly InvestigationSchemaDefinit
     ownerLabel: 'MAS/MAR',
     schemaRequestValue: hslSchemaRequest,
     uiSchemaRequestValue: hslUiSchemaRequest,
+  }),
+  createSchemaDefinition({
+    key: 'beslut-hsl',
+    tabLabel: 'Beslut HSL',
+    ownerLabel: 'MAS/MAR',
+    schemaRequestValue: hslDecisionSchemaRequest,
+    uiSchemaRequestValue: hslDecisionUiSchemaRequest,
+  }),
+  createSchemaDefinition({
+    key: 'beslut-sol-lss',
+    tabLabel: 'Beslut SoL/LSS',
+    ownerLabel: 'LEX-ansvarig',
+    schemaRequestValue: solLssDecisionSchemaRequest,
+    uiSchemaRequestValue: solLssDecisionUiSchemaRequest,
   }),
 ];
 

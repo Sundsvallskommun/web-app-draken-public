@@ -1,5 +1,9 @@
 import type { Page, Request, Route } from '@playwright/test';
 
+import hslDecisionSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/beslut-hsl.schema-request.json';
+import hslDecisionUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/beslut-hsl.ui-schema-request.json';
+import solLssDecisionSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/beslut-sol-lss.schema-request.json';
+import solLssDecisionUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/beslut-sol-lss.ui-schema-request.json';
 import investigationCases from '../../../src/supportmanagement/investigation/avvikelse/schemas/fixtures/investigation-schema-cases.json';
 import managerSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-enhetschef.schema-request.json';
 import managerUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-enhetschef.ui-schema-request.json';
@@ -16,8 +20,21 @@ const applicationSlug = application.toLowerCase();
 export const errandNumber = `${application}-2026-0001`;
 export const katlaSchemaId = `2281_katla-${applicationSlug}-report_1.0`;
 
-export const investigationKeys = ['utredning-enhetschef', 'utredning-sol-lss', 'utredning-hsl'] as const;
+export const investigationKeys = [
+  'utredning-enhetschef',
+  'utredning-sol-lss',
+  'utredning-hsl',
+  'beslut-hsl',
+  'beslut-sol-lss',
+] as const;
 export type InvestigationKey = (typeof investigationKeys)[number];
+/** The IVO decision on an ordinary deviation under HSL. */
+export const hslDecisionKey = 'beslut-hsl' satisfies InvestigationKey;
+/** The lex Sarah decision on a reported misconduct. */
+export const misconductDecisionKey = 'beslut-sol-lss' satisfies InvestigationKey;
+const decisionKeys: readonly InvestigationKey[] = [hslDecisionKey, misconductDecisionKey];
+/** The documents the Utredning tab offers; the decisions live on their own tab. */
+export const investigationTabKeys = investigationKeys.filter((key) => !decisionKeys.includes(key));
 
 export interface MockInvestigationProfile {
   application: string;
@@ -28,7 +45,8 @@ export interface MockInvestigationProfile {
     schemaName: InvestigationKey;
     tabLabel: string;
     ownerLabel: string;
-    access?: 'edit' | 'read' | 'hidden';
+    placement?: 'investigation' | 'decision';
+    appliesTo?: 'all' | 'reported-misconduct' | 'hsl-deviation';
   }>;
 }
 
@@ -47,13 +65,29 @@ export const defaultInvestigationProfile = (): MockInvestigationProfile => ({
       key: 'utredning-sol-lss',
       schemaName: 'utredning-sol-lss',
       tabLabel: 'Utredning SoL/LSS',
-      ownerLabel: 'LEX-utredare',
+      ownerLabel: 'Lex Sarah',
     },
     {
       key: 'utredning-hsl',
       schemaName: 'utredning-hsl',
       tabLabel: 'Utredning HSL',
       ownerLabel: 'MAS/MAR',
+    },
+    {
+      key: hslDecisionKey,
+      schemaName: hslDecisionKey,
+      tabLabel: 'Beslut HSL',
+      ownerLabel: 'MAS/MAR',
+      placement: 'decision',
+      appliesTo: 'hsl-deviation',
+    },
+    {
+      key: misconductDecisionKey,
+      schemaName: misconductDecisionKey,
+      tabLabel: 'Beslut SoL/LSS',
+      ownerLabel: 'LEX-ansvarig',
+      placement: 'decision',
+      appliesTo: 'reported-misconduct',
     },
   ],
 });
@@ -100,9 +134,13 @@ export interface IafApiTrace {
   classificationPatches: ClassificationPatchTrace[];
   errandPatches: unknown[];
   writes: Array<'document' | 'classification'>;
+  /** Report requests, in order; a preview renders without attaching or recording. */
+  reports: Array<{ key: string; preview: boolean }>;
 }
 
 export interface IafApiScenario {
+  documentAccess?: Readonly<Record<string, 'edit' | 'read' | 'hidden'>>;
+  investigationAccessStatus?: number;
   canEdit?: boolean;
   errandStatus?: string;
   /** null leaves the errand unassigned, which is how it arrives before anyone has taken it. */
@@ -132,24 +170,32 @@ const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
   'utredning-enhetschef': managerSchemaRequest,
   'utredning-sol-lss': solLssSchemaRequest,
   'utredning-hsl': hslSchemaRequest,
+  'beslut-hsl': hslDecisionSchemaRequest,
+  'beslut-sol-lss': solLssDecisionSchemaRequest,
 };
 
 const uiSchemaRequests: Record<InvestigationKey, UiSchemaRequest> = {
   'utredning-enhetschef': managerUiSchemaRequest,
   'utredning-sol-lss': solLssUiSchemaRequest,
   'utredning-hsl': hslUiSchemaRequest,
+  'beslut-hsl': hslDecisionUiSchemaRequest,
+  'beslut-sol-lss': solLssDecisionUiSchemaRequest,
 };
 
 const validValues: Record<InvestigationKey, JsonObject> = {
   'utredning-enhetschef': investigationCases['utredning-enhetschef'].valid,
   'utredning-sol-lss': investigationCases['utredning-sol-lss'].valid,
   'utredning-hsl': investigationCases['utredning-hsl'].valid,
+  'beslut-hsl': investigationCases['beslut-hsl'].valid,
+  'beslut-sol-lss': investigationCases['beslut-sol-lss'].valid,
 };
 
 export const latestSchemaIds: Record<InvestigationKey, string> = {
-  'utredning-enhetschef': '2281_utredning-enhetschef_1.1',
-  'utredning-sol-lss': '2281_utredning-sol-lss_1.1',
-  'utredning-hsl': '2281_utredning-hsl_1.0',
+  'utredning-enhetschef': '2281_utredning-enhetschef_1.2',
+  'utredning-sol-lss': '2281_utredning-sol-lss_1.2',
+  'utredning-hsl': '2281_utredning-hsl_1.2',
+  'beslut-hsl': '2281_beslut-hsl_1.2',
+  'beslut-sol-lss': '2281_beslut-sol-lss_1.3',
 };
 
 export const existingManagerDocument = (): InvestigationDocument => ({
@@ -408,6 +454,18 @@ const misconductLabels = [
   deficientHandling,
 ].map(withoutChildren);
 
+/**
+ * An ordinary deviation under SoL only. The default deviation is under HSL, so this is the errand
+ * that takes no decision at all.
+ */
+export const solDeviationScenario = (): Pick<IafApiScenario, 'labels' | 'classification'> => ({
+  labels: [provisionSol, reportDeviation, solLssOwner, legalCertainty, deficientHandling].map(withoutChildren),
+  classification: {
+    category: iafLabelFixture.classification.solLssOwner.resourcePath,
+    type: iafLabelFixture.classification.legalCertainty.resourcePath,
+  },
+});
+
 const allLabelsById = new Map<string, MockLabel>();
 const collectLabels = (labels: readonly MockLabel[]) => {
   labels.forEach((currentLabel) => {
@@ -586,6 +644,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     classificationPatches: [],
     errandPatches: [],
     writes: [],
+    reports: [],
   };
 
   const buildErrand = () => ({
@@ -633,6 +692,22 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
 
     if (method === 'GET' && path.endsWith('/featureflags')) {
       await fulfillJson(route, scenario.featureFlags ?? []);
+      return;
+    }
+
+    if (method === 'GET' && path.endsWith('/investigation-access')) {
+      await fulfillJson(
+        route,
+        {
+          municipalityId,
+          errandId,
+          documents: investigationProfile.documents.map(({ key }) => ({
+            key,
+            access: scenario.documentAccess ? scenario.documentAccess[key] ?? 'hidden' : 'edit',
+          })),
+        },
+        scenario.investigationAccessStatus ?? 200
+      );
       return;
     }
 
@@ -792,6 +867,52 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         path.endsWith(`/supporterrands/${municipalityId}/${errandId}`))
     ) {
       await fulfillJson(route, buildErrand());
+      return;
+    }
+
+    const reportMatch = path.match(/\/json-parameters\/([^/]+)\/reports$/u);
+    if (method === 'POST' && reportMatch) {
+      const key = decodeURIComponent(reportMatch[1]);
+      const body = requestBody(request) as { preview?: boolean } | undefined;
+      const preview = body?.preview === true;
+      trace.reports.push({ key, preview });
+      const document = documents[key];
+      if (!document) {
+        await fulfillJson(route, { message: 'JSON parameter not found' }, 404);
+        return;
+      }
+      if (document.value.completed !== 'yes') {
+        await fulfillJson(route, { message: 'Mark the investigation as completed before generating a report' }, 409);
+        return;
+      }
+      const existingReports = Array.isArray(document.value.reports) ? (document.value.reports as JsonObject[]) : [];
+      const sequence = existingReports.length + 1;
+      const fileName = `Rapport_${sequence}.pdf`;
+      if (preview) {
+        await fulfillJson(route, { data: { fileName, pdfBase64: 'JVBERi0xLjQK' }, message: 'rendered' }, 200);
+        return;
+      }
+      const entry = {
+        generatedAt: '2026-09-11T12:30:00.000Z',
+        generatedBy: `${applicationSlug}.test`,
+        fileName,
+        attachmentId: `attachment-${sequence}`,
+      };
+      const nextVersion = document.version + 1;
+      const updated: InvestigationDocument = {
+        ...document,
+        value: { ...document.value, reports: [...existingReports, entry] },
+        version: nextVersion,
+        etag: `"${nextVersion}"`,
+      };
+      documents[key] = updated;
+      errandVersion += 1;
+      const { etag, ...responseDocument } = updated;
+      await fulfillJson(route, { data: { document: responseDocument, report: entry }, message: 'attached' }, 201, {
+        etag,
+        'x-errand-version': String(errandVersion),
+        'access-control-expose-headers': 'ETag, X-Errand-Version',
+      });
       return;
     }
 

@@ -67,6 +67,7 @@ test('a variant needs only the required slots', () => {
   // categorization control of its own does not have to supply stubs for them.
   assert.equal(minimalVariant.renderNotice, undefined);
   assert.equal(minimalVariant.renderCategorizationControl, undefined);
+  assert.equal(minimalVariant.decisionTab, undefined);
 });
 
 test('a second capability selects its own variant and leaves avvikelse unselected', () => {

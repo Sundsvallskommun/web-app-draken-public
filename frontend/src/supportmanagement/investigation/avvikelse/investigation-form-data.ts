@@ -2,11 +2,18 @@ import type { Experimental_DefaultFormStateBehavior, RJSFSchema } from '@rjsf/ut
 
 import type { InvestigationFormData } from './investigation-document';
 
-// A choice's first option is not an answer. Keep unanswered oneOf fields empty while preserving
-// saved answers and explicit schema defaults such as the SoL/LSS legal bases.
+// A choice's first option is not an answer, and an untouched list is not an empty list. Keep
+// unanswered oneOf fields empty and add no empty arrays or objects as defaults, while preserving
+// saved answers and explicit non-empty schema defaults such as the SoL/LSS legal bases. Without
+// this, RJSF fills every untouched array with [] on mount, and a stored document that lacks those
+// keys reads as changed the moment it is opened or saved.
 export const investigationDefaultFormStateBehavior: Experimental_DefaultFormStateBehavior = Object.freeze({
   constAsDefaults: 'skipOneOf',
+  emptyObjectFields: 'skipEmptyDefaults',
 });
+
+/** Investigation and decision forms spell the required marker out rather than using an asterisk. */
+export const investigationRequiredIndicator = ' (Obligatorisk)';
 
 interface CalculationMetadata {
   formula: 'probability * severity';
@@ -123,12 +130,65 @@ function normalizeManagerConditions(formData: InvestigationFormData): Investigat
   return normalizedData;
 }
 
-function normalizeHslConditions(formData: InvestigationFormData): InvestigationFormData {
-  if (formData.ivoNotification === 'yes') return formData;
+/**
+ * The IVO case number only exists once the errand is reported to IVO. The HSL investigation carried
+ * this decision up to schema 1.0, so documents still bound to that version keep the rule; from 1.1
+ * it lives in the decision documents, where the Public 360 number follows the same answer.
+ */
+const IVO_INVESTIGATION_SCHEMA_NAMES: readonly string[] = ['utredning-hsl'];
+
+/** The decision documents: IVO and Public 360 case numbers exist only for a report to IVO. */
+const DECISION_SCHEMA_NAMES: readonly string[] = ['beslut-hsl', 'beslut-sol-lss'];
+
+const isReportedToIvo = (formData: InvestigationFormData): boolean => formData.ivoNotification === 'yes';
+
+function dropUnlessReportedToIvo(formData: InvestigationFormData, fields: readonly string[]): InvestigationFormData {
+  if (isReportedToIvo(formData)) return formData;
+  const present = fields.filter((field) => hasOwn(formData, field));
+  if (present.length === 0) return formData;
 
   const normalizedData = { ...formData };
-  delete normalizedData.ivoCaseNumber;
+  for (const field of present) delete normalizedData[field];
   return normalizedData;
+}
+
+/**
+ * The decision schemas keep both case numbers ordinary optional properties, so the sections
+ * template has no conditional rule to hide them by. Hiding them here keeps the form from showing
+ * fields the normalization above would then drop.
+ */
+function getDecisionRenderingSchema(schema: RJSFSchema, formData: InvestigationFormData): RJSFSchema {
+  if (isReportedToIvo(formData)) return schema;
+
+  const properties = { ...schema.properties };
+  delete properties.ivoCaseNumber;
+  delete properties.public360CaseNumber;
+  return { ...schema, properties };
+}
+
+export interface InvestigationServerTimestamp {
+  readonly name: string;
+  readonly label: string;
+  readonly value: string;
+}
+
+const SERVER_TIMESTAMP_MODES: readonly unknown[] = ['created', 'updated'];
+
+/**
+ * The properties the schema marks `x-draken-server-timestamp` (`created` is stamped once, `updated`
+ * on every write), with the values the document carries. The BFF stamps them; the form only
+ * reports them.
+ */
+export function getInvestigationServerTimestamps(
+  schema: RJSFSchema,
+  formData: InvestigationFormData
+): InvestigationServerTimestamp[] {
+  return Object.entries(schema.properties ?? {}).flatMap(([name, property]) => {
+    if (!isRecord(property) || !SERVER_TIMESTAMP_MODES.includes(property['x-draken-server-timestamp'])) return [];
+    const value = formData[name];
+    if (typeof value !== 'string' || value.trim().length === 0) return [];
+    return [{ name, label: typeof property.title === 'string' ? property.title : name, value }];
+  });
 }
 
 function readCalculationMetadata(value: unknown): CalculationMetadata | undefined {
@@ -174,8 +234,46 @@ function applyDeclaredCalculations(schema: RJSFSchema, formData: InvestigationFo
 }
 
 /**
+ * The root properties the server writes: timestamps, revision logs and server-owned values such as
+ * the report log. They are read from the stored document, never carried in the form, so the form
+ * neither sends them nor treats the server's copy of them as an unsaved change.
+ */
+export const isServerControlledProperty = (property: unknown): boolean =>
+  isRecord(property) &&
+  (property['x-draken-server-timestamp'] !== undefined ||
+    property['x-draken-server-revisions'] === true ||
+    property['x-draken-server-owned'] === true);
+
+/**
+ * An empty list is no answer: the widgets emit `[]` for untouched multi-selects, and a stored
+ * document that lacks the key must not read as changed. Dropping empty root arrays makes the
+ * canonical form independent of which widget rendered it.
+ */
+function dropEmptyArrays(formData: InvestigationFormData): InvestigationFormData {
+  const emptyArrays = Object.entries(formData)
+    .filter(([, value]) => Array.isArray(value) && value.length === 0)
+    .map(([name]) => name);
+  if (emptyArrays.length === 0) return formData;
+
+  const answered = { ...formData };
+  for (const name of emptyArrays) delete answered[name];
+  return answered;
+}
+
+function dropServerControlledProperties(schema: RJSFSchema, formData: InvestigationFormData): InvestigationFormData {
+  const serverControlled = Object.entries(schema.properties ?? {})
+    .filter(([name, property]) => isServerControlledProperty(property) && hasOwn(formData, name))
+    .map(([name]) => name);
+  if (serverControlled.length === 0) return formData;
+
+  const clientData = { ...formData };
+  for (const name of serverControlled) delete clientData[name];
+  return clientData;
+}
+
+/**
  * Canonical adapter from untrusted browser/RJSF values to one investigation
- * document. Unknown and conditionally inapplicable values are removed before
+ * document. Unknown, server-controlled and conditionally inapplicable values are removed before
  * calculations declared by the schema are applied.
  */
 export function normalizeInvestigationFormData(
@@ -184,23 +282,32 @@ export function normalizeInvestigationFormData(
   formData: InvestigationFormData
 ): InvestigationFormData {
   const prunedData = pruneValueToSchema(schema, formData, schema);
-  const schemaOwnedData = isRecord(prunedData) ? prunedData : {};
+  const schemaOwnedData = dropEmptyArrays(
+    dropServerControlledProperties(schema, isRecord(prunedData) ? prunedData : {})
+  );
   let conditionallyNormalizedData = schemaOwnedData;
   if (schemaName === 'utredning-enhetschef') conditionallyNormalizedData = normalizeManagerConditions(schemaOwnedData);
-  if (schemaName === 'utredning-hsl') conditionallyNormalizedData = normalizeHslConditions(schemaOwnedData);
+  if (IVO_INVESTIGATION_SCHEMA_NAMES.includes(schemaName)) {
+    conditionallyNormalizedData = dropUnlessReportedToIvo(schemaOwnedData, ['ivoCaseNumber']);
+  }
+  if (DECISION_SCHEMA_NAMES.includes(schemaName)) {
+    conditionallyNormalizedData = dropUnlessReportedToIvo(schemaOwnedData, ['ivoCaseNumber', 'public360CaseNumber']);
+  }
 
   return applyDeclaredCalculations(schema, conditionallyNormalizedData);
 }
 
 /**
  * Narrows presentation choices to those that the canonical manager schema
- * accepts for the selected legal bases. The source schema remains untouched.
+ * accepts for the selected legal bases, and hides a decision's IVO case number
+ * until the errand is reported to IVO. The source schema remains untouched.
  */
 export function getInvestigationRenderingSchema(
   schemaName: string,
   schema: RJSFSchema,
   formData: InvestigationFormData
 ): RJSFSchema {
+  if (DECISION_SCHEMA_NAMES.includes(schemaName)) return getDecisionRenderingSchema(schema, formData);
   if (schemaName !== 'utredning-enhetschef') return schema;
 
   const properties = { ...schema.properties };
@@ -247,4 +354,58 @@ export function getHslRiskValue(formData: InvestigationFormData): number | undef
   if (!isRecord(riskAssessment)) return undefined;
 
   return typeof riskAssessment.calculatedRiskValue === 'number' ? riskAssessment.calculatedRiskValue : undefined;
+}
+
+/**
+ * A schema that declares `x-draken-completion` lets its owner mark the document completed, which
+ * locks it and allows a PDF report; the reports field is the server-owned log of those reports.
+ */
+export interface InvestigationCompletion {
+  readonly field: string;
+  readonly reportsField: string;
+}
+
+export function getInvestigationCompletion(schema: RJSFSchema): InvestigationCompletion | undefined {
+  const declaration = (schema as Record<string, unknown>)['x-draken-completion'];
+  if (!isRecord(declaration) || typeof declaration.field !== 'string' || typeof declaration.reportsField !== 'string') {
+    return undefined;
+  }
+  return { field: declaration.field, reportsField: declaration.reportsField };
+}
+
+export const isInvestigationCompleted = (schema: RJSFSchema, formData: InvestigationFormData): boolean => {
+  const completion = getInvestigationCompletion(schema);
+  return completion !== undefined && formData[completion.field] === 'yes';
+};
+
+export interface InvestigationReport {
+  readonly generatedAt: string;
+  readonly generatedBy: string;
+  readonly fileName: string;
+  readonly attachmentId?: string;
+}
+
+/** The reports the document records, oldest first; malformed entries are left out rather than shown. */
+export function getInvestigationReports(schema: RJSFSchema, formData: InvestigationFormData): InvestigationReport[] {
+  const completion = getInvestigationCompletion(schema);
+  const entries = completion ? formData[completion.reportsField] : undefined;
+  if (!Array.isArray(entries)) return [];
+  return entries.flatMap((entry) => {
+    if (
+      !isRecord(entry) ||
+      typeof entry.generatedAt !== 'string' ||
+      typeof entry.generatedBy !== 'string' ||
+      typeof entry.fileName !== 'string'
+    ) {
+      return [];
+    }
+    return [
+      {
+        generatedAt: entry.generatedAt,
+        generatedBy: entry.generatedBy,
+        fileName: entry.fileName,
+        ...(typeof entry.attachmentId === 'string' ? { attachmentId: entry.attachmentId } : {}),
+      },
+    ];
+  });
 }

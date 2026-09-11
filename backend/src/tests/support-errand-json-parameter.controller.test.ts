@@ -1,37 +1,57 @@
 import { Response } from 'express';
 
-import { resolveSupportInvestigationDocumentGroups } from '@/config/support-investigation-document-groups';
+import { resolveIafVofInvestigationClassificationPolicy } from '@/config/iaf-vof-investigation-classification';
 import { createSupportInvestigationProfile, getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 import {
   SupportErrandJsonParameter,
   SupportErrandJsonParameterController,
   UpdateSupportErrandJsonParameterDto,
 } from '@/controllers/supportmanagement/support-errand-json-parameter.controller';
+import ApiService from '@/services/api.service';
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
 import { ABSENT_HEADER, mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
 import { MOCK_HSL_INVESTIGATOR_GROUP, MOCK_UNIT_MANAGER_GROUP, mockMunicipalityId, mockSupportErrandId } from './helpers/mock-data';
+import { mockErrandAccess } from './helpers/support-errand-access';
 
 interface DocumentServiceStub {
   readJsonParameter: ReturnType<typeof vi.fn>;
   writeJsonParameter: ReturnType<typeof vi.fn>;
+  readParentErrandSnapshot: ReturnType<typeof vi.fn>;
 }
 
-const makeController = (application = 'IAF', state: 'active' | 'inactive' | 'unavailable' = 'active', configuredDocumentGroups = '') => {
+const makeController = (
+  application = 'IAF',
+  state: 'active' | 'inactive' | 'unavailable' = 'active',
+  documentAccess: 'edit' | 'read' | 'hidden' = 'edit',
+) => {
   const documentService: DocumentServiceStub = {
     readJsonParameter: vi.fn(),
     writeJsonParameter: vi.fn(),
+    readParentErrandSnapshot: vi.fn(),
   };
+  const profile = getSupportInvestigationProfile(application);
   const policyService = {
     getState: vi.fn(async () => state),
+    iafVofClassificationPolicy: resolveIafVofInvestigationClassificationPolicy(profile),
   };
+  const accessApi = new ApiService();
+  vi.spyOn(accessApi, 'get').mockResolvedValue({
+    status: 200,
+    message: 'success',
+    data: {
+      ...mockErrandAccess(),
+      fields: documentAccess === 'hidden' ? [] : mockErrandAccess().fields,
+      resources: [{ resource: 'errand/json-parameter', level: documentAccess === 'read' ? 'R' : 'RW' }],
+    },
+  });
   const controller = new SupportErrandJsonParameterController(
-    getSupportInvestigationProfile(application),
+    profile,
     documentService as unknown as SupportJsonParameterService,
     policyService as unknown as SupportInvestigationPolicyService,
-    new SupportInvestigationAccessService(resolveSupportInvestigationDocumentGroups(configuredDocumentGroups)),
+    new SupportInvestigationAccessService({ apiService: accessApi }),
   );
   return { controller, documentService, policyService };
 };
@@ -40,7 +60,7 @@ const resDouble = () => mockRes() as unknown as MockResponse & Response;
 const UNSUPPORTED_KEY_ERROR = { status: 400, message: 'Unsupported investigation JSON parameter key' };
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 describe('SupportErrandJsonParameterController', () => {
@@ -157,9 +177,8 @@ describe('SupportErrandJsonParameterController', () => {
     expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
   });
 
-  it('refuses both the write and the read of a document the user is not mapped to', async () => {
-    const configuredDocumentGroups = JSON.stringify([{ documentKey: 'utredning-hsl', groups: [MOCK_HSL_INVESTIGATOR_GROUP] }]);
-    const { controller, documentService } = makeController('IAF', 'active', configuredDocumentGroups);
+  it('refuses both writing and reading a document absent from the errand access', async () => {
+    const { controller, documentService } = makeController('IAF', 'active', 'hidden');
     const unitManager = mockReq(mockUser({ groups: [MOCK_UNIT_MANAGER_GROUP] }));
 
     await expect(
@@ -186,10 +205,7 @@ describe('SupportErrandJsonParameterController', () => {
   });
 
   it('serves a read-only document but refuses its write', async () => {
-    const configuredDocumentGroups = JSON.stringify([
-      { documentKey: 'utredning-hsl', editorGroups: [MOCK_HSL_INVESTIGATOR_GROUP], readerGroups: [MOCK_UNIT_MANAGER_GROUP] },
-    ]);
-    const { controller, documentService } = makeController('IAF', 'active', configuredDocumentGroups);
+    const { controller, documentService } = makeController('IAF', 'active', 'read');
     const parameter: SupportErrandJsonParameter = {
       key: 'utredning-hsl',
       schemaId: '2281_utredning-hsl_1.0',
@@ -220,9 +236,8 @@ describe('SupportErrandJsonParameterController', () => {
     expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
   });
 
-  it('lets the mapped group write its own document', async () => {
-    const configuredDocumentGroups = JSON.stringify([{ documentKey: 'utredning-hsl', groups: [MOCK_HSL_INVESTIGATOR_GROUP] }]);
-    const { controller, documentService } = makeController('IAF', 'active', configuredDocumentGroups);
+  it('lets an upstream-authorized user write without an application edit permission', async () => {
+    const { controller, documentService } = makeController('IAF', 'active', 'edit');
     documentService.writeJsonParameter.mockResolvedValue({
       document: { key: 'utredning-hsl', schemaId: '2281_utredning-hsl_1.0', value: {}, version: 2 },
       etag: '"2"',
@@ -243,6 +258,189 @@ describe('SupportErrandJsonParameterController', () => {
     );
 
     expect(documentService.writeJsonParameter).toHaveBeenCalledTimes(1);
+  });
+
+  describe('a document declared for reported misconduct only', () => {
+    const decisionKey = 'beslut-sol-lss';
+    const update = { schemaId: '2281_beslut-sol-lss_1.1', value: { ivoNotification: 'no' } };
+    const deviationErrand = { id: mockSupportErrandId, parameters: [{ key: 'eventType', values: ['AVVIKELSE'] }] };
+    const savedInvestigation = { key: 'utredning-sol-lss', schemaId: '2281_utredning-sol-lss_1.0', value: {} };
+    const misconductErrand = {
+      id: mockSupportErrandId,
+      parameters: [{ key: 'eventType', values: ['MISSFORHALLANDE'] }],
+      jsonParameters: [savedInvestigation],
+    };
+    const NOT_APPLICABLE_ERROR = { status: 409, message: 'This investigation document applies to reported misconduct errands only' };
+
+    it('is served and written on a reported misconduct errand', async () => {
+      const { controller, documentService } = makeController();
+      documentService.readParentErrandSnapshot.mockResolvedValue(misconductErrand);
+      documentService.readJsonParameter.mockResolvedValue({ document: { key: decisionKey, ...update, version: 1 }, etag: '"1"', status: 200 });
+      documentService.writeJsonParameter.mockResolvedValue({
+        document: { key: decisionKey, ...update, version: 2 },
+        etag: '"2"',
+        status: 200,
+        parentErrandVersion: 5,
+      });
+      const req = mockReq();
+
+      await controller.getJsonParameter(req, mockMunicipalityId, mockSupportErrandId, decisionKey, resDouble());
+      await controller.updateJsonParameter(req, mockMunicipalityId, mockSupportErrandId, decisionKey, '"1"', ABSENT_HEADER, '4', update, resDouble());
+
+      // One parent read per call: the prerequisite check reuses the applicability snapshot.
+      expect(documentService.readParentErrandSnapshot).toHaveBeenCalledTimes(2);
+      expect(documentService.readParentErrandSnapshot).toHaveBeenCalledWith({
+        definition: expect.objectContaining({ key: decisionKey, appliesTo: 'reported-misconduct', placement: 'decision' }),
+        municipalityId: mockMunicipalityId,
+        errandId: mockSupportErrandId,
+        user: req.user,
+      });
+      expect(documentService.readJsonParameter).toHaveBeenCalledTimes(1);
+      expect(documentService.writeJsonParameter).toHaveBeenCalledTimes(1);
+    });
+
+    it('is refused on an ordinary deviation errand before the document is touched', async () => {
+      const { controller, documentService } = makeController();
+      documentService.readParentErrandSnapshot.mockResolvedValue(deviationErrand);
+
+      await expect(controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, decisionKey, resDouble())).rejects.toMatchObject(
+        NOT_APPLICABLE_ERROR,
+      );
+      await expect(
+        controller.updateJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, decisionKey, ABSENT_HEADER, '*', '4', update, resDouble()),
+      ).rejects.toMatchObject(NOT_APPLICABLE_ERROR);
+
+      expect(documentService.readJsonParameter).not.toHaveBeenCalled();
+      expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
+    });
+
+    it('is read but not written while the SoL/LSS investigation it answers is missing from the errand', async () => {
+      const { controller, documentService } = makeController();
+      documentService.readParentErrandSnapshot.mockResolvedValue({ ...misconductErrand, jsonParameters: [] });
+      documentService.readJsonParameter.mockResolvedValue({ document: { key: decisionKey, ...update, version: 1 }, etag: '"1"', status: 200 });
+
+      await controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, decisionKey, resDouble());
+      await expect(
+        controller.updateJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, decisionKey, ABSENT_HEADER, '*', '4', update, resDouble()),
+      ).rejects.toMatchObject({ status: 409, message: 'This investigation document requires utredning-sol-lss to be saved on the errand first' });
+
+      expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
+    });
+
+    it('is checked only after document access, so a hidden document reveals nothing about the errand', async () => {
+      const { controller, documentService } = makeController('IAF', 'active', 'hidden');
+
+      await expect(
+        controller.getJsonParameter(
+          mockReq(mockUser({ groups: [MOCK_UNIT_MANAGER_GROUP] })),
+          mockMunicipalityId,
+          mockSupportErrandId,
+          decisionKey,
+          resDouble(),
+        ),
+      ).rejects.toMatchObject({ status: 403 });
+
+      expect(documentService.readParentErrandSnapshot).not.toHaveBeenCalled();
+    });
+
+    it('never reads the parent errand for documents that apply to every errand', async () => {
+      const { controller, documentService } = makeController();
+      documentService.readJsonParameter.mockResolvedValue({
+        document: { key: 'utredning-hsl', schemaId: '2281_utredning-hsl_1.0', value: {}, version: 1 },
+        etag: '"1"',
+        status: 200,
+      });
+
+      await controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, 'utredning-hsl', resDouble());
+
+      expect(documentService.readParentErrandSnapshot).not.toHaveBeenCalled();
+    });
+
+    it('fails closed when the application has no classification policy to decide applicability', async () => {
+      const profile = createSupportInvestigationProfile({
+        application: 'FUTURE',
+        documents: [{ key: decisionKey, schemaName: 'beslut-sol-lss', tabLabel: 'Beslut', ownerLabel: 'Owner', appliesTo: 'reported-misconduct' }],
+      });
+      const documentService = { readJsonParameter: vi.fn(), readParentErrandSnapshot: vi.fn() } as unknown as SupportJsonParameterService;
+      const policyService = { getState: vi.fn().mockResolvedValue('active'), iafVofClassificationPolicy: undefined };
+      const accessApi = new ApiService();
+      vi.spyOn(accessApi, 'get').mockResolvedValue({ status: 200, message: 'success', data: mockErrandAccess() });
+      const controller = new SupportErrandJsonParameterController(
+        profile,
+        documentService,
+        policyService as unknown as SupportInvestigationPolicyService,
+        new SupportInvestigationAccessService({ apiService: accessApi }),
+      );
+
+      await expect(controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, decisionKey, resDouble())).rejects.toMatchObject({
+        status: 409,
+        message: 'Restricted investigation documents require an investigation classification policy',
+      });
+      expect(documentService.readParentErrandSnapshot).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('a document declared for HSL deviations only', () => {
+    const decisionKey = 'beslut-hsl';
+    const update = { schemaId: '2281_beslut-hsl_1.0', value: { ivoNotification: 'no' } };
+    const hslLabel = { classification: 'PROVISION', resourcePath: 'PROVISION/HSL', resourceName: 'HSL' };
+    const solLabel = { classification: 'PROVISION', resourcePath: 'PROVISION/SOL', resourceName: 'SOL' };
+    const hslDeviation = { id: mockSupportErrandId, parameters: [{ key: 'eventType', values: ['AVVIKELSE'] }], labels: [hslLabel] };
+    const solDeviation = { id: mockSupportErrandId, parameters: [{ key: 'eventType', values: ['AVVIKELSE'] }], labels: [solLabel] };
+    const hslMisconduct = { id: mockSupportErrandId, parameters: [{ key: 'eventType', values: ['MISSFORHALLANDE'] }], labels: [hslLabel] };
+    const NOT_APPLICABLE_ERROR = { status: 409, message: 'This investigation document applies to HSL deviation errands only' };
+
+    it('is served and written on an ordinary deviation under HSL', async () => {
+      const { controller, documentService } = makeController();
+      documentService.readParentErrandSnapshot.mockResolvedValue(hslDeviation);
+      documentService.readJsonParameter.mockResolvedValue({ document: { key: decisionKey, ...update, version: 1 }, etag: '"1"', status: 200 });
+      documentService.writeJsonParameter.mockResolvedValue({
+        document: { key: decisionKey, ...update, version: 2 },
+        etag: '"2"',
+        status: 200,
+        parentErrandVersion: 5,
+      });
+      const req = mockReq();
+
+      await controller.getJsonParameter(req, mockMunicipalityId, mockSupportErrandId, decisionKey, resDouble());
+      await controller.updateJsonParameter(req, mockMunicipalityId, mockSupportErrandId, decisionKey, '"1"', ABSENT_HEADER, '4', update, resDouble());
+
+      expect(documentService.readParentErrandSnapshot).toHaveBeenCalledWith(
+        expect.objectContaining({ definition: expect.objectContaining({ key: decisionKey, appliesTo: 'hsl-deviation', placement: 'decision' }) }),
+      );
+      expect(documentService.readJsonParameter).toHaveBeenCalledTimes(1);
+      expect(documentService.writeJsonParameter).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+      ['a deviation without HSL', solDeviation],
+      ['a reported misconduct, even under HSL', hslMisconduct],
+    ])('is refused on %s before the document is touched', async (_case, errand) => {
+      const { controller, documentService } = makeController();
+      documentService.readParentErrandSnapshot.mockResolvedValue(errand);
+
+      await expect(controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, decisionKey, resDouble())).rejects.toMatchObject(
+        NOT_APPLICABLE_ERROR,
+      );
+      await expect(
+        controller.updateJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, decisionKey, ABSENT_HEADER, '*', '4', update, resDouble()),
+      ).rejects.toMatchObject(NOT_APPLICABLE_ERROR);
+
+      expect(documentService.readJsonParameter).not.toHaveBeenCalled();
+      expect(documentService.writeJsonParameter).not.toHaveBeenCalled();
+    });
+
+    it('keeps the lex Sarah decision closed on the same HSL deviation', async () => {
+      const { controller, documentService } = makeController();
+      documentService.readParentErrandSnapshot.mockResolvedValue(hslDeviation);
+
+      await expect(
+        controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, 'beslut-sol-lss', resDouble()),
+      ).rejects.toMatchObject({
+        status: 409,
+        message: 'This investigation document applies to reported misconduct errands only',
+      });
+    });
   });
 
   it('rejects keys outside the configured profile before any upstream or policy call', async () => {
@@ -292,10 +490,13 @@ describe('SupportErrandJsonParameterController', () => {
       })),
     } as unknown as SupportJsonParameterService;
     const policyService = { getState: vi.fn().mockResolvedValue('active') };
+    const accessApi = new ApiService();
+    vi.spyOn(accessApi, 'get').mockResolvedValue({ status: 200, message: 'success', data: mockErrandAccess() });
     const controller = new SupportErrandJsonParameterController(
       profile,
       documentService,
       policyService as unknown as SupportInvestigationPolicyService,
+      new SupportInvestigationAccessService({ apiService: accessApi }),
     );
 
     await controller.getJsonParameter(mockReq(), mockMunicipalityId, mockSupportErrandId, 'custom-document', resDouble());

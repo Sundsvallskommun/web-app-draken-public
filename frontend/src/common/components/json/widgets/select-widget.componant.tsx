@@ -8,10 +8,12 @@ export function SelectWidget(props: WidgetProps) {
   const enumOptions = (options?.enumOptions as { value: any; label: string }[]) || [];
 
   const currentValue = value === undefined || value === null ? '' : value;
+  // The UI schema may set the width, as for the text widget; the capped width stays the default.
+  const customClassName = typeof options?.className === 'string' ? options.className : 'w-full max-w-[48rem]';
 
   return (
     <Select
-      className="w-full min-w-0 max-w-[48rem]"
+      className={`${customClassName} min-w-0 max-w-full`}
       id={id}
       value={currentValue}
       onChange={(e) => onChange(e.currentTarget.value || undefined)}

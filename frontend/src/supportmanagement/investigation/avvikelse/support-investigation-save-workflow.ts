@@ -42,6 +42,7 @@ export interface PreparedInvestigationClassification {
 
 interface PrepareClassificationInput {
   readonly required: boolean;
+  readonly canEditClassification: boolean;
   readonly dirty: boolean;
   readonly labelTree?: AvvikelseClassificationLabelTree;
   readonly labelStructure: readonly Label[] | undefined;
@@ -63,8 +64,37 @@ const persistedClassificationError = (
   return 'Välj avvikelsetyp och underkategori innan utredningen sparas.';
 };
 
+/** The same prerequisite is shown before editing and enforced again before either save step. */
+export function investigationClassificationWriteBlock({
+  required,
+  canEditClassification,
+  dirty,
+  labelTree,
+  labelStructure,
+  legalBases,
+  legalBaseRules,
+  persistedClassification,
+}: Omit<PrepareClassificationInput, 'triggerValidation' | 'getDraft'>): string | undefined {
+  if (!required || canEditClassification) return undefined;
+  if (dirty) return 'Du saknar behörighet att spara ändrad kategorisering. Dina ändringar finns kvar på sidan.';
+  if (!labelTree)
+    return 'Kategoriseringen kan inte kontrolleras just nu. Försök igen när klassificeringsprofilen har laddats.';
+  const state = getPersistedAvvikelseLabelClassificationState(
+    labelStructure,
+    labelTree,
+    legalBases,
+    persistedClassification,
+    legalBaseRules
+  );
+  if (persistedClassificationError(state)) {
+    return 'Dokumentet kräver en giltig kategorisering för valda lagrum. Du saknar behörighet att ändra kategoriseringen. Behåll lagrum som stämmer med kategoriseringen eller be en behörig handläggare att uppdatera den.';
+  }
+  return undefined;
+}
+
 export async function prepareInvestigationClassification({
   required,
+  canEditClassification,
   dirty,
   labelTree,
   labelStructure,
@@ -75,6 +105,17 @@ export async function prepareInvestigationClassification({
   getDraft,
 }: PrepareClassificationInput): Promise<PreparedInvestigationClassification | undefined> {
   if (!required) return undefined;
+  const writeBlock = investigationClassificationWriteBlock({
+    required,
+    canEditClassification,
+    dirty,
+    labelTree,
+    labelStructure,
+    legalBases,
+    legalBaseRules,
+    persistedClassification,
+  });
+  if (writeBlock) throw new Error(writeBlock);
 
   if (!dirty && labelTree) {
     const persistedState = getPersistedAvvikelseLabelClassificationState(
@@ -186,10 +227,33 @@ export async function saveInvestigationClassificationStep({
   return saveSupportInvestigationClassification(municipalityId, errandId, request);
 }
 
-export function investigationSaveSuccessMessage(documentSaved: boolean, classificationSaved: boolean): string {
-  if (documentSaved && classificationSaved) return 'Utredningen och ärendets klassificering har sparats.';
+/**
+ * What the handler calls the document, capitalised for the start of a sentence. The investigation
+ * wording is the default; the decision tab passes its own.
+ */
+export interface InvestigationDocumentWording {
+  readonly noun: string;
+  readonly kind: string;
+}
+
+export const investigationDocumentWording: InvestigationDocumentWording = Object.freeze({
+  noun: 'Utredningen',
+  kind: 'utredningsdokumentet',
+});
+
+export const decisionDocumentWording: InvestigationDocumentWording = Object.freeze({
+  noun: 'Beslutet',
+  kind: 'beslutsdokumentet',
+});
+
+export function investigationSaveSuccessMessage(
+  documentSaved: boolean,
+  classificationSaved: boolean,
+  wording: InvestigationDocumentWording = investigationDocumentWording
+): string {
+  if (documentSaved && classificationSaved) return `${wording.noun} och ärendets klassificering har sparats.`;
   if (classificationSaved) return 'Ärendets klassificering har sparats.';
-  return 'Utredningen har sparats.';
+  return `${wording.noun} har sparats.`;
 }
 
 interface SaveErrorMessageInput {
@@ -197,6 +261,7 @@ interface SaveErrorMessageInput {
   readonly documentSavedForClassification: boolean;
   readonly classificationDirty: boolean;
   readonly classificationRequired: boolean;
+  readonly wording?: InvestigationDocumentWording;
 }
 
 export function investigationSaveErrorMessage({
@@ -204,22 +269,23 @@ export function investigationSaveErrorMessage({
   documentSavedForClassification,
   classificationDirty,
   classificationRequired,
+  wording = investigationDocumentWording,
 }: SaveErrorMessageInput): string {
   if (isSupportInvestigationAccessDenied(error)) {
-    return 'Support Management nekade åtkomst till det här utredningsdokumentet.';
+    return `Support Management nekade åtkomst till det här ${wording.kind}.`;
   }
   const classificationConflict = isSupportInvestigationClassificationConflict(error);
   if (classificationConflict && documentSavedForClassification && classificationDirty) {
-    return 'Utredningen har sparats, men ärendets klassificering har ändrats av någon annan. Dina kategoriseringsval finns kvar här. Ladda om ärendet och jämför innan du sparar klassificeringen igen.';
+    return `${wording.noun} har sparats, men ärendets klassificering har ändrats av någon annan. Dina kategoriseringsval finns kvar här. Ladda om ärendet och jämför innan du sparar klassificeringen igen.`;
   }
   if (classificationConflict && classificationDirty) {
     return 'Ärendets klassificering har ändrats av någon annan. Dina kategoriseringsval finns kvar här. Ladda om ärendet och jämför innan du sparar igen.';
   }
   if (documentSavedForClassification && classificationDirty) {
-    return 'Utredningen har sparats, men ärendets klassificering kunde inte synkroniseras. Försök igen; nästa försök uppdaterar bara klassificeringen.';
+    return `${wording.noun} har sparats, men ärendets klassificering kunde inte synkroniseras. Försök igen; nästa försök uppdaterar bara klassificeringen.`;
   }
   if (isSupportInvestigationConflict(error)) {
-    return 'Utredningen har ändrats av någon annan. Dina ändringar finns kvar här. Ladda om ärendet och jämför innan du sparar igen.';
+    return `${wording.noun} har ändrats av någon annan. Dina ändringar finns kvar här. Ladda om ärendet och jämför innan du sparar igen.`;
   }
 
   const apiMessage = (error as AxiosError<{ message?: string }>).response?.data?.message;
@@ -228,5 +294,5 @@ export function investigationSaveErrorMessage({
   if (classificationRequired && classificationDirty) {
     return 'Ärendets klassificering kunde inte sparas. Dina ändringar finns kvar och du kan försöka igen.';
   }
-  return 'Utredningen kunde inte sparas. Dina ändringar finns kvar och du kan försöka igen.';
+  return `${wording.noun} kunde inte sparas. Dina ändringar finns kvar och du kan försöka igen.`;
 }

@@ -51,6 +51,8 @@ type SchemaFormProps = {
   externalFields?: Readonly<Record<string, ReactNode>>;
   validationErrors?: readonly SchemaFormError[];
   onError?: FormProps['onError'];
+  /** What marks a required field's label; the asterisk unless the form says otherwise. */
+  requiredIndicator?: string;
 };
 
 export default function SchemaForm({
@@ -70,6 +72,7 @@ export default function SchemaForm({
   externalFields,
   validationErrors,
   onError,
+  requiredIndicator,
 }: SchemaFormProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [errorNavigation, setErrorNavigation] = useState<SchemaErrorNavigation>();
@@ -124,8 +127,15 @@ export default function SchemaForm({
 
   // Send original schema via formContext so ObjectFieldTemplate can read if/then conditions
   const formContext = useMemo(
-    () => ({ originalSchema: schema, submitButtonOptions, idPrefix, externalFields, errorNavigation }),
-    [externalFields, idPrefix, schema, submitButtonOptions, errorNavigation]
+    () => ({
+      originalSchema: schema,
+      submitButtonOptions,
+      idPrefix,
+      externalFields,
+      errorNavigation,
+      requiredIndicator,
+    }),
+    [externalFields, idPrefix, schema, submitButtonOptions, errorNavigation, requiredIndicator]
   );
 
   const templates: NonNullable<FormProps['templates']> = {

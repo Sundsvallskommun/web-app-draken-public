@@ -1,7 +1,8 @@
 # Schema-labb (endast lokal utveckling)
 
-Utvecklarsandlåda för att förhandsgranska utredningsformulären (`utredning-enhetschef`,
-`utredning-sol-lss`, `utredning-hsl`) i Drakens riktiga formulärkomponenter — utan ärende, utan
+Utvecklarsandlåda för att förhandsgranska utrednings- och beslutsformulären (`utredning-enhetschef`,
+`utredning-sol-lss`, `utredning-hsl`, `beslut-hsl`, `beslut-sol-lss`) i Drakens riktiga
+formulärkomponenter — utan ärende, utan
 inloggning och utan nätverksanrop. Ingenting här är en del av produkten.
 
 Syfte, hur du startar den och ansvarsgränserna mot `schemas/` och `common/components/json`

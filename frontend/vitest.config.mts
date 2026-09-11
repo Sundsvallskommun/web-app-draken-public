@@ -8,17 +8,17 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   test: {
-    // The suites are pure functions; nothing renders. Switch to 'jsdom' if that changes.
+    // Pure suites use node; component/hook suites opt into jsdom with a file directive.
     environment: 'node',
     // Assertions use node:assert/strict and `test` is imported explicitly, so no globals
     // are injected.
     globals: false,
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/data-contracts/**', 'src/**/*.test.ts'],
+      exclude: ['src/**/data-contracts/**', 'src/**/*.test.{ts,tsx}'],
     },
   },
 });

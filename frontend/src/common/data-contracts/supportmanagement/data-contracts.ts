@@ -719,27 +719,33 @@ export interface Status {
 
 /** Role model */
 export interface Role {
+  /** Role ID */
+  id?: string;
   /**
    * Name for the role. Used as key
    * @minLength 1
-   * @example "roleName"
    */
   name: string;
-  /**
-   * Display name for the role
-   * @example "Role name"
-   */
+  /** Display name for the role */
   displayName?: string | null;
+  /**
+   * Sort order for the role
+   * @format int32
+   */
+  sortOrder?: number | null;
+  /**
+   * Indicates if the role is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
   /**
    * Timestamp when the role was created
    * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
    */
   created?: string;
   /**
    * Timestamp when the role was last modified
    * @format date-time
-   * @example "2000-10-31T01:30:00+02:00"
    */
   modified?: string;
 }
@@ -885,6 +891,8 @@ export interface ContactChannel {
 
 /** Errand model */
 export interface Errand {
+  /** List of measures for the errand */
+  measures?: Measure[];
   /**
    * Unique id for the errand
    * @example "f0882f1d-06bc-47fd-b017-1d8307f5ce95"
@@ -1649,6 +1657,7 @@ export interface Phase {
 
 /** MetadataResponse model */
 export interface MetadataResponse {
+  measureTypes?: MeasureType[];
   categories?: Category[];
   externalIdTypes?: ExternalIdType[];
   /** Labels model */
@@ -2138,4 +2147,102 @@ export enum CommunicationCommunicationTypeEnum {
 export enum MessageTypeEnum {
   USER_CREATED = 'USER_CREATED',
   SYSTEM_CREATED = 'SYSTEM_CREATED',
+}
+
+/** Measure model */
+export interface Measure {
+  /** Measure ID */
+  id?: string;
+  /** Responsible user (ad-username) */
+  responsibleUser?: string;
+  /**
+   * Measure type ID (UUID reference to measure type metadata)
+   * @format uuid
+   */
+  measureTypeId?: string;
+  /** Type name from metadata (read-only) */
+  type?: string;
+  /**
+   * Optimistic locking version of the measure (read-only)
+   * @format int64
+   */
+  version?: number;
+  /**
+   * Planned start date
+   * @format date-time
+   */
+  plannedStart?: string;
+  /**
+   * Planned completion date
+   * @format date-time
+   */
+  plannedComplete?: string;
+  /**
+   * Execution date
+   * @format date-time
+   */
+  executed?: string;
+  /** User who added the measure */
+  addedByUser?: string;
+  /** Role of the user who added the measure */
+  addedByRole?: string;
+  /** Goal of the measure */
+  goal?: string;
+  /** Description of the measure */
+  description?: string;
+  /** Accept status */
+  accept?: string | null;
+  /** Motivation for the accept decision */
+  acceptMotivation?: string;
+  /** Rework goal */
+  reworkGoal?: string;
+  /** Rework description */
+  reworkDescription?: string;
+  /**
+   * Timestamp when the measure was created
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * Timestamp when the measure was last modified
+   * @format date-time
+   */
+  modified?: string;
+}
+
+/** MeasureType model */
+export interface MeasureType {
+  /** MeasureType ID */
+  id?: string;
+  /**
+   * Name for the measure type. Used as key
+   * @minLength 1
+   */
+  name: string;
+  /** Display name for the measure type */
+  displayName?: string | null;
+  /**
+   * Groups that this measure type belongs to
+   */
+  measureGroups?: string[];
+  /**
+   * Sort order for the measure type
+   * @format int32
+   */
+  sortOrder?: number | null;
+  /**
+   * Indicates if the measure type is deprecated
+   * @default false
+   */
+  deprecated?: boolean;
+  /**
+   * Timestamp when the measure type was created
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * Timestamp when the measure type was last modified
+   * @format date-time
+   */
+  modified?: string;
 }

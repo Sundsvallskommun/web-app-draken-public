@@ -6,6 +6,7 @@ import {
   preservesIafVofInvestigationClassificationOwnerParameter,
   resolveIafVofInvestigationClassificationOwner,
   resolveIafVofInvestigationClassificationPolicy,
+  resolveIafVofInvestigationDocumentApplicability,
 } from '@/config/iaf-vof-investigation-classification';
 import { createSupportInvestigationProfile, getSupportInvestigationProfile } from '@/config/support-investigation-profile';
 
@@ -67,6 +68,38 @@ describe('fixed IAF/VOF investigation classification policy', () => {
       'default',
     );
     expect(resolveIafVofInvestigationClassificationOwner(policy, { labels: [{ resourceName: 'ABUSE' }] }).mode).toBe('reported-misconduct');
+  });
+
+  it('resolves at most one decision applicability per errand, reported misconduct first', () => {
+    const hslLabel = { classification: 'PROVISION', resourcePath: 'PROVISION/HSL', resourceName: 'HSL' };
+    const solLabel = { classification: 'PROVISION', resourcePath: 'PROVISION/SOL', resourceName: 'SOL' };
+    const deviation = { parameters: [{ key: 'eventType', values: ['AVVIKELSE'] }] };
+    const misconduct = { parameters: [{ key: 'eventType', values: ['MISSFORHALLANDE'] }] };
+
+    expect(resolveIafVofInvestigationDocumentApplicability({ ...deviation, labels: [solLabel] })).toBeUndefined();
+    expect(resolveIafVofInvestigationDocumentApplicability({ ...deviation, labels: [hslLabel] })).toBe('hsl-deviation');
+    expect(resolveIafVofInvestigationDocumentApplicability({ ...deviation, labels: [solLabel, hslLabel] })).toBe('hsl-deviation');
+    expect(resolveIafVofInvestigationDocumentApplicability({ ...misconduct, labels: [solLabel] })).toBe('reported-misconduct');
+    expect(resolveIafVofInvestigationDocumentApplicability({ ...misconduct, labels: [hslLabel, solLabel] })).toBe('reported-misconduct');
+  });
+
+  it('recognises the HSL legal base by path, and by name only for a pathless legal base label', () => {
+    expect(resolveIafVofInvestigationDocumentApplicability({ labels: [{ classification: 'PROVISION', resourcePath: '/provision/hsl/' }] })).toBe(
+      'hsl-deviation',
+    );
+    expect(resolveIafVofInvestigationDocumentApplicability({ labels: [{ classification: 'provision', resourceName: ' hsl ' }] })).toBe(
+      'hsl-deviation',
+    );
+    // The category branch for HSL is also named HSL; it is not a legal base.
+    expect(
+      resolveIafVofInvestigationDocumentApplicability({
+        labels: [{ classification: 'CATEGORY', resourcePath: 'CATEGORY/HSL', resourceName: 'HSL' }],
+      }),
+    ).toBeUndefined();
+    expect(resolveIafVofInvestigationDocumentApplicability({ labels: [{ classification: 'CATEGORY', resourceName: 'HSL' }] })).toBeUndefined();
+    expect(
+      resolveIafVofInvestigationDocumentApplicability({ labels: [{ classification: 'PROVISION', resourcePath: 'OTHER/PROVISION/HSL' }] }),
+    ).toBeUndefined();
   });
 
   it('protects only the fixed eventType selector from generic parameter writes', () => {

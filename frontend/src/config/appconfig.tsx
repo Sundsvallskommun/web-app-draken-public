@@ -40,6 +40,7 @@ export interface AppConfigFeatures {
   useAppeal: boolean;
   useHandover: boolean;
   useInvestigation: boolean;
+  useMeasures: boolean;
   useAvvikelseInvestigation: boolean;
   useAotInvestigation: boolean;
   /**
@@ -98,6 +99,7 @@ export const appConfig: AppConfig = {
     useAppeal: envBool(process.env.NEXT_PUBLIC_USE_APPEAL),
     useHandover: envBool(process.env.NEXT_PUBLIC_USE_HANDOVER),
     useInvestigation: envBool(process.env.NEXT_PUBLIC_USE_INVESTIGATION),
+    useMeasures: envBool(process.env.NEXT_PUBLIC_USE_MEASURES),
     useAvvikelseInvestigation: envBool(process.env.NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION),
     useAotInvestigation: envBool(process.env.NEXT_PUBLIC_USE_AOT_INVESTIGATION),
     hideAboutErrandSection: envBool(process.env.NEXT_PUBLIC_HIDE_ABOUT_ERRAND_SECTION),
