@@ -746,9 +746,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     // The case numbers only appear once the errand is reported to IVO.
     await expect(document.locator(`#${misconductDecisionKey}_ivoCaseNumber`)).toHaveCount(0);
     await expect(document.locator(`#${misconductDecisionKey}_public360CaseNumber`)).toHaveCount(0);
-    await document
-      .locator(`#${misconductDecisionKey}_decidedMisconductDegree`)
-      .selectOption('tangible_risk_of_serious_misconduct');
+    // The classification spans the form: the UI schema's width wins over the widget's capped default.
+    const classification = document.locator(`#${misconductDecisionKey}_decidedMisconductDegree`);
+    await expect(classification).toHaveClass(/\bw-full\b/u);
+    await expect(classification).not.toHaveClass(/max-w-\[48rem\]/u);
+    await classification.selectOption('tangible_risk_of_serious_misconduct');
     await document.locator(`#${misconductDecisionKey}_decisionMotivation`).fill('Risken var påtaglig.');
     await document
       .locator(`#${misconductDecisionKey}_ivoNotification`)
