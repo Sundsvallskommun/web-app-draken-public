@@ -2,9 +2,10 @@ import { hasDirtyFields } from '@common/services/helper-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
+import type { InvestigationPhaseContext } from '@supportmanagement/investigation/investigation-phase';
 import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import {
   isDecisionTabVisible,
@@ -50,9 +51,18 @@ export const SupportTabsWrapper: FC<{
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const investigationVariant = getInvestigationVariant();
   const investigationProfile = useInvestigationProfileStore((state) => state.profile);
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
+  // Where the errand stands in the workflow, for the tabs that wait for a phase. The access request
+  // is deliberately not gated on it: what the handler may read of an already written document does
+  // not change with the phase, and Ärendeuppgifter asks the same answer from any phase.
+  const investigationPhases: InvestigationPhaseContext = useMemo(
+    () => ({ metadataPhases: supportMetadata?.phases, errandPhases: supportErrand?.phases }),
+    [supportErrand?.phases, supportMetadata?.phases]
+  );
   const { access: investigationAccess, refresh: refreshInvestigationAccess } = useInvestigationAccess(
-    isInvestigationTabVisible(appConfig.features, investigationVariant) &&
+    appConfig.features.useInvestigation &&
+      investigationVariant !== null &&
       investigationProfile?.state === 'active' &&
       investigationProfile.documents.length > 0
   );
@@ -172,7 +182,7 @@ export const SupportTabsWrapper: FC<{
             refreshAccess: refreshInvestigationAccess,
           }),
         disabled: false,
-        visibleFor: isInvestigationTabVisible(appConfig.features, investigationVariant),
+        visibleFor: isInvestigationTabVisible(appConfig.features, investigationVariant, investigationPhases),
       },
       {
         key: 'measures',
@@ -205,6 +215,7 @@ export const SupportTabsWrapper: FC<{
             investigationVariant,
             supportErrand,
             investigationProfile,
+            investigationPhases,
             investigationAccess
           ) ||
           investigationProfile?.documents.some(
@@ -274,6 +285,7 @@ export const SupportTabsWrapper: FC<{
       investigationProfile,
       investigationAccess,
       investigationDirty,
+      investigationPhases,
       refreshInvestigationAccess,
       setUnsavedFacility,
       supportAttachments,

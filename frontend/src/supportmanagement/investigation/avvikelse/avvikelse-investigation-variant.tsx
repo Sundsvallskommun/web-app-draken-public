@@ -43,6 +43,16 @@ const AvvikelseCategorizationControl = dynamic(
 );
 
 /**
+ * The phases the avvikelse process runs through, named as the namespace's phase metadata names them.
+ * The documents belong to one phase each: the investigations are written while the errand is being
+ * investigated, the decision once it has moved on to being decided. Naming the phases here is what
+ * keeps the tabs from being reachable before the errand is there - a namespace whose phase model
+ * does not use these names simply runs ungated, as it did before the phases existed.
+ */
+const INVESTIGATION_PHASE_NAME = 'Utredning';
+const DECISION_PHASE_NAME = 'Beslut';
+
+/**
  * The avvikelse utredning: the Utredning tab and its documents, the avvikelse label tree, and
  * classification owned by the investigation document rather than by Grundinformation. One
  * functional package, enabled by one capability flag.
@@ -53,6 +63,7 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
   id: 'avvikelse',
   label: 'Utredning',
   enabledBy: 'useAvvikelseInvestigation',
+  requiredPhaseName: INVESTIGATION_PHASE_NAME,
   resolveClassificationPlacement: (profile: InvestigationProfile | null | undefined) =>
     resolveAvvikelseClassificationPlacement(profile),
   renderTab: (props: InvestigationTabProps) => <SupportErrandInvestigationTab {...props} />,
@@ -68,6 +79,7 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
    */
   decisionTab: {
     label: 'Beslut',
+    requiredPhaseName: DECISION_PHASE_NAME,
     isVisible: (
       errand: SupportErrand | undefined,
       profile: InvestigationProfile | null | undefined,

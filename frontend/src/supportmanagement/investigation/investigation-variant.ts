@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 import type { SupportErrandClassificationPlacement } from './classification-placement';
 import type { InvestigationAccessState } from './investigation-access';
+import { hasReachedInvestigationPhase, type InvestigationPhaseContext } from './investigation-phase';
 import type { InvestigationProfile } from './investigation-profile';
 
 /**
@@ -32,6 +33,12 @@ export interface InvestigationCategorizationControlProps {
 export interface InvestigationDecisionTabSlot {
   /** Label for the errand tab. */
   readonly label: string;
+  /**
+   * The workflow phase the decision is taken in. The tab is offered once the errand has reached it,
+   * so a decision cannot be written while the errand is still being investigated. A slot that names
+   * no phase is offered whenever `isVisible` says so, as it always was.
+   */
+  readonly requiredPhaseName?: string;
   readonly isVisible: (
     errand: SupportErrand | undefined,
     profile: InvestigationProfile | null | undefined,
@@ -51,6 +58,11 @@ export interface InvestigationVariantModule {
   /** Label for the errand tab this variant fills. */
   readonly label: string;
   readonly enabledBy: InvestigationCapability;
+  /**
+   * The workflow phase the investigation is carried out in. The tab is offered once the errand has
+   * reached it - a variant whose work has no phase of its own names none and is never gated.
+   */
+  readonly requiredPhaseName?: string;
   /** Where classification is edited, and in which vocabulary, when this variant is in play. */
   resolveClassificationPlacement: (
     profile: InvestigationProfile | null | undefined
@@ -88,21 +100,29 @@ export const resolveInvestigationVariant = (
 
 /**
  * Two flags, deliberately: the capability says which implementation, and `useInvestigation` is the
- * master switch that turns the tab off across every variant at once.
+ * master switch that turns the tab off across every variant at once. On top of the flags the errand
+ * has to have reached the phase the variant works in, so the tab appears when the work does.
  */
 export const isInvestigationTabVisible = (
   features: AppConfigFeatures,
-  variant: InvestigationVariantModule | null
-): boolean => features.useInvestigation && variant !== null;
+  variant: InvestigationVariantModule | null,
+  phases: InvestigationPhaseContext
+): boolean =>
+  features.useInvestigation && variant !== null && hasReachedInvestigationPhase(variant.requiredPhaseName, phases);
 
 /**
- * The master switch gates the decision tab exactly as it gates the investigation tab; beyond that
- * the variant's own slot decides, per errand and profile. No slot, no tab.
+ * The master switch and the phase gate apply to the decision tab exactly as they apply to the
+ * investigation tab; beyond them the variant's own slot decides, per errand and profile. No slot,
+ * no tab.
  */
 export const isDecisionTabVisible = (
   features: AppConfigFeatures,
   variant: InvestigationVariantModule | null,
   errand: SupportErrand | undefined,
   profile: InvestigationProfile | null | undefined,
+  phases: InvestigationPhaseContext,
   access: InvestigationAccessState = { status: 'loading' }
-): boolean => features.useInvestigation && variant?.decisionTab?.isVisible(errand, profile, access) === true;
+): boolean =>
+  features.useInvestigation &&
+  variant?.decisionTab?.isVisible(errand, profile, access) === true &&
+  hasReachedInvestigationPhase(variant.decisionTab.requiredPhaseName, phases);

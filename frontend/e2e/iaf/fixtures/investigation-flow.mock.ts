@@ -138,6 +138,26 @@ export interface IafApiTrace {
   reports: Array<{ key: string; preview: boolean }>;
 }
 
+/** One phase of the namespace's workflow, as `supportmetadata` describes it. */
+export interface MockPhase {
+  id: string;
+  name: string;
+  displayName?: string;
+  phaseOrder: number;
+  deprecated?: boolean;
+}
+
+/**
+ * The IAF/VOF workflow as the specs use it. The Utredning tab opens in Utredning and the Beslut tab
+ * in Beslut, so a scenario places the errand in one of these to say how far it has got.
+ */
+export const investigationPhases: MockPhase[] = [
+  { id: 'phase-received', name: 'Inkommet', phaseOrder: 1 },
+  { id: 'phase-investigation', name: 'Utredning', phaseOrder: 2 },
+  { id: 'phase-decision', name: 'Beslut', phaseOrder: 3 },
+  { id: 'phase-closed', name: 'Avslutat', phaseOrder: 4 },
+];
+
 export interface IafApiScenario {
   documentAccess?: Readonly<Record<string, 'edit' | 'read' | 'hidden'>>;
   investigationAccessStatus?: number;
@@ -164,6 +184,13 @@ export interface IafApiScenario {
   investigationProfile?: MockInvestigationProfile;
   investigationProfileResponse?: unknown;
   investigationProfileStatus?: number;
+  /**
+   * The workflow the namespace runs. Omitted by default, which is a namespace with no phase model -
+   * the errand is then in no phase and nothing that waits for one is gated.
+   */
+  metadataPhases?: MockPhase[];
+  /** The phase the errand is in: `activePhaseId` never comes back on a read, the history does. */
+  activePhaseId?: string;
 }
 
 const schemaRequests: Record<InvestigationKey, SchemaRequest> = {
@@ -661,6 +688,13 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     created: '2026-08-01T10:00:00.000+02:00',
     modified: '2026-08-12T09:00:00.000+02:00',
     version: errandVersion,
+    ...(scenario.activePhaseId
+      ? {
+          phases: [
+            { phaseId: scenario.activePhaseId, name: scenario.activePhaseId, started: '2026-08-01T10:00:00.000+02:00' },
+          ],
+        }
+      : {}),
     classification: structuredClone(errandClassification),
     labels: structuredClone(errandLabels),
     actions: [],
@@ -758,6 +792,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     if (method === 'GET' && path.endsWith(`/supportmetadata/${municipalityId}`)) {
       await fulfillJson(route, {
         ...metadata,
+        ...(scenario.metadataPhases ? { phases: scenario.metadataPhases } : {}),
         labels: {
           labelStructure:
             scenario.labelStructure ??

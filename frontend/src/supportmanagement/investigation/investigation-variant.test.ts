@@ -4,6 +4,7 @@ import type { AppConfigFeatures } from '@config/appconfig';
 import { test } from 'vitest';
 
 import { defaultBasicsPlacement } from './classification-placement';
+import type { InvestigationPhaseContext } from './investigation-phase';
 import {
   type InvestigationCapability,
   type InvestigationVariantModule,
@@ -23,6 +24,9 @@ const stub = (id: string, enabledBy: InvestigationCapability): InvestigationVari
   resolveClassificationPlacement: () => defaultBasicsPlacement,
   renderTab: () => null,
 });
+
+/** A deployment running no workflow: the phase gate has nothing to compare and lets every tab past. */
+const noPhases: InvestigationPhaseContext = { metadataPhases: undefined, errandPhases: undefined };
 
 test('no enabled capability resolves to no variant', () => {
   assert.equal(resolveInvestigationVariant(features({}), [stub('avvikelse', 'useAvvikelseInvestigation')]), null);
@@ -52,7 +56,7 @@ test('two enabled capabilities resolve to the first registered variant', () => {
 test('the tab needs both the master switch and a claiming variant', () => {
   const variant = stub('avvikelse', 'useAvvikelseInvestigation');
   const visible = (useInvestigation: boolean, resolved: InvestigationVariantModule | null) =>
-    isInvestigationTabVisible({ ...features({}), useInvestigation } as AppConfigFeatures, resolved);
+    isInvestigationTabVisible({ ...features({}), useInvestigation } as AppConfigFeatures, resolved, noPhases);
 
   assert.equal(visible(true, variant), true);
   assert.equal(visible(false, variant), false);
@@ -73,9 +77,37 @@ test('the decision tab needs the master switch, a slot, and the slot saying yes'
   const on = { ...features({}), useInvestigation: true } as AppConfigFeatures;
   const off = { ...features({}), useInvestigation: false } as AppConfigFeatures;
 
-  assert.equal(isDecisionTabVisible(on, withSlot, decided, null), true);
-  assert.equal(isDecisionTabVisible(on, withSlot, other, null), false);
-  assert.equal(isDecisionTabVisible(off, withSlot, decided, null), false);
-  assert.equal(isDecisionTabVisible(on, withoutSlot, decided, null), false);
-  assert.equal(isDecisionTabVisible(on, null, decided, null), false);
+  assert.equal(isDecisionTabVisible(on, withSlot, decided, null, noPhases), true);
+  assert.equal(isDecisionTabVisible(on, withSlot, other, null, noPhases), false);
+  assert.equal(isDecisionTabVisible(off, withSlot, decided, null, noPhases), false);
+  assert.equal(isDecisionTabVisible(on, withoutSlot, decided, null, noPhases), false);
+  assert.equal(isDecisionTabVisible(on, null, decided, null, noPhases), false);
+});
+
+// The phase a variant names is part of what makes a tab visible, so the two switches compose: the
+// flags say the tab exists at all, the phase says the errand has got to the work it holds.
+test('a tab waiting for a phase stays away until the errand reaches it', () => {
+  const metadataPhases = [
+    { id: 'received', name: 'Inkommet', phaseOrder: 1 },
+    { id: 'investigation', name: 'Utredning', phaseOrder: 2 },
+    { id: 'decision', name: 'Beslut', phaseOrder: 3 },
+  ];
+  const inPhase = (phaseId: string): InvestigationPhaseContext => ({
+    metadataPhases,
+    errandPhases: [{ phaseId }],
+  });
+  const variant: InvestigationVariantModule = {
+    ...stub('avvikelse', 'useAvvikelseInvestigation'),
+    requiredPhaseName: 'Utredning',
+    decisionTab: { label: 'Beslut', requiredPhaseName: 'Beslut', isVisible: () => true, render: () => null },
+  };
+  const on = { ...features({}), useInvestigation: true } as AppConfigFeatures;
+  const errand = { id: 'errand' } as Parameters<typeof isDecisionTabVisible>[2];
+
+  assert.equal(isInvestigationTabVisible(on, variant, inPhase('received')), false);
+  assert.equal(isInvestigationTabVisible(on, variant, inPhase('investigation')), true);
+  assert.equal(isInvestigationTabVisible(on, variant, inPhase('decision')), true);
+
+  assert.equal(isDecisionTabVisible(on, variant, errand, null, inPhase('investigation')), false);
+  assert.equal(isDecisionTabVisible(on, variant, errand, null, inPhase('decision')), true);
 });

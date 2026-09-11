@@ -68,6 +68,8 @@ test('a variant needs only the required slots', () => {
   assert.equal(minimalVariant.renderNotice, undefined);
   assert.equal(minimalVariant.renderCategorizationControl, undefined);
   assert.equal(minimalVariant.decisionTab, undefined);
+  // A variant whose work has no phase of its own names none, and is offered from any phase.
+  assert.equal(minimalVariant.requiredPhaseName, undefined);
 });
 
 test('a second capability selects its own variant and leaves avvikelse unselected', () => {
@@ -81,8 +83,10 @@ test('the master switch gates a non-avvikelse variant the same way', () => {
   const enabled = features({ [OTHER]: true, useInvestigation: true });
   const masterOff = features({ [OTHER]: true });
 
-  assert.equal(isInvestigationTabVisible(enabled, minimalVariant), true);
-  assert.equal(isInvestigationTabVisible(masterOff, minimalVariant), false);
+  const noPhases = { metadataPhases: undefined, errandPhases: undefined };
+
+  assert.equal(isInvestigationTabVisible(enabled, minimalVariant, noPhases), true);
+  assert.equal(isInvestigationTabVisible(masterOff, minimalVariant, noPhases), false);
 });
 
 /**

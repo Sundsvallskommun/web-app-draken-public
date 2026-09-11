@@ -28,13 +28,21 @@ delad kod erbjuder:
   Krävs exakt när `resolveClassificationPlacement` returnerar en placement med `labelTree`: en variant som tar med
   sig eget ordförråd måste också ta med kontrollen som redigerar det.
 - `resolveClassificationPlacement` — var kategoriseringen redigeras, och i vilket ordförråd.
+- `requiredPhaseName` — valfri fas arbetet utförs i. Fliken erbjuds först när ärendet nått fasen (att vara i den
+  räcker, liksom att ha passerat den). `decisionTab` har ett eget `requiredPhaseName`, så beslutet kan vänta på en
+  senare fas än utredningen. En variant vars arbete inte hör till någon fas namnger ingen och grindas aldrig.
 - `decisionTab` — valfri andra ärendeflik, Beslut, för en utredning som avslutas med ett registrerat beslut
   (för avvikelse: lex Sarah-beslutet vid missförhållande eller IVO-beslutet vid HSL-avvikelse, aldrig båda). Till
   skillnad från Utredningsfliken, som kapabilitetsflaggan ensam tänder, avgör varianten själv per ärende och
   runtimeprofil om fliken finns (`isVisible`). Utan slot, ingen flik — och ingen förändring för andra varianter.
 
 Två flaggor styr fliken: kapabilitetsflaggan väljer _vilken_ implementation, och `useInvestigation`
-är huvudströmbrytaren som släcker fliken för alla varianter samtidigt.
+är huvudströmbrytaren som släcker fliken för alla varianter samtidigt. Ovanpå flaggorna ligger fasgrinden
+(`investigation-phase.ts`): faserna kommer ur namespacets `supportmetadata`, och vilken fas ärendet är i läses
+ur dess `phases`-historik — `activePhaseId` är skrivvägen och kommer aldrig tillbaka vid läsning. Grinden
+jämför `phaseOrder`, matchar fasen på `name` eller `displayName`, och släpper igenom när det inte finns något
+att jämföra: en deployment utan fasmodell, eller med andra fasnamn, behåller de flikar den alltid haft. Det som
+däremot grindas är ett ärende som inte gått in i flödet — det ligger före varje fas.
 
 ## Regler som håller sömmen tät
 
