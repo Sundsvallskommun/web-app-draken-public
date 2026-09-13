@@ -21,11 +21,11 @@ import {
 } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
+import { getContractAttachmentAsBase64, getContractErrandId, validateContractAction } from '@/casedata/services/contract-service';
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { AttachmentMetadata, Contract, PageContract } from '@/data-contracts/contract/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
-import { getContractAttachmentAsBase64, getContractErrandId, validateContractAction } from '@/services/contract-service';
 import { logger } from '@/utils/logger';
 import { apiURL, luhnCheck } from '@/utils/util';
 

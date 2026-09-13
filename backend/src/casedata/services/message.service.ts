@@ -1,0 +1,652 @@
+import { Role } from '@interfaces/role';
+import { User } from '@interfaces/users.interface';
+import { logger } from '@utils/logger';
+import dayjs from 'dayjs';
+import NodeFormData from 'form-data';
+import { v4 as uuidv4 } from 'uuid';
+
+import { getDecisionAttachmentAsBase64 } from '@/casedata/services/casedata-attachment.service';
+import { getOwnerStakeholder, getOwnerStakeholderEmail } from '@/casedata/services/stakeholder.service';
+import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
+import { apiServiceName } from '@/config/api-config';
+import { AgnosticMessageResponse, DecisionChannelResult, LetterResponse, MessageClassification } from '@/controllers/casedata/message.controller';
+import { ConversationType } from '@/data-contracts/case-data/data-contracts';
+import {
+  Attachment,
+  Classification,
+  Conversation,
+  EmailHeader,
+  Errand as ErrandDTO,
+  Header,
+  MessageRequest,
+  MessageRequestDirectionEnum,
+  Stakeholder as StakeholderDTO,
+} from '@/data-contracts/case-data/data-contracts';
+import {
+  DigitalMailAttachment,
+  DigitalMailAttachmentContentTypeEnum,
+  DigitalMailRequest,
+  DigitalMailRequestContentTypeEnum,
+  EmailAttachment,
+  EmailRequest,
+  HistoryResponse,
+  LetterRequest,
+  SmsRequest,
+  WebMessageAttachment,
+  WebMessageRequest,
+} from '@/data-contracts/messaging/data-contracts';
+import { createConversation } from '@/integrations/casedata-conversations';
+import { RequestWithUser } from '@/interfaces/auth.interface';
+import { FTCaseType, MEXCaseType, PTCaseType } from '@/interfaces/case-type.interface';
+import ApiService, { ApiResponse } from '@/services/api.service';
+import { base64Encode } from '@/utils/util';
+
+interface SmsMessage {
+  party?: {
+    partyId: string;
+    externalReferences: { [key: string]: string }[];
+  };
+  headers?: [
+    {
+      name: string;
+      values: string[];
+    },
+  ];
+  sender?: string;
+  mobileNumber: string;
+  message: string;
+}
+
+const NOTIFY_CONTACTS = false;
+const SERVICE = apiServiceName('case-data');
+const MESSAGING_SERVICE = apiServiceName('messaging');
+
+export const generateMessageId = () => `<${uuidv4()}@sundsvall.se>`;
+
+export const sendSms = (municipalityId: string, message: SmsRequest, req: RequestWithUser, errandData: ApiResponse<ErrandDTO>) => {
+  const url = `${MESSAGING_SERVICE}/${municipalityId}/sms`;
+  const apiService = new ApiService();
+  return apiService
+    .post<AgnosticMessageResponse, SmsRequest>({ url, data: message }, req.user)
+    .then(async res => {
+      return saveMessageOnErrand(
+        municipalityId,
+        errandData.data,
+        {
+          message: message.message,
+          id: res.data.messageId,
+          messageType: 'SMS',
+          messageClassification: MessageClassification.Informationsmeddelande,
+          header_message_Id: '',
+          header_reply_to: '',
+          header_references: '',
+          mobileNumber: message.mobileNumber,
+        },
+        req.user,
+      )
+        .then(res => {
+          return {
+            data: res.data,
+            message: `SMS sent.`,
+          };
+        })
+        .catch(e => {
+          logger.error('Error when saving message id:', e);
+          return { data: res.data, message: `Message sent but id could not be stored` };
+        });
+    })
+    .catch(e => {
+      logger.error('Error when sending message:', e);
+      throw e;
+    });
+};
+
+export const sendWebMessage = (municipalityId: string, message: WebMessageRequest, req: RequestWithUser, errandData: ApiResponse<ErrandDTO>) => {
+  const url = `${MESSAGING_SERVICE}/${municipalityId}/webmessage`;
+  const apiService = new ApiService();
+  return apiService
+    .post<AgnosticMessageResponse, WebMessageRequest>({ url, data: message }, req.user)
+    .then(async (res: ApiResponse<AgnosticMessageResponse>) => {
+      return saveMessageOnErrand(
+        municipalityId,
+        errandData.data,
+        {
+          message: message.message,
+          id: res.data.messageId,
+          messageType: 'WEBMESSAGE',
+          messageClassification: MessageClassification.Informationsmeddelande,
+          header_message_Id: '',
+          header_reply_to: '',
+          header_references: '',
+        },
+        req.user,
+      )
+        .then(async _ => {
+          if (NOTIFY_CONTACTS) {
+            await notifyContactPersons(municipalityId, errandData.data, req.user);
+            return { data: res.data, message: `Message sent` };
+          } else {
+            return { data: res.data, message: `Message sent` };
+          }
+        })
+        .catch(e => {
+          logger.error('Error when saving message id:', e);
+          return { data: res.data, message: `Message sent but id could not be stored` };
+        });
+    })
+    .catch(e => {
+      logger.error('Error when sending message:', e);
+      throw e;
+    });
+};
+
+export const sendEmail = (
+  municipalityId: string,
+  message: EmailRequest,
+  req: RequestWithUser,
+  errandData: ApiResponse<ErrandDTO>,
+  classification: MessageClassification,
+) => {
+  const url = `${MESSAGING_SERVICE}/${municipalityId}/email`;
+  const apiService = new ApiService();
+  return apiService
+    .post<AgnosticMessageResponse, EmailRequest>({ url, data: message }, req.user)
+    .then(async res => {
+      return saveMessageOnErrand(
+        municipalityId,
+        errandData.data,
+        {
+          message: message.message ?? '',
+          id: res.data.messageId,
+          messageType: 'EMAIL',
+          messageClassification: classification,
+          header_message_Id: message.headers?.['MESSAGE_ID']?.[0] ?? '',
+          header_reply_to: message.headers?.['IN_REPLY_TO']?.[0] ?? '',
+          header_references: message.headers?.['REFERENCES']?.join(',') ?? '',
+          email: message.emailAddress,
+        },
+        req.user,
+      )
+        .then(async _ => {
+          if (NOTIFY_CONTACTS) {
+            const notified = await notifyContactPersons(municipalityId, errandData.data, req.user);
+            return {
+              data: res.data,
+              message: notified ? `Message sent, notified contacts.` : `Message sent, but contact notification could not be sent.`,
+            };
+          } else {
+            return {
+              data: res.data,
+              message: `Message sent.`,
+            };
+          }
+        })
+        .catch(e => {
+          logger.error('Error when saving message id:', e);
+          return { data: res.data, message: `Message sent but id could not be stored` };
+        });
+    })
+    .catch(e => {
+      logger.error('Error when sending message:', e);
+      throw e;
+    });
+};
+
+export const sendDigitalMail = (
+  municipalityId: string,
+  message: LetterRequest & { message?: string },
+  req: RequestWithUser,
+  errandData: ApiResponse<ErrandDTO>,
+  classification: MessageClassification,
+) => {
+  const url = `${MESSAGING_SERVICE}/${municipalityId}/letter?async=false`;
+  const apiService = new ApiService();
+  return apiService
+    .post<LetterResponse, LetterRequest>({ url, data: message }, req.user)
+    .then(async (res: ApiResponse<LetterResponse>) => {
+      const id = res.data.messages?.[0]?.messageId;
+      if (!id) {
+        throw new Error('Error: no id returned when sending message');
+      }
+      return saveMessageOnErrand(
+        municipalityId,
+        errandData.data,
+        {
+          message: message.message ?? '',
+          id: id,
+          messageType: 'DIGITAL_MAIL',
+          messageClassification: classification,
+          header_message_Id: '',
+          header_reply_to: '',
+          header_references: '',
+        },
+        req.user,
+      )
+        .then(async _ => {
+          if (NOTIFY_CONTACTS) {
+            await notifyContactPersons(municipalityId, errandData.data, req.user);
+            return { data: { messageId: id }, message: `Message sent` };
+          } else {
+            return { data: { messageId: id }, message: `Message sent` };
+          }
+        })
+        .catch(e => {
+          logger.error('Error when saving message id:', e);
+          return { data: { messageId: id }, message: `Message sent but id could not be stored` };
+        });
+    })
+    .catch(e => {
+      logger.error('Error when sending message:', e);
+      throw e;
+    });
+};
+
+export const saveMessageOnErrand: (
+  municipalityId: string,
+  errand: ErrandDTO,
+  message: {
+    message: string;
+    id: string;
+    messageType: string;
+    messageClassification: MessageClassification;
+    header_message_Id: string;
+    header_reply_to: string;
+    header_references: string;
+    mobileNumber?: string;
+    email?: string;
+  },
+  user: User,
+) => Promise<ApiResponse<any>> = async (municipalityId, errand, message, user) => {
+  const apiService = new ApiService();
+  // Fetch message info from Messaging and construct SaveMessage object
+  const messagingUrl = `${MESSAGING_SERVICE}/${municipalityId}/messages/${message.id}/metadata`;
+  const messagingResponse = await apiService.get<HistoryResponse[]>({ url: messagingUrl }, user);
+  const messagingInfo = messagingResponse.data[0];
+  const headers = (messagingInfo.content as EmailRequest)?.headers || {};
+  const emailHeaders: EmailHeader[] = Object.entries(headers).map(h => ({ header: h[0] as Header, values: h[1] }));
+
+  const attachments: ((WebMessageAttachment & EmailAttachment) | any)[] = [];
+
+  if (messagingInfo?.content?.attachments && messagingInfo?.content?.attachments?.length > 0) {
+    for (const attachment of messagingInfo.content.attachments) {
+      const attachmentUrl = `${MESSAGING_SERVICE}/${municipalityId}/messages/${message.id}/attachments`;
+      const attachmentResponse = await apiService.get<ArrayBuffer>(
+        { url: attachmentUrl, params: { fileName: attachment.name ?? attachment.filename }, responseType: 'arraybuffer' },
+        user,
+      );
+      const attatchmentBase64 = Buffer.from(attachmentResponse.data).toString('base64');
+      attachments.push({ ...attachment, content: attatchmentBase64 });
+    }
+  }
+
+  const saveMessage: MessageRequest = {
+    messageId: message.id,
+    messageType: message.messageType || '',
+    classification: message.messageClassification as unknown as Classification,
+    direction: MessageRequestDirectionEnum.OUTBOUND,
+    familyId: '',
+    externalCaseId: errand.externalCaseId || '',
+    message: message.message,
+    sent: dayjs(messagingInfo.timestamp).format('YYYY-MM-DD HH:mm:ss'),
+    subject: messagingInfo.content.subject || '',
+    username: user.username,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    mobileNumber: message.mobileNumber || '',
+    recipients: message.email ? [message.email] : [],
+    email: process.env.CASEDATA_SENDER_EMAIL || '',
+    userId: '',
+    attachments: attachments.map(a => ({
+      content: a.content ?? a.base64Data,
+      name: a.name ?? a.fileName ?? a.filename,
+      contentType: a.contentType ?? a.mimeType,
+    })),
+    emailHeaders: emailHeaders,
+  };
+
+  const url = `${SERVICE}/${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errand.id}/messages`;
+  const saveIdResponse = await apiService
+    .post<any, MessageRequest>({ url, data: saveMessage }, user)
+    .then(res => {
+      return res;
+    })
+    .catch(e => {
+      logger.error('Error when saving message on errand:', e);
+      logger.error(e);
+      throw e;
+    });
+
+  if (saveMessage.direction === MessageRequestDirectionEnum.OUTBOUND) {
+    await setMessageViewed(municipalityId, errand.id!, message.id, user).catch(e => {
+      logger.error('Error when saving viewed status:', e);
+    });
+  }
+
+  return saveIdResponse;
+};
+
+const buildSms = (applicant: StakeholderDTO, contact: StakeholderDTO, message: string) => {
+  const sms: SmsMessage = {
+    party: {
+      partyId: applicant.personId!,
+      externalReferences: [],
+    },
+    mobileNumber: contact.contactInformation?.find(c => c.contactType === 'PHONE')?.value ?? '',
+    message: message,
+  };
+  return sms;
+};
+
+const buildEmail = (applicant: StakeholderDTO, contact: StakeholderDTO, message: string) => {
+  const email = {
+    party: {
+      partyId: applicant.personId!,
+      externalReferences: [],
+    },
+    emailAddress: contact.contactInformation?.find(c => c.contactType === 'EMAIL')?.value ?? '',
+    subject: 'Meddelande i ärende',
+    message: message,
+    attachments: [],
+  } as EmailRequest;
+  return email;
+};
+
+export const notifyContactPersons: (municipalityId: string, errand: ErrandDTO, user: User) => Promise<boolean> = (municipalityId, errand, user) => {
+  const apiService = new ApiService();
+  const applicant = errand.stakeholders?.find(s => s.roles.includes(Role.APPLICANT));
+  if (!applicant) {
+    return Promise.resolve(false);
+  }
+  const standardMessage = `Ni står som ärendeintressent i ärende ${errand.errandNumber} om ansökan för parkeringstillstånd för ${applicant.firstName}. Vi vill uppmärksamma er på att ett nytt meddelande i ärendet har skickats till den sökande.`;
+  const notifiablePrimaryContacts = (errand.stakeholders ?? []).filter(
+    s => s.extraParameters?.['primaryContact'] === 'true' && s.extraParameters?.['messageAllowed'] === 'true',
+  );
+  const smss = notifiablePrimaryContacts
+    .filter(c => c.contactInformation?.some(c => c.contactType === 'PHONE'))
+    .map(c => buildSms(applicant, c, standardMessage));
+  const emails = notifiablePrimaryContacts
+    .filter(c => c.contactInformation?.some(c => c.contactType === 'EMAIL'))
+    .map(c => buildEmail(applicant, c, standardMessage));
+  const smsPromises = smss.map(async sms => {
+    return apiService.post<AgnosticMessageResponse, SmsMessage>({ url: `${MESSAGING_SERVICE}/${municipalityId}/sms`, data: sms }, user);
+  });
+  const emailPromises = emails.map(async email => {
+    return apiService.post<AgnosticMessageResponse, EmailRequest>({ url: `${MESSAGING_SERVICE}/${municipalityId}/email`, data: email }, user);
+  });
+  return Promise.allSettled([...smsPromises, ...emailPromises]).then(res => {
+    const succeeded = res.filter(r => r.status === 'fulfilled').length;
+    logger.info(`Sent ${succeeded} notifications to contact persons in errand ${errand.errandNumber}`);
+    return true;
+  });
+};
+
+export const setMessageViewed = (municipalityId: string, errandId: number, messageId: string, user: User) => {
+  const apiService = new ApiService();
+  const url = `${SERVICE}/${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/viewed/true`;
+  return apiService.put<any, any>({ url }, user);
+};
+
+export const sendConversation = async (errandId: string, conversationId: string, user: User, pdf: Attachment, decisionId: number) => {
+  const apiService = new ApiService();
+  const url = `${SERVICE}/${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
+
+  // The conversation message's `attachmentIds` only resolves *errand* attachments, so the decision
+  // PDF (a decision-scoped attachment) has to be uploaded as new bytes on the `attachments` part.
+  const formData = new NodeFormData();
+  const messageObj = {
+    createdBy: { type: 'adAccount', value: user.username },
+    content: 'Beslut fattat i ärende',
+  };
+  formData.append('message', JSON.stringify(messageObj));
+
+  if (pdf.id) {
+    const content = await getDecisionAttachmentAsBase64(MUNICIPALITY_ID!, errandId, decisionId, pdf.id, user);
+    formData.append('attachments', Buffer.from(content, 'base64'), { filename: pdf.name, contentType: pdf.mimeType });
+  }
+
+  return await apiService.post<any, any>({ url, data: formData, headers: { 'Content-Type': formData.getHeaders()['content-type'] } }, user);
+};
+
+const failureReason = (e: unknown): string => {
+  const status = (e as { status?: number; httpCode?: number })?.status ?? (e as { httpCode?: number })?.httpCode;
+  const message = e instanceof Error ? e.message : String(e);
+  return status ? `${status} ${message}` : message;
+};
+
+export const sendDecisionToMinaSidor = async (
+  baseURL: string,
+  errandId: string,
+  user: User,
+  pdf: Attachment,
+  decisionId: number,
+): Promise<DecisionChannelResult> => {
+  try {
+    const apiService = new ApiService();
+    const conversationUrl = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations`;
+    const conversationRes = await apiService.get<Conversation[]>({ url: conversationUrl, baseURL }, user);
+    let externalConversation: Conversation | undefined;
+    externalConversation = conversationRes.data.find(c => c.type === 'EXTERNAL');
+
+    if (externalConversation === undefined) {
+      externalConversation = await createConversation(errandId, user, ConversationType.EXTERNAL, 'Mina sidor', CASEDATA_NAMESPACE!);
+    }
+    await sendConversation(errandId, externalConversation!.id!, user, pdf, decisionId);
+    return { channel: 'MINA_SIDOR', status: 'sent', data: { messageId: externalConversation!.id }, message: `Message sent to Mina sidor` };
+  } catch (e) {
+    logger.error('Error when sending message to Mina sidor:', e);
+    return { channel: 'MINA_SIDOR', status: 'failed', data: { reason: failureReason(e) }, message: `Message to Mina sidor failed` };
+  }
+};
+
+export const sendDecisionToKatla = async (
+  baseURL: string,
+  errand: ErrandDTO,
+  user: User,
+  pdf: Attachment,
+  decisionId: number,
+): Promise<DecisionChannelResult> => {
+  if (errand.channel !== 'ESERVICE_KATLA') {
+    return { channel: 'KATLA', status: 'skipped', data: {}, message: `Non Katla errand` };
+  }
+
+  try {
+    const apiService = new ApiService();
+    const conversationUrl = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errand.id}/communication/conversations`;
+    const conversationRes = await apiService.get<Conversation[]>({ url: conversationUrl, baseURL }, user);
+    let relationlessConversation: Conversation | undefined;
+
+    relationlessConversation = conversationRes.data.find(c => c.relationIds?.length === 0 && c.type !== 'EXTERNAL');
+
+    if (relationlessConversation === undefined) {
+      relationlessConversation = await createConversation(
+        errand.id!.toString(),
+        user,
+        ConversationType.INTERNAL,
+        errand.errandNumber!,
+        CASEDATA_NAMESPACE!,
+      );
+    }
+    await sendConversation(errand.id!.toString(), relationlessConversation!.id!, user, pdf, decisionId);
+    return { channel: 'KATLA', status: 'sent', data: { messageId: relationlessConversation!.id }, message: `Message sent to Katla` };
+  } catch (e) {
+    logger.error('Error when sending message to Katla:', e);
+    return { channel: 'KATLA', status: 'failed', data: { reason: failureReason(e) }, message: `Message to Katla failed` };
+  }
+};
+
+export const decisionMessageSubject = (errand: ErrandDTO) => {
+  if (errand?.caseType && Object.values(PTCaseType).includes(errand.caseType as PTCaseType)) {
+    return 'Meddelande gällande er ansökan om parkeringstillstånd';
+  } else if (errand?.caseType && Object.values(FTCaseType).includes(errand.caseType as FTCaseType)) {
+    return 'Meddelande gällande er ansökan om färdtjänst';
+  } else if (errand?.caseType && Object.values(MEXCaseType).includes(errand.caseType as MEXCaseType)) {
+    return 'Meddelande från MEX';
+  }
+  return 'Beslutsmeddelande';
+};
+
+export const sendDecisionToDigitalMail = async (
+  errand: ErrandDTO,
+  user: User,
+  pdf: Attachment,
+  decisionId: number,
+): Promise<DecisionChannelResult> => {
+  const url = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/letter?async=false`;
+  const apiService = new ApiService();
+
+  if (!pdf.id) {
+    logger.error('Decision attachment is missing id, cannot fetch attachment content');
+    return {
+      channel: 'DIGITAL_MAIL',
+      status: 'failed',
+      data: { reason: 'Decision attachment is missing id, cannot fetch attachment content' },
+      message: `Digital mail failed`,
+    };
+  }
+
+  let content: string;
+  try {
+    content = await getDecisionAttachmentAsBase64(MUNICIPALITY_ID!, errand.id!, decisionId, pdf.id, user);
+  } catch (e) {
+    logger.error('Error when fetching decision attachment content:', e);
+    return { channel: 'DIGITAL_MAIL', status: 'failed', data: { reason: failureReason(e) }, message: `Digital mail failed` };
+  }
+
+  const attachments = [
+    {
+      deliveryMode: 'ANY',
+      contentType: DigitalMailAttachmentContentTypeEnum.ApplicationPdf,
+      content,
+      filename: pdf.name,
+    } as DigitalMailAttachment,
+  ];
+  const message: DigitalMailRequest = {
+    party: {
+      partyIds: [getOwnerStakeholder(errand)?.personId ?? ''],
+      externalReferences: [],
+    },
+    sender: {
+      supportInfo: {
+        text: 'Sundsvalls kommun',
+        emailAddress: '',
+        phoneNumber: '',
+        url: '',
+      },
+    },
+    //Change subject depending on application and casetype?
+    subject: decisionMessageSubject(errand),
+    contentType: DigitalMailRequestContentTypeEnum.TextPlain,
+    body: 'Beslut fattat i ärende',
+    department: 'SBK(Gatuavdelningen, Trafiksektionen)',
+    attachments: attachments,
+  };
+
+  return apiService
+    .post<LetterResponse, DigitalMailRequest>({ url, data: message }, user)
+    .then(async (res: ApiResponse<LetterResponse>) => {
+      const id = res.data.messages?.[0]?.messageId;
+      if (!id) {
+        throw new Error('Error: no id returned when sending message');
+      }
+      return saveMessageOnErrand(
+        MUNICIPALITY_ID!,
+        errand,
+        {
+          message: message.body ?? '',
+          id: id,
+          messageType: 'DIGITAL_MAIL',
+          messageClassification: MessageClassification.Informationsmeddelande,
+          header_message_Id: '',
+          header_reply_to: '',
+          header_references: '',
+        },
+        user,
+      )
+        .then(async _ => {
+          return { channel: 'DIGITAL_MAIL', status: 'sent', data: { messageId: id }, message: `Digital mail sent` } as DecisionChannelResult;
+        })
+        .catch(e => {
+          // The letter was delivered, only the bookkeeping on the errand failed — still a send.
+          logger.error('Error when saving message id:', e);
+          return {
+            channel: 'DIGITAL_MAIL',
+            status: 'sent',
+            data: { messageId: id },
+            message: `Digital mail sent but id could not be stored`,
+          } as DecisionChannelResult;
+        });
+    })
+    .catch(e => {
+      logger.error('Error when sending digital mail:', e);
+      return { channel: 'DIGITAL_MAIL', status: 'failed', data: { reason: failureReason(e) }, message: `Digital mail failed` };
+    });
+};
+
+// Sends a MEX decision through a single channel, chosen the same way the frontend used to choose it:
+// webmessage for e-service errands, otherwise email to the owner. The decision body is rendered by
+// the frontend and passed in (html for email, plaintext for webmessage).
+export const sendDecisionForMex = async (
+  municipalityId: string,
+  req: RequestWithUser,
+  errandData: ApiResponse<ErrandDTO>,
+  html: string,
+  plaintext: string,
+): Promise<DecisionChannelResult> => {
+  const errand = errandData.data;
+
+  if (errand.externalCaseId) {
+    const owner = getOwnerStakeholder(errand);
+    const message = {
+      party: {
+        ...(owner?.personId && { partyId: owner.personId }),
+        externalReferences: [{ key: 'flowInstanceId', value: errand.externalCaseId }],
+      },
+      message: plaintext,
+    } as WebMessageRequest;
+    try {
+      const res = await sendWebMessage(municipalityId, message, req, errandData);
+      return { channel: 'WEBMESSAGE', status: 'sent', data: { messageId: res.data.messageId }, message: res.message };
+    } catch (e) {
+      logger.error('Error when sending decision as webmessage:', e);
+      return { channel: 'WEBMESSAGE', status: 'failed', data: { reason: failureReason(e) }, message: `Webmessage failed` };
+    }
+  }
+
+  const ownerEmail = getOwnerStakeholderEmail(errand);
+  if (ownerEmail) {
+    const cleanedBody = html.replace(/<p><br \/><\/p>/g, '');
+    const message = {
+      party: {
+        // Fake uuid since Messaging demands one
+        partyId: uuidv4(),
+      },
+      emailAddress: ownerEmail,
+      subject: `Ärende #${errand.errandNumber}`,
+      message: cleanedBody,
+      htmlMessage: base64Encode(cleanedBody),
+      sender: {
+        name: process.env.CASEDATA_SENDER,
+        address: process.env.CASEDATA_SENDER_EMAIL,
+        replyTo: process.env.CASEDATA_REPLY_TO,
+      },
+      headers: {
+        MESSAGE_ID: [generateMessageId()],
+      },
+    } as EmailRequest;
+    try {
+      const res = await sendEmail(municipalityId, message, req, errandData, MessageClassification.Informationsmeddelande);
+      return { channel: 'EMAIL', status: 'sent', data: { messageId: res.data.messageId }, message: res.message };
+    } catch (e) {
+      logger.error('Error when sending decision as email:', e);
+      return { channel: 'EMAIL', status: 'failed', data: { reason: failureReason(e) }, message: `Email failed` };
+    }
+  }
+
+  // Reported as a failed channel rather than thrown, so the remaining channels still get to report.
+  return {
+    channel: 'EMAIL',
+    status: 'failed',
+    data: { reason: 'Ärendeägaren har inga godkända kontaktsätt' },
+    message: `Email failed`,
+  };
+};

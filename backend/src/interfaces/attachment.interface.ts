@@ -2,8 +2,6 @@ import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 
 import { Attachment as AttachmentDTO, AttachmentChannelEnum } from '@/data-contracts/case-data/data-contracts';
 
-import { GenericExtraParameters } from './extra-parameters.interface';
-
 export class Attachment implements AttachmentDTO {
   @IsNumber()
   @IsOptional()
@@ -29,7 +27,7 @@ export class Attachment implements AttachmentDTO {
   @IsOptional()
   updated?: string;
   @IsOptional()
-  extraParameters?: GenericExtraParameters;
+  extraParameters?: Record<string, string>;
   @IsString()
   @IsOptional()
   municipalityId?: string;

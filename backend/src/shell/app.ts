@@ -43,12 +43,12 @@ import { getMetadataArgsStorage, useExpressServer } from 'routing-controllers';
 import { routingControllersToSpec } from 'routing-controllers-openapi';
 import swaggerUi from 'swagger-ui-express';
 
-import { HttpException } from './exceptions/HttpException';
-import { Profile } from './interfaces/profile.interface';
-import { authorizeGroups, getLoginPermissions, getRole } from './services/authorization.service';
-import { additionalConverters } from './utils/custom-validation-classes';
-import { isValidOrigin } from './utils/isValidateOrigin';
-import { isValidUrl } from './utils/util';
+import { HttpException } from '@/exceptions/HttpException';
+import { Profile } from '@/interfaces/profile.interface';
+import { authorizeGroups, getLoginPermissions, getRole } from '@/services/authorization.service';
+import { additionalConverters } from '@/utils/custom-validation-classes';
+import { isValidOrigin } from '@/utils/isValidateOrigin';
+import { isValidUrl } from '@/utils/util';
 
 passport.serializeUser(function (user, done) {
   done(null, user);
@@ -435,15 +435,15 @@ class App {
   }
 
   private initializeDataFolders() {
-    const databaseDir: string = join(__dirname, '../data/database');
+    const databaseDir: string = join(__dirname, '../../data/database');
     if (!existsSync(databaseDir)) {
       mkdirSync(databaseDir, { recursive: true });
     }
-    const logsDir: string = join(__dirname, '../data/logs');
+    const logsDir: string = join(__dirname, '../../data/logs');
     if (!existsSync(logsDir)) {
       mkdirSync(logsDir, { recursive: true });
     }
-    const sessionsDir: string = join(__dirname, '../data/sessions');
+    const sessionsDir: string = join(__dirname, '../../data/sessions');
     if (!existsSync(sessionsDir)) {
       mkdirSync(sessionsDir, { recursive: true });
     }

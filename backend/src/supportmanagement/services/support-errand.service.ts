@@ -24,13 +24,12 @@ import {
 import { CreateAttachmentDto } from '@/interfaces/attachment.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import { Role } from '@/interfaces/role';
-import { ContactChannelType } from '@/interfaces/support-contactchannel';
-import { SupportManagementChannels } from '@/interfaces/supportmanagement-channel.interface';
 import { User } from '@/interfaces/users.interface';
+import ApiService from '@/services/api.service';
+import { ContactChannelType } from '@/supportmanagement/interfaces/support-contactchannel';
+import { SupportManagementChannels } from '@/supportmanagement/interfaces/supportmanagement-channel.interface';
 import { logger } from '@/utils/logger';
 import { apiURL, buildCategoryFilter, findLeafComponents, removeUnreachablePaths, toOffsetDateTime } from '@/utils/util';
-
-import ApiService from './api.service';
 const SERVICE = apiServiceName('supportmanagement');
 const namespace = SUPPORTMANAGEMENT_NAMESPACE;
 

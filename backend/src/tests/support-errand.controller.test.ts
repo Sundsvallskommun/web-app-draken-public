@@ -33,7 +33,7 @@ import {
 
 // createConversation/sendConversationTextMessage build their own ApiService internally,
 // so they cannot be stubbed through the controller's instance fields.
-vi.mock('@/services/message.service', async () => {
+vi.mock('@/integrations/casedata-conversations', async () => {
   const { mockConversationId } = await import('./helpers/mock-data');
   return {
     createConversation: vi.fn(async () => ({ id: mockConversationId })),
@@ -41,7 +41,7 @@ vi.mock('@/services/message.service', async () => {
   };
 });
 
-import { createConversation, sendConversationTextMessage } from '@/services/message.service';
+import { createConversation, sendConversationTextMessage } from '@/integrations/casedata-conversations';
 
 const SUPPORT_SERVICE = apiServiceName('supportmanagement');
 const CITIZEN_SERVICE = apiServiceName('citizen');

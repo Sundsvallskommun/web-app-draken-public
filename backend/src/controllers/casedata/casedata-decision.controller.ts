@@ -6,12 +6,12 @@ import { logger } from '@utils/logger';
 import { Body, Controller, Get, HttpCode, Param, Patch, Put, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
+import { DecisionDTO } from '@/casedata/interfaces/decision.interface';
+import { validateAction } from '@/casedata/services/errand.service';
 import { apiServiceName } from '@/config/api-config';
 import { Decision, DecisionDecisionOutcomeEnum, DecisionDecisionTypeEnum } from '@/data-contracts/case-data/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
-import { DecisionDTO } from '@/interfaces/decision.interface';
 import { User } from '@/interfaces/users.interface';
-import { validateAction } from '@/services/errand.service';
 import { apiURL } from '@/utils/util';
 
 import { ResponseData } from './casedata-notes.controller';

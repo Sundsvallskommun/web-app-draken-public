@@ -1,12 +1,11 @@
+import { UiPhase } from '@/casedata/interfaces/errand-phase.interface';
+import { getLastUpdatedAdministrator } from '@/casedata/services/stakeholder.service';
 import { apiServiceName } from '@/config/api-config';
 import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
 import { Contract } from '@/data-contracts/contract/data-contracts';
-import { UiPhase } from '@/interfaces/errand-phase.interface';
 import { User } from '@/interfaces/users.interface';
+import ApiService from '@/services/api.service';
 import { apiURL } from '@/utils/util';
-
-import ApiService from './api.service';
-import { getLastUpdatedAdministrator } from './stakeholder.service';
 
 const CASEDATA_SERVICE = apiServiceName('case-data');
 const CONTRACT_SERVICE = apiServiceName('contract');

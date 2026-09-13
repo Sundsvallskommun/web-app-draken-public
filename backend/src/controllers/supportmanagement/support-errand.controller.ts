@@ -6,6 +6,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { APPLICATION, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
+import { ConversationType } from '@/data-contracts/case-data/data-contracts';
 import {
   Errand as CasedataErrandDTO,
   ErrandPriorityEnum as CasedataErrandDtoPriorityEnum,
@@ -26,17 +27,17 @@ import {
   Stakeholder as SupportStakeholder,
   Suspension,
 } from '@/data-contracts/supportmanagement/data-contracts';
+import { createConversation, sendConversationTextMessage } from '@/integrations/casedata-conversations';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { MEXCaseType } from '@/interfaces/case-type.interface';
 import { ErrandStatus } from '@/interfaces/errand-status.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
-import { ContactChannelType } from '@/interfaces/support-contactchannel';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { createConversation, sendConversationTextMessage } from '@/services/message.service';
 import { OrganizationService } from '@/services/organization.service';
+import { ContactChannelType } from '@/supportmanagement/interfaces/support-contactchannel';
 import {
   buildErrandFilter,
   ErrandFilterInput,
@@ -48,7 +49,7 @@ import {
   toCasedataChannel,
   toCasedataStakeholder,
   toFacilities,
-} from '@/services/support-errand.service';
+} from '@/supportmanagement/services/support-errand.service';
 import { logger } from '@/utils/logger';
 import { apiURL, formatOrgNr, luhnCheck, OrgNumberFormat, withRetries } from '@/utils/util';
 
@@ -868,7 +869,7 @@ export class SupportErrandController {
         const referredFromRelation = relationsRes.data.relations?.find(r => r.type === 'REFERRED_FROM');
 
         if (referredFromRelation?.id) {
-          const conversation = await createConversation(errand.id!.toString(), req.user, 'INTERNAL', 'Överlämning', data.department!, [
+          const conversation = await createConversation(errand.id!.toString(), req.user, ConversationType.INTERNAL, 'Överlämning', data.department!, [
             referredFromRelation.id,
           ]);
 

@@ -4,6 +4,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
+import { PROCESS_PARAMETER_KEYS } from '@/controllers/casedata/extraparameter.controller';
 import { Errand, ExtraParameter, MessageResponse as IMessageResponse, Stakeholder } from '@/data-contracts/case-data/data-contracts';
 import { RenderRequest, RenderResponse } from '@/data-contracts/templating/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
@@ -11,8 +12,6 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
-
-import { PROCESS_PARAMETER_KEYS } from './casedata/extraparameter.controller';
 
 @Controller()
 export class ExportController {

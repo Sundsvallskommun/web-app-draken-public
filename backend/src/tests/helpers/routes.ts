@@ -6,8 +6,8 @@
 
 import { getMetadataArgsStorage } from 'routing-controllers';
 
-import { CONTROLLERS } from '@/controllers';
 import authMiddleware from '@/middlewares/auth.middleware';
+import { CONTROLLERS } from '@/shell/controllers';
 
 export interface RegisteredRoute {
   controllerName: string;

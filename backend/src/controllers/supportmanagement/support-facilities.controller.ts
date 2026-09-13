@@ -7,7 +7,7 @@ import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
-import { stripParameterVersions } from '@/services/support-errand.service';
+import { stripParameterVersions } from '@/supportmanagement/services/support-errand.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 

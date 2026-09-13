@@ -44,6 +44,7 @@
     "build": "dotenv -e .env.development.local -e .env.production.local -- tsc && tsc-alias",
     "build:swc": "swc src -d dist --source-maps --copy-files",
     "generate:datacontracts": "dotenv -e .env.kc.development.local ts-node ./src/swagger-typescript-api.ts",
+    "lint:deps": "node ../scripts/backend-boundaries.mjs",
     "lint": "eslint src/",
     "lint:fix": "npm run lint -- --fix",
     "lint:strict": "eslint src/ --max-warnings=0 --cache --cache-location node_modules/.cache/eslint/",

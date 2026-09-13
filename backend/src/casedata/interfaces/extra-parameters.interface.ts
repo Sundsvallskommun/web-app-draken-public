@@ -1,7 +1,5 @@
 import { IsIn, IsOptional, IsString } from 'class-validator';
 
-export type GenericExtraParameters = { [key: string]: string };
-
 export class ExtraParametersDto {
   @IsString()
   @IsOptional()

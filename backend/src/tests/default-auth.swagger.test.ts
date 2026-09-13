@@ -7,7 +7,7 @@
 // allow-list would return the HTML shell and 401 every asset, leaving a blank page rather
 // than an honest error - which is exactly the failure this test is here to catch.
 //
-// Nothing is imported statically from '@/config' or '@/app': config reads SWAGGER_ENABLED
+// Nothing is imported statically from '@/config' or '@/shell/app': config reads SWAGGER_ENABLED
 // into a module-level const at import time, and static imports are hoisted above the
 // assignment below. Everything that touches config is therefore imported dynamically.
 
@@ -34,8 +34,8 @@ describe('default-deny auth (swagger)', () => {
   beforeAll(async () => {
     process.env.SWAGGER_ENABLED = 'true';
 
-    const { default: App } = await import('@/app');
-    const { CONTROLLERS } = await import('@/controllers');
+    const { default: App } = await import('@/shell/app');
+    const { CONTROLLERS } = await import('@/shell/controllers');
 
     server = new App(CONTROLLERS, new session.MemoryStore()).getServer();
   });

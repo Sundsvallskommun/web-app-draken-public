@@ -1,9 +1,8 @@
 import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { User } from '@/interfaces/users.interface';
+import ApiService from '@/services/api.service';
 import { apiURL } from '@/utils/util';
-
-import ApiService from './api.service';
 
 const SERVICE = apiServiceName('case-data');
 
