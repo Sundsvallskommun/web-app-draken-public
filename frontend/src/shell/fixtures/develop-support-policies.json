@@ -1,0 +1,225 @@
+{
+  "KC": {
+    "resolutions": {
+      "SOLVED": "Löst av Kontakt Sundsvall",
+      "REFERRED_VIA_EXCHANGE": "Vidarebefordrat via växelprogrammet",
+      "CONNECTED": "Kopplat samtal",
+      "REGISTERED_EXTERNAL_SYSTEM": "Registrerat i annat system",
+      "SELF_SERVICE": "Hänvisat till självservice",
+      "INTERNAL_SERVICE": "Hänvisat till intern service",
+      "REFERRED_TO_RETURN": "Hänvisat att återkomma",
+      "SECURE_APPBOX": "SecureAppbox"
+    },
+    "ongoingStatuses": [
+      "ONGOING",
+      "PENDING",
+      "AWAITING_INTERNAL_RESPONSE",
+      "REOPENED"
+    ],
+    "defaultResolution": "SOLVED",
+    "closedDefaultResolution": "CLOSED"
+  },
+  "KA": {
+    "resolutions": {
+      "SOLVED": "Löst av Kontaktcenter",
+      "REGISTERED_EXTERNAL_SYSTEM": "Vidarebefordrad (ärendet har överlämnats till annan funktion)"
+    },
+    "ongoingStatuses": [
+      "ONGOING",
+      "PENDING",
+      "AWAITING_INTERNAL_RESPONSE",
+      "REOPENED"
+    ],
+    "defaultResolution": "SOLVED",
+    "closedDefaultResolution": "CLOSED"
+  },
+  "ROB": {
+    "resolutions": {
+      "NEED_MET": "Behov uppfyllt",
+      "RECRUITED_FEWER": "Rekryterat färre",
+      "RECRUITED_MORE": "Rekryterat fler",
+      "CANCELLED": "Avbruten"
+    },
+    "ongoingStatuses": [
+      "ONGOING",
+      "PENDING",
+      "AWAITING_INTERNAL_RESPONSE",
+      "REOPENED",
+      "UPSTART",
+      "PUBLISH_SELECTION",
+      "INTERNAL_CONTROL_AND_INTERVIEWS",
+      "REFERENCE_CHECK",
+      "REVIEW",
+      "SECURITY_CLEARENCE",
+      "FEEDBACK_CLOSURE",
+      "SUBPACKAGE_HANDLED"
+    ],
+    "defaultResolution": "NEED_MET",
+    "closedDefaultResolution": "NEED_MET"
+  },
+  "LOP": {
+    "resolutions": {
+      "CLOSED": "Avslutat",
+      "BACK_TO_MANAGER": "Åter till chef",
+      "BACK_TO_HR": "Åter till HR",
+      "REGISTERED_EXTERNAL_SYSTEM": "Registrerat i annat system"
+    },
+    "ongoingStatuses": [
+      "ONGOING",
+      "PENDING",
+      "AWAITING_INTERNAL_RESPONSE",
+      "REOPENED"
+    ],
+    "defaultResolution": "SOLVED",
+    "closedDefaultResolution": "CLOSED"
+  },
+  "IK": {
+    "resolutions": {
+      "REFER_TO_CONTACTSUNDSVALL": "Hänvisat till Kontakt Sundsvall",
+      "SELF_SERVICE": "Hänvisat till självservice",
+      "SOLVED": "Informerat / Intern Kundtjänst har löst ärendet",
+      "REFER_TO_PHONE": "Behöver återkomma/hänvisat till telefontid",
+      "REGISTERED": "Tagit emot/registrerat/paketerat ärende",
+      "CONNECTED": "Kopplat samtal",
+      "SENT_MESSAGE": "Skickat ett meddelande"
+    },
+    "ongoingStatuses": [
+      "ONGOING",
+      "PENDING",
+      "AWAITING_INTERNAL_RESPONSE",
+      "REOPENED"
+    ],
+    "defaultResolution": "SOLVED",
+    "closedDefaultResolution": "CLOSED"
+  },
+  "MSVA": {
+    "resolutions": {
+      "SOLVED": "Löst av Kontakt Sundsvall",
+      "REFERRED_VIA_EXCHANGE": "Vidarebefordrat via växelprogrammet",
+      "CONNECTED": "Kopplat samtal",
+      "REGISTERED_EXTERNAL_SYSTEM": "Registrerat i annat system",
+      "SELF_SERVICE": "Hänvisat till självservice",
+      "INTERNAL_SERVICE": "Hänvisat till intern service",
+      "REFERRED_TO_RETURN": "Hänvisat att återkomma",
+      "SECURE_APPBOX": "SecureAppbox"
+    },
+    "ongoingStatuses": [
+      "ONGOING",
+      "PENDING",
+      "AWAITING_INTERNAL_RESPONSE",
+      "REOPENED"
+    ],
+    "defaultResolution": "SOLVED",
+    "closedDefaultResolution": "CLOSED"
+  },
+  "SE": {
+    "resolutions": {
+      "REFER_TO_CONTACTSUNDSVALL": "Hänvisat till Kontakt Sundsvall",
+      "SELF_SERVICE": "Hänvisat till självservice",
+      "SOLVED": "Informerat / Intern Kundtjänst har löst ärendet",
+      "REFER_TO_PHONE": "Behöver återkomma/hänvisat till telefontid",
+      "REGISTERED": "Tagit emot/registrerat/paketerat ärende",
+      "CONNECTED": "Kopplat samtal",
+      "SENT_MESSAGE": "Skickat ett meddelande"
+    },
+    "ongoingStatuses": [
+      "ONGOING",
+      "PENDING",
+      "AWAITING_INTERNAL_RESPONSE",
+      "REOPENED"
+    ],
+    "defaultResolution": "SOLVED",
+    "closedDefaultResolution": "CLOSED"
+  },
+  "BOU": {
+    "resolutions": {
+      "SOLVED": "Löst",
+      "BACK_TO_CONTACT_SUNDSVALL": "Åter till Kontakt Sundsvall"
+    },
+    "ongoingStatuses": [
+      "ONGOING",
+      "PENDING",
+      "AWAITING_INTERNAL_RESPONSE",
+      "REOPENED"
+    ],
+    "defaultResolution": "SOLVED",
+    "closedDefaultResolution": "CLOSED"
+  },
+  "LOK": {
+    "resolutions": {
+      "SOLVED": "Löst av VoF/IAF Lokalplanering",
+      "FORWARDED_TO_DRAKFASTIGHETER": "Vidarebefordrat till Drakfastigheter",
+      "FORWARDED_TO_EXTERNAL_LANDLORD": "Vidarebefordrat till extern hyresvärd",
+      "FORWARDED_TO_INTERNAL_CONTRACTOR": "Vidarebefordrat till intern entreprenör",
+      "FORWARDED_TO_EXTERNAL_CONTRACTOR": "Vidarebefordrat till extern entreprenör"
+    },
+    "ongoingStatuses": [
+      "ONGOING",
+      "PENDING",
+      "AWAITING_INTERNAL_RESPONSE",
+      "REOPENED"
+    ],
+    "defaultResolution": "SOLVED",
+    "closedDefaultResolution": "CLOSED"
+  },
+  "IAF": {
+    "resolutions": {
+      "SOLVED": "Löst av Kontakt Sundsvall",
+      "REFERRED_VIA_EXCHANGE": "Vidarebefordrat via växelprogrammet",
+      "CONNECTED": "Kopplat samtal",
+      "REGISTERED_EXTERNAL_SYSTEM": "Registrerat i annat system",
+      "SELF_SERVICE": "Hänvisat till självservice",
+      "INTERNAL_SERVICE": "Hänvisat till intern service",
+      "REFERRED_TO_RETURN": "Hänvisat att återkomma",
+      "SECURE_APPBOX": "SecureAppbox"
+    },
+    "ongoingStatuses": [
+      "ONGOING",
+      "PENDING",
+      "AWAITING_INTERNAL_RESPONSE",
+      "REOPENED"
+    ],
+    "defaultResolution": "SOLVED",
+    "closedDefaultResolution": "CLOSED"
+  },
+  "VOF": {
+    "resolutions": {
+      "SOLVED": "Löst av Kontakt Sundsvall",
+      "REFERRED_VIA_EXCHANGE": "Vidarebefordrat via växelprogrammet",
+      "CONNECTED": "Kopplat samtal",
+      "REGISTERED_EXTERNAL_SYSTEM": "Registrerat i annat system",
+      "SELF_SERVICE": "Hänvisat till självservice",
+      "INTERNAL_SERVICE": "Hänvisat till intern service",
+      "REFERRED_TO_RETURN": "Hänvisat att återkomma",
+      "SECURE_APPBOX": "SecureAppbox"
+    },
+    "ongoingStatuses": [
+      "ONGOING",
+      "PENDING",
+      "AWAITING_INTERNAL_RESPONSE",
+      "REOPENED"
+    ],
+    "defaultResolution": "SOLVED",
+    "closedDefaultResolution": "CLOSED"
+  },
+  "AOT": {
+    "resolutions": {
+      "SOLVED": "Löst av Kontakt Sundsvall",
+      "REFERRED_VIA_EXCHANGE": "Vidarebefordrat via växelprogrammet",
+      "CONNECTED": "Kopplat samtal",
+      "REGISTERED_EXTERNAL_SYSTEM": "Registrerat i annat system",
+      "SELF_SERVICE": "Hänvisat till självservice",
+      "INTERNAL_SERVICE": "Hänvisat till intern service",
+      "REFERRED_TO_RETURN": "Hänvisat att återkomma",
+      "SECURE_APPBOX": "SecureAppbox"
+    },
+    "ongoingStatuses": [
+      "ONGOING",
+      "PENDING",
+      "AWAITING_INTERNAL_RESPONSE",
+      "REOPENED"
+    ],
+    "defaultResolution": "SOLVED",
+    "closedDefaultResolution": "CLOSED"
+  }
+}

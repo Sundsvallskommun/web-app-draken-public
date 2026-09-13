@@ -1,7 +1,8 @@
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
 import { countAttachment, getSupportAttachments } from '@supportmanagement/services/support-attachment-service';

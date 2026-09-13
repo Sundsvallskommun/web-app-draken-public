@@ -3,7 +3,8 @@ import { getErrand, setErrandStatus } from '@casedata/services/casedata-errand-s
 import { sortBy } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
 import { CirclePlay } from 'lucide-react';
 import { useState } from 'react';
 

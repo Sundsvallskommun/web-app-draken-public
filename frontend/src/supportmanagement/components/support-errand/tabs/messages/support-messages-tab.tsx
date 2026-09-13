@@ -1,6 +1,8 @@
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
 import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
+import { useUserStore } from '@stores/user-store';
 import { SupportCommunicationType } from '@supportmanagement/services/support-communication-types';
 import { markSupportConversationMessagesAsRead } from '@supportmanagement/services/support-conversation-service';
 import { isSupportErrandLocked, Status, validateAction } from '@supportmanagement/services/support-errand-service';

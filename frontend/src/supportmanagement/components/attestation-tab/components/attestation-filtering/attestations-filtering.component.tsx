@@ -1,6 +1,6 @@
 import { Admin } from '@common/services/user-service';
 import { Button, cx, Link } from '@sk-web-gui/react';
-import { useUserStore } from '@stores/index';
+import { useUserStore } from '@stores/user-store';
 import {
   AttestationDatesFilter,
   AttestationDatesValues,

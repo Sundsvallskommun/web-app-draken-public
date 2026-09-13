@@ -297,3 +297,7 @@ https://confluence.sundsvall.se/spaces/OA/pages/1259405457/Feature+flaggor+alla+
 | `yarn start:{drake}`                  | Startar produktionsserver           |
 | `yarn test:e2e:{drake}`               | Kör Playwright E2E-tester           |
 | `yarn generate:datacontracts:{drake}` | Genererar TypeScript-typer från API |
+
+## Arkitektur och nya drakar
+
+Se [gemensam grund och importgränser](docs/architecture/boundaries.md) för ägarskap, policysammansättning, kontroller och införande från develop.

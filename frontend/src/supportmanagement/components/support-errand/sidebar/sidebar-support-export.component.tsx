@@ -2,7 +2,9 @@ import { isKC, isROB } from '@common/services/application-service';
 import { downloadPdf, exportSingleSupportErrand } from '@common/services/export-service';
 import { appConfig } from '@config/appconfig';
 import { Button, Checkbox, FormControl, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useSupportStore } from '@stores/support-store';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import {
   Channels,

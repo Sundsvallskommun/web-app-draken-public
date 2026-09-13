@@ -2,7 +2,9 @@ import { MessageAvatar } from '@common/components/message/message-avatar.compone
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
 import sanitized from '@common/services/sanitizer-service';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
+import { useUserStore } from '@stores/user-store';
 import {
   isSupportReplyableCommunicationType,
   SupportCommunicationType,

@@ -1,6 +1,6 @@
+import { getLastUpdatedAdministrator, getOwnerStakeholder, getOwnerStakeholderEmail } from '@/casedata/services/stakeholder.service';
 import { Errand as ErrandDTO, Stakeholder as StakeholderDTO } from '@/data-contracts/case-data/data-contracts';
 import { Role } from '@/interfaces/role';
-import { getLastUpdatedAdministrator, getOwnerStakeholder, getOwnerStakeholderEmail } from '@/services/stakeholder.service';
 
 import { mockEmail, mockPhoneNumber } from './helpers/mock-data';
 

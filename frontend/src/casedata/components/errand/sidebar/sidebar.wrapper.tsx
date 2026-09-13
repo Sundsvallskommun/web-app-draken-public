@@ -60,5 +60,7 @@ export const SidebarWrapper = () => {
     },
   ];
 
-  return <Sidebar buttons={buttons} />;
+  // CaseData mounts the sidebar only for a persisted errand (casedata-errand.component.tsx), so
+  // every panel is available from the start.
+  return <Sidebar buttons={buttons} errandIsUnsaved={false} />;
 };

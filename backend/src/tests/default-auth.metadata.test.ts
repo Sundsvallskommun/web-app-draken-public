@@ -8,7 +8,7 @@
 // (default-auth.runtime.test.ts) proves the app-level guard actually denies these requests.
 
 import { PUBLIC_PATHS } from '@/config/public-paths';
-import { CONTROLLERS } from '@/controllers';
+import { CONTROLLERS } from '@/shell/controllers';
 
 import { collectRegisteredRoutes } from './helpers/routes';
 
@@ -53,4 +53,51 @@ describe('default-deny auth (metadata)', () => {
 
     expect(publicSurface).toEqual(['GET /', 'GET /health/up']);
   });
+});
+
+// Controller inventory captured from develop 3f04aaaed before ownership moves.
+it('preserves the deployed API controller inventory', () => {
+  expect(CONTROLLERS.map(controller => controller.name)).toEqual([
+    'ActiveDirectoryController',
+    'AddressController',
+    'AssetController',
+    'BillingController',
+    'BillingDataCollectorController',
+    'CaseDataAttachmentController',
+    'CasedataContractsController',
+    'CaseDataDecisionAttachmentController',
+    'CaseDataDecisionsController',
+    'CaseDataErrandController',
+    'caseDataFacilitiesController',
+    'CaseDataHistoryController',
+    'CasedataNotesController',
+    'CasedataNotificationController',
+    'CasedataStakeholderController',
+    'EstateInfoController',
+    'ExportController',
+    'HealthController',
+    'IndexController',
+    'MessageController',
+    'SupportAttachmentController',
+    'SupportErrandController',
+    'SupportExportController',
+    'SupportFacilitiesController',
+    'SupportHandoverController',
+    'SupportHistoryController',
+    'SupportMessageController',
+    'SupportMetadataController',
+    'SupportNoteController',
+    'SupportNotificationController',
+    'TemplateController',
+    'UserController',
+    'RelationsController',
+    'CaseStatusController',
+    'CaseDataConversationController',
+    'SupportConversationController',
+    'JsonSchemaController',
+    'ExtraParameterController',
+    'FeatureFlagController',
+    'EmployeeController',
+    'OrganizationController',
+  ]);
 });

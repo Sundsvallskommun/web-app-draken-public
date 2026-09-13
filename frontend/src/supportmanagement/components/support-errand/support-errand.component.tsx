@@ -4,7 +4,11 @@ import { getMe } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
-import { useBadgeStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { useBadgeStore } from '@stores/badge-store';
+import { useConfigStore } from '@stores/config-store';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useSupportStore } from '@stores/support-store';
+import { useUserStore } from '@stores/user-store';
 import {
   defaultSupportErrandInformation,
   getSupportErrandByErrandNumber,

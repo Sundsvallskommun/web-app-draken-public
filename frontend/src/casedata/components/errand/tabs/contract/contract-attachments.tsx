@@ -10,7 +10,8 @@ import {
 import { downloadBase64File } from '@common/services/attachment-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, FileUpload, PopupMenu, UploadFile, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
 import { Eye, FilePen, Trash } from 'lucide-react';
 import { FC, useMemo, useState } from 'react';
 

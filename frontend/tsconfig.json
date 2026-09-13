@@ -55,6 +55,12 @@
       ],
       "@stores/*": [
         "src/stores/*"
+      ],
+      "@shell/*": [
+        "src/shell/*"
+      ],
+      "@dragons/*": [
+        "src/dragons/*"
       ]
       // "@services/*": ["src/services/*"],
       // "@common/components/*": ["src/components/*"],
@@ -68,8 +74,8 @@
     ]
   },
   "include": [
-    "src/**/*.{ts,tsx}",
-    "e2e/**/*.{ts,tsx}",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     "next-env.d.ts",
     "node_modules/dayjs/plugin/utc.d.ts",
     "src/common/components/localization-provider",

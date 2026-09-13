@@ -1,5 +1,5 @@
-import { CreateErrandDto } from '@/interfaces/errand.interface';
-import { makeErrandApiData } from '@/services/errand.service';
+import { CreateErrandDto } from '@/casedata/interfaces/errand.interface';
+import { makeErrandApiData } from '@/casedata/services/errand.service';
 
 // Minimal errand input; individual tests set only the fields they exercise.
 const input = (overrides: Partial<CreateErrandDto> = {}): CreateErrandDto => ({ ...overrides }) as CreateErrandDto;

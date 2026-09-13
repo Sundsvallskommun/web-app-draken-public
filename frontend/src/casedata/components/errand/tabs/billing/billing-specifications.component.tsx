@@ -1,6 +1,6 @@
 import { BillingFormData } from '@casedata/interfaces/billing';
 import { Checkbox, DatePicker, FormControl, FormErrorMessage, FormLabel, Input } from '@sk-web-gui/react';
-import { useCasedataStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
 import { useFormContext } from 'react-hook-form';
 
 export const BillingSpecifications: React.FC = () => {

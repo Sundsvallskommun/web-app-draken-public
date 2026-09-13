@@ -20,6 +20,38 @@ export default [
       'simple-import-sort/exports': 'error',
     },
   },
+  // Import boundaries (docs/architecture/boundaries.md) are enforced by dependency-cruiser, but an
+  // environment read is not an import, so this one is ESLint's: process.env.NEXT_PUBLIC_APPLICATION is
+  // the app identity and only the shell may read it. Existing reads are recorded as bulk suppressions
+  // in eslint-suppressions.json (picked up automatically from the frontend cwd). That file is a
+  // ratchet: it may only shrink. After removing a read, run `yarn lint:prune-suppressions`; never
+  // regenerate it to add one. NEXT_PUBLIC_APPLICATION_NAME is a different variable and stays allowed.
+  {
+    files: ['src/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "MemberExpression[computed=false][object.object.name='process'][object.property.name='env'][property.name='NEXT_PUBLIC_APPLICATION']",
+          message:
+            'Do not read process.env.NEXT_PUBLIC_APPLICATION outside the shell. Import the app identity from @shell/app-identity, or express the variation as a domain-owned contract that the shell fulfils. See docs/architecture/boundaries.md.',
+        },
+        {
+          selector:
+            "MemberExpression[computed=true][object.object.name='process'][object.property.name='env'][property.value='NEXT_PUBLIC_APPLICATION']",
+          message:
+            'Do not read process.env["NEXT_PUBLIC_APPLICATION"] outside the shell. Import the app identity from @shell/app-identity, or express the variation as a domain-owned contract that the shell fulfils. See docs/architecture/boundaries.md.',
+        },
+      ],
+    },
+  },
+  {
+    // The shell owns the app identity, the Next.js routes are part of the shell, and
+    // application-service.ts is the legacy reader that the shell is replacing.
+    files: ['src/shell/**', 'src/app/**', 'src/common/services/application-service.ts'],
+    rules: { 'no-restricted-syntax': 'off' },
+  },
   // Playwright-sviten lintas för det som faktiskt kan gå sönder i den, inte för stilregler.
   // Importsortering och react-hooks är avstängda här: den förra skulle kräva en normalisering
   // av hela e2e-trädet som inte hör hemma i samma ändring, den senare tolkar Playwrights

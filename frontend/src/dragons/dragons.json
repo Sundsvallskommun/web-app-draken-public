@@ -1,0 +1,44 @@
+{
+  "KC": {
+    "domain": "supportmanagement"
+  },
+  "KA": {
+    "domain": "supportmanagement"
+  },
+  "MEX": {
+    "domain": "casedata"
+  },
+  "PT": {
+    "domain": "casedata"
+  },
+  "ROB": {
+    "domain": "supportmanagement"
+  },
+  "LOP": {
+    "domain": "supportmanagement"
+  },
+  "IK": {
+    "domain": "supportmanagement"
+  },
+  "MSVA": {
+    "domain": "supportmanagement"
+  },
+  "SE": {
+    "domain": "supportmanagement"
+  },
+  "BOU": {
+    "domain": "supportmanagement"
+  },
+  "LOK": {
+    "domain": "supportmanagement"
+  },
+  "IAF": {
+    "domain": "supportmanagement"
+  },
+  "VOF": {
+    "domain": "supportmanagement"
+  },
+  "AOT": {
+    "domain": "supportmanagement"
+  }
+}

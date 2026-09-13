@@ -3,12 +3,14 @@
   "private": true,
   "scripts": {
     "prepare": "husky",
-    "type-check": "yarn --cwd frontend type-check && yarn --cwd backend type-check && yarn --cwd backend type-check:test",
+    "type-check": "yarn --cwd frontend type-check && yarn --cwd frontend type-check:test && yarn --cwd backend type-check && yarn --cwd backend type-check:test",
     "lint": "yarn --cwd frontend lint && yarn --cwd backend lint",
     "knip": "yarn --cwd frontend knip && yarn --cwd backend knip",
     "format": "yarn --cwd frontend format && yarn --cwd backend format",
     "test": "yarn --cwd backend test",
-    "verify": "yarn type-check && yarn lint && yarn knip && yarn test"
+    "verify": "yarn type-check && yarn lint && yarn knip && yarn test",
+    "lint:deps": "yarn --cwd frontend lint:deps && yarn --cwd backend lint:deps",
+    "test:boundaries": "node --test --test-concurrency=1 scripts/backend-boundaries.test.mjs scripts/frontend-boundaries.test.mjs scripts/boundaries-baseline-guard.test.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.0",

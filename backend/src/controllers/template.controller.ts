@@ -164,7 +164,7 @@ export class TemplateController {
       filteredTemplates = filteredTemplates.filter((t: DetailedTemplateResponse) => {
         const metadataType = getMetadataValue(t, 'templateType');
         if (metadataType) return metadataType === effectiveType;
-        const parts = t.identifier?.split('.') || [];
+        const parts = t.identifier?.split('@/shell/controllers') || [];
         return parts.length >= 2 && parts[1] === effectiveType;
       });
     }
@@ -186,7 +186,7 @@ export class TemplateController {
       filteredTemplates = filteredTemplates.filter((t: DetailedTemplateResponse) => {
         const metadataRole = getMetadataValue(t, 'templateRole');
         if (metadataRole) return !excludeList.includes(metadataRole);
-        const parts = t.identifier?.split('.') || [];
+        const parts = t.identifier?.split('@/shell/controllers') || [];
         return parts.length < 3 || !excludeList.includes(parts[2]);
       });
     }

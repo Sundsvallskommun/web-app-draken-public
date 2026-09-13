@@ -2,7 +2,8 @@ import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.componen
 import { formatCurrency, maybe, prettyTime } from '@common/services/helper-service';
 import { Button, Input, Pagination, Select, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
-import { useBillingStore, useConfigStore } from '@stores/index';
+import { useBillingStore } from '@stores/billing-store';
+import { useConfigStore } from '@stores/config-store';
 import { attestationLabels, billingrecordStatusToLabel } from '@supportmanagement/services/support-billing-service';
 import { findAttestationStatusLabelForAttestationStatusKey } from '@supportmanagement/services/support-errand-service';
 import NextLink from 'next/link';

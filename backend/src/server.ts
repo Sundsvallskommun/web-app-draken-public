@@ -1,8 +1,8 @@
 import { createSessionStore } from '@utils/session-store';
-import validateEnv from '@utils/validateEnv';
 
-import App from './app';
-import { CONTROLLERS } from './controllers';
+import App from '@/shell/app';
+import { CONTROLLERS } from '@/shell/controllers';
+import validateEnv from '@/shell/validate-environment';
 
 validateEnv();
 

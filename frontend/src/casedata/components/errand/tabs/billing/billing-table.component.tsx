@@ -7,7 +7,7 @@ import {
   updateCasedataBillingRecord,
 } from '@casedata/services/casedata-billing-service';
 import { Button, DatePicker, FormControl, FormLabel, Input, Table, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
 import { Pen, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { CBillingRecord, CBillingRecordStatusEnum, CInvoiceRow } from 'src/data-contracts/backend/data-contracts';

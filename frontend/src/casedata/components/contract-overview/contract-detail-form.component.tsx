@@ -29,7 +29,8 @@ import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts'
 import { Admin } from '@common/services/user-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, Checkbox, FormControl, FormLabel, Modal, Select, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useUserStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import { ExternalLink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { FC, useMemo, useState } from 'react';

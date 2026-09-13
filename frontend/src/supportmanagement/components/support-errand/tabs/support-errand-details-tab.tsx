@@ -1,6 +1,7 @@
 import { JsonParametersDisplay } from '@common/components/json/schema/json-parameters-display.component';
 import { Table } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
 import { useMemo } from 'react';
 

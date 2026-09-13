@@ -36,8 +36,8 @@ describe('default-deny auth (runtime)', () => {
   let server: import('express').Application;
 
   beforeAll(async () => {
-    const { default: App } = await import('@/app');
-    const { CONTROLLERS } = await import('@/controllers');
+    const { default: App } = await import('@/shell/app');
+    const { CONTROLLERS } = await import('@/shell/controllers');
 
     server = new App(CONTROLLERS, new session.MemoryStore()).getServer();
   });

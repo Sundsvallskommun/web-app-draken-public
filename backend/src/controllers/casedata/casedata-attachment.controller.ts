@@ -2,13 +2,13 @@ import { Attachment, CreateAttachmentDto } from '@interfaces/attachment.interfac
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
-import { getAttachmentAsBase64 } from '@services/casedata-attachment.service';
 import { fileUploadOptions } from '@utils/fileUploadOptions';
 import { validateRequestBody } from '@utils/validate';
 import FormData from 'form-data';
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
+import { getAttachmentAsBase64 } from '@/casedata/services/casedata-attachment.service';
 import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { AttachmentChannelEnum, Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';

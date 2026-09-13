@@ -42,7 +42,9 @@ import {
   Textarea,
   useConfirm,
 } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import dayjs from 'dayjs';
 import { Calendar, FilePen, Info, MapPin, Pencil, Plus, Receipt, Trash, Users, Wallet } from 'lucide-react';
 import { ChangeEvent, FC, useEffect, useMemo, useState } from 'react';
