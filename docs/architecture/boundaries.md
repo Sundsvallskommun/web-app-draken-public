@@ -21,11 +21,13 @@ anropande användaren och det uttryckliga målnamnutrymmet. Ingen domän äger e
 
 ## Samma beteende med tydliga val
 
-`dragons.json` äger kända identiteter och deras domän. `frontend/src/dragons/<id>/index.ts`
+`frontend/src/dragons/dragons.json` äger kända identiteter och deras domän. `frontend/src/dragons/<id>/index.ts`
 väljer en komplett `SupportErrandPolicy`, eller `null` för CaseData. Gemensam SM-kod läser
 policyn och frågar inte efter appnamnet för statusgrupper, avslutsval eller statusetiketter.
 Två drakar kan uttryckligen välja samma namngivna preset. Shell fyller inte i affärsregler
-som en applikation glömt att välja. Befintliga Adminpanel-flaggor och miljövariabler behålls.
+som en applikation glömt att välja. Befintliga Adminpanel-flaggor och miljövariabler behålls. Katalogen ligger inom frontendens
+byggkontext så att samma källa följer med både Next och den befintliga Docker-byggningen.
+Backendens importkontroll läser samma katalog vid utveckling och CI.
 
 `common/components/json/` äger RJSF/AJV, generella widgets, schemahämtning och layout.
 `SchemaForm.fields` och `SchemaFieldsProvider` tillför fält från konsumenten eller applikationens

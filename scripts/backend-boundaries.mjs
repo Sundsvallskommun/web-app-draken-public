@@ -12,7 +12,7 @@ export function checkBackendBoundaries(backendRoot, sourceFiles) {
   if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.messageText, '\n'));
   const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, backendRoot);
   const src = resolve(backendRoot, 'src');
-  const dragons = JSON.parse(readFileSync(resolve(backendRoot, '../dragons.json'), 'utf8'));
+  const dragons = JSON.parse(readFileSync(resolve(backendRoot, '../frontend/src/dragons/dragons.json'), 'utf8'));
   const violations = [];
   const owner = (file) => {
     const path = relative(src, file).replaceAll('\\', '/');

@@ -12,7 +12,9 @@ function fixture(run) {
   const directory = mkdtempSync(join(tmpdir(), 'draken-source-boundaries-'));
   const backend = join(directory, 'backend');
   mkdirSync(backend);
-  writeFileSync(join(directory, 'dragons.json'), JSON.stringify({ KC: { domain: 'supportmanagement' }, AOT: { domain: 'supportmanagement' }, MEX: { domain: 'casedata' } }));
+  const catalogDirectory = join(directory, 'frontend/src/dragons');
+  mkdirSync(catalogDirectory, { recursive: true });
+  writeFileSync(join(catalogDirectory, 'dragons.json'), JSON.stringify({ KC: { domain: 'supportmanagement' }, AOT: { domain: 'supportmanagement' }, MEX: { domain: 'casedata' } }));
   symlinkSync(join(root, 'backend/node_modules'), join(backend, 'node_modules'), 'dir');
   writeFileSync(join(backend, 'package.json'), '{}');
   writeFileSync(join(backend, 'tsconfig.json'), JSON.stringify({ compilerOptions: {
