@@ -3,10 +3,10 @@
 import { ArrayObjectFieldTemplate } from '@common/components/json/fields/array-object-field-template.componant';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { Alert, Button, Disclosure, Label } from '@sk-web-gui/react';
-import { useMetadataStore } from '@stores/metadata-store';
 import { Save, Trash2 } from 'lucide-react';
 import { MouseEvent, ReactNode, useMemo, useState } from 'react';
 
+import { avvikelseSchemaFields } from '../form-fields/facility-search-field.component';
 import { InvestigationFormData } from '../investigation-document';
 import { getHslRiskValue, getInvestigationRenderingSchema } from '../investigation-form-data';
 import { InvestigationLabNotice, InvestigationSchemaAccess } from './investigation-schema-lab.types';
@@ -55,7 +55,6 @@ export function InvestigationSchemaFormPanel({
   onValidatedSave,
   onRemoveDraft,
 }: Readonly<InvestigationSchemaFormPanelProps>) {
-  const supportMetadata = useMetadataStore((state) => state.supportMetadata);
   const [jsonPreviewOpen, setJsonPreviewOpen] = useState(false);
   const hslRiskValue = definition.schemaName === 'utredning-enhetschef' ? getHslRiskValue(formData) : undefined;
   const renderingSchema = useMemo(
@@ -131,7 +130,7 @@ export function InvestigationSchemaFormPanel({
       )}
 
       <SchemaForm
-        placeLabelStructure={supportMetadata ? supportMetadata.labels?.labelStructure : null}
+        fields={avvikelseSchemaFields}
         schema={renderingSchema}
         uiSchema={definition.uiSchema}
         idPrefix={definition.key}

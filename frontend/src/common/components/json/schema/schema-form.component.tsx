@@ -1,9 +1,5 @@
 'use client';
 
-import {
-  type FacilityFieldContext,
-  FacilitySearchField,
-} from '@common/components/json/fields/facility-search-field.componant';
 import { FieldTemplate } from '@common/components/json/fields/field-template.componant';
 import { SectionsObjectFieldTemplate } from '@common/components/json/fields/sections-object-field-template.componant';
 import {
@@ -32,11 +28,9 @@ const validator = customizeValidator({ AjvClass: Ajv2020 });
 
 const widgets: RegistryWidgetsType = jsonWidgets;
 
-const fields: RegistryFieldsType = {
-  FacilitySearchWidget: FacilitySearchField,
-};
-
-type SchemaFormProps = FacilityFieldContext & {
+type SchemaFormProps = {
+  /** Business-owned RJSF fields, selected by the caller. */
+  fields?: RegistryFieldsType;
   schema: RJSFSchema;
   uiSchema?: UiSchema;
   formData?: any;
@@ -66,7 +60,7 @@ export default function SchemaForm({
   submitButtonOptions,
   extraContent,
   externalFields,
-  placeLabelStructure,
+  fields,
 }: SchemaFormProps) {
   const [localData, setLocalData] = useState<any>({});
   const data = formData ?? localData;
@@ -97,8 +91,8 @@ export default function SchemaForm({
 
   // Send original schema via formContext so ObjectFieldTemplate can read if/then conditions
   const formContext = useMemo(
-    () => ({ originalSchema: schema, submitButtonOptions, idPrefix, externalFields, placeLabelStructure }),
-    [externalFields, idPrefix, schema, submitButtonOptions, placeLabelStructure]
+    () => ({ originalSchema: schema, submitButtonOptions, idPrefix, externalFields }),
+    [externalFields, idPrefix, schema, submitButtonOptions]
   );
 
   const templates: NonNullable<FormProps['templates']> = {

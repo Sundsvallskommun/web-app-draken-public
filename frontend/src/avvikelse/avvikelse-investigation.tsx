@@ -11,6 +11,7 @@ import type {
 } from '../supportmanagement/investigation/investigation-module';
 import { resolveAvvikelseClassificationPlacement } from './avvikelse-classification-placement';
 import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.component';
+import { avvikelseSchemaFields } from './form-fields/facility-search-field.component';
 
 /** Load the document UI on demand in applications that compose Avvikelse. */
 const SupportErrandInvestigationTab = dynamic(
@@ -40,6 +41,7 @@ const AvvikelseCategorizationControl = dynamic(
 export const avvikelseInvestigation: InvestigationModule = Object.freeze({
   id: 'avvikelse',
   label: 'Utredning',
+  schemaFields: avvikelseSchemaFields,
   resolveClassificationPlacement: (profile: SupportApplicationProfile | null | undefined) =>
     resolveAvvikelseClassificationPlacement(profile),
   renderTab: (props: InvestigationTabProps) => <SupportErrandInvestigationTab {...props} />,

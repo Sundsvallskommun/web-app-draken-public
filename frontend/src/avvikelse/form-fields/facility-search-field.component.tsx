@@ -1,4 +1,12 @@
 'use client';
+import { logClientFailure } from '@common/services/client-diagnostics';
+import { getUserEmployments, OrgManagerDTO } from '@common/services/employee-service';
+import { ariaDescribedByIds, type FieldProps, type RegistryFieldsType, type RJSFSchema } from '@rjsf/utils';
+import { Button, Combobox, FormControl, FormLabel, RadioButton } from '@sk-web-gui/react';
+import { useMetadataStore } from '@stores/metadata-store';
+import { Pen } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import {
   findPlaceEmploymentMatch,
   findPlaceNode,
@@ -16,14 +24,7 @@ import {
   placeKey,
   placeName,
   type PlaceNode,
-} from '@common/components/json/utils/place-structure';
-import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
-import { logClientFailure } from '@common/services/client-diagnostics';
-import { getUserEmployments, OrgManagerDTO } from '@common/services/employee-service';
-import { ariaDescribedByIds, type FieldProps, type RJSFSchema } from '@rjsf/utils';
-import { Button, Combobox, FormControl, FormLabel, RadioButton } from '@sk-web-gui/react';
-import { Pen } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+} from './place-structure';
 
 /** Fler underenheter än så blir en ohanterlig radioknappsgrupp — då används sökning istället */
 const MAX_RADIO_SUB_PLACES = 6;
@@ -40,12 +41,7 @@ interface FacilityInfo {
   manager?: OrgManagerDTO;
 }
 
-export interface FacilityFieldContext {
-  /** null while metadata is loading; an empty/missing structure is a configuration error. */
-  placeLabelStructure?: readonly Label[] | null;
-}
-
-export function FacilitySearchField(props: FieldProps<FacilityInfo, RJSFSchema, FacilityFieldContext>) {
+export function FacilitySearchField(props: FieldProps<FacilityInfo, RJSFSchema>) {
   const { idSchema, formData, disabled, readonly, required, rawErrors, onBlur, onChange, onFocus, uiSchema } = props;
   const id = idSchema.$id;
   const searchLabelId = `${id}__search-label`;
@@ -62,7 +58,8 @@ export function FacilitySearchField(props: FieldProps<FacilityInfo, RJSFSchema, 
   // Platsvalet styrs av labelstrukturen, inte av organisationsträdet: strukturen är det som
   // rättighetsstyr ärendet i Support Management, och den är också det enda som kan avgöra vilket av de
   // sparade namnen som är anläggning respektive avdelning.
-  const placeLabelStructure = props.formContext?.placeLabelStructure;
+  const supportMetadata = useMetadataStore((state) => state.supportMetadata);
+  const placeLabelStructure = supportMetadata ? supportMetadata.labels?.labelStructure : null;
   const placeNodes = useMemo(() => getPlaceNodes(placeLabelStructure ?? undefined), [placeLabelStructure]);
   const selectablePlaceNodes = useMemo(() => placeNodes.filter((node) => !hasSubPlaces(node)), [placeNodes]);
 
@@ -335,3 +332,6 @@ export function FacilitySearchField(props: FieldProps<FacilityInfo, RJSFSchema, 
     </div>
   );
 }
+
+/** Keep the field name used by persisted Avvikelse schemas. */
+export const avvikelseSchemaFields: RegistryFieldsType = { FacilitySearchWidget: FacilitySearchField };

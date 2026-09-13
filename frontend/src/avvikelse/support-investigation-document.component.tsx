@@ -19,6 +19,7 @@ import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 
 import { useSupportApplicationProfileStore } from '../supportmanagement/application/support-application-profile-store';
 import { AVVIKELSE_CLASSIFICATION_POLICY } from './avvikelse-classification-policy';
+import { avvikelseSchemaFields } from './form-fields/facility-search-field.component';
 import {
   getInvestigationClassificationSchemaContract,
   getInvestigationClassificationUiSchema,
@@ -470,7 +471,7 @@ export function SupportInvestigationDocument({
       )}
 
       <SchemaForm
-        placeLabelStructure={supportMetadata ? supportMetadata.labels?.labelStructure : null}
+        fields={avvikelseSchemaFields}
         schema={renderingSchema}
         uiSchema={classificationUiSchema}
         idPrefix={definition.key}

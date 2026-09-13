@@ -1,4 +1,5 @@
 import type { AppConfigFeatures } from '@config/appconfig';
+import type { RegistryFieldsType } from '@rjsf/utils';
 import type { ReactNode } from 'react';
 
 import type { SupportApplicationProfile } from '../application/support-application-profile';
@@ -21,6 +22,8 @@ export interface InvestigationModule {
   readonly id: string;
   /** Label for the errand tab this variant fills. */
   readonly label: string;
+  /** Also available to display saved documents when the investigation tab is disabled. */
+  readonly schemaFields?: RegistryFieldsType;
   /** Where classification is edited, and in which vocabulary, when this variant is in play. */
   resolveClassificationPlacement: (
     profile: SupportApplicationProfile | null | undefined

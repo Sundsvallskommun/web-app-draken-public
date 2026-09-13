@@ -1,8 +1,8 @@
 'use client';
 
-import type { FacilityFieldContext } from '@common/components/json/fields/facility-search-field.componant';
 import { useJsonSchema } from '@common/components/json/hooks/useJsonSchema';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
+import type { RegistryFieldsType } from '@rjsf/utils';
 import { Alert, Spinner } from '@sk-web-gui/react';
 import { FC } from 'react';
 
@@ -13,12 +13,13 @@ export interface DisplayJsonParameter {
   version?: number;
 }
 
-interface JsonParameterItemProps extends FacilityFieldContext {
+interface JsonParameterItemProps {
+  fields?: RegistryFieldsType;
   param: DisplayJsonParameter;
   municipalityId: string;
 }
 
-const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId, placeLabelStructure }) => {
+const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId, fields }) => {
   const { schema, uiSchema, loading, error } = useJsonSchema(municipalityId, param.schemaId);
 
   if (loading) {
@@ -45,27 +46,18 @@ const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId, 
 
   return (
     <div className="mb-16">
-      <SchemaForm
-        placeLabelStructure={placeLabelStructure}
-        schema={schema}
-        uiSchema={uiSchema ?? undefined}
-        formData={param.value}
-        disabled
-      />
+      <SchemaForm fields={fields} schema={schema} uiSchema={uiSchema ?? undefined} formData={param.value} disabled />
     </div>
   );
 };
 
-interface JsonParametersDisplayProps extends FacilityFieldContext {
+interface JsonParametersDisplayProps {
+  fields?: RegistryFieldsType;
   jsonParameters: DisplayJsonParameter[];
   municipalityId: string;
 }
 
-export const JsonParametersDisplay: FC<JsonParametersDisplayProps> = ({
-  jsonParameters,
-  municipalityId,
-  placeLabelStructure,
-}) => {
+export const JsonParametersDisplay: FC<JsonParametersDisplayProps> = ({ jsonParameters, municipalityId, fields }) => {
   if (!jsonParameters || jsonParameters.length === 0) {
     return null;
   }
@@ -76,7 +68,7 @@ export const JsonParametersDisplay: FC<JsonParametersDisplayProps> = ({
         <JsonParameterItem
           key={`${param.key}-${param.schemaId}-${idx}`}
           param={param}
-          placeLabelStructure={placeLabelStructure}
+          fields={fields}
           municipalityId={municipalityId}
         />
       ))}
