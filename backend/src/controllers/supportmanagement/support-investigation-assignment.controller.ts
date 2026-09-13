@@ -272,6 +272,7 @@ export class SupportInvestigationAssignmentController {
         headers: { 'If-Match': `"${currentVersion}"` },
         followLocation: false,
         propagateClientError: true,
+        mapUnauthorizedToForbidden: true,
       },
       req.user,
     );
@@ -321,10 +322,19 @@ export class SupportInvestigationAssignmentController {
     const baseURL = apiURL(this.SERVICE);
     const [errandResponse, metadataResponse] = await Promise.all([
       this.apiService.get<SupportErrand>(
-        { url: `${municipalityId}/${this.namespace}/errands/${id}`, baseURL, includeResponseHeaders: true, propagateClientError: true },
+        {
+          url: `${municipalityId}/${this.namespace}/errands/${id}`,
+          baseURL,
+          includeResponseHeaders: true,
+          propagateClientError: true,
+          mapUnauthorizedToForbidden: true,
+        },
         req.user,
       ),
-      this.apiService.get<SupportMetadata>({ url: `${municipalityId}/${this.namespace}/metadata`, baseURL, propagateClientError: true }, req.user),
+      this.apiService.get<SupportMetadata>(
+        { url: `${municipalityId}/${this.namespace}/metadata`, baseURL, propagateClientError: true, mapUnauthorizedToForbidden: true },
+        req.user,
+      ),
     ]);
 
     return {

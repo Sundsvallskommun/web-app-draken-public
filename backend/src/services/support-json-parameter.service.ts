@@ -6,6 +6,7 @@ import { HttpException } from '@/exceptions/HttpException';
 import type { User } from '@/interfaces/users.interface';
 
 import ApiService, { type ApiResponse } from './api.service';
+import { isPendingInvestigationReport } from './investigation-report-publication.service';
 import {
   isJsonObject,
   isRecord,
@@ -333,6 +334,10 @@ const withoutProperties = (value: JsonObject, names: ReadonlySet<string>): JsonO
 export const assertLockedDocumentWrite = (schema: JsonSchema, existingValue: JsonObject | undefined, value: JsonObject): void => {
   const completion = readDocumentCompletion(schema);
   if (!completion || !existingValue || existingValue[completion.field] !== 'yes') return;
+  const reports = existingValue[completion.reportsField];
+  if (Array.isArray(reports) && reports.some(isPendingInvestigationReport)) {
+    throw new HttpException(409, 'Rapporten väntar på bekräftelse. Slutför rapporten innan utredningen låses upp.');
+  }
   if (value[completion.field] === 'yes') {
     throw new HttpException(409, 'This investigation document is completed and locked; unlock it before changing it');
   }

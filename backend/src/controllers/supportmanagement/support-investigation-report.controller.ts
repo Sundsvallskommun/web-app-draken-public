@@ -1,4 +1,4 @@
-import { IsBoolean, IsObject, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsBoolean, IsObject, IsOptional, IsString, IsUUID, isUUID, MinLength } from 'class-validator';
 import { Response } from 'express';
 import { Body, Controller, Param, Post, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
@@ -15,13 +15,19 @@ import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { buildInvestigationReportModel, investigationReportFileName } from '@/services/investigation-report.service';
 import { renderInvestigationReportTemplate } from '@/services/investigation-report.template';
+import { InvestigationReportPublicationService, readInvestigationReportEntries } from '@/services/investigation-report-publication.service';
 import { isJsonObject, isRecord, type JsonObject } from '@/services/schema-bound-json.service';
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { isDocumentCompleted, readDocumentCompletion, SupportJsonParameterService } from '@/services/support-json-parameter.service';
-import { attachPdfToSupportErrand, type PdfAttachmentApiService, renderPdfWithTemplating } from '@/services/support-pdf-attachment.service';
+import { type PdfAttachmentApiService, renderPdfWithTemplating } from '@/services/support-pdf-attachment.service';
 
 export class CreateSupportInvestigationReportDto {
+  /** Stable identity retained by the client until a real publication is confirmed. */
+  @IsOptional()
+  @IsUUID('4')
+  operationId?: string;
+
   /** Render the PDF and return it without attaching it to the errand or recording it. */
   @IsOptional()
   @IsBoolean()
@@ -42,14 +48,7 @@ export class CreateSupportInvestigationReportDto {
   value?: JsonObject;
 }
 
-export interface SupportInvestigationReportEntry {
-  readonly generatedAt: string;
-  readonly generatedBy: string;
-  readonly fileName: string;
-  readonly attachmentId?: string;
-}
-
-type ReportApiService = PdfAttachmentApiService;
+type ReportApiService = PdfAttachmentApiService & Pick<ApiService, 'get'>;
 
 export interface SupportInvestigationReportControllerDependencies {
   readonly investigationProfile?: SupportInvestigationProfileDto;
@@ -139,11 +138,30 @@ export class SupportInvestigationReportController {
       this.documentService.readUiSchema(request, schemaId),
       this.documentService.readParentErrandWithVersion(request),
     ]);
-    const existingReports = stored?.document.value[completion.reportsField];
-    const reports: SupportInvestigationReportEntry[] = Array.isArray(existingReports) ? (existingReports as SupportInvestigationReportEntry[]) : [];
+    const reports = readInvestigationReportEntries(stored?.document.value[completion.reportsField]);
+    const publication = new InvestigationReportPublicationService({
+      documentService: this.documentService,
+      apiService: this.apiService,
+      namespace: this.namespace,
+      supportManagementService: this.supportManagementService,
+    });
+    const operationId = body.operationId?.toLowerCase();
+    if (!preview && !isUUID(operationId ?? '', '4')) throw new HttpException(400, 'A report operationId (UUID v4) is required');
+    const publicationInput = stored ? { request, stored, reportsField: completion.reportsField, parentVersion: parent.version } : undefined;
+    if (!preview && publicationInput && operationId) {
+      const recovered = await publication.recover(publicationInput, operationId);
+      if (recovered) {
+        response.setHeader('ETag', recovered.etag);
+        response.setHeader('X-Errand-Version', String(recovered.parentErrandVersion));
+        return response
+          .status(201)
+          .send({ data: { document: recovered.document, report: recovered.report }, message: 'Investigation report attached' });
+      }
+    }
     const sequence = reports.length + 1;
     const generatedAt = this.clock().toISOString();
-    const fileName = investigationReportFileName(definition.tabLabel, sequence);
+    const baseFileName = investigationReportFileName(definition.tabLabel, sequence);
+    const fileName = preview ? baseFileName : baseFileName.replace(/\.pdf$/u, `_${operationId}.pdf`);
     const model = buildInvestigationReportModel({
       schema,
       uiSchema,
@@ -168,29 +186,13 @@ export class SupportInvestigationReportController {
       return response.status(200).send({ data: { fileName, pdfBase64 }, message: 'Investigation report rendered' });
     }
 
-    if (!stored) throw new HttpException(404, 'Investigation document not found');
-    const attachmentId = await attachPdfToSupportErrand({
-      apiService: this.apiService,
-      supportManagementService: this.supportManagementService,
-      namespace: this.namespace,
-      municipalityId,
-      errandId,
-      fileName,
-      pdfBase64,
-      user: req.user,
-    });
-    const entry: SupportInvestigationReportEntry = { generatedAt, generatedBy: req.user.username, fileName, ...(attachmentId && { attachmentId }) };
-    const written = await this.documentService.writeJsonParameter({
-      ...request,
-      data: { schemaId: stored.document.schemaId, value: stored.document.value },
-      preconditions: { ifMatch: stored.etag, parentErrandVersion: String(parent.version) },
-      internal: { serverOwnedOverrides: { [completion.reportsField]: [...reports, entry] as unknown as JsonObject[] }, allowLocked: true },
-    });
+    if (!publicationInput) throw new HttpException(404, 'Investigation document not found');
+    const written = await publication.publish(publicationInput, { generatedAt, generatedBy: req.user.username, fileName }, pdfBase64);
 
     response.setHeader('ETag', written.etag);
     response.setHeader('X-Errand-Version', String(written.parentErrandVersion));
     return response.status(201).send({
-      data: { document: written.document, report: entry },
+      data: { document: written.document, report: written.report },
       message: 'Investigation report attached',
     });
   }

@@ -466,6 +466,7 @@ test.each(['TRUE', 'FALSE', 'REWORK'] as const)('a deciding user can assess anot
       headers: { 'If-Match': '"3"' },
       followLocation: false,
       propagateClientError: true,
+      mapUnauthorizedToForbidden: true,
     },
     user,
   ]);

@@ -65,10 +65,13 @@ export class SupportMeasureService {
   }
 
   private async readCurrentWritableMeasure(url: string, measureId: string, user: User): Promise<Measure> {
-    const current = await this.apiService.get<Errand>({ url, propagateClientError: true }, user);
+    const current = await this.apiService.get<Errand>({ url, propagateClientError: true, mapUnauthorizedToForbidden: true }, user);
     assertSupportErrandWritable(current.data, 'measure changes');
     const existing = (
-      await this.apiService.get<Measure>({ url: `${url}/measures/${encodeURIComponent(measureId)}`, propagateClientError: true }, user)
+      await this.apiService.get<Measure>(
+        { url: `${url}/measures/${encodeURIComponent(measureId)}`, propagateClientError: true, mapUnauthorizedToForbidden: true },
+        user,
+      )
     ).data;
     if (existing.version === undefined || !Number.isSafeInteger(existing.version) || existing.version < 0) {
       throw new HttpException(502, 'Support Management response is missing a valid measure version');
@@ -97,10 +100,19 @@ export class SupportMeasureService {
     const url = this.errandUrl(municipalityId, errandId);
     // Parent version is only used to synchronize the surrounding errand form after our own edit.
     // Each measure carries the version used for its own writes.
-    const errand = await this.apiService.get<Errand>({ url, includeResponseHeaders: true, propagateClientError: true }, user);
-    const result = await this.apiService.get<Measure[]>({ url: `${url}/measures`, propagateClientError: true }, user);
+    const errand = await this.apiService.get<Errand>(
+      { url, includeResponseHeaders: true, propagateClientError: true, mapUnauthorizedToForbidden: true },
+      user,
+    );
+    const result = await this.apiService.get<Measure[]>(
+      { url: `${url}/measures`, propagateClientError: true, mapUnauthorizedToForbidden: true },
+      user,
+    );
     const metadata = (
-      await this.apiService.get<MetadataResponse>({ url: `${this.baseUrl(municipalityId)}/metadata`, propagateClientError: true }, user)
+      await this.apiService.get<MetadataResponse>(
+        { url: `${this.baseUrl(municipalityId)}/metadata`, propagateClientError: true, mapUnauthorizedToForbidden: true },
+        user,
+      )
     ).data;
     const registration = resolveSupportMeasureRegistration(metadata, user.groups ?? [], this.registrationConfiguration);
     return {
@@ -128,11 +140,14 @@ export class SupportMeasureService {
 
   async create(municipalityId: string, errandId: string, data: CreateSupportMeasureDto, user: User): Promise<void> {
     const url = this.errandUrl(municipalityId, errandId);
-    const current = await this.apiService.get<Errand>({ url, propagateClientError: true }, user);
+    const current = await this.apiService.get<Errand>({ url, propagateClientError: true, mapUnauthorizedToForbidden: true }, user);
     assertSupportErrandWritable(current.data, 'measure changes');
 
     const metadata = (
-      await this.apiService.get<MetadataResponse>({ url: `${this.baseUrl(municipalityId)}/metadata`, propagateClientError: true }, user)
+      await this.apiService.get<MetadataResponse>(
+        { url: `${this.baseUrl(municipalityId)}/metadata`, propagateClientError: true, mapUnauthorizedToForbidden: true },
+        user,
+      )
     ).data;
     const resolved = resolveSupportMeasureRegistration(metadata, user.groups ?? [], this.registrationConfiguration);
     assertMeasureRegistration(resolved, data.addedByRole, data.measureTypeId);
@@ -152,6 +167,7 @@ export class SupportMeasureService {
         data: { ...data, ...decision, addedByUser: user.username },
         followLocation: false,
         propagateClientError: true,
+        mapUnauthorizedToForbidden: true,
       },
       user,
     );
@@ -178,7 +194,10 @@ export class SupportMeasureService {
     const reportsExecuted = data.executed !== undefined && !existing.executed;
     if (changesType && data.measureTypeId !== undefined) {
       const metadata = (
-        await this.apiService.get<MetadataResponse>({ url: `${this.baseUrl(municipalityId)}/metadata`, propagateClientError: true }, user)
+        await this.apiService.get<MetadataResponse>(
+          { url: `${this.baseUrl(municipalityId)}/metadata`, propagateClientError: true, mapUnauthorizedToForbidden: true },
+          user,
+        )
       ).data;
       // Membership may have changed since creation; type choices follow the saved registration role.
       const { registration } = resolveSupportMeasureRegistration(metadata, user.groups ?? [], this.registrationConfiguration);
@@ -196,12 +215,19 @@ export class SupportMeasureService {
     assertMeasureDates(data, existing);
 
     // Recheck status after dependent reads. Unrelated errand edits do not invalidate this measure's ETag.
-    const latest = await this.apiService.get<Errand>({ url, propagateClientError: true }, user);
+    const latest = await this.apiService.get<Errand>({ url, propagateClientError: true, mapUnauthorizedToForbidden: true }, user);
     assertSupportErrandWritable(latest.data, 'measure changes');
 
     // Forward the caller's original version so upstream also catches changes after the checks above.
     await this.apiService.patch<Measure, UpdateSupportMeasureDto>(
-      { url: measureUrl, data, headers: { 'If-Match': ifMatch }, followLocation: false, propagateClientError: true },
+      {
+        url: measureUrl,
+        data,
+        headers: { 'If-Match': ifMatch },
+        followLocation: false,
+        propagateClientError: true,
+        mapUnauthorizedToForbidden: true,
+      },
       user,
     );
   }
@@ -217,7 +243,10 @@ export class SupportMeasureService {
     const url = this.errandUrl(municipalityId, errandId);
     const existing = await this.readWritableMeasure(url, measureId, ifMatch, user);
     const metadata = (
-      await this.apiService.get<MetadataResponse>({ url: `${this.baseUrl(municipalityId)}/metadata`, propagateClientError: true }, user)
+      await this.apiService.get<MetadataResponse>(
+        { url: `${this.baseUrl(municipalityId)}/metadata`, propagateClientError: true, mapUnauthorizedToForbidden: true },
+        user,
+      )
     ).data;
     const resolved = resolveSupportMeasureRegistration(metadata, user.groups ?? [], this.registrationConfiguration);
     if (resolved.registration.status !== 'ready') throw new HttpException(503, 'Beslutsbehörigheten för åtgärder är inte tillgänglig.');
@@ -229,7 +258,7 @@ export class SupportMeasureService {
     const motivation = data.acceptMotivation?.trim();
     if (data.accept !== 'TRUE' && !motivation) throw new HttpException(400, 'En kommentar krävs vid avslag eller delvis godkännande.');
 
-    const latest = await this.apiService.get<Errand>({ url, propagateClientError: true }, user);
+    const latest = await this.apiService.get<Errand>({ url, propagateClientError: true, mapUnauthorizedToForbidden: true }, user);
     assertSupportErrandWritable(latest.data, 'measure decisions');
     // Only decision fields: the proposal and its creator/role are never replaced by the decision maker.
     // This is independent of the deciding role's own selectable measure types.
@@ -240,6 +269,7 @@ export class SupportMeasureService {
         headers: { 'If-Match': ifMatch },
         followLocation: false,
         propagateClientError: true,
+        mapUnauthorizedToForbidden: true,
       },
       user,
     );
@@ -337,13 +367,14 @@ export class SupportMeasureService {
           headers: { 'If-Match': ifMatch },
           followLocation: false,
           propagateClientError: true,
+          mapUnauthorizedToForbidden: true,
         },
         user,
       );
       if (!followUpExecutionIsSaved(saved.data, document)) throw new HttpException(502, 'Genomförandet kunde inte bekräftas.');
     } catch (cause) {
       // The document is deliberately kept: the next read shows pending, and an explicit retry can finish it.
-      if (isRecord(cause) && [409, 412].includes(Number(cause.status))) throw cause;
+      if (isRecord(cause) && [403, 409, 412].includes(Number(cause.status))) throw cause;
       throw new HttpException(503, 'Uppföljningssvaren är sparade, men genomförandet kunde inte bekräftas. Ladda om åtgärden och slutför sparandet.');
     }
   }

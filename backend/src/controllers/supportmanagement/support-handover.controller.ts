@@ -179,7 +179,10 @@ export class SupportHandoverController {
       namespace: data.targetNamespace,
     });
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/handover/preview`;
-    const res = await this.apiService.post<HandoverPreview, HandoverPreviewRequest>({ url, data, propagateClientError: true }, req.user);
+    const res = await this.apiService.post<HandoverPreview, HandoverPreviewRequest>(
+      { url, data, propagateClientError: true, mapUnauthorizedToForbidden: true },
+      req.user,
+    );
     return response.status(200).send(res.data);
   }
 
@@ -210,6 +213,7 @@ export class SupportHandoverController {
         // Reuse the client-generated idempotency key so retries do not create duplicate errands.
         headers: { 'Idempotency-Key': canonicalIdempotencyKey },
         propagateClientError: true,
+        mapUnauthorizedToForbidden: true,
       },
       req.user,
     );

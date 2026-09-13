@@ -71,8 +71,11 @@ export class SupportPhaseController {
     const metadataUrl = `${municipalityId}/${this.namespace}/metadata`;
     const baseURL = apiURL(this.SERVICE);
     const [currentErrand, metadata] = await Promise.all([
-      this.apiService.get<SupportErrand>({ url, baseURL, includeResponseHeaders: true, propagateClientError: true }, req.user),
-      this.apiService.get<SupportMetadata>({ url: metadataUrl, baseURL, propagateClientError: true }, req.user),
+      this.apiService.get<SupportErrand>(
+        { url, baseURL, includeResponseHeaders: true, propagateClientError: true, mapUnauthorizedToForbidden: true },
+        req.user,
+      ),
+      this.apiService.get<SupportMetadata>({ url: metadataUrl, baseURL, propagateClientError: true, mapUnauthorizedToForbidden: true }, req.user),
     ]);
     const currentVersion = getErrandVersion(currentErrand.data, currentErrand.headers?.etag);
     if (currentVersion !== data.expectedVersion) {
@@ -90,12 +93,13 @@ export class SupportPhaseController {
         headers: { 'If-Match': `"${currentVersion}"` },
         followLocation: false,
         propagateClientError: true,
+        mapUnauthorizedToForbidden: true,
       },
       req.user,
     );
 
     const savedErrand = await this.apiService.get<SupportErrand>(
-      { url, baseURL, includeResponseHeaders: true, propagateClientError: true },
+      { url, baseURL, includeResponseHeaders: true, propagateClientError: true, mapUnauthorizedToForbidden: true },
       req.user,
     );
     return response.status(200).send({

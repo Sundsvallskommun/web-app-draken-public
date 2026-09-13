@@ -650,6 +650,18 @@ describe('server-owned values and completion locks', () => {
     expect(api.putCalls[0]).toMatchObject({ data: { value: { assessment: 'a', completed: 'no', reports: [] } } });
   });
 
+  it('cannot unlock and change the content of an unconfirmed publication', async () => {
+    const { api, service } = subject({
+      assessment: 'a',
+      completed: 'yes',
+      reports: [{ fileName: 'Report_1_f0000000-0000-4000-8000-000000000001.pdf' }],
+    });
+    await expect(service.writeJsonParameter(writeRequest({ ifMatch: '"7"' }, SCHEMA_ID, { assessment: 'a', completed: 'no' }))).rejects.toMatchObject(
+      { status: 409 },
+    );
+    expect(api.putCalls).toHaveLength(0);
+  });
+
   it('leaves an unlocked document free to change, completion included', async () => {
     const { api, service } = subject({ assessment: 'a', completed: 'no' });
 

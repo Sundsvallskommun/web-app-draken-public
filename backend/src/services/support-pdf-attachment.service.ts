@@ -85,7 +85,15 @@ export const attachPdfToSupportErrand = async (request: AttachPdfRequest): Promi
   data.append('channel', ErrandAttachmentChannelEnum.WEB_UI);
   const url = `${request.supportManagementService}/${encodeURIComponent(request.municipalityId)}/${encodeURIComponent(request.namespace)}/errands/${encodeURIComponent(request.errandId)}/attachments`;
   const uploaded = await request.apiService.post<unknown, FormData>(
-    { url, data, headers: { 'Content-Type': data.getHeaders()['content-type'] }, includeResponseHeaders: true, propagateClientError: true },
+    {
+      url,
+      data,
+      headers: { 'Content-Type': data.getHeaders()['content-type'] },
+      includeResponseHeaders: true,
+      followLocation: false,
+      propagateClientError: true,
+      mapUnauthorizedToForbidden: true,
+    },
     request.user,
   );
   return attachmentIdFrom(uploaded.data, uploaded.headers?.location);
