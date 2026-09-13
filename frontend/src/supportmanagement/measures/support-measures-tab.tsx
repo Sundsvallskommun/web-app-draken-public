@@ -1,6 +1,7 @@
 import { Button, Spinner } from '@sk-web-gui/react';
 import { useSupportStore } from '@stores/support-store';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { isSoleSupportErrandVersionChange } from '@supportmanagement/services/support-errand-write-version';
 import { isAxiosError } from 'axios';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -63,7 +64,7 @@ export function SupportMeasuresTab({
             current?.id === errand.id &&
             current.version === expectedErrandVersion &&
             getValues('version') === expectedErrandVersion &&
-            snapshot.errandVersion === expectedErrandVersion + 1
+            isSoleSupportErrandVersionChange(expectedErrandVersion, snapshot.errandVersion)
           ) {
             useSupportStore.setState({ supportErrand: { ...current, version: snapshot.errandVersion } });
             resetField('version', { defaultValue: snapshot.errandVersion });

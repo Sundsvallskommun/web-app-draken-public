@@ -4,7 +4,7 @@ import { Alert, Button } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { Eye, FileText } from 'lucide-react';
 
-import type { InvestigationReport } from './investigation-form-data';
+import { type InvestigationReport, isPendingInvestigationReport } from './investigation-form-data';
 
 interface InvestigationReportControlsProps {
   readonly documentKey: string;
@@ -41,6 +41,7 @@ export function InvestigationReportControls({
   onPreview,
   onUnlock,
 }: Readonly<InvestigationReportControlsProps>) {
+  const pending = reports.some(isPendingInvestigationReport);
   const canGenerate = completedInDraft && canEdit && !busy;
 
   return (
@@ -69,7 +70,7 @@ export function InvestigationReportControls({
           onClick={(event) => onGenerate(event.currentTarget.form)}
           data-cy="investigation-report-generate"
         >
-          Skapa rapport
+          {pending ? 'Slutför rapport' : 'Skapa rapport'}
         </Button>
         <Button
           type="button"
@@ -85,7 +86,7 @@ export function InvestigationReportControls({
           <Button
             type="button"
             variant="tertiary"
-            disabled={busy}
+            disabled={busy || pending}
             onClick={onUnlock}
             data-cy="investigation-report-unlock"
           >
@@ -95,10 +96,11 @@ export function InvestigationReportControls({
       </div>
       {reports.length > 0 && (
         <div>
-          <h4 className="text-label-medium font-bold">Skapade rapporter</h4>
+          <h4 className="text-label-medium font-bold">Rapporter</h4>
           <ul className="mt-4 flex flex-col gap-4" data-cy="investigation-report-list">
             {reports.map((report, index) => (
               <li key={`${report.fileName}-${index}`} className="text-small">
+                {isPendingInvestigationReport(report) && <span>Väntar på bekräftelse · </span>}
                 <span className="font-bold">{report.fileName}</span>{' '}
                 <span>
                   · <time dateTime={report.generatedAt}>{dayjs(report.generatedAt).format('YYYY-MM-DD HH:mm')}</time> av{' '}
@@ -107,7 +109,7 @@ export function InvestigationReportControls({
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-small">Rapporterna finns under fliken Bilagor.</p>
+          <p className="mt-4 text-small">Bekräftade rapporter finns under fliken Bilagor.</p>
         </div>
       )}
     </div>

@@ -82,8 +82,9 @@ test('starting handläggning enters the workflow for an errand that is in no pha
 test('starting handläggning moves no errand it would have to guess for', () => {
   // A deployment running no workflow has no phase to enter.
   assert.equal(resolveStartProcessPhaseAdvance(undefined, []), null);
-  // Received branches into investigation and closed; the branch is chosen in the phase strip.
-  assert.equal(resolveStartProcessPhaseAdvance('received', phases), null);
+  // Equal forward orders are ambiguous; neither branch may be selected by array order.
+  const ambiguous = phases.map((phase) => ({ ...phase, phaseOrder: phase.id === 'closed' ? 2 : phase.phaseOrder }));
+  assert.equal(resolveStartProcessPhaseAdvance('received', ambiguous), null);
   // A phase with nowhere to go stays where it is.
   assert.equal(resolveStartProcessPhaseAdvance('closed', phases), null);
 });
@@ -208,4 +209,18 @@ test('recognises the decision phase by its technical name only', () => {
   assert.equal(isDecisionPhase({ name: 'INVESTIGATION' }), false);
   assert.equal(isDecisionPhase({ name: 'decision' }), false);
   assert.equal(isDecisionPhase(undefined), false);
+});
+
+test('starting handläggning chooses the unique nearest forward phase, regardless of metadata order', () => {
+  for (const workflow of [phases, [...phases].reverse()]) {
+    assert.deepEqual(resolveStartProcessPhaseAdvance('received', workflow), {
+      kind: 'transition',
+      transitionId: 'start-investigation',
+    });
+  }
+});
+
+test('multiple backward transitions do not cause an automatic move', () => {
+  const backward = phases.map((phase) => ({ ...phase, phaseOrder: phase.id === 'received' ? 4 : phase.phaseOrder }));
+  assert.equal(resolveStartProcessPhaseAdvance('received', backward), null);
 });

@@ -14,6 +14,7 @@ import {
 } from '@supportmanagement/investigation/avvikelse/label-classification';
 import { getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
+import { isSoleSupportErrandVersionChange } from '@supportmanagement/services/support-errand-write-version';
 import { isAxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -159,7 +160,11 @@ export function SupportInvestigationDocument({
   const municipalityId = useConfigStore((state) => state.municipalityId);
   const supportErrand = useSupportStore((state) => state.supportErrand);
   const supportMetadata = useMetadataStore((state) => state.supportMetadata);
-  const { register: registerErrandField, resetField: resetErrandField } = useFormContext<SupportErrand>();
+  const {
+    register: registerErrandField,
+    resetField: resetErrandField,
+    getValues: getErrandValues,
+  } = useFormContext<SupportErrand>();
   const errandId = supportErrand?.id;
   const profile = useInvestigationProfileStore((state) => state.profile);
   const reportedMisconduct = isReportedMisconductErrand(supportErrand);
@@ -379,6 +384,7 @@ export function SupportInvestigationDocument({
     : [];
 
   useEffect(() => {
+    registerErrandField('version');
     if (!classificationOwner) return;
 
     registerErrandField('classification');
@@ -418,7 +424,23 @@ export function SupportInvestigationDocument({
     );
   }
 
-  const applySavedDocument = (saved: SavedSupportInvestigationDocument) => {
+  const advanceParentVersion = (expected: number | undefined, received: number) => {
+    const current = useSupportStore.getState().supportErrand;
+    if (
+      current &&
+      current.id === errandId &&
+      current.version === expected &&
+      getErrandValues('version') === expected &&
+      isSoleSupportErrandVersionChange(expected, received)
+    ) {
+      useSupportStore.setState({ supportErrand: { ...current, version: received } });
+      resetErrandField('version', { defaultValue: received });
+      return received;
+    }
+    return expected;
+  };
+
+  const applySavedDocument = (saved: SavedSupportInvestigationDocument, advanceVersion = true) => {
     setDocumentState((current) =>
       current
         ? {
@@ -439,17 +461,17 @@ export function SupportInvestigationDocument({
         : current
     );
     onSaved(saved.document);
-    useSupportStore.setState((state) => {
-      if (!state.supportErrand || state.supportErrand.id !== errandId) return state;
-      return { supportErrand: { ...state.supportErrand, version: saved.parentErrandVersion } };
-    });
-    resetErrandField('version', { defaultValue: saved.parentErrandVersion });
     setDocumentDirty(false);
+    // A report retry can perform zero writes or several writes, so its readback proves no parent baseline.
+    return advanceVersion
+      ? advanceParentVersion(supportErrand?.version, saved.parentErrandVersion)
+      : supportErrand?.version;
   };
 
   const applySavedClassification = (
     savedErrand: SupportInvestigationClassificationResponse,
-    prepared: PreparedInvestigationClassification
+    prepared: PreparedInvestigationClassification,
+    expectedVersion: number | undefined
   ) => {
     const savedSelection = getAvvikelseLabelClassificationSelection(
       prepared.model,
@@ -476,7 +498,6 @@ export function SupportInvestigationDocument({
           type: savedDraft.type,
           subType: savedDraft.subType,
           classificationHasSubTypes: savedDraft.classificationHasSubTypes,
-          version: savedErrand.version,
         },
       };
     });
@@ -487,7 +508,7 @@ export function SupportInvestigationDocument({
     resetErrandField('type', { defaultValue: savedDraft.type });
     resetErrandField('subType', { defaultValue: savedDraft.subType });
     resetErrandField('classificationHasSubTypes', { defaultValue: savedDraft.classificationHasSubTypes });
-    resetErrandField('version', { defaultValue: savedErrand.version });
+    advanceParentVersion(expectedVersion, savedErrand.version);
   };
 
   /**
@@ -553,14 +574,27 @@ export function SupportInvestigationDocument({
     setIsReporting(true);
     setNotice(undefined);
     try {
-      const created = await createSupportInvestigationReport(municipalityId, errandId, definition.key);
-      applySavedDocument(created);
+      // Survives a reload after a lost response. Clear only after the BFF confirms publication.
+      const publicationKey = `investigation-report:${municipalityId}:${errandId}:${definition.key}`;
+      const operationId = sessionStorage.getItem(publicationKey) ?? crypto.randomUUID();
+      sessionStorage.setItem(publicationKey, operationId);
+      const created = await createSupportInvestigationReport(municipalityId, errandId, definition.key, operationId);
+      sessionStorage.removeItem(publicationKey);
+      applySavedDocument(created, false);
       setNotice({
         type: 'success',
         message: `Rapporten ${created.report.fileName} har skapats och lagts som en bilaga på ärendet.`,
       });
-      const attachments = await getSupportAttachments(errandId, municipalityId);
-      useSupportStore.getState().setSupportAttachments(attachments);
+      try {
+        const attachments = await getSupportAttachments(errandId, municipalityId);
+        useSupportStore.getState().setSupportAttachments(attachments);
+      } catch {
+        // Publication is already confirmed. A failed list refresh must not invite another upload.
+        setNotice({
+          type: 'warning',
+          message: `Rapporten ${created.report.fileName} har skapats, men bilagelistan kunde inte uppdateras. Öppna fliken Bilagor för att läsa rapporten.`,
+        });
+      }
     } catch (error) {
       reportFailureNotice(error, 'Rapporten kunde inte skapas. Försök igen eller kontakta support om felet kvarstår.');
     } finally {
@@ -661,7 +695,7 @@ export function SupportInvestigationDocument({
         classificationDirty,
         documentSavedPendingClassification,
       });
-      if (savedDocument) applySavedDocument(savedDocument);
+      const classificationVersion = savedDocument ? applySavedDocument(savedDocument) : supportErrand?.version;
 
       if (savedDocument && classificationDirty) {
         documentSavedForClassification = true;
@@ -673,11 +707,11 @@ export function SupportInvestigationDocument({
         errandId,
         documentKey: definition.key,
         prepared: preparedClassification,
-        parentErrandVersion: savedDocument?.parentErrandVersion ?? supportErrand?.version,
+        parentErrandVersion: classificationVersion,
         documentETag: savedDocument?.etag ?? documentState.etag,
       });
       if (savedClassification && preparedClassification) {
-        applySavedClassification(savedClassification, preparedClassification);
+        applySavedClassification(savedClassification, preparedClassification, classificationVersion);
       }
 
       setDocumentSavedPendingClassification(false);

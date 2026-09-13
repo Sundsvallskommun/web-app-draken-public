@@ -432,3 +432,61 @@ Uppslaget är best effort — ett konto utan namn visas med sitt AD-konto i stä
 Kandidaterna returneras grupperade per roll, och klienten renderar dem med `Select.Optgroup` precis
 som handläggarlistan i sidopanelen. Utredaren väljer; backend löser upp samma lista igen vid
 skrivningen och avvisar alla utanför den, så väljaren kan inte bredda vem som får ta emot ärendet.
+
+
+## Rapporter: publicering och återhämtning
+
+`InvestigationReportPublicationService` i backend äger publiceringsförloppet. Controllern
+kontrollerar åtkomst och bygger rapporten; tjänsten samordnar dokumentets rapportlista och
+Support Managements bilagor. Ingen separat databas eller processlokal låsning används.
+
+Klienten skickar ett UUID v4 som `operationId` och behåller det i `sessionStorage` tills
+publiceringen har bekräftats. Samma identitet används efter nätverksfel och omladdning.
+Förhandsgranskning kräver ingen identitet och gör inga skrivningar.
+
+Befintliga, bundna scheman tillåter `generatedAt`, `generatedBy`, `fileName` och ett valfritt
+`attachmentId`. Därför lagras publiceringsidentiteten som ett UUID-suffix i filnamnet:
+`Handelseanalys_HSL_2_<operationId>.pdf`. Rapportlistan förblir serverägd.
+
+1. PDF:en renderas. Ett renderingsfel lämnar inget väntande arbete.
+2. En rapportpost utan `attachmentId` reserveras med dokumentets `If-Match`. Bara den begäran
+   som får ett bekräftat svar på reservationen får ladda upp. Samtidiga försök serialiseras av
+   dokumentversionen. En väntande rapport hindrar upplåsning och ändring av rapportunderlaget.
+3. Bilagan laddas upp en gång. `Location` följs inte; bilagans id läses ur svaret.
+4. Rapportposten kompletteras med id på dokumentets senast lästa version. Ett nytt försök
+   återanvänder en bekräftad post eller hittar bilagan med exakt samma unika filnamn.
+
+Support Managements bilage-POST saknar idempotensnyckel. Om uppladdningen eller svaret avbryts
+kan BFF därför inte bevisa att det är säkert att ladda upp igen. Den behåller reservationen och
+letar efter den befintliga bilagan. Saknas en entydig träff blir resultatet HTTP 409 med en
+åtgärdsanvisning, aldrig en automatisk ny uppladdning. Detta gäller även efter omstart av BFF.
+
+### Förvaltning av en väntande rapport
+
+- Låt ett pågående försök avslutas. Försök sedan med **Slutför rapport**. Finns exakt en bilaga
+  med reservationens filnamn kopplar BFF ihop den med rapportposten.
+- Om ingen bilaga finns: kontrollera upstream-loggar och säkerställ att ingen uppladdning
+  fortfarande kan slutföras. Återställ inte reservationen medan utfallet är oklart.
+- Om det är bekräftat att ingen uppladdning accepterades får en behörig förvaltare ta bort
+  just den väntande posten via Support Managements JSON-parameter-API, med dokumentets
+  aktuella `If-Match`. Behåll övriga poster och dokumentfält. Därefter kan användaren försöka igen.
+- Om flera bilagor matchar eller reservationen har ändrats utanför BFF krävs manuell utredning.
+  Radera inte bilagor automatiskt. Dokumentera vald bilaga och eventuell korrigering.
+
+Äldre rapportposter utan UUID-suffix tolkas inte som väntande. Återgång till en äldre BFF får
+inte göras med pågående reservationer: den äldre rapportkoden känner inte till dessa och kan
+ladda upp nya kopior. Slutför eller utred reservationerna före återgång. Frontend och backend
+behöver driftsättas tillsammans eftersom verklig publicering nu kräver `operationId`.
+
+### Ärendeversion och formulärutkast
+
+Ett dokument har en egen version. Föräldraärendets version får uppdateras i ett delvis laddat
+formulär bara om den egna skrivningen förklarar hela versionsökningen, och både store och
+formulär fortfarande har den basversionen. Regeln ägs av `isSoleSupportErrandVersionChange`
+och används av dokument, kategorisering och åtgärder. En rapport kan göra noll eller flera
+skrivningar vid återhämtning; dess svar får därför inte flytta formulärets ärendeversion.
+
+Efter andra samtidiga ändringar behöver användaren ladda om föräldraärendet före ett nytt
+ärendesparande. Sparfel lämnar utkast och basversion kvar. Spara undan utkastet före omladdning.
+Sidopanelens sparfunktion returnerar uttryckligen om hela flödet lyckades; **Starta handläggning**
+fortsätter bara efter ett bekräftat sparande.

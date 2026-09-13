@@ -66,3 +66,14 @@ export const supportErrandWriteErrorMessage = (error: unknown, fallback: string)
 
   return isSupportErrandWriteConflict(error) ? SUPPORT_ERRAND_WRITE_CONFLICT_MESSAGE : fallback;
 };
+
+/** A child write may advance a partially loaded parent only when it explains the entire change.
+ * A later readback can include someone else's edit; its version must never authorize stale fields.
+ */
+export const isSoleSupportErrandVersionChange = (expected: unknown, received: unknown): boolean =>
+  typeof expected === 'number' &&
+  Number.isSafeInteger(expected) &&
+  expected >= 0 &&
+  typeof received === 'number' &&
+  Number.isSafeInteger(received) &&
+  received === expected + 1;

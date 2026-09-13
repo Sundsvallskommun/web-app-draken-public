@@ -130,16 +130,7 @@ export const SidebarInfo: FC<{
     };
   }, [errandId, municipalityId]);
 
-  const refreshCurrentErrand = async () => {
-    if (!supportErrand?.id) return;
-    const current = await getSupportErrandById(supportErrand.id, municipalityId);
-    if (!current.error) {
-      setSupportErrand(current.errand);
-      reset(current.errand);
-    }
-  };
-
-  const onSubmit = async () => {
+  const onSubmit = async (): Promise<boolean> => {
     setError(false);
     setIsLoading(true);
 
@@ -194,13 +185,13 @@ export const SidebarInfo: FC<{
             status: 'error',
           });
           setError(true);
-          await refreshCurrentErrand();
-          return;
+          return false;
         }
       }
 
       // Single fetch + reset after all operations complete
       const e = await getSupportErrandById(getValues().id!, municipalityId);
+      if (e.error) throw new Error('Could not confirm the saved support errand');
       setSupportErrand(e.errand);
       reset(e.errand);
 
@@ -210,6 +201,7 @@ export const SidebarInfo: FC<{
         message: 'Ärendet uppdaterades',
         status: 'success',
       });
+      return true;
     } catch (e) {
       console.error('Error when updating errand:', e);
       toastMessage({
@@ -219,7 +211,7 @@ export const SidebarInfo: FC<{
         status: 'error',
       });
       setError(true);
-      await refreshCurrentErrand();
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -253,18 +245,18 @@ export const SidebarInfo: FC<{
   const handleAction = (action: () => Promise<boolean>, success: () => void, fail: (error: unknown) => void) => {
     return action()
       .then(async () => {
+        const res = await getSupportErrandById(supportErrand!.id!, municipalityId);
+        if (res.error) throw new Error('Could not confirm the updated support errand');
         success();
         setIsLoading(false);
-        const res = await getSupportErrandById(supportErrand!.id!, municipalityId);
         setSupportErrand(res.errand);
         reset(res.errand);
       })
-      .catch(async (e) => {
+      .catch((e) => {
         fail(e);
         setError(true);
         setIsLoading(false);
-        await refreshCurrentErrand();
-        return;
+        return false;
       });
   };
 
@@ -497,7 +489,12 @@ export const SidebarInfo: FC<{
             className="w-full my-8"
             data-cy="save-button"
             type="button"
-            disabled={isSupportErrandLocked(supportErrand!) || !hasDirtyFields(formState.dirtyFields) || formIsNotValid}
+            disabled={
+              isLoading === true ||
+              isSupportErrandLocked(supportErrand!) ||
+              !hasDirtyFields(formState.dirtyFields) ||
+              formIsNotValid
+            }
             onClick={handleSubmit(() => {
               return onSubmit();
             }, onError)}

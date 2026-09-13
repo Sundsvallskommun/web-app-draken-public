@@ -21,12 +21,12 @@ import {
   resolveStartProcessPhaseAdvance,
 } from '@supportmanagement/services/support-phase-service';
 import { ArrowRight } from 'lucide-react';
-import { FC, useMemo } from 'react';
+import { FC, useMemo, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 export const SupportStartProcessButtonComponent: FC<{
   disabled: boolean;
-  onSubmit: () => Promise<any>;
+  onSubmit: () => Promise<boolean>;
   onError: () => void;
 }> = ({ disabled, onSubmit, onError }) => {
   const user = useUserStore((s) => s.user);
@@ -36,6 +36,8 @@ export const SupportStartProcessButtonComponent: FC<{
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const toast = useSnackbar();
+  const starting = useRef(false);
+  const [isStarting, setIsStarting] = useState(false);
   const setSupportMetadata = useMetadataStore((s) => s.setSupportMetadata);
   const { handleSubmit, reset } = useFormContext();
   const cachedPhases = useMemo(() => getSupportPhases(supportMetadata?.phases), [supportMetadata?.phases]);
@@ -62,8 +64,11 @@ export const SupportStartProcessButtonComponent: FC<{
   };
 
   const handleStartProcess = async () => {
+    if (starting.current) return;
+    starting.current = true;
+    setIsStarting(true);
     try {
-      await onSubmit();
+      if (!(await onSubmit())) return;
 
       const afterSubmit = await getSupportErrandById(supportErrand!.id!, municipalityId);
       if (afterSubmit.error) {
@@ -144,25 +149,22 @@ export const SupportStartProcessButtonComponent: FC<{
       }
 
       const updated = await getSupportErrandById(supportErrand!.id!, municipalityId);
+      if (updated.error) throw new Error('Could not confirm the started support errand');
       setSupportErrand(updated.errand);
       reset(updated.errand);
 
       toast({ message: 'Handläggning startad', status: 'success', position: 'bottom' });
     } catch (err) {
       console.error(err);
-      // Part of the flow may have landed - the assignment in particular - and every later write is
-      // conditioned on the version those produced. Reloading leaves the user on a current errand, so
-      // the next attempt, here or from the phase strip, is not refused over a stale version.
-      const current = await getSupportErrandById(supportErrand!.id!, municipalityId);
-      if (!current.error) {
-        setSupportErrand(current.errand);
-        reset(current.errand);
-      }
+      // Keep the caller's draft and its original version on every failure, including partial writes.
       toast({
         message: supportErrandWriteErrorMessage(err, 'Något gick fel vid start av handläggning'),
         status: 'error',
         position: 'bottom',
       });
+    } finally {
+      starting.current = false;
+      setIsStarting(false);
     }
   };
 
@@ -174,7 +176,8 @@ export const SupportStartProcessButtonComponent: FC<{
     <Button
       className="w-full"
       type="button"
-      disabled={disabled}
+      disabled={disabled || isStarting}
+      loading={isStarting}
       onClick={handleSubmit(handleStartProcess, onError)}
       variant="primary"
       color="vattjom"

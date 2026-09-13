@@ -612,3 +612,19 @@ for (const artifact of artifacts) {
     );
   });
 }
+
+test('pending and confirmed publications fit every existing report schema without a migration', () => {
+  const pending = {
+    generatedAt: '2026-09-13T10:00:00.000Z',
+    generatedBy: 'handler',
+    fileName: 'Rapport_1_f0000000-0000-4000-8000-000000000001.pdf',
+  };
+  for (const artifact of artifacts.filter((item) => item.hasReport)) {
+    const schema = readJson(artifact.schemaFile).value;
+    const { ajv, validate } = createValidator(schema);
+    for (const report of [pending, { ...pending, attachmentId: 'attachment-1' }]) {
+      const value = { ...fixtures[artifact.name].valid, [schema['x-draken-completion'].reportsField]: [report] };
+      assert.equal(validate(value), true, `${artifact.name}: ${ajv.errorsText(validate.errors)}`);
+    }
+  }
+});

@@ -136,11 +136,12 @@ const parseReportEntry = (value: unknown): SupportInvestigationReportEntry => {
 export async function createSupportInvestigationReport(
   municipalityId: string,
   errandId: string,
-  key: InvestigationDocumentKey
+  key: InvestigationDocumentKey,
+  operationId: string
 ): Promise<CreatedSupportInvestigationReport> {
-  const response = await apiService.post<ReportResponseBody, Record<string, never>>(
+  const response = await apiService.post<ReportResponseBody, { operationId: string }>(
     `${documentUrl(municipalityId, errandId, key)}/reports`,
-    {}
+    { operationId }
   );
   if (response.status !== 201) {
     throw new Error(`Rapporten returnerade oväntad status ${response.status}.`);

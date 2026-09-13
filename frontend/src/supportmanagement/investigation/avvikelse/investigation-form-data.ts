@@ -385,6 +385,11 @@ export interface InvestigationReport {
   readonly attachmentId?: string;
 }
 
+/** Publication identity is persisted in the filename because existing pinned schemas allow no extra fields. */
+export const isPendingInvestigationReport = (report: InvestigationReport): boolean =>
+  !report.attachmentId &&
+  /_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.pdf$/.test(report.fileName);
+
 /** The reports the document records, oldest first; malformed entries are left out rather than shown. */
 export function getInvestigationReports(schema: RJSFSchema, formData: InvestigationFormData): InvestigationReport[] {
   const completion = getInvestigationCompletion(schema);

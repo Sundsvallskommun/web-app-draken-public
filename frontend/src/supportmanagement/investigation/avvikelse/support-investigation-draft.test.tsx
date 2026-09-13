@@ -15,8 +15,10 @@ import { SupportErrandInvestigationTab } from './support-errand-investigation-ta
 
 const mocks = vi.hoisted(() => ({
   read: vi.fn(),
+  save: vi.fn(),
   preview: vi.fn(),
   generate: vi.fn(),
+  attachments: vi.fn(),
   completion: vi.fn<() => { field: string; reportsField: string } | undefined>(),
   refresh: vi.fn(),
   router: { push: vi.fn(), replace: vi.fn() },
@@ -33,7 +35,7 @@ vi.mock('@stores/index', async () => ({
 vi.mock('@supportmanagement/services/support-errand-service', () => ({ isSupportErrandLocked: () => false }));
 vi.mock('react-hook-form', async (original) => ({
   ...(await original<typeof import('react-hook-form')>()),
-  useFormContext: () => ({ register: vi.fn(), resetField: vi.fn() }),
+  useFormContext: () => ({ register: vi.fn(), resetField: vi.fn(), getValues: () => 1 }),
 }));
 vi.mock('@sk-web-gui/react', async () => ({
   ...(await import('@sk-web-gui/tabs')),
@@ -49,12 +51,14 @@ vi.mock('@common/components/json/schema/schema-form.component', () => ({
     readonly,
     idPrefix,
     externalFields,
+    onSubmit,
   }: {
     formData: InvestigationFormData;
     onChange: (data: InvestigationFormData) => void;
     readonly: boolean;
     idPrefix: string;
     externalFields?: Readonly<Record<string, ReactNode>>;
+    onSubmit: (data: InvestigationFormData) => void;
   }) =>
     createElement(
       Fragment,
@@ -65,6 +69,7 @@ vi.mock('@common/components/json/schema/schema-form.component', () => ({
         readOnly: readonly,
         onChange: (event: { target: { value: string } }) => onChange({ ...formData, answer: event.target.value }),
       }),
+      createElement('button', { onClick: () => onSubmit(formData) }, 'Save document'),
       externalFields?.investigationReport
     ),
 }));
@@ -88,7 +93,8 @@ vi.mock('./investigation-classification', () => ({
     data: InvestigationFormData
   ) => data,
 }));
-vi.mock('./investigation-form-data', () => ({
+vi.mock('./investigation-form-data', async (original) => ({
+  ...(await original<typeof import('./investigation-form-data')>()),
   getInvestigationRenderingSchema: (_name: string, schema: unknown) => schema,
   getInvestigationServerTimestamps: () => [],
   getInvestigationCompletion: mocks.completion,
@@ -98,7 +104,7 @@ vi.mock('./investigation-form-data', () => ({
   investigationRequiredIndicator: ' (Obligatorisk)',
 }));
 vi.mock('@supportmanagement/services/support-attachment-service', () => ({
-  getSupportAttachments: vi.fn(async () => []),
+  getSupportAttachments: mocks.attachments,
 }));
 vi.mock('./investigation-schema-debug-panel.component', () => ({
   investigationSchemaDebugIsVisible: () => false,
@@ -108,7 +114,7 @@ vi.mock('./support-investigation-service', () => ({
   getSupportInvestigationDocument: mocks.read,
   isSupportInvestigationAccessDenied: () => false,
   isSupportInvestigationConflict: () => false,
-  saveSupportInvestigationDocument: vi.fn(),
+  saveSupportInvestigationDocument: mocks.save,
   createSupportInvestigationReport: mocks.generate,
   previewSupportInvestigationReport: mocks.preview,
 }));
@@ -145,6 +151,9 @@ beforeEach(() => {
   mocks.completion.mockReset();
   mocks.preview.mockReset();
   mocks.generate.mockReset();
+  mocks.attachments.mockReset().mockResolvedValue([]);
+  mocks.save.mockReset();
+  sessionStorage.clear();
   mocks.read.mockReset().mockImplementation(async (_municipality: string, _errand: string, key: string) => ({
     document: { key, schemaId: 'schema', value: { answer: `Saved ${key}` } },
     etag: '"1"',
@@ -245,4 +254,84 @@ test('a new user cannot inherit the previous user draft', async () => {
   rerender(createElement(Harness, { access: grants() }));
   expect(await screen.findByDisplayValue('Saved first')).toBeTruthy();
   expect(screen.queryByDisplayValue('Private draft')).toBeNull();
+});
+
+test.each([2, 3])('a report readback at version %s does not authorize stale parent fields', async (version) => {
+  mocks.completion.mockReturnValue({ field: 'completed', reportsField: 'reports' });
+  mocks.read.mockResolvedValue({
+    document: { key: 'first', schemaId: 'schema', value: { answer: 'Saved first', completed: 'yes' } },
+    etag: '"1"',
+  });
+  useSupportStore.setState((state) => ({ supportErrand: { ...state.supportErrand!, title: 'Old title' } }));
+  mocks.generate.mockResolvedValue({
+    document: { key: 'first', schemaId: 'schema', value: { answer: 'Saved first', completed: 'yes' } },
+    etag: '"2"',
+    parentErrandVersion: version,
+    report: { fileName: 'report.pdf' },
+  });
+  render(createElement(Harness, { access: grants('edit', 'hidden') }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Skapa rapport' }));
+  await screen.findByText(/Rapporten report.pdf har skapats/);
+  expect(useSupportStore.getState().supportErrand).toMatchObject({ title: 'Old title', version: 1 });
+});
+
+test('a report retry retains its publication identity after a lost response', async () => {
+  mocks.completion.mockReturnValue({ field: 'completed', reportsField: 'reports' });
+  mocks.read.mockResolvedValue({
+    document: { key: 'first', schemaId: 'schema', value: { answer: 'Saved first', completed: 'yes' } },
+    etag: '"1"',
+  });
+  mocks.generate.mockRejectedValue(new Error('Lost response'));
+  const view = render(createElement(Harness, { access: grants('edit', 'hidden') }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Skapa rapport' }));
+  await screen.findByText('Lost response');
+  const operationId = mocks.generate.mock.calls[0][3];
+  view.unmount();
+  render(createElement(Harness, { access: grants('edit', 'hidden') }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Skapa rapport' }));
+  await waitFor(() => expect(mocks.generate).toHaveBeenCalledTimes(2));
+  expect(mocks.generate.mock.calls[1][3]).toBe(operationId);
+  expect(operationId).toMatch(/^[a-f0-9-]{36}$/);
+});
+
+test.each([
+  [2, 2],
+  [3, 1],
+])('a document save at parent version %s retains the safe form version %s', async (received, expected) => {
+  mocks.save.mockResolvedValue({
+    document: { key: 'first', schemaId: 'schema', value: { answer: 'New answer' } },
+    etag: '"2"',
+    parentErrandVersion: received,
+  });
+  useSupportStore.setState((state) => ({ supportErrand: { ...state.supportErrand!, title: 'Old title' } }));
+  render(createElement(Harness, { access: grants('edit', 'hidden') }));
+  fireEvent.change(await screen.findByLabelText('first', { selector: 'textarea' }), {
+    target: { value: 'New answer' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Save document' }));
+  await waitFor(() => expect(mocks.save).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(screen.queryByText('Osparade ändringar')).toBeNull());
+  await waitFor(() =>
+    expect(useSupportStore.getState().supportErrand).toMatchObject({ title: 'Old title', version: expected })
+  );
+});
+
+test('a failed attachment refresh still reports the publication as successful', async () => {
+  mocks.completion.mockReturnValue({ field: 'completed', reportsField: 'reports' });
+  mocks.read.mockResolvedValue({
+    document: { key: 'first', schemaId: 'schema', value: { answer: 'Saved first', completed: 'yes' } },
+    etag: '"1"',
+  });
+  mocks.generate.mockResolvedValue({
+    document: { key: 'first', schemaId: 'schema', value: { answer: 'Saved first', completed: 'yes' } },
+    etag: '"2"',
+    parentErrandVersion: 4,
+    report: { fileName: 'report.pdf' },
+  });
+  mocks.attachments.mockRejectedValue(new Error('List unavailable'));
+  render(createElement(Harness, { access: grants('edit', 'hidden') }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Skapa rapport' }));
+  await screen.findByText(/Rapporten report.pdf har skapats, men bilagelistan kunde inte uppdateras/);
+  expect(mocks.generate).toHaveBeenCalledTimes(1);
+  expect(screen.queryByText('List unavailable')).toBeNull();
 });

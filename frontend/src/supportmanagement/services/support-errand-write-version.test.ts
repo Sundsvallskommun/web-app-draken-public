@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'vitest';
 
 import {
+  isSoleSupportErrandVersionChange,
   isSupportErrandWriteConflict,
   SUPPORT_ERRAND_STATUS_AFTER_ASSIGNMENT_MESSAGE,
   SUPPORT_ERRAND_WRITE_CONFLICT_MESSAGE,
@@ -75,5 +76,19 @@ test('says which half of taking an errand is missing', () => {
       supportErrandWriteErrorMessage(new SupportErrandStatusAfterAssignmentError(reason), 'fallback'),
       SUPPORT_ERRAND_STATUS_AFTER_ASSIGNMENT_MESSAGE
     );
+  }
+});
+
+test('only a sole child write can advance a partially loaded parent version', () => {
+  assert.equal(isSoleSupportErrandVersionChange(3, 4), true);
+  for (const [expected, received] of [
+    [3, 3],
+    [3, 5],
+    [undefined, 1],
+    [NaN, 2],
+    [-1, 0],
+    [3, '4'],
+  ]) {
+    assert.equal(isSoleSupportErrandVersionChange(expected, received), false);
   }
 });
