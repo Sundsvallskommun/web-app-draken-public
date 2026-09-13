@@ -1,0 +1,40 @@
+name: Dragon Foundation
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+jobs:
+  boundaries:
+    name: Dragon Foundation Contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: |
+            frontend/yarn.lock
+            backend/yarn.lock
+      - name: Install frontend dependencies
+        run: yarn --cwd frontend install --frozen-lockfile --ignore-scripts --silent
+      - name: Install backend dependencies
+        run: yarn --cwd backend install --frozen-lockfile --ignore-scripts --silent
+      - name: Check import boundaries
+        run: yarn lint:deps
+      - name: Prevent baseline growth
+        run: node scripts/boundaries-baseline-guard.mjs
+      - name: Test the boundary rules
+        run: yarn test:boundaries
+      - name: Check frontend test types
+        run: yarn --cwd frontend type-check:test
+      - name: Test application policies and JSON fields
+        run: yarn --cwd frontend test
