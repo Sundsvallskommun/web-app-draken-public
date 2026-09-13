@@ -261,11 +261,12 @@ test.describe('Message tab', () => {
 
         await page.locator('[data-cy="messageTemplate"]').first().selectOption({ index: 1 });
         await expect(page.locator('[data-cy="email-tag-0"]').getByText(message.email)).toBeVisible();
-        await page.locator('[data-cy="send-message-button"]').first().click({ force: true });
-
-        const sendEmailRequest = await page.waitForRequest(
+        const sendEmailRequestPromise = page.waitForRequest(
           (req) => req.url().includes('/email') && req.method() === 'POST'
         );
+        await page.locator('[data-cy="send-message-button"]').first().click({ force: true });
+
+        const sendEmailRequest = await sendEmailRequestPromise;
         const requestBody = sendEmailRequest.postData() || '';
         expect(requestBody).toContain('Content-Disposition: form-data; name="contactMeans"');
         expect(requestBody).toContain('email');
