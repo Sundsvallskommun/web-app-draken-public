@@ -93,7 +93,7 @@ function AppInitializer({ children }: Readonly<{ children: ReactNode }>) {
   return <>{children}</>;
 }
 
-function AppLayout({ children }: ClientApplicationProps) {
+function AppLayout({ children }: Readonly<ClientApplicationProps>) {
   const colorScheme = useSyncExternalStore(
     useUiSettingsStore.subscribe,
     () => (useUiSettingsStore.getState().colorScheme as ColorSchemeMode) || ColorSchemeMode.Light,

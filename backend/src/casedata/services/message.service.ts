@@ -10,11 +10,11 @@ import { getOwnerStakeholder, getOwnerStakeholderEmail } from '@/casedata/servic
 import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { AgnosticMessageResponse, DecisionChannelResult, LetterResponse, MessageClassification } from '@/controllers/casedata/message.controller';
-import { ConversationType } from '@/data-contracts/case-data/data-contracts';
 import {
   Attachment,
   Classification,
   Conversation,
+  ConversationType,
   EmailHeader,
   Errand as ErrandDTO,
   Header,

@@ -17,7 +17,7 @@ function warnMissingEnv(spec: EnvSpec): void {
 
     if (type === 'port') {
       const port = Number(value);
-      if (isNaN(port) || port < 1 || port > 65535) {
+      if (Number.isNaN(port) || port < 1 || port > 65535) {
         invalid.push(`${key} (invalid port: "${value}")`);
       }
     }
@@ -31,11 +31,17 @@ function warnMissingEnv(spec: EnvSpec): void {
     }
   }
 
+  reportEnvironmentErrors(missing, invalid);
+}
+
+function reportEnvironmentErrors(missing: string[], invalid: string[]): void {
   if (missing.length > 0) {
-    console.error(`\nMissing environment variables:\n${missing.map(k => `   - ${k}`).join('\n')}\n`);
+    const details = missing.map(key => `   - ${key}`).join('\n');
+    console.error(`\nMissing environment variables:\n${details}\n`);
   }
   if (invalid.length > 0) {
-    console.error(`\nInvalid environment variables:\n${invalid.map(k => `   - ${k}`).join('\n')}\n`);
+    const details = invalid.map(key => `   - ${key}`).join('\n');
+    console.error(`\nInvalid environment variables:\n${details}\n`);
   }
   if (missing.length === 0 && invalid.length === 0) {
     console.info('✅ All required environment variables are set.');

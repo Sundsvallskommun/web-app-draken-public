@@ -121,7 +121,7 @@
     "@types/uuid": "^9.0.1",
     "autoprefixer": "^10.4.21",
     "cross-env": "^7.0.3",
-    "dependency-cruiser": "18.2.0",
+    "dependency-cruiser": "17.4.3",
     "dotenv": "^16.6.1",
     "dotenv-cli": "^7.4.2",
     "eslint": "^9.39.4",

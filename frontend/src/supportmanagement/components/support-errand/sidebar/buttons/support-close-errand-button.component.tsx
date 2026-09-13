@@ -27,7 +27,7 @@ const RESOLUTION_DESCRIPTION =
 const getResolutionLabels = (): Readonly<Record<string, string>> => getSupportErrandPolicy().resolutions;
 
 const getDefaultResolution = (errand: SupportErrand | undefined): string => {
-  if (!!errand?.resolution) return errand?.resolution as string;
+  if (errand?.resolution) return errand?.resolution as string;
 
   return getSupportErrandPolicy().defaultResolution(appConfig.features);
 };

@@ -6,8 +6,8 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { APPLICATION, MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { ConversationType } from '@/data-contracts/case-data/data-contracts';
 import {
+  ConversationType,
   Errand as CasedataErrandDTO,
   ErrandPriorityEnum as CasedataErrandDtoPriorityEnum,
   Stakeholder as CasedataStakeholderDTO,

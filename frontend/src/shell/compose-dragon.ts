@@ -12,7 +12,7 @@ export const resolveDragonModule = (identity: string, registry: DragonRegistry):
   if (!isDragonId(identity))
     throw new Error(`Unknown dragon "${identity}". NEXT_PUBLIC_APPLICATION must be one of: ${DRAGON_IDS.join(', ')}.`);
   const dragon = registry[identity];
-  if (!dragon || dragon.id !== identity) throw new Error(`Dragon registry does not match "${identity}".`);
+  if (dragon?.id !== identity) throw new Error(`Dragon registry does not match "${identity}".`);
   return dragon;
 };
 

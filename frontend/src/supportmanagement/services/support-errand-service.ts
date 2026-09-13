@@ -183,15 +183,15 @@ export enum AttestationStatusLabel {
 
 export const getStatusLabel = (statuses: readonly string[]) => {
   if (statuses.length > 0) {
-    if (statuses.some((s) => newStatuses.some((status) => status === s))) {
+    if (statuses.some((s) => (newStatuses as readonly string[]).includes(s))) {
       return 'Nya ärenden';
     } else if (statuses.some((s) => getSupportErrandPolicy().ongoingStatuses.includes(s))) {
       return 'Öppna ärenden';
-    } else if (statuses.some((s) => suspendedStatuses.some((status) => status === s))) {
+    } else if (statuses.some((s) => (suspendedStatuses as readonly string[]).includes(s))) {
       return 'Parkerade ärenden';
-    } else if (statuses.some((s) => assignedStatuses.some((status) => status === s))) {
+    } else if (statuses.some((s) => (assignedStatuses as readonly string[]).includes(s))) {
       return 'Tilldelade ärenden';
-    } else if (statuses.some((s) => closedStatuses.some((status) => status === s))) {
+    } else if (statuses.some((s) => (closedStatuses as readonly string[]).includes(s))) {
       return 'Avslutade ärenden';
     } else {
       return 'Ärenden';

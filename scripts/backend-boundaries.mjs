@@ -18,16 +18,16 @@ export function checkBackendBoundaries(backendRoot, sourceFiles) {
     const path = relative(src, file).replaceAll('\\', '/');
     if (/^(casedata\/|controllers\/casedata\/)/u.test(path)) return 'casedata';
     if (/^(supportmanagement\/|controllers\/supportmanagement\/)/u.test(path)) return 'supportmanagement';
-    if (/^avvikelse\//u.test(path)) return 'avvikelse';
+    if (path.startsWith('avvikelse/')) return 'avvikelse';
     if (/^dragons\/[^/]+\//u.test(path)) return path.split('/').slice(0, 2).join('/');
-    if (/^(shell\/|tests\/|server\.ts$)/u.test(path)) return 'composition';
-    if (/^data-contracts\//u.test(path)) return 'external';
+    if (path.startsWith('shell/') || path.startsWith('tests/') || path === 'server.ts') return 'composition';
+    if (path.startsWith('data-contracts/')) return 'external';
     return 'shared';
   };
   const accepts = (from, to, importer) => {
     if (from === 'composition' || to === 'shared' || to === 'external' || from === to) return true;
     if (from.startsWith('dragons/')) {
-      if (to === 'composition') return /\/application\.ts$/u.test(importer) || /\/server\.ts$/u.test(importer);
+      if (to === 'composition') return importer.endsWith('/application.ts') || importer.endsWith('/server.ts');
       const domain = dragons[from.slice('dragons/'.length).toUpperCase()]?.domain;
       return to === domain || (to === 'avvikelse' && domain === 'supportmanagement');
     }
@@ -36,7 +36,7 @@ export function checkBackendBoundaries(backendRoot, sourceFiles) {
   const cache = ts.createModuleResolutionCache(backendRoot, (name) => name, parsed.options);
   const files = sourceFiles ?? parsed.fileNames;
   for (const file of files) {
-    if (!file.startsWith(src + '/') || /\/(data-contracts|tests)\/|\.d\.ts$/u.test(file)) continue;
+    if (!file.startsWith(src + '/') || file.includes('/data-contracts/') || file.includes('/tests/') || file.endsWith('.d.ts')) continue;
     const source = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
     const check = (specifier) => {
       const imported = ts.resolveModuleName(specifier, file, parsed.options, ts.sys, cache).resolvedModule?.resolvedFileName;
