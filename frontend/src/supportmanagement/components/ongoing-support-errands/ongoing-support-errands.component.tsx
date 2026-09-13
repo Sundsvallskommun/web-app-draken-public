@@ -1,8 +1,12 @@
 import { ErrandsData } from '@casedata/interfaces/errand';
 import { attestationEnabled } from '@common/services/feature-flag-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
-import { useBillingStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { useBillingStore } from '@stores/billing-store';
+import { useConfigStore } from '@stores/config-store';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useSupportStore } from '@stores/support-store';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
+import { useUserStore } from '@stores/user-store';
 import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
 import {
   getLabelSubTypeFromName,

@@ -27,7 +27,8 @@ import {
   RadioButton,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
 import { Eye, EyeOff } from 'lucide-react';
 import { ChangeEvent, FC, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 

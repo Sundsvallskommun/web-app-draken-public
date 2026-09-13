@@ -2,7 +2,7 @@
 
 import { getUserEmployments, UserEmploymentDTO } from '@common/services/employee-service';
 import { getOrgLeafNodes, OrgLeafNodeDTO } from '@common/services/organization-service';
-import type { FieldProps } from '@rjsf/utils';
+import type { FieldProps, RegistryFieldsType } from '@rjsf/utils';
 import { Button, Combobox, FormControl, FormLabel } from '@sk-web-gui/react';
 import { Check, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -207,3 +207,6 @@ export function FacilitySearchField(props: FieldProps) {
     </div>
   );
 }
+
+/** Existing Avvikelse schemas keep their persisted field name. */
+export const avvikelseSchemaFields: RegistryFieldsType = { FacilitySearchWidget: FacilitySearchField };

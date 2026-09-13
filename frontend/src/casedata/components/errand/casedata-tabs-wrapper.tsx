@@ -17,7 +17,8 @@ import { deepFlattenToObject } from '@common/services/helper-service';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { Tabs, useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 

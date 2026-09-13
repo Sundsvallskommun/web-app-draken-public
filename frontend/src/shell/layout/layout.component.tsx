@@ -1,18 +1,20 @@
 import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wrapper';
 import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
+import { PageHeader } from '@common/components/layout/page-header.component';
+import { userMenuGroups } from '@common/components/layout/userMenuGroups';
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
-import { useCasedataStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useSupportStore } from '@stores/support-store';
+import { useUserStore } from '@stores/user-store';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 import { ExternalLink, Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
 import { Fragment, useEffect, useState } from 'react';
-
-import { PageHeader } from './page-header.component';
-import { userMenuGroups } from './userMenuGroups';
 
 export default function Layout({ title, children }: { title: string; children: React.ReactNode }) {
   const user = useUserStore((s) => s.user);

@@ -2,7 +2,8 @@ import { PriorityComponent } from '@common/components/priority/priority.componen
 import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
-import { useMetadataStore, useUserStore } from '@stores/index';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useUserStore } from '@stores/user-store';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
 import {
   Channels,

@@ -68,7 +68,10 @@
     "test:e2e:ui:kc": "dotenv -e .env.kc -- playwright test --project=kc --ui",
     "test:e2e:ui:lop": "dotenv -e .env.lop -- playwright test --project=lop --ui",
     "test:e2e:report": "playwright show-report",
-    "test": "jest --watch"
+    "test": "vitest run --maxWorkers=1",
+    "type-check:test": "tsc -p tsconfig.test.json --pretty --noEmit",
+    "lint:deps": "depcruise src --config .dependency-cruiser.cjs --ignore-known",
+    "lint:prune-suppressions": "eslint src/ e2e/ --prune-suppressions"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -118,6 +121,7 @@
     "@types/uuid": "^9.0.1",
     "autoprefixer": "^10.4.21",
     "cross-env": "^7.0.3",
+    "dependency-cruiser": "18.2.0",
     "dotenv": "^16.6.1",
     "dotenv-cli": "^7.4.2",
     "eslint": "^9.39.4",
@@ -132,7 +136,8 @@
     "prettier": "^2.4.1",
     "swagger-typescript-api": "13.2.8",
     "tailwindcss": "^3.4.17",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "4.1.9"
   },
   "resolutions": {
     "form-data": "^4.0.4",

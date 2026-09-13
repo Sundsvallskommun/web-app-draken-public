@@ -1,9 +1,9 @@
 'use client';
 
 import { CasedataErrandComponent } from '@casedata/components/errand/casedata-errand.component';
-import Layout from '@common/components/layout/layout.component';
 import { appConfig } from '@config/appconfig';
-import { useConfigStore } from '@stores/index';
+import Layout from '@shell/layout/layout.component';
+import { useConfigStore } from '@stores/config-store';
 import { SupportErrandComponent } from '@supportmanagement/components/support-errand/support-errand.component';
 import NextLink from 'next/link';
 import { useRef } from 'react';

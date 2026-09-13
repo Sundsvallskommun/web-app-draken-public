@@ -10,7 +10,7 @@ import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { getStakeholderRelation } from '@casedata/services/casedata-stakeholder-service';
 import { appConfig } from '@config/appconfig';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
-import { useCasedataStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
 import { Info, User, Users } from 'lucide-react';
 import { FC, useEffect, useState } from 'react';
 import { useFieldArray, useFormContext, UseFormReturn } from 'react-hook-form';

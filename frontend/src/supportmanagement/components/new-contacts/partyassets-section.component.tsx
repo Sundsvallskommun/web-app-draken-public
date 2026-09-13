@@ -2,7 +2,8 @@
 
 import { usePartyAssetServices } from '@common/hooks/use-asset-services';
 import { Button, Icon, Spinner } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
 import { ArrowRight, ListChecks } from 'lucide-react';
 import { useMemo } from 'react';
 

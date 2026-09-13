@@ -1,7 +1,8 @@
 import { isKC } from '@common/services/application-service';
 import { Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { useSupportErrandTable } from '@supportmanagement/components/support-errand/useSupportErrandTable';
 import { Status, SupportErrand } from '@supportmanagement/services/support-errand-service';

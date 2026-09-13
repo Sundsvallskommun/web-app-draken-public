@@ -1,6 +1,7 @@
 import { appConfig } from '@config/appconfig';
 import { Avatar, Button, Disclosure, FormControl, FormLabel, useConfirm } from '@sk-web-gui/react';
-import { useMetadataStore, useSupportStore } from '@stores/index';
+import { useMetadataStore } from '@stores/metadata-store';
+import { useSupportStore } from '@stores/support-store';
 import {
   emptyContact,
   ExternalIdType,

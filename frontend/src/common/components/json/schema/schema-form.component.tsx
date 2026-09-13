@@ -1,6 +1,5 @@
 'use client';
 
-import { FacilitySearchField } from '@common/components/json/fields/facility-search-field.componant';
 import { FieldTemplate } from '@common/components/json/fields/field-template.componant';
 import { SectionsObjectFieldTemplate } from '@common/components/json/fields/sections-object-field-template.componant';
 import { SubmitButtonFieldTemplate } from '@common/components/json/fields/submit-button-field-template.componant';
@@ -12,15 +11,12 @@ import Ajv2020 from 'ajv/dist/2020';
 import { ComponentType, useCallback, useMemo, useState } from 'react';
 
 import createJsonErrorTransformer from '../utils/schema-form-error-handling';
+import { useSchemaFields } from './schema-fields-context';
 
 // Schemas declare $schema: draft 2020-12, which the default AJV8 validator (draft-07) cannot compile.
 const validator = customizeValidator({ AjvClass: Ajv2020 });
 
 const widgets: RegistryWidgetsType = jsonWidgets as RegistryWidgetsType;
-
-const fields: RegistryFieldsType = {
-  FacilitySearchWidget: FacilitySearchField as any,
-};
 
 type AnyProp = {
   type?: string | string[];
@@ -32,6 +28,7 @@ type AnyProp = {
 };
 
 type SchemaFormProps = {
+  fields?: RegistryFieldsType;
   schema: RJSFSchema;
   uiSchema?: UiSchema;
   formData?: any;
@@ -88,6 +85,7 @@ function buildUiSchemaFromSchema(schema: RJSFSchema): UiSchema {
 }
 
 export default function SchemaForm({
+  fields: customFields,
   schema,
   uiSchema,
   formData,
@@ -98,6 +96,8 @@ export default function SchemaForm({
   submitButtonOptions,
   extraContent,
 }: SchemaFormProps) {
+  const applicationFields = useSchemaFields();
+  const fields = customFields ?? applicationFields;
   const [localData, setLocalData] = useState<any>({});
   const data = formData ?? localData;
 

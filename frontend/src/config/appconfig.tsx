@@ -8,7 +8,7 @@ export interface AppConfig {
   features: AppConfigFeatures;
 }
 
-interface AppConfigFeatures {
+export interface AppConfigFeatures {
   useThreeLevelCategorization: boolean;
   useTwoLevelCategorization: boolean;
   useExplanationOfTheCause: boolean;

@@ -1,7 +1,7 @@
 import TextEditor from '@common/components/dynamic-text-editor';
 import { Warning, WarningType } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Alert, Divider, FormControl, FormLabel, Select } from '@sk-web-gui/react';
-import { useMetadataStore } from '@stores/index';
+import { useMetadataStore } from '@stores/metadata-store';
 import { SupportErrand } from '@supportmanagement/services/support-errand-service';
 
 import { ForwardErrandSummary } from '../forward-errand-summary.component';

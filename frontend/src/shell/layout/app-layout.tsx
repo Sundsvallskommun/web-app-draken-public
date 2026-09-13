@@ -1,5 +1,6 @@
 'use client';
 
+import { SchemaFieldsProvider } from '@common/components/json/schema/schema-fields-context';
 import { getFeatureFlags } from '@common/services/feature-flag-service';
 import { getAdminUsers, getMe } from '@common/services/user-service';
 import { appConfig, applyRuntimeFeatureFlags } from '@config/appconfig';
@@ -19,6 +20,8 @@ import dayjs from 'dayjs';
 import updateLocale from 'dayjs/plugin/updateLocale';
 import utc from 'dayjs/plugin/utc';
 import { ReactNode, useEffect, useMemo, useSyncExternalStore } from 'react';
+
+import { dragon } from '../bootstrap';
 
 dayjs.extend(utc);
 dayjs.locale('sv');
@@ -112,7 +115,9 @@ function AppLayout({ children }: ClientApplicationProps) {
   return (
     <GuiProvider theme={theme} colorScheme={colorScheme}>
       <ConfirmationDialogContextProvider>
-        <AppInitializer>{children}</AppInitializer>
+        <SchemaFieldsProvider value={dragon?.schemaFields ?? {}}>
+          <AppInitializer>{children}</AppInitializer>
+        </SchemaFieldsProvider>
       </ConfirmationDialogContextProvider>
     </GuiProvider>
   );

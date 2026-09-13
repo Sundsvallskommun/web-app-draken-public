@@ -1,0 +1,23 @@
+/** Labels for persisted history codes, preserving develop's existing vocabulary. */
+export const supportResolutionHistoryLabels: Readonly<Record<string, string>> = Object.freeze({
+  SOLVED: 'Löst',
+  REFERRED_VIA_EXCHANGE: 'Vidarebefordrat via växelprogrammet',
+  CONNECTED: 'Kopplat samtal',
+  REGISTERED_EXTERNAL_SYSTEM: 'Registrerat i annat system',
+  SELF_SERVICE: 'Hänvisat till självservice',
+  INTERNAL_SERVICE: 'Hänvisat till intern service',
+  REFERRED_TO_RETURN: 'Hänvisat att återkomma',
+  SECURE_APPBOX: 'SecureAppbox',
+  CLOSED: 'Avslutat',
+  BACK_TO_MANAGER: 'Åter till chef',
+  BACK_TO_HR: 'Åter till HR',
+  REFER_TO_CONTACTSUNDSVALL: 'Hänvisat till Kontakt Sundsvall',
+  REFER_TO_PHONE: 'Behöver återkomma/hänvisat till telefontid',
+  REGISTERED: 'Tagit emot/registrerat/paketerat ärende',
+  SENT_MESSAGE: 'Skickat ett meddelande',
+  FORWARDED_TO_DRAKFASTIGHETER: 'Vidarebefordrat till Drakfastigheter',
+  FORWARDED_TO_EXTERNAL_LANDLORD: 'Vidarebefordrat till extern hyresvärd',
+  FORWARDED_TO_INTERNAL_CONTRACTOR: 'Vidarebefordrat till intern entreprenör',
+  FORWARDED_TO_EXTERNAL_CONTRACTOR: 'Vidarebefordrat till extern entreprenör',
+  BACK_TO_CONTACT_SUNDSVALL: 'Åter till Kontakt Sundsvall',
+});

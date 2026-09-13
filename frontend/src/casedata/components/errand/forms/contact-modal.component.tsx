@@ -4,7 +4,7 @@ import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import { appConfig } from '@config/appconfig';
 import { Button, cx, FormControl, FormErrorMessage, FormLabel, Input, Modal } from '@sk-web-gui/react';
-import { useCasedataStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
 import { Dispatch, FC, SetStateAction } from 'react';
 import { UseFieldArrayReplace, UseFormReturn } from 'react-hook-form';
 

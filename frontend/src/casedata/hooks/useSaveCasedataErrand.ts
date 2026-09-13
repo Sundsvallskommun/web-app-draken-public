@@ -16,7 +16,9 @@ import { FacilityDTO } from '@common/interfaces/facilities';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
-import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
+import { useUserStore } from '@stores/user-store';
 import { useFormContext } from 'react-hook-form';
 
 export function useSaveCasedataErrand(registeringNewErrand: boolean = false) {

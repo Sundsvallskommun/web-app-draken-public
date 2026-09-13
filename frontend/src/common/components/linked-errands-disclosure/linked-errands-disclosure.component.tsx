@@ -12,7 +12,7 @@ import { sortBy } from '@common/services/helper-service';
 import { createRelation, deleteRelation, getResolvedRelations } from '@common/services/relations-service';
 import { appConfig } from '@config/appconfig';
 import { Disclosure, SearchField, Spinner } from '@sk-web-gui/react';
-import { useConfigStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
 import { SupportErrand, supportErrandIsEmpty } from '@supportmanagement/services/support-errand-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 import { Link2 } from 'lucide-react';

@@ -1,6 +1,6 @@
 import { PriorityComponent } from '@common/components/priority/priority.component';
 import { prettyTime } from '@common/services/helper-service';
-import { useSupportStore } from '@stores/index';
+import { useSupportStore } from '@stores/support-store';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { Channels } from '@supportmanagement/services/support-errand-service';
 import { getSupportReporterStakeholder } from '@supportmanagement/services/support-stakeholder-service';

@@ -1,6 +1,7 @@
 import { UiPhase } from '@casedata/interfaces/errand-phase';
 import { getErrand } from '@casedata/services/casedata-errand-service';
-import { useCasedataStore, useConfigStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useConfigStore } from '@stores/config-store';
 
 function useDisplayPhasePoller() {
   const municipalityId = useConfigStore((s) => s.municipalityId);

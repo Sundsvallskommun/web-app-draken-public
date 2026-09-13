@@ -2,7 +2,7 @@ import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import { AddressResult } from '@common/services/adress-service';
 import { Button, FormErrorMessage } from '@sk-web-gui/react';
-import { useSupportStore } from '@stores/index';
+import { useSupportStore } from '@stores/support-store';
 import { SupportStakeholderFormModel } from '@supportmanagement/services/support-errand-service';
 import { Plus } from 'lucide-react';
 import { FC } from 'react';

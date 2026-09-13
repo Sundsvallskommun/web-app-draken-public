@@ -7,7 +7,9 @@ import { Notification as SupportNotification } from '@common/data-contracts/supp
 import { sortBy } from '@common/services/helper-service';
 import { appConfig } from '@config/appconfig';
 import { Button, Checkbox, cx, Divider, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
+import { useUserStore } from '@stores/user-store';
 import {
   acknowledgeSupportNotification,
   getSupportNotifications,

@@ -1,6 +1,6 @@
 import { Admin } from '@common/services/user-service';
 import { Chip } from '@sk-web-gui/react';
-import { useMetadataStore } from '@stores/index';
+import { useMetadataStore } from '@stores/metadata-store';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { Channels, Status } from '@supportmanagement/services/support-errand-service';

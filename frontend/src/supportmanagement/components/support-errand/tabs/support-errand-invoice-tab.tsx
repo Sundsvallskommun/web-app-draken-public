@@ -2,7 +2,9 @@ import { prettyTime } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
+import { useSupportStore } from '@stores/support-store';
+import { useUserStore } from '@stores/user-store';
 import BillingForm from '@supportmanagement/components/billing/billing-form.component';
 import { invoiceSettings } from '@supportmanagement/services/invoiceSettings';
 import {

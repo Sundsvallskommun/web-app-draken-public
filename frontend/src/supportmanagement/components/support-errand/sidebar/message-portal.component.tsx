@@ -1,5 +1,5 @@
 import { MessageWrapper } from '@common/components/message/message-wrapper.component';
-import { useSupportStore } from '@stores/index';
+import { useSupportStore } from '@stores/support-store';
 import { SupportMessageForm } from '@supportmanagement/components/support-message-form/support-message-form.component';
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
 import { useEffect, useState } from 'react';

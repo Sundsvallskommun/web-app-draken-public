@@ -3,7 +3,7 @@ import { ContactReason } from '@common/data-contracts/supportmanagement/data-con
 import { isLOK } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, cx, FormControl, FormErrorMessage, FormLabel, Select, Textarea } from '@sk-web-gui/react';
-import { useMetadataStore } from '@stores/index';
+import { useMetadataStore } from '@stores/metadata-store';
 import {
   ContactChannelType,
   getErrandParameterValue,

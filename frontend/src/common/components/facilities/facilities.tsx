@@ -22,7 +22,8 @@ import {
   Table,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useCasedataStore, useSupportStore } from '@stores/index';
+import { useCasedataStore } from '@stores/casedata-store';
+import { useSupportStore } from '@stores/support-store';
 import { isSupportErrandLocked } from '@supportmanagement/services/support-errand-service';
 import { FC, useEffect, useState } from 'react';
 import { useForm, UseFormSetValue } from 'react-hook-form';

@@ -8,7 +8,7 @@ import { defaultMunicipality, getCaseLabels, isErrandLocked } from '@casedata/se
 import { LinkedErrandsDisclosure } from '@common/components/linked-errands-disclosure/linked-errands-disclosure.component';
 import { appConfig } from '@config/appconfig';
 import { cx, Disclosure, FormControl, FormErrorMessage, FormLabel, Input, Select } from '@sk-web-gui/react';
-import { useConfigStore } from '@stores/index';
+import { useConfigStore } from '@stores/config-store';
 import { CircleAlert } from 'lucide-react';
 import { Dispatch, FC, SetStateAction, useEffect } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
