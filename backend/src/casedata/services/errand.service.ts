@@ -1,14 +1,14 @@
-import { CPatchErrandDto, CreateErrandDto } from '@interfaces/errand.interface';
 import { User } from '@interfaces/users.interface';
 import { apiURL } from '@utils/util';
 
+import { CPatchErrandDto, CreateErrandDto } from '@/casedata/interfaces/errand.interface';
+import { UiPhase } from '@/casedata/interfaces/errand-phase.interface';
+import { getLastUpdatedAdministrator } from '@/casedata/services/stakeholder.service';
 import { CASEDATA_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Errand as ErrandDTO } from '@/data-contracts/case-data/data-contracts';
-import { UiPhase } from '@/interfaces/errand-phase.interface';
 
-import ApiService from './api.service';
-import { getLastUpdatedAdministrator } from './stakeholder.service';
+import ApiService from '../../services/api.service';
 
 const SERVICE = apiServiceName('case-data');
 

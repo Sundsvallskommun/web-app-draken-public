@@ -62,7 +62,7 @@ export const getUnresolvedReporterAccounts = (
     .filter((account): account is string => !!account)
     .filter((account) => !getAdminName(findAdminByAccount(administrators, account)!));
 
-export const useSupportErrandTable = (statuses: Status[]) => {
+export const useSupportErrandTable = (statuses: readonly string[]) => {
   const { t } = useTranslation();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const administrators = useUserStore((s) => s.administrators);
@@ -233,7 +233,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       screenReaderOnly: false,
       sortable: true,
       sortKey: 'assignedUserId',
-      shownForStatus: Object.values(Status).filter((status) => status !== Status.NEW),
+      shownForStatus: statuses.filter((status) => status !== Status.NEW),
       render: (errand: SupportErrand) => {
         return <>{getAdminName(findAdminByAccount(administrators, errand?.assignedUserId)!)}</>;
       },
@@ -259,6 +259,8 @@ export const useSupportErrandTable = (statuses: Status[]) => {
   ];
 
   return labels.filter(
-    (label) => label.shownForStatus === All.ALL || statuses?.some((status) => label.shownForStatus.includes(status))
+    (label) =>
+      label.shownForStatus === All.ALL ||
+      statuses?.some((status) => label.shownForStatus.some((shown) => shown === status))
   );
 };

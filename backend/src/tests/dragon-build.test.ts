@@ -3,9 +3,9 @@ import { useExpressServer } from 'routing-controllers';
 import request from 'supertest';
 
 import { assertDragonBuild } from '@/config/dragon-build';
-import { configureSupportApplicationProfile, getSupportApplicationProfile } from '@/config/support-application-profile';
-import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
 import { startServer } from '@/shell/start-server';
+import { configureSupportApplicationProfile, getSupportApplicationProfile } from '@/supportmanagement/config/support-application-profile';
+import { SupportApplicationPolicyService } from '@/supportmanagement/services/support-application-policy.service';
 
 import dragons from '../../../dragons.json';
 import { APPLICATIONS } from './helpers/dragon-applications';

@@ -1,7 +1,11 @@
-import type { SupportErrandPolicy } from '@supportmanagement/policy/support-errand-policy';
+import {
+  kontaktSundsvallSupportErrandPolicy,
+  type SupportErrandPolicy,
+} from '@supportmanagement/policy/support-errand-policy';
 import { Resolution } from '@supportmanagement/services/support-errand-status';
 
-export const lopSupportErrandPolicy: Partial<SupportErrandPolicy> = {
+export const lopSupportErrandPolicy: SupportErrandPolicy = {
+  ...kontaktSundsvallSupportErrandPolicy,
   resolutions: Object.freeze({
     [Resolution.CLOSED]: 'Avslutat',
     [Resolution.BACK_TO_MANAGER]: 'Åter till chef',

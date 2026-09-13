@@ -13,9 +13,9 @@ import {
   MarkAsReadRequest,
   PageMessage,
 } from '@/data-contracts/supportmanagement/data-contracts';
-import { ConversationReadByCountDto, MarkConversationMessagesAsReadDto } from '@/dtos/support-conversation.dto';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import { logApplicationFailure } from '@/services/request-diagnostics';
+import { ConversationReadByCountDto, MarkConversationMessagesAsReadDto } from '@/supportmanagement/dtos/support-conversation.dto';
 import { fileUploadOptions } from '@/utils/fileUploadOptions';
 import { apiURL } from '@/utils/util';
 

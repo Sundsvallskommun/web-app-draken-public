@@ -1,8 +1,8 @@
-import { createSupportManagementLabelFilterProfile } from '@/config/supportmanagement-label-filter-profile';
-import { SupportApplicationProfileDto, SupportManagementLabelFilterProfileDto } from '@/dtos/support-application-profile.dto';
+import type { SupportInvestigationClassificationPolicy } from '@/supportmanagement/config/support-investigation-classification';
+import { createSupportManagementLabelFilterProfile } from '@/supportmanagement/config/supportmanagement-label-filter-profile';
+import { SupportApplicationProfileDto, SupportManagementLabelFilterProfileDto } from '@/supportmanagement/dtos/support-application-profile.dto';
 
-import { SUPPORT_MANAGEMENT_API_TARGETS, SupportManagementApiTarget } from './api-config';
-import type { SupportInvestigationClassificationPolicy } from './support-investigation-classification';
+import { SUPPORT_MANAGEMENT_API_TARGETS, SupportManagementApiTarget } from '../../config/api-config';
 
 export type LabelSpec = Readonly<{ category: string; type: string; subType?: string }>;
 

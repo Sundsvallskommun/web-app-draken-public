@@ -5,7 +5,6 @@ import { getMetadataArgsStorage } from 'routing-controllers';
 
 import { resolveIafVofInvestigationClassificationPolicy } from '@/avvikelse/classification-policy';
 import { apiServiceName } from '@/config/api-config';
-import { createSupportApplicationProfile } from '@/config/support-application-profile';
 import {
   AssignSupportErrandDto,
   SupportErrandController,
@@ -19,8 +18,9 @@ import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
-import { SupportApplicationPolicyService, SupportErrandClassificationOwner } from '@/services/support-application-policy.service';
-import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
+import { createSupportApplicationProfile } from '@/supportmanagement/config/support-application-profile';
+import { SupportApplicationPolicyService, SupportErrandClassificationOwner } from '@/supportmanagement/services/support-application-policy.service';
+import { SupportJsonParameterService } from '@/supportmanagement/services/support-json-parameter.service';
 
 import { ABSENT_HEADER, mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
 import {
@@ -53,7 +53,7 @@ import { supportProfileFixture } from './helpers/support-application-profiles';
 
 // createConversation/sendConversationTextMessage build their own ApiService internally,
 // so they cannot be stubbed through the controller's instance fields.
-vi.mock('@/services/message.service', async () => {
+vi.mock('@/integrations/casedata-conversations', async () => {
   const { mockConversationId } = await import('./helpers/mock-data');
   return {
     createConversation: vi.fn(async () => ({ id: mockConversationId })),
@@ -61,7 +61,7 @@ vi.mock('@/services/message.service', async () => {
   };
 });
 
-import { createConversation, sendConversationTextMessage } from '@/services/message.service';
+import { createConversation, sendConversationTextMessage } from '@/integrations/casedata-conversations';
 
 const SUPPORT_SERVICE = apiServiceName('supportmanagement');
 const CITIZEN_SERVICE = apiServiceName('citizen');

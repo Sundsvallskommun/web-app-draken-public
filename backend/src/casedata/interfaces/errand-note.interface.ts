@@ -2,11 +2,9 @@ import { IsObject, IsString } from 'class-validator';
 
 import { Note as NoteDTO, NoteType } from '@/data-contracts/case-data/data-contracts';
 
-import { GenericExtraParameters } from './extra-parameters.interface';
-
 export class CreateErrandNoteDto implements NoteDTO {
   @IsObject()
-  extraParameters!: GenericExtraParameters;
+  extraParameters!: Record<string, string>;
   @IsString()
   title!: string;
   @IsString()

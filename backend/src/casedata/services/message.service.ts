@@ -4,12 +4,16 @@ import dayjs from 'dayjs';
 import NodeFormData from 'form-data';
 import { v4 as uuidv4 } from 'uuid';
 
+import { AgnosticMessageResponse, DecisionChannelResult, LetterResponse, MessageClassification } from '@/casedata/dtos/message.dto';
+import { getDecisionAttachmentAsBase64 } from '@/casedata/services/casedata-attachment.service';
+import { getOwnerStakeholder, getOwnerStakeholderEmail } from '@/casedata/services/stakeholder.service';
 import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   Attachment,
   Classification,
   Conversation,
+  ConversationType,
   EmailHeader,
   Errand as ErrandDTO,
   Header,
@@ -30,15 +34,13 @@ import {
   WebMessageAttachment,
   WebMessageRequest,
 } from '@/data-contracts/messaging/data-contracts';
-import { AgnosticMessageResponse, DecisionChannelResult, LetterResponse, MessageClassification } from '@/dtos/message.dto';
+import { createConversation } from '@/integrations/casedata-conversations';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { FTCaseType, MEXCaseType, PTCaseType } from '@/interfaces/case-type.interface';
 import { logApplicationEvent, logApplicationFailure } from '@/services/request-diagnostics';
-import { apiURL, base64Encode } from '@/utils/util';
+import { base64Encode } from '@/utils/util';
 
-import ApiService, { ApiResponse } from './api.service';
-import { getDecisionAttachmentAsBase64 } from './casedata-attachment.service';
-import { getOwnerStakeholder, getOwnerStakeholderEmail } from './stakeholder.service';
+import ApiService, { ApiResponse } from '../../services/api.service';
 
 interface SmsMessage {
   party?: {
@@ -384,46 +386,6 @@ export const setMessageViewed = (municipalityId: string, errandId: number, messa
   return apiService.put<any, any>({ url }, user);
 };
 
-export const createConversation = async (
-  errandId: string,
-  user: User,
-  converastionType: string,
-  topic: string,
-  namespace: string,
-  relationIds?: string[],
-) => {
-  const apiService = new ApiService();
-  const baseURL = apiURL(SERVICE);
-  const url = `${MUNICIPALITY_ID}/${namespace}/errands/${errandId}/communication/conversations`;
-  const body: Record<string, unknown> = {
-    topic: topic,
-    type: converastionType,
-  };
-
-  if (relationIds?.length) {
-    body.relationIds = relationIds;
-  }
-
-  const res = await apiService.post<any, any>({ url, baseURL, data: body }, user);
-
-  return res.data;
-};
-
-export const sendConversationTextMessage = async (errandId: string, conversationId: string, user: User, content: string, namespace: string) => {
-  const apiService = new ApiService();
-  const baseURL = apiURL(SERVICE);
-  const url = `${MUNICIPALITY_ID}/${namespace}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
-
-  const formData = new FormData();
-  const messageObj = {
-    createdBy: { type: 'adAccount', value: user.username },
-    content: content,
-  };
-  formData.append('message', JSON.stringify(messageObj));
-
-  return await apiService.post<any, any>({ url, baseURL, data: formData, headers: { 'Content-Type': 'multipart/form-data' } }, user);
-};
-
 export const sendConversation = async (errandId: string, conversationId: string, user: User, pdf: Attachment, decisionId: number) => {
   const apiService = new ApiService();
   const url = `${SERVICE}/${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
@@ -466,7 +428,7 @@ export const sendDecisionToMinaSidor = async (
     externalConversation = conversationRes.data.find(c => c.type === 'EXTERNAL');
 
     if (externalConversation === undefined) {
-      externalConversation = await createConversation(errandId, user, 'EXTERNAL', 'Mina sidor', CASEDATA_NAMESPACE!);
+      externalConversation = await createConversation(errandId, user, ConversationType.EXTERNAL, 'Mina sidor', CASEDATA_NAMESPACE!);
     }
     await sendConversation(errandId, externalConversation!.id!, user, pdf, decisionId);
     return { channel: 'MINA_SIDOR', status: 'sent', data: { messageId: externalConversation!.id }, message: `Message sent to Mina sidor` };
@@ -496,7 +458,13 @@ export const sendDecisionToKatla = async (
     relationlessConversation = conversationRes.data.find(c => c.relationIds?.length === 0 && c.type !== 'EXTERNAL');
 
     if (relationlessConversation === undefined) {
-      relationlessConversation = await createConversation(errand.id!.toString(), user, 'INTERNAL', errand.errandNumber!, CASEDATA_NAMESPACE!);
+      relationlessConversation = await createConversation(
+        errand.id!.toString(),
+        user,
+        ConversationType.INTERNAL,
+        errand.errandNumber!,
+        CASEDATA_NAMESPACE!,
+      );
     }
     await sendConversation(errand.id!.toString(), relationlessConversation!.id!, user, pdf, decisionId);
     return { channel: 'KATLA', status: 'sent', data: { messageId: relationlessConversation!.id }, message: `Message sent to Katla` };

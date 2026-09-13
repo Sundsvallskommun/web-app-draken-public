@@ -5,7 +5,7 @@ import { useMetadataStore } from '@stores/metadata-store';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
 import type { LabelFilterGroupProjection } from '@supportmanagement/filters/label-filter-projector';
 import { reduceLabelFilterSelection } from '@supportmanagement/filters/label-filter-selection';
-import { Channels, Status } from '@supportmanagement/services/support-errand-service';
+import { Channels } from '@supportmanagement/services/support-errand-service';
 import { SupportType } from '@supportmanagement/services/support-metadata-service';
 import dayjs from 'dayjs';
 import { FC, useEffect, useMemo } from 'react';
@@ -162,7 +162,7 @@ export const SupportManagementFilterTags: FC<SupportManagementFilterTagsProps> =
 
   const handleReset = () => {
     reset(SupportManagementValues);
-    setValue('status', selectedSupportErrandStatuses as Status[]);
+    setValue('status', selectedSupportErrandStatuses);
   };
 
   return (

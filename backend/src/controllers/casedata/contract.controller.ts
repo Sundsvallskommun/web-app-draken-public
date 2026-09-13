@@ -4,11 +4,11 @@ import ApiService from '@services/api.service';
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, QueryParam, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
+import { validateContractAction } from '@/casedata/services/contract-service';
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Contract, PageContract } from '@/data-contracts/contract/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
-import { validateContractAction } from '@/services/contract-service';
 import { logApplicationEvent, logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL, luhnCheck } from '@/utils/util';
 

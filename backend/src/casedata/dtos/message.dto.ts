@@ -8,6 +8,7 @@ import {
   MessageResponse as IMessageResponse,
   MessageResponseDirectionEnum,
 } from '@/data-contracts/case-data/data-contracts';
+import type { DecisionChannel } from '@/interfaces/delivery-channel';
 
 export enum MessageClassification {
   'Efterfrågan komplettering' = 'COMPLETION_REQUEST',
@@ -154,7 +155,6 @@ export interface AgnosticMessageResponse {
   messageId: string;
 }
 
-export type DecisionChannel = 'MINA_SIDOR' | 'KATLA' | 'DIGITAL_MAIL' | 'EMAIL' | 'WEBMESSAGE';
 type DecisionSendStatus = 'sent' | 'failed' | 'skipped';
 
 export interface DecisionChannelResult {

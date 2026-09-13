@@ -23,6 +23,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
+  ConversationType,
   Errand as CasedataErrandDTO,
   ErrandPriorityEnum as CasedataErrandDtoPriorityEnum,
   Stakeholder as CasedataStakeholderDTO,
@@ -46,19 +47,19 @@ import {
   Suspension,
 } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
+import { createConversation, sendConversationTextMessage } from '@/integrations/casedata-conversations';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { MEXCaseType } from '@/interfaces/case-type.interface';
 import { ErrandStatus } from '@/interfaces/errand-status.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
-import { ContactChannelType } from '@/interfaces/support-contactchannel';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { createConversation, sendConversationTextMessage } from '@/services/message.service';
 import { OrganizationService } from '@/services/organization.service';
 import { logApplicationEvent, logApplicationFailure } from '@/services/request-diagnostics';
-import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
+import { ContactChannelType } from '@/supportmanagement/interfaces/support-contactchannel';
+import { SupportApplicationPolicyService } from '@/supportmanagement/services/support-application-policy.service';
 import {
   assertRequestedErrandVersion,
   assertSupportErrandAdminAssignable,
@@ -78,13 +79,13 @@ import {
   toCasedataChannel,
   toCasedataStakeholder,
   toFacilities,
-} from '@/services/support-errand.service';
-import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
+} from '@/supportmanagement/services/support-errand.service';
+import { SupportJsonParameterService } from '@/supportmanagement/services/support-json-parameter.service';
 import {
   SupportManagementLabelFilterError,
   SupportManagementLabelFilterSelection,
   SupportManagementLabelFilterService,
-} from '@/services/supportmanagement-label-filter.service';
+} from '@/supportmanagement/services/supportmanagement-label-filter.service';
 import { apiURL, formatOrgNr, luhnCheck, OrgNumberFormat, withRetries } from '@/utils/util';
 
 export { SupportStakeholderRole };
@@ -1296,7 +1297,7 @@ export class SupportErrandController {
         const referredFromRelation = relationsRes.data.relations?.find(r => r.type === 'REFERRED_FROM');
 
         if (referredFromRelation?.id) {
-          const conversation = await createConversation(errand.id!.toString(), req.user, 'INTERNAL', 'Överlämning', data.department!, [
+          const conversation = await createConversation(errand.id!.toString(), req.user, ConversationType.INTERNAL, 'Överlämning', data.department!, [
             referredFromRelation.id,
           ]);
 

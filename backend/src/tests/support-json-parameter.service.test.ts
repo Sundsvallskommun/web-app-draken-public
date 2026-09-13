@@ -2,7 +2,7 @@ import { HttpException } from '@/exceptions/HttpException';
 import type { User } from '@/interfaces/users.interface';
 import ApiService, { type ApiRequestConfig, type ApiResponse } from '@/services/api.service';
 import type { JsonObject } from '@/services/schema-bound-json.service';
-import { type JsonParameterWritePreconditions, SupportJsonParameterService } from '@/services/support-json-parameter.service';
+import { type JsonParameterWritePreconditions, SupportJsonParameterService } from '@/supportmanagement/services/support-json-parameter.service';
 
 import { mockUser } from './helpers/http';
 

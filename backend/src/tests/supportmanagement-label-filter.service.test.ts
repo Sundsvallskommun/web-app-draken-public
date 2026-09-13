@@ -4,7 +4,7 @@ import {
   type SupportManagementLabelFilterErrorSource,
   type SupportManagementLabelFilterProfile,
   SupportManagementLabelFilterService,
-} from '@/services/supportmanagement-label-filter.service';
+} from '@/supportmanagement/services/supportmanagement-label-filter.service';
 
 const label = (classification: string, resourcePath: string, labels: readonly Label[] = [], displayName = resourcePath): Label => ({
   classification,

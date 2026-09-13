@@ -2,6 +2,21 @@ import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import { validationMiddleware } from '@middlewares/validation.middleware';
 import ApiService from '@services/api.service';
+import { fileUploadOptions } from '@utils/fileUploadOptions';
+import { validateRequestBody } from '@utils/validate';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
+import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
+import { v4 as uuidv4 } from 'uuid';
+
+import {
+  AgnosticMessageResponse,
+  DecisionChannelResult,
+  DecisionMessageDto,
+  MessageClassification,
+  MessageDto,
+  MessageResponse,
+  SmsDto,
+} from '@/casedata/dtos/message.dto';
 import {
   decisionMessageSubject,
   generateMessageId,
@@ -12,26 +27,11 @@ import {
   sendEmail,
   sendSms,
   sendWebMessage,
-} from '@services/message.service';
-import { getOwnerStakeholder, getOwnerStakeholderEmail } from '@services/stakeholder.service';
-import { fileUploadOptions } from '@utils/fileUploadOptions';
-import { validateRequestBody } from '@utils/validate';
-import { Body, Controller, Get, HttpCode, Param, Post, Put, Req, Res, UploadedFiles, UseBefore } from 'routing-controllers';
-import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
-import { v4 as uuidv4 } from 'uuid';
-
+} from '@/casedata/services/message.service';
+import { getOwnerStakeholder, getOwnerStakeholderEmail } from '@/casedata/services/stakeholder.service';
 import { apiServiceName } from '@/config/api-config';
 import { Errand as ErrandDTO, MessageResponse as IMessageResponse } from '@/data-contracts/case-data/data-contracts';
 import { EmailAttachment, EmailRequest, SmsRequest, WebMessageAttachment, WebMessageRequest } from '@/data-contracts/messaging/data-contracts';
-import {
-  AgnosticMessageResponse,
-  DecisionChannelResult,
-  DecisionMessageDto,
-  MessageClassification,
-  MessageDto,
-  MessageResponse,
-  SmsDto,
-} from '@/dtos/message.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { isMEX } from '@/services/application.service';
 import { logApplicationEvent, logApplicationFailure } from '@/services/request-diagnostics';

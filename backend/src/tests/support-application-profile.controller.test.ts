@@ -2,7 +2,7 @@ import { getMetadataArgsStorage } from 'routing-controllers';
 
 import { SupportApplicationProfileController } from '@/controllers/supportmanagement/support-application-profile.controller';
 import authMiddleware from '@/middlewares/auth.middleware';
-import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
+import { SupportApplicationPolicyService } from '@/supportmanagement/services/support-application-policy.service';
 
 import { mockReq } from './helpers/http';
 

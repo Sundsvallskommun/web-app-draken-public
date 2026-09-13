@@ -22,7 +22,7 @@ const robOngoingStatuses: readonly Status[] = Object.freeze([
   Status.SUBPACKAGE_HANDLED,
 ]);
 
-export const robSupportErrandPolicy: Partial<SupportErrandPolicy> = {
+export const robSupportErrandPolicy: SupportErrandPolicy = {
   ongoingStatuses: robOngoingStatuses,
   resolutions: robResolutionLabels,
   // "Behov uppfyllt" regardless of useClosedAsDefaultResolution; the flag is a Kontakt Sundsvall-style concept.

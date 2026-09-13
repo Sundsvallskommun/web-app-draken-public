@@ -1,11 +1,11 @@
 import { Response } from 'express';
 
-import { createSupportApplicationProfile } from '@/config/support-application-profile';
 import { SupportHistoryController } from '@/controllers/supportmanagement/support-history.controller';
 import { DifferenceResponse } from '@/data-contracts/supportmanagement/data-contracts';
 import ApiService from '@/services/api.service';
-import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
-import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
+import { createSupportApplicationProfile } from '@/supportmanagement/config/support-application-profile';
+import { SupportApplicationPolicyService } from '@/supportmanagement/services/support-application-policy.service';
+import { SupportJsonParameterService } from '@/supportmanagement/services/support-json-parameter.service';
 
 import { mockReq, mockRes } from './helpers/http';
 import { mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';

@@ -1,7 +1,7 @@
 import { createAvvikelseSupportApplicationProfile } from '@/avvikelse/application-profile';
-import { createSupportApplicationProfile } from '@/config/support-application-profile';
 import { FeatureFlagService } from '@/services/feature-flag.service';
-import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
+import { createSupportApplicationProfile } from '@/supportmanagement/config/support-application-profile';
+import { SupportApplicationPolicyService } from '@/supportmanagement/services/support-application-policy.service';
 
 import { mockReq, mockUser } from './helpers/http';
 import { supportProfileFixture } from './helpers/support-application-profiles';

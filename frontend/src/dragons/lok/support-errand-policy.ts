@@ -1,7 +1,11 @@
-import type { SupportErrandPolicy } from '@supportmanagement/policy/support-errand-policy';
+import {
+  kontaktSundsvallSupportErrandPolicy,
+  type SupportErrandPolicy,
+} from '@supportmanagement/policy/support-errand-policy';
 import { Resolution } from '@supportmanagement/services/support-errand-status';
 
-export const lokSupportErrandPolicy: Partial<SupportErrandPolicy> = {
+export const lokSupportErrandPolicy: SupportErrandPolicy = {
+  ...kontaktSundsvallSupportErrandPolicy,
   resolutions: Object.freeze({
     [Resolution.SOLVED]: 'Löst av VoF/IAF Lokalplanering',
     [Resolution.FORWARDED_TO_DRAKFASTIGHETER]: 'Vidarebefordrat till Drakfastigheter',

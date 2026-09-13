@@ -4,6 +4,8 @@ import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { checkBackendBoundaries } from './backend-boundaries.mjs';
+
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dragons = JSON.parse(readFileSync(resolve(root, 'dragons.json'), 'utf8'));
 // Derive paths from the catalog key, never from the caller's spelling of it.
@@ -29,8 +31,10 @@ const config = ts.readConfigFile(resolve(backendRoot, 'tsconfig.json'), ts.sys.r
 const { options } = ts.parseJsonConfigFileContent(config.config, ts.sys, backendRoot);
 const entrypoint = resolve(backendRoot, `src/dragons/${id.toLowerCase()}/server.ts`);
 const program = ts.createProgram([entrypoint], options);
-// Controller filenames do not define their domain: several CaseData controllers
-// live directly under controllers/. Derive ownership from the canonical compositions.
+const boundaryViolations = checkBackendBoundaries(backendRoot, program.getSourceFiles().map(source => source.fileName));
+assert.deepEqual(boundaryViolations, [], boundaryViolations.join('\n'));
+// Also derive controller ownership from the canonical compositions. This catches a
+// misplaced controller even if someone moves it outside its domain directory.
 const controllerOwners = new Map();
 for (const [composition, owner] of [['shared', 'shared'], ['casedata', 'casedata'], ['support', 'supportmanagement']]) {
   const file = resolve(backendRoot, `src/shell/${composition}-controllers.ts`);

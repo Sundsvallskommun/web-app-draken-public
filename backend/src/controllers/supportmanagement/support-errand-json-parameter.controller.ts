@@ -4,16 +4,16 @@ import { Body, Controller, Get, HeaderParam, Param, Put, Req, Res, UseBefore } f
 import { OpenAPI } from 'routing-controllers-openapi';
 
 import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
-import { getSupportApplicationProfile, SupportApplicationProfile } from '@/config/support-application-profile';
-import { SupportApplicationProfileDto, SupportInvestigationDocumentProfileDto } from '@/dtos/support-application-profile.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import { JsonObject } from '@/services/schema-bound-json.service';
-import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
-import { SupportJsonParameter, SupportJsonParameterService } from '@/services/support-json-parameter.service';
+import { getSupportApplicationProfile, SupportApplicationProfile } from '@/supportmanagement/config/support-application-profile';
+import { SupportApplicationProfileDto, SupportInvestigationDocumentProfileDto } from '@/supportmanagement/dtos/support-application-profile.dto';
+import { SupportApplicationPolicyService } from '@/supportmanagement/services/support-application-policy.service';
+import { SupportJsonParameter, SupportJsonParameterService } from '@/supportmanagement/services/support-json-parameter.service';
 
 export type SupportErrandJsonParameterKey = SupportApplicationProfileDto['documents'][number]['key'];
 

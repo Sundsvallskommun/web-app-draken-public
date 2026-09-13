@@ -30,7 +30,7 @@ den är fortfarande en platshållare. Drakar importerar aldrig varandra.
 | Domän för roller och miljökrav | Backendens `getDragonDomain` läser katalogen; en ny identitet ärver sin domäns rollmodell och konfigurationskrav. |
 | Obligatorisk backendmiljö och valfria frontendvärden | `scripts/dragon-deployment.cjs` validerar backendkraven för release och start; `frontend-environment-defaults.json` används av frontend och leveransverktyg. |
 | Delade sidvyer och API-uppsättningar | `frontend/src/shell/ui/` och `backend/src/shell/*-controllers.ts`; drakar återanvänder samma implementation. |
-| Generellt SM-stöd | `frontend/src/supportmanagement/`, backendens SM-controllers och `support-*`-services/config. |
+| Generellt SM-stöd | `frontend/src/supportmanagement/`, `backend/src/supportmanagement/` och `backend/src/controllers/supportmanagement/`. |
 | Avvikelses användarflöde och scheman | `frontend/src/avvikelse/`. IAF och VOF importerar samma modul. |
 | Avvikelses dokument, klassificering och lagrumsregler | `backend/src/avvikelse/`. Draken väljer profilen; SM gissar aldrig regler från namnet IAF/VOF. |
 | JSON-transport, schemahantering och samtidiga skrivningar | Backendens `support-json-parameter.service.ts`, `schema-bound-json.service.ts` och befintliga SM-skrivgränser. |
@@ -52,8 +52,9 @@ skäl att slå ihop olika verksamhetsregler. Börja med befintlig ägare och ett
 
 Basen är gemensam teknik: HTTP-transport, autentiseringsmekanik, diagnostik, sessionslivscykel,
 generell presentation och validerad start/leverans. Den ska fungera utan kunskap om exempelvis
-Avvikelses lagrum, KC:s kategorier eller en viss drakes statusetiketter. Backendens äldre
-`services/` innehåller både teknik och domänkod; mappnamnet gör inte all kod där till bas.
+Avvikelses lagrum, KC:s kategorier eller en viss drakes statusetiketter. Backendens domäntjänster ligger i `src/supportmanagement/services/` och `src/casedata/services/`.
+`src/services/` äger gemensamma tjänster. Extern API-transport kan delas genom `src/integrations/`,
+som inte får importera intern domänkod.
 
 | Nivå | Äger | Exempel på ändring |
 | --- | --- | --- |
@@ -130,7 +131,9 @@ Utan sista argumentet kör `dev` båda tjänsterna, medan `build` bygger dem i o
 Vid utveckling läser CLI `frontend/.env.<id>` och `backend/.env.<id>.development.local`.
 Befintliga miljövariabler vinner över utvecklingsfilerna. Backendens produktionsstart kräver
 release-manifestet och läser aldrig utvecklingsfiler. Frontend kan också startas separat med
-sin env-fil för lokala, mockade Playwright-prov; Dockerstart kräver alltid manifestet.
+sin env-fil för lokala, mockade Playwright-prov. `next start` använder publika värden från
+bygget och accepterar därför inte release-manifest via CLI; manifeststyrd frontendstart
+ska använda imagen och genererad Compose, där kompilerade platshållare ersätts.
 CLI sätter identitet och byggmål. Använd olika `PORT` i respektive tjänsts env-fil vid utveckling.
 Kör produktionsparet med Compose enligt [leveranskontraktet](../../deployments/README.md),
 så får tjänsterna separata containrar och manifestets hostportar.
@@ -145,7 +148,9 @@ behöver inte rensas.
 1. Lägg till identiteten i `dragons.json` med enbart `domain: "supportmanagement"` eller `"casedata"`.
    Utredningens implementation väljs i applikationskoden.
 2. Skapa `frontend/src/dragons/<id>/index.ts` med `DragonModule`. Lägg bara drakens konkreta
-   överstyrningar här. `application.ts` exporterar `dragon`, återanvänd `applicationUi` och
+   policyval här: en komplett `supportErrandPolicy` eller ett uttryckligen valt namngivet preset
+   för SM, och `null` för CaseData. Egna koder behöver inte införas i gemensamma enums.
+   `application.ts` exporterar `dragon`, återanvänd `applicationUi` och
    `configureApplication`, som anropar `configureInvestigation(implementation)` eller `configureInvestigation(null)`. Använd KC som
    minimalt exempel, IAF för delad Avvikelse och AOT för en egen utredning.
 3. Skapa `backend/src/dragons/<id>/application.ts` med `DragonApplication` och en liten
@@ -353,5 +358,6 @@ frontend- och backendimages tillsammans med deras tidigare konfiguration. Senare
 lagrade dokument behöver en egen plan för schemaversioner och återställning.
 
 Samma team, `@Sundsvallskommun/web-developers`, äger samtliga områden genom befintlig CODEOWNERS.
-Aktiverad branch protection med krav på granskning och gröna kontroller behövs för att göra
+Följ [införandet av mergekrav](../operations/quality-gates.md). Aktiverad branch protection
+med krav på granskning och gröna kontroller behövs för att göra
 ägarskapet obligatoriskt i GitHub. Se [säkerhet och loggning](dragon-security.md).

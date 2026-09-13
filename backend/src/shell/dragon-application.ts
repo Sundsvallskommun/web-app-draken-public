@@ -1,5 +1,5 @@
 import type { DragonId } from '@/config/dragon-build';
-import type { SupportApplicationProfile } from '@/config/support-application-profile';
+import type { SupportApplicationProfile } from '@/supportmanagement/config/support-application-profile';
 
 /** Concrete server composition owned by one dragon. */
 export interface DragonApplication {

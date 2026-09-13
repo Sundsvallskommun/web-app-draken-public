@@ -1,10 +1,10 @@
+import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 import type {
   SupportInvestigationClassificationLabelTree,
   SupportInvestigationClassificationPolicy,
-} from '@/config/support-investigation-classification';
-import { normalizeSupportManagementResourcePath } from '@/config/supportmanagement-path';
-import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
-import type { SupportApplicationProfileDto } from '@/dtos/support-application-profile.dto';
+} from '@/supportmanagement/config/support-investigation-classification';
+import { normalizeSupportManagementResourcePath } from '@/supportmanagement/config/supportmanagement-path';
+import type { SupportApplicationProfileDto } from '@/supportmanagement/dtos/support-application-profile.dto';
 
 import { assertSupportInvestigationClassificationContext } from './classification-context';
 

@@ -3,9 +3,9 @@ import {
   configureSupportApplicationProfile,
   getSupportApplicationProfile,
   SupportApplicationProfileInput,
-} from '@/config/support-application-profile';
-import { createSupportApplicationProfile } from '@/config/support-application-profile';
-import { SupportApplicationProfileDto } from '@/dtos/support-application-profile.dto';
+} from '@/supportmanagement/config/support-application-profile';
+import { createSupportApplicationProfile } from '@/supportmanagement/config/support-application-profile';
+import { SupportApplicationProfileDto } from '@/supportmanagement/dtos/support-application-profile.dto';
 
 const expectedDocuments = [
   { key: 'utredning-enhetschef', schemaName: 'utredning-enhetschef', tabLabel: 'Utredning enhetschef', ownerLabel: 'Enhetschef' },

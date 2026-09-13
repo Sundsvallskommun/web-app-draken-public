@@ -136,7 +136,7 @@ export interface SupportErrandsData extends Data {
     screenReaderOnly: boolean;
     sortable: boolean;
     sticky?: boolean;
-    shownForStatus: All | Status[];
+    shownForStatus: All | readonly string[];
   }[];
 }
 
@@ -210,17 +210,17 @@ export enum AttestationStatusLabel {
   NONE = 'Attestera',
 }
 
-export const getStatusLabel = (statuses: readonly Status[]) => {
+export const getStatusLabel = (statuses: readonly string[]) => {
   if (statuses.length > 0) {
-    if (statuses.some((s) => newStatuses.includes(s))) {
+    if (statuses.some((s) => newStatuses.some((known) => known === s))) {
       return 'Nya ärenden';
     } else if (statuses.some((s) => getSupportErrandPolicy().ongoingStatuses.includes(s))) {
       return 'Öppna ärenden';
-    } else if (statuses.some((s) => suspendedStatuses.includes(s))) {
+    } else if (statuses.some((s) => suspendedStatuses.some((known) => known === s))) {
       return 'Parkerade ärenden';
-    } else if (statuses.some((s) => assignedStatuses.includes(s))) {
+    } else if (statuses.some((s) => assignedStatuses.some((known) => known === s))) {
       return 'Tilldelade ärenden';
-    } else if (statuses.some((s) => closedStatuses.includes(s))) {
+    } else if (statuses.some((s) => closedStatuses.some((known) => known === s))) {
       return 'Avslutade ärenden';
     } else {
       return 'Ärenden';
@@ -910,7 +910,7 @@ export const setSupportErrandAdmin: (
 const transitionSupportErrandStatus = async (
   errandId: string,
   municipalityId: string,
-  status: Status,
+  status: string,
   expected: SupportErrandStatusSnapshot,
   changes: SupportErrandStatusTransitionChanges = {}
 ): Promise<boolean> => {
@@ -925,7 +925,7 @@ const transitionSupportErrandStatus = async (
 export const setSupportErrandStatus: (
   errandId: string,
   municipalityId: string,
-  status: Status,
+  status: string,
   expected: SupportErrandStatusSnapshot
 ) => Promise<boolean> = async (errandId, municipalityId, status, expected) => {
   return transitionSupportErrandStatus(errandId, municipalityId, status, expected, {
@@ -939,7 +939,7 @@ export const setSupportErrandStatus: (
 export const closeSupportErrand: (
   errandId: string,
   municipalityId: string,
-  resolution: Resolution,
+  resolution: string,
   expected: SupportErrandStatusSnapshot
 ) => Promise<boolean> = async (errandId, municipalityId, resolution, expected) => {
   return transitionSupportErrandStatus(errandId, municipalityId, Status.SOLVED, expected, { resolution }).catch((e) => {

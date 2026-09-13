@@ -9,12 +9,11 @@ import {
   closedStatuses,
   getStatusLabel,
   newStatuses,
-  Status,
   suspendedStatuses,
 } from '@supportmanagement/services/support-errand-service';
 import { FC, useMemo } from 'react';
 export interface SupportManagementStatusFilter {
-  status: Status[];
+  status: string[];
 }
 
 export const SupportManagementStatusValues: SupportManagementStatusFilter = {
@@ -37,7 +36,7 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
   const suspendedSupportErrands = useUiSettingsStore((s) => s.suspendedErrands);
   const solvedSupportErrands = useUiSettingsStore((s) => s.closedErrands);
 
-  const updateStatusFilter = (ss: readonly Status[]) => {
+  const updateStatusFilter = (ss: readonly string[]) => {
     try {
       const status = ss.join(',');
       setFilter({ ...filter, status });
@@ -51,7 +50,7 @@ export const SupportManagementFilterSidebarStatusSelector: FC<{
   // recruitment steps); the other groups are the same everywhere.
   const { ongoingStatuses } = getSupportErrandPolicy();
 
-  const supportSidebarButtons = useMemo<SidebarButton<Status>[]>(
+  const supportSidebarButtons = useMemo<SidebarButton<string>[]>(
     () => [
       {
         label: getStatusLabel(newStatuses) ?? '',

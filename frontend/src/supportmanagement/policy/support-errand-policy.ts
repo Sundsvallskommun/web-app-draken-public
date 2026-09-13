@@ -1,6 +1,6 @@
 import type { AppConfigFeatures } from '@config/appconfig';
 
-import { ongoingStatuses, Resolution, Status } from '../services/support-errand-status';
+import { ongoingStatuses, Resolution } from '../services/support-errand-status';
 import { kontaktSundsvallResolutionLabels } from './resolution-label-presets';
 
 /**
@@ -8,12 +8,13 @@ import { kontaktSundsvallResolutionLabels } from './resolution-label-presets';
  * resolutions an errand can be closed with, and what the overview says about a solved one.
  *
  * Shared supportmanagement code reads this through `getSupportErrandPolicy()` instead of asking
- * which application is running. A dragon module (`src/dragons/<id>/`) overrides the members it
- * needs to; the shell merges those over `defaultSupportErrandPolicy` at startup.
+ * which application is running. Every SupportManagement dragon supplies a complete policy, either its own or an explicitly
+ * selected named preset. Codes come from the upstream metadata; the shared enums only name
+ * existing well-known codes and are not a closed list of codes a dragon may use.
  */
 export interface SupportErrandPolicy {
   /** Statuses treated as "open/ongoing" in overview counts, filters and status labels. */
-  readonly ongoingStatuses: readonly Status[];
+  readonly ongoingStatuses: readonly string[];
   /** Resolution code -> Swedish label offered when closing an errand and shown for its current resolution. */
   readonly resolutions: Readonly<Record<string, string>>;
   /**
@@ -24,7 +25,7 @@ export interface SupportErrandPolicy {
    * the dialog opens, not when the dragon is composed. A dragon whose default never depends on
    * the flag ignores the argument.
    */
-  readonly defaultResolution: (features: Pick<AppConfigFeatures, 'useClosedAsDefaultResolution'>) => Resolution;
+  readonly defaultResolution: (features: Pick<AppConfigFeatures, 'useClosedAsDefaultResolution'>) => string;
   /**
    * Text for the overview status label of a solved errand, keyed by resolution. `undefined` means
    * the resolution has no label of its own and the status's metadata display name is shown.
@@ -46,8 +47,8 @@ const defaultSolvedStatusLabels: Readonly<Record<string, string>> = Object.freez
   [Resolution.BACK_TO_CONTACT_SUNDSVALL]: 'Felskickat',
 });
 
-/** The policy every dragon starts from. Kontakt Sundsvall's vocabulary, because that is where Draken started. */
-export const defaultSupportErrandPolicy: SupportErrandPolicy = Object.freeze<SupportErrandPolicy>({
+/** Kontakt Sundsvall's named policy preset. Other dragons must explicitly choose to reuse it. */
+export const kontaktSundsvallSupportErrandPolicy: SupportErrandPolicy = Object.freeze<SupportErrandPolicy>({
   ongoingStatuses,
   resolutions: kontaktSundsvallResolutionLabels,
   defaultResolution: ({ useClosedAsDefaultResolution }) =>
@@ -66,7 +67,7 @@ let configuredPolicy: SupportErrandPolicy | undefined;
  * Called once by the shell at startup (`@shell/bootstrap`). Calling it again replaces the policy;
  * production never does, and the unit tests rely on being able to.
  */
-export const configureSupportErrandPolicy = (policy: SupportErrandPolicy): void => {
+export const configureSupportErrandPolicy = (policy: SupportErrandPolicy | undefined): void => {
   configuredPolicy = policy;
 };
 

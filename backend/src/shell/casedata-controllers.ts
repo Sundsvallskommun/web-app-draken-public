@@ -1,5 +1,3 @@
-import { ExportController } from '@controllers/export.controller';
-
 import { CaseDataAttachmentController } from '@/controllers/casedata/casedata-attachment.controller';
 import { CaseDataConversationController } from '@/controllers/casedata/casedata-conversation.controller';
 import { CaseDataDecisionsController } from '@/controllers/casedata/casedata-decision.controller';
@@ -10,9 +8,10 @@ import { CaseDataHistoryController } from '@/controllers/casedata/casedata-histo
 import { CasedataNotesController } from '@/controllers/casedata/casedata-notes.controller';
 import { CasedataNotificationController } from '@/controllers/casedata/casedata-notification.controller';
 import { CasedataStakeholderController } from '@/controllers/casedata/casedata-stakeholder.controller';
+import { CasedataContractsController } from '@/controllers/casedata/contract.controller';
+import { ExportController } from '@/controllers/casedata/export.controller';
 import { ExtraParameterController } from '@/controllers/casedata/extraparameter.controller';
-import { CasedataContractsController } from '@/controllers/contract.controller';
-import { MessageController } from '@/controllers/message.controller';
+import { MessageController } from '@/controllers/casedata/message.controller';
 
 import { SHARED_CONTROLLERS } from './shared-controllers';
 

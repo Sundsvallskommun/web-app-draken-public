@@ -3,9 +3,6 @@ import FormData from 'form-data';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import type { LabelSpec } from '@/config/support-application-profile';
-import type { SupportInvestigationClassificationLabelTree } from '@/config/support-investigation-classification';
-import { normalizeSupportManagementResourcePath } from '@/config/supportmanagement-path';
 import {
   AddressAddressCategoryEnum,
   AttachmentChannelEnum,
@@ -31,13 +28,16 @@ import { HttpException } from '@/exceptions/HttpException';
 import { CreateAttachmentDto } from '@/interfaces/attachment.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import { Role } from '@/interfaces/role';
-import { ContactChannelType } from '@/interfaces/support-contactchannel';
-import { SupportManagementChannels } from '@/interfaces/supportmanagement-channel.interface';
 import { User } from '@/interfaces/users.interface';
 import { logApplicationFailure } from '@/services/request-diagnostics';
+import type { LabelSpec } from '@/supportmanagement/config/support-application-profile';
+import type { SupportInvestigationClassificationLabelTree } from '@/supportmanagement/config/support-investigation-classification';
+import { normalizeSupportManagementResourcePath } from '@/supportmanagement/config/supportmanagement-path';
+import { ContactChannelType } from '@/supportmanagement/interfaces/support-contactchannel';
+import { SupportManagementChannels } from '@/supportmanagement/interfaces/supportmanagement-channel.interface';
 import { apiURL, buildCategoryFilter, findLeafComponents, removeUnreachablePaths, toOffsetDateTime } from '@/utils/util';
 
-import ApiService from './api.service';
+import ApiService from '../../services/api.service';
 const SERVICE = apiServiceName('supportmanagement');
 const namespace = SUPPORTMANAGEMENT_NAMESPACE;
 

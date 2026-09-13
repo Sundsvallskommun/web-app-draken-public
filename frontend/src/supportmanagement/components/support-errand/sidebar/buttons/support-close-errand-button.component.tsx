@@ -11,7 +11,6 @@ import {
   closeSupportErrand,
   getSupportErrandById,
   readSupportErrandWriteSnapshot,
-  Resolution,
   setSupportErrandAdmin,
   setSupportErrandStatus,
   Status,
@@ -31,8 +30,8 @@ const RESOLUTION_DESCRIPTION =
 // Which resolutions exist, and which one is preselected, is the running dragon's decision.
 const getResolutionLabels = (): Readonly<Record<string, string>> => getSupportErrandPolicy().resolutions;
 
-const getDefaultResolution = (errand: SupportErrand | undefined): Resolution => {
-  if (!!errand?.resolution) return errand?.resolution as Resolution;
+const getDefaultResolution = (errand: SupportErrand | undefined): string => {
+  if (!!errand?.resolution) return errand?.resolution;
 
   return getSupportErrandPolicy().defaultResolution(appConfig.features);
 };
@@ -46,7 +45,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
   const toastMessage = useSnackbar();
   const [showModal, setShowModal] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [selectedResolution, setSelectedResolution] = useState<Resolution>(getDefaultResolution(supportErrand));
+  const [selectedResolution, setSelectedResolution] = useState<string>(getDefaultResolution(supportErrand));
 
   const [closingMessage, setClosingMessage] = useState<boolean>(false);
   const [changeResolution, setChangeResolution] = useState<boolean>(false);
@@ -91,7 +90,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
     };
   };
 
-  const handleCloseErrand = async (resolution: Resolution, msg: boolean) => {
+  const handleCloseErrand = async (resolution: string, msg: boolean) => {
     if (!supportErrand?.id) return;
     const errandId = supportErrand.id;
     setIsLoading(true);
@@ -244,7 +243,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
                         <RadioButton
                           value={_key}
                           defaultChecked={_key === selectedResolution}
-                          onClick={(e) => setSelectedResolution((e.target as HTMLInputElement).value as Resolution)}
+                          onClick={(e) => setSelectedResolution((e.target as HTMLInputElement).value)}
                         >
                           {_label}
                         </RadioButton>

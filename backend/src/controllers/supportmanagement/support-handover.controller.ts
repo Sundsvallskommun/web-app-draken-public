@@ -5,7 +5,6 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { SUPPORT_INVESTIGATION_HANDOVER_NAMESPACE_PATTERN } from '@/config/support-investigation-handover-targets';
 import {
   HandoverErrand,
   HandoverErrandRequest,
@@ -22,9 +21,10 @@ import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { logApplicationFailure } from '@/services/request-diagnostics';
-import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
-import { SupportInvestigationHandoverTargetService } from '@/services/support-investigation-handover-target.service';
-import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
+import { SUPPORT_INVESTIGATION_HANDOVER_NAMESPACE_PATTERN } from '@/supportmanagement/config/support-investigation-handover-targets';
+import { SupportApplicationPolicyService } from '@/supportmanagement/services/support-application-policy.service';
+import { SupportInvestigationHandoverTargetService } from '@/supportmanagement/services/support-investigation-handover-target.service';
+import { SupportJsonParameterService } from '@/supportmanagement/services/support-json-parameter.service';
 import { apiURL } from '@/utils/util';
 
 export class HandoverPreviewDto {

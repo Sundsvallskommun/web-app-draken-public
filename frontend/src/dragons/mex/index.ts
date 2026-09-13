@@ -1,3 +1,3 @@
 import type { DragonModule } from '../dragon-module';
 
-export const mexDragon: DragonModule = Object.freeze({ id: 'MEX' });
+export const mexDragon: DragonModule = Object.freeze({ id: 'MEX', supportErrandPolicy: null });

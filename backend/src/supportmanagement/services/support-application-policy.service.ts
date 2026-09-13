@@ -1,17 +1,17 @@
 import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { resolveSupportManagementApiTarget, SupportManagementApiTarget } from '@/config/api-config';
-import { getSupportApplicationProfile, SupportApplicationProfile } from '@/config/support-application-profile';
-import type { SupportInvestigationClassificationPolicy } from '@/config/support-investigation-classification';
+import { HttpException } from '@/exceptions/HttpException';
+import { User } from '@/interfaces/users.interface';
+import { logApplicationFailure } from '@/services/request-diagnostics';
+import { getSupportApplicationProfile, SupportApplicationProfile } from '@/supportmanagement/config/support-application-profile';
+import type { SupportInvestigationClassificationPolicy } from '@/supportmanagement/config/support-investigation-classification';
 import {
   SupportApplicationRuntimeProfileDto,
   SupportInvestigationState,
   SupportManagementLabelFilterProfileDto,
-} from '@/dtos/support-application-profile.dto';
-import { HttpException } from '@/exceptions/HttpException';
-import { User } from '@/interfaces/users.interface';
-import { logApplicationFailure } from '@/services/request-diagnostics';
+} from '@/supportmanagement/dtos/support-application-profile.dto';
 
-import { FeatureFlagService, featureFlagService } from './feature-flag.service';
+import { FeatureFlagService, featureFlagService } from '../../services/feature-flag.service';
 
 export type SupportErrandClassificationOwner = 'generic-errand' | 'investigation' | 'unavailable';
 export type SupportRegistrationState = 'enabled' | 'disabled' | 'unavailable';

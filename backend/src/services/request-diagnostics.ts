@@ -5,7 +5,7 @@ import { performance } from 'node:perf_hooks';
 import axios from 'axios';
 import { HttpError } from 'routing-controllers';
 
-import type { DecisionChannel } from '@/dtos/message.dto';
+import type { DecisionChannel } from '@/interfaces/delivery-channel';
 import type { InternalRole } from '@/interfaces/users.interface';
 import { exitAfterDiagnostics, writeDiagnosticRecord } from '@/utils/logger';
 

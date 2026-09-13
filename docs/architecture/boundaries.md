@@ -1,11 +1,11 @@
-# Frontend import boundaries
+# Import boundaries
 
 One Next.js codebase with one build target per dragon serves 14 dragons (kc, ka, mex, pt, rob, lop, ik, msva, se, bou, lok, iaf,
 vof, aot). Variation between dragons used to be expressed as `isKC()`-style branches and direct
 reads of `process.env.NEXT_PUBLIC_APPLICATION` scattered through shared code. The layering below
 replaces that with one module per dragon and an explicit direction of dependencies. The layering is
 enforced by CI; this document is the reference for what the checks mean and what to do when one
-fails.
+fails. Mandatory merge enforcement is a separate [GitHub rollout](../operations/quality-gates.md).
 
 Build entrypoints, backend route boundaries and the onboarding workflow are described in
 [dragon-development.md](dragon-development.md). The remaining import baseline is 31 (down from 79, then 38);
@@ -15,7 +15,7 @@ direct imports between the two domains have been removed.
 
 - `src/app/` and `src/shell/` host Next routes, lifecycle and reusable UI composition.
 - `src/dragons/<id>/application.ts` selects one application's domain UI and investigation;
-  its `index.ts` and policy files provide concrete domain overrides.
+  its `index.ts` and policy files explicitly select complete domain policies.
 - `src/avvikelse/` implements the shared IAF/VOF workflow **on top of** SM.
 - `src/supportmanagement/` and `src/casedata/` own reusable domain behavior and contracts.
 - `src/common/` and other shared code own concepts independent of a specific domain or dragon.
@@ -33,7 +33,7 @@ its investigation contract. AOT's implementation is owned by `src/dragons/aot/in
 | 2   | anything except `src/shell/**`, `src/app/**`, dragon `application.ts` | `src/shell/**`                                                                                                  | forbidden              | dependency-cruiser | none     |
 | 2a  | dragon `application.ts`                                           | `src/shell/**` except `src/shell/ui/**`                                                                          | forbidden              | dependency-cruiser | none     |
 | 3   | `src/common`, `src/supportmanagement`, `src/casedata`, `src/config`, `src/stores`, `src/utils`, `src/interfaces` | `src/dragons/**`                                                                              | forbidden              | dependency-cruiser | none     |
-| 4   | `src/common/**`                                                   | `src/casedata/**`, `src/supportmanagement/**`                                                                   | forbidden              | dependency-cruiser | yes      |
+| 4   | `src/common/**`, shared `config`, `stores`, `utils`, `interfaces`                                                   | `src/casedata/**`, `src/supportmanagement/**`                                                                   | forbidden              | dependency-cruiser | yes      |
 | 5   | `src/supportmanagement/**`                                        | `src/casedata/**` (and the reverse)                                                                             | forbidden              | dependency-cruiser | yes      |
 | 6   | anything except `src/shell/**`, `src/app/**`, the file itself     | `src/common/services/application-service.ts` (`isKC()` and friends)                                            | forbidden              | dependency-cruiser | yes      |
 | 7   | `src/dragons/aot/**`                      | `src/avvikelse/**` (and the reverse)                                            | forbidden              | dependency-cruiser | none     |
@@ -85,6 +85,30 @@ props, and the shared sidebar owns its generic tooltip and status contract.
   as a domain-owned contract that the shell fulfils. The rule is `off` for `src/shell/**`,
   `src/app/**` and `src/common/services/application-service.ts` (the legacy reader the shell
   replaces). The `e2e/**` tree has its own, unrelated `no-restricted-syntax` configuration.
+
+## Backend source and artifact boundaries
+
+`scripts/backend-boundaries.mjs` resolves TypeScript imports from the backend tsconfig.
+`backend`'s `yarn lint:deps` scans source files; `check-backend-artifact.mjs` applies the
+same rules to the selected application's source graph before accepting its emitted files.
+Type imports, re-exports, literal dynamic imports and CommonJS imports are included.
+Unresolved local imports and non-literal module loading fail validation. There is no baseline.
+
+Domain services, configuration, DTOs and internal interfaces live under `src/casedata/`
+and `src/supportmanagement/`; controllers also carry their domain in their path.
+Shared code cannot import those owners, Avvikelse or the composition root. Domain code
+cannot import another domain or reach its consumers through the shell. Avvikelse may use SM.
+Dragon entrypoints select their components in the shell; dragons cannot import each other.
+External generated datacontracts remain consumable by either domain. A shared API adapter
+under `src/integrations/` may use those contracts and technical services, never internal
+domain modules. Existing API vocabulary DTOs under `interfaces/` describe transport, not
+permission to route imports through another domain.
+
+Frontend applies the core rule to all shared directories, including configuration and
+shared stores. New source directories are treated as shared until they have an explicit layer,
+so an extra folder cannot become an unchecked bridge. `casedata-store`, `support-store` and `metadata-store` are existing domain-owned
+stores; both directions across their domain boundaries are checked. Shared schema fields
+receive the caller's place structure explicitly, rather than importing SM's metadata store.
 
 ## The baseline ratchet
 

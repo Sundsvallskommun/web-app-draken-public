@@ -1,158 +1,88 @@
-# Beslut: en modul per drake bakom en CI-hållen gräns
+# Arkitekturbeslut: gemensamt repo, en applikation per drake
 
-Uppdatering 2026-09-06: den införda modellen är **en applikation och ett byggmål per drake**.
-IAF och VOF komponerar Avvikelse ovanpå SupportManagement. Det tidigare mellansteget med tre
-byggfamiljer är ersatt. Följ [den aktuella utvecklingsguiden](dragon-development.md).
-Nedan bevaras det ursprungliga beslutsunderlaget; dess deployalternativ beskriver inte dagens bygge.
+Status: valt arkitekturmönster. Ersätter underlaget från 2026-09-04 och mellansteget med
+byggfamiljer. Det historiska underlaget finns i Git-historiken. Denna text beskriver den
+aktuella lösningen; [utvecklingsguiden](dragon-development.md) beskriver arbetsflödet.
 
-|          |                                                                                                                      |
-| -------- | -------------------------------------------------------------------------------------------------------------------- |
-| Status   | Beslutat 2026-09-04, steg 1–3 införda i samma PR som detta dokument                                                  |
-| Gäller   | `frontend/` (backend följer samma mönster i mindre skala, se sist)                                                   |
-| Reglerna | [`boundaries.md`](boundaries.md) är den maskinläsbara referensen; det här dokumentet är _varför_                     |
-| Siffror  | Räknade på commit `a9847cd4` (`feature/utvecklingssprint-start`) med grep över `frontend/src`, testfiler exkluderade |
+## Problem och beslut
 
-Draken är en Next.js-app som körs som fjorton drakar (kc, ka, mex, pt, rob, lop, ik, msva, se,
-bou, lok, iaf, vof, aot). Frågan som väcktes var om apparna borde brytas ut i egna repon för att
-slippa krockar. Svaret blev nej: krockarna beror inte på repo-layouten utan på _hur variationen
-uttrycks_, och det löses med tydliga lager och en gräns som CI håller, inte med fler repon.
+Fler drakar ska kunna tillkomma utan att kopiera ärendehantering, autentisering, UI eller
+driftsverktyg. Samtidigt måste en verksamhetsändring kunna granskas hos sin ägare och inte
+bli ett nytt identitetsvillkor i gemensam kod.
 
-## Nuläget som beslutet utgick från
+Vi behåller ett repo och de två befintliga paketen `frontend` och `backend`. Varje drake
+har egna kompositionspunkter och bygg-/releasemål. Delade moduler har en implementation
+och en ägare. Ett eget repo eller npm-paket per drake behövs inte för separat leverans.
 
-Repot är två fristående paket i samma mapp (rotens `package.json` kedjar `yarn --cwd frontend`
-och `yarn --cwd backend`; inga workspaces, två lockfiles). Frontend delar routes, komponenter och
-services mellan alla drakar. Vilken drake som kör avgörs av `NEXT_PUBLIC_APPLICATION`, som
-`entrypoint.sh` sed-ersätter i den färdigbyggda bundeln vid containerstart: **en image, fjorton
-deployments**.
+| Lager | Kanonisk ägare och ansvar |
+| --- | --- |
+| Bas | Gemensam teknik: HTTP, autentiseringsmekanik, diagnostik, sessioner och generell presentation. |
+| Integration | Avgränsad transport mot ett externt API, med dess datakontrakt. Importerar ingen intern domän. |
+| Domän | `supportmanagement` respektive `casedata`; ärendeoperationer, tillstånd och domänkontrakt. |
+| Verksamhet | Avvikelses sammanhängande flöde, dokument och regler; återanvänds av IAF och VOF. |
+| Drake | `src/dragons/<id>/`; egna regler och ett explicit val av domänens policy och verksamhetsmodul. |
+| Sammansättning | `shell` och frontendens routes; kopplar vald applikation till dess beroenden. |
 
-| Mätpunkt                                          | Värde                                                              |
-| ------------------------------------------------- | ------------------------------------------------------------------ |
-| Drake-predikat (`isKC()`, `isROB()` …) i frontend | 103 anrop i 32 filer, varav 66 i casedata                          |
-| …i supportmanagement                              | 30                                                                 |
-| Direkta läsningar av `NEXT_PUBLIC_APPLICATION`    | 21                                                                 |
-| Capability-flaggor i `appconfig`                  | 33 booleska, 102 läsningar                                         |
-| `common`-filer som importerar en domän            | 21 unika (17 casedata, 15 supportmanagement)                       |
-| SM-drakar med e2e i CI                            | 5 av 12 (kc, lop, iaf, vof, aot); mex och pt täcks av casedata-e2e |
+Importer går från konsumenten till dess underliggande ägare. Domäner importerar inte
+varandra, basen importerar inte domäner, och drakar importerar aldrig andra drakar.
+Sammansättningen får känna till lagren men får inte användas som mellanled från domänkod.
+Backendens domäntjänster, domänkonfiguration och domän-DTO:er ligger i sina domänmappar;
+controllers har motsvarande domänindelning under `controllers/`.
 
-Kodbasen var alltså redan mest flaggstyrd; drake-namnsbranching var en rest på ett trettiotal
-ställen i supportmanagement plus miljöläsningarna. Men `common` nådde in i båda domänerna, och
-inget i bygget, linten eller CI sa ifrån när en ändring för en drake ändrade beteendet för en annan.
+## Hur variation uttrycks
 
-## Krocken, konkret
+Kontrakten ägs av den domän som behöver beteendet. En drake levererar en komplett
+`SupportErrandPolicy`, antingen egen eller genom ett explicit val av en namngiven policy.
+Kontakt Sundsvall är ett sådant val, aldrig skalets tysta standard. CaseData väljer `null`.
+Status- och avslutskoder kommer från verksamhetens metadata; gemensamma enums beskriver
+befintliga koder och begränsar inte vad en ny drake kan välja. Historiska avslutskoder
+behåller sina etiketter även när de inte längre kan väljas vid avslut.
 
-`support-close-errand-button.component.tsx` avgjorde avslutsorsaker med en if-kedja:
-`isLOP()`, `isIK() || isSE()`, `isKA()`, `isROB()`, `isBOU()`, `isLOK()`, annars KS. Filen körs
-av de tolv supportmanagement-drakarna. En ändring för ROB rörde en fil elva andra drakar kör;
-fem av dem har e2e, ROB själv har det inte. Gränsen mellan drakarna fanns bara i huvudet på den
-som kodade.
+Ett större användarflöde uttrycks som verksamhetskod mot exempelvis `InvestigationModule`
+och SM:s dokumentkontrakt. Liknande skärmbilder är inte skäl att blanda skilda regler.
+Vi inför inga generella pluginregister eller profilobjekt med godtyckliga callbacks.
 
-Utredningsseamen för IAF/VOF och AOT var det närmaste en gräns som fanns, och den bevisade
-mindre än man kunde tro: kontraktstestet är ett kompileringsskydd för kontraktet (fixturerna
-importerar aldrig avvikelse), inte en analys av importgrafen; ingen importregel fanns i ESLint;
-AOT:s utredningsflik är en placeholder.
+Identitet väljer applikation vid bygge. Capabilities kan aktivera funktioner inom den
+applikationen men byter inte implementation. Behörighet kontrolleras på servern och i API:t.
 
-## Beslutet
+## Leverans och kontroll
 
-**Fyra lager, import bara nedåt.**
+Varje drake byggs från sina egna entrypoints. Frontend och backend levereras som ett
+versionsbundet par med ett gemensamt manifest. En image kan bara startas som den drake den
+byggdes för. Gemensam kod ändras atomiskt i repot och provas mot sina konsumenter.
 
-```mermaid
-flowchart TB
-  shell["apps/shell — src/shell, src/app<br/>enda läsaren av NEXT_PUBLIC_APPLICATION<br/>komponerar draken, validerar konfigurationen vid start"]
-  dragons["dragons — src/dragons/&lt;id&gt;<br/>en modul per drake: data + implementationer av domänernas kontrakt"]
-  domains["domäner — src/supportmanagement, src/casedata<br/>äger sina kontrakt (t.ex. SupportErrandPolicy)"]
-  core["kärna — src/common, src/config, src/stores<br/>känner varken drake eller domän"]
-  shell --> dragons --> domains --> core
-  dragons -. "aldrig varandra" .- dragons
-```
+Frontendens dependency-cruiser kontrollerar även gemensam config, interfaces, utils och
+stores. Tre äldre domänstores klassas efter sin faktiska ägare. Befintliga överträdelser
+ligger i en baseline som bara får krympa. Backendens källgraf kontrolleras i lint och med
+samma regler vid artefaktkontroll, inklusive typer och vidareexporter. Integrationskod
+får inte vidareexportera interna domäntjänster.
 
-**Kontrakten ägs av domänerna, inte av ett centralt profilobjekt.** Det första utkastet hade ett
-allomfattande `DrakeProfile` i kärnan. Granskningen visade att det bara hade flyttat komplexiteten:
-kärnan hade behövt ändras varje gång en drake behövde något nytt, och variationen är av olika
-slag (texter och alternativ är konfiguration, utredningsflöden är verksamhetslogik, formulär och
-paneler är komponenter, behörighet hör hemma i API:t). Därför äger supportmanagement
-`SupportErrandPolicy` (pågående statusar, avslutsorsaker, standardavslut, etikett för löst ärende),
-varje drake levererar sina avvikelser i `src/dragons/<id>/`, och skalet slår ihop dem över
-domänens standard.
+Workflow-filer är inte i sig en merge-spärr. [Införandet av kvalitetskraven](../operations/quality-gates.md)
+verifierar först jobb på målbranchen och sedan de effektiva reglerna i GitHub. Kraven ska
+aktiveras på `develop` efter att workflowsen landat och lyckats där.
 
-**Identitet, variant och capability är tre olika saker.** Appidentiteten är ett explicit värde som
-bara skalet läser. En variant är exakt ett giltigt alternativ av ömsesidigt uteslutande (de två
-utredningsimplementationerna); två aktiva är ett konfigurationsfel som stoppar uppstarten, på
-samma sätt som backendens `validateEnv.ts` stoppar fel namespace. Registrets first-wins finns kvar
-som skyddsnät bakom valideringen, inte som princip. Capabilities är oberoende flaggor som får
-kombineras. Behörighet är en fjärde sak och härleds aldrig ur en profil: API:t nekar, BFF:en
-vidarebefordrar.
+## Varför inte egna repos?
 
-**Gränsen hålls av CI, med en baseline som bara får krympa.** dependency-cruiser äger
-importreglerna, ESLint äger regeln mot miljöläsningar. Befintliga överträdelser är inspelade i
-två baseline-filer; nya faller, och `scripts/boundaries-baseline-guard.mjs` fäller varje PR där en
-baseline växer. Så kan reglerna slås på dag ett utan att flytta hela kodbasen.
+Egna repos med gemensamma paket kan också undvika kodkopiering. De tillför dock publicering,
+versionsval, uppgraderings-PR:er och kompatibilitet mellan paketversioner. En ändring i ett
+kontrakt och dess konsumenter behöver då samordnas mellan flera repon. Med samma tekniska
+plattform och överlappande förvaltning ökar det arbetet utan att lösa otydligt ägarskap.
 
-**Casedata får begränsad nyutveckling men är inte isolerad.** Den påverkas av kärna, auth,
-api-klient och beroenden, så mex/pt-e2e stannar i matrisen. CODEOWNERS är en granskningsprocess,
-inte en teknisk gräns, och kan inte avgöra om en ändring är buggfix eller ny funktion.
+Ompröva repogränsen när det finns ett konkret behov av separata läsrättigheter, självständiga
+team med långvarigt olika releasecykler eller en drake som lämnar den gemensamma plattformen.
+Bryt då ut efter stabila kontrakt och publicera den gemensamma koden som ägda paket. Kopiera
+inte koden och bygg inte en ny delningsmekanism enbart för ett tänkbart framtida behov.
 
-**Workspaces kommer sist, inte först.** Att flytta filer innan seamen finns hade gett ett `core`
-fullt av samma if-satser plus fjorton tunna appar. När gränserna håller är flytten mekanisk.
+Workspaces kan införas senare om paketberoenden och verktyg tjänar på det. De är ingen
+förutsättning för detta ägarskap och löser inte i sig verksamhetskopplingar.
 
-## Alternativ som valdes bort
+## Vad återstår innan grunden kan kallas fullt bevisad?
 
-| Alternativ                                                  | Varför inte                                                                                                                                                                                                                  |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Ett repo per drake med versionssatta paket                  | Ger verklig självständighet bara om man är beredd att köra och supporta olika versioner av `common` i drift samtidigt. Med ett team och en releasetakt är det overhead utan nytta. Frågan hålls öppen tills gränserna finns. |
-| Centralt `DrakeProfile` i kärnan                            | Flyttar komplexiteten utan att minska den; kärnan blir en ny version av dagens för generella `common`.                                                                                                                       |
-| Generalisera registrets first-wins till all drakkomposition | Deterministiskt men inte nödvändigtvis rätt; en felkonfiguration ger fel verksamhetsflöde utan att stoppas.                                                                                                                  |
-| Förbjuda `common → domän` fullt ut dag ett                  | Flera filer under `common` var appkomposition (layout, sidomeny) som ska _upp_ till skalet, inte ned i kärnan. Därav baseline plus förbud mot nya.                                                                           |
+AOT:s utredningsimplementation är fortfarande en platshållare. Ett andra verkligt
+verksamhetsflöde behöver provas mot domänkontrakten, med avtalade regler för visning,
+sparande, behörighet och samtidiga ändringar. Syntetiska tester av nya koder bevisar
+kontraktets utbyggbarhet; de bevisar inte AOT:s verksamhetsbehov.
 
-## Tre sätt att deploya
-
-Samma kod fungerar med alla tre. Fan-out sker vid deploy i A, vid build i B och C. En pipeline
-med matris räcker i alla tre; vad som måste byggas om avgörs av beroendegraf och releasepolicy,
-inte av antalet images.
-
-|                           | A · en image (dagens) | B · image per produktfamilj      | C · image per drake                          |
-| ------------------------- | --------------------- | -------------------------------- | -------------------------------------------- |
-| Builds per release        | 1                     | 3 (support, avvikelse, casedata) | 14                                           |
-| Vad som skiljer drakarna  | miljö vid start       | bundle per familj, miljö inom    | bundeln                                      |
-| Isolering                 | gränsregel + e2e      | fysisk mellan familjer           | fysisk, _bara_ med egen entrypoint per drake |
-| Störning för dagens drift | ingen                 | två nya byggmål                  | ny release-rutin                             |
-| Rekommendation            | börja här             | när avvikelse divergerar         | när gränsen bevisligen hålls                 |
-
-Utan egna entrypoints följer alla implementationer med även i C, via registret. Bilden gäller
-frontend; backend har egen Dockerfile.
-
-## Planen och var vi står
-
-| Steg | Innehåll                                                                       | Klart när                        | Status                                                             |
-| ---- | ------------------------------------------------------------------------------ | -------------------------------- | ------------------------------------------------------------------ |
-| 1    | Baseline + förbud mot nya överträdelser                                        | CI stoppar nya                   | **Införd**                                                         |
-| 2    | Pilot: ROB:s ärendepolicy som SM-ägt kontrakt, med tester                      | Ändringen rör bara `dragons/rob` | **Införd**                                                         |
-| 3    | Flytta ansvar: layout upp till skalet, undantag bort                           | Baseline krymper per sprint      | **Påbörjad** (93 → 79 importöverträdelser, 16 → 15 miljöläsningar) |
-| 4    | Yarn workspaces (`packages/*`, `dragons/*`, `apps/shell`), en lockfile i roten | En lockfile, regler per paket    | Ej påbörjad                                                        |
-| 5    | Deploybeslut A, B eller C efter releasepolicy                                  | Pipeline matchar                 | Ej påbörjad                                                        |
-
-Steg 2 är mätpunkten: om nästa ändring för ROB bara rör ROB:s modul finns konkret stöd för att
-fortsätta. Om den ändå kräver ändringar i delad kod är hypotesen fel och planen ska justeras innan
-mer flyttas. Acceptanskriteriet är inte bara "noll `isX()`": ingen kod utanför skalet får läsa
-appidentiteten alls, varken via miljövariabeln, `application-service` eller ett profilobjekt.
-
-## Frågor som återstår
-
-- Kan en verklig AOT-funktion byggas utan att röra avvikelse eller utöka ett centralt kontrakt?
-- Vilka delar är samma verksamhetsbegrepp mellan drakarna, och vilka råkar bara likna varandra?
-- Vem äger de gemensamma kontrakten och beslutar om ändringar i dem?
-- Vilket problem ska lösas först: samordningsbehov, regressionsrisk, releasekoppling eller byggkostnad?
-- Vilket team ska stå i CODEOWNERS för casedata?
-
-## Backend
-
-Nio filer branchar på `APPLICATION`. Utredningsprofilen och `getSupportInvestigationProfile` är
-verksamhetspolicy och stannar i BFF:en; auktorisering stannar i API:t. Ingen av dem ska härledas ur
-en frontendprofil. Samma lagerregler kan införas där med samma verktyg när det blir aktuellt.
-
-## Underlag
-
-Beslutet togs efter ett första underlag och en oberoende granskning som rättade fyra
-faktapåståenden (antal `common`-filer, antal flaggor, att MEX/PT inte kör supportmanagement-koden,
-och att kontraktstestet inte analyserar importgrafen) och fällde det centrala profilobjektet.
-Den visuella versionen av underlaget, med diagrammen, finns som delbar sida:
-https://claude.ai/code/artifact/40a13956-5e40-4a47-bd9d-6b2233a8b6d6
+Den äldre frontendbaselinen och kvarvarande identitetsvillkor ska avvecklas hos sina
+ägare. Delade ändringar kräver fortsatt tester av berörda drakar. Ett gemensamt repo tar
+inte bort deras beroenden; det gör beroendena synliga och möjliga att ändra tillsammans.

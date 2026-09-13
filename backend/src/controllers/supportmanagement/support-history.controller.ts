@@ -8,8 +8,8 @@ import { DifferenceResponse, PageEvent } from '@/data-contracts/supportmanagemen
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
-import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
-import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
+import { SupportApplicationPolicyService } from '@/supportmanagement/services/support-application-policy.service';
+import { SupportJsonParameterService } from '@/supportmanagement/services/support-json-parameter.service';
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 const isAccessDenied = (error: unknown): boolean => isRecord(error) && (error.status === 401 || error.status === 403);

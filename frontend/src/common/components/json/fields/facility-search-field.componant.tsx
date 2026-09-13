@@ -17,11 +17,11 @@ import {
   placeName,
   type PlaceNode,
 } from '@common/components/json/utils/place-structure';
+import type { Label } from '@common/data-contracts/supportmanagement/data-contracts';
 import { logClientFailure } from '@common/services/client-diagnostics';
 import { getUserEmployments, OrgManagerDTO } from '@common/services/employee-service';
-import { ariaDescribedByIds, type FieldProps } from '@rjsf/utils';
+import { ariaDescribedByIds, type FieldProps, type RJSFSchema } from '@rjsf/utils';
 import { Button, Combobox, FormControl, FormLabel, RadioButton } from '@sk-web-gui/react';
-import { useMetadataStore } from '@stores/metadata-store';
 import { Pen } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -40,7 +40,12 @@ interface FacilityInfo {
   manager?: OrgManagerDTO;
 }
 
-export function FacilitySearchField(props: FieldProps) {
+export interface FacilityFieldContext {
+  /** null while metadata is loading; an empty/missing structure is a configuration error. */
+  placeLabelStructure?: readonly Label[] | null;
+}
+
+export function FacilitySearchField(props: FieldProps<FacilityInfo, RJSFSchema, FacilityFieldContext>) {
   const { idSchema, formData, disabled, readonly, required, rawErrors, onBlur, onChange, onFocus, uiSchema } = props;
   const id = idSchema.$id;
   const searchLabelId = `${id}__search-label`;
@@ -57,11 +62,8 @@ export function FacilitySearchField(props: FieldProps) {
   // Platsvalet styrs av labelstrukturen, inte av organisationsträdet: strukturen är det som
   // rättighetsstyr ärendet i Support Management, och den är också det enda som kan avgöra vilket av de
   // sparade namnen som är anläggning respektive avdelning.
-  const supportMetadata = useMetadataStore((state) => state.supportMetadata);
-  const placeNodes = useMemo(
-    () => getPlaceNodes(supportMetadata?.labels?.labelStructure),
-    [supportMetadata?.labels?.labelStructure]
-  );
+  const placeLabelStructure = props.formContext?.placeLabelStructure;
+  const placeNodes = useMemo(() => getPlaceNodes(placeLabelStructure ?? undefined), [placeLabelStructure]);
   const selectablePlaceNodes = useMemo(() => placeNodes.filter((node) => !hasSubPlaces(node)), [placeNodes]);
 
   const [placeSearchValue, setPlaceSearchValue] = useState('');
@@ -159,7 +161,7 @@ export function FacilitySearchField(props: FieldProps) {
 
   const sectionTitle = <h2 className="text-xl font-bold mb-6">Mer information om platsen</h2>;
 
-  if (!supportMetadata) {
+  if (placeLabelStructure === null) {
     return (
       <div className={className}>
         {sectionTitle}

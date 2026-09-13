@@ -1,4 +1,4 @@
-import { createSupportManagementLabelFilterProfile } from '@/config/supportmanagement-label-filter-profile';
+import { createSupportManagementLabelFilterProfile } from '@/supportmanagement/config/supportmanagement-label-filter-profile';
 
 describe('Support Management label-filter profiles', () => {
   it('creates separate immutable capabilities from the same application-neutral declaration', () => {

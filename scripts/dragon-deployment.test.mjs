@@ -118,7 +118,7 @@ test('the real backend startup validator rejects the same absent field without p
       NODE_ENV: 'production',
       LOG_DIR: directory,
     };
-    const start = () => spawnSync(process.execPath, ['-r', 'ts-node/register/transpile-only', '-r', 'tsconfig-paths/register', '-e', 'require("./src/utils/validateEnv").default()'], {
+    const start = () => spawnSync(process.execPath, ['-r', 'ts-node/register/transpile-only', '-r', 'tsconfig-paths/register', '-e', 'require("./src/shell/validate-environment").default()'], {
       cwd: join(root, 'backend'), env: environment, encoding: 'utf8', timeout: 10_000,
     });
     const complete = start();

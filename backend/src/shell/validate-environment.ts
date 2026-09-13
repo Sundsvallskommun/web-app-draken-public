@@ -1,8 +1,8 @@
 import { resolveSupportManagementApiTarget } from '@/config/api-config';
 import { getDragonDomain } from '@/config/dragon-build';
-import { resolveSupportInvestigationHandoverTargets } from '@/config/support-investigation-handover-targets';
 import { isContactSundsvall, isKC } from '@/services/application.service';
 import { exitAfterDiagnosticFailure, logApplicationEvent, logApplicationFailure, logApplicationWarning } from '@/services/request-diagnostics';
+import { resolveSupportInvestigationHandoverTargets } from '@/supportmanagement/config/support-investigation-handover-targets';
 
 import { backendEnvironmentIssues } from '../../../scripts/dragon-deployment.cjs';
 

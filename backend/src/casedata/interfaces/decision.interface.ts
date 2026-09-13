@@ -9,8 +9,7 @@ import {
   Stakeholder as StakeholderDTO,
 } from '@/data-contracts/case-data/data-contracts';
 
-import { Attachment } from './attachment.interface';
-import { GenericExtraParameters } from './extra-parameters.interface';
+import { Attachment } from '../../interfaces/attachment.interface';
 
 export class LawDTO implements Law {
   @IsString()
@@ -58,5 +57,5 @@ export class DecisionDTO implements Decision {
   attachments!: Attachment[];
   @IsObject()
   @IsOptional()
-  extraParameters!: GenericExtraParameters;
+  extraParameters!: Record<string, string>;
 }

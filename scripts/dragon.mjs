@@ -108,6 +108,9 @@ async function execute(mode, id, target) {
   assertSafeRuntimeEnvironment(process.env);
   if (mode === 'build') await run(process.execPath, [join(root, 'scripts/check-runtime-logging.mjs'), `--${target}`], root);
   if (mode === 'build' && target === 'backend') return buildBackend(id);
+  if (mode === 'start' && target === 'frontend' && process.env.DRAKEN_DEPLOYMENT_FILE) {
+    throw new Error('Frontend deployment manifests require the image entrypoint. Start the generated Compose release; local next start cannot replace compiled public configuration.');
+  }
   const env = environment(id, target, mode === 'start');
   if (mode === 'build') {
     env.NODE_ENV = 'production';

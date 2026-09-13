@@ -4,17 +4,17 @@ import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Communication, EmailRequest, SmsRequest, WebMessageRequest } from '@/data-contracts/supportmanagement/data-contracts';
-import { CCommunication, generateMessageId, SupportMessageDto } from '@/dtos/support-message.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
 import { logApplicationFailure } from '@/services/request-diagnostics';
-import { validateSupportAction } from '@/services/support-errand.service';
+import { CCommunication, generateMessageId, SupportMessageDto } from '@/supportmanagement/dtos/support-message.dto';
+import { validateSupportAction } from '@/supportmanagement/services/support-errand.service';
 import { fileUploadOptions } from '@/utils/fileUploadOptions';
 import { validateRequestBody } from '@/utils/validate';
 
-export { SingleSupportAttachment, SupportAttachment } from '@/dtos/support-message.dto';
+export { SingleSupportAttachment, SupportAttachment } from '@/supportmanagement/dtos/support-message.dto';
 
 interface ResponseData {
   data: any;

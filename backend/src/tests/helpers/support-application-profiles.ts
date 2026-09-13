@@ -1,5 +1,5 @@
 import type { DragonId } from '@/config/dragon-build';
-import { getSupportApplicationProfile } from '@/config/support-application-profile';
+import { getSupportApplicationProfile } from '@/supportmanagement/config/support-application-profile';
 
 import { APPLICATIONS } from './dragon-applications';
 

@@ -6,7 +6,7 @@ RUN yarn install --frozen-lockfile --ignore-scripts
 COPY dragons.json frontend-environment-defaults.json /app/
 COPY scripts/check-runtime-logging.mjs /app/scripts/check-runtime-logging.mjs
 COPY scripts/dragon.mjs /app/scripts/dragon.mjs
-COPY scripts/check-backend-artifact.mjs /app/scripts/check-backend-artifact.mjs
+COPY scripts/check-backend-artifact.mjs scripts/backend-boundaries.mjs /app/scripts/
 COPY scripts/dragon-deployment.cjs scripts/dragon-deployment.d.cts /app/scripts/
 COPY backend/ ./
 ARG DRAKEN_BUILD_DRAGON

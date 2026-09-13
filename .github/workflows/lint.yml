@@ -35,6 +35,12 @@ jobs:
       - name: Run eslint (strict)
         run: yarn lint:strict
 
+      - name: Check backend source boundaries
+        run: yarn lint:deps
+
+      - name: Check boundary enforcement regressions
+        run: node --test ../scripts/backend-boundaries.test.mjs
+
       - name: Check logging enforcement regressions
         run: node --test --test-name-pattern='^backend:' ../scripts/check-runtime-logging.test.mjs
 
@@ -84,6 +90,9 @@ jobs:
         # dependency-cruiser rules from .dependency-cruiser.cjs; pre-existing violations are
         # baselined in .dependency-cruiser-known-violations.json.
         run: yarn lint:deps
+
+      - name: Check frontend boundary enforcement regressions
+        run: node --test ../scripts/frontend-boundaries.test.mjs
 
       - name: Baseline may only shrink
         # Fails when either baseline gained an entry compared to the base branch, so a red

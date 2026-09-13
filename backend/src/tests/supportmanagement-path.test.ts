@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { normalizeSupportManagementResourcePath, trimSupportManagementPath } from '@/config/supportmanagement-path';
+import { normalizeSupportManagementResourcePath, trimSupportManagementPath } from '@/supportmanagement/config/supportmanagement-path';
 
 describe('Support Management path normalization', () => {
   it('removes only boundary whitespace and slashes', () => {

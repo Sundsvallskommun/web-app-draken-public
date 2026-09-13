@@ -1,6 +1,6 @@
-import { normalizeSupportManagementResourcePath } from '@/config/supportmanagement-path';
 import { HttpException } from '@/exceptions/HttpException';
 import { JsonObject } from '@/services/schema-bound-json.service';
+import { normalizeSupportManagementResourcePath } from '@/supportmanagement/config/supportmanagement-path';
 
 import type { IafVofInvestigationClassificationOwnerSelection, IafVofInvestigationClassificationPolicy } from './classification-policy';
 

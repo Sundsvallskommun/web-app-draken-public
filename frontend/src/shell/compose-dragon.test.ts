@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 
 import { DRAGON_IDS, type DragonModule } from '@dragons/dragon-module';
 import { kontaktSundsvallResolutionLabels } from '@supportmanagement/policy/resolution-label-presets';
-import { defaultSupportErrandPolicy, getSupportErrandPolicy } from '@supportmanagement/policy/support-errand-policy';
+import {
+  getSupportErrandPolicy,
+  kontaktSundsvallSupportErrandPolicy,
+} from '@supportmanagement/policy/support-errand-policy';
+import { getStatusLabel } from '@supportmanagement/services/support-errand-service';
 import { ongoingStatuses, Resolution, Status } from '@supportmanagement/services/support-errand-status';
 import { test } from 'vitest';
 
@@ -62,7 +66,7 @@ test('KC gets the default policy', () => {
   assert.equal(policy.resolutions, kontaktSundsvallResolutionLabels);
   assert.equal(policy.defaultResolution({ useClosedAsDefaultResolution: false }), Resolution.SOLVED);
   assert.equal(policy.defaultResolution({ useClosedAsDefaultResolution: true }), Resolution.CLOSED);
-  assert.equal(policy.solvedStatusLabel, defaultSupportErrandPolicy.solvedStatusLabel);
+  assert.equal(policy.solvedStatusLabel, kontaktSundsvallSupportErrandPolicy.solvedStatusLabel);
 });
 
 test('IK and SE share the internal customer service resolution labels', () => {
@@ -113,12 +117,41 @@ test.each(['MSVA', 'AOT', 'IAF', 'VOF'] as const)('%s retains the shared closing
   assert.deepEqual(policy.ongoingStatuses, ongoingStatuses);
 });
 
-test('an override set to undefined is rejected instead of silently falling back', () => {
-  const broken: DragonModule = { id: 'KC', supportErrandPolicy: { resolutions: undefined } };
+test('missing policy or policy members are rejected instead of silently selecting a preset', () => {
+  assert.throws(() => buildSupportErrandPolicy({ id: 'KC', supportErrandPolicy: null }), /explicitly select/);
+  const policy = { ...kontaktSundsvallSupportErrandPolicy };
+  Reflect.deleteProperty(policy, 'resolutions');
+  assert.throws(
+    () => buildSupportErrandPolicy({ id: 'KC', supportErrandPolicy: policy }),
+    /missing supportErrandPolicy.resolutions/
+  );
+});
 
-  assert.throws(() => buildSupportErrandPolicy(broken), {
-    message: /Dragon "KC" sets supportErrandPolicy.resolutions to undefined/,
-  });
+test('a dragon can introduce metadata codes without extending a shared enum', () => {
+  const dragon: DragonModule = {
+    id: 'AOT',
+    supportErrandPolicy: {
+      ...kontaktSundsvallSupportErrandPolicy,
+      ongoingStatuses: ['WAITING_FOR_COMPANY'],
+      resolutions: { COMPANY_SUPPORTED: 'Stöd genomfört' },
+      defaultResolution: () => 'COMPANY_SUPPORTED',
+      solvedStatusLabel: (code) => (code === 'COMPANY_SUPPORTED' ? 'Stöd genomfört' : undefined),
+    },
+  };
+  composeDragon({ identity: 'AOT', dragon });
+  assert.deepEqual(getSupportErrandPolicy().ongoingStatuses, ['WAITING_FOR_COMPANY']);
+  assert.equal(getStatusLabel(['WAITING_FOR_COMPANY']), 'Öppna ärenden');
+  assert.equal(
+    getSupportErrandPolicy().defaultResolution({ useClosedAsDefaultResolution: false }),
+    'COMPANY_SUPPORTED'
+  );
+  assert.equal(getSupportErrandPolicy().solvedStatusLabel('COMPANY_SUPPORTED'), 'Stöd genomfört');
+});
+
+test('CaseData composition cannot retain an SM policy from an earlier composition', () => {
+  composeDragon({ identity: 'KC', dragon: DRAGON_REGISTRY.KC });
+  composeDragon({ identity: 'MEX', dragon: DRAGON_REGISTRY.MEX });
+  assert.throws(() => getSupportErrandPolicy(), /not configured/);
 });
 
 test('composeDragon hands the resolved dragon its policy', () => {

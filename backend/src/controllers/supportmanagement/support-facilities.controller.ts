@@ -13,14 +13,14 @@ import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { logApplicationFailure } from '@/services/request-diagnostics';
-import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
+import { SupportApplicationPolicyService } from '@/supportmanagement/services/support-application-policy.service';
 import {
   assertRequestedErrandVersion,
   assertSupportErrandWritable,
   getErrandVersion,
   requireStrongErrandVersion,
   stripParameterVersions,
-} from '@/services/support-errand.service';
+} from '@/supportmanagement/services/support-errand.service';
 import { apiURL } from '@/utils/util';
 
 const PROPERTY_DESIGNATION = { key: 'propertyDesignation', displayName: 'Fastighetsbeteckning' } as const;

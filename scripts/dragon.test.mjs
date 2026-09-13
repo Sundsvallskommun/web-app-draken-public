@@ -35,7 +35,7 @@ test('artifact validation catches broken imports and foreign controllers before 
     for (const path of ['scripts', 'backend/dist-KC/dragons/kc', 'backend/dist-KC/shell', 'backend/dist-KC/controllers/supportmanagement']) {
       mkdirSync(join(directory, path), { recursive: true });
     }
-    for (const file of ['scripts/check-backend-artifact.mjs', 'dragons.json', 'backend/tsconfig.json']) cpSync(join(root, file), join(directory, file));
+    for (const file of ['scripts/check-backend-artifact.mjs', 'scripts/backend-boundaries.mjs', 'dragons.json', 'backend/tsconfig.json']) cpSync(join(root, file), join(directory, file));
     symlinkSync(join(root, 'backend/node_modules'), join(directory, 'backend/node_modules'), 'dir');
     cpSync(join(root, 'backend/package.json'), join(directory, 'backend/package.json'));
     mkdirSync(join(directory, 'backend/src/dragons/kc'), { recursive: true });
@@ -71,6 +71,21 @@ test('artifact validation catches broken imports and foreign controllers before 
     const foreignController = check();
     assert.notEqual(foreignController.status, 0);
     assert.match(foreignController.stderr, /casedata controller must not ship in a supportmanagement application/);
+
+    // Reachability alone is insufficient: a reachable service from the wrong domain must fail too.
+    for (const domain of ['supportmanagement', 'casedata']) {
+      mkdirSync(join(directory, `backend/src/${domain}/services`), { recursive: true });
+      mkdirSync(join(output, `${domain}/services`), { recursive: true });
+    }
+    writeFileSync(join(directory, 'backend/src/shell/start-server.ts'), "import '../supportmanagement/services/errand';");
+    writeFileSync(join(directory, 'backend/src/supportmanagement/services/errand.ts'), "import '../../casedata/services/errand';");
+    writeFileSync(join(directory, 'backend/src/casedata/services/errand.ts'), 'export {};');
+    writeFileSync(join(output, 'supportmanagement/services/errand.js'), "require('../../casedata/services/errand');");
+    writeFileSync(join(output, 'casedata/services/errand.js'), 'module.exports = {};');
+    const foreignService = check();
+    assert.notEqual(foreignService.status, 0);
+    assert.match(foreignService.stderr, /supportmanagement must not import casedata/);
+
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
 
@@ -108,6 +123,12 @@ test('Next env files cannot activate verbose logging after the CLI checks inheri
       assert.equal(existsSync(marker), false);
       rmSync(path);
     }
+    const manifestStart = spawnSync(process.execPath, [join(directory, 'scripts/dragon.mjs'), 'start', 'KC', 'frontend'], {
+      encoding: 'utf8', env: { ...env, DRAKEN_DEPLOYMENT_FILE: '/release.json' },
+    });
+    assert.notEqual(manifestStart.status, 0);
+    assert.match(manifestStart.stderr, /manifests require the image entrypoint/);
+    assert.equal(existsSync(marker), false);
     writeFileSync(join(directory, 'frontend/.env.local'), 'DEBUG=\nNODE_DEBUG=\nNODE_DEBUG_NATIVE=\n');
     const clean = start();
     assert.equal(clean.status, 0, clean.stderr);

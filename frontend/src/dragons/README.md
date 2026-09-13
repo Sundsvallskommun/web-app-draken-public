@@ -3,7 +3,8 @@
 Varje mapp äger en drakes frontend-sammansättning:
 
 - `application.ts` är bygg-entrypoint: exporterar `dragon`, `applicationUi` och `configureApplication`.
-- `index.ts` och namngivna policyfiler innehåller drakens överstyrningar av domänägda kontrakt.
+- `index.ts` och namngivna policyfiler innehåller drakens explicita val av domänägda kontrakt. En SM-drake väljer en komplett `supportErrandPolicy`
+  (egen eller namngiven delad policy); en CaseData-drake väljer `null`. Skalet tillför inga policyvärden.
 - Egen implementation, som AOT:s utredningsflik, ligger hos den draken.
 
 IAF och VOF importerar samma `src/avvikelse/` och samma SM-vyer. KC importerar SM-vyerna utan

@@ -6,7 +6,7 @@ import { Errand as ErrandDTO, Stakeholder as StakeholderDTO } from '@/data-contr
 import { User } from '@/interfaces/users.interface';
 import { latestBy } from '@/utils/util';
 
-import ApiService from './api.service';
+import ApiService from '../../services/api.service';
 
 const SERVICE = apiServiceName('case-data');
 

@@ -3,7 +3,7 @@ import { apiServiceName } from '@/config/api-config';
 import { User } from '@/interfaces/users.interface';
 import { apiURL } from '@/utils/util';
 
-import ApiService from './api.service';
+import ApiService from '../../services/api.service';
 
 const SERVICE = apiServiceName('case-data');
 

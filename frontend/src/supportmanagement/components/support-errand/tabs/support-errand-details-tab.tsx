@@ -1,12 +1,14 @@
 import { JsonParametersDisplay } from '@common/components/json/schema/json-parameters-display.component';
 import { Table } from '@sk-web-gui/react';
 import { useConfigStore } from '@stores/config-store';
+import { useMetadataStore } from '@stores/metadata-store';
 import { useSupportStore } from '@stores/support-store';
 import { useSupportApplicationProfileStore } from '@supportmanagement/application/support-application-profile-store';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
 import { useMemo } from 'react';
 
 export const SupportErrandDetailsTab: React.FC<{}> = () => {
+  const supportMetadata = useMetadataStore((state) => state.supportMetadata);
   const _supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const handledJsonParameterKeys = useSupportApplicationProfileStore((state) => state.handledJsonParameterKeys);
@@ -111,7 +113,11 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
         ))}
         {readonlyJsonParameters.length > 0 && municipalityId ? (
           <div className="p-16">
-            <JsonParametersDisplay jsonParameters={readonlyJsonParameters} municipalityId={municipalityId} />
+            <JsonParametersDisplay
+              placeLabelStructure={supportMetadata ? supportMetadata.labels?.labelStructure : null}
+              jsonParameters={readonlyJsonParameters}
+              municipalityId={municipalityId}
+            />
           </div>
         ) : null}
       </div>

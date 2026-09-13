@@ -19,10 +19,6 @@ export const getDragonDefinition = (id: DragonId) => dragons[id];
  */
 export interface DragonModule {
   readonly id: DragonId;
-  /**
-   * Overrides of supportmanagement's errand policy; the shell merges them over the domain
-   * default. Leave the key out entirely for a dragon that uses the defaults - a member set to
-   * `undefined` is rejected at startup rather than silently falling back.
-   */
-  readonly supportErrandPolicy?: Partial<SupportErrandPolicy>;
+  /** Complete policy explicitly selected by an SM dragon; null for a CaseData dragon. */
+  readonly supportErrandPolicy: SupportErrandPolicy | null;
 }

@@ -11,7 +11,7 @@ import {
   StakeholderTypeEnum,
 } from '@/data-contracts/case-data/data-contracts';
 
-import { Role } from './role';
+import { Role } from '../../interfaces/role';
 
 export class Link {
   href!: string;

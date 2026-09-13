@@ -49,6 +49,7 @@
     "build:aot": "node ../scripts/dragon.mjs build aot backend",
     "build": "node ../scripts/dragon.mjs build \"$DRAKEN_BUILD_DRAGON\" backend",
     "generate:datacontracts": "dotenv -e .env.kc.development.local ts-node ./src/swagger-typescript-api.ts",
+    "lint:deps": "node ../scripts/backend-boundaries.mjs",
     "lint": "node ../scripts/check-runtime-logging.mjs --backend && eslint src/",
     "lint:fix": "npm run lint -- --fix",
     "lint:strict": "node ../scripts/check-runtime-logging.mjs --backend && eslint src/ --max-warnings=0 --cache --cache-location node_modules/.cache/eslint/",

@@ -2,15 +2,15 @@ import { HttpException } from '@exceptions/HttpException';
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
-import { validateAction } from '@services/errand.service';
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
+import { CreateErrandNoteDto } from '@/casedata/interfaces/errand-note.interface';
+import { validateAction } from '@/casedata/services/errand.service';
+import { noteIsTjansteanteckning } from '@/casedata/services/errand-note.service';
 import { apiServiceName } from '@/config/api-config';
 import { Errand as ErrandDTO, Note as NoteDTO } from '@/data-contracts/case-data/data-contracts';
-import { CreateErrandNoteDto } from '@/interfaces/errand-note.interface';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
-import { noteIsTjansteanteckning } from '@/services/errand-note.service';
 import { logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL } from '@/utils/util';
 

@@ -22,7 +22,7 @@ import {
   toCasedataChannel,
   toCasedataStakeholder,
   toFacilities,
-} from '@/services/support-errand.service';
+} from '@/supportmanagement/services/support-errand.service';
 
 import {
   mockAdUsername,

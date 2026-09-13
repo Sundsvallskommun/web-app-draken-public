@@ -1,5 +1,5 @@
-import { createSupportApplicationProfile } from '@/config/support-application-profile';
-import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
+import { createSupportApplicationProfile } from '@/supportmanagement/config/support-application-profile';
+import { SupportApplicationPolicyService } from '@/supportmanagement/services/support-application-policy.service';
 
 import { mockUser } from './helpers/http';
 

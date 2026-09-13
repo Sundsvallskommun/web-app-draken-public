@@ -1,5 +1,5 @@
-import { resolveSupportInvestigationHandoverTargets } from '@/config/support-investigation-handover-targets';
-import { SupportInvestigationHandoverTargetService } from '@/services/support-investigation-handover-target.service';
+import { resolveSupportInvestigationHandoverTargets } from '@/supportmanagement/config/support-investigation-handover-targets';
+import { SupportInvestigationHandoverTargetService } from '@/supportmanagement/services/support-investigation-handover-target.service';
 
 const configuredTarget = JSON.stringify([{ municipalityId: '2281', namespace: 'FUTURE_TARGET', documentKeys: ['future-investigation'] }]);
 

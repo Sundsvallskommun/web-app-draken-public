@@ -2,10 +2,10 @@ import App from '@/app';
 import { resolveSupportManagementApiTarget } from '@/config/api-config';
 import { assertDragonBuild, getDragonDomain } from '@/config/dragon-build';
 import { loadDragonDeployment } from '@/config/dragon-deployment';
-import { configureSupportApplicationProfile } from '@/config/support-application-profile';
 import { logApplicationFailure } from '@/services/request-diagnostics';
+import validateEnv from '@/shell/validate-environment';
+import { configureSupportApplicationProfile } from '@/supportmanagement/config/support-application-profile';
 import { createSessionStore } from '@/utils/session-store';
-import validateEnv from '@/utils/validateEnv';
 
 import type { DragonApplication } from './dragon-application';
 

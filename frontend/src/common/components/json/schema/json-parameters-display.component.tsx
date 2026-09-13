@@ -1,5 +1,6 @@
 'use client';
 
+import type { FacilityFieldContext } from '@common/components/json/fields/facility-search-field.componant';
 import { useJsonSchema } from '@common/components/json/hooks/useJsonSchema';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { Alert, Spinner } from '@sk-web-gui/react';
@@ -12,12 +13,12 @@ export interface DisplayJsonParameter {
   version?: number;
 }
 
-interface JsonParameterItemProps {
+interface JsonParameterItemProps extends FacilityFieldContext {
   param: DisplayJsonParameter;
   municipalityId: string;
 }
 
-const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId }) => {
+const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId, placeLabelStructure }) => {
   const { schema, uiSchema, loading, error } = useJsonSchema(municipalityId, param.schemaId);
 
   if (loading) {
@@ -44,17 +45,27 @@ const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId }
 
   return (
     <div className="mb-16">
-      <SchemaForm schema={schema} uiSchema={uiSchema ?? undefined} formData={param.value} disabled />
+      <SchemaForm
+        placeLabelStructure={placeLabelStructure}
+        schema={schema}
+        uiSchema={uiSchema ?? undefined}
+        formData={param.value}
+        disabled
+      />
     </div>
   );
 };
 
-interface JsonParametersDisplayProps {
+interface JsonParametersDisplayProps extends FacilityFieldContext {
   jsonParameters: DisplayJsonParameter[];
   municipalityId: string;
 }
 
-export const JsonParametersDisplay: FC<JsonParametersDisplayProps> = ({ jsonParameters, municipalityId }) => {
+export const JsonParametersDisplay: FC<JsonParametersDisplayProps> = ({
+  jsonParameters,
+  municipalityId,
+  placeLabelStructure,
+}) => {
   if (!jsonParameters || jsonParameters.length === 0) {
     return null;
   }
@@ -65,6 +76,7 @@ export const JsonParametersDisplay: FC<JsonParametersDisplayProps> = ({ jsonPara
         <JsonParameterItem
           key={`${param.key}-${param.schemaId}-${idx}`}
           param={param}
+          placeLabelStructure={placeLabelStructure}
           municipalityId={municipalityId}
         />
       ))}

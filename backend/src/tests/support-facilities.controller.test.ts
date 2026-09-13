@@ -8,7 +8,7 @@ import { SupportFacilitiesController, SupportFacilitiesPayloadDto } from '@/cont
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
-import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
+import { SupportApplicationPolicyService } from '@/supportmanagement/services/support-application-policy.service';
 
 import { ABSENT_HEADER, mockReq, mockRes, MockResponse, mockUser } from './helpers/http';
 import { mockMunicipalityId, mockSupportErrandId, mockSupportNamespace } from './helpers/mock-data';

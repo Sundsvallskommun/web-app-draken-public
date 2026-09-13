@@ -7,7 +7,7 @@ import {
   resolveIafVofInvestigationClassificationOwner,
   resolveIafVofInvestigationClassificationPolicy,
 } from '@/avvikelse/classification-policy';
-import { createSupportApplicationProfile } from '@/config/support-application-profile';
+import { createSupportApplicationProfile } from '@/supportmanagement/config/support-application-profile';
 
 import { supportProfileFixture } from './helpers/support-application-profiles';
 

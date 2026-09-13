@@ -12,7 +12,7 @@ import ApiService from '@/services/api.service';
 import { logApplicationFailure } from '@/services/request-diagnostics';
 import { apiURL } from '@/utils/util';
 
-import { PROCESS_PARAMETER_KEYS } from './casedata/extraparameter.controller';
+import { PROCESS_PARAMETER_KEYS } from './extraparameter.controller';
 
 @Controller()
 export class ExportController {

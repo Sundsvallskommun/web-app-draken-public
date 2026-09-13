@@ -35,14 +35,26 @@ module.exports = {
     {
       name: 'casedata-does-not-import-support-state',
       severity: 'error',
-      from: { path: '^src/casedata/' },
+      from: { path: '^src/casedata/|^src/stores/casedata-store\\.ts$' },
       to: { path: '^src/stores/(support|metadata)-store\\.ts$' },
     },
     {
       name: 'support-does-not-import-casedata-state',
       severity: 'error',
-      from: { path: '^src/(supportmanagement|avvikelse)/' },
+      from: { path: '^src/(supportmanagement|avvikelse)/|^src/stores/(support|metadata)-store\\.ts$' },
       to: { path: '^src/stores/casedata-store\\.ts$' },
+    },
+    {
+      name: 'domain-stores-do-not-import-other-domain',
+      severity: 'error',
+      from: { path: '^src/stores/casedata-store\\.ts$' },
+      to: { path: '^src/supportmanagement/' },
+    },
+    {
+      name: 'support-stores-do-not-import-casedata',
+      severity: 'error',
+      from: { path: '^src/stores/(support|metadata)-store\\.ts$' },
+      to: { path: '^src/casedata/' },
     },
     {
       name: 'avvikelse-does-not-import-casedata',
@@ -104,19 +116,23 @@ module.exports = {
         'src/config, src/stores, src/utils, src/interfaces) must not import src/dragons. Dragon modules ' +
         'sit above the domains and implement contracts the domains own. If a domain needs dragon-specific ' +
         'behaviour, declare a contract in the domain and let the shell inject the dragon implementation.',
-      from: { path: '^src/(common|supportmanagement|casedata|avvikelse|config|stores|utils|interfaces)/' },
+      from: { path: '^src/', pathNot: '^src/(shell|app|dragons)/' },
       to: { path: '^src/dragons/' },
     },
     {
       name: 'core-does-not-import-domains',
       severity: 'error',
       comment:
-        '[baselined] src/common is core/shared code and must not depend on the domain packages ' +
+        '[baselined] common, config, shared stores, utils and interfaces are core/shared code and must not depend on the domain packages ' +
         'src/casedata or src/supportmanagement. Either the thing you need is generic and belongs in ' +
         'src/common, or the module you are editing is domain code and belongs in the domain package. ' +
         'Existing violations are recorded in the baseline; do not add new ones.',
-      from: { path: '^src/common/' },
-      to: { path: '^src/(casedata|supportmanagement)/' },
+      from: {
+        path: '^src/',
+        // These existing stores belong to their domains, even before their mechanical relocation.
+        pathNot: '^src/(casedata|supportmanagement|avvikelse|shell|app|dragons)/|^src/stores/(casedata|support|metadata)-store\\.ts$',
+      },
+      to: { path: '^src/(casedata|supportmanagement)/|^src/stores/(casedata|support|metadata)-store\\.ts$' },
     },
     {
       name: 'domains-do-not-import-each-other',

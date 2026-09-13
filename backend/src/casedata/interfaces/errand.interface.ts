@@ -1,6 +1,8 @@
 import { Type } from 'class-transformer';
 import { IsArray, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 
+import { ErrandPhase } from '@/casedata/interfaces/errand-phase.interface';
+import { CreateStakeholderDto } from '@/casedata/interfaces/stakeholder.interface';
 import {
   Decision as DecisionDTO,
   Errand as ErrandDTO,
@@ -12,9 +14,7 @@ import {
   Stakeholder as StakeholderDTO,
 } from '@/data-contracts/case-data/data-contracts';
 
-import { ErrandPhase } from './errand-phase.interface';
-import { StatusDTO } from './errand-status.interface';
-import { CreateStakeholderDto } from './stakeholder.interface';
+import { StatusDTO } from '../../interfaces/errand-status.interface';
 
 export class CreateErrandDto implements ErrandDTO {
   @IsNumber()

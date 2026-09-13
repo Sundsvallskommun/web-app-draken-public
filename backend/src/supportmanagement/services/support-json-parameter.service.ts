@@ -1,11 +1,12 @@
 import { apiServiceName } from '@/config/api-config';
-import { trimSupportManagementPath } from '@/config/supportmanagement-path';
 import type { JsonSchema } from '@/data-contracts/jsonschema/data-contracts';
 import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import type { User } from '@/interfaces/users.interface';
+import { trimSupportManagementPath } from '@/supportmanagement/config/supportmanagement-path';
+import { assertSupportErrandWritable, getErrandVersion } from '@/supportmanagement/services/support-errand.service';
 
-import ApiService, { type ApiResponse } from './api.service';
+import ApiService, { type ApiResponse } from '../../services/api.service';
 import {
   isJsonObject,
   isRecord,
@@ -13,8 +14,7 @@ import {
   requireResponseStatus,
   SchemaBoundJsonService,
   type SchemaBoundJsonServiceDependencies,
-} from './schema-bound-json.service';
-import { assertSupportErrandWritable, getErrandVersion } from './support-errand.service';
+} from '../../services/schema-bound-json.service';
 
 /**
  * The application profile injects this definition. The json-parameter service never

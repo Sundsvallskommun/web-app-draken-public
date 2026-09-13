@@ -1,8 +1,8 @@
+import { HttpException } from '@/exceptions/HttpException';
 import {
   resolveSupportInvestigationHandoverTargets,
   supportInvestigationHandoverTargetIdentity,
-} from '@/config/support-investigation-handover-targets';
-import { HttpException } from '@/exceptions/HttpException';
+} from '@/supportmanagement/config/support-investigation-handover-targets';
 
 export interface RequestedSupportInvestigationHandoverTarget {
   readonly municipalityId?: string;

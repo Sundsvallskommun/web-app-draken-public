@@ -30,7 +30,7 @@ export const SupportErrandsTable: FC = () => {
 
   const currentStatusHaserrands =
     data.errands.filter((e) => {
-      return selectedSupportErrandStatuses.includes(e.status as Status) || e.status === Status.PENDING;
+      return selectedSupportErrandStatuses.includes(e.status ?? '') || e.status === Status.PENDING;
     }).length !== 0
       ? true
       : false;
@@ -61,7 +61,7 @@ export const SupportErrandsTable: FC = () => {
     window.open(`${process.env.NEXT_PUBLIC_BASEPATH}/arende/${errand.errandNumber}`, '_blank');
   };
 
-  const errandTableObject = useSupportErrandTable(selectedSupportErrandStatuses as Status[]);
+  const errandTableObject = useSupportErrandTable(selectedSupportErrandStatuses);
 
   // Only IAF/VOF show a registrar, and only the accounts the admin list cannot name need asking
   // for. The store keeps answers and misses for the session, so paging back and forth costs

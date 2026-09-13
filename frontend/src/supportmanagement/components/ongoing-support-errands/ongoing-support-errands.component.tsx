@@ -20,7 +20,6 @@ import {
   getLabelSubTypeFromName,
   getLabelTypeFromName,
   getStatusLabel,
-  Status,
   useSupportErrands,
 } from '@supportmanagement/services/support-errand-service';
 import {
@@ -104,7 +103,7 @@ const restoreStoredFilter = ({
       )
     : [];
   const status =
-    storedFilter.status === '' ? [] : readStoredList<Status>(storedFilter.status, SupportManagementValues.status);
+    storedFilter.status === '' ? [] : readStoredList<string>(storedFilter.status, SupportManagementValues.status);
   const admins =
     storedFilter.stakeholders === username
       ? []
@@ -250,10 +249,8 @@ export const OngoingSupportErrands: FC = () => {
           labelFilterState,
           username: user.username,
         });
-        const filterStatuses = readStoredList<Status>(storedFilter.status, SupportManagementValues.status);
-        const selectedStatusLabel = getStatusLabel(
-          filterStatuses.map((s: string) => (Status as Record<string, string>)[s]) as Status[]
-        );
+        const filterStatuses = readStoredList<string>(storedFilter.status, SupportManagementValues.status);
+        const selectedStatusLabel = getStatusLabel(filterStatuses);
         setSidebarLabel(selectedStatusLabel ?? '');
       } catch {
         setStoredFilter({});
@@ -287,7 +284,7 @@ export const OngoingSupportErrands: FC = () => {
     const currentStatus = JSON.stringify(getValues('status'));
     const storeStatus = JSON.stringify(selectedErrandStatuses);
     if (currentStatus !== storeStatus) {
-      setFilterValue('status', selectedErrandStatuses as Status[]);
+      setFilterValue('status', selectedErrandStatuses);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedErrandStatuses]);

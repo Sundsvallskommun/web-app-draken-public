@@ -1,4 +1,8 @@
-import { createSupportApplicationProfile, SupportApplicationProfile, SupportApplicationProfileInput } from '@/config/support-application-profile';
+import {
+  createSupportApplicationProfile,
+  SupportApplicationProfile,
+  SupportApplicationProfileInput,
+} from '@/supportmanagement/config/support-application-profile';
 
 import { resolveIafVofInvestigationClassificationPolicy } from './classification-policy';
 

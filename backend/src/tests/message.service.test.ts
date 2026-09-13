@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { getDecisionAttachmentAsBase64 } from '@/casedata/services/casedata-attachment.service';
+import { sendDecisionToDigitalMail, sendDecisionToKatla } from '@/casedata/services/message.service';
 import { Attachment as CasedataAttachment, Errand as ErrandDTO, ErrandChannelEnum } from '@/data-contracts/case-data/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { Role } from '@/interfaces/role';
 import { User } from '@/interfaces/users.interface';
-import { getDecisionAttachmentAsBase64 } from '@/services/casedata-attachment.service';
-import { sendDecisionToDigitalMail, sendDecisionToKatla } from '@/services/message.service';
 
 import {
   mockAdUsername,
@@ -36,7 +36,7 @@ vi.mock('@/services/api.service', () => ({
   ApiResponse: class {},
 }));
 
-vi.mock('@/services/casedata-attachment.service', () => ({
+vi.mock('@/casedata/services/casedata-attachment.service', () => ({
   getDecisionAttachmentAsBase64: vi.fn(),
 }));
 

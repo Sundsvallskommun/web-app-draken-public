@@ -1,13 +1,13 @@
 import { Response } from 'express';
 
-import { createSupportApplicationProfile } from '@/config/support-application-profile';
 import {
   SupportErrandJsonParameter,
   SupportErrandJsonParameterController,
   UpdateSupportErrandJsonParameterDto,
 } from '@/controllers/supportmanagement/support-errand-json-parameter.controller';
-import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
-import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
+import { createSupportApplicationProfile } from '@/supportmanagement/config/support-application-profile';
+import { SupportApplicationPolicyService } from '@/supportmanagement/services/support-application-policy.service';
+import { SupportJsonParameterService } from '@/supportmanagement/services/support-json-parameter.service';
 
 import { ABSENT_HEADER, mockReq, mockRes, MockResponse } from './helpers/http';
 import { mockMunicipalityId, mockSupportErrandId } from './helpers/mock-data';

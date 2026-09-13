@@ -3,16 +3,16 @@ import { validate } from 'class-validator';
 import { NextFunction, Response } from 'express';
 import { getMetadataArgsStorage } from 'routing-controllers';
 
-import { createSupportApplicationProfile } from '@/config/support-application-profile';
 import { HandoverErrandDto, HandoverPreviewDto, SupportHandoverController } from '@/controllers/supportmanagement/support-handover.controller';
 import { HandoverErrandRequest, HandoverPreviewRequest } from '@/data-contracts/supportmanagement/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
 import { FeatureFlagService } from '@/services/feature-flag.service';
-import { SupportApplicationPolicyService } from '@/services/support-application-policy.service';
-import { SupportInvestigationHandoverTargetService } from '@/services/support-investigation-handover-target.service';
-import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
+import { createSupportApplicationProfile } from '@/supportmanagement/config/support-application-profile';
+import { SupportApplicationPolicyService } from '@/supportmanagement/services/support-application-policy.service';
+import { SupportInvestigationHandoverTargetService } from '@/supportmanagement/services/support-investigation-handover-target.service';
+import { SupportJsonParameterService } from '@/supportmanagement/services/support-json-parameter.service';
 
 import { mockReq, mockRes, mockUser } from './helpers/http';
 import { mockMunicipalityId, mockSupportErrandId } from './helpers/mock-data';

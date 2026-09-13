@@ -470,6 +470,7 @@ export function SupportInvestigationDocument({
       )}
 
       <SchemaForm
+        placeLabelStructure={supportMetadata ? supportMetadata.labels?.labelStructure : null}
         schema={renderingSchema}
         uiSchema={classificationUiSchema}
         idPrefix={definition.key}
