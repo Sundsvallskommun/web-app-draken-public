@@ -1,12 +1,10 @@
 import type { Errand } from '@/data-contracts/supportmanagement/data-contracts';
-import type {
-  SupportInvestigationClassificationLabelTree,
-  SupportInvestigationClassificationPolicy,
-} from '@/supportmanagement/config/support-investigation-classification';
+import type { SupportInvestigationClassificationPolicy } from '@/supportmanagement/config/support-investigation-classification';
 import { normalizeSupportManagementResourcePath } from '@/supportmanagement/config/supportmanagement-path';
 import type { SupportApplicationProfileDto } from '@/supportmanagement/dtos/support-application-profile.dto';
 
 import { assertSupportInvestigationClassificationContext } from './classification-context';
+import { type AvvikelseClassificationLabelTree, resolveAvvikelseClassification } from './label-classification';
 
 export interface IafVofInvestigationClassificationLegalBaseRule {
   readonly legalBase: string;
@@ -14,6 +12,7 @@ export interface IafVofInvestigationClassificationLegalBaseRule {
 }
 
 export interface IafVofInvestigationClassificationPolicy extends SupportInvestigationClassificationPolicy {
+  readonly labelTree: AvvikelseClassificationLabelTree;
   readonly defaultOwnerDocumentKey: string;
   readonly reportedMisconductOwnerDocumentKey: string;
   readonly forcedLegalBases: readonly string[];
@@ -37,7 +36,7 @@ const REPORTED_MISCONDUCT_LABELS = Object.freeze({
   resourceNames: Object.freeze(['ABUSE', 'ADVERSE_INCIDENT']),
 });
 
-export const IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE: SupportInvestigationClassificationLabelTree = Object.freeze({
+export const IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE: AvvikelseClassificationLabelTree = Object.freeze({
   root: Object.freeze({ resource: 'CATEGORY', classification: 'CATEGORY_ROOT' }),
   ownerClassification: 'PROVISION_CATEGORY',
   categoryClassification: 'CATEGORY',
@@ -75,6 +74,8 @@ export const resolveIafVofInvestigationClassificationPolicy = (
     defaultOwnerDocumentKey,
     reportedMisconductOwnerDocumentKey,
     labelTree: IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE,
+    resolveClassification: (data, labelStructure) =>
+      resolveAvvikelseClassification(data, labelStructure, IAF_VOF_INVESTIGATION_CLASSIFICATION_LABEL_TREE),
     forcedLegalBases: IAF_VOF_REPORTED_MISCONDUCT_FORCED_LEGAL_BASES,
     legalBasesPointer: IAF_VOF_INVESTIGATION_LEGAL_BASES_POINTER,
     legalBaseRules: IAF_VOF_INVESTIGATION_CLASSIFICATION_LEGAL_BASE_RULES,

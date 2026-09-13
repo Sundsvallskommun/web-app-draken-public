@@ -70,7 +70,6 @@ import {
   getErrandVersion,
   requireStrongErrandVersion,
   resolveDefaultLabels,
-  resolveSupportErrandClassification,
   resolveSupportErrandPhaseTransition,
   resolveSupportErrandStatusTransition,
   stripErrandVersions,
@@ -1098,7 +1097,7 @@ export class SupportErrandController {
       throw new HttpException(409, 'Investigation document has changed since classification was edited');
     }
     classificationPolicy.assertClassificationContext(currentErrand.data, definition.key, classificationDocument.document.value, data.classification);
-    const resolvedClassification = resolveSupportErrandClassification(data, labelMetadata.data?.labelStructure, classificationPolicy.labelTree);
+    const resolvedClassification = classificationPolicy.resolveClassification(data, labelMetadata.data?.labelStructure);
     const body = buildSupportErrandClassificationUpdateBody(
       data,
       currentErrand.data.labels,

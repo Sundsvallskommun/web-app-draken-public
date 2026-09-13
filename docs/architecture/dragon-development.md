@@ -199,6 +199,26 @@ Den befintliga JSON-renderaren, schematransporten, dokumentlagringen och version
 Det gemensamma paketet är alltså mer än en synlig flik, men innehåller ingen generell kopia av
 Avvikelses utredningsmodell.
 
+### Egna JSON-fält och klassificeringsregler
+
+`common/components/json/` äger schemahämtning, RJSF/AJV, generell layout, felpresentation
+och vanliga inmatningswidgets. `SchemaForm` tar emot RJSF:s `fields` från anroparen.
+Lägg inte till verksamhetsfält i ett globalt register i common.
+
+Avvikelses `form-fields/facility-search-field.component.tsx` äger platsval, anställningsförval,
+texter och kopplingen till platsmetadata. `place-structure.ts` i samma mapp äger tolkningen
+av Avvikelses platsträd. Den sparade schemanyckeln `FacilitySearchWidget` behålls.
+Avvikelses formulär skickar `avvikelseSchemaFields`; `InvestigationModule.schemaFields`
+låter Ärendeuppgifter återanvända samma fält vid skrivskyddad dokumentvisning. Fälten följer
+den valda implementationen även när `useInvestigation` är avstängd, så sparade dokument
+fortfarande går att visa. En annan verksamhet tillför sina egna fält eller inga alls.
+
+Backendens `SupportInvestigationClassificationPolicy.resolveClassification` ansvarar för
+verksamhetens mappning och validering av klassificering mot metadata. Avvikelses implementation
+finns i `avvikelse/label-classification.ts`. Den gemensamma ärendeskrivningen använder resultatet,
+bevarar orelaterade etiketter och kontrollerar versioner och behörighet. En ny verksamhet behöver
+därför inte använda Avvikelses nivåförskjutning mellan etiketter och `classification`.
+
 `supportmanagement/application/` äger frontendens runtimeprofil, hämtning och store.
 Backendens `SupportApplicationPolicyService` och `support-application-profile` äger motsvarande
 kontrakt. Profilens `state` gäller utredningsdokument; `registration` och `labelFilter` kan

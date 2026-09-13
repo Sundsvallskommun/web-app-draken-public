@@ -19,6 +19,7 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { createSupportApplicationProfile } from '@/supportmanagement/config/support-application-profile';
+import type { SupportInvestigationClassificationPolicy } from '@/supportmanagement/config/support-investigation-classification';
 import { SupportApplicationPolicyService, SupportErrandClassificationOwner } from '@/supportmanagement/services/support-application-policy.service';
 import { SupportJsonParameterService } from '@/supportmanagement/services/support-json-parameter.service';
 
@@ -103,7 +104,7 @@ const makeController = (
     getRegistrationState: vi.fn(async () => (classificationOwner === 'unavailable' ? 'unavailable' : 'enabled')),
     profile: configuredProfile,
     labelFilter: configuredProfile.labelFilter,
-    classificationPolicy: resolveIafVofInvestigationClassificationPolicy(configuredProfile),
+    classificationPolicy: resolveIafVofInvestigationClassificationPolicy(configuredProfile) as SupportInvestigationClassificationPolicy | undefined,
   };
   const investigationDocument = {
     readJsonParameter: vi.fn(async () => ({
@@ -1774,6 +1775,38 @@ describe('updateSupportErrandClassification', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual(savedErrand);
+  });
+
+  it('persists another investigation policy without applying Avvikelse taxonomy', async () => {
+    const { controller, api, investigationPolicy } = makeController();
+    investigationPolicy.classificationPolicy = {
+      preservesOwnerParameters: () => true,
+      assertClassificationContext: () => {},
+      resolveClassification: data => ({
+        classification: { category: 'SERVICE', type: data.classification.type },
+        categoryLabels: [{ id: 'service-label' }],
+        managedCategoryLabelIds: ['old-service-label', 'service-label'],
+        managedRootResource: 'SERVICES',
+      }),
+    };
+    routeClassificationGets(api, [
+      {
+        data: {
+          version: 7,
+          labels: [
+            { id: 'old-service-label', resourcePath: 'SERVICES/OLD' },
+            { id: 'unrelated-label', resourcePath: 'LOCATION/ONE' },
+          ],
+        },
+      },
+      { data: { version: 8 } },
+    ]);
+    const payload = { ...update(), classification: { category: 'requested', type: 'REPAIR' }, categoryLabels: [{ id: 'service-label' }] };
+    await controller.updateSupportErrandClassification(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, payload, mockRes());
+    expect(api.patch.mock.calls[0][0]).toMatchObject({
+      data: { classification: { category: 'SERVICE', type: 'REPAIR' }, labels: [{ id: 'unrelated-label' }, { id: 'service-label' }] },
+      headers: { 'If-Match': '"7"' },
+    });
   });
 
   it('rejects a classification based on an older errand version before patching', async () => {
