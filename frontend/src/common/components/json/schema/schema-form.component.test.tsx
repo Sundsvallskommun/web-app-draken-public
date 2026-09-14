@@ -212,6 +212,134 @@ test('respects conditional choices and renders schema-positioned external fields
   expect(screen.queryByRole('textbox', { name: /Beskrivning/ })).toBeNull();
 });
 
+test.each([false, true])(
+  'renders an external control once at the root and preserves nested data (explicit placement: %s)',
+  async (explicitPlacement) => {
+    const onSubmit = vi.fn();
+    const formData = { details: { answer: 'Svar' }, people: [{ name: 'Anna' }, { name: 'Bertil' }] };
+    const view = render(
+      <SchemaForm
+        schema={{
+          type: 'object',
+          properties: {
+            details: { type: 'object', properties: { answer: { type: 'string' } } },
+            people: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' } } } },
+          },
+        }}
+        idPrefix="document"
+        formData={formData}
+        uiSchema={{
+          'ui:order': explicitPlacement ? ['$external:classification', '*', 'people'] : ['*', 'people'],
+        }}
+        externalFields={{ classification: <button type="button">Extern klassificering</button> }}
+        submitButtonOptions={{ label: 'Spara' }}
+        onSubmit={onSubmit}
+      />
+    );
+    expect(screen.getAllByRole('button', { name: 'Extern klassificering' })).toHaveLength(1);
+    const fieldOrder = Array.from(
+      view.container.querySelectorAll(
+        '#document_details__field, #document_people__field, [data-cy="schema-external-field-classification"]'
+      )
+    ).map((element) => element.id || 'external');
+    expect(fieldOrder).toEqual(
+      explicitPlacement
+        ? ['external', 'document_details__field', 'document_people__field']
+        : ['document_details__field', 'document_people__field', 'external']
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Spara' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce());
+    expect(onSubmit.mock.calls[0][0]).toEqual(formData);
+  }
+);
+
+test.each([
+  { order: undefined, expected: ['root_first', 'external', 'root_last'] },
+  { order: ['first', 'last'], expected: ['root_first', 'external', 'root_last'] },
+  { order: ['*', 'last'], expected: ['root_first', 'external', 'root_last'] },
+  { order: ['$external:classification', '*'], expected: ['external', 'root_first', 'root_last'] },
+])('places external section fields using ui:order only when explicit ($order)', ({ order, expected }) => {
+  const view = render(
+    <SchemaForm
+      schema={{ type: 'object', properties: { first: { type: 'string' }, last: { type: 'string' } } }}
+      uiSchema={{
+        'ui:order': order,
+        'ui:sections': [
+          {
+            id: 'section',
+            title: 'Sektion',
+            defaultOpen: true,
+            fields: ['first', '$external:classification', 'last'],
+          },
+        ],
+      }}
+      externalFields={{ classification: <button type="button">Extern klassificering</button> }}
+    />
+  );
+  const fieldOrder = Array.from(
+    view.container.querySelectorAll('#root_first, #root_last, [data-cy="schema-external-field-classification"]')
+  ).map((element) => element.id || 'external');
+  expect(fieldOrder).toEqual(expected);
+});
+
+test('keeps consecutive external section fields in order when their preceding field is hidden', () => {
+  const view = render(
+    <SchemaForm
+      schema={{ type: 'object', properties: { first: { type: 'string' }, last: { type: 'string' } } }}
+      uiSchema={{
+        first: { 'ui:widget': 'hidden' },
+        'ui:sections': [
+          {
+            id: 'section',
+            title: 'Sektion',
+            defaultOpen: true,
+            fields: ['first', '$external:classification', '$external:report', 'last'],
+          },
+        ],
+      }}
+      externalFields={{ classification: <p>Klassificering</p>, report: <p>Rapport</p> }}
+    />
+  );
+  const fieldOrder = Array.from(view.container.querySelectorAll('[data-cy^="schema-external-field-"], #root_last')).map(
+    (element) => element.id || element.textContent
+  );
+  expect(fieldOrder).toEqual(['Klassificering', 'Rapport', 'root_last']);
+});
+
+test.each(['order', 'section'])(
+  'keeps explicitly nested external controls in their object or list row without a root fallback (%s)',
+  (placement) => {
+    const externalPlacement = (name: string): UiSchema =>
+      placement === 'order'
+        ? { 'ui:order': [`$external:${name}`, '*'] }
+        : {
+            'ui:sections': [{ id: 'external', title: name, defaultOpen: true, fields: [`$external:${name}`] }],
+          };
+    const view = render(
+      <SchemaForm
+        schema={{
+          type: 'object',
+          properties: {
+            details: { type: 'object', properties: { answer: { type: 'string' } } },
+            people: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' } } } },
+          },
+        }}
+        formData={{ details: { answer: 'Svar' }, people: [{ name: 'Anna' }, { name: 'Bertil' }] }}
+        uiSchema={{ details: externalPlacement('classification'), people: { items: externalPlacement('report') } }}
+        externalFields={{ classification: <p>Klassificering</p>, report: <p>Rapport</p> }}
+      />
+    );
+    expect(screen.getAllByText('Klassificering')).toHaveLength(1);
+    expect(screen.getAllByText('Rapport')).toHaveLength(2);
+    expect(view.container.querySelector('#root_details__field')?.contains(screen.getByText('Klassificering'))).toBe(
+      true
+    );
+    screen.getAllByText('Rapport').forEach((report, index) => {
+      expect(view.container.querySelector(`#root_people_${index}__field`)?.contains(report)).toBe(true);
+    });
+  }
+);
+
 test('checkbox groups preserve value types and enforce the maximum number of choices', async () => {
   const onSubmit = vi.fn();
   render(

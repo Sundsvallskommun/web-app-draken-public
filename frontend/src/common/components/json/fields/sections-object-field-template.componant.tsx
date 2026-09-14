@@ -260,6 +260,51 @@ function resolveFieldOrder(rawOrder: unknown, propertyNames: string[]): string[]
   return resolvedOrder;
 }
 
+function getDeclaredExternalFields(uiSchema: unknown): Set<string> {
+  if (!isRecordValue(uiSchema)) return new Set();
+
+  const order: unknown[] = Array.isArray(uiSchema['ui:order']) ? uiSchema['ui:order'] : [];
+  const sectionFields = getSectionDefinitions(uiSchema).flatMap((section) => section.fields);
+  const declaredFields = new Set(
+    [...order, ...sectionFields].filter(
+      (field): field is string => typeof field === 'string' && field.startsWith(externalFieldPrefix)
+    )
+  );
+
+  // A placement in a nested object or an array's items also claims the field,
+  // so the root must not add a second instance as an unplaced fallback.
+  for (const [key, value] of Object.entries(uiSchema)) {
+    if (key.startsWith('ui:')) continue;
+    const children = Array.isArray(value) ? value : [value];
+    for (const child of children) {
+      for (const field of getDeclaredExternalFields(child)) declaredFields.add(field);
+    }
+  }
+
+  return declaredFields;
+}
+
+function resolveObjectFieldOrder(
+  uiSchema: UiSchema | undefined,
+  propertyNames: string[],
+  externalFields: Readonly<Record<string, ReactNode>>,
+  isRoot: boolean
+): string[] {
+  const rawOrder = uiSchema?.['ui:order'];
+  const requestedOrder: unknown[] = Array.isArray(rawOrder) ? rawOrder : [];
+  const externalFieldNames = Object.keys(externalFields).map((name) => `${externalFieldPrefix}${name}`);
+  // Only explicit names participate in ui:order (including its wildcard).
+  // Section-only placements are inserted later from section.fields.
+  const order = resolveFieldOrder(rawOrder, [
+    ...propertyNames,
+    ...externalFieldNames.filter((name) => requestedOrder.includes(name)),
+  ]);
+  if (!isRoot) return order;
+
+  const declaredFields = getDeclaredExternalFields(uiSchema);
+  return [...order, ...externalFieldNames.filter((name) => !declaredFields.has(name))];
+}
+
 function insertExternalFieldsInSectionOrder(
   orderedPropertyNames: readonly string[],
   sectionFieldNames: readonly string[]
@@ -368,10 +413,8 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
   const showCompletionControl = uiSchema?.['ui:options']?.showSectionCompletion !== false;
   const showObjectFieldset = uiSchema?.['ui:options']?.showObjectFieldset === true;
   const propertyNames = properties.map((p) => p.name);
-  const order = resolveFieldOrder(uiSchema?.['ui:order'], [
-    ...propertyNames,
-    ...Object.keys(externalFields).map((name) => `${externalFieldPrefix}${name}`),
-  ]);
+  const isRoot = idSchema.$id === (ctx?.idPrefix ?? 'root');
+  const order = resolveObjectFieldOrder(uiSchema, propertyNames, externalFields, isRoot);
   const isReadonly = !!(disabled || readonly);
 
   const visibleFields = new Set<string>();
@@ -395,7 +438,7 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
       </div>
     );
 
-    if (idSchema.$id === (ctx?.idPrefix ?? 'root') || !showObjectFieldset) return renderedFields;
+    if (isRoot || !showObjectFieldset) return renderedFields;
 
     return (
       <fieldset

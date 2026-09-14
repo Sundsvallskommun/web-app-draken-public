@@ -28,7 +28,19 @@ Använd ett unikt `idPrefix` när flera formulär visas på samma sida. `getSche
 UI Schema kan använda `ui:sections`, `ui:rows` och `ui:order` för layout. Observera att
 vår `ui:rows` beskriver fältrader och skiljer sig från RJSF-typens numeriska textarea-option.
 Externa komponenter skickas genom `externalFields` och placeras med `$external:<namn>`.
-De hör inte till formulärets JSON-data. De JSON-specifika layoutreglerna finns i
+De hör inte till formulärets JSON-data. Placeringen följer dessa regler:
+
+1. Ett uttryckligt `$external:<namn>` i objektets `ui:order` styr ordningen inom
+   objektet eller den sektion fältet tillhör. Jokertecknet `*` är inte en uttrycklig placering.
+2. Annars används positionen i `ui:sections[].fields`, relativt sektionens övriga fält.
+3. Externa fält utan placering någonstans i UI-schemat visas sist på formulärets rot,
+   efter eventuella sektioner. De upprepas inte automatiskt i nästlade objekt eller listposter.
+
+En uttrycklig placering i ett nästlat objekts UI-schema gäller bara där. Placering i
+en listas `items` gäller per listpost. Sådana fält får ingen extra kopia på roten.
+Anroparen ansvarar för att inte deklarera samma externa kontroll på flera oavsiktliga platser.
+
+De JSON-specifika layoutreglerna finns i
 `src/styles/tailwind.scss`; lokala UI-scheman ingår i Tailwinds sökvägar.
 
 ## Platsval
