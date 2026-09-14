@@ -379,11 +379,7 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
     // Hidden fields must not leave wrappers, row gaps or empty sections in the layout.
     if (prop.hidden) continue;
     const conditions = conditionalFields.get(prop.name);
-    if (conditions) {
-      if (conditions.some((condition) => isConditionMet(condition, formData || {}))) {
-        visibleFields.add(prop.name);
-      }
-    } else {
+    if (!conditions || conditions.some((condition) => isConditionMet(condition, formData || {}))) {
       visibleFields.add(prop.name);
     }
   }
