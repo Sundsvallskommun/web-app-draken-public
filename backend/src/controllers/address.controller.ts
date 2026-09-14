@@ -9,9 +9,10 @@ import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 import { MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { LEAddress, LegalEntity2, LEPostAddress, OrganizationEngagements } from '@/data-contracts/legalentity/data-contracts';
+import { LEAddress, LegalEntity2, LEPostAddress } from '@/data-contracts/legalentity/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
-import { OrganizationService } from '@/services/organization.service';
+import { LegalEntityEngagementsApiResponse, LegalEntityProfileApiResponse } from '@/responses/legal-entity.response';
+import { OrganizationService, toLegalEntityProfile } from '@/services/organization.service';
 import { logger } from '@/utils/logger';
 import { formatOrgNr, OrgNumberFormat } from '@/utils/util';
 
@@ -137,7 +138,7 @@ class CLegalEntity2WithId extends CLegalEntity2 implements LegalEntity2WithId {
 }
 
 interface ResponseData {
-  data: Citizenaddress | LegalEntity2 | OrganizationEngagements;
+  data: Citizenaddress | LegalEntity2;
   message: string;
 }
 
@@ -181,10 +182,29 @@ export class AddressController {
     return { data: result, message: 'success' } as ResponseData;
   }
 
+  @Get('/legalentity/:partyId')
+  @OpenAPI({ summary: 'Return legal entity information for a given party id' })
+  @ResponseSchema(LegalEntityProfileApiResponse)
+  @UseBefore(authMiddleware)
+  async legalEntityByPartyId(@Req() req: RequestWithUser, @Param('partyId') partyId: string): Promise<LegalEntityProfileApiResponse> {
+    if (!isUUID(partyId)) {
+      throw new HttpException(400, 'Party id must be a uuid');
+    }
+
+    if (!MUNICIPALITY_ID) {
+      throw new HttpException(500, 'Municipality id is not configured');
+    }
+
+    const legalEntity = await this.organizationService.getOrganizationByPartyId(MUNICIPALITY_ID, partyId, req.user);
+
+    return { data: toLegalEntityProfile(legalEntity), message: 'success' };
+  }
+
   @Get('/legalentity/:partyId/engagements')
   @OpenAPI({ summary: 'Return people engaged in the company a given party id belongs to' })
+  @ResponseSchema(LegalEntityEngagementsApiResponse)
   @UseBefore(authMiddleware)
-  async legalEntityEngagements(@Req() req: RequestWithUser, @Param('partyId') partyId: string): Promise<ResponseData> {
+  async legalEntityEngagements(@Req() req: RequestWithUser, @Param('partyId') partyId: string): Promise<LegalEntityEngagementsApiResponse> {
     if (!isUUID(partyId)) {
       throw new HttpException(400, 'Party id must be a uuid');
     }
@@ -195,7 +215,7 @@ export class AddressController {
 
     const data = await this.organizationService.getOrganizationEngagements(MUNICIPALITY_ID, partyId, req.user);
 
-    return { data, message: 'success' } as ResponseData;
+    return { data, message: 'success' };
   }
 
   @Get('/portalpersondata/personal/:loginName')

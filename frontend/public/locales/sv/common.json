@@ -64,6 +64,14 @@
     "engagements_description": "Nedan kan du se personer kopplade till ärendeägaren.",
     "role": "Roll",
     "name": "Namn",
-    "identity": "Personnummer"
+    "identity": "Personnummer",
+    "show_more": "Visa mer information",
+    "description_heading": "Verksamhetsbeskrivning",
+    "accounting_period": "Räkenskapsår",
+    "table_company": "Bolag",
+    "table_address": "Adress",
+    "table_employees": "Antal anställda",
+    "no_description": "Ingen verksamhetsbeskrivning finns registrerad.",
+    "close_description": "Stäng verksamhetsbeskrivning"
   }
 }

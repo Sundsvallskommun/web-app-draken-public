@@ -1,10 +1,11 @@
 'use client';
 
-import { CompanyEngagement, getCompanyEngagementsByPartyId } from '@common/services/legal-entity-service';
+import { getCompanyEngagementsByPartyId } from '@common/services/legal-entity-service';
 import { useEffect, useState } from 'react';
+import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
 
-export const useCompanyEngagements = (partyId: string | undefined): CompanyEngagement[] => {
-  const [engagements, setEngagements] = useState<CompanyEngagement[]>([]);
+export const useCompanyEngagements = (partyId: string | undefined): LegalEntityEngagement[] => {
+  const [engagements, setEngagements] = useState<LegalEntityEngagement[]>([]);
 
   useEffect(() => {
     if (!partyId) {
