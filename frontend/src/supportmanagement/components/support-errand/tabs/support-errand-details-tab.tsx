@@ -136,7 +136,7 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
             />
           </div>
         ) : null}
-        {companyProfile && showsBusinessDescription ? (
+        {companyProfile ? (
           <SupportErrandBusinessDescriptionDrawer
             show={showsBusinessDescription}
             profile={companyProfile}
