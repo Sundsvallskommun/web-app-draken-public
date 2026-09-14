@@ -24,7 +24,8 @@ export function SelectWidget(props: WidgetProps) {
       onBlur={() => onBlur(id, value)}
       onFocus={() => onFocus(id, value)}
     >
-      {placeholder && <Select.Option value="">{placeholder}</Select.Option>}
+      {/* Without an empty option the browser would show the first choice as selected while the value is unset. */}
+      {(placeholder || currentValue === '') && <Select.Option value="">{placeholder || ''}</Select.Option>}
       {enumOptions.map((o) => (
         <Select.Option key={String(o.value)} value={o.value}>
           {o.label}

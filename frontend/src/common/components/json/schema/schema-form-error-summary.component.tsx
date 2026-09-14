@@ -14,11 +14,14 @@ export function SchemaFormErrorSummary({
   const headingId = useId();
   const summaryRef = useRef<HTMLDivElement>(null);
 
+  // Callers may derive the list during render; focus only when its content changes, not its identity.
+  const errorSignature = errors.map((error) => `${error.fieldId}\n${error.message}`).join('\n\n');
+
   useEffect(() => {
-    if (errors.length === 0) return;
+    if (!errorSignature) return;
     summaryRef.current?.focus({ preventScroll: true });
     summaryRef.current?.scrollIntoView({ block: 'start' });
-  }, [errors]);
+  }, [errorSignature]);
 
   if (errors.length === 0) return null;
 

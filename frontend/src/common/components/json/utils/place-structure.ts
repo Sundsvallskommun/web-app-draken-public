@@ -152,7 +152,7 @@ export const getEmploymentPrefillNode = <TManager>(
   persistedOrgName: string | undefined
 ): PlaceNode | undefined => (persistedOrgName?.trim() ? undefined : employmentMatch?.node);
 
-export const placeKey = (node: PlaceNode): string => node.label.resourcePath ?? node.path.map(labelName).join('/');
+export const placeKey = (node: PlaceNode): string => node.label.resourcePath || node.path.map(labelName).join('/');
 
 export const findPlaceNodeByKey = (nodes: readonly PlaceNode[], key: string): PlaceNode | undefined =>
   nodes.find((node) => placeKey(node) === key);

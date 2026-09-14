@@ -41,7 +41,8 @@ en listas `items` gäller per listpost. Sådana fält får ingen extra kopia på
 Anroparen ansvarar för att inte deklarera samma externa kontroll på flera oavsiktliga platser.
 
 De JSON-specifika layoutreglerna finns i
-`src/styles/tailwind.scss`; lokala UI-scheman ingår i Tailwinds sökvägar.
+`src/styles/tailwind.scss`. Klasser som bara förekommer i UI-scheman från API:et läggs i
+Tailwinds `safelist` i `tailwind.config.ts`, eftersom de inte kan hittas av innehållsskanningen.
 
 ## Platsval
 

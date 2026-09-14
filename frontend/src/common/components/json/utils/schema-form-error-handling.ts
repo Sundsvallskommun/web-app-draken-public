@@ -18,10 +18,21 @@ function getFieldPath(property: string): string[] {
     .filter(Boolean);
 }
 
+// Only "#/..." pointers resolve here. Any other reference, such as a draft 2020-12 $anchor,
+// keeps the raw key as its label rather than aborting the whole validation with an exception.
+function withResolvedRef(node: RJSFSchema, rootSchema: RJSFSchema): RJSFSchema {
+  if (!node.$ref) return node;
+  try {
+    return { ...findSchemaDefinition(node.$ref, rootSchema), ...node };
+  } catch {
+    return node;
+  }
+}
+
 function getFieldLabels(schema: RJSFSchema, path: string[]): string[] {
   let current: RJSFSchema | undefined = schema;
   return path.map((part) => {
-    if (current?.$ref) current = { ...findSchemaDefinition(current.$ref, schema), ...current };
+    if (current) current = withResolvedRef(current, schema);
     if (/^\d+$/.test(part)) {
       const item = Array.isArray(current?.items) ? current.items[Number(part)] : current?.items;
       current = typeof item === 'object' ? item : undefined;
@@ -29,7 +40,7 @@ function getFieldLabels(schema: RJSFSchema, path: string[]): string[] {
     }
     const field = current?.properties?.[part];
     current = typeof field === 'object' ? field : undefined;
-    if (current?.$ref) current = { ...findSchemaDefinition(current.$ref, schema), ...current };
+    if (current) current = withResolvedRef(current, schema);
     return current?.title ?? part;
   });
 }

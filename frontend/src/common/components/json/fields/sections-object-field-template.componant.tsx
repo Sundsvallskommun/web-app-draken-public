@@ -1,26 +1,14 @@
 'use client';
 
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-import type { ObjectFieldTemplateProps, RJSFSchema, UiSchema } from '@rjsf/utils';
+import type { ObjectFieldTemplateProps, RJSFSchema, SchemaUtilsType, UiSchema } from '@rjsf/utils';
 import { Checkbox, Disclosure, Divider, Label } from '@sk-web-gui/react';
 import { MouseEvent, ReactNode, useState } from 'react';
 
 import type { SchemaErrorNavigation } from '../schema/schema-form-error-summary.component';
 
-interface SchemaCondition {
-  const?: unknown;
-  enum?: unknown[];
-  properties?: Record<string, SchemaCondition | boolean>;
-  required?: string[];
-  contains?: SchemaCondition | boolean;
-  allOf?: (SchemaCondition | boolean)[];
-  anyOf?: (SchemaCondition | boolean)[];
-  oneOf?: (SchemaCondition | boolean)[];
-  not?: SchemaCondition | boolean;
-}
-
 interface ConditionalRule {
-  if: SchemaCondition;
+  if: RJSFSchema;
   then: {
     required?: string[];
     properties?: Record<string, unknown>;
@@ -50,48 +38,18 @@ interface FormContext {
 
 const externalFieldPrefix = '$external:';
 
-function hasOwn(value: object, key: string): boolean {
-  return Object.hasOwn(value, key);
-}
-
 const isRecordValue = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-const matchesRequiredFields = (required: readonly string[] | undefined, value: unknown): boolean =>
-  !required || (isRecordValue(value) && required.every((fieldName) => hasOwn(value, fieldName)));
-
-const matchesProperties = (properties: SchemaCondition['properties'], value: unknown): boolean =>
-  !properties ||
-  (isRecordValue(value) &&
-    Object.entries(properties).every(
-      ([fieldName, fieldCondition]) =>
-        !hasOwn(value, fieldName) || matchesSchemaCondition(fieldCondition, value[fieldName])
-    ));
-
-const matchesContains = (contains: SchemaCondition['contains'], value: unknown): boolean =>
-  !contains || (Array.isArray(value) && value.some((item) => matchesSchemaCondition(contains, item)));
-
-const matchesCombinators = (condition: SchemaCondition, value: unknown): boolean => {
-  if (condition.allOf && !condition.allOf.every((part) => matchesSchemaCondition(part, value))) return false;
-  if (condition.anyOf && !condition.anyOf.some((part) => matchesSchemaCondition(part, value))) return false;
-  if (condition.oneOf && condition.oneOf.filter((part) => matchesSchemaCondition(part, value)).length !== 1) {
-    return false;
-  }
-  return condition.not === undefined || !matchesSchemaCondition(condition.not, value);
-};
-
-function matchesSchemaCondition(condition: SchemaCondition | boolean, value: unknown): boolean {
-  if (typeof condition === 'boolean') return condition;
-  if (hasOwn(condition, 'const') && !Object.is(value, condition.const)) return false;
-  if (condition.enum && !condition.enum.some((enumValue) => Object.is(enumValue, value))) return false;
-  if (!matchesRequiredFields(condition.required, value)) return false;
-  if (!matchesProperties(condition.properties, value)) return false;
-  if (!matchesContains(condition.contains, value)) return false;
-  return matchesCombinators(condition, value);
-}
-
-function isConditionMet(condition: ConditionalRule['if'], formData: Record<string, unknown>): boolean {
-  return matchesSchemaCondition(condition, formData);
+// Visibility follows the same evaluator as validity: the form's AJV instance decides whether an
+// if-condition holds, so keywords such as minimum or pattern cannot diverge from what is enforced.
+function isConditionMet(
+  schemaUtils: SchemaUtilsType,
+  condition: ConditionalRule['if'],
+  formData: Record<string, unknown>,
+  rootSchema: RJSFSchema
+): boolean {
+  return schemaUtils.getValidator().isValid(condition, formData, rootSchema);
 }
 
 function getConditionalFields(schema: RJSFSchema): Map<string, ConditionalRule['if'][]> {
@@ -336,6 +294,20 @@ function insertExternalFieldsInSectionOrder(
   return resolvedOrder;
 }
 
+function renderExternalField(
+  fieldName: string,
+  externalFields: Readonly<Record<string, ReactNode>>,
+  className: string
+) {
+  const externalFieldName = fieldName.slice(externalFieldPrefix.length);
+  const externalField = externalFields[externalFieldName];
+  return externalField ? (
+    <div key={fieldName} className={className} data-cy={`schema-external-field-${externalFieldName}`}>
+      {externalField}
+    </div>
+  ) : null;
+}
+
 function renderFields(
   fieldNames: string[],
   properties: ObjectFieldTemplateProps['properties'],
@@ -348,14 +320,9 @@ function renderFields(
   return fieldNames.map((fieldName) => {
     if (!visibleFields.has(fieldName)) return null;
 
-    if (fieldName.startsWith(externalFieldPrefix)) {
-      const externalFieldName = fieldName.slice(externalFieldPrefix.length);
-      const externalField = externalFields[externalFieldName];
-      return externalField ? (
-        <div key={fieldName} className="min-w-0 max-w-full" data-cy={`schema-external-field-${externalFieldName}`}>
-          {externalField}
-        </div>
-      ) : null;
+    // An external field declared in a row is rendered as a cell of that row below.
+    if (fieldName.startsWith(externalFieldPrefix) && !rowFieldNames.has(fieldName)) {
+      return renderExternalField(fieldName, externalFields, 'min-w-0 max-w-full');
     }
 
     const row = rows.find((r) => r.fields.find((field) => visibleFields.has(field)) === fieldName);
@@ -374,6 +341,9 @@ function renderFields(
           data-cy="schema-field-row"
         >
           {visibleRowFields.map((f) => {
+            if (f.startsWith(externalFieldPrefix)) {
+              return renderExternalField(f, externalFields, 'schema-field-cell w-full min-w-0');
+            }
             const prop = properties.find((p) => p.name === f);
             return prop ? (
               <div key={f} className="schema-field-cell w-full min-w-0">
@@ -397,12 +367,13 @@ function renderFields(
 }
 
 export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
-  const { properties, formData, formContext, uiSchema, disabled, readonly, description, idSchema, required, title } =
+  const { properties, formData, formContext, uiSchema, disabled, readonly, idSchema, registry, required, title } =
     props;
 
   const ctx = formContext as FormContext | undefined;
   const externalFields = ctx?.externalFields ?? {};
   const originalSchema = ctx?.originalSchema;
+  const rootSchema = originalSchema ?? registry.rootSchema;
   const conditionalFields = originalSchema
     ? getConditionalFields(originalSchema)
     : new Map<string, ConditionalRule['if'][]>();
@@ -422,7 +393,10 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
     // Hidden fields must not leave wrappers, row gaps or empty sections in the layout.
     if (prop.hidden) continue;
     const conditions = conditionalFields.get(prop.name);
-    if (!conditions || conditions.some((condition) => isConditionMet(condition, formData || {}))) {
+    if (
+      !conditions ||
+      conditions.some((condition) => isConditionMet(registry.schemaUtils, condition, formData || {}, rootSchema))
+    ) {
       visibleFields.add(prop.name);
     }
   }
@@ -451,7 +425,6 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
             {required ? ctx?.requiredIndicator ?? ' *' : ''}
           </legend>
         )}
-        {description && <p className="mb-16 text-small text-dark-secondary">{description}</p>}
         {renderedFields}
       </fieldset>
     );

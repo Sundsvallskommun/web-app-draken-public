@@ -35,14 +35,16 @@ export function RjsfTextEditor({
   const markupValue = typeof value === 'string' ? value : '';
   const configuredClassName = typeof options.className === 'string' ? options.className : defaultClassName;
   const isReadonly = Boolean(disabled || readonly);
+  // FieldTemplate also hides the label on ui:options.hideLabel, which RJSF's hideLabel does not cover.
+  const labelHidden = Boolean(hideLabel || options.hideLabel);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
 
-    const syncAccessibilityAttributes = () => {
+    const syncAccessibilityAttributes = (): boolean => {
       const editor = host.querySelector<HTMLElement>('.ql-editor');
-      if (!editor) return;
+      if (!editor) return false;
 
       editor.id = id;
       editor.setAttribute('role', 'textbox');
@@ -54,21 +56,26 @@ export function RjsfTextEditor({
       if (required) editor.setAttribute('aria-required', 'true');
       else editor.removeAttribute('aria-required');
 
-      if (hideLabel) {
+      if (labelHidden) {
         editor.setAttribute('aria-label', label);
         editor.removeAttribute('aria-labelledby');
       } else {
         editor.setAttribute('aria-labelledby', titleId(id));
         editor.removeAttribute('aria-label');
       }
+      return true;
     };
 
-    syncAccessibilityAttributes();
-    const observer = new MutationObserver(syncAccessibilityAttributes);
+    // Quill mounts through next/dynamic, so the editor may not exist yet. Observe only until it
+    // does; typing mutates the editor's children and must not re-run the sync on every keystroke.
+    if (syncAccessibilityAttributes()) return;
+    const observer = new MutationObserver(() => {
+      if (syncAccessibilityAttributes()) observer.disconnect();
+    });
     observer.observe(host, { childList: true, subtree: true });
 
     return () => observer.disconnect();
-  }, [hideLabel, id, isReadonly, label, rawErrors, required]);
+  }, [labelHidden, id, isReadonly, label, rawErrors, required]);
 
   return (
     <div ref={hostRef} className="min-w-0 max-w-full">

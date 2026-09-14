@@ -2,6 +2,7 @@
 
 import { ariaDescribedByIds, type WidgetProps } from '@rjsf/utils';
 import { Input } from '@sk-web-gui/react';
+import { useEffect } from 'react';
 
 /**
  * Ett nativt tidsfält lämnar HH:mm, men JSON Schemas `time`-format kräver sekunder. Sekunder läggs
@@ -28,6 +29,14 @@ export function TimeWidget({
 }: WidgetProps) {
   const customClassName = typeof options.className === 'string' ? options.className : 'w-full max-w-[40rem]';
   const requiresSeconds = schema.format === 'time';
+
+  // A stored value without seconds only satisfies the format once it is retyped, so normalize it
+  // on load instead of letting the save fail on an untouched field.
+  useEffect(() => {
+    if (disabled || readonly || typeof value !== 'string' || value === '') return;
+    const normalized = toSchemaValue(value, requiresSeconds);
+    if (normalized !== value) onChange(normalized);
+  }, [disabled, onChange, readonly, requiresSeconds, value]);
 
   return (
     <Input
