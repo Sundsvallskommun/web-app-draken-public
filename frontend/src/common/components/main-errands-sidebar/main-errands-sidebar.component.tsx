@@ -14,7 +14,7 @@ import {
   SupportManagementFilter,
   SupportManagementValues,
 } from '@supportmanagement/components/supportmanagement-filtering/supportmanagement-filtering.component';
-import { ChevronsLeft, ChevronsRight, FileText, SquarePen } from 'lucide-react';
+import { CalendarCheck, ChevronsLeft, ChevronsRight, FileText, SquarePen } from 'lucide-react';
 import NextLink from 'next/link';
 import { FC, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -26,9 +26,20 @@ export const MainErrandsSidebar: FC<{
   setShowAttestationTable: (show: boolean) => void;
   showContractTable: boolean;
   setShowContractTable: (show: boolean) => void;
+  showPlannedMeasures?: boolean;
+  setShowPlannedMeasures?: (show: boolean) => void;
   open: boolean;
   setOpen: (open: boolean) => void;
-}> = ({ showAttestationTable, setShowAttestationTable, showContractTable, setShowContractTable, open, setOpen }) => {
+}> = ({
+  showAttestationTable,
+  setShowAttestationTable,
+  showContractTable,
+  setShowContractTable,
+  showPlannedMeasures = false,
+  setShowPlannedMeasures,
+  open,
+  setOpen,
+}) => {
   const suppportManagementFilterForm = useForm<SupportManagementFilter>({ defaultValues: SupportManagementValues });
   const casedataFilterForm = useForm<CaseDataFilter>({ defaultValues: CaseStatusValues });
   const user = useUserStore((s) => s.user);
@@ -98,6 +109,8 @@ export const MainErrandsSidebar: FC<{
               <SupportManagementFilterSidebarStatusSelector
                 showAttestationTable={showAttestationTable}
                 setShowAttestationTable={setShowAttestationTable}
+                showPlannedMeasures={showPlannedMeasures}
+                setShowPlannedMeasures={setShowPlannedMeasures}
                 iconButton={!open}
               />
             </FormProvider>
@@ -117,7 +130,10 @@ export const MainErrandsSidebar: FC<{
             <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
             <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
               <Button
-                onClick={() => setShowAttestationTable(true)}
+                onClick={() => {
+                  setShowAttestationTable(true);
+                  setShowPlannedMeasures?.(false);
+                }}
                 leftIcon={<SquarePen />}
                 className={`${open && 'justify-start'} ${!showAttestationTable && 'hover:bg-dark-ghost'}`}
                 variant={showAttestationTable ? 'primary' : 'ghost'}
@@ -140,6 +156,27 @@ export const MainErrandsSidebar: FC<{
                     />
                   </span>
                 )}
+              </Button>
+            </div>
+          </>
+        )}
+        {appConfig.isSupportManagement && appConfig.features.useMeasures && setShowPlannedMeasures && (
+          <>
+            <Divider className={cx(open ? '' : 'w-[4rem] mx-auto')} />
+            <div className={cx('flex flex-col gap-8', open ? 'py-24' : 'items-center justify-center py-15')}>
+              <Button
+                onClick={() => {
+                  setShowPlannedMeasures(true);
+                  setShowAttestationTable(false);
+                }}
+                leftIcon={<CalendarCheck />}
+                className={`${open && 'justify-start'} ${!showPlannedMeasures && 'hover:bg-dark-ghost'}`}
+                variant={showPlannedMeasures ? 'primary' : 'ghost'}
+                iconButton={!open}
+                aria-label={open ? undefined : 'Planerade åtgärder'}
+                data-cy="planned-measures-button"
+              >
+                {open && <span className="w-full flex justify-between">Planerade åtgärder</span>}
               </Button>
             </div>
           </>

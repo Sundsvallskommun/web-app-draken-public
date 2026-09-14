@@ -194,4 +194,22 @@ describe('measure write handlers (over HTTP)', () => {
     expect(response.status).toBe(400);
     expect(apiPatch).not.toHaveBeenCalled();
   });
+
+  it('serves the planned overview under its own prefix, so the segment is not read as an errand id', async () => {
+    const planned = { ...measure, accept: 'TRUE', plannedComplete: '2026-10-01T00:00:00Z' };
+    apiGet.mockImplementation(async (config: { url?: string }) => {
+      if (config.url?.endsWith('/metadata')) return { data: metadata };
+      if (config.url?.includes('/errands?')) {
+        return { data: { content: [{ ...errand, errandNumber: 'VOF-2026-0001', title: 'Fallskada', measures: [planned, measure] }], last: true } };
+      }
+      throw new HttpException(404, `Unexpected read ${config.url}`);
+    });
+    const response = await request(server).get('/supportmeasures/2281/planned');
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      measures: [{ ...planned, errand: { id: 'errand-1', errandNumber: 'VOF-2026-0001', title: 'Fallskada', status: 'ONGOING' } }],
+      metadata,
+      truncated: false,
+    });
+  });
 });

@@ -174,6 +174,82 @@ test.each(['', '{invalid'])('reads history when registration configuration is ab
   expect(snapshot.registration.status).toBe(configuration ? 'invalid' : 'unconfigured');
 });
 
+const plannedOnErrand = (errandId: string, errandNumber: string, ...measures: Measure[]) => ({
+  id: errandId,
+  errandNumber,
+  title: 'Fallskada',
+  status: 'ONGOING',
+  measures,
+});
+const openPlanned = (id: string, plannedComplete: string): Measure => ({ ...measure, id, accept: 'TRUE', plannedComplete });
+
+test('reads open planned measures across the errands upstream grants, one page at a time, with the errand attached', async () => {
+  const { service, get } = setup();
+  const pageUrls: string[] = [];
+  get.mockImplementation(async config => {
+    if (config.url?.endsWith('/metadata')) return response(metadata);
+    pageUrls.push(config.url ?? '');
+    const page = Number(new URL('http://x/' + config.url).searchParams.get('page'));
+    return response(
+      page === 0
+        ? {
+            content: [plannedOnErrand('e1', 'VOF-2026-0001', openPlanned('later', '2026-11-01T00:00:00Z'), { ...measure, id: 'proposal' })],
+            last: false,
+          }
+        : { content: [plannedOnErrand('e2', 'VOF-2026-0002', openPlanned('soon', '2026-09-20T00:00:00Z'))], last: true },
+    );
+  });
+  const snapshot = await service.readPlanned(mockMunicipalityId, user);
+  expect(snapshot.measures.map(planned => [planned.id, planned.errand.errandNumber])).toEqual([
+    ['soon', 'VOF-2026-0002'],
+    ['later', 'VOF-2026-0001'],
+  ]);
+  expect(snapshot.measures[0].errand).toEqual({ id: 'e2', errandNumber: 'VOF-2026-0002', title: 'Fallskada', status: 'ONGOING' });
+  expect(snapshot.metadata).toEqual(metadata);
+  expect(snapshot.truncated).toBe(false);
+  expect(pageUrls).toHaveLength(2);
+  const query = new URL('http://x/' + pageUrls[0]).searchParams;
+  expect(pageUrls[0]).toMatch(/\/errands\?/);
+  expect(query.get('filter')).toBe(
+    "(measures.accept:'TRUE' or measures.accept:'REWORK') and measures.executed is null" +
+      " and (measures.plannedStart is not null or measures.plannedComplete is not null) and status!'SOLVED'",
+  );
+  expect(query.get('size')).toBe('100');
+  expect(query.get('sort')).toBe('created,asc');
+  expect(new URL('http://x/' + pageUrls[1]).searchParams.get('page')).toBe('1');
+  expect(get.mock.calls[0][0]).toMatchObject({ propagateClientError: true, mapUnauthorizedToForbidden: true });
+  expect(get.mock.calls[0][1]).toBe(user);
+});
+
+test('stops walking pages at the cap and says the overview is incomplete', async () => {
+  const { service, get } = setup();
+  get.mockImplementation(async config =>
+    response(
+      config.url?.endsWith('/metadata')
+        ? metadata
+        : { content: [plannedOnErrand('e', 'VOF-2026-0001', openPlanned('m', '2026-09-20T00:00:00Z'))], last: false },
+    ),
+  );
+  const snapshot = await service.readPlanned(mockMunicipalityId, user);
+  expect(snapshot.truncated).toBe(true);
+  expect(snapshot.measures).toHaveLength(1);
+  expect(get.mock.calls.filter(([config]) => config.url?.includes('/errands?'))).toHaveLength(10);
+});
+
+test('stops on an empty page even when upstream does not flag it as the last one', async () => {
+  const { service, get } = setup();
+  get.mockImplementation(async config => response(config.url?.endsWith('/metadata') ? metadata : { content: [], last: false }));
+  const snapshot = await service.readPlanned(mockMunicipalityId, user);
+  expect(snapshot).toEqual({ measures: [], metadata, truncated: false });
+  expect(get).toHaveBeenCalledTimes(2);
+});
+
+test('propagates denied access to the planned overview instead of showing it as empty', async () => {
+  const { service, get } = setup();
+  get.mockRejectedValueOnce(new HttpException(403, 'Denied'));
+  await expect(service.readPlanned(mockMunicipalityId, user)).rejects.toMatchObject({ status: 403 });
+});
+
 test('edits historic proposals with the original measure ETag while preserving attribution', async () => {
   const { service, get, patch } = setup();
   get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response(measure));

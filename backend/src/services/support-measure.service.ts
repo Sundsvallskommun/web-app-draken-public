@@ -1,7 +1,7 @@
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import type { JsonSchema } from '@/data-contracts/jsonschema/data-contracts';
-import { Errand, Measure, MeasureType, MetadataResponse, Role } from '@/data-contracts/supportmanagement/data-contracts';
+import { Errand, Measure, MeasureType, MetadataResponse, PageErrand, Role } from '@/data-contracts/supportmanagement/data-contracts';
 import { CreateSupportMeasureDto, DecideSupportMeasureDto, FollowUpSupportMeasureDto, UpdateSupportMeasureDto } from '@/dtos/support-measure.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { User } from '@/interfaces/users.interface';
@@ -26,6 +26,7 @@ import {
   measureRoleDecides,
   resolveSupportMeasureRegistration,
 } from './support-measure-registration';
+import { collectOpenPlannedMeasures, OPEN_PLANNED_MEASURES_FILTER, type PlannedSupportMeasure } from './support-planned-measures';
 
 export interface SupportMeasuresSnapshot {
   measures: SupportMeasure[];
@@ -34,6 +35,18 @@ export interface SupportMeasuresSnapshot {
   creationRoles: Role[];
   registration: MeasureRegistrationPolicy;
 }
+
+export interface PlannedSupportMeasuresSnapshot {
+  measures: PlannedSupportMeasure[];
+  metadata: { measureTypes: MeasureType[]; roles: Role[] };
+  /** More errands matched than the read covers, so the list is incomplete. */
+  truncated: boolean;
+}
+
+// The errand list is paged per errand, not per measure. An overview of one person's planned work is small,
+// so the pages are walked up to a cap that still keeps a runaway namespace from turning into a thousand reads.
+const PLANNED_MEASURES_PAGE_SIZE = 100;
+const PLANNED_MEASURES_MAX_PAGES = 10;
 
 function requireMeasureVersion(ifMatch: string | undefined): number {
   if (ifMatch === undefined) throw new HttpException(428, 'If-Match is required when updating a measure');
@@ -135,6 +148,49 @@ export class SupportMeasureService {
       errandVersion: getErrandVersion(errand.data, errand.headers?.etag),
       metadata: { measureTypes: metadata.measureTypes ?? [], roles: metadata.roles ?? [] },
       ...registration,
+    };
+  }
+
+  /**
+   * Open planned measures on every errand the user reaches, for an overview outside the errand. Upstream applies
+   * its access control to the list, so the result is exactly the errands the overview already shows this user.
+   * Follow-up answers are not joined in: they are one read per measure, and an unexecuted measure is planned
+   * whether or not its answers were saved.
+   */
+  async readPlanned(municipalityId: string, user: User): Promise<PlannedSupportMeasuresSnapshot> {
+    const errands: Errand[] = [];
+    let truncated = false;
+    // Sorted by creation so paging stays stable while others write; a page walk over `touched` would skip
+    // errands that were edited between two reads.
+    for (let page = 0; ; page++) {
+      if (page >= PLANNED_MEASURES_MAX_PAGES) {
+        truncated = true;
+        break;
+      }
+      const query = new URLSearchParams({
+        filter: OPEN_PLANNED_MEASURES_FILTER,
+        page: String(page),
+        size: String(PLANNED_MEASURES_PAGE_SIZE),
+        sort: 'created,asc',
+      });
+      const result = await this.apiService.get<PageErrand>(
+        { url: `${this.baseUrl(municipalityId)}/errands?${query.toString()}`, propagateClientError: true, mapUnauthorizedToForbidden: true },
+        user,
+      );
+      const content = result.data.content ?? [];
+      errands.push(...content);
+      if (content.length === 0 || result.data.last !== false) break;
+    }
+    const metadata = (
+      await this.apiService.get<MetadataResponse>(
+        { url: `${this.baseUrl(municipalityId)}/metadata`, propagateClientError: true, mapUnauthorizedToForbidden: true },
+        user,
+      )
+    ).data;
+    return {
+      measures: collectOpenPlannedMeasures(errands),
+      metadata: { measureTypes: metadata.measureTypes ?? [], roles: metadata.roles ?? [] },
+      truncated,
     };
   }
 

@@ -307,6 +307,70 @@ Inför kodändringen tillsammans med den nya backendkonfigurationen. Gamla
 backendkonfiguration och API-version hållas samordnade; återställ inte bara
 klientens gamla typfält mot API:ts nya svar.
 
+## Planerade åtgärder utanför ärendet
+
+Sidomenyn i översikten har knappen **Planerade åtgärder** (`main-errands-sidebar.component.tsx`,
+visas med `useMeasures`). Den byter ut ärendetabellen mot `planned-measures-overview.tsx`: en
+agenda över alla godkända (`TRUE`) eller delvis godkända (`REWORK`) åtgärder som har planerat
+start- eller slutdatum och ännu inte är genomförda, från alla ärenden användaren har tillgång
+till. Förslag som inte har bedömts, avslagna förslag, åtgärder utan datum och genomförda
+åtgärder visas inte. Ett statusklick i sidomenyn tar tillbaka ärendetabellen.
+
+Vyn är en agenda, inte ett register. Åtgärderna ligger i tidsfack efter slutdatum (startdatum
+när slutdatum saknas), närmast först: **Försenade** (passerat slutdatum), **Kommande två veckor**
+och **Senare**. Ett passerat startdatum gör inte en åtgärd försenad. Tomma fack visas inte.
+Reglerna är rena funktioner i `planned-measures.ts` (`plannedMeasureBucket`,
+`groupPlannedMeasures`, `formatDeadlineDay`, `describeDeadlineDistance`).
+
+- Raden visar datumet störst ("10 sep", med år bara när det inte är innevarande år) och
+  avståndet i dagar under, åtgärdstyp, ärendenummer som länk till ärendet (ny flik), ärendets
+  rubrik, ansvarig och beslutet som etikett. Försenade rader har rött datum; hela raden färgas
+  inte.
+- Raden är ett `details`-element som fälls ut på plats till hela åtgärden: beskrivning, mål,
+  planerade datum, ansvarig, registrerad av (roll och datum), beslutsmotiveringen i samma ruta
+  som på åtgärdskortet, och knappen **Öppna ärendet**. Flera rader kan vara utfällda samtidigt.
+  Länken i raden följs utan att raden fälls ut.
+- Vyn erbjuder ingen registrering, bedömning eller uppföljning; det görs i ärendet. Listan läses
+  om när fönstret återfår fokus, så att en uppföljning som gjorts i ärendefliken syns direkt.
+- Fritextsökningen i filterbandet matchar ärendenummer, rubrik, åtgärdstyp, beskrivning, mål
+  och ansvarig; sammanfattningen bredvid anger antal och antal försenade.
+
+Valet av agenda framför en tabell med detaljpanel eller ärendegrupper med kort gjordes den
+14 september 2026 utifrån tre skisser; agendan träffar frågan "vad ska vara klart, och när?"
+direkt. Panelen och grupperingen kan läggas till senare utan att datat eller BFF:en ändras.
+
+BFF:en svarar på `GET /supportmeasures/:municipalityId/planned` (`support-measure.controller.ts`,
+kräver `canEditSupportManagement` som ärendelistan). `SupportMeasureService.readPlanned` läser
+Support Managements ärendelista med filtret i `support-planned-measures.ts`:
+
+```text
+(measures.accept:'TRUE' or measures.accept:'REWORK') and measures.executed is null
+and (measures.plannedStart is not null or measures.plannedComplete is not null) and status!'SOLVED'
+```
+
+Filtret gäller samma åtgärdsrad (Spring Filter återanvänder en join per sökväg). Avslutade
+ärenden (`SOLVED`) utelämnas eftersom ingen åtgärd kan följas upp där. API:t tillämpar sin
+vanliga åtkomstkontroll på listan, så användaren ser åtgärder på precis de ärenden översikten
+redan visar; `MEASURES` ingår i alla rollernas fältåtkomst i namespace-konfigurationen. Listan
+är sidindelad per ärende (100 per sida, sorterad på `created` så att sidorna är stabila under
+samtidiga skrivningar) och läses upp till tio sidor; därefter markerar svaret `truncated` och
+vyn säger att listan är ofullständig. Ärendets åtgärder filtreras igen i BFF:en, eftersom
+listan returnerar ärendets samtliga åtgärder. Uppföljningsdokumenten läses inte in här (en
+läsning per åtgärd); en åtgärd utan genomförandedatum är planerad oavsett om svar sparats.
+
+`support-planned-measures.test.ts`, `support-measure.service.test.ts` och
+`support-measure.controller.http.test.ts` täcker urval, sortering, sidvandring, avhuggning och
+routen. `planned-measures.test.ts`, `planned-measures-overview.test.tsx` och e2e-specen
+`planned-measures-overview.spec.ts` täcker vyn, länkarna, sökningen, felen och flaggan.
+
+**Bättre lösning på sikt, utanför scope:** Support Management saknar en åtgärdsfråga över
+ärenden, så vyn lånar ärendelistan. En egen `GET /{municipalityId}/{namespace}/measures` i API:t
+skulle ge sidindelning och sortering per åtgärd i stället för per ärende (inget tak, inget
+`truncated`), en smal payload i stället för hela ärenden, en räknare till sidomenyn och ett
+filter skrivet på åtgärdsentiteten i stället för att vila på hur biblioteket joinar. Den byggs
+inte nu: åtgärdsmodellen är inte färdigbestämd, och ett API-kontrakt som skärs i dag skulle
+behöva skäras om. Bytet är begränsat till `readPlanned`; svaret till frontend behöver inte ändras.
+
 ## Handlingsplan
 
 Knappen **Skapa handlingsplan** på fliken Åtgärder samlar ärendets samtliga sparade åtgärder i en

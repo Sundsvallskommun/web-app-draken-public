@@ -6,7 +6,7 @@ import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
-import { SupportMeasureService, type SupportMeasuresSnapshot } from '@/services/support-measure.service';
+import { type PlannedSupportMeasuresSnapshot, SupportMeasureService, type SupportMeasuresSnapshot } from '@/services/support-measure.service';
 
 // Write handlers return nothing. routing-controllers turns an undefined result into NotFoundError unless
 // @OnUndefined names the status, and that error carries no `status`/message, so it surfaced as an opaque 500.
@@ -23,6 +23,14 @@ export class SupportMeasureController {
     @Param('errandId') errandId: string,
   ): Promise<SupportMeasuresSnapshot> {
     return this.measures.read(municipalityId, errandId, req.user);
+  }
+
+  // Own prefix: under /supporterrands/:municipalityId a segment reads as an errand id.
+  @Get('/supportmeasures/:municipalityId/planned')
+  @OpenAPI({ summary: 'Read the open planned measures on every errand the user reaches, with the errand each belongs to' })
+  @UseBefore(authMiddleware, hasPermissions(['canEditSupportManagement']))
+  async readPlanned(@Req() req: RequestWithUser, @Param('municipalityId') municipalityId: string): Promise<PlannedSupportMeasuresSnapshot> {
+    return this.measures.readPlanned(municipalityId, req.user);
   }
 
   @Post('/supporterrands/:municipalityId/:errandId/measures')
