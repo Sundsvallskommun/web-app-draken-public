@@ -2,11 +2,18 @@
 
 import { useJsonSchema } from '@common/components/json/hooks/useJsonSchema';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
-import { JsonParameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Alert, Spinner } from '@sk-web-gui/react';
 import { FC } from 'react';
+
+interface DisplayJsonParameter {
+  key: string;
+  value?: unknown;
+  schemaId: string;
+  version?: number;
+}
+
 interface JsonParameterItemProps {
-  param: JsonParameter;
+  param: DisplayJsonParameter;
   municipalityId: string;
 }
 
@@ -43,7 +50,7 @@ const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId }
 };
 
 interface JsonParametersDisplayProps {
-  jsonParameters: JsonParameter[];
+  jsonParameters: DisplayJsonParameter[];
   municipalityId: string;
 }
 
