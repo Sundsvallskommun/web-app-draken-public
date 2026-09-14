@@ -3,7 +3,7 @@
 import { useJsonSchema } from '@common/components/json/hooks/useJsonSchema';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { JsonParameter } from '@common/data-contracts/supportmanagement/data-contracts';
-import { Spinner } from '@sk-web-gui/react';
+import { Alert, Spinner } from '@sk-web-gui/react';
 import { FC } from 'react';
 interface JsonParameterItemProps {
   param: JsonParameter;
@@ -23,7 +23,16 @@ const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId }
   }
 
   if (error || !schema) {
-    return null;
+    return (
+      <Alert type="error" className="mb-16">
+        <Alert.Icon />
+        <Alert.Content>
+          <Alert.Content.Description>
+            Uppgifterna för {param.key} kunde inte visas eftersom schemat {param.schemaId} inte kunde laddas.
+          </Alert.Content.Description>
+        </Alert.Content>
+      </Alert>
+    );
   }
 
   return (

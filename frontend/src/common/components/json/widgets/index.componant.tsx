@@ -6,6 +6,7 @@ import { TexteditorWidget } from './richtext-widget.componant';
 import { SelectWidget } from './select-widget.componant';
 import { TextWidget } from './text-widget.componant';
 import { TextareaWidget } from './textarea-widget.componant';
+import { TimeWidget } from './time-widget.componant';
 
 const baseWidgets = {
   TextWidget,
@@ -13,6 +14,7 @@ const baseWidgets = {
   RadiobuttonWidget,
   CheckboxWidget,
   DateWidget,
+  TimeWidget,
   ComboboxWidget,
   TexteditorWidget,
   TextareaWidget,
@@ -28,6 +30,7 @@ export const jsonWidgets = {
   radiobutton: baseWidgets.RadiobuttonWidget,
   checkbox: baseWidgets.CheckboxWidget,
   date: baseWidgets.DateWidget,
+  time: baseWidgets.TimeWidget,
   combobox: baseWidgets.ComboboxWidget,
   texteditor: baseWidgets.TexteditorWidget,
   textarea: baseWidgets.TextareaWidget,

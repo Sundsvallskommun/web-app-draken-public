@@ -62,6 +62,10 @@ function buildUiSchemaFromSchema(schema: RJSFSchema): UiSchema {
         entry['ui:widget'] = 'date';
       }
 
+      if (hasType(prop, 'string') && prop.format === 'time') {
+        entry['ui:widget'] = 'time';
+      }
+
       if (
         hasType(prop, 'array') &&
         prop.items &&
