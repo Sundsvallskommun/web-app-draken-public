@@ -184,6 +184,10 @@ export enum Status {
   INTERNAL_CONTROL_AND_INTERVIEWS = 'INTERNAL_CONTROL_AND_INTERVIEWS',
   REFERENCE_CHECK = 'REFERENCE_CHECK',
   REVIEW = 'REVIEW',
+  /** IAF/VOF: the status of the decision phase. */
+  DECISION = 'DECISION',
+  /** IAF/VOF: the status of the follow-up phase. */
+  FOLLOW_UP = 'FOLLOW_UP',
   SECURITY_CLEARENCE = 'SECURITY_CLEARENCE',
   FEEDBACK_CLOSURE = 'FEEDBACK_CLOSURE',
   SUBPACKAGE_HANDLED = 'SUBPACKAGE_HANDLED',
@@ -219,8 +223,19 @@ export const newStatuses = [Status.NEW];
  */
 export const getOngoingStatus = (): Status => (isIAFOrVOF() ? Status.INQUIRY : Status.ONGOING);
 
+// IAF/VOF's workflow gives each phase exactly one status - REVIEW in Granskning, INQUIRY in Utredning,
+// DECISION in Beslut, FOLLOW_UP in Uppföljning - so every one of them is an errand being worked on.
+// INQUIRY stays first: the first entry keys the "Öppna ärenden" filter.
 export const ongoingStatuses = isIAFOrVOF()
-  ? [Status.INQUIRY, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.REOPENED]
+  ? [
+      Status.INQUIRY,
+      Status.REVIEW,
+      Status.DECISION,
+      Status.FOLLOW_UP,
+      Status.PENDING,
+      Status.AWAITING_INTERNAL_RESPONSE,
+      Status.REOPENED,
+    ]
   : [Status.ONGOING, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.REOPENED];
 
 export const ongoingStatusesROB = [
