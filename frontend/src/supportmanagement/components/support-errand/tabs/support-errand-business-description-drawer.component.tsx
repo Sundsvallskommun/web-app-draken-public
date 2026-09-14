@@ -3,14 +3,14 @@ import {
   companyAccountingPeriod,
   companyAddressLines,
   companyDescriptionParagraphs,
-  CompanyProfile,
 } from '@common/services/legal-entity-service';
 import { Table } from '@sk-web-gui/react';
 import { useTranslation } from 'react-i18next';
+import { LegalEntityProfile } from 'src/data-contracts/backend/data-contracts';
 
 export const SupportErrandBusinessDescriptionDrawer: React.FC<{
   show: boolean;
-  profile: CompanyProfile;
+  profile: LegalEntityProfile;
   onClose: () => void;
 }> = ({ show, profile, onClose }) => {
   const { t } = useTranslation();

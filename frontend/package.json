@@ -46,6 +46,7 @@
     "start:rob": "dotenv -e .env.rob -- dotenv next start",
     "start:iaf": "dotenv -e .env.iaf -- dotenv next start",
     "start:se": "dotenv -e .env.se -- dotenv next start",
+    "generate:contracts:aot": "dotenv -e .env.aot npx tsx ./src/swagger-typescript-api.ts",
     "generate:contracts:lop": "dotenv -e .env.lop npx tsx ./src/swagger-typescript-api.ts",
     "generate:contracts:kc": "dotenv -e .env.kc npx tsx ./src/swagger-typescript-api.ts",
     "generate:contracts:ka": "dotenv -e .env.ka npx tsx ./src/swagger-typescript-api.ts",

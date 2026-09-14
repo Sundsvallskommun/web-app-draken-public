@@ -1,10 +1,11 @@
-import { CompanyEngagement, engagementRoles } from '@common/services/legal-entity-service';
+import { engagementRoles } from '@common/services/legal-entity-service';
 import { Button, Card, Disclosure, Icon, Table } from '@sk-web-gui/react';
 import { Building2, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
 
 export const SupportErrandCompanyEngagements: React.FC<{
-  engagements: CompanyEngagement[];
+  engagements: LegalEntityEngagement[];
   initiallyOpen: boolean;
   companyName?: string | null;
   onShowBusinessDescription?: () => void;

@@ -1,10 +1,11 @@
 'use client';
 
-import { CompanyProfile, getCompanyProfileByPartyId } from '@common/services/legal-entity-service';
+import { getCompanyProfileByPartyId } from '@common/services/legal-entity-service';
 import { useEffect, useState } from 'react';
+import { LegalEntityProfile } from 'src/data-contracts/backend/data-contracts';
 
-export const useCompanyProfile = (partyId: string | undefined): CompanyProfile | undefined => {
-  const [profile, setProfile] = useState<CompanyProfile>();
+export const useCompanyProfile = (partyId: string | undefined): LegalEntityProfile | undefined => {
+  const [profile, setProfile] = useState<LegalEntityProfile>();
 
   useEffect(() => {
     if (!partyId) {
