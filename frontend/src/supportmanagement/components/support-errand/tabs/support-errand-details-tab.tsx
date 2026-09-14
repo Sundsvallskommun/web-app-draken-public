@@ -14,19 +14,17 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const _supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = _supportErrand!;
-
-  const showsJsonParameters = (supportErrand.jsonParameters?.length ?? 0) > 0 && !!municipalityId;
+  const ifJsonParameters = (supportErrand.jsonParameters?.length ?? 0) > 0;
+  const showsJsonParameters = ifJsonParameters && !!municipalityId;
 
   const organizationStakeholder = supportErrand.stakeholders?.find(
     (stakeholder) => stakeholder.role === 'PRIMARY' && stakeholder.externalIdType === 'COMPANY'
   );
   const organizationPartyId = organizationStakeholder?.externalId;
-
-  const companyEngagements = useCompanyEngagements(
-    appConfig.features.useCompanyInformation ? organizationPartyId : undefined
-  );
+  const companyInformation = appConfig.features.useCompanyInformation ? organizationPartyId : undefined;
+  const companyEngagements = useCompanyEngagements(companyInformation);
   const showsCompanyEngagements = companyEngagements.length > 0;
-  const companyProfile = useCompanyProfile(appConfig.features.useCompanyInformation ? organizationPartyId : undefined);
+  const companyProfile = useCompanyProfile(companyInformation);
   const [showsBusinessDescription, setShowsBusinessDescription] = useState(false);
 
   const simpleParams = useMemo(

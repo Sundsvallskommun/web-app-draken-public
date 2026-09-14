@@ -52,7 +52,7 @@ export const SupportErrandBusinessDescriptionDrawer: React.FC<{
           </Table.Body>
         </Table>
         {paragraphs.length > 0 ? (
-          paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)
+          paragraphs.map((paragraph, i) => <p key={`${paragraph.slice(0, 4)}-${i}`}>{paragraph}</p>)
         ) : (
           <p>{t('common:company.no_description')}</p>
         )}
