@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import Form, { getDefaultRegistry } from '@rjsf/core';
-import type { RJSFSchema } from '@rjsf/utils';
+import type { RJSFSchema, UiSchema } from '@rjsf/utils';
 import { customizeValidator } from '@rjsf/validator-ajv8';
 import { cleanup, fireEvent, isInaccessible, render, screen, waitFor } from '@testing-library/react';
 import Ajv2020 from 'ajv/dist/2020';
@@ -22,6 +22,12 @@ const templates = {
   ArrayFieldTemplate: ArrayObjectFieldTemplate,
   ObjectFieldTemplate: SectionsObjectFieldTemplate,
 };
+/**
+ * `ui:rows` is Draken's own row layout, read by SectionsObjectFieldTemplate, while RJSF's UiSchema
+ * types the same key as a textarea height. Casting the rows alone states that extension, instead of
+ * casting the whole uiSchema and losing the checks on everything else in it.
+ */
+const rowLayout = (rows: { fields: string[] }[]) => rows as unknown as UiSchema['ui:rows'];
 const defaultWidgets = getDefaultRegistry().widgets;
 // The field templates are under test; use RJSF's controls for the application widget names.
 const widgets = {
@@ -135,7 +141,7 @@ test.each([false, true])(
         uiSchema={{
           metadata: { 'ui:widget': 'hidden' },
           timestamp: { 'ui:widget': 'hidden' },
-          'ui:rows': [{ fields: ['timestamp', 'answer'] }],
+          'ui:rows': rowLayout([{ fields: ['timestamp', 'answer'] }]),
           'ui:options': { showSectionCompletion: false },
           ...(withSections
             ? {

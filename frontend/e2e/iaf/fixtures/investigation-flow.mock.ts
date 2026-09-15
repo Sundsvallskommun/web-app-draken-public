@@ -159,10 +159,12 @@ export interface MockPhase {
  * in Beslut, so a scenario places the errand in one of these to say how far it has got.
  */
 export const investigationPhases: MockPhase[] = [
-  { id: 'phase-received', name: 'Inkommet', phaseOrder: 1 },
-  { id: 'phase-investigation', name: 'Utredning', phaseOrder: 2 },
-  { id: 'phase-decision', name: 'Beslut', phaseOrder: 3 },
-  { id: 'phase-closed', name: 'Avslutat', phaseOrder: 4 },
+  // Named the way Support Management names them: the technical key in `name`, what handlers read in
+  // `displayName`. The tab gates match the key, so a Swedish `name` would leave every tab ungated.
+  { id: 'phase-received', name: 'ACTUALIZATION', displayName: 'Registrerat', phaseOrder: 1 },
+  { id: 'phase-investigation', name: 'INVESTIGATION', displayName: 'Utredning', phaseOrder: 2 },
+  { id: 'phase-decision', name: 'DECISION', displayName: 'Beslut', phaseOrder: 3 },
+  { id: 'phase-closed', name: 'END', displayName: 'Avsluta', phaseOrder: 4 },
 ];
 
 export type WorkflowPhaseName = 'ACTUALIZATION' | 'REVIEW' | 'INVESTIGATION' | 'DECISION' | 'FOLLOW_UP' | 'END';
