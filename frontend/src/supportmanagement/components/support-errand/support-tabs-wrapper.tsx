@@ -30,10 +30,15 @@ import {
   groupByConversationIdSortedTree,
   MessageNode,
 } from '@supportmanagement/services/support-message-service';
-import { hasReachedSupportPhase, type SupportPhaseContext } from '@supportmanagement/services/support-phase-service';
-import { Dispatch, FC, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  getActiveSupportPhaseId,
+  hasReachedSupportPhase,
+  type SupportPhaseContext,
+} from '@supportmanagement/services/support-phase-service';
+import { Dispatch, FC, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn, useFormState } from 'react-hook-form';
 
+import { resolvePhaseTabKey } from './support-phase-tab';
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
 import { SupportErrandServicesTab } from './tabs/services/support-errand-services-tab';
 import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-tab';
@@ -151,6 +156,8 @@ export const SupportTabsWrapper: FC<{
     content: ReactNode;
     disabled: boolean;
     visibleFor: boolean;
+    /** The workflow phase the tab belongs to; an errand opened in, or moved into, that phase lands on it. */
+    phaseName?: string;
   }[] = useMemo(
     () => [
       {
@@ -170,9 +177,41 @@ export const SupportTabsWrapper: FC<{
       {
         key: 'details',
         label: 'Ärendeuppgifter',
-        content: supportErrand && <SupportErrandDetailsTab access={investigationAccess} />,
+        content: supportErrand && (
+          <SupportErrandDetailsTab
+            access={investigationAccess}
+            header={
+              appConfig.features.useInvestigation &&
+              investigationVariant?.renderDetailsHeader?.({ access: investigationAccess, disabled: unsavedChanges })
+            }
+          />
+        ),
         disabled: false,
         visibleFor: appConfig.features.useDetailsTab,
+      },
+      {
+        key: 'messages',
+        label: messageTabLabel,
+        content: supportErrand && (
+          <SupportMessagesTab
+            messages={messages}
+            messageTree={messageTree}
+            supportConversations={supportConversations}
+            conversationMessageTree={conversationMessageTree}
+            setUnsaved={setTabUnsavedChanges}
+            update={update}
+            municipalityId={municipalityId}
+          />
+        ),
+        disabled: false,
+        visibleFor: true,
+      },
+      {
+        key: 'attachments',
+        label: `Bilagor (${countAttachment(supportAttachments ?? [])})`,
+        content: supportErrand && <SupportErrandAttachmentsTab update={update} />,
+        disabled: false,
+        visibleFor: true,
       },
       {
         key: 'investigation',
@@ -185,6 +224,7 @@ export const SupportTabsWrapper: FC<{
             refreshAccess: refreshInvestigationAccess,
           }),
         disabled: false,
+        phaseName: investigationVariant?.requiredPhaseName,
         visibleFor: isInvestigationTabVisible(appConfig.features, investigationVariant, errandPhases),
       },
       {
@@ -200,6 +240,7 @@ export const SupportTabsWrapper: FC<{
           />
         ),
         disabled: false,
+        phaseName: MEASURES_PHASE_NAME,
         visibleFor: appConfig.features.useMeasures && hasReachedSupportPhase(MEASURES_PHASE_NAME, errandPhases),
       },
       {
@@ -213,6 +254,7 @@ export const SupportTabsWrapper: FC<{
             refreshAccess: refreshInvestigationAccess,
           }),
         disabled: false,
+        phaseName: investigationVariant?.decisionTab?.requiredPhaseName,
         visibleFor:
           isDecisionTabVisible(
             appConfig.features,
@@ -240,32 +282,9 @@ export const SupportTabsWrapper: FC<{
           />
         ),
         disabled: false,
+        phaseName: MEASURE_FOLLOW_UP_PHASE_NAME,
         visibleFor:
           appConfig.features.useMeasures && hasReachedSupportPhase(MEASURE_FOLLOW_UP_PHASE_NAME, errandPhases),
-      },
-      {
-        key: 'messages',
-        label: messageTabLabel,
-        content: supportErrand && (
-          <SupportMessagesTab
-            messages={messages}
-            messageTree={messageTree}
-            supportConversations={supportConversations}
-            conversationMessageTree={conversationMessageTree}
-            setUnsaved={setTabUnsavedChanges}
-            update={update}
-            municipalityId={municipalityId}
-          />
-        ),
-        disabled: false,
-        visibleFor: true,
-      },
-      {
-        key: 'attachments',
-        label: `Bilagor (${countAttachment(supportAttachments ?? [])})`,
-        content: supportErrand && <SupportErrandAttachmentsTab update={update} />,
-        disabled: false,
-        visibleFor: true,
       },
       {
         key: 'services',
@@ -314,6 +333,7 @@ export const SupportTabsWrapper: FC<{
       supportConversations,
       supportErrand,
       setInvestigationDocumentDirty,
+      unsavedChanges,
     ]
   );
 
@@ -323,6 +343,37 @@ export const SupportTabsWrapper: FC<{
     const index = tabs.filter((tab) => tab.visibleFor).findIndex((tab) => tab.key === activeTabKey);
     setActiveTab(index >= 0 ? index : 0);
   }, [activeTabKey, tabs]);
+
+  // An errand lands on the tab of the phase it is in: Utredning while it is investigated, Beslut once it
+  // is decided. It lands when it is opened and again when its phase changes, so a completed phase change
+  // takes the handler to the new phase's tab - and at no other time, so a tab the handler picks is never
+  // taken from them. It waits for the investigation profile and access to settle, since the decision tab
+  // is only offered once they have, and access is read anew after every phase change.
+  const investigationProfileStatus = useInvestigationProfileStore((state) => state.status);
+  const landedPhaseTab = useRef<string | undefined>(undefined);
+  const activePhaseId = getActiveSupportPhaseId(supportErrand?.phases);
+  const phaseTabsSettled =
+    !appConfig.features.useInvestigation ||
+    investigationVariant === null ||
+    (investigationProfileStatus !== 'idle' &&
+      investigationProfileStatus !== 'loading' &&
+      investigationAccess.status !== 'loading');
+  useEffect(() => {
+    if (!supportErrand?.id || !supportMetadata?.phases || !phaseTabsSettled) return;
+    const landing = `${supportErrand.id}|${activePhaseId ?? ''}`;
+    if (landedPhaseTab.current === landing) return;
+    landedPhaseTab.current = landing;
+    const phaseTabKey = resolvePhaseTabKey(tabs, errandPhases);
+    if (phaseTabKey) setActiveTabKey(phaseTabKey);
+  }, [
+    activePhaseId,
+    errandPhases,
+    phaseTabsSettled,
+    setActiveTabKey,
+    supportErrand?.id,
+    supportMetadata?.phases,
+    tabs,
+  ]);
 
   return (
     <>

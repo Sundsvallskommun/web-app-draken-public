@@ -138,7 +138,7 @@ export interface IafApiTrace {
   /** Report requests, in order; a preview renders without attaching or recording. */
   reports: Array<{ key: string; preview: boolean }>;
   /** Phase transition requests, in order, as the BFF received them. */
-  phasePatches: Array<{ transitionId?: string; expectedVersion?: number }>;
+  phasePatches: Array<{ transitionId?: string; expectedActivePhaseId?: string | null }>;
   /** Handover steps, in order, exactly as the client named them. */
   handovers: Array<{ step: string; expectedVersion?: number; assignedUserId?: string; locationLabelId?: string }>;
   /** Places whose managers were previewed, by label id. */
@@ -155,8 +155,9 @@ export interface MockPhase {
 }
 
 /**
- * The IAF/VOF workflow as the specs use it. The Utredning tab opens in Utredning and the Beslut tab
- * in Beslut, so a scenario places the errand in one of these to say how far it has got.
+ * The IAF/VOF workflow as the specs use it. The Utredning tab opens in Utredning, the Beslut tab in
+ * Beslut and the Uppföljning tab in Uppföljning, so a scenario places the errand in one of these to say
+ * how far it has got.
  */
 export const investigationPhases: MockPhase[] = [
   // Named the way Support Management names them: the technical key in `name`, what handlers read in
@@ -164,7 +165,8 @@ export const investigationPhases: MockPhase[] = [
   { id: 'phase-received', name: 'ACTUALIZATION', displayName: 'Registrerat', phaseOrder: 1 },
   { id: 'phase-investigation', name: 'INVESTIGATION', displayName: 'Utredning', phaseOrder: 2 },
   { id: 'phase-decision', name: 'DECISION', displayName: 'Beslut', phaseOrder: 3 },
-  { id: 'phase-closed', name: 'END', displayName: 'Avsluta', phaseOrder: 4 },
+  { id: 'phase-follow-up', name: 'FOLLOW_UP', displayName: 'Uppföljning', phaseOrder: 4 },
+  { id: 'phase-closed', name: 'END', displayName: 'Avsluta', phaseOrder: 5 },
 ];
 
 export type WorkflowPhaseName = 'ACTUALIZATION' | 'REVIEW' | 'INVESTIGATION' | 'DECISION' | 'FOLLOW_UP' | 'END';
@@ -184,7 +186,7 @@ interface WorkflowPhase {
   }>;
 }
 
-const workflowPhaseId = (name: WorkflowPhaseName) => `phase-${name.toLowerCase().replace('_', '-')}`;
+export const workflowPhaseId = (name: WorkflowPhaseName) => `phase-${name.toLowerCase().replace('_', '-')}`;
 export const workflowTransitionId = (target: WorkflowPhaseName) =>
   `transition-to-${target.toLowerCase().replace('_', '-')}`;
 
@@ -1013,9 +1015,11 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     }
 
     if (method === 'PATCH' && path.endsWith(`/supporterrands/${municipalityId}/${errandId}/phase`)) {
-      const body = requestBody(request) as { transitionId?: string; expectedVersion?: number } | undefined;
-      trace.phasePatches.push({ transitionId: body?.transitionId, expectedVersion: body?.expectedVersion });
-      if (body?.expectedVersion !== errandVersion) {
+      const body = requestBody(request) as { transitionId?: string; expectedActivePhaseId?: string | null } | undefined;
+      trace.phasePatches.push({ transitionId: body?.transitionId, expectedActivePhaseId: body?.expectedActivePhaseId });
+      // Like the BFF: the precondition is the phase the client saw, not the errand's version.
+      const currentPhaseId = activePhaseName ? workflowPhaseId(activePhaseName) : null;
+      if ((body?.expectedActivePhaseId ?? null) !== currentPhaseId) {
         await fulfillJson(route, { message: 'Support errand phase has changed since it was loaded' }, 409);
         return;
       }

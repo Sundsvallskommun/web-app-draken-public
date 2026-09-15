@@ -31,9 +31,9 @@ async function visitErrand(page: Page, dismissCookieConsent: () => Promise<void>
 
 /**
  * The tabs follow the workflow: the investigations are written while the errand is being
- * investigated and the decision once it has moved on to being decided, so neither tab is reachable
- * before the errand is there. The default deviation is under HSL, so the IVO decision is the one
- * that applies to it.
+ * investigated, the decision once it has moved on to being decided and the follow-up once it is being
+ * followed up, so no tab is reachable before the errand is there. The default deviation is under HSL,
+ * so the IVO decision is the one that applies to it.
  */
 test.describe('Utrednings- och beslutsflikarna följer ärendets fas', () => {
   test('varken utredning eller beslut visas innan ärendet är i utredningsfasen', async ({
@@ -51,7 +51,7 @@ test.describe('Utrednings- och beslutsflikarna följer ärendets fas', () => {
 
     await expect(investigationTab(page)).toHaveCount(0);
     await expect(decisionTab(page)).toHaveCount(0);
-    // The measures follow the same rule: decided under Utredning, followed up under Beslut.
+    // The measures follow the same rule: decided under Utredning, followed up under Uppföljning.
     await expect(measuresTab(page)).toHaveCount(0);
     await expect(followUpTab(page)).toHaveCount(0);
   });
@@ -88,9 +88,25 @@ test.describe('Utrednings- och beslutsflikarna följer ärendets fas', () => {
 
     await expect(investigationTab(page)).toHaveCount(1);
     await expect(measuresTab(page)).toHaveCount(1);
-    await expect(followUpTab(page)).toHaveCount(1);
+    // Being decided is not yet being followed up.
+    await expect(followUpTab(page)).toHaveCount(0);
     await decisionTab(page).click();
     await expect(page.locator('[data-cy="support-decision-tab"]')).toBeVisible();
+  });
+
+  test('uppföljningen visas först när ärendet nått uppföljningsfasen', async ({ page, dismissCookieConsent }) => {
+    await installIafApiMock(page, {
+      documents: {},
+      featureFlags: measuresEnabled,
+      metadataPhases: investigationPhases,
+      activePhaseId: 'phase-follow-up',
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+
+    await expect(followUpTab(page)).toHaveCount(1);
+    await expect(measuresTab(page)).toHaveCount(1);
+    await expect(decisionTab(page)).toHaveCount(1);
   });
 
   // A namespace that runs no workflow has no phase to wait for, and keeps the tabs it always had.

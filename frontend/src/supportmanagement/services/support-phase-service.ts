@@ -200,3 +200,19 @@ export const hasReachedSupportPhase = (
 
   return activeOrder >= requiredOrder;
 };
+
+/**
+ * Whether the errand is in the named phase right now, not merely past it. The phase is named in
+ * either of the metadata's vocabularies, as for `hasReachedSupportPhase`. An errand outside the
+ * workflow, or in a phase the model does not describe, is in no named phase.
+ */
+export const isInSupportPhase = (
+  phaseName: string | undefined,
+  { metadataPhases, errandPhases }: SupportPhaseContext
+): boolean => {
+  const canonicalName = canonicalPhaseName(phaseName);
+  const activePhaseId = getActiveSupportPhaseId(errandPhases);
+  if (!canonicalName || !activePhaseId) return false;
+  const activePhase = (metadataPhases ?? []).find((phase) => phase.id === activePhaseId);
+  return activePhase !== undefined && isNamedPhase(activePhase, canonicalName);
+};
