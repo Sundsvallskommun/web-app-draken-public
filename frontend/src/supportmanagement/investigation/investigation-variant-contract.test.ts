@@ -70,6 +70,8 @@ test('a variant needs only the required slots', () => {
   assert.equal(minimalVariant.decisionTab, undefined);
   // Nothing is added to Ärendeuppgifter by a variant that does not ask for it.
   assert.equal(minimalVariant.renderDetailsHeader, undefined);
+  // A variant that requires nothing before a phase holds no phase change.
+  assert.equal(minimalVariant.phaseEntryRequirement, undefined);
   // A variant whose work has no phase of its own names none, and is offered from any phase.
   assert.equal(minimalVariant.requiredPhaseName, undefined);
 });

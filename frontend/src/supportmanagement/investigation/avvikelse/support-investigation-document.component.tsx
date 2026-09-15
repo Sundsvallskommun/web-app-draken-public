@@ -1002,6 +1002,7 @@ export function SupportInvestigationDocument({
           municipalityId={municipalityId}
           errandId={errandId!}
           expectedVersion={lexAssignmentVersion}
+          onClose={() => setShowLexAssignmentPrompt(false)}
         />
       )}
     </section>

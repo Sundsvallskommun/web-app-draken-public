@@ -7,9 +7,12 @@ import type { InvestigationProfile } from '../investigation-profile';
 import type {
   InvestigationCategorizationControlProps,
   InvestigationDetailsHeaderProps,
+  InvestigationPhaseEntryContext,
+  InvestigationPhaseEntryRequirementProps,
   InvestigationTabProps,
   InvestigationVariantModule,
 } from '../investigation-variant';
+import { requiresLexAssignment } from './assignment/avvikelse-assignment-policy';
 import { resolveAvvikelseClassificationPlacement } from './avvikelse-classification-placement';
 import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.component';
 
@@ -42,6 +45,12 @@ const AvvikelseCategorizationControl = dynamic(
 /** Lazy for the same bundle reason as the categorization control. */
 const ErrandLocationCard = dynamic(
   () => import('./assignment/errand-location-card.component').then((module) => module.ErrandLocationCard),
+  { loading: () => null }
+);
+
+/** Lazy for the same bundle reason as the categorization control. */
+const LexAssignmentRequirement = dynamic(
+  () => import('./assignment/lex-assignment-requirement.component').then((module) => module.LexAssignmentRequirement),
   { loading: () => null }
 );
 
@@ -79,13 +88,24 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
   /**
    * The decision that closes the investigation: lex Sarah for a reported misconduct, the IVO
    * decision for an HSL deviation. The tab is always offered once the errand is being decided. When
-   * there is nothing for this user to decide - the errand calls for no decision, or the decision is
-   * another role's - it says only that, and to move on to the follow-up.
+   * there is nothing for this user to decide it says only that: that the errand calls for no decision
+   * and moves on to the follow-up, or which role takes the decision.
    */
   decisionTab: {
     label: 'Beslut',
     requiredPhaseName: DECISION_PHASE_NAME,
     isVisible: () => true,
     render: (props: InvestigationTabProps) => <SupportErrandInvestigationTab {...props} placement="decision" />,
+  },
+  /**
+   * A suspected misconduct is handed to a LEX manager before it is decided. The dialog after saving the
+   * unit manager's investigation can be put off; sending the errand to the decision cannot.
+   */
+  phaseEntryRequirement: {
+    phaseName: DECISION_PHASE_NAME,
+    // The handler hands the errand over; the LEX manager sends it to the decision, as before.
+    actionLabel: 'Tilldela LEX-ansvarig',
+    isMet: (context: InvestigationPhaseEntryContext) => !requiresLexAssignment(context),
+    render: (props: InvestigationPhaseEntryRequirementProps) => <LexAssignmentRequirement {...props} />,
   },
 });

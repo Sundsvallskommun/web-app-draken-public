@@ -10,16 +10,20 @@ interface LexAssignmentPromptProps {
   show: boolean;
   municipalityId: string;
   errandId: string;
-  /** The errand version the investigation was saved against; the backend rejects a stale one. */
+  /** The errand version the handover is conditioned on; the backend rejects a stale one. */
   expectedVersion: number | undefined;
+  /** Why the handover is asked for now; the dialog explains the classification when left out. */
+  description?: string;
+  /** Puts the handover off. It is still required before the errand can be sent to the decision. */
+  onClose: () => void;
 }
 
 /**
  * Asks the unit manager to hand a suspected misconduct to a LEX manager.
  *
- * The dialog has no close button on purpose. The investigation is already saved with the assessment
- * that requires the handover, so dismissing it would leave the errand classified as a suspected
- * misconduct with nobody able to act on it.
+ * The handover can be put off - the dialog closes - but not skipped: the errand cannot enter the
+ * decision phase while its saved investigation assesses a suspected misconduct that has not been handed
+ * over, and the phase change asks for the handover again.
  *
  * Once the handover lands, the errand belongs to the LEX roles: Support Management's AccessMapper
  * stops showing it to the manager who just handed it over. There is therefore nothing left to
@@ -30,6 +34,8 @@ export const LexAssignmentPrompt: FC<LexAssignmentPromptProps> = ({
   municipalityId,
   errandId,
   expectedVersion,
+  description = 'Ärendet är nu klassificerat som ett misstänkt missförhållande och ska tilldelas en LEX-ansvarig, som sedan skickar det till beslut. Rapporttypen ändras från Avvikelse till Missförhållande, och när ärendet är tilldelat lämnar det din ärendelista.',
+  onClose,
 }) => {
   const administrators = useUserStore((s) => s.administrators);
   const handlerDirectoryState = useUserStore((s) => s.handlerDirectoryState);
@@ -75,7 +81,7 @@ export const LexAssignmentPrompt: FC<LexAssignmentPromptProps> = ({
     <HandlerAssignmentModal
       show={show}
       label="Ärendet är klassificerat som missförhållande"
-      description="Ärendet är nu klassificerat som ett misstänkt missförhållande och måste tilldelas en LEX-ansvarig. Rapporttypen ändras från Avvikelse till Missförhållande, och när ärendet är tilldelat lämnar det din ärendelista."
+      description={description}
       selectLabel="LEX-ansvarig"
       confirmLabel="Tilldela LEX-ansvarig"
       confirmLoadingLabel="Tilldelar LEX-ansvarig"
@@ -85,6 +91,9 @@ export const LexAssignmentPrompt: FC<LexAssignmentPromptProps> = ({
       isSaving={isSaving}
       error={error}
       onAssign={(adAccount) => void assign(adAccount)}
+      onClose={() => {
+        if (!isSaving) onClose();
+      }}
     />
   );
 };

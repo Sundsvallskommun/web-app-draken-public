@@ -282,7 +282,7 @@ Två namngivna steg finns, och klienten namnger steget i stället för att kompo
 
 | Steg | Utlöses av | Skriver |
 | --- | --- | --- |
-| `assign-lex` | `suspectedMisconduct === 'yes'` i enhetschefsutredningen | `assignedUserId` (LEX-ansvarig), `REPORT_TYPE/ABUSE` i stället för `REPORT_TYPE/DEVIATION`, `ACCESS/LEX`, status `ASSIGNED` |
+| `assign-lex` | `suspectedMisconduct === 'yes'` i den sparade enhetschefsutredningen. Dialogen efter sparningen kan stängas. Så länge ärendet inte är tilldelat heter fasknappen Tilldela LEX-ansvarig i stället för Skicka till beslut och öppnar samma dialog; fasen byts inte, utan LEX-ansvarig skickar ärendet till beslut | `assignedUserId` (LEX-ansvarig), `REPORT_TYPE/ABUSE` i stället för `REPORT_TYPE/DEVIATION`, `ACCESS/LEX`, status `ASSIGNED` |
 | `return-to-manager` | LEX har beslutat; knappen sitter längst ned i lex Sarah-beslutet (`beslut-sol-lss`), vars skrivrätt också auktoriserar steget | `assignedUserId` (enhetschef för platsen), tar bort `ACCESS/LEX` (och `ACCESS`-roten om inget annat ligger under den), status `ASSIGNED` |
 | `move-location` | Ärendet har kommit till fel enhet; enhetschefen väljer rätt plats (`locationLabelId`) i kortet Ärendets plats överst i Ärendeuppgifter | `assignedUserId` (chef för den **nya** platsen), byter ut hela platskedjan i labels mot den nya platsens; se [Fel plats](#fel-plats-flytta-ärendet-utan-att-ändra-det-inrapporterade) |
 

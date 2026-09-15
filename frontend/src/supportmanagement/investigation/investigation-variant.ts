@@ -23,6 +23,35 @@ export interface InvestigationCategorizationControlProps {
   readonly disabled: boolean;
 }
 
+/** What a phase entry requirement is judged on: the errand, the runtime profile and the label tree. */
+export interface InvestigationPhaseEntryContext {
+  readonly errand: SupportErrand | undefined;
+  readonly profile: InvestigationProfile | null | undefined;
+  readonly labelStructure: SupportErrand['labels'];
+}
+
+export interface InvestigationPhaseEntryRequirementProps {
+  /** Abandons the phase change; the requirement is asked for again on the next attempt. */
+  readonly onClose: () => void;
+}
+
+/**
+ * Something the variant requires before the errand may enter a phase. While it is unmet, the phase
+ * change is held and `render` is shown instead, so the handler can deal with it or leave the errand
+ * where it is. Shared code only asks; what the requirement is stays the variant's.
+ */
+export interface InvestigationPhaseEntryRequirement {
+  /** The workflow phase whose entry the requirement guards. */
+  readonly phaseName: string;
+  /**
+   * What the phase button says while the requirement is unmet. The button then does that, not the phase
+   * change, so it must not promise a phase change the handler will not get.
+   */
+  readonly actionLabel: string;
+  readonly isMet: (context: InvestigationPhaseEntryContext) => boolean;
+  readonly render: (props: InvestigationPhaseEntryRequirementProps) => ReactNode;
+}
+
 export interface InvestigationDetailsHeaderProps {
   readonly access: InvestigationAccessState;
   /** True while the errand page holds unsaved changes, which an errand-moving command would discard. */
@@ -93,6 +122,8 @@ export interface InvestigationVariantModule {
   renderDetailsHeader?: (props: InvestigationDetailsHeaderProps) => ReactNode;
   /** The decision tab, for a variant whose investigation ends in a recorded decision. */
   readonly decisionTab?: InvestigationDecisionTabSlot;
+  /** Something that has to be done before the errand may enter a phase; a variant with none omits this. */
+  readonly phaseEntryRequirement?: InvestigationPhaseEntryRequirement;
 }
 
 /**

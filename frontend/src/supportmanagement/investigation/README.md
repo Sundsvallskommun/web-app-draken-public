@@ -29,6 +29,9 @@ delad kod erbjuder:
   sig eget ordförråd måste också ta med kontrollen som redigerar det.
 - `renderDetailsHeader` — valfritt innehåll överst i Ärendeuppgifter, för kontroller som gäller hela ärendet (för
   avvikelse: kortet Ärendets plats). Utan slot ser Ärendeuppgifter ut som för alla andra drakar.
+- `phaseEntryRequirement` — valfritt krav innan ärendet får gå in i en fas. Så länge kravet inte är uppfyllt byter
+  fasknappen namn till kravets `actionLabel` och gör det i stället för fasbytet (för avvikelse: Tilldela
+  LEX-ansvarig vid misstänkt missförhållande, varefter LEX-ansvarig byter fas). Utan slot byts fas som vanligt.
 - `resolveClassificationPlacement` — var kategoriseringen redigeras, och i vilket ordförråd.
 - `requiredPhaseName` — valfri fas arbetet utförs i. Fliken erbjuds först när ärendet nått fasen (att vara i den
   räcker, liksom att ha passerat den). `decisionTab` har ett eget `requiredPhaseName`, så beslutet kan vänta på en
