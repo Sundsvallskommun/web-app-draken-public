@@ -2,14 +2,19 @@ import { OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_ISSUER_URL } from '@config';
 import type * as oidc from 'openid-client';
 
 /**
- * openid-client v6 is ESM-only while this backend compiles to CommonJS, so it is loaded with a
- * lazy dynamic import: SAML-only deployments (OIDC_ENABLED=false) never load it at all, and
- * Node's require(esm) interop is exercised only when the OIDC flow is actually used.
+ * openid-client v6 is ESM-only while this backend compiles to CommonJS. A plain `import()` is
+ * not enough: tsc with module=commonjs rewrites it into `require()`, which cannot load an ES
+ * module on Nodes without require(esm) interop (ERR_REQUIRE_ESM on the test servers). The
+ * Function constructor hides the import() from the compiler, so the emitted CommonJS keeps a
+ * TRUE dynamic import — supported from every CommonJS module on all maintained Node versions.
+ * Still lazy: SAML-only deployments (OIDC_ENABLED=false) never load the module at all.
  */
+const dynamicImport = new Function('specifier', 'return import(specifier)') as (specifier: string) => Promise<unknown>;
+
 let clientModule: Promise<typeof oidc> | undefined;
 
 export function loadOpenidClient(): Promise<typeof oidc> {
-  clientModule ??= import('openid-client');
+  clientModule ??= dynamicImport('openid-client') as Promise<typeof oidc>;
   return clientModule;
 }
 
