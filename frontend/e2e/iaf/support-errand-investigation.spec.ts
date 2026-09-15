@@ -871,7 +871,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(controls.locator('[data-cy="investigation-report-generate"]')).toBeDisabled();
   });
 
-  test('beslutsfliken säger att det inte finns något att besluta om när beslutet är en annan rolls', async ({
+  test('beslutsfliken säger vem som fattar beslutet när det är en annan rolls', async ({
     page,
     dismissCookieConsent,
   }) => {
@@ -888,11 +888,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await visitErrand(page, dismissCookieConsent);
     await openInvestigation(page);
 
-    // The decision is the LEX role's: this handler is told there is nothing for them to decide, and nothing else.
+    // The decision is the LEX role's: this handler is told who takes it, and nothing else.
     await page.getByRole('tab', { name: 'Beslut', exact: true }).click();
     const decisionTab = page.locator('[data-cy="support-decision-tab"]');
     await expect(decisionTab.locator('[data-cy="decision-tab-nothing-to-do"]')).toHaveText(
-      'Det finns inget att besluta om. Gå vidare till uppföljning.'
+      'Beslutet fattas av LEX-ansvarig.'
     );
     await expect(decisionTab).not.toContainText('behörighet');
   });

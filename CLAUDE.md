@@ -42,9 +42,9 @@ wrongly enables both then degrades to today's behaviour rather than to a placeho
   leaves Ärendeuppgifter untouched. AOT is precisely that case. The same
   holds for `decisionTab`: avvikelse fills it with the Beslut errand tab, always offered once the errand
   is in the decision phase. It shows the decision document that applies to the errand (the lex Sarah
-  decision on a reported misconduct, the IVO decision on an HSL deviation, never both), and says only
-  that there is nothing to decide when neither applies or the user does not reach the decision; a
-  variant without the slot gets no tab.
+  decision on a reported misconduct, the IVO decision on an HSL deviation, never both). It says only
+  that there is nothing to decide when neither applies, and only which role decides when the user does
+  not reach the decision; a variant without the slot gets no tab.
 - **The tab is selected by flag, not by profile state.** AOT has no registered profile, so the BFF
   always reports `state: 'inactive'` for it (`getSupportInvestigationProfile` falls through to an
   empty profile). Gating the tab on profile state silently deletes it from every non-avvikelse drake.

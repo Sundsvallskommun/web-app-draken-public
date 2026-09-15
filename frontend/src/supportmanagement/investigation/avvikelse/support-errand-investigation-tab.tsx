@@ -10,6 +10,7 @@ import { useInvestigationProfileStore } from '../investigation-profile-store';
 import type { InvestigationTabProps } from '../investigation-variant';
 import { getInvestigationDocumentApplicability } from './investigation-classification';
 import {
+  configuredInvestigationDocuments,
   type InvestigationDocumentContext,
   type InvestigationTabState,
   isInvestigationDocumentEditable,
@@ -28,10 +29,12 @@ interface TabCopy {
   readonly noticePrefix: string;
   readonly notices: Readonly<Record<InvestigationTabNotice, string>>;
   /**
-   * States in which the tab has nothing for this user to do. The tab then shows only its `not-applicable`
-   * notice, with nothing to document and no permissions to recheck.
+   * States in which the tab has nothing for this user to do. The tab then shows only one notice, with
+   * nothing to document and no permissions to recheck: that nothing applies, or who the work belongs to.
    */
   readonly nothingToDoStates?: readonly InvestigationTabNotice[];
+  /** Who the work belongs to, told a handler who reaches none of the documents that apply to the errand. */
+  readonly ownerNotice?: (owners: string) => string;
 }
 
 /**
@@ -69,8 +72,9 @@ const tabCopy: Readonly<Record<InvestigationDocumentPlacement, TabCopy>> = {
       'no-access': 'Du har inte behörighet till beslutet i det här ärendet.',
     },
     // An errand that calls for no decision, and a decision that is another role's, leave this handler
-    // nothing to decide: either way the errand moves on to the follow-up.
+    // nothing to decide. The second names the role, so a role wrongly refused its own decision shows.
     nothingToDoStates: ['not-applicable', 'no-access'],
+    ownerNotice: (owners) => `Beslutet fattas av ${owners}.`,
   },
 };
 
@@ -127,6 +131,16 @@ function InvestigationDocuments({
   const tabState = resolveInvestigationTabState(profileStatus, profile, documentContext);
   const nothingToDo =
     tabState !== 'loading' && tabState !== 'ready' && copy.nothingToDoStates?.includes(tabState) === true;
+  // Who the documents this errand calls for belong to, told to a handler who reaches none of them.
+  const owners = [
+    ...new Set(configuredInvestigationDocuments(profile, documentContext).map((document) => document.ownerLabel)),
+  ].join(' eller ');
+  const nothingToDoNotice =
+    tabState === 'no-access'
+      ? copy.ownerNotice && owners
+        ? copy.ownerNotice(owners)
+        : copy.notices['no-access']
+      : copy.notices['not-applicable'];
   const hasHiddenDraft = documents.some(
     (document) => dirtyDocuments[document.key] && !visibleDocuments.some((visible) => visible.key === document.key)
   );
@@ -168,7 +182,7 @@ function InvestigationDocuments({
           <Alert.Icon />
           <Alert.Content>
             <Alert.Content.Description data-cy={`${copy.noticePrefix}-nothing-to-do`}>
-              {copy.notices['not-applicable']}
+              {nothingToDoNotice}
             </Alert.Content.Description>
           </Alert.Content>
         </Alert>
