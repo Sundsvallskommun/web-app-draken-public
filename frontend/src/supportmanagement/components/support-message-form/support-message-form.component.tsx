@@ -37,7 +37,7 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   getSupportAttachment,
   SingleSupportAttachment,
@@ -53,8 +53,8 @@ import {
   getSupportErrandById,
   isSupportErrandLocked,
   readSupportErrandWriteSnapshot,
+  resolveAwaitingResponseStatus,
   setSupportErrandStatus,
-  Status,
 } from '@supportmanagement/services/support-errand-service';
 import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import { buildSupportReplyContext } from '@supportmanagement/services/support-message-reply-context-service';
@@ -341,7 +341,13 @@ export const SupportMessageForm: FC<{
         if (typeOfMessage === 'infoCompletion' || typeOfMessage === 'internalCompletion') {
           // The send above is ours, so the version this form was opened with may already be stale.
           const afterMessage = await readSupportErrandWriteSnapshot(supportErrand.id!, municipalityId);
-          const nextStatus = typeOfMessage === 'infoCompletion' ? Status.PENDING : Status.AWAITING_INTERNAL_RESPONSE;
+          // A workflow namespace waits for any completion in its phase's AWAITING_RESPONSE; the others keep
+          // their customer and internal waiting statuses.
+          const nextStatus = resolveAwaitingResponseStatus(
+            typeOfMessage === 'infoCompletion' ? 'info' : 'internal',
+            supportErrand.phases,
+            useMetadataStore.getState().supportMetadata?.phases
+          );
           await setSupportErrandStatus(supportErrand.id!, municipalityId, nextStatus, afterMessage);
         }
 

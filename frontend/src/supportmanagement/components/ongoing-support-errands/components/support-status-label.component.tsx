@@ -46,6 +46,8 @@ export const SupportStatusLabelComponent: FC<{
       icon = 'clock-10';
       break;
     case 'AWAITING_INTERNAL_RESPONSE':
+    // IAF/VOF wait for a completion in AWAITING_RESPONSE; to a reader it is the same state.
+    case 'AWAITING_RESPONSE':
       color = 'gronsta';
       inverted = true;
       icon = 'clock-10';

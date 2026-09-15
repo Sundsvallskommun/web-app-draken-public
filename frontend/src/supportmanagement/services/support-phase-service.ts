@@ -113,6 +113,36 @@ export const isStatusAllowedInPhase = (
 };
 
 /**
+ * A phase's main status: the first one it allows. The others - Tilldelat, Komplettering - are states
+ * the errand passes through within the phase; the first is the one it works in, and the one Support
+ * Management gives an errand that enters the phase without a status the phase allows.
+ */
+export const getPhaseMainStatus = (activePhaseId: string | undefined, phases: readonly Phase[]): string | undefined =>
+  phases.find((phase) => phase.id === activePhaseId)?.allowedStatuses?.[0];
+
+/**
+ * The statuses a handler can pick for the errand.
+ *
+ * Where the namespace runs a workflow, the active phase declares which statuses it allows and
+ * Support Management refuses the rest, so only those are offered - in IAF/VOF, where each phase
+ * allows exactly one, that is the phase's own status. A deployment with no phase model, an errand
+ * that has not entered the workflow and a phase listing no statuses constrain nothing and keep the
+ * full list. The errand's current status is always kept, so the selector never shows a value it
+ * has no option for.
+ */
+export const getSelectableSupportStatuses = <SupportStatus extends { name?: string }>(
+  statuses: readonly SupportStatus[] | undefined,
+  currentStatus: string | undefined,
+  activePhaseId: string | undefined,
+  phases: readonly Phase[]
+): SupportStatus[] =>
+  (statuses ?? []).filter(
+    (status) =>
+      status.name === currentStatus ||
+      (status.name !== undefined && isStatusAllowedInPhase(status.name, activePhaseId, phases))
+  );
+
+/**
  * Where the errand stands in the workflow: the phases the deployment runs, and the ones this errand
  * has entered. Both sides are needed - the first says what the phases are and in which order, the
  * second which of them the errand is in.

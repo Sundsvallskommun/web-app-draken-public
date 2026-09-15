@@ -12,6 +12,7 @@ import {
   getNewErrandDefaults,
   mapContactChannels,
   NEW_ERRAND_DEFAULTS,
+  resolveClosingPhaseId,
   resolveDefaultLabels,
   resolveSupportErrandClassification,
   resolveSupportErrandPhaseTransition,
@@ -996,5 +997,41 @@ describe('support-errand.service', () => {
         }),
       );
     });
+  });
+});
+
+describe('resolveClosingPhaseId', () => {
+  const workflow: Phase[] = [
+    { id: 'review', name: 'REVIEW', allowedStatuses: ['REVIEW', 'ASSIGNED', 'AWAITING_RESPONSE'] },
+    { id: 'end', name: 'END', allowedStatuses: ['SOLVED'] },
+  ];
+
+  it('moves an errand closed in another phase into the phase that allows closing', () => {
+    expect(resolveClosingPhaseId({ phases: [{ phaseId: 'review' }] }, workflow, 'SOLVED')).toBe('end');
+    // An errand outside the workflow is closed into it as well.
+    expect(resolveClosingPhaseId({ phases: [] }, workflow, 'SOLVED')).toBe('end');
+  });
+
+  it('moves nothing where closing is already allowed, for other statuses, or without a workflow', () => {
+    expect(resolveClosingPhaseId({ phases: [{ phaseId: 'end' }] }, workflow, 'SOLVED')).toBeUndefined();
+    expect(resolveClosingPhaseId({ phases: [{ phaseId: 'review' }] }, workflow, 'ASSIGNED')).toBeUndefined();
+    expect(resolveClosingPhaseId({ phases: [{ phaseId: 'review' }] }, [], 'SOLVED')).toBeUndefined();
+    expect(resolveClosingPhaseId({ phases: [{ phaseId: 'review' }] }, undefined, 'SOLVED')).toBeUndefined();
+  });
+
+  it('does not guess between several phases that allow closing', () => {
+    const twoEnds: Phase[] = [...workflow, { id: 'archive', name: 'ARCHIVE', allowedStatuses: ['SOLVED'] }];
+    expect(() => resolveClosingPhaseId({ phases: [{ phaseId: 'review' }] }, twoEnds, 'SOLVED')).toThrow(expect.objectContaining({ status: 409 }));
+  });
+
+  it('carries the move in the same status write as the resolution', () => {
+    expect(
+      resolveSupportErrandStatusTransition(
+        { status: 'REVIEW', phases: [{ phaseId: 'review' }] },
+        [{ name: 'SOLVED' }],
+        { expectedStatus: 'REVIEW', status: 'SOLVED', resolution: 'CLOSED' },
+        workflow,
+      ),
+    ).toEqual({ status: 'SOLVED', resolution: 'CLOSED', activePhaseId: 'end' });
   });
 });

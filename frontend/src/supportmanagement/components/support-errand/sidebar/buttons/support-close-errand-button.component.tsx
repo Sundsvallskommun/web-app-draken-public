@@ -158,9 +158,14 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
         leftIcon={<Check />}
         variant={
           !!(supportErrand?.status as Status) &&
-          [Status.NEW, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.SUSPENDED, Status.ASSIGNED].includes(
-            supportErrand?.status as Status
-          )
+          [
+            Status.NEW,
+            Status.PENDING,
+            Status.AWAITING_INTERNAL_RESPONSE,
+            Status.AWAITING_RESPONSE,
+            Status.SUSPENDED,
+            Status.ASSIGNED,
+          ].includes(supportErrand?.status as Status)
             ? 'secondary'
             : 'primary'
         }

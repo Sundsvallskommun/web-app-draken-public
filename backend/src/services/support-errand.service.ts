@@ -630,6 +630,8 @@ export interface ResolvedSupportErrandStatusTransition {
   status: string;
   resolution?: string;
   suspension?: Suspension;
+  /** The phase a closed errand moves into, when the phase it is in does not allow closing. */
+  activePhaseId?: string;
 }
 
 /**
@@ -641,9 +643,10 @@ export interface ResolvedSupportErrandStatusTransition {
  * transition rules in Draken.
  */
 export const resolveSupportErrandStatusTransition = (
-  errand: Pick<Errand, 'status'>,
+  errand: Pick<Errand, 'status' | 'phases'>,
   statuses: readonly Pick<SupportManagementStatus, 'name' | 'deprecated'>[] | undefined,
   command: SupportErrandStatusTransitionCommand,
+  phases?: readonly Phase[],
 ): ResolvedSupportErrandStatusTransition => {
   if (!errand.status) {
     throw new HttpException(502, 'Support Management response is missing the current errand status');
@@ -658,10 +661,13 @@ export const resolveSupportErrandStatusTransition = (
     throw new HttpException(400, 'Target status is not available in Support Management metadata');
   }
 
+  const activePhaseId = resolveClosingPhaseId(errand, phases, command.status);
+
   return {
     status: command.status,
     ...(command.resolution !== undefined ? { resolution: command.resolution } : {}),
     ...(command.suspension !== undefined ? { suspension: command.suspension } : {}),
+    ...(activePhaseId ? { activePhaseId } : {}),
   };
 };
 
@@ -688,6 +694,33 @@ export interface ResolvedSupportErrandPhaseTransition {
 export const getActiveErrandPhaseId = (errand: Pick<Errand, 'phases'>): string | undefined => {
   const open = (errand.phases ?? []).filter(phase => phase.phaseId && !phase.ended);
   return open.length > 0 ? open[open.length - 1].phaseId : undefined;
+};
+
+const CLOSED_SUPPORT_ERRAND_STATUS = 'SOLVED';
+
+/**
+ * The phase closing an errand moves it into, or undefined when closing needs no move.
+ *
+ * Closing is the handler's decision rather than a step in the workflow, so it is taken from any
+ * phase: an errand closed in a phase that does not allow SOLVED moves, in the same write, into the
+ * phase that does - END in the avvikelse workflow. This is the one move not made through an explicit
+ * transition. A namespace without phases, a phase that already allows closing and every status other
+ * than SOLVED move nothing. Several phases allowing SOLVED is a choice Draken does not guess at.
+ */
+export const resolveClosingPhaseId = (errand: Pick<Errand, 'phases'>, phases: readonly Phase[] | undefined, status: string): string | undefined => {
+  if (status !== CLOSED_SUPPORT_ERRAND_STATUS) return undefined;
+  const workflow = (phases ?? []).filter(phase => !phase.deprecated && phase.id);
+  if (workflow.length === 0) return undefined;
+
+  const activePhaseId = getActiveErrandPhaseId(errand);
+  const activeAllowed = workflow.find(phase => phase.id === activePhaseId)?.allowedStatuses ?? [];
+  if (activePhaseId && (activeAllowed.length === 0 || activeAllowed.includes(status))) return undefined;
+
+  const closingPhases = workflow.filter(phase => phase.allowedStatuses?.includes(status));
+  if (closingPhases.length !== 1) {
+    throw new HttpException(409, 'Support Management metadata has no single phase that closes an errand');
+  }
+  return closingPhases[0].id;
 };
 
 /** The workflow's first phase: the lowest `phaseOrder`, with metadata order as the tie-break. */

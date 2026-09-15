@@ -977,7 +977,7 @@ export class SupportErrandController {
       throw new HttpException(409, 'Support errand status has changed since it was loaded');
     }
 
-    const body = resolveSupportErrandStatusTransition(currentErrand.data, metadata.data.statuses, data);
+    const body = resolveSupportErrandStatusTransition(currentErrand.data, metadata.data.statuses, data, metadata.data.phases);
     await this.apiService.patch<SupportErrand, typeof body>(
       {
         url,

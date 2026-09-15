@@ -1,4 +1,8 @@
-import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import {
+  Label,
+  Phase,
+  Stakeholder as SupportStakeholder,
+} from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
 import { isIAFOrVOF, isKC, isLOK, isROB } from '@common/services/application-service';
@@ -14,7 +18,7 @@ import { basicsAcceptsClassification } from '@supportmanagement/investigation/in
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef } from 'react';
-import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
+import { CErrandPhase, CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 
 import { saveSupportAttachments, SupportAttachment } from './support-attachment-service';
@@ -33,6 +37,7 @@ import { getMappedLabelSubType, shouldMapLabelSubType } from './support-label-cl
 import { MessageRequest, sendMessage } from './support-message-service';
 import { saveSupportNote } from './support-note-service';
 import { saveChangedErrandParameters } from './support-parameter-service';
+import { getActiveSupportPhaseId, getPhaseMainStatus, getSupportPhases } from './support-phase-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
 export interface Customer {
   id: string;
@@ -188,6 +193,8 @@ export enum Status {
   DECISION = 'DECISION',
   /** IAF/VOF: the status of the follow-up phase. */
   FOLLOW_UP = 'FOLLOW_UP',
+  /** IAF/VOF: waiting for a requested completion, from whichever party was asked. */
+  AWAITING_RESPONSE = 'AWAITING_RESPONSE',
   SECURITY_CLEARENCE = 'SECURITY_CLEARENCE',
   FEEDBACK_CLOSURE = 'FEEDBACK_CLOSURE',
   SUBPACKAGE_HANDLED = 'SUBPACKAGE_HANDLED',
@@ -196,7 +203,14 @@ export enum Status {
 
 export const shouldShowResumeErrandButton = (status?: Status): boolean => {
   return (
-    !!status && [Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.SUSPENDED, Status.ASSIGNED].includes(status)
+    !!status &&
+    [
+      Status.PENDING,
+      Status.AWAITING_INTERNAL_RESPONSE,
+      Status.AWAITING_RESPONSE,
+      Status.SUSPENDED,
+      Status.ASSIGNED,
+    ].includes(status)
   );
 };
 
@@ -223,6 +237,37 @@ export const newStatuses = [Status.NEW];
  */
 export const getOngoingStatus = (): Status => (isIAFOrVOF() ? Status.INQUIRY : Status.ONGOING);
 
+/**
+ * The status an errand works in when it is taken, resumed or given back to its handler.
+ *
+ * Where the namespace runs a workflow that is the active phase's main status - the first one the
+ * phase allows, the same rule Support Management's phase change applies - because each phase owns
+ * its status and refuses the application-wide ongoing one. Everywhere else it is the ongoing status.
+ */
+export const resolveWorkingStatus = (
+  errandPhases: readonly CErrandPhase[] | undefined,
+  metadataPhases: readonly Phase[] | undefined
+): Status => {
+  const mainStatus = getPhaseMainStatus(getActiveSupportPhaseId(errandPhases), getSupportPhases(metadataPhases));
+  return (mainStatus as Status | undefined) ?? getOngoingStatus();
+};
+
+/**
+ * The status an errand waits in after asking for a completion. Where the active phase allows
+ * AWAITING_RESPONSE the errand waits there, whichever party was asked; every other namespace keeps
+ * its own pair, PENDING for the customer and AWAITING_INTERNAL_RESPONSE for a colleague.
+ */
+export const resolveAwaitingResponseStatus = (
+  requested: 'info' | 'internal',
+  errandPhases: readonly CErrandPhase[] | undefined,
+  metadataPhases: readonly Phase[] | undefined
+): Status => {
+  const activePhaseId = getActiveSupportPhaseId(errandPhases);
+  const activePhase = getSupportPhases(metadataPhases).find((phase) => phase.id === activePhaseId);
+  if (activePhase?.allowedStatuses?.includes(Status.AWAITING_RESPONSE)) return Status.AWAITING_RESPONSE;
+  return requested === 'info' ? Status.PENDING : Status.AWAITING_INTERNAL_RESPONSE;
+};
+
 // IAF/VOF's workflow gives each phase exactly one status - REVIEW in Granskning, INQUIRY in Utredning,
 // DECISION in Beslut, FOLLOW_UP in Uppföljning - so every one of them is an errand being worked on.
 // INQUIRY stays first: the first entry keys the "Öppna ärenden" filter.
@@ -232,6 +277,7 @@ export const ongoingStatuses = isIAFOrVOF()
       Status.REVIEW,
       Status.DECISION,
       Status.FOLLOW_UP,
+      Status.AWAITING_RESPONSE,
       Status.PENDING,
       Status.AWAITING_INTERNAL_RESPONSE,
       Status.REOPENED,

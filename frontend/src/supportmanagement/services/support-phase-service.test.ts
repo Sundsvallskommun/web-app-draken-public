@@ -5,6 +5,8 @@ import { test } from 'vitest';
 
 import {
   getAvailablePhaseTransitions,
+  getPhaseMainStatus,
+  getSelectableSupportStatuses,
   getSupportPhases,
   hasReachedSupportPhase,
   isDecisionPhase,
@@ -223,4 +225,37 @@ test('starting handläggning chooses the unique nearest forward phase, regardles
 test('multiple backward transitions do not cause an automatic move', () => {
   const backward = phases.map((phase) => ({ ...phase, phaseOrder: phase.id === 'received' ? 4 : phase.phaseOrder }));
   assert.equal(resolveStartProcessPhaseAdvance('received', backward), null);
+});
+
+// In a workflow the phase owns the status, so the selector offers what the active phase allows and
+// keeps whatever the errand already has; without a phase to ask, nothing is taken away.
+test('offers the statuses the active phase allows, and the full list where no phase constrains it', () => {
+  const statuses = [{ name: 'NEW' }, { name: 'REVIEW' }, { name: 'INQUIRY' }, { name: 'SOLVED' }];
+  const workflow = [
+    { id: 'registered', name: 'ACTUALIZATION', phaseOrder: 0, allowedStatuses: ['NEW'] },
+    { id: 'review', name: 'REVIEW', phaseOrder: 1, allowedStatuses: ['REVIEW'] },
+    { id: 'open', name: 'OPEN', phaseOrder: 2 },
+  ];
+  const names = (selectable: { name?: string }[]) => selectable.map(({ name }) => name);
+
+  assert.deepEqual(names(getSelectableSupportStatuses(statuses, 'REVIEW', 'review', workflow)), ['REVIEW']);
+  // The current status stays selectable even where the phase no longer lists it.
+  assert.deepEqual(names(getSelectableSupportStatuses(statuses, 'SOLVED', 'review', workflow)), ['REVIEW', 'SOLVED']);
+  assert.deepEqual(names(getSelectableSupportStatuses(statuses, 'NEW', 'open', workflow)), names(statuses));
+  assert.deepEqual(names(getSelectableSupportStatuses(statuses, 'NEW', undefined, workflow)), names(statuses));
+  assert.deepEqual(names(getSelectableSupportStatuses(statuses, 'NEW', undefined, [])), names(statuses));
+  assert.deepEqual(getSelectableSupportStatuses(undefined, 'NEW', 'review', workflow), []);
+});
+
+// Resuming, taking the errand and giving it back all land in the status the phase works in.
+test("a phase's main status is the first it allows", () => {
+  const workflow = [
+    { id: 'review', name: 'REVIEW', phaseOrder: 1, allowedStatuses: ['REVIEW', 'ASSIGNED', 'AWAITING_RESPONSE'] },
+    { id: 'open', name: 'OPEN', phaseOrder: 2 },
+  ];
+
+  assert.equal(getPhaseMainStatus('review', workflow), 'REVIEW');
+  assert.equal(getPhaseMainStatus('open', workflow), undefined);
+  assert.equal(getPhaseMainStatus(undefined, workflow), undefined);
+  assert.equal(getPhaseMainStatus('review', []), undefined);
 });

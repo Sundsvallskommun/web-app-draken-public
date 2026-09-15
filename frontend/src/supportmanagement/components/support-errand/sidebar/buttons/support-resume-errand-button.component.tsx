@@ -1,9 +1,9 @@
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import {
-  getOngoingStatus,
   getSupportErrandById,
+  resolveWorkingStatus,
   setSupportErrandStatus,
   shouldShowResumeErrandButton,
   Status,
@@ -16,13 +16,17 @@ export const SupportResumeErrandButton: React.FC<{ disabled: boolean }> = ({ dis
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const confirm = useConfirm();
   const toastMessage = useSnackbar();
   const [isLoading, setIsLoading] = useState(false);
 
   const activateErrand = () => {
     setIsLoading(true);
-    return setSupportErrandStatus(supportErrand!.id!, municipalityId, getOngoingStatus(), supportErrand!)
+    // Resuming returns the errand to the status it works in: its phase's main status where the
+    // namespace runs a workflow, the ongoing status everywhere else.
+    const workingStatus = resolveWorkingStatus(supportErrand?.phases, supportMetadata?.phases);
+    return setSupportErrandStatus(supportErrand!.id!, municipalityId, workingStatus, supportErrand!)
       .then(() => {
         toastMessage(
           getToastOptions({
