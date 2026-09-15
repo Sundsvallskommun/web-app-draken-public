@@ -27,6 +27,15 @@ export const getAvailablePhaseTransitions = (
 };
 
 /**
+ * Whether the errand is closed from its active phase rather than moved on: the last phase has no
+ * transition left to take, and allows the closed status. The phase button then closes the errand, and
+ * nothing else on the page needs to offer closing.
+ */
+export const closesFromActivePhase = (activePhaseId: string | undefined, phases: readonly Phase[]): boolean =>
+  getAvailablePhaseTransitions(activePhaseId, phases).length === 0 &&
+  phases.find((phase) => phase.id === activePhaseId)?.allowedStatuses?.includes('SOLVED') === true;
+
+/**
  * The workflow phase whose entry Draken guards: moving an errand into it while no measure has been
  * registered is asked about first. Phase names are the technical keys of Support Management's phase
  * metadata (`INVESTIGATION`, `DECISION`, ...), so this is an exact match on `name`; the display name
@@ -215,4 +224,10 @@ export const isInSupportPhase = (
   if (!canonicalName || !activePhaseId) return false;
   const activePhase = (metadataPhases ?? []).find((phase) => phase.id === activePhaseId);
   return activePhase !== undefined && isNamedPhase(activePhase, canonicalName);
+};
+
+/** Whether a phase is the named one, in either of the metadata's vocabularies. */
+export const isSupportPhaseNamed = (phase: Phase | undefined, phaseName: string | undefined): boolean => {
+  const canonicalName = canonicalPhaseName(phaseName);
+  return phase !== undefined && Boolean(canonicalName) && isNamedPhase(phase, canonicalName);
 };

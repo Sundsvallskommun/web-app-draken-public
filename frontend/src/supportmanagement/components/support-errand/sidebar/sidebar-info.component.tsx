@@ -24,6 +24,7 @@ import {
 import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
 import {
+  closesFromActivePhase,
   getActiveSupportPhaseId,
   getSelectableSupportStatuses,
   getSupportPhases,
@@ -533,7 +534,10 @@ export const SidebarInfo: FC<{
 
             {supportErrand?.status === Status.SOLVED ? (
               <>
-                {renderLabelSwitch(supportErrand.resolution!)}
+                {/* A workflow records no resolution, so a closed errand is simply closed. */}
+                {appConfig.features.useUiPhases
+                  ? solutionComponent('Avslutat', 'avslutade ärendet.', 'check')
+                  : renderLabelSwitch(supportErrand.resolution!)}
                 <SupportReopenErrandButton />
               </>
             ) : supportErrand?.status === Status.SUSPENDED || supportErrand?.status === Status.ASSIGNED ? (
@@ -614,7 +618,14 @@ export const SidebarInfo: FC<{
                   </>
                 )}
                 <SupportForwardErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
-                <SupportCloseErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
+                {/* In the last phase of a workflow the phase button closes the errand, so it is not offered twice. */}
+                {!(
+                  appConfig.features.useUiPhases &&
+                  closesFromActivePhase(
+                    getActiveSupportPhaseId(supportErrand?.phases),
+                    getSupportPhases(supportMetadata?.phases)
+                  )
+                ) && <SupportCloseErrandButtonComponent disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />}
               </div>
             )}
           </>

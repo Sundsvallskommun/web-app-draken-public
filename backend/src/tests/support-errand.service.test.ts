@@ -13,6 +13,7 @@ import {
   mapContactChannels,
   NEW_ERRAND_DEFAULTS,
   resolveClosingPhaseId,
+  resolveClosingPhaseSteps,
   resolveDefaultLabels,
   resolveSupportErrandClassification,
   resolveSupportErrandPhaseTransition,
@@ -1001,19 +1002,68 @@ describe('support-errand.service', () => {
 });
 
 describe('resolveClosingPhaseId', () => {
+  // The last phase of the avvikelse workflow allows closing alongside its own statuses.
   const workflow: Phase[] = [
-    { id: 'review', name: 'REVIEW', allowedStatuses: ['REVIEW', 'ASSIGNED', 'AWAITING_RESPONSE'] },
-    { id: 'end', name: 'END', allowedStatuses: ['SOLVED'] },
+    {
+      id: 'review',
+      name: 'REVIEW',
+      allowedStatuses: ['REVIEW', 'ASSIGNED', 'AWAITING_RESPONSE'],
+      transitions: [{ id: 'to-follow-up', targetPhaseId: 'follow-up' }],
+    },
+    { id: 'follow-up', name: 'FOLLOW_UP', allowedStatuses: ['FOLLOW_UP', 'ASSIGNED', 'AWAITING_RESPONSE', 'SOLVED'] },
+  ];
+  // The avvikelse chain, where Support Management only lets an errand move one transition at a time.
+  const chain: Phase[] = [
+    { id: 'review', name: 'REVIEW', allowedStatuses: ['REVIEW', 'ASSIGNED'], transitions: [{ id: 't1', targetPhaseId: 'investigation' }] },
+    {
+      id: 'investigation',
+      name: 'INVESTIGATION',
+      allowedStatuses: ['INQUIRY', 'ASSIGNED'],
+      transitions: [{ id: 't2', targetPhaseId: 'decision' }],
+    },
+    { id: 'decision', name: 'DECISION', allowedStatuses: ['DECISION', 'ASSIGNED'], transitions: [{ id: 't3', targetPhaseId: 'follow-up' }] },
+    { id: 'follow-up', name: 'FOLLOW_UP', allowedStatuses: ['FOLLOW_UP', 'ASSIGNED', 'SOLVED'] },
   ];
 
+  it('steps a closed errand along the transitions, each phase setting the status it requires', () => {
+    expect(
+      resolveSupportErrandStatusTransition(
+        { status: 'REVIEW', phases: [{ phaseId: 'review' }] },
+        [{ name: 'SOLVED' }],
+        { expectedStatus: 'REVIEW', status: 'SOLVED' },
+        chain,
+      ),
+    ).toEqual({
+      status: 'SOLVED',
+      activePhaseId: 'follow-up',
+      phaseSteps: [
+        { activePhaseId: 'investigation', status: 'INQUIRY' },
+        { activePhaseId: 'decision', status: 'DECISION' },
+      ],
+    });
+    // A status every phase on the way allows is left as it is.
+    expect(resolveClosingPhaseSteps({ phases: [{ phaseId: 'decision' }] }, chain, 'SOLVED')).toEqual(['follow-up']);
+  });
+
+  it('enters an errand outside the workflow at its first phase and steps on from there', () => {
+    expect(resolveClosingPhaseSteps({ phases: [] }, chain, 'SOLVED')).toEqual(['review', 'investigation', 'decision', 'follow-up']);
+  });
+
+  it('refuses to close into a phase the workflow cannot reach from the active phase', () => {
+    const disconnected = chain.map(phase => (phase.id === 'decision' ? { ...phase, transitions: [] } : phase));
+    expect(() => resolveClosingPhaseSteps({ phases: [{ phaseId: 'review' }] }, disconnected, 'SOLVED')).toThrow(
+      expect.objectContaining({ status: 409 }),
+    );
+  });
+
   it('moves an errand closed in another phase into the phase that allows closing', () => {
-    expect(resolveClosingPhaseId({ phases: [{ phaseId: 'review' }] }, workflow, 'SOLVED')).toBe('end');
+    expect(resolveClosingPhaseId({ phases: [{ phaseId: 'review' }] }, workflow, 'SOLVED')).toBe('follow-up');
     // An errand outside the workflow is closed into it as well.
-    expect(resolveClosingPhaseId({ phases: [] }, workflow, 'SOLVED')).toBe('end');
+    expect(resolveClosingPhaseId({ phases: [] }, workflow, 'SOLVED')).toBe('follow-up');
   });
 
   it('moves nothing where closing is already allowed, for other statuses, or without a workflow', () => {
-    expect(resolveClosingPhaseId({ phases: [{ phaseId: 'end' }] }, workflow, 'SOLVED')).toBeUndefined();
+    expect(resolveClosingPhaseId({ phases: [{ phaseId: 'follow-up' }] }, workflow, 'SOLVED')).toBeUndefined();
     expect(resolveClosingPhaseId({ phases: [{ phaseId: 'review' }] }, workflow, 'ASSIGNED')).toBeUndefined();
     expect(resolveClosingPhaseId({ phases: [{ phaseId: 'review' }] }, [], 'SOLVED')).toBeUndefined();
     expect(resolveClosingPhaseId({ phases: [{ phaseId: 'review' }] }, undefined, 'SOLVED')).toBeUndefined();
@@ -1024,14 +1074,14 @@ describe('resolveClosingPhaseId', () => {
     expect(() => resolveClosingPhaseId({ phases: [{ phaseId: 'review' }] }, twoEnds, 'SOLVED')).toThrow(expect.objectContaining({ status: 409 }));
   });
 
-  it('carries the move in the same status write as the resolution', () => {
+  it('carries the move in the same status write that closes the errand', () => {
     expect(
       resolveSupportErrandStatusTransition(
         { status: 'REVIEW', phases: [{ phaseId: 'review' }] },
         [{ name: 'SOLVED' }],
-        { expectedStatus: 'REVIEW', status: 'SOLVED', resolution: 'CLOSED' },
+        { expectedStatus: 'REVIEW', status: 'SOLVED' },
         workflow,
       ),
-    ).toEqual({ status: 'SOLVED', resolution: 'CLOSED', activePhaseId: 'end' });
+    ).toEqual({ status: 'SOLVED', activePhaseId: 'follow-up' });
   });
 });

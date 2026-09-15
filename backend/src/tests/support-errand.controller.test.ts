@@ -1432,6 +1432,43 @@ describe('updateSupportErrandStatus', () => {
     expect(res.body).toMatchObject({ status: 'SOLVED', resolution: 'CLOSED', version: 8 });
   });
 
+  // Support Management refuses a jump between phases, so closing from Granskning walks the chain.
+  it('steps an errand closed in an earlier phase through each transition before closing it', async () => {
+    const { controller, api } = makeController();
+    const phases = [
+      { id: 'review', name: 'REVIEW', allowedStatuses: ['REVIEW'], transitions: [{ id: 't1', targetPhaseId: 'investigation' }] },
+      { id: 'investigation', name: 'INVESTIGATION', allowedStatuses: ['INQUIRY'], transitions: [{ id: 't2', targetPhaseId: 'decision' }] },
+      { id: 'decision', name: 'DECISION', allowedStatuses: ['DECISION'], transitions: [{ id: 't3', targetPhaseId: 'follow-up' }] },
+      { id: 'follow-up', name: 'FOLLOW_UP', allowedStatuses: ['FOLLOW_UP', 'SOLVED'] },
+    ];
+    let errandRead = 0;
+    api.get.mockImplementation(async (config: { url?: string }) => {
+      if (config.url === metadataUrl) return { data: { statuses: [{ name: 'REVIEW' }, { name: 'SOLVED' }], phases }, message: 'success' };
+      errandRead += 1;
+      const version = 6 + errandRead;
+      return {
+        data: { id: mockSupportErrandId, status: 'REVIEW', phases: [{ phaseId: 'review' }], version },
+        message: 'success',
+        headers: { etag: `"${version}"` },
+      };
+    });
+    const req = mockReq();
+
+    await controller.updateSupportErrandStatus(
+      req,
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      { expectedVersion: 7, expectedStatus: 'REVIEW', status: 'SOLVED' },
+      mockRes(),
+    );
+
+    expect(api.patch.mock.calls.map(([config]) => [config.data, config.headers])).toEqual([
+      [{ activePhaseId: 'investigation', status: 'INQUIRY' }, { 'If-Match': '"7"' }],
+      [{ activePhaseId: 'decision', status: 'DECISION' }, { 'If-Match': '"8"' }],
+      [{ status: 'SOLVED', activePhaseId: 'follow-up' }, { 'If-Match': '"9"' }],
+    ]);
+  });
+
   it.each([
     {
       name: 'stale version',

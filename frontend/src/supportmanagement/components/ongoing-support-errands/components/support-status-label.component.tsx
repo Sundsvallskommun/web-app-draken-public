@@ -1,5 +1,6 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { isROB } from '@common/services/application-service';
+import { appConfig } from '@config/appconfig';
 import { Label } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
 import { Resolution, ResolutionLabelROB, Status } from '@supportmanagement/services/support-errand-service';
@@ -15,12 +16,14 @@ export const SupportStatusLabelComponent: FC<{
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
 
   const sevenDaysAction = actions?.find((action) => action.actionName === 'ADD_LABEL');
+  // A workflow records no resolution, so its closed errands are labelled by their status alone.
+  const readsResolution = !appConfig.features.useUiPhases;
 
   const solvedErrandIcon = () => {
-    if (resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM) return 'split';
-    else if (resolution === Resolution.CLOSED) return 'check';
-    else if (resolution === Resolution.BACK_TO_MANAGER) return 'redo';
-    else if (resolution === Resolution.BACK_TO_HR) return 'redo';
+    if (readsResolution && resolution === Resolution.REGISTERED_EXTERNAL_SYSTEM) return 'split';
+    else if (readsResolution && resolution === Resolution.CLOSED) return 'check';
+    else if (readsResolution && resolution === Resolution.BACK_TO_MANAGER) return 'redo';
+    else if (readsResolution && resolution === Resolution.BACK_TO_HR) return 'redo';
     else if (status === 'SOLVED') return 'check';
   };
   let color,
@@ -102,7 +105,7 @@ export const SupportStatusLabelComponent: FC<{
   }
 
   const solvedErrandText = () => {
-    if (status === Status.SOLVED && resolution) {
+    if (status === Status.SOLVED && resolution && readsResolution) {
       if (isROB()) {
         return (ResolutionLabelROB as Record<string, string>)[resolution] ?? 'Löst';
       }

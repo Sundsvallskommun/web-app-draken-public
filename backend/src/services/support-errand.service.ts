@@ -626,12 +626,24 @@ export interface SupportErrandStatusTransitionCommand {
   suspension?: Suspension;
 }
 
+/** One move along the workflow, on the way to the phase that closes an errand. */
+export interface SupportErrandPhaseStep {
+  activePhaseId: string;
+  /** The status the phase requires, when the errand's status at that point is not one it allows. */
+  status?: string;
+}
+
 export interface ResolvedSupportErrandStatusTransition {
   status: string;
   resolution?: string;
   suspension?: Suspension;
   /** The phase a closed errand moves into, when the phase it is in does not allow closing. */
   activePhaseId?: string;
+  /**
+   * The phases a closed errand passes through before that one, in order. Support Management only moves
+   * an errand along its workflow's transitions, so closing from an earlier phase steps through each first.
+   */
+  phaseSteps?: SupportErrandPhaseStep[];
 }
 
 /**
@@ -661,13 +673,24 @@ export const resolveSupportErrandStatusTransition = (
     throw new HttpException(400, 'Target status is not available in Support Management metadata');
   }
 
-  const activePhaseId = resolveClosingPhaseId(errand, phases, command.status);
+  const closingSteps = resolveClosingPhaseSteps(errand, phases, command.status) ?? [];
+  const activePhaseId = closingSteps.at(-1);
+  // Every phase passed on the way leaves the errand in a status it allows, as a phase transition does.
+  const phaseSteps: SupportErrandPhaseStep[] = [];
+  let stepStatus = errand.status;
+  for (const phaseId of closingSteps.slice(0, -1)) {
+    const phase = phases?.find(candidate => candidate.id === phaseId);
+    const status = phase ? resolvePhaseStatus(stepStatus, phase) : undefined;
+    if (status) stepStatus = status;
+    phaseSteps.push({ activePhaseId: phaseId, ...withStatus(status) });
+  }
 
   return {
     status: command.status,
     ...(command.resolution !== undefined ? { resolution: command.resolution } : {}),
     ...(command.suspension !== undefined ? { suspension: command.suspension } : {}),
     ...(activePhaseId ? { activePhaseId } : {}),
+    ...(phaseSteps.length > 0 ? { phaseSteps } : {}),
   };
 };
 
@@ -702,10 +725,11 @@ const CLOSED_SUPPORT_ERRAND_STATUS = 'SOLVED';
  * The phase closing an errand moves it into, or undefined when closing needs no move.
  *
  * Closing is the handler's decision rather than a step in the workflow, so it is taken from any
- * phase: an errand closed in a phase that does not allow SOLVED moves, in the same write, into the
- * phase that does - END in the avvikelse workflow. This is the one move not made through an explicit
- * transition. A namespace without phases, a phase that already allows closing and every status other
- * than SOLVED move nothing. Several phases allowing SOLVED is a choice Draken does not guess at.
+ * phase: an errand closed in a phase that does not allow SOLVED moves into the phase that does -
+ * Uppföljning (FOLLOW_UP) in the avvikelse workflow - stepping there along the workflow's transitions
+ * (`resolveClosingPhaseSteps`). A namespace without phases, a phase that already allows closing and
+ * every status other than SOLVED move nothing. Several phases allowing SOLVED is a choice Draken does
+ * not guess at.
  */
 export const resolveClosingPhaseId = (errand: Pick<Errand, 'phases'>, phases: readonly Phase[] | undefined, status: string): string | undefined => {
   if (status !== CLOSED_SUPPORT_ERRAND_STATUS) return undefined;
@@ -721,6 +745,48 @@ export const resolveClosingPhaseId = (errand: Pick<Errand, 'phases'>, phases: re
     throw new HttpException(409, 'Support Management metadata has no single phase that closes an errand');
   }
   return closingPhases[0].id;
+};
+
+/**
+ * The phases a closed errand moves through to reach the phase that closes it, ending with that phase, or
+ * undefined when closing needs no move.
+ *
+ * Support Management only moves an errand along its workflow's transitions and refuses a jump between
+ * phases, so the path follows them - the shortest one from the active phase. An errand outside the
+ * workflow enters its first phase and steps on from there. A closing phase the transitions do not reach
+ * is refused rather than jumped to.
+ */
+export const resolveClosingPhaseSteps = (
+  errand: Pick<Errand, 'phases'>,
+  phases: readonly Phase[] | undefined,
+  status: string,
+): string[] | undefined => {
+  const closingPhaseId = resolveClosingPhaseId(errand, phases, status);
+  if (!closingPhaseId) return undefined;
+
+  const workflow = (phases ?? []).filter(phase => !phase.deprecated && phase.id);
+  const activePhaseId = getActiveErrandPhaseId(errand);
+  const start = activePhaseId ?? findInitialSupportErrandPhase(phases)?.id;
+  if (!start) throw new HttpException(409, 'Support Management metadata has no phase to start the workflow in');
+
+  const cameFrom = new Map<string, string | undefined>([[start, undefined]]);
+  const queue = [start];
+  while (queue.length > 0 && !cameFrom.has(closingPhaseId)) {
+    const phaseId = queue.shift() as string;
+    for (const transition of workflow.find(phase => phase.id === phaseId)?.transitions ?? []) {
+      const target = transition.targetPhaseId;
+      if (transition.deprecated || !target || cameFrom.has(target) || !workflow.some(phase => phase.id === target)) continue;
+      cameFrom.set(target, phaseId);
+      queue.push(target);
+    }
+  }
+  if (!cameFrom.has(closingPhaseId)) {
+    throw new HttpException(409, 'The phase that closes the errand cannot be reached along the workflow from its active phase');
+  }
+
+  const path: string[] = [];
+  for (let at: string | undefined = closingPhaseId; at && at !== start; at = cameFrom.get(at)) path.unshift(at);
+  return activePhaseId ? path : [start, ...path];
 };
 
 /** The workflow's first phase: the lowest `phaseOrder`, with metadata order as the tie-break. */

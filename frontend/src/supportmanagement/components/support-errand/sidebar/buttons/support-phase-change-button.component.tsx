@@ -6,7 +6,9 @@ import { FC } from 'react';
 /**
  * The step to the next phase, once handläggning is under way - the counterpart of CaseData's phase
  * changer. A single transition out of the phase is named the way the workflow names it ("Skicka till
- * utredning"); several are chosen between first. A phase with nowhere to go shows nothing.
+ * utredning"); several are chosen between first. In the last phase, when it allows closing, the button
+ * closes the errand; a phase with nowhere to go and no closing shows nothing. While the investigation
+ * requires something before the chosen phase, the button is named for that instead.
  */
 export const SupportPhaseChangeButtonComponent: FC<{
   disabled: boolean;
@@ -21,14 +23,21 @@ export const SupportPhaseChangeButtonComponent: FC<{
     controlsDisabled,
     canAdvance,
     advancePhase,
+    closesErrand,
+    closeErrand,
+    heldActionLabel,
+    phaseEntryRequirementDialog,
   } = useSupportPhaseTransition(hasUnsavedChanges);
 
-  if (!entersWorkflow && availableTransitions.length === 0) return null;
+  if (!entersWorkflow && !closesErrand && availableTransitions.length === 0) return null;
 
   const singleTransition = availableTransitions.length === 1 ? availableTransitions[0] : undefined;
-  const label = entersWorkflow
-    ? 'Starta fasflödet'
-    : singleTransition?.transition.description || (singleTransition ? 'Nästa fas' : 'Byt fas');
+  const label = closesErrand
+    ? 'Avsluta ärendet'
+    : heldActionLabel ??
+      (entersWorkflow
+        ? 'Starta fasflödet'
+        : singleTransition?.transition.description || (singleTransition ? 'Nästa fas' : 'Byt fas'));
 
   return (
     <div className="flex flex-col gap-8 w-full">
@@ -56,15 +65,16 @@ export const SupportPhaseChangeButtonComponent: FC<{
         type="button"
         variant="primary"
         color="vattjom"
-        rightIcon={<ArrowRight size={18} />}
+        rightIcon={closesErrand || heldActionLabel ? undefined : <ArrowRight size={18} />}
         loading={isSaving}
-        loadingText="Byter fas"
+        loadingText={closesErrand ? 'Avslutar ärendet' : 'Byter fas'}
         disabled={disabled || !canAdvance}
-        onClick={() => void advancePhase()}
+        onClick={() => void (closesErrand ? closeErrand() : advancePhase())}
         data-cy="next-phase-button"
       >
         {label}
       </Button>
+      {phaseEntryRequirementDialog}
     </div>
   );
 };

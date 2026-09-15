@@ -1,19 +1,27 @@
 import { appConfig } from '@config/appconfig';
 import { useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
+import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
+import { getInvestigationVariant } from '@supportmanagement/investigation/investigation-variant-registry';
 import { getSupportMeasures } from '@supportmanagement/measures/support-measure-service';
 import {
+  getSupportErrandById,
   isSupportErrandLocked,
+  setSupportErrandStatus,
+  Status,
   SupportErrand,
   updateSupportErrandPhase,
 } from '@supportmanagement/services/support-errand-service';
+import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import {
+  closesFromActivePhase,
   getActiveSupportPhaseId,
   getAvailablePhaseTransitions,
   getSupportPhases,
   isDecisionPhase,
+  isSupportPhaseNamed,
 } from '@supportmanagement/services/support-phase-service';
-import { useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 /**
@@ -30,11 +38,13 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const canEditSupportManagement = useUserStore((s) => s.user.permissions.canEditSupportManagement);
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  const investigationProfile = useInvestigationProfileStore((s) => s.profile);
   const form = useFormContext<SupportErrand>();
   const toastMessage = useSnackbar();
   const confirm = useConfirm();
   const [isSaving, setIsSaving] = useState(false);
   const [selectedTransitionId, setSelectedTransitionId] = useState('');
+  const [requirementShown, setRequirementShown] = useState(false);
 
   const phases = useMemo(() => getSupportPhases(supportMetadata?.phases), [supportMetadata?.phases]);
   const activePhaseId = getActiveSupportPhaseId(supportErrand?.phases);
@@ -47,6 +57,25 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
   // An errand created outside the workflow has no phase to move from. Entering the first one is the
   // only move it has, and it names no transition - so the button must not wait for one.
   const entersWorkflow = phases.length > 0 && !activePhaseId;
+  // In the last phase, when it allows closing, closing is the step left to take and the button takes it.
+  const closesErrand = !entersWorkflow && closesFromActivePhase(activePhaseId, phases);
+
+  // What the investigation requires before a phase is entered is the variant's to say, not this hook's.
+  // While it is unmet for the chosen move, the button does what the requirement asks instead of moving
+  // the errand - and says so, rather than promising a phase change the handler will not get.
+  const phaseEntryRequirement = appConfig.features.useInvestigation
+    ? getInvestigationVariant()?.phaseEntryRequirement
+    : undefined;
+  const heldRequirement =
+    phaseEntryRequirement &&
+    isSupportPhaseNamed(selectedTransition?.target, phaseEntryRequirement.phaseName) &&
+    !phaseEntryRequirement.isMet({
+      errand: supportErrand,
+      profile: investigationProfile,
+      labelStructure: supportMetadata?.labels?.labelStructure,
+    })
+      ? phaseEntryRequirement
+      : undefined;
 
   useEffect(() => {
     setSelectedTransitionId(availableTransitions.length === 1 ? availableTransitions[0].transition.id : '');
@@ -87,6 +116,10 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
   const advancePhase = async () => {
     if (!municipalityId || !supportErrand?.id) return;
     if (!entersWorkflow && !selectedTransition?.transition.id) return;
+    if (heldRequirement) {
+      setRequirementShown(true);
+      return;
+    }
     setIsSaving(true);
     try {
       if (!(await confirmMissingMeasures(supportErrand.id))) return;
@@ -110,14 +143,46 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
     }
   };
 
+  /**
+   * Closes the errand from the last phase with the status alone - this workflow records no resolution.
+   * The status is conditioned on the errand as the page shows it, and the closed errand is read back.
+   */
+  const closeErrand = async () => {
+    if (!municipalityId || !supportErrand?.id || typeof supportErrand.version !== 'number') return;
+    setIsSaving(true);
+    try {
+      await setSupportErrandStatus(supportErrand.id, municipalityId, Status.SOLVED, {
+        status: supportErrand.status,
+        version: supportErrand.version,
+      });
+      const closed = await getSupportErrandById(supportErrand.id, municipalityId);
+      if (closed.error) throw new Error('Could not read back the closed support errand');
+      setSupportErrand(closed.errand);
+      form.reset(closed.errand);
+    } catch (error) {
+      toastMessage({
+        position: 'bottom',
+        closeable: false,
+        message: supportErrandWriteErrorMessage(error, 'Något gick fel när ärendet skulle avslutas'),
+        status: 'error',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // The controls are unusable while anything would be lost or overwritten by the move; advancing
-  // additionally needs a transition to apply, unless the errand is only entering the workflow.
+  // additionally needs a transition to apply, unless the errand is only entering the workflow or closing.
   const controlsDisabled = !canEditSupportManagement || locked || hasUnsavedChanges || isSaving;
   const canAdvance =
     !controlsDisabled &&
     Boolean(supportErrand?.id) &&
     typeof supportErrand?.version === 'number' &&
-    (entersWorkflow || Boolean(selectedTransition));
+    (entersWorkflow || closesErrand || Boolean(selectedTransition));
+
+  /** The requirement that holds the move, shown while the handler deals with it. */
+  const phaseEntryRequirementDialog: ReactNode =
+    requirementShown && heldRequirement ? heldRequirement.render({ onClose: () => setRequirementShown(false) }) : null;
 
   return {
     availableTransitions,
@@ -128,5 +193,11 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
     controlsDisabled,
     canAdvance,
     advancePhase,
+    /** Set in the last phase when it allows closing: the button closes the errand instead of moving it. */
+    closesErrand,
+    closeErrand,
+    /** Set while the chosen move is held by a requirement: the button does that instead, and says so. */
+    heldActionLabel: heldRequirement?.actionLabel,
+    phaseEntryRequirementDialog,
   };
 };

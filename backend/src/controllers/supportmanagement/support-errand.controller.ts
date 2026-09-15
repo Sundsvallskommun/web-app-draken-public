@@ -977,13 +977,31 @@ export class SupportErrandController {
       throw new HttpException(409, 'Support errand status has changed since it was loaded');
     }
 
-    const body = resolveSupportErrandStatusTransition(currentErrand.data, metadata.data.statuses, data, metadata.data.phases);
+    const { phaseSteps = [], ...body } = resolveSupportErrandStatusTransition(currentErrand.data, metadata.data.statuses, data, metadata.data.phases);
+    // Closing from an earlier phase steps along the workflow first: Support Management refuses a jump
+    // between phases. Each step is conditioned on the version the one before it left.
+    let version = currentVersion;
+    for (const step of phaseSteps) {
+      await this.apiService.patch<SupportErrand, (typeof phaseSteps)[number]>(
+        {
+          url,
+          baseURL,
+          data: step,
+          headers: { 'If-Match': `"${version}"` },
+          followLocation: false,
+          propagateClientError: true,
+        },
+        req.user,
+      );
+      const stepped = await this.apiService.get<SupportErrand>({ url, baseURL, includeResponseHeaders: true, propagateClientError: true }, req.user);
+      version = getErrandVersion(stepped.data, stepped.headers?.etag);
+    }
     await this.apiService.patch<SupportErrand, typeof body>(
       {
         url,
         baseURL,
         data: body,
-        headers: { 'If-Match': `"${currentVersion}"` },
+        headers: { 'If-Match': `"${version}"` },
         followLocation: false,
         propagateClientError: true,
       },

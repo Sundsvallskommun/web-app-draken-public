@@ -166,10 +166,9 @@ export const investigationPhases: MockPhase[] = [
   { id: 'phase-investigation', name: 'INVESTIGATION', displayName: 'Utredning', phaseOrder: 2 },
   { id: 'phase-decision', name: 'DECISION', displayName: 'Beslut', phaseOrder: 3 },
   { id: 'phase-follow-up', name: 'FOLLOW_UP', displayName: 'Uppföljning', phaseOrder: 4 },
-  { id: 'phase-closed', name: 'END', displayName: 'Avsluta', phaseOrder: 5 },
 ];
 
-export type WorkflowPhaseName = 'ACTUALIZATION' | 'REVIEW' | 'INVESTIGATION' | 'DECISION' | 'FOLLOW_UP' | 'END';
+export type WorkflowPhaseName = 'ACTUALIZATION' | 'REVIEW' | 'INVESTIGATION' | 'DECISION' | 'FOLLOW_UP';
 
 interface WorkflowPhase {
   id: string;
@@ -195,13 +194,13 @@ const workflowChain: Array<[WorkflowPhaseName, string, string, string]> = [
   ['REVIEW', 'Granskning', 'REVIEW', 'Skicka till utredning'],
   ['INVESTIGATION', 'Utredning', 'INQUIRY', 'Skicka till beslut'],
   ['DECISION', 'Beslut', 'DECISION', 'Skicka till uppföljning'],
-  ['FOLLOW_UP', 'Uppföljning', 'FOLLOW_UP', 'Skicka till avslut'],
-  ['END', 'Avsluta', 'SOLVED', ''],
+  ['FOLLOW_UP', 'Uppföljning', 'FOLLOW_UP', ''],
 ];
 
 /**
- * The avvikelse workflow as the test namespace declares it (read 2026-09-11): one linear chain where
- * each phase allows exactly one status and offers exactly one transition. Ids are fixed so a spec
+ * The avvikelse workflow as the test namespace declares it (read 2026-09-15): one linear chain where
+ * each phase allows its own status and offers one transition on. The last phase, Uppföljning, has no
+ * transition and allows SOLVED instead, so the errand is closed from there. Ids are fixed so a spec
  * can name the transition it expects the BFF to receive.
  */
 export const workflowPhases: WorkflowPhase[] = workflowChain.map(
@@ -212,7 +211,7 @@ export const workflowPhases: WorkflowPhase[] = workflowChain.map(
       name,
       displayName,
       phaseOrder: index,
-      allowedStatuses: [status],
+      allowedStatuses: next ? [status] : [status, 'SOLVED'],
       transitions: next
         ? [
             {
