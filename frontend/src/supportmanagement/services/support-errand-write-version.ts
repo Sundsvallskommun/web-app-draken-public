@@ -77,3 +77,18 @@ export const isSoleSupportErrandVersionChange = (expected: unknown, received: un
   typeof received === 'number' &&
   Number.isSafeInteger(received) &&
   received === expected + 1;
+
+/**
+ * The latest version this client knows the errand has reached. Versions only grow, so the higher of the
+ * store's - refreshed by every load - and one read right after the caller's own writes is the current one
+ * as far as this client can tell; either alone may lag behind the other.
+ */
+export const latestKnownSupportErrandVersion = (
+  storeVersion: unknown,
+  ownWriteVersion: unknown
+): number | undefined => {
+  const known = [storeVersion, ownWriteVersion].filter(
+    (version): version is number => typeof version === 'number' && Number.isSafeInteger(version) && version >= 0
+  );
+  return known.length > 0 ? Math.max(...known) : undefined;
+};

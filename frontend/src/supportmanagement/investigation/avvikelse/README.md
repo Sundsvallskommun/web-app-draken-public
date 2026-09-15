@@ -279,15 +279,16 @@ Två namngivna steg finns, och klienten namnger steget i stället för att kompo
 
 | Steg | Utlöses av | Skriver |
 | --- | --- | --- |
-| `assign-lex` | `suspectedMisconduct === 'yes'` i enhetschefsutredningen | `assignedUserId` (LEX-ansvarig), `REPORT_TYPE/ABUSE` i stället för `REPORT_TYPE/DEVIATION`, `ACCESS/LEX` |
-| `return-to-manager` | LEX-utredaren är klar | `assignedUserId` (enhetschef för platsen), tar bort `ACCESS/LEX` |
+| `assign-lex` | `suspectedMisconduct === 'yes'` i enhetschefsutredningen | `assignedUserId` (LEX-ansvarig), `REPORT_TYPE/ABUSE` i stället för `REPORT_TYPE/DEVIATION`, `ACCESS/LEX`, status `ASSIGNED` |
+| `return-to-manager` | LEX har beslutat; knappen sitter längst ned i lex Sarah-beslutet (`beslut-sol-lss`), vars skrivrätt också auktoriserar steget | `assignedUserId` (enhetschef för platsen), tar bort `ACCESS/LEX` (och `ACCESS`-roten om inget annat ligger under den), status `ASSIGNED` |
 | `move-location` | Ärendet har kommit till fel enhet; enhetschefen väljer rätt plats (`locationLabelId`) | `assignedUserId` (chef för den **nya** platsen), byter ut hela platskedjan i labels mot den nya platsens; se [Fel plats](#fel-plats-flytta-ärendet-utan-att-ändra-det-inrapporterade) |
 
-Inget av stegen ändrar **status**. `ASSIGNED` vore den naturliga statusen för en överlämning, men
-Draken behandlar den som ett *låst* tillstånd (`isSupportErrandLocked`), och enda vägen ur den är
-sidopanelens återuppta-knapp som går till `ONGOING` — en status avvikelsenamespacen inte har. Att
-sätta den lämnade alltså mottagaren med ett ärende de varken kunde redigera eller låsa upp. Ärendet
-behåller i stället den status det redan hade; det är handläggarbytet som signalerar överlämningen.
+`assign-lex` och `return-to-manager` sätter **status** `ASSIGNED`: ärendet når LEX-ansvarig respektive
+chefen som Tilldelat. Draken behandlar `ASSIGNED` som ett *låst* tillstånd (`isSupportErrandLocked`), så
+mottagaren återupptar ärendet innan hen arbetar i det — och återuppta skriver den aktiva fasens
+huvudstatus, den första i fasens `allowedStatuses`, inte en generell pågående-status som fasen inte
+tillåter. Fasernas `allowedStatuses` måste därför innehålla `ASSIGNED`. `move-location` lämnar statusen
+orörd; ärendet stannar hos samma roll, bara på en annan enhet.
 
 Två saker följer av att åtkomsten är poängen med skrivningen:
 

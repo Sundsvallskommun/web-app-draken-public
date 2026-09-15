@@ -48,15 +48,17 @@ export interface InvestigationHandoverStepDefinition {
    * Target status, applied in the same write as the assignment and validated against namespace
    * metadata.
    *
-   * Currently unset on every step, deliberately. `ASSIGNED` is the status a handover reads as, but
-   * Draken treats it as a **locked** state (`isSupportErrandLocked`), and the only route out of it
-   * is the sidebar's resume action, which transitions to `ONGOING` - a status the avvikelse
-   * namespaces do not have. Setting it therefore handed the recipient an errand they could not
-   * edit and could not unlock. Leaving the status alone keeps the errand in whatever working state
-   * it already had; the assignee change is what signals the handover.
+   * The two steps that hand the errand to another role set `ASSIGNED`: the recipient - the
+   * LEX-ansvarig on `assign-lex`, the manager on `return-to-manager` - receives an errand marked
+   * Tilldelat, which is how a handover reads in the overview. Draken locks that state
+   * (`isSupportErrandLocked`), so the recipient resumes the errand before working in it - and resuming
+   * writes the active phase's main status, the first in its `allowedStatuses`, so the errand goes
+   * back to the status its phase works in rather than to an ongoing status that phase does not allow.
+   * The namespace's phases must therefore allow `ASSIGNED`; Support Management refuses the handover
+   * where the active phase does not.
    *
-   * Before setting one here, check that the target exists in the namespace's metadata *and* that it
-   * is not in `LOCKED_SUPPORT_ERRAND_STATUSES`.
+   * `move-location` leaves the status alone: the errand stays with the same role, only at another
+   * unit, and the assignee change is what signals it.
    */
   readonly status?: string;
 }
@@ -72,15 +74,19 @@ const definitions: Readonly<Record<InvestigationHandoverStep, InvestigationHando
     authorizingSchemaName: 'utredning-enhetschef',
     assigneeRoleKey: LEX_MANAGER_ROLE_KEY,
     assigneeSource: 'request',
+    status: 'ASSIGNED',
     addLabelResourcePaths: Object.freeze([INVESTIGATION_MISCONDUCT_REPORT_LABEL, INVESTIGATION_ACCESS_LEX_LABEL]),
     removeLabelResourcePaths: Object.freeze([INVESTIGATION_DEVIATION_REPORT_LABEL]),
   }),
-  // The LEX investigator is finished. The manager is resolved from the errand's location rather
-  // than picked, so the errand cannot be handed to a manager who does not own the place it concerns.
+  // LEX has decided on the suspected misconduct, so the errand goes back to the manager - from the lex
+  // Sarah decision, whose write access authorizes the step. The manager is resolved from the errand's
+  // location rather than picked, so the errand cannot be handed to a manager who does not own the place
+  // it concerns.
   'return-to-manager': Object.freeze({
     step: 'return-to-manager',
-    authorizingSchemaName: 'utredning-sol-lss',
+    authorizingSchemaName: 'beslut-sol-lss',
     assigneeSource: 'location',
+    status: 'ASSIGNED',
     addLabelResourcePaths: Object.freeze([]),
     removeLabelResourcePaths: Object.freeze([INVESTIGATION_ACCESS_LEX_LABEL]),
   }),

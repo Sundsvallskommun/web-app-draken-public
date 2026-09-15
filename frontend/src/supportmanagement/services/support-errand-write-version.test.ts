@@ -5,6 +5,7 @@ import { test } from 'vitest';
 import {
   isSoleSupportErrandVersionChange,
   isSupportErrandWriteConflict,
+  latestKnownSupportErrandVersion,
   SUPPORT_ERRAND_STATUS_AFTER_ASSIGNMENT_MESSAGE,
   SUPPORT_ERRAND_WRITE_CONFLICT_MESSAGE,
   SupportErrandStatusAfterAssignmentError,
@@ -91,4 +92,15 @@ test('only a sole child write can advance a partially loaded parent version', ()
   ]) {
     assert.equal(isSoleSupportErrandVersionChange(expected, received), false);
   }
+});
+
+// A handover button can be pressed long after the page loaded: the store knows what every load saw, a
+// readback after the document's own writes knows what those left, and the later of the two is current.
+test('takes the later of the store version and the one read after own writes', () => {
+  assert.equal(latestKnownSupportErrandVersion(7, 9), 9);
+  assert.equal(latestKnownSupportErrandVersion(11, 9), 11);
+  assert.equal(latestKnownSupportErrandVersion(7, undefined), 7);
+  assert.equal(latestKnownSupportErrandVersion(undefined, 9), 9);
+  assert.equal(latestKnownSupportErrandVersion(undefined, undefined), undefined);
+  assert.equal(latestKnownSupportErrandVersion(-1, '8'), undefined);
 });

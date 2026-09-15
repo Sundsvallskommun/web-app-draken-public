@@ -1,8 +1,10 @@
 import { Label } from '@/data-contracts/supportmanagement/data-contracts';
 import {
+  buildInvestigationHandoverLabelUpdate,
   buildInvestigationLocationLabelUpdate,
   resolveErrandLocation,
   resolveInvestigationLocationTarget,
+  withoutEmptyLabelRoots,
 } from '@/services/investigation-handover-label.service';
 
 const label = (id: string, classification: string, resourcePath: string, displayName: string, labels?: Label[]): Label => ({
@@ -119,5 +121,45 @@ describe('buildInvestigationLocationLabelUpdate', () => {
     });
 
     expect(resolveErrandLocation(labels, structure)).toEqual({ resourcePath: 'LOCATION/SOUTH/SOUTH_UNIT/BLUE', displayName: 'Blå' });
+  });
+});
+
+describe('empty label roots', () => {
+  it('takes the access root off together with the last access label beneath it', () => {
+    const labels = buildInvestigationHandoverLabelUpdate({
+      currentLabels: [{ id: 'access-root' }, { id: 'access-lex' }, { id: 'category-root' }, { id: 'category-hsl' }],
+      labelStructure: structure,
+      addResourcePaths: [],
+      removeResourcePaths: ['ACCESS/LEX'],
+    });
+
+    expect(labels).toEqual([{ id: 'category-root' }, { id: 'category-hsl' }]);
+  });
+
+  it('keeps a root while anything beneath it is carried, and a top-level label without children', () => {
+    const standalone = label('standalone', 'STANDALONE', 'STANDALONE', 'Fristående');
+
+    expect(withoutEmptyLabelRoots(['category-root', 'category-hsl', 'standalone'], [...structure, standalone])).toEqual([
+      'category-root',
+      'category-hsl',
+      'standalone',
+    ]);
+  });
+
+  it('drops every root with nothing beneath it, not only the one a step touched', () => {
+    expect(withoutEmptyLabelRoots(['location-root', 'access-root', 'category-root', 'category-hsl'], structure)).toEqual([
+      'category-root',
+      'category-hsl',
+    ]);
+  });
+
+  it('keeps the structure root through a move, since the new place sits beneath it', () => {
+    const labels = buildInvestigationLocationLabelUpdate({
+      currentLabels: [{ id: 'location-root' }, { id: 'north' }, { id: 'north-unit' }, { id: 'north-blue' }, { id: 'access-root' }],
+      labelStructure: structure,
+      target: resolveInvestigationLocationTarget(structure, 'south-blue'),
+    });
+
+    expect(labels).toEqual([{ id: 'location-root' }, { id: 'south' }, { id: 'south-unit' }, { id: 'south-blue' }]);
   });
 });

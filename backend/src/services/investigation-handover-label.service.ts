@@ -39,6 +39,34 @@ const requireLabelId = (label: { id?: string }, context: string): string => {
   return label.id;
 };
 
+const hasCarriedDescendant = (nodes: readonly Label[] | undefined, carried: ReadonlySet<string>): boolean =>
+  (nodes ?? []).some(node => (typeof node.id === 'string' && carried.has(node.id)) || hasCarriedDescendant(node.labels, carried));
+
+/**
+ * The label ids without the top-level labels that would be left with nothing beneath them.
+ *
+ * A root - ACCESS, LOCATION, REPORT_TYPE, CATEGORY - names a structure rather than saying anything about
+ * the errand, so on its own it is noise, and an access root left behind could still be matched by an
+ * AccessMapper pattern after the label that justified it is gone. Whenever labels are written here, a
+ * root goes as soon as none of its descendants remains.
+ *
+ * Only the top level is pruned. A level further down can be a complete answer on its own - a type
+ * without an optional sub-type - and removing it would take part of the classification with it. A
+ * top-level label with no children in the metadata is a label in its own right, not a structure, and
+ * stays.
+ */
+export const withoutEmptyLabelRoots = (labelIds: readonly string[], labelStructure: readonly Label[] | undefined): string[] => {
+  const carried = new Set(labelIds);
+  const emptyRootIds = new Set(
+    (labelStructure ?? [])
+      .filter(
+        root => typeof root.id === 'string' && carried.has(root.id) && (root.labels?.length ?? 0) > 0 && !hasCarriedDescendant(root.labels, carried),
+      )
+      .map(root => root.id as string),
+  );
+  return labelIds.filter(id => !emptyRootIds.has(id));
+};
+
 interface HandoverLabelUpdateInput {
   readonly currentLabels: Errand['labels'];
   readonly labelStructure: readonly Label[] | undefined;
@@ -55,7 +83,8 @@ interface HandoverLabelUpdateInput {
  * errand.
  *
  * Removing a path the errand does not carry is a no-op rather than an error: a step describes the
- * state it leaves behind, not a transition from one exact starting point.
+ * state it leaves behind, not a transition from one exact starting point. A root left with nothing
+ * beneath it goes too - taking ACCESS/LEX off takes the ACCESS root with it (`withoutEmptyLabelRoots`).
  *
  * Returns `undefined` when the errand already has exactly the requested labels, so an unchanged
  * assignment does not spend an errand version.
@@ -77,7 +106,7 @@ export const buildInvestigationHandoverLabelUpdate = ({
 
   const currentIds = (currentLabels ?? []).map(label => requireLabelId(label, 'errand response'));
   const keptIds = currentIds.filter(id => !removedIds.has(id));
-  const updatedIds = [...new Set([...keptIds, ...addedIds])];
+  const updatedIds = withoutEmptyLabelRoots([...new Set([...keptIds, ...addedIds])], labelStructure);
 
   const unchanged =
     updatedIds.length === currentIds.length && new Set(currentIds).size === updatedIds.length && updatedIds.every(id => currentIds.includes(id));
@@ -337,8 +366,9 @@ const collectDescendantIds = (labelStructure: readonly Label[] | undefined, root
  * because AccessMapper's patterns are written against ancestors as well as the place itself and a
  * leftover level would keep the old unit's managers on the errand.
  *
- * The top-level node is left as it was, carried or not: it is the structure rather than a place,
- * and whether a deployment writes it onto errands is not this function's decision.
+ * The top-level node is left as it was while anything beneath it is carried: it is the structure
+ * rather than a place, and whether a deployment writes it onto errands is not this function's
+ * decision. A root left with nothing beneath it goes, as on every label write here.
  *
  * Returns `undefined` when the errand already carries exactly the target's chain, so a move to
  * where the errand already is does not spend an errand version.
@@ -365,7 +395,7 @@ export const buildInvestigationLocationLabelUpdate = ({
   const isLocationLabel = (id: string): boolean => structureIds.has(id) || isInvestigationLocationLabelClassification(byId.get(id)?.classification);
 
   const keptIds = currentIds.filter(id => !isLocationLabel(id));
-  const updatedIds = [...new Set([...keptIds, ...target.chainIds])];
+  const updatedIds = withoutEmptyLabelRoots([...new Set([...keptIds, ...target.chainIds])], labelStructure);
 
   const unchanged =
     updatedIds.length === currentIds.length && new Set(currentIds).size === updatedIds.length && updatedIds.every(id => currentIds.includes(id));

@@ -13,8 +13,11 @@ import {
   getAvvikelseLabelClassificationSelection,
 } from '@supportmanagement/investigation/avvikelse/label-classification';
 import { getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
-import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
-import { isSoleSupportErrandVersionChange } from '@supportmanagement/services/support-errand-write-version';
+import { readSupportErrandWriteSnapshot, type SupportErrand } from '@supportmanagement/services/support-errand-service';
+import {
+  isSoleSupportErrandVersionChange,
+  latestKnownSupportErrandVersion,
+} from '@supportmanagement/services/support-errand-write-version';
 import { isAxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -194,6 +197,11 @@ export function SupportInvestigationDocument({
   const [classificationDirty, setClassificationDirty] = useState(false);
   const [documentSavedPendingClassification, setDocumentSavedPendingClassification] = useState(false);
   const [showLexAssignmentPrompt, setShowLexAssignmentPrompt] = useState(false);
+  const [lexAssignmentVersion, setLexAssignmentVersion] = useState<number>();
+  const [ownWriteVersion, setOwnWriteVersion] = useState<number>();
+
+  // A version read for one errand says nothing about the next one opened in its place.
+  useEffect(() => setOwnWriteVersion(undefined), [errandId]);
   const classificationMethods = useForm<InvestigationClassificationDraft>({
     defaultValues: getClassificationDraft(supportErrand),
     mode: 'onChange',
@@ -325,10 +333,11 @@ export function SupportInvestigationDocument({
     definition.schemaName === 'utredning-enhetschef' && documentState
       ? getHslRiskValue(documentState.formData)
       : undefined;
-  // The LEX investigation can be handed back only from the document that owns it, and only while the
-  // errand is actually with LEX - the access label is what says so.
+  // The errand goes back to the manager once LEX has decided on it, so the handover sits at the foot of
+  // the lex Sarah decision - and only while the errand is actually with LEX, which the access label
+  // says. The backend authorizes the step on write access to this same document.
   const canReturnToManager =
-    definition.schemaName === 'utredning-sol-lss' &&
+    definition.schemaName === 'beslut-sol-lss' &&
     !readonly &&
     Boolean(errandId) &&
     isWithLexInvestigation(supportErrand?.labels, supportMetadata?.labels?.labelStructure);
@@ -516,7 +525,7 @@ export function SupportInvestigationDocument({
    * LEX manager, and the dialog that does it opens here rather than during the save itself - the
    * investigation is already stored, and the handover is a separate write against its new version.
    */
-  const promptLexAssignmentIfNeeded = (savedFormData: InvestigationFormData) => {
+  const promptLexAssignmentIfNeeded = async (savedFormData: InvestigationFormData) => {
     if (definition.schemaName !== 'utredning-enhetschef') return;
 
     const needsLexAssignment = shouldPromptLexAssignment({
@@ -524,7 +533,37 @@ export function SupportInvestigationDocument({
       labels: useSupportStore.getState().supportErrand?.labels,
       labelStructure: supportMetadata?.labels?.labelStructure,
     });
-    if (needsLexAssignment) setShowLexAssignmentPrompt(true);
+    if (!needsLexAssignment) return;
+
+    // The handover is conditioned on the errand version, and the store is not a reliable source for it
+    // here: it only advances on a write that explains the whole version change, so after a save that
+    // moved the errand further - classification, a generated report - it still holds the version from
+    // before. The writes just made are this flow's own, so the version they left is causally ours and
+    // is read now, before the dialog opens, rather than when the manager eventually picks somebody -
+    // by then someone else's edit could have come between. A failed read leaves the version unset,
+    // and the dialog asks for a reload instead of sending a precondition it cannot vouch for.
+    try {
+      setLexAssignmentVersion((await readSupportErrandWriteSnapshot(errandId!, municipalityId)).version);
+    } catch {
+      setLexAssignmentVersion(undefined);
+    }
+    setShowLexAssignmentPrompt(true);
+  };
+
+  /**
+   * The return to the manager is conditioned on the errand version, and after this document's own writes
+   * the store can lag behind them: it only advances on a write that explains the whole version change.
+   * The version those writes left is read right after them, while it is causally ours, and the button
+   * takes the later of it and the store's - so a reload elsewhere, a phase change say, is not undone.
+   * A failed read leaves the store's version standing; a stale one is refused with a conflict, never applied.
+   */
+  const rememberOwnWriteVersion = async () => {
+    if (!canReturnToManager || !municipalityId || !errandId) return;
+    try {
+      setOwnWriteVersion((await readSupportErrandWriteSnapshot(errandId, municipalityId)).version);
+    } catch {
+      // The store's version stands.
+    }
   };
 
   const reportFailureNotice = (error: unknown, fallback: string) => {
@@ -562,6 +601,7 @@ export function SupportInvestigationDocument({
       );
       applySavedDocument(saved);
       setNotice({ type: 'success', message: `${wording.noun} är upplåst och kan ändras igen.` });
+      await rememberOwnWriteVersion();
     } catch (error) {
       reportFailureNotice(error, `${wording.noun} kunde inte låsas upp. Försök igen.`);
     } finally {
@@ -581,6 +621,7 @@ export function SupportInvestigationDocument({
       const created = await createSupportInvestigationReport(municipalityId, errandId, definition.key, operationId);
       sessionStorage.removeItem(publicationKey);
       applySavedDocument(created, false);
+      await rememberOwnWriteVersion();
       setNotice({
         type: 'success',
         message: `Rapporten ${created.report.fileName} har skapats och lagts som en bilaga på ärendet.`,
@@ -723,7 +764,8 @@ export function SupportInvestigationDocument({
       });
 
       if (reportRequested) await generateReportNow();
-      promptLexAssignmentIfNeeded(normalizedData);
+      await promptLexAssignmentIfNeeded(normalizedData);
+      await rememberOwnWriteVersion();
     } catch (error) {
       if (isSupportInvestigationAccessDenied(error)) refreshAccess();
       setNotice({
@@ -961,7 +1003,7 @@ export function SupportInvestigationDocument({
             <ReturnToManagerButton
               municipalityId={municipalityId}
               errandId={errandId!}
-              expectedVersion={supportErrand?.version}
+              expectedVersion={latestKnownSupportErrandVersion(supportErrand?.version, ownWriteVersion)}
               disabled={isSaving || isDirty || classificationDirty}
             />
           ) : undefined
@@ -979,7 +1021,7 @@ export function SupportInvestigationDocument({
           show
           municipalityId={municipalityId}
           errandId={errandId!}
-          expectedVersion={supportErrand?.version}
+          expectedVersion={lexAssignmentVersion}
         />
       )}
     </section>
