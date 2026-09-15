@@ -23,7 +23,10 @@ Ett dolt fält ska inte ta plats i layouten, men dess sparade data behålls vid 
 Använd ett unikt `idPrefix` när flera formulär visas på samma sida. `getSchemaFormErrors`
 översätter RJSF:s fel till en lista med fält-ID, etikett och meddelande. Skicka listan som
 `validationErrors` för att visa en felsammanfattning med navigering till rätt fält och
-öppning av dess sektion. Anroparen äger listans livscykel.
+öppning av dess sektion. Anroparen äger listans livscykel. Ett fel bär även `ancestorIds`,
+id:na för de objekt och listor som omsluter fältet; det avgör vilken sektion som öppnas,
+eftersom ett fält-ID inte kan skilja `risk.level` från ett fält som heter `risk_level`.
+Ett fel som byggs för hand, till exempel för en extern kontroll, anger en tom lista.
 
 UI Schema kan använda `ui:sections`, `ui:rows` och `ui:order` för layout. Observera att
 vår `ui:rows` beskriver fältrader och skiljer sig från RJSF-typens numeriska textarea-option.

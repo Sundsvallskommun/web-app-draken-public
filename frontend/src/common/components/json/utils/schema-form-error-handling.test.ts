@@ -36,6 +36,7 @@ test('summarizes nested errors with Swedish titles and navigable field ids', () 
   );
   const probability = summary.find((error) => error.fieldId === 'utredning-enhetschef_riskAssessmentHsl_probability');
   assert.ok(probability);
+  assert.deepEqual(probability.ancestorIds, ['utredning-enhetschef_riskAssessmentHsl']);
   assert.equal(probability.label, 'Riskbedömning HSL – Sannolikhet för inträffande');
   assert.equal(probability.message, 'Vänligen ange Sannolikhet för inträffande.');
   assert.ok(summary.every((error) => !error.message.includes('must')));
@@ -59,8 +60,18 @@ test('distinguishes repeated rows and includes the violated limit', () => {
   };
   const summary = getSchemaFormErrors(schema, validate(schema, { people: [{}, { name: 'A' }] }), 'document');
   assert.deepEqual(summary, [
-    { fieldId: 'document_people_0_name', label: 'Deltagare – Rad 1 – Namn', message: 'Vänligen ange Namn.' },
-    { fieldId: 'document_people_1_name', label: 'Deltagare – Rad 2 – Namn', message: 'Ange minst 2 tecken.' },
+    {
+      fieldId: 'document_people_0_name',
+      ancestorIds: ['document_people', 'document_people_0'],
+      label: 'Deltagare – Rad 1 – Namn',
+      message: 'Vänligen ange Namn.',
+    },
+    {
+      fieldId: 'document_people_1_name',
+      ancestorIds: ['document_people', 'document_people_1'],
+      label: 'Deltagare – Rad 2 – Namn',
+      message: 'Ange minst 2 tecken.',
+    },
   ]);
   assert.deepEqual(getSchemaFormErrors(schema, validate(schema, { people: [{ name: 'Anna' }] }), 'document'), []);
 });
@@ -75,6 +86,6 @@ test('shows conditional required fields once without the technical branch error'
     ],
   };
   assert.deepEqual(getSchemaFormErrors(schema, validate(schema, {}), 'document'), [
-    { fieldId: 'document_details', label: 'Beskrivning', message: 'Vänligen ange Beskrivning.' },
+    { fieldId: 'document_details', ancestorIds: [], label: 'Beskrivning', message: 'Vänligen ange Beskrivning.' },
   ]);
 });

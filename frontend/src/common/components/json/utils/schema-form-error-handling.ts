@@ -7,6 +7,12 @@ type FormatParams = { format: string };
 
 export interface SchemaFormError {
   fieldId: string;
+  /**
+   * Ids of the objects and lists enclosing the field, outermost first; empty for a field at the
+   * root or outside the schema. An id alone cannot tell nesting apart from a name that happens
+   * to contain the separator: `risk.level` and `risk_level` both become `root_risk_level`.
+   */
+  ancestorIds: readonly string[];
   label: string;
   message: string;
 }
@@ -55,8 +61,10 @@ export function getSchemaFormErrors(
     // AJV also reports the failed conditional branch; the concrete field errors explain what to fix.
     if (error.name === 'if' && errors.some((candidate) => candidate.name !== 'if')) continue;
     const path = getFieldPath(error.property ?? '');
+    const pathIds = path.map((_, depth) => [idPrefix, ...path.slice(0, depth + 1)].join('_'));
     const entry = {
-      fieldId: [idPrefix, ...path].join('_'),
+      fieldId: pathIds.at(-1) ?? idPrefix,
+      ancestorIds: pathIds.slice(0, -1),
       label: getFieldLabels(schema, path).join(' – ') || schema.title || 'Formuläret',
       message: error.message ?? 'Kontrollera uppgifterna.',
     };

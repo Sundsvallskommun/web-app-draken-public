@@ -433,6 +433,12 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
   const sectionFieldNames = new Set(sections.flatMap((s) => s.fields));
   const unsectionedFields = order.filter((f) => !sectionFieldNames.has(f) && visibleFields.has(f));
   const renderedRows = new Set<string>();
+  // A section opens for the error target when one of its fields is the target or encloses it.
+  // The enclosing fields come with the navigation: a field name may itself contain the id
+  // separator, so `root_risk` is not necessarily an ancestor of `root_risk_level`.
+  const errorNavigation = ctx?.errorNavigation;
+  const holdsErrorTarget = (fieldId: string) =>
+    errorNavigation?.fieldId === fieldId || errorNavigation?.ancestorIds.includes(fieldId);
 
   return (
     <div className="flex min-w-0 max-w-full flex-col gap-32">
@@ -450,13 +456,10 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
             isReadonly={isReadonly}
             showCompletionControl={showCompletionControl}
             errorNavigation={
-              section.fields.some((fieldName) => {
-                const fieldId = `${idSchema.$id}_${fieldName.replace('$external:', 'external_')}`;
-                return (
-                  ctx?.errorNavigation?.fieldId === fieldId || ctx?.errorNavigation?.fieldId.startsWith(`${fieldId}_`)
-                );
-              })
-                ? ctx?.errorNavigation
+              section.fields.some((fieldName) =>
+                holdsErrorTarget(`${idSchema.$id}_${fieldName.replace('$external:', 'external_')}`)
+              )
+                ? errorNavigation
                 : undefined
             }
           >

@@ -179,12 +179,46 @@ test('opens a closed section and focuses the field selected in the error summary
       schema={answerSchema}
       idPrefix="document"
       uiSchema={{ 'ui:sections': [{ id: 'answers', title: 'Uppgifter', fields: ['answer'], defaultOpen: false }] }}
-      validationErrors={[{ fieldId: 'document_answer', label: 'Svar', message: 'Vänligen ange Svar.' }]}
+      validationErrors={[
+        { fieldId: 'document_answer', ancestorIds: [], label: 'Svar', message: 'Vänligen ange Svar.' },
+      ]}
     />
   );
   expect(screen.queryByRole('textbox', { name: 'Svar' })).toBeNull();
   fireEvent.click(screen.getByRole('link', { name: 'Svar: Vänligen ange Svar.' }));
   await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Svar' })));
+});
+
+test('opens only the section that encloses the error field, not one whose field name is a prefix of it', async () => {
+  render(
+    <SchemaForm
+      schema={{
+        type: 'object',
+        properties: {
+          risk: { type: 'string', title: 'Risk' },
+          risk_level: { type: 'object', properties: { value: { type: 'string', title: 'Risknivå' } } },
+        },
+      }}
+      idPrefix="document"
+      uiSchema={{
+        'ui:sections': [
+          { id: 'risk', title: 'Risk', fields: ['risk'], defaultOpen: false },
+          { id: 'level', title: 'Nivå', fields: ['risk_level'], defaultOpen: false },
+        ],
+      }}
+      validationErrors={[
+        {
+          fieldId: 'document_risk_level_value',
+          ancestorIds: ['document_risk_level'],
+          label: 'Risknivå',
+          message: 'Vänligen ange Risknivå.',
+        },
+      ]}
+    />
+  );
+  fireEvent.click(screen.getByRole('link', { name: 'Risknivå: Vänligen ange Risknivå.' }));
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Risknivå' })));
+  expect(screen.queryByRole('textbox', { name: 'Risk' })).toBeNull();
 });
 
 test('respects conditional choices and renders schema-positioned external fields', () => {
