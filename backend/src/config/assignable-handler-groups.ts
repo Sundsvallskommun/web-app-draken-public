@@ -4,7 +4,7 @@ import { resolveHandlerGroupRoles } from './handler-group-roles';
  * Directory groups whose members can be selected as handlers. This list does not grant application
  * permissions; ADMIN_GROUP continues to own its existing role and supplies the default directory group.
  *
- * `HANDLER_GROUP_ROLES` is the richer spelling of the same thing: it names the groups *and* the role
+ * `HEALTHCAREDEVIATION_HANDLER_ROLES` is the richer spelling of the same thing: it names the groups *and* the role
  * each one stands for. When it is configured it wins, so a deployment never has to keep two lists of
  * the same AD groups in sync.
  */
@@ -17,7 +17,13 @@ export const resolveAssignableHandlerGroups = (
 
   if (!configuredGroups?.trim()) {
     if (!adminGroup?.trim()) throw new Error('ADMIN_GROUP must be set when ASSIGNABLE_HANDLER_GROUPS is unset');
-    return Object.freeze([adminGroup.trim()]);
+    // ADMIN_GROUP may be a comma-separated list; every group in it supplies handlers.
+    return dedupeGroups(
+      adminGroup
+        .split(',')
+        .map(group => group.trim())
+        .filter(Boolean),
+    );
   }
 
   const groups = configuredGroups.split(',').map(group => group.trim());

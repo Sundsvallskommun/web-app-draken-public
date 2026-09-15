@@ -22,4 +22,11 @@ describe('assignable handler group configuration', () => {
   it('requires a default group when no explicit groups are configured', () => {
     expect(() => resolveAssignableHandlerGroups('', '')).toThrow('ADMIN_GROUP must be set');
   });
+
+  it('reads every group of a comma-separated ADMIN_GROUP when no handler groups are configured', () => {
+    expect(resolveAssignableHandlerGroups('', 'MOCK_UNIT_MANAGERS, MOCK_LEX_MANAGERS, mock_unit_managers')).toEqual([
+      'MOCK_UNIT_MANAGERS',
+      'MOCK_LEX_MANAGERS',
+    ]);
+  });
 });

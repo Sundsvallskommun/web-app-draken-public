@@ -1,14 +1,26 @@
 /**
- * Deployment-owned mapping from a named handler role to the AD group whose members hold it.
+ * Deployment-owned catalogue of the handler roles in the healthcare deviation (avvikelse) applications:
+ * which AD group holds each role, and what the role may do with measures.
  *
- * `ASSIGNABLE_HANDLER_GROUPS` names the same directory groups but flattens them into one list, which
- * loses the only thing an assignment flow needs to know: which role a handler holds. A deployment
- * that has to tell a LEX manager from a LEX investigator configures this instead, and the flat list
- * is derived from it.
+ * One list serves three consumers, so a group is written once. The handler selector groups its members
+ * by role (and the flat `ASSIGNABLE_HANDLER_GROUPS` list is derived from it), the handover steps require a
+ * role of their assignee, and a role carrying `measures` is a registration role for measures. Members of
+ * `SUPERADMIN_GROUP` hold every registration role on top of that.
  *
- * This grants nothing. It populates the handler selector and lets an assignment step require a
- * specific role; login, admin privileges and investigation document access stay where they are.
+ * The catalogue grants nothing else: login stays with `AUTHORIZED_GROUPS`, application privileges with
+ * the admin groups, and investigation document access with Support Management.
  */
+export const HANDLER_ROLES_SETTING = 'HEALTHCAREDEVIATION_HANDLER_ROLES';
+
+export interface HandlerRoleMeasureRegistration {
+  /** The namespace metadata role (`Role.name`) the measures are registered for. */
+  readonly roleName: string;
+  /** The group in `MeasureType.measureGroups` whose types the role can choose from. */
+  readonly measureGroup: string;
+  /** A deciding role's own measures are accepted on creation; every other role registers proposals. */
+  readonly decides: boolean;
+}
+
 export interface HandlerGroupRole {
   /** Stable client-facing identifier for the role. */
   readonly key: string;
@@ -16,9 +28,12 @@ export interface HandlerGroupRole {
   readonly label: string;
   /** AD group name, kept verbatim so it survives the directory lookup unchanged. */
   readonly group: string;
+  /** Present when the role registers measures. */
+  readonly measures?: HandlerRoleMeasureRegistration;
 }
 
-const ROLE_KEYS = new Set(['key', 'label', 'group']);
+const ROLE_KEYS = new Set(['key', 'label', 'group', 'measures']);
+const MEASURE_KEYS = new Set(['roleName', 'measureGroup', 'decides']);
 const ROLE_KEY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -30,37 +45,56 @@ const readRequiredString = (value: unknown, path: string): string => {
   return value.trim();
 };
 
+const rejectUnknownKeys = (candidate: Record<string, unknown>, allowed: ReadonlySet<string>, path: string): void => {
+  const unknownKeys = Object.keys(candidate).filter(key => !allowed.has(key));
+  if (unknownKeys.length > 0) {
+    throw new Error(`${path} contains unknown keys: ${unknownKeys.join(', ')}`);
+  }
+};
+
+const readMeasureRegistration = (value: unknown, path: string): HandlerRoleMeasureRegistration | undefined => {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) throw new Error(`${path} must be an object`);
+  rejectUnknownKeys(value, MEASURE_KEYS, path);
+  if (value.decides !== undefined && typeof value.decides !== 'boolean') {
+    throw new Error(`${path}.decides must be a boolean`);
+  }
+
+  return Object.freeze({
+    roleName: readRequiredString(value.roleName, `${path}.roleName`),
+    measureGroup: readRequiredString(value.measureGroup, `${path}.measureGroup`),
+    decides: value.decides === true,
+  });
+};
+
 /**
- * Parses `HANDLER_GROUP_ROLES`. Missing configuration is a legal state: only the applications that
- * assign by role configure this, so requiring it would make every other deployment carry a setting
- * it has no use for. Array order is display order.
+ * Parses the catalogue. Missing configuration is a legal state: only the applications that assign by
+ * role configure it, so requiring it would make every other deployment carry a setting it has no use
+ * for. Array order is display order.
  */
-export const resolveHandlerGroupRoles = (configuredRoles = process.env.HANDLER_GROUP_ROLES): readonly HandlerGroupRole[] | undefined => {
+export const resolveHandlerGroupRoles = (configuredRoles = process.env[HANDLER_ROLES_SETTING]): readonly HandlerGroupRole[] | undefined => {
   if (!configuredRoles?.trim()) return undefined;
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(configuredRoles);
   } catch {
-    throw new SyntaxError('HANDLER_GROUP_ROLES must contain valid JSON');
+    throw new SyntaxError(`${HANDLER_ROLES_SETTING} must contain valid JSON`);
   }
 
   if (!Array.isArray(parsed)) {
-    throw new TypeError('HANDLER_GROUP_ROLES must be an array');
+    throw new TypeError(`${HANDLER_ROLES_SETTING} must be an array`);
   }
   if (parsed.length === 0) {
-    throw new Error('HANDLER_GROUP_ROLES must name at least one role');
+    throw new Error(`${HANDLER_ROLES_SETTING} must name at least one role`);
   }
 
   const roleKeys = new Set<string>();
+  const measureRegistrations = new Map<string, HandlerRoleMeasureRegistration>();
   const roles = parsed.map((candidate, index) => {
-    const path = `HANDLER_GROUP_ROLES[${index}]`;
+    const path = `${HANDLER_ROLES_SETTING}[${index}]`;
     if (!isRecord(candidate)) throw new Error(`${path} must be an object`);
-
-    const unknownKeys = Object.keys(candidate).filter(key => !ROLE_KEYS.has(key));
-    if (unknownKeys.length > 0) {
-      throw new Error(`${path} contains unknown keys: ${unknownKeys.join(', ')}`);
-    }
+    rejectUnknownKeys(candidate, ROLE_KEYS, path);
 
     const key = readRequiredString(candidate.key, `${path}.key`);
     if (!ROLE_KEY_PATTERN.test(key)) {
@@ -69,14 +103,54 @@ export const resolveHandlerGroupRoles = (configuredRoles = process.env.HANDLER_G
     if (roleKeys.has(key)) throw new Error(`${path} duplicates role key ${key}`);
     roleKeys.add(key);
 
+    const measures = readMeasureRegistration(candidate.measures, `${path}.measures`);
+    if (measures) {
+      // Several handler roles may register as the same namespace role - a LEX manager exactly as a LEX
+      // investigator - but one namespace role cannot choose from two type groups, nor both decide and propose.
+      const shared = measureRegistrations.get(measures.roleName);
+      if (shared && (shared.measureGroup !== measures.measureGroup || shared.decides !== measures.decides)) {
+        throw new Error(`${path}.measures registers ${measures.roleName} differently from an earlier role`);
+      }
+      measureRegistrations.set(measures.roleName, measures);
+    }
+
     return Object.freeze({
       key,
       label: readRequiredString(candidate.label, `${path}.label`),
       group: readRequiredString(candidate.group, `${path}.group`),
+      ...(measures ? { measures } : {}),
     });
   });
 
   return Object.freeze(roles);
+};
+
+/**
+ * The groups that hold something in the catalogue but cannot log in: a role group, or the superadmin
+ * group where some role registers measures, missing from `AUTHORIZED_GROUPS`. Their members would hold
+ * a role in Draken they can never reach.
+ */
+export const findUnauthorizedHandlerRoleGroups = (
+  roles: readonly HandlerGroupRole[] | undefined,
+  superadminGroup: string | undefined,
+  authorizedGroups: string | undefined,
+): string[] => {
+  if (!roles) return [];
+  const authorized = new Set(
+    (authorizedGroups ?? '')
+      .split(',')
+      .map(group => group.trim().toLowerCase())
+      .filter(Boolean),
+  );
+  const groups = roles.map(role => role.group);
+  if (superadminGroup?.trim() && roles.some(role => role.measures)) groups.push(superadminGroup.trim());
+
+  const unauthorized = new Map<string, string>();
+  for (const group of groups) {
+    const normalized = group.toLowerCase();
+    if (!authorized.has(normalized) && !unauthorized.has(normalized)) unauthorized.set(normalized, group);
+  }
+  return [...unauthorized.values()];
 };
 
 /**

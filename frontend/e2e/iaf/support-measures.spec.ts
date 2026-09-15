@@ -135,7 +135,7 @@ async function installMeasures(
       await route.fulfill(
         denyRead
           ? { status: 403, json: { message: 'Denied' } }
-          : { json: { measures, errandVersion, metadata, creationRoles, registration } }
+          : { json: { measures, errandVersion, metadata, creationRoles, registration, canWrite: true } }
       );
       return;
     }

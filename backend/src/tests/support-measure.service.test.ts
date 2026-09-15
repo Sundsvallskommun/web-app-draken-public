@@ -1,24 +1,27 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 
+import { HandlerGroupRole } from '@/config/handler-group-roles';
 import { Measure, MetadataResponse } from '@/data-contracts/supportmanagement/data-contracts';
 import { CreateSupportMeasureDto, DecideSupportMeasureDto, FollowUpSupportMeasureDto, UpdateSupportMeasureDto } from '@/dtos/support-measure.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import ApiService from '@/services/api.service';
+import { MEASURE_ACCESS_RESOURCE, SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
 import { SupportMeasureService } from '@/services/support-measure.service';
 
 import { mockUser } from './helpers/http';
 import { mockMunicipalityId, mockSupportErrandId } from './helpers/mock-data';
 
 const user = mockUser({ groups: ['AD-MANAGER'] });
-const registrationConfiguration = JSON.stringify([
-  { roleName: 'MANAGER', adGroups: ['ad-manager'], measureGroup: 'PREVENTIVE', decides: true },
-  { roleName: 'NURSE', adGroups: ['ad-nurse'], measureGroup: 'CLINICAL' },
-]);
-const proposingConfiguration = JSON.stringify([
-  { roleName: 'MANAGER', adGroups: ['ad-manager'], measureGroup: 'PREVENTIVE' },
-  { roleName: 'NURSE', adGroups: ['ad-nurse'], measureGroup: 'CLINICAL' },
-]);
+const handlerRoles: HandlerGroupRole[] = [
+  { key: 'manager', label: 'Enhetschef', group: 'ad-manager', measures: { roleName: 'MANAGER', measureGroup: 'PREVENTIVE', decides: true } },
+  { key: 'nurse', label: 'HSL', group: 'ad-nurse', measures: { roleName: 'NURSE', measureGroup: 'CLINICAL', decides: false } },
+];
+const proposingRoles: HandlerGroupRole[] = handlerRoles.map(role => ({ ...role, measures: { ...role.measures!, decides: false } }));
+/** A registration role the namespace metadata does not know, which makes the registration policy invalid. */
+const invalidRoles: HandlerGroupRole[] = [
+  { key: 'unknown', label: 'Okänd', group: 'ad-manager', measures: { roleName: 'UNKNOWN', measureGroup: 'PREVENTIVE', decides: true } },
+];
 const educationId = 'dd000000-0000-4000-8000-000000000100';
 const oldTypeId = 'dd000000-0000-4000-8000-000000000101';
 const metadata: MetadataResponse = {
@@ -90,7 +93,7 @@ test.each([false, true])('follow-up accepts the explicit boolean answer %s', asy
 
 afterEach(() => vi.restoreAllMocks());
 
-function setup(configuration = registrationConfiguration) {
+function setup(roles: readonly HandlerGroupRole[] = handlerRoles) {
   const api = new ApiService();
   const get = vi.spyOn(api, 'get').mockImplementation(async config => {
     if (config.url?.includes('/json-parameters/')) throw new HttpException(404, 'Not found');
@@ -98,11 +101,14 @@ function setup(configuration = registrationConfiguration) {
   });
   const patch = vi.spyOn(api, 'patch').mockResolvedValue(response(undefined));
   const post = vi.spyOn(api, 'post').mockResolvedValue(response(undefined));
-  return { service: new SupportMeasureService(api, configuration), get, patch, post };
+  // Support Management's answer on the measures resource, which alone decides whether they are writable.
+  const access = { getResourceLevel: vi.fn<SupportInvestigationAccessService['getResourceLevel']>(async () => 'RW') };
+  const service = new SupportMeasureService(api, roles, undefined, 'ad-superadmins', access as unknown as SupportInvestigationAccessService);
+  return { service, get, patch, post, access };
 }
 
 test('reads protected measures with their own versions and keeps parent synchronization separate', async () => {
-  const { service, get } = setup();
+  const { service, get, access } = setup();
   get
     .mockResolvedValueOnce(response(current))
     .mockResolvedValueOnce(response([measure]))
@@ -119,12 +125,43 @@ test('reads protected measures with their own versions and keeps parent synchron
         { roleName: 'NURSE', measureTypeIds: [], decides: false },
       ],
     },
+    canWrite: true,
   });
   expect(get).toHaveBeenCalledTimes(4);
   expect(get.mock.calls[1][0]).toMatchObject({
     url: expect.stringContaining('/errands/' + mockSupportErrandId + '/measures'),
     propagateClientError: true,
   });
+  expect(access.getResourceLevel).toHaveBeenCalledWith(user, mockMunicipalityId, mockSupportErrandId, MEASURE_ACCESS_RESOURCE);
+});
+
+// The role catalogue says how a writer registers; whether anyone may write is Support Management's call.
+test.each([
+  ['R', false],
+  ['LR', false],
+  [undefined, false],
+] as const)('offers no writes when Support Management grants %s on the measures', async (level, canWrite) => {
+  const { service, get, access } = setup();
+  access.getResourceLevel.mockResolvedValueOnce(level);
+  get
+    .mockResolvedValueOnce(response(current))
+    .mockResolvedValueOnce(response([measure]))
+    .mockResolvedValueOnce(response(metadata));
+  const snapshot = await service.read(mockMunicipalityId, mockSupportErrandId, user);
+  expect(snapshot.canWrite).toBe(canWrite);
+  expect(snapshot.creationRoles).toEqual([metadata.roles![1]]);
+});
+
+test('keeps the measures readable but offers no writes when the access lookup fails', async () => {
+  const { service, get, access } = setup();
+  access.getResourceLevel.mockRejectedValueOnce(new HttpException(503, 'Unavailable'));
+  get
+    .mockResolvedValueOnce(response(current))
+    .mockResolvedValueOnce(response([measure]))
+    .mockResolvedValueOnce(response(metadata));
+  const snapshot = await service.read(mockMunicipalityId, mockSupportErrandId, user);
+  expect(snapshot.measures).toEqual([measure]);
+  expect(snapshot.canWrite).toBe(false);
 });
 
 test('propagates denied access instead of showing a falsely empty list', async () => {
@@ -162,8 +199,11 @@ test('does not create in a locked errand', async () => {
   expect(post).not.toHaveBeenCalled();
 });
 
-test.each(['', '{invalid'])('reads history when registration configuration is absent or invalid: %s', async configuration => {
-  const { service, get } = setup(configuration);
+test.each([
+  [[], 'unconfigured'],
+  [invalidRoles, 'invalid'],
+] as const)('reads history when registration configuration is absent or invalid: %j', async (roles, expectedStatus) => {
+  const { service, get } = setup(roles);
   get
     .mockResolvedValueOnce(response(current))
     .mockResolvedValueOnce(response([measure]))
@@ -171,7 +211,7 @@ test.each(['', '{invalid'])('reads history when registration configuration is ab
   const snapshot = await service.read(mockMunicipalityId, mockSupportErrandId, user);
   expect(snapshot.measures).toEqual([measure]);
   expect(snapshot.creationRoles).toEqual([]);
-  expect(snapshot.registration.status).toBe(configuration ? 'invalid' : 'unconfigured');
+  expect(snapshot.registration.status).toBe(expectedStatus);
 });
 
 const plannedOnErrand = (errandId: string, errandNumber: string, ...measures: Measure[]) => ({
@@ -424,7 +464,7 @@ test('does not infer namespace roles by comparing group text to role names', asy
 });
 
 test('preserves a historical measure when registration is not configured', async () => {
-  const { service, get, patch } = setup('');
+  const { service, get, patch } = setup([]);
   get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response(measure));
   await service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { goal: 'Revised' }, user);
   expect(patch).toHaveBeenCalledOnce();
@@ -458,26 +498,26 @@ test("accepts a deciding role's own measure on creation and leaves other roles' 
   await deciding.service.create(mockMunicipalityId, mockSupportErrandId, newMeasure, user);
   expect(deciding.post.mock.calls[0][0].data).toMatchObject({ addedByRole: 'MANAGER', accept: 'TRUE' });
 
-  const proposing = setup(proposingConfiguration);
+  const proposing = setup(proposingRoles);
   await proposing.service.create(mockMunicipalityId, mockSupportErrandId, plannedProposal, user);
   expect(proposing.post.mock.calls[0][0].data).not.toHaveProperty('accept');
 });
 
 test('rejects executed measures from a proposing role on creation', async () => {
-  const { service, post } = setup(proposingConfiguration);
+  const { service, post } = setup(proposingRoles);
   await expect(service.create(mockMunicipalityId, mockSupportErrandId, newMeasure, user)).rejects.toMatchObject({ status: 400 });
   expect(post).not.toHaveBeenCalled();
 });
 
 test('lets a proposal be reported as executed only once it is accepted', async () => {
-  const pending = setup(proposingConfiguration);
+  const pending = setup(proposingRoles);
   pending.get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response(measure));
   await expect(
     pending.service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { executed: '2026-09-09T12:00:00+02:00' }, user),
   ).rejects.toMatchObject({ status: 400 });
   expect(pending.patch).not.toHaveBeenCalled();
 
-  const accepted = setup(proposingConfiguration);
+  const accepted = setup(proposingRoles);
   accepted.get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response({ ...measure, accept: 'TRUE' }));
   await accepted.service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { executed: '2026-09-09T12:00:00+02:00' }, user);
   expect(accepted.patch).toHaveBeenCalledTimes(1);
@@ -568,8 +608,8 @@ test.each([{ groups: ['ad-nurse'] }, { groups: ['MANAGER'] }, { groups: [] }])(
   },
 );
 
-test.each(['', '{invalid'])('blocks decisions when role configuration is unavailable: %s', async configuration => {
-  const { service, get, patch } = setup(configuration);
+test.each([[[]], [invalidRoles]])('blocks decisions when role configuration is unavailable: %j', async roles => {
+  const { service, get, patch } = setup(roles);
   get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response(measure));
   await expect(service.decide(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { accept: 'TRUE' }, user)).rejects.toMatchObject({
     status: 503,
@@ -644,7 +684,7 @@ test.each(['TRUE', 'FALSE', 'REWORK'])('protects the original content after deci
 });
 
 test.each(['TRUE', 'REWORK'])('allows execution after %s even if registration is no longer configured', async accept => {
-  const { service, get, patch } = setup('');
+  const { service, get, patch } = setup([]);
   get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response({ ...measure, accept }));
   await service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { executed: '2026-09-09T00:00:00Z' }, user);
   expect(patch).toHaveBeenCalledTimes(1);

@@ -162,22 +162,28 @@ För LOK (Lokalplanering):
 
 ### AD-grupper för handläggare och utredning
 
-Backendens `ASSIGNABLE_HANDLER_GROUPS` anger vilka AD-grupper som fyller handläggarlistan.
-Ange gruppnamnen kommaseparerat, exempelvis för lokal VOF mot testmiljön:
+I IAF och VOF anger backendens `HEALTHCAREDEVIATION_HANDLER_ROLES` handläggarrollerna: en post per roll
+med den AD-grupp som har den. Samma lista fyller handläggarlistan, grupperad per roll, styr vilken roll
+överlämningsstegen kräver och avgör vem som registrerar åtgärder. Formatet beskrivs i
+`frontend/src/supportmanagement/measures/README.md`. Medlemmar i `SUPERADMIN_GROUP` har alla
+registreringsroller för åtgärder.
+
+Övriga drakar anger handläggarlistan med `ASSIGNABLE_HANDLER_GROUPS`, kommaseparerat:
 
 ```env
-ASSIGNABLE_HANDLER_GROUPS="SG_Appl_Draken_Enhetschef_Vof_Test,SG_Appl_Draken_LEX_Utredare_Vof_Test,SG_Appl_Draken_MAS_MAR_Vof_Test,SG_Appl_Draken_Avvikelse_Admin_Test"
+ASSIGNABLE_HANDLER_GROUPS="{{INSERT_HANDLER_GROUP}},{{INSERT_OTHER_HANDLER_GROUP}}"
 ```
 
-Medlemmarna slås ihop utan dubbla AD-konton. Om inställningen är tom eller saknas används
+Medlemmarna slås ihop utan dubbla AD-konton. Om ingen av inställningarna är satt används
 `ADMIN_GROUP`. Resultatet cachas i backend i en timme; om något gruppanrop misslyckas
 returneras ett fel i stället för en ofullständig lista. Starta om backendens
 `yarn dev:{drake}`-process efter en env-ändring och ladda om sidan.
 
 Gruppnamnen anges separat per miljö. Välj de faktiska test- eller produktionsgrupperna i env;
-koden ändrar inga suffix. Handläggarlistan ger inga inloggnings- eller skrivrättigheter:
+koden ändrar inga suffix. Handläggarrollerna ger inga inloggnings- eller skrivrättigheter:
 `AUTHORIZED_GROUPS` styr inloggning och `ADMIN_GROUP`, `SUPERADMIN_GROUP` samt
-`DEVELOPER_GROUP` behåller sina befintliga applikationsroller.
+`DEVELOPER_GROUP` behåller sina befintliga applikationsroller. De tre tar en grupp eller en
+kommaseparerad lista med grupper.
 
 Utrednings- och beslutsdokumentens rättigheter hämtas per användare och ärende från
 Support Management Sprint 16.1, `GET /{municipalityId}/{namespace}/errands/{errandId}/access`.

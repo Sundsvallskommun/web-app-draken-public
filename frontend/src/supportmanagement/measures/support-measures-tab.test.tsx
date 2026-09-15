@@ -56,6 +56,7 @@ const snapshot: MeasuresSnapshot = {
     status: 'ready',
     roleTypes: [{ roleName: 'MANAGER', measureTypeIds: ['type-one'], decides: true }],
   },
+  canWrite: true,
 };
 const errand = { id: 'errand-one', version: 4 } as SupportErrand;
 

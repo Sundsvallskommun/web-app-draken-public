@@ -22,9 +22,16 @@ sparande. Det finns ingen lokal typkatalog eller lista över tillåtna typnamn.
 
 ## Konfiguration
 
-`SUPPORT_MEASURE_REGISTRATION` i backend innehåller en post per registreringsroll.
-Lokalt används `backend/.env.iaf.development.local` eller
-`backend/.env.vof.development.local`. Exempelmallarna har samma struktur.
+Om åtgärderna får skrivas avgör Support Management: BFF:en läser ärendets `/access` och erbjuder
+Lägg till, redigering, beslut och uppföljning bara när resursen för åtgärder har nivån `RW`. Listan
+går att läsa ändå, och ett misslyckat `/access`-anrop erbjuder inga skrivningar.
+
+Hur en åtgärd registreras avgör Draken. Registreringsrollerna ligger i backendens
+`HEALTHCAREDEVIATION_HANDLER_ROLES`, samma lista som handläggarrollerna i Ansvarig-listan. En roll med
+`measures` är en registreringsroll; en roll utan `measures`, som Verksamhetschef, registrerar inga
+åtgärder. Lokalt används
+`backend/.env.iaf.development.local` eller `backend/.env.vof.development.local`. Exempelmallarna har
+samma struktur.
 
 | Registreringsroll (`displayName` i metadata) | `Role.name`        | Grupp i `MeasureType.measureGroups` | `decides`     |
 | -------------------------------------------- | ------------------ | ----------------------------------- | ------------- |
@@ -36,49 +43,46 @@ Rollnamn och typgrupp är olika begrepp. Tabellen motsvarar den metadata som
 lästes från testmiljön den 9 september 2026. Ingen automatisk översättning från
 visningsnamn eller delsträngsmatchning används.
 
-IAF:
-
 ```dotenv
-SUPPORT_MEASURE_REGISTRATION='[{"roleName":"UNIT_MANAGER","decides":true,"adGroups":["SG_Appl_Draken_Enhetschef_IAF_Test","SG_Appl_Draken_Avvikelse_Admin_Test"],"measureGroup":"UNIT_MANAGER"},{"roleName":"MAR_MAS","adGroups":["SG_Appl_Draken_MAS_MAR_IAF_Test","SG_Appl_Draken_Avvikelse_Admin_Test"],"measureGroup":"HSL_MAS_MAR"},{"roleName":"LEX_INVESTIGATOR","adGroups":["SG_Appl_Draken_LEX_Utredare_IAF_Test","SG_Appl_Draken_Avvikelse_Admin_Test"],"measureGroup":"SOL_LSS"}]'
+HEALTHCAREDEVIATION_HANDLER_ROLES='[{"key":"enhetschef","label":"Enhetschef","group":"{{INSERT_ENHETSCHEF_GROUP}}","measures":{"roleName":"UNIT_MANAGER","measureGroup":"UNIT_MANAGER","decides":true}},{"key":"verksamhetschef","label":"Verksamhetschef","group":"{{INSERT_VERKSAMHETSCHEF_GROUP}}"},{"key":"lex-ansvarig","label":"LEX-ansvarig","group":"{{INSERT_LEX_ANSVARIG_GROUP}}","measures":{"roleName":"LEX_INVESTIGATOR","measureGroup":"SOL_LSS"}},{"key":"lex-utredare","label":"LEX-utredare","group":"{{INSERT_LEX_UTREDARE_GROUP}}","measures":{"roleName":"LEX_INVESTIGATOR","measureGroup":"SOL_LSS"}},{"key":"mas-mar","label":"MAS/MAR","group":"{{INSERT_HSL_GROUP}}","measures":{"roleName":"MAR_MAS","measureGroup":"HSL_MAS_MAR"}}]'
+SUPERADMIN_GROUP="{{INSERT_SUPERADMIN_GROUP}}"
 ```
 
-VoF använder motsvarande grupper med `Vof_Test` i stället för `IAF_Test`.
-Förvaltningsrollerna matchas mot den egna förvaltningens grupper.
-Den gemensamma admin-gruppen gäller i båda instanserna. Produktion använder
-motsvarande AD-grupper utan `_Test`. Flera AD-grupper kan anges för samma roll;
-medlemskap i någon av dem räcker för rollvalet. AD-gruppmatchningen bortser från
-stora/små bokstäver. Rollnamn och typgrupp matchas exakt.
+Grupperna anges per miljö: IAF och VoF har var sin förvaltnings grupper, testmiljön har `_Test` och
+produktion inte. Varje roll har en AD-grupp. AD-gruppmatchningen bortser från stora/små bokstäver.
+Rollnamn och typgrupp matchas exakt.
 
-`roleName`, `adGroups` och `measureGroup` krävs. `decides` är valfritt och betyder
-att rollen beslutar om åtgärder: en åtgärd som registreras i en beslutande roll
-får `accept: "TRUE"` direkt vid skapandet, satt av backend. Roller utan `decides`
-registrerar förslag (`accept` lämnas tomt) och formuläret säger då "Lägg till
-förslag till åtgärd". Listan visar beslutet som en etikett: Förslag, Godkänd,
-Avslagen eller Delvis godkänd. Skapa- och redigeringsanrop kan inte sätta
-`accept`; beslut sparas genom en separat, behörighetskontrollerad endpoint.
-Roller utan `decides` kan bara registrera planerade åtgärder: formuläret erbjuder
-inte "Genomförd åtgärd" och backend avvisar `executed` från dem, både vid
-skapande och vid redigering av ett förslag som ännu inte är godkänt. Ett godkänt
-eller delvis godkänt förslag får markeras som genomfört.
-`adGroups` måste vara en lista med minst ett gruppnamn.
-`measureGroup` måste vara en icke-tom sträng. Okända fält, dubbla roller och roller
-som saknas i namespace-metadatan ger konfigurationsfel. Den tidigare
-`measureTypeNames`-inställningen ska tas bort; den stöds inte parallellt.
+`key`, `label` och `group` krävs för varje roll. I `measures` krävs `roleName` och `measureGroup`.
+`decides` är valfritt och betyder att rollen beslutar om åtgärder: en åtgärd som registreras i en
+beslutande roll får `accept: "TRUE"` direkt vid skapandet, satt av backend. Roller utan `decides`
+registrerar förslag (`accept` lämnas tomt) och formuläret säger då "Lägg till förslag till åtgärd".
+Listan visar beslutet som en etikett: Förslag, Godkänd, Avslagen eller Delvis godkänd. Skapa- och
+redigeringsanrop kan inte sätta `accept`; beslut sparas genom en separat, behörighetskontrollerad
+endpoint. Roller utan `decides` kan bara registrera planerade åtgärder: formuläret erbjuder inte
+"Genomförd åtgärd" och backend avvisar `executed` från dem, både vid skapande och vid redigering av
+ett förslag som ännu inte är godkänt. Ett godkänt eller delvis godkänt förslag får markeras som
+genomfört.
+
+Flera roller får registrera som samma `roleName` - LEX-ansvarig registrerar exakt som
+LEX-utredare - om de har samma `measureGroup` och `decides`; rollen visas då en gång och innehas via
+någon av gruppernas medlemskap. Okända fält, dubbla nycklar, två roller som registrerar samma
+`roleName` på olika sätt och roller som saknas i namespace-metadatan ger konfigurationsfel. `measureTypeNames` stöds inte. Listan ger ingen
+inloggning: backend varnar vid start om en rollgrupp eller `SUPERADMIN_GROUP` saknas i
+`AUTHORIZED_GROUPS`.
 
 Starta om backend efter ändring av denna konfiguration. Uppdaterat AD-medlemskap
 kräver ny inloggning. Nya typer eller ändrade typgrupper i API:t kräver däremot
 ingen konfigurationsändring eller omstart av Draken: ladda om åtgärdsfliken.
 
-`SG_Appl_Draken_Avvikelse_Admin_Test` ger samtliga tre registreringsroller i både
-IAF och VoF. Gruppen ingår uttryckligen i varje rolls `adGroups`; inga särskilda
-adminflaggor eller undantag i koden behövs. Administratören måste välja vilken
-roll åtgärden registreras för. Typurvalet följer den valda rollen, som sparas på
-åtgärden tillsammans med den faktiska användaren. Vanlig skrivbehörighet och
-API:ts behörighetskontroller gäller fortfarande.
+Medlemmar i `SUPERADMIN_GROUP` har samtliga registreringsroller. I IAF och VoF är det
+avvikelseadministratörerna. Gruppen skrivs en gång i `SUPERADMIN_GROUP` i stället för i varje roll,
+och den visas inte under rollerna i Ansvarig-listan. Administratören måste välja vilken roll åtgärden
+registreras för. Typurvalet följer den valda rollen, som sparas på åtgärden tillsammans med den
+faktiska användaren. Vanlig skrivbehörighet och API:ts behörighetskontroller gäller fortfarande.
 
-Verksamhetschef, LEX-ansvarig och rapportör ger inte i sig
-registreringsroller genom denna mappning. Ärende- och utredningsbehörighet
-hanteras separat. Personnummer och enskilda testkonton används inte som rollregler.
+Verksamhetschef finns i listan för att kunna väljas som ansvarig, men ger ingen registreringsroll
+eftersom den saknar `measures`. LEX-ansvarig registrerar i samma roll som LEX-utredare. Rapportör finns
+inte i listan. Ärende- och utredningsbehörighet hanteras separat. Personnummer och enskilda testkonton används inte som rollregler.
 
 ## Metadata och typurval
 
@@ -185,9 +189,14 @@ Drakens `PATCH .../measures/:measureId/follow-up` tar endast
 och åtgärdens `If-Match`. Den använder **befintliga resurser i SM 16.1**:
 
 1. Svaren, åtgärds-ID/version, genomförandetid samt registrerande användare/tid
-   sparas som JSON-parametern `measure-follow-up-<measureId>` genom
-   `SupportJsonParameterService`. Dokumentet skapas en gång med tjänstens
-   create-only-villkor; sparade svar skrivs aldrig över.
+   sparas som en post i JSON-parametern `measure-follow-up` genom
+   `SupportJsonParameterService`. Ärendet har ett sådant dokument med en post per
+   åtgärd, och åtgärdens id ligger i posten. Nyckeln är stabil eftersom Support
+   Management ger behörighet till JSON-parametrar per nyckel: en nyckel per åtgärd
+   gick aldrig att ge behörighet till i AccessMapper. Dokumentet skapas med
+   create-only-villkor och utökas sedan med dokumentets ETag; sparade poster skrivs
+   aldrig över. Hinner en annan uppföljning skrivas mellan läsning och tillägg läses
+   dokumentet om och tillägget görs en gång till.
 2. Åtgärdens vanliga `PATCH .../measures/:measureId` får endast `executed`
    och åtgärdens versionsvillkor. Innehåll, planering och beslut bevaras.
 3. Läsningen sammanför åtgärden med dokumentet i Drakens `SupportMeasure.followUp`.
@@ -209,9 +218,11 @@ version flera steg behålls formulärets gamla version för att skydda mot
 ändring i det övergripande formuläret.
 
 **Införande:** registrera `backend/src/schemas/measure-follow-up.schema-request.json`
-via JsonSchema `POST /2281/schemas` före användning. Namnet är `measure-follow-up`,
-version `1.0`, ID `2281_measure-follow-up_1.0`. BFF skapar inte scheman automatiskt. Schemat registrerades och verifierades i
-`api-i-test.sundsvall.se` den 11 september 2026.
+via JsonSchema `POST /2281/schemas` före driftsättning. Namnet är `measure-follow-up`,
+version `2.0`, ID `2281_measure-follow-up_2.0`. BFF skapar inte scheman automatiskt; ett nytt
+dokument binds till den senaste publicerade versionen. Version `1.0` sparade en uppföljning per
+åtgärd under nycklarna `measure-follow-up-<measureId>`, som inte läses längre. Ge i AccessMapper
+behörighet till nyckeln `measure-follow-up` för de roller som ska läsa eller göra uppföljningar.
 API:ts vanliga läs-/skrivrättigheter för JSON-parametern gäller; nekad åtkomst
 visas som fel. Inget nytt SM-endpoint, ingen migration och ingen driftsättning av
 den tidigare förberedda API-worktreen `api-service-support-management-follow-up`

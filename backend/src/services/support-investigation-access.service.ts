@@ -6,12 +6,15 @@ import { User } from '@/interfaces/users.interface';
 
 import ApiService from './api.service';
 
-type AccessLevel = 'LR' | 'R' | 'RW';
+export type SupportErrandAccessLevel = 'LR' | 'R' | 'RW';
+
+/** The resource path the sprint /access contract names an errand's measures by. */
+export const MEASURE_ACCESS_RESOURCE = 'errand/measure';
 
 interface JsonParameterAccess {
-  readonly errandLevel: AccessLevel;
-  readonly resourceLevel: AccessLevel | undefined;
-  readonly field: { readonly allKeys: boolean; readonly keys: ReadonlyMap<string, AccessLevel> } | undefined;
+  readonly errandLevel: SupportErrandAccessLevel;
+  readonly resourceLevel: SupportErrandAccessLevel | undefined;
+  readonly field: { readonly allKeys: boolean; readonly keys: ReadonlyMap<string, SupportErrandAccessLevel> } | undefined;
 }
 
 const invalidAccess = (): never => {
@@ -23,7 +26,7 @@ const record = (value: unknown): Record<string, unknown> => {
   return value as Record<string, unknown>;
 };
 
-const level = (value: unknown): AccessLevel => {
+const level = (value: unknown): SupportErrandAccessLevel => {
   if (value !== 'LR' && value !== 'R' && value !== 'RW') return invalidAccess();
   return value;
 };
@@ -56,7 +59,7 @@ const parseJsonParameterAccess = (value: unknown): JsonParameterAccess => {
   const resourceLevel = resource ? level(resource.level) : undefined;
   if (!field) return { errandLevel, resourceLevel, field: undefined };
   if (typeof field.allKeys !== 'boolean') return invalidAccess();
-  const keys = new Map<string, AccessLevel>();
+  const keys = new Map<string, SupportErrandAccessLevel>();
   for (const [key, grant] of indexedRecords(field.keys, 'key')) keys.set(key, level(grant.level));
   if (field.allKeys && keys.size > 0) return invalidAccess();
   return { errandLevel, resourceLevel, field: { allKeys: field.allKeys, keys } };
@@ -95,16 +98,11 @@ export class SupportInvestigationAccessService {
     this.service = dependencies.service ?? apiServiceName('supportmanagement');
   }
 
-  async getDocumentAccess(
-    user: User,
-    municipalityId: string,
-    errandId: string,
-    documentKeys: readonly string[],
-  ): Promise<SupportInvestigationErrandAccessDto> {
+  /** The user's effective access to one errand, as Support Management resolves it. */
+  private async readErrandAccess(user: User, municipalityId: string, errandId: string): Promise<unknown> {
     if (!this.namespace.trim() || !municipalityId.trim() || !errandId.trim()) {
       throw new HttpException(503, 'Investigation access context is unavailable');
     }
-    let data: unknown;
     try {
       const response = await this.apiService.get<unknown>(
         {
@@ -118,7 +116,7 @@ export class SupportInvestigationAccessService {
         user,
       );
       if (response.status !== 200) return invalidAccess();
-      data = response.data;
+      return response.data;
     } catch (error) {
       if (
         typeof error === 'object' &&
@@ -130,12 +128,28 @@ export class SupportInvestigationAccessService {
         throw error;
       throw new HttpException(503, 'Investigation access is temporarily unavailable');
     }
-    const access = parseJsonParameterAccess(data);
+  }
+
+  async getDocumentAccess(
+    user: User,
+    municipalityId: string,
+    errandId: string,
+    documentKeys: readonly string[],
+  ): Promise<SupportInvestigationErrandAccessDto> {
+    const access = parseJsonParameterAccess(await this.readErrandAccess(user, municipalityId, errandId));
     return {
       municipalityId,
       errandId,
       documents: documentKeys.map(key => ({ key, access: documentAccess(access, key) })),
     };
+  }
+
+  /** The level granted for one errand resource, or undefined when the user is granted nothing on it. */
+  async getResourceLevel(user: User, municipalityId: string, errandId: string, resource: string): Promise<SupportErrandAccessLevel | undefined> {
+    const response = record(await this.readErrandAccess(user, municipalityId, errandId));
+    level(response.level);
+    const grant = indexedRecords(response.resources, 'resource').get(resource);
+    return grant ? level(grant.level) : undefined;
   }
 
   async assertCanReadDocument(user: User, municipalityId: string, errandId: string, key: string): Promise<void> {

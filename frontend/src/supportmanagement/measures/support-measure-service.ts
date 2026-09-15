@@ -14,6 +14,8 @@ export interface MeasuresSnapshot {
     status: 'ready' | 'unconfigured' | 'invalid';
     roleTypes: { roleName: string; measureTypeIds: string[]; decides: boolean }[];
   };
+  /** Whether Support Management lets the user write the errand's measures. The list stays readable without it. */
+  canWrite: boolean;
 }
 
 export interface PlannedMeasuresSnapshot {

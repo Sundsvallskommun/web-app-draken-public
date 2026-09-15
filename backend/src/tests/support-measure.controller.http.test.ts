@@ -37,7 +37,9 @@ vi.mock('@/services/api.service', () => ({
   },
 }));
 
-const registrationConfiguration = JSON.stringify([{ roleName: 'MANAGER', adGroups: ['ad-manager'], measureGroup: 'PREVENTIVE', decides: true }]);
+const handlerRoles = JSON.stringify([
+  { key: 'enhetschef', label: 'Enhetschef', group: 'ad-manager', measures: { roleName: 'MANAGER', measureGroup: 'PREVENTIVE', decides: true } },
+]);
 const typeId = 'dd000000-0000-4000-8000-000000000100';
 const metadata = {
   measureTypes: [{ id: typeId, name: 'EDUCATION', displayName: 'Utbildning', measureGroups: ['PREVENTIVE'] }],
@@ -59,7 +61,7 @@ describe('measure write handlers (over HTTP)', () => {
   const measuresUrl = '/supporterrands/2281/errand-1/measures';
 
   beforeAll(async () => {
-    process.env.SUPPORT_MEASURE_REGISTRATION = registrationConfiguration;
+    process.env.HEALTHCAREDEVIATION_HANDLER_ROLES = handlerRoles;
     const { default: express } = await import('express');
     const { useExpressServer } = await import('routing-controllers');
     const { default: errorMiddleware } = await import('@/middlewares/error.middleware');
@@ -110,7 +112,7 @@ describe('measure write handlers (over HTTP)', () => {
   it('saves the follow-up through its dedicated endpoint and preserves a negative answer', async () => {
     const approved = { ...measure, accept: 'TRUE', plannedStart: '2026-09-08T00:00:00Z' };
     const answers = { desiredEffectAchieved: false, followUpDescription: 'Ingen förbättring.' };
-    const schema = { ...schemaRequest, id: '2281_measure-follow-up_1.0' };
+    const schema = { ...schemaRequest, id: '2281_measure-follow-up_2.0' };
     let document: SupportJsonParameter | undefined;
     apiGet.mockImplementation(async (config: { url?: string }) => {
       if (config.url?.includes('/schemas/')) return { data: schema, status: 200 };
@@ -127,7 +129,11 @@ describe('measure write handlers (over HTTP)', () => {
     apiPatch.mockImplementation(async ({ data }: { data: { executed: string } }) => ({ data: { ...approved, ...data, version: 4 } }));
     const response = await request(server).patch(`${measuresUrl}/measure-1/follow-up`).set('If-Match', '"3"').send(answers);
     expect(response.status).toBe(204);
-    expect(document?.value).toMatchObject(answers);
+    expect(document?.value.followUps).toEqual([expect.objectContaining(answers)]);
+    expect(apiPut).toHaveBeenCalledWith(
+      expect.objectContaining({ url: expect.stringMatching(/\/json-parameters\/measure-follow-up$/) }),
+      expect.anything(),
+    );
     expect(apiPatch.mock.calls[0][0]).toMatchObject({
       url: expect.stringMatching(/\/measures\/measure-1$/),
       data: { executed: expect.any(String) },

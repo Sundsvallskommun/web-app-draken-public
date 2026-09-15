@@ -1,5 +1,6 @@
 import { resolveSupportManagementApiTarget } from '@/config/api-config';
 import { resolveAssignableHandlerGroups } from '@/config/assignable-handler-groups';
+import { findUnauthorizedHandlerRoleGroups, HANDLER_ROLES_SETTING, resolveHandlerGroupRoles } from '@/config/handler-group-roles';
 import { resolveSupportInvestigationHandoverTargets } from '@/config/support-investigation-handover-targets';
 import { isContactSundsvall, isKC, isMEX, isPT } from '@/services/application.service';
 import { logger } from '@/utils/logger';
@@ -73,6 +74,18 @@ const validateEnv = () => {
   } catch (error) {
     console.error(`\n${error instanceof Error ? error.message : 'Invalid assignable handler group configuration'}\n`);
     process.exit(1);
+  }
+
+  // A role group whose members cannot log in holds a role nobody reaches; say so rather than let it look configured.
+  const unauthorizedRoleGroups = findUnauthorizedHandlerRoleGroups(
+    resolveHandlerGroupRoles(),
+    process.env.SUPERADMIN_GROUP,
+    process.env.AUTHORIZED_GROUPS,
+  );
+  if (unauthorizedRoleGroups.length > 0) {
+    logger.warn(
+      `${HANDLER_ROLES_SETTING} names groups missing from AUTHORIZED_GROUPS, whose members cannot log in: ${unauthorizedRoleGroups.join(', ')}`,
+    );
   }
 
   const commonSpec: EnvSpec = {

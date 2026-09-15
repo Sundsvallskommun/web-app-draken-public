@@ -1,3 +1,4 @@
+import { HandlerGroupRole, HandlerRoleMeasureRegistration } from '@/config/handler-group-roles';
 import { MetadataResponse } from '@/data-contracts/supportmanagement/data-contracts';
 import {
   assertMeasureRegistration,
@@ -19,18 +20,24 @@ const metadata: MetadataResponse = {
     { id: 'old-id', name: 'OLD', measureGroups: ['MANAGERS'], deprecated: true },
   ],
 };
-const rules = [
-  { roleName: 'MANAGER', adGroups: ['AD-MANAGER'], measureGroup: 'MANAGERS' },
-  { roleName: 'NURSE', adGroups: ['AD-NURSE'], measureGroup: 'CLINICAL' },
-  { roleName: 'RETIRED', adGroups: ['AD-RETIRED'], measureGroup: 'CLINICAL' },
+const roles: HandlerGroupRole[] = [
+  { key: 'manager', label: 'Enhetschef', group: 'AD-MANAGER', measures: { roleName: 'MANAGER', measureGroup: 'MANAGERS', decides: false } },
+  { key: 'nurse', label: 'HSL', group: 'AD-NURSE', measures: { roleName: 'NURSE', measureGroup: 'CLINICAL', decides: false } },
+  { key: 'retired', label: 'Utgången', group: 'AD-RETIRED', measures: { roleName: 'RETIRED', measureGroup: 'CLINICAL', decides: false } },
 ];
-const configuration = JSON.stringify(rules);
+const lexManager: HandlerGroupRole = { key: 'lex-ansvarig', label: 'LEX-ansvarig', group: 'AD-LEX' };
+const SUPERADMINS = 'AD-SUPERADMINS';
+
+/** The first role with its registration changed, for the cases that turn one knob. */
+const withManagerMeasures = (measures: Partial<HandlerRoleMeasureRegistration>): HandlerGroupRole[] => [
+  { ...roles[0], measures: { ...roles[0].measures!, ...measures } },
+];
 
 beforeEach(() => vi.spyOn(logger, 'error').mockImplementation(() => logger));
 afterEach(() => vi.restoreAllMocks());
 
-test('resolves exact metadata identities from explicit AD groups and exposes only presentation data', () => {
-  const resolved = resolveSupportMeasureRegistration(metadata, ['ad-manager', 'Ad-Nurse', 'AD-RETIRED'], configuration);
+test('resolves exact metadata identities from the role groups and exposes only presentation data', () => {
+  const resolved = resolveSupportMeasureRegistration(metadata, ['ad-manager', 'Ad-Nurse', 'AD-RETIRED'], roles, SUPERADMINS);
   expect(resolved.creationRoles.map(role => role.name)).toEqual(['MANAGER', 'NURSE']);
   expect(resolved.creationRoles.map(role => role.displayName)).toEqual(['Enhetschef', 'HSL']);
   expect(resolved.registration).toEqual({
@@ -45,41 +52,50 @@ test('resolves exact metadata identities from explicit AD groups and exposes onl
 });
 
 test('does not turn matching labels, namespace role names or partial group names into membership', () => {
-  const resolved = resolveSupportMeasureRegistration(metadata, ['MANAGER', 'Enhetschef', 'AD-MANAGER-OTHER'], configuration);
+  const resolved = resolveSupportMeasureRegistration(metadata, ['MANAGER', 'Enhetschef', 'AD-MANAGER-OTHER'], roles, SUPERADMINS);
   expect(resolved.registration.status).toBe('ready');
   expect(resolved.creationRoles).toEqual([]);
 });
 
-test('distinguishes missing configuration from a valid empty policy', () => {
-  expect(resolveSupportMeasureRegistration(metadata, ['AD-MANAGER'], '').registration.status).toBe('unconfigured');
-  expect(resolveSupportMeasureRegistration(metadata, ['AD-MANAGER'], '[]')).toEqual({
+// The superadmin group is written once in SUPERADMIN_GROUP instead of into every registration role.
+test('the superadmin group holds every registration role that is still active', () => {
+  const resolved = resolveSupportMeasureRegistration(metadata, ['ad-superadmins'], roles, SUPERADMINS);
+  expect(resolved.creationRoles.map(role => role.name)).toEqual(['MANAGER', 'NURSE']);
+  expect(resolveSupportMeasureRegistration(metadata, ['AD-SUPERADMINS'], roles, undefined).creationRoles).toEqual([]);
+  expect(resolveSupportMeasureRegistration(metadata, ['', 'AD-SUPERADMINS'], roles, '   ').creationRoles).toEqual([]);
+});
+
+test('is unconfigured when no handler role registers measures', () => {
+  expect(resolveSupportMeasureRegistration(metadata, ['AD-MANAGER'], undefined, SUPERADMINS).registration.status).toBe('unconfigured');
+  expect(resolveSupportMeasureRegistration(metadata, ['AD-LEX'], [lexManager], SUPERADMINS)).toEqual({
     creationRoles: [],
-    registration: { status: 'ready', roleTypes: [] },
+    registration: { status: 'unconfigured', roleTypes: [] },
   });
 });
 
-test.each([
-  '{',
-  '{}',
-  '[null]',
-  JSON.stringify([{ ...rules[0], roleName: '' }]),
-  JSON.stringify([{ ...rules[0], adGroups: [] }]),
-  JSON.stringify([{ ...rules[0], adGroups: ['AD-MANAGER', 'ad-manager'] }]),
-  JSON.stringify([{ ...rules[0], measureGroup: '' }]),
-  JSON.stringify([{ ...rules[0], measureGroup: null }]),
-  JSON.stringify([{ ...rules[0], roleName: 'UNKNOWN' }]),
-  JSON.stringify([{ ...rules[0], measureGroup: ['MANAGERS'] }]),
-  JSON.stringify([{ ...rules[0], unknownSetting: true }]),
-  JSON.stringify([rules[0], rules[0]]),
-])('rejects invalid configuration without granting roles or interrupting history reads: %s', configured => {
-  expect(resolveSupportMeasureRegistration(metadata, ['AD-MANAGER'], configured)).toEqual({
+// A LEX manager registers exactly as a LEX investigator does: one namespace role, reached through either group.
+test('a namespace role shared by several handler roles is listed once and held through any of their groups', () => {
+  const sharing: HandlerGroupRole[] = [roles[0], { ...roles[0], key: 'deputy', group: 'AD-DEPUTY' }];
+  const resolved = resolveSupportMeasureRegistration(metadata, ['ad-deputy'], sharing, SUPERADMINS);
+  expect(resolved.registration.roleTypes.map(rule => rule.roleName)).toEqual(['MANAGER']);
+  expect(resolved.creationRoles.map(role => role.name)).toEqual(['MANAGER']);
+});
+
+test('a handler role without measures takes no part in registration', () => {
+  const resolved = resolveSupportMeasureRegistration(metadata, ['AD-LEX', 'AD-MANAGER'], [lexManager, roles[0]], SUPERADMINS);
+  expect(resolved.registration.roleTypes.map(rule => rule.roleName)).toEqual(['MANAGER']);
+  expect(resolved.creationRoles.map(role => role.name)).toEqual(['MANAGER']);
+});
+
+test('a registration role missing from the namespace metadata invalidates the policy without interrupting history reads', () => {
+  expect(resolveSupportMeasureRegistration(metadata, ['AD-MANAGER'], withManagerMeasures({ roleName: 'UNKNOWN' }), SUPERADMINS)).toEqual({
     creationRoles: [],
     registration: { status: 'invalid', roleTypes: [] },
   });
 });
 
 test('checks both group membership and type choices when saving', () => {
-  const resolved = resolveSupportMeasureRegistration(metadata, ['AD-NURSE'], configuration);
+  const resolved = resolveSupportMeasureRegistration(metadata, ['AD-NURSE'], roles, SUPERADMINS);
   expect(() => assertMeasureRegistration(resolved, 'NURSE', 'education-id')).not.toThrow();
   expect(() => assertMeasureRegistration(resolved, 'MANAGER', 'education-id')).toThrow('saknar');
   expect(() => assertMeasureRegistration(resolved, 'NURSE', 'supervision-id')).toThrow('inte tillgänglig');
@@ -87,14 +103,14 @@ test('checks both group membership and type choices when saving', () => {
 });
 
 test('changing a historical type uses the saved role while leaving editor authorization to the protected resource', () => {
-  const resolved = resolveSupportMeasureRegistration(metadata, [], configuration);
+  const resolved = resolveSupportMeasureRegistration(metadata, [], roles, SUPERADMINS);
   expect(resolved.creationRoles).toEqual([]);
   expect(() => assertMeasureTypeForRole(resolved.registration, 'MANAGER', 'supervision-id')).not.toThrow();
   expect(() => assertMeasureTypeForRole(resolved.registration, 'NURSE', 'supervision-id')).toThrow('inte tillgänglig');
 });
 
 test('empty type choices never expand to all active metadata types', () => {
-  const resolved = resolveSupportMeasureRegistration(metadata, ['AD-MANAGER'], JSON.stringify([{ ...rules[0], measureGroup: 'NO_TYPES' }]));
+  const resolved = resolveSupportMeasureRegistration(metadata, ['AD-MANAGER'], withManagerMeasures({ measureGroup: 'NO_TYPES' }), SUPERADMINS);
   expect(resolved.creationRoles.map(role => role.name)).toEqual(['MANAGER']);
   expect(resolved.registration.roleTypes[0].measureTypeIds).toEqual([]);
   expect(() => assertMeasureRegistration(resolved, 'MANAGER', 'education-id')).toThrow('inte tillgänglig');
@@ -111,7 +127,7 @@ test('new and reassigned metadata types change choices without changing local co
       { id: 'similar-id', name: 'SIMILAR', measureGroups: ['MANAGERS_OTHER'] },
     ],
   };
-  const resolved = resolveSupportMeasureRegistration(changed, ['AD-MANAGER', 'AD-NURSE'], configuration);
+  const resolved = resolveSupportMeasureRegistration(changed, ['AD-MANAGER', 'AD-NURSE'], roles, SUPERADMINS);
   expect(resolved.registration.roleTypes).toEqual([
     { roleName: 'MANAGER', measureTypeIds: ['new-id'], decides: false },
     { roleName: 'NURSE', measureTypeIds: ['new-id', 'education-id'], decides: false },
@@ -120,24 +136,20 @@ test('new and reassigned metadata types change choices without changing local co
   expect(() => assertMeasureRegistration(resolved, 'NURSE', 'new-id')).not.toThrow();
 });
 
-test('rejects legacy type lists instead of silently maintaining two policies', () => {
-  const resolved = resolveSupportMeasureRegistration(metadata, ['AD-MANAGER'], JSON.stringify([{ ...rules[0], measureTypeNames: ['EDUCATION'] }]));
-  expect(resolved.registration.status).toBe('invalid');
-});
-
 test('a matching type without an ID prevents registration but preserves history access', () => {
   const resolved = resolveSupportMeasureRegistration(
     { ...metadata, measureTypes: [{ name: 'NO_ID', measureGroups: ['MANAGERS'] }] },
     ['AD-MANAGER'],
-    configuration,
+    roles,
+    SUPERADMINS,
   );
   expect(resolved.registration.status).toBe('invalid');
   expect(resolved.creationRoles).toEqual([]);
 });
 
-test('reads the deciding flag per role, defaults it to proposal and rejects non-boolean values', () => {
-  const withDecider = JSON.stringify([{ ...rules[0], decides: true }, rules[1]]);
-  const resolved = resolveSupportMeasureRegistration(metadata, ['ad-manager', 'ad-nurse'], withDecider);
+test('reads the deciding flag per role', () => {
+  const withDecider: HandlerGroupRole[] = [{ ...roles[0], measures: { ...roles[0].measures!, decides: true } }, roles[1]];
+  const resolved = resolveSupportMeasureRegistration(metadata, ['ad-manager', 'ad-nurse'], withDecider, SUPERADMINS);
   expect(resolved.registration.roleTypes.map(rule => [rule.roleName, rule.decides])).toEqual([
     ['MANAGER', true],
     ['NURSE', false],
@@ -145,7 +157,4 @@ test('reads the deciding flag per role, defaults it to proposal and rejects non-
   expect(measureRoleDecides(resolved.registration, 'MANAGER')).toBe(true);
   expect(measureRoleDecides(resolved.registration, 'NURSE')).toBe(false);
   expect(measureRoleDecides(resolved.registration, 'UNKNOWN')).toBe(false);
-
-  const invalid = resolveSupportMeasureRegistration(metadata, ['ad-manager'], JSON.stringify([{ ...rules[0], decides: 'yes' }]));
-  expect(invalid.registration.status).toBe('invalid');
 });

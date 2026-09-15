@@ -66,7 +66,8 @@ export function AvvikelseMeasures({
     },
     [onDirtyChange]
   );
-  const canWrite = user.permissions.canEditSupportManagement && !isSupportErrandLocked(errand);
+  // Support Management decides whether the measures are writable; the registration roles only decide how.
+  const canWrite = snapshot.canWrite && user.permissions.canEditSupportManagement && !isSupportErrandLocked(errand);
   const canEdit = !followUp && canWrite;
   const canDecide =
     canEdit &&

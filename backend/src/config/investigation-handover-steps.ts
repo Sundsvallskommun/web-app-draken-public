@@ -16,7 +16,7 @@ export const INVESTIGATION_HANDOVER_STEPS = ['assign-lex', 'return-to-manager', 
 
 export type InvestigationHandoverStep = (typeof INVESTIGATION_HANDOVER_STEPS)[number];
 
-/** The handler role a caller-picked assignee must hold, from HANDLER_GROUP_ROLES. */
+/** The handler role a caller-picked assignee must hold, from HEALTHCAREDEVIATION_HANDLER_ROLES. */
 export const LEX_MANAGER_ROLE_KEY = 'lex-ansvarig';
 export const LEX_INVESTIGATOR_ROLE_KEY = 'lex-utredare';
 

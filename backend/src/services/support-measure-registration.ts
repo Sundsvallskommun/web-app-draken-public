@@ -1,14 +1,7 @@
+import { HANDLER_ROLES_SETTING, HandlerGroupRole, HandlerRoleMeasureRegistration } from '@/config/handler-group-roles';
 import { MetadataResponse, Role } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { logger } from '@/utils/logger';
-
-interface MeasureRegistrationRule {
-  roleName: string;
-  adGroups: string[];
-  measureGroup: string;
-  /** A deciding role's own measures are accepted on creation; every other role registers proposals. */
-  decides: boolean;
-}
 
 export interface MeasureRegistrationPolicy {
   status: 'ready' | 'unconfigured' | 'invalid';
@@ -20,59 +13,48 @@ export interface ResolvedMeasureRegistration {
   registration: MeasureRegistrationPolicy;
 }
 
-const configurationName = 'SUPPORT_MEASURE_REGISTRATION';
-
-function readRules(configured: string): MeasureRegistrationRule[] {
-  const parsed: unknown = JSON.parse(configured);
-  if (!Array.isArray(parsed)) throw new Error(`${configurationName} must be an array`);
-  const seenRoles = new Set<string>();
-  return parsed.map((entry: unknown, index) => {
-    const location = `${configurationName}[${index}]`;
-    if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) throw new Error(`${location} must be an object`);
-    const rule = entry as Record<string, unknown>;
-    if (Object.keys(rule).some(key => !['roleName', 'adGroups', 'measureGroup', 'decides'].includes(key))) {
-      throw new Error(`${location} contains an unknown field`);
-    }
-    if (typeof rule.roleName !== 'string' || !rule.roleName.trim()) throw new Error(`${location}.roleName is required`);
-    const roleName = rule.roleName.trim();
-    if (seenRoles.has(roleName)) throw new Error(`${location} repeats a roleName`);
-    seenRoles.add(roleName);
-    if (!Array.isArray(rule.adGroups) || rule.adGroups.length === 0) throw new Error(`${location}.adGroups must name at least one group`);
-    const adGroups = rule.adGroups.map((value: unknown) => {
-      if (typeof value !== 'string' || !value.trim()) throw new Error(`${location}.adGroups must contain non-empty strings`);
-      return value.trim().toLowerCase();
-    });
-    if (new Set(adGroups).size !== adGroups.length) throw new Error(`${location}.adGroups contains duplicates`);
-    if (typeof rule.measureGroup !== 'string' || !rule.measureGroup.trim()) throw new Error(`${location}.measureGroup is required`);
-    if (rule.decides !== undefined && typeof rule.decides !== 'boolean') throw new Error(`${location}.decides must be a boolean`);
-    return { roleName, adGroups, measureGroup: rule.measureGroup.trim(), decides: rule.decides === true };
-  });
-}
-
-/** Draken owns its registration choices. Metadata owns type group membership, identities and display names. */
+/**
+ * Draken owns who registers in which role; metadata owns type group membership, identities and display
+ * names. The registration roles are the handler roles carrying `measures`: a user holds one through the
+ * role's AD group, or through the superadmin group, which holds every one of them.
+ */
 export function resolveSupportMeasureRegistration(
   metadata: Pick<MetadataResponse, 'roles' | 'measureTypes'>,
   userGroups: readonly string[],
-  configured: string | undefined,
+  handlerRoles: readonly HandlerGroupRole[] | undefined,
+  superadminGroup: string | undefined,
 ): ResolvedMeasureRegistration {
-  if (!configured?.trim()) return { creationRoles: [], registration: { status: 'unconfigured', roleTypes: [] } };
+  const registrationRoles = (handlerRoles ?? []).filter(
+    (role): role is HandlerGroupRole & { measures: HandlerRoleMeasureRegistration } => role.measures !== undefined,
+  );
+  if (registrationRoles.length === 0) return { creationRoles: [], registration: { status: 'unconfigured', roleTypes: [] } };
   try {
     const groups = new Set(userGroups.map(group => group.trim().toLowerCase()));
+    const superadmin = superadminGroup?.trim().toLowerCase();
+    const holdsEveryRole = superadmin ? groups.has(superadmin) : false;
     const creationRoles: Role[] = [];
     const roleTypes: MeasureRegistrationPolicy['roleTypes'] = [];
-    for (const rule of readRules(configured)) {
-      const role = metadata.roles?.find(candidate => candidate.name === rule.roleName);
-      if (!role) throw new Error(`${configurationName}: role ${rule.roleName} is missing from namespace metadata`);
+    // Several handler roles can register as one namespace role - a LEX manager exactly as a LEX investigator.
+    // It is listed once, and held through the group of any of them.
+    const byRoleName = new Map<string, { measures: HandlerRoleMeasureRegistration; adGroups: string[] }>();
+    for (const { group, measures } of registrationRoles) {
+      const shared = byRoleName.get(measures.roleName);
+      if (shared) shared.adGroups.push(group);
+      else byRoleName.set(measures.roleName, { measures, adGroups: [group] });
+    }
+    for (const { measures, adGroups } of byRoleName.values()) {
+      const role = metadata.roles?.find(candidate => candidate.name === measures.roleName);
+      if (!role) throw new Error(`${HANDLER_ROLES_SETTING}: role ${measures.roleName} is missing from namespace metadata`);
       if (role.deprecated) continue;
       const types = (metadata.measureTypes ?? []).filter(
-        type => !type.deprecated && Array.isArray(type.measureGroups) && type.measureGroups.includes(rule.measureGroup),
+        type => !type.deprecated && Array.isArray(type.measureGroups) && type.measureGroups.includes(measures.measureGroup),
       );
       const measureTypeIds = types.map(type => {
-        if (!type.id) throw new Error(`${configurationName}: type ${type.name} is missing its metadata ID`);
+        if (!type.id) throw new Error(`${HANDLER_ROLES_SETTING}: type ${type.name} is missing its metadata ID`);
         return type.id;
       });
-      roleTypes.push({ roleName: role.name, measureTypeIds, decides: rule.decides });
-      if (rule.adGroups.some(group => groups.has(group))) creationRoles.push(role);
+      roleTypes.push({ roleName: role.name, measureTypeIds, decides: measures.decides });
+      if (holdsEveryRole || adGroups.some(adGroup => groups.has(adGroup.trim().toLowerCase()))) creationRoles.push(role);
     }
     creationRoles.sort(
       (a, b) =>
@@ -82,7 +64,7 @@ export function resolveSupportMeasureRegistration(
     return { creationRoles, registration: { status: 'ready', roleTypes } };
   } catch (cause) {
     // Configuration details stay in backend logs; reading existing measures remains available.
-    logger.error(`${configurationName}: ${cause instanceof Error ? cause.message : 'Invalid configuration'}`);
+    logger.error(`${HANDLER_ROLES_SETTING}: ${cause instanceof Error ? cause.message : 'Invalid configuration'}`);
     return { creationRoles: [], registration: { status: 'invalid', roleTypes: [] } };
   }
 }
