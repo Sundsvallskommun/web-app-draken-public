@@ -5,6 +5,7 @@ import {
   CREDENTIALS,
   LOG_FORMAT,
   NODE_ENV,
+  OIDC_ENABLED,
   ORIGIN,
   PORT,
   SAML_CALLBACK_URL,
@@ -45,6 +46,7 @@ import swaggerUi from 'swagger-ui-express';
 
 import { HttpException } from './exceptions/HttpException';
 import { Profile } from './interfaces/profile.interface';
+import { createOidcRouter } from './oidc/oidc-router';
 import { authorizeGroups, getLoginPermissions, getRole } from './services/authorization.service';
 import { additionalConverters } from './utils/custom-validation-classes';
 import { isValidOrigin } from './utils/isValidateOrigin';
@@ -376,6 +378,12 @@ class App {
         }
       })(req, res, next);
     });
+
+    // OIDC (POC): the additive login flow, mounted only when the feature flag is on and —
+    // like the SAML endpoints above — in front of the default-deny guard.
+    if (OIDC_ENABLED) {
+      this.app.use(`${BASE_URL_PREFIX}/oidc`, createOidcRouter());
+    }
 
     // Default-deny authentication. Mounted last so the SAML endpoints and the `/health`
     // probe above it stay reachable, and before initializeRoutes() so every

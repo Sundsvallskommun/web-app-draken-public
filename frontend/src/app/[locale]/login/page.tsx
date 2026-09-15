@@ -42,7 +42,7 @@ const Login: FC = () => {
     const basePath = process.env.NEXT_PUBLIC_BASEPATH || '';
     const cleanedPath = path.startsWith(basePath) ? path.slice(basePath.length) : path;
 
-    const url = new URL(apiURL('/saml/login'));
+    const url = new URL(apiURL(appConfig.isOidcEnabled ? '/oidc/login' : '/saml/login'));
     const queries = new URLSearchParams({
       successRedirect: `${appURL(cleanedPath)}`,
       failureRedirect: `${appURL()}/login`,

@@ -4,6 +4,9 @@ export interface AppConfig {
   applicationName: string;
   isCaseData: boolean;
   isSupportManagement: boolean;
+  // OIDC login POC: switches the login/logout pages to the /oidc endpoints. Build/deploy-time
+  // only - deliberately not a runtime feature flag, since it must be known before login.
+  isOidcEnabled: boolean;
   reopenSupportErrandLimit: string;
   features: AppConfigFeatures;
 }
@@ -55,6 +58,7 @@ export const appConfig: AppConfig = {
   applicationName: process.env.NEXT_PUBLIC_APPLICATION_NAME || 'appen',
   isCaseData: envBool(process.env.NEXT_PUBLIC_IS_CASEDATA),
   isSupportManagement: envBool(process.env.NEXT_PUBLIC_IS_SUPPORTMANAGEMENT),
+  isOidcEnabled: envBool(process.env.NEXT_PUBLIC_OIDC_ENABLED),
   reopenSupportErrandLimit: process.env.NEXT_PUBLIC_REOPEN_SUPPORT_ERRAND_LIMIT || '30',
   features: {
     useThreeLevelCategorization: envBool(process.env.NEXT_PUBLIC_USE_THREE_LEVEL_CATEGORIZATION),

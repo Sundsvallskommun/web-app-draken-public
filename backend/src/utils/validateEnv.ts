@@ -112,6 +112,16 @@ const validateEnv = () => {
     });
   }
 
+  // OIDC (POC): the additive login flow's env is required only when the feature flag is on,
+  // so existing SAML-only deployments are unaffected.
+  if (process.env.OIDC_ENABLED === 'true') {
+    warnMissingEnv({
+      OIDC_ISSUER_URL: s('url'),
+      OIDC_CLIENT_ID: s(),
+      OIDC_CALLBACK_URL: s('url'),
+    });
+  }
+
   // The KC drake grants the canViewOtherNamespaces permission at login only when the CONTACTSUNDSVALL
   // supportmanagement namespace is also configured. Warn if the identity says KC but the namespace is
   // missing, so the resulting (silent) loss of cross-namespace access is visible instead of mysterious.

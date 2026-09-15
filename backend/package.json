@@ -80,6 +80,7 @@
     "hpp": "^0.2.3",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
+    "openid-client": "^6.8.8",
     "openapi3-ts": "^3.2.0",
     "passport": "^0.7.0",
     "qs": "^6.15.0",

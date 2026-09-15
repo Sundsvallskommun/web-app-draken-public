@@ -4,6 +4,10 @@
     "SAML_MISSING_GROUP": "Användaren saknar rätt grupper",
     "SAML_MISSING_ATTRIBUTES": "Användaren saknar rätt attribut",
     "MISSING_PERMISSIONS": "Användaren saknar rättigheter",
-    "NO_USER": "Misslyckades att konfigurera användare"
+    "NO_USER": "Misslyckades att konfigurera användare",
+    "OIDC_MISSING_GROUP": "Användaren saknar rätt grupper",
+    "OIDC_MISSING_ATTRIBUTES": "Användaren saknar rätt attribut",
+    "OIDC_DISCOVERY_FAILED": "Kunde inte nå identitetsleverantören",
+    "OIDC_UNKNOWN_ERROR": "Ett okänt fel inträffade vid inloggningen"
   }
 }

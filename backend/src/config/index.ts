@@ -9,6 +9,8 @@ config({ path: `.env.${process.env.NODE_ENV || 'development'}.local` });
 export const CREDENTIALS = process.env.CREDENTIALS === 'true';
 export const SWAGGER_ENABLED = process.env.SWAGGER_ENABLED === 'true';
 export const SESSION_MEMORY = process.env.SESSION_MEMORY === 'true';
+// OIDC (POC): additive login flow alongside SAML; everything OIDC is gated on this flag.
+export const OIDC_ENABLED = process.env.OIDC_ENABLED === 'true';
 
 export const {
   NODE_ENV,
@@ -33,6 +35,11 @@ export const {
   SAML_IDP_PUBLIC_CERT,
   SAML_PRIVATE_KEY,
   SAML_PUBLIC_KEY,
+  OIDC_ISSUER_URL,
+  OIDC_CLIENT_ID,
+  OIDC_CLIENT_SECRET,
+  OIDC_CALLBACK_URL,
+  OIDC_SCOPES,
   SUPPORTMANAGEMENT_NAMESPACE,
   CASEDATA_NAMESPACE,
   AUTHORIZED_GROUPS,

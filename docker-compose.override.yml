@@ -43,6 +43,13 @@ services:
       LOG_FORMAT: ${LOG_FORMAT-dev}
       LOG_DIR: ${LOG_DIR-../../data/logs}
       CREDENTIALS: ${CREDENTIALS-true}
+      # OIDC (POC, additive) - all optional so existing SAML-only deployments are unaffected
+      OIDC_ENABLED: ${OIDC_ENABLED-false}
+      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET-}
+      OIDC_CALLBACK_URL: ${OIDC_CALLBACK_URL-}
+      OIDC_SCOPES: ${OIDC_SCOPES-}
   frontend:
     environment:
       # URL to backend

@@ -110,7 +110,14 @@ class ApiService {
       ...axiosConfig,
       maxContentLength: Infinity,
       maxBodyLength: Infinity,
-      headers: { ...axiosConfig.headers, 'X-Sent-By': [`type=adAccount; ${user.username}`] },
+      headers: {
+        ...axiosConfig.headers,
+        'X-Sent-By': [`type=adAccount; ${user.username}`],
+        // OIDC POC: forward the user's own token in the WSO2 gateway convention's header, so
+        // a downstream service can verify the caller against the IdP. The machine-to-machine
+        // Authorization header from the interceptor is untouched. Absent for SAML logins.
+        ...(user.accessToken ? { 'x-jwt-assertion': user.accessToken } : {}),
+      },
       params: { ...defaultParams, ...axiosConfig.params },
       url: axiosConfig.baseURL ? axiosConfig.url : apiURL(axiosConfig.url!),
     };
