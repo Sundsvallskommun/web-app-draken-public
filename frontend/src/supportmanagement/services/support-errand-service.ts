@@ -1000,17 +1000,20 @@ export const updateSupportErrand: (
  * Moves the errand through the workflow. `transitionId` is omitted only when the errand has no phase
  * at all: it is then entering the workflow rather than moving within it, and the backend puts it in
  * the first phase. The status follows the phase, since a phase declares which statuses it allows.
+ *
+ * The precondition is the phase the caller saw the errand in, not the errand's version: measures,
+ * documents and labels move the version without touching the phase.
  */
 export const updateSupportErrandPhase = (
   municipalityId: string,
   id: string,
   transitionId: string | undefined,
-  expectedVersion: number
+  expectedActivePhaseId: string | undefined
 ): Promise<SupportErrand> =>
   apiService
-    .patch<ApiSupportErrand, { transitionId?: string; expectedVersion: number }>(
+    .patch<ApiSupportErrand, { transitionId?: string; expectedActivePhaseId: string | null }>(
       `supporterrands/${municipalityId}/${id}/phase`,
-      { ...(transitionId ? { transitionId } : {}), expectedVersion }
+      { ...(transitionId ? { transitionId } : {}), expectedActivePhaseId: expectedActivePhaseId ?? null }
     )
     .then((response) => mapApiSupportErrandToSupportErrand(response.data))
     .catch((e) => {

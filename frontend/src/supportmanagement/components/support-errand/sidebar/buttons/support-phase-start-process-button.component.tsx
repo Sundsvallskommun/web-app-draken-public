@@ -94,14 +94,11 @@ export const SupportPhaseStartProcessButtonComponent: FC<{
         const advance = resolveStartProcessPhaseAdvance(activePhaseId, phases);
         if (!advance) break;
 
-        const expectedVersion = typeof started.version === 'number' ? started.version : undefined;
-        if (expectedVersion === undefined) break;
-
         started = await updateSupportErrandPhase(
           municipalityId,
           supportErrand!.id!,
           advance.kind === 'transition' ? advance.transitionId : undefined,
-          expectedVersion
+          activePhaseId
         );
       }
 

@@ -25,17 +25,19 @@ const makeController = () => {
 };
 
 describe('UpdateSupportErrandPhaseDto', () => {
-  it('requires a non-negative errand version and an explicit transition id', async () => {
-    const valid = plainToInstance(UpdateSupportErrandPhaseDto, { expectedVersion: 7, transitionId: 'start-investigation' });
+  it('accepts the phase the client saw and an explicit transition id, and nothing that names a target', async () => {
+    const valid = plainToInstance(UpdateSupportErrandPhaseDto, { expectedActivePhaseId: 'received', transitionId: 'start-investigation' });
+    const entering = plainToInstance(UpdateSupportErrandPhaseDto, { expectedActivePhaseId: null });
     const invalid = plainToInstance(UpdateSupportErrandPhaseDto, {
-      expectedVersion: -1,
+      expectedActivePhaseId: '',
       transitionId: '',
       activePhaseId: 'client-selected-target-is-not-accepted',
     });
 
     await expect(validate(valid, { whitelist: true, forbidNonWhitelisted: true })).resolves.toEqual([]);
+    await expect(validate(entering, { whitelist: true, forbidNonWhitelisted: true })).resolves.toEqual([]);
     const serializedErrors = JSON.stringify(await validate(invalid, { whitelist: true, forbidNonWhitelisted: true }));
-    expect(serializedErrors).toMatch(/expectedVersion/);
+    expect(serializedErrors).toMatch(/expectedActivePhaseId/);
     expect(serializedErrors).toMatch(/transitionId/);
     expect(serializedErrors).toMatch(/activePhaseId/);
   });
@@ -57,39 +59,50 @@ describe('updateSupportErrandPhase', () => {
     { id: 'closed', name: 'CLOSED' },
   ];
 
-  it('rejects a request without a municipality id and makes no API call', async () => {
-    const { controller, api } = makeController();
-    const res = mockRes();
-
-    await controller.updateSupportErrandPhase(mockReq(), mockSupportErrandId, '', { expectedVersion: 1, transitionId: 'next' }, res);
-
-    expect(res.statusCode).toBe(400);
-    expect(res.body).toBe('Municipality id missing');
-    expect(api.get).not.toHaveBeenCalled();
-  });
-
-  it('applies the selected transition with If-Match and returns the fresh errand version', async () => {
-    const { controller, api } = makeController();
+  /** The errand as upstream holds it at the first read, and after the transition. */
+  const stubErrand = (api: ApiStub, before: { phaseId: string; version: number }) => {
     let errandRead = 0;
     api.get.mockImplementation(async (config: { url?: string }) => {
       if (config.url === metadataUrl) return { data: { phases }, message: 'success' };
       errandRead += 1;
       return errandRead === 1
         ? {
-            data: { id: mockSupportErrandId, phases: [{ phaseId: 'received' }], status: 'ONGOING', version: 7 },
+            data: { id: mockSupportErrandId, phases: [{ phaseId: before.phaseId }], status: 'ONGOING', version: before.version },
             message: 'success',
-            headers: { etag: '"7"' },
+            headers: { etag: `"${before.version}"` },
           }
         : {
-            data: { id: mockSupportErrandId, phases: [{ phaseId: 'closed' }], status: 'ONGOING', version: 8 },
+            data: { id: mockSupportErrandId, phases: [{ phaseId: 'closed' }], status: 'ONGOING', version: before.version + 1 },
             message: 'success',
-            headers: { etag: '"8"' },
+            headers: { etag: `"${before.version + 1}"` },
           };
     });
+  };
+
+  it('rejects a request without a municipality id and makes no API call', async () => {
+    const { controller, api } = makeController();
+    const res = mockRes();
+
+    await controller.updateSupportErrandPhase(mockReq(), mockSupportErrandId, '', { expectedActivePhaseId: 'received', transitionId: 'next' }, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toBe('Municipality id missing');
+    expect(api.get).not.toHaveBeenCalled();
+  });
+
+  it('applies the selected transition with If-Match on the version it read and returns the fresh errand version', async () => {
+    const { controller, api } = makeController();
+    stubErrand(api, { phaseId: 'received', version: 7 });
     const req = mockReq();
     const res = mockRes();
 
-    await controller.updateSupportErrandPhase(req, mockSupportErrandId, MUNICIPALITY_ID, { expectedVersion: 7, transitionId: 'close-directly' }, res);
+    await controller.updateSupportErrandPhase(
+      req,
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      { expectedActivePhaseId: 'received', transitionId: 'close-directly' },
+      res,
+    );
 
     expect(api.patch).toHaveBeenCalledTimes(1);
     expect(api.patch).toHaveBeenCalledWith(
@@ -106,20 +119,35 @@ describe('updateSupportErrandPhase', () => {
     expect(res.body).toMatchObject({ phases: [{ phaseId: 'closed' }], version: 8 });
   });
 
-  it('rejects a stale request before applying a transition', async () => {
+  // A measure, document or label written since the page loaded moves the errand's version, not its phase.
+  it('moves an errand whose version has moved on while its phase has not', async () => {
     const { controller, api } = makeController();
-    api.get.mockImplementation(async (config: { url?: string }) =>
-      config.url === metadataUrl
-        ? { data: { phases }, message: 'success' }
-        : { data: { phases: [{ phaseId: 'received' }], status: 'ONGOING', version: 8 }, message: 'success' },
+    stubErrand(api, { phaseId: 'received', version: 14 });
+
+    await controller.updateSupportErrandPhase(
+      mockReq(),
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      { expectedActivePhaseId: 'received', transitionId: 'close-directly' },
+      mockRes(),
     );
+
+    expect(api.patch).toHaveBeenCalledWith(expect.objectContaining({ headers: { 'If-Match': '"14"' } }), expect.anything());
+  });
+
+  it.each([
+    ['another phase', 'investigation'],
+    ['no phase', undefined],
+  ])('rejects a transition chosen from %s than the errand is in, before applying it', async (_seen, expectedActivePhaseId) => {
+    const { controller, api } = makeController();
+    stubErrand(api, { phaseId: 'received', version: 7 });
 
     await expect(
       controller.updateSupportErrandPhase(
         mockReq(),
         mockSupportErrandId,
         MUNICIPALITY_ID,
-        { expectedVersion: 7, transitionId: 'start-investigation' },
+        { expectedActivePhaseId, transitionId: 'start-investigation' },
         mockRes(),
       ),
     ).rejects.toMatchObject({ status: 409, message: 'Support errand phase has changed since it was loaded' });

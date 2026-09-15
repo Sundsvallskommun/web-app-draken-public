@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
+import { IsOptional, IsString, MinLength } from 'class-validator';
 import { Body, Controller, HttpCode, Param, Patch, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
@@ -11,15 +11,20 @@ import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { getErrandVersion, resolveSupportErrandPhaseTransition } from '@/services/support-errand.service';
+import { getActiveErrandPhaseId, getErrandVersion, resolveSupportErrandPhaseTransition } from '@/services/support-errand.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
 export class UpdateSupportErrandPhaseDto {
-  @IsInt()
-  @Min(0)
-  @Max(Number.MAX_SAFE_INTEGER)
-  expectedVersion!: number;
+  /**
+   * The phase the client saw the errand in; omitted or null when it saw the errand outside the
+   * workflow. The move is refused when the errand's phase has changed since, which is what a phase
+   * change contends over.
+   */
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  expectedActivePhaseId?: string | null;
 
   /**
    * The transition to apply. Omitted only when the errand has no active phase: it is then entering
@@ -35,10 +40,13 @@ export class UpdateSupportErrandPhaseDto {
  * Workflow phase transitions for a support errand.
  *
  * Support Management has no errand-level phase route: the phase model lives under `metadata/phases`
- * and an errand moves by writing `activePhaseId` on the errand itself. The phase is therefore an
- * errand-level field, and the errand's own version is the right precondition for changing it - the
- * one shape of write where that is true, as against the parameters and JSON parameters that carry
- * versions of their own.
+ * and an errand moves by writing `activePhaseId` on the errand itself.
+ *
+ * The client's precondition is the phase it saw, not the errand's version. Measures, JSON parameters
+ * and labels all move the errand's version without touching its phase, so a handler who registered a
+ * measure a moment ago would otherwise be refused a phase change nobody contended. The upstream write
+ * is still conditioned on the version read here, so a change landing between that read and the write
+ * is refused rather than overwritten.
  *
  * Draken never derives the target from metadata order. The client submits an explicit transition id,
  * which is resolved against the errand's active phase and fresh metadata, so a branched workflow
@@ -77,8 +85,7 @@ export class SupportPhaseController {
       ),
       this.apiService.get<SupportMetadata>({ url: metadataUrl, baseURL, propagateClientError: true, mapUnauthorizedToForbidden: true }, req.user),
     ]);
-    const currentVersion = getErrandVersion(currentErrand.data, currentErrand.headers?.etag);
-    if (currentVersion !== data.expectedVersion) {
+    if ((data.expectedActivePhaseId ?? undefined) !== getActiveErrandPhaseId(currentErrand.data)) {
       throw new HttpException(409, 'Support errand phase has changed since it was loaded');
     }
 
@@ -90,7 +97,7 @@ export class SupportPhaseController {
         // Phase and status move together: a phase declares which statuses it allows, so writing one
         // without the other leaves the errand in a combination its own workflow does not have.
         data: { activePhaseId: transition.targetPhaseId, ...(transition.status ? { status: transition.status } : {}) },
-        headers: { 'If-Match': `"${currentVersion}"` },
+        headers: { 'If-Match': `"${getErrandVersion(currentErrand.data, currentErrand.headers?.etag)}"` },
         followLocation: false,
         propagateClientError: true,
         mapUnauthorizedToForbidden: true,

@@ -85,7 +85,7 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
   };
 
   const advancePhase = async () => {
-    if (!municipalityId || !supportErrand?.id || typeof supportErrand.version !== 'number') return;
+    if (!municipalityId || !supportErrand?.id) return;
     if (!entersWorkflow && !selectedTransition?.transition.id) return;
     setIsSaving(true);
     try {
@@ -94,7 +94,7 @@ export const useSupportPhaseTransition = (hasUnsavedChanges: boolean) => {
         municipalityId,
         supportErrand.id,
         entersWorkflow ? undefined : selectedTransition?.transition.id,
-        supportErrand.version
+        activePhaseId
       );
       setSupportErrand(savedErrand);
       form.reset(savedErrand);
