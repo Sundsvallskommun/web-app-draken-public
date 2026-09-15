@@ -7,9 +7,16 @@ import {
 } from '@supportmanagement/investigation/investigation-access';
 import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
-import { useMemo } from 'react';
+import { ReactNode, useMemo } from 'react';
 
-export const SupportErrandDetailsTab = ({ access }: { readonly access: InvestigationAccessState }) => {
+export const SupportErrandDetailsTab = ({
+  access,
+  header,
+}: {
+  readonly access: InvestigationAccessState;
+  /** Rendered first, beneath the heading; an investigation variant may put errand-level controls here. */
+  readonly header?: ReactNode;
+}) => {
   const _supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const profile = useInvestigationProfileStore((state) => state.profile);
@@ -70,6 +77,7 @@ export const SupportErrandDetailsTab = ({ access }: { readonly access: Investiga
     <div className="pt-xl pb-16 px-40 flex flex-col">
       <div className="flex flex-col gap-md mb-32">
         <h2 className="text-h2-md">Ärendeuppgifter</h2>
+        {header}
         {(isOpenEErrand(supportErrand) || simpleParams.length > 0) && (
           <div className="rounded-lg gap-md p-16">
             <h3 className="text-h3-md mb-12">Grunduppgifter</h3>

@@ -138,3 +138,21 @@ test('decision access is independent of investigation access', () => {
     'no-access'
   );
 });
+
+// An errand that calls for no decision is told so, rather than told the deployment has no decisions.
+test('a decision tab whose documents concern other errands has nothing to decide', () => {
+  const p = profile({ documents: [document(), decision] });
+  const state = access({ 'beslut-sol-lss': 'edit' });
+  assert.equal(
+    resolveInvestigationTabState('ready', p, { access: state, placement: 'decision', applicability: 'hsl-deviation' }),
+    'not-applicable'
+  );
+  assert.equal(resolveInvestigationTabState('ready', p, { access: state, placement: 'decision' }), 'not-applicable');
+  assert.equal(
+    resolveInvestigationTabState('ready', profile({ documents: [document()] }), {
+      access: state,
+      placement: 'decision',
+    }),
+    'not-configured'
+  );
+});

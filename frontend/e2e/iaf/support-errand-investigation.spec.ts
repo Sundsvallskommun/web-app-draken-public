@@ -611,18 +611,26 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(hslDocument.locator('[data-cy="schema-submit-button"]')).toHaveCount(1);
   });
 
-  test('visar ingen beslutsflik för en vanlig avvikelse utan lagrum HSL', async ({ page, dismissCookieConsent }) => {
+  test('beslutsfliken säger att det inte finns något att besluta om för en vanlig avvikelse utan lagrum HSL', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
     const trace = await installIafApiMock(page, { documents: {}, eventType: 'AVVIKELSE', ...solDeviationScenario() });
 
     await visitErrand(page, dismissCookieConsent);
     await openInvestigation(page);
-
-    // Neither decision is an errand tab nor a document under Utredning for a SoL deviation.
-    await expect(page.getByRole('tab', { name: 'Beslut', exact: true })).toHaveCount(0);
     await expect(page.locator('[data-cy="support-investigation-tab"]').getByRole('tab')).toHaveCount(
       investigationTabKeys.length
     );
-    await expect(page.locator('[data-cy="support-decision-tab"]')).toHaveCount(0);
+
+    // The tab is always there, and tells the handler that a SoL deviation calls for no decision.
+    await page.getByRole('tab', { name: 'Beslut', exact: true }).click();
+    const decisionTab = page.locator('[data-cy="support-decision-tab"]');
+    await expect(decisionTab.locator('[data-cy="decision-tab-nothing-to-do"]')).toHaveText(
+      'Det finns inget att besluta om. Gå vidare till uppföljning.'
+    );
+    await expect(decisionTab.getByRole('heading', { name: 'Beslut' })).toHaveCount(0);
+    await expect(decisionTab.getByRole('tab')).toHaveCount(0);
     expect(trace.documentGets).not.toContain(hslDecisionKey);
     expect(trace.documentGets).not.toContain(misconductDecisionKey);
   });
@@ -863,7 +871,10 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(controls.locator('[data-cy="investigation-report-generate"]')).toBeDisabled();
   });
 
-  test('döljer beslutsfliken när användaren inte når beslutet', async ({ page, dismissCookieConsent }) => {
+  test('beslutsfliken säger att det inte finns något att besluta om när beslutet är en annan rolls', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
     const profile = defaultInvestigationProfile();
     await installIafApiMock(page, {
       documents: {},
@@ -877,7 +888,13 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await visitErrand(page, dismissCookieConsent);
     await openInvestigation(page);
 
-    await expect(page.getByRole('tab', { name: 'Beslut', exact: true })).toHaveCount(0);
+    // The decision is the LEX role's: this handler is told there is nothing for them to decide, and nothing else.
+    await page.getByRole('tab', { name: 'Beslut', exact: true }).click();
+    const decisionTab = page.locator('[data-cy="support-decision-tab"]');
+    await expect(decisionTab.locator('[data-cy="decision-tab-nothing-to-do"]')).toHaveText(
+      'Det finns inget att besluta om. Gå vidare till uppföljning.'
+    );
+    await expect(decisionTab).not.toContainText('behörighet');
   });
 
   test('förklarar sig när ingen del av utredningen tillhör användaren', async ({ page, dismissCookieConsent }) => {

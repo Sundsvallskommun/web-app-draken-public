@@ -1,20 +1,17 @@
 'use client';
 
 import { Spinner } from '@sk-web-gui/react';
-import type { SupportErrand } from '@supportmanagement/services/support-errand-service';
 import dynamic from 'next/dynamic';
 
-import type { InvestigationAccessState } from '../investigation-access';
 import type { InvestigationProfile } from '../investigation-profile';
 import type {
   InvestigationCategorizationControlProps,
+  InvestigationDetailsHeaderProps,
   InvestigationTabProps,
   InvestigationVariantModule,
 } from '../investigation-variant';
 import { resolveAvvikelseClassificationPlacement } from './avvikelse-classification-placement';
-import { resolveAvvikelseDocumentApplicability } from './avvikelse-classification-policy';
 import { AvvikelseInvestigationNotice } from './avvikelse-investigation-notice.component';
-import { visibleInvestigationDocuments } from './investigation-tab-state';
 
 /**
  * Loaded lazily on purpose. A static import would close a module cycle - the registry imports this
@@ -39,6 +36,12 @@ const SupportErrandInvestigationTab = dynamic(
  */
 const AvvikelseCategorizationControl = dynamic(
   () => import('./avvikelse-categorization-control.component').then((module) => module.AvvikelseCategorizationControl),
+  { loading: () => null }
+);
+
+/** Lazy for the same bundle reason as the categorization control. */
+const ErrandLocationCard = dynamic(
+  () => import('./assignment/errand-location-card.component').then((module) => module.ErrandLocationCard),
   { loading: () => null }
 );
 
@@ -71,25 +74,18 @@ export const avvikelseInvestigationVariant: InvestigationVariantModule = Object.
   renderCategorizationControl: ({ disabled }: InvestigationCategorizationControlProps) => (
     <AvvikelseCategorizationControl disabled={disabled} />
   ),
+  // Ärendets plats: a wrongly routed errand is moved from Ärendeuppgifter, not from inside an investigation.
+  renderDetailsHeader: (props: InvestigationDetailsHeaderProps) => <ErrandLocationCard {...props} />,
   /**
    * The decision that closes the investigation: lex Sarah for a reported misconduct, the IVO
-   * decision for an HSL deviation. Offered only when the profile has a decision document that
-   * applies to this errand and that this user reaches: a handler who is not mapped to the decision
-   * gets no tab rather than a tab that explains it is not theirs.
+   * decision for an HSL deviation. The tab is always offered once the errand is being decided. When
+   * there is nothing for this user to decide - the errand calls for no decision, or the decision is
+   * another role's - it says only that, and to move on to the follow-up.
    */
   decisionTab: {
     label: 'Beslut',
     requiredPhaseName: DECISION_PHASE_NAME,
-    isVisible: (
-      errand: SupportErrand | undefined,
-      profile: InvestigationProfile | null | undefined,
-      access: InvestigationAccessState
-    ) =>
-      visibleInvestigationDocuments(profile, {
-        placement: 'decision',
-        applicability: resolveAvvikelseDocumentApplicability(errand),
-        access,
-      }).length > 0,
+    isVisible: () => true,
     render: (props: InvestigationTabProps) => <SupportErrandInvestigationTab {...props} placement="decision" />,
   },
 });

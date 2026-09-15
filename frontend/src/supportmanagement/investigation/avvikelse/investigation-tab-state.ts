@@ -11,6 +11,7 @@ export type InvestigationTabState =
   | 'error'
   | 'unavailable'
   | 'not-configured'
+  | 'not-applicable'
   | 'no-access'
   | 'access-error'
   | 'ready';
@@ -72,8 +73,13 @@ export const resolveInvestigationTabState = (
   // "disabled" means the profile was never requested - not SupportManagement, or an auth route.
   if (status === 'disabled' || !profile) return 'not-configured';
   if (profile.state === 'unavailable') return 'unavailable';
-  if (profile.state !== 'active' || configuredInvestigationDocuments(profile, context).length === 0) {
-    return 'not-configured';
+  if (profile.state !== 'active') return 'not-configured';
+  if (configuredInvestigationDocuments(profile, context).length === 0) {
+    // Documents exist for this tab, but none of them concerns this errand - a decision the errand does
+    // not call for. Kept apart from "not configured", which is a deployment without such documents.
+    const placement = context.placement ?? 'investigation';
+    const placed = profile.documents.some((document) => (document.placement ?? 'investigation') === placement);
+    return placed ? 'not-applicable' : 'not-configured';
   }
   if (!context.access || context.access.status === 'loading') return 'loading';
   if (context.access.status === 'error') return 'access-error';

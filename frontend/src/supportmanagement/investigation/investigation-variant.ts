@@ -23,6 +23,12 @@ export interface InvestigationCategorizationControlProps {
   readonly disabled: boolean;
 }
 
+export interface InvestigationDetailsHeaderProps {
+  readonly access: InvestigationAccessState;
+  /** True while the errand page holds unsaved changes, which an errand-moving command would discard. */
+  readonly disabled: boolean;
+}
+
 /**
  * A second errand tab a variant may fill, for the decision that closes an investigation.
  *
@@ -80,6 +86,11 @@ export interface InvestigationVariantModule {
    * A variant categorizing from the default tree omits this and gets the ordinary controls.
    */
   renderCategorizationControl?: (props: InvestigationCategorizationControlProps) => ReactNode;
+  /**
+   * Errand-level controls rendered at the top of Ärendeuppgifter. A variant with nothing to add
+   * omits this and the tab stays as every other drake sees it.
+   */
+  renderDetailsHeader?: (props: InvestigationDetailsHeaderProps) => ReactNode;
   /** The decision tab, for a variant whose investigation ends in a recorded decision. */
   readonly decisionTab?: InvestigationDecisionTabSlot;
 }

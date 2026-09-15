@@ -19,12 +19,19 @@ import {
 import { SupportInvestigationDocument } from './support-investigation-document.component';
 import type { SupportInvestigationDocument as SavedInvestigationDocument } from './support-investigation-service';
 
+type InvestigationTabNotice = Exclude<InvestigationTabState, 'loading' | 'ready'>;
+
 interface TabCopy {
   readonly heading: string;
   readonly description: string;
   readonly dataCy: string;
   readonly noticePrefix: string;
-  readonly notices: Readonly<Record<Exclude<InvestigationTabState, 'loading' | 'ready'>, string>>;
+  readonly notices: Readonly<Record<InvestigationTabNotice, string>>;
+  /**
+   * States in which the tab has nothing for this user to do. The tab then shows only its `not-applicable`
+   * notice, with nothing to document and no permissions to recheck.
+   */
+  readonly nothingToDoStates?: readonly InvestigationTabNotice[];
 }
 
 /**
@@ -42,6 +49,7 @@ const tabCopy: Readonly<Record<InvestigationDocumentPlacement, TabCopy>> = {
       error: 'Utredningsprofilen kunde inte laddas. Utredningen kan därför inte visas.',
       unavailable: 'Utredningsfunktionen är tillfälligt otillgänglig. Försök igen senare.',
       'not-configured': 'Inga utredningsdokument är konfigurerade för den här applikationen.',
+      'not-applicable': 'Inga utredningsdokument gäller för det här ärendet.',
       'access-error': 'Behörigheterna kunde inte kontrolleras. Försök igen för att fortsätta.',
       'no-access': 'Du har inte behörighet till någon del av den här utredningen.',
     },
@@ -56,9 +64,13 @@ const tabCopy: Readonly<Record<InvestigationDocumentPlacement, TabCopy>> = {
       error: 'Utredningsprofilen kunde inte laddas. Beslutet kan därför inte visas.',
       unavailable: 'Utredningsfunktionen är tillfälligt otillgänglig. Försök igen senare.',
       'not-configured': 'Inga beslutsdokument är konfigurerade för den här applikationen.',
+      'not-applicable': 'Det finns inget att besluta om. Gå vidare till uppföljning.',
       'access-error': 'Behörigheterna kunde inte kontrolleras. Försök igen för att fortsätta.',
       'no-access': 'Du har inte behörighet till beslutet i det här ärendet.',
     },
+    // An errand that calls for no decision, and a decision that is another role's, leave this handler
+    // nothing to decide: either way the errand moves on to the follow-up.
+    nothingToDoStates: ['not-applicable', 'no-access'],
   },
 };
 
@@ -113,6 +125,8 @@ function InvestigationDocuments({
     documents.findIndex((document) => document.key === selectedKey)
   );
   const tabState = resolveInvestigationTabState(profileStatus, profile, documentContext);
+  const nothingToDo =
+    tabState !== 'loading' && tabState !== 'ready' && copy.nothingToDoStates?.includes(tabState) === true;
   const hasHiddenDraft = documents.some(
     (document) => dirtyDocuments[document.key] && !visibleDocuments.some((visible) => visible.key === document.key)
   );
@@ -149,38 +163,52 @@ function InvestigationDocuments({
 
   return (
     <div className="min-w-0 max-w-full p-16 sm:p-24 md:p-32" data-cy={copy.dataCy}>
-      <div className="mb-24">
-        <h2 className="text-h2-md">{copy.heading}</h2>
-        <p className="mt-8">{copy.description}</p>
-      </div>
-
-      {tabState === 'loading' ? (
-        <div className="flex justify-center p-24" data-cy={`${copy.noticePrefix}-loading`}>
-          <Spinner size={4} aria-label={`${copy.heading} laddas`} />
-        </div>
-      ) : null}
-
-      {tabState !== 'loading' && tabState !== 'ready' ? (
-        <Alert type={tabState === 'not-configured' ? 'info' : 'warning'}>
+      {nothingToDo ? (
+        <Alert type="info">
           <Alert.Icon />
           <Alert.Content>
-            <Alert.Content.Description data-cy={`${copy.noticePrefix}-${tabState}`}>
-              {copy.notices[tabState]}
+            <Alert.Content.Description data-cy={`${copy.noticePrefix}-nothing-to-do`}>
+              {copy.notices['not-applicable']}
             </Alert.Content.Description>
           </Alert.Content>
         </Alert>
-      ) : null}
+      ) : (
+        <>
+          <div className="mb-24">
+            <h2 className="text-h2-md">{copy.heading}</h2>
+            <p className="mt-8">{copy.description}</p>
+          </div>
+
+          {tabState === 'loading' ? (
+            <div className="flex justify-center p-24" data-cy={`${copy.noticePrefix}-loading`}>
+              <Spinner size={4} aria-label={`${copy.heading} laddas`} />
+            </div>
+          ) : null}
+
+          {tabState !== 'loading' && tabState !== 'ready' ? (
+            <Alert type={tabState === 'not-configured' || tabState === 'not-applicable' ? 'info' : 'warning'}>
+              <Alert.Icon />
+              <Alert.Content>
+                <Alert.Content.Description data-cy={`${copy.noticePrefix}-${tabState}`}>
+                  {copy.notices[tabState]}
+                </Alert.Content.Description>
+              </Alert.Content>
+            </Alert>
+          ) : null}
+
+          {(tabState === 'access-error' || tabState === 'no-access') && (
+            <Button className="my-16" variant="secondary" onClick={refreshAccess}>
+              Kontrollera behörigheter igen
+            </Button>
+          )}
+        </>
+      )}
 
       {hasHiddenDraft && (
         <p role="status" className="my-16">
           Du har osparade ändringar i ett dokument som inte kan visas just nu. Ändringarna finns kvar tills du lämnar
           sidan eller laddar om den.
         </p>
-      )}
-      {(tabState === 'access-error' || tabState === 'no-access') && (
-        <Button className="my-16" variant="secondary" onClick={refreshAccess}>
-          Kontrollera behörigheter igen
-        </Button>
       )}
 
       {documents.length > 0 ? (

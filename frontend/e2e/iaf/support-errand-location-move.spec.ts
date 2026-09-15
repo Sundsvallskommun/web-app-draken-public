@@ -20,7 +20,6 @@ test.skip(
   'Flytt av plats körs med IAF/VOF-profilen.'
 );
 
-const managerKey = 'utredning-enhetschef';
 const southManagers = [
   { adAccount: 'south.manager', displayName: 'Sonja Söder', roleKey: 'UNIT_MANAGER' },
   { adAccount: 'south.head', displayName: 'Hans Huvud', roleKey: 'HEAD_OF_OPERATION' },
@@ -35,13 +34,10 @@ async function visitErrand(page: Page, dismissCookieConsent: () => Promise<void>
   await dismissCookieConsent();
 }
 
-async function openManagerDocument(page: Page) {
-  await page.getByRole('tab', { name: 'Utredning', exact: true }).click();
-  await expect(page.locator('[data-cy="support-investigation-tab"]')).toBeVisible();
-  await page.getByRole('tab', { name: 'Utredning enhetschef', exact: true }).click();
-  const document = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
-  await expect(document).toBeVisible();
-  return document;
+/** The card sits at the top of Ärendeuppgifter, not inside an investigation document. */
+async function openErrandDetails(page: Page) {
+  await page.getByRole('tab', { name: 'Ärendeuppgifter', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Ärendeuppgifter', exact: true })).toBeVisible();
 }
 
 test.describe('Fel plats: flytta ärendet utan att ändra det inrapporterade', () => {
@@ -54,11 +50,11 @@ test.describe('Fel plats: flytta ärendet utan att ändra det inrapporterade', (
       locationManagers: { [iafPlaceFixture.southBlue.id]: southManagers },
     });
     await visitErrand(page, dismissCookieConsent);
-    const document = await openManagerDocument(page);
+    await openErrandDetails(page);
 
     // The card reads the place from the labels, presented the way Katla presents it: the unit at
     // level 6 and the department beneath it.
-    const card = document.locator('[data-cy="errand-location"]');
+    const card = page.locator('[data-cy="errand-location"]');
     await expect(card).toBeVisible();
     await expect(card.locator('[data-cy="errand-location-name"]')).toHaveText('Norra hemmet — Avdelning: Blå');
 
@@ -115,9 +111,9 @@ test.describe('Fel plats: flytta ärendet utan att ändra det inrapporterade', (
       handoverResult: 'conflict',
     });
     await visitErrand(page, dismissCookieConsent);
-    const document = await openManagerDocument(page);
+    await openErrandDetails(page);
 
-    await document.locator('[data-cy="move-location-button"]').click();
+    await page.locator('[data-cy="move-location-button"]').click();
     const modal = page.locator('[data-cy="move-location-modal"]');
     await modal.locator('[data-cy="move-location-search"] input').fill('blå');
     await modal.getByRole('option', { name: 'Södra hemmet — Avdelning: Blå' }).click();
@@ -132,9 +128,9 @@ test.describe('Fel plats: flytta ärendet utan att ändra det inrapporterade', (
   test('en plats utan konfigurerad chef kan inte ta emot ärendet', async ({ page, dismissCookieConsent }) => {
     const trace = await installIafApiMock(page, { ...withPlaceStructure(), locationManagers: {} });
     await visitErrand(page, dismissCookieConsent);
-    const document = await openManagerDocument(page);
+    await openErrandDetails(page);
 
-    await document.locator('[data-cy="move-location-button"]').click();
+    await page.locator('[data-cy="move-location-button"]').click();
     const modal = page.locator('[data-cy="move-location-modal"]');
     await modal.locator('[data-cy="move-location-search"] input').fill('södra');
     await modal.getByRole('option', { name: 'Södra hemmet — Avdelning: Blå' }).click();
@@ -149,16 +145,16 @@ test.describe('Fel plats: flytta ärendet utan att ändra det inrapporterade', (
   test('erbjuds inte medan ärendet är hos LEX', async ({ page, dismissCookieConsent }) => {
     await installIafApiMock(page, withPlaceStructure({ withLex: true }));
     await visitErrand(page, dismissCookieConsent);
-    const document = await openManagerDocument(page);
+    await openErrandDetails(page);
 
-    await expect(document.locator('[data-cy="errand-location"]')).toHaveCount(0);
+    await expect(page.locator('[data-cy="errand-location"]')).toHaveCount(0);
   });
 
   test('visas inte alls när metadata saknar platsstruktur', async ({ page, dismissCookieConsent }) => {
     await installIafApiMock(page);
     await visitErrand(page, dismissCookieConsent);
-    const document = await openManagerDocument(page);
+    await openErrandDetails(page);
 
-    await expect(document.locator('[data-cy="errand-location"]')).toHaveCount(0);
+    await expect(page.locator('[data-cy="errand-location"]')).toHaveCount(0);
   });
 });

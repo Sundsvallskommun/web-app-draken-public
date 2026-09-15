@@ -27,6 +27,8 @@ delad kod erbjuder:
 - `renderCategorizationControl` — valfri kategoriseringskontroll som ersätter de vanliga två-/trenivåkontrollerna.
   Krävs exakt när `resolveClassificationPlacement` returnerar en placement med `labelTree`: en variant som tar med
   sig eget ordförråd måste också ta med kontrollen som redigerar det.
+- `renderDetailsHeader` — valfritt innehåll överst i Ärendeuppgifter, för kontroller som gäller hela ärendet (för
+  avvikelse: kortet Ärendets plats). Utan slot ser Ärendeuppgifter ut som för alla andra drakar.
 - `resolveClassificationPlacement` — var kategoriseringen redigeras, och i vilket ordförråd.
 - `requiredPhaseName` — valfri fas arbetet utförs i. Fliken erbjuds först när ärendet nått fasen (att vara i den
   räcker, liksom att ha passerat den). `decisionTab` har ett eget `requiredPhaseName`, så beslutet kan vänta på en

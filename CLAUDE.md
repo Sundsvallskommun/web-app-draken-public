@@ -38,10 +38,13 @@ wrongly enables both then degrades to today's behaviour rather than to a placeho
   for the summary panel; do not extend it.
 - **Optional slots stay optional.** A variant that supplies no `renderNotice`, no
   `renderCategorizationControl` and no `labelTree` must leave Grundinformation's ordinary two-/three-
-  level categorization exactly as every other drake sees it. AOT is precisely that case. The same
-  holds for `decisionTab`: avvikelse fills it with the Beslut errand tab, offered only when a decision
-  document applies to the errand and the user reaches it (the lex Sarah decision on a reported
-  misconduct, the IVO decision on an HSL deviation, never both); a variant without the slot gets no tab.
+  level categorization exactly as every other drake sees it, and one without `renderDetailsHeader`
+  leaves Ärendeuppgifter untouched. AOT is precisely that case. The same
+  holds for `decisionTab`: avvikelse fills it with the Beslut errand tab, always offered once the errand
+  is in the decision phase. It shows the decision document that applies to the errand (the lex Sarah
+  decision on a reported misconduct, the IVO decision on an HSL deviation, never both), and says only
+  that there is nothing to decide when neither applies or the user does not reach the decision; a
+  variant without the slot gets no tab.
 - **The tab is selected by flag, not by profile state.** AOT has no registered profile, so the BFF
   always reports `state: 'inactive'` for it (`getSupportInvestigationProfile` falls through to an
   empty profile). Gating the tab on profile state silently deletes it from every non-avvikelse drake.
@@ -55,7 +58,7 @@ wrongly enables both then degrades to today's behaviour rather than to a placeho
   the unit manager and the LEX roles, and the `LOCATION` label chain that moves a wrongly routed
   errand to the unit it concerns. A wrong routing is corrected in the labels only; the incoming
   JSON parameter stays the record of what was reported.
-- **Handler roles are data, not a drake.** `HANDLER_GROUP_ROLES` makes `/users/admins` return a role
+- **Handler roles are data, not a drake.** `HEALTHCAREDEVIATION_HANDLER_ROLES` makes `/users/admins` return a role
   per account, and the shared `Ansvarig` selector groups by those roles. A deployment that configures
   none gets the flat list it always had — that is what lets the grouping live in shared code at all.
 
@@ -201,7 +204,7 @@ Backend unit tests use **Vitest** (`backend/vitest.config.ts`), run from `backen
 - **Globals**: `globals: true`, so `describe`/`it`/`expect`/`vi` are available without importing. They are typed ambiently via `/// <reference types="vitest/globals" />` in `src/types/vitest.d.ts` — the tsconfig's explicit `typeRoots` prevents resolving `vitest/globals` through the `types` array, so a reference from an included source file is used instead.
 - **Transform**: tests are transformed with **SWC** via `unplugin-swc`, because routing-controllers/class-validator need `emitDecoratorMetadata`, which Vite 8's native Oxc/esbuild transform does not emit. The transform sets `swcrc: false` so it ignores the project's `.swcrc` (that file targets the `build:swc` production output — es2017/CJS — and would rewrite aliases).
 - **Path aliases**: resolved by an explicit `alias` table in `vitest.config.ts` (mirroring `tsconfig.json`). Unlike some sibling apps, this project's `tsconfig.json` has **no `baseUrl`**, so `vite-tsconfig-paths` can't synthesize the aliases — hence the manual table. Keep it in sync when tsconfig paths change.
-- **Env bootstrap**: `backend/src/tests/setup.ts` (wired via `setupFiles`) imports `reflect-metadata` and seeds env vars **before any module loads**. This is required because `logger.ts` mkdirs `LOG_DIR` at import time, and `ad-role.service.ts` dereferences `DEVELOPER_GROUP`/`ADMIN_GROUP`/`SUPERADMIN_GROUP` (and `APPLICATION`) at import time — importing those modules throws if the vars are unset. Add other env defaults here when tests need them; keep it to env bootstrapping only (no fixtures, no mocks).
+- **Env bootstrap**: `backend/src/tests/setup.ts` (wired via `setupFiles`) imports `reflect-metadata` and seeds env vars **before any module loads**. This is required because `logger.ts` mkdirs `LOG_DIR` at import time, and `ad-role.service.ts` builds its role mapping from `DEVELOPER_GROUP`/`ADMIN_GROUP`/`SUPERADMIN_GROUP` (and `APPLICATION`) at import time — a group seeded after the module loads is never mapped. Add other env defaults here when tests need them; keep it to env bootstrapping only (no fixtures, no mocks).
 - **Type-checking**: `src/tests` is **excluded from the root `tsconfig.json`** so the per-drake `tsc` production builds never emit test files. Tests get their own `backend/src/tests/tsconfig.json` (extends the root, `noEmit`, re-includes `src/tests` + the Vitest globals shim). This nested config is what makes the editor type test files correctly — VS Code auto-discovers the closest `tsconfig.json`, and the root one excludes tests, so without it `describe`/`it`/`expect` and `@/…` aliases show as unresolved. `yarn type-check:test` runs `tsc -p src/tests/tsconfig.json`.
 - **CI**: `.github/workflows/vitest-backend.yml` runs `yarn type-check:test` and `yarn test` on pull requests and pushes to `develop`/`main`.
 - **Scope**: the `services/` and `controllers/` layers — pure/transform functions directly, and IO-bound controller methods via the mocking pattern below.
@@ -288,7 +291,8 @@ and — worse — sending a whole collection rewrites entries another user just 
 | One parameter | `PUT /supporterrands/:m/:id/parameters/:key` | that parameter's version |
 | One JSON parameter | `PUT /supporterrands/:m/:id/json-parameters/:key` | that document's ETag |
 | Errand-level fields (`title`, `stakeholders`, `labels`, `externalTags`, …) | `PATCH /supporterrands/:m/:id` | the errand's version |
-| Assignee / status / phase / classification / handover | their own command routes | the errand's version |
+| Assignee / status / classification / handover | their own command routes | the errand's version |
+| Phase | `PATCH /supporterrands/:m/:id/phase` | the active phase the client saw; the BFF conditions the upstream write on the version it just read |
 
 Two consequences worth keeping:
 

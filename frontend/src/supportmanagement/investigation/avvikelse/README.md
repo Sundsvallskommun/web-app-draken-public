@@ -166,8 +166,11 @@ dokumentändringar. Kontrollen upprepas direkt före dokument-PUT för att håll
 statusglappet så smalt upstreamkontraktet tillåter. Ett fullständigt skydd mot att ärendet låses i just det
 intervallet kräver en atomisk status-precondition i upstreamkontraktet.
 
-De endpoints som faktiskt skriver på **ärendet** — `/classification`, `/admin`, `/status`, `/phase` och
+De endpoints som faktiskt skriver på **ärendet** — `/classification`, `/admin`, `/status` och
 `/investigation-handover` — kräver fortsatt exakt ärendeversion, eftersom det är ärendet de villkorar.
+`/phase` villkoras i stället på den aktiva fas klienten såg: åtgärder, dokument och labels flyttar
+ärendets version utan att röra fasen. BFF:en skickar upstream-skrivningen med If-Match på den version
+den nyss läste.
 
 `Spara utredning` samordnar sparningen av utredningsdokumentet med en smal PATCH av ärendets klassificeringslabels.
 Dokumentet sparas först och label-PATCH:en skickar endast klassificering, labelreferenser, ägande `documentKey`,
@@ -281,7 +284,7 @@ Två namngivna steg finns, och klienten namnger steget i stället för att kompo
 | --- | --- | --- |
 | `assign-lex` | `suspectedMisconduct === 'yes'` i enhetschefsutredningen | `assignedUserId` (LEX-ansvarig), `REPORT_TYPE/ABUSE` i stället för `REPORT_TYPE/DEVIATION`, `ACCESS/LEX`, status `ASSIGNED` |
 | `return-to-manager` | LEX har beslutat; knappen sitter längst ned i lex Sarah-beslutet (`beslut-sol-lss`), vars skrivrätt också auktoriserar steget | `assignedUserId` (enhetschef för platsen), tar bort `ACCESS/LEX` (och `ACCESS`-roten om inget annat ligger under den), status `ASSIGNED` |
-| `move-location` | Ärendet har kommit till fel enhet; enhetschefen väljer rätt plats (`locationLabelId`) | `assignedUserId` (chef för den **nya** platsen), byter ut hela platskedjan i labels mot den nya platsens; se [Fel plats](#fel-plats-flytta-ärendet-utan-att-ändra-det-inrapporterade) |
+| `move-location` | Ärendet har kommit till fel enhet; enhetschefen väljer rätt plats (`locationLabelId`) i kortet Ärendets plats överst i Ärendeuppgifter | `assignedUserId` (chef för den **nya** platsen), byter ut hela platskedjan i labels mot den nya platsens; se [Fel plats](#fel-plats-flytta-ärendet-utan-att-ändra-det-inrapporterade) |
 
 `assign-lex` och `return-to-manager` sätter **status** `ASSIGNED`: ärendet når LEX-ansvarig respektive
 chefen som Tilldelat. Draken behandlar `ASSIGNED` som ett *låst* tillstånd (`isSupportErrandLocked`), så
@@ -345,8 +348,10 @@ den som ser det först och ska kunna skicka det vidare. Ett ärende som bär `AC
 (409) — det är LEX-labeln, inte platsen, som ger LEX åtkomst, och chefen flytten skulle tilldela
 kunde inte agera förrän ärendet lämnats tillbaka. Utredaren återlämnar först; mottagaren flyttar.
 
-Kortet **Ärendets plats** överst i enhetschefsutredningen (`MoveLocationButton`) visar platsen enligt
-labels — inte platsen i Ärendeuppgifter — och öppnar flytten (`MoveLocationModal`): sök plats som i
+Kortet **Ärendets plats** ligger överst i Ärendeuppgifter (`ErrandLocationCard`, via variantens
+`renderDetailsHeader`) och visas för den som har skrivrätt på `utredning-enhetschef`, när ärendet
+varken är låst eller hos LEX. Kortet (`MoveLocationButton`) visar platsen enligt
+labels — inte platsen i de inrapporterade uppgifterna — och öppnar flytten (`MoveLocationModal`): sök plats som i
 Katla, välj chef, bekräfta. Efter flytten navigerar klienten till översikten av samma skäl som de
 andra stegen. `resolveErrandPlace` i `assignment/errand-location.ts` är den rena upplösningen från
 labels till platsstrukturnod, delad med `place-structure.ts` som Ärendeuppgifter redan använder.
@@ -374,8 +379,9 @@ inte svarar — så väljaren aldrig står tom.
 
 ### Vem som kan tilldelas
 
-`HANDLER_GROUP_ROLES` är den rikare stavningen av `ASSIGNABLE_HANDLER_GROUPS`: den namnger samma
-AD-grupper och dessutom vilken roll varje grupp står för. `GET /users/admins` returnerar därför
+`HEALTHCAREDEVIATION_HANDLER_ROLES` är den rikare stavningen av `ASSIGNABLE_HANDLER_GROUPS`: den
+namnger samma AD-grupper och dessutom vilken roll varje grupp står för, och för roller med `measures`
+även vem som registrerar åtgärder. `GET /users/admins` returnerar därför
 `roleKeys` per konto plus rollernas etiketter, och `Ansvarig`-listan grupperas med `Select.Optgroup`.
 Det är **data**, inte en drake-if: en deployment utan roller får exakt den platta lista den alltid
 har haft, vilket är varför den här ändringen kan ligga i delad kod.
@@ -433,7 +439,6 @@ Uppslaget är best effort — ett konto utan namn visas med sitt AD-konto i stä
 Kandidaterna returneras grupperade per roll, och klienten renderar dem med `Select.Optgroup` precis
 som handläggarlistan i sidopanelen. Utredaren väljer; backend löser upp samma lista igen vid
 skrivningen och avvisar alla utanför den, så väljaren kan inte bredda vem som får ta emot ärendet.
-
 
 ## Rapporter: publicering och återhämtning
 
