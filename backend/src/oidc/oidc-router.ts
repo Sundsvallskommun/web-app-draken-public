@@ -20,7 +20,21 @@ const appendFailMessage = (target: string, failMessage: string): string => {
   return url.toString();
 };
 
-const describeError = (err: unknown): string => (err instanceof Error ? `${err.name}: ${err.message}` : String(err));
+const describeError = (err: unknown): string => {
+  if (!(err instanceof Error)) {
+    return String(err);
+  }
+  // openid-client v6 wraps an OAuth error body (RFC 6749 §5.2) in a ResponseBodyError whose
+  // own message is generic ("server responded with an error in the response body"). The
+  // diagnostic value is in the `error`/`error_description` fields it carries — surface them.
+  const oauth = err as { error?: unknown; error_description?: unknown; code?: unknown; status?: unknown };
+  const details = [
+    typeof oauth.error === 'string' ? `error=${oauth.error}` : undefined,
+    typeof oauth.error_description === 'string' ? `error_description=${oauth.error_description}` : undefined,
+    typeof oauth.status === 'number' ? `status=${oauth.status}` : undefined,
+  ].filter(Boolean);
+  return details.length > 0 ? `${err.name}: ${err.message} (${details.join(', ')})` : `${err.name}: ${err.message}`;
+};
 
 /**
  * The OIDC counterpart of the SAML routes in app.ts. Same contract towards the frontend
