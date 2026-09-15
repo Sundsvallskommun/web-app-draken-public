@@ -2,17 +2,18 @@ import { HandlerSelectOptions } from '@common/components/handler-select/handler-
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { hasDirtyFields, prettyTime } from '@common/services/helper-service';
 import { getAssignableHandlers, type HandlerDirectory } from '@common/services/user-service';
+import { appConfig } from '@config/appconfig';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 import { RegisterSupportErrandFormModel } from '@supportmanagement/interfaces/errand';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import {
-  getOngoingStatus,
   getSupportErrandById,
   isSupportErrandLocked,
   readSupportErrandWriteSnapshot,
   Resolution,
+  resolveWorkingStatus,
   setSupportErrandAdmin,
   setSupportErrandStatus,
   Status,
@@ -22,6 +23,11 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import { saveFacilityInfo } from '@supportmanagement/services/support-facilities';
+import {
+  getActiveSupportPhaseId,
+  getSelectableSupportStatuses,
+  getSupportPhases,
+} from '@supportmanagement/services/support-phase-service';
 import dayjs from 'dayjs';
 import { CirclePause, Mail } from 'lucide-react';
 import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
@@ -29,6 +35,7 @@ import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { SupportCloseErrandButtonComponent } from './buttons/support-close-errand-button.component';
 import { SupportForwardErrandButtonComponent } from './buttons/support-forward-errand-button.component';
+import { SupportPhaseProcessButtonComponent } from './buttons/support-phase-process-button.component';
 import { SupportReopenErrandButton } from './buttons/support-reopen-errand-button.component';
 import { SupportResumeErrandButton } from './buttons/support-resume-errand-button.component';
 import { SupportStartProcessButtonComponent } from './buttons/support-start-process-button.component';
@@ -37,6 +44,7 @@ import { SupportSuspendErrandButtonComponent } from './buttons/support-suspend-e
 export const SidebarInfo: FC<{
   unsavedFacility: boolean;
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
+  hasUnsavedChanges: boolean;
 }> = (props) => {
   const user = useUserStore((s) => s.user);
   const supportErrand = useSupportStore((s) => s.supportErrand);
@@ -50,6 +58,18 @@ export const SidebarInfo: FC<{
   const assignableHandlers = assignable?.administrators ?? administrators;
   const assignableRoles = assignable?.roles ?? handlerRoles;
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  // Only a namespace with a phase model narrows the list - today IAF/VOF - because there each phase
+  // allows its own status and Support Management refuses the others.
+  const selectableStatuses = useMemo(
+    () =>
+      getSelectableSupportStatuses(
+        supportMetadata?.statuses,
+        supportErrand?.status,
+        getActiveSupportPhaseId(supportErrand?.phases),
+        getSupportPhases(supportMetadata?.phases)
+      ),
+    [supportMetadata?.statuses, supportMetadata?.phases, supportErrand?.status, supportErrand?.phases]
+  );
   const selectablePriorities = useMemo(() => {
     if (supportErrand?.priority && supportErrand?.status) {
       return [
@@ -148,7 +168,10 @@ export const SidebarInfo: FC<{
       if (supportErrand?.assignedUserId !== newAdminAccount) {
         const assigner = administrators.find((a) => a.adAccount === user.username);
         if (newAdminAccount && assigner) {
-          const newStatus = newAdminAccount === assigner.adAccount ? getOngoingStatus() : Status.ASSIGNED;
+          const newStatus =
+            newAdminAccount === assigner.adAccount
+              ? resolveWorkingStatus(supportErrand?.phases, supportMetadata?.phases)
+              : Status.ASSIGNED;
           const afterUpdate = await readSupportErrandWriteSnapshot(supportErrand!.id!, municipalityId);
           await setSupportErrandAdmin(
             supportErrand!.id!,
@@ -272,7 +295,7 @@ export const SidebarInfo: FC<{
             municipalityId,
             admin?.adAccount!,
             supportErrand?.version,
-            getOngoingStatus(),
+            resolveWorkingStatus(supportErrand?.phases, supportMetadata?.phases),
             admin?.adAccount!
           ),
         () => toast('success', 'Handläggare tilldelades'),
@@ -453,7 +476,7 @@ export const SidebarInfo: FC<{
               }
             >
               {!supportErrand?.status ? <Select.Option>Välj status</Select.Option> : null}
-              {supportMetadata?.statuses?.map((status, index) => (
+              {selectableStatuses.map((status, index) => (
                 <Select.Option value={status?.name} key={`${status?.name}-${index}`}>
                   {status?.displayName}
                 </Select.Option>
@@ -558,11 +581,22 @@ export const SidebarInfo: FC<{
                 {allowed && !supportErrandIsEmpty(supportErrand!) && (
                   <>
                     <SupportResumeErrandButton disabled={!allowed || supportErrandIsEmpty(supportErrand!)} />
-                    <SupportStartProcessButtonComponent
-                      disabled={!allowed || supportErrandIsEmpty(supportErrand!)}
-                      onSubmit={onSubmit}
-                      onError={onError}
-                    />
+                    {/* A namespace that runs a workflow starts and moves errands through its phases here, as
+                        CaseData does; every other one keeps the plain start button. */}
+                    {appConfig.features.useUiPhases ? (
+                      <SupportPhaseProcessButtonComponent
+                        disabled={!allowed || supportErrandIsEmpty(supportErrand!)}
+                        hasUnsavedChanges={props.hasUnsavedChanges}
+                        onSubmit={onSubmit}
+                        onError={onError}
+                      />
+                    ) : (
+                      <SupportStartProcessButtonComponent
+                        disabled={!allowed || supportErrandIsEmpty(supportErrand!)}
+                        onSubmit={onSubmit}
+                        onError={onError}
+                      />
+                    )}
                     {!messageSidebarIsDisabled && (
                       <Button
                         leftIcon={<Mail />}

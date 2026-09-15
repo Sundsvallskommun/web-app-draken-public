@@ -66,7 +66,9 @@ async function installPhases(
   return { trace, reads: () => reads };
 }
 
-const nextPhaseButton = (page: Page) => page.getByRole('button', { name: 'Nästa fas', exact: true });
+// The phase button lives in the sidebar and is labelled by the workflow's own transition name, so it
+// is found by its test id rather than by a label the metadata decides.
+const nextPhaseButton = (page: Page) => page.locator('[data-cy="next-phase-button"]');
 const confirmation = (page: Page) => page.getByRole('dialog').filter({ hasText: 'Gå till beslutsfasen?' });
 /** The strip names three phases around the active one, so the names on show say where the errand is. */
 const phaseStrip = (page: Page) => page.locator('[data-cy="phase-strip"]');

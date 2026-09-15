@@ -176,7 +176,7 @@ export const SupportErrandComponent: FC = () => {
                 {appConfig.features.useUiPhases && (
                   <section className="bg-transparent pt-24">
                     <div className="container m-auto pl-0 pr-24 md:pr-40">
-                      <SupportUiPhaseWrapper hasUnsavedChanges={hasUnsavedChanges} />
+                      <SupportUiPhaseWrapper />
                     </div>
                   </section>
                 )}
@@ -221,7 +221,11 @@ export const SupportErrandComponent: FC = () => {
               </div>
             </main>
           </div>
-          <SidebarWrapper setUnsavedFacility={setUnsavedFacility} unsavedFacility={unsavedFacility} />
+          <SidebarWrapper
+            setUnsavedFacility={setUnsavedFacility}
+            unsavedFacility={unsavedFacility}
+            hasUnsavedChanges={hasUnsavedChanges}
+          />
         </div>
       </div>
     </FormProvider>

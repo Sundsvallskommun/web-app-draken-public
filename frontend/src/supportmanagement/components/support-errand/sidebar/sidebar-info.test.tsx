@@ -96,7 +96,7 @@ function Harness({ facility = false }: { facility?: boolean }) {
     <FormProvider {...form}>
       <input aria-label="Title" {...form.register('title')} />
       <output aria-label="Dirty">{String(form.formState.isDirty)}</output>
-      <SidebarInfo unsavedFacility={facility} setUnsavedFacility={() => undefined} />
+      <SidebarInfo unsavedFacility={facility} setUnsavedFacility={() => undefined} hasUnsavedChanges={false} />
     </FormProvider>
   );
 }
