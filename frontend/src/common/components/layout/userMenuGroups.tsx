@@ -2,7 +2,6 @@ import { Button, PopupMenu } from '@sk-web-gui/react';
 import { ChevronRight, LogOut, Palette } from 'lucide-react';
 
 import { ColorSchemeItems } from './color-scheme-items.component';
-import { DemoModeItem } from './demo-mode-item.component';
 
 export const userMenuGroups = [
   {
@@ -29,10 +28,6 @@ export const userMenuGroups = [
             </PopupMenu>
           </PopupMenu.Item>
         ),
-      },
-      {
-        label: 'Demoläge',
-        element: () => <DemoModeItem />,
       },
       {
         label: 'Logga ut',
