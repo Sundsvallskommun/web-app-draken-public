@@ -16,7 +16,7 @@ import {
   supportErrandIsEmpty,
 } from '@supportmanagement/services/support-errand-service';
 import { getErrandTypeLabel } from '@supportmanagement/services/support-label-classification-service';
-import { getSupportNotesCount } from '@supportmanagement/services/support-note-service';
+import { getSupportNotesCount, getSupportServiceNotesCount } from '@supportmanagement/services/support-note-service';
 import { useParams, useRouter } from 'next/navigation';
 import { FC, useEffect, useRef, useState } from 'react';
 import { FormProvider, type Resolver, useForm } from 'react-hook-form';
@@ -38,7 +38,7 @@ export const SupportErrandComponent: FC = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const { supportErrand, setSupportErrand } = useSupportStore();
-  const { setNotesCount } = useBadgeStore();
+  const { setNotesCount, setServiceNotesCount } = useBadgeStore();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const toastMessage = useSnackbar();
   const supportApplicationProfile = useInvestigationProfileStore((state) => state.profile);
@@ -127,8 +127,11 @@ export const SupportErrandComponent: FC = () => {
       getSupportNotesCount(supportErrand!.id!, municipalityId!).then((res) => {
         setNotesCount(res);
       });
+      if (appConfig.features.useServiceNotes) {
+        getSupportServiceNotesCount(supportErrand.id!, municipalityId!).then(setServiceNotesCount);
+      }
     }
-  }, [supportErrand, municipalityId, setNotesCount]);
+  }, [supportErrand, municipalityId, setNotesCount, setServiceNotesCount]);
 
   const isReady = !isLoading && !!supportErrand?.id && !!supportMetadata;
 

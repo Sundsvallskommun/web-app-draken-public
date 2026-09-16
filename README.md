@@ -212,6 +212,21 @@ när den befintliga kategoriseringen är giltig. Ändringar av lagrum som skulle
 stoppas direkt med en förklaring; saknad eller ogiltig kategorisering förklaras innan redigering.
 Övriga applikationsrättigheter och handläggarlistor migreras separat.
 
+### Tjänsteanteckningar i supportärenden
+
+`useServiceNotes` (`NEXT_PUBLIC_USE_SERVICE_NOTES`, eller Adminpanel vid runtime) visar
+**Tjänsteanteckningar** i sidopanelen, före **Kommentarer**. Support Management har ingen typ på
+anteckningar, så typen ligger i anteckningens `context`: kommentarer skrivs som tidigare med
+`context: SUPPORT` och `role: FIRST_LINE_SUPPORT`, tjänsteanteckningar med `context: SERVICE_NOTE`
+och `role: ERRAND_HANDLER`. Varje lista hämtar bara sin egen typ, så befintliga kommentarer i alla
+drakar påverkas inte.
+
+Som i CaseData skriver bara ärendets handläggare (`assignedUserId`) en tjänsteanteckning, och bara
+medan ärendet tar emot ändringar. En sparad tjänsteanteckning kan inte ändras eller tas bort genom
+Draken. AccessMapper ger behörighet till anteckningar som en resurs och kan inte skilja typerna åt,
+så reglerna ligger i backenden (`support-note.service.ts`). Texten får vara högst 2048 tecken, vilket
+är Support Managements gräns.
+
 ### Krav
 
 - Node >= 20 LTS

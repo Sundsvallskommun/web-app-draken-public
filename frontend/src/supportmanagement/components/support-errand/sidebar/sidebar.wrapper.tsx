@@ -1,9 +1,11 @@
+import { appConfig } from '@config/appconfig';
 import { Dispatch, FC, ReactNode, SetStateAction } from 'react';
 
 import { Sidebar, SidebarButtonKey } from '../../../../common/components/sidebar/sidebar.component';
 import { SidebarComments } from './sidebar-comments.component';
 import { SidebarHistory } from './sidebar-history.component';
 import { SidebarInfo } from './sidebar-info.component';
+import { SidebarServiceNotes } from './sidebar-service-notes.component';
 import { SidebarSupportExport } from './sidebar-support-export.component';
 
 export const SidebarWrapper: FC<{
@@ -29,6 +31,16 @@ export const SidebarWrapper: FC<{
         />
       ),
     },
+    ...(appConfig.features.useServiceNotes
+      ? [
+          {
+            label: 'Tjänsteanteckningar',
+            key: 'notes' as const,
+            icon: 'pencil-line',
+            component: <SidebarServiceNotes />,
+          },
+        ]
+      : []),
     {
       label: 'Kommentarer',
       key: 'comments',
