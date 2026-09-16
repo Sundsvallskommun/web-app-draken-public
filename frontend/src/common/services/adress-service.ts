@@ -278,3 +278,22 @@ export const searchOrganization: (orgNr: string) => Promise<AddressResult | unde
           }
         });
 };
+
+export const getOrganizationPartyId = async (orgNr: string): Promise<string | undefined> => {
+  try {
+    const res = await apiService.post<ApiResponse<CLegalEntity2WithId>, { orgNr: string }>('organization', { orgNr });
+    return res.data.data.partyId;
+  } catch (error) {
+    console.error('Failed to fetch organization partyId:', error);
+    return undefined;
+  }
+};
+
+// A stakeholder's partyId is its personId when it was looked up. Organizations added by hand only
+// carry an organization number, so their partyId has to be fetched from the party register.
+export const resolvePartyId = async (personId?: string, organizationNumber?: string): Promise<string | undefined> => {
+  if (personId) {
+    return personId;
+  }
+  return organizationNumber ? getOrganizationPartyId(organizationNumber) : undefined;
+};
