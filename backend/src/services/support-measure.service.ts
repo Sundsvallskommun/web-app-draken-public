@@ -1,27 +1,15 @@
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { HandlerGroupRole, resolveHandlerGroupRoles } from '@/config/handler-group-roles';
-import type { JsonSchema } from '@/data-contracts/jsonschema/data-contracts';
 import { Errand, Measure, MeasureType, MetadataResponse, PageErrand, Role } from '@/data-contracts/supportmanagement/data-contracts';
 import { CreateSupportMeasureDto, DecideSupportMeasureDto, FollowUpSupportMeasureDto, UpdateSupportMeasureDto } from '@/dtos/support-measure.dto';
 import { HttpException } from '@/exceptions/HttpException';
 import { User } from '@/interfaces/users.interface';
 
 import ApiService from './api.service';
-import { isRecord } from './schema-bound-json.service';
 import { assertSupportErrandWritable, getErrandVersion } from './support-errand.service';
 import { MEASURE_ACCESS_RESOURCE, SupportInvestigationAccessService } from './support-investigation-access.service';
-import { SupportJsonParameterService } from './support-json-parameter.service';
-import {
-  findMeasureFollowUp,
-  followUpExecutionIsSaved,
-  isPlannedApprovedMeasure,
-  measureFollowUpDefinition,
-  type MeasureFollowUpEntry,
-  measureFollowUpSchemaName,
-  readMeasureFollowUps,
-  type SupportMeasure,
-} from './support-measure-follow-up';
+import { isPlannedApprovedMeasure, measureFollowUpAnswers, measureHoldsFollowUp } from './support-measure-follow-up';
 import {
   assertMeasureRegistration,
   assertMeasureTypeForRole,
@@ -32,7 +20,7 @@ import {
 import { collectOpenPlannedMeasures, OPEN_PLANNED_MEASURES_FILTER, type PlannedSupportMeasure } from './support-planned-measures';
 
 export interface SupportMeasuresSnapshot {
-  measures: SupportMeasure[];
+  measures: Measure[];
   errandVersion: number;
   metadata: { measureTypes: MeasureType[]; roles: Role[] };
   creationRoles: Role[];
@@ -48,13 +36,6 @@ export interface PlannedSupportMeasuresSnapshot {
   truncated: boolean;
 }
 
-/** The errand's follow-up document as read: every measure's follow-up, and the ETag an append is conditioned on. */
-interface StoredMeasureFollowUps {
-  readonly entries: MeasureFollowUpEntry[];
-  readonly etag: string;
-  readonly schemaId: string;
-}
-
 // The errand list is paged per errand, not per measure. An overview of one person's planned work is small,
 // so the pages are walked up to a cap that still keeps a runaway namespace from turning into a thousand reads.
 const PLANNED_MEASURES_PAGE_SIZE = 100;
@@ -68,12 +49,11 @@ function requireMeasureVersion(ifMatch: string | undefined): number {
   return version;
 }
 
-/** Measure details use the protected measure resource; follow-up answers have their own schema-bound document. */
+/** Measures, their decisions and their follow-ups are all written to the protected measure resource. */
 export class SupportMeasureService {
   constructor(
     private readonly apiService = new ApiService(),
     private readonly handlerRoles: readonly HandlerGroupRole[] | undefined = resolveHandlerGroupRoles(),
-    private documents?: SupportJsonParameterService,
     // Members of the superadmin group hold every measure registration role.
     private readonly superadminGroup: string | undefined = process.env.SUPERADMIN_GROUP,
     private access?: SupportInvestigationAccessService,
@@ -81,11 +61,6 @@ export class SupportMeasureService {
 
   private errandAccess(): SupportInvestigationAccessService {
     return (this.access ??= new SupportInvestigationAccessService({ apiService: this.apiService }));
-  }
-
-  private followUpDocuments(): SupportJsonParameterService {
-    // Controllers are also constructed in application profiles without Support Management.
-    return (this.documents ??= new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '', apiService: this.apiService }));
   }
 
   private baseUrl(municipalityId: string): string {
@@ -118,76 +93,6 @@ export class SupportMeasureService {
     return existing;
   }
 
-  /** The errand's follow-ups and the ETag an append is conditioned on, or undefined before the first follow-up. */
-  private async readFollowUps(municipalityId: string, errandId: string, user: User): Promise<StoredMeasureFollowUps | undefined> {
-    const stored = await this.followUpDocuments().readOptionalJsonParameter({
-      municipalityId,
-      errandId,
-      user,
-      definition: measureFollowUpDefinition,
-    });
-    return stored ? { entries: readMeasureFollowUps(stored.document.value), etag: stored.etag, schemaId: stored.document.schemaId } : undefined;
-  }
-
-  /** The latest published follow-up schema, which the errand's document is bound to when it is first created. */
-  private async latestFollowUpSchemaId(municipalityId: string, user: User): Promise<string> {
-    const schema = await this.apiService
-      .get<JsonSchema>(
-        {
-          url: `${apiServiceName('jsonschema')}/${encodeURIComponent(municipalityId)}/schemas/${measureFollowUpSchemaName}/versions/latest`,
-          propagateClientError: true,
-        },
-        user,
-      )
-      .catch((cause: unknown) => {
-        if (isRecord(cause) && cause.status === 404)
-          throw new HttpException(503, 'Schemat för åtgärdsuppföljning är inte publicerat. Kontakta administratören.');
-        throw cause;
-      });
-    if (!schema.data.id || schema.data.name !== measureFollowUpSchemaName) throw new HttpException(502, 'Uppföljningsschemat kunde inte bekräftas.');
-    return schema.data.id;
-  }
-
-  /**
-   * Adds one measure's answers to the errand's follow-up document and returns the follow-up now saved for that
-   * measure. The follow-ups already saved are carried over untouched, so answers are never rewritten.
-   *
-   * Every measure's follow-up shares the document, so another follow-up can land between reading it and
-   * appending: that write moves the ETag and this append is refused, which is retried once on a fresh read.
-   * Every failure is followed by a re-read, so an accepted write whose response was lost - or a competing save
-   * of this same measure - is found saved rather than written again.
-   */
-  private async appendFollowUp(
-    municipalityId: string,
-    errandId: string,
-    user: User,
-    answers: MeasureFollowUpEntry,
-    stored: StoredMeasureFollowUps | undefined,
-  ): Promise<MeasureFollowUpEntry> {
-    let current = stored;
-    for (let attempt = 1; ; attempt++) {
-      try {
-        const schemaId = current?.schemaId ?? (await this.latestFollowUpSchemaId(municipalityId, user));
-        const written = await this.followUpDocuments().writeJsonParameter({
-          municipalityId,
-          errandId,
-          user,
-          definition: measureFollowUpDefinition,
-          data: { schemaId, value: { followUps: [...(current?.entries ?? []), answers] } },
-          preconditions: current ? { ifMatch: current.etag } : { ifNoneMatch: '*' },
-        });
-        const saved = findMeasureFollowUp(readMeasureFollowUps(written.document.value), answers.measureId);
-        if (saved) return saved;
-        throw new HttpException(502, 'Uppföljningen kunde inte bekräftas.');
-      } catch (cause) {
-        current = await this.readFollowUps(municipalityId, errandId, user);
-        const saved = findMeasureFollowUp(current?.entries, answers.measureId);
-        if (saved) return saved;
-        if (attempt >= 2 || !(isRecord(cause) && Number(cause.status) === 412)) throw cause;
-      }
-    }
-  }
-
   async read(municipalityId: string, errandId: string, user: User): Promise<SupportMeasuresSnapshot> {
     const url = this.errandUrl(municipalityId, errandId);
     // Parent version is only used to synchronize the surrounding errand form after our own edit.
@@ -207,7 +112,6 @@ export class SupportMeasureService {
       )
     ).data;
     const registration = resolveSupportMeasureRegistration(metadata, user.groups ?? [], this.handlerRoles, this.superadminGroup);
-    const followUps = await this.readFollowUps(municipalityId, errandId, user);
     // Whether measures can be added, edited and followed up is Support Management's call; the role catalogue only
     // says which role and types a writer registers with. A failed lookup offers no writes but keeps the list readable.
     const canWrite = await this.errandAccess()
@@ -217,20 +121,7 @@ export class SupportMeasureService {
         () => false,
       );
     return {
-      measures: result.data.map((measure): SupportMeasure => {
-        if (!measure.id) return measure;
-        const followUp = findMeasureFollowUp(followUps?.entries, measure.id);
-        return followUp
-          ? {
-              ...measure,
-              followUp: {
-                status: followUpExecutionIsSaved(measure, followUp) ? 'completed' : measure.executed ? 'conflict' : 'pending',
-                desiredEffectAchieved: followUp.desiredEffectAchieved,
-                followUpDescription: followUp.followUpDescription,
-              },
-            }
-          : measure;
-      }),
+      measures: result.data,
       errandVersion: getErrandVersion(errand.data, errand.headers?.etag),
       metadata: { measureTypes: metadata.measureTypes ?? [], roles: metadata.roles ?? [] },
       ...registration,
@@ -293,7 +184,7 @@ export class SupportMeasureService {
       )
     ).data;
     const resolved = resolveSupportMeasureRegistration(metadata, user.groups ?? [], this.handlerRoles, this.superadminGroup);
-    assertMeasureRegistration(resolved, data.addedByRole, data.measureTypeId);
+    assertMeasureRegistration(resolved, data.addedByRole, data.type);
     assertMeasureDates(data);
     // Executed measures are facts, not proposals, so only a deciding role may report them.
     if (data.executed !== undefined && !measureRoleDecides(resolved.registration, data.addedByRole)) {
@@ -329,13 +220,13 @@ export class SupportMeasureService {
     const existing = await this.readWritableMeasure(url, measureId, ifMatch, user);
     assertOwnMeasure(existing, user);
 
-    if (existing.accept && (['measureTypeId', 'description', 'goal'] as const).some(key => data[key] !== undefined && data[key] !== existing[key])) {
+    if (existing.accept && (['type', 'description', 'goal'] as const).some(key => data[key] !== undefined && data[key] !== existing[key])) {
       throw new HttpException(409, 'Typ, beskrivning och mål är låsta efter beslut. Skapa ett nytt förslag om innehållet behöver ändras.');
     }
 
-    const changesType = data.measureTypeId !== undefined && data.measureTypeId !== existing.measureTypeId;
+    const changesType = data.type !== undefined && data.type !== existing.type;
     const reportsExecuted = data.executed !== undefined && !existing.executed;
-    if (changesType && data.measureTypeId !== undefined) {
+    if (changesType && data.type !== undefined) {
       const metadata = (
         await this.apiService.get<MetadataResponse>(
           { url: `${this.baseUrl(municipalityId)}/metadata`, propagateClientError: true, mapUnauthorizedToForbidden: true },
@@ -344,16 +235,13 @@ export class SupportMeasureService {
       ).data;
       // Membership may have changed since creation; type choices follow the saved registration role.
       const { registration } = resolveSupportMeasureRegistration(metadata, user.groups ?? [], this.handlerRoles, this.superadminGroup);
-      assertMeasureTypeForRole(registration, existing.addedByRole, data.measureTypeId);
+      assertMeasureTypeForRole(registration, existing.addedByRole, data.type);
     }
     if (reportsExecuted && existing.accept !== 'TRUE' && existing.accept !== 'REWORK') {
       throw new HttpException(400, 'Ett förslag kan inte markeras som genomfört förrän det har godkänts helt eller delvis.');
     }
-    if (data.executed !== undefined && data.executed !== existing.executed) {
-      const followUp = findMeasureFollowUp((await this.readFollowUps(municipalityId, errandId, user))?.entries, measureId);
-      if (followUp && Date.parse(data.executed) !== Date.parse(followUp.executed)) {
-        throw new HttpException(409, 'Genomförandet hör till en sparad uppföljning och kan inte ändras här.');
-      }
+    if (existing.result && data.executed !== undefined && Date.parse(data.executed) !== Date.parse(existing.executed ?? '')) {
+      throw new HttpException(409, 'Genomförandet hör till en sparad uppföljning och kan inte ändras här.');
     }
     assertMeasureDates(data, existing);
 
@@ -435,66 +323,29 @@ export class SupportMeasureService {
     if (typeof data.desiredEffectAchieved !== 'boolean' || !description || description.length > 4000) {
       throw new HttpException(400, 'Ange om åtgärden lett till önskad effekt och beskriv vad som har hänt (högst 4000 tecken).');
     }
-    const stored = await this.readFollowUps(municipalityId, errandId, user);
-    let entry = findMeasureFollowUp(stored?.entries, measureId);
-    const assertSameAnswers = (saved: MeasureFollowUpEntry) => {
-      if (
-        saved.desiredEffectAchieved !== data.desiredEffectAchieved ||
-        saved.followUpDescription !== description ||
-        saved.recordedBy.toLowerCase() !== user.username.toLowerCase()
-      ) {
-        throw new HttpException(409, 'Uppföljningssvar är redan sparade. Ladda om åtgärden för att läsa dem och vid behov slutföra genomförandet.');
-      }
-    };
-    if (entry) {
-      assertSameAnswers(entry);
-      // A lost response after execution must not turn a successful save into an unrecoverable stale-version error.
-      if (followUpExecutionIsSaved(existing, entry)) return;
+    const answers = measureFollowUpAnswers(data.desiredEffectAchieved, description);
+    if (existing.result) {
+      // A lost response to an accepted follow-up is retried with the version it started from; it is saved, not stale.
+      if (measureHoldsFollowUp(existing, answers)) return;
+      throw new HttpException(409, 'Åtgärden är redan uppföljd. Ladda om åtgärderna för att läsa svaren.');
     }
     if (existing.version !== expectedVersion) throw new HttpException(412, 'If-Match does not match the current measure version');
-    if (!entry) {
-      const now = new Date().toISOString();
-      entry = await this.appendFollowUp(
-        municipalityId,
-        errandId,
-        user,
-        {
-          measureId,
-          measureVersion: expectedVersion,
-          executed: existing.executed ?? now,
-          desiredEffectAchieved: data.desiredEffectAchieved,
-          followUpDescription: description,
-          recordedBy: user.username,
-          recordedAt: now,
-        },
-        stored,
-      );
-      assertSameAnswers(entry);
-    }
-    const current = await this.readCurrentWritableMeasure(url, measureId, user);
-    assertOwnMeasure(current, user);
-    if (!isPlannedApprovedMeasure(current)) throw new HttpException(409, 'Åtgärden kan inte längre följas upp. Svaren finns kvar.');
-    if (followUpExecutionIsSaved(current, entry)) return;
-    if (current.executed) throw new HttpException(409, 'Genomförandedatumet avviker från uppföljningen. Svaren finns kvar.');
-    if (current.version !== expectedVersion)
-      throw new HttpException(412, 'Åtgärden har ändrats. Svaren finns kvar. Ladda om och slutför uppföljningen.');
-    try {
-      const saved = await this.apiService.patch<Measure, Pick<Measure, 'executed'>>(
-        {
-          url: `${url}/measures/${encodeURIComponent(measureId)}`,
-          data: { executed: entry.executed },
-          headers: { 'If-Match': ifMatch },
-          followLocation: false,
-          propagateClientError: true,
-          mapUnauthorizedToForbidden: true,
-        },
-        user,
-      );
-      if (!followUpExecutionIsSaved(saved.data, entry)) throw new HttpException(502, 'Genomförandet kunde inte bekräftas.');
-    } catch (cause) {
-      // The document is deliberately kept: the next read shows pending, and an explicit retry can finish it.
-      if (isRecord(cause) && [403, 409, 412].includes(Number(cause.status))) throw cause;
-      throw new HttpException(503, 'Uppföljningssvaren är sparade, men genomförandet kunde inte bekräftas. Ladda om åtgärden och slutför sparandet.');
+
+    // Answers and execution are one write to the measure, conditioned on the version the user followed up.
+    const now = new Date().toISOString();
+    const saved = await this.apiService.patch<Measure, Pick<Measure, 'executed' | 'result' | 'resultText' | 'completedAt'>>(
+      {
+        url: `${url}/measures/${encodeURIComponent(measureId)}`,
+        data: { ...(existing.executed ? {} : { executed: now }), ...answers, completedAt: now },
+        headers: { 'If-Match': ifMatch },
+        followLocation: false,
+        propagateClientError: true,
+        mapUnauthorizedToForbidden: true,
+      },
+      user,
+    );
+    if (!measureHoldsFollowUp(saved.data, answers) || !saved.data.executed) {
+      throw new HttpException(502, 'Uppföljningen kunde inte bekräftas. Ladda om åtgärderna.');
     }
   }
 }

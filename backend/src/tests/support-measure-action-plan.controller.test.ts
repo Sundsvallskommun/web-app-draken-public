@@ -16,7 +16,6 @@ const metadata = {
 const storedMeasures: Measure[] = [
   {
     id: 'm-1',
-    measureTypeId: educationId,
     type: 'EDUCATION',
     addedByUser: mockAdUsername,
     addedByRole: 'MANAGER',

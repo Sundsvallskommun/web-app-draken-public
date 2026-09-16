@@ -39,14 +39,17 @@ export const APIS = [
   {
     name: 'supportmanagement',
     version: '15.1',
+    // Runtime transport target only. The Support Management contract is generated
+    // from the sprint API below, which phases, measures and errand access are built
+    // against; the sprint API extends this one.
+    generateDataContract: false,
   },
   {
     name: 'supportmanagement-sprint',
-    version: '16.1',
-    // Runtime transport target only. Application code imports the stable
-    // Support Management facade, so generating a second unused contract would
-    // create two competing TypeScript owners for the same domain.
-    generateDataContract: false,
+    version: '16.0',
+    // Generated as the one Support Management contract application code imports,
+    // so the domain keeps a single TypeScript owner.
+    dataContractName: 'supportmanagement',
   },
   {
     name: 'support-management-alkt-sprint',

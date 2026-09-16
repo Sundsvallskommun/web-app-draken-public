@@ -9,17 +9,17 @@ export interface MeasureFilters {
   status: '' | MeasureStatus;
   decision: '' | MeasureDecision;
   role: string;
-  typeId: string;
+  type: string;
   text: string;
 }
 
-export const emptyMeasureFilters: MeasureFilters = { status: '', decision: '', role: '', typeId: '', text: '' };
+export const emptyMeasureFilters: MeasureFilters = { status: '', decision: '', role: '', type: '', text: '' };
 
 export const measureStatus = (measure: Measure): MeasureStatus =>
   measure.executed ? 'executed' : measure.plannedStart || measure.plannedComplete ? 'planned' : 'unscheduled';
 
 export const isMeasureFilterActive = (filters: MeasureFilters): boolean =>
-  Boolean(filters.status || filters.decision || filters.role || filters.typeId || filters.text.trim());
+  Boolean(filters.status || filters.decision || filters.role || filters.type || filters.text.trim());
 
 export function filterMeasures(
   measures: readonly Measure[],
@@ -31,7 +31,7 @@ export function filterMeasures(
     if (filters.status && measureStatus(measure) !== filters.status) return false;
     if (filters.decision && measureDecision(measure) !== filters.decision) return false;
     if (filters.role && measure.addedByRole !== filters.role) return false;
-    if (filters.typeId && measure.measureTypeId !== filters.typeId) return false;
+    if (filters.type && measure.type !== filters.type) return false;
     if (!needle) return true;
     return [
       measureTypeLabel(types, measure),
@@ -52,12 +52,12 @@ export const measureFilterOptions = (
   roles: readonly Role[]
 ): { roles: { value: string; label: string }[]; types: { value: string; label: string }[] } => {
   const roleNames = [...new Set(measures.map((measure) => measure.addedByRole).filter(Boolean))] as string[];
-  const typeIds = [...new Set(measures.map((measure) => measure.measureTypeId).filter(Boolean))] as string[];
+  const typeNames = [...new Set(measures.map((measure) => measure.type).filter(Boolean))] as string[];
   const byLabel = (a: { label: string }, b: { label: string }) => a.label.localeCompare(b.label, 'sv');
   return {
     roles: roleNames
       .map((name) => ({ value: name, label: roles.find((role) => role.name === name)?.displayName || name }))
       .sort(byLabel),
-    types: typeIds.map((id) => ({ value: id, label: measureTypeLabel(types, { measureTypeId: id }) })).sort(byLabel),
+    types: typeNames.map((name) => ({ value: name, label: measureTypeLabel(types, { type: name }) })).sort(byLabel),
   };
 };

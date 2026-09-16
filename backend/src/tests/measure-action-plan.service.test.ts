@@ -11,13 +11,12 @@ import { MEASURE_ACTION_PLAN_TEMPLATE } from '@/services/measure-action-plan.tem
 import { mockAdUsername, mockSupportErrandNumber } from './helpers/mock-data';
 
 const educationId = 'dd000000-0000-4000-8000-000000000100';
-const measureTypes: MeasureType[] = [{ id: educationId, name: 'EDUCATION', displayName: 'Utbildning' }];
+const measureTypes: MeasureType[] = [{ id: educationId, name: 'EDUCATION', displayName: 'Utbildning', measureGroups: ['PREVENTIVE'] }];
 const roles: Role[] = [{ name: 'MANAGER', displayName: 'Enhetschef' }];
 const displayName = (username: string) => (username === mockAdUsername ? 'Anna Andersson' : undefined);
 
 const executed: Measure = {
   id: 'm-1',
-  measureTypeId: educationId,
   type: 'EDUCATION',
   addedByUser: mockAdUsername,
   addedByRole: 'MANAGER',
@@ -32,7 +31,6 @@ const executed: Measure = {
 };
 const planned: Measure = {
   id: 'm-2',
-  measureTypeId: 'ee000000-0000-4000-8000-000000000999',
   type: 'RETIRED_TYPE',
   addedByUser: 'someone.else',
   addedByRole: 'UNKNOWN_ROLE',

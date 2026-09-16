@@ -15,7 +15,6 @@ test.skip(!['IAF', 'VOF'].includes(process.env.NEXT_PUBLIC_APPLICATION ?? ''), '
 
 const existingMeasure: Measure = {
   id: 'existing',
-  measureTypeId: 'dd000000-0000-4000-8000-000000000100',
   type: 'TRAINING',
   version: 1,
   goal: 'Säkrare arbetssätt',

@@ -109,8 +109,8 @@ export const buildMeasureActionPlanModel = (input: BuildMeasureActionPlanModelIn
     return input.displayName?.(username) || username;
   };
   const typeLabel = (measure: Measure): string => {
-    const type = input.measureTypes.find(candidate => candidate.id && candidate.id === measure.measureTypeId);
-    return type?.displayName || type?.name || measure.type || measure.measureTypeId || 'Typ saknas';
+    const type = input.measureTypes.find(candidate => candidate.name === measure.type);
+    return type?.displayName || measure.type || 'Typ saknas';
   };
   const roleLabel = (name: string | undefined): string | undefined => {
     if (!name) return undefined;

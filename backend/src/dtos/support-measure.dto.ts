@@ -1,4 +1,4 @@
-import { IsBoolean, IsIn, IsISO8601, IsString, IsUUID, Matches, MaxLength, ValidateIf } from 'class-validator';
+import { IsBoolean, IsIn, IsISO8601, IsString, Matches, MaxLength, ValidateIf } from 'class-validator';
 
 class SupportMeasureDetailsDto {
   @ValidateIf((_, value: unknown) => value !== undefined)
@@ -17,8 +17,10 @@ class SupportMeasureDetailsDto {
 
 /** The browser selects a role; Draken sets addedByUser from its authenticated session. */
 export class CreateSupportMeasureDto extends SupportMeasureDetailsDto {
-  @IsUUID()
-  measureTypeId!: string;
+  /** The measure type's metadata name, which Support Management keys a measure's type by. */
+  @IsString()
+  @Matches(/\S/)
+  type!: string;
   @IsString()
   @Matches(/\S/)
   addedByRole!: string;
@@ -33,8 +35,9 @@ export class CreateSupportMeasureDto extends SupportMeasureDetailsDto {
 /** Basic edits cannot change a decision or its attribution. */
 export class UpdateSupportMeasureDto extends SupportMeasureDetailsDto {
   @ValidateIf((_, value: unknown) => value !== undefined)
-  @IsUUID()
-  measureTypeId?: string;
+  @IsString()
+  @Matches(/\S/)
+  type?: string;
   @ValidateIf((_, value: unknown) => value !== undefined)
   @IsString()
   goal?: string;

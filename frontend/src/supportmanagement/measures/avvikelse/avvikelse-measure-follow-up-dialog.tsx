@@ -1,8 +1,9 @@
+import type { Measure } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Alert, Button, FormControl, FormLabel, Modal, RadioButton, Textarea, useConfirm } from '@sk-web-gui/react';
 import { isAxiosError } from 'axios';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 
-import { measureCanBeFollowedUp, type MeasureFollowUpInput, type SupportMeasure } from '../measure-follow-up';
+import { measureCanBeFollowedUp, type MeasureFollowUpInput } from '../measure-follow-up';
 
 export function AvvikelseMeasureFollowUpDialog({
   measure,
@@ -12,7 +13,7 @@ export function AvvikelseMeasureFollowUpDialog({
   onClose,
   onDirtyChange,
 }: {
-  measure: SupportMeasure;
+  measure: Measure;
   unavailable?: boolean;
   title: string;
   onSave: (values: MeasureFollowUpInput) => Promise<void>;
@@ -24,18 +25,11 @@ export function AvvikelseMeasureFollowUpDialog({
   const errorSummary = useRef<HTMLDivElement>(null);
   const busy = useRef(false);
   const [saving, setSaving] = useState(false);
-  const [effect, setEffect] = useState<'yes' | 'no' | ''>(
-    measure.followUp ? (measure.followUp.desiredEffectAchieved ? 'yes' : 'no') : ''
-  );
-  const [description, setDescription] = useState(measure.followUp?.followUpDescription ?? '');
+  const [effect, setEffect] = useState<'yes' | 'no' | ''>('');
+  const [description, setDescription] = useState('');
   const [error, setError] = useState<string>();
   const confirm = useConfirm();
-  const pending = measure.followUp?.status === 'pending';
-  const answersMatch =
-    !measure.followUp ||
-    (measure.followUp.desiredEffectAchieved === (effect === 'yes') &&
-      measure.followUp.followUpDescription === description.trim());
-  const available = !unavailable && measureCanBeFollowedUp(measure) && answersMatch;
+  const available = !unavailable && measureCanBeFollowedUp(measure);
   // Opening this dialog is the user's unsaved choice to mark the measure as completed.
   useEffect(() => {
     onDirtyChange(true);
@@ -48,7 +42,6 @@ export function AvvikelseMeasureFollowUpDialog({
   const requestClose = async () => {
     if (busy.current) return;
     if (
-      !measure.followUp &&
       (effect || description) &&
       !(await confirm.showConfirmation(
         'Avbryt uppföljningen?',
@@ -84,8 +77,6 @@ export function AvvikelseMeasureFollowUpDialog({
           ? 'Du saknar behörighet att följa upp åtgärden. Dina svar finns kvar.'
           : status === 404
           ? 'Uppföljningen är inte tillgänglig. Ladda om åtgärderna och kontakta administratören om felet kvarstår. Dina svar finns kvar.'
-          : status === 503 && isAxiosError<{ message?: string }>(cause) && cause.response?.data?.message
-          ? cause.response.data.message
           : 'Uppföljningen kunde inte bekräftas. Dina svar finns kvar. Ladda om åtgärderna innan du försöker igen.'
       );
     } finally {
@@ -123,11 +114,7 @@ export function AvvikelseMeasureFollowUpDialog({
               </p>
             )}
           </section>
-          <p>
-            {pending
-              ? 'Svaren är redan sparade. Slutför sparandet för att bekräfta genomförandet.'
-              : 'När du sparar markeras åtgärden som utförd. Svaren visas tillsammans med åtgärden.'}
-          </p>
+          <p>När du sparar markeras åtgärden som utförd. Svaren visas tillsammans med åtgärden.</p>
           {!available && (
             <p role="status">
               Åtgärden kan inte längre följas upp. Dina svar finns kvar så att du kan kopiera dem innan du stänger.
@@ -145,7 +132,7 @@ export function AvvikelseMeasureFollowUpDialog({
               </Alert>
             </div>
           )}
-          <fieldset disabled={saving || !available || pending} className="flex flex-col gap-24">
+          <fieldset disabled={saving || !available} className="flex flex-col gap-24">
             <legend className="sr-only">Uppföljningssvar</legend>
             <FormControl fieldset id={`${id}-effect`} className="w-full">
               <FormLabel>Har åtgärd lett till önskad effekt? (Obligatoriskt)</FormLabel>
@@ -180,7 +167,7 @@ export function AvvikelseMeasureFollowUpDialog({
           </fieldset>
           <div className="flex flex-wrap gap-12">
             <Button type="submit" disabled={saving || !available} loading={saving}>
-              {pending ? 'Slutför sparandet' : 'Spara uppföljning'}
+              Spara uppföljning
             </Button>
             <Button type="button" variant="secondary" disabled={saving} onClick={() => void requestClose()}>
               Avbryt

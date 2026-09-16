@@ -38,7 +38,6 @@ const metadata: MetadataResponse = {
 const current = { version: 7, status: 'ONGOING' };
 const measure: Measure = {
   id: 'measure-1',
-  measureTypeId: oldTypeId,
   type: 'OLD',
   version: 3,
   goal: 'Existing goal',
@@ -47,7 +46,7 @@ const measure: Measure = {
 };
 const response = <T>(data: T) => ({ data, message: 'success' });
 const newMeasure: CreateSupportMeasureDto = {
-  measureTypeId: educationId,
+  type: 'EDUCATION',
   addedByRole: 'MANAGER',
   description: 'Gemensam utbildning',
   goal: 'Säkrare arbetssätt',
@@ -55,7 +54,7 @@ const newMeasure: CreateSupportMeasureDto = {
 };
 
 const plannedProposal: CreateSupportMeasureDto = {
-  measureTypeId: educationId,
+  type: 'EDUCATION',
   addedByRole: 'MANAGER',
   description: 'Gemensam utbildning',
   goal: 'Säkrare arbetssätt',
@@ -74,6 +73,9 @@ test.each([
   { description: 'Ersätt originalet' },
   { executed: '2026-09-09T00:00:00Z' },
   { accept: 'TRUE' },
+  { result: 'ACHIEVED' },
+  { resultText: 'Direkt till åtgärden' },
+  { completedAt: '2026-09-09T00:00:00Z' },
 ])('follow-up contract rejects missing answers and fields from other workflows: %j', async fields => {
   const errors = await validate(plainToInstance(FollowUpSupportMeasureDto, { ...followUp, ...fields }), {
     whitelist: true,
@@ -95,15 +97,12 @@ afterEach(() => vi.restoreAllMocks());
 
 function setup(roles: readonly HandlerGroupRole[] = handlerRoles) {
   const api = new ApiService();
-  const get = vi.spyOn(api, 'get').mockImplementation(async config => {
-    if (config.url?.includes('/json-parameters/')) throw new HttpException(404, 'Not found');
-    return response(config.url?.endsWith('/metadata') ? metadata : current);
-  });
+  const get = vi.spyOn(api, 'get').mockImplementation(async config => response(config.url?.endsWith('/metadata') ? metadata : current));
   const patch = vi.spyOn(api, 'patch').mockResolvedValue(response(undefined));
   const post = vi.spyOn(api, 'post').mockResolvedValue(response(undefined));
   // Support Management's answer on the measures resource, which alone decides whether they are writable.
   const access = { getResourceLevel: vi.fn<SupportInvestigationAccessService['getResourceLevel']>(async () => 'RW') };
-  const service = new SupportMeasureService(api, roles, undefined, 'ad-superadmins', access as unknown as SupportInvestigationAccessService);
+  const service = new SupportMeasureService(api, roles, 'ad-superadmins', access as unknown as SupportInvestigationAccessService);
   return { service, get, patch, post, access };
 }
 
@@ -121,13 +120,14 @@ test('reads protected measures with their own versions and keeps parent synchron
     registration: {
       status: 'ready',
       roleTypes: [
-        { roleName: 'MANAGER', measureTypeIds: [educationId], decides: true },
-        { roleName: 'NURSE', measureTypeIds: [], decides: false },
+        { roleName: 'MANAGER', measureTypes: ['EDUCATION'], decides: true },
+        { roleName: 'NURSE', measureTypes: [], decides: false },
       ],
     },
     canWrite: true,
   });
-  expect(get).toHaveBeenCalledTimes(4);
+  // The errand, its measures and the metadata: a follow-up is part of the measure, not a document of its own.
+  expect(get).toHaveBeenCalledTimes(3);
   expect(get.mock.calls[1][0]).toMatchObject({
     url: expect.stringContaining('/errands/' + mockSupportErrandId + '/measures'),
     propagateClientError: true,
@@ -306,18 +306,23 @@ test('edits historic proposals with the original measure ETag while preserving a
   ]);
 });
 
-test('changes type by metadata UUID, never by its name or display name', async () => {
+test('changes type by its metadata name, never by its display name', async () => {
   const { service, get, patch } = setup();
   get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response(measure));
-  await service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { measureTypeId: educationId }, user);
-  expect(patch.mock.calls[0][0].data).toEqual({ measureTypeId: educationId });
+  await service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { type: 'EDUCATION' }, user);
+  expect(patch.mock.calls[0][0].data).toEqual({ type: 'EDUCATION' });
+  get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response(measure));
+  await expect(service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { type: 'Utbildning' }, user)).rejects.toMatchObject({
+    status: 400,
+  });
+  expect(patch).toHaveBeenCalledOnce();
 });
 
-test('allows an unchanged historic type UUID', async () => {
+test('allows an unchanged historic type', async () => {
   const { service, get, patch } = setup();
   get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response(measure));
-  await service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { measureTypeId: oldTypeId, goal: 'Revised' }, user);
-  expect(patch.mock.calls[0][0].data).toEqual({ measureTypeId: oldTypeId, goal: 'Revised' });
+  await service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { type: 'OLD', goal: 'Revised' }, user);
+  expect(patch.mock.calls[0][0].data).toEqual({ type: 'OLD', goal: 'Revised' });
 });
 
 test.each(['SOLVED', 'SUSPENDED', 'ASSIGNED', 'REOPENED'])('rejects writes in locked status %s', async status => {
@@ -388,14 +393,16 @@ test('rejects upstream responses without a measure version', async () => {
 });
 
 test.each([
-  { type: 'EDUCATION' },
-  { measureTypeId: 'EDUCATION' },
-  { measureTypeId: null },
+  { type: ' ' },
+  { type: null },
+  { measureTypeId: educationId },
   { version: 3 },
   { accept: 'TRUE' },
   { addedByUser: 'someone-else' },
   { addedByRole: 'MANAGER' },
   { reworkGoal: 'Bypass' },
+  { result: 'ACHIEVED' },
+  { resultText: 'Uppföljning utan uppföljningsflödet' },
   { id: 'other-id' },
   { plannedStart: null },
   { plannedStart: 'invalid' },
@@ -404,8 +411,8 @@ test.each([
   expect(errors.length).toBeGreaterThan(0);
 });
 
-test('accepts a UUID reference and basic fields in a narrow patch', async () => {
-  const errors = await validate(plainToInstance(UpdateSupportMeasureDto, { measureTypeId: educationId, goal: 'Revised' }), {
+test('accepts a type name and basic fields in a narrow patch', async () => {
+  const errors = await validate(plainToInstance(UpdateSupportMeasureDto, { type: 'EDUCATION', goal: 'Revised' }), {
     whitelist: true,
     forbidNonWhitelisted: true,
   });
@@ -413,8 +420,9 @@ test('accepts a UUID reference and basic fields in a narrow patch', async () => 
 });
 
 test.each([
-  { measureTypeId: undefined },
-  { measureTypeId: 'EDUCATION' },
+  { type: undefined },
+  { type: ' ' },
+  { measureTypeId: educationId },
   { addedByRole: undefined },
   { addedByRole: null },
   { addedByRole: ' ' },
@@ -473,15 +481,8 @@ test('preserves a historical measure when registration is not configured', async
 test('checks type changes against the saved role, independently of the editor role', async () => {
   const { service, get, patch } = setup();
   get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response(measure));
-  await service.update(
-    mockMunicipalityId,
-    mockSupportErrandId,
-    'measure-1',
-    '"3"',
-    { measureTypeId: educationId },
-    mockUser({ groups: ['ad-nurse'] }),
-  );
-  expect(patch.mock.calls[0][0].data).toEqual({ measureTypeId: educationId });
+  await service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', { type: 'EDUCATION' }, mockUser({ groups: ['ad-nurse'] }));
+  expect(patch.mock.calls[0][0].data).toEqual({ type: 'EDUCATION' });
 });
 
 test('rejects an effective date range that reverses the stored start and new completion', async () => {
@@ -562,7 +563,7 @@ test('lets only the user who registered a measure edit it, regardless of case', 
 test.each(['TRUE', 'FALSE', 'REWORK'] as const)('a deciding user can assess another role’s proposal with decision %s', async accept => {
   const { service, get, patch } = setup();
   // Deliberately outside the manager's own selectable types. The decision must not rewrite the proposal.
-  const proposal = { ...measure, addedByUser: 'someone.else', addedByRole: 'NURSE', measureTypeId: 'clinical-type' };
+  const proposal = { ...measure, addedByUser: 'someone.else', addedByRole: 'NURSE', type: 'CLINICAL' };
   get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response(proposal));
   await service.decide(
     mockMunicipalityId,
@@ -672,7 +673,7 @@ test('propagates a decision conflict without retrying the write', async () => {
 
 test.each(['TRUE', 'FALSE', 'REWORK'])('protects the original content after decision %s while allowing planning updates', async accept => {
   const { service, get, patch } = setup();
-  for (const changes of [{ goal: 'Changed goal' }, { description: 'Changed description' }, { measureTypeId: educationId }]) {
+  for (const changes of [{ goal: 'Changed goal' }, { description: 'Changed description' }, { type: 'EDUCATION' }]) {
     get.mockResolvedValueOnce(response(current)).mockResolvedValueOnce(response({ ...measure, accept }));
     await expect(service.update(mockMunicipalityId, mockSupportErrandId, 'measure-1', '"3"', changes, user)).rejects.toMatchObject({ status: 409 });
   }

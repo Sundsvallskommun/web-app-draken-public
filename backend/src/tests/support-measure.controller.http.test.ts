@@ -10,8 +10,6 @@ import request from 'supertest';
 
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
-import schemaRequest from '@/schemas/measure-follow-up.schema-request.json';
-import type { SupportJsonParameter } from '@/services/support-json-parameter.service';
 
 import { mockUser } from './helpers/http';
 
@@ -48,7 +46,7 @@ const metadata = {
 const errand = { id: 'errand-1', status: 'ONGOING', version: 2 };
 const measure = {
   id: 'measure-1',
-  measureTypeId: typeId,
+  type: 'EDUCATION',
   version: 3,
   goal: 'Mål',
   description: 'Beskrivning',
@@ -97,7 +95,7 @@ describe('measure write handlers (over HTTP)', () => {
   it('answers 204 after a successful create', async () => {
     const response = await request(server)
       .post(measuresUrl)
-      .send({ measureTypeId: typeId, addedByRole: 'MANAGER', goal: 'Mål', description: 'Beskrivning', executed: '2026-09-08T12:00:00+02:00' });
+      .send({ type: 'EDUCATION', addedByRole: 'MANAGER', goal: 'Mål', description: 'Beskrivning', executed: '2026-09-08T12:00:00+02:00' });
     expect(response.status).toBe(204);
     expect(apiPost).toHaveBeenCalledTimes(1);
   });
@@ -109,34 +107,21 @@ describe('measure write handlers (over HTTP)', () => {
     expect(apiPatch).toHaveBeenCalledTimes(1);
   });
 
-  it('saves the follow-up through its dedicated endpoint and preserves a negative answer', async () => {
+  it('saves the follow-up on the measure through its dedicated endpoint and preserves a negative answer', async () => {
     const approved = { ...measure, accept: 'TRUE', plannedStart: '2026-09-08T00:00:00Z' };
     const answers = { desiredEffectAchieved: false, followUpDescription: 'Ingen förbättring.' };
-    const schema = { ...schemaRequest, id: '2281_measure-follow-up_2.0' };
-    let document: SupportJsonParameter | undefined;
-    apiGet.mockImplementation(async (config: { url?: string }) => {
-      if (config.url?.includes('/schemas/')) return { data: schema, status: 200 };
-      if (config.url?.includes('/json-parameters/')) {
-        if (!document) throw new HttpException(404, 'Not found');
-        return { data: document, status: 200, headers: { etag: '"0"' } };
-      }
-      return { data: config.url?.endsWith('/measures/measure-1') ? approved : errand, status: 200 };
-    });
-    apiPut.mockImplementation(async ({ data }: { data: SupportJsonParameter }) => {
-      document = { ...data, version: 0 };
-      return { data: document, status: 201, headers: { etag: '"0"' } };
-    });
-    apiPatch.mockImplementation(async ({ data }: { data: { executed: string } }) => ({ data: { ...approved, ...data, version: 4 } }));
+    apiGet.mockImplementation(async (config: { url?: string }) => ({
+      data: config.url?.endsWith('/measures/measure-1') ? approved : errand,
+      status: 200,
+    }));
+    apiPatch.mockImplementation(async ({ data }: { data: Record<string, string> }) => ({ data: { ...approved, ...data, version: 4 } }));
     const response = await request(server).patch(`${measuresUrl}/measure-1/follow-up`).set('If-Match', '"3"').send(answers);
     expect(response.status).toBe(204);
-    expect(document?.value.followUps).toEqual([expect.objectContaining(answers)]);
-    expect(apiPut).toHaveBeenCalledWith(
-      expect.objectContaining({ url: expect.stringMatching(/\/json-parameters\/measure-follow-up$/) }),
-      expect.anything(),
-    );
+    expect(apiPut).not.toHaveBeenCalled();
+    expect(apiPatch).toHaveBeenCalledTimes(1);
     expect(apiPatch.mock.calls[0][0]).toMatchObject({
       url: expect.stringMatching(/\/measures\/measure-1$/),
-      data: { executed: expect.any(String) },
+      data: { executed: expect.any(String), result: 'NOT_ACHIEVED', resultText: 'Ingen förbättring.', completedAt: expect.any(String) },
       headers: { 'If-Match': '"3"' },
     });
   });

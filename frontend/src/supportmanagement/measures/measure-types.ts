@@ -1,18 +1,18 @@
 import type { Measure, MeasureType } from '@common/data-contracts/supportmanagement/data-contracts';
 
-type SelectableMeasureType = MeasureType & { id: string };
-
-/** Render Draken's resolved choices; retain the saved type when editing historical measures. */
+/**
+ * Render Draken's resolved choices; retain the saved type when editing historical measures. Types are
+ * keyed by their metadata name, which is what a measure's `type` carries.
+ */
 export const selectableMeasureTypes = (
   types: readonly MeasureType[],
-  availableTypeIds: readonly string[],
-  currentTypeId?: string
-): SelectableMeasureType[] =>
+  availableTypes: readonly string[],
+  currentType?: string
+): MeasureType[] =>
   types
     .filter(
-      (type): type is SelectableMeasureType =>
-        Boolean(type.id) &&
-        (type.id === currentTypeId || (!type.deprecated && availableTypeIds.includes(type.id ?? '')))
+      (type) =>
+        Boolean(type.name) && (type.name === currentType || (!type.deprecated && availableTypes.includes(type.name)))
     )
     .toSorted(
       (a, b) =>
@@ -20,10 +20,7 @@ export const selectableMeasureTypes = (
         (a.displayName || a.name).localeCompare(b.displayName || b.name, 'sv')
     );
 
-export const measureTypeLabel = (
-  types: readonly MeasureType[],
-  measure: Pick<Measure, 'measureTypeId' | 'type'>
-): string => {
-  const type = types.find((candidate) => candidate.id && candidate.id === measure.measureTypeId);
-  return type?.displayName || type?.name || measure.type || measure.measureTypeId || 'Typ saknas';
+export const measureTypeLabel = (types: readonly MeasureType[], measure: Pick<Measure, 'type'>): string => {
+  const type = types.find((candidate) => candidate.name === measure.type);
+  return type?.displayName || measure.type || 'Typ saknas';
 };

@@ -17,7 +17,6 @@ test.skip(
 
 const application = process.env.NEXT_PUBLIC_APPLICATION;
 const basePath = process.env.NEXT_PUBLIC_BASEPATH ?? '';
-const typeId = 'dd000000-0000-4000-8000-000000000100';
 
 const emptyErrandPage = {
   content: [],
@@ -37,7 +36,7 @@ const planned: PlannedMeasuresSnapshot = {
     {
       id: 'measure-soon',
       version: 2,
-      measureTypeId: typeId,
+      type: 'EDUCATION',
       accept: 'TRUE',
       description: 'Utbilda personalen i förflyttningsteknik',
       goal: 'Färre fallskador',
@@ -51,7 +50,7 @@ const planned: PlannedMeasuresSnapshot = {
     {
       id: 'measure-later',
       version: 1,
-      measureTypeId: typeId,
+      type: 'EDUCATION',
       accept: 'REWORK',
       description: 'Byt larmmatta',
       plannedComplete: '2099-12-01T00:00:00+01:00',
@@ -61,7 +60,14 @@ const planned: PlannedMeasuresSnapshot = {
     },
   ],
   metadata: {
-    measureTypes: [{ id: typeId, name: 'EDUCATION', displayName: 'Utbildning' }],
+    measureTypes: [
+      {
+        id: 'dd000000-0000-4000-8000-000000000100',
+        name: 'EDUCATION',
+        displayName: 'Utbildning',
+        measureGroups: ['PREVENTIVE'],
+      },
+    ],
     roles: [{ name: 'UNIT_MANAGER', displayName: 'Enhetschef' }],
   },
   truncated: false,

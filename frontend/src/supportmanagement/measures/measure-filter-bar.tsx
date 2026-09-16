@@ -35,7 +35,7 @@ export function MeasureFilterBar({
   const active = isMeasureFilterActive(filters);
   const set = <K extends keyof MeasureFilters>(key: K, value: MeasureFilters[K]) =>
     onChange({ ...filters, [key]: value });
-  const select = <K extends 'status' | 'decision' | 'role' | 'typeId'>(
+  const select = <K extends 'status' | 'decision' | 'role' | 'type'>(
     key: K,
     label: string,
     options: readonly { value: string; label: string }[]
@@ -64,7 +64,7 @@ export function MeasureFilterBar({
         {select('status', 'Status', statusOptions)}
         {select('decision', 'Beslut', decisionOptions)}
         {select('role', 'Registrerad i rollen', [{ value: '', label: 'Alla' }, ...roles])}
-        {select('typeId', 'Åtgärdstyp', [{ value: '', label: 'Alla' }, ...types])}
+        {select('type', 'Åtgärdstyp', [{ value: '', label: 'Alla' }, ...types])}
         <FormControl id={`${id}-text`} size="sm" className="w-full">
           <FormLabel>Sök</FormLabel>
           <Input

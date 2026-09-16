@@ -13,7 +13,6 @@ import {
 const plannedMeasure = {
   id: '1',
   type: 'OLD',
-  measureTypeId: 'dd000000-0000-4000-8000-000000000101',
   version: 3,
   goal: 'Existing goal',
   description: 'Existing description',
@@ -29,18 +28,12 @@ test('edits only changed fields and preserves exact timestamps, creator and deci
 });
 
 test('collects all required field errors instead of reporting only the first', () => {
-  expect(Object.keys(measureFormErrors(measureFormValues({}), {}))).toEqual([
-    'measureTypeId',
-    'description',
-    'goal',
-    'timing',
-  ]);
+  expect(Object.keys(measureFormErrors(measureFormValues({}), {}))).toEqual(['type', 'description', 'goal', 'timing']);
 });
 
-test('sends the selected type UUID without the read-only type name or version', () => {
-  const measureTypeId = 'dd000000-0000-4000-8000-000000000100';
-  const form = { ...measureFormValues(plannedMeasure), measureTypeId };
-  expect(measureFormChanges(form, plannedMeasure)).toEqual({ measureTypeId });
+test('sends the selected type name without the version', () => {
+  const form = { ...measureFormValues(plannedMeasure), type: 'EDUCATION' };
+  expect(measureFormChanges(form, plannedMeasure)).toEqual({ type: 'EDUCATION' });
 });
 
 test('rejects reversed date ranges and missing required dates', () => {
@@ -84,7 +77,7 @@ test('preselects a single creation role but requires a deliberate choice when se
 test('creates with the selected role key and only the visible dates', () => {
   const form: MeasureForm = {
     ...measureFormValues(),
-    measureTypeId: plannedMeasure.measureTypeId,
+    type: plannedMeasure.type,
     addedByRole: 'NURSE',
     goal: 'Säkrare arbetssätt',
     description: 'Gemensam utbildning',
@@ -94,7 +87,7 @@ test('creates with the selected role key and only the visible dates', () => {
   };
   expect(measureFormErrors(form)).toEqual({});
   expect(measureFormCreate(form)).toEqual({
-    measureTypeId: plannedMeasure.measureTypeId,
+    type: plannedMeasure.type,
     addedByRole: 'NURSE',
     goal: 'Säkrare arbetssätt',
     description: 'Gemensam utbildning',
@@ -144,7 +137,7 @@ test.each(['TRUE', 'FALSE', 'REWORK'])('preserves decided content when editing p
     ...measureFormValues(measure),
     goal: 'Changed',
     description: 'Changed',
-    measureTypeId: 'other',
+    type: 'OTHER',
     responsibleUser: ' Anna ',
   };
   expect(measureFormChanges(form, measure)).toEqual({ responsibleUser: 'Anna' });

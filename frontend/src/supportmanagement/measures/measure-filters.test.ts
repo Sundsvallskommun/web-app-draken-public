@@ -10,8 +10,8 @@ import {
 } from './measure-filters';
 
 const types = [
-  { id: 't-education', name: 'EDUCATION', displayName: 'Utbildningsinsats' },
-  { id: 't-routine', name: 'ROUTINE', displayName: 'Översyn/uppdatering av rutin' },
+  { id: 't-education', name: 'EDUCATION', displayName: 'Utbildningsinsats', measureGroups: ['PREVENTIVE'] },
+  { id: 't-routine', name: 'ROUTINE', displayName: 'Översyn/uppdatering av rutin', measureGroups: ['PREVENTIVE'] },
 ];
 const roles = [
   { name: 'UNIT_MANAGER', displayName: 'Enhetschef' },
@@ -20,7 +20,7 @@ const roles = [
 const measures = [
   {
     id: '1',
-    measureTypeId: 't-education',
+    type: 'EDUCATION',
     description: 'Utbildning i dokumentation',
     goal: 'Korrekt journal',
     plannedStart: '2026-09-12T00:00:00Z',
@@ -29,7 +29,7 @@ const measures = [
   },
   {
     id: '2',
-    measureTypeId: 't-routine',
+    type: 'ROUTINE',
     description: 'Rutinen ses över',
     goal: 'Samma rutin',
     executed: '2026-09-08T00:00:00Z',
@@ -38,7 +38,7 @@ const measures = [
   },
   {
     id: '3',
-    measureTypeId: 't-education',
+    type: 'EDUCATION',
     description: 'Kompetens',
     goal: 'Mer kunskap',
     addedByRole: 'LEX_INVESTIGATOR',
@@ -61,7 +61,7 @@ test('filters combine and free text searches type, description, goal and respons
   expect(ids({ decision: 'proposal' })).toEqual(['1']);
   expect(ids({ role: 'LEX_INVESTIGATOR' })).toEqual(['1', '3']);
   expect(ids({ role: 'LEX_INVESTIGATOR', decision: 'rework' })).toEqual(['3']);
-  expect(ids({ typeId: 't-education', text: 'kunskap' })).toEqual(['3']);
+  expect(ids({ type: 'EDUCATION', text: 'kunskap' })).toEqual(['3']);
   expect(ids({ text: 'UTBILDNINGS' })).toEqual(['1', '3']);
   expect(ids({ text: 'max' })).toEqual(['1']);
   expect(ids({ text: 'dokumentationsutbildningen' })).toEqual(['3']);
@@ -75,8 +75,8 @@ test('offers only roles and types that occur in the list, sorted by label', () =
       { value: 'LEX_INVESTIGATOR', label: 'Lex Sarah' },
     ],
     types: [
-      { value: 't-education', label: 'Utbildningsinsats' },
-      { value: 't-routine', label: 'Översyn/uppdatering av rutin' },
+      { value: 'EDUCATION', label: 'Utbildningsinsats' },
+      { value: 'ROUTINE', label: 'Översyn/uppdatering av rutin' },
     ],
   });
   expect(isMeasureFilterActive(emptyMeasureFilters)).toBe(false);

@@ -186,7 +186,7 @@ koden ändrar inga suffix. Handläggarrollerna ger inga inloggnings- eller skriv
 kommaseparerad lista med grupper.
 
 Utrednings- och beslutsdokumentens rättigheter hämtas per användare och ärende från
-Support Management Sprint 16.1, `GET /{municipalityId}/{namespace}/errands/{errandId}/access`.
+Support Management Sprint 16.0, `GET /{municipalityId}/{namespace}/errands/{errandId}/access`.
 Backend erbjuder projektionen som `GET /supporterrands/{municipalityId}/{errandId}/investigation-access`.
 Den globala utredningsprofilen beskriver dokument och scheman; den innehåller inga behörigheter.
 

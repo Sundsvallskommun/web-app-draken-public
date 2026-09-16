@@ -15,11 +15,13 @@ import {
   type PlannedSupportMeasure,
 } from './planned-measures';
 
-const types: MeasureType[] = [{ id: 'type-education', name: 'EDUCATION', displayName: 'Utbildning' }];
+const types: MeasureType[] = [
+  { id: 'type-education', name: 'EDUCATION', displayName: 'Utbildning', measureGroups: ['PREVENTIVE'] },
+];
 const planned = (fields: Partial<PlannedSupportMeasure>): PlannedSupportMeasure => ({
   id: 'm',
   accept: 'TRUE',
-  measureTypeId: 'type-education',
+  type: 'EDUCATION',
   plannedComplete: '2026-10-01T00:00:00Z',
   errand: { id: 'e', errandNumber: 'VOF-2026-0001', title: 'Fallskada på avdelning 3' },
   ...fields,
@@ -46,12 +48,12 @@ test('free text matches the errand number and title, the type label and the meas
   const measures = [
     planned({ id: 'by-number', errand: { id: 'e1', errandNumber: 'VOF-2026-0007', title: 'Annat' } }),
     planned({ id: 'by-title' }),
-    planned({ id: 'by-type', measureTypeId: 'type-education', errand: { id: 'e3', errandNumber: 'VOF-2026-0009' } }),
-    planned({ id: 'by-goal', goal: 'Färre fall', measureTypeId: 'unknown', errand: { id: 'e4', errandNumber: 'X' } }),
+    planned({ id: 'by-type', type: 'EDUCATION', errand: { id: 'e3', errandNumber: 'VOF-2026-0009' } }),
+    planned({ id: 'by-goal', goal: 'Färre fall', type: 'UNKNOWN', errand: { id: 'e4', errandNumber: 'X' } }),
     planned({
       id: 'by-user',
       responsibleUser: 'abc01abc',
-      measureTypeId: 'unknown',
+      type: 'UNKNOWN',
       errand: { id: 'e5', errandNumber: 'Y' },
     }),
   ];

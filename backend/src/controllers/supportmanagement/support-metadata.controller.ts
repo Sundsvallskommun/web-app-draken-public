@@ -278,8 +278,7 @@ class MeasureType implements IMeasureType {
   displayName?: string | null;
   @IsArray()
   @IsString({ each: true })
-  @IsOptional()
-  measureGroups?: string[];
+  measureGroups!: string[];
   @IsNumber()
   @IsOptional()
   sortOrder?: number | null;

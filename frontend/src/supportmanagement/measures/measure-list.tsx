@@ -1,4 +1,4 @@
-import type { MeasureType, Role } from '@common/data-contracts/supportmanagement/data-contracts';
+import type { Measure, MeasureType, Role } from '@common/data-contracts/supportmanagement/data-contracts';
 import { getNameFromADUsername } from '@common/services/user-service';
 import { Button, Checkbox, Icon, Label } from '@sk-web-gui/react';
 import { useUserStore } from '@stores/user-store';
@@ -6,13 +6,13 @@ import dayjs from 'dayjs';
 import { ClipboardCheck, FileText, Pencil } from 'lucide-react';
 
 import { measureCanBeDecided, measureDecisionPresentation } from './measure-decision';
-import { measureCanBeFollowedUp, measureHasFollowUp, type SupportMeasure } from './measure-follow-up';
+import { measureCanBeFollowedUp, measureFollowUp, measureHasFollowUp } from './measure-follow-up';
 import { isOwnMeasure } from './measure-ownership';
 import { measureTypeLabel } from './measure-types';
 
 const date = (value?: string) => (value ? dayjs(value).format('YYYY-MM-DD') : undefined);
 
-function timing(measure: SupportMeasure): { label: string; color: string; dateLine?: string } {
+function timing(measure: Measure): { label: string; color: string; dateLine?: string } {
   if (measure.executed)
     return {
       label: measureHasFollowUp(measure) ? 'Utförd' : 'Genomförd',
@@ -38,14 +38,14 @@ export function MeasureList({
   onFollowUp,
   emptyMessage = 'Det finns inga åtgärder registrerade.',
 }: {
-  measures: readonly SupportMeasure[];
+  measures: readonly Measure[];
   types: readonly MeasureType[];
   roles: readonly Role[];
   /** Session username; only the person who registered a measure may edit it. */
   currentUser?: string;
-  onEdit?: (measure: SupportMeasure) => void;
-  onDecide?: (measure: SupportMeasure) => void;
-  onFollowUp?: (measure: SupportMeasure) => void;
+  onEdit?: (measure: Measure) => void;
+  onDecide?: (measure: Measure) => void;
+  onFollowUp?: (measure: Measure) => void;
   emptyMessage?: string;
 }) {
   const administrators = useUserStore((state) => state.administrators);
@@ -70,6 +70,7 @@ export function MeasureList({
           onFollowUp && measureCanBeFollowedUp(measure) && isOwnMeasure(measure, currentUser)
         );
         const responsible = userLabel(measure.responsibleUser);
+        const followUp = measureFollowUp(measure);
         return (
           <li
             key={measure.id ?? index}
@@ -121,22 +122,14 @@ export function MeasureList({
                   <p className="whitespace-pre-wrap break-words">{measure.acceptMotivation}</p>
                 </div>
               )}
-              {measure.followUp && (
+              {followUp && (
                 <div className="rounded-8 border-1 border-gronsta-surface-primary bg-gronsta-background-100 p-12 flex flex-col gap-8">
                   <p>
-                    <strong>Önskad effekt uppnådd:</strong> {measure.followUp.desiredEffectAchieved ? 'Ja' : 'Nej'}
+                    <strong>Önskad effekt uppnådd:</strong> {followUp.desiredEffectAchieved ? 'Ja' : 'Nej'}
                   </p>
                   <p className="whitespace-pre-wrap break-words">
-                    <strong>Vad har hänt:</strong> {measure.followUp.followUpDescription}
+                    <strong>Vad har hänt:</strong> {followUp.followUpDescription}
                   </p>
-                  {measure.followUp.status === 'pending' && (
-                    <p role="status">
-                      Svaren är sparade. Genomförandet behöver bekräftas för att slutföra uppföljningen.
-                    </p>
-                  )}
-                  {measure.followUp.status === 'conflict' && (
-                    <p role="alert">Genomförandedatumet avviker från uppföljningen. Kontakta administratören.</p>
-                  )}
                 </div>
               )}
               <p className="text-small text-dark-secondary">

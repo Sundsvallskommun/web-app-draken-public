@@ -1,28 +1,14 @@
 import type { Measure } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
-import schemaRequest from '@/schemas/measure-follow-up.schema-request.json';
 import ApiService, { type ApiRequestConfig, type ApiResponse } from '@/services/api.service';
-import type { JsonObject } from '@/services/schema-bound-json.service';
-import type { SupportJsonParameter } from '@/services/support-json-parameter.service';
 import { SupportMeasureService } from '@/services/support-measure.service';
 
 import { mockUser } from './helpers/http';
 
 const user = mockUser();
 const answers = { desiredEffectAchieved: false, followUpDescription: 'Ingen förbättring ännu.' };
-const schema = { ...schemaRequest, id: '2281_measure-follow-up_2.0' };
-/** A follow-up of another measure on the same errand, saved before the one under test. */
-const otherFollowUp = {
-  measureId: 'measure-0',
-  measureVersion: 1,
-  executed: '2026-09-01T12:00:00Z',
-  desiredEffectAchieved: true,
-  followUpDescription: 'Utbildningen är genomförd.',
-  recordedBy: 'someone-else',
-  recordedAt: '2026-09-01T12:00:00Z',
-};
 
-/** Simulates SM 16.1 persistence, including writes that succeed but lose their response. */
+/** Simulates the SM 16.0 measure resource, including writes that succeed but lose their response. */
 class MeasureApi extends ApiService {
   measure: Measure = {
     id: 'measure-1',
@@ -32,73 +18,33 @@ class MeasureApi extends ApiService {
     plannedStart: '2026-09-08T12:00:00Z',
     goal: 'Originalmål',
   };
-  document?: SupportJsonParameter;
-  /** The document's version; -1 while none exists, which is what a create-only write asks for. */
-  documentVersion = -1;
-  documentUrls: string[] = [];
   parent = { version: 7, status: 'ONGOING' };
-  failure?: 'put-before' | 'put-after' | 'patch-before' | 'patch-after' | 'stale' | 'denied' | 'schema' | 'race';
-  patches: unknown[] = [];
-  puts = 0;
+  failure?: 'patch-before' | 'patch-after' | 'race' | 'denied';
+  patches: ApiRequestConfig[] = [];
 
   private response<T>(data: unknown, status = 200, version?: number): ApiResponse<T> {
     return { data: structuredClone(data) as T, message: 'success', status, headers: version === undefined ? {} : { etag: `"${version}"` } };
   }
 
-  seed(followUps: JsonObject[]) {
-    this.documentVersion = 0;
-    this.document = { key: 'measure-follow-up', schemaId: schema.id, value: { followUps }, version: 0 };
-  }
-
-  followUpOf(measureId = 'measure-1'): JsonObject | undefined {
-    return (this.document?.value.followUps as JsonObject[] | undefined)?.find(entry => entry.measureId === measureId);
-  }
-
   override async get<T>(config: ApiRequestConfig): Promise<ApiResponse<T>> {
     const url = config.url ?? '';
-    if (url.includes('/schemas/')) {
-      if (this.failure === 'schema') throw new HttpException(404, 'Missing schema');
-      return this.response(schema);
-    }
-    if (url.includes('/json-parameters/')) {
-      this.documentUrls.push(url);
-      if (this.failure === 'denied') throw new HttpException(403, 'Denied');
-      if (!this.document) throw new HttpException(404, 'Not found');
-      return this.response(this.document, 200, this.documentVersion);
-    }
     if (url.endsWith('/metadata')) return this.response({ measureTypes: [], roles: [] });
     if (url.endsWith('/measures')) return this.response([this.measure]);
     if (url.endsWith('/measures/measure-1')) return this.response(this.measure);
     return this.response(this.parent, 200, this.parent.version);
   }
 
-  override async put<T, D>(config: ApiRequestConfig<D>): Promise<ApiResponse<T>> {
-    this.puts++;
-    this.documentUrls.push(config.url ?? '');
-    if (this.failure === 'put-before') throw new HttpException(503, 'Unavailable');
-    if (this.failure === 'race' && this.puts === 1) {
-      // Another measure's follow-up lands between this command's read and its write.
-      this.seed([otherFollowUp]);
-    }
-    const expected = this.document ? `"${this.documentVersion}"` : '"-1"';
-    if ((config.headers as Record<string, string> | undefined)?.['If-Match'] !== expected) throw new HttpException(412, 'Precondition failed');
-    const created = !this.document;
-    this.documentVersion++;
-    this.document = { ...(config.data as SupportJsonParameter), version: this.documentVersion };
-    this.parent.version++;
-    if (this.failure === 'stale') this.measure.version = 4;
-    if (this.failure === 'put-after') throw new HttpException(503, 'Lost response');
-    return this.response(this.document, created ? 201 : 200, this.documentVersion);
-  }
-
   override async patch<T, D>(config: ApiRequestConfig<D>): Promise<ApiResponse<T>> {
     expect(config.url).toMatch(/\/measures\/measure-1$/);
-    expect(this.followUpOf()).toBeDefined();
-    expect(config.data).toEqual({ executed: this.followUpOf()?.executed });
-    expect(config.headers).toEqual({ 'If-Match': `"${this.measure.version}"` });
-    this.patches.push(config.data);
+    this.patches.push(config);
+    if (this.failure === 'denied') throw new HttpException(403, 'Denied');
     if (this.failure === 'patch-before') throw new HttpException(503, 'Unavailable');
-    this.measure = { ...this.measure, ...(config.data as Pick<Measure, 'executed'>), version: (this.measure.version ?? 0) + 1 };
+    // Another writer changes the measure between this command's read and its write.
+    if (this.failure === 'race' && this.patches.length === 1) this.measure.version = (this.measure.version ?? 0) + 1;
+    if ((config.headers as Record<string, string> | undefined)?.['If-Match'] !== `"${this.measure.version}"`) {
+      throw new HttpException(412, 'Precondition failed');
+    }
+    this.measure = { ...this.measure, ...(config.data as Measure), version: (this.measure.version ?? 0) + 1 };
     this.parent.version++;
     if (this.failure === 'patch-after') throw new HttpException(503, 'Lost response');
     return this.response(this.measure);
@@ -116,109 +62,93 @@ function setup() {
   };
 }
 
-test.each(['TRUE', 'REWORK'] as const)('persists a negative answer for %s through existing SM resources', async accept => {
+test.each(['TRUE', 'REWORK'] as const)('saves answers, completion and execution for %s in one conditioned measure write', async accept => {
   const { api, save, read } = setup();
   api.measure.accept = accept;
   await save();
-  expect(api.followUpOf()).toMatchObject({ ...answers, measureId: 'measure-1', measureVersion: 3, recordedBy: user.username });
+  expect(api.patches).toHaveLength(1);
+  expect(api.patches[0].headers).toEqual({ 'If-Match': '"3"' });
+  expect(api.patches[0].data).toEqual({
+    executed: expect.any(String),
+    result: 'NOT_ACHIEVED',
+    resultText: answers.followUpDescription,
+    completedAt: expect.any(String),
+  });
+  const saved = api.patches[0].data as Measure;
+  expect(saved.executed).toBe(saved.completedAt);
   expect((await read()).measures[0]).toMatchObject({
     goal: 'Originalmål',
     plannedStart: api.measure.plannedStart,
-    followUp: { status: 'completed', ...answers },
+    result: 'NOT_ACHIEVED',
+    resultText: answers.followUpDescription,
+    version: 4,
   });
-  expect(api.puts).toBe(1);
-  expect(api.patches).toHaveLength(1);
 });
 
-// AccessMapper grants JSON parameters per key, so a key naming the measure could never be granted.
-test('keeps every follow-up of the errand in one document under a stable key', async () => {
+test('saves a desired effect as achieved and trims what happened', async () => {
   const { api, save } = setup();
-  api.seed([otherFollowUp]);
-  await save();
-  expect(api.document?.value.followUps).toEqual([otherFollowUp, expect.objectContaining({ ...answers, measureId: 'measure-1' })]);
-  expect(api.documentUrls.length).toBeGreaterThan(0);
-  expect(api.documentUrls.every(url => url.endsWith('/json-parameters/measure-follow-up'))).toBe(true);
-  expect(api.puts).toBe(1);
+  await save(3, { desiredEffectAchieved: true, followUpDescription: '  Utbildningen är genomförd.  ' });
+  expect(api.measure).toMatchObject({ result: 'ACHIEVED', resultText: 'Utbildningen är genomförd.' });
 });
 
-test('retries once when another follow-up lands between reading and appending, and keeps both', async () => {
-  const { api, save } = setup();
-  api.failure = 'race';
-  await save();
-  expect(api.document?.value.followUps).toEqual([otherFollowUp, expect.objectContaining({ ...answers, measureId: 'measure-1' })]);
-  expect(api.puts).toBe(2);
-  expect(api.patches).toHaveLength(1);
-});
-
-test('treats a measure followed up twice as a corrupt document', async () => {
-  const { api, read } = setup();
-  api.seed([otherFollowUp, { ...otherFollowUp, followUpDescription: 'En andra uppföljning.' }]);
-  await expect(read()).rejects.toMatchObject({ status: 502 });
-});
+test.each([{ followUpDescription: '   ' }, { followUpDescription: 'x'.repeat(4001) }])(
+  'rejects incomplete answers without writing: %j',
+  async fields => {
+    const { api, save } = setup();
+    await expect(save(3, { ...answers, ...fields })).rejects.toMatchObject({ status: 400 });
+    expect(api.patches).toHaveLength(0);
+  },
+);
 
 test('preserves an already recorded execution date', async () => {
-  const { api, save, read } = setup();
+  const { api, save } = setup();
   api.measure.executed = '2026-09-09T12:00:00Z';
   await save();
-  expect(api.followUpOf()?.executed).toBe(api.measure.executed);
-  expect(api.patches).toHaveLength(0);
-  expect((await read()).measures[0].followUp?.status).toBe('completed');
+  expect(api.patches[0].data).not.toHaveProperty('executed');
+  expect(api.measure).toMatchObject({ executed: '2026-09-09T12:00:00Z', result: 'NOT_ACHIEVED' });
 });
 
-test('never executes when the document was not saved', async () => {
+test('saves nothing when the write fails before it is applied', async () => {
   const { api, save } = setup();
-  api.failure = 'put-before';
-  await expect(save()).rejects.toMatchObject({ status: 503 });
-  expect(api.document).toBeUndefined();
-  expect(api.patches).toHaveLength(0);
-});
-
-test('recovers a lost document response by reading durable answers', async () => {
-  const { api, save, read } = setup();
-  api.failure = 'put-after';
-  await save();
-  expect((await read()).measures[0].followUp?.status).toBe('completed');
-  expect(api.puts).toBe(1);
-});
-
-test('shows pending answers after failed execution and completes with an explicit retry', async () => {
-  const { api, save, read } = setup();
   api.failure = 'patch-before';
   await expect(save()).rejects.toMatchObject({ status: 503 });
-  expect((await read()).measures[0].followUp).toEqual({ status: 'pending', ...answers });
-  await expect(save(3, { ...answers, followUpDescription: 'Ersätt svaren' })).rejects.toMatchObject({ status: 409 });
-  api.failure = undefined;
-  await save();
-  expect((await read()).measures[0].followUp?.status).toBe('completed');
-  expect(api.puts).toBe(1);
+  expect(api.measure.result).toBeUndefined();
+  expect(api.measure.executed).toBeUndefined();
 });
 
-test('accepts an identical retry after a lost execution response despite the old version', async () => {
-  const { api, save, read } = setup();
+test('accepts an identical retry after a lost response despite the old version', async () => {
+  const { api, save } = setup();
   api.failure = 'patch-after';
   await expect(save()).rejects.toMatchObject({ status: 503 });
-  expect((await read()).measures[0].followUp?.status).toBe('completed');
+  api.failure = undefined;
   await save();
-  expect(api.puts).toBe(1);
   expect(api.patches).toHaveLength(1);
+  expect(api.measure.version).toBe(4);
 });
 
-test('preserves answers across a concurrent measure change and requires its fresh version', async () => {
+test('never replaces the answers of a measure that is already followed up', async () => {
   const { api, save } = setup();
-  api.failure = 'stale';
+  await save();
+  await expect(save(4, { ...answers, followUpDescription: 'Ersätt svaren' })).rejects.toMatchObject({ status: 409 });
+  await expect(save(4, { ...answers, desiredEffectAchieved: true })).rejects.toMatchObject({ status: 409 });
+  expect(api.patches).toHaveLength(1);
+  expect(api.measure.resultText).toBe(answers.followUpDescription);
+});
+
+test('lets Support Management refuse a measure changed after it was read, and succeeds on its fresh version', async () => {
+  const { api, save } = setup();
+  api.failure = 'race';
   await expect(save()).rejects.toMatchObject({ status: 412 });
-  expect(api.patches).toHaveLength(0);
+  expect(api.measure.result).toBeUndefined();
   await save(4);
-  expect(api.measure.executed).toBe(api.followUpOf()?.executed);
-  expect(api.puts).toBe(1);
+  expect(api.measure).toMatchObject({ result: 'NOT_ACHIEVED', version: 5 });
 });
 
-test.each(['denied', 'schema'] as const)('fails explicitly for %s without writing', async failure => {
+test('passes a refusal from the measure resource on unchanged', async () => {
   const { api, save } = setup();
-  api.failure = failure;
-  await expect(save()).rejects.toMatchObject({ status: failure === 'denied' ? 403 : 503 });
-  expect(api.puts).toBe(0);
-  expect(api.patches).toHaveLength(0);
+  api.failure = 'denied';
+  await expect(save()).rejects.toMatchObject({ status: 403 });
+  expect(api.measure.result).toBeUndefined();
 });
 
 test.each([{ accept: undefined }, { accept: 'FALSE' }, { plannedStart: undefined }, { addedByUser: 'someone-else' }] as const)(
@@ -227,42 +157,32 @@ test.each([{ accept: undefined }, { accept: 'FALSE' }, { plannedStart: undefined
     const { api, save } = setup();
     api.measure = { ...api.measure, ...fields };
     await expect(save()).rejects.toMatchObject({ status: fields.addedByUser ? 403 : 409 });
-    expect(api.puts).toBe(0);
+    expect(api.patches).toHaveLength(0);
   },
 );
 
-test('does not hide a missing schema for an existing document as absent follow-up', async () => {
-  const { api, save, read } = setup();
-  await save();
-  api.failure = 'schema';
-  await expect(read()).rejects.toMatchObject({ status: 404 });
-});
-
-test('concurrent commands save only one immutable answer for the measure', async () => {
+test('concurrent commands save only one answer for the measure', async () => {
   const { api, save } = setup();
   const outcomes = await Promise.allSettled([save(), save(3, { ...answers, followUpDescription: 'Ett annat svar' })]);
   expect(outcomes.filter(outcome => outcome.status === 'fulfilled')).toHaveLength(1);
-  expect(api.document?.value.followUps).toHaveLength(1);
-  expect(api.followUpOf()?.followUpDescription).toBe(answers.followUpDescription);
-  expect(api.patches).toHaveLength(1);
+  expect(api.measure.resultText).toBe(answers.followUpDescription);
+  expect(api.measure.version).toBe(4);
 });
 
-test('rejects locked errands and stale measure versions before reserving answers', async () => {
+test('rejects locked errands and stale measure versions before writing', async () => {
   const { api, save } = setup();
   api.parent.status = 'SOLVED';
   await expect(save()).rejects.toMatchObject({ status: 409 });
   api.parent.status = 'ONGOING';
   await expect(save(2)).rejects.toMatchObject({ status: 412 });
-  expect(api.puts).toBe(0);
+  expect(api.patches).toHaveLength(0);
 });
 
-test('ordinary editing cannot change the execution belonging to saved follow-up', async () => {
-  const { api, service, save, read } = setup();
+test('ordinary editing cannot change the execution belonging to a saved follow-up', async () => {
+  const { api, service, save } = setup();
   await save();
   await expect(service.update('2281', 'errand-1', 'measure-1', '"4"', { executed: '2026-09-09T00:00:00Z' }, user)).rejects.toMatchObject({
     status: 409,
   });
-  api.measure.executed = '2026-09-09T00:00:00Z';
-  expect((await read()).measures[0].followUp?.status).toBe('conflict');
-  await expect(save(4)).rejects.toMatchObject({ status: 409 });
+  expect(api.patches).toHaveLength(1);
 });

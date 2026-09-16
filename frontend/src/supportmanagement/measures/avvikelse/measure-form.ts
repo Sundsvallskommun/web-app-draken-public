@@ -5,7 +5,7 @@ import { measureContentIsLocked, measureIsApproved } from '../measure-decision';
 import type { MeasureChanges, NewMeasure } from '../support-measure-service';
 
 export interface MeasureForm {
-  measureTypeId: string;
+  type: string;
   addedByRole: string;
   timing: '' | 'planned' | 'executed';
   responsibleUser: string;
@@ -17,7 +17,7 @@ export interface MeasureForm {
 }
 
 export const measureFormValues = (measure?: Measure, creationRoles: readonly Role[] = []): MeasureForm => ({
-  measureTypeId: measure?.measureTypeId ?? '',
+  type: measure?.type ?? '',
   addedByRole: measure ? measure.addedByRole ?? '' : creationRoles.length === 1 ? creationRoles[0].name : '',
   timing: measure?.executed ? 'executed' : measure?.plannedStart || measure?.plannedComplete ? 'planned' : '',
   responsibleUser: measure?.responsibleUser ?? '',
@@ -64,7 +64,7 @@ export function measureFormErrors(
   policy: MeasureFormPolicy = { canExecute: true }
 ): MeasureFormErrors {
   const errors: MeasureFormErrors = {};
-  if (!values.measureTypeId) errors.measureTypeId = 'Välj typ av åtgärd.';
+  if (!values.type) errors.type = 'Välj typ av åtgärd.';
   if (!existing && !values.addedByRole) errors.addedByRole = 'Välj vilken roll åtgärden registreras för.';
   if (!values.description.trim()) errors.description = 'Beskriv vad åtgärden innebär.';
   if (!values.goal.trim()) errors.goal = 'Beskriv vad åtgärden ska uppnå.';
@@ -92,7 +92,7 @@ export function measureFormErrors(
 
 /** The editable fields; addedByRole is fixed for an existing measure and never rebases. */
 const REBASABLE_FIELDS = [
-  'measureTypeId',
+  'type',
   'timing',
   'responsibleUser',
   'goal',
@@ -103,7 +103,7 @@ const REBASABLE_FIELDS = [
 ] as const satisfies readonly (keyof MeasureForm)[];
 
 const FIELD_LABELS: Record<(typeof REBASABLE_FIELDS)[number], string> = {
-  measureTypeId: 'Typ av åtgärd',
+  type: 'Typ av åtgärd',
   timing: 'Genomförd eller planerad',
   responsibleUser: 'Ansvarig',
   goal: 'Mål',
@@ -152,7 +152,7 @@ export function measureFormRebase(
 export function measureFormChanges(values: MeasureForm, existing: Measure): MeasureChanges {
   const initial = measureFormValues(existing);
   const changes: MeasureChanges = {};
-  for (const key of ['measureTypeId', 'responsibleUser', 'goal', 'description'] as const) {
+  for (const key of ['type', 'responsibleUser', 'goal', 'description'] as const) {
     if (key !== 'responsibleUser' && measureContentIsLocked(existing)) continue;
     // Responsible is free text, so surrounding whitespace is not a change worth sending.
     const value = key === 'responsibleUser' ? values[key].trim() : values[key];
@@ -167,7 +167,7 @@ export function measureFormChanges(values: MeasureForm, existing: Measure): Meas
 export function measureFormCreate(values: MeasureForm): NewMeasure {
   return {
     ...measureFormChanges(values, {}),
-    measureTypeId: values.measureTypeId,
+    type: values.type,
     addedByRole: values.addedByRole,
     goal: values.goal,
     description: values.description,

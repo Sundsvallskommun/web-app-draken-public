@@ -33,7 +33,6 @@ vi.mock('./support-measure-service', () => ({
 const measure: Measure = {
   id: 'measure-one',
   version: 3,
-  measureTypeId: 'type-one',
   type: 'EDUCATION',
   addedByUser: 'creator',
   addedByRole: 'MANAGER',
@@ -48,13 +47,13 @@ const snapshot: MeasuresSnapshot = {
   measures: [measure],
   errandVersion: 4,
   metadata: {
-    measureTypes: [{ id: 'type-one', name: 'EDUCATION', displayName: 'Utbildning' }],
+    measureTypes: [{ id: 'type-one', name: 'EDUCATION', displayName: 'Utbildning', measureGroups: ['PREVENTIVE'] }],
     roles: [{ name: 'MANAGER', displayName: 'Enhetschef' }],
   },
   creationRoles: [{ name: 'MANAGER', displayName: 'Enhetschef' }],
   registration: {
     status: 'ready',
-    roleTypes: [{ roleName: 'MANAGER', measureTypeIds: ['type-one'], decides: true }],
+    roleTypes: [{ roleName: 'MANAGER', measureTypes: ['EDUCATION'], decides: true }],
   },
   canWrite: true,
 };
@@ -135,7 +134,14 @@ test.each(['Ja', 'Nej'])(
     const result = { desiredEffectAchieved: answer === 'Ja', followUpDescription: 'Personalen har fått utbildning.' };
     mocks.read.mockResolvedValue({
       ...snapshot,
-      measures: [{ ...measure, followUp: { status: 'completed', ...result }, executed: '2026-09-11T12:00:00Z' }],
+      measures: [
+        {
+          ...measure,
+          result: answer === 'Ja' ? 'ACHIEVED' : 'NOT_ACHIEVED',
+          resultText: result.followUpDescription,
+          executed: '2026-09-11T12:00:00Z',
+        },
+      ],
     });
     fireEvent.click(save);
     await waitFor(() => expect(mocks.followUp).toHaveBeenCalledWith('2281', 'errand-one', 'measure-one', 3, result));
@@ -158,25 +164,40 @@ test('cancel leaves the measure incomplete and does not save', async () => {
   expect(mocks.dirty).toHaveBeenLastCalledWith(false);
 });
 
-test('reopens saved pending answers read-only and finishes execution', async () => {
+test('a follow-up whose response was lost is recognised as saved from the reloaded measure', async () => {
   const answers = { desiredEffectAchieved: false, followUpDescription: 'Sparat före avbrottet' };
-  mocks.read.mockResolvedValue({
-    ...snapshot,
-    measures: [{ ...measure, followUp: { status: 'pending', ...answers } }],
-  });
+  mocks.followUp.mockRejectedValueOnce(
+    new AxiosError('Unavailable', 'ERR_BAD_RESPONSE', undefined, undefined, {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: {},
+      config: { headers: new AxiosHeaders() },
+      data: {},
+    })
+  );
   render(<Harness />);
   fireEvent.click(await screen.findByRole('checkbox', { name: 'Utförd: Utbildning' }));
   const dialog = await screen.findByRole('dialog');
-  expect(within(dialog).getByDisplayValue(answers.followUpDescription).closest('fieldset')?.disabled).toBe(true);
-  expect((within(dialog).getByRole('radio', { name: 'Nej' }) as HTMLInputElement).checked).toBe(true);
+  fireEvent.click(within(dialog).getByRole('radio', { name: 'Nej' }));
+  fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: answers.followUpDescription } });
   mocks.read.mockResolvedValue({
     ...snapshot,
-    measures: [{ ...measure, executed: '2026-09-11T12:00:00Z', followUp: { status: 'completed', ...answers } }],
+    measures: [
+      {
+        ...measure,
+        version: 4,
+        executed: '2026-09-11T12:00:00Z',
+        result: 'NOT_ACHIEVED',
+        resultText: answers.followUpDescription,
+      },
+    ],
   });
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Slutför sparandet' }));
-  await waitFor(() => expect(mocks.followUp).toHaveBeenCalledWith('2281', 'errand-one', 'measure-one', 3, answers));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Spara uppföljning' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  expect(mocks.followUp).toHaveBeenCalledTimes(1);
+  expect(mocks.followUp).toHaveBeenCalledWith('2281', 'errand-one', 'measure-one', 3, answers);
   expect(await screen.findByText('Utförd')).toBeTruthy();
+  expect(screen.getByText(answers.followUpDescription)).toBeTruthy();
 });
 
 test('a version conflict preserves answers and never replaces someone else’s recorded follow-up', async () => {
@@ -201,7 +222,8 @@ test('a version conflict preserves answers and never replaces someone else’s r
         ...measure,
         version: 4,
         executed: '2026-09-11T12:00:00Z',
-        followUp: { status: 'completed', desiredEffectAchieved: true, followUpDescription: 'Tidigare sparat svar' },
+        result: 'ACHIEVED',
+        resultText: 'Tidigare sparat svar',
       },
     ],
   });

@@ -34,9 +34,9 @@ test('does not follow up a measure without its version', async () => {
   expect(apiService.patch).not.toHaveBeenCalled();
 });
 
-test('creates with a UUID and role key without an errand version or browser-supplied creator', async () => {
+test('creates with a type name and role key without an errand version or browser-supplied creator', async () => {
   const data = {
-    measureTypeId: 'dd000000-0000-4000-8000-000000000100',
+    type: 'EDUCATION',
     addedByRole: 'NURSE',
     goal: 'Säkrare arbetssätt',
     description: 'Gemensam utbildning',
@@ -45,8 +45,8 @@ test('creates with a UUID and role key without an errand version or browser-supp
   expect(apiService.post).toHaveBeenCalledWith('supporterrands/2281/errand-id/measures', data);
 });
 
-test('sends the edited measure version and UUID reference in separate header and body fields', async () => {
-  const changes = { measureTypeId: 'dd000000-0000-4000-8000-000000000100' };
+test('sends the edited measure version and type name in separate header and body fields', async () => {
+  const changes = { type: 'EDUCATION' };
   await updateSupportMeasure('2281', 'errand-id', 'measure-id', 3, changes);
   expect(apiService.patch).toHaveBeenCalledWith('supporterrands/2281/errand-id/measures/measure-id', changes, {
     headers: { 'If-Match': '"3"' },

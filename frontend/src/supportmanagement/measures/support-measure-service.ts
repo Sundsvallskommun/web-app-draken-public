@@ -2,17 +2,18 @@ import type { Measure, MeasureType, Role } from '@common/data-contracts/supportm
 import { apiService } from '@common/services/api-service';
 
 import type { MeasureDecisionInput } from './measure-decision';
-import type { MeasureFollowUpInput, SupportMeasure } from './measure-follow-up';
+import type { MeasureFollowUpInput } from './measure-follow-up';
 import type { PlannedSupportMeasure } from './planned-measures';
 
 export interface MeasuresSnapshot {
-  measures: SupportMeasure[];
+  measures: Measure[];
   errandVersion: number;
   metadata: { measureTypes: MeasureType[]; roles: Role[] };
   creationRoles: Role[];
   registration: {
     status: 'ready' | 'unconfigured' | 'invalid';
-    roleTypes: { roleName: string; measureTypeIds: string[]; decides: boolean }[];
+    /** The measure types each role registers, by the metadata name a measure's `type` carries. */
+    roleTypes: { roleName: string; measureTypes: string[]; decides: boolean }[];
   };
   /** Whether Support Management lets the user write the errand's measures. The list stays readable without it. */
   canWrite: boolean;
@@ -27,11 +28,10 @@ export interface PlannedMeasuresSnapshot {
 
 export type MeasureChanges = Pick<
   Measure,
-  'measureTypeId' | 'responsibleUser' | 'goal' | 'description' | 'plannedStart' | 'plannedComplete' | 'executed'
+  'type' | 'responsibleUser' | 'goal' | 'description' | 'plannedStart' | 'plannedComplete' | 'executed'
 >;
 
-export type NewMeasure = MeasureChanges &
-  Required<Pick<Measure, 'measureTypeId' | 'addedByRole' | 'goal' | 'description'>>;
+export type NewMeasure = MeasureChanges & Required<Pick<Measure, 'type' | 'addedByRole' | 'goal' | 'description'>>;
 
 const measuresUrl = (municipalityId: string, errandId: string) =>
   `supporterrands/${encodeURIComponent(municipalityId)}/${encodeURIComponent(errandId)}/measures`;

@@ -43,8 +43,8 @@ test('resolves exact metadata identities from the role groups and exposes only p
   expect(resolved.registration).toEqual({
     status: 'ready',
     roleTypes: [
-      { roleName: 'MANAGER', measureTypeIds: ['education-id', 'supervision-id'], decides: false },
-      { roleName: 'NURSE', measureTypeIds: ['education-id'], decides: false },
+      { roleName: 'MANAGER', measureTypes: ['EDUCATION', 'SUPERVISION'], decides: false },
+      { roleName: 'NURSE', measureTypes: ['EDUCATION'], decides: false },
     ],
   });
   expect(JSON.stringify(resolved)).not.toContain('AD-MANAGER');
@@ -96,24 +96,25 @@ test('a registration role missing from the namespace metadata invalidates the po
 
 test('checks both group membership and type choices when saving', () => {
   const resolved = resolveSupportMeasureRegistration(metadata, ['AD-NURSE'], roles, SUPERADMINS);
-  expect(() => assertMeasureRegistration(resolved, 'NURSE', 'education-id')).not.toThrow();
-  expect(() => assertMeasureRegistration(resolved, 'MANAGER', 'education-id')).toThrow('saknar');
-  expect(() => assertMeasureRegistration(resolved, 'NURSE', 'supervision-id')).toThrow('inte tillgänglig');
-  expect(() => assertMeasureRegistration(resolved, 'NURSE', 'old-id')).toThrow('inte tillgänglig');
+  expect(() => assertMeasureRegistration(resolved, 'NURSE', 'EDUCATION')).not.toThrow();
+  expect(() => assertMeasureRegistration(resolved, 'MANAGER', 'EDUCATION')).toThrow('saknar');
+  expect(() => assertMeasureRegistration(resolved, 'NURSE', 'SUPERVISION')).toThrow('inte tillgänglig');
+  expect(() => assertMeasureRegistration(resolved, 'NURSE', 'OLD')).toThrow('inte tillgänglig');
+  expect(() => assertMeasureRegistration(resolved, 'NURSE', 'Utbildning')).toThrow('inte tillgänglig');
 });
 
 test('changing a historical type uses the saved role while leaving editor authorization to the protected resource', () => {
   const resolved = resolveSupportMeasureRegistration(metadata, [], roles, SUPERADMINS);
   expect(resolved.creationRoles).toEqual([]);
-  expect(() => assertMeasureTypeForRole(resolved.registration, 'MANAGER', 'supervision-id')).not.toThrow();
-  expect(() => assertMeasureTypeForRole(resolved.registration, 'NURSE', 'supervision-id')).toThrow('inte tillgänglig');
+  expect(() => assertMeasureTypeForRole(resolved.registration, 'MANAGER', 'SUPERVISION')).not.toThrow();
+  expect(() => assertMeasureTypeForRole(resolved.registration, 'NURSE', 'SUPERVISION')).toThrow('inte tillgänglig');
 });
 
 test('empty type choices never expand to all active metadata types', () => {
   const resolved = resolveSupportMeasureRegistration(metadata, ['AD-MANAGER'], withManagerMeasures({ measureGroup: 'NO_TYPES' }), SUPERADMINS);
   expect(resolved.creationRoles.map(role => role.name)).toEqual(['MANAGER']);
-  expect(resolved.registration.roleTypes[0].measureTypeIds).toEqual([]);
-  expect(() => assertMeasureRegistration(resolved, 'MANAGER', 'education-id')).toThrow('inte tillgänglig');
+  expect(resolved.registration.roleTypes[0].measureTypes).toEqual([]);
+  expect(() => assertMeasureRegistration(resolved, 'MANAGER', 'EDUCATION')).toThrow('inte tillgänglig');
 });
 
 test('new and reassigned metadata types change choices without changing local configuration', () => {
@@ -122,23 +123,22 @@ test('new and reassigned metadata types change choices without changing local co
     measureTypes: [
       { id: 'new-id', name: 'NEW_TYPE', measureGroups: ['MANAGERS', 'CLINICAL'] },
       { id: 'education-id', name: 'EDUCATION', measureGroups: ['CLINICAL'] },
-      { id: 'no-group-id', name: 'UNASSIGNED' },
       { id: 'empty-id', name: 'EMPTY', measureGroups: [] },
       { id: 'similar-id', name: 'SIMILAR', measureGroups: ['MANAGERS_OTHER'] },
     ],
   };
   const resolved = resolveSupportMeasureRegistration(changed, ['AD-MANAGER', 'AD-NURSE'], roles, SUPERADMINS);
   expect(resolved.registration.roleTypes).toEqual([
-    { roleName: 'MANAGER', measureTypeIds: ['new-id'], decides: false },
-    { roleName: 'NURSE', measureTypeIds: ['new-id', 'education-id'], decides: false },
+    { roleName: 'MANAGER', measureTypes: ['NEW_TYPE'], decides: false },
+    { roleName: 'NURSE', measureTypes: ['NEW_TYPE', 'EDUCATION'], decides: false },
   ]);
-  expect(() => assertMeasureRegistration(resolved, 'MANAGER', 'education-id')).toThrow('inte tillgänglig');
-  expect(() => assertMeasureRegistration(resolved, 'NURSE', 'new-id')).not.toThrow();
+  expect(() => assertMeasureRegistration(resolved, 'MANAGER', 'EDUCATION')).toThrow('inte tillgänglig');
+  expect(() => assertMeasureRegistration(resolved, 'NURSE', 'NEW_TYPE')).not.toThrow();
 });
 
-test('a matching type without an ID prevents registration but preserves history access', () => {
+test('a matching type without a name prevents registration but preserves history access', () => {
   const resolved = resolveSupportMeasureRegistration(
-    { ...metadata, measureTypes: [{ name: 'NO_ID', measureGroups: ['MANAGERS'] }] },
+    { ...metadata, measureTypes: [{ name: ' ', measureGroups: ['MANAGERS'] }] },
     ['AD-MANAGER'],
     roles,
     SUPERADMINS,

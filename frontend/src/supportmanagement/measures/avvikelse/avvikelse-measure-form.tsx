@@ -81,14 +81,14 @@ export function AvvikelseMeasureForm({
   const registrationRole = roles.find((role) => role.name === (measure?.addedByRole ?? roleName));
   const roleLabel = registrationRole?.displayName || measure?.addedByRole || roleName;
   const roleRule = registration.roleTypes.find((rule) => rule.roleName === (measure?.addedByRole ?? roleName));
-  const availableTypeIds = roleRule?.measureTypeIds ?? [];
+  const availableTypes = roleRule?.measureTypes ?? [];
   // Draken's role policy decides: a deciding role adds accepted measures, every other role adds proposals.
   const contentLocked = Boolean(measure && measureContentIsLocked(measure));
   const decision = measure ? measureDecisionPresentation(measure) : undefined;
   const proposes = !measure && Boolean(roleName) && !roleRule?.decides;
   // Before a role is chosen the details are disabled anyway; show the full choice until the policy is known.
   const canExecute = !measure && !roleName ? true : measureCanExecute(measure, Boolean(roleRule?.decides));
-  const types = selectableMeasureTypes(measureTypes, availableTypeIds, measure?.measureTypeId);
+  const types = selectableMeasureTypes(measureTypes, availableTypes, measure?.type);
   const [saving, setSaving] = useState(false);
   const confirm = useConfirm();
   // One granted role is preselected; the role step only exists when there is an actual choice to make.
@@ -292,12 +292,12 @@ export function AvvikelseMeasureForm({
               id={fieldId('addedByRole')}
               {...register('addedByRole', {
                 onChange: (event: { target: { value: string } }) => {
-                  setValue('measureTypeId', '', { shouldDirty: true });
+                  setValue('type', '', { shouldDirty: true });
                   if (!decidesFor(event.target.value)) setValue('timing', 'planned', { shouldDirty: true });
                   setErrors((current) => {
                     const next = { ...current };
                     delete next.addedByRole;
-                    delete next.measureTypeId;
+                    delete next.type;
                     return next;
                   });
                 },
@@ -325,28 +325,20 @@ export function AvvikelseMeasureForm({
       <fieldset id={detailsId} disabled={detailsDisabled} className="flex flex-col gap-24 min-w-0">
         <legend className="sr-only">Uppgifter om åtgärden</legend>
         {chooseRole && <h4 className="text-h3-sm">2. Beskriv åtgärden</h4>}
-        <FormControl id={fieldId('measureTypeId')} invalid={Boolean(errors.measureTypeId)} className="w-full">
+        <FormControl id={fieldId('type')} invalid={Boolean(errors.type)} className="w-full">
           <FormLabel>
             Åtgärd
             <Required />
           </FormLabel>
-          <Select
-            id={fieldId('measureTypeId')}
-            {...register('measureTypeId')}
-            disabled={contentLocked}
-            aria-required
-            className="w-full"
-          >
+          <Select id={fieldId('type')} {...register('type')} disabled={contentLocked} aria-required className="w-full">
             <Select.Option value="">
               {!measure && !roleName ? 'Välj registreringsroll först' : 'Välj typ av åtgärd'}
             </Select.Option>
-            {measure?.measureTypeId && !types.some((type) => type.id === measure.measureTypeId) && (
-              <Select.Option value={measure.measureTypeId}>
-                {measure.type || measure.measureTypeId} (saknas i metadata)
-              </Select.Option>
+            {measure?.type && !types.some((type) => type.name === measure.type) && (
+              <Select.Option value={measure.type}>{measure.type} (saknas i metadata)</Select.Option>
             )}
             {types.map((type) => (
-              <Select.Option key={type.id} value={type.id}>
+              <Select.Option key={type.name} value={type.name}>
                 {type.displayName || type.name}
                 {type.deprecated ? ' (utgången)' : ''}
               </Select.Option>
@@ -359,7 +351,7 @@ export function AvvikelseMeasureForm({
               ? 'Det finns inga aktiva åtgärdstyper kopplade till den valda rollen. Kontakta administratören.'
               : 'Du kan välja åtgärdstyper som är kopplade till registreringsrollen.'}
           </FormHelperText>
-          {errorText('measureTypeId')}
+          {errorText('type')}
         </FormControl>
         <FormControl fieldset id={fieldId('timing')} invalid={Boolean(errors.timing)} className="w-full">
           <FormLabel>

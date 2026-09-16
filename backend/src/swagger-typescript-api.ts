@@ -15,7 +15,7 @@ const execFileAsync = promisify(execFile);
 
 const PATH_TO_OUTPUT_DIR = path.resolve(process.cwd(), './src/data-contracts');
 
-type Api = { name: string; version: string; generateDataContract?: boolean };
+type Api = { name: string; version: string; generateDataContract?: boolean; dataContractName?: string };
 
 /**
  * Download the OpenAPI spec for a single API and generate its data contracts.
@@ -23,8 +23,8 @@ type Api = { name: string; version: string; generateDataContract?: boolean };
  * half-written (truncated) spec. The downloaded spec is deleted afterwards so
  * it never lingers next to the generated contracts.
  */
-const generateForApi = async ({ name, version }: Api): Promise<void> => {
-  const outputDir = `${PATH_TO_OUTPUT_DIR}/${name}`;
+const generateForApi = async ({ name, version, dataContractName = name }: Api): Promise<void> => {
+  const outputDir = `${PATH_TO_OUTPUT_DIR}/${dataContractName}`;
 
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });

@@ -18,7 +18,7 @@ vi.mock('./support-measure-service', () => ({ getPlannedSupportMeasures: mocks.r
 const planned: PlannedSupportMeasure = {
   id: 'measure-one',
   version: 3,
-  measureTypeId: 'type-one',
+  type: 'EDUCATION',
   accept: 'TRUE',
   description: 'Utbilda personalen',
   goal: 'Säkrare arbetssätt',
@@ -42,7 +42,7 @@ const snapshot: PlannedMeasuresSnapshot = {
     },
   ],
   metadata: {
-    measureTypes: [{ id: 'type-one', name: 'EDUCATION', displayName: 'Utbildning' }],
+    measureTypes: [{ id: 'type-one', name: 'EDUCATION', displayName: 'Utbildning', measureGroups: ['PREVENTIVE'] }],
     roles: [{ name: 'MANAGER', displayName: 'Enhetschef' }],
   },
   truncated: false,

@@ -125,7 +125,8 @@ och utredning och är inte åtgärdstyper.
    till fälten.
 5. Vid POST hämtar backend metadata igen och kontrollerar grupp, roll och typ.
    Den sätter `addedByUser` från sessionens `username`, `addedByRole` till
-   namespace-rollens `name` och skickar `measureTypeId` som UUID.
+   namespace-rollens `name` och skickar typens metadatanamn i `type`, som är
+   typens nyckel i Support Management.
 6. Vid PATCH används åtgärdens egen version i `If-Match`. Skapare, registreringsroll
    och beslut kan inte ändras genom DTO:n för grundfält. Innan beslut kan
    förslagets skapare ändra typ; typbytet kontrolleras mot den sparade rollens
@@ -148,7 +149,7 @@ Formuläret skiljer på saknad konfiguration, felaktig konfiguration, avsaknad a
 egen roll och att vald roll inte har några aktiva typer. Tekniska feldetaljer
 stannar i backendloggen. Skrivbehörighet och ärendestatus gäller alltid.
 
-Statistik ska utgå från sparad `addedByRole`, `measureTypeId` och `addedByUser`.
+Statistik ska utgå från sparad `addedByRole`, `type` och `addedByUser`.
 Härled inte den ursprungliga rollen från typens nuvarande grupper. Ändrade grupper
 skriver inte om befintliga åtgärder. Behåll använda typer och markera dem vid behov
 utgångna i API:t så att historiken behåller sina referenser.
@@ -177,38 +178,36 @@ Ingen registrering, redigering eller bedömning erbjuds i denna vy.
 Skaparen kan, med vanlig skrivrätt till ett öppet ärende, kryssa i **Utförd**.
 En separat dialog kräver ett aktivt Ja/Nej-val på **Har åtgärd lett till önskad
 effekt?** och text i **Vad har hänt?** (högst 4000 tecken). Avbryt sparar inget.
-Svaren sparas först och genomförandet bekräftas därefter. Kortet behåller
+Svaren och genomförandet sparas i samma skrivning. Kortet behåller
 åtgärdens original, planering och beslut och visar sedan Utförd, önskad effekt
-och vad som hänt. En sparad uppföljning kan inte ändras i detta flöde. Äldre
-planerade åtgärder som redan har ett genomförandedatum men saknar svar kan följas
-upp; datumet bevaras.
+och vad som hänt. En sparad uppföljning kan inte ändras i detta flöde. Planerade
+åtgärder som redan har ett genomförandedatum men saknar svar kan följas upp;
+datumet bevaras.
 
 Drakens `PATCH .../measures/:measureId/follow-up` tar endast
 `desiredEffectAchieved: boolean` och `followUpDescription: string`.
 `SupportMeasureService` kontrollerar skapare, ärendestatus, planering, beslut
-och åtgärdens `If-Match`. Den använder **befintliga resurser i SM 16.1**:
+och åtgärdens `If-Match`. Uppföljningen sparas på åtgärden själv i SM 16.0,
+med en enda `PATCH .../measures/:measureId` villkorad på åtgärdens version:
 
-1. Svaren, åtgärds-ID/version, genomförandetid samt registrerande användare/tid
-   sparas som en post i JSON-parametern `measure-follow-up` genom
-   `SupportJsonParameterService`. Ärendet har ett sådant dokument med en post per
-   åtgärd, och åtgärdens id ligger i posten. Nyckeln är stabil eftersom Support
-   Management ger behörighet till JSON-parametrar per nyckel: en nyckel per åtgärd
-   gick aldrig att ge behörighet till i AccessMapper. Dokumentet skapas med
-   create-only-villkor och utökas sedan med dokumentets ETag; sparade poster skrivs
-   aldrig över. Hinner en annan uppföljning skrivas mellan läsning och tillägg läses
-   dokumentet om och tillägget görs en gång till.
-2. Åtgärdens vanliga `PATCH .../measures/:measureId` får endast `executed`
-   och åtgärdens versionsvillkor. Innehåll, planering och beslut bevaras.
-3. Läsningen sammanför åtgärden med dokumentet i Drakens `SupportMeasure.followUp`.
-   Fälten är inte tillägg till SM:s genererade Measure-kontrakt.
+| Fält          | Innehåll                                                                  |
+| ------------- | ------------------------------------------------------------------------- |
+| `result`      | `ACHIEVED` eller `NOT_ACHIEVED` - svaret på om åtgärden gav önskad effekt |
+| `resultText`  | Vad som har hänt, trimmat och högst 4000 tecken                           |
+| `completedAt` | När uppföljningen sparades                                                |
+| `executed`    | Samma tidpunkt, men bara om åtgärden inte redan har ett genomförandedatum |
 
-Ett Nej är ett sparat svar, inte ett saknat värde. Om dokumentet sparats men
-åtgärdsskrivningen misslyckas visas status `pending` och **Slutför sparandet**.
-Svaren är då låsta och återförsöket använder åtgärdens omlästa version. Förlorade
-svar efter lyckade skrivningar hanteras genom omläsning och identiska återförsök.
-Ett avvikande genomförandedatum ger `conflict` och kräver utredning av
-administratör; dokumentet raderas inte. Två resurser innebär att sparandet inte
-är en gemensam databastransaktion. Ett avbrott kan lämna svar att slutföra.
+Support Management har ingen metadata för åtgärdsresultat, så de två värdena
+för `result` ägs av Draken (`support-measure-follow-up.ts` i backend och
+`measure-follow-up.ts` i frontend). Innehåll, planering och beslut bevaras.
+Ett Nej är ett sparat svar, inte ett saknat värde.
+
+Uppföljningen är antingen sparad eller inte: det finns inga halvsparade svar att
+slutföra. En uppföljning vars svar gick förlorat känns igen på att den omlästa
+åtgärden har exakt de svaren; dialogen stängs då som sparad, och ett identiskt
+återförsök från en äldre version godtas av backend. Andra svar på en redan
+uppföljd åtgärd avvisas med 409. Vanlig redigering kan inte ändra
+genomförandedatumet på en uppföljd åtgärd.
 
 Den aktiva fliken läser om när den öppnas och när fönstret återfår fokus.
 Sparfel behåller dialogens svar och läser om åtgärden. Flikarnas osparade
@@ -217,22 +216,18 @@ version flera steg behålls formulärets gamla version för att skydda mot
 överskrivning av samtidiga ändringar; ärendet kan behöva laddas om före nästa
 ändring i det övergripande formuläret.
 
-**Införande:** registrera `backend/src/schemas/measure-follow-up.schema-request.json`
-via JsonSchema `POST /2281/schemas` före driftsättning. Namnet är `measure-follow-up`,
-version `2.0`, ID `2281_measure-follow-up_2.0`. BFF skapar inte scheman automatiskt; ett nytt
-dokument binds till den senaste publicerade versionen. Version `1.0` sparade en uppföljning per
-åtgärd under nycklarna `measure-follow-up-<measureId>`, som inte läses längre. Ge i AccessMapper
-behörighet till nyckeln `measure-follow-up` för de roller som ska läsa eller göra uppföljningar.
-API:ts vanliga läs-/skrivrättigheter för JSON-parametern gäller; nekad åtkomst
-visas som fel. Inget nytt SM-endpoint, ingen migration och ingen driftsättning av
-den tidigare förberedda API-worktreen `api-service-support-management-follow-up`
-behövs. Vid återställning av Draken behålls schema och sparade JSON-parametrar.
+**Behörighet:** att läsa och göra uppföljningar styrs av resursen
+`errand/measure` i AccessMapper, samma som för åtgärderna i övrigt (`RW` krävs
+för att följa upp). Inget JSON-schema och ingen nyckel för JSON-parametrar
+behöver registreras. AccessMapper ger nivåer per resurs, inte per fält på en
+åtgärd, så den som når åtgärderna når också svaren.
 
-`support-measure-follow-up.service.test.ts` testar båda befintliga resurserna
-med riktig schemavalidering, Nej, bevarade original, avbrott före/efter skrivning,
-identiska återförsök, versionskonflikter och saknat schema. Service- och HTTP-tester
-skyddar det smala kontraktet och behörigheterna. Komponenttesterna täcker urval,
-obligatoriska svar, avbryt, Ja/Nej, omläsning och slutförande av sparade svar.
+`support-measure-follow-up.service.test.ts` testar skrivningen mot en simulerad
+åtgärdsresurs: Ja/Nej, bevarat genomförandedatum, avbrott före och efter
+skrivning, identiska återförsök, avvisade nya svar, versionskonflikter och
+samtidiga uppföljningar. Service- och HTTP-tester skyddar det smala kontraktet
+och behörigheterna. Komponenttesterna täcker urval, obligatoriska svar, avbryt,
+Ja/Nej, omläsning och en uppföljning vars svar gick förlorat.
 
 ## Beslut om förslag
 
@@ -254,8 +249,7 @@ kräver ett uttryckligt beslut:
 
 För delvis godkännande ska kommentaren ange vad som godkänns och ska göras,
 vilka delar som utgår och varför. `REWORK` är ett fattat beslut, inte en begäran
-om ett omarbetat förslag. `reworkGoal` och `reworkDescription` används därför
-inte i detta flöde. Kommentaren sparas i `acceptMotivation`, visas på kortet och
+om ett omarbetat förslag. Kommentaren sparas i `acceptMotivation`, visas på kortet och
 vid redigering och ingår i fritextsökningen.
 
 Drakens `PATCH /supporterrands/:municipalityId/:errandId/measures/:measureId/decision`

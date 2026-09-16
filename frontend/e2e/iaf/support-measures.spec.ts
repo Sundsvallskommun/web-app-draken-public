@@ -12,9 +12,10 @@ import { errandNumber, installIafApiMock } from './fixtures/investigation-flow.m
 
 test.skip(!['IAF', 'VOF'].includes(process.env.NEXT_PUBLIC_APPLICATION ?? ''), 'Körs med IAF/VOF-profilen.');
 
-const firstTypeId = 'dd000000-0000-4000-8000-000000000100';
-const secondTypeId = 'dd000000-0000-4000-8000-000000000101';
-const oldTypeId = 'dd000000-0000-4000-8000-000000000102';
+// Support Management keys a measure's type by the metadata name.
+const firstType = 'FIRST';
+const secondType = 'SECOND';
+const oldType = 'OLD';
 
 async function installMeasures(
   page: Page,
@@ -65,8 +66,7 @@ async function installMeasures(
   const measures: Measure[] = [
     {
       id: 'existing',
-      measureTypeId: oldTypeId,
-      type: 'OLD',
+      type: oldType,
       version: 3,
       goal: 'Befintligt mål',
       description: 'Befintlig beskrivning',
@@ -89,22 +89,22 @@ async function installMeasures(
     ],
     measureTypes: [
       {
-        id: secondTypeId,
-        name: 'SECOND',
+        id: 'dd000000-0000-4000-8000-000000000101',
+        name: secondType,
         displayName: 'Handledning',
         measureGroups: ['Förebyggande', 'SHARED'],
         sortOrder: 2,
       },
       {
-        id: firstTypeId,
-        name: 'FIRST',
+        id: 'dd000000-0000-4000-8000-000000000100',
+        name: firstType,
         displayName: 'Utbildning',
         measureGroups: ['Förebyggande', 'SHARED'],
         sortOrder: 1,
       },
       {
-        id: oldTypeId,
-        name: 'OLD',
+        id: 'dd000000-0000-4000-8000-000000000102',
+        name: oldType,
         displayName: 'Tidigare åtgärdstyp',
         measureGroups: ['Förebyggande', 'SHARED'],
         deprecated: true,
@@ -122,8 +122,8 @@ async function installMeasures(
     roleTypes:
       registrationStatus === 'ready'
         ? [
-            { roleName: 'MANAGER', measureTypeIds: [firstTypeId, secondTypeId], decides: true },
-            { roleName: 'NURSE', measureTypeIds: [firstTypeId], decides: false },
+            { roleName: 'MANAGER', measureTypes: [firstType, secondType], decides: true },
+            { roleName: 'NURSE', measureTypes: [firstType], decides: false },
           ]
         : [],
   };
@@ -171,7 +171,6 @@ async function installMeasures(
       measures.push({
         ...body,
         id: 'new-measure',
-        type: metadata.measureTypes.find((type) => type.id === body.measureTypeId)?.name,
         addedByUser: 'authenticated-user',
         accept: body.addedByRole === 'MANAGER' ? 'TRUE' : undefined,
         version: 0,
@@ -184,7 +183,6 @@ async function installMeasures(
     measures[0] = {
       ...measures[0],
       ...body,
-      type: metadata.measureTypes.find((type) => type.id === (body.measureTypeId ?? measures[0].measureTypeId))?.name,
       version: (measures[0].version ?? 0) + 1,
     };
     errandVersion++;
@@ -235,7 +233,7 @@ test('creates a measure for an explicitly selected granted role independently of
   await expect(page.locator('[data-cy="measure-proposal-notice"]')).toBeVisible();
   await expect(types).toBeEnabled();
   await expect(types.locator('option')).toHaveText(['Välj typ av åtgärd', 'Utbildning']);
-  await types.selectOption(firstTypeId);
+  await types.selectOption(firstType);
   // A proposing role cannot report executed measures, so only the planned option exists and it is preselected.
   await expect(page.getByLabel('Genomförd åtgärd', { exact: true })).toHaveCount(0);
   await expect(page.getByLabel('Planerad åtgärd', { exact: true })).toBeChecked();
@@ -251,7 +249,7 @@ test('creates a measure for an explicitly selected granted role independently of
       method: 'POST',
       version: undefined,
       data: {
-        measureTypeId: firstTypeId,
+        type: firstType,
         addedByRole: 'NURSE',
         description: 'Gemensam utbildning',
         goal: 'Säkrare arbetssätt',
@@ -299,11 +297,11 @@ test('changes type using sorted metadata UUIDs and the measure ETag', async ({ p
     'Handledning',
     'Tidigare åtgärdstyp (utgången)',
   ]);
-  await types.selectOption(firstTypeId);
+  await types.selectOption(firstType);
   await dialog.getByRole('button', { name: 'Spara ändringar', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Utbildning', exact: true })).toBeVisible();
-  expect(state.writes).toEqual([{ method: 'PATCH', version: '"3"', data: { measureTypeId: firstTypeId } }]);
+  expect(state.writes).toEqual([{ method: 'PATCH', version: '"3"', data: { type: firstType } }]);
   expect(state.trace.puts).toEqual([]);
   expect(state.trace.errandPatches).toEqual([]);
 });
@@ -315,7 +313,7 @@ test('edits historic measures narrowly and uses the refreshed measure version fo
   const state = await installMeasures(page);
   await openMeasures(page, dismissCookieConsent);
   await page.getByRole('button', { name: /^Redigera åtgärd/ }).click();
-  await expect(editDialog(page).getByLabel('Åtgärd (Obligatoriskt)', { exact: true })).toHaveValue(oldTypeId);
+  await expect(editDialog(page).getByLabel('Åtgärd (Obligatoriskt)', { exact: true })).toHaveValue(oldType);
   await editDialog(page).getByLabel('Vad är målet med åtgärden? (Obligatoriskt)', { exact: true }).fill('Ändrat mål');
   await editDialog(page).getByRole('button', { name: 'Spara ändringar', exact: true }).click();
   await expect(page.getByText('Ändrat mål', { exact: true })).toBeVisible();
@@ -354,7 +352,7 @@ test('does not claim a rebase when a new measure conflicts with a moved errand',
   // wording would be false on every count and no retry can succeed.
   await installMeasures(page, { singleCreationRole: true, failWrite: true });
   await openMeasures(page, dismissCookieConsent);
-  await page.getByLabel('Åtgärd (Obligatoriskt)', { exact: true }).selectOption(firstTypeId);
+  await page.getByLabel('Åtgärd (Obligatoriskt)', { exact: true }).selectOption(firstType);
   await page.getByLabel('När ska åtgärden påbörjas? (Obligatoriskt)', { exact: true }).fill('2026-09-08');
   await page.getByLabel('När ska åtgärden vara klar? (Obligatoriskt)', { exact: true }).fill('2026-09-10');
   await page.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true }).fill('Ny åtgärd');
@@ -480,7 +478,7 @@ test('changing registration role resets the type while preserving the draft text
   const role = page.getByLabel('Registrera åtgärden för rollen (Obligatoriskt)', { exact: true });
   const type = page.getByLabel('Åtgärd (Obligatoriskt)', { exact: true });
   await role.selectOption('MANAGER');
-  await type.selectOption(secondTypeId);
+  await type.selectOption(secondType);
   await page.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true }).fill('Mitt utkast');
   await role.selectOption('NURSE');
   await expect(type).toHaveValue('');
@@ -502,7 +500,7 @@ test('skips the role step and registers for the only granted role', async ({ pag
   const types = page.getByLabel('Åtgärd (Obligatoriskt)', { exact: true });
   await expect(types).toBeEnabled();
   await expect(types.locator('option')).toHaveText(['Välj typ av åtgärd', 'Utbildning', 'Handledning']);
-  await types.selectOption(secondTypeId);
+  await types.selectOption(secondType);
   await page.getByLabel('Genomförd åtgärd', { exact: true }).check();
   await page.getByLabel('När genomfördes åtgärden? (Obligatoriskt)', { exact: true }).fill('2026-09-08');
   await page.getByLabel('Ansvarig för åtgärden', { exact: true }).fill(' Anna Andersson ');
@@ -519,7 +517,7 @@ test('skips the role step and registers for the only granted role', async ({ pag
   await expect(page.getByText('Anna Andersson', { exact: true })).toBeVisible();
   expect(state.writes).toHaveLength(1);
   expect(state.writes[0].data).toMatchObject({
-    measureTypeId: secondTypeId,
+    type: secondType,
     addedByRole: 'MANAGER',
     responsibleUser: 'Anna Andersson',
   });
@@ -540,7 +538,7 @@ test('lists validation errors in an alert that links to the fields', async ({ pa
 test('rejects an executed date in the future before saving', async ({ page, dismissCookieConsent }) => {
   const state = await installMeasures(page, { singleCreationRole: true });
   await openMeasures(page, dismissCookieConsent);
-  await page.getByLabel('Åtgärd (Obligatoriskt)', { exact: true }).selectOption(firstTypeId);
+  await page.getByLabel('Åtgärd (Obligatoriskt)', { exact: true }).selectOption(firstType);
   await page.getByLabel('Genomförd åtgärd', { exact: true }).check();
   const executed = page.getByLabel('När genomfördes åtgärden? (Obligatoriskt)', { exact: true });
   await expect(executed).toHaveAttribute('max', /^\d{4}-\d{2}-\d{2}$/);
@@ -556,7 +554,7 @@ test('filters the list by status, decision, role, type and text', async ({ page,
   await installMeasures(page, { singleCreationRole: true, existingDecision: 'REWORK' });
   await openMeasures(page, dismissCookieConsent);
   // Add a second, executed measure so the filters have something to separate.
-  await page.getByLabel('Åtgärd (Obligatoriskt)', { exact: true }).selectOption(firstTypeId);
+  await page.getByLabel('Åtgärd (Obligatoriskt)', { exact: true }).selectOption(firstType);
   await page.getByLabel('Genomförd åtgärd', { exact: true }).check();
   await page.getByLabel('När genomfördes åtgärden? (Obligatoriskt)', { exact: true }).fill('2026-09-08');
   await page.getByLabel('Beskrivning av åtgärd (Obligatoriskt)', { exact: true }).fill('Genomgång av rutin');

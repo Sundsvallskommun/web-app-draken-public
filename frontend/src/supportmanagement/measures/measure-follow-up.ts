@@ -7,17 +7,38 @@ export interface MeasureFollowUpInput {
   followUpDescription: string;
 }
 
-export interface SupportMeasure extends Measure {
-  followUp?: MeasureFollowUpInput & { status: 'pending' | 'completed' | 'conflict' };
-}
+/**
+ * The result a follow-up saves on a measure that had the desired effect; the BFF saves `NOT_ACHIEVED` otherwise.
+ * What happened is saved in `resultText`.
+ */
+export const MEASURE_RESULT_ACHIEVED = 'ACHIEVED';
+
+/** The answers saved on a followed-up measure, or undefined while it has not been followed up. */
+export const measureFollowUp = (measure: Pick<Measure, 'result' | 'resultText'>): MeasureFollowUpInput | undefined =>
+  measure.result
+    ? {
+        desiredEffectAchieved: measure.result === MEASURE_RESULT_ACHIEVED,
+        followUpDescription: measure.resultText ?? '',
+      }
+    : undefined;
+
+/** Whether the measure holds exactly these answers - a follow-up that was saved even if its response was lost. */
+export const measureHoldsFollowUp = (
+  measure: Pick<Measure, 'result' | 'resultText'>,
+  answers: MeasureFollowUpInput
+): boolean => {
+  const saved = measureFollowUp(measure);
+  return (
+    saved?.desiredEffectAchieved === answers.desiredEffectAchieved &&
+    saved.followUpDescription === answers.followUpDescription
+  );
+};
 
 /** Completed planned measures remain visible with their result. Directly executed measures do not enter this flow. */
 export const measureBelongsInFollowUp = (measure: Measure): boolean =>
   measureIsApproved(measure) && Boolean(measure.plannedStart || measure.plannedComplete);
 
-export const measureHasFollowUp = (measure: SupportMeasure): boolean => measure.followUp?.status === 'completed';
+export const measureHasFollowUp = (measure: Measure): boolean => Boolean(measure.result);
 
-export const measureCanBeFollowedUp = (measure: SupportMeasure): boolean =>
-  Boolean(measure.id) &&
-  measureBelongsInFollowUp(measure) &&
-  (!measure.followUp || measure.followUp.status === 'pending');
+export const measureCanBeFollowedUp = (measure: Measure): boolean =>
+  Boolean(measure.id) && measureBelongsInFollowUp(measure) && !measureHasFollowUp(measure);

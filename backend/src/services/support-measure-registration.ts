@@ -5,7 +5,8 @@ import { logger } from '@/utils/logger';
 
 export interface MeasureRegistrationPolicy {
   status: 'ready' | 'unconfigured' | 'invalid';
-  roleTypes: { roleName: string; measureTypeIds: string[]; decides: boolean }[];
+  /** The measure types each role registers, by the metadata name a measure's `type` carries. */
+  roleTypes: { roleName: string; measureTypes: string[]; decides: boolean }[];
 }
 
 export interface ResolvedMeasureRegistration {
@@ -49,11 +50,11 @@ export function resolveSupportMeasureRegistration(
       const types = (metadata.measureTypes ?? []).filter(
         type => !type.deprecated && Array.isArray(type.measureGroups) && type.measureGroups.includes(measures.measureGroup),
       );
-      const measureTypeIds = types.map(type => {
-        if (!type.id) throw new Error(`${HANDLER_ROLES_SETTING}: type ${type.name} is missing its metadata ID`);
-        return type.id;
+      const measureTypes = types.map(type => {
+        if (!type.name?.trim()) throw new Error(`${HANDLER_ROLES_SETTING}: a type in group ${measures.measureGroup} is missing its metadata name`);
+        return type.name;
       });
-      roleTypes.push({ roleName: role.name, measureTypeIds, decides: measures.decides });
+      roleTypes.push({ roleName: role.name, measureTypes, decides: measures.decides });
       if (holdsEveryRole || adGroups.some(adGroup => groups.has(adGroup.trim().toLowerCase()))) creationRoles.push(role);
     }
     creationRoles.sort(
@@ -69,19 +70,19 @@ export function resolveSupportMeasureRegistration(
   }
 }
 
-export function assertMeasureTypeForRole(policy: MeasureRegistrationPolicy, roleName: string | undefined, measureTypeId: string): void {
+export function assertMeasureTypeForRole(policy: MeasureRegistrationPolicy, roleName: string | undefined, measureType: string): void {
   if (policy.status !== 'ready')
     throw new HttpException(503, 'Åtgärdernas roll- och typval behöver konfigureras i Draken. Kontakta administratören.');
-  if (!policy.roleTypes.some(rule => rule.roleName === roleName && rule.measureTypeIds.includes(measureTypeId))) {
+  if (!policy.roleTypes.some(rule => rule.roleName === roleName && rule.measureTypes.includes(measureType))) {
     throw new HttpException(400, 'Åtgärdstypen är inte tillgänglig för registreringsrollen i Draken. Ladda om åtgärderna och välj igen.');
   }
 }
 
-export function assertMeasureRegistration(resolved: ResolvedMeasureRegistration, roleName: string, measureTypeId: string): void {
+export function assertMeasureRegistration(resolved: ResolvedMeasureRegistration, roleName: string, measureType: string): void {
   if (resolved.registration.status !== 'ready')
     throw new HttpException(503, 'Åtgärdernas roll- och typval behöver konfigureras i Draken. Kontakta administratören.');
   if (!resolved.creationRoles.some(role => role.name === roleName)) throw new HttpException(403, 'Du saknar den valda registreringsrollen i Draken.');
-  assertMeasureTypeForRole(resolved.registration, roleName, measureTypeId);
+  assertMeasureTypeForRole(resolved.registration, roleName, measureType);
 }
 
 /** Whether measures registered in this role are accepted on creation rather than proposed. */

@@ -1,3 +1,4 @@
+import type { Measure } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Modal, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useUserStore } from '@stores/user-store';
 import { isSupportErrandLocked, type SupportErrand } from '@supportmanagement/services/support-errand-service';
@@ -12,7 +13,7 @@ import {
   measureBelongsInFollowUp,
   measureCanBeFollowedUp,
   type MeasureFollowUpInput,
-  type SupportMeasure,
+  measureHoldsFollowUp,
 } from '../measure-follow-up';
 import { MeasureList } from '../measure-list';
 import { measureTypeLabel } from '../measure-types';
@@ -51,8 +52,7 @@ export function AvvikelseMeasures({
   const confirm = useConfirm();
   const [filters, setFilters] = useState(emptyMeasureFilters);
   const [dialog, setDialog] = useState<
-    | { kind: 'edit' | 'decide'; measure: SupportMeasure }
-    | { kind: 'follow-up'; measure: SupportMeasure; unavailable?: boolean }
+    { kind: 'edit' | 'decide'; measure: Measure } | { kind: 'follow-up'; measure: Measure; unavailable?: boolean }
   >();
   const editing = dialog?.kind === 'edit' ? dialog.measure : undefined;
   const [revision, setRevision] = useState(0);
@@ -90,17 +90,21 @@ export function AvvikelseMeasures({
    * keyed by id, not version, so the typed values survive while measureFormChanges recomputes against the new
    * baseline - fields the other writer already set to the same value drop out of the patch by themselves.
    */
-  const rebaseOnCurrent = async (measureId: string, kind: 'edit' | 'decide' | 'follow-up') => {
+  const rebaseOnCurrent = async (
+    measureId: string,
+    kind: 'edit' | 'decide' | 'follow-up'
+  ): Promise<Measure | undefined> => {
     const snapshot = await onSaved();
     // A failed reload is not evidence the measure is gone, and closing here would discard the draft. Leave the
     // dialog as it stands; the write error is already on screen and the tab shows its own reload failure.
-    if (!snapshot) return;
+    if (!snapshot) return undefined;
     const current = snapshot.measures.find((measure) => measure.id === measureId);
     if (current) setDialog({ kind, measure: current });
     else if (kind === 'follow-up') {
       // Preserve the answers even when the measure disappeared, and explicitly disable submission.
       setDialog((open) => (open?.kind === 'follow-up' ? { ...open, unavailable: true } : open));
     } else setDialog(undefined);
+    return current;
   };
 
   const save = async (values: MeasureForm) => {
@@ -155,17 +159,21 @@ export function AvvikelseMeasures({
     if (!followUp || !canWrite || !errand.id || !measure?.id || !measureCanBeFollowedUp(measure)) {
       throw new Error('Measure cannot be followed up');
     }
+    let recovered = false;
     try {
       await followUpSupportMeasure(municipalityId, errand.id, measure.id, measure.version, values);
     } catch (cause) {
-      // Any failure can be a confirmed document followed by an unconfirmed execution write.
-      await rebaseOnCurrent(measure.id, 'follow-up');
-      throw cause;
+      // A failed save can still have been accepted, with only its response lost: the reloaded measure then holds
+      // exactly these answers, and the follow-up is done rather than failed.
+      const current = await rebaseOnCurrent(measure.id, 'follow-up');
+      if (!current || !measureHoldsFollowUp(current, values)) throw cause;
+      recovered = true;
     }
     setDialog(undefined);
     listHeading.current?.focus();
     snackbar({ message: 'Åtgärden är markerad som utförd och uppföljningen har sparats.', status: 'success' });
-    await onSaved();
+    // A recovered save was found by the reload it has just had.
+    if (!recovered) await onSaved();
   };
 
   const measures = followUp ? snapshot.measures.filter(measureBelongsInFollowUp) : snapshot.measures;

@@ -23,38 +23,36 @@ const types: MeasureType[] = [
 
 test('sorts each active choice once by metadata without modifying the source', () => {
   const original = structuredClone(types);
-  expect(selectableMeasureTypes(types, ['first-id', 'second-id']).map((type) => type.name)).toEqual([
-    'FIRST',
-    'SECOND',
-  ]);
+  expect(selectableMeasureTypes(types, ['FIRST', 'SECOND']).map((type) => type.name)).toEqual(['FIRST', 'SECOND']);
   expect(types).toEqual(original);
 });
 
 test('keeps an existing deprecated type selectable and resolves historic or unknown labels', () => {
-  expect(selectableMeasureTypes(types, ['first-id', 'second-id'], 'old-id').map((type) => type.id)).toEqual([
-    'first-id',
-    'second-id',
-    'old-id',
+  expect(selectableMeasureTypes(types, ['FIRST', 'SECOND'], 'OLD').map((type) => type.name)).toEqual([
+    'FIRST',
+    'SECOND',
+    'OLD',
   ]);
-  expect(measureTypeLabel(types, { measureTypeId: 'old-id', type: 'OLD' })).toBe('Tidigare typ');
-  expect(measureTypeLabel(types, { measureTypeId: 'removed-id', type: 'REMOVED' })).toBe('REMOVED');
+  expect(measureTypeLabel(types, { type: 'OLD' })).toBe('Tidigare typ');
+  expect(measureTypeLabel(types, { type: 'REMOVED' })).toBe('REMOVED');
   expect(selectableMeasureTypes([], [])).toEqual([]);
 });
 
-test('does not infer identity from a name or offer metadata without an ID', () => {
-  expect(selectableMeasureTypes([{ name: 'NO_ID', measureGroups: ['A', 'SHARED'] }], ['NO_ID'])).toEqual([]);
-  expect(measureTypeLabel(types, { measureTypeId: 'removed-id', type: 'OLD' })).toBe('OLD');
+test('identifies a type by its metadata name, never by its display name, and offers no nameless metadata', () => {
+  expect(selectableMeasureTypes(types, ['Första typen'])).toEqual([]);
+  expect(selectableMeasureTypes([{ name: '', measureGroups: ['A', 'SHARED'] }], [''])).toEqual([]);
+  expect(measureTypeLabel(types, { type: 'Tidigare typ' })).toBe('Tidigare typ');
   expect(measureTypeLabel(types, {})).toBe('Typ saknas');
 });
 
-test('only offers IDs resolved by Draken; empty choices grant nothing', () => {
+test('only offers types resolved by Draken; empty choices grant nothing', () => {
   expect(selectableMeasureTypes(types, [])).toEqual([]);
-  expect(selectableMeasureTypes(types, ['unknown-id'])).toEqual([]);
+  expect(selectableMeasureTypes(types, ['UNKNOWN'])).toEqual([]);
   expect(
     selectableMeasureTypes([{ id: 'type-id', name: 'UNASSIGNED', measureGroups: ['role-1', 'SHARED'] }], [])
   ).toEqual([]);
 });
 
 test('keeps the saved type when Draken no longer offers it', () => {
-  expect(selectableMeasureTypes(types, [], 'first-id').map((type) => type.id)).toEqual(['first-id']);
+  expect(selectableMeasureTypes(types, [], 'FIRST').map((type) => type.name)).toEqual(['FIRST']);
 });

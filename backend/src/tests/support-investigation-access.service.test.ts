@@ -9,7 +9,7 @@ const documentKeys = ['utredning-hsl', 'utredning-sol-lss', 'beslut-sol-lss'];
 const setup = (data: unknown = mockErrandAccess()) => {
   const api = new ApiService();
   const get = vi.spyOn(api, 'get').mockResolvedValue({ data, status: 200, message: 'success' });
-  const service = new SupportInvestigationAccessService({ apiService: api, namespace: 'IAF', service: 'supportmanagement-sprint/16.1' });
+  const service = new SupportInvestigationAccessService({ apiService: api, namespace: 'IAF', service: 'supportmanagement-sprint/16.0' });
   const read = () => service.getDocumentAccess(mockUser(), '2281', 'errand-1', documentKeys);
   return { get, service, read };
 };
@@ -26,7 +26,7 @@ describe('SupportInvestigationAccessService', () => {
     });
     expect(get).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: 'supportmanagement-sprint/16.1/2281/IAF/errands/errand-1/access',
+        url: 'supportmanagement-sprint/16.0/2281/IAF/errands/errand-1/access',
         mapUnauthorizedToForbidden: true,
         timeout: 10_000,
       }),

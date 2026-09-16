@@ -240,7 +240,7 @@ yarn test:e2e:iaf
 
 Profilen beskriver dokumenten; rättigheter hämtas separat från backendens
 `supporterrands/{municipalityId}/{errandId}/investigation-access`, som projicerar
-Support Management Sprint 16.1 `/access`. Nyckeln i fältposten med
+Support Management Sprint 16.0 `/access`. Nyckeln i fältposten med
 `field: "jsonParameters"` och resursen `errand/json-parameter` måste båda tillåta åtkomst.
 `allKeys: true` omfattar nya dokument; annars måste nyckeln vara explicit listad.
 Ärendets nivå är en default, inte ett tak — den gäller de nycklar som saknar egen grant, som ett
