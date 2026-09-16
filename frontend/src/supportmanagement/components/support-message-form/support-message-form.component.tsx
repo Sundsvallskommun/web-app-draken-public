@@ -57,6 +57,7 @@ import {
   setSupportErrandStatus,
 } from '@supportmanagement/services/support-errand-service';
 import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
+import { contactMeansCarriesAttachments } from '@supportmanagement/services/support-message-attachments';
 import { buildSupportReplyContext } from '@supportmanagement/services/support-message-reply-context-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
@@ -727,10 +728,7 @@ export const SupportMessageForm: FC<{
         </div>
       </div>
 
-      {contactMeans === 'email' ||
-      contactMeans === 'webmessage' ||
-      contactMeans === 'draken' ||
-      contactMeans === 'minasidor' ? (
+      {contactMeansCarriesAttachments(contactMeans) ? (
         <div className="w-full gap-xl mb-lg">
           {contactMeans === 'email' && (
             <CommonNestedEmailArrayV2
@@ -846,10 +844,7 @@ export const SupportMessageForm: FC<{
         </div>
       ) : null}
 
-      {(!props.locked && contactMeans === 'email') ||
-      contactMeans === 'webmessage' ||
-      contactMeans === 'draken' ||
-      contactMeans === 'minasidor' ? (
+      {(contactMeans === 'email' ? !props.locked : contactMeansCarriesAttachments(contactMeans)) ? (
         <div className="flex mb-24">
           <Button
             variant="tertiary"

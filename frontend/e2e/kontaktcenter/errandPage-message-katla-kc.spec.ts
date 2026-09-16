@@ -115,6 +115,9 @@ test.describe('Katla conversation', () => {
     await page.locator('[data-cy="useKatla-radiobutton-true"]').check({ force: true });
     // The linked-errand picker belongs to the Draken thread and must not block Katla.
     await expect(page.getByText('Koppla ett ärende för att kunna skicka meddelande')).toBeHidden();
+    // A Katla message carries attachments like the other conversations: new files and the errand's own.
+    await expect(page.locator('[data-cy="add-attachment-button"]')).toBeVisible();
+    await expect(page.locator('[data-cy="select-errand-attachment"]')).toBeVisible();
 
     await page.locator('[data-cy="decision-richtext-wrapper"]').first().click();
     await page.keyboard.type('Svar till Katla');
