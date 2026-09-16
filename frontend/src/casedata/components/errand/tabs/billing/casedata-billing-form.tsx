@@ -3,11 +3,11 @@ import { Role } from '@casedata/interfaces/role';
 import {
   getCasedataBillingRecordsForErrand,
   getCounterpart,
-  getOrganizationPartyId,
   saveCasedataBillingRecord,
 } from '@casedata/services/casedata-billing-service';
 import { getErrand } from '@casedata/services/casedata-errand-service';
 import { getSSNFromPersonId } from '@casedata/services/casedata-stakeholder-service';
+import { resolvePartyId } from '@common/services/adress-service';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Button, Divider, FormErrorMessage, useSnackbar } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
@@ -175,14 +175,7 @@ export const CaseDataBillingForm: React.FC = () => {
         }
       }
 
-      let partyId = resolvedRecipient.personId;
-      if (!partyId && resolvedRecipient.organizationNumber) {
-        try {
-          partyId = await getOrganizationPartyId(resolvedRecipient.organizationNumber);
-        } catch (error) {
-          console.error('Failed to fetch organization partyId:', error);
-        }
-      }
+      const partyId = await resolvePartyId(resolvedRecipient.personId, resolvedRecipient.organizationNumber);
 
       const stakeholderType = resolvedRecipient.organizationNumber ? 'ORGANIZATION' : 'PERSON';
       let resolvedServices = data.services;
