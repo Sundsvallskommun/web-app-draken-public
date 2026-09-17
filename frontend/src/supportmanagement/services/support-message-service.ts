@@ -1,5 +1,5 @@
 import { ApiResponse, apiService } from '@common/services/api-service';
-import sanitized from '@common/services/sanitizer-service';
+import { sanitized } from '@common/services/sanitizer-service';
 import { toBase64 } from '@common/utils/toBase64';
 import dayjs from 'dayjs';
 import { CCommunicationAttachment } from 'src/data-contracts/backend/data-contracts';

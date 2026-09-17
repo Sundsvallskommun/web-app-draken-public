@@ -1,16 +1,16 @@
 // Local ISO YYYY-MM-DD (without UTC offset glitch)
-export const todayLocalISO = () => {
+const todayLocalISO = () => {
   const d = new Date();
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
   return d.toISOString().split('T')[0];
 };
 
-export const toLocalISODate = (d = new Date()) => {
+const toLocalISODate = (d = new Date()) => {
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
   return d.toISOString().split('T')[0];
 };
 
-export const toLocalISODateTime = (d = new Date()) => {
+const toLocalISODateTime = (d = new Date()) => {
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
   return d.toISOString().slice(0, 16);
 };

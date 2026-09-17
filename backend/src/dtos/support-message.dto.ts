@@ -10,21 +10,6 @@ import {
   CommunicationDirectionEnum,
 } from '@/data-contracts/supportmanagement/data-contracts';
 
-export interface SupportAttachment {
-  id: string;
-  fileName: string;
-  mimeType: string;
-}
-
-export interface SingleSupportAttachment {
-  errandAttachmentHeader: {
-    id: string;
-    fileName: string;
-    mimeType: string;
-  };
-  base64EncodedString: string;
-}
-
 export class SupportMessageDto {
   @IsString()
   @IsNotEmpty()
@@ -56,7 +41,7 @@ export class SupportMessageDto {
   attachmentIds!: string[];
 }
 
-export class CCommunicationAttachment implements CommunicationAttachment {
+class CCommunicationAttachment implements CommunicationAttachment {
   @IsString()
   @IsOptional()
   id?: string;
