@@ -139,8 +139,9 @@ test('opens all investigation sections without turning an unanswered draft into 
     const panel = page.locator('[role="tabpanel"]:visible');
     await expect(panel.getByRole('radio').first()).toBeVisible();
     await expect(panel.locator('input[type="radio"]:checked')).toHaveCount(0);
+    // Scoped to the form: the local JSON preview below it is a closed disclosure of its own.
     await expect(
-      panel.locator('.schema-boundary-disclosure .sk-disclosure-header-button[aria-expanded="false"]')
+      panel.locator('form .schema-boundary-disclosure .sk-disclosure-header-button[aria-expanded="false"]')
     ).toHaveCount(0);
   }
 });
@@ -153,7 +154,8 @@ test('is reachable with the standard IAF profile and renders the investigation a
   await expect(page.getByRole('tab', { name: 'Utredning enhetschef' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Utredning Lex Sarah' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Händelseanalys HSL' })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Beslut', exact: true })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Beslut HSL', exact: true })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Beslut SoL/LSS', exact: true })).toBeVisible();
 
   await expect(page.locator(`#${managerIdPrefix}_legalBases-group input:checked`)).toHaveCount(2);
   await expect(page.locator('[id$="_deviationType"]')).toHaveCount(0);
