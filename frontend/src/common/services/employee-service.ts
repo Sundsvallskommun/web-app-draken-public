@@ -2,7 +2,7 @@
 
 import { ApiResponse, apiService } from '@common/services/api-service';
 
-interface OrgManagerDTO {
+export interface OrgManagerDTO {
   personId?: string;
   givenname?: string;
   lastname?: string;
