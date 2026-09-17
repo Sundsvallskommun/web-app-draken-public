@@ -18,6 +18,8 @@ export function TextWidget({
 }: WidgetProps) {
   const customClassName = (options as any)?.className || 'w-full max-w-[48rem] h-[20rem]';
 
+  // Validation runs on save (noHtml5Validate); aria-required instead of the required attribute keeps the
+  // theme's :invalid styling off untouched fields, so only reported errors render red.
   return (
     <Input
       id={id}
@@ -28,7 +30,7 @@ export function TextWidget({
       readOnly={Boolean(readonly)}
       aria-describedby={ariaDescribedByIds(id)}
       aria-invalid={Boolean(rawErrors?.length)}
-      required={required}
+      aria-required={required}
       onBlur={() => onBlur(id, value)}
       onFocus={() => onFocus(id, value)}
       onChange={(e) => onChange(e.currentTarget.value)}

@@ -29,6 +29,8 @@ export function TimeWidget({
   const customClassName = typeof options.className === 'string' ? options.className : 'w-full max-w-[40rem]';
   const requiresSeconds = schema.format === 'time';
 
+  // Validation runs on save (noHtml5Validate); aria-required instead of the required attribute keeps the
+  // theme's :invalid styling off untouched fields, so only reported errors render red.
   return (
     <Input
       id={id}
@@ -39,7 +41,7 @@ export function TimeWidget({
       readOnly={Boolean(readonly)}
       aria-describedby={ariaDescribedByIds(id)}
       aria-invalid={Boolean(rawErrors?.length)}
-      required={required}
+      aria-required={required}
       onBlur={() => onBlur(id, value)}
       onFocus={() => onFocus(id, value)}
       onChange={(e) => onChange(toSchemaValue(e.currentTarget.value, requiresSeconds))}

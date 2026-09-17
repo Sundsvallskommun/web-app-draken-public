@@ -313,6 +313,22 @@ test('exposes labels, descriptions, state and disclosure controls accessibly', a
   await expect(page.getByRole('status')).toContainText('Utkastet är sparat');
 });
 
+test('marks an empty required field as an error only after a save attempt', async ({ page }) => {
+  const assessedWith = page.locator(`#${managerIdPrefix}_riskAssessmentHsl_assessedWith`);
+  const assessedWithError = page.locator(`#${managerIdPrefix}_riskAssessmentHsl_assessedWith__error`);
+  await assessedWith.fill('');
+
+  // The theme styles :invalid as an error, so an untouched empty field must not match it before saving.
+  await expect(assessedWith).toHaveAttribute('aria-required', 'true');
+  await expect(assessedWith).toHaveAttribute('aria-invalid', 'false');
+  expect(await assessedWith.evaluate((input) => input.matches(':invalid'))).toBe(false);
+  await expect(assessedWithError).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Validera och spara lokalt' }).click();
+  await expect(assessedWith).toHaveAttribute('aria-invalid', 'true');
+  await expect(assessedWithError).toBeVisible();
+});
+
 test('calculates risk values and restores a locally saved draft after reload', async ({ page }) => {
   await page.locator(`#${managerIdPrefix}_riskAssessmentHsl_probability`).getByLabel(/^1 –/u).check();
   await page.locator(`#${managerIdPrefix}_riskAssessmentHsl_severity`).getByLabel(/^1 –/u).check();
