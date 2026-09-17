@@ -60,6 +60,11 @@ Labben använder samma `SchemaForm`, widgets, templates och SK Web GUI-komponent
 `schemas/fixtures/investigation-schema-cases.json`. Utkast sparas separat per schema och version i localStorage under
 prefixet `draken:investigation-schema-lab:`. Inga ärenden eller scheman läses eller skrivs av labbsidan.
 
+Kategoriseringen visas med samma väljare och gruppregel som i ärendet, en väljare per lagrumsgrupp (se
+[Ansvarsgränser](#ansvarsgränser)), men alternativen kommer från den lokala mockkatalogen i `label-classification/` i
+stället för Support Managements labelträd. Valen sparas med en post per grupp under
+`draken:investigation-schema-lab:supportmanagement-labels`.
+
 ## Ansvarsgränser
 
 - JSON Schema äger datatyper, obligatoriska fält, stabila koder, villkor och validering.
@@ -82,6 +87,16 @@ SupportManagement-labels. De lagras inte i utredningsdokumentets RJSF-formulärd
 En vanlig avvikelse kategoriseras i enhetschefsutredningen. När ärendets `eventType` är `MISSFORHALLANDE` ägs
 redigeringen i stället av SOL/LSS-utredningen; lagrummen SOL och LSS är då förvalda och skrivskyddade. Regeln ger
 ett enda redigeringsställe, även om samma externa fält kan deklareras av båda schematyperna.
+
+Kategoriseringen görs en gång per lagrumsgrupp (`classificationGroups` i `avvikelse-classification-policy.ts`): HSL
+har en egen väljare, och SoL och LSS delar en. En väljare visas bara när något av gruppens lagrum är valt, erbjuder
+bara de kategorier de valda lagrummen tillåter och har dem som rubrik, alltså HSL, SoL, LSS eller SoL/LSS. Tills
+metadatan skiljer SoL och LSS åt har de samma kategorilista. Ett missförhållande har alltid lagrummen SOL och LSS och
+kategoriseras därför bara i SoL/LSS-gruppen. Tas ett lagrum bort så att en grupp inte längre nås, försvinner också
+gruppens kategorisering. Varje grupps väg sparas som ärendets labels, och ärendets eget `classification`, som bara
+rymmer en, tar den grupp som `errandClassificationGroupPriority` rangordnar först: SoL/LSS före HSL. Gruppregeln
+(`getChosenAvvikelseClassificationGroups`) och väljarna (`AvvikelseGroupedClassificationFields`) delas av ärendet och
+labben, så att labben visar samma väljare som ärendet.
 
 ## Riktigt ärendeflöde
 
@@ -173,9 +188,12 @@ De endpoints som faktiskt skriver på **ärendet** — `/classification`, `/admi
 den nyss läste.
 
 `Spara utredning` samordnar sparningen av utredningsdokumentet med en smal PATCH av ärendets klassificeringslabels.
-Dokumentet sparas först och label-PATCH:en skickar endast klassificering, labelreferenser, ägande `documentKey`,
-dokumentets ETag och förväntad ärendeversion. Backend verifierar därmed både rätt IAF/VOF-ägardokument och att varken
-dokumentet eller ärendet har ändrats sedan formuläret laddades. Operationerna är inte atomiska. Om dokumentet har
+Dokumentet sparas först och label-PATCH:en skickar endast `classifications`, en post med klassificering och
+labelreferenser per lagrumsgrupp, samt ägande `documentKey`, dokumentets ETag och förväntad ärendeversion. Backend
+verifierar därmed rätt IAF/VOF-ägardokument, att varje klassificering tillåts av dokumentets lagrum, att varje grupp
+lagrummen når har exakt en, och att varken dokumentet eller ärendet har ändrats sedan formuläret laddades. Alla
+gruppers labels skrivs, och ärendets `classification` sätts från den grupp som rangordnas först. Operationerna är inte
+atomiska. Om dokumentet har
 sparats men label-PATCH:en misslyckas visas det uttryckligen som ett delvis fel; formuläret behåller klassificeringen och
 nästa försök upprepar endast label-PATCH:en.
 
@@ -206,9 +224,10 @@ skrivskyddat (läst från ärendets JSON Parameters via profilens dokumentnyckel
 `beslut-hsl` tar över IVO- och Public 360-fälten som till och med schema 1.0 låg i HSL-utredningen. Katlas
 inkommande ärendedata förblir en separat skrivskyddad JSON Parameter.
 
-De lokala artefakterna för de tre utredningarna är version 1.2: enhetschefs- och SoL/LSS-utredningen deklarerar
-`errandClassification`, HSL-utredningen saknar beslutsfälten sedan 1.1, och alla tre har sektionen Utredningen klar
-och rapport (`x-draken-completion`, se `schemas/README.md`). En utredning som sparats som klar är låst i både BFF
+De lokala artefakterna för utredningarna är version 1.2, utom enhetschefsutredningen som är version 1.3 och tillåter
+alla tre lagrum samtidigt. Enhetschefs- och SoL/LSS-utredningen deklarerar `errandClassification`, HSL-utredningen
+saknar beslutsfälten sedan 1.1, och alla tre har sektionen Utredningen klar och rapport (`x-draken-completion`, se
+`schemas/README.md`). En utredning som sparats som klar är låst i både BFF
 och formulär tills ägaren låser upp den; BFF:en skapar PDF-rapporten ur det sparade dokumentet, lägger den som
 numrerad bilaga och registrerar den i det serverägda `reports`-fältet. För redan bundna manager- och SOL/LSS-dokument
 med schema till och med version 1.0 injicerar runtime samma externa placering som en bakåtkompatibel fallback.

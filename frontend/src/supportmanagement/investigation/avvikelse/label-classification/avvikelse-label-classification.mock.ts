@@ -1,6 +1,6 @@
 import type { LabelClassificationCatalog } from './label-classification.types';
 
-export const AVVIKELSE_LABEL_CLASSIFICATION_GROUP = {
+const AVVIKELSE_LABEL_CLASSIFICATION_GROUP = {
   HSL: 'HSL',
   SOL_LSS: 'SOL_LSS',
 } as const;

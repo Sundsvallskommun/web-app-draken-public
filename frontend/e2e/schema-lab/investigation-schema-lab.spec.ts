@@ -179,13 +179,22 @@ test('updates risks and label choices when the manager changes legal bases', asy
   const lss = legalBases.getByLabel(/^LSS –/u);
   const sol = legalBases.getByLabel(/^SoL –/u);
   const hslLabel = legalBases.getByText(/^HSL –/u);
+  const lssLabel = legalBases.getByText(/^LSS –/u);
   const solLabel = legalBases.getByText(/^SoL –/u);
-  const typeSelect = activePanel.locator('[data-cy="label-classification-type"]');
+  // One categorization selector per legal base group, as in the errand: HSL, and SoL and LSS together.
+  const categorizationGroups = activePanel.locator('[data-cy^="avvikelse-label-categorization-"]');
+  const hslGroup = activePanel.locator('[data-cy="avvikelse-label-categorization-HSL"]');
+  const socialGroup = activePanel.locator('[data-cy="avvikelse-label-categorization-SOL_LSS"]');
+  const socialTypeSelect = socialGroup.locator('[data-cy="label-classification-type"]');
   const templateSelect = page.locator(`#${managerIdPrefix}_investigationTemplate`);
 
   // From schema 1.3 all three legal bases can apply at once, so the third stays selectable.
   await expect(lss).toBeEnabled();
   await expect(templateSelect.locator('option:not([value=""])')).toHaveCount(3);
+  await expect(hslGroup.locator('legend')).toHaveText('HSL');
+  await expect(hslGroup.locator('[data-cy="label-classification-type"]')).toHaveValue('hsl_fall');
+  await expect(socialGroup.locator('legend')).toHaveText('SoL');
+  await expect(socialTypeSelect).toHaveValue('sol_lss_brister_arbetssatt_metoder_rutiner');
   await hslLabel.click();
   await expect(hsl).not.toBeChecked();
 
@@ -194,18 +203,29 @@ test('updates risks and label choices when the manager changes legal bases', asy
   await expect(page.locator(`#${managerIdPrefix}_riskAssessmentHsl_probability`)).toHaveCount(0);
   await expect(page.locator(`#${managerIdPrefix}_riskAssessmentSolLss_probability`)).toBeVisible();
   await expect(page.locator(`#${managerIdPrefix}_suspectedMisconduct`)).toBeVisible();
-  await expect(typeSelect.locator('option[value="hsl_fall"]')).toHaveCount(0);
-  await expect(typeSelect).toHaveValue('');
+  // The HSL selector leaves with its classification; the SoL/LSS selector keeps its own.
+  await expect(hslGroup).toHaveCount(0);
+  await expect(socialTypeSelect.locator('option[value="hsl_fall"]')).toHaveCount(0);
+  await expect(socialTypeSelect).toHaveValue('sol_lss_brister_arbetssatt_metoder_rutiner');
   await expect(activePanel.locator('[data-cy="label-classification-notice"]')).toContainText(
     'ärendeklassificering passade inte längre valda lagrum'
   );
+
+  // SoL and LSS share their selector, which is headed by whichever of them are chosen.
+  await lssLabel.click();
+  await expect(lss).toBeChecked();
+  await expect(socialGroup.locator('legend')).toHaveText('SoL/LSS');
+  await lssLabel.click();
+  await expect(lss).not.toBeChecked();
+  await expect(socialGroup.locator('legend')).toHaveText('SoL');
 
   await solLabel.click();
   await expect(sol).not.toBeChecked();
   await expect(page.locator(`#${managerIdPrefix}_riskAssessmentSolLss_probability`)).toHaveCount(0);
   await expect(page.locator(`#${managerIdPrefix}_suspectedMisconduct`)).toHaveCount(0);
   await expect(templateSelect).toHaveCount(0);
-  await expect(typeSelect).toBeDisabled();
+  await expect(categorizationGroups).toHaveCount(0);
+  await expect(activePanel.getByText('Välj lagrum för att kunna kategorisera ärendet.')).toBeVisible();
 
   await activePanel.getByText('Visa lokalt JSON-värde', { exact: true }).click();
   const preview = page.locator('[data-cy="schema-form-data-preview"]:visible');
@@ -345,12 +365,17 @@ test('calculates risk values and restores a locally saved draft after reload', a
 
 test('keeps SupportManagement labels separate from investigation JSON', async ({ page }) => {
   const activePanel = page.locator('[role="tabpanel"]:visible');
-  const typeSelect = activePanel.locator('[data-cy="label-classification-type"]');
-  const subtypeSelect = activePanel.locator('[data-cy="label-classification-subtype"]');
+  const hslGroup = activePanel.locator('[data-cy="avvikelse-label-categorization-HSL"]');
+  const typeSelect = hslGroup.locator('[data-cy="label-classification-type"]');
+  const subtypeSelect = hslGroup.locator('[data-cy="label-classification-subtype"]');
+  const socialClassification = {
+    typeCode: 'sol_lss_brister_arbetssatt_metoder_rutiner',
+    subtypeCode: 'sol_lss_brister_arbetssatt_brister_i_rutin',
+  };
 
-  await expect(activePanel.getByLabel('Avvikelsetyp')).toBeVisible();
-  await expect(activePanel.getByLabel('Detaljerad typ av avvikelse')).toBeVisible();
-  await expect(typeSelect.locator('option').first()).toHaveText('Välj ärendekategori');
+  await expect(hslGroup.getByLabel('Avvikelsetyp (obligatoriskt)')).toBeVisible();
+  await expect(hslGroup.getByLabel('Underkategori (obligatorisk)')).toBeVisible();
+  await expect(typeSelect.locator('option').first()).toHaveText('Välj avvikelsetyp');
   await expect(typeSelect).toHaveValue('hsl_fall');
   await typeSelect.selectOption('hsl_lakemedel');
   await expect(subtypeSelect).toHaveValue('');
@@ -362,14 +387,26 @@ test('keeps SupportManagement labels separate from investigation JSON', async ({
     investigation: window.localStorage.getItem('draken:investigation-schema-lab:utredning-enhetschef'),
   }));
 
-  expect(storedValues.labels).toContain('"typeCode":"hsl_lakemedel"');
-  expect(storedValues.labels).toContain('"subtypeCode":"hsl_lakemedel_fel_dos"');
+  // One selection per legal base group, the way the errand keeps one label path per group.
+  expect(JSON.parse(storedValues.labels ?? '{}').value).toEqual({
+    HSL: { typeCode: 'hsl_lakemedel', subtypeCode: 'hsl_lakemedel_fel_dos' },
+    SOL_LSS: socialClassification,
+  });
   expect(storedValues.investigation).not.toContain('deviationType');
   expect(storedValues.investigation).not.toContain('deviationSubtype');
 
   await page.reload();
   await expect(typeSelect).toHaveValue('hsl_lakemedel');
   await expect(subtypeSelect).toHaveValue('hsl_lakemedel_fel_dos');
+
+  // Reported misconduct always has SoL and LSS, so the SoL/LSS investigation categorizes in that group only.
+  await page.locator('[data-cy="utredning-sol-lss-tab"]').click();
+  const socialPanelGroups = page.locator('[role="tabpanel"]:visible [data-cy^="avvikelse-label-categorization-"]');
+  await expect(socialPanelGroups).toHaveCount(1);
+  await expect(socialPanelGroups.locator('legend')).toHaveText('SoL/LSS');
+  await expect(socialPanelGroups.locator('[data-cy="label-classification-type"]')).toHaveValue(
+    socialClassification.typeCode
+  );
 });
 
 test('sanitizes legacy label fields and ignores malformed local timestamps', async ({ page }) => {

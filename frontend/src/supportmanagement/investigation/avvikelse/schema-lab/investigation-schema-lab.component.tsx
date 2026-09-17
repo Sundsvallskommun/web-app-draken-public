@@ -1,15 +1,14 @@
 'use client';
 
 import { Alert, FormControl, FormLabel, Label, Select, Tabs } from '@sk-web-gui/react';
-import {
-  AVVIKELSE_LABEL_CLASSIFICATION_CATALOGS,
-  AVVIKELSE_LABEL_CLASSIFICATION_GROUP,
-  LabelClassificationCatalog,
+import type {
+  AvvikelseGroupedClassificationSelection,
   LabelClassificationSelection,
 } from '@supportmanagement/investigation/avvikelse/label-classification';
 import { FlaskConical } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import type { AvvikelseGroupedClassificationField } from '../avvikelse-grouped-classification-fields.component';
 import { INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD } from '../investigation-classification';
 import { InvestigationFormData } from '../investigation-document';
 import { normalizeInvestigationFormData } from '../investigation-form-data';
@@ -21,6 +20,13 @@ import {
   LocalInvestigationDocumentKey,
 } from './investigation-schema-lab.types';
 import { getInvestigationSchemaAccess, investigationLabRoleOptions } from './investigation-schema-lab-access';
+import {
+  defaultLabClassificationSelections,
+  getLabClassificationFields,
+  getLabClassificationGroupKeys,
+  isSameLabClassificationSelections,
+  retainLabClassificationSelections,
+} from './investigation-schema-lab-classification';
 import {
   loadInvestigationDraft,
   loadLabelClassificationDraft,
@@ -39,7 +45,7 @@ interface InitialLabState {
   drafts: DraftsBySchema;
   savedAt: SavedAtBySchema;
   notices: NoticesBySchema;
-  labelClassification: LabelClassificationSelection;
+  labelClassifications: AvvikelseGroupedClassificationSelection;
   labelClassificationSavedAt?: string;
 }
 
@@ -51,67 +57,9 @@ const emptyDrafts: DraftsBySchema = {
   'beslut-sol-lss': {},
 };
 
-const defaultLabelClassification: LabelClassificationSelection = {
-  typeCode: 'hsl_fall',
-  subtypeCode: 'hsl_fall_vid_forflyttning_med_personal',
-};
-
-const emptyLabelCatalog: LabelClassificationCatalog = {
-  code: 'NO_LEGAL_BASIS',
-  displayName: 'Välj lagrum',
-  types: [],
-};
-
-function getManagerLabelCatalog(formData: InvestigationFormData): LabelClassificationCatalog {
-  const legalBases = Array.isArray(formData.legalBases)
-    ? formData.legalBases.filter((value): value is string => typeof value === 'string')
-    : [];
-  const catalogs: LabelClassificationCatalog[] = [];
-
-  if (legalBases.includes('HSL')) {
-    catalogs.push(AVVIKELSE_LABEL_CLASSIFICATION_CATALOGS[AVVIKELSE_LABEL_CLASSIFICATION_GROUP.HSL]);
-  }
-  if (legalBases.includes('SOL') || legalBases.includes('LSS')) {
-    catalogs.push(AVVIKELSE_LABEL_CLASSIFICATION_CATALOGS[AVVIKELSE_LABEL_CLASSIFICATION_GROUP.SOL_LSS]);
-  }
-
-  if (catalogs.length === 0) return emptyLabelCatalog;
-  if (catalogs.length === 1) return catalogs[0];
-
-  return {
-    code: catalogs.map((catalog) => catalog.code).join('_'),
-    displayName: catalogs.map((catalog) => catalog.displayName).join(' / '),
-    types: catalogs.flatMap((catalog) => catalog.types),
-  };
-}
-
-function getSchemaLabelCatalog(
-  schemaName: string,
-  managerLabelCatalog: LabelClassificationCatalog
-): LabelClassificationCatalog | undefined {
-  if (schemaName === 'utredning-enhetschef') return managerLabelCatalog;
-  if (schemaName === 'utredning-sol-lss') {
-    return AVVIKELSE_LABEL_CLASSIFICATION_CATALOGS[AVVIKELSE_LABEL_CLASSIFICATION_GROUP.SOL_LSS];
-  }
-  return undefined;
-}
-
-function normalizeLabelClassification(
-  catalog: LabelClassificationCatalog,
-  value: LabelClassificationSelection
-): LabelClassificationSelection {
-  const selectedType = catalog.types.find((type) => type.code === value.typeCode);
-  if (!selectedType) return {};
-
-  const selectedSubtype = selectedType.subtypes.find((subtype) => subtype.code === value.subtypeCode);
-  return {
-    typeCode: selectedType.code,
-    subtypeCode: selectedSubtype?.code,
-  };
-}
-
-function isSameLabelClassification(left: LabelClassificationSelection, right: LabelClassificationSelection): boolean {
-  return left.typeCode === right.typeCode && left.subtypeCode === right.subtypeCode;
+/** The unit manager's selectors; their legal bases decide which groups keep a classification, as in the errand. */
+function getManagerClassificationFields(managerFormData: InvestigationFormData): AvvikelseGroupedClassificationField[] {
+  return getLabClassificationFields('utredning-enhetschef', managerFormData) ?? [];
 }
 
 function readBrowserStorage(notices: NoticesBySchema): Storage | undefined {
@@ -144,38 +92,38 @@ function loadInitialDocumentDrafts(
   }
 }
 
-function loadInitialLabelClassification(
+function loadInitialLabelClassifications(
   browserStorage: Storage | undefined,
-  managerLabelCatalog: LabelClassificationCatalog,
+  managerFields: readonly AvvikelseGroupedClassificationField[],
   notices: NoticesBySchema
-): Pick<InitialLabState, 'labelClassification' | 'labelClassificationSavedAt'> {
+): Pick<InitialLabState, 'labelClassifications' | 'labelClassificationSavedAt'> {
   if (!browserStorage) {
     return {
-      labelClassification: normalizeLabelClassification(managerLabelCatalog, defaultLabelClassification),
+      labelClassifications: retainLabClassificationSelections(managerFields, defaultLabClassificationSelections),
     };
   }
 
-  const loadedLabelClassification = loadLabelClassificationDraft(browserStorage);
-  const initialLabelClassification = loadedLabelClassification.savedAt
-    ? loadedLabelClassification.value
-    : defaultLabelClassification;
-  const normalizedLabelClassification = normalizeLabelClassification(managerLabelCatalog, initialLabelClassification);
-  if (loadedLabelClassification.warning) {
-    notices['utredning-enhetschef'] = { type: 'warning', message: loadedLabelClassification.warning };
-  } else if (
-    loadedLabelClassification.savedAt &&
-    !isSameLabelClassification(normalizedLabelClassification, initialLabelClassification)
-  ) {
+  const loadedLabelClassifications = loadLabelClassificationDraft(browserStorage);
+  const initialLabelClassifications = loadedLabelClassifications.savedAt
+    ? loadedLabelClassifications.value
+    : defaultLabClassificationSelections;
+  const retainedLabelClassifications = retainLabClassificationSelections(managerFields, initialLabelClassifications);
+  const classificationsMatch = isSameLabClassificationSelections(
+    retainedLabelClassifications,
+    initialLabelClassifications
+  );
+  if (loadedLabelClassifications.warning) {
+    notices['utredning-enhetschef'] = { type: 'warning', message: loadedLabelClassifications.warning };
+  } else if (loadedLabelClassifications.savedAt && !classificationsMatch) {
     notices['utredning-enhetschef'] = {
       type: 'warning',
       message: 'Den lokalt sparade labelmocken passar inte längre valda lagrum och har därför ignorerats.',
     };
   }
 
-  const classificationMatches = isSameLabelClassification(normalizedLabelClassification, initialLabelClassification);
   return {
-    labelClassification: normalizedLabelClassification,
-    labelClassificationSavedAt: classificationMatches ? loadedLabelClassification.savedAt : undefined,
+    labelClassifications: retainedLabelClassifications,
+    labelClassificationSavedAt: classificationsMatch ? loadedLabelClassifications.savedAt : undefined,
   };
 }
 
@@ -185,8 +133,8 @@ function createInitialLabState(): InitialLabState {
   const notices: NoticesBySchema = {};
   const browserStorage = readBrowserStorage(notices);
   loadInitialDocumentDrafts(browserStorage, drafts, savedAt, notices);
-  const managerLabelCatalog = getManagerLabelCatalog(drafts['utredning-enhetschef']);
-  const labelState = loadInitialLabelClassification(browserStorage, managerLabelCatalog, notices);
+  const managerFields = getManagerClassificationFields(drafts['utredning-enhetschef']);
+  const labelState = loadInitialLabelClassifications(browserStorage, managerFields, notices);
   return { drafts, savedAt, notices, ...labelState };
 }
 
@@ -197,8 +145,8 @@ export function InvestigationSchemaLab() {
   const [drafts, setDrafts] = useState<DraftsBySchema>(initialLabState.drafts);
   const [savedAt, setSavedAt] = useState<SavedAtBySchema>(initialLabState.savedAt);
   const [notices, setNotices] = useState<NoticesBySchema>(initialLabState.notices);
-  const [labelClassification, setLabelClassification] = useState<LabelClassificationSelection>(
-    initialLabState.labelClassification
+  const [labelClassifications, setLabelClassifications] = useState<AvvikelseGroupedClassificationSelection>(
+    initialLabState.labelClassifications
   );
   const [labelClassificationSavedAt, setLabelClassificationSavedAt] = useState<string | undefined>(
     initialLabState.labelClassificationSavedAt
@@ -210,19 +158,17 @@ export function InvestigationSchemaLab() {
     [role]
   );
 
-  const managerLabelCatalog = useMemo(() => getManagerLabelCatalog(drafts['utredning-enhetschef']), [drafts]);
-
   const updateLabelClassification = (
     schemaKey: LocalInvestigationDocumentKey,
-    catalog: LabelClassificationCatalog,
-    value: LabelClassificationSelection
+    groupKey: string,
+    selection: LabelClassificationSelection
   ) => {
-    const normalizedValue = normalizeLabelClassification(catalog, value);
-    setLabelClassification(normalizedValue);
+    const nextLabelClassifications = { ...labelClassifications, [groupKey]: selection };
+    setLabelClassifications(nextLabelClassifications);
     setLabelClassificationNotice(undefined);
 
     try {
-      const timestamp = saveLabelClassificationDraft(window.localStorage, normalizedValue);
+      const timestamp = saveLabelClassificationDraft(window.localStorage, nextLabelClassifications);
       setLabelClassificationSavedAt(timestamp);
       setNotices((currentNotices) => ({ ...currentNotices, [schemaKey]: undefined }));
     } catch {
@@ -245,12 +191,18 @@ export function InvestigationSchemaLab() {
     }));
 
     if (definition.schemaName === 'utredning-enhetschef') {
-      const nextCatalog = getManagerLabelCatalog(normalizedData);
-      const normalizedLabels = normalizeLabelClassification(nextCatalog, labelClassification);
-      if (!isSameLabelClassification(normalizedLabels, labelClassification)) {
-        setLabelClassification(normalizedLabels);
+      const nextFields = getManagerClassificationFields(normalizedData);
+      // Only legal bases that stop reaching a group clear its classification; other edits keep every choice.
+      const reachedGroupsChanged =
+        getLabClassificationGroupKeys(getManagerClassificationFields(drafts[schemaKey])) !==
+        getLabClassificationGroupKeys(nextFields);
+      const retainedLabels = reachedGroupsChanged
+        ? retainLabClassificationSelections(nextFields, labelClassifications)
+        : labelClassifications;
+      if (!isSameLabClassificationSelections(retainedLabels, labelClassifications)) {
+        setLabelClassifications(retainedLabels);
         try {
-          const timestamp = saveLabelClassificationDraft(window.localStorage, normalizedLabels);
+          const timestamp = saveLabelClassificationDraft(window.localStorage, retainedLabels);
           setLabelClassificationSavedAt(timestamp);
           setLabelClassificationNotice(
             'Vald ärendeklassificering passade inte längre valda lagrum och har därför rensats.'
@@ -328,8 +280,12 @@ export function InvestigationSchemaLab() {
       [schemaKey]: normalizeInvestigationFormData(definition.schemaName, definition.schema, exampleFormData),
     }));
     if (definition.schemaName === 'utredning-enhetschef') {
-      const resetCatalog = getManagerLabelCatalog(exampleFormData);
-      setLabelClassification(normalizeLabelClassification(resetCatalog, defaultLabelClassification));
+      setLabelClassifications(
+        retainLabClassificationSelections(
+          getManagerClassificationFields(exampleFormData),
+          defaultLabClassificationSelections
+        )
+      );
       setLabelClassificationSavedAt(undefined);
       setLabelClassificationNotice(undefined);
     }
@@ -404,7 +360,7 @@ export function InvestigationSchemaLab() {
         >
           {investigationSchemaDefinitions.map((definition) => {
             const access = getInvestigationSchemaAccess(role, definition.key);
-            const classificationCatalog = getSchemaLabelCatalog(definition.schemaName, managerLabelCatalog);
+            const classificationFields = getLabClassificationFields(definition.schemaName, drafts[definition.key]);
 
             return (
               <Tabs.Item key={definition.key}>
@@ -423,18 +379,18 @@ export function InvestigationSchemaLab() {
                           markeringen.
                         </p>
                       ),
-                      ...(classificationCatalog
+                      ...(classificationFields
                         ? {
                             [INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD]: (
                               <InvestigationLabelClassificationPanel
                                 headingId={`${definition.key}-label-classification-heading`}
-                                catalog={classificationCatalog}
-                                value={labelClassification}
+                                fields={classificationFields}
+                                selections={labelClassifications}
                                 canWrite={access.canWrite}
                                 savedAt={labelClassificationSavedAt}
                                 notice={labelClassificationNotice}
-                                onChange={(value) =>
-                                  updateLabelClassification(definition.key, classificationCatalog, value)
+                                onChange={(groupKey, selection) =>
+                                  updateLabelClassification(definition.key, groupKey, selection)
                                 }
                               />
                             ),

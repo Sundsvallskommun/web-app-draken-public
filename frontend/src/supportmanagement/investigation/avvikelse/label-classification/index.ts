@@ -1,12 +1,11 @@
-export {
-  AVVIKELSE_LABEL_CLASSIFICATION_CATALOGS,
-  AVVIKELSE_LABEL_CLASSIFICATION_GROUP,
-} from './avvikelse-label-classification.mock';
+export { AVVIKELSE_LABEL_CLASSIFICATION_CATALOGS } from './avvikelse-label-classification.mock';
 export type {
   AvvikelseClassificationGroup,
   AvvikelseGroupedClassificationModel,
+  AvvikelseGroupedClassificationSelection,
   AvvikelseGroupedClassificationUpdate,
   LabelClassificationLegalBaseRule,
+  MissingAvvikelseGroupedClassificationChoice,
 } from './avvikelse-supportmanagement-label-classification';
 export {
   applyAvvikelseGroupedClassificationSelection,
@@ -15,6 +14,7 @@ export {
   createAvvikelseLabelClassificationModel,
   getAvvikelseGroupedClassificationSelection,
   getAvvikelseLabelClassificationSelection,
+  getChosenAvvikelseClassificationGroups,
   getMissingAvvikelseGroupedClassificationChoices,
   getPersistedAvvikelseGroupedClassificationState,
 } from './avvikelse-supportmanagement-label-classification';

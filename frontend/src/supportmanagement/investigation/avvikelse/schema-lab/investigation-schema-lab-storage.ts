@@ -1,11 +1,15 @@
-import { LabelClassificationSelection } from '@supportmanagement/investigation/avvikelse/label-classification';
+import {
+  AvvikelseGroupedClassificationSelection,
+  LabelClassificationSelection,
+} from '@supportmanagement/investigation/avvikelse/label-classification';
 
 import { InvestigationFormData } from '../investigation-document';
 import { LocalInvestigationDocumentKey } from './investigation-schema-lab.types';
 
 const storageNamespace = 'draken:investigation-schema-lab';
 const labelClassificationStorageKey = `${storageNamespace}:supportmanagement-labels`;
-const labelClassificationCatalogVersion = '1.0';
+// 2.0 keeps one selection per legal base group; a 1.0 draft held a single selection and is not read.
+const labelClassificationCatalogVersion = '2.0';
 const labelOwnedInvestigationFields = new Set(['deviationType', 'deviationSubtype']);
 
 interface InvestigationDraftEnvelope {
@@ -18,7 +22,7 @@ interface InvestigationDraftEnvelope {
 interface LabelClassificationDraftEnvelope {
   catalogVersion: string;
   savedAt: string;
-  value: LabelClassificationSelection;
+  value: AvvikelseGroupedClassificationSelection;
 }
 
 export interface LoadedInvestigationDraft {
@@ -28,7 +32,7 @@ export interface LoadedInvestigationDraft {
 }
 
 export interface LoadedLabelClassificationDraft {
-  value: LabelClassificationSelection;
+  value: AvvikelseGroupedClassificationSelection;
   savedAt?: string;
   warning?: string;
 }
@@ -86,13 +90,17 @@ function isLabelClassificationSelection(value: unknown): value is LabelClassific
   );
 }
 
+function isGroupedLabelClassificationSelection(value: unknown): value is AvvikelseGroupedClassificationSelection {
+  return isRecord(value) && Object.values(value).every(isLabelClassificationSelection);
+}
+
 function isLabelClassificationDraftEnvelope(value: unknown): value is LabelClassificationDraftEnvelope {
   if (!isRecord(value)) return false;
 
   return (
     value.catalogVersion === labelClassificationCatalogVersion &&
     isIsoTimestamp(value.savedAt) &&
-    isLabelClassificationSelection(value.value)
+    isGroupedLabelClassificationSelection(value.value)
   );
 }
 
@@ -183,7 +191,7 @@ export function loadLabelClassificationDraft(storage: InvestigationDraftStorage)
 
 export function saveLabelClassificationDraft(
   storage: InvestigationDraftStorage,
-  value: LabelClassificationSelection
+  value: AvvikelseGroupedClassificationSelection
 ): string {
   const savedAt = new Date().toISOString();
   const envelope: LabelClassificationDraftEnvelope = {

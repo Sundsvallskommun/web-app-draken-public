@@ -12,3 +12,9 @@ export const avvikelseClassificationContent: LabelClassificationContent = Object
   subtypeEmptyPlaceholder: 'Saknar underkategorier',
   subtypeHelperText: 'Underkategori för avvikelsen',
 });
+
+/** What the categorization says about the legal bases its selectors follow, wherever it is shown. */
+export const avvikelseGroupedClassificationContent = Object.freeze({
+  noLegalBases: 'Välj lagrum för att kunna kategorisera ärendet.',
+  everyLegalBase: 'Välj avvikelsetyp och underkategori för varje valt lagrum.',
+});
