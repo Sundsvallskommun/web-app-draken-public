@@ -432,3 +432,244 @@ export const applyAvvikelseLabelClassificationSelection = (
     requiresSubType: Boolean(binding?.types.length),
   };
 };
+
+/** A legal base of a group, with the name its selector is headed by. */
+export interface AvvikelseClassificationGroupLegalBase {
+  readonly legalBase: string;
+  readonly label: string;
+}
+
+/** Legal bases whose categories are chosen in one selector. */
+export interface AvvikelseClassificationGroup {
+  readonly key: string;
+  readonly legalBases: readonly AvvikelseClassificationGroupLegalBase[];
+}
+
+export interface AvvikelseGroupedClassificationModelGroup {
+  readonly group: AvvikelseClassificationGroup;
+  /** What the selector is headed by: the group's chosen legal bases, such as SoL, LSS or SoL/LSS. */
+  readonly label: string;
+  /** The categories the group's chosen legal bases allow. */
+  readonly model: AvvikelseLabelClassificationModel;
+}
+
+/**
+ * An errand is classified once in every group one of its legal bases belongs to: a deviation under
+ * both HSL and SoL has an HSL classification and a SoL/LSS one, each chosen in its own selector.
+ */
+export interface AvvikelseGroupedClassificationModel {
+  /** The groups the chosen legal bases reach, in display order. */
+  readonly groups: readonly AvvikelseGroupedClassificationModelGroup[];
+  /** Every configured category, so a path chosen in a group the legal bases no longer reach is recognised. */
+  readonly completeModel: AvvikelseLabelClassificationModel;
+  /** Group keys in the order they claim the errand's own classification field, which holds only one. */
+  readonly errandClassificationGroupPriority: readonly string[];
+}
+
+export type AvvikelseGroupedClassificationSelection = Readonly<Record<string, LabelClassificationSelection>>;
+
+export interface AvvikelseGroupClassificationUpdate extends AvvikelseLabelClassificationUpdate {
+  readonly groupKey: string;
+  readonly groupLabel: string;
+}
+
+export interface AvvikelseGroupedClassificationUpdate {
+  readonly labels: Label[];
+  readonly labelsChanged: boolean;
+  /** One per group the legal bases reach, in display order. */
+  readonly classifications: readonly AvvikelseGroupClassificationUpdate[];
+  /** The chosen classification the errand's own classification field takes. */
+  readonly errandClassification: AvvikelseGroupClassificationUpdate | undefined;
+}
+
+const normalizeLegalBase = (legalBase: string): string => legalBase.trim().toUpperCase();
+
+export const createAvvikelseGroupedClassificationModel = (
+  labelStructure: readonly Label[] | undefined,
+  labelTree: AvvikelseClassificationLabelTree | undefined,
+  legalBases: readonly string[],
+  legalBaseRules: readonly LabelClassificationLegalBaseRule[],
+  groups: readonly AvvikelseClassificationGroup[],
+  errandClassificationGroupPriority: readonly string[]
+): AvvikelseGroupedClassificationModel => {
+  const chosenLegalBases = new Set(legalBases.map(normalizeLegalBase));
+  return {
+    groups: groups.flatMap((group) => {
+      const groupLegalBases = group.legalBases.filter(({ legalBase }) =>
+        chosenLegalBases.has(normalizeLegalBase(legalBase))
+      );
+      return groupLegalBases.length === 0
+        ? []
+        : [
+            {
+              group,
+              label: groupLegalBases.map(({ label }) => label).join('/'),
+              model: createAvvikelseLabelClassificationModel(
+                labelStructure,
+                labelTree,
+                groupLegalBases.map(({ legalBase }) => legalBase),
+                legalBaseRules
+              ),
+            },
+          ];
+    }),
+    completeModel: createAvvikelseLabelClassificationModel(labelStructure, labelTree),
+    errandClassificationGroupPriority,
+  };
+};
+
+export const getAvvikelseGroupedClassificationSelection = (
+  model: AvvikelseGroupedClassificationModel,
+  errandLabels: readonly Label[] | undefined,
+  classification?: { readonly category?: string; readonly type?: string; readonly subType?: string }
+): AvvikelseGroupedClassificationSelection =>
+  Object.fromEntries(
+    model.groups.map(({ group, model: groupModel }) => [
+      group.key,
+      getAvvikelseLabelClassificationSelection(groupModel, errandLabels, classification),
+    ])
+  );
+
+/**
+ * Replaces every classification path on the errand with the paths chosen per group. A group the legal
+ * bases no longer reach loses its path; labels outside the classification tree are kept as they are.
+ */
+export const applyAvvikelseGroupedClassificationSelection = (
+  model: AvvikelseGroupedClassificationModel,
+  currentLabels: readonly Label[] | undefined,
+  selections: AvvikelseGroupedClassificationSelection
+): AvvikelseGroupedClassificationUpdate => {
+  const labels = (currentLabels ?? [])
+    .filter((label) => !isManagedLabel(model.completeModel, label))
+    .map(withoutChildren);
+  const classifications = model.groups.map(({ group, label: groupLabel, model: groupModel }) => {
+    const update = applyAvvikelseLabelClassificationSelection(groupModel, [], selections[group.key] ?? {});
+    update.categoryLabels.forEach((label) => appendUnique(labels, label));
+    return { ...update, groupKey: group.key, groupLabel };
+  });
+  const rank = (groupKey: string): number => {
+    const index = model.errandClassificationGroupPriority.indexOf(groupKey);
+    return index < 0 ? Number.MAX_SAFE_INTEGER : index;
+  };
+  const errandClassification = classifications
+    .filter((classification) => classification.category)
+    .sort((left, right) => rank(left.groupKey) - rank(right.groupKey))[0];
+
+  return {
+    labels,
+    labelsChanged: !hasSameLabelSequence(currentLabels ?? [], labels),
+    classifications,
+    errandClassification,
+  };
+};
+
+const hasChosenBinding = (binding: AvvikelseLabelClassificationBinding, labels: readonly Label[]): boolean =>
+  labels.some(
+    (label) => hasSameIdentity(label, binding.category) || binding.types.some((type) => hasSameIdentity(label, type))
+  );
+
+/**
+ * The errand's labels on one chosen path: its owner, its category, the category's types - and any type
+ * label below the category's path that metadata no longer describes, which is what a retired
+ * undercategory looks like. Another group's labels are not evidence about this path.
+ */
+const labelsOnBindingPath = (
+  binding: AvvikelseLabelClassificationBinding,
+  labels: readonly Label[],
+  labelTree: AvvikelseClassificationLabelTree
+): Label[] => {
+  const categoryPath = normalizeResourcePath(labelResourceValue(binding.category));
+  return labels.filter(
+    (label) =>
+      (binding.owner !== undefined && hasSameIdentity(label, binding.owner)) ||
+      hasSameIdentity(label, binding.category) ||
+      binding.types.some((type) => hasSameIdentity(label, type)) ||
+      (isClassification(label, labelTree.typeClassification) &&
+        Boolean(label.resourcePath) &&
+        normalizeResourcePath(label.resourcePath).startsWith(`${categoryPath}/`))
+  );
+};
+
+/**
+ * Whether the classification saved on the errand satisfies the chosen legal bases: every group they
+ * reach has a complete path, and no group they no longer reach still has one. A group without a path
+ * of its own is satisfied only by a legacy classification its legal bases still allow.
+ */
+export const getPersistedAvvikelseGroupedClassificationState = (
+  labelStructure: readonly Label[] | undefined,
+  labelTree: AvvikelseClassificationLabelTree,
+  legalBases: readonly string[],
+  classification: PersistedIafLabelClassification,
+  legalBaseRules: readonly LabelClassificationLegalBaseRule[],
+  groups: readonly AvvikelseClassificationGroup[],
+  errandClassificationGroupPriority: readonly string[]
+): PersistedIafLabelClassificationState => {
+  const model = createAvvikelseGroupedClassificationModel(
+    labelStructure,
+    labelTree,
+    legalBases,
+    legalBaseRules,
+    groups,
+    errandClassificationGroupPriority
+  );
+  if (model.completeModel.bindings.length === 0) return 'legacy-unknown';
+  if (model.groups.length === 0) return 'missing-classification';
+
+  const labels = classification.labels ?? [];
+  const chosenOutsideGroups = model.completeModel.bindings.some(
+    (binding) =>
+      hasChosenBinding(binding, labels) &&
+      !model.groups.some(({ model: groupModel }) =>
+        groupModel.bindings.some((candidate) => hasSameIdentity(candidate.category, binding.category))
+      )
+  );
+  if (chosenOutsideGroups) return 'known-disallowed-legal-base';
+
+  const chosenLegalBases = new Set(legalBases.map(normalizeLegalBase));
+  for (const { group, model: groupModel } of model.groups) {
+    const groupLegalBases = group.legalBases
+      .map(({ legalBase }) => legalBase)
+      .filter((legalBase) => chosenLegalBases.has(normalizeLegalBase(legalBase)));
+    const selection = getAvvikelseLabelClassificationSelection(groupModel, labels, classification);
+    const binding = groupModel.bindings.find(({ category }) => labelCode(category) === selection.typeCode);
+    // The group is judged the way a single classification always was, on the path it has: an errand
+    // classified before the tree was labelled, or under an undercategory metadata has since retired,
+    // is kept while the group's legal bases still allow its owner.
+    const state = getPersistedAvvikelseLabelClassificationState(
+      labelStructure,
+      labelTree,
+      groupLegalBases,
+      binding
+        ? {
+            labels: labelsOnBindingPath(binding, labels, labelTree),
+            category: labelResourceValue(binding.owner ?? binding.category),
+            type: labelResourceValue(binding.category),
+            subType: '',
+          }
+        : classification,
+      legalBaseRules
+    );
+    if (state === 'known-valid' || state === 'legacy-unknown') continue;
+    return binding ? state : 'missing-classification';
+  }
+  return 'known-valid';
+};
+
+export interface MissingAvvikelseGroupedClassificationChoice {
+  readonly groupKey: string;
+  /** The first choice the group still needs: a category, or the undercategory the chosen category requires. */
+  readonly missing: 'type' | 'subtype';
+}
+
+/** The groups whose classification is not yet complete, in display order. */
+export const getMissingAvvikelseGroupedClassificationChoices = (
+  model: AvvikelseGroupedClassificationModel,
+  selections: AvvikelseGroupedClassificationSelection
+): MissingAvvikelseGroupedClassificationChoice[] =>
+  model.groups.flatMap(({ group, model: groupModel }): MissingAvvikelseGroupedClassificationChoice[] => {
+    const selection = selections[group.key] ?? {};
+    const chosenType = groupModel.catalog.types.find((type) => type.code === selection.typeCode);
+    if (!chosenType) return [{ groupKey: group.key, missing: 'type' }];
+    if (chosenType.subtypes.length > 0 && !selection.subtypeCode) return [{ groupKey: group.key, missing: 'subtype' }];
+    return [];
+  });

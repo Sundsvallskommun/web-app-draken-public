@@ -1,6 +1,7 @@
 import type { SupportLabelTreeProfile } from '../../services/support-label-classification-projector';
 import { normalizeSupportManagementResourcePath } from '../../services/supportmanagement-path';
 import type { SupportErrandClassificationPlacement } from '../classification-placement';
+import type { AvvikelseClassificationGroup } from './label-classification/avvikelse-supportmanagement-label-classification';
 
 export interface AvvikelseClassificationLegalBaseRule {
   readonly legalBase: string;
@@ -46,6 +47,22 @@ export const AVVIKELSE_CLASSIFICATION_POLICY = Object.freeze({
     Object.freeze({ legalBase: 'SOL', allowedClassificationCategories: Object.freeze(['CATEGORY/SOL_LSS']) }),
     Object.freeze({ legalBase: 'LSS', allowedClassificationCategories: Object.freeze(['CATEGORY/SOL_LSS']) }),
   ]) satisfies readonly AvvikelseClassificationLegalBaseRule[],
+  /**
+   * The legal bases whose categories are chosen in one selector. An errand is classified once in every
+   * group one of its legal bases belongs to: HSL in one selector, SoL and LSS together in the other.
+   */
+  classificationGroups: Object.freeze([
+    Object.freeze({ key: 'HSL', legalBases: Object.freeze([Object.freeze({ legalBase: 'HSL', label: 'HSL' })]) }),
+    Object.freeze({
+      key: 'SOL_LSS',
+      legalBases: Object.freeze([
+        Object.freeze({ legalBase: 'SOL', label: 'SoL' }),
+        Object.freeze({ legalBase: 'LSS', label: 'LSS' }),
+      ]),
+    }),
+  ]) satisfies readonly AvvikelseClassificationGroup[],
+  /** Every classification is kept as labels; the errand's classification field takes the SoL/LSS one when both exist. */
+  errandClassificationGroupPriority: Object.freeze(['SOL_LSS', 'HSL']),
 });
 
 type AvvikelseClassificationPolicy = typeof AVVIKELSE_CLASSIFICATION_POLICY;

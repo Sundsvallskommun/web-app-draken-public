@@ -21,6 +21,44 @@ const managerKey = 'utredning-enhetschef';
 const solLssKey = 'utredning-sol-lss';
 const managerProbabilityGroup = `#${managerKey}_riskAssessmentHsl_probability`;
 const classificationFieldSelector = '[data-cy="schema-external-field-errandClassification"]';
+// A manager investigation under both HSL and SoL has one categorization selector per group.
+const hslClassificationSelector = '[data-cy="avvikelse-label-categorization-HSL"]';
+const socialClassificationSelector = '[data-cy="avvikelse-label-categorization-SOL_LSS"]';
+/** The default deviation's SoL/LSS path, which an errand the manager investigates under HSL and SoL also needs. */
+const socialClassificationLabels: MockLabel[] = [
+  {
+    id: iafLabelFixture.classification.solLssOwner.id,
+    classification: 'PROVISION_CATEGORY',
+    displayName: 'SoL/LSS',
+    resourceName: 'SOL_LSS',
+    resourcePath: iafLabelFixture.classification.solLssOwner.resourcePath,
+  },
+  {
+    id: iafLabelFixture.classification.legalCertainty.id,
+    classification: 'CATEGORY',
+    displayName: iafLabelFixture.classification.legalCertainty.displayName,
+    resourceName: 'LEGAL_CERTAINTY',
+    resourcePath: iafLabelFixture.classification.legalCertainty.resourcePath,
+  },
+  {
+    id: iafLabelFixture.classification.deficientHandling.id,
+    classification: 'TYPE',
+    displayName: iafLabelFixture.classification.deficientHandling.displayName,
+    resourceName: 'DEFICIENT_HANDLING',
+    resourcePath: iafLabelFixture.classification.deficientHandling.resourcePath,
+  },
+];
+const socialClassificationPatch = {
+  classification: {
+    category: iafLabelFixture.classification.solLssOwner.resourcePath,
+    type: iafLabelFixture.classification.legalCertainty.resourcePath,
+  },
+  categoryLabels: [
+    { id: iafLabelFixture.classification.solLssOwner.id },
+    { id: iafLabelFixture.classification.legalCertainty.id },
+    { id: iafLabelFixture.classification.deficientHandling.id },
+  ],
+};
 // The schema debug surfaces follow NEXT_PUBLIC_ENVIRONMENT, so the same specs assert both
 // directions: visible under a TEST deployment, gone under any other.
 const schemaDebugIsVisible = process.env.NEXT_PUBLIC_ENVIRONMENT === 'TEST';
@@ -492,9 +530,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
           .selectOption(iafLabelFixture.classification.supportNotProvided.resourcePath);
       } else {
         await ownerClassification
+          .locator(hslClassificationSelector)
           .locator('[data-cy="label-classification-type"]')
           .selectOption(iafLabelFixture.classification.medication.resourcePath);
         await ownerClassification
+          .locator(hslClassificationSelector)
           .locator('[data-cy="label-classification-subtype"]')
           .selectOption(iafLabelFixture.classification.incorrectAdministration.resourcePath);
       }
@@ -978,37 +1018,48 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const legalBases = managerDocument.locator(`#${managerKey}_legalBases-group`);
     const hsl = legalBases.getByLabel(/^HSL –/u);
     const sol = legalBases.getByLabel(/^SoL –/u);
+    const lss = legalBases.getByLabel(/^LSS –/u);
     const hslLabel = legalBases.getByText(/^HSL –/u);
     const solLabel = legalBases.getByText(/^SoL –/u);
-    const typeSelect = managerDocument.locator('[data-cy="label-classification-type"]');
+    const lssLabel = legalBases.getByText(/^LSS –/u);
+    const hslGroup = managerDocument.locator(hslClassificationSelector);
+    const socialGroup = managerDocument.locator(socialClassificationSelector);
+    const typeOption = (groupSelector: string, name: string) =>
+      managerDocument
+        .locator(`${groupSelector} [data-cy="label-classification-type"] option`)
+        .filter({ hasText: name });
+    const rehab = iafLabelFixture.classification.rehab.displayName;
+    const legalCertainty = iafLabelFixture.classification.legalCertainty.displayName;
 
-    await expect(
-      typeSelect.locator('option').filter({ hasText: iafLabelFixture.classification.rehab.displayName })
-    ).toHaveCount(1);
-    await expect(
-      typeSelect.locator('option').filter({ hasText: iafLabelFixture.classification.legalCertainty.displayName })
-    ).toHaveCount(1);
+    // HSL and SoL are chosen: one selector per group, each offering only its own categories.
+    await expect(hslGroup.locator('legend')).toHaveText('HSL');
+    await expect(socialGroup.locator('legend')).toHaveText('SoL');
+    await expect(typeOption(hslClassificationSelector, rehab)).toHaveCount(1);
+    await expect(typeOption(hslClassificationSelector, legalCertainty)).toHaveCount(0);
+    await expect(typeOption(socialClassificationSelector, legalCertainty)).toHaveCount(1);
+    await expect(typeOption(socialClassificationSelector, rehab)).toHaveCount(0);
+
+    // All three legal bases can be chosen. SoL and LSS share their selector, which then names both.
+    await lssLabel.click();
+    await expect(lss).toBeChecked();
+    await expect(socialGroup.locator('legend')).toHaveText('SoL/LSS');
+    await expect(hslGroup).toHaveCount(1);
 
     await solLabel.click();
     await expect(sol).not.toBeChecked();
-    await expect(
-      typeSelect.locator('option').filter({ hasText: iafLabelFixture.classification.rehab.displayName })
-    ).toHaveCount(1);
-    await expect(
-      typeSelect.locator('option').filter({ hasText: iafLabelFixture.classification.legalCertainty.displayName })
-    ).toHaveCount(0);
+    await expect(socialGroup.locator('legend')).toHaveText('LSS');
+
+    await lssLabel.click();
+    await expect(lss).not.toBeChecked();
+    await expect(socialGroup).toHaveCount(0);
+    await expect(typeOption(hslClassificationSelector, rehab)).toHaveCount(1);
 
     await solLabel.click();
     await expect(sol).toBeChecked();
     await hslLabel.click();
     await expect(hsl).not.toBeChecked();
-    await expect(
-      typeSelect.locator('option').filter({ hasText: iafLabelFixture.classification.rehab.displayName })
-    ).toHaveCount(0);
-    await expect(
-      typeSelect.locator('option').filter({ hasText: iafLabelFixture.classification.legalCertainty.displayName })
-    ).toHaveCount(1);
-    await expect(typeSelect).toHaveValue('');
+    await expect(hslGroup).toHaveCount(0);
+    await expect(typeOption(socialClassificationSelector, legalCertainty)).toHaveCount(1);
   });
 
   test('följer Adminpanels avstängda utredningsflagga deterministiskt', async ({ page, dismissCookieConsent }) => {
@@ -1121,8 +1172,10 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     const document = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
     const assessedWith = document.locator(`#${managerKey}_riskAssessmentHsl_assessedWith`);
-    const typeSelect = document.locator('[data-cy="label-classification-type"]');
-    const subtypeSelect = document.locator('[data-cy="label-classification-subtype"]');
+    const typeSelect = document.locator(hslClassificationSelector).locator('[data-cy="label-classification-type"]');
+    const subtypeSelect = document
+      .locator(hslClassificationSelector)
+      .locator('[data-cy="label-classification-subtype"]');
     const saveButton = document.getByRole('button', { name: 'Spara utredning', exact: true });
     const summary = document.locator('[data-cy="schema-form-error-summary"]');
     await assessedWith.fill('');
@@ -1230,7 +1283,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
         category: iafLabelFixture.classification.hslOwner.resourcePath,
         type: legacyCategoryPath,
       },
-      labels: legacyLabels,
+      labels: [...legacyLabels, ...socialClassificationLabels],
     });
 
     await visitErrand(page, dismissCookieConsent);
@@ -1288,7 +1341,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     ];
     const trace = await installIafApiMock(page, {
       documents: { [managerKey]: existingManagerDocument() },
-      labels: labelsWithRetiredType,
+      labels: [...labelsWithRetiredType, ...socialClassificationLabels],
     });
 
     await visitErrand(page, dismissCookieConsent);
@@ -1319,7 +1372,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
 
     await expect(page.locator('[data-cy="schema-form-error-summary"]')).toContainText(
-      'Välj avvikelsetyp och underkategori innan utredningen sparas.'
+      'Välj avvikelsetyp och underkategori för varje valt lagrum innan utredningen sparas.'
     );
     expect(trace.puts).toHaveLength(0);
     expect(trace.classificationPatches).toHaveLength(0);
@@ -1342,7 +1395,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
 
     await expect(page.locator('[data-cy="schema-form-error-summary"]')).toContainText(
-      'Den befintliga kategoriseringen stämmer inte med valda lagrum. Välj en giltig avvikelsetyp och underkategori.'
+      'Den befintliga kategoriseringen stämmer inte med valda lagrum. Välj en giltig avvikelsetyp och underkategori för varje valt lagrum.'
     );
     expect(trace.puts).toHaveLength(0);
     expect(trace.classificationPatches).toHaveLength(0);
@@ -1394,7 +1447,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
 
     await expect(page.locator('[data-cy="schema-form-error-summary"]')).toContainText(
-      'Välj underkategori innan utredningen sparas.'
+      'Välj underkategori för varje valt lagrum innan utredningen sparas.'
     );
     expect(trace.puts).toHaveLength(0);
     expect(trace.classificationPatches).toHaveLength(0);
@@ -1452,21 +1505,25 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     expect(trace.classificationPatches[0].body).toEqual({
       expectedVersion: 8,
-      classification: {
-        category: iafLabelFixture.classification.hslOwner.resourcePath,
-        type: iafLabelFixture.classification.medication.resourcePath,
-      },
-      categoryLabels: [
-        { id: iafLabelFixture.classification.hslOwner.id },
-        { id: iafLabelFixture.classification.medication.id },
-        { id: iafLabelFixture.classification.incorrectAdministration.id },
+      classifications: [
+        {
+          classification: {
+            category: iafLabelFixture.classification.hslOwner.resourcePath,
+            type: iafLabelFixture.classification.medication.resourcePath,
+          },
+          categoryLabels: [
+            { id: iafLabelFixture.classification.hslOwner.id },
+            { id: iafLabelFixture.classification.medication.id },
+            { id: iafLabelFixture.classification.incorrectAdministration.id },
+          ],
+        },
+        socialClassificationPatch,
       ],
       documentKey: managerKey,
       documentETag: '"8"',
     });
     expect(Object.keys(trace.classificationPatches[0].body as Record<string, unknown>).sort()).toEqual([
-      'categoryLabels',
-      'classification',
+      'classifications',
       'documentETag',
       'documentKey',
       'expectedVersion',
@@ -1485,10 +1542,15 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.classificationPatches[1].body).toEqual(
       expect.objectContaining({
         expectedVersion: 9,
-        classification: {
-          category: iafLabelFixture.classification.hslOwner.resourcePath,
-          type: iafLabelFixture.classification.rehab.resourcePath,
-        },
+        classifications: [
+          expect.objectContaining({
+            classification: {
+              category: iafLabelFixture.classification.hslOwner.resourcePath,
+              type: iafLabelFixture.classification.rehab.resourcePath,
+            },
+          }),
+          socialClassificationPatch,
+        ],
       })
     );
   });
@@ -1504,8 +1566,12 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await openInvestigation(page);
 
     const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
-    const typeSelect = managerDocument.locator('[data-cy="label-classification-type"]');
-    const subtypeSelect = managerDocument.locator('[data-cy="label-classification-subtype"]');
+    const typeSelect = managerDocument
+      .locator(hslClassificationSelector)
+      .locator('[data-cy="label-classification-type"]');
+    const subtypeSelect = managerDocument
+      .locator(hslClassificationSelector)
+      .locator('[data-cy="label-classification-subtype"]');
     await typeSelect.selectOption(iafLabelFixture.classification.medication.id);
     await subtypeSelect.selectOption(iafLabelFixture.classification.incorrectAdministration.id);
     await managerDocument.getByRole('button', { name: 'Spara utredning', exact: true }).click();
@@ -1516,11 +1582,19 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.classificationPatches).toHaveLength(1);
     expect(trace.classificationPatches[0].body).toEqual({
       expectedVersion: 7,
-      classification: { category: 'HSL', type: 'MEDICATION' },
-      categoryLabels: [
-        { id: iafLabelFixture.classification.hslOwner.id },
-        { id: iafLabelFixture.classification.medication.id },
-        { id: iafLabelFixture.classification.incorrectAdministration.id },
+      classifications: [
+        {
+          classification: { category: 'HSL', type: 'MEDICATION' },
+          categoryLabels: [
+            { id: iafLabelFixture.classification.hslOwner.id },
+            { id: iafLabelFixture.classification.medication.id },
+            { id: iafLabelFixture.classification.incorrectAdministration.id },
+          ],
+        },
+        {
+          classification: { category: 'SOL_LSS', type: 'LEGAL_CERTAINTY' },
+          categoryLabels: socialClassificationPatch.categoryLabels,
+        },
       ],
       documentKey: managerKey,
       documentETag: existing.etag,
@@ -1542,9 +1616,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
     await managerDocument
+      .locator(hslClassificationSelector)
       .locator('[data-cy="label-classification-type"]')
       .selectOption(iafLabelFixture.classification.medication.resourcePath);
     await managerDocument
+      .locator(hslClassificationSelector)
       .locator('[data-cy="label-classification-subtype"]')
       .selectOption(iafLabelFixture.classification.incorrectAdministration.resourcePath);
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
@@ -1580,9 +1656,11 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
 
     const managerDocument = page.locator(`[data-cy="investigation-document-${managerKey}"]`);
     await managerDocument
+      .locator(hslClassificationSelector)
       .locator('[data-cy="label-classification-type"]')
       .selectOption(iafLabelFixture.classification.medication.resourcePath);
     await managerDocument
+      .locator(hslClassificationSelector)
       .locator('[data-cy="label-classification-subtype"]')
       .selectOption(iafLabelFixture.classification.incorrectAdministration.resourcePath);
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
@@ -1674,14 +1752,18 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect.poll(() => trace.classificationPatches.length).toBe(1);
     expect(trace.classificationPatches[0].body).toEqual({
       expectedVersion: 7,
-      classification: {
-        category: iafLabelFixture.classification.solLssOwner.resourcePath,
-        type: iafLabelFixture.classification.executionDeficiency.resourcePath,
-      },
-      categoryLabels: [
-        { id: iafLabelFixture.classification.solLssOwner.id },
-        { id: iafLabelFixture.classification.executionDeficiency.id },
-        { id: iafLabelFixture.classification.supportNotProvided.id },
+      classifications: [
+        {
+          classification: {
+            category: iafLabelFixture.classification.solLssOwner.resourcePath,
+            type: iafLabelFixture.classification.executionDeficiency.resourcePath,
+          },
+          categoryLabels: [
+            { id: iafLabelFixture.classification.solLssOwner.id },
+            { id: iafLabelFixture.classification.executionDeficiency.id },
+            { id: iafLabelFixture.classification.supportNotProvided.id },
+          ],
+        },
       ],
       documentKey: solLssKey,
       documentETag: documents[solLssKey].etag,

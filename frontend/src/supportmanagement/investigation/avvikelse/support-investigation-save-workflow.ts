@@ -7,12 +7,13 @@ import type {
 } from './avvikelse-classification-policy';
 import type { InvestigationDocumentKey, InvestigationFormData } from './investigation-document';
 import {
-  applyAvvikelseLabelClassificationSelection,
-  type AvvikelseLabelClassificationModel,
-  type AvvikelseLabelClassificationUpdate,
-  createAvvikelseLabelClassificationModel,
-  getAvvikelseLabelClassificationSelection,
-  getPersistedAvvikelseLabelClassificationState,
+  applyAvvikelseGroupedClassificationSelection,
+  type AvvikelseClassificationGroup,
+  type AvvikelseGroupedClassificationModel,
+  type AvvikelseGroupedClassificationUpdate,
+  createAvvikelseGroupedClassificationModel,
+  getAvvikelseGroupedClassificationSelection,
+  getPersistedAvvikelseGroupedClassificationState,
 } from './label-classification';
 import {
   buildSupportInvestigationClassificationRequest,
@@ -36,8 +37,8 @@ export interface InvestigationClassificationDraft {
 }
 
 export interface PreparedInvestigationClassification {
-  readonly model: AvvikelseLabelClassificationModel;
-  readonly update: AvvikelseLabelClassificationUpdate;
+  readonly model: AvvikelseGroupedClassificationModel;
+  readonly update: AvvikelseGroupedClassificationUpdate;
 }
 
 interface PrepareClassificationInput {
@@ -48,21 +49,54 @@ interface PrepareClassificationInput {
   readonly labelStructure: readonly Label[] | undefined;
   readonly legalBases: readonly string[];
   readonly legalBaseRules: readonly AvvikelseClassificationLegalBaseRule[];
+  readonly classificationGroups: readonly AvvikelseClassificationGroup[];
+  readonly errandClassificationGroupPriority: readonly string[];
   readonly persistedClassification: InvestigationClassificationDraft;
   readonly triggerValidation: () => Promise<boolean>;
   readonly getDraft: () => InvestigationClassificationDraft;
 }
 
 const persistedClassificationError = (
-  state: ReturnType<typeof getPersistedAvvikelseLabelClassificationState>
+  state: ReturnType<typeof getPersistedAvvikelseGroupedClassificationState>
 ): string | undefined => {
   if (state === 'known-valid' || state === 'legacy-unknown') return undefined;
   if (state === 'known-disallowed-legal-base') {
-    return 'Den befintliga kategoriseringen stämmer inte med valda lagrum. Välj en giltig avvikelsetyp och underkategori.';
+    return 'Den befintliga kategoriseringen stämmer inte med valda lagrum. Välj en giltig avvikelsetyp och underkategori för varje valt lagrum.';
   }
-  if (state === 'known-missing-required-type') return 'Välj underkategori innan utredningen sparas.';
-  return 'Välj avvikelsetyp och underkategori innan utredningen sparas.';
+  if (state === 'known-missing-required-type')
+    return 'Välj underkategori för varje valt lagrum innan utredningen sparas.';
+  return 'Välj avvikelsetyp och underkategori för varje valt lagrum innan utredningen sparas.';
 };
+
+type PersistedClassificationInput = Pick<
+  PrepareClassificationInput,
+  | 'labelStructure'
+  | 'legalBases'
+  | 'legalBaseRules'
+  | 'classificationGroups'
+  | 'errandClassificationGroupPriority'
+  | 'persistedClassification'
+> &
+  Readonly<{ labelTree: AvvikelseClassificationLabelTree }>;
+
+const getPersistedClassificationState = ({
+  labelStructure,
+  labelTree,
+  legalBases,
+  legalBaseRules,
+  classificationGroups,
+  errandClassificationGroupPriority,
+  persistedClassification,
+}: PersistedClassificationInput) =>
+  getPersistedAvvikelseGroupedClassificationState(
+    labelStructure,
+    labelTree,
+    legalBases,
+    persistedClassification,
+    legalBaseRules,
+    classificationGroups,
+    errandClassificationGroupPriority
+  );
 
 /** The same prerequisite is shown before editing and enforced again before either save step. */
 export function investigationClassificationWriteBlock({
@@ -70,22 +104,13 @@ export function investigationClassificationWriteBlock({
   canEditClassification,
   dirty,
   labelTree,
-  labelStructure,
-  legalBases,
-  legalBaseRules,
-  persistedClassification,
+  ...persisted
 }: Omit<PrepareClassificationInput, 'triggerValidation' | 'getDraft'>): string | undefined {
   if (!required || canEditClassification) return undefined;
   if (dirty) return 'Du saknar behörighet att spara ändrad kategorisering. Dina ändringar finns kvar på sidan.';
   if (!labelTree)
     return 'Kategoriseringen kan inte kontrolleras just nu. Försök igen när klassificeringsprofilen har laddats.';
-  const state = getPersistedAvvikelseLabelClassificationState(
-    labelStructure,
-    labelTree,
-    legalBases,
-    persistedClassification,
-    legalBaseRules
-  );
+  const state = getPersistedClassificationState({ ...persisted, labelTree });
   if (persistedClassificationError(state)) {
     return 'Dokumentet kräver en giltig kategorisering för valda lagrum. Du saknar behörighet att ändra kategoriseringen. Behåll lagrum som stämmer med kategoriseringen eller be en behörig handläggare att uppdatera den.';
   }
@@ -93,38 +118,17 @@ export function investigationClassificationWriteBlock({
 }
 
 export async function prepareInvestigationClassification({
-  required,
-  canEditClassification,
-  dirty,
-  labelTree,
-  labelStructure,
-  legalBases,
-  legalBaseRules,
-  persistedClassification,
   triggerValidation,
   getDraft,
+  ...input
 }: PrepareClassificationInput): Promise<PreparedInvestigationClassification | undefined> {
+  const { required, dirty, labelTree, labelStructure, legalBases, legalBaseRules } = input;
   if (!required) return undefined;
-  const writeBlock = investigationClassificationWriteBlock({
-    required,
-    canEditClassification,
-    dirty,
-    labelTree,
-    labelStructure,
-    legalBases,
-    legalBaseRules,
-    persistedClassification,
-  });
+  const writeBlock = investigationClassificationWriteBlock(input);
   if (writeBlock) throw new Error(writeBlock);
 
   if (!dirty && labelTree) {
-    const persistedState = getPersistedAvvikelseLabelClassificationState(
-      labelStructure,
-      labelTree,
-      legalBases,
-      persistedClassification,
-      legalBaseRules
-    );
+    const persistedState = getPersistedClassificationState({ ...input, labelTree });
     const errorMessage = persistedClassificationError(persistedState);
     if (errorMessage) {
       await triggerValidation();
@@ -138,16 +142,23 @@ export async function prepareInvestigationClassification({
     throw new Error('Klassificeringsprofilens labelträd saknas. Ladda om sidan innan utredningen sparas.');
   }
   if (!(await triggerValidation())) {
-    throw new Error('Välj avvikelsetyp och underkategori innan utredningen sparas.');
+    throw new Error('Välj avvikelsetyp och underkategori för varje valt lagrum innan utredningen sparas.');
   }
 
   const draft = getDraft();
-  const model = createAvvikelseLabelClassificationModel(labelStructure, labelTree, legalBases, legalBaseRules);
-  const selection = getAvvikelseLabelClassificationSelection(model, draft.labels, draft);
+  const model = createAvvikelseGroupedClassificationModel(
+    labelStructure,
+    labelTree,
+    legalBases,
+    legalBaseRules,
+    input.classificationGroups,
+    input.errandClassificationGroupPriority
+  );
+  const selections = getAvvikelseGroupedClassificationSelection(model, draft.labels, draft);
 
   return {
     model,
-    update: applyAvvikelseLabelClassificationSelection(model, draft.labels, selection),
+    update: applyAvvikelseGroupedClassificationSelection(model, draft.labels, selections),
   };
 }
 

@@ -13,17 +13,7 @@ import type { SupportMetadata } from '@supportmanagement/services/support-metada
 import { type FC, useEffect, useMemo, useRef } from 'react';
 import { type FieldError, useFormContext, useWatch } from 'react-hook-form';
 
-const avvikelseClassificationContent = {
-  typeLabel: 'Avvikelsetyp (obligatoriskt)',
-  typePlaceholder: 'Välj avvikelsetyp',
-  typeEmptyPlaceholder: 'Inga avvikelsetyper tillgängliga',
-  typeHelperText: 'Huvudkategori för avvikelsen',
-  subtypeLabel: 'Underkategori (obligatorisk)',
-  subtypePlaceholder: 'Välj underkategori',
-  subtypeBeforeTypePlaceholder: 'Välj avvikelsetyp först',
-  subtypeEmptyPlaceholder: 'Saknar underkategorier',
-  subtypeHelperText: 'Underkategori för avvikelsen',
-} as const;
+import { avvikelseClassificationContent } from './avvikelse-classification-content';
 
 const errorMessage = (error: FieldError | undefined): string | undefined =>
   typeof error?.message === 'string' ? error.message : undefined;

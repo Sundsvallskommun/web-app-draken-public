@@ -2,19 +2,24 @@ import type { Label } from '@common/data-contracts/supportmanagement/data-contra
 import { apiService } from '@common/services/api-service';
 import type { AxiosError } from 'axios';
 
-import type { AvvikelseLabelClassificationUpdate } from './label-classification';
+import type { AvvikelseGroupedClassificationUpdate } from './label-classification';
 
 interface ErrandLabelReference {
   id: string;
 }
 
-export interface SupportInvestigationClassificationRequest {
-  expectedVersion: number;
+/** One classification of the errand: the category path chosen in one legal base group. */
+export interface SupportInvestigationClassificationSelection {
   classification: {
     category: string;
     type: string;
   };
   categoryLabels: ErrandLabelReference[];
+}
+
+export interface SupportInvestigationClassificationRequest {
+  expectedVersion: number;
+  classifications: SupportInvestigationClassificationSelection[];
   documentKey: string;
   documentETag: string;
 }
@@ -42,7 +47,7 @@ const requireLabelReferences = (labels: readonly Label[]): ErrandLabelReference[
 };
 
 export const buildSupportInvestigationClassificationRequest = (
-  update: AvvikelseLabelClassificationUpdate,
+  update: AvvikelseGroupedClassificationUpdate,
   expectedVersion: number | undefined,
   documentKey: string,
   documentETag: string | undefined
@@ -50,16 +55,19 @@ export const buildSupportInvestigationClassificationRequest = (
   if (typeof expectedVersion !== 'number' || !Number.isSafeInteger(expectedVersion) || expectedVersion < 0) {
     throw new Error('Ärendets version saknas. Ladda om ärendet innan klassificeringen sparas.');
   }
-  if (!update.category || !update.type) {
-    throw new Error('Avvikelsetyp måste väljas innan klassificeringen kan sparas.');
+  if (update.classifications.length === 0) {
+    throw new Error('Välj lagrum innan klassificeringen kan sparas.');
   }
-  if (update.requiresSubType && !update.subType) {
-    throw new Error('Underkategori måste väljas innan klassificeringen kan sparas.');
-  }
-
-  const categoryLabels = update.categoryLabels;
-  if (categoryLabels.length === 0) {
-    throw new Error('Klassificeringens etiketter kunde inte bestämmas.');
+  for (const classification of update.classifications) {
+    if (!classification.category || !classification.type) {
+      throw new Error(`Avvikelsetyp för ${classification.groupLabel} måste väljas innan klassificeringen kan sparas.`);
+    }
+    if (classification.requiresSubType && !classification.subType) {
+      throw new Error(`Underkategori för ${classification.groupLabel} måste väljas innan klassificeringen kan sparas.`);
+    }
+    if (classification.categoryLabels.length === 0) {
+      throw new Error('Klassificeringens etiketter kunde inte bestämmas.');
+    }
   }
   if (!documentKey.trim()) {
     throw new Error('Dokumentnyckeln för klassificeringen saknas.');
@@ -70,11 +78,13 @@ export const buildSupportInvestigationClassificationRequest = (
 
   return {
     expectedVersion,
-    classification: {
-      category: update.category,
-      type: update.type,
-    },
-    categoryLabels: requireLabelReferences(categoryLabels),
+    classifications: update.classifications.map((classification) => ({
+      classification: {
+        category: classification.category,
+        type: classification.type,
+      },
+      categoryLabels: requireLabelReferences(classification.categoryLabels),
+    })),
     documentKey,
     documentETag,
   };

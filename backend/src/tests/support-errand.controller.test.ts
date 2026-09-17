@@ -1505,15 +1505,21 @@ describe('UpdateSupportErrandClassificationDto', () => {
   it('accepts only classification and label id references', async () => {
     const validPayload = plainToInstance(UpdateSupportErrandClassificationDto, {
       expectedVersion: 7,
-      classification: { category: 'HSL', type: 'REHAB' },
-      categoryLabels: [{ id: 'label-id' }],
+      classifications: [
+        { classification: { category: 'HSL', type: 'REHAB' }, categoryLabels: [{ id: 'label-id' }] },
+        { classification: { category: 'SOL_LSS', type: 'LEGAL_CERTAINTY' }, categoryLabels: [{ id: 'other-label-id' }] },
+      ],
       documentKey: 'utredning-enhetschef',
       documentETag: '"3"',
     });
     const invalidPayload = plainToInstance(UpdateSupportErrandClassificationDto, {
       expectedVersion: -1,
-      classification: { category: 'HSL', type: 'REHAB', displayName: 'Not writable' },
-      categoryLabels: [{ id: 'label-id', displayName: 'Not writable' }],
+      classifications: [
+        {
+          classification: { category: 'HSL', type: 'REHAB', displayName: 'Not writable' },
+          categoryLabels: [{ id: 'label-id', displayName: 'Not writable' }],
+        },
+      ],
       labels: [{ id: 'stale-full-label-list-is-not-writable' }],
       title: 'Not writable',
       documentKey: 'utredning-enhetschef',
@@ -1531,8 +1537,7 @@ describe('UpdateSupportErrandClassificationDto', () => {
   it('rejects empty classification values and an empty label selection', async () => {
     const payload = plainToInstance(UpdateSupportErrandClassificationDto, {
       expectedVersion: -1,
-      classification: { category: '', type: '' },
-      categoryLabels: [],
+      classifications: [{ classification: { category: '', type: '' }, categoryLabels: [] }],
       documentKey: '',
       documentETag: 'W/"3"',
     });
@@ -1546,6 +1551,17 @@ describe('UpdateSupportErrandClassificationDto', () => {
     expect(serializedErrors).toMatch(/documentKey/);
     expect(serializedErrors).toMatch(/documentETag/);
   });
+
+  it('rejects a command without any classification', async () => {
+    const payload = plainToInstance(UpdateSupportErrandClassificationDto, {
+      expectedVersion: 7,
+      classifications: [],
+      documentKey: 'utredning-enhetschef',
+      documentETag: '"3"',
+    });
+
+    expect(JSON.stringify(await validate(payload, { whitelist: true, forbidNonWhitelisted: true }))).toMatch(/classifications/);
+  });
 });
 
 describe('updateSupportErrandClassification', () => {
@@ -1554,10 +1570,13 @@ describe('updateSupportErrandClassification', () => {
   });
   const errandUrl = `${MUNICIPALITY_ID}/${NAMESPACE}/errands/${mockSupportErrandId}`;
 
-  const update = (): UpdateSupportErrandClassificationDto => ({
-    expectedVersion: 7,
+  const hslClassification = () => ({
     classification: { category: 'CATEGORY/HSL', type: 'CATEGORY/HSL/REHAB' },
     categoryLabels: [{ id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'type-label-id' }],
+  });
+  const update = (): UpdateSupportErrandClassificationDto => ({
+    expectedVersion: 7,
+    classifications: [hslClassification()],
     documentKey: 'utredning-enhetschef',
     documentETag: '"3"',
   });
@@ -1713,7 +1732,7 @@ describe('updateSupportErrandClassification', () => {
     const [patchConfig, forwardedUser] = api.patch.mock.calls[0];
     expect(patchConfig.url).toBe(errandUrl);
     expect(patchConfig.data).toEqual({
-      classification: update().classification,
+      classification: hslClassification().classification,
       labels: [{ id: 'report-type-id' }, { id: 'category-owner-id' }, { id: 'category-label-id' }, { id: 'type-label-id' }],
     });
     expect(patchConfig.headers).toEqual({ 'If-Match': '"7"' });
@@ -1729,6 +1748,93 @@ describe('updateSupportErrandClassification', () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual(savedErrand);
+  });
+
+  describe('an errand under both HSL and SoL', () => {
+    const socialOwner: Label = {
+      id: 'sol-lss-owner-id',
+      classification: 'PROVISION_CATEGORY',
+      resourceName: 'SOL_LSS',
+      resourcePath: 'CATEGORY/SOL_LSS',
+      labels: [
+        {
+          id: 'legal-certainty-id',
+          classification: 'CATEGORY',
+          resourceName: 'LEGAL_CERTAINTY',
+          resourcePath: 'CATEGORY/SOL_LSS/LEGAL_CERTAINTY',
+          labels: [
+            {
+              id: 'documentation-missing-id',
+              classification: 'TYPE',
+              resourceName: 'DOCUMENTATION_MISSING',
+              resourcePath: 'CATEGORY/SOL_LSS/LEGAL_CERTAINTY/DOCUMENTATION_MISSING',
+            },
+          ],
+        },
+      ],
+    };
+    const [categoryRoot, ...otherRoots] = classificationLabelStructure;
+    const groupedLabelStructure: Label[] = [{ ...categoryRoot, labels: [...(categoryRoot.labels ?? []), socialOwner] }, ...otherRoots];
+    const socialClassification = () => ({
+      classification: { category: 'CATEGORY/SOL_LSS', type: 'CATEGORY/SOL_LSS/LEGAL_CERTAINTY' },
+      categoryLabels: [{ id: 'sol-lss-owner-id' }, { id: 'legal-certainty-id' }, { id: 'documentation-missing-id' }],
+    });
+
+    const setup = () => {
+      const context = makeController();
+      let errandRead = 0;
+      context.api.get.mockImplementation(async (config: { url?: string }) => {
+        if (config.url?.endsWith('/metadata/labels')) return { data: { labelStructure: groupedLabelStructure }, message: 'success' };
+        errandRead++;
+        return errandRead === 1
+          ? {
+              data: { id: mockSupportErrandId, version: 7, labels: [{ id: 'report-type-id', resourcePath: 'REPORT_TYPE/DEVIATION' }] },
+              message: 'success',
+            }
+          : { data: { id: mockSupportErrandId, version: 8, labels: [] }, message: 'success' };
+      });
+      context.investigationDocument.readJsonParameter.mockResolvedValue({
+        document: { key: 'utredning-enhetschef', schemaId: '2281_utredning-enhetschef_1.2', value: { legalBases: ['HSL', 'SOL'] }, version: 3 },
+        etag: '"3"',
+        status: 200,
+      });
+      return context;
+    };
+
+    it('keeps both classifications as labels and gives the errand classification field to the SoL/LSS one', async () => {
+      const { controller, api } = setup();
+
+      await controller.updateSupportErrandClassification(
+        mockReq(),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        { ...update(), classifications: [hslClassification(), socialClassification()] },
+        mockRes(),
+      );
+
+      expect(api.patch).toHaveBeenCalledTimes(1);
+      expect(api.patch.mock.calls[0][0].data).toEqual({
+        classification: socialClassification().classification,
+        labels: [
+          { id: 'report-type-id' },
+          { id: 'category-owner-id' },
+          { id: 'category-label-id' },
+          { id: 'type-label-id' },
+          { id: 'sol-lss-owner-id' },
+          { id: 'legal-certainty-id' },
+          { id: 'documentation-missing-id' },
+        ],
+      });
+    });
+
+    it('refuses to classify only one of the two groups', async () => {
+      const { controller, api } = setup();
+
+      await expect(
+        controller.updateSupportErrandClassification(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, update(), mockRes()),
+      ).rejects.toMatchObject({ status: 409, message: 'The investigation legal bases require a classification in every legal base group' });
+      expect(api.patch).not.toHaveBeenCalled();
+    });
   });
 
   it('rejects a classification based on an older errand version before patching', async () => {

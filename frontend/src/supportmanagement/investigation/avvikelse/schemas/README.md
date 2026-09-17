@@ -4,7 +4,7 @@ Den här katalogen är den kanoniska lokala källan för den första schema-labb
 
 | Parameter key / schema name | Lokal version | JSON Schema POST body                      | UI Schema PUT body                            |
 | --------------------------- | ------------- | ------------------------------------------ | --------------------------------------------- |
-| `utredning-enhetschef`      | 1.2           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
+| `utredning-enhetschef`      | 1.3           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
 | `utredning-sol-lss`         | 1.2           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
 | `utredning-hsl`             | 1.2           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
 | `beslut-hsl`                | 1.2           | `beslut-hsl.schema-request.json`           | `beslut-hsl.ui-schema-request.json`           |
@@ -39,6 +39,11 @@ Den 11 september 2026 publicerades också version 1.2 av de tre utredningarna (`
 enhetschefs- och SoL/LSS-utredningen fanns bara som lokala artefakter och hoppades över. Att en requestartefakt
 finns här innebär inte att den har skickats till JsonSchema-API:t. Formulären läser schemana från JsonSchema-API:t
 vid körning, så en ny version måste publiceras i varje miljö innan den används där.
+
+Den 17 september 2026 publicerades version 1.3 av enhetschefsutredningen (`2281_utredning-enhetschef_1.3`) i
+testmiljön. Den tillåter alla tre lagrum i `legalBases` (tidigare högst två); UI-schemat är oförändrat och lades på
+det nya schema-ID:t. Schema och UI Schema lästes tillbaka och var identiska med artefakterna. Inget har publicerats
+i produktionsmiljön. Dokument som redan är bundna till 1.2 behåller sin gräns på två lagrum.
 
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 

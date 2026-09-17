@@ -85,7 +85,10 @@ import {
   toFacilities,
 } from '@/services/support-errand.service';
 import { SupportInvestigationAccessService } from '@/services/support-investigation-access.service';
-import { assertSupportInvestigationClassificationContext } from '@/services/support-investigation-classification-context.service';
+import {
+  assertSupportInvestigationClassificationContext,
+  selectErrandClassificationIndex,
+} from '@/services/support-investigation-classification-context.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
 import {
@@ -259,12 +262,8 @@ export class ClassificationLabelReferenceDto {
   id!: string;
 }
 
-export class UpdateSupportErrandClassificationDto {
-  @IsInt()
-  @Min(0)
-  @Max(Number.MAX_SAFE_INTEGER)
-  expectedVersion!: number;
-
+/** One classification of the errand: the category path chosen in one legal base group. */
+export class InvestigationClassificationSelectionDto {
   @IsDefined()
   @IsObject()
   @ValidateNested()
@@ -279,6 +278,22 @@ export class UpdateSupportErrandClassificationDto {
   @TypeTransformer(() => ClassificationLabelReferenceDto)
   @JSONSchema({ type: 'array', items: { $ref: '#/components/schemas/ClassificationLabelReferenceDto' } })
   categoryLabels!: ClassificationLabelReferenceDto[];
+}
+
+export class UpdateSupportErrandClassificationDto {
+  @IsInt()
+  @Min(0)
+  @Max(Number.MAX_SAFE_INTEGER)
+  expectedVersion!: number;
+
+  /** One classification per legal base group the investigation's legal bases reach. */
+  @IsDefined()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @TypeTransformer(() => InvestigationClassificationSelectionDto)
+  @JSONSchema({ type: 'array', items: { $ref: '#/components/schemas/InvestigationClassificationSelectionDto' } })
+  classifications!: InvestigationClassificationSelectionDto[];
 
   @IsString()
   @MinLength(1)
@@ -1077,21 +1092,28 @@ export class SupportErrandController {
       throw new HttpException(409, 'Investigation document has changed since classification was edited');
     }
     const classificationOwnerSelection = resolveIafVofInvestigationClassificationOwner(iafVofClassificationPolicy, currentErrand.data);
-    assertSupportInvestigationClassificationContext(
+    const classificationGroups = assertSupportInvestigationClassificationContext(
       iafVofClassificationPolicy,
       classificationOwnerSelection,
       definition.key,
       classificationDocument.document.value,
-      data.classification,
+      data.classifications.map(selection => selection.classification),
     );
-    const resolvedClassification = resolveSupportErrandClassification(data, labelMetadata.data?.labelStructure, iafVofClassificationPolicy.labelTree);
+    const resolvedClassifications = data.classifications.map(selection =>
+      resolveSupportErrandClassification(selection, labelMetadata.data?.labelStructure, iafVofClassificationPolicy.labelTree),
+    );
+    // Every classification is kept as labels; the errand's own classification field holds only one.
+    const errandClassification = resolvedClassifications[selectErrandClassificationIndex(iafVofClassificationPolicy, classificationGroups)];
+    const categoryLabels = [
+      ...new Map(resolvedClassifications.flatMap(resolved => resolved.categoryLabels).map(label => [label.id, label])).values(),
+    ];
     const body = buildSupportErrandClassificationUpdateBody(
-      data,
+      { classification: errandClassification.classification, categoryLabels },
       currentErrand.data.labels,
-      resolvedClassification.categoryLabels,
-      resolvedClassification.classification,
-      resolvedClassification.managedCategoryLabelIds,
-      resolvedClassification.managedRootResource,
+      categoryLabels,
+      errandClassification.classification,
+      errandClassification.managedCategoryLabelIds,
+      errandClassification.managedRootResource,
     );
     await this.apiService.patch<SupportErrand, typeof body>(
       { url, baseURL, data: body, headers: { 'If-Match': `"${data.expectedVersion}"` }, propagateClientError: true },

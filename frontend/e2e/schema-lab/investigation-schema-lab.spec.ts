@@ -120,7 +120,7 @@ test.afterEach(async ({ page }) => {
 test('opens all investigation sections without turning an unanswered draft into radio answers', async ({ page }) => {
   await page.evaluate(() => {
     for (const [key, schemaVersion, formData] of [
-      ['utredning-enhetschef', '1.2', { legalBases: ['HSL', 'SOL'] }],
+      ['utredning-enhetschef', '1.3', { legalBases: ['HSL', 'SOL'] }],
       ['utredning-sol-lss', '1.2', {}],
       ['utredning-hsl', '1.2', {}],
       ['beslut-hsl', '1.2', {}],
@@ -181,12 +181,12 @@ test('updates risks and label choices when the manager changes legal bases', asy
   const typeSelect = activePanel.locator('[data-cy="label-classification-type"]');
   const templateSelect = page.locator(`#${managerIdPrefix}_investigationTemplate`);
 
-  await expect(lss).toBeDisabled();
+  // From schema 1.3 all three legal bases can apply at once, so the third stays selectable.
+  await expect(lss).toBeEnabled();
   await expect(templateSelect.locator('option:not([value=""])')).toHaveCount(3);
   await hslLabel.click();
   await expect(hsl).not.toBeChecked();
 
-  await expect(lss).toBeEnabled();
   await expect(templateSelect).toHaveValue('sol_lss');
   await expect(templateSelect.locator('option:not([value=""])')).toHaveCount(1);
   await expect(page.locator(`#${managerIdPrefix}_riskAssessmentHsl_probability`)).toHaveCount(0);
@@ -361,7 +361,7 @@ test('sanitizes legacy label fields and ignores malformed local timestamps', asy
       'draken:investigation-schema-lab:utredning-enhetschef',
       JSON.stringify({
         schemaKey: 'utredning-enhetschef',
-        schemaVersion: '1.2',
+        schemaVersion: '1.3',
         savedAt: '2026-08-11T10:00:00.000Z',
         formData: {
           legalBases: ['HSL'],

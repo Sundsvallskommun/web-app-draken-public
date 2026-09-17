@@ -12,7 +12,7 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const artifacts = [
   {
     name: 'utredning-enhetschef',
-    version: '1.2',
+    version: '1.3',
     hasErrandClassification: true,
     hasReport: true,
     schemaFile: 'utredning-enhetschef.schema-request.json',
@@ -381,6 +381,17 @@ test('unit manager rejects fields and templates that do not match the selected l
     };
     assert.equal(validate(combined), true, ajv.errorsText(validate.errors));
   }
+
+  // From 1.3 all three legal bases can apply to one deviation; HSL and SoL/LSS are then both assessed.
+  const allLegalBases = {
+    legalBases: ['HSL', 'LSS', 'SOL'],
+    investigationTemplate: 'sol_lss_hsl',
+    riskAssessmentHsl: hslRisk,
+    riskAssessmentSolLss: socialRisk,
+  };
+  assert.equal(validate(allLegalBases), true, ajv.errorsText(validate.errors));
+  assert.equal(validate({ ...allLegalBases, riskAssessmentSolLss: undefined }), false);
+  assert.equal(validate({ ...allLegalBases, legalBases: ['HSL', 'SOL', 'SOL'] }), false);
 });
 
 test('the HSL investigation no longer carries the IVO decision', () => {

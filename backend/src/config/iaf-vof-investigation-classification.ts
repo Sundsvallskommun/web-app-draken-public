@@ -8,6 +8,16 @@ export interface IafVofInvestigationClassificationLegalBaseRule {
   readonly allowedClassificationCategories: readonly string[];
 }
 
+/**
+ * Legal bases whose categories are chosen in one selector. An errand is classified once in every group
+ * one of its legal bases belongs to, so a deviation under both HSL and SoL has an HSL and a SoL/LSS
+ * classification.
+ */
+export interface IafVofInvestigationClassificationGroup {
+  readonly key: string;
+  readonly legalBases: readonly string[];
+}
+
 export interface IafVofInvestigationClassificationLabelTree {
   readonly root: Readonly<{
     readonly resource: string;
@@ -25,6 +35,9 @@ export interface IafVofInvestigationClassificationPolicy {
   readonly forcedLegalBases: readonly string[];
   readonly legalBasesPointer: string;
   readonly legalBaseRules: readonly IafVofInvestigationClassificationLegalBaseRule[];
+  readonly classificationGroups: readonly IafVofInvestigationClassificationGroup[];
+  /** Group keys in the order they claim the errand's own classification field, which holds only one. */
+  readonly errandClassificationGroupPriority: readonly string[];
 }
 
 export type IafVofInvestigationClassificationOwnerSelection = Readonly<{
@@ -68,6 +81,14 @@ export const IAF_VOF_INVESTIGATION_CLASSIFICATION_LEGAL_BASE_RULES: readonly Iaf
   Object.freeze({ legalBase: 'LSS', allowedClassificationCategories: Object.freeze(['CATEGORY/SOL_LSS']) }),
 ]);
 
+export const IAF_VOF_INVESTIGATION_CLASSIFICATION_GROUPS: readonly IafVofInvestigationClassificationGroup[] = Object.freeze([
+  Object.freeze({ key: 'HSL', legalBases: Object.freeze(['HSL']) }),
+  Object.freeze({ key: 'SOL_LSS', legalBases: Object.freeze(['SOL', 'LSS']) }),
+]);
+
+/** Every classification is kept as labels; the errand's classification field takes the SoL/LSS one when both exist. */
+export const IAF_VOF_ERRAND_CLASSIFICATION_GROUP_PRIORITY = Object.freeze(['SOL_LSS', 'HSL']);
+
 export const IAF_VOF_INVESTIGATION_LEGAL_BASES_POINTER = '/legalBases';
 export const IAF_VOF_REPORTED_MISCONDUCT_FORCED_LEGAL_BASES = Object.freeze(['SOL', 'LSS']);
 
@@ -96,6 +117,8 @@ export const resolveIafVofInvestigationClassificationPolicy = (
     forcedLegalBases: IAF_VOF_REPORTED_MISCONDUCT_FORCED_LEGAL_BASES,
     legalBasesPointer: IAF_VOF_INVESTIGATION_LEGAL_BASES_POINTER,
     legalBaseRules: IAF_VOF_INVESTIGATION_CLASSIFICATION_LEGAL_BASE_RULES,
+    classificationGroups: IAF_VOF_INVESTIGATION_CLASSIFICATION_GROUPS,
+    errandClassificationGroupPriority: IAF_VOF_ERRAND_CLASSIFICATION_GROUP_PRIORITY,
   });
 };
 

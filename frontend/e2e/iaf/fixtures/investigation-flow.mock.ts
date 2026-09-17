@@ -297,7 +297,7 @@ const validValues: Record<InvestigationKey, JsonObject> = {
 };
 
 export const latestSchemaIds: Record<InvestigationKey, string> = {
-  'utredning-enhetschef': '2281_utredning-enhetschef_1.2',
+  'utredning-enhetschef': '2281_utredning-enhetschef_1.3',
   'utredning-sol-lss': '2281_utredning-sol-lss_1.2',
   'utredning-hsl': '2281_utredning-hsl_1.2',
   'beslut-hsl': '2281_beslut-hsl_1.2',
@@ -526,7 +526,19 @@ const labelStructure: MockLabel[] = [
   ]),
 ];
 
-const deviationLabelsSource = [provisionHsl, reportDeviation, hslOwner, rehab, missedAssessment];
+/**
+ * An ordinary deviation under HSL and SoL, classified in both groups: an HSL path and a SoL/LSS path.
+ */
+const deviationLabelsSource = [
+  provisionHsl,
+  reportDeviation,
+  hslOwner,
+  rehab,
+  missedAssessment,
+  solLssOwner,
+  legalCertainty,
+  deficientHandling,
+];
 
 /**
  * The place structure the way Katla's reporter sees it, and the way Support Management stores it:
@@ -774,10 +786,14 @@ const uiSchemaValueForId = (request: UiSchemaRequest, schemaId: string): JsonObj
   return value;
 };
 
-interface ClassificationPatchBody {
-  expectedVersion: number;
+interface ClassificationPatchSelection {
   classification: { category: string; type: string };
   categoryLabels: Array<{ id: string }>;
+}
+
+interface ClassificationPatchBody {
+  expectedVersion: number;
+  classifications: ClassificationPatchSelection[];
   documentKey: string;
   documentETag: string;
 }
@@ -785,25 +801,21 @@ interface ClassificationPatchBody {
 const hasOnlyKeys = (value: JsonObject, keys: readonly string[]): boolean =>
   Object.keys(value).length === keys.length && keys.every((key) => key in value);
 
-const isClassificationPatchBody = (body: unknown): body is ClassificationPatchBody => {
-  if (!body || typeof body !== 'object' || Array.isArray(body)) return false;
-  const value = body as JsonObject;
-  if (!hasOnlyKeys(value, ['expectedVersion', 'classification', 'categoryLabels', 'documentKey', 'documentETag']))
-    return false;
+const isClassificationPatchSelection = (selection: unknown): selection is ClassificationPatchSelection => {
+  if (!selection || typeof selection !== 'object' || Array.isArray(selection)) return false;
+  const value = selection as JsonObject;
+  if (!hasOnlyKeys(value, ['classification', 'categoryLabels'])) return false;
   if (!value.classification || typeof value.classification !== 'object' || Array.isArray(value.classification)) {
     return false;
   }
 
   const classification = value.classification as JsonObject;
   return (
-    Number.isSafeInteger(value.expectedVersion) &&
-    (value.expectedVersion as number) >= 0 &&
     hasOnlyKeys(classification, ['category', 'type']) &&
     typeof classification.category === 'string' &&
     typeof classification.type === 'string' &&
-    typeof value.documentKey === 'string' &&
-    typeof value.documentETag === 'string' &&
     Array.isArray(value.categoryLabels) &&
+    value.categoryLabels.length > 0 &&
     value.categoryLabels.every(
       (labelReference) =>
         Boolean(labelReference) &&
@@ -814,6 +826,27 @@ const isClassificationPatchBody = (body: unknown): body is ClassificationPatchBo
     )
   );
 };
+
+const isClassificationPatchBody = (body: unknown): body is ClassificationPatchBody => {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return false;
+  const value = body as JsonObject;
+  if (!hasOnlyKeys(value, ['expectedVersion', 'classifications', 'documentKey', 'documentETag'])) return false;
+
+  return (
+    Number.isSafeInteger(value.expectedVersion) &&
+    (value.expectedVersion as number) >= 0 &&
+    typeof value.documentKey === 'string' &&
+    typeof value.documentETag === 'string' &&
+    Array.isArray(value.classifications) &&
+    value.classifications.length > 0 &&
+    value.classifications.every(isClassificationPatchSelection)
+  );
+};
+
+/** Like the BFF: every classification is kept as labels, and the errand's own field takes the SoL/LSS one. */
+const errandClassificationOf = (selections: readonly ClassificationPatchSelection[]) =>
+  (selections.find(({ classification }) => /(^|\/)SOL_LSS$/iu.test(classification.category)) ?? selections[0])
+    .classification;
 
 export async function installIafApiMock(page: Page, scenario: IafApiScenario = {}): Promise<IafApiTrace> {
   const investigationProfile = scenario.investigationProfile ?? defaultInvestigationProfile();
@@ -1068,13 +1101,15 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
         return;
       }
 
-      const resolvedCategoryLabels = body.categoryLabels.map(({ id }) => allLabelsById.get(id));
+      const resolvedCategoryLabels = body.classifications
+        .flatMap(({ categoryLabels }) => categoryLabels)
+        .map(({ id }) => allLabelsById.get(id));
       if (resolvedCategoryLabels.some((resolvedLabel) => !resolvedLabel)) {
         await fulfillJson(route, { message: 'Unknown label id' }, 400);
         return;
       }
 
-      errandClassification = structuredClone(body.classification);
+      errandClassification = structuredClone(errandClassificationOf(body.classifications));
       errandLabels = [
         ...errandLabels.filter(({ resourcePath }) => !resourcePath?.toUpperCase().startsWith('CATEGORY/')),
         ...resolvedCategoryLabels.map((resolvedLabel) => structuredClone(resolvedLabel!)),

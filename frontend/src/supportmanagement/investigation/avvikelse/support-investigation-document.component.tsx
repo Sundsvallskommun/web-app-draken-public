@@ -7,10 +7,10 @@ import { getLatestRjsfSchema, getRjsfSchema, getUiSchemaForSchema } from '@commo
 import type { RJSFSchema, RJSFValidationError, UiSchema } from '@rjsf/utils';
 import { Alert, Button, Label, Spinner } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
-import { AvvikelseLabelCategorization } from '@supportmanagement/investigation/avvikelse/avvikelse-label-categorization.component';
+import { AvvikelseGroupedLabelCategorization } from '@supportmanagement/investigation/avvikelse/avvikelse-grouped-label-categorization.component';
 import {
-  applyAvvikelseLabelClassificationSelection,
-  getAvvikelseLabelClassificationSelection,
+  applyAvvikelseGroupedClassificationSelection,
+  getAvvikelseGroupedClassificationSelection,
 } from '@supportmanagement/investigation/avvikelse/label-classification';
 import { getSupportAttachments } from '@supportmanagement/services/support-attachment-service';
 import { readSupportErrandWriteSnapshot, type SupportErrand } from '@supportmanagement/services/support-errand-service';
@@ -347,6 +347,7 @@ export function SupportInvestigationDocument({
     : undefined;
   const legalBases = documentState ? getInvestigationLegalBases(documentState.formData) : [];
   const legalBaseRules = getInvestigationLegalBaseRules();
+  const { classificationGroups, errandClassificationGroupPriority } = AVVIKELSE_CLASSIFICATION_POLICY;
   const classificationPrerequisites = {
     required: classificationOwner,
     canEditClassification: !classificationReadonly,
@@ -355,6 +356,8 @@ export function SupportInvestigationDocument({
     labelStructure: supportMetadata?.labels?.labelStructure,
     legalBases,
     legalBaseRules,
+    classificationGroups,
+    errandClassificationGroupPriority,
     persistedClassification,
   };
   const classificationWriteBlock = investigationClassificationWriteBlock(classificationPrerequisites);
@@ -473,18 +476,22 @@ export function SupportInvestigationDocument({
     prepared: PreparedInvestigationClassification,
     expectedVersion: number | undefined
   ) => {
-    const savedSelection = getAvvikelseLabelClassificationSelection(
+    const savedSelections = getAvvikelseGroupedClassificationSelection(
       prepared.model,
       savedErrand.labels,
       savedErrand.classification
     );
-    const savedUpdate = applyAvvikelseLabelClassificationSelection(prepared.model, savedErrand.labels, savedSelection);
+    const savedErrandClassification = applyAvvikelseGroupedClassificationSelection(
+      prepared.model,
+      savedErrand.labels,
+      savedSelections
+    ).errandClassification;
     const savedDraft: InvestigationClassificationDraft = {
       labels: savedErrand.labels,
-      category: savedUpdate.category,
-      type: savedUpdate.type,
-      subType: savedUpdate.subType,
-      classificationHasSubTypes: savedUpdate.requiresSubType,
+      category: savedErrandClassification?.category ?? '',
+      type: savedErrandClassification?.type ?? '',
+      subType: savedErrandClassification?.subType ?? '',
+      classificationHasSubTypes: savedErrandClassification?.requiresSubType ?? false,
     };
 
     useSupportStore.setState((state) => {
@@ -700,8 +707,10 @@ export function SupportInvestigationDocument({
           labelStructure: supportMetadata?.labels?.labelStructure,
           legalBases: getInvestigationLegalBases(normalizedData),
           legalBaseRules,
+          classificationGroups,
+          errandClassificationGroupPriority,
           persistedClassification,
-          triggerValidation: () => triggerClassification(['category', 'type', 'subType']),
+          triggerValidation: () => triggerClassification('labels'),
           getDraft: getClassificationValues,
         });
       } catch (error) {
@@ -952,12 +961,14 @@ export function SupportInvestigationDocument({
                 errandClassification: (
                   <div id={classificationFieldId} tabIndex={-1}>
                     <FormProvider {...classificationMethods}>
-                      <AvvikelseLabelCategorization
+                      <AvvikelseGroupedLabelCategorization
                         supportMetadata={supportMetadata}
                         labelTree={classificationLabelTree}
                         disabled={formReadonly || classificationReadonly || isSaving}
                         legalBases={legalBases}
                         legalBaseRules={legalBaseRules}
+                        groups={classificationGroups}
+                        errandClassificationGroupPriority={errandClassificationGroupPriority}
                         onClassificationChange={() => {
                           setClassificationDirty(true);
                           setValidationErrors([]);

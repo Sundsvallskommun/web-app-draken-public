@@ -42,6 +42,17 @@ const input = () => ({
     { legalBase: 'SOL', allowedClassificationCategories: ['CATEGORY/SOL_LSS'] },
     { legalBase: 'HSL', allowedClassificationCategories: ['CATEGORY/HSL'] },
   ],
+  classificationGroups: [
+    { key: 'HSL', legalBases: [{ legalBase: 'HSL', label: 'HSL' }] },
+    {
+      key: 'SOL_LSS',
+      legalBases: [
+        { legalBase: 'SOL', label: 'SoL' },
+        { legalBase: 'LSS', label: 'LSS' },
+      ],
+    },
+  ],
+  errandClassificationGroupPriority: ['SOL_LSS', 'HSL'],
   persistedClassification: {
     labels: [],
     category: 'CATEGORY/SOL_LSS',
@@ -82,6 +93,14 @@ test('missing classification is explained without asking the editor to fix a dis
 test('classification drafts cannot be saved after the classification permission is revoked', async () => {
   const request = { ...input(), dirty: true };
   await expect(prepareInvestigationClassification(request)).rejects.toThrow('ändrad kategorisering');
+});
+
+// A deviation under both HSL and SoL is classified in each group, so the SoL/LSS classification alone
+// no longer covers it once HSL is chosen as well.
+test('choosing a second legal base group asks for its classification before saving', async () => {
+  const request = { ...input(), canEditClassification: true, legalBases: ['SOL', 'HSL'] };
+  await expect(prepareInvestigationClassification(request)).rejects.toThrow('för varje valt lagrum');
+  expect(request.triggerValidation).toHaveBeenCalled();
 });
 
 test('documents which do not own classification do not require classification permission', async () => {
