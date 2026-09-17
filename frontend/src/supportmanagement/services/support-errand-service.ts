@@ -208,6 +208,12 @@ export const newStatuses = [Status.NEW];
 export const getOngoingStatus = (): Status => (isIAFOrVOF() ? Status.INQUIRY : Status.ONGOING);
 
 /**
+ * Whether a closed errand can be reopened. IAF/VOF never offer it. The two always behave the same, so this
+ * follows the application rather than a runtime flag that could be set differently for each of them.
+ */
+export const canReopenSupportErrand = (): boolean => !isIAFOrVOF();
+
+/**
  * The status an errand works in when it is taken, resumed or given back to its handler.
  *
  * Where the namespace runs a workflow that is the active phase's main status - the first one the

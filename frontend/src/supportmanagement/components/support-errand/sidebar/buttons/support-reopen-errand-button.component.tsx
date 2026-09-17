@@ -2,6 +2,7 @@ import { appConfig } from '@config/appconfig';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import {
+  canReopenSupportErrand,
   getOngoingStatus,
   getSupportErrandById,
   setSupportErrandStatus,
@@ -51,6 +52,10 @@ export const SupportReopenErrandButton: React.FC<{ disabled?: boolean }> = ({ di
         setIsLoading(false);
       });
   };
+
+  if (!canReopenSupportErrand()) {
+    return null;
+  }
 
   return (
     <Button
