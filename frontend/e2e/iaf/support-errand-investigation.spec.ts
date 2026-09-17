@@ -579,11 +579,19 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const classificationField = managerDocument.locator(classificationFieldSelector);
     await expect(classificationField).toBeVisible();
     await expect(classificationField.getByRole('heading', { name: 'Kategorisering', exact: true })).toBeVisible();
-    await expect(classificationField.getByRole('combobox', { name: 'Avvikelsetyp (obligatoriskt)' })).toHaveValue(
+    const hslClassification = classificationField.locator(hslClassificationSelector);
+    await expect(hslClassification.getByRole('combobox', { name: 'Avvikelsetyp (obligatoriskt)' })).toHaveValue(
       iafLabelFixture.classification.rehab.resourcePath
     );
-    await expect(classificationField.getByRole('combobox', { name: 'Underkategori (obligatorisk)' })).toHaveValue(
+    await expect(hslClassification.getByRole('combobox', { name: 'Underkategori (obligatorisk)' })).toHaveValue(
       iafLabelFixture.classification.missedAssessment.resourcePath
+    );
+    const socialClassification = classificationField.locator(socialClassificationSelector);
+    await expect(socialClassification.getByRole('combobox', { name: 'Avvikelsetyp (obligatoriskt)' })).toHaveValue(
+      iafLabelFixture.classification.legalCertainty.resourcePath
+    );
+    await expect(socialClassification.getByRole('combobox', { name: 'Underkategori (obligatorisk)' })).toHaveValue(
+      iafLabelFixture.classification.deficientHandling.resourcePath
     );
     const schemaFieldOrder = await managerDocument
       .locator(`#${managerKey}_legalBases-group, ${classificationFieldSelector}`)
@@ -1467,8 +1475,12 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     const sidebarSaveButton = page
       .locator('[data-cy="manage-sidebar"] [data-cy="save-button"]')
       .filter({ hasText: 'Spara ärende' });
-    const typeSelect = managerDocument.locator('[data-cy="label-classification-type"]');
-    const subtypeSelect = managerDocument.locator('[data-cy="label-classification-subtype"]');
+    const typeSelect = managerDocument
+      .locator(hslClassificationSelector)
+      .locator('[data-cy="label-classification-type"]');
+    const subtypeSelect = managerDocument
+      .locator(hslClassificationSelector)
+      .locator('[data-cy="label-classification-subtype"]');
     await expect(sidebarSaveButton).toBeDisabled();
     await typeSelect.selectOption(iafLabelFixture.classification.medication.resourcePath);
     await subtypeSelect.selectOption(iafLabelFixture.classification.incorrectAdministration.resourcePath);
