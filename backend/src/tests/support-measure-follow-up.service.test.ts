@@ -70,7 +70,7 @@ test.each(['TRUE', 'REWORK'] as const)('saves answers, completion and execution 
   expect(api.patches[0].headers).toEqual({ 'If-Match': '"3"' });
   expect(api.patches[0].data).toEqual({
     executed: expect.any(String),
-    result: 'NOT_ACHIEVED',
+    result: 'NOT_COMPLETED',
     resultText: answers.followUpDescription,
     completedAt: expect.any(String),
   });
@@ -79,7 +79,7 @@ test.each(['TRUE', 'REWORK'] as const)('saves answers, completion and execution 
   expect((await read()).measures[0]).toMatchObject({
     goal: 'Originalmål',
     plannedStart: api.measure.plannedStart,
-    result: 'NOT_ACHIEVED',
+    result: 'NOT_COMPLETED',
     resultText: answers.followUpDescription,
     version: 4,
   });
@@ -88,7 +88,7 @@ test.each(['TRUE', 'REWORK'] as const)('saves answers, completion and execution 
 test('saves a desired effect as achieved and trims what happened', async () => {
   const { api, save } = setup();
   await save(3, { desiredEffectAchieved: true, followUpDescription: '  Utbildningen är genomförd.  ' });
-  expect(api.measure).toMatchObject({ result: 'ACHIEVED', resultText: 'Utbildningen är genomförd.' });
+  expect(api.measure).toMatchObject({ result: 'COMPLETED', resultText: 'Utbildningen är genomförd.' });
 });
 
 test.each([{ followUpDescription: '   ' }, { followUpDescription: 'x'.repeat(4001) }])(
@@ -105,7 +105,7 @@ test('preserves an already recorded execution date', async () => {
   api.measure.executed = '2026-09-09T12:00:00Z';
   await save();
   expect(api.patches[0].data).not.toHaveProperty('executed');
-  expect(api.measure).toMatchObject({ executed: '2026-09-09T12:00:00Z', result: 'NOT_ACHIEVED' });
+  expect(api.measure).toMatchObject({ executed: '2026-09-09T12:00:00Z', result: 'NOT_COMPLETED' });
 });
 
 test('saves nothing when the write fails before it is applied', async () => {
@@ -141,7 +141,7 @@ test('lets Support Management refuse a measure changed after it was read, and su
   await expect(save()).rejects.toMatchObject({ status: 412 });
   expect(api.measure.result).toBeUndefined();
   await save(4);
-  expect(api.measure).toMatchObject({ result: 'NOT_ACHIEVED', version: 5 });
+  expect(api.measure).toMatchObject({ result: 'NOT_COMPLETED', version: 5 });
 });
 
 test('passes a refusal from the measure resource on unchanged', async () => {

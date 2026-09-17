@@ -2,11 +2,12 @@ import type { Measure } from '@/data-contracts/supportmanagement/data-contracts'
 
 /**
  * A follow-up is saved on the measure itself: `result` says whether the measure had the desired effect,
- * `resultText` what happened and `completedAt` when it was followed up. Support Management keeps no
- * catalogue of measure results, so Draken owns the two result values.
+ * `resultText` what happened and `completedAt` when it was followed up. Support Management accepts only
+ * `COMPLETED`, `PARTIALLY_COMPLETED`, `NOT_COMPLETED` and `NOT_APPLICABLE` in `result` (an enum in its code,
+ * not in its OpenAPI spec). Draken's yes/no answer uses the two outer values.
  */
-const MEASURE_RESULT_ACHIEVED = 'ACHIEVED';
-const MEASURE_RESULT_NOT_ACHIEVED = 'NOT_ACHIEVED';
+const MEASURE_RESULT_ACHIEVED = 'COMPLETED';
+const MEASURE_RESULT_NOT_ACHIEVED = 'NOT_COMPLETED';
 
 export interface MeasureFollowUpAnswers {
   readonly result: string;

@@ -190,16 +190,19 @@ Drakens `PATCH .../measures/:measureId/follow-up` tar endast
 och åtgärdens `If-Match`. Uppföljningen sparas på åtgärden själv i SM 16.0,
 med en enda `PATCH .../measures/:measureId` villkorad på åtgärdens version:
 
-| Fält          | Innehåll                                                                  |
-| ------------- | ------------------------------------------------------------------------- |
-| `result`      | `ACHIEVED` eller `NOT_ACHIEVED` - svaret på om åtgärden gav önskad effekt |
-| `resultText`  | Vad som har hänt, trimmat och högst 4000 tecken                           |
-| `completedAt` | När uppföljningen sparades                                                |
-| `executed`    | Samma tidpunkt, men bara om åtgärden inte redan har ett genomförandedatum |
+| Fält          | Innehåll                                                                               |
+| ------------- | -------------------------------------------------------------------------------------- |
+| `result`      | `COMPLETED` (Ja) eller `NOT_COMPLETED` (Nej) - svaret på om åtgärden gav önskad effekt |
+| `resultText`  | Vad som har hänt, trimmat och högst 4000 tecken                                        |
+| `completedAt` | När uppföljningen sparades                                                             |
+| `executed`    | Samma tidpunkt, men bara om åtgärden inte redan har ett genomförandedatum              |
 
-Support Management har ingen metadata för åtgärdsresultat, så de två värdena
-för `result` ägs av Draken (`support-measure-follow-up.ts` i backend och
-`measure-follow-up.ts` i frontend). Innehåll, planering och beslut bevaras.
+Support Management har ingen metadata för åtgärdsresultat men godtar bara
+`COMPLETED`, `PARTIALLY_COMPLETED`, `NOT_COMPLETED` och `NOT_APPLICABLE` i
+`result` (enum i API:ts kod, inte i OpenAPI-specen; andra värden ger 400).
+Drakens Ja/Nej använder de två yttre värdena, och översättningen finns i
+`support-measure-follow-up.ts` i backend och `measure-follow-up.ts` i frontend.
+Innehåll, planering och beslut bevaras.
 Ett Nej är ett sparat svar, inte ett saknat värde.
 
 Uppföljningen är antingen sparad eller inte: det finns inga halvsparade svar att

@@ -73,7 +73,7 @@ test.each([
   { description: 'Ersätt originalet' },
   { executed: '2026-09-09T00:00:00Z' },
   { accept: 'TRUE' },
-  { result: 'ACHIEVED' },
+  { result: 'COMPLETED' },
   { resultText: 'Direkt till åtgärden' },
   { completedAt: '2026-09-09T00:00:00Z' },
 ])('follow-up contract rejects missing answers and fields from other workflows: %j', async fields => {
@@ -401,7 +401,7 @@ test.each([
   { addedByUser: 'someone-else' },
   { addedByRole: 'MANAGER' },
   { reworkGoal: 'Bypass' },
-  { result: 'ACHIEVED' },
+  { result: 'COMPLETED' },
   { resultText: 'Uppföljning utan uppföljningsflödet' },
   { id: 'other-id' },
   { plannedStart: null },

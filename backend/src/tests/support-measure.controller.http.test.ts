@@ -121,7 +121,7 @@ describe('measure write handlers (over HTTP)', () => {
     expect(apiPatch).toHaveBeenCalledTimes(1);
     expect(apiPatch.mock.calls[0][0]).toMatchObject({
       url: expect.stringMatching(/\/measures\/measure-1$/),
-      data: { executed: expect.any(String), result: 'NOT_ACHIEVED', resultText: 'Ingen förbättring.', completedAt: expect.any(String) },
+      data: { executed: expect.any(String), result: 'NOT_COMPLETED', resultText: 'Ingen förbättring.', completedAt: expect.any(String) },
       headers: { 'If-Match': '"3"' },
     });
   });

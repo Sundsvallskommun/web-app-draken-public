@@ -137,7 +137,7 @@ test.each(['Ja', 'Nej'])(
       measures: [
         {
           ...measure,
-          result: answer === 'Ja' ? 'ACHIEVED' : 'NOT_ACHIEVED',
+          result: answer === 'Ja' ? 'COMPLETED' : 'NOT_COMPLETED',
           resultText: result.followUpDescription,
           executed: '2026-09-11T12:00:00Z',
         },
@@ -187,7 +187,7 @@ test('a follow-up whose response was lost is recognised as saved from the reload
         ...measure,
         version: 4,
         executed: '2026-09-11T12:00:00Z',
-        result: 'NOT_ACHIEVED',
+        result: 'NOT_COMPLETED',
         resultText: answers.followUpDescription,
       },
     ],
@@ -222,7 +222,7 @@ test('a version conflict preserves answers and never replaces someone else’s r
         ...measure,
         version: 4,
         executed: '2026-09-11T12:00:00Z',
-        result: 'ACHIEVED',
+        result: 'COMPLETED',
         resultText: 'Tidigare sparat svar',
       },
     ],
