@@ -1,12 +1,20 @@
 import { RequestWithUser } from '@interfaces/auth.interface';
 import authMiddleware from '@middlewares/auth.middleware';
 import ApiService from '@services/api.service';
-import { Body, Controller, Get, Param, Post, Req, UploadedFiles, UseBefore } from 'routing-controllers';
-import { OpenAPI } from 'routing-controllers-openapi';
+import { Body, Controller, Get, HttpCode, Param, Post, QueryParam, Req, UploadedFiles, UseBefore } from 'routing-controllers';
+import { OpenAPI, ResponseSchema } from 'routing-controllers-openapi';
 
 import { apiServiceName } from '@/config/api-config';
 import { PortalPersonData } from '@/data-contracts/employee/data-contracts';
-import { Conversation, ConversationType, PageMessage } from '@/data-contracts/supportmanagement/data-contracts';
+import {
+  Conversation,
+  ConversationReadByCount,
+  ConversationType,
+  MarkAsReadRequest,
+  PageMessage,
+} from '@/data-contracts/supportmanagement/data-contracts';
+import { ConversationReadByCountDto, MarkConversationMessagesAsReadDto } from '@/dtos/support-conversation.dto';
+import { validationMiddleware } from '@/middlewares/validation.middleware';
 import { fileUploadOptions } from '@/utils/fileUploadOptions';
 import { apiURL } from '@/utils/util';
 
@@ -36,6 +44,27 @@ export class SupportConversationController {
     return { data: res, message: 'success' } as ResponseData;
   }
 
+  @Get('/supportmanagement/:municipalityId/namespace/errands/:errandId/communication/conversations/count-read-by')
+  @OpenAPI({ summary: 'Return read statistics for every conversation connected to an errand' })
+  @ResponseSchema(ConversationReadByCountDto, { isArray: true })
+  @UseBefore(authMiddleware)
+  async returnConversationReadByCounts(
+    @Req() req: RequestWithUser,
+    @Param('errandId') errandId: string,
+    @Param('municipalityId') municipalityId: string,
+    @QueryParam('includeSystemMessages') includeSystemMessages = false,
+    @QueryParam('conversationId') conversationId?: string,
+  ): Promise<ConversationReadByCount[]> {
+    const url = `${municipalityId}/${process.env.SUPPORTMANAGEMENT_NAMESPACE}/errands/${errandId}/communication/conversations/count-read-by`;
+    const baseURL = apiURL(this.SERVICE);
+    const params = {
+      includeSystemMessages,
+      ...(conversationId ? { conversationId } : {}),
+    };
+    const response = await this.apiService.get<ConversationReadByCount[]>({ url, baseURL, params }, req.user);
+    return response.data;
+  }
+
   @Get('/supportmanagement/:municipalityId/namespace/errands/:errandId/communication/conversations/:conversationId/messages')
   @OpenAPI({ summary: 'Return all conversations by errandId' })
   @UseBefore(authMiddleware)
@@ -49,7 +78,7 @@ export class SupportConversationController {
     let url = `${municipalityId}/${process.env.SUPPORTMANAGEMENT_NAMESPACE}/errands/${errandId}/communication/conversations`;
     const resConversation = await this.apiService.get<Conversation[]>({ url, baseURL }, req.user);
 
-    const conversation = resConversation.data.find((c: any) => c.id === conversationId);
+    const conversation = resConversation.data.find(item => item.id === conversationId);
     const topic = conversation ? conversation.topic : undefined;
     const communicationType = conversation?.type === ConversationType.INTERNAL ? 'DRAKEN' : 'MINASIDOR';
 
@@ -57,21 +86,22 @@ export class SupportConversationController {
     const resPageMessage = await this.apiService.get<PageMessage>({ url, baseURL }, req.user);
 
     const mappedMessages = await Promise.all(
-      resPageMessage.data?.content?.map(async (msg: any) => {
+      resPageMessage.data?.content?.map(async msg => {
         if (msg.type === 'SYSTEM_CREATED') return;
         let sender = undefined;
         let direction = undefined;
-        let viewed = undefined;
+        let viewed = false;
 
-        const isReadByCurrentUser = Array.isArray(msg.readBy) && msg.readBy.some((reader: any) => reader.identifier.value === req.user.username);
+        const isReadByCurrentUser = Array.isArray(msg.readBy) && msg.readBy.some(reader => reader.identifier?.value === req.user.username);
         if (isReadByCurrentUser) {
-          viewed = 'true';
+          viewed = true;
         }
 
         if (msg?.createdBy?.type === 'adAccount') {
           if (msg?.createdBy?.value === req.user.username) {
             sender = req.user.firstName + ' ' + req.user.lastName;
             direction = 'OUTBOUND';
+            viewed = true;
           } else {
             const adAccountUrl = `${this.EMPLOYEE_SERVICE}/${municipalityId}/portalpersondata/PERSONAL/${msg?.createdBy?.value}`;
             const res = await this.apiService.get<PortalPersonData>({ url: adAccountUrl }, req.user);
@@ -110,6 +140,22 @@ export class SupportConversationController {
     );
 
     return { data: mappedMessages, message: 'success' } as ResponseData;
+  }
+
+  @Post('/supportmanagement/:municipalityId/namespace/errands/:errandId/communication/conversations/:conversationId/messages/mark-as-read')
+  @HttpCode(204)
+  @OpenAPI({ summary: 'Mark specified messages as read for the errand' })
+  @UseBefore(authMiddleware, validationMiddleware(MarkConversationMessagesAsReadDto, 'body'))
+  async markConversationMessagesAsRead(
+    @Req() req: RequestWithUser,
+    @Param('errandId') errandId: string,
+    @Param('municipalityId') municipalityId: string,
+    @Param('conversationId') conversationId: string,
+    @Body() request: MarkConversationMessagesAsReadDto,
+  ): Promise<void> {
+    const url = `${municipalityId}/${process.env.SUPPORTMANAGEMENT_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages/mark-as-read`;
+    const baseURL = apiURL(this.SERVICE);
+    await this.apiService.post<void, MarkAsReadRequest>({ url, baseURL, data: request }, req.user);
   }
 
   @Post('/supportmanagement/:municipalityId/namespace/errand/:errandId/communication/conversations')

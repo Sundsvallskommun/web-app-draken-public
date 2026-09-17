@@ -6,7 +6,7 @@ export const APIS = [
   },
   {
     name: 'contract',
-    version: '9.0',
+    version: '11.0',
   },
   {
     name: 'citizen',
@@ -34,7 +34,7 @@ export const APIS = [
   },
   {
     name: 'supportmanagement',
-    version: '14.9',
+    version: '14.15',
   },
   {
     name: 'billingpreprocessor',

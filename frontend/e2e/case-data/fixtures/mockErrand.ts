@@ -1,4 +1,3 @@
-import { Decision } from '@casedata/interfaces/decision';
 import dayjs from 'dayjs';
 import { mockEnv } from '../../fixtures/mock-env';
 

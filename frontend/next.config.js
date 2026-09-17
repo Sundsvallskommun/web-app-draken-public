@@ -30,6 +30,11 @@ envalid.cleanEnv(process.env, {
 
 module.exports = {
   allowedDevOrigins: ['dev.test'],
+  // Keep Turbopack scoped to this Next.js app. Without an explicit root it can
+  // select a parent lockfile and index the whole home directory.
+  turbopack: {
+    root: __dirname,
+  },
   distDir:
     process.env.DOCKER_BUILD === 'true'
       ? '.next'

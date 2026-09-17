@@ -1,4 +1,4 @@
-import { test as base, Page, Route } from '@playwright/test';
+import { test as base, Route } from '@playwright/test';
 import { mockEnv } from './mock-env';
 
 type MockRouteOptions = {

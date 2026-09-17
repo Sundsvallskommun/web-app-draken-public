@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures/base.fixture';
+import { test } from '../fixtures/base.fixture';
 import { mockAdmins } from '../case-data/fixtures/mockAdmins';
 import { mockMe } from '../case-data/fixtures/mockMe';
 import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';

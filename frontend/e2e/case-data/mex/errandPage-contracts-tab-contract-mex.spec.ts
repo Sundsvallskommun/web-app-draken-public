@@ -8,14 +8,14 @@ import {
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
-import { Role } from '@casedata/interfaces/role';
 import { test, expect } from '../../fixtures/base.fixture';
 import { mockAttachments } from '../fixtures/mockAttachments';
 import { mockHistory } from '../fixtures/mockHistory';
 import { mockPersonId } from '../fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockAsset } from '../fixtures/mockAsset';
-import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockPdfBase64 } from '../fixtures/mockAttachmentContent';
+import { mockLeaseAgreement } from '../fixtures/mockContract';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockMe } from '../fixtures/mockMe';
@@ -41,7 +41,17 @@ test.describe('Errand page contracts tab', () => {
     },
   };
 
+  // Attachment ids whose content was fetched, in request order. Content is no longer part of the
+  // contract payload and must only be requested when a file is actually opened.
+  let contentRequests: number[];
+  // Upload requests, so the multipart body can be inspected. Chromium streams file parts
+  // separately from the rest of the body, so neither the file bytes nor Content-Length are
+  // visible to Playwright - only the part headers and the plain fields can be asserted here.
+  let uploadedRequests: { body: string; contentType: string }[];
+
   test.beforeEach(async ({ page, mockRoute }) => {
+    contentRequests = [];
+    uploadedRequests = [];
     await mockRoute('**/messages/MEX-2024-000280*', mockMessages, { method: 'GET' });
     await mockRoute('**/users/admins', mockAdmins, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
@@ -63,8 +73,27 @@ test.describe('Errand page contracts tab', () => {
     await mockRoute('**/contracts/2024-01026', mockLeaseAgreement, { method: 'GET' }); // @getContract
     await mockRoute('**/contracts', contractText, { method: 'POST' }); // @postContract
     await mockRoute('**/contracts/2024-01026', contractText, { method: 'PUT' }); // @putContract
-    await mockRoute('**/contracts/2281/2024-01026/attachments/1', mockContractAttachment, { method: 'GET' }); // @getContractAttachment
-    await mockRoute('**/contracts/2281/2024-01026/attachments/1', {}, { method: 'DELETE' }); // @deleteContractAttachment
+    // Content of a single contract attachment: raw base64 as plain text, matching what the BFF
+    // sends. mockRoute cannot serve this - it always replies application/json.
+    await page.route(/\/contracts\/[^/]+\/[^/]+\/attachments\/\d+$/, async (route) => {
+      const id = Number(new URL(route.request().url()).pathname.split('/').pop());
+      if (route.request().method() === 'GET') {
+        contentRequests.push(id);
+        await route.fulfill({ status: 200, contentType: 'text/plain', body: mockPdfBase64 });
+        return;
+      }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: true, message: 'ok' }) });
+    }); // @contractAttachmentContent
+
+    await page.route(/\/contracts\/[^/]+\/[^/]+\/attachments$/, async (route) => {
+      if (route.request().method() === 'POST') {
+        uploadedRequests.push({
+          body: route.request().postData() ?? '',
+          contentType: route.request().headers()['content-type'] ?? '',
+        });
+      }
+      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ data: true, message: 'ok' }) });
+    }); // @postContractAttachment
 
     await mockRoute('**/errand/errandNumber/*', mockMexErrand_base, { method: 'GET' }); // @getErrand
     await mockRoute('**/sourcerelations/**/**', mockRelations, { method: 'GET' }); // @getSourceRelations
@@ -99,10 +128,16 @@ test.describe('Errand page contracts tab', () => {
     await expect(page.locator('[data-cy="contract-type-select"]')).toBeVisible();
   };
 
-  const visitErrandWithoutContract = async (page, mockRoute, dismissCookieConsent) => {
-    // Deep clone so filtering extraParameters does not mutate the shared
-    // mockMexErrand_base fixture (which other tests/files reuse).
-    const mockMexErrand_base_without_contract = structuredClone(mockMexErrand_base);
+  // errandMock defaults to a deep clone of mockMexErrand_base so filtering extraParameters does
+  // not mutate the shared fixture (which other tests/files reuse); pass a pre-modified clone to
+  // visit an errand with e.g. extra stakeholders.
+  const visitErrandWithoutContract = async (
+    page,
+    mockRoute,
+    dismissCookieConsent,
+    errandMock = structuredClone(mockMexErrand_base)
+  ) => {
+    const mockMexErrand_base_without_contract = errandMock;
     mockMexErrand_base_without_contract.data.extraParameters =
       mockMexErrand_base_without_contract.data.extraParameters.filter((p) => p.key !== 'contractId');
     await mockRoute('**/errand/101', mockMexErrand_base_without_contract, { method: 'GET' }); // @getErrandByIdNoContract
@@ -120,16 +155,16 @@ test.describe('Errand page contracts tab', () => {
 
   test('shows uploaded contracts', async ({ page, mockRoute, dismissCookieConsent }) => {
     await mockRoute('**/errand/101', mockMexErrand_base, { method: 'GET' }); // @getErrand
-    await mockRoute(
-      `**/contracts/${mockMexErrand_base.data.municipalityId}/${contractText.data.contractId}/attachments`,
-      {},
-      { method: 'POST' }
-    );
     await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
     await page.locator('[data-cy="bilagor-disclosure"] button.sk-disclosure-header-button').click();
 
     await expect(page.locator('[data-cy="contract-upload-field"]')).toBeVisible();
     await expect(page.locator('[data-cy="contract-attachment-item-1"]')).toBeVisible();
+
+    // The list is built from the metadata the contract already carries. Rendering it must not
+    // pull down the file itself - that is the whole point of the binary attachment migration.
+    expect(contentRequests).toEqual([]);
+
     await page.locator('[data-cy="contract-attachment-item-1"]').locator('.sk-form-file-upload-list-item-actions-more').click();
     await expect(page.locator('[data-cy="open-attachment-1"]')).toBeVisible();
     await page.locator('[data-cy="delete-attachment-1"]').click();
@@ -140,6 +175,60 @@ test.describe('Errand page contracts tab', () => {
     );
     await page.locator('article.sk-dialog').locator('button').filter({ hasText: 'Ja' }).click();
     expect((await deleteRequest).url()).toContain(contractText.data.contractId);
+  });
+
+  test('fetches contract attachment content only when the file is opened', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    await mockRoute('**/errand/101', mockMexErrand_base, { method: 'GET' }); // @getErrand
+    await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
+    await page.locator('[data-cy="bilagor-disclosure"] button.sk-disclosure-header-button').click();
+    await expect(page.locator('[data-cy="contract-attachment-item-1"]')).toBeVisible();
+
+    await page.locator('[data-cy="contract-attachment-item-1"]').locator('.sk-form-file-upload-list-item-actions-more').click();
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('[data-cy="open-attachment-1"]').click();
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toBe('mock-contract.pdf');
+    expect(contentRequests).toEqual([1]);
+
+    const chunks: Buffer[] = [];
+    const stream = await download.createReadStream();
+    for await (const chunk of stream) {
+      chunks.push(chunk as Buffer);
+    }
+    const downloaded = Buffer.concat(chunks);
+    expect(downloaded.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+    expect(downloaded.toString('base64')).toBe(mockPdfBase64);
+  });
+
+  test('uploads a contract attachment as multipart with the file attached', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    await mockRoute('**/errand/101', mockMexErrand_base, { method: 'GET' }); // @getErrand
+    await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
+    await page.locator('[data-cy="bilagor-disclosure"] button.sk-disclosure-header-button').click();
+
+    await page
+      .locator('[data-cy="contract-upload-field"] input[type=file]')
+      .setInputFiles('e2e/case-data/files/testpdf.pdf');
+
+    await expect(page.getByText('Bilagan/orna sparades')).toBeVisible();
+
+    expect(uploadedRequests).toHaveLength(1);
+    const [upload] = uploadedRequests;
+    expect(upload.contentType).toContain('multipart/form-data');
+    expect(upload.body).toContain('name="files"; filename="testpdf.pdf"');
+    expect(upload.body).toContain('name="category"');
+    expect(upload.body).toContain('CONTRACT');
+    expect(upload.body).toContain('name="filename"');
+    expect(upload.body).toContain('name="mimeType"');
+    expect(upload.body).toContain('application/pdf');
   });
 
   test('shows the correct contracts information', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -288,6 +377,23 @@ test.describe('Errand page contracts tab', () => {
   });
 
   // Löpande avgift
+  test('shows the KPI index used for index adjustment', async ({ page, mockRoute, dismissCookieConsent }) => {
+    const indexYear = new Date().getFullYear() - 1;
+    const indexNumber = 419.35;
+    await mockRoute(
+      '**/billingdatacollector/kpi*',
+      { baseYear: 'KPI_80', period: `${indexYear}-10`, value: indexNumber },
+      { method: 'GET' }
+    );
+
+    await visitErrandWithoutContract(page, mockRoute, dismissCookieConsent);
+    await page.locator('[data-cy="lopande-disclosure"] button.sk-disclosure-header-button').click();
+
+    await expect(page.locator('[data-cy="index-adjustment-help-text"]')).toHaveText(
+      `Indexreglering utgår från index enligt KPI 80 för oktober ${indexYear}: ${indexNumber}`
+    );
+  });
+
   test('manages lease fee automatically in lease agreements', async ({ page, mockRoute, dismissCookieConsent }) => {
     await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
     await mockRoute('**/errand/101', mockMexErrand_base, { method: 'GET' }); // @getErrand
@@ -331,6 +437,45 @@ test.describe('Errand page contracts tab', () => {
       total: 120,
       additionalInformation: ['Avgift, lägenhetsarrende'],
     });
+  });
+
+  test('manages extra avitexter in lease agreements', async ({ page, mockRoute, dismissCookieConsent }) => {
+    await visitErrandContractTab(page, mockRoute, dismissCookieConsent);
+    await mockRoute('**/errand/101', mockMexErrand_base, { method: 'GET' }); // @getErrand
+    await page.locator('[data-cy="lopande-disclosure"] button.sk-disclosure-header-button').click();
+
+    await page.locator('[data-cy="fees-yearly-input"]').fill('120');
+
+    // Extra avitexter are stored as detailedDescriptionNN under the InvoiceInfo extraParameter group
+    await page.locator('[data-cy="add-detailed-description-button"]').click();
+    await expect(page.getByText('Kompletterande avitext 1', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Ta bort kompletterande avitext 1' })).toBeVisible();
+    await page.locator('[data-cy="detailed-description-input-0"]').fill('Första kompletterande raden');
+    await page.locator('[data-cy="add-detailed-description-button"]').click();
+    await page.locator('[data-cy="detailed-description-input-1"]').fill('Andra kompletterande raden');
+
+    // Each row is capped at 51 characters
+    await expect(page.locator('[data-cy="detailed-description-input-0"]')).toHaveAttribute('maxlength', '51');
+
+    // Removing the first row renumbers the remaining one
+    await page.locator('[data-cy="remove-detailed-description-0-button"]').click();
+    await expect(page.locator('[data-cy="detailed-description-input-0"]')).toHaveValue('Andra kompletterande raden');
+    await expect(page.locator('[data-cy="detailed-description-input-1"]')).not.toBeVisible();
+
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
+    await page.locator('[data-cy="avtalstid-start"]').clear();
+    await page.locator('[data-cy="avtalstid-start"]').fill('2024-01-01');
+    await page.locator('[data-cy="all-notice-period"]').clear();
+    await page.locator('[data-cy="all-notice-period"]').fill('1');
+
+    const putContractRequest = page.waitForRequest(
+      (req) => req.url().includes('/contracts/2024-01026') && req.method() === 'PUT'
+    );
+    await page.locator('[data-cy="lopande-disclosure"] button.sk-btn-primary').filter({ hasText: 'Spara' }).click();
+    const leaseAgreement: Contract = (await putContractRequest).postDataJSON();
+    const invoiceInfo = leaseAgreement.extraParameters?.find((p) => p.name === 'InvoiceInfo');
+    expect(invoiceInfo?.parameters?.detailedDescription01).toBe('Andra kompletterande raden');
+    expect(invoiceInfo?.parameters?.detailedDescription02).toBeUndefined();
   });
 
   test('manages creating a new lease agreement with correct default values', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -464,6 +609,100 @@ test.describe('Errand page contracts tab', () => {
     expect(lessee.lastName).toBe('Arrendatorsson');
     // Lessee should also have PRIMARY_BILLING_PARTY role
     expect(lessee.roles).toContain(StakeholderRole.PRIMARY_BILLING_PARTY);
+  });
+
+  test('prevents selecting manually added stakeholders as contract parties', async ({ page, mockRoute, dismissCookieConsent }) => {
+    // A stakeholder entered by hand (no person/organization lookup) has no personId; the contract
+    // API rejects such parties since stakeholder partyId must be a valid UUID.
+    const mockErrandWithManualStakeholder = structuredClone(mockMexErrand_base);
+    mockErrandWithManualStakeholder.data.stakeholders.push({
+      id: 9999,
+      version: 1,
+      created: '2024-05-17T10:50:17.25221+02:00',
+      updated: '2024-05-17T10:50:17.252221+02:00',
+      type: 'PERSON',
+      firstName: 'Manuell',
+      lastName: 'Intressent',
+      organizationName: '',
+      roles: ['CONTACT_PERSON'],
+      personId: '',
+      personalNumber: '',
+      addresses: [],
+      address: { streetAddress: '' },
+      contactInformation: [],
+      extraParameters: {},
+    });
+    await visitErrandWithoutContract(page, mockRoute, dismissCookieConsent, mockErrandWithManualStakeholder);
+
+    await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.LEASE_AGREEMENT);
+    await page.locator('[data-cy="contract-subtype-select"]').selectOption(LeaseType.LAND_LEASE_MISC);
+
+    await page.locator('[data-cy="add-party-button"]').click();
+    const stakeholderSelect = page.locator('[data-cy="party-modal-stakeholder-select"]');
+    await expect(stakeholderSelect).toBeVisible();
+
+    // Looked-up stakeholders are selectable; the manual one is excluded from the list entirely,
+    // and the hint below the field names it and explains why
+    await expect(stakeholderSelect.locator('option', { hasText: 'Test Upplåtarsson' })).toBeEnabled();
+    await expect(stakeholderSelect.locator('option', { hasText: 'Manuell Intressent' })).toHaveCount(0);
+    await expect(page.locator('[data-cy="party-modal-manual-stakeholder-hint"]')).toBeVisible();
+    await expect(page.locator('[data-cy="party-modal-manual-stakeholder-hint"]')).toContainText('Manuell Intressent');
+  });
+
+  test('resolves partyId for a manually added organization used as invoice recipient', async ({ page, mockRoute, dismissCookieConsent }) => {
+    // An organization entered by hand only has an organization number; its partyId must be looked up
+    // before it is saved as a contract party.
+    const mockOrganizationPartyId = 'b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e';
+    const mockErrandWithManualOrganization = structuredClone(mockMexErrand_base);
+    mockErrandWithManualOrganization.data.stakeholders.push({
+      id: 9998,
+      version: 1,
+      created: '2024-05-17T10:50:17.25221+02:00',
+      updated: '2024-05-17T10:50:17.252221+02:00',
+      type: 'ORGANIZATION',
+      firstName: '',
+      lastName: '',
+      organizationName: 'Manuellt Företag AB',
+      organizationNumber: '556677-8899',
+      roles: ['CONTACT_PERSON'],
+      personId: '',
+      personalNumber: '',
+      addresses: [],
+      address: { streetAddress: '' },
+      contactInformation: [],
+      extraParameters: {},
+    });
+    await mockRoute('**/organization', { data: { partyId: mockOrganizationPartyId }, message: 'success' }, { method: 'POST' });
+    await visitErrandWithoutContract(page, mockRoute, dismissCookieConsent, mockErrandWithManualOrganization);
+
+    await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.LEASE_AGREEMENT);
+    await page.locator('[data-cy="contract-subtype-select"]').selectOption(LeaseType.LAND_LEASE_MISC);
+
+    await page.locator('[data-cy="add-party-button"]').click();
+    await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('9998');
+    await page.locator('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
+    await page.locator('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').check({ force: true });
+    await page.locator('[data-cy="party-modal-save-button"]').click();
+
+    const organizationRow = page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-0"]');
+    await expect(organizationRow.locator('[data-cy="party-0-name"]')).toContainText('Manuellt Företag AB');
+    await expect(organizationRow.locator('[data-cy="party-0-role"]')).toContainText('Fakturamottagare');
+
+    await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
+    await page.locator('[data-cy="avtalstid-start"]').fill('2024-01-01');
+    await page.locator('[data-cy="all-notice-period"]').clear();
+    await page.locator('[data-cy="all-notice-period"]').fill('3');
+
+    const postContractRequest = page.waitForRequest(
+      (req) => req.url().includes('/contracts') && req.method() === 'POST'
+    );
+    await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
+    const leaseAgreement: Contract = (await postContractRequest).postDataJSON();
+    const billingParty = leaseAgreement.stakeholders.find((s) =>
+      s.roles.includes(StakeholderRole.PRIMARY_BILLING_PARTY)
+    );
+    expect(billingParty.organizationNumber).toBe('556677-8899');
+    expect(billingParty.partyId).toBe(mockOrganizationPartyId);
   });
 
   test('manages creating a new purchase agreement with manual party selection', async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -647,123 +886,6 @@ test.describe('Errand page contracts tab', () => {
     expect(contract.stakeholders.some((s) => s.roles.includes(StakeholderRole.LESSEE))).toBe(true);
   });
 
-  test.describe('Manual party selection with stakeholders without partyId', () => {
-    // Mock errand with a stakeholder that has no personalNumber/personId (manually added)
-    const mockMexErrandWithManualStakeholder = {
-      ...mockMexErrand_base,
-      data: {
-        ...mockMexErrand_base.data,
-        stakeholders: [
-          ...mockMexErrand_base.data.stakeholders,
-          {
-            id: 9999, // Has id but no personalNumber/personId
-            version: 1,
-            created: '2024-05-17T10:50:17.25221+02:00',
-            updated: '2024-05-17T10:50:17.252221+02:00',
-            type: 'PERSON',
-            // No personalNumber - manually added stakeholder
-            firstName: 'Manual',
-            lastName: 'Stakeholder',
-            roles: ['CONTACT_PERSON'],
-            addresses: [
-              {
-                addressCategory: 'POSTAL_ADDRESS',
-                street: 'Manual Street 1',
-                postalCode: '12345',
-                city: 'TestCity',
-                careOf: '',
-              },
-            ],
-            address: {
-              streetAddress: '',
-            },
-            contactInformation: [
-              {
-                contactType: 'EMAIL',
-                value: 'manual@example.com',
-              },
-            ],
-            extraParameters: {},
-          },
-        ],
-        extraParameters: mockMexErrand_base.data.extraParameters.filter((p) => p.key !== 'contractId'),
-      },
-    };
-
-    test('allows selecting stakeholders without partyId as billing parties', async ({ page, mockRoute, dismissCookieConsent }) => {
-      // Override the errand intercept for this test
-      await mockRoute('**/errand/101', mockMexErrandWithManualStakeholder, { method: 'GET' }); // @getErrandByIdManual
-      await mockRoute('**/errand/errandNumber/*', mockMexErrandWithManualStakeholder, { method: 'GET' }); // @getErrandManual
-      const errandResponse = page.waitForResponse(
-        (resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200
-      );
-      await page.goto(`arende/${mockMexErrand_base.data.id}`);
-      await errandResponse;
-      await dismissCookieConsent();
-      const tab = page.getByRole('tab', { name: 'Faktura', exact: true });
-      await tab.click({ force: true });
-      await page.locator('[data-cy="contract-type-select"]').selectOption(ContractType.LEASE_AGREEMENT);
-
-      // Add lessor via party modal
-      await page.locator('[data-cy="add-party-button"]').click();
-      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
-      await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2260');
-      await page.locator('[data-cy="party-modal-role-LESSOR"]').check({ force: true });
-      await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
-      await page.locator('[data-cy="party-modal-save-button"]').click();
-      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
-
-      // Add lessee (Test Arrendatorsson)
-      await page.locator('[data-cy="add-party-button"]').click();
-      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
-      await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('2280');
-      await page.locator('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
-      await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
-      await page.locator('[data-cy="party-modal-save-button"]').click();
-      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
-
-      // Add manual stakeholder (without partyId) as lessee + billing party
-      await page.locator('[data-cy="add-party-button"]').click();
-      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeVisible();
-      await page.locator('[data-cy="party-modal-stakeholder-select"]').selectOption('9999');
-      await page.locator('[data-cy="party-modal-role-LESSEE"]').check({ force: true });
-      await page.locator('[data-cy="party-modal-role-PRIMARY_BILLING_PARTY"]').check({ force: true });
-      await expect(page.locator('[data-cy="party-modal-save-button"]')).toBeEnabled();
-      await page.locator('[data-cy="party-modal-save-button"]').click();
-      await expect(page.locator('[data-cy="party-modal-stakeholder-select"]')).toBeHidden();
-
-      // Verify all parties were added
-      await expect(page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-0"]')).toBeVisible();
-      await expect(page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-1"]')).toBeVisible();
-      await expect(page.locator('[data-cy="parties-table"]').locator('[data-cy="party-row-2"]')).toBeVisible();
-
-      // Verify the manual stakeholder has billing role
-      await expect(page.locator('[data-cy="parties-table"]')).toContainText('Manual Stakeholder');
-      await expect(page.locator('[data-cy="parties-table"]')).toContainText('Fakturamottagare');
-
-      // Fill required fields before saving
-      await page.locator('[data-cy="avtalstid-disclosure"] button.sk-disclosure-header-button').click();
-      await page.locator('[data-cy="avtalstid-start"]').fill('2024-01-01');
-      await page.locator('[data-cy="all-notice-period"]').clear();
-      await page.locator('[data-cy="all-notice-period"]').fill('3');
-
-      // Save the contract and verify the stakeholder is included with PRIMARY_BILLING_PARTY role
-      const postContractRequest = page.waitForRequest(
-        (req) => req.url().includes('/contracts') && req.method() === 'POST'
-      );
-      await page.locator('[data-cy="parties-disclosure"]').locator('[data-cy="save-contract-button"]').click();
-      const contract: Contract = (await postContractRequest).postDataJSON();
-      const manualStakeholder = contract.stakeholders.find(
-        (s) => s.firstName === 'Manual' && s.lastName === 'Stakeholder'
-      );
-      expect(manualStakeholder).toBeTruthy();
-      expect(manualStakeholder.roles).toContain(StakeholderRole.LESSEE);
-      expect(manualStakeholder.roles).toContain(StakeholderRole.PRIMARY_BILLING_PARTY);
-      // The manual stakeholder should NOT have a meaningful partyId since it was added without personnummer
-      expect(manualStakeholder.partyId).toBeFalsy();
-    });
-  });
-
   test.describe('Non-DRAFT contract restrictions', () => {
     test.describe('ACTIVE contract', () => {
       const activeContractId = '2024-ACTIVE-001';
@@ -795,7 +917,6 @@ test.describe('Errand page contracts tab', () => {
       test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
         await mockRoute('**/errand/errandNumber/*', mockMexErrandWithActiveContract, { method: 'GET' }); // @getErrand
         await mockRoute(`**/contracts/${activeContractId}`, mockActiveLeaseAgreement, { method: 'GET' }); // @getActiveContract
-        await mockRoute(`**/contracts/2281/${activeContractId}/attachments/*`, mockContractAttachment, { method: 'GET' }); // @getActiveContractAttachment
 
         const errandResponse = page.waitForResponse(
           (resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200
@@ -934,7 +1055,6 @@ test.describe('Errand page contracts tab', () => {
       test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
         await mockRoute('**/errand/errandNumber/*', mockMexErrandWithUniqueContract, { method: 'GET' }); // @getErrand
         await mockRoute(`**/contracts/${uniqueContractId}`, mockActiveContractWithErrandParties, { method: 'GET' }); // @getUniqueContract
-        await mockRoute(`**/contracts/2281/${uniqueContractId}/attachments/*`, mockContractAttachment, { method: 'GET' }); // @getUniqueContractAttachment
 
         const errandResponse = page.waitForResponse(
           (resp) => resp.url().includes('/errand/errandNumber/') && resp.status() === 200

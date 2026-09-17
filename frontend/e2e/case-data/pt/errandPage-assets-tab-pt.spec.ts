@@ -1,4 +1,5 @@
 import { ErrandPhase } from '@casedata/interfaces/errand-phase';
+import { MODAL_DIALOG } from '../../utils/modal';
 
 import { expect,test } from '../../fixtures/base.fixture';
 import { mockAdmins } from '../fixtures/mockAdmins';
@@ -495,7 +496,7 @@ test.describe('Errand page Insatser tab', () => {
     await mockRoute('**/asset-drafts/*', { data: 'ok', message: 'ok' }, { method: 'PATCH' });
     await visitInsatserTab(page, mockRoute, dismissCookieConsent, mockDraftAsset);
     await page.locator('[data-cy="edit-service-button"]').first().click();
-    await expect(page.locator('article.sk-modal-dialog')).toBeVisible();
+    await expect(page.locator(MODAL_DIALOG)).toBeVisible();
     const patchRequest = page.waitForRequest(
       (req) => /\/asset-drafts\//.test(req.url()) && req.method() === 'PATCH'
     );

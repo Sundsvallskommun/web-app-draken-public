@@ -41,6 +41,7 @@ test.describe('register page', () => {
     await mockRoute('**/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSaveFacilities, { method: 'PATCH' });
     await mockRoute('**/sourcerelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/targetrelations/**/**', mockRelations, { method: 'GET' });
+    await mockRoute('**/communication/conversations/count-read-by*', [], { method: 'GET' });
     await mockRoute('**/namespace/errands/**/communication/conversations', mockConversations, { method: 'GET' });
     await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, { method: 'GET' });
     await page.goto('registrera');
@@ -53,6 +54,22 @@ test.describe('register page', () => {
     await expect(page.locator('[data-cy="channel-input"]')).toBeVisible();
     // await expect(page.locator('[data-cy="description-input"]')).toBeVisible();
     await expect(page.locator('[data-cy="errand-description-richtext-wrapper"]')).toBeVisible();
+  });
+
+  test('does not offer deprecated labels when registering a new errand', async ({ page }) => {
+    // labelCategory-input is a <select> whose options stay hidden until opened, so count the option
+    // elements instead of asserting on their visibility.
+    const categorySelect = page.locator('[data-cy="labelCategory-input"]');
+    // The category itself is deprecated, so neither it nor anything below it may be picked.
+    await expect(categorySelect.locator('option', { hasText: 'Utgangen verksamhet' })).toHaveCount(0);
+    await expect(categorySelect.locator('option', { hasText: 'Utgangstest' })).toHaveCount(1);
+
+    await categorySelect.selectOption('Utgangstest');
+    await page.locator('[data-cy="labelType-wrapper"]').click();
+    await expect(page.getByRole('option', { name: 'Aktiv typ', exact: true })).toBeVisible();
+    await expect(page.getByRole('option', { name: 'Utgangen typ', exact: true })).toHaveCount(0);
+    // Every subtype of this type is deprecated, so the whole branch is unreachable.
+    await expect(page.getByRole('option', { name: 'Typ med bara utgangna undertyper', exact: true })).toHaveCount(0);
   });
 
   test('displays the admin part of the register form', async ({ page }) => {

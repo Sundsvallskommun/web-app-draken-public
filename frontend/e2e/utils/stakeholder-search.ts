@@ -1,5 +1,4 @@
 import { Page, expect } from '@playwright/test';
-import { mockEnv } from '../fixtures/mock-env';
 
 export const disabledIncompleteContactForm = async (page: Page) => {
   await expect(page.locator('[data-cy="add-manually-button-owner"]')).toBeVisible();

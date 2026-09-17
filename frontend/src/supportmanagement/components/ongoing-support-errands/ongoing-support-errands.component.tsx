@@ -11,6 +11,12 @@ import {
   Status,
   useSupportErrands,
 } from '@supportmanagement/services/support-errand-service';
+import {
+  getSelectableCategories,
+  getSelectableSubTypes,
+  getSelectableTypes,
+  getUniqueLabelDisplayNames,
+} from '@supportmanagement/services/support-label-service';
 import { useRouter } from 'next/navigation';
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -104,10 +110,20 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
   useEffect(() => {
     if (storedFilter && Object.keys(storedFilter).length > 0 && supportMetadata) {
       let storedFilters;
+      // A stored filter can point at a label that has since been deprecated. Such a value is dropped
+      // here: its checkbox is no longer rendered, so keeping it would leave an active filter the user
+      // can neither see nor switch off.
+      const selectableCategoryPaths = new Set(getSelectableCategories(supportMetadata).map((c) => c.resourcePath));
+      const selectableTypeNames = getUniqueLabelDisplayNames(getSelectableTypes(supportMetadata));
+      const selectableSubTypeNames = getUniqueLabelDisplayNames(getSelectableSubTypes(supportMetadata));
       try {
         storedFilters = {
           category: (storedFilter?.category as string)?.split(',') || SupportManagementValues.category,
-          labelCategory: (storedFilter?.labelCategory as string)?.split(',') || SupportManagementValues.labelCategory,
+          labelCategory:
+            (storedFilter?.labelCategory as string)
+              ?.split(',')
+              .filter((resourcePath: string) => selectableCategoryPaths.has(resourcePath)) ||
+            SupportManagementValues.labelCategory,
           type: (storedFilter?.type as string)?.split(',') || SupportManagementValues.type,
           labelType:
             (Array.from(
@@ -116,6 +132,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
                   ?.split(',')
                   .map((n: string) => getLabelTypeFromName(n, supportMetadata!))
                   .map((t: { displayName?: string } | undefined) => t?.displayName)
+                  .filter((displayName?: string) => !!displayName && selectableTypeNames.includes(displayName))
               )
             ) as string[]) || SupportManagementValues.labelType,
           labelSubType:
@@ -125,6 +142,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
                   ?.split(',')
                   .map((n: string) => getLabelSubTypeFromName(n, supportMetadata!))
                   .map((t: { displayName?: string } | undefined) => t?.displayName)
+                  .filter((displayName?: string) => !!displayName && selectableSubTypeNames.includes(displayName))
               )
             ) as string[]) || SupportManagementValues.labelSubType,
           priority: (storedFilter?.priority as string)?.split(',') || SupportManagementValues.priority,

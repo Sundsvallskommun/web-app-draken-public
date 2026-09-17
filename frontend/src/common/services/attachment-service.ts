@@ -10,6 +10,27 @@ export function base64ToFile(base64: string, fileName: string, mimeType: string)
   }
 }
 
+/**
+ * Turns base64 attachment content into a browser download. Shared by the surfaces that fetch
+ * attachment content on demand rather than receiving it with the metadata.
+ *
+ * Throws on empty content instead of delegating to base64ToFile, which swallows a failed decode
+ * into an empty File - that would save a 0-byte file and look like a successful download.
+ */
+export function downloadBase64File(base64: string, fileName: string, mimeType: string): void {
+  if (!base64) {
+    throw new Error('EMPTY_ATTACHMENT_CONTENT');
+  }
+  const blobUrl = URL.createObjectURL(base64ToFile(base64, fileName, mimeType));
+  const link = document.createElement('a');
+  link.href = blobUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(blobUrl);
+}
+
 export function mapAttachmentToUploadFile<TExtraMeta extends object = object>(
   attachment: Attachment
 ): UploadFile<TExtraMeta> {

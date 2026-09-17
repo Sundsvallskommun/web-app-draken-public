@@ -12,7 +12,7 @@ import { mockAsset } from '../fixtures/mockAsset';
 import { mockConversations, mockConversationMessages } from '../fixtures/mockConversations';
 import { mockRelations } from '../fixtures/mockRelations';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
-import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockLeaseAgreement } from '../fixtures/mockContract';
 import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 
 const b64 = (s: string) => Buffer.from(s, 'utf-8').toString('base64');
@@ -20,6 +20,12 @@ const mockMessageTemplates = {
   data: [
     { identifier: 'mex.email.default', name: 'E-postmall', content: b64('<p>E-postmall innehåll</p>') },
     { identifier: 'mex.email.confirmation', name: 'E-postbekräftelse', content: b64('<p>Bekräftelse</p>') },
+    {
+      identifier: 'mex.email.explicit-default',
+      name: 'Explicit standardmall',
+      content: b64('<p>Explicit standardinnehåll</p>'),
+      metadata: [{ key: 'templateRole', value: 'default' }],
+    },
     { identifier: 'mex.email.signature', name: 'E-postsignatur', content: b64('<p>Med vänliga hälsningar {{user}}</p>') },
     { identifier: 'mex.sms.default', name: 'SMS-mall', content: b64('SMS-mall innehåll') },
     { identifier: 'mex.sms.reminder', name: 'SMS-påminnelse', content: b64('SMS-påminnelse') },
@@ -50,7 +56,6 @@ test.describe('Message tab', () => {
     await mockRoute('**/address', mockAddress, { method: 'POST' }); // @postAddress
     await mockRoute('**/stakeholders/personNumber', mockMexErrand_base.data.stakeholders, { method: 'POST' });
     await mockRoute('**/contracts/2024-01026', mockLeaseAgreement, { method: 'GET' }); // @getContract
-    await mockRoute('**/contracts/2281/2024-01026/attachments/1', mockContractAttachment, { method: 'GET' }); // @getContractAttachment
     await page.route(/\/errand\/\d+\/messages$/, async (route) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(mockMessages) });
     });
@@ -112,6 +117,39 @@ test.describe('Message tab', () => {
           .click({ force: true });
       }
     }
+  });
+
+  test('prefers an explicit default template over a legacy default identifier', async ({
+    page,
+    dismissCookieConsent,
+  }) => {
+    await goToMessageTab(page, dismissCookieConsent);
+    await page.locator('[data-cy="new-message-button"]').click();
+
+    await expect(page.locator('[data-cy="messageTemplate"]').first()).toHaveValue('mex.email.explicit-default');
+    await expect(page.locator('[data-cy="decision-richtext-wrapper"]:visible').first()).toContainText(
+      'Explicit standardinnehåll'
+    );
+  });
+
+  test('falls back to a legacy default identifier when no explicit default exists', async ({
+    page,
+    mockRoute,
+    dismissCookieConsent,
+  }) => {
+    const templatesWithoutExplicitDefault = {
+      ...mockMessageTemplates,
+      data: mockMessageTemplates.data.filter((template) => template.identifier !== 'mex.email.explicit-default'),
+    };
+    await mockRoute('**/templates?**', templatesWithoutExplicitDefault, { method: 'GET' });
+
+    await goToMessageTab(page, dismissCookieConsent);
+    await page.locator('[data-cy="new-message-button"]').click();
+
+    await expect(page.locator('[data-cy="messageTemplate"]').first()).toHaveValue('mex.email.default');
+    await expect(page.locator('[data-cy="decision-richtext-wrapper"]:visible').first()).toContainText(
+      'E-postmall innehåll'
+    );
   });
 
   test('sends sms with template', async ({ page, mockRoute, dismissCookieConsent }) => {

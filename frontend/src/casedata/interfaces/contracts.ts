@@ -147,7 +147,7 @@ export interface Address {
 }
 
 /** Attachment metadata */
-interface AttachmentMetadata {
+export interface AttachmentMetadata {
   /**
    * The attachment id
    * @format int64
@@ -158,15 +158,23 @@ interface AttachmentMetadata {
   /**
    * The attachment filename
    * @minLength 1
+   * @maxLength 255
    */
   filename: string;
   /**
-   * The attachment mime-type
+   * The attachment mime-type, on the form 'type/subtype'. Parameters (e.g. ';charset=utf-8') are not accepted.
    * @minLength 1
+   * @maxLength 255
    */
   mimeType: string;
-  /** Notes on the attachment */
+  /**
+   * Notes on the attachment
+   * @minLength 0
+   * @maxLength 255
+   */
   note?: string;
+  /** SHA-256 hash, lower-case hex encoded, of the attachment's raw binary content. Identical to what the database produces with lower(sha2(file, 256)), and to the hash the same file is given in other services. */
+  hash?: string;
   /**
    * Date when the attachment was created
    * @format date-time
@@ -538,23 +546,6 @@ interface ThrowableProblem {
 interface Violation {
   field?: string;
   message?: string;
-}
-
-/** Attachment */
-export interface Attachment {
-  /** Attachment data, i.e. the file */
-  attachmentData: AttachmentData;
-  /** Attachment metadata */
-  metadata: AttachmentMetadata;
-}
-
-/** Attachment content */
-interface AttachmentData {
-  /**
-   * BASE64-encoded attachment file content
-   * @format base64
-   */
-  content?: string;
 }
 
 interface Change {

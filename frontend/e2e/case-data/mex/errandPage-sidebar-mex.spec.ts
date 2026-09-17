@@ -5,7 +5,7 @@ import { mockHistory } from '../fixtures/mockHistory';
 import { mockPersonId } from '../fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockAsset } from '../fixtures/mockAsset';
-import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockLeaseAgreement } from '../fixtures/mockContract';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockJsonSchema } from '../fixtures/mockJsonSchema';
 import { mockMe } from '../fixtures/mockMe';
@@ -46,7 +46,6 @@ test.describe('Errand page', () => {
     await mockRoute('**/errands/*/facilities', mockMexErrand_base, { method: 'POST' });
     await mockRoute('**/stakeholders/**', mockMexErrand_base.data.stakeholders, { method: 'POST' });
     await mockRoute('**/contracts/2024-01026', mockLeaseAgreement, { method: 'GET' });
-    await mockRoute('**/contracts/2281/2024-01026/attachments/1', mockContractAttachment, { method: 'GET' });
     await mockRoute('**/sourcerelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/targetrelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/namespace/errands/**/communication/conversations', mockConversations, { method: 'GET' });

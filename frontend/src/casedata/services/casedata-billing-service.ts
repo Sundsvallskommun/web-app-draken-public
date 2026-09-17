@@ -333,16 +333,6 @@ export const approveCasedataBillingRecord = async (
   }
 };
 
-export const getOrganizationPartyId = async (orgNr: string): Promise<string | undefined> => {
-  try {
-    const res = await apiService.post<{ data: { partyId: string } }, { orgNr: string }>('organization', { orgNr });
-    return res.data.data.partyId;
-  } catch (error) {
-    console.error('Failed to fetch organization partyId:', error);
-    return undefined;
-  }
-};
-
 export const getCounterpart = async (partyId: string, stakeholderType: string): Promise<string> => {
   const res = await apiService.get<string>(`billingdatacollector/counterpart/${partyId}/${stakeholderType}`);
   return res.data.toString();

@@ -28,6 +28,7 @@ import {
   saveContract,
   saveContractToErrand,
 } from '@casedata/services/contract-service';
+import { resolvePartyId } from '@common/services/adress-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
@@ -42,7 +43,6 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore, useUserStore } from '@stores/index';
-import dayjs from 'dayjs';
 import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
@@ -86,20 +86,11 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
               .min(yup.ref('startDate'), 'Slutdatum måste vara efter startdatum'),
           }),
       }),
+      // Slutdatum får ligga bakåt i tiden (uppsägningsärenden kan registreras i efterhand).
       endDate: yup
         .date()
         .nullable()
-        .transform((value, original) => (original === '' ? null : value))
-        .test('not-in-past', 'Datum kan inte vara i det förflutna', (value) => {
-          if (!value) return true;
-          const selected = dayjs(value).startOf('day');
-          // Keep an already-saved endDate valid even if it's now in the past; only a
-          // newly chosen past date is rejected. This avoids blocking re-saves of contracts
-          // that were terminated earlier.
-          const original = existingContract?.endDate;
-          if (original && selected.isSame(dayjs(original).startOf('day'))) return true;
-          return !selected.isBefore(dayjs().startOf('day'));
-        }),
+        .transform((value, original) => (original === '' ? null : value)),
       notice: yup.object().when('type', {
         is: (type: ContractType) => type !== ContractType.PURCHASE_AGREEMENT,
         then: (schema) =>
@@ -282,11 +273,12 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
   };
 
   // Handler to add a new party
-  const handleAddParty = (stakeholderId: string, roles: StakeholderRole[]) => {
+  const handleAddParty = async (stakeholderId: string, roles: StakeholderRole[]) => {
     const stakeholder = errand?.stakeholders?.find((s) => String(s.id) === stakeholderId);
     if (!stakeholder) return;
 
-    const contractStakeholder = errandStakeholderToContractStakeholder(stakeholder, roles);
+    const partyId = await resolvePartyId(stakeholder.personId, stakeholder.organizationNumber);
+    const contractStakeholder = errandStakeholderToContractStakeholder({ ...stakeholder, personId: partyId }, roles);
     const current = (contractForm.getValues('stakeholders') ?? []) as StakeholderWithPersonnumber[];
     const appended = [...current, contractStakeholder];
     updateStakeholders(reconcileParties(appended, appended.length - 1));

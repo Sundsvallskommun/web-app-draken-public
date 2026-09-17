@@ -13,6 +13,7 @@ import { mockPermits } from '../fixtures/mockPermits';
 import { mockPTErrand_base } from '../fixtures/mockPtErrand';
 import { mockRelations } from '../fixtures/mockRelations';
 import { mockPdfRender } from '../fixtures/mockDecisions';
+import { CONFIRM_DIALOG } from '../../utils/modal';
 
 test.describe('Decisions tab', () => {
   const mockFTErrand = {
@@ -138,7 +139,7 @@ test.describe('Decisions tab', () => {
     // Set up mock for getting errand with decisions after create
     await mockRoute(`**/errand/${mockPTErrand_base.data.id}`, mockPTErrand_base);
 
-    await page.locator('article.sk-modal-dialog').getByRole('button', { name: 'Ja' }).click();
+    await page.locator(CONFIRM_DIALOG).getByRole('button', { name: 'Ja' }).click();
 
     const createDecisionRequest = await page.waitForRequest(
       (req) => req.url().includes('/errands/') && req.url().includes('/decisions') && req.method() === 'PATCH'
@@ -178,7 +179,7 @@ test.describe('Decisions tab', () => {
     const finalDecisionId = mockPTErrand_base.data.decisions.find((d) => d.decisionType === 'FINAL')?.id;
     await mockRoute(`**/decisions/${finalDecisionId}`, mockPTErrand_base, { method: 'PUT' });
 
-    await page.locator('article.sk-modal-dialog').getByRole('button', { name: 'Ja' }).click();
+    await page.locator(CONFIRM_DIALOG).getByRole('button', { name: 'Ja' }).click();
 
     const updateDecisionRequest = await page.waitForRequest(
       (req) => req.url().includes(`/decisions/${finalDecisionId}`) && req.method() === 'PUT'
@@ -202,7 +203,7 @@ test.describe('Decisions tab', () => {
     await page.keyboard.press('Control+A');
     await page.keyboard.type('Mock text');
     await page.locator('[data-cy="save-decision-button"]').click();
-    await page.locator('article.sk-modal-dialog').getByRole('button', { name: 'Ja' }).click();
+    await page.locator(CONFIRM_DIALOG).getByRole('button', { name: 'Ja' }).click();
 
     const updateDecisionRequest = await page.waitForRequest(
       (req) => req.url().includes(`/decisions/${finalDecisionId}`) && req.method() === 'PUT'
@@ -249,7 +250,7 @@ test.describe('Decisions tab', () => {
     await page.keyboard.press('Control+A');
     await page.keyboard.type('Mock text');
     await page.locator('[data-cy="save-decision-button"]').click();
-    await page.locator('article.sk-modal-dialog').getByRole('button', { name: 'Ja' }).click();
+    await page.locator(CONFIRM_DIALOG).getByRole('button', { name: 'Ja' }).click();
 
     const updateDecisionRequest = await page.waitForRequest(
       (req) => req.url().includes(`/decisions/${finalDecisionId}`) && req.method() === 'PUT'

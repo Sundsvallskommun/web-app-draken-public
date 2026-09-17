@@ -1,7 +1,6 @@
 import { expect, test } from '../../fixtures/base.fixture';
 import { mockNotifications } from '../../kontaktcenter/fixtures/mockSupportNotifications';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockContractAttachment } from '../fixtures/mockContract';
 import {
   mockContractDetailLeaseAgreement,
   mockContractDetailPurchaseAgreement,
@@ -13,6 +12,7 @@ import {
 } from '../fixtures/mockContractsList';
 import { mockErrands_base } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
+import { MODAL_DIALOG } from '../../utils/modal';
 
 test.describe('Contract Overview page', () => {
   test.beforeEach(async ({ page, mockRoute, dismissCookieConsent }) => {
@@ -405,11 +405,6 @@ test.describe('Contract Overview page', () => {
   });
 
   test.describe('Contract detail panel', () => {
-    test.beforeEach(async ({ mockRoute }) => {
-      // Intercept attachment requests to prevent 401 errors
-      await mockRoute('**/contracts/**/attachments/**', mockContractAttachment, { method: 'GET' }); // @getContractAttachment
-    });
-
     test('opens contract detail panel when clicking a row', async ({ page, mockRoute }) => {
       await mockRoute('**/contracts?*', mockContractDetailLeaseAgreement, { method: 'GET' }); // @getContracts
       await navigateToContractOverview(page);
@@ -528,6 +523,27 @@ test.describe('Contract Overview page', () => {
 
       // Bilagor disclosure should be visible
       await expect(page.locator('[data-cy="bilagor-disclosure"]')).toBeVisible();
+    });
+
+    test('attachments are read-only in contract detail panel', async ({ page, mockRoute }) => {
+      await mockRoute('**/contracts?*', mockContractDetailLeaseAgreement, { method: 'GET' }); // @getContracts
+      await navigateToContractOverview(page);
+
+      await page.locator('[data-cy="contract-row-0"]').click();
+      await page.locator('[data-cy="bilagor-disclosure"]').click();
+
+      // The overview panel has no errand in the store, so it could not refresh the list after a
+      // mutation. Attachments are managed from the errand contract tab instead.
+      await expect(page.locator('[data-cy="contract-attachment-item-1"]')).toBeVisible();
+      await expect(page.locator('[data-cy="contract-upload-field"]')).toHaveCount(0);
+
+      // Downloading is a pure read and stays available.
+      await page
+        .locator('[data-cy="contract-attachment-item-1"]')
+        .locator('.sk-form-file-upload-list-item-actions-more')
+        .click();
+      await expect(page.locator('[data-cy="open-attachment-1"]')).toBeVisible();
+      await expect(page.locator('[data-cy="delete-attachment-1"]')).toHaveCount(0);
     });
 
     test('form fields are read-only in contract detail panel', async ({ page, mockRoute }) => {
@@ -814,7 +830,7 @@ test.describe('Contract Overview page', () => {
         await page.locator('[data-cy="contract-detail-edit-button"]').click();
 
         // Confirmation dialog should appear
-        const dialog = page.locator('article.sk-modal-dialog');
+        const dialog = page.locator(MODAL_DIALOG);
         await expect(dialog.locator('.sk-modal-dialog-header-title')).toHaveText('Ändra avtalsuppgifter');
         await expect(dialog.getByText('Vill du skapa ett nytt ärende för avtal 2049-00010?')).toBeVisible();
         await expect(page.locator('[data-cy="contract-detail-confirm-submit"]')).toBeVisible();

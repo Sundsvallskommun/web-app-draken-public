@@ -1,4 +1,3 @@
-import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { mockEnv } from '../../fixtures/mock-env';
 
 // This person number is for test purposes, from the Swedish Tax Agency
@@ -65,6 +64,7 @@ export const mockMexErrand_base = {
         lastName: 'Upplåtarsson',
         organizationName: '',
         roles: ['CONTACT_PERSON', 'PROPERTY_OWNER'],
+        personId: 'aaaaaaaa-bbbb-cccc-dddd-000000002260',
         personalNumber: MOCK_PERSON_NUMBER,
         addresses: [
           {
@@ -100,6 +100,7 @@ export const mockMexErrand_base = {
         lastName: 'Arrendatorsson',
         organizationName: '',
         roles: ['APPLICANT', 'LEASEHOLDER'],
+        personId: 'aaaaaaaa-bbbb-cccc-dddd-000000002280',
         personalNumber: MOCK_PERSON_NUMBER,
         addresses: [
           {
@@ -135,6 +136,7 @@ export const mockMexErrand_base = {
         lastName: 'Testarsson',
         organizationName: '',
         roles: ['SELLER'],
+        personId: 'aaaaaaaa-bbbb-cccc-dddd-000000002290',
         personalNumber: MOCK_PERSON_NUMBER,
         addresses: [
           {
@@ -170,6 +172,7 @@ export const mockMexErrand_base = {
         lastName: 'Köparsson',
         organizationName: '',
         roles: ['BUYER'],
+        personId: 'aaaaaaaa-bbbb-cccc-dddd-000000002106',
         addresses: [
           {
             addressCategory: 'POSTAL_ADDRESS',

@@ -10,6 +10,7 @@ import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
 import { mockSupportAdminsResponse } from './fixtures/mockSupportAdmins';
 import { mockSupportAttachments, mockSupportErrand, mockSupportMessages } from './fixtures/mockSupportErrands';
 import { mockSupportHistory } from './fixtures/mockSupportHistory';
+import { MODAL_DIALOG } from '../utils/modal';
 
 test.describe('errand handover to another namespace', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
@@ -27,6 +28,7 @@ test.describe('errand handover to another namespace', () => {
     await mockRoute('**/supportmetadata/2281', mockMetaData, { method: 'GET' });
     await mockRoute('**/sourcerelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/targetrelations/**/**', mockRelations, { method: 'GET' });
+    await mockRoute('**/communication/conversations/count-read-by*', [], { method: 'GET' });
     await mockRoute('**/namespace/errands/**/communication/conversations', mockConversations, { method: 'GET' });
     await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, { method: 'GET' });
     await mockRoute('**/party/*/statuses', mockStakeholderStatus, { method: 'GET' });
@@ -53,12 +55,12 @@ test.describe('errand handover to another namespace', () => {
 
     // Step 1 – open modal, choose "Draken" and pick the target namespace (where MEX is also listed).
     await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
-    await expect(page.locator('article.sk-modal-dialog')).toBeVisible();
-    await page.locator('.sk-modal-dialog [type="radio"]').nth(0).check();
+    await expect(page.locator(MODAL_DIALOG)).toBeVisible();
+    await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
 
     // Selecting the namespace triggers the preview automatically (no "Nästa" click).
     const previewResponse = page.waitForResponse((resp) => resp.url().includes('/handover/preview'));
-    await page.locator('.sk-modal-dialog [data-cy="resolution-input"]').selectOption('ROB');
+    await page.locator(`${MODAL_DIALOG} [data-cy="resolution-input"]`).selectOption('ROB');
     await previewResponse;
 
     // Step 2 – review renders, auto-suggestions are preselected.
@@ -78,6 +80,6 @@ test.describe('errand handover to another namespace', () => {
     expect(request.headers()['idempotency-key']).toBeTruthy();
 
     // Like the MEX forward: the modal closes after a successful handover (no in-modal success view).
-    await expect(page.locator('article.sk-modal-dialog')).toBeHidden();
+    await expect(page.locator(MODAL_DIALOG)).toBeHidden();
   });
 });

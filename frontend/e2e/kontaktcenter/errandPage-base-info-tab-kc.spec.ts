@@ -24,6 +24,7 @@ import { disabledIncompleteContactForm } from '../utils/stakeholder-search';
 import { mockStakeholderStatus } from './fixtures/mockStakeholderStatus';
 import { mockEnv } from '../fixtures/mock-env';
 import type { Page } from '@playwright/test';
+import { CONFIRM_DIALOG } from '../utils/modal';
 
 // Local corrected helpers (the shared utils/stakeholder-search.ts variants assert
 // against pre-@sk-web-gui-bump DOM: validation now fires on "Sök" click rather than
@@ -237,6 +238,7 @@ test.describe('Errand page', () => {
     await mockRoute('**/targetrelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/resolvedrelations/**/**', mockResolvedRelations, { method: 'GET' });
     await mockRoute('**/relations/referredfrom/**', mockRelations, { method: 'GET' });
+    await mockRoute('**/communication/conversations/count-read-by*', [], { method: 'GET' });
     await mockRoute('**/namespace/errands/**/communication/conversations', mockConversations, { method: 'GET' });
     await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, {
       method: 'GET',
@@ -997,7 +999,7 @@ test.describe('Errand page', () => {
     await expect(page.locator('[data-cy="make-stakeholder-owner-button"]')).toBeEnabled();
     await page.locator('[data-cy="make-stakeholder-owner-button"]').click();
 
-    await page.locator('article.sk-modal-dialog button').filter({ hasText: 'Ja' }).click();
+    await page.locator(`${CONFIRM_DIALOG} button`).filter({ hasText: 'Ja' }).click();
 
     await expect(page.locator('[data-cy="save-button"]')).toBeEnabled();
 

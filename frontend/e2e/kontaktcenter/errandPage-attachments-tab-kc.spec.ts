@@ -11,6 +11,7 @@ import {
   mockSupportMessages,
   mockSupportNotes,
 } from './fixtures/mockSupportErrands';
+import { CONFIRM_DIALOG } from '../utils/modal';
 
 test.describe.skip('Errand page support attachments tab', () => {
   test.beforeEach(async ({ page, mockRoute }) => {
@@ -83,8 +84,8 @@ test.describe.skip('Errand page support attachments tab', () => {
       const deleteButton = page.locator(`[data-cy="delete-attachment-${attachment.id}"]`);
       await expect(deleteButton).toBeVisible();
       await deleteButton.filter({ hasText: 'Ta bort' }).click();
-      await expect(page.locator('.sk-modal-dialog button.sk-btn-secondary').filter({ hasText: 'Nej' })).toBeVisible();
-      await page.locator('.sk-modal-dialog button.sk-btn-primary').filter({ hasText: 'Ja' }).click();
+      await expect(page.locator(`${CONFIRM_DIALOG} button.sk-btn-secondary`).filter({ hasText: 'Nej' })).toBeVisible();
+      await page.locator(`${CONFIRM_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Ja' }).click();
     }
   });
 

@@ -18,9 +18,10 @@ export interface MessageTemplateInfo {
   metadata?: Array<{ key: string; value: string }>;
 }
 
-const getTemplateRoleFromTemplate = (template: MessageTemplateInfo): string | undefined => {
-  const fromMetadata = template.metadata?.find((m) => m.key === 'templateRole')?.value?.toLowerCase();
-  if (fromMetadata) return fromMetadata;
+const getExplicitTemplateRole = (template: MessageTemplateInfo): string | undefined =>
+  template.metadata?.find((metadata) => metadata.key === 'templateRole')?.value?.toLowerCase();
+
+const getTemplateRoleFromIdentifier = (template: MessageTemplateInfo): string | undefined => {
   const parts = template.identifier?.split('.') || [];
   return parts.length >= 3 ? parts[2].toLowerCase() : undefined;
 };
@@ -58,11 +59,14 @@ export const getTemplateOptions = (
 
 export const getDefaultTemplateId = (templates: MessageTemplates | null, means: MessageContactMeans): string => {
   const options = getTemplateOptions(templates, means);
-  // Prefer templateRole metadata; fall back to identifier suffix for legacy templates.
-  const byRole = options.find((template) => getTemplateRoleFromTemplate(template) === 'default');
-  if (byRole) return byRole.identifier;
-  const bySuffix = options.find((template) => template.identifier?.endsWith('.default'));
-  if (bySuffix) return bySuffix.identifier;
+  const explicitDefault = options.find((template) => getExplicitTemplateRole(template) === 'default');
+  if (explicitDefault) return explicitDefault.identifier;
+
+  const legacyDefault = options.find(
+    (template) => !getExplicitTemplateRole(template) && getTemplateRoleFromIdentifier(template) === 'default'
+  );
+  if (legacyDefault) return legacyDefault.identifier;
+
   // Last-resort fallback: pick the first available template so the body matches what the
   // dropdown visually shows as selected when no template follows the .default convention.
   return options[0]?.identifier || '';

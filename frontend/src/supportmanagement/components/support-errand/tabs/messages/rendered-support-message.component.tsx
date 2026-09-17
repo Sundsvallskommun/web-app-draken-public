@@ -112,7 +112,7 @@ export const RenderedSupportMessage: FC<{
   }
 
   useEffect(() => {
-    if (!message.viewed && supportErrand.assignedUserId === user.username) {
+    if (!message.conversationId && !message.viewed && supportErrand.assignedUserId === user.username) {
       expanded &&
         isInViewport(document.querySelector(`.message-${message.communicationID}`)!) &&
         setMessageViewStatus(supportErrand.id!, municipalityId, message.communicationID, true).then(() => {
