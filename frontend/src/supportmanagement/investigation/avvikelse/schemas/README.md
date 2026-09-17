@@ -102,11 +102,12 @@ I version 1.1 deklarerar enhetschefs- och SOL/LSS-schemana det externa fältet
 `x-draken-external-fields.errandClassification`. Respektive UI Schema placerar
 `$external:errandClassification` direkt efter `legalBases`. Deklarationen låter schemat styra var klassificeringen
 visas och vilket lagrumsfält som filtrerar den, men avvikelsetyp, underkategori och deras UUID:n ägs av ärendets
-SupportManagement-labels. De är inte JSON Schema-properties och sparas inte i utredningsdokumentets JSON.
+SupportManagement-labels. De är inte JSON Schema-properties och sparas inte i utredningsdokumentets JSON. På platsen
+visar Draken en väljare per vald lagrumsgrupp, HSL respektive SoL/LSS; se [../README.md](../README.md#ansvarsgränser).
 
 Vanliga avvikelser redigerar klassificeringen i enhetschefsutredningen. För `eventType: MISSFORHALLANDE` flyttas
 redigeringsansvaret till SOL/LSS-utredningen, med SOL och LSS förvalda och skrivskyddade. `Spara utredning` samordnar
-dokumentets egen PUT med en smal label-PATCH. Om PUT:en lyckas men label-PATCH:en misslyckas rapporteras en delvis
+dokumentets egen PUT med en smal label-PATCH som bär en klassificering per lagrumsgrupp. Om PUT:en lyckas men label-PATCH:en misslyckas rapporteras en delvis
 genomförd sparning, och ett nytt försök skickar endast label-PATCH:en.
 
 Redan sparade enhetschefs- och SOL/LSS-dokument som är bundna till schema till och med version 1.0 får samma externa

@@ -1,28 +1,32 @@
 'use client';
 
 import { Alert, Label } from '@sk-web-gui/react';
-import {
-  LabelClassification,
-  LabelClassificationCatalog,
+import type {
+  AvvikelseGroupedClassificationSelection,
   LabelClassificationSelection,
 } from '@supportmanagement/investigation/avvikelse/label-classification';
 
+import { avvikelseGroupedClassificationContent } from '../avvikelse-classification-content';
+import {
+  type AvvikelseGroupedClassificationField,
+  AvvikelseGroupedClassificationFields,
+} from '../avvikelse-grouped-classification-fields.component';
 import { formatInvestigationLabTimestamp } from './investigation-schema-lab-time';
 
 interface InvestigationLabelClassificationPanelProps {
   headingId: string;
-  catalog: LabelClassificationCatalog;
-  value: LabelClassificationSelection;
+  fields: readonly AvvikelseGroupedClassificationField[];
+  selections: AvvikelseGroupedClassificationSelection;
   canWrite: boolean;
   savedAt?: string;
   notice?: string;
-  onChange: (value: LabelClassificationSelection) => void;
+  onChange: (groupKey: string, selection: LabelClassificationSelection) => void;
 }
 
 export function InvestigationLabelClassificationPanel({
   headingId,
-  catalog,
-  value,
+  fields,
+  selections,
   canWrite,
   savedAt,
   notice,
@@ -43,8 +47,9 @@ export function InvestigationLabelClassificationPanel({
         </Label>
       </div>
       <p className="mb-16 text-small">
-        Schemat placerar kontrollen här och valda lagrum styr vilka alternativ som visas. Avvikelsetyp och detaljerad
-        typ tillhör fortfarande ärendets SupportManagement-labels och ingår därför inte i utredningens JSON.
+        Schemat placerar kontrollen här och valda lagrum styr vilka väljare som visas, som i ärendet: en för HSL och en
+        gemensam för SoL och LSS. Avvikelsetyp och underkategori tillhör fortfarande ärendets SupportManagement-labels
+        och ingår därför inte i utredningens JSON.
       </p>
       {notice && (
         <div role="status" aria-live="polite">
@@ -56,7 +61,16 @@ export function InvestigationLabelClassificationPanel({
           </Alert>
         </div>
       )}
-      <LabelClassification catalog={catalog} value={value} onChange={onChange} disabled={!canWrite} />
+      {fields.length === 0 ? (
+        <p className="text-small">{avvikelseGroupedClassificationContent.noLegalBases}</p>
+      ) : (
+        <AvvikelseGroupedClassificationFields
+          fields={fields}
+          selections={selections}
+          disabled={!canWrite}
+          onChange={onChange}
+        />
+      )}
       {savedAt && (
         <p className="mt-12 text-small">Labelmock sparad lokalt: {formatInvestigationLabTimestamp(savedAt)}</p>
       )}

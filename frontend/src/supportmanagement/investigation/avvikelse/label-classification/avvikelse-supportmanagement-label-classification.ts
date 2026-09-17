@@ -445,10 +445,16 @@ export interface AvvikelseClassificationGroup {
   readonly legalBases: readonly AvvikelseClassificationGroupLegalBase[];
 }
 
-export interface AvvikelseGroupedClassificationModelGroup {
+/** A group one or more of the chosen legal bases belong to. */
+export interface AvvikelseChosenClassificationGroup {
   readonly group: AvvikelseClassificationGroup;
   /** What the selector is headed by: the group's chosen legal bases, such as SoL, LSS or SoL/LSS. */
   readonly label: string;
+  /** The group's legal bases among the chosen ones, which decide the categories it offers. */
+  readonly legalBases: readonly string[];
+}
+
+export interface AvvikelseGroupedClassificationModelGroup extends AvvikelseChosenClassificationGroup {
   /** The categories the group's chosen legal bases allow. */
   readonly model: AvvikelseLabelClassificationModel;
 }
@@ -484,6 +490,31 @@ export interface AvvikelseGroupedClassificationUpdate {
 
 const normalizeLegalBase = (legalBase: string): string => legalBase.trim().toUpperCase();
 
+/**
+ * The groups the chosen legal bases reach, in the order the groups are configured. Every categorization
+ * of an avvikelse follows this rule, whichever catalog its selectors offer.
+ */
+export const getChosenAvvikelseClassificationGroups = (
+  legalBases: readonly string[],
+  groups: readonly AvvikelseClassificationGroup[]
+): AvvikelseChosenClassificationGroup[] => {
+  const chosenLegalBases = new Set(legalBases.map(normalizeLegalBase));
+  return groups.flatMap((group) => {
+    const groupLegalBases = group.legalBases.filter(({ legalBase }) =>
+      chosenLegalBases.has(normalizeLegalBase(legalBase))
+    );
+    return groupLegalBases.length === 0
+      ? []
+      : [
+          {
+            group,
+            label: groupLegalBases.map(({ label }) => label).join('/'),
+            legalBases: groupLegalBases.map(({ legalBase }) => legalBase),
+          },
+        ];
+  });
+};
+
 export const createAvvikelseGroupedClassificationModel = (
   labelStructure: readonly Label[] | undefined,
   labelTree: AvvikelseClassificationLabelTree | undefined,
@@ -491,32 +522,14 @@ export const createAvvikelseGroupedClassificationModel = (
   legalBaseRules: readonly LabelClassificationLegalBaseRule[],
   groups: readonly AvvikelseClassificationGroup[],
   errandClassificationGroupPriority: readonly string[]
-): AvvikelseGroupedClassificationModel => {
-  const chosenLegalBases = new Set(legalBases.map(normalizeLegalBase));
-  return {
-    groups: groups.flatMap((group) => {
-      const groupLegalBases = group.legalBases.filter(({ legalBase }) =>
-        chosenLegalBases.has(normalizeLegalBase(legalBase))
-      );
-      return groupLegalBases.length === 0
-        ? []
-        : [
-            {
-              group,
-              label: groupLegalBases.map(({ label }) => label).join('/'),
-              model: createAvvikelseLabelClassificationModel(
-                labelStructure,
-                labelTree,
-                groupLegalBases.map(({ legalBase }) => legalBase),
-                legalBaseRules
-              ),
-            },
-          ];
-    }),
-    completeModel: createAvvikelseLabelClassificationModel(labelStructure, labelTree),
-    errandClassificationGroupPriority,
-  };
-};
+): AvvikelseGroupedClassificationModel => ({
+  groups: getChosenAvvikelseClassificationGroups(legalBases, groups).map((chosenGroup) => ({
+    ...chosenGroup,
+    model: createAvvikelseLabelClassificationModel(labelStructure, labelTree, chosenGroup.legalBases, legalBaseRules),
+  })),
+  completeModel: createAvvikelseLabelClassificationModel(labelStructure, labelTree),
+  errandClassificationGroupPriority,
+});
 
 export const getAvvikelseGroupedClassificationSelection = (
   model: AvvikelseGroupedClassificationModel,
@@ -625,11 +638,7 @@ export const getPersistedAvvikelseGroupedClassificationState = (
   );
   if (chosenOutsideGroups) return 'known-disallowed-legal-base';
 
-  const chosenLegalBases = new Set(legalBases.map(normalizeLegalBase));
-  for (const { group, model: groupModel } of model.groups) {
-    const groupLegalBases = group.legalBases
-      .map(({ legalBase }) => legalBase)
-      .filter((legalBase) => chosenLegalBases.has(normalizeLegalBase(legalBase)));
+  for (const { legalBases: groupLegalBases, model: groupModel } of model.groups) {
     const selection = getAvvikelseLabelClassificationSelection(groupModel, labels, classification);
     const binding = groupModel.bindings.find(({ category }) => labelCode(category) === selection.typeCode);
     // The group is judged the way a single classification always was, on the path it has: an errand

@@ -4,8 +4,9 @@ import type { SupportMetadata } from '@supportmanagement/services/support-metada
 import { type FC, useEffect, useMemo, useRef } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
-import { avvikelseClassificationContent } from './avvikelse-classification-content';
+import { avvikelseGroupedClassificationContent } from './avvikelse-classification-content';
 import type { AvvikelseClassificationLabelTree } from './avvikelse-classification-policy';
+import { AvvikelseGroupedClassificationFields } from './avvikelse-grouped-classification-fields.component';
 import {
   applyAvvikelseGroupedClassificationSelection,
   type AvvikelseClassificationGroup,
@@ -13,7 +14,6 @@ import {
   createAvvikelseGroupedClassificationModel,
   getAvvikelseGroupedClassificationSelection,
   getMissingAvvikelseGroupedClassificationChoices,
-  LabelClassification,
   type LabelClassificationLegalBaseRule,
   type LabelClassificationSelection,
 } from './label-classification';
@@ -131,6 +131,13 @@ export const AvvikelseGroupedLabelCategorization: FC<{
   const changeGroup = (groupKey: string, selection: LabelClassificationSelection) =>
     publish(applyAvvikelseGroupedClassificationSelection(model, labels, { ...selections, [groupKey]: selection }));
 
+  const fields = model.groups.map(({ group, label, model: groupModel }) => ({
+    key: group.key,
+    label,
+    catalog: groupModel.catalog,
+    missing: showErrors ? missingChoices.find((choice) => choice.groupKey === group.key)?.missing : undefined,
+  }));
+
   return (
     <section
       className="my-md w-full"
@@ -142,39 +149,18 @@ export const AvvikelseGroupedLabelCategorization: FC<{
           Kategorisering
         </h3>
         <p className="mt-xs">
-          {model.groups.length === 0
-            ? 'Välj lagrum för att kunna kategorisera ärendet.'
-            : 'Välj avvikelsetyp och detaljerad typ för varje valt lagrum.'}
+          {fields.length === 0
+            ? avvikelseGroupedClassificationContent.noLegalBases
+            : avvikelseGroupedClassificationContent.everyLegalBase}
         </p>
       </div>
 
-      <div className="flex flex-col gap-lg">
-        {model.groups.map(({ group, label, model: groupModel }) => {
-          const missing = showErrors
-            ? missingChoices.find((choice) => choice.groupKey === group.key)?.missing
-            : undefined;
-          return (
-            <fieldset
-              key={group.key}
-              className="flex min-w-0 flex-col gap-sm"
-              data-cy={`avvikelse-label-categorization-${group.key}`}
-            >
-              <legend className="mb-sm text-label-large">{label}</legend>
-              <LabelClassification
-                catalog={groupModel.catalog}
-                value={selections[group.key] ?? {}}
-                disabled={disabled}
-                content={avvikelseClassificationContent}
-                errors={{
-                  type: missing === 'type' ? 'Välj avvikelsetyp' : undefined,
-                  subtype: missing === 'subtype' ? 'Välj underkategori' : undefined,
-                }}
-                onChange={(selection) => changeGroup(group.key, selection)}
-              />
-            </fieldset>
-          );
-        })}
-      </div>
+      <AvvikelseGroupedClassificationFields
+        fields={fields}
+        selections={selections}
+        disabled={disabled}
+        onChange={changeGroup}
+      />
     </section>
   );
 };

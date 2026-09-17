@@ -4,6 +4,7 @@ export {
   AVVIKELSE_LABEL_CLASSIFICATION_GROUP,
 } from './avvikelse-label-classification.mock';
 export type {
+  AvvikelseChosenClassificationGroup,
   AvvikelseClassificationGroup,
   AvvikelseGroupClassificationUpdate,
   AvvikelseGroupedClassificationModel,
@@ -23,6 +24,7 @@ export {
   createAvvikelseLabelClassificationModel,
   getAvvikelseGroupedClassificationSelection,
   getAvvikelseLabelClassificationSelection,
+  getChosenAvvikelseClassificationGroups,
   getMissingAvvikelseGroupedClassificationChoices,
   getPersistedAvvikelseGroupedClassificationState,
   getPersistedAvvikelseLabelClassificationState,

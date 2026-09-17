@@ -7,6 +7,7 @@ import {
   applyAvvikelseGroupedClassificationSelection,
   createAvvikelseGroupedClassificationModel,
   getAvvikelseGroupedClassificationSelection,
+  getChosenAvvikelseClassificationGroups,
   getMissingAvvikelseGroupedClassificationChoices,
   getPersistedAvvikelseGroupedClassificationState,
 } from './avvikelse-supportmanagement-label-classification';
@@ -70,6 +71,21 @@ test('offers one selector per group the chosen legal bases reach, SoL and LSS sh
     ['SOL_LSS']
   );
   assert.deepEqual(model([]).groups, []);
+});
+
+test('the chosen groups keep the configured order and name only the legal bases chosen in them', () => {
+  assert.deepEqual(
+    getChosenAvvikelseClassificationGroups([' lss ', 'HSL', 'UNKNOWN'], groups).map(({ group, label, legalBases }) => ({
+      key: group.key,
+      label,
+      legalBases,
+    })),
+    [
+      { key: 'HSL', label: 'HSL', legalBases: ['HSL'] },
+      { key: 'SOL_LSS', label: 'LSS', legalBases: ['LSS'] },
+    ]
+  );
+  assert.deepEqual(getChosenAvvikelseClassificationGroups(['UNKNOWN'], groups), []);
 });
 
 test('heads the SoL/LSS selector by the legal bases chosen in it', () => {
