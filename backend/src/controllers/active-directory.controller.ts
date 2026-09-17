@@ -2,7 +2,7 @@ import authMiddleware from '@middlewares/auth.middleware';
 import { Controller, Get, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { MUNICIPALITY_ID } from '@/config';
+import { ADMIN_GROUP, DOMAIN, MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import ApiService from '@/services/api.service';
@@ -43,7 +43,7 @@ export class ActiveDirectoryController {
       return response.status(200).send({ data: cachedAdmins, message: 'ok' });
     }
 
-    const url = `${apiServiceName('activedirectory')}/${MUNICIPALITY_ID}/groupmembers/${process.env.DOMAIN}/${process.env.ADMIN_GROUP}`;
+    const url = `${apiServiceName('activedirectory')}/${MUNICIPALITY_ID}/groupmembers/${DOMAIN}/${ADMIN_GROUP}`;
     const res = await this.apiService.get<AdUser[]>({ url }, req.user);
     cachedAdmins = res.data.map(u => ({ displayName: u.displayName, name: u.name, guid: u.guid }));
     cacheTimestamp = now;

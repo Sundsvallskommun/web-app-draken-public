@@ -37,7 +37,7 @@ export const MEX_DEPARTMENT_VALUE = 'SBK_MEX';
  * REMOVE this list – and always classify via labels – once the API migration to labels is done for
  * all namespaces.
  */
-export const TWO_LEVEL_CATEGORIZATION_NAMESPACES = ['CONTACTCENTER', 'CONTACTSUNDSVALL', 'ROB'];
+const TWO_LEVEL_CATEGORIZATION_NAMESPACES = ['CONTACTCENTER', 'CONTACTSUNDSVALL', 'ROB'];
 
 const defaultIncludes = (): HandoverInclude => ({
   stakeholders: true,

@@ -1271,5 +1271,3 @@ export const ContractForm: FC<{
     </>
   );
 };
-
-export default ContractForm;

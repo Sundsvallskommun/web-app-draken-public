@@ -28,6 +28,7 @@ import {
   saveContract,
   saveContractToErrand,
 } from '@casedata/services/contract-service';
+import { resolvePartyId } from '@common/services/adress-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { yupResolver } from '@hookform/resolvers/yup';
 import {
@@ -46,7 +47,7 @@ import { Dispatch, FC, SetStateAction, useEffect, useState } from 'react';
 import { FormProvider, Resolver, useForm } from 'react-hook-form';
 import * as yup from 'yup';
 
-import ContractForm from './contract-form';
+import { ContractForm } from './contract-form';
 import { ContractNavigation } from './contract-navigation';
 
 interface CasedataContractProps {
@@ -272,11 +273,12 @@ export const CasedataContractTab: FC<CasedataContractProps> = (props) => {
   };
 
   // Handler to add a new party
-  const handleAddParty = (stakeholderId: string, roles: StakeholderRole[]) => {
+  const handleAddParty = async (stakeholderId: string, roles: StakeholderRole[]) => {
     const stakeholder = errand?.stakeholders?.find((s) => String(s.id) === stakeholderId);
     if (!stakeholder) return;
 
-    const contractStakeholder = errandStakeholderToContractStakeholder(stakeholder, roles);
+    const partyId = await resolvePartyId(stakeholder.personId, stakeholder.organizationNumber);
+    const contractStakeholder = errandStakeholderToContractStakeholder({ ...stakeholder, personId: partyId }, roles);
     const current = (contractForm.getValues('stakeholders') ?? []) as StakeholderWithPersonnumber[];
     const appended = [...current, contractStakeholder];
     updateStakeholders(reconcileParties(appended, appended.length - 1));

@@ -4,7 +4,7 @@ import { MessageNode } from '@casedata/services/casedata-message-service';
 import { CasedataMessageType, isCasedataWebMessageType } from '@casedata/services/casedata-message-types';
 import { getOwnerStakeholder } from '@casedata/services/casedata-stakeholder-service';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
-import sanitized from '@common/services/sanitizer-service';
+import { sanitized } from '@common/services/sanitizer-service';
 import { Button } from '@sk-web-gui/button';
 import { FC, useState } from 'react';
 const MAX_VISIBLE_RECIPIENTS = 2;

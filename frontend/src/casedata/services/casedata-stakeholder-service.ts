@@ -46,7 +46,7 @@ const determineStakeholderType: (data: CasedataOwnerOrContact | Stakeholder) => 
   }
 };
 
-export const makeAdministratorStakeholder: (data: Partial<IErrand>) => CreateStakeholderDto | undefined = (data) => {
+const makeAdministratorStakeholder: (data: Partial<IErrand>) => CreateStakeholderDto | undefined = (data) => {
   // TODO This async handling of administrators - fetching from api and using string matching
   // when registering errand needs to be improved. Hopefully this will be possible when
   // administrator stakeholders are real AD users with all data
@@ -63,7 +63,7 @@ export const makeAdministratorStakeholder: (data: Partial<IErrand>) => CreateSta
     : undefined;
 };
 
-export const makeStakeholder: (data: CasedataOwnerOrContact, role: Role) => CreateStakeholderDto = (data, role) => {
+const makeStakeholder: (data: CasedataOwnerOrContact, role: Role) => CreateStakeholderDto = (data, role) => {
   const phones =
     data.phoneNumbers?.map((p) => ({
       contactType: 'PHONE' as ContactInfoType,
@@ -156,23 +156,6 @@ export const editStakeholder = (municipalityId: string, errandId: string, contac
     });
 };
 
-export const addStakeholder = (municipalityId: string, errandId: string, contact: CasedataOwnerOrContact) => {
-  const stakeholder = makeStakeholder(contact, contact.newRole);
-
-  return apiService
-    .patch<boolean, Partial<CreateStakeholderDto>>(
-      `casedata/${municipalityId}/errands/${errandId}/stakeholders`,
-      stakeholder
-    )
-    .then((res) => {
-      return res;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when creating stakeholder ', stakeholder);
-      throw e;
-    });
-};
-
 export const setAdministrator = async (municipalityId: string, errand: IErrand, admin: Admin) => {
   const stakeholder: CreateStakeholderDto = {
     roles: [Role.ADMINISTRATOR],
@@ -255,14 +238,8 @@ export const stakeholder2Contact: (s: Stakeholder) => CasedataOwnerOrContact = (
   };
 };
 
-export const getFellowApplicants: (e: IErrand) => CasedataOwnerOrContact[] = (e) =>
-  e.stakeholders?.filter((s) => s.roles.includes(Role.FELLOW_APPLICANT)) || [];
-
 export const getOwnerStakeholder: (e: IErrand) => CasedataOwnerOrContact = (e) =>
   e.stakeholders?.filter((s) => s.roles.includes(Role.APPLICANT))?.[0];
-
-export const getStakeholdersByRelation: (e: IErrand, relation: Role) => CasedataOwnerOrContact[] = (e, relation) =>
-  e.stakeholders?.filter((s) => s.roles.includes(relation));
 
 export const getStakeholderRelation: (s: Stakeholder | CasedataOwnerOrContact) => Role | undefined = (s) => {
   const relations = [...Object.keys(MEXRelation), ...Object.keys(PTRelation)];
@@ -275,23 +252,14 @@ export const getStakeholderRelation: (s: Stakeholder | CasedataOwnerOrContact) =
 export const validateOwnerForSendingDecision: (e: IErrand) => boolean = (e) =>
   validateOwnerForSendingDecisionByEmail(e) || validateOwnerForSendingDecisionByLetter(e);
 
-export const validateOwnerForSendingDecisionByEmail: (e: IErrand) => boolean = (e) => {
+const validateOwnerForSendingDecisionByEmail: (e: IErrand) => boolean = (e) => {
   const owner = getOwnerStakeholder(e);
   return owner && owner.emails.length > 0;
 };
 
-export const validateOwnerForSendingDecisionByLetter: (e: IErrand) => boolean = (e) => {
+const validateOwnerForSendingDecisionByLetter: (e: IErrand) => boolean = (e) => {
   const owner = getOwnerStakeholder(e);
   return owner && !!owner.personId;
-};
-
-export const getStakeholderName: (c: CasedataOwnerOrContact) => string = (c) =>
-  c.stakeholderType === 'ORGANIZATION' ? c.organizationName ?? '' : `${c.firstName} ${c.lastName}`;
-
-export const getStakeholderSSN: (c: CasedataOwnerOrContact) => string = (c) => {
-  return c.stakeholderType === 'ORGANIZATION'
-    ? c.organizationNumber ?? ''
-    : c.personalNumber || '(personnummer saknas)';
 };
 
 export const getSSNFromPersonId: (municipalityId: string, personId: string) => Promise<string> = (
