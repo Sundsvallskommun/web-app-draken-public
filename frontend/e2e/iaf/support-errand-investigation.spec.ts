@@ -1850,6 +1850,42 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect(page.locator('[data-cy="new-message-button"]')).toBeEnabled();
   });
 
+  /**
+   * A workflow answers its errands once they have been taken on: while the errand is still in the phase
+   * it was registered in, sending waits and the tab says what for. From the next phase on it is open.
+   */
+  for (const [activePhaseName, waits] of [
+    ['ACTUALIZATION', true],
+    ['REVIEW', false],
+  ] as const) {
+    test(`${waits ? 'väntar med' : 'tillåter'} meddelanden när ärendet ligger i ${activePhaseName}`, async ({
+      page,
+      dismissCookieConsent,
+    }) => {
+      await installIafApiMock(page, {
+        activePhaseName,
+        featureFlags: [
+          { name: 'isSupportManagement', enabled: true },
+          { name: 'useUiPhases', enabled: true },
+          { name: 'useInvestigation', enabled: false },
+        ],
+      });
+
+      await visitErrand(page, dismissCookieConsent);
+      await page.getByRole('tab', { name: /Meddelanden/ }).click();
+
+      if (waits) {
+        await expect(page.locator('[data-cy="new-message-button"]')).toBeDisabled();
+        await expect(page.locator('[data-cy="messages-phase-notice"]')).toHaveText(
+          'Meddelanden kan skickas när ärendet har lämnat fasen Registrerat.'
+        );
+      } else {
+        await expect(page.locator('[data-cy="new-message-button"]')).toBeEnabled();
+        await expect(page.locator('[data-cy="messages-phase-notice"]')).toHaveCount(0);
+      }
+    });
+  }
+
   for (const state of ['active', 'unavailable'] as const) {
     test(`låter ett oklassificerat ärende tas och hanteras när utredningen är ${state}`, async ({
       page,

@@ -5,6 +5,7 @@ import { test } from 'vitest';
 
 import {
   getAvailablePhaseTransitions,
+  getInitialSupportPhaseToLeave,
   getPhaseMainStatus,
   getSelectableSupportStatuses,
   getSupportPhases,
@@ -170,6 +171,42 @@ test('a phase the deployment does not run gates nothing', () => {
 test('a tab naming no phase is never gated', () => {
   assert.equal(hasReachedSupportPhase(undefined, inPhase('received')), true);
   assert.equal(hasReachedSupportPhase('   ', inPhase('received')), true);
+});
+
+// What waits for the first phase to be left - sending messages - waits while the errand is in it, or has
+// not entered the workflow at all, and is let through from the next phase on.
+test('the first phase is still to leave until the errand has moved past it', () => {
+  assert.equal(getInitialSupportPhaseToLeave(inPhase('received'))?.id, 'received');
+  assert.equal(getInitialSupportPhaseToLeave({ metadataPhases: gatePhases, errandPhases: [] })?.id, 'received');
+  assert.equal(
+    getInitialSupportPhaseToLeave({ metadataPhases: gatePhases, errandPhases: [{ phaseId: 'received', ended: '1' }] })
+      ?.id,
+    'received'
+  );
+  assert.equal(getInitialSupportPhaseToLeave(inPhase('investigation')), undefined);
+  assert.equal(getInitialSupportPhaseToLeave(inPhase('closed')), undefined);
+});
+
+test('a namespace without a workflow, or a phase the model no longer describes, waits for nothing', () => {
+  assert.equal(getInitialSupportPhaseToLeave({ metadataPhases: undefined, errandPhases: undefined }), undefined);
+  assert.equal(
+    getInitialSupportPhaseToLeave({ metadataPhases: [], errandPhases: [{ phaseId: 'received' }] }),
+    undefined
+  );
+  assert.equal(getInitialSupportPhaseToLeave(inPhase('retired-and-removed')), undefined);
+});
+
+// The first phase is the first one still in use: a retired phase ahead of it is not what the errand leaves.
+test('a retired phase is not the first phase to leave', () => {
+  const retiredFirst: Phase[] = [{ id: 'old', name: 'OLD', phaseOrder: 0, deprecated: true }, ...gatePhases];
+  assert.equal(
+    getInitialSupportPhaseToLeave({ metadataPhases: retiredFirst, errandPhases: [{ phaseId: 'received' }] })?.id,
+    'received'
+  );
+  assert.equal(
+    getInitialSupportPhaseToLeave({ metadataPhases: retiredFirst, errandPhases: [{ phaseId: 'old' }] })?.id,
+    'received'
+  );
 });
 
 // A retired phase is not one to wait for, but an errand can still be sitting in one, and its order

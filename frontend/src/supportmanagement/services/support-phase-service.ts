@@ -211,6 +211,29 @@ export const hasReachedSupportPhase = (
 };
 
 /**
+ * The workflow's first phase while the errand has yet to move past it, or undefined once it has.
+ *
+ * It answers the same questions `hasReachedSupportPhase` does, the other way round: a namespace that runs
+ * no workflow has no first phase to wait for, an errand that has not entered the workflow has not left
+ * its first phase, and an errand in a phase the model no longer describes is in the workflow and past it.
+ */
+export const getInitialSupportPhaseToLeave = ({
+  metadataPhases,
+  errandPhases,
+}: SupportPhaseContext): Phase | undefined => {
+  const initialPhase = getSupportPhases(metadataPhases)[0];
+  if (!initialPhase) return undefined;
+
+  const activePhaseId = getActiveSupportPhaseId(errandPhases);
+  if (!activePhaseId) return initialPhase;
+
+  const activeOrder = phaseOrder((metadataPhases ?? []).find((phase) => phase.id === activePhaseId));
+  if (activeOrder === undefined) return undefined;
+
+  return activeOrder > (phaseOrder(initialPhase) ?? 0) ? undefined : initialPhase;
+};
+
+/**
  * Whether the errand is in the named phase right now, not merely past it. The phase is named in
  * either of the metadata's vocabularies, as for `hasReachedSupportPhase`. An errand outside the
  * workflow, or in a phase the model does not describe, is in no named phase.

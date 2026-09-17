@@ -34,6 +34,7 @@ import { CirclePause, Mail } from 'lucide-react';
 import { Dispatch, FC, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 
+import { useSupportMessagingPhase } from '../tabs/messages/use-support-messaging-phase';
 import { SupportCloseErrandButtonComponent } from './buttons/support-close-errand-button.component';
 import { SupportForwardErrandButtonComponent } from './buttons/support-forward-errand-button.component';
 import { SupportPhaseProcessButtonComponent } from './buttons/support-phase-process-button.component';
@@ -411,11 +412,14 @@ export const SidebarInfo: FC<{
 
   // Ny is not a reason to keep the handler from writing: `allowed` already says the errand is
   // theirs, and an errand that arrives from an e-service is a real errand from the first minute.
-  // The parked and closed states are locked for every action and stay that way.
+  // The parked and closed states are locked for every action and stay that way. A workflow is the
+  // exception: there messages are sent once the errand has left its first phase.
+  const messagingPhase = useSupportMessagingPhase();
   const messageSidebarIsDisabled =
     !supportErrand ||
     isSupportErrandLocked(supportErrand!) ||
     !allowed ||
+    !!messagingPhase ||
     [Status.SUSPENDED, Status.ASSIGNED, Status.SOLVED].includes(supportErrand.status as Status);
 
   const onError = () => {
