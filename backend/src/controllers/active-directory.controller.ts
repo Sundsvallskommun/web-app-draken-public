@@ -5,15 +5,15 @@ import { OpenAPI } from 'routing-controllers-openapi';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { AssignableHandler, HandlerDirectoryService } from '@/services/handler-directory.service';
 
-export type { AdUser, AssignableHandler } from '@/services/handler-directory.service';
+export type { AdUser } from '@/services/handler-directory.service';
 
-export interface ResponseData<T> {
+interface ResponseData<T> {
   data: T;
   message: string;
 }
 
 /** Presentation metadata for one handler role, in the order the deployment configured it. */
-export interface AssignableHandlerRole {
+interface AssignableHandlerRole {
   key: string;
   label: string;
 }

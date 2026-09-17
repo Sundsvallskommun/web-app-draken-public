@@ -1,11 +1,11 @@
-export type LabelClassificationCode = string;
+type LabelClassificationCode = string;
 
-export interface LabelClassificationOption {
+interface LabelClassificationOption {
   readonly code: LabelClassificationCode;
   readonly displayName: string;
 }
 
-export type LabelClassificationSubtypeOption = LabelClassificationOption;
+type LabelClassificationSubtypeOption = LabelClassificationOption;
 
 export interface LabelClassificationTypeOption extends LabelClassificationOption {
   readonly subtypes: readonly LabelClassificationSubtypeOption[];

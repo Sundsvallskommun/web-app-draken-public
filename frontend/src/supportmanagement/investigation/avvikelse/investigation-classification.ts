@@ -14,7 +14,7 @@ import type { InvestigationDocumentKey, InvestigationFormData } from './investig
 import { normalizeInvestigationFormData } from './investigation-form-data';
 
 export const INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD = 'errandClassification';
-export const INVESTIGATION_CLASSIFICATION_SLOT = `$external:${INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD}`;
+const INVESTIGATION_CLASSIFICATION_SLOT = `$external:${INVESTIGATION_CLASSIFICATION_EXTERNAL_FIELD}`;
 
 interface InvestigationExternalFieldDefinition {
   kind?: unknown;
@@ -113,7 +113,7 @@ export const getInvestigationDocumentApplicability = (
   errand: SupportErrand | undefined
 ): AvvikelseDocumentApplicability | undefined => resolveAvvikelseDocumentApplicability(errand);
 
-export const getInvestigationClassificationOwner = (
+const getInvestigationClassificationOwner = (
   errand: SupportErrand | undefined
 ): InvestigationDocumentKey | undefined => {
   const placement = getAvvikelseClassificationPlacement();

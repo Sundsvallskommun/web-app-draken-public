@@ -716,6 +716,7 @@ export function SupportInvestigationDocument({
       } catch (error) {
         errors.push({
           fieldId: classificationFieldId,
+          ancestorIds: [],
           label: 'Kategorisering',
           message: error instanceof Error ? error.message : 'Kontrollera avvikelsetyp och underkategori.',
         });

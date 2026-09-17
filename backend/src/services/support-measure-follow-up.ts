@@ -5,8 +5,8 @@ import type { Measure } from '@/data-contracts/supportmanagement/data-contracts'
  * `resultText` what happened and `completedAt` when it was followed up. Support Management keeps no
  * catalogue of measure results, so Draken owns the two result values.
  */
-export const MEASURE_RESULT_ACHIEVED = 'ACHIEVED';
-export const MEASURE_RESULT_NOT_ACHIEVED = 'NOT_ACHIEVED';
+const MEASURE_RESULT_ACHIEVED = 'ACHIEVED';
+const MEASURE_RESULT_NOT_ACHIEVED = 'NOT_ACHIEVED';
 
 export interface MeasureFollowUpAnswers {
   readonly result: string;

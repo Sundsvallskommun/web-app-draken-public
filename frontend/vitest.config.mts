@@ -13,6 +13,7 @@ export default defineConfig({
     // Assertions use node:assert/strict and `test` is imported explicitly, so no globals
     // are injected.
     globals: false,
+    maxWorkers: 1,
     include: ['src/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',

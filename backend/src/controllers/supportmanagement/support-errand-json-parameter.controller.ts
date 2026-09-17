@@ -17,7 +17,7 @@ import { SupportInvestigationAccessService } from '@/services/support-investigat
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameter, SupportJsonParameterService } from '@/services/support-json-parameter.service';
 
-export type SupportErrandJsonParameterKey = SupportInvestigationProfileDto['documents'][number]['key'];
+type SupportErrandJsonParameterKey = SupportInvestigationProfileDto['documents'][number]['key'];
 
 export type SupportErrandJsonParameter = SupportJsonParameter<SupportErrandJsonParameterKey>;
 

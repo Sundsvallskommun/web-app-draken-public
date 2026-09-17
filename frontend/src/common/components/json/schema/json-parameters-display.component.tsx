@@ -5,7 +5,7 @@ import SchemaForm from '@common/components/json/schema/schema-form.component';
 import { Alert, Spinner } from '@sk-web-gui/react';
 import { FC } from 'react';
 
-export interface DisplayJsonParameter {
+interface DisplayJsonParameter {
   key: string;
   value?: unknown;
   schemaId: string;
@@ -44,7 +44,13 @@ const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId }
 
   return (
     <div className="mb-16">
-      <SchemaForm schema={schema} uiSchema={uiSchema ?? undefined} formData={param.value} disabled />
+      <SchemaForm
+        schema={schema}
+        uiSchema={uiSchema ?? undefined}
+        formData={param.value}
+        idPrefix={param.key.replace(/[^\w-]/g, '_')}
+        disabled
+      />
     </div>
   );
 };

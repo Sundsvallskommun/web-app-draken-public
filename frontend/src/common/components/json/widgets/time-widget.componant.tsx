@@ -2,6 +2,7 @@
 
 import { ariaDescribedByIds, type WidgetProps } from '@rjsf/utils';
 import { Input } from '@sk-web-gui/react';
+import { useEffect } from 'react';
 
 /**
  * Ett nativt tidsfält lämnar HH:mm, men JSON Schemas `time`-format kräver sekunder. Sekunder läggs
@@ -29,8 +30,14 @@ export function TimeWidget({
   const customClassName = typeof options.className === 'string' ? options.className : 'w-full max-w-[40rem]';
   const requiresSeconds = schema.format === 'time';
 
-  // Validation runs on save (noHtml5Validate); aria-required instead of the required attribute keeps the
-  // theme's :invalid styling off untouched fields, so only reported errors render red.
+  // A stored value without seconds only satisfies the format once it is retyped, so normalize it
+  // on load instead of letting the save fail on an untouched field.
+  useEffect(() => {
+    if (disabled || readonly || typeof value !== 'string' || value === '') return;
+    const normalized = toSchemaValue(value, requiresSeconds);
+    if (normalized !== value) onChange(normalized);
+  }, [disabled, onChange, readonly, requiresSeconds, value]);
+
   return (
     <Input
       id={id}
@@ -41,6 +48,7 @@ export function TimeWidget({
       readOnly={Boolean(readonly)}
       aria-describedby={ariaDescribedByIds(id)}
       aria-invalid={Boolean(rawErrors?.length)}
+      // Required validation runs on save; untouched fields must not receive native :invalid styling.
       aria-required={required}
       onBlur={() => onBlur(id, value)}
       onFocus={() => onFocus(id, value)}

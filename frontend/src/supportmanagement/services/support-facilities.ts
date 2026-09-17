@@ -1,12 +1,7 @@
 import type { Parameter } from '@common/data-contracts/supportmanagement/data-contracts';
 import { saveChangedErrandParameters } from '@supportmanagement/services/support-parameter-service';
 
-export interface supportmanagementFacility {
-  name: string;
-  value: string;
-}
-
-export interface FacilitiesPayload {
+interface FacilitiesPayload {
   propertyDesignations: string[];
   districtnames: string[];
   streets: string[];

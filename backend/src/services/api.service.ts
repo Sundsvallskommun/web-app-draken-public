@@ -15,8 +15,8 @@ export class ApiResponse<T> {
   status?: number;
 }
 
-// Extends AxiosRequestConfig with an opt-in flag. When `propagateClientError` is true, upstream
-// 4xx responses are re-thrown with their original status and message instead of a generic 500.
+// Per-request options for upstream error handling, Location following and concurrency metadata.
+// `propagateClientError` preserves upstream 4xx statuses and messages instead of returning a generic 500.
 export type ApiRequestConfig<D = any> = AxiosRequestConfig<D> & {
   followLocation?: boolean;
   includeResponseHeaders?: boolean;
@@ -113,8 +113,11 @@ class ApiService {
         if (response.headers.location && response.config.url?.includes('asset-drafts')) {
           response.headers.location = response.headers.location.replace('/asset-drafts/', '/assets/');
         }
+        // `followLocation: false` opts a single request out. Unlike `propagateClientError` this
+        // flag is deliberately not stripped from the axios config, so it survives onto
+        // `response.config` and is readable here.
         const followLocation = (response.config as ApiRequestConfig).followLocation !== false;
-        if (response.headers.location && followLocation && !response.config.url?.includes('messaging')) {
+        if (followLocation && response.headers.location && !response.config.url?.includes('messaging')) {
           logger.info(`Response contained location header: ${response.headers.location}`);
           logger.info(`Base URL was: ${response.config.baseURL}`);
           const sentBy = response.config.headers?.['X-Sent-By'];

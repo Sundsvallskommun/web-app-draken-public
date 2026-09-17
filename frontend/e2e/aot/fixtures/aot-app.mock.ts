@@ -23,9 +23,9 @@ import type { Page, Request, Route } from '@playwright/test';
  * them to probe a configuration AOT does not ship.
  */
 
-export const backendOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').origin;
-export const municipalityId = '2281';
-export const errandId = 'f0a1d4c6-9b23-4f18-9c40-2b6e0a7c51de';
+const backendOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').origin;
+const municipalityId = '2281';
+const errandId = 'f0a1d4c6-9b23-4f18-9c40-2b6e0a7c51de';
 export const application = (process.env.NEXT_PUBLIC_APPLICATION ?? 'AOT').trim().toUpperCase();
 export const errandNumber = `${application}-2026-0001`;
 
@@ -94,7 +94,7 @@ const metadata = {
  * with registration enabled. The Utredning tab must appear anyway - it is selected by the capability
  * flag, not by this profile - and a spec pins exactly that.
  */
-export const emptyInvestigationProfile = () => ({
+const emptyInvestigationProfile = () => ({
   application,
   documents: [] as unknown[],
   state: 'inactive',

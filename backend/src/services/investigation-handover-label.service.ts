@@ -14,7 +14,7 @@ import { HttpException } from '@/exceptions/HttpException';
  * path is not a chain of resource names, and reconstructing it from the levels it passes through
  * resolves the wrong node as soon as two branches share a name.
  */
-export const findLabelByResourcePath = (labelStructure: readonly Label[] | undefined, resourcePath: string): Label => {
+const findLabelByResourcePath = (labelStructure: readonly Label[] | undefined, resourcePath: string): Label => {
   const wanted = normalizeSupportManagementResourcePath(resourcePath);
   const matches: Label[] = [];
 
@@ -163,7 +163,7 @@ const resolveErrandMetadataLabels = (currentLabels: Errand['labels'], labelStruc
 };
 
 /** The resource paths an errand's labels stand for, resolved through the metadata tree. */
-export const resolveErrandLabelResourcePaths = (currentLabels: Errand['labels'], labelStructure: readonly Label[] | undefined): string[] =>
+const resolveErrandLabelResourcePaths = (currentLabels: Errand['labels'], labelStructure: readonly Label[] | undefined): string[] =>
   resolveErrandMetadataLabels(currentLabels, labelStructure).map(node => node.resourcePath);
 
 /** Where an errand happened: the path AccessMapper matches on, and the name a handler is shown. */

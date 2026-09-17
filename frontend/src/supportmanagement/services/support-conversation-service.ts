@@ -119,7 +119,7 @@ export const getConversationMessageCountSummary = (
     { total: 0, unread: 0 }
   );
 
-export const createSupportConversation = async (
+const createSupportConversation = async (
   municipalityId: string,
   errandId: string,
   topic: string,

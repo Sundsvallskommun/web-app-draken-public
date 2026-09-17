@@ -12,13 +12,11 @@ import {
  * combination the business process does not have - such as taking the LEX label off without giving
  * the errand back to somebody who can still see it.
  */
-export const INVESTIGATION_HANDOVER_STEPS = ['assign-lex', 'return-to-manager', 'move-location'] as const;
-
-export type InvestigationHandoverStep = (typeof INVESTIGATION_HANDOVER_STEPS)[number];
+export type InvestigationHandoverStep = 'assign-lex' | 'return-to-manager' | 'move-location';
 
 /** The handler role a caller-picked assignee must hold, from HEALTHCAREDEVIATION_HANDLER_ROLES. */
-export const LEX_MANAGER_ROLE_KEY = 'lex-ansvarig';
-export const LEX_INVESTIGATOR_ROLE_KEY = 'lex-utredare';
+const LEX_MANAGER_ROLE_KEY = 'lex-ansvarig';
+const LEX_INVESTIGATOR_ROLE_KEY = 'lex-utredare';
 
 /**
  * While an errand carries the LEX access label it belongs to the LEX roles, and the Ansvarig list

@@ -81,7 +81,7 @@ export const hasSubPlaces = (node: PlaceNode): boolean => (node.label.labels?.le
 export const placeName = (node: PlaceNode): string => labelName(node.label);
 
 /** Föräldern inom platsstrukturen. Roten räknas inte som förälder. */
-export const placeParentName = (node: PlaceNode): string | undefined => {
+const placeParentName = (node: PlaceNode): string | undefined => {
   const parent = node.path.at(-2);
   return parent && !isSameLabel(parent, node.path[0]) ? labelName(parent) : undefined;
 };
@@ -126,7 +126,7 @@ export const findPlaceNode = (
   return withParent.length === 1 ? withParent[0] : undefined;
 };
 
-export const isDescendantOrSelf = (node: PlaceNode, ancestor: PlaceNode): boolean =>
+const isDescendantOrSelf = (node: PlaceNode, ancestor: PlaceNode): boolean =>
   node.path.some((label) => isSameLabel(label, ancestor.label));
 
 /** Finds the first employment whose organisation name resolves unambiguously in the place structure. */
@@ -152,7 +152,7 @@ export const getEmploymentPrefillNode = <TManager>(
   persistedOrgName: string | undefined
 ): PlaceNode | undefined => (persistedOrgName?.trim() ? undefined : employmentMatch?.node);
 
-export const placeKey = (node: PlaceNode): string => node.label.resourcePath ?? node.path.map(labelName).join('/');
+export const placeKey = (node: PlaceNode): string => node.label.resourcePath || node.path.map(labelName).join('/');
 
 export const findPlaceNodeByKey = (nodes: readonly PlaceNode[], key: string): PlaceNode | undefined =>
   nodes.find((node) => placeKey(node) === key);

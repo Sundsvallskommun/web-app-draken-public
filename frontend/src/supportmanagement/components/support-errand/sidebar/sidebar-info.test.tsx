@@ -37,13 +37,22 @@ vi.mock('@common/services/helper-service', () => ({
   hasDirtyFields: (fields: object) => Object.keys(fields).length > 0,
   prettyTime: () => '',
 }));
-vi.mock('@sk-web-gui/react', async () => ({
-  ...(await import('@sk-web-gui/button')),
-  ...(await import('@sk-web-gui/forms')),
-  ...(await import('@sk-web-gui/divider')),
-  ...(await import('@sk-web-gui/label')),
-  useSnackbar: () => mocks.toast,
-}));
+vi.mock('@sk-web-gui/react', async (importOriginal) => {
+  const gui = await importOriginal<typeof import('@sk-web-gui/react')>();
+  return {
+    Button: gui.Button,
+    FormControl: gui.FormControl,
+    FormLabel: gui.FormLabel,
+    FormErrorMessage: gui.FormErrorMessage,
+    Input: gui.Input,
+    Select: gui.Select,
+    Checkbox: gui.Checkbox,
+    RadioButton: gui.RadioButton,
+    Divider: gui.Divider,
+    Label: gui.Label,
+    useSnackbar: () => mocks.toast,
+  };
+});
 vi.mock('@supportmanagement/services/support-errand-service', () => ({
   Status: { NEW: 'NEW', ASSIGNED: 'ASSIGNED', SUSPENDED: 'SUSPENDED', SOLVED: 'SOLVED', REOPENED: 'REOPENED' },
   Resolution: {},

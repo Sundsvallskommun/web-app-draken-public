@@ -4,13 +4,6 @@ import type { ArrayFieldTemplateProps, RJSFSchema } from '@rjsf/utils';
 import { Button, cx } from '@sk-web-gui/react';
 import { ArrowDown, ArrowUp, Copy, Plus, Trash2 } from 'lucide-react';
 
-export interface ArrayObjectFieldTemplateOptions {
-  addButtonLabel?: string;
-  emptyMessage?: string;
-  itemTitle?: string;
-  showItemNumber?: boolean;
-}
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -48,14 +41,13 @@ export function ArrayObjectFieldTemplate(props: ArrayFieldTemplateProps) {
         </legend>
       )}
       {description && <p className="mb-12 text-small text-dark-secondary">{description}</p>}
-
       <div className="flex flex-col gap-16">
         {items.length === 0 && <p className="text-small text-dark-secondary">{emptyMessage}</p>}
 
         {items.map((item) => {
           const itemLocked = Boolean(isLocked || item.disabled || item.readonly);
           const showToolbar = Boolean(
-            item.hasToolbar && (item.hasMoveUp || item.hasMoveDown || item.hasCopy || item.hasRemove)
+            !itemLocked && item.hasToolbar && (item.hasMoveUp || item.hasMoveDown || item.hasCopy || item.hasRemove)
           );
 
           return (
@@ -133,7 +125,7 @@ export function ArrayObjectFieldTemplate(props: ArrayFieldTemplateProps) {
         })}
       </div>
 
-      {canAdd && (
+      {canAdd && !isLocked && (
         <Button
           type="button"
           className="mt-16 h-auto max-w-full whitespace-normal"

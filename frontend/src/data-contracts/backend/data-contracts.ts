@@ -212,11 +212,6 @@ export interface StatusDTO {
   created: string;
 }
 
-export interface ContactInfo {
-  contactType: string;
-  value: string;
-}
-
 export interface CAddressDTO {
   apartmentNumber?: string;
   addressCategory?: any;
@@ -322,9 +317,9 @@ export interface CasedataNotificationDto {
   description: string;
   content?: string;
   expires?: string;
-  acknowledged?: string;
-  globalAcknowledged?: string;
-  errandId: string;
+  acknowledged?: boolean;
+  globalAcknowledged?: boolean;
+  errandId: number;
   errandNumber?: string;
 }
 

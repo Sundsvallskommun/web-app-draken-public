@@ -28,7 +28,7 @@ const normalizeResourcePath = (value: string | undefined): string =>
  * fallback: the id is the identity and the path is looked up from it, never rebuilt by joining the
  * names of the levels it passes through.
  */
-export const resolveErrandLabelResourcePaths = (
+const resolveErrandLabelResourcePaths = (
   labels: Label[] | undefined,
   labelStructure: Label[] | undefined
 ): string[] => {

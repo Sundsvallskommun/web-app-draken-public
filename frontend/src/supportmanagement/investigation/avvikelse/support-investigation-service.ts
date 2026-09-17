@@ -94,7 +94,7 @@ export function isSupportInvestigationAccessDenied(error: unknown): boolean {
   return status === 401 || status === 403;
 }
 
-export interface SupportInvestigationReportEntry {
+interface SupportInvestigationReportEntry {
   readonly generatedAt: string;
   readonly generatedBy: string;
   readonly fileName: string;

@@ -11,7 +11,7 @@ import { readDocumentCompletion } from './support-json-parameter.service';
  * external fields that live on the errand rather than in the document are not part of the report:
  * the report is the investigation document and nothing else, with the errand number for context.
  */
-export interface InvestigationReportField {
+interface InvestigationReportField {
   readonly label: string;
   readonly kind: 'text' | 'html' | 'list' | 'table' | 'group';
   readonly text?: string;
@@ -22,7 +22,7 @@ export interface InvestigationReportField {
   readonly fields?: readonly InvestigationReportField[];
 }
 
-export interface InvestigationReportSection {
+interface InvestigationReportSection {
   readonly title: string;
   readonly fields: readonly InvestigationReportField[];
 }

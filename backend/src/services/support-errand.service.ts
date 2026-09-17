@@ -72,7 +72,7 @@ export enum SupportStakeholderRole {
  * query is interpolated into the SupportManagement filter expression, so that a user cannot
  * break out of the quoted literal.
  */
-export const SAFE_CHARS_REGEX = /[^\p{L}\p{N}\s.\-_,:]/gu;
+const SAFE_CHARS_REGEX = /[^\p{L}\p{N}\s.\-_,:]/gu;
 
 export const sanitizeQuery = (s?: string): string => {
   return (s ?? '').normalize('NFKC').replace(SAFE_CHARS_REGEX, '').replace(/\s+/g, ' ').trim();
@@ -627,7 +627,7 @@ export interface SupportErrandStatusTransitionCommand {
 }
 
 /** One move along the workflow, on the way to the phase that closes an errand. */
-export interface SupportErrandPhaseStep {
+interface SupportErrandPhaseStep {
   activePhaseId: string;
   /** The status the phase requires, when the errand's status at that point is not one it allows. */
   status?: string;

@@ -3,7 +3,7 @@
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import TextEditor from '@common/components/dynamic-text-editor';
 import { deepFlattenToObject } from '@common/services/helper-service';
-import sanitized from '@common/services/sanitizer-service';
+import { sanitized } from '@common/services/sanitizer-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';

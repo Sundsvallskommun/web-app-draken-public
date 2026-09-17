@@ -22,7 +22,7 @@ import { assertSupportErrandWritable, getErrandVersion } from './support-errand.
  * The application profile injects this definition. The json-parameter service never
  * needs to know which application, role or concrete document it belongs to.
  */
-export interface JsonParameterDefinition<TKey extends string = string, TSchemaName extends string = string> {
+interface JsonParameterDefinition<TKey extends string = string, TSchemaName extends string = string> {
   readonly key: TKey;
   readonly schemaName: TSchemaName;
 }
@@ -267,7 +267,7 @@ const resolveWritePrecondition = (
   return { mode: 'create', headers: { 'If-Match': CREATE_ONLY_UPSTREAM_ETAG } };
 };
 
-export interface ServerStampContext {
+interface ServerStampContext {
   /** The document as Support Management holds it before this write, if it exists. */
   readonly existingValue: JsonObject | undefined;
   readonly now: Date;
@@ -331,7 +331,7 @@ const withoutProperties = (value: JsonObject, names: ReadonlySet<string>): JsonO
  * A locked document accepts exactly one write from a client: the unlock, which sets the completion
  * field to `no` and leaves every other user-editable property as stored.
  */
-export const assertLockedDocumentWrite = (schema: JsonSchema, existingValue: JsonObject | undefined, value: JsonObject): void => {
+const assertLockedDocumentWrite = (schema: JsonSchema, existingValue: JsonObject | undefined, value: JsonObject): void => {
   const completion = readDocumentCompletion(schema);
   if (!completion || !existingValue || existingValue[completion.field] !== 'yes') return;
   const reports = existingValue[completion.reportsField];
@@ -360,7 +360,7 @@ export const assertLockedDocumentWrite = (schema: JsonSchema, existingValue: Jso
  * - `x-draken-server-owned: true` names a value only the BFF writes, kept from the stored document
  *   unless the BFF's own caller overrides it.
  */
-export const applyServerStamps = (schema: JsonSchema, value: JsonObject, context: ServerStampContext): JsonObject => {
+const applyServerStamps = (schema: JsonSchema, value: JsonObject, context: ServerStampContext): JsonObject => {
   const properties = isRecord(schema.value) && isRecord(schema.value.properties) ? schema.value.properties : {};
   const timestamp = context.now.toISOString();
   const stamped: Record<string, JsonValue> = { ...value };

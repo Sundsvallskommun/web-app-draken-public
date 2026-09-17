@@ -23,7 +23,7 @@ import { MEASURE_ACTION_PLAN_TEMPLATE } from '@/services/measure-action-plan.tem
 import { assertSupportErrandWritable } from '@/services/support-errand.service';
 import { attachPdfToSupportErrand, renderPdfWithTemplating } from '@/services/support-pdf-attachment.service';
 
-export interface CreatedMeasureActionPlan {
+interface CreatedMeasureActionPlan {
   readonly fileName: string;
   readonly attachmentId?: string;
 }

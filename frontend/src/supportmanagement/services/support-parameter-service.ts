@@ -4,7 +4,7 @@ import { SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 
 import { toStrongSupportErrandETag } from './support-errand-write-version';
 
-export interface ParametersObject {
+interface ParametersObject {
   RECRUITMENT?: Parameter[];
 }
 
@@ -157,7 +157,7 @@ export const saveParameters = (
  * One parameter write. `version` is the version the client loaded; leaving it out creates the
  * parameter.
  */
-export interface ErrandParameterWrite {
+interface ErrandParameterWrite {
   key: string;
   values: string[];
   displayName?: string;
@@ -172,7 +172,7 @@ export interface ErrandParameterWrite {
  * A concurrent edit to some other part of the errand neither fails this write nor is overwritten by
  * it - which is what sending the whole parameter array used to do.
  */
-export const saveErrandParameter = (
+const saveErrandParameter = (
   municipalityId: string,
   errandId: string,
   write: ErrandParameterWrite

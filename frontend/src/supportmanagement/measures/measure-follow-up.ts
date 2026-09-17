@@ -11,7 +11,7 @@ export interface MeasureFollowUpInput {
  * The result a follow-up saves on a measure that had the desired effect; the BFF saves `NOT_ACHIEVED` otherwise.
  * What happened is saved in `resultText`.
  */
-export const MEASURE_RESULT_ACHIEVED = 'ACHIEVED';
+const MEASURE_RESULT_ACHIEVED = 'ACHIEVED';
 
 /** The answers saved on a followed-up measure, or undefined while it has not been followed up. */
 export const measureFollowUp = (measure: Pick<Measure, 'result' | 'resultText'>): MeasureFollowUpInput | undefined =>

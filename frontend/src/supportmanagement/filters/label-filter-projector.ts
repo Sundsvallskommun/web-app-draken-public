@@ -11,7 +11,7 @@ export interface LabelFilterMetadataNode {
   readonly labels?: readonly LabelFilterMetadataNode[];
 }
 
-export interface LabelFilterFieldDefinition {
+interface LabelFilterFieldDefinition {
   readonly key: string;
   readonly label: string;
   readonly classification: string;
@@ -24,7 +24,7 @@ export interface LabelFilterGroupDefinition {
   readonly fields: readonly LabelFilterFieldDefinition[];
 }
 
-export interface LabelFilterChoiceAncestor {
+interface LabelFilterChoiceAncestor {
   readonly groupKey: string;
   readonly fieldKey: string;
   readonly resourcePath: string;
@@ -45,7 +45,7 @@ export interface LabelFilterChoice {
 
 export type LabelFilterSelection = Pick<LabelFilterChoice, 'groupKey' | 'fieldKey' | 'resourcePath'>;
 
-export interface LabelFilterFieldProjection {
+interface LabelFilterFieldProjection {
   readonly key: string;
   readonly label: string;
   readonly classification: string;

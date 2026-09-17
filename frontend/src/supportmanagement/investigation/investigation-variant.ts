@@ -40,7 +40,7 @@ export interface InvestigationPhaseEntryRequirementProps {
  * change is held and `render` is shown instead, so the handler can deal with it or leave the errand
  * where it is. Shared code only asks; what the requirement is stays the variant's.
  */
-export interface InvestigationPhaseEntryRequirement {
+interface InvestigationPhaseEntryRequirement {
   /** The workflow phase whose entry the requirement guards. */
   readonly phaseName: string;
   /**
@@ -65,7 +65,7 @@ export interface InvestigationDetailsHeaderProps {
  * for the errands the variant says it does: the variant decides from the errand and the runtime
  * profile, shared code only asks. A variant with no decision omits the slot and gets no tab.
  */
-export interface InvestigationDecisionTabSlot {
+interface InvestigationDecisionTabSlot {
   /** Label for the errand tab. */
   readonly label: string;
   /**

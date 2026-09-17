@@ -9,7 +9,7 @@ interface ErrandLabelReference {
 }
 
 /** One classification of the errand: the category path chosen in one legal base group. */
-export interface SupportInvestigationClassificationSelection {
+interface SupportInvestigationClassificationSelection {
   classification: {
     category: string;
     type: string;

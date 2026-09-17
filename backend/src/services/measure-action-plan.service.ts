@@ -8,7 +8,7 @@ import { EMPTY_VALUE } from './investigation-report.service';
  * namespace metadata (type and registration role) and from the handler directory (people); a
  * value nothing resolves is shown as it is stored rather than dropped.
  */
-export interface MeasureActionPlanEntry {
+interface MeasureActionPlanEntry {
   readonly number: number;
   readonly type: string;
   /** Genomförd, Planerad or Ej tidsatt - the same wording as the tab's status badge. */
@@ -29,7 +29,7 @@ export interface MeasureActionPlanEntry {
   readonly created: string;
 }
 
-export interface MeasureActionPlanCounts {
+interface MeasureActionPlanCounts {
   readonly total: number;
   readonly executed: number;
   readonly planned: number;
@@ -63,7 +63,7 @@ export interface BuildMeasureActionPlanModelInput {
   readonly displayName?: (username: string) => string | undefined;
 }
 
-export const ACTION_PLAN_TITLE = 'Handlingsplan';
+const ACTION_PLAN_TITLE = 'Handlingsplan';
 
 const STOCKHOLM_DATE = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Stockholm', year: 'numeric', month: '2-digit', day: '2-digit' });
 

@@ -89,7 +89,7 @@ const findTypeLabels = (labels: readonly Label[] | undefined, labelTree: Avvikel
   return sortLabels(typeLabels);
 };
 
-export interface AvvikelseLabelClassificationBinding {
+interface AvvikelseLabelClassificationBinding {
   readonly owner?: Label;
   readonly category: Label;
   readonly types: readonly Label[];
@@ -434,7 +434,7 @@ export const applyAvvikelseLabelClassificationSelection = (
 };
 
 /** A legal base of a group, with the name its selector is headed by. */
-export interface AvvikelseClassificationGroupLegalBase {
+interface AvvikelseClassificationGroupLegalBase {
   readonly legalBase: string;
   readonly label: string;
 }
@@ -445,7 +445,7 @@ export interface AvvikelseClassificationGroup {
   readonly legalBases: readonly AvvikelseClassificationGroupLegalBase[];
 }
 
-export interface AvvikelseGroupedClassificationModelGroup {
+interface AvvikelseGroupedClassificationModelGroup {
   readonly group: AvvikelseClassificationGroup;
   /** What the selector is headed by: the group's chosen legal bases, such as SoL, LSS or SoL/LSS. */
   readonly label: string;
@@ -468,7 +468,7 @@ export interface AvvikelseGroupedClassificationModel {
 
 export type AvvikelseGroupedClassificationSelection = Readonly<Record<string, LabelClassificationSelection>>;
 
-export interface AvvikelseGroupClassificationUpdate extends AvvikelseLabelClassificationUpdate {
+interface AvvikelseGroupClassificationUpdate extends AvvikelseLabelClassificationUpdate {
   readonly groupKey: string;
   readonly groupLabel: string;
 }

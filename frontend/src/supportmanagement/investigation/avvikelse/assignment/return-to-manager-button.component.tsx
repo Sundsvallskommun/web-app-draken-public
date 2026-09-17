@@ -122,7 +122,7 @@ export const ReturnToManagerButton: FC<ReturnToManagerButtonProps> = ({
 };
 
 /** Shown when the errand is not in a state where it can be returned, so the reason is visible. */
-export const ReturnToManagerUnavailable: FC<{ message: string }> = ({ message }) => (
+const ReturnToManagerUnavailable: FC<{ message: string }> = ({ message }) => (
   <Alert type="info" className="mb-24">
     <Alert.Icon />
     <Alert.Content>

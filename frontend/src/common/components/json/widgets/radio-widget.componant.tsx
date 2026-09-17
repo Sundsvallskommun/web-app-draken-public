@@ -19,6 +19,8 @@ export function RadiobuttonWidget({
 }: WidgetProps) {
   const enumOptions = (options?.enumOptions as { value: any; label: string }[]) ?? [];
   const customClassName = (options as any)?.className || 'w-full max-w-[40rem]';
+  // FieldTemplate also hides the label on ui:options.hideLabel, which RJSF's hideLabel does not cover.
+  const labelHidden = Boolean(hideLabel || options.hideLabel);
 
   return (
     <FormControl className={`${customClassName} min-w-0 max-w-full`} invalid={Boolean(rawErrors?.length)}>
@@ -26,8 +28,8 @@ export function RadiobuttonWidget({
         className="flex min-w-0 max-w-full flex-wrap gap-12"
         id={id}
         role="radiogroup"
-        aria-label={hideLabel ? label : undefined}
-        aria-labelledby={hideLabel ? undefined : titleId(id)}
+        aria-label={labelHidden ? label : undefined}
+        aria-labelledby={labelHidden ? undefined : titleId(id)}
         aria-describedby={ariaDescribedByIds(id)}
         aria-invalid={Boolean(rawErrors?.length)}
         aria-required={required}

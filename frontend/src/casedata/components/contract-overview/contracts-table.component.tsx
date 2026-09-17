@@ -81,7 +81,7 @@ const formatPeriod = (start?: string, end?: string): ReactNode => {
   return '-';
 };
 
-export const contractTableLabels = [
+const contractTableLabels = [
   { label: 'Status', sortable: true, column: 'status' },
   { label: 'Fastighetsbeteckning', sortable: true, column: 'propertyDesignations.name' },
   { label: 'Distrikt', sortable: true, column: 'propertyDesignations.district' },

@@ -7,6 +7,12 @@ type FormatParams = { format: string };
 
 export interface SchemaFormError {
   fieldId: string;
+  /**
+   * Ids of the objects and lists enclosing the field, outermost first; empty for a field at the
+   * root or outside the schema. An id alone cannot tell nesting apart from a name that happens
+   * to contain the separator: `risk.level` and `risk_level` both become `root_risk_level`.
+   */
+  ancestorIds: readonly string[];
   label: string;
   message: string;
 }
@@ -18,10 +24,21 @@ function getFieldPath(property: string): string[] {
     .filter(Boolean);
 }
 
+// Only "#/..." pointers resolve here. Any other reference, such as a draft 2020-12 $anchor,
+// keeps the raw key as its label rather than aborting the whole validation with an exception.
+function withResolvedRef(node: RJSFSchema, rootSchema: RJSFSchema): RJSFSchema {
+  if (!node.$ref) return node;
+  try {
+    return { ...findSchemaDefinition(node.$ref, rootSchema), ...node };
+  } catch {
+    return node;
+  }
+}
+
 function getFieldLabels(schema: RJSFSchema, path: string[]): string[] {
   let current: RJSFSchema | undefined = schema;
   return path.map((part) => {
-    if (current?.$ref) current = { ...findSchemaDefinition(current.$ref, schema), ...current };
+    if (current) current = withResolvedRef(current, schema);
     if (/^\d+$/.test(part)) {
       const item = Array.isArray(current?.items) ? current.items[Number(part)] : current?.items;
       current = typeof item === 'object' ? item : undefined;
@@ -29,7 +46,7 @@ function getFieldLabels(schema: RJSFSchema, path: string[]): string[] {
     }
     const field = current?.properties?.[part];
     current = typeof field === 'object' ? field : undefined;
-    if (current?.$ref) current = { ...findSchemaDefinition(current.$ref, schema), ...current };
+    if (current) current = withResolvedRef(current, schema);
     return current?.title ?? part;
   });
 }
@@ -44,8 +61,10 @@ export function getSchemaFormErrors(
     // AJV also reports the failed conditional branch; the concrete field errors explain what to fix.
     if (error.name === 'if' && errors.some((candidate) => candidate.name !== 'if')) continue;
     const path = getFieldPath(error.property ?? '');
+    const pathIds = path.map((_, depth) => [idPrefix, ...path.slice(0, depth + 1)].join('_'));
     const entry = {
-      fieldId: [idPrefix, ...path].join('_'),
+      fieldId: pathIds.at(-1) ?? idPrefix,
+      ancestorIds: pathIds.slice(0, -1),
       label: getFieldLabels(schema, path).join(' – ') || schema.title || 'Formuläret',
       message: error.message ?? 'Kontrollera uppgifterna.',
     };

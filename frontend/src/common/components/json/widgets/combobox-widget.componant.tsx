@@ -16,7 +16,11 @@ export function ComboboxWidget(props: WidgetProps) {
     schema = {},
     rawErrors,
     required,
+    label,
+    hideLabel,
   } = props;
+  // FieldTemplate also hides the label on ui:options.hideLabel, which RJSF's hideLabel does not cover.
+  const labelHidden = Boolean(hideLabel || (options as any).hideLabel);
 
   const multiple =
     (options as any).multiple ?? (schema && typeof schema === 'object' && (schema as any).type === 'array');
@@ -65,13 +69,14 @@ export function ComboboxWidget(props: WidgetProps) {
       className={`${customClassName} min-w-0 max-w-full`}
       multiple={!!multiple}
       value={currentValue}
-      aria-labelledby={titleId(id)}
       aria-describedby={ariaDescribedByIds(id)}
       onChange={handleChange}
     >
       <Combobox.Input
         placeholder={placeholder}
         className="w-full min-w-0 max-w-full"
+        aria-label={labelHidden ? label : undefined}
+        aria-labelledby={labelHidden ? undefined : titleId(id)}
         aria-describedby={ariaDescribedByIds(id)}
         aria-invalid={Boolean(rawErrors?.length)}
         required={required}

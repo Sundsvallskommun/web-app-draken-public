@@ -10,12 +10,6 @@ interface CheckboxOption {
   value: CheckboxValue;
 }
 
-export interface CheckboxGroupWidgetOptions {
-  className?: string;
-  direction?: 'row' | 'column';
-  inline?: boolean;
-}
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -62,6 +56,8 @@ export function CheckboxGroupWidget({
   const hasReachedMaximum = typeof schema.maxItems === 'number' && selectedValues.length >= schema.maxItems;
   const direction = getDirection(options.direction, options.inline);
   const className = typeof options.className === 'string' ? options.className : 'w-full max-w-[48rem]';
+  // FieldTemplate also hides the label on ui:options.hideLabel, which RJSF's hideLabel does not cover.
+  const labelHidden = Boolean(hideLabel || options.hideLabel);
 
   const handleChange = (optionKeys: Array<string | number | readonly string[] | undefined>) => {
     const selectedKeys = new Set(optionKeys.map(String));
@@ -73,8 +69,8 @@ export function CheckboxGroupWidget({
       <fieldset
         id={`${id}-group`}
         className="m-0 min-w-0 border-0 p-0"
-        aria-label={hideLabel ? label : undefined}
-        aria-labelledby={hideLabel ? undefined : titleId(id)}
+        aria-label={labelHidden ? label : undefined}
+        aria-labelledby={labelHidden ? undefined : titleId(id)}
         aria-describedby={ariaDescribedByIds(id)}
       >
         <Checkbox.Group name={id} value={selectedOptionKeys} direction={direction} onChange={handleChange}>

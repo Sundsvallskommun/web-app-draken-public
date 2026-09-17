@@ -47,6 +47,8 @@ const emptyDrafts: DraftsBySchema = {
   'utredning-enhetschef': {},
   'utredning-sol-lss': {},
   'utredning-hsl': {},
+  'beslut-hsl': {},
+  'beslut-sol-lss': {},
 };
 
 const defaultLabelClassification: LabelClassificationSelection = {

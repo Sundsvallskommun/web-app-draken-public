@@ -15,7 +15,7 @@ import { normalizeSupportManagementResourcePath } from './supportmanagement-path
  * business rule, and a deployment that could rename it could silently strand an errand where no
  * role can reach it.
  */
-export const INVESTIGATION_ACCESS_LABEL_ROOT = 'ACCESS';
+const INVESTIGATION_ACCESS_LABEL_ROOT = 'ACCESS';
 
 /** Set when a unit manager assesses an avvikelse as a suspected misconduct and hands it to LEX. */
 export const INVESTIGATION_ACCESS_LEX_LABEL = 'ACCESS/LEX';
@@ -61,14 +61,13 @@ export const isInvestigationHandoverLabelPath = (resourcePath: string): boolean 
  * not something AccessMapper's patterns are written against. Matching on the path prefix instead
  * would accept those ancestors and resolve a manager for a whole department.
  */
-export const INVESTIGATION_LOCATION_LABEL_CLASSIFICATION = 'LOCATION';
+const INVESTIGATION_LOCATION_LABEL_CLASSIFICATION = 'LOCATION';
 
 /**
  * Normalizes a label classification for comparison, matching how Support Management classifications
  * are compared elsewhere in the BFF: case and the `_`/`-` spelling are presentation, not identity.
  */
-export const normalizeLabelClassification = (classification: string | undefined): string =>
-  (classification ?? '').trim().replaceAll('_', '-').toUpperCase();
+const normalizeLabelClassification = (classification: string | undefined): string => (classification ?? '').trim().replaceAll('_', '-').toUpperCase();
 
 const LOCATION_LABEL_CLASSIFICATION = normalizeLabelClassification(INVESTIGATION_LOCATION_LABEL_CLASSIFICATION);
 

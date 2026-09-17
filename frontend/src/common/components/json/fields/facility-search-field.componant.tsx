@@ -19,9 +19,10 @@ import {
   type PlaceNode,
 } from '@common/components/json/utils/place-structure';
 import { getUserEmployments, OrgManagerDTO } from '@common/services/employee-service';
+import { appConfig } from '@config/appconfig';
 import { ariaDescribedByIds, type FieldProps } from '@rjsf/utils';
 import { Button, Combobox, FormControl, FormLabel, RadioButton } from '@sk-web-gui/react';
-import { useMetadataStore } from '@stores/index';
+import { useMetadataStore } from '@stores/metadata-store';
 import { Pen } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -53,6 +54,19 @@ export function FacilitySearchField(props: FieldProps) {
 
   const facilityInfo = formData as FacilityInfo | undefined;
   const { orgName, parentOrgName } = facilityInfo ?? {};
+  const latestFacilityInfoRef = useRef(facilityInfo);
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    latestFacilityInfoRef.current = facilityInfo;
+  }, [facilityInfo]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Platsvalet styrs av labelstrukturen, inte av organisationsträdet: strukturen är det som
   // rättighetsstyr ärendet i Support Management, och den är också det enda som kan avgöra vilket av de
@@ -126,14 +140,19 @@ export function FacilitySearchField(props: FieldProps) {
     const loadEmploymentMatch = async () => {
       try {
         const employments = await getUserEmployments();
-        const match = findPlaceEmploymentMatch<OrgManagerDTO>(placeNodes, employments, selectedNode);
+        if (!mountedRef.current) return;
+        const currentFacility = latestFacilityInfoRef.current;
+        const currentNode = findPlaceNode(placeNodes, currentFacility?.orgName, currentFacility?.parentOrgName);
+        const match = findPlaceEmploymentMatch<OrgManagerDTO>(placeNodes, employments, currentNode);
         if (!match) return;
 
         // Load the match even for persisted facilities. A later place change can then retain the
         // manager for a node in the employment branch without replacing the saved selection now.
         employmentMatchRef.current = match;
-        const prefillNode = getEmploymentPrefillNode(match, orgName);
-        if (prefillNode) selectPlace(prefillNode);
+        // A node with sub-places is not a complete place, so it is never written to the form for the
+        // user; the match is still kept so a chosen department inherits the employment metadata.
+        const prefillNode = getEmploymentPrefillNode(match, currentFacility?.orgName);
+        if (prefillNode && !hasSubPlaces(prefillNode)) selectPlace(prefillNode);
       } catch (error) {
         console.error('Failed to load employments:', error);
       }
@@ -159,7 +178,9 @@ export function FacilitySearchField(props: FieldProps) {
 
   const sectionTitle = <h2 className="text-xl font-bold mb-6">Mer information om platsen</h2>;
 
-  if (!supportMetadata) {
+  // The place structure is part of Support Management's metadata, which is only ever loaded in that
+  // domain. Elsewhere there is nothing to wait for, so the field reports the structure as unavailable.
+  if (!supportMetadata && appConfig.isSupportManagement && !selectedPlacePresentation) {
     return (
       <div className={className}>
         {sectionTitle}
@@ -168,12 +189,12 @@ export function FacilitySearchField(props: FieldProps) {
     );
   }
 
-  if (placeNodes.length === 0) {
+  if (placeNodes.length === 0 && !selectedPlacePresentation) {
     return (
       <div className={className}>
         {sectionTitle}
-        <p className="text-error" data-cy="facility-structure-missing">
-          Platsstrukturen kunde inte laddas. Ladda om sidan eller kontakta administratör.
+        <p className="text-text-secondary" data-cy="facility-structure-missing">
+          Platsstrukturen är inte tillgänglig i den här applikationen.
         </p>
       </div>
     );
@@ -261,7 +282,7 @@ export function FacilitySearchField(props: FieldProps) {
                 )}
               </div>
 
-              {showSubPlaceChoice && subPlaceParentNode && selectedNode ? (
+              {isEditable && showSubPlaceChoice && subPlaceParentNode && selectedNode ? (
                 <FormControl disabled={!isEditable} required={mustChooseSubPlace} className="w-full">
                   <FormLabel id={subPlaceLabelId} className="font-bold">
                     Välj enhet inom {placeName(subPlaceParentNode)}
@@ -289,7 +310,12 @@ export function FacilitySearchField(props: FieldProps) {
                       onChange={(e: { target: { value: unknown } }) => handleSelectPlace(String(e.target.value))}
                       data-cy="facility-sub-place-options"
                     >
-                      <Combobox.Input placeholder="Sök plats" className="w-full" />
+                      <Combobox.Input
+                        id={`${id}__sub-place`}
+                        placeholder="Sök plats"
+                        className="w-full"
+                        aria-labelledby={subPlaceLabelId}
+                      />
                       <Combobox.List style={{ maxHeight: '32rem' }}>
                         {subPlaceNodes.map((node) => (
                           <Combobox.Option
@@ -311,7 +337,7 @@ export function FacilitySearchField(props: FieldProps) {
                 </FormControl>
               ) : null}
 
-              {isEditable && (
+              {isEditable && placeNodes.length > 0 && (
                 <div className="flex flex-wrap border-t-1 border-divider pt-12">
                   <Button
                     type="button"

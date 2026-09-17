@@ -5,7 +5,7 @@ import type { CErrandAction } from 'src/data-contracts/backend/data-contracts';
  * The action Support Management schedules to move a reported misconduct to LEX on its own. The status
  * label recognises the same action by the same name.
  */
-export const LEX_TRANSFER_ACTION_NAME = 'ADD_LABEL';
+const LEX_TRANSFER_ACTION_NAME = 'ADD_LABEL';
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;

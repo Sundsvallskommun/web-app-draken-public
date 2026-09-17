@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrayObjectFieldTemplate } from '@common/components/json/fields/array-object-field-template.componant';
 import { FacilitySearchField } from '@common/components/json/fields/facility-search-field.componant';
 import { FieldTemplate } from '@common/components/json/fields/field-template.componant';
 import { SectionsObjectFieldTemplate } from '@common/components/json/fields/sections-object-field-template.componant';
@@ -143,6 +144,7 @@ export default function SchemaForm({
   );
 
   const templates: NonNullable<FormProps['templates']> = {
+    ArrayFieldTemplate: ArrayObjectFieldTemplate,
     FieldTemplate,
     ObjectFieldTemplate: SectionsObjectFieldTemplate,
     ButtonTemplates: { SubmitButton: SubmitButtonFieldTemplate },
@@ -177,26 +179,25 @@ export default function SchemaForm({
     experimental_defaultFormStateBehavior: defaultFormStateBehavior,
   };
 
-  if (extraContent) {
-    return (
-      <div ref={containerRef} className="w-full min-w-0 max-w-full">
-        {validationErrors && <SchemaFormErrorSummary errors={validationErrors} onNavigate={setErrorNavigation} />}
-        <Form {...formProps} templates={{ ...templates, ButtonTemplates: { SubmitButton: () => null } }}>
-          {extraContent}
-          <SchemaSubmitButton options={submitButtonOptions} actions={submitButtonActions} />
-        </Form>
-      </div>
-    );
-  }
-
   const formWithoutSubmit = disabled || readonly;
   return (
     <div ref={containerRef} className="w-full min-w-0 max-w-full">
       {validationErrors && <SchemaFormErrorSummary errors={validationErrors} onNavigate={setErrorNavigation} />}
       <Form
         {...formProps}
-        templates={formWithoutSubmit ? { ...templates, ButtonTemplates: { SubmitButton: () => null } } : templates}
-      />
+        templates={
+          formWithoutSubmit || extraContent
+            ? { ...templates, ButtonTemplates: { SubmitButton: () => null } }
+            : templates
+        }
+      >
+        {extraContent ? (
+          <>
+            {extraContent}
+            {!formWithoutSubmit && <SchemaSubmitButton options={submitButtonOptions} actions={submitButtonActions} />}
+          </>
+        ) : undefined}
+      </Form>
       {/* The form renders no submit button when it is read-only, but the actions beside it are not
           about saving and must stay reachable - a finished, locked document is handed on from here. */}
       {formWithoutSubmit && submitButtonActions && (

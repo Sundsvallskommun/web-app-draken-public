@@ -1,4 +1,4 @@
-export type SupportErrandFilterValue = string | boolean | number;
+type SupportErrandFilterValue = string | boolean | number;
 export type SupportErrandFilterQuery = Readonly<Record<string, SupportErrandFilterValue>>;
 export type SupportErrandSortQuery = Readonly<Record<string, 'asc' | 'desc'>>;
 

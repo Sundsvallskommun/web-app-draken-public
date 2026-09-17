@@ -5,6 +5,8 @@ import type { SchemaFormError } from '../utils/schema-form-error-handling';
 
 export interface SchemaErrorNavigation {
   fieldId: string;
+  /** Ids of the fields enclosing the target, outermost first, so a section can tell whether it holds it. */
+  ancestorIds: readonly string[];
 }
 
 export function SchemaFormErrorSummary({
@@ -14,11 +16,14 @@ export function SchemaFormErrorSummary({
   const headingId = useId();
   const summaryRef = useRef<HTMLDivElement>(null);
 
+  // Callers may derive the list during render; focus only when its content changes, not its identity.
+  const errorSignature = errors.map((error) => `${error.fieldId}\n${error.message}`).join('\n\n');
+
   useEffect(() => {
-    if (errors.length === 0) return;
+    if (!errorSignature) return;
     summaryRef.current?.focus({ preventScroll: true });
     summaryRef.current?.scrollIntoView({ block: 'start' });
-  }, [errors]);
+  }, [errorSignature]);
 
   if (errors.length === 0) return null;
 
@@ -46,7 +51,7 @@ export function SchemaFormErrorSummary({
                   className="underline"
                   onClick={(event) => {
                     event.preventDefault();
-                    onNavigate({ fieldId: error.fieldId });
+                    onNavigate({ fieldId: error.fieldId, ancestorIds: error.ancestorIds });
                   }}
                 >
                   {error.label}: {error.message}

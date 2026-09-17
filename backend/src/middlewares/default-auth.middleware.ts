@@ -19,7 +19,7 @@ import { isPublicPath } from '@/config/public-paths';
  * Authorization stays where it is: `hasPermissions`/`hasRoles` remain per route, since
  * this guard only answers "is there a logged-in user", not "may they do this".
  */
-export const defaultAuthGuard = (req: Request, res: Response, next: NextFunction) => {
+const defaultAuthGuard = (req: Request, res: Response, next: NextFunction) => {
   // CORS preflight carries no cookies, so authenticating it would 401 the preflight and
   // break the real request that follows.
   if (req.method === 'OPTIONS') {

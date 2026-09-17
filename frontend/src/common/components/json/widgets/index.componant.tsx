@@ -13,7 +13,7 @@ import { TimeWidget } from './time-widget.componant';
 
 /**
  * The canonical name of a widget is its PascalCase component name. A ui-schema authored
- * in this repo should use those, and only those — see `investigation/schemas/*.ui-schema-request.json`.
+ * in this repo should use those names.
  *
  * CAUTION: `TextareaWidget` does not render a `<textarea>`. It renders the Quill editor and
  * stores HTML markup, and it also occupies RJSF's reserved `textarea` name below, so any schema
@@ -44,12 +44,7 @@ const baseWidgets = {
  *    HTML control, so these must stay.
  *
  * 2. Spelling tolerance for ui-schemas that arrive from the external JSON schema service, whose
- *    naming we do not control: `RadioWidget`, `text`, `radiobutton`, `checkboxGroup`,
- *    `checkbox-group`, `combobox`, `texteditor`.
- *
- * `checkboxGroup` and `checkbox-group` currently have no consumer in this repo or in any known
- * payload — they are speculative. Before removing them, confirm which spellings the external
- * service actually emits and record the answer here; that list is the missing source of truth.
+ *    naming we do not control: `RadioWidget`, `text`, `radiobutton`, `combobox`, `texteditor`.
  */
 export const jsonWidgets = {
   ...baseWidgets,
@@ -60,8 +55,6 @@ export const jsonWidgets = {
   radiobutton: baseWidgets.RadiobuttonWidget,
   checkbox: baseWidgets.CheckboxWidget,
   checkboxes: baseWidgets.CheckboxGroupWidget,
-  checkboxGroup: baseWidgets.CheckboxGroupWidget,
-  'checkbox-group': baseWidgets.CheckboxGroupWidget,
   date: baseWidgets.DateWidget,
   time: baseWidgets.TimeWidget,
   combobox: baseWidgets.ComboboxWidget,

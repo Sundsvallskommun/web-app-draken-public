@@ -12,7 +12,7 @@ import { assertSupportErrandWritable } from './support-errand.service';
 export const SUPPORT_COMMENT = Object.freeze({ context: 'SUPPORT', role: 'FIRST_LINE_SUPPORT', subject: 'Notering' });
 export const SUPPORT_SERVICE_NOTE = Object.freeze({ context: 'SERVICE_NOTE', role: 'ERRAND_HANDLER', subject: 'Tjänsteanteckning' });
 
-export const isSupportServiceNote = (note: Pick<ErrandNote, 'context'>): boolean => note.context === SUPPORT_SERVICE_NOTE.context;
+const isSupportServiceNote = (note: Pick<ErrandNote, 'context'>): boolean => note.context === SUPPORT_SERVICE_NOTE.context;
 
 /**
  * A service note is the handler's record of the errand: only the handler the errand is assigned to writes one,

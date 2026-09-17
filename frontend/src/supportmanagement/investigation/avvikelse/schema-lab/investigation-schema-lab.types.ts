@@ -1,4 +1,4 @@
-export const localInvestigationDocumentKeys = [
+const localInvestigationDocumentKeys = [
   'utredning-enhetschef',
   'utredning-sol-lss',
   'utredning-hsl',
@@ -8,7 +8,7 @@ export const localInvestigationDocumentKeys = [
 
 export type LocalInvestigationDocumentKey = (typeof localInvestigationDocumentKeys)[number];
 
-export const investigationLabRoles = ['unitManager', 'lexInvestigator', 'masMar', 'decisionMaker', 'reader'] as const;
+const investigationLabRoles = ['unitManager', 'lexInvestigator', 'masMar', 'decisionMaker', 'reader'] as const;
 
 export type InvestigationLabRole = (typeof investigationLabRoles)[number];
 

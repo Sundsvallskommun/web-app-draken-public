@@ -1,7 +1,7 @@
 import type { SupportLabelTreeProfile } from '../services/support-label-classification-projector';
 
 /** Which part of the UI persists the errand's classification. */
-export type SupportErrandClassificationOwner = 'basics' | 'investigation' | 'unavailable';
+type SupportErrandClassificationOwner = 'basics' | 'investigation' | 'unavailable';
 
 /**
  * The shared vocabulary for classification placement: who owns persistence, and which label tree

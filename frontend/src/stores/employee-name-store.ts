@@ -32,7 +32,7 @@ const initialState: EmployeeNameState = { names: {} };
  */
 const inFlightAccounts = new Set<string>();
 
-export const formatEmployeeName = (givenname: string | undefined, lastname: string | undefined): string =>
+const formatEmployeeName = (givenname: string | undefined, lastname: string | undefined): string =>
   [givenname, lastname].filter(Boolean).join(' ').trim();
 
 export const useEmployeeNameStore = create<EmployeeNameStore>((set, get) => ({

@@ -42,7 +42,7 @@ export const closesFromActivePhase = (activePhaseId: string | undefined, phases:
  * is free text and is never matched. A namespace whose workflow has no phase of this name simply
  * never triggers the guard.
  */
-export const DECISION_PHASE_NAME = 'DECISION';
+const DECISION_PHASE_NAME = 'DECISION';
 
 export const isDecisionPhase = (phase: Pick<Phase, 'name'> | undefined): boolean => phase?.name === DECISION_PHASE_NAME;
 

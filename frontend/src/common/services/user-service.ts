@@ -41,16 +41,7 @@ export const getMe: () => Promise<User> = () => {
     });
 };
 
-export const saveUserSettings: (settings: any) => Promise<boolean> = (settings) => {
-  return apiService
-    .patch('settings', settings)
-    .then(() => Promise.resolve(true))
-    .catch((e) => {
-      return Promise.resolve(false);
-    });
-};
-
-export interface AdUser {
+interface AdUser {
   description: string;
   displayName: string;
   domain: string;
@@ -132,15 +123,6 @@ export const getHandlerDirectory: () => Promise<HandlerDirectory> = () => {
   return apiService
     .get<HandlerDirectoryResponse>(`users/admins`)
     .then((res) => toHandlerDirectory(res.data))
-    .catch((err) => {
-      return Promise.reject(err.response?.data?.message);
-    });
-};
-
-export const getAvatar: (width: string) => Promise<string> = (width) => {
-  return apiService
-    .get<ApiResponse<string>>(`user/avatar?width=${width}`)
-    .then((res) => res.data.data)
     .catch((err) => {
       return Promise.reject(err.response?.data?.message);
     });

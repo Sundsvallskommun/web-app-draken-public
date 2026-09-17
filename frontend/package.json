@@ -88,7 +88,9 @@
     "test:e2e:report": "playwright show-report",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "format": "prettier --write \"src/**/*.{ts,tsx,mjs}\"",
+    "test:json": "vitest run src/common/components/json"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -128,7 +130,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
-    "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "14.0.0",
     "@types/node": "^20.3.2",
     "@types/react": "^19.2.14",

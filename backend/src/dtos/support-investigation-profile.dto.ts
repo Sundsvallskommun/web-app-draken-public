@@ -60,7 +60,7 @@ export class SupportInvestigationDocumentProfileDto {
   readonly prerequisiteDocumentKey?: string;
 }
 
-export const SUPPORT_INVESTIGATION_DOCUMENT_ACCESS = ['edit', 'read', 'hidden'] as const;
+const SUPPORT_INVESTIGATION_DOCUMENT_ACCESS = ['edit', 'read', 'hidden'] as const;
 
 /**
  * How far the signed-in user reaches into one investigation document: `edit` may change it, `read`

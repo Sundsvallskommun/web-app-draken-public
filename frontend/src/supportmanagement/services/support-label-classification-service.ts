@@ -15,8 +15,6 @@ import {
 } from './support-label-classification-projector';
 import type { SupportMetadata } from './support-metadata-service';
 
-export { findLabelByClassification } from './support-label-classification-projector';
-
 export const getLabelCategory = (
   errand: SupportErrandLabelSource | undefined,
   metadata?: SupportMetadata,

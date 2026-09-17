@@ -1,12 +1,12 @@
 import type { Labels } from '@/data-contracts/supportmanagement/data-contracts';
 
-export interface SupportManagementLabelFilterFieldDefinition<TFieldKey extends string = string> {
+interface SupportManagementLabelFilterFieldDefinition<TFieldKey extends string = string> {
   readonly key: TFieldKey;
   readonly label: string;
   readonly classification: string;
 }
 
-export interface SupportManagementLabelFilterGroupDefinition<TGroupKey extends string = string, TFieldKey extends string = string> {
+interface SupportManagementLabelFilterGroupDefinition<TGroupKey extends string = string, TFieldKey extends string = string> {
   readonly key: TGroupKey;
   readonly label: string;
   readonly rootResourcePath: string;

@@ -1,26 +1,14 @@
 'use client';
 
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-import type { ObjectFieldTemplateProps, RJSFSchema, UiSchema } from '@rjsf/utils';
+import type { ObjectFieldTemplateProps, RJSFSchema, SchemaUtilsType, UiSchema } from '@rjsf/utils';
 import { Checkbox, Disclosure, Divider, Label } from '@sk-web-gui/react';
 import { MouseEvent, ReactNode, useState } from 'react';
 
 import type { SchemaErrorNavigation } from '../schema/schema-form-error-summary.component';
 
-interface SchemaCondition {
-  const?: unknown;
-  enum?: unknown[];
-  properties?: Record<string, SchemaCondition | boolean>;
-  required?: string[];
-  contains?: SchemaCondition | boolean;
-  allOf?: (SchemaCondition | boolean)[];
-  anyOf?: (SchemaCondition | boolean)[];
-  oneOf?: (SchemaCondition | boolean)[];
-  not?: SchemaCondition | boolean;
-}
-
 interface ConditionalRule {
-  if: SchemaCondition;
+  if: RJSFSchema;
   then: {
     required?: string[];
     properties?: Record<string, unknown>;
@@ -50,48 +38,18 @@ interface FormContext {
 
 const externalFieldPrefix = '$external:';
 
-function hasOwn(value: object, key: string): boolean {
-  return Object.hasOwn(value, key);
-}
-
 const isRecordValue = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-const matchesRequiredFields = (required: readonly string[] | undefined, value: unknown): boolean =>
-  !required || (isRecordValue(value) && required.every((fieldName) => hasOwn(value, fieldName)));
-
-const matchesProperties = (properties: SchemaCondition['properties'], value: unknown): boolean =>
-  !properties ||
-  (isRecordValue(value) &&
-    Object.entries(properties).every(
-      ([fieldName, fieldCondition]) =>
-        !hasOwn(value, fieldName) || matchesSchemaCondition(fieldCondition, value[fieldName])
-    ));
-
-const matchesContains = (contains: SchemaCondition['contains'], value: unknown): boolean =>
-  !contains || (Array.isArray(value) && value.some((item) => matchesSchemaCondition(contains, item)));
-
-const matchesCombinators = (condition: SchemaCondition, value: unknown): boolean => {
-  if (condition.allOf && !condition.allOf.every((part) => matchesSchemaCondition(part, value))) return false;
-  if (condition.anyOf && !condition.anyOf.some((part) => matchesSchemaCondition(part, value))) return false;
-  if (condition.oneOf && condition.oneOf.filter((part) => matchesSchemaCondition(part, value)).length !== 1) {
-    return false;
-  }
-  return condition.not === undefined || !matchesSchemaCondition(condition.not, value);
-};
-
-function matchesSchemaCondition(condition: SchemaCondition | boolean, value: unknown): boolean {
-  if (typeof condition === 'boolean') return condition;
-  if (hasOwn(condition, 'const') && !Object.is(value, condition.const)) return false;
-  if (condition.enum && !condition.enum.some((enumValue) => Object.is(enumValue, value))) return false;
-  if (!matchesRequiredFields(condition.required, value)) return false;
-  if (!matchesProperties(condition.properties, value)) return false;
-  if (!matchesContains(condition.contains, value)) return false;
-  return matchesCombinators(condition, value);
-}
-
-function isConditionMet(condition: ConditionalRule['if'], formData: Record<string, unknown>): boolean {
-  return matchesSchemaCondition(condition, formData);
+// Visibility follows the same evaluator as validity: the form's AJV instance decides whether an
+// if-condition holds, so keywords such as minimum or pattern cannot diverge from what is enforced.
+function isConditionMet(
+  schemaUtils: SchemaUtilsType,
+  condition: ConditionalRule['if'],
+  formData: Record<string, unknown>,
+  rootSchema: RJSFSchema
+): boolean {
+  return schemaUtils.getValidator().isValid(condition, formData, rootSchema);
 }
 
 function getConditionalFields(schema: RJSFSchema): Map<string, ConditionalRule['if'][]> {
@@ -260,6 +218,51 @@ function resolveFieldOrder(rawOrder: unknown, propertyNames: string[]): string[]
   return resolvedOrder;
 }
 
+function getDeclaredExternalFields(uiSchema: unknown): Set<string> {
+  if (!isRecordValue(uiSchema)) return new Set();
+
+  const order: unknown[] = Array.isArray(uiSchema['ui:order']) ? uiSchema['ui:order'] : [];
+  const sectionFields = getSectionDefinitions(uiSchema).flatMap((section) => section.fields);
+  const declaredFields = new Set(
+    [...order, ...sectionFields].filter(
+      (field): field is string => typeof field === 'string' && field.startsWith(externalFieldPrefix)
+    )
+  );
+
+  // A placement in a nested object or an array's items also claims the field,
+  // so the root must not add a second instance as an unplaced fallback.
+  for (const [key, value] of Object.entries(uiSchema)) {
+    if (key.startsWith('ui:')) continue;
+    const children = Array.isArray(value) ? value : [value];
+    for (const child of children) {
+      for (const field of getDeclaredExternalFields(child)) declaredFields.add(field);
+    }
+  }
+
+  return declaredFields;
+}
+
+function resolveObjectFieldOrder(
+  uiSchema: UiSchema | undefined,
+  propertyNames: string[],
+  externalFields: Readonly<Record<string, ReactNode>>,
+  isRoot: boolean
+): string[] {
+  const rawOrder = uiSchema?.['ui:order'];
+  const requestedOrder: unknown[] = Array.isArray(rawOrder) ? rawOrder : [];
+  const externalFieldNames = Object.keys(externalFields).map((name) => `${externalFieldPrefix}${name}`);
+  // Only explicit names participate in ui:order (including its wildcard).
+  // Section-only placements are inserted later from section.fields.
+  const order = resolveFieldOrder(rawOrder, [
+    ...propertyNames,
+    ...externalFieldNames.filter((name) => requestedOrder.includes(name)),
+  ]);
+  if (!isRoot) return order;
+
+  const declaredFields = getDeclaredExternalFields(uiSchema);
+  return [...order, ...externalFieldNames.filter((name) => !declaredFields.has(name))];
+}
+
 function insertExternalFieldsInSectionOrder(
   orderedPropertyNames: readonly string[],
   sectionFieldNames: readonly string[]
@@ -291,6 +294,20 @@ function insertExternalFieldsInSectionOrder(
   return resolvedOrder;
 }
 
+function renderExternalField(
+  fieldName: string,
+  externalFields: Readonly<Record<string, ReactNode>>,
+  className: string
+) {
+  const externalFieldName = fieldName.slice(externalFieldPrefix.length);
+  const externalField = externalFields[externalFieldName];
+  return externalField ? (
+    <div key={fieldName} className={className} data-cy={`schema-external-field-${externalFieldName}`}>
+      {externalField}
+    </div>
+  ) : null;
+}
+
 function renderFields(
   fieldNames: string[],
   properties: ObjectFieldTemplateProps['properties'],
@@ -303,14 +320,9 @@ function renderFields(
   return fieldNames.map((fieldName) => {
     if (!visibleFields.has(fieldName)) return null;
 
-    if (fieldName.startsWith(externalFieldPrefix)) {
-      const externalFieldName = fieldName.slice(externalFieldPrefix.length);
-      const externalField = externalFields[externalFieldName];
-      return externalField ? (
-        <div key={fieldName} className="min-w-0 max-w-full" data-cy={`schema-external-field-${externalFieldName}`}>
-          {externalField}
-        </div>
-      ) : null;
+    // An external field declared in a row is rendered as a cell of that row below.
+    if (fieldName.startsWith(externalFieldPrefix) && !rowFieldNames.has(fieldName)) {
+      return renderExternalField(fieldName, externalFields, 'min-w-0 max-w-full');
     }
 
     const row = rows.find((r) => r.fields.find((field) => visibleFields.has(field)) === fieldName);
@@ -329,6 +341,9 @@ function renderFields(
           data-cy="schema-field-row"
         >
           {visibleRowFields.map((f) => {
+            if (f.startsWith(externalFieldPrefix)) {
+              return renderExternalField(f, externalFields, 'schema-field-cell w-full min-w-0');
+            }
             const prop = properties.find((p) => p.name === f);
             return prop ? (
               <div key={f} className="schema-field-cell w-full min-w-0">
@@ -352,12 +367,24 @@ function renderFields(
 }
 
 export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
-  const { properties, formData, formContext, uiSchema, disabled, readonly, description, idSchema, required, title } =
-    props;
+  const {
+    properties,
+    formData,
+    formContext,
+    uiSchema,
+    disabled,
+    readonly,
+    description,
+    idSchema,
+    registry,
+    required,
+    title,
+  } = props;
 
   const ctx = formContext as FormContext | undefined;
   const externalFields = ctx?.externalFields ?? {};
   const originalSchema = ctx?.originalSchema;
+  const rootSchema = originalSchema ?? registry.rootSchema;
   const conditionalFields = originalSchema
     ? getConditionalFields(originalSchema)
     : new Map<string, ConditionalRule['if'][]>();
@@ -368,7 +395,8 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
   const showCompletionControl = uiSchema?.['ui:options']?.showSectionCompletion !== false;
   const showObjectFieldset = uiSchema?.['ui:options']?.showObjectFieldset === true;
   const propertyNames = properties.map((p) => p.name);
-  const order = resolveFieldOrder(uiSchema?.['ui:order'], propertyNames);
+  const isRoot = idSchema.$id === (ctx?.idPrefix ?? 'root');
+  const order = resolveObjectFieldOrder(uiSchema, propertyNames, externalFields, isRoot);
   const isReadonly = !!(disabled || readonly);
 
   const visibleFields = new Set<string>();
@@ -376,11 +404,10 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
     // Hidden fields must not leave wrappers, row gaps or empty sections in the layout.
     if (prop.hidden) continue;
     const conditions = conditionalFields.get(prop.name);
-    if (conditions) {
-      if (conditions.some((condition) => isConditionMet(condition, formData || {}))) {
-        visibleFields.add(prop.name);
-      }
-    } else {
+    if (
+      !conditions ||
+      conditions.some((condition) => isConditionMet(registry.schemaUtils, condition, formData || {}, rootSchema))
+    ) {
       visibleFields.add(prop.name);
     }
   }
@@ -396,7 +423,7 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
       </div>
     );
 
-    if (idSchema.$id === (ctx?.idPrefix ?? 'root') || !showObjectFieldset) return renderedFields;
+    if (isRoot || !showObjectFieldset) return renderedFields;
 
     return (
       <fieldset
@@ -418,6 +445,12 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
   const sectionFieldNames = new Set(sections.flatMap((s) => s.fields));
   const unsectionedFields = order.filter((f) => !sectionFieldNames.has(f) && visibleFields.has(f));
   const renderedRows = new Set<string>();
+  // A section opens for the error target when one of its fields is the target or encloses it.
+  // The enclosing fields come with the navigation: a field name may itself contain the id
+  // separator, so `root_risk` is not necessarily an ancestor of `root_risk_level`.
+  const errorNavigation = ctx?.errorNavigation;
+  const holdsErrorTarget = (fieldId: string) =>
+    errorNavigation?.fieldId === fieldId || errorNavigation?.ancestorIds.includes(fieldId);
 
   return (
     <div className="flex min-w-0 max-w-full flex-col gap-32">
@@ -435,13 +468,10 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
             isReadonly={isReadonly}
             showCompletionControl={showCompletionControl}
             errorNavigation={
-              section.fields.some((fieldName) => {
-                const fieldId = `${idSchema.$id}_${fieldName.replace('$external:', 'external_')}`;
-                return (
-                  ctx?.errorNavigation?.fieldId === fieldId || ctx?.errorNavigation?.fieldId.startsWith(`${fieldId}_`)
-                );
-              })
-                ? ctx?.errorNavigation
+              section.fields.some((fieldName) =>
+                holdsErrorTarget(`${idSchema.$id}_${fieldName.replace('$external:', 'external_')}`)
+              )
+                ? errorNavigation
                 : undefined
             }
           >

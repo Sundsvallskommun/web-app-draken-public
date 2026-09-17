@@ -34,12 +34,6 @@ export const attestationLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: '', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
 ];
-export interface CustomerIdentity {
-  orgId: string;
-  treeLevel: number;
-  customerId: string;
-  customerName: string;
-}
 
 export const billingrecordStatusToLabel = (status: string) => {
   switch (status) {
@@ -336,7 +330,7 @@ const parseInvoiceAdministrationInfo: (orgTree: string) => {
   };
 };
 
-export const getEmployeeData: (username: string, domain?: string) => Promise<PortalPersonData> = async (
+const getEmployeeData: (username: string, domain?: string) => Promise<PortalPersonData> = async (
   username: string,
   domain?: string
 ) => {
@@ -352,7 +346,7 @@ export const getEmployeeData: (username: string, domain?: string) => Promise<Por
     });
 };
 
-export const getEmployeeOrganizationId: (
+const getEmployeeOrganizationId: (
   username: string,
   domain?: string
 ) => Promise<{ companyId: number; organizationId: string; referenceNumber?: string } | undefined> = async (

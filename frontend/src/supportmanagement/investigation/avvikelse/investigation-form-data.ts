@@ -238,7 +238,7 @@ function applyDeclaredCalculations(schema: RJSFSchema, formData: InvestigationFo
  * the report log. They are read from the stored document, never carried in the form, so the form
  * neither sends them nor treats the server's copy of them as an unsaved change.
  */
-export const isServerControlledProperty = (property: unknown): boolean =>
+const isServerControlledProperty = (property: unknown): boolean =>
   isRecord(property) &&
   (property['x-draken-server-timestamp'] !== undefined ||
     property['x-draken-server-revisions'] === true ||

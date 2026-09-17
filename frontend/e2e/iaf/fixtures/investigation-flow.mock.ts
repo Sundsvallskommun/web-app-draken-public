@@ -12,10 +12,10 @@ import hslUiSchemaRequest from '../../../src/supportmanagement/investigation/avv
 import solLssSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-sol-lss.schema-request.json';
 import solLssUiSchemaRequest from '../../../src/supportmanagement/investigation/avvikelse/schemas/utredning-sol-lss.ui-schema-request.json';
 
-export const backendOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').origin;
-export const municipalityId = '2281';
-export const errandId = 'ca97b2be-dc37-4707-b5bb-bae98936a183';
-export const application = (process.env.NEXT_PUBLIC_APPLICATION ?? 'IAF').trim().toUpperCase();
+const backendOrigin = new URL(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').origin;
+const municipalityId = '2281';
+const errandId = 'ca97b2be-dc37-4707-b5bb-bae98936a183';
+const application = (process.env.NEXT_PUBLIC_APPLICATION ?? 'IAF').trim().toUpperCase();
 const applicationSlug = application.toLowerCase();
 export const errandNumber = `${application}-2026-0001`;
 export const katlaSchemaId = `2281_katla-${applicationSlug}-report_1.0`;
@@ -203,7 +203,7 @@ const workflowChain: Array<[WorkflowPhaseName, string, string, string]> = [
  * transition and allows SOLVED instead, so the errand is closed from there. Ids are fixed so a spec
  * can name the transition it expects the BFF to receive.
  */
-export const workflowPhases: WorkflowPhase[] = workflowChain.map(
+const workflowPhases: WorkflowPhase[] = workflowChain.map(
   ([name, displayName, status, transitionDescription], index) => {
     const next = workflowChain[index + 1];
     return {

@@ -69,7 +69,7 @@ export interface AttachPdfRequest {
   readonly user: User;
 }
 
-export const attachmentIdFrom = (data: unknown, location: unknown): string | undefined => {
+const attachmentIdFrom = (data: unknown, location: unknown): string | undefined => {
   if (isRecord(data) && typeof data.id === 'string' && data.id.length > 0) return data.id;
   if (typeof location === 'string') {
     const match = location.match(/\/attachments\/([^/?#]+)/u);

@@ -8,8 +8,6 @@ import {
   sortCandidates,
 } from './handler-candidate-select.component';
 
-export type { AssignableCandidate, AssignableRole } from './handler-candidate-select.component';
-
 interface HandlerAssignmentModalProps {
   show: boolean;
   label: string;

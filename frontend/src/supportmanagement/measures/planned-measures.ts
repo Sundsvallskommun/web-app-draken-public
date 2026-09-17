@@ -55,7 +55,7 @@ const bucketLabels: Record<PlannedMeasureBucket, string> = {
 };
 
 /** How far ahead "soon" reaches, in days from today inclusive. */
-export const SOON_HORIZON_DAYS = 14;
+const SOON_HORIZON_DAYS = 14;
 
 /**
  * Places a measure in its time bucket. Only a passed completion date makes it late; a measure that is

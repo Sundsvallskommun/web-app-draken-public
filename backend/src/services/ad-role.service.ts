@@ -1,3 +1,4 @@
+import { ADMIN_GROUP, DEVELOPER_GROUP, SUPERADMIN_GROUP } from '@/config';
 import { InternalRole } from '@/interfaces/users.interface';
 
 import { isMEX, isPT } from './application.service';
@@ -32,12 +33,12 @@ export const buildRoleADMapping = (settings: ReadonlyArray<readonly [string | un
 export const roleADMapping: RoleADMapping = buildRoleADMapping(
   isPT() || isMEX()
     ? [
-        [process.env.DEVELOPER_GROUP, 'draken_casedata_developer'],
-        [process.env.ADMIN_GROUP, 'draken_casedata_admin'],
+        [DEVELOPER_GROUP, 'draken_casedata_developer'],
+        [ADMIN_GROUP, 'draken_casedata_admin'],
       ]
     : [
-        [process.env.DEVELOPER_GROUP, 'draken_developer'],
-        [process.env.ADMIN_GROUP, 'draken_admin'],
-        [process.env.SUPERADMIN_GROUP, 'draken_superadmin'],
+        [DEVELOPER_GROUP, 'draken_developer'],
+        [ADMIN_GROUP, 'draken_admin'],
+        [SUPERADMIN_GROUP, 'draken_superadmin'],
       ],
 );

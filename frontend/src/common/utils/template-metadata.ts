@@ -3,7 +3,7 @@ interface TemplateWithMetadata {
   metadata?: Array<{ key: string; value: string }>;
 }
 
-export function getTemplateMetadata(template: TemplateWithMetadata, key: string): string | undefined {
+function getTemplateMetadata(template: TemplateWithMetadata, key: string): string | undefined {
   return template.metadata?.find((m) => m.key === key)?.value;
 }
 

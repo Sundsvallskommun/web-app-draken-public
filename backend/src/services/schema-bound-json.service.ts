@@ -16,7 +16,7 @@ export type JsonValue = null | boolean | number | string | readonly JsonValue[] 
 
 export const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
-export const isJsonValue = (value: unknown, ancestors: ReadonlySet<object> = new Set()): value is JsonValue => {
+const isJsonValue = (value: unknown, ancestors: ReadonlySet<object> = new Set()): value is JsonValue => {
   if (value === null || typeof value === 'boolean' || typeof value === 'string') return true;
   if (typeof value === 'number') return Number.isFinite(value);
   if (typeof value !== 'object') return false;

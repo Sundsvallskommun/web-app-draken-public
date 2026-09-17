@@ -1,14 +1,14 @@
 import type { LabelFilterGroupDefinition } from '../filters/label-filter-projector';
 
-export const INVESTIGATION_PROFILE_STATES = ['active', 'inactive', 'unavailable'] as const;
-export type InvestigationProfileState = (typeof INVESTIGATION_PROFILE_STATES)[number];
+const INVESTIGATION_PROFILE_STATES = ['active', 'inactive', 'unavailable'] as const;
+type InvestigationProfileState = (typeof INVESTIGATION_PROFILE_STATES)[number];
 
-export const INVESTIGATION_DOCUMENT_PLACEMENTS = ['investigation', 'decision'] as const;
+const INVESTIGATION_DOCUMENT_PLACEMENTS = ['investigation', 'decision'] as const;
 
 /** Which errand tab offers the document. The BFF omits the field for the ordinary investigation tab. */
 export type InvestigationDocumentPlacement = (typeof INVESTIGATION_DOCUMENT_PLACEMENTS)[number];
 
-export const INVESTIGATION_DOCUMENT_APPLICABILITIES = ['all', 'reported-misconduct', 'hsl-deviation'] as const;
+const INVESTIGATION_DOCUMENT_APPLICABILITIES = ['all', 'reported-misconduct', 'hsl-deviation'] as const;
 
 /**
  * Which errands the document applies to. `all` is every errand. The other values name one kind of

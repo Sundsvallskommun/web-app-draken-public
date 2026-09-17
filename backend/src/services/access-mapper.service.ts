@@ -13,7 +13,7 @@ const SERVICE = apiServiceName('access-mapper');
 const LABEL_ACCESS_TYPE = 'label';
 
 /** The pattern AccessMapper stores for a place: the place's own path, covering everything under it. */
-export const locationAccessPattern = (locationResourcePath: string): string => `${normalizeSupportManagementResourcePath(locationResourcePath)}/**`;
+const locationAccessPattern = (locationResourcePath: string): string => `${normalizeSupportManagementResourcePath(locationResourcePath)}/**`;
 
 /**
  * Reads Support Management's access configuration.

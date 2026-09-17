@@ -1,6 +1,6 @@
 import { apiService } from '@common/services/api-service';
 
-export interface SupportNoteDto {
+interface SupportNoteDto {
   context: string;
   role?: string;
   partyId: string;

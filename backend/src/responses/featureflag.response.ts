@@ -1,7 +1,4 @@
-import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, IsString, ValidateNested } from 'class-validator';
-
-import { ApiResponse } from '@/services/api.service';
+import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class FeatureFlag {
   @IsInt()
@@ -17,19 +14,4 @@ export class FeatureFlag {
   application!: string;
   @IsString()
   namespace!: string;
-}
-
-export class FeatureFlagsApiResponse implements ApiResponse<FeatureFlag[]> {
-  @ValidateNested({ each: true })
-  @Type(() => FeatureFlag)
-  data!: FeatureFlag[];
-  @IsString()
-  message!: string;
-}
-export class FeatureFlagApiResponse implements ApiResponse<FeatureFlag> {
-  @ValidateNested()
-  @Type(() => FeatureFlag)
-  data!: FeatureFlag;
-  @IsString()
-  message!: string;
 }

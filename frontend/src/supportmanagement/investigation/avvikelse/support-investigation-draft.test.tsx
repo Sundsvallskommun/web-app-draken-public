@@ -37,13 +37,16 @@ vi.mock('react-hook-form', async (original) => ({
   ...(await original<typeof import('react-hook-form')>()),
   useFormContext: () => ({ register: vi.fn(), resetField: vi.fn(), getValues: () => 1 }),
 }));
-vi.mock('@sk-web-gui/react', async () => ({
-  ...(await import('@sk-web-gui/tabs')),
-  ...(await import('@sk-web-gui/button')),
-  ...(await import('@sk-web-gui/alert')),
-  ...(await import('@sk-web-gui/spinner')),
-  ...(await import('@sk-web-gui/label')),
-}));
+vi.mock('@sk-web-gui/react', async (importOriginal) => {
+  const gui = await importOriginal<typeof import('@sk-web-gui/react')>();
+  return {
+    Tabs: gui.Tabs,
+    Button: gui.Button,
+    Alert: gui.Alert,
+    Spinner: gui.Spinner,
+    Label: gui.Label,
+  };
+});
 vi.mock('@common/components/json/schema/schema-form.component', () => ({
   default: ({
     formData,
