@@ -196,7 +196,7 @@ export type LabelSpec = { category: string; type: string; subType?: string };
  * form here is what turns that into a page the handler fills in first, so the choice is made per
  * application and no shared component has to know which drake it is running as.
  */
-export interface NewErrandRegistrationForm {
+interface NewErrandRegistrationForm {
   /** The report types offered, by label resource path. The chosen one becomes the errand's label. */
   readonly reportTypes: readonly string[];
   /** Whether the handler picks the place, from the ones AccessMapper configures for their account. */

@@ -230,7 +230,7 @@ const workflowPhases: WorkflowPhase[] = workflowChain.map(
 );
 
 /** What the registration form is told it may choose. Omitted, registration is not exercised. */
-export interface RegistrationOptionsScenario {
+interface RegistrationOptionsScenario {
   reportTypes: Array<{ labelId: string; displayName: string; resourcePath: string }>;
   locations: Array<{ labelId: string; displayName: string; resourcePath: string }>;
   priorities: string[];

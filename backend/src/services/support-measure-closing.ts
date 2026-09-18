@@ -19,14 +19,14 @@ export const closeRequiresHandledMeasures = (application?: string): boolean =>
   CLOSE_REQUIRES_HANDLED_MEASURES.has((application ?? '').trim().toUpperCase());
 
 /** A measure nobody has decided on: it was proposed and is still only a proposal. */
-export const isUndecidedMeasure = (measure: Measure): boolean => !measure.accept;
+const isUndecidedMeasure = (measure: Measure): boolean => !measure.accept;
 
 /**
  * An approved, planned measure that has not been followed up. The follow-up writes `executed`
  * together with its answers, so an unexecuted one is exactly one still waiting - the same rule the
  * planned-measures overview lists an errand by.
  */
-export const isUnfollowedMeasure = (measure: Measure): boolean => isPlannedApprovedMeasure(measure) && !measure.executed;
+const isUnfollowedMeasure = (measure: Measure): boolean => isPlannedApprovedMeasure(measure) && !measure.executed;
 
 /**
  * Whether a measure still asks something of somebody. A rejected measure and one registered as
