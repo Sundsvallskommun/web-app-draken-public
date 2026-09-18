@@ -101,6 +101,7 @@ import {
 } from '@/services/support-investigation-classification-context.service';
 import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
 import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
+import { assertMeasuresHandledBeforeClose, closeRequiresHandledMeasures } from '@/services/support-measure-closing';
 import {
   SupportManagementLabelFilterError,
   SupportManagementLabelFilterSelection,
@@ -560,6 +561,7 @@ export class SupportErrandController {
   private jsonParameterService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' });
   private accessMapperService = new AccessMapperService();
   private newErrandDefaults: NewErrandDefaults | undefined = getNewErrandDefaults(APPLICATION);
+  private requiresHandledMeasuresBeforeClose = closeRequiresHandledMeasures(APPLICATION);
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   SERVICE = apiServiceName('supportmanagement');
   CITIZEN_SERVICE = apiServiceName('citizen');
@@ -1091,6 +1093,14 @@ export class SupportErrandController {
     if (currentVersion !== data.expectedVersion) {
       throw new HttpException(409, 'Support errand status has changed since it was loaded');
     }
+    await assertMeasuresHandledBeforeClose({
+      apiService: this.apiService,
+      user: req.user,
+      errandUrl: url,
+      baseURL,
+      status: data.status,
+      required: this.requiresHandledMeasuresBeforeClose,
+    });
 
     const { phaseSteps = [], ...body } = resolveSupportErrandStatusTransition(currentErrand.data, metadata.data.statuses, data, metadata.data.phases);
     // Closing from an earlier phase steps along the workflow first: Support Management refuses a jump

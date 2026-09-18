@@ -750,7 +750,7 @@ export const getActiveErrandPhaseId = (errand: Pick<Errand, 'phases'>): string |
   return open.length > 0 ? open[open.length - 1].phaseId : undefined;
 };
 
-const CLOSED_SUPPORT_ERRAND_STATUS = 'SOLVED';
+export const CLOSED_SUPPORT_ERRAND_STATUS = 'SOLVED';
 
 /**
  * The phase closing an errand moves it into, or undefined when closing needs no move.

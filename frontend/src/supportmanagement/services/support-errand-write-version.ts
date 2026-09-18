@@ -61,10 +61,23 @@ export class SupportErrandStatusAfterAssignmentError extends Error {
  * half-finished assignment says which half is missing. Reloading is the wrong advice there - the
  * assignment already landed, so there is nothing to redo.
  */
+/**
+ * The BFF answers 422 when the write is refused for a reason it can name - the errand is as the
+ * handler left it, but its state forbids what they asked for. That message is the whole point of the
+ * refusal, so it is shown instead of a generic one.
+ */
+const refusalMessage = (error: unknown): string | undefined => {
+  if (getResponseStatus(error) !== 422) return undefined;
+  const message = (error as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
+  return typeof message === 'string' && message.trim() ? message : undefined;
+};
+
 export const supportErrandWriteErrorMessage = (error: unknown, fallback: string): string => {
   if (error instanceof SupportErrandStatusAfterAssignmentError) return error.message;
 
-  return isSupportErrandWriteConflict(error) ? SUPPORT_ERRAND_WRITE_CONFLICT_MESSAGE : fallback;
+  return (
+    refusalMessage(error) ?? (isSupportErrandWriteConflict(error) ? SUPPORT_ERRAND_WRITE_CONFLICT_MESSAGE : fallback)
+  );
 };
 
 /** A child write may advance a partially loaded parent only when it explains the entire change.

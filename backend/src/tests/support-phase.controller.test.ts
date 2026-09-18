@@ -79,6 +79,57 @@ describe('updateSupportErrandPhase', () => {
     });
   };
 
+  /**
+   * A phase carries its status, so a move into a phase that closes the errand is a close. The rule
+   * about handled measures cannot live on the close button alone, or the phase strip walks past it.
+   */
+  it('refuses a phase move that would close the errand while a measure is unhandled', async () => {
+    const { controller, api } = makeController();
+    (controller as unknown as { requiresHandledMeasuresBeforeClose: boolean }).requiresHandledMeasuresBeforeClose = true;
+    const closingPhases = [
+      { id: 'received', name: 'RECEIVED', transitions: [{ id: 'close-directly', targetPhaseId: 'closed' }] },
+      { id: 'closed', name: 'CLOSED', allowedStatuses: ['SOLVED'] },
+    ];
+    api.get.mockImplementation(async (config: { url?: string }) => {
+      if (config.url === metadataUrl) return { data: { phases: closingPhases }, message: 'success' };
+      if (config.url === `${errandUrl}/measures`) return { data: [{ id: 'a' }], message: 'success' };
+      return {
+        data: { id: mockSupportErrandId, phases: [{ phaseId: 'received' }], status: 'ONGOING', version: 7 },
+        message: 'success',
+        headers: { etag: '"7"' },
+      };
+    });
+
+    await expect(
+      controller.updateSupportErrandPhase(
+        mockReq(),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        { expectedActivePhaseId: 'received', transitionId: 'close-directly' },
+        mockRes(),
+      ),
+    ).rejects.toMatchObject({ status: 422, message: expect.stringContaining('väntar på beslut') });
+    expect(api.patch).not.toHaveBeenCalled();
+  });
+
+  // A move that carries no closing status is an ordinary step and never reads the measures.
+  it('does not consult the measures for a phase move that does not close the errand', async () => {
+    const { controller, api } = makeController();
+    (controller as unknown as { requiresHandledMeasuresBeforeClose: boolean }).requiresHandledMeasuresBeforeClose = true;
+    stubErrand(api, { phaseId: 'received', version: 7 });
+
+    await controller.updateSupportErrandPhase(
+      mockReq(),
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      { expectedActivePhaseId: 'received', transitionId: 'start-investigation' },
+      mockRes(),
+    );
+
+    expect(api.get).not.toHaveBeenCalledWith(expect.objectContaining({ url: `${errandUrl}/measures` }), expect.anything());
+    expect(api.patch).toHaveBeenCalled();
+  });
+
   it('rejects a request without a municipality id and makes no API call', async () => {
     const { controller, api } = makeController();
     const res = mockRes();

@@ -2,7 +2,7 @@ import { IsOptional, IsString, MinLength } from 'class-validator';
 import { Body, Controller, HttpCode, Param, Patch, Req, Res, UseBefore } from 'routing-controllers';
 import { OpenAPI } from 'routing-controllers-openapi';
 
-import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
+import { APPLICATION, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import { Errand as SupportErrand, MetadataResponse as SupportMetadata } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
@@ -12,6 +12,7 @@ import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
 import { getActiveErrandPhaseId, getErrandVersion, resolveSupportErrandPhaseTransition } from '@/services/support-errand.service';
+import { assertMeasuresHandledBeforeClose, closeRequiresHandledMeasures } from '@/services/support-measure-closing';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
@@ -57,6 +58,7 @@ export class UpdateSupportErrandPhaseDto {
 export class SupportPhaseController {
   private apiService = new ApiService();
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
+  private requiresHandledMeasuresBeforeClose = closeRequiresHandledMeasures(APPLICATION);
   SERVICE = apiServiceName('supportmanagement');
 
   @Patch('/supporterrands/:municipalityId/:id/phase')
@@ -90,6 +92,16 @@ export class SupportPhaseController {
     }
 
     const transition = resolveSupportErrandPhaseTransition(currentErrand.data, metadata.data.phases, data.transitionId);
+    // A phase carries its status with it, so a move into a phase that closes the errand is a close
+    // and answers to the same rule as the close button.
+    await assertMeasuresHandledBeforeClose({
+      apiService: this.apiService,
+      user: req.user,
+      errandUrl: url,
+      baseURL,
+      status: transition.status,
+      required: this.requiresHandledMeasuresBeforeClose,
+    });
     await this.apiService.patch<SupportErrand, { activePhaseId: string; status?: string }>(
       {
         url,

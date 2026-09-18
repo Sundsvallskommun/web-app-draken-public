@@ -1500,6 +1500,95 @@ describe('updateSupportErrandStatus', () => {
   const metadataUrl = `${MUNICIPALITY_ID}/${NAMESPACE}/metadata`;
   const statuses = [{ name: 'ONGOING' }, { name: 'SOLVED' }, { name: 'RETIRED', deprecated: true }];
 
+  /**
+   * IAF and VOF may not close an errand while a measure still asks something of somebody. The rule
+   * sits on the status transition, so it holds however the errand is being closed.
+   */
+  describe('with handled measures required before closing', () => {
+    const makeClosingController = (measures: unknown[]) => {
+      const made = makeController();
+      (made.controller as unknown as { requiresHandledMeasuresBeforeClose: boolean }).requiresHandledMeasuresBeforeClose = true;
+      made.api.get.mockImplementation(async (config: { url?: string }) => {
+        if (config.url === metadataUrl) return { data: { statuses }, message: 'success' };
+        if (config.url === `${errandUrl}/measures`) return { data: measures, message: 'success' };
+        return { data: { id: mockSupportErrandId, status: 'ONGOING', version: 7 }, message: 'success', headers: { etag: '"7"' } };
+      });
+      return made;
+    };
+
+    const close = (controller: SupportErrandController) =>
+      controller.updateSupportErrandStatus(
+        mockReq(),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        { expectedVersion: 7, expectedStatus: 'ONGOING', status: 'SOLVED', resolution: 'CLOSED' },
+        mockRes(),
+      );
+
+    it('refuses while a measure is still an undecided proposal', async () => {
+      const { controller, api } = makeClosingController([{ id: 'a' }]);
+
+      await expect(close(controller)).rejects.toMatchObject({ status: 422, message: expect.stringContaining('väntar på beslut') });
+      expect(api.patch).not.toHaveBeenCalled();
+    });
+
+    it('refuses while an approved planned measure has not been followed up', async () => {
+      const { controller, api } = makeClosingController([{ id: 'b', accept: 'TRUE', plannedComplete: '2026-09-30T00:00:00Z' }]);
+
+      await expect(close(controller)).rejects.toMatchObject({ status: 422, message: expect.stringContaining('inte uppföljd') });
+      expect(api.patch).not.toHaveBeenCalled();
+    });
+
+    it('closes once every measure is handled', async () => {
+      const { controller, api } = makeClosingController([
+        { id: 'b', accept: 'TRUE', plannedComplete: '2026-09-30T00:00:00Z', executed: '2026-09-29T00:00:00Z', result: 'COMPLETED' },
+        { id: 'd', accept: 'FALSE' },
+      ]);
+
+      await close(controller);
+
+      expect(api.patch).toHaveBeenCalledWith(
+        expect.objectContaining({ url: errandUrl, data: { status: 'SOLVED', resolution: 'CLOSED' } }),
+        expect.anything(),
+      );
+    });
+
+    // Any other status is not a close, so the measures are nobody's business here.
+    it('does not read the measures for a transition that is not a close', async () => {
+      const { controller, api } = makeClosingController([{ id: 'a' }]);
+
+      await controller.updateSupportErrandStatus(
+        mockReq(),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        { expectedVersion: 7, expectedStatus: 'ONGOING', status: 'ONGOING' },
+        mockRes(),
+      );
+
+      expect(api.get).not.toHaveBeenCalledWith(expect.objectContaining({ url: `${errandUrl}/measures` }), expect.anything());
+    });
+  });
+
+  // Every other drake closes exactly as before, without so much as reading the measures.
+  it('closes without consulting the measures for a drake that does not require them', async () => {
+    const { controller, api } = makeController();
+    api.get.mockImplementation(async (config: { url?: string }) => {
+      if (config.url === metadataUrl) return { data: { statuses }, message: 'success' };
+      return { data: { id: mockSupportErrandId, status: 'ONGOING', version: 7 }, message: 'success', headers: { etag: '"7"' } };
+    });
+
+    await controller.updateSupportErrandStatus(
+      mockReq(),
+      mockSupportErrandId,
+      MUNICIPALITY_ID,
+      { expectedVersion: 7, expectedStatus: 'ONGOING', status: 'SOLVED', resolution: 'CLOSED' },
+      mockRes(),
+    );
+
+    expect(api.get).not.toHaveBeenCalledWith(expect.objectContaining({ url: `${errandUrl}/measures` }), expect.anything());
+    expect(api.patch).toHaveBeenCalled();
+  });
+
   it('applies one configured transition with If-Match and returns the fresh errand version', async () => {
     const { controller, api } = makeController();
     let errandRead = 0;
