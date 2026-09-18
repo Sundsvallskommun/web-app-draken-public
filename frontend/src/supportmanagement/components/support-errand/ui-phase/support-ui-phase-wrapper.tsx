@@ -1,38 +1,22 @@
 'use client';
 
 import { appConfig } from '@config/appconfig';
-import { ProgressStepper } from '@sk-web-gui/react';
 import { useSupportStore } from '@stores/index';
 import { hasSupportErrandProcess } from '@supportmanagement/services/support-process-service';
-import {
-  getSupportUiPhase,
-  SUPPORT_UI_PHASE_ORDER,
-  supportUiPhaseTranslationKey,
-} from '@supportmanagement/services/support-ui-phase-service';
-import { useTranslation } from 'react-i18next';
 
 import { SupportProcessRow } from './support-process-row.component';
 
+/**
+ * Where the errand stands, as the process reports it. An errand without a process - one registered
+ * before the process ran, or in a namespace that runs none - has no step of its own, and the row
+ * stays away rather than deriving one from the status.
+ */
 export const SupportUiPhaseWrapper = () => {
-  const { t } = useTranslation();
   const supportErrand = useSupportStore((s) => s.supportErrand);
-  const activePhase = getSupportUiPhase(supportErrand);
 
-  if (appConfig.features.useProcess && hasSupportErrandProcess(supportErrand)) {
-    return <SupportProcessRow />;
+  if (!appConfig.features.useProcess || !hasSupportErrandProcess(supportErrand)) {
+    return null;
   }
 
-  const steps = SUPPORT_UI_PHASE_ORDER.map((phase) => t(supportUiPhaseTranslationKey(phase)));
-  const current = SUPPORT_UI_PHASE_ORDER.findIndex((phase) => phase === activePhase);
-
-  return (
-    <ProgressStepper
-      steps={steps}
-      current={current}
-      labelPosition="right"
-      size="sm"
-      className="w-fit"
-      data-cy="ui-phase-stepper"
-    />
-  );
+  return <SupportProcessRow />;
 };

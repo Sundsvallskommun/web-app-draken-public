@@ -7,6 +7,7 @@ import { getSupportProcessActivities } from '@supportmanagement/services/support
 import dayjs from 'dayjs';
 import { Info } from 'lucide-react';
 import { FC, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const activityHeading = (activity: ProcessActivity): string =>
   activity.activityName || activity.activityId || activity.activityType;
@@ -27,6 +28,7 @@ const ProcessActivityRow: FC<{ activity: ProcessActivity }> = ({ activity }) => 
 );
 
 export const SupportProcessLog = () => {
+  const { t } = useTranslation();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const [isOpen, setIsOpen] = useState(false);
@@ -58,17 +60,17 @@ export const SupportProcessLog = () => {
         size="sm"
         showBackground={false}
         onClick={open}
-        aria-label="Visa processloggen"
-        title="Visa processloggen"
+        aria-label={t('common:process.log.open')}
+        title={t('common:process.log.open')}
         data-cy="process-log-button"
       >
         <Info size={16} />
       </Button>
-      <Modal show={isOpen} onClose={() => setIsOpen(false)} label="Processlogg" className="w-[48rem] max-w-full">
+      <Modal show={isOpen} onClose={() => setIsOpen(false)} label={t('common:process.log.heading')} className="w-[48rem] max-w-full">
         <Modal.Content>
-          {isLoading ? <Spinner size={3} aria-label="Hämtar processloggen" /> : null}
-          {error ? <p>Processloggen kunde inte hämtas.</p> : null}
-          {!isLoading && !error && activities.length === 0 ? <p>Processen har inte loggat något än.</p> : null}
+          {isLoading ? <Spinner size={3} aria-label={t('common:process.log.loading')} /> : null}
+          {error ? <p>{t('common:process.log.error')}</p> : null}
+          {!isLoading && !error && activities.length === 0 ? <p>{t('common:process.log.empty')}</p> : null}
           {!isLoading && !error && activities.length > 0 ? (
             <ul className="list-none p-0 m-0" data-cy="process-log-list">
               {activities.map((activity, index) => (

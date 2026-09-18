@@ -1,17 +1,20 @@
 'use client';
 
-import { Badge, cx, Icon, Label } from '@sk-web-gui/react';
+import { Badge, Icon, Label, ProgressStepper } from '@sk-web-gui/react';
 import { useSupportStore } from '@stores/index';
 import {
   getSupportErrandProcess,
   isSupportProcessCompleted,
   isSupportProcessFailed,
   supportProcessErrorText,
-  supportProcessStatusLabel,
+  supportProcessStatusKey,
+  supportProcessStepIndex,
+  supportProcessStepKeys,
   supportProcessStepLabel,
 } from '@supportmanagement/services/support-process-service';
 import { CircleAlert, CircleCheck } from 'lucide-react';
 import { FC } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { SupportProcessLog } from './support-process-log.component';
 
@@ -21,7 +24,16 @@ const ProcessStateIcon: FC<{ failed: boolean; completed: boolean }> = ({ failed,
   return <Badge rounded counter={1} color="vattjom" inverted />;
 };
 
+/** The activity the process reports, for a step the six-step row does not cover. */
+const CurrentActivity: FC<{ failed: boolean; completed: boolean; label: string }> = ({ failed, completed, label }) => (
+  <>
+    <ProcessStateIcon failed={failed} completed={completed} />
+    {label ? <span className="font-bold">{label}</span> : null}
+  </>
+);
+
 export const SupportProcessRow = () => {
+  const { t } = useTranslation();
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const process = getSupportErrandProcess(supportErrand);
 
@@ -29,18 +41,28 @@ export const SupportProcessRow = () => {
 
   const failed = isSupportProcessFailed(process);
   const completed = isSupportProcessCompleted(process);
-  const step = supportProcessStepLabel(process);
+  const stepIndex = supportProcessStepIndex(process);
   const errorText = supportProcessErrorText(process);
+  const statusKey = supportProcessStatusKey(process.processStatus);
 
   return (
     <div
       className="flex items-center gap-12 rounded-xl border-1 h-[40px] w-fit px-12 whitespace-nowrap"
       data-cy="process-row"
     >
-      <ProcessStateIcon failed={failed} completed={completed} />
-      {step ? <span className={cx('font-bold')}>{step}</span> : null}
+      {stepIndex >= 0 ? (
+        <ProgressStepper
+          steps={supportProcessStepKeys().map((key) => t(key))}
+          current={stepIndex}
+          labelPosition="right"
+          size="sm"
+          data-cy="process-stepper"
+        />
+      ) : (
+        <CurrentActivity failed={failed} completed={completed} label={supportProcessStepLabel(process)} />
+      )}
       <Label rounded color={completed ? 'gronsta' : 'tertiary'} inverted={!failed}>
-        {supportProcessStatusLabel(process.processStatus)}
+        {t(statusKey, { defaultValue: process.processStatus })}
       </Label>
       {failed && errorText ? (
         <span className="text-small text-dark-secondary" data-cy="process-error">
