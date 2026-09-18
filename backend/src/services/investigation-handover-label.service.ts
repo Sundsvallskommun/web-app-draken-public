@@ -322,7 +322,7 @@ interface LocationLabelUpdateInput {
 }
 
 /** Label ids by normalized resource path, for errand labels that arrive without an id. */
-const indexLabelIdsByPath = (labelStructure: readonly Label[] | undefined): Map<string, string> => {
+export const indexLabelIdsByPath = (labelStructure: readonly Label[] | undefined): Map<string, string> => {
   const idByPath = new Map<string, string>();
   const visit = (nodes: readonly Label[] | undefined): void => {
     for (const node of nodes ?? []) {

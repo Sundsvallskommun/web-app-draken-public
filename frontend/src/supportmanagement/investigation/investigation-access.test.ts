@@ -54,7 +54,7 @@ test('the generic JSON view cannot reveal a hidden investigation document from a
   const profile = {
     application: 'IAF',
     state: 'active' as const,
-    registration: { mode: 'enabled' as const },
+    registration: { mode: 'enabled' as const, form: false },
     documents: [
       {
         key: 'hsl',

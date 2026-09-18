@@ -14,7 +14,7 @@ const profile = (documents: InvestigationProfile['documents']): InvestigationPro
   application: 'IAF',
   state: 'active',
   documents,
-  registration: { mode: 'enabled' },
+  registration: { mode: 'enabled', form: false },
 });
 const investigation = (key: string, schemaName = 'utredning-sol-lss'): InvestigationProfile['documents'][number] => ({
   key,

@@ -290,7 +290,22 @@ describe('support-errand.service', () => {
       expect(getNewErrandDefaults(application)).toEqual({
         labels: { category: 'REPORT_TYPE', type: 'REPORT_TYPE/DEVIATION' },
         parameters: [{ key: 'eventType', displayName: 'Rapporttyp', values: ['AVVIKELSE'] }],
+        form: {
+          reportTypes: ['REPORT_TYPE/DEVIATION', 'REPORT_TYPE/ABUSE'],
+          location: true,
+          priority: true,
+        },
       });
+    });
+
+    // The form is what makes the registration page ask before creating the errand. Every other
+    // drake leaves it out and keeps creating the errand the moment the page opens.
+    it('configures the registration form for the avvikelse drakes only', () => {
+      const withForm = Object.entries(NEW_ERRAND_DEFAULTS)
+        .filter(([, defaults]) => defaults.form)
+        .map(([application]) => application);
+
+      expect(withForm).toEqual(['IAF', 'VOF']);
     });
 
     it('leaves labels undefined for the drakes that configure none', () => {

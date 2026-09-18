@@ -143,6 +143,8 @@ export interface IafApiTrace {
   handovers: Array<{ step: string; expectedVersion?: number; assignedUserId?: string; locationLabelId?: string }>;
   /** Places whose managers were previewed, by label id. */
   locationManagerGets: string[];
+  /** Registration requests, in order, exactly as the form sent them. */
+  registrations: Array<{ reportTypeLabelId?: string; locationLabelId?: string; priority?: string }>;
 }
 
 /** One phase of the namespace's workflow, as `supportmetadata` describes it. */
@@ -227,7 +229,15 @@ const workflowPhases: WorkflowPhase[] = workflowChain.map(
   }
 );
 
+/** What the registration form is told it may choose. Omitted, registration is not exercised. */
+export interface RegistrationOptionsScenario {
+  reportTypes: Array<{ labelId: string; displayName: string; resourcePath: string }>;
+  locations: Array<{ labelId: string; displayName: string; resourcePath: string }>;
+  priorities: string[];
+}
+
 export interface IafApiScenario {
+  registrationOptions?: RegistrationOptionsScenario;
   documentAccess?: Readonly<Record<string, 'edit' | 'read' | 'hidden'>>;
   investigationAccessStatus?: number;
   canEdit?: boolean;
@@ -896,6 +906,7 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
     phasePatches: [],
     handovers: [],
     locationManagerGets: [],
+    registrations: [],
   };
 
   // Support Management reports the phase an errand is in as the one entry of its history that has
@@ -1001,6 +1012,26 @@ export async function installIafApiMock(page: Page, scenario: IafApiScenario = {
           ? { ...configuredResponse, state: 'inactive' }
           : configuredResponse;
       await fulfillJson(route, response, scenario.investigationProfileStatus ?? 200);
+      return;
+    }
+
+    if (method === 'GET' && /\/newerrand\/[^/]+\/options$/u.test(path)) {
+      await fulfillJson(
+        route,
+        apiResponse(scenario.registrationOptions ?? { reportTypes: [], locations: [], priorities: [] })
+      );
+      return;
+    }
+
+    if (method === 'POST' && /\/newerrand\/[^/]+$/u.test(path)) {
+      const body = request.postDataJSON() as {
+        reportTypeLabelId?: string;
+        locationLabelId?: string;
+        priority?: string;
+      };
+      trace.registrations.push(body);
+      // The BFF sends Support Management's created errand straight back, not wrapped in an envelope.
+      await fulfillJson(route, { id: errandId, errandNumber }, 201);
       return;
     }
 

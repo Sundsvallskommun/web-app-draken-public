@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsIn, IsOptional, IsString, Matches, MinLength, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsIn, IsOptional, IsString, Matches, MinLength, ValidateNested } from 'class-validator';
 
 const SUPPORT_INVESTIGATION_IDENTIFIER = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 
@@ -107,6 +107,14 @@ export type SupportInvestigationState = (typeof SUPPORT_INVESTIGATION_STATES)[nu
 export class SupportRegistrationCapabilityDto {
   @IsIn(['enabled', 'disabled'])
   readonly mode!: 'enabled' | 'disabled';
+
+  /**
+   * Whether registration asks the handler for the errand's details first. Absent for every drake
+   * that registers the way support management always has, by creating the errand straight away.
+   */
+  @IsOptional()
+  @IsBoolean()
+  readonly form?: boolean;
 }
 
 export class SupportManagementLabelFilterFieldProfileDto {

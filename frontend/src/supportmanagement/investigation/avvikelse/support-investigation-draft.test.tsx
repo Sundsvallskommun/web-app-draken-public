@@ -172,7 +172,7 @@ beforeEach(() => {
     profile: {
       application: 'IAF',
       state: 'active',
-      registration: { mode: 'enabled' },
+      registration: { mode: 'enabled', form: false },
       documents: ['first', 'second'].map((key) => ({
         key,
         schemaName: key,

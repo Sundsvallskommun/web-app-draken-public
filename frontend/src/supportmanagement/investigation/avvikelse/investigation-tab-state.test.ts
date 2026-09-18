@@ -38,7 +38,7 @@ const profile = (overrides: Partial<InvestigationProfile> = {}): InvestigationPr
   application: 'IAF',
   state: 'active',
   documents: [document()],
-  registration: { mode: 'enabled' },
+  registration: { mode: 'enabled', form: false },
   ...overrides,
 });
 const access = (

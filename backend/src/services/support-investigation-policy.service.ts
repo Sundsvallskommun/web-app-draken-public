@@ -79,7 +79,12 @@ export class SupportInvestigationPolicyService {
       documents: this.configuredProfile.documents,
       ...(this.configuredProfile.labelFilter ? { labelFilter: this.configuredProfile.labelFilter } : {}),
       state,
-      registration: Object.freeze({ mode: registrationState === 'enabled' ? 'enabled' : 'disabled' }),
+      registration: Object.freeze({
+        mode: registrationState === 'enabled' ? 'enabled' : 'disabled',
+        // The form is the application's own configuration, not a runtime state: a drake either asks
+        // before creating the errand or it does not, whatever the investigation is doing.
+        ...(getNewErrandDefaults(this.configuredProfile.application)?.form ? { form: true } : {}),
+      }),
     });
   }
 

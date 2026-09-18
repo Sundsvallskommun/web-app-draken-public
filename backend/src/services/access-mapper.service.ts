@@ -51,6 +51,34 @@ export class AccessMapperService {
 
     return [...new Map(accounts.map(account => [account.toLowerCase(), account])).values()];
   }
+
+  /**
+   * The label patterns configured for one AD account - the other direction of the same
+   * configuration: `findLocationAccessCandidates` asks which accounts reach a place, this asks which
+   * places an account reaches.
+   *
+   * An unknown account answers 404 upstream. That is an account with no configured places rather
+   * than a failure, so it comes back empty, the same way its roles do.
+   */
+  async findAccountLabelPatterns(user: User, municipalityId: string, namespace: string, adAccount: string): Promise<string[]> {
+    const url = `${municipalityId}/${namespace}/access/ad/${encodeURIComponent(adAccount)}`;
+
+    try {
+      const response = await this.apiService.get<AccessGroup[]>(
+        { url, baseURL: apiURL(SERVICE), params: { type: LABEL_ACCESS_TYPE }, propagateClientError: true },
+        user,
+      );
+      return (response.data ?? [])
+        .flatMap(group => group.accessByType ?? [])
+        .filter(accessType => accessType.type?.trim().toLowerCase() === LABEL_ACCESS_TYPE)
+        .flatMap(accessType => accessType.access ?? [])
+        .map(access => access.pattern)
+        .filter((pattern): pattern is string => typeof pattern === 'string');
+    } catch (error) {
+      if (hasStatus(error, 404)) return [];
+      throw error;
+    }
+  }
 }
 
 /**

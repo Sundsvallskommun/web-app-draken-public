@@ -862,11 +862,45 @@ const getSupportErrandsCount: (municipalityId: string, filter?: SupportErrandFil
     });
 };
 
-export const initiateSupportErrand: (municipalityId: string) => Promise<any | Partial<SupportErrandDto>> = (
+/** One choice the registration form offers, identified the way a label always is: by its id. */
+export interface SupportRegistrationOption {
+  labelId: string;
+  displayName: string;
+  resourcePath: string;
+}
+
+/**
+ * What the signed-in handler may choose when registering. The places are theirs alone - the backend
+ * resolves them from the same configuration that decides who reaches which errands - so the form
+ * offers exactly what it will accept back.
+ */
+export interface SupportRegistrationOptions {
+  reportTypes: SupportRegistrationOption[];
+  locations: SupportRegistrationOption[];
+  /** Priority keys as Support Management spells them, e.g. `HIGH`; `findPriorityLabelForPriorityKey` names them. */
+  priorities: string[];
+}
+
+/** The handler's answers. A drake that registers without a form sends none of them. */
+export interface SupportRegistrationChoice {
+  reportTypeLabelId?: string;
+  locationLabelId?: string;
+  priority?: string;
+}
+
+export const getSupportRegistrationOptions: (municipalityId: string) => Promise<SupportRegistrationOptions> = (
   municipalityId
-) => {
+) =>
+  apiService
+    .get<{ data: SupportRegistrationOptions }>(`newerrand/${municipalityId}/options`)
+    .then((res) => res.data.data);
+
+export const initiateSupportErrand: (
+  municipalityId: string,
+  choice?: SupportRegistrationChoice
+) => Promise<any | Partial<SupportErrandDto>> = (municipalityId, choice = {}) => {
   return apiService
-    .post<ApiSupportErrand, Partial<SupportErrandDto>>(`newerrand/${municipalityId}`, {})
+    .post<ApiSupportErrand, SupportRegistrationChoice>(`newerrand/${municipalityId}`, choice)
     .then((res) => {
       return mapApiSupportErrandToSupportErrand(res.data);
     })

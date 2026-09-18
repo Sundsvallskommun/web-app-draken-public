@@ -13,7 +13,7 @@ import {
   UpdateSupportErrandClassificationDto,
   UpdateSupportErrandStatusDto,
 } from '@/controllers/supportmanagement/support-errand.controller';
-import { Errand as SupportErrand, Label } from '@/data-contracts/supportmanagement/data-contracts';
+import { Errand as SupportErrand, Label, Priority } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { ExternalIdType } from '@/interfaces/externalIdType.interface';
@@ -114,13 +114,77 @@ const makeController = (classificationOwner: SupportErrandClassificationOwner = 
       status: 200,
     })),
   };
+  const accessMapper = { findAccountLabelPatterns: vi.fn(async (): Promise<string[]> => []) };
   (controller as unknown as { apiService: ApiStub }).apiService = api;
+  (controller as unknown as { accessMapperService: typeof accessMapper }).accessMapperService = accessMapper;
   (controller as unknown as { organizationService: OrgStub }).organizationService = organization;
   (controller as unknown as { investigationPolicyService: SupportInvestigationPolicyService }).investigationPolicyService =
     investigationPolicy as unknown as SupportInvestigationPolicyService;
   (controller as unknown as { jsonParameterService: SupportJsonParameterService }).jsonParameterService =
     investigationDocument as unknown as SupportJsonParameterService;
-  return { controller, api, organization, investigationPolicy, investigationDocument };
+  return { controller, api, organization, investigationPolicy, investigationDocument, accessMapper };
+};
+
+/**
+ * Metadata for the drakes that ask before creating the errand: the two report types they configure,
+ * and one place under a department, which is the shape AccessMapper's patterns are written against.
+ */
+const registrationMetadata = {
+  labels: {
+    labelStructure: [
+      {
+        id: 'report-type-root',
+        classification: 'REPORT_TYPE_ROOT',
+        resourceName: 'REPORT_TYPE',
+        resourcePath: 'REPORT_TYPE',
+        labels: [
+          {
+            id: 'deviation',
+            classification: 'REPORT_TYPE',
+            resourceName: 'DEVIATION',
+            resourcePath: 'REPORT_TYPE/DEVIATION',
+            displayName: 'Avvikelse',
+          },
+          { id: 'abuse', classification: 'REPORT_TYPE', resourceName: 'ABUSE', resourcePath: 'REPORT_TYPE/ABUSE', displayName: 'Missförhållande' },
+        ],
+      },
+      {
+        id: 'location-root',
+        classification: 'LOCATION_ROOT',
+        resourceName: 'LOCATION',
+        resourcePath: 'LOCATION',
+        labels: [
+          {
+            id: 'department',
+            classification: 'DEPARTMENT',
+            resourceName: 'VOF',
+            resourcePath: 'LOCATION/VOF',
+            labels: [
+              {
+                id: 'unit',
+                classification: 'LOCATION',
+                resourceName: 'HEMTJANST_NORR',
+                resourcePath: 'LOCATION/VOF/HEMTJANST_NORR',
+                displayName: 'Hemtjänst Norr',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};
+
+const HANDLER_LOCATION_PATTERN = 'LOCATION/VOF/HEMTJANST_NORR/**';
+
+/** A controller configured the way IAF and VOF are: registration asks before the errand exists. */
+const makeRegistrationController = () => {
+  const made = makeController();
+  (made.controller as unknown as { newErrandDefaults: NewErrandDefaults }).newErrandDefaults = getNewErrandDefaults('IAF')!;
+  made.api.get.mockResolvedValue({ data: registrationMetadata, message: 'success' });
+  made.api.post.mockResolvedValue({ data: { id: mockSupportErrandId }, message: 'success' });
+  made.accessMapper.findAccountLabelPatterns.mockResolvedValue([HANDLER_LOCATION_PATTERN]);
+  return made;
 };
 
 /** All query params of `errands`, in declaration order, so tests can override just one. */
@@ -276,7 +340,7 @@ describe('SupportErrandController', () => {
         (res: MockResponse) => controller.errand(req, mockSupportErrandId, '', res),
         (res: MockResponse) => controller.errands(req, ...errandsArgs(), '', res),
         (res: MockResponse) => controller.countErrands(req, ...countArgs(), '', res),
-        (res: MockResponse) => controller.registerSupportErrand(req, '', res),
+        (res: MockResponse) => controller.registerSupportErrand(req, '', {}, res),
         (res: MockResponse) => controller.updateSupportErrand(req, mockSupportErrandId, '', ABSENT_HEADER, {}, res),
         (res: MockResponse) =>
           controller.updateSupportErrandStatus(req, mockSupportErrandId, '', { expectedVersion: 1, expectedStatus: 'NEW', status: 'ONGOING' }, res),
@@ -503,7 +567,7 @@ describe('SupportErrandController', () => {
       api.post.mockResolvedValue({ data: { id: mockSupportErrandId }, message: 'success' });
       const res = mockRes();
 
-      await controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, res);
+      await controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, {}, res);
 
       const [config] = api.post.mock.calls[0];
       expect(config.url).toBe(`${MUNICIPALITY_ID}/${NAMESPACE}/errands`);
@@ -526,7 +590,7 @@ describe('SupportErrandController', () => {
       const { controller, api } = makeController();
       (controller as unknown as { newErrandDefaults: undefined }).newErrandDefaults = undefined;
 
-      await expect(controller.registerSupportErrand(mockReq(), MUNICIPALITY_ID, mockRes())).rejects.toMatchObject({
+      await expect(controller.registerSupportErrand(mockReq(), MUNICIPALITY_ID, {}, mockRes())).rejects.toMatchObject({
         status: 409,
         message: 'Registration is not configured for this application',
       });
@@ -537,7 +601,7 @@ describe('SupportErrandController', () => {
     it('does not create an investigation-owned errand while its registration policy is unavailable', async () => {
       const { controller, api } = makeController('unavailable');
 
-      await expect(controller.registerSupportErrand(mockReq(), MUNICIPALITY_ID, mockRes())).rejects.toMatchObject({
+      await expect(controller.registerSupportErrand(mockReq(), MUNICIPALITY_ID, {}, mockRes())).rejects.toMatchObject({
         status: 503,
         message: 'Support errand registration policy is temporarily unavailable',
       });
@@ -550,7 +614,7 @@ describe('SupportErrandController', () => {
       api.get.mockResolvedValue(metadata);
       api.post.mockResolvedValue({ data: { id: mockSupportErrandId }, message: 'success' });
 
-      await controller.registerSupportErrand(mockReq(), MUNICIPALITY_ID, mockRes());
+      await controller.registerSupportErrand(mockReq(), MUNICIPALITY_ID, {}, mockRes());
 
       expect(api.get).toHaveBeenCalledWith({ url: `${SUPPORT_SERVICE}/${MUNICIPALITY_ID}/${NAMESPACE}/metadata` }, expect.anything());
     });
@@ -571,7 +635,7 @@ describe('SupportErrandController', () => {
       });
       api.post.mockResolvedValue({ data: { id: mockSupportErrandId }, message: 'success' });
 
-      await controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, mockRes());
+      await controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, {}, mockRes());
 
       expect(api.post.mock.calls[0][0].data).toMatchObject({ activePhaseId: 'actualization', status: 'NEW' });
     });
@@ -581,7 +645,7 @@ describe('SupportErrandController', () => {
       api.get.mockResolvedValue(metadata);
       api.post.mockResolvedValue({ data: { id: mockSupportErrandId }, message: 'success' });
 
-      await controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, mockRes());
+      await controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, {}, mockRes());
 
       expect(api.post.mock.calls[0][0].data).not.toHaveProperty('activePhaseId');
     });
@@ -592,7 +656,7 @@ describe('SupportErrandController', () => {
       api.post.mockResolvedValue({ data: '', message: 'success' });
       const res = mockRes();
 
-      await controller.registerSupportErrand(mockReq(), MUNICIPALITY_ID, res);
+      await controller.registerSupportErrand(mockReq(), MUNICIPALITY_ID, {}, res);
 
       expect(res.statusCode).toBe(500);
       expect(res.body).toBe('Something went wrong when initiating support errand');
@@ -603,7 +667,7 @@ describe('SupportErrandController', () => {
       api.get.mockResolvedValue(metadata);
       api.post.mockRejectedValue(new Error('upstream down'));
 
-      await expect(controller.registerSupportErrand(mockReq(), MUNICIPALITY_ID, mockRes())).rejects.toThrow('upstream down');
+      await expect(controller.registerSupportErrand(mockReq(), MUNICIPALITY_ID, {}, mockRes())).rejects.toThrow('upstream down');
     });
   });
 
@@ -824,40 +888,87 @@ describe('SupportErrandController', () => {
       });
     });
 
-    it('creates IAF/VOF errands with an explicit deviation kind but leaves legal-base classification to the investigation', async () => {
-      const { controller, api } = makeController();
-      (controller as unknown as { newErrandDefaults: NewErrandDefaults }).newErrandDefaults = getNewErrandDefaults('IAF')!;
-      api.get.mockResolvedValue({
-        data: {
-          labels: {
-            labelStructure: [
-              {
-                id: 'report-type-root',
-                classification: 'REPORT_TYPE_ROOT',
-                resourceName: 'REPORT_TYPE',
-                resourcePath: 'REPORT_TYPE',
-                labels: [
-                  {
-                    id: 'deviation',
-                    classification: 'REPORT_TYPE',
-                    resourceName: 'DEVIATION',
-                    resourcePath: 'REPORT_TYPE/DEVIATION',
-                  },
-                ],
-              },
-            ],
-          },
-        },
-        message: 'success',
-      });
-      api.post.mockResolvedValue({ data: { id: mockSupportErrandId }, message: 'success' });
+    // IAF and VOF ask the unit manager what happened and where before the errand exists. The errand
+    // still carries no classification: which legal bases apply is the investigation's answer, not
+    // the reporter's.
+    it('creates IAF/VOF errands from the chosen report type and place', async () => {
+      const { controller, api } = makeRegistrationController();
 
-      await controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, mockRes());
+      await controller.registerSupportErrand(
+        mockReq(mockUser()),
+        MUNICIPALITY_ID,
+        { reportTypeLabelId: 'abuse', locationLabelId: 'unit', priority: Priority.HIGH },
+        mockRes(),
+      );
 
       const body = api.post.mock.calls[0][0].data;
       expect(body).not.toHaveProperty('classification');
       expect(body.parameters).toEqual([{ key: 'eventType', displayName: 'Rapporttyp', values: ['AVVIKELSE'] }]);
-      expect(body.labels.map(({ resourcePath }: Label) => resourcePath)).toEqual(['REPORT_TYPE', 'REPORT_TYPE/DEVIATION']);
+      expect(body.labels.map(({ resourcePath }: Label) => resourcePath)).toEqual([
+        'REPORT_TYPE',
+        'REPORT_TYPE/ABUSE',
+        'LOCATION/VOF',
+        'LOCATION/VOF/HEMTJANST_NORR',
+      ]);
+      expect(body.priority).toBe(Priority.HIGH);
+    });
+
+    it('refuses to create the errand before the handler has said what is being reported', async () => {
+      const { controller, api } = makeRegistrationController();
+
+      await expect(
+        controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, { locationLabelId: 'unit' }, mockRes()),
+      ).rejects.toMatchObject({ status: 400 });
+      expect(api.post).not.toHaveBeenCalled();
+    });
+
+    // The form only ever offers the handler's own places, so a request naming another one is not a
+    // handler who changed their mind - it is a client deciding something the configuration decides.
+    it('refuses a place the handler is not configured for', async () => {
+      const { controller, api, accessMapper } = makeRegistrationController();
+      accessMapper.findAccountLabelPatterns.mockResolvedValue(['LOCATION/VOF/ANNAN_ENHET/**']);
+
+      await expect(
+        controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, { reportTypeLabelId: 'abuse', locationLabelId: 'unit' }, mockRes()),
+      ).rejects.toMatchObject({ status: 400 });
+      expect(api.post).not.toHaveBeenCalled();
+    });
+
+    it('refuses registration choices from a drake that registers without a form', async () => {
+      const { controller, api } = makeController();
+
+      await expect(
+        controller.registerSupportErrand(mockReq(mockUser()), MUNICIPALITY_ID, { reportTypeLabelId: 'abuse' }, mockRes()),
+      ).rejects.toMatchObject({ status: 400 });
+      expect(api.post).not.toHaveBeenCalled();
+    });
+
+    it('offers the handler the configured report types and their own places', async () => {
+      const { controller, accessMapper } = makeRegistrationController();
+
+      const options = await controller.getNewErrandOptions(mockReq(mockUser()), MUNICIPALITY_ID);
+
+      expect(options.reportTypes.map(({ resourcePath }) => resourcePath)).toEqual(['REPORT_TYPE/DEVIATION', 'REPORT_TYPE/ABUSE']);
+      expect(options.locations).toEqual([{ labelId: 'unit', displayName: 'Hemtjänst Norr', resourcePath: 'LOCATION/VOF/HEMTJANST_NORR' }]);
+      expect(options.priorities).toEqual(Object.values(Priority));
+      expect(accessMapper.findAccountLabelPatterns).toHaveBeenCalledWith(expect.anything(), MUNICIPALITY_ID, expect.any(String), mockUser().username);
+    });
+
+    // A department is not a place: AccessMapper's patterns are matched against the units beneath it,
+    // and an errand filed on the department would have no manager to resolve.
+    it('leaves out a configured pattern that is not a place', async () => {
+      const { controller, accessMapper } = makeRegistrationController();
+      accessMapper.findAccountLabelPatterns.mockResolvedValue(['LOCATION/VOF/**', 'LOCATION/**']);
+
+      const options = await controller.getNewErrandOptions(mockReq(mockUser()), MUNICIPALITY_ID);
+
+      expect(options.locations).toEqual([]);
+    });
+
+    it('has no registration options to offer for a drake that registers without a form', async () => {
+      const { controller } = makeController();
+
+      await expect(controller.getNewErrandOptions(mockReq(mockUser()), MUNICIPALITY_ID)).rejects.toMatchObject({ status: 409 });
     });
 
     it('fails closed for protected fields when ownership cannot be resolved, but not for unrelated updates', async () => {

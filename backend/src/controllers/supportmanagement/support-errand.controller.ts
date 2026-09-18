@@ -4,6 +4,7 @@ import {
   IsArray,
   IsBoolean,
   IsDefined,
+  IsIn,
   IsInt,
   IsNumber,
   IsObject,
@@ -58,7 +59,16 @@ import { ContactChannelType } from '@/interfaces/support-contactchannel';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { hasPermissions } from '@/middlewares/permissions.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
+import { AccessMapperService } from '@/services/access-mapper.service';
 import ApiService from '@/services/api.service';
+import { resolveInvestigationLocationTarget } from '@/services/investigation-handover-label.service';
+import {
+  RegistrationLocation,
+  RegistrationReportType,
+  resolveRegistrationLabelsByIds,
+  resolveRegistrationLocations,
+  resolveRegistrationReportTypes,
+} from '@/services/investigation-registration.service';
 import { createConversation, sendConversationTextMessage } from '@/services/message.service';
 import { OrganizationService } from '@/services/organization.service';
 import {
@@ -513,6 +523,33 @@ class ForwardFormDto {
   messageBodyPlaintext!: string;
 }
 
+/** What the registration form offers the signed-in handler. */
+export interface NewErrandOptionsResponse {
+  readonly reportTypes: readonly RegistrationReportType[];
+  readonly locations: readonly RegistrationLocation[];
+  readonly priorities: readonly SupportPriority[];
+}
+
+/**
+ * What the handler chose in the registration form. Every field is optional on the wire: a drake
+ * without a configured form sends none of them and gets exactly the errand it always got.
+ */
+export class NewSupportErrandDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  locationLabelId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  reportTypeLabelId?: string;
+
+  @IsOptional()
+  @IsIn(Object.values(SupportPriority))
+  priority?: SupportPriority;
+}
+
 @Controller()
 @UseBefore(hasPermissions(['canEditSupportManagement']))
 export class SupportErrandController {
@@ -521,6 +558,7 @@ export class SupportErrandController {
   private investigationPolicyService = new SupportInvestigationPolicyService();
   private investigationAccessService = new SupportInvestigationAccessService();
   private jsonParameterService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' });
+  private accessMapperService = new AccessMapperService();
   private newErrandDefaults: NewErrandDefaults | undefined = getNewErrandDefaults(APPLICATION);
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   SERVICE = apiServiceName('supportmanagement');
@@ -801,11 +839,12 @@ export class SupportErrandController {
 
   @Post('/newerrand/:municipalityId')
   @HttpCode(201)
-  @OpenAPI({ summary: 'Initiate a new, empty support errand' })
-  @UseBefore(authMiddleware)
+  @OpenAPI({ summary: 'Initiate a new support errand' })
+  @UseBefore(authMiddleware, validationMiddleware(NewSupportErrandDto, 'body'))
   async registerSupportErrand(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
+    @Body() data: NewSupportErrandDto,
     @Res() response: any,
   ): Promise<{ data: SupportErrandDto; message: string }> {
     if (!municipalityId) {
@@ -814,17 +853,10 @@ export class SupportErrandController {
       return response.status(400).send('Municipality id missing');
     }
 
-    const registrationState = await this.investigationPolicyService.getRegistrationState(req.user);
-    if (registrationState === 'unavailable') {
-      throw new HttpException(503, 'Support errand registration policy is temporarily unavailable');
-    }
-    if (registrationState === 'disabled' || !this.newErrandDefaults) {
-      throw new HttpException(409, 'Registration is not configured for this application');
-    }
+    const defaults = await this.assertRegistrationEnabled(req);
 
     // The whole metadata rather than just its labels: a new errand also needs the phase it starts in.
-    const metadataUrl = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata`;
-    const metadataRes = await this.apiService.get<SupportMetadata>({ url: metadataUrl }, req.user);
+    const metadataRes = await this.readSupportMetadata(req, municipalityId);
 
     // An errand created without a phase stands outside the workflow, and the phase strip has nothing
     // to advance from. A namespace with no phases configured simply has no workflow, and the errand
@@ -832,16 +864,18 @@ export class SupportErrandController {
     const initialPhase = findInitialSupportErrandPhase(metadataRes.data.phases);
     const initialStatus = initialPhase ? (resolvePhaseStatus(Status.NEW, initialPhase) ?? Status.NEW) : Status.NEW;
 
+    const registration = await this.resolveRegistrationChoice(req, municipalityId, data, metadataRes.data);
+
     const url = `${municipalityId}/${this.namespace}/errands`;
     const baseURL = apiURL(this.SERVICE);
     const body: Partial<SupportErrandDto> = {
       reporterUserId: req.user.username,
       assignedUserId: req.user.username,
-      ...(this.newErrandDefaults.classification ? { classification: this.newErrandDefaults.classification } : {}),
-      labels: this.newErrandDefaults.labels ? resolveDefaultLabels(metadataRes.data.labels?.labelStructure, this.newErrandDefaults.labels) : [],
-      ...(this.newErrandDefaults.parameters ? { parameters: this.newErrandDefaults.parameters.map(parameter => ({ ...parameter })) } : {}),
+      ...(defaults.classification ? { classification: defaults.classification } : {}),
+      labels: registration?.labels ?? (defaults.labels ? resolveDefaultLabels(metadataRes.data.labels?.labelStructure, defaults.labels) : []),
+      ...(defaults.parameters ? { parameters: defaults.parameters.map(parameter => ({ ...parameter })) } : {}),
       ...(initialPhase?.id ? { activePhaseId: initialPhase.id } : {}),
-      priority: SupportPriority.MEDIUM,
+      priority: registration?.priority ?? SupportPriority.MEDIUM,
       status: initialStatus,
       channel: ContactChannelType.PHONE,
       title: 'Empty errand',
@@ -857,6 +891,105 @@ export class SupportErrandController {
       return response.status(500).send('Something went wrong when initiating support errand');
     }
     return response.status(201).send(res.data);
+  }
+
+  /**
+   * What the registration form offers the signed-in handler: the report types the application
+   * configures, and the places their own AccessMapper configuration reaches.
+   *
+   * An application that registers without a form has nothing to answer here, and says so with the
+   * same 409 registration itself gives, rather than an empty form the handler could not submit.
+   */
+  @Get('/newerrand/:municipalityId/options')
+  @OpenAPI({ summary: 'The choices the registration form offers the signed-in handler' })
+  @UseBefore(authMiddleware)
+  async getNewErrandOptions(@Req() req: RequestWithUser, @Param('municipalityId') municipalityId: string): Promise<NewErrandOptionsResponse> {
+    const form = this.newErrandDefaults?.form;
+    if (!form) throw new HttpException(409, 'Registration is not configured for this application');
+    await this.assertRegistrationEnabled(req);
+
+    const metadata = await this.readSupportMetadata(req, municipalityId);
+    const labelStructure = metadata.data.labels?.labelStructure;
+
+    return {
+      reportTypes: resolveRegistrationReportTypes(labelStructure, form.reportTypes),
+      locations: form.location ? await this.resolveHandlerLocations(req, municipalityId, labelStructure) : [],
+      priorities: form.priority ? Object.values(SupportPriority) : [],
+    };
+  }
+
+  /** Refuses unless this application registers errands, and hands back what it registers them with. */
+  private async assertRegistrationEnabled(req: RequestWithUser): Promise<NewErrandDefaults> {
+    const registrationState = await this.investigationPolicyService.getRegistrationState(req.user);
+    if (registrationState === 'unavailable') {
+      throw new HttpException(503, 'Support errand registration policy is temporarily unavailable');
+    }
+    if (registrationState === 'disabled' || !this.newErrandDefaults) {
+      throw new HttpException(409, 'Registration is not configured for this application');
+    }
+    return this.newErrandDefaults;
+  }
+
+  private readSupportMetadata(req: RequestWithUser, municipalityId: string) {
+    const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata`;
+    return this.apiService.get<SupportMetadata>({ url }, req.user);
+  }
+
+  /** The places the signed-in handler is configured for, as the form offers them. */
+  private async resolveHandlerLocations(
+    req: RequestWithUser,
+    municipalityId: string,
+    labelStructure: Label[] | undefined,
+  ): Promise<RegistrationLocation[]> {
+    const patterns = await this.accessMapperService.findAccountLabelPatterns(req.user, municipalityId, this.namespace!, req.user.username);
+    return resolveRegistrationLocations(labelStructure, patterns);
+  }
+
+  /**
+   * The labels and priority the handler chose, or nothing at all for an application that registers
+   * without a form.
+   *
+   * The place is checked against the handler's own configuration rather than taken on the client's
+   * word: the form only ever offers their places, so a request naming another one is not a handler
+   * who changed their mind. The report type likewise has to be one the application configures - it
+   * decides which investigation the errand gets, so it is not a free label.
+   */
+  private async resolveRegistrationChoice(
+    req: RequestWithUser,
+    municipalityId: string,
+    data: NewSupportErrandDto,
+    metadata: SupportMetadata,
+  ): Promise<{ labels: Label[]; priority: SupportPriority } | undefined> {
+    const form = this.newErrandDefaults?.form;
+    if (!form) {
+      if (data.locationLabelId || data.reportTypeLabelId || data.priority) {
+        throw new HttpException(400, 'This application registers errands without a form');
+      }
+      return undefined;
+    }
+
+    const labelStructure = metadata.labels?.labelStructure;
+    const reportTypes = resolveRegistrationReportTypes(labelStructure, form.reportTypes);
+    const reportType = reportTypes.find(candidate => candidate.labelId === data.reportTypeLabelId);
+    if (!reportType) {
+      throw new HttpException(400, 'Choose what is being reported');
+    }
+
+    const labelIds = [...reportType.chainIds];
+
+    if (form.location) {
+      const locations = await this.resolveHandlerLocations(req, municipalityId, labelStructure);
+      const location = locations.find(candidate => candidate.labelId === data.locationLabelId);
+      if (!location) {
+        throw new HttpException(400, 'Choose one of the places you are configured for');
+      }
+      labelIds.push(...resolveInvestigationLocationTarget(labelStructure, location.labelId).chainIds);
+    }
+
+    return {
+      labels: resolveRegistrationLabelsByIds(labelStructure, [...new Set(labelIds)]),
+      priority: form.priority ? (data.priority ?? SupportPriority.MEDIUM) : SupportPriority.MEDIUM,
+    };
   }
 
   private async assertGenericClassificationUpdateAllowed(

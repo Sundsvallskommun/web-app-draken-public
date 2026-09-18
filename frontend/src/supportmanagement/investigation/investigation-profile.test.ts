@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 import { test } from 'vitest';
 
-import { parseInvestigationProfile } from './investigation-profile';
+import { isSupportRegistrationForm, parseInvestigationProfile } from './investigation-profile';
 
 const validProfile = () => ({
   application: 'iaf',
@@ -48,7 +48,33 @@ test('accepts a valid inactive empty document profile', () => {
       { application: 'KC', state: 'inactive', registration: { mode: 'enabled' }, documents: [] },
       'kc'
     ),
-    { application: 'KC', state: 'inactive', registration: { mode: 'enabled' }, documents: [] }
+    { application: 'KC', state: 'inactive', registration: { mode: 'enabled', form: false }, documents: [] }
+  );
+});
+
+// The form is what makes the registration page ask before the errand exists. A BFF that does not
+// send it is a drake that registers the way support management always has.
+test('reads a registration without a form as one that creates the errand straight away', () => {
+  const withoutForm = parseInvestigationProfile(
+    { application: 'KC', state: 'inactive', registration: { mode: 'enabled' }, documents: [] },
+    'kc'
+  );
+  const withForm = parseInvestigationProfile(
+    { application: 'VOF', state: 'active', registration: { mode: 'enabled', form: true }, documents: [] },
+    'vof'
+  );
+
+  assert.equal(isSupportRegistrationForm(withoutForm), false);
+  assert.equal(isSupportRegistrationForm(withForm), true);
+  // A drake that cannot register at all has no form to show either.
+  assert.equal(
+    isSupportRegistrationForm(
+      parseInvestigationProfile(
+        { application: 'VOF', state: 'active', registration: { mode: 'disabled', form: true }, documents: [] },
+        'vof'
+      )
+    ),
+    false
   );
 });
 

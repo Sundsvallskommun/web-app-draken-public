@@ -188,11 +188,40 @@ export const buildErrandFilter = (input: ErrandFilterInput): string => {
 
 export type LabelSpec = { category: string; type: string; subType?: string };
 
+/**
+ * What the handler is asked before a new errand exists.
+ *
+ * An application without this registers the way every support drake always has: opening the
+ * registration page creates the errand from the defaults below and goes straight to it. Declaring a
+ * form here is what turns that into a page the handler fills in first, so the choice is made per
+ * application and no shared component has to know which drake it is running as.
+ */
+export interface NewErrandRegistrationForm {
+  /** The report types offered, by label resource path. The chosen one becomes the errand's label. */
+  readonly reportTypes: readonly string[];
+  /** Whether the handler picks the place, from the ones AccessMapper configures for their account. */
+  readonly location: boolean;
+  /** Whether the handler picks the errand's priority instead of taking the default. */
+  readonly priority: boolean;
+}
+
 export interface NewErrandDefaults {
   classification?: { category: string; type: string };
   labels?: LabelSpec;
   parameters?: readonly Pick<Parameter, 'key' | 'displayName' | 'values'>[];
+  form?: NewErrandRegistrationForm;
 }
+
+/**
+ * IAF and VOF register the same way: the unit manager says what happened and where, and the errand
+ * is created from that. The report type replaces the default label rather than adding to it - an
+ * errand is either a deviation or a reported misconduct, never both.
+ */
+const AVVIKELSE_REGISTRATION_FORM: NewErrandRegistrationForm = Object.freeze({
+  reportTypes: Object.freeze(['REPORT_TYPE/DEVIATION', 'REPORT_TYPE/ABUSE']),
+  location: true,
+  priority: true,
+});
 
 // Default classification and labels applied to a new empty errand, per application (drake).
 // Applications without a `labels` entry get no default labels.
@@ -227,10 +256,12 @@ export const NEW_ERRAND_DEFAULTS: Record<string, NewErrandDefaults> = {
   IAF: {
     labels: { category: 'REPORT_TYPE', type: 'REPORT_TYPE/DEVIATION' },
     parameters: [{ key: 'eventType', displayName: 'Rapporttyp', values: ['AVVIKELSE'] }],
+    form: AVVIKELSE_REGISTRATION_FORM,
   },
   VOF: {
     labels: { category: 'REPORT_TYPE', type: 'REPORT_TYPE/DEVIATION' },
     parameters: [{ key: 'eventType', displayName: 'Rapporttyp', values: ['AVVIKELSE'] }],
+    form: AVVIKELSE_REGISTRATION_FORM,
   },
   // Deliberately empty. Presence here is what enables registration at all - an application missing
   // from this table resolves to registration 'disabled', so the drake silently cannot create

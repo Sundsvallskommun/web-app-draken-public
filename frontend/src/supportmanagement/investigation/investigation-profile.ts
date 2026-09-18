@@ -33,7 +33,7 @@ export interface InvestigationProfile {
   readonly application: string;
   readonly state: InvestigationProfileState;
   readonly documents: readonly InvestigationProfileDocument[];
-  readonly registration: { readonly mode: 'enabled' | 'disabled' };
+  readonly registration: { readonly mode: 'enabled' | 'disabled'; readonly form: boolean };
   readonly labelFilter?: { readonly groups: readonly LabelFilterGroupDefinition[] };
 }
 
@@ -202,7 +202,9 @@ export function parseInvestigationProfile(value: unknown, expectedApplication?: 
   ) {
     throw new Error('Utredningsprofilens registration är ogiltig.');
   }
-  const registration = Object.freeze({ mode: value.registration.mode });
+  // The form is optional on the wire: a drake that registers the way support management always has
+  // leaves it out, and reads here as false rather than as a profile the client cannot parse.
+  const registration = Object.freeze({ mode: value.registration.mode, form: value.registration.form === true });
   const labelFilter = readLabelFilter(value.labelFilter);
   assertUnique(
     documents.map(({ key }) => key),
@@ -228,3 +230,10 @@ export function parseInvestigationProfile(value: unknown, expectedApplication?: 
 
 export const isSupportRegistrationEnabled = (profile: InvestigationProfile | null | undefined): boolean =>
   profile?.registration.mode === 'enabled';
+
+/**
+ * Whether registration asks the handler for the errand's details before creating it. Every other
+ * drake creates the errand the moment the registration page opens, which is what this guards.
+ */
+export const isSupportRegistrationForm = (profile: InvestigationProfile | null | undefined): boolean =>
+  isSupportRegistrationEnabled(profile) && profile?.registration.form === true;

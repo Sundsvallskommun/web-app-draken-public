@@ -6,7 +6,10 @@ import { appConfig } from '@config/appconfig';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Alert, Spinner, useGui, useSnackbar } from '@sk-web-gui/react';
 import { useBadgeStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
-import { isSupportRegistrationEnabled } from '@supportmanagement/investigation/investigation-profile';
+import {
+  isSupportRegistrationEnabled,
+  isSupportRegistrationForm,
+} from '@supportmanagement/investigation/investigation-profile';
 import { useInvestigationProfileStore } from '@supportmanagement/investigation/investigation-profile-store';
 import {
   defaultSupportErrandInformation,
@@ -25,6 +28,7 @@ import { SupportErrandSummary } from '../support-errand-basics-form/support-erra
 import { MessagePortal } from './sidebar/message-portal.component';
 import { SidebarWrapper } from './sidebar/sidebar.wrapper';
 import { supportErrandFormSchema } from './support-errand-form-schema';
+import { SupportErrandRegistrationForm } from './support-errand-registration-form.component';
 import { SupportTabsWrapper } from './support-tabs-wrapper';
 import { SupportUiPhaseWrapper } from './ui-phase/ui-phase-wrapper';
 
@@ -44,6 +48,9 @@ export const SupportErrandComponent: FC = () => {
   const supportApplicationProfile = useInvestigationProfileStore((state) => state.profile);
   const registrationBlocked =
     !errandNumber && appConfig.isSupportManagement && !isSupportRegistrationEnabled(supportApplicationProfile);
+  // A drake that asks before creating the errand renders the form instead of initiating one; every
+  // other drake keeps creating the errand the moment this page opens.
+  const registrationForm = !errandNumber && isSupportRegistrationForm(supportApplicationProfile);
 
   const methods = useForm<SupportErrand>({
     resolver: yupResolver(supportErrandFormSchema) as unknown as Resolver<SupportErrand>,
@@ -97,7 +104,7 @@ export const SupportErrandComponent: FC = () => {
             status: 'error',
           });
         });
-    } else if (!registrationBlocked) {
+    } else if (!registrationBlocked && !registrationForm) {
       if (municipalityId && supportErrandIsEmpty(supportErrand!) && !isLoading) {
         setIsLoading(true);
         setMessage('Registrerar nytt ärende..');
@@ -120,7 +127,7 @@ export const SupportErrandComponent: FC = () => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router, municipalityId, errandNumber, registrationBlocked]);
+  }, [router, municipalityId, errandNumber, registrationBlocked, registrationForm]);
 
   useEffect(() => {
     if (supportErrand && !supportErrandIsEmpty(supportErrand)) {
@@ -150,6 +157,10 @@ export const SupportErrandComponent: FC = () => {
         </Alert>
       </div>
     );
+  }
+
+  if (registrationForm) {
+    return <SupportErrandRegistrationForm municipalityId={municipalityId!} />;
   }
 
   if (!isReady) {
