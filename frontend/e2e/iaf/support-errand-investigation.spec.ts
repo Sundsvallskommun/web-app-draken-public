@@ -14,6 +14,7 @@ import {
   investigationKeys,
   investigationTabKeys,
   katlaSchemaId,
+  latestSchemaIds,
   type MockLabel,
 } from './fixtures/investigation-flow.mock';
 
@@ -886,7 +887,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await expect.poll(() => trace.puts.length).toBe(1);
     // The form never sends the server-owned report log, whatever RJSF defaulted it to.
     expect(trace.puts[0].body).toEqual({
-      schemaId: '2281_utredning-hsl_1.2',
+      schemaId: latestSchemaIds['utredning-hsl'],
       value: expect.objectContaining({ completed: 'yes' }),
     });
     expect(trace.puts[0].body).not.toHaveProperty(['value', 'reports']);
@@ -1186,6 +1187,9 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
       .locator('[data-cy="label-classification-subtype"]');
     const saveButton = document.getByRole('button', { name: 'Spara utredning', exact: true });
     const summary = document.locator('[data-cy="schema-form-error-summary"]');
+    // What the investigation must contain is asserted when it is marked finished; an unfinished
+    // draft may have empty fields. The scenario therefore finishes it, then empties a field in it.
+    await document.locator(`#${managerKey}_completed`).getByRole('radio', { name: 'Ja', exact: true }).check();
     await assessedWith.fill('');
     await typeSelect.selectOption('');
 
@@ -1363,7 +1367,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.classificationPatches).toHaveLength(0);
   });
 
-  test('kräver kategorisering innan ett helt oklassificerat ärendes utredning kan sparas', async ({
+  test('kräver kategorisering innan ett helt oklassificerat ärendes utredning kan markeras klar', async ({
     page,
     dismissCookieConsent,
   }) => {
@@ -1377,6 +1381,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await openInvestigation(page);
 
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
+    // Kategoriseringen krävs när utredningen markeras klar, inte vid varje sparning däremellan.
+    await page.locator(`#${managerKey}_completed`).getByRole('radio', { name: 'Ja', exact: true }).check();
     await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
 
     await expect(page.locator('[data-cy="schema-form-error-summary"]')).toContainText(
@@ -1386,7 +1392,28 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.classificationPatches).toHaveLength(0);
   });
 
-  test('blockerar dokumentsparning när den befintliga klassificeringen inte hör till valt lagrum', async ({
+  // The reason the gate exists: a unit manager who has written half the investigation must be able
+  // to put it down, on an errand nobody has classified yet.
+  test('sparar ett påbörjat utkast på ett helt oklassificerat ärende', async ({ page, dismissCookieConsent }) => {
+    const trace = await installIafApiMock(page, {
+      documents: { [managerKey]: existingManagerDocument() },
+      classification: { category: '', type: '' },
+      labels: [],
+    });
+
+    await visitErrand(page, dismissCookieConsent);
+    await openInvestigation(page);
+
+    await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
+    await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
+
+    await expect(page.locator('[data-cy="investigation-document-notice"]')).toContainText('Utredningen har sparats.');
+    await expect(page.locator('[data-cy="schema-form-error-summary"]')).toHaveCount(0);
+    await expect.poll(() => trace.puts.length).toBe(1);
+    expect(trace.classificationPatches).toHaveLength(0);
+  });
+
+  test('blockerar klarmarkering när den befintliga klassificeringen inte hör till valt lagrum', async ({
     page,
     dismissCookieConsent,
   }) => {
@@ -1400,6 +1427,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await openInvestigation(page);
 
     await page.locator(`#${managerKey}_riskAssessmentSolLss_probability`).getByLabel(/^1 –/u).check();
+    // Kategoriseringen krävs när utredningen markeras klar, inte vid varje sparning däremellan.
+    await page.locator(`#${managerKey}_completed`).getByRole('radio', { name: 'Ja', exact: true }).check();
     await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
 
     await expect(page.locator('[data-cy="schema-form-error-summary"]')).toContainText(
@@ -1409,7 +1438,7 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     expect(trace.classificationPatches).toHaveLength(0);
   });
 
-  test('blockerar dokumentsparning när en känd kategori saknar obligatorisk underkategori', async ({
+  test('blockerar klarmarkering när en känd kategori saknar obligatorisk underkategori', async ({
     page,
     dismissCookieConsent,
   }) => {
@@ -1452,6 +1481,8 @@ test.describe('IAF/VOF:s riktiga utredningsflöde', () => {
     await openInvestigation(page);
 
     await page.locator(managerProbabilityGroup).getByLabel(/^1 –/u).check();
+    // Kategoriseringen krävs när utredningen markeras klar, inte vid varje sparning däremellan.
+    await page.locator(`#${managerKey}_completed`).getByRole('radio', { name: 'Ja', exact: true }).check();
     await page.getByRole('button', { name: 'Spara utredning', exact: true }).click();
 
     await expect(page.locator('[data-cy="schema-form-error-summary"]')).toContainText(

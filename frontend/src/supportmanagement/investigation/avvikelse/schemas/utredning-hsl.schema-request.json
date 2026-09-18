@@ -1,8 +1,8 @@
 {
   "name": "utredning-hsl",
-  "version": "1.2",
+  "version": "1.3",
   "value": {
-    "$id": "https://schemas.sundsvall.se/2281/utredning-hsl/1.2",
+    "$id": "https://schemas.sundsvall.se/2281/utredning-hsl/1.3",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Utredning HSL",
     "description": "HSL-utredning för IAF- och VOF-ärenden. Beslutet om anmälan till IVO, åtgärder och handlingsplan lagras inte i detta dokument.",
@@ -23,12 +23,10 @@
         "items": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role"],
           "properties": {
             "role": {
               "title": "Roll",
-              "type": "string",
-              "minLength": 1
+              "type": "string"
             },
             "unit": {
               "title": "Enhet",
@@ -147,7 +145,39 @@
           { "const": "no", "title": "Nej" }
         ]
       }
-    }
+    },
+    "allOf": [
+      {
+        "$comment": "Utkast får vara ofullständiga. Kraven på vad utredningen ska innehålla gäller först när utredaren markerar den som klar.",
+        "if": {
+          "properties": {
+            "completed": {
+              "const": "yes"
+            }
+          },
+          "required": ["completed"]
+        },
+        "then": {
+          "$comment": "Kraven ligger under then.allOf: sektionsmallen läser then.properties och then.required i rot-allOf som en synlighetsregel, och ett fält får inte försvinna ur formuläret före klarmarkeringen.",
+          "allOf": [
+            {
+              "properties": {
+                "analysisTeamParticipants": {
+                  "items": {
+                    "required": ["role"],
+                    "properties": {
+                      "role": {
+                        "minLength": 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
   },
-  "description": "WSO2 request body for version 1.2 of the HSL investigation schema"
+  "description": "WSO2 request body for version 1.3 of the HSL investigation schema"
 }

@@ -87,7 +87,12 @@
             "fields": ["role", "unit"],
             "gap": "gap-24"
           }
-        ]
+        ],
+        "role": {
+          "ui:options": {
+            "showRequiredIndicator": true
+          }
+        }
       }
     },
     "methodology": {
@@ -144,5 +149,5 @@
     "completed": { "ui:widget": "RadiobuttonWidget" },
     "reports": { "ui:widget": "hidden" }
   },
-  "description": "UI schema for version 1.2 of Utredning HSL in Draken"
+  "description": "UI schema for version 1.3 of Utredning HSL in Draken"
 }

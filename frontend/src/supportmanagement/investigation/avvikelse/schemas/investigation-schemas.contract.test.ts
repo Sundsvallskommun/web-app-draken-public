@@ -12,7 +12,7 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const artifacts = [
   {
     name: 'utredning-enhetschef',
-    version: '1.3',
+    version: '1.5',
     hasErrandClassification: true,
     hasReport: true,
     schemaFile: 'utredning-enhetschef.schema-request.json',
@@ -20,7 +20,7 @@ const artifacts = [
   },
   {
     name: 'utredning-sol-lss',
-    version: '1.2',
+    version: '1.3',
     hasErrandClassification: true,
     hasReport: true,
     schemaFile: 'utredning-sol-lss.schema-request.json',
@@ -28,7 +28,7 @@ const artifacts = [
   },
   {
     name: 'utredning-hsl',
-    version: '1.2',
+    version: '1.3',
     hasErrandClassification: false,
     hasReport: true,
     schemaFile: 'utredning-hsl.schema-request.json',
@@ -308,6 +308,52 @@ test('invalid fixtures are rejected by their schemas', () => {
   }
 });
 
+// One half-finished document per investigation, as a handler leaves it between two work sessions.
+// The form, the BFF and Support Management all validate the same schema, so a draft can only be
+// saved if the schema itself calls it valid - which it does until the handler answers that the
+// investigation is finished. Everything the investigation must contain is asserted on that answer.
+const incompleteInvestigations: Record<string, Record<string, unknown>> = {
+  'utredning-enhetschef': { legalBases: ['HSL'], riskAssessmentHsl: { probability: 2 } },
+  // Nothing answered at all: the unit manager has opened the investigation and put it down again.
+  'utredning-enhetschef (tomt)': {},
+  'utredning-sol-lss': { legalBases: ['SOL', 'LSS'], eventTypes: [] },
+  'utredning-hsl': { analysisTeamParticipants: [{ unit: 'Hemtjänst Norr' }] },
+};
+
+// The sections template reads `then.properties` and `then.required` of a root `allOf` rule as the
+// rule for when to SHOW a field - that is how a risk assessment appears with its legal base. The
+// completion gate must therefore keep its requirements one level down, under `then.allOf`, or every
+// field it names disappears from the form until the handler marks the investigation complete.
+test('the completion gate decides what is valid, not which fields the form shows', () => {
+  for (const artifact of artifacts) {
+    const schema = readJson(artifact.schemaFile).value;
+    for (const rule of schema.allOf ?? []) {
+      if (!rule.if?.properties?.completed || !rule.then) continue;
+      assert.equal(rule.then.properties, undefined, `${artifact.name} hides fields until it is completed`);
+      assert.equal(rule.then.required, undefined, `${artifact.name} hides fields until it is completed`);
+    }
+  }
+});
+
+for (const [label, incomplete] of Object.entries(incompleteInvestigations)) {
+  const name = label.replace(/ \(.*\)$/u, '');
+  test(`${label} saves incomplete as a draft and refuses the same document marked complete`, () => {
+    const schema = readJson(`${name}.schema-request.json`).value;
+    const { ajv, validate } = createValidator(schema);
+
+    // An unanswered completion question is not a completed investigation either.
+    for (const draft of [incomplete, { ...incomplete, completed: 'no' }]) {
+      assert.equal(validate(draft), true, `${label} refused a draft: ${ajv.errorsText(validate.errors)}`);
+    }
+    assert.equal(validate({ ...incomplete, completed: 'yes' }), false, `${label} accepted an incomplete completion`);
+    assert.equal(
+      validate({ ...fixtures[name].valid, completed: 'yes' }),
+      true,
+      `${name} refused a complete investigation: ${ajv.errorsText(validate.errors)}`
+    );
+  });
+}
+
 test('unit manager risk objects expose the agreed formula metadata and readonly result fields', () => {
   const schema = readJson('utredning-enhetschef.schema-request.json').value;
   const uiSchema = readJson('utredning-enhetschef.ui-schema-request.json').value;
@@ -390,7 +436,11 @@ test('unit manager rejects fields and templates that do not match the selected l
     riskAssessmentSolLss: socialRisk,
   };
   assert.equal(validate(allLegalBases), true, ajv.errorsText(validate.errors));
-  assert.equal(validate({ ...allLegalBases, riskAssessmentSolLss: undefined }), false);
+  // Which legal base needs which risk assessment is decided here; that it has to be there at all is
+  // the completion gate's rule, so the missing one is only refused once the investigation is marked
+  // complete.
+  assert.equal(validate({ ...allLegalBases, riskAssessmentSolLss: undefined }), true);
+  assert.equal(validate({ ...allLegalBases, completed: 'yes', riskAssessmentSolLss: undefined }), false);
   assert.equal(validate({ ...allLegalBases, legalBases: ['HSL', 'SOL', 'SOL'] }), false);
 });
 
@@ -403,7 +453,11 @@ test('the HSL investigation no longer carries the IVO decision', () => {
     assert.equal(field in uiSchema, false, `utredning-hsl UI schema still configures ${field}`);
   }
   assert.equal(schema.required, undefined);
-  assert.equal(schema.allOf, undefined);
+  // The only root condition left is the completion gate below; the IVO rules moved to the decisions.
+  assert.deepEqual(
+    schema.allOf.map((entry: any) => Object.keys(entry.if.properties)),
+    [['completed']]
+  );
 });
 
 // Both decisions share the IVO part: the Ja/Nej answer is required, the IVO case number is always

@@ -296,13 +296,10 @@ const validValues: Record<InvestigationKey, JsonObject> = {
   'beslut-sol-lss': investigationCases['beslut-sol-lss'].valid,
 };
 
-export const latestSchemaIds: Record<InvestigationKey, string> = {
-  'utredning-enhetschef': '2281_utredning-enhetschef_1.3',
-  'utredning-sol-lss': '2281_utredning-sol-lss_1.2',
-  'utredning-hsl': '2281_utredning-hsl_1.2',
-  'beslut-hsl': '2281_beslut-hsl_1.2',
-  'beslut-sol-lss': '2281_beslut-sol-lss_1.3',
-};
+/** Derived from the artifacts the mock serves, so a published version never drifts from its id. */
+export const latestSchemaIds = Object.fromEntries(
+  investigationKeys.map((key) => [key, `${municipalityId}_${key}_${schemaRequests[key].version}`])
+) as Record<InvestigationKey, string>;
 
 export const existingManagerDocument = (): InvestigationDocument => ({
   key: 'utredning-enhetschef',

@@ -4,9 +4,9 @@ Den här katalogen är den kanoniska lokala källan för den första schema-labb
 
 | Parameter key / schema name | Lokal version | JSON Schema POST body                      | UI Schema PUT body                            |
 | --------------------------- | ------------- | ------------------------------------------ | --------------------------------------------- |
-| `utredning-enhetschef`      | 1.3           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
-| `utredning-sol-lss`         | 1.2           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
-| `utredning-hsl`             | 1.2           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
+| `utredning-enhetschef`      | 1.5           | `utredning-enhetschef.schema-request.json` | `utredning-enhetschef.ui-schema-request.json` |
+| `utredning-sol-lss`         | 1.3           | `utredning-sol-lss.schema-request.json`    | `utredning-sol-lss.ui-schema-request.json`    |
+| `utredning-hsl`             | 1.3           | `utredning-hsl.schema-request.json`        | `utredning-hsl.ui-schema-request.json`        |
 | `beslut-hsl`                | 1.2           | `beslut-hsl.schema-request.json`           | `beslut-hsl.ui-schema-request.json`           |
 | `beslut-sol-lss`            | 1.3           | `beslut-sol-lss.schema-request.json`       | `beslut-sol-lss.ui-schema-request.json`       |
 
@@ -45,6 +45,17 @@ testmiljön. Den tillåter alla tre lagrum i `legalBases` (tidigare högst två)
 det nya schema-ID:t. Schema och UI Schema lästes tillbaka och var identiska med artefakterna. Inget har publicerats
 i produktionsmiljön. Dokument som redan är bundna till 1.2 behåller sin gräns på två lagrum.
 
+Den 18 september 2026 publicerades version 1.4 av enhetschefsutredningen och 1.3 av SoL/LSS- och HSL-utredningarna
+(`2281_utredning-enhetschef_1.4`, `2281_utredning-sol-lss_1.3`, `2281_utredning-hsl_1.3`) i testmiljön, med
+villkoret för utkast (se nedan). Schema och UI Schema lästes tillbaka för varje ID och var identiska med
+artefakterna, och `schemas/{name}/versions/latest` pekar nu på de nya versionerna. Inget har publicerats i
+produktionsmiljön. Dokument som redan är bundna till ett äldre schema-ID behåller sina ovillkorade krav — BFF:en
+vägrar byta `schemaId` på ett befintligt dokument.
+
+Samma dag publicerades `2281_utredning-enhetschef_1.5`, som ersätter 1.4: även lagrummen krävs först vid
+klarmarkering, så en enhetschef kan spara ett helt tomt utkast. 1.4 hann användas några timmar i testmiljön;
+utredningar som skapades då sitter kvar på 1.4 och kräver därför fortfarande ett valt lagrum.
+
 Schema v1.0 innehåller utredningsdata. Åtgärder, handlingsplaner, interna arbetsanteckningar, rapportgenerering och lokala markeringar om kompletta accordionsektioner ligger avsiktligt utanför dokumenten.
 
 ## Utredningen klar och rapport
@@ -69,6 +80,57 @@ inte behöver hantera mellanslag eller Unicode i filnamnet. PDF-rubriken följer
 Förhandsgranskning
 renderar utan att bifoga eller registrera. Efter upplåsning kan utredningen ändras och en ny numrerad rapport
 skapas; äldre rapporter ligger kvar som bilagor.
+
+## Utkast och klarmarkering
+
+Ett halvfärdigt utkast är giltigt enligt schemat. Kraven på vad utredningen ska innehålla ligger i ett villkor på
+klarmarkeringen:
+
+```json
+{
+  "if": { "properties": { "completed": { "const": "yes" } }, "required": ["completed"] },
+  "then": { "allOf": [{ "...": "det som utredningen måste innehålla" }] }
+}
+```
+
+Kraven ligger under `then.allOf`, inte direkt under `then`, och det är inte kosmetik: sektionsmallen läser
+`then.properties` och `then.required` i rotens `allOf` som en regel för när ett fält ska **visas** — det är så
+riskbedömningen dyker upp med sitt lagrum. Skrivs kraven direkt under `then` försvinner varje fält de nämner
+ur formuläret tills utredaren markerar utredningen klar. Kontraktstestet "the completion gate decides what is
+valid, not which fields the form shows" håller fast det.
+
+Samma schema valideras av formuläret (RJSF), av BFF:en och av Support Management, så det är dokumentets egen
+klarmarkering — inte vilket anrop som görs — som avgör vilka regler som gäller. Ingen validering är avstängd
+någonstans: API:t upprätthåller kravet på ett komplett dokument även mot ett anrop som inte kommer från Draken.
+
+Det som flyttade in i villkoret är exakt det som krävdes ovillkorat förut, varken mer eller mindre:
+
+| Schema                 | Krav som gäller först vid klarmarkering                                                                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `utredning-enhetschef` | Minst ett lagrum, riskbedömningarnas fält (`assessedWith`, `probability`, `severity`, `calculatedRiskValue`) och att den riskbedömning som valt lagrum kräver finns |
+| `utredning-sol-lss`    | `eventTypes` måste ha minst ett val om fältet finns                                                                                                                 |
+| `utredning-hsl`        | `role` på varje rad i `analysisTeamParticipants`                                                                                                                    |
+
+Vilka fält verksamheten vill tvinga fram vid klarmarkering utöver detta är ett eget beslut; det läggs i så fall i
+`then`-grenen och ingen annanstans.
+
+Ovillkorade står reglerna om dokumentets _form_, inte dess ifyllnadsgrad: att ett fält som inte gäller för valt
+lagrum inte får finnas, att utredningsmallen följer lagrummen, och att ett uträknat riskvärde stämmer med sina
+indata. Lagrummen krävs också först vid klarmarkering: de är formulärets första fråga, men ett utkast där
+enhetschefen ännu inte tagit ställning ska gå att lägga ifrån sig.
+
+Ärendets kategorisering följer samma regel, fast utanför schemat: den skrivs genom en egen PATCH och krävs av
+`prepareInvestigationClassification` först när utredningen markeras klar. En kategorisering som handläggaren
+själv har ändrat skrivs och valideras ändå — ett utkast är ingen licens att lagra en kategorisering som ingen
+hade kunnat välja. Följden är att ett ärende kan ligga med en påbörjad utredning helt utan etiketter och då inte
+syns i översiktens avvikelsefilter förrän någon kategoriserar det.
+
+Eftersom `required` nu är villkorat markerar RJSF inte längre fälten som obligatoriska i ett utkast. UI-schemana
+sätter därför `ui:options.showRequiredIndicator` på dem, så att "(Obligatorisk)" står kvar hela vägen. Fältuppsättningens
+egen rubrik (Riskbedömning HSL) får sin markering av RJSF och saknar den i ett utkast.
+
+Besluten (`beslut-hsl`, `beslut-sol-lss`) har ingen klarmarkering och är oförändrat strikta: ett beslut fattas eller
+fattas inte.
 
 ## Besluten
 

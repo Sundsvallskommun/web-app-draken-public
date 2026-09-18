@@ -44,7 +44,8 @@
       "ui:options": {
         "multiple": true,
         "placeholder": "Välj lagrum",
-        "className": "w-full max-w-[48rem]"
+        "className": "w-full max-w-[48rem]",
+        "showRequiredIndicator": true
       }
     },
     "investigationTemplate": {
@@ -76,17 +77,29 @@
       "ui:order": ["assessedWith", "probability", "severity", "calculatedRiskValue"],
       "assessedWith": {
         "ui:widget": "TextWidget",
-        "ui:placeholder": "Ange för- och efternamn"
+        "ui:placeholder": "Ange för- och efternamn",
+        "ui:options": {
+          "showRequiredIndicator": true
+        }
       },
       "probability": {
-        "ui:widget": "RadiobuttonWidget"
+        "ui:widget": "RadiobuttonWidget",
+        "ui:options": {
+          "showRequiredIndicator": true
+        }
       },
       "severity": {
-        "ui:widget": "RadiobuttonWidget"
+        "ui:widget": "RadiobuttonWidget",
+        "ui:options": {
+          "showRequiredIndicator": true
+        }
       },
       "calculatedRiskValue": {
         "ui:widget": "TextWidget",
-        "ui:readonly": true
+        "ui:readonly": true,
+        "ui:options": {
+          "showRequiredIndicator": true
+        }
       }
     },
     "riskAssessmentSolLss": {
@@ -95,14 +108,23 @@
       },
       "ui:order": ["probability", "severity", "calculatedRiskValue"],
       "probability": {
-        "ui:widget": "RadiobuttonWidget"
+        "ui:widget": "RadiobuttonWidget",
+        "ui:options": {
+          "showRequiredIndicator": true
+        }
       },
       "severity": {
-        "ui:widget": "RadiobuttonWidget"
+        "ui:widget": "RadiobuttonWidget",
+        "ui:options": {
+          "showRequiredIndicator": true
+        }
       },
       "calculatedRiskValue": {
         "ui:widget": "TextWidget",
-        "ui:readonly": true
+        "ui:readonly": true,
+        "ui:options": {
+          "showRequiredIndicator": true
+        }
       }
     },
     "suspectedMisconduct": {
@@ -111,5 +133,5 @@
     "completed": { "ui:widget": "RadiobuttonWidget" },
     "reports": { "ui:widget": "hidden" }
   },
-  "description": "UI schema for version 1.2 of Utredning enhetschef in Draken"
+  "description": "UI schema for version 1.5 of Utredning enhetschef in Draken"
 }

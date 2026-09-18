@@ -5,8 +5,11 @@ import {
   prepareInvestigationClassification,
 } from './support-investigation-save-workflow';
 
+// The classification is what a finished investigation is filed under, so its rules are asserted on
+// the completed document; the draft cases have their own tests at the end.
 const input = () => ({
   required: true,
+  completed: true,
   canEditClassification: false,
   dirty: false,
   labelTree: {
@@ -105,4 +108,40 @@ test('choosing a second legal base group asks for its classification before savi
 
 test('documents which do not own classification do not require classification permission', async () => {
   expect(await prepareInvestigationClassification({ ...input(), required: false, dirty: true })).toBeUndefined();
+});
+
+// A draft is saved as it stands. Demanding the errand's classification on every save is what made a
+// half-written investigation impossible to put down, which is the same reason the schema asks
+// nothing of one.
+test('a draft saves although the errand has no classification yet', async () => {
+  const request = { ...input(), completed: false };
+  request.persistedClassification.category = '';
+  request.persistedClassification.type = '';
+
+  expect(investigationClassificationWriteBlock(request)).toBeUndefined();
+  expect(await prepareInvestigationClassification(request)).toBeUndefined();
+  expect(request.triggerValidation).not.toHaveBeenCalled();
+});
+
+test('a draft saves although the existing classification does not match the chosen legal bases', async () => {
+  const request = { ...input(), completed: false, legalBases: ['HSL'] };
+
+  expect(investigationClassificationWriteBlock(request)).toBeUndefined();
+  expect(await prepareInvestigationClassification(request)).toBeUndefined();
+});
+
+// What the handler changed is written, so it still has to be valid - a draft is not a licence to
+// store a classification nobody could have chosen.
+test('a classification the handler edited is validated even in a draft', async () => {
+  const request = {
+    ...input(),
+    completed: false,
+    canEditClassification: true,
+    dirty: true,
+    legalBases: ['SOL', 'HSL'],
+    triggerValidation: vi.fn(async () => false),
+  };
+
+  await expect(prepareInvestigationClassification(request)).rejects.toThrow('för varje valt lagrum');
+  expect(request.triggerValidation).toHaveBeenCalled();
 });

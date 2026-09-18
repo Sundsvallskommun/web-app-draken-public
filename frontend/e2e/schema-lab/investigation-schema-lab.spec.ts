@@ -1,5 +1,11 @@
 import { expect, Page, test } from '@playwright/test';
 
+import hslDecisionSchemaRequest from '../../src/supportmanagement/investigation/avvikelse/schemas/beslut-hsl.schema-request.json';
+import solLssDecisionSchemaRequest from '../../src/supportmanagement/investigation/avvikelse/schemas/beslut-sol-lss.schema-request.json';
+import managerSchemaRequest from '../../src/supportmanagement/investigation/avvikelse/schemas/utredning-enhetschef.schema-request.json';
+import hslSchemaRequest from '../../src/supportmanagement/investigation/avvikelse/schemas/utredning-hsl.schema-request.json';
+import solLssSchemaRequest from '../../src/supportmanagement/investigation/avvikelse/schemas/utredning-sol-lss.schema-request.json';
+
 const backendOrigin = 'http://localhost:3001';
 const managerIdPrefix = 'utredning-enhetschef';
 const solLssIdPrefix = 'utredning-sol-lss';
@@ -7,6 +13,15 @@ const hslIdPrefix = 'utredning-hsl';
 const hslDecisionIdPrefix = 'beslut-hsl';
 const investigationTabNames = ['Utredning enhetschef', 'Utredning Lex Sarah', 'Händelseanalys HSL'] as const;
 const backendRequestsByPage = new WeakMap<Page, string[]>();
+// The lab refuses a local draft saved against another schema version, so seeded drafts follow the
+// artifacts rather than a version written out by hand here.
+const schemaVersions: Record<string, string> = {
+  'utredning-enhetschef': managerSchemaRequest.version,
+  'utredning-sol-lss': solLssSchemaRequest.version,
+  'utredning-hsl': hslSchemaRequest.version,
+  'beslut-hsl': hslDecisionSchemaRequest.version,
+  'beslut-sol-lss': solLssDecisionSchemaRequest.version,
+};
 
 async function openAllDisclosures(page: Page) {
   const activePanel = page.locator('[role="tabpanel"]:visible');
@@ -118,20 +133,25 @@ test.afterEach(async ({ page }) => {
 });
 
 test('opens all investigation sections without turning an unanswered draft into radio answers', async ({ page }) => {
-  await page.evaluate(() => {
-    for (const [key, schemaVersion, formData] of [
-      ['utredning-enhetschef', '1.3', { legalBases: ['HSL', 'SOL'] }],
-      ['utredning-sol-lss', '1.2', {}],
-      ['utredning-hsl', '1.2', {}],
-      ['beslut-hsl', '1.2', {}],
-      ['beslut-sol-lss', '1.3', {}],
-    ]) {
+  await page.evaluate((versions) => {
+    for (const [key, formData] of [
+      ['utredning-enhetschef', { legalBases: ['HSL', 'SOL'] }],
+      ['utredning-sol-lss', {}],
+      ['utredning-hsl', {}],
+      ['beslut-hsl', {}],
+      ['beslut-sol-lss', {}],
+    ] as [string, Record<string, unknown>][]) {
       localStorage.setItem(
         `draken:investigation-schema-lab:${key}`,
-        JSON.stringify({ schemaKey: key, schemaVersion, savedAt: new Date().toISOString(), formData })
+        JSON.stringify({
+          schemaKey: key,
+          schemaVersion: versions[key],
+          savedAt: new Date().toISOString(),
+          formData,
+        })
       );
     }
-  });
+  }, schemaVersions);
   await page.reload();
 
   for (const tabName of investigationTabNames) {
@@ -311,7 +331,9 @@ test('exposes labels, descriptions, state and disclosure controls accessibly', a
   );
   await expect(page.locator(`#${managerIdPrefix}_investigationText__description`)).toBeVisible();
 
-  await expect(page.getByRole('radiogroup', { name: 'Sannolikhet för inträffande (Obligatorisk)' }).first()).toBeVisible();
+  await expect(
+    page.getByRole('radiogroup', { name: 'Sannolikhet för inträffande (Obligatorisk)' }).first()
+  ).toBeVisible();
   await expect(page.getByRole('group', { name: /Vilket eller vilka lagrum gäller/u })).toBeVisible();
 
   const sectionButton = page.getByRole('button', { name: 'Kategorisering och dokumentation' });
@@ -336,10 +358,13 @@ test('exposes labels, descriptions, state and disclosure controls accessibly', a
 test('marks an empty required field as an error only after a save attempt', async ({ page }) => {
   const assessedWith = page.locator(`#${managerIdPrefix}_riskAssessmentHsl_assessedWith`);
   const assessedWithError = page.locator(`#${managerIdPrefix}_riskAssessmentHsl_assessedWith__error`);
+  // An unfinished draft may have empty fields. Marking the investigation finished is what makes
+  // the schema require them, so the field is only required once that answer is Ja.
+  await page.locator(`#${managerIdPrefix}_completed`).getByRole('radio', { name: 'Ja', exact: true }).check();
+  await expect(assessedWith).toHaveAttribute('aria-required', 'true');
   await assessedWith.fill('');
 
   // The theme styles :invalid as an error, so an untouched empty field must not match it before saving.
-  await expect(assessedWith).toHaveAttribute('aria-required', 'true');
   await expect(assessedWith).toHaveAttribute('aria-invalid', 'false');
   expect(await assessedWith.evaluate((input) => input.matches(':invalid'))).toBe(false);
   await expect(assessedWithError).toHaveCount(0);
@@ -411,12 +436,12 @@ test('keeps SupportManagement labels separate from investigation JSON', async ({
 
 test('sanitizes legacy label fields and ignores malformed local timestamps', async ({ page }) => {
   const activePanel = page.locator('[role="tabpanel"]:visible');
-  await page.evaluate(() => {
+  await page.evaluate((schemaVersion) => {
     window.localStorage.setItem(
       'draken:investigation-schema-lab:utredning-enhetschef',
       JSON.stringify({
         schemaKey: 'utredning-enhetschef',
-        schemaVersion: '1.3',
+        schemaVersion,
         savedAt: '2026-08-11T10:00:00.000Z',
         formData: {
           legalBases: ['HSL'],
@@ -425,7 +450,7 @@ test('sanitizes legacy label fields and ignores malformed local timestamps', asy
         },
       })
     );
-  });
+  }, schemaVersions['utredning-enhetschef']);
   await page.reload();
 
   await expect(page.locator('[data-cy="investigation-lab-notice"]')).toContainText(

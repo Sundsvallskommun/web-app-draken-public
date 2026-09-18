@@ -53,6 +53,7 @@ import {
   getInvestigationServerTimestamps,
   investigationDefaultFormStateBehavior,
   investigationRequiredIndicator,
+  isInvestigationCompleted,
 } from './investigation-form-data';
 import { InvestigationReportControls } from './investigation-report-controls.component';
 import {
@@ -348,8 +349,12 @@ export function SupportInvestigationDocument({
   const legalBases = documentState ? getInvestigationLegalBases(documentState.formData) : [];
   const legalBaseRules = getInvestigationLegalBaseRules();
   const { classificationGroups, errandClassificationGroupPriority } = AVVIKELSE_CLASSIFICATION_POLICY;
+  // The errand's classification is demanded when the investigation is marked finished, not while it
+  // is being written; the schema's own requirements wait for the same answer.
+  const markedComplete = documentState ? isInvestigationCompleted(documentState.schema, documentState.formData) : false;
   const classificationPrerequisites = {
     required: classificationOwner,
+    completed: markedComplete,
     canEditClassification: !classificationReadonly,
     dirty: classificationDirty,
     labelTree: classificationLabelTree,
@@ -701,6 +706,7 @@ export function SupportInvestigationDocument({
       try {
         preparedClassification = await prepareInvestigationClassification({
           required: classificationOwner,
+          completed: isInvestigationCompleted(documentState.schema, normalizedData),
           canEditClassification: !classificationReadonly,
           dirty: classificationDirty,
           labelTree: classificationLabelTree,

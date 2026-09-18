@@ -43,6 +43,12 @@ export interface PreparedInvestigationClassification {
 
 interface PrepareClassificationInput {
   readonly required: boolean;
+  /**
+   * Whether this save marks the investigation finished. The errand's classification is what the
+   * finished investigation is filed under, so it is demanded then - not on every draft in between,
+   * the same way the schema asks nothing of a half-written document.
+   */
+  readonly completed: boolean;
   readonly canEditClassification: boolean;
   readonly dirty: boolean;
   readonly labelTree?: AvvikelseClassificationLabelTree;
@@ -101,6 +107,7 @@ const getPersistedClassificationState = ({
 /** The same prerequisite is shown before editing and enforced again before either save step. */
 export function investigationClassificationWriteBlock({
   required,
+  completed,
   canEditClassification,
   dirty,
   labelTree,
@@ -108,6 +115,8 @@ export function investigationClassificationWriteBlock({
 }: Omit<PrepareClassificationInput, 'triggerValidation' | 'getDraft'>): string | undefined {
   if (!required || canEditClassification) return undefined;
   if (dirty) return 'Du saknar behörighet att spara ändrad kategorisering. Dina ändringar finns kvar på sidan.';
+  // An untouched classification is only in the way once the investigation is marked finished.
+  if (!completed) return undefined;
   if (!labelTree)
     return 'Kategoriseringen kan inte kontrolleras just nu. Försök igen när klassificeringsprofilen har laddats.';
   const state = getPersistedClassificationState({ ...persisted, labelTree });
@@ -122,10 +131,14 @@ export async function prepareInvestigationClassification({
   getDraft,
   ...input
 }: PrepareClassificationInput): Promise<PreparedInvestigationClassification | undefined> {
-  const { required, dirty, labelTree, labelStructure, legalBases, legalBaseRules } = input;
+  const { required, completed, dirty, labelTree, labelStructure, legalBases, legalBaseRules } = input;
   if (!required) return undefined;
   const writeBlock = investigationClassificationWriteBlock(input);
   if (writeBlock) throw new Error(writeBlock);
+
+  // A draft is saved as it stands. A classification the handler has edited is still written and
+  // still has to be valid - what waits for the completion mark is the demand that one exists.
+  if (!dirty && !completed) return undefined;
 
   if (!dirty && labelTree) {
     const persistedState = getPersistedClassificationState({ ...input, labelTree });
