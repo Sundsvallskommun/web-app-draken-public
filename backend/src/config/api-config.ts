@@ -37,7 +37,7 @@ export const APIS: Api[] = [
   {
     name: 'supportmanagement',
     service: 'support-management-alkt-sprint',
-    version: '15.7',
+    version: '16.0',
   },
   {
     name: 'billingpreprocessor',
