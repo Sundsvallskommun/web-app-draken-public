@@ -1,0 +1,153 @@
+{
+  "value": {
+    "ui:options": {
+      "showSectionCompletion": false
+    },
+    "ui:order": [
+      "assignment",
+      "analysisTeamParticipants",
+      "methodology",
+      "eventDescription",
+      "identifiedCauses",
+      "underlyingCauses",
+      "contributingFactorsAndRisks",
+      "analysisEvaluation",
+      "commissionerComment",
+      "completed",
+      "reports"
+    ],
+    "ui:sections": [
+      {
+        "id": "assignment",
+        "title": "Uppdrag",
+        "icon": "file-text",
+        "defaultOpen": true,
+        "fields": ["assignment"]
+      },
+      {
+        "id": "analysis-team-participants",
+        "defaultOpen": true,
+        "title": "Deltagare i analysteam",
+        "icon": "users",
+        "fields": ["analysisTeamParticipants"]
+      },
+      {
+        "id": "methodology",
+        "defaultOpen": true,
+        "title": "Metodik",
+        "icon": "file-text",
+        "fields": ["methodology"]
+      },
+      {
+        "id": "result",
+        "defaultOpen": true,
+        "title": "Resultat",
+        "icon": "info",
+        "fields": [
+          "eventDescription",
+          "identifiedCauses",
+          "underlyingCauses",
+          "contributingFactorsAndRisks",
+          "analysisEvaluation"
+        ]
+      },
+      {
+        "id": "commissioner-comment",
+        "defaultOpen": true,
+        "title": "Uppdragsgivarens kommentar",
+        "icon": "pen",
+        "fields": ["commissionerComment"]
+      },
+      {
+        "id": "report",
+        "title": "Utredningen klar och rapport",
+        "icon": "file-text",
+        "defaultOpen": true,
+        "fields": ["completed", "$external:investigationReport", "reports"]
+      }
+    ],
+    "assignment": {
+      "ui:widget": "TexteditorWidget",
+      "ui:options": {
+        "className": "w-full min-h-[28rem]",
+        "disableToolbar": false
+      }
+    },
+    "analysisTeamParticipants": {
+      "ui:options": {
+        "addable": true,
+        "orderable": false,
+        "itemTitle": "Deltagare",
+        "addButtonLabel": "Lägg till deltagare"
+      },
+      "items": {
+        "ui:order": ["role", "unit"],
+        "ui:rows": [
+          {
+            "fields": ["role", "unit"],
+            "gap": "gap-24"
+          }
+        ],
+        "role": {
+          "ui:options": {
+            "showRequiredIndicator": true
+          }
+        }
+      }
+    },
+    "methodology": {
+      "ui:widget": "TexteditorWidget",
+      "ui:options": {
+        "className": "w-full min-h-[18rem]",
+        "disableToolbar": false
+      }
+    },
+    "eventDescription": {
+      "ui:widget": "TexteditorWidget",
+      "ui:options": {
+        "className": "w-full min-h-[24rem]",
+        "disableToolbar": false
+      }
+    },
+    "identifiedCauses": {
+      "ui:widget": "checkboxes",
+      "ui:options": {
+        "multiple": true,
+        "placeholder": "Välj en eller flera identifierade orsaker",
+        "className": "w-full max-w-[48rem]"
+      }
+    },
+    "underlyingCauses": {
+      "ui:widget": "ComboboxWidget",
+      "ui:options": {
+        "multiple": true,
+        "placeholder": "Välj en eller flera bakomliggande orsaker",
+        "className": "w-full max-w-[48rem]"
+      }
+    },
+    "contributingFactorsAndRisks": {
+      "ui:widget": "TexteditorWidget",
+      "ui:options": {
+        "className": "w-full min-h-[20rem]",
+        "disableToolbar": false
+      }
+    },
+    "analysisEvaluation": {
+      "ui:widget": "TexteditorWidget",
+      "ui:options": {
+        "className": "w-full min-h-[20rem]",
+        "disableToolbar": false
+      }
+    },
+    "commissionerComment": {
+      "ui:widget": "TextareaWidget",
+      "ui:placeholder": "Skriv uppdragsgivarens kommentar",
+      "ui:options": {
+        "className": "w-full min-h-[10rem]"
+      }
+    },
+    "completed": { "ui:widget": "RadiobuttonWidget" },
+    "reports": { "ui:widget": "hidden" }
+  },
+  "description": "UI schema for version 1.3 of Utredning HSL in Draken"
+}

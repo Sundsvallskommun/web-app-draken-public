@@ -1,0 +1,517 @@
+# Utredningsscheman för IAF/VOF
+
+Den här katalogen innehåller den lokala utvecklingsytan för fem separata JSON Parameters:
+
+- `utredning-enhetschef`
+- `utredning-sol-lss`
+- `utredning-hsl`
+- `beslut-hsl` — beslutet om anmälan till IVO för en vanlig avvikelse med lagrum HSL (`placement: 'decision'`,
+  `appliesTo: 'hsl-deviation'` i runtimeprofilen).
+- `beslut-sol-lss` — beslutet enligt lex Sarah för ett rapporterat missförhållande, oavsett lagrum
+  (`placement: 'decision'`, `appliesTo: 'reported-misconduct'`).
+
+Besluten visas på den egna ärendefliken Beslut i stället för under Utredning, efter Åtgärder, eftersom beslutet
+avslutar ärendet. Den fasta IAF/VOF-regeln avgör
+vilket av dem ett ärende tar: missförhållande ger alltid lex Sarah-beslutet, en vanlig avvikelse ger HSL-beslutet
+bara när HSL är ett av lagrummen, och ett ärende tar aldrig båda. Regeln finns i både backend och frontend
+(`resolveIafVofInvestigationDocumentApplicability` respektive `resolveAvvikelseDocumentApplicability`), och BFF:en
+avvisar ett beslutsdokument på ett ärende det inte gäller.
+
+Ett dokument kan i profilen peka ut ett `prerequisiteDocumentKey`: ett annat dokument som måste vara sparat i
+ärendet innan det får skrivas. `beslut-sol-lss` kräver `utredning-sol-lss`. BFF:en avvisar skrivningen med 409
+annars, och formuläret visar en spärr i stället för spara-knappen. Serverägda schemaegenskaper sätts av BFF:en
+oavsett vad klienten skickar: `x-draken-server-timestamp: "created"` stämplas vid första sparningen och bevaras
+sedan, `"updated"` stämplas vid varje sparning, och en array märkt `x-draken-server-revisions` får en post
+`{ savedAt, savedBy }` per sparning (beslutens `decidedAt`, `updatedAt` och `revisions`). Utrednings- och
+beslutsformulären markerar obligatoriska fält med texten "(Obligatorisk)" i stället för en asterisk
+(`requiredIndicator` på `SchemaForm`); ett fält kan dessutom alltid visas som obligatoriskt via
+`ui:options.showRequiredIndicator`.
+
+`schemas/` äger de versionssatta WSO2-requestartefakterna. Varje JSON Schema-request kan skickas som body till
+`POST /{municipalityId}/schemas` och motsvarande UI Schema-request som body till
+`PUT /{municipalityId}/schemas/{id}/ui-schema` när versionen är godkänd. Labben publicerar ingenting själv.
+
+## Lokal schema-labb
+
+"Labben" (`schema-lab/`) är en **utvecklarsandlåda för att förhandsgranska utredningsformulär** — inte en del av
+produkten. Den renderar ett schemapar (JSON Schema + UI Schema) i Drakens riktiga formulärkomponenter så att man kan
+se resultatet innan schemat publiceras, och den låter dig växla roll för att prova `canRead`/`canWrite` utan att
+behöva ett verkligt ärende i rätt fas.
+
+Ordet "schema" avser här **JSON Schema och UI Schema** — inte tidsschema, och inte de yup-scheman som används för
+formulärvalidering på andra håll i Draken.
+
+Labben är avsiktligt oåtkomlig utanför lokal utveckling, och spärren sitter i två lager. Rutten heter
+`page.dev.tsx`, och `pageExtensions` i `next.config.js` accepterar den ändelsen bara när `NODE_ENV` inte är
+`production` — i ett produktionsbygge kompileras alltså sidan inte alls. Kompileras den ändå anropar den `notFound()`
+för alla profiler utom `IAF`. Den läser och skriver inga ärenden, och publicerar inga scheman.
+
+Starta IAF-profilen med:
+
+```sh
+cp .env.iaf-example .env.iaf
+yarn dev:iaf
+```
+
+Öppna `http://localhost:3000/iaf/schema-lab/utredning`. Sidan är alltid upplåst för IAF-profilen när Next kör i
+development, men är inte tillgänglig i en produktionsbyggd app.
+
+Labben använder samma `SchemaForm`, widgets, templates och SK Web GUI-komponenter som Draken. Exempeldata läses från
+`schemas/fixtures/investigation-schema-cases.json`. Utkast sparas separat per schema och version i localStorage under
+prefixet `draken:investigation-schema-lab:`. Inga ärenden eller scheman läses eller skrivs av labbsidan.
+
+Kategoriseringen visas med samma väljare och gruppregel som i ärendet, en väljare per lagrumsgrupp (se
+[Ansvarsgränser](#ansvarsgränser)), men alternativen kommer från den lokala mockkatalogen i `label-classification/` i
+stället för Support Managements labelträd. Valen sparas med en post per grupp under
+`draken:investigation-schema-lab:supportmanagement-labels`.
+
+## Ansvarsgränser
+
+- JSON Schema äger datatyper, obligatoriska fält, stabila koder, villkor och validering.
+- UI Schema äger ordning, accordions, widgets och layout.
+- `common/components/json` äger återanvändbar rendering, inte IAF-specifika fält.
+- `label-classification/` äger labelväljaren och adaptern mellan Support Managements labelträd och Drakens
+  formulärvärden för IAF/VOF-kategorisering.
+- `iaf-vof-investigation-classification-policy.ts` äger den fasta IAF/VOF-regeln för var kategorisering redigeras.
+  Runtimeprofilen tillhandahåller endast dokumentens stabila nycklar och aktiveringsstatus; den kan inte ändra
+  själva verksamhetsregeln.
+- `investigation-form-data.ts` äger normalisering, deklarerade beräkningar och riskvärde — delat av både
+  produktionsflödet och labben.
+- `schema-lab/` äger exempeldataadapter, mockad `canRead`/`canWrite` och separerad lokal lagring.
+
+Enhetschefs- och SOL/LSS-schemana deklarerar det externa fältet `errandClassification`. UI-schemat placerar fältet
+direkt efter `legalBases`, så att avvikelsetyp och underkategori visas i rätt formulärsektion och filtreras av valda
+lagrum. Deklarationen styr placering och koppling, men de valda värdena och deras UUID:n ägs fortfarande av
+SupportManagement-labels. De lagras inte i utredningsdokumentets RJSF-formulärdata eller JSON Parameter.
+
+En vanlig avvikelse kategoriseras i enhetschefsutredningen. När ärendets `eventType` är `MISSFORHALLANDE` ägs
+redigeringen i stället av SOL/LSS-utredningen; lagrummen SOL och LSS är då förvalda och skrivskyddade. Regeln ger
+ett enda redigeringsställe, även om samma externa fält kan deklareras av båda schematyperna.
+
+Kategoriseringen görs en gång per lagrumsgrupp (`classificationGroups` i `avvikelse-classification-policy.ts`): HSL
+har en egen väljare, och SoL och LSS delar en. En väljare visas bara när något av gruppens lagrum är valt, erbjuder
+bara de kategorier de valda lagrummen tillåter och har dem som rubrik, alltså HSL, SoL, LSS eller SoL/LSS. Tills
+metadatan skiljer SoL och LSS åt har de samma kategorilista. Ett missförhållande har alltid lagrummen SOL och LSS och
+kategoriseras därför bara i SoL/LSS-gruppen. Tas ett lagrum bort så att en grupp inte längre nås, försvinner också
+gruppens kategorisering. Varje grupps väg sparas som ärendets labels, och ärendets eget `classification`, som bara
+rymmer en, tar den grupp som `errandClassificationGroupPriority` rangordnar först: SoL/LSS före HSL. Gruppregeln
+(`getChosenAvvikelseClassificationGroups`) och väljarna (`AvvikelseGroupedClassificationFields`) delas av ärendet och
+labben, så att labben visar samma väljare som ärendet.
+
+## Riktigt ärendeflöde
+
+`GET supportmanagement/investigation-profile` är produktflödets runtimeprojektion av backendens kanoniska register för
+dokumentnyckel, schemanamn, fliketikett och ansvarig roll. Backend väger in feature-flaggen `useInvestigation` och
+applikationens tillgänglighet i profilens `state`. Profilen deklarerar även vilket Support
+Management-transportmål capabilityn kräver. Om deploymenten använder ett äldre mål blir state `unavailable` innan
+registrering eller dokumentanrop; kravet härleds alltså inte från appnamn i controllern. Huvudtabben `Utredning`
+visar de dokument som profilen konfigurerar. Den innehåller inte användarspecifika rättigheter; varje dokumentanrop
+får sitt åtkomstbeslut från Support Management. Vid saknad, ogiltig eller fel appbunden profil stängs flödet
+säkert och befintliga JSON Parameters döljs inte från `Ärendeuppgifter`.
+
+### App-profiler och nya appar
+
+Backendregistret i `backend/src/config/support-investigation-profile.ts` är enda ägare till vilka dokument en app
+har i produktionsflödet. IAF och VOF har två separata, immutabla profiler som för närvarande skapas från samma
+gemensamma bas. De kan därför ändras oberoende senare utan att frontend eller den andra appens profil behöver
+förgrenas.
+
+En ny SupportManagement-app kan konfigurera valfritt antal dokument. Varje post består av:
+
+- `key`: stabil persistensidentitet för JSON Parametern och BFF-routen. En nyckel får inte bytas efter att data har
+  sparats utan en uttrycklig datamigrering.
+- `schemaName`: namnet som används när senaste publicerade schema hämtas för ett nytt dokument. Det behöver inte vara
+  samma sträng som `key`.
+- `tabLabel` och `ownerLabel`: enbart presentation i klienten.
+
+Läs- och skrivrättigheter ägs av Support Managements AccessMapper per namespace, resurstyp och dokumentnyckel.
+Draken skickar den inloggades AD-identitet i `X-Sent-By`, vidarebefordrar GET/PUT till den skyddade endpointen och
+visar ett tydligt meddelande när Support Management svarar 401/403. `canEditSupportManagement` krävs fortfarande
+för skrivning i Draken men ger aldrig ensam åtkomst till ett utredningsdokument.
+
+Skyddade dokument kan bara följa med en överlämning till mål som deploymenten uttryckligen har markerat som
+kompatibla i `SUPPORT_INVESTIGATION_HANDOVER_TARGETS`. Varje post innehåller `municipalityId`, `namespace` och
+målcapabilityns `documentKeys`; en ny dokumenttyp i källprofilen stänger överföringen tills målet deklarerats stödja den.
+Backend provar samtliga profilnycklar genom Support Managements skyddade dokument-endpoint före både preview och
+execute; execute kräver också `canEditSupportManagement`. Support Management kontrollerar åtkomst före existens,
+så 404 betyder läsbar men saknad medan 401/403 blockerar överföringen. Saknad allowlist stänger endast överföringen
+av befintliga skyddade dokument, inte överlämningar utan JSON Parameters eller ärenden som bara innehåller generiska
+JSON Parameters.
+
+Standardbeteendet är att klassificeringen redigeras i `Grundinformation`. IAF och VOF har tills vidare en uttrycklig,
+fast specialregel i både backend och frontend: när utredningen är aktiv flyttas redigeringen till dokumentet med
+schemarollen `utredning-enhetschef`, eller till `utredning-sol-lss` vid missförhållande. Profilens `schemaName` används
+för att hitta rollen och profilens `key` används för persistens, så egna stabila dokumentnycklar stöds utan att
+verksamhetsregeln blir dynamisk konfiguration.
+
+Samma IAF/VOF-modul äger parameter-/labelselectorn, lagrumspekaren, tvingade lagrum, tillåtna
+klassificeringsrötter och labelträdets Support Management-vokabulär. Backend och frontend implementerar samma fasta
+regel och tester låser pariteten. Persistensmappningen är avsiktligt fast: owner sparas i
+`classification.category`, category i `classification.type` och type som vald label. Alla andra appar behåller
+Grundinformation och den generiska TYPE/SUBTYPE-mappningen, även om de råkar använda samma schemastrukturer. Om en
+framtida app behöver motsvarande specialhantering görs det som ett medvetet nytt verksamhetsstöd, inte genom att
+lägga policyfält i den generiska dokumentprofilen.
+
+Om profilen eller backendens ägarskapsbeslut är otillgängligt visas IAF/VOF-kategoriseringen skrivskyddad i
+`Grundinformation`. Den generiska ärende-PATCH:en utelämnar då `classification` och `labels`, så orelaterade
+ärendeändringar kan sparas utan att någon av skrivvägarna tar över klassificeringen.
+
+För att slå på en ny app läggs dess dokumentprofil till i backendkonfigurationen, dokumentnycklarna konfigureras i
+Support Managements AccessMapper, de namngivna JSON- och UI-schemana publiceras och `useInvestigation` aktiveras. Frontend
+har ingen separat app- eller dokumentlista att uppdatera. Flaggan, profilen, AccessMapper-konfigurationen och
+schemapubliceringen är oberoende driftsförutsättningar; en lyckad profilrespons garanterar inte att ett schema är
+publicerat.
+
+Varje dokument laddas och sparas via sin profilkonfigurerade `key` och sin allowlistade BFF-route; `schemaName` används
+separat för att hämta senaste schema. Ett befintligt dokument laddar sitt exakta `schemaId`; ett nytt dokument hämtar
+senaste schema och fryser det ID:t vid första sparningen. Dokumentet kan inte skrivas genom den generiska
+ärende-PATCH:en. Dokumentnyckeln och schema-ID:t binds mot schema-metadata i backend. Exakt stark `If-Match` krävs
+för uppdatering och create-only-precondition används vid första skrivningen; lokala formulärvärden behålls vid
+konflikt.
+
+**Versionskontroller är scopade till den resurs som skrivs.** Dokumentets egen ETag är villkoret för
+dokumentskrivningen, och ingenting annat. Föräldraärendets version är inte en precondition: versioner rullar uppåt men
+inte nedåt — ändras dokumentet stiger även ärendets version, men att ärendets version har stigit säger ingenting om
+dokumentet. Att kräva att de stämmer överens skulle avvisa en sparning för att någon annan ändrat ett orelaterat fält,
+utan att skydda någonting. Klienten skickar ändå med den version formuläret laddades med i `X-Errand-Version` (den
+valideras om den finns), och får ärendets färska version tillbaka i svaret.
+
+Föräldraärendet läses däremot fortfarande färskt, för sin **status**: ett låst eller avslutat ärende tar inte emot
+dokumentändringar. Kontrollen upprepas direkt före dokument-PUT för att hålla det oundvikliga icke-atomiska
+statusglappet så smalt upstreamkontraktet tillåter. Ett fullständigt skydd mot att ärendet låses i just det
+intervallet kräver en atomisk status-precondition i upstreamkontraktet.
+
+De endpoints som faktiskt skriver på **ärendet** — `/classification`, `/admin`, `/status` och
+`/investigation-handover` — kräver fortsatt exakt ärendeversion, eftersom det är ärendet de villkorar.
+`/phase` villkoras i stället på den aktiva fas klienten såg: åtgärder, dokument och labels flyttar
+ärendets version utan att röra fasen. BFF:en skickar upstream-skrivningen med If-Match på den version
+den nyss läste.
+
+`Spara utredning` samordnar sparningen av utredningsdokumentet med en smal PATCH av ärendets klassificeringslabels.
+Dokumentet sparas först och label-PATCH:en skickar endast `classifications`, en post med klassificering och
+labelreferenser per lagrumsgrupp, samt ägande `documentKey`, dokumentets ETag och förväntad ärendeversion. Backend
+verifierar därmed rätt IAF/VOF-ägardokument, att varje klassificering tillåts av dokumentets lagrum, att varje grupp
+lagrummen når har exakt en, och att varken dokumentet eller ärendet har ändrats sedan formuläret laddades. Alla
+gruppers labels skrivs, och ärendets `classification` sätts från den grupp som rangordnas först. Operationerna är inte
+atomiska. Om dokumentet har
+sparats men label-PATCH:en misslyckas visas det uttryckligen som ett delvis fel; formuläret behåller klassificeringen och
+nästa försök upprepar endast label-PATCH:en.
+
+Label-PATCH:en skickar ärendeversionen som laddades tillsammans med formuläret. BFF:en läser den aktuella versionen,
+avvisar en inaktuell klient med konflikt och vidarebefordrar samma version som `If-Match`. Efter en lyckad sparning
+ersätts klientens version med den version som läses tillbaka från Support Management.
+
+När flaggen är avstängd ligger kategoriseringen kvar under `Grundinformation` och utredningsparametrarna visas
+skrivskyddade under `Ärendeuppgifter`. Det ger en direkt rollback utan datamigrering. När flaggtjänsten är
+otillgänglig blir state i stället `unavailable`: skyddade skrivningar stoppas med 503 medan orelaterade ärendefält kan
+sparas. För en implementation där utredningen äger klassificeringen stoppas även nyregistrering tills policyn kan
+avgöras igen, så att inget oklassificerbart ärende skapas.
+
+Runtimeprofilens valfria `labelFilter` beskriver generiska filtergrupper och fält. Frontend projicerar dem mot live
+label-metadata och skickar hela identiteten `(groupKey, fieldKey, resourcePath)`. Backend validerar samma identitet
+mot samma metadata innan filteruttrycket byggs; handskrivna eller inaktuella val avvisas i stället för att tyst bredda
+sökningen. Profilens `registration`-capability avgör dessutom om registreringsvägen visas. IAF/VOF skapar ett nytt
+ärende med explicit vanlig avvikelse (`REPORT_TYPE/DEVIATION` och `eventType=AVVIKELSE`), medan lagrumsstyrd
+klassificering fortsatt ägs av utredningen.
+
+All data som läses från RJSF eller localStorage normaliseras mot det aktuella schemat före rendering och lagring.
+Okända fält tas bort, liksom villkorsstyrda värden som inte längre gäller (exempelvis IVO-ärendenummer när IVO är
+`Nej`). Riskvärden beräknas från respektive schemas `x-calculation` och samma produktregel valideras av JSON Schema.
+
+Åtgärder, handlingsplan, arbetsanteckningar och rapportgenerering ingår avsiktligt inte i de tre
+utredningsdokumenten. Besluten är egna dokument: `beslut-sol-lss` visar utredarens förslag från SOL/LSS-utredningen
+skrivskyddat (läst från ärendets JSON Parameters via profilens dokumentnyckel) men kopierar det inte, och
+`beslut-hsl` tar över IVO- och Public 360-fälten som till och med schema 1.0 låg i HSL-utredningen. Katlas
+inkommande ärendedata förblir en separat skrivskyddad JSON Parameter.
+
+De lokala artefakterna för utredningarna är version 1.2, utom enhetschefsutredningen som är version 1.3 och tillåter
+alla tre lagrum samtidigt. Enhetschefs- och SoL/LSS-utredningen deklarerar `errandClassification`, HSL-utredningen
+saknar beslutsfälten sedan 1.1, och alla tre har sektionen Utredningen klar och rapport (`x-draken-completion`, se
+`schemas/README.md`). En utredning som sparats som klar är låst i både BFF
+och formulär tills ägaren låser upp den; BFF:en skapar PDF-rapporten ur det sparade dokumentet, lägger den som
+numrerad bilaga och registrerar den i det serverägda `reports`-fältet. För redan bundna manager- och SOL/LSS-dokument
+med schema till och med version 1.0 injicerar runtime samma externa placering som en bakåtkompatibel fallback.
+Ägarskapet bestäms dock centralt av den fasta IAF/VOF-regeln tillsammans med runtimeprofilens dokumentnycklar, inte
+av en enskild schemadeklaration. Om
+även ett nyare
+schema saknar deklarationen behåller därför utredningen klassificeringen, placerar den i en säker standardsektion och
+visar en varning i stället för att skapa dubbla eller saknade redigeringsvägar.
+Artefakterna i repot är publiceringsunderlag och innebär inte i sig att någon schemaversion har publicerats.
+
+## Verifiering
+
+```sh
+yarn test                       # hela enhetstestsviten
+yarn test src/supportmanagement/investigation   # bara utredningens tester
+yarn type-check
+yarn type-check:test
+yarn lint:strict
+```
+
+Med labbservern startad kan webbläsarbeteendet verifieras med:
+
+```sh
+yarn test:e2e:iaf-schema-lab
+yarn test:e2e:iaf
+```
+
+### Ärendets dokumentbehörigheter
+
+Profilen beskriver dokumenten; rättigheter hämtas separat från backendens
+`supporterrands/{municipalityId}/{errandId}/investigation-access`, som projicerar
+Support Management Sprint 16.0 `/access`. Nyckeln i fältposten med
+`field: "jsonParameters"` och resursen `errand/json-parameter` måste båda tillåta åtkomst.
+`allKeys: true` omfattar nya dokument; annars måste nyckeln vara explicit listad.
+Ärendets nivå är en default, inte ett tak — den gäller de nycklar som saknar egen grant, som ett
+unix-filträd där en skrivbar katalog kan ligga under en läsbar förälder. En roll med `R`/`LR` på
+ärendet men `RW` på sin egen nyckel skriver alltså det dokumentet utan att få handlägga ärendet i
+övrigt. Med `allKeys: true` finns ingen sådan förfining, och ärendets nivå gäller varje nyckel.
+Resursen `errand/json-parameter` måste däremot alltid vara `RW` för att skrivvägen (PUT) ska vara
+öppen.
+
+Både `R` och `LR` returnerar `fields`. Skillnaden är att `LR` returnerar en _delmängd_ av dem, och
+den delmängden är då det som gäller: en nyckel som finns med är läsbar med sin egen nivå, en nyckel
+som saknas är dold. `LR` är alltså inte en svagare läsning av samma dokument utan ett smalare urval
+av vilka dokument som finns för användaren, och en listad nyckel visar sitt innehåll precis som
+under `R`.
+
+UI:t delar en accesshämtning mellan Utredning och Beslut och visar aldrig rättigheter från ett
+annat ärende eller en annan användare. Ändrad ärendeversion, etiketter, fokus, återanslutning och
+nekade dokumentanrop utlöser omkontroll; varje GET/PUT kontrolleras även i backend.
+Nekad åtkomst blir 403, utan att skicka användaren till inloggningen.
+Dokumentkomponenterna behåller sina utkast medan innehållet döljs vid omkontroll eller nekad
+läsrätt. Även dolda utkast räknas som osparade ändringar och omfattas av omladdningsvarningen.
+De sparas endast i minnet för aktuell användare och aktuellt ärende. En beslutsflik med ett
+osparat utkast behålls för att kunna förklara spärren och erbjuda omkontroll.
+Vanliga ärendefält, inklusive kategorisering, använder fortsatt sina befintliga regler.
+
+## Tilldelningsflödet: från enhetschef till LEX och tillbaka
+
+Ett misstänkt missförhållande byter inte bara klassificering — det byter **åtkomst**. Support
+Managements AccessMapper matchar användarens konfigurerade labelmönster mot ärendets labels, så det
+är labeln `ACCESS/LEX` som faktiskt lämnar över ärendet: enhetschefen slutar se det och LEX-rollerna
+börjar. Draken implementerar därför ingen egen synlighetsregel; den skriver bara labeln.
+
+`ACCESS`-trädet innehåller i dag exakt den labeln. Det finns ingen motsvarighet för MAS/MAR — de når
+HSL-ärenden på annat sätt — så ett högt HSL-riskvärde har ingen label att skriva och inget
+överlämningssteg. Riskvärdet visas som en varning för enhetschefen och inget mer.
+
+Två namngivna steg finns, och klienten namnger steget i stället för att komponera skrivningen själv
+(`backend/src/config/investigation-handover-steps.ts`):
+
+| Steg | Utlöses av | Skriver |
+| --- | --- | --- |
+| `assign-lex` | `suspectedMisconduct === 'yes'` i den sparade enhetschefsutredningen. Dialogen efter sparningen kan stängas. Så länge ärendet inte är tilldelat heter fasknappen Tilldela LEX-ansvarig i stället för Skicka till beslut och öppnar samma dialog; fasen byts inte, utan LEX-ansvarig skickar ärendet till beslut | `assignedUserId` (LEX-ansvarig), `REPORT_TYPE/ABUSE` i stället för `REPORT_TYPE/DEVIATION`, `ACCESS/LEX`, status `ASSIGNED` |
+| `return-to-manager` | LEX har beslutat; knappen sitter längst ned i lex Sarah-beslutet (`beslut-sol-lss`), vars skrivrätt också auktoriserar steget | `assignedUserId` (enhetschef för platsen), tar bort `ACCESS/LEX` (och `ACCESS`-roten om inget annat ligger under den), status `ASSIGNED` |
+| `move-location` | Ärendet har kommit till fel enhet; enhetschefen väljer rätt plats (`locationLabelId`) i kortet Ärendets plats överst i Ärendeuppgifter | `assignedUserId` (chef för den **nya** platsen), byter ut hela platskedjan i labels mot den nya platsens; se [Fel plats](#fel-plats-flytta-ärendet-utan-att-ändra-det-inrapporterade) |
+
+`assign-lex` och `return-to-manager` sätter **status** `ASSIGNED`: ärendet når LEX-ansvarig respektive
+chefen som Tilldelat. Draken behandlar `ASSIGNED` som ett *låst* tillstånd (`isSupportErrandLocked`), så
+mottagaren återupptar ärendet innan hen arbetar i det — och återuppta skriver den aktiva fasens
+huvudstatus, den första i fasens `allowedStatuses`, inte en generell pågående-status som fasen inte
+tillåter. Fasernas `allowedStatuses` måste därför innehålla `ASSIGNED`. `move-location` lämnar statusen
+orörd; ärendet stannar hos samma roll, bara på en annan enhet.
+
+Två saker följer av att åtkomsten är poängen med skrivningen:
+
+- **Ett enda PATCH uppströms.** Handläggare, labels och status skrivs tillsammans. Delas de upp
+  tappas läsrätten mitt i en sekvens som fortfarande har skrivningar kvar.
+- **Ingen återläsning efteråt.** Anroparen har just skrivit bort sig själv från ärendet, så den
+  bekräftande GET:en skulle misslyckas. Endpointen svarar `204` och klienten navigerar till
+  översikten i stället för att rendera om ett ärende den inte längre ser.
+
+Rapporttypen är enkelvärd, så `assign-lex` **byter ut** `REPORT_TYPE/DEVIATION` mot
+`REPORT_TYPE/ABUSE` i stället för att lägga till. Det sker i samma skrivning som `ACCESS/LEX`: delas
+de upp kan ärendet bli registrerat som ett missförhållande utan att någon i LEX når det, och
+enhetschefen som kunde rättat till det är då redan utskriven ur ärendet.
+
+Bytet har en följdverkan utanför labeln. `REPORT_TYPE/ABUSE` är en av de paths
+`resolveIafVofInvestigationClassificationOwner` läser, så klassificeringsägandet flyttas från
+enhetschefsutredningen till SoL/LSS-utredningen och SOL och LSS blir tvingade lagrum. Ärendets
+parameter `eventType` lämnas däremot orörd och står kvar som `AVVIKELSE`.
+
+En känd konsekvens av de tvingade lagrummen: ett ärende med både HSL och SOL/LSS som blir
+missförhållande får sina lagrum normaliserade till SOL/LSS nästa gång enhetschefsdokumentet **sparas**,
+vilket tar bort `riskAssessmentHsl`. I praktiken når det bara den som har skrivrätt på
+enhetschefsdokumentet, och den rätten ägs av Support Managements AccessMapper — men regeln är värd
+att känna till innan åtkomsten konfigureras om.
+
+### Fel plats: flytta ärendet utan att ändra det inrapporterade
+
+Katla skriver platsen två gånger. Rapportörens val ligger i den inkommande JSON-parametern
+(`orgName`/`parentOrgName`, renderat i Ärendeuppgifter av `FacilitySearchField`), och samma plats
+ligger som ärendets LOCATION-labels — hela kedjan, en label per nivå. De två stämmer överens när
+ärendet routats rätt och skiljer sig åt när det inte gjort det, och det är **bara labels som flyttas**.
+JSON-parametern är facit på vad som skickades in och ändras aldrig; labels är det AccessMapper
+matchar på och därmed det som avgör vem som når ärendet. Ett ärende som hamnat hos fel enhet rättas
+alltså genom att byta plats-labels, inte genom att redigera rapporten.
+
+Steget `move-location` gör det. Klienten namnger målplatsen med label-id (`locationLabelId`), och
+backend löser ut resten ur metadataträdet (`resolveInvestigationLocationTarget`):
+
+- målet måste finnas exakt en gång i trädet, vara ett **löv** (Katla erbjuder bara enheterna längst
+  ned som platser) och ha en nivå med classification `LOCATION` på sin väg — annars finns inget för
+  AccessMapper att matcha och ingen chef att lösa ut;
+- den nya labellistan (`buildInvestigationLocationLabelUpdate`) tar bort varje label under
+  platsstrukturens toppnod och varje LOCATION-klassad label, och lägger till hela kedjan ned till
+  målet. Alla andra labels — klassificering, rapporttyp, `ACCESS/LEX` — passerar orörda, så vägen
+  kan inte bli ett andra sätt att omklassificera. Toppnoden själv lämnas som den bars: den är
+  strukturen, inte en plats;
+- chefen väljs ur den **nya** platsens chefer, upplösta med exakt samma regel som återlämningen
+  (`resolveManagersForLocation`), och förhandsvisas via
+  `GET /supporterrands/:m/:id/location-managers/:labelId`. Den som flyttar skriver bort sig själv
+  från ärendet, så någon i andra änden måste kunna se det.
+
+Steget auktoriseras av skrivrätt på `utredning-enhetschef`: den chef som felaktigt fick ärendet är
+den som ser det först och ska kunna skicka det vidare. Ett ärende som bär `ACCESS/LEX` flyttas inte
+(409) — det är LEX-labeln, inte platsen, som ger LEX åtkomst, och chefen flytten skulle tilldela
+kunde inte agera förrän ärendet lämnats tillbaka. Utredaren återlämnar först; mottagaren flyttar.
+
+Kortet **Ärendets plats** ligger överst i Ärendeuppgifter (`ErrandLocationCard`, via variantens
+`renderDetailsHeader`) och visas för den som har skrivrätt på `utredning-enhetschef`, när ärendet
+varken är låst eller hos LEX. Kortet (`MoveLocationButton`) visar platsen enligt
+labels — inte platsen i de inrapporterade uppgifterna — och öppnar flytten (`MoveLocationModal`): sök plats som i
+Katla, välj chef, bekräfta. Efter flytten navigerar klienten till översikten av samma skäl som de
+andra stegen. `resolveErrandPlace` i `assignment/errand-location.ts` är den rena upplösningen från
+labels till platsstrukturnod, delad med `place-structure.ts` som Ärendeuppgifter redan använder.
+
+### Ansvarig-listan är ärendespecifik
+
+`GET /users/admins` svarar "vilka finns i de konfigurerade AD-grupperna" och är identisk för alla
+ärenden — vilket är hur en enhetschef kunde stå kvar som valbar för ett ärende hen inte längre nådde.
+Sidopanelen frågar därför per ärende i stället, via
+`GET /supporterrands/:m/:id/assignable-handlers`:
+
+| Ärendets tillstånd | Listan innehåller |
+| --- | --- |
+| Bär `ACCESS/LEX` | LEX-ansvarig och LEX-utredare. **Inte** enhetschefer eller verksamhetschefer — de kan ändå inte agera förrän ärendet lämnats tillbaka |
+| Annars, med plats | Platsens chefer, upplösta med **exakt samma** regel som återlämningen använder |
+| Ingen plats, eller ingen avvikelse-capability | Oförändrad lista |
+
+Att båda vägarna delar `resolveManagersForErrand` är avsiktligt: en regel avgör vem som äger en
+plats, inte två som kan säga olika.
+
+Filtreringen styrs av capabilityn, aldrig av appnamn. En deployment utan AccessMapper-konfiguration
+har ingenting att filtrera mot, och en tom Ansvarig-lista skulle göra den oförmögen att tilldela
+någon alls. Klienten faller dessutom tillbaka på hela katalogen tills endpointen svarat — och om den
+inte svarar — så väljaren aldrig står tom.
+
+### Vem som kan tilldelas
+
+`HEALTHCAREDEVIATION_HANDLER_ROLES` är den rikare stavningen av `ASSIGNABLE_HANDLER_GROUPS`: den
+namnger samma AD-grupper och dessutom vilken roll varje grupp står för, och för roller med `measures`
+även vem som registrerar åtgärder. `GET /users/admins` returnerar därför
+`roleKeys` per konto plus rollernas etiketter, och `Ansvarig`-listan grupperas med `Select.Optgroup`.
+Det är **data**, inte en drake-if: en deployment utan roller får exakt den platta lista den alltid
+har haft, vilket är varför den här ändringen kan ligga i delad kod.
+
+### Vilken plats ärendet gäller
+
+Två saker avgör vilken label som är platsen, och båda behövs.
+
+**Classification, inte path-prefix.** Platsen är den label vars `classification` är `location`.
+Hierarkin blandar sorter, och att matcha på att pathen börjar med platsroten skulle svepa in noder
+som inte är platser.
+
+**Djupast vinner.** Ärendet bär hela sin platssökväg, inte bara lövet: en plats fyra nivåer ned
+kommer som fyra labels, en per nivå. Att räkna dem är alltså inte vägen till platsen — platsen är
+den **djupaste** av dem. Varje förfader är ett bredare område, och att lösa ut chefen mot någon av
+dem skulle lämna ärendet till den som ansvarar för en hel region i stället för för enheten det
+gäller.
+
+Djupet kommer från metadataträdet, inte från att räkna snedstreck i pathen, så en resource path
+tolkas aldrig som en kedja av namn. Labelns identitet är dess `id`; ärendets egen `resourcePath`
+används bara när id saknas, eftersom det är metadatanoden som bär classification.
+
+Två labels på **samma** djup är däremot en verklig tvetydighet — två olika platser, inte två nivåer
+av samma — och rapporteras i stället för att gissas.
+
+### Vilka chefer platsen har
+
+Båda halvorna kommer ur AccessMapper, och ingen räcker ensam:
+
+**Vem når platsen.** `GET access-config/user?pattern=…` filtrerar på **exakt** lagrat mönster, så
+platsens eget mönster och varje förfaders frågas efter vid namn:
+
+```
+LOCATION/33/34/500020/10920/**   ← specificitet 5
+LOCATION/33/34/500020/**         ← 4
+…
+LOCATION/**                      ← 1
+```
+
+Att bara fråga efter det djupaste mönstret vore fel: en chef upplagd högre upp täcker platsen men
+skulle aldrig dyka upp, och felet ser ut som "ingen chef är konfigurerad". En person som finns på
+flera nivåer behåller sin mest specifika träff, och listan sorteras med den först.
+
+**Vem är chef.** `GET access/ad/{adId}?type=role` ger personens roller. `UNIT_MANAGER` och
+`HEAD_OF_OPERATION` är de som räknas (`investigation-manager-roles.ts`); en roll som inte står där
+är ingen chef i det här sammanhanget och kan alltså aldrig ta emot ett ärende. Rollen kommer från
+AccessMapper och inte från en AD-grupp, eftersom det är där personens åtkomst till platsen ändå
+konfigureras — två system skulle glida isär.
+
+**Namnet** finns inte i AccessMapper. Det hämtas ur Active Directory efteråt, och bara för de konton
+som blev kvar: handläggarcachen svarar gratis där den kan, övriga slås upp med `search/{domain}`.
+Uppslaget är best effort — ett konto utan namn visas med sitt AD-konto i stället för att fälla hela
+återlämningen, för ett visningsnamn är presentation.
+
+Kandidaterna returneras grupperade per roll, och klienten renderar dem med `Select.Optgroup` precis
+som handläggarlistan i sidopanelen. Utredaren väljer; backend löser upp samma lista igen vid
+skrivningen och avvisar alla utanför den, så väljaren kan inte bredda vem som får ta emot ärendet.
+
+## Rapporter: publicering och återhämtning
+
+`InvestigationReportPublicationService` i backend äger publiceringsförloppet. Controllern
+kontrollerar åtkomst och bygger rapporten; tjänsten samordnar dokumentets rapportlista och
+Support Managements bilagor. Ingen separat databas eller processlokal låsning används.
+
+Klienten skickar ett UUID v4 som `operationId` och behåller det i `sessionStorage` tills
+publiceringen har bekräftats. Samma identitet används efter nätverksfel och omladdning.
+Förhandsgranskning kräver ingen identitet och gör inga skrivningar.
+
+Befintliga, bundna scheman tillåter `generatedAt`, `generatedBy`, `fileName` och ett valfritt
+`attachmentId`. Därför lagras publiceringsidentiteten som ett UUID-suffix i filnamnet:
+`Handelseanalys_HSL_2_<operationId>.pdf`. Rapportlistan förblir serverägd.
+
+1. PDF:en renderas. Ett renderingsfel lämnar inget väntande arbete.
+2. En rapportpost utan `attachmentId` reserveras med dokumentets `If-Match`. Bara den begäran
+   som får ett bekräftat svar på reservationen får ladda upp. Samtidiga försök serialiseras av
+   dokumentversionen. En väntande rapport hindrar upplåsning och ändring av rapportunderlaget.
+3. Bilagan laddas upp en gång. `Location` följs inte; bilagans id läses ur svaret.
+4. Rapportposten kompletteras med id på dokumentets senast lästa version. Ett nytt försök
+   återanvänder en bekräftad post eller hittar bilagan med exakt samma unika filnamn.
+
+Support Managements bilage-POST saknar idempotensnyckel. Om uppladdningen eller svaret avbryts
+kan BFF därför inte bevisa att det är säkert att ladda upp igen. Den behåller reservationen och
+letar efter den befintliga bilagan. Saknas en entydig träff blir resultatet HTTP 409 med en
+åtgärdsanvisning, aldrig en automatisk ny uppladdning. Detta gäller även efter omstart av BFF.
+
+### Förvaltning av en väntande rapport
+
+- Låt ett pågående försök avslutas. Försök sedan med **Slutför rapport**. Finns exakt en bilaga
+  med reservationens filnamn kopplar BFF ihop den med rapportposten.
+- Om ingen bilaga finns: kontrollera upstream-loggar och säkerställ att ingen uppladdning
+  fortfarande kan slutföras. Återställ inte reservationen medan utfallet är oklart.
+- Om det är bekräftat att ingen uppladdning accepterades får en behörig förvaltare ta bort
+  just den väntande posten via Support Managements JSON-parameter-API, med dokumentets
+  aktuella `If-Match`. Behåll övriga poster och dokumentfält. Därefter kan användaren försöka igen.
+- Om flera bilagor matchar eller reservationen har ändrats utanför BFF krävs manuell utredning.
+  Radera inte bilagor automatiskt. Dokumentera vald bilaga och eventuell korrigering.
+
+Äldre rapportposter utan UUID-suffix tolkas inte som väntande. Återgång till en äldre BFF får
+inte göras med pågående reservationer: den äldre rapportkoden känner inte till dessa och kan
+ladda upp nya kopior. Slutför eller utred reservationerna före återgång. Frontend och backend
+behöver driftsättas tillsammans eftersom verklig publicering nu kräver `operationId`.
+
+### Ärendeversion och formulärutkast
+
+Ett dokument har en egen version. Föräldraärendets version får uppdateras i ett delvis laddat
+formulär bara om den egna skrivningen förklarar hela versionsökningen, och både store och
+formulär fortfarande har den basversionen. Regeln ägs av `isSoleSupportErrandVersionChange`
+och används av dokument, kategorisering och åtgärder. En rapport kan göra noll eller flera
+skrivningar vid återhämtning; dess svar får därför inte flytta formulärets ärendeversion.
+
+Efter andra samtidiga ändringar behöver användaren ladda om föräldraärendet före ett nytt
+ärendesparande. Sparfel lämnar utkast och basversion kvar. Spara undan utkastet före omladdning.
+Sidopanelens sparfunktion returnerar uttryckligen om hela flödet lyckades; **Starta handläggning**
+fortsätter bara efter ett bekräftat sparande.

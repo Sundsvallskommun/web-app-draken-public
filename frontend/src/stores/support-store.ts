@@ -33,7 +33,9 @@ type SupportStore = SupportState & SupportActions;
 
 const initialState: SupportState = {
   supportErrand: undefined,
-  supportErrands: { errands: [], labels: [] },
+  // Loading until the overview has asked for errands: an empty list before the first request has
+  // even gone out reads as "Det finns inga ärenden", which is not what it means.
+  supportErrands: { errands: [], labels: [], isLoading: true },
   supportAttachments: undefined,
   stakeholderContacts: [],
   stakeholderCustomers: [],

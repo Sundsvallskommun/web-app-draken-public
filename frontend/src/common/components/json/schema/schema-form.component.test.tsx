@@ -20,6 +20,63 @@ const answerSchema: RJSFSchema = {
   properties: { answer: { type: 'string', title: 'Svar' } },
 };
 
+test.each([
+  ['TextWidget', undefined],
+  ['DateWidget', 'date'],
+  ['TimeWidget', 'time'],
+])('validates required %s on save without marking untouched fields invalid', async (widget, format) => {
+  const onSubmit = vi.fn();
+  render(
+    <SchemaForm
+      schema={{
+        type: 'object',
+        required: ['answer'],
+        properties: { answer: { type: 'string', title: 'Svar', format } },
+      }}
+      uiSchema={{ answer: { 'ui:widget': widget } }}
+      submitButtonOptions={{ label: 'Spara' }}
+      onSubmit={onSubmit}
+      onError={() => undefined}
+    />
+  );
+  const input = screen.getByLabelText(/Svar/) as HTMLInputElement;
+  expect(input.getAttribute('aria-required')).toBe('true');
+  expect(input.getAttribute('aria-invalid')).toBe('false');
+  expect(input.validity.valueMissing).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: 'Spara' }));
+  await waitFor(() => expect(input.getAttribute('aria-invalid')).toBe('true'));
+  expect(onSubmit).not.toHaveBeenCalled();
+});
+
+test('keeps investigation object and array instructions in the shared templates', () => {
+  render(
+    <SchemaForm
+      schema={{
+        type: 'object',
+        properties: {
+          details: {
+            type: 'object',
+            title: 'Utredning',
+            description: 'Beskriv händelsen.',
+            properties: { answer: { type: 'string' } },
+          },
+          people: {
+            type: 'array',
+            title: 'Deltagare',
+            description: 'Ange berörda personer.',
+            items: { type: 'object', properties: { name: { type: 'string' } } },
+          },
+        },
+      }}
+      uiSchema={{ details: { 'ui:options': { showObjectFieldset: true } } }}
+      readonly
+    />
+  );
+  expect(screen.getByRole('group', { name: 'Utredning' }).textContent).toContain('Beskriv händelsen.');
+  expect(screen.getByRole('group', { name: 'Deltagare' }).textContent).toContain('Ange berörda personer.');
+  expect(screen.queryByRole('button', { name: 'Lägg till' })).toBeNull();
+});
+
 test.each([false, true])(
   'preserves hidden metadata without empty rows or sections (sections: %s)',
   async (sections) => {

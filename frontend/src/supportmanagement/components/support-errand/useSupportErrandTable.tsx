@@ -1,34 +1,77 @@
 import { PriorityComponent } from '@common/components/priority/priority.component';
+import { isIAFOrVOF } from '@common/services/application-service';
 import { prettyTime, sortBy, truncate } from '@common/services/helper-service';
 import { Admin } from '@common/services/user-service';
 import { appConfig } from '@config/appconfig';
-import { useMetadataStore, useUserStore } from '@stores/index';
+import { useEmployeeNameStore, useMetadataStore, useUserStore } from '@stores/index';
 import { All, Priority } from '@supportmanagement/interfaces/priority';
 import {
   Channels,
   getLabelCategory,
+  getLabelReportType,
   getLabelSubType,
   getLabelType,
+  getMappedLabelSubType,
   Status,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
-import { getAdminName, primaryStakeholderNameorEmail } from '@supportmanagement/services/support-stakeholder-service';
+import {
+  findAdminByAccount,
+  getAdminName,
+  primaryStakeholderNameorEmail,
+} from '@supportmanagement/services/support-stakeholder-service';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 
 import { SupportStatusLabelComponent } from '../ongoing-support-errands/components/support-status-label.component';
 
+/**
+ * What the "Registrerad av" cell shows, in falling order of precision: the registrar's name from
+ * the already-loaded admin list, their name from the Employee API, the raw `reporterUserId`, then
+ * `(saknas)`.
+ *
+ * The admin list is tried first because it costs nothing - it is fetched once at startup - and
+ * only accounts it cannot answer for reach the Employee lookup. The raw account is worth showing
+ * while that request is in flight, and if it comes back empty: every row then says something
+ * about who registered the errand rather than going silently blank.
+ */
+const getReporterDisplayName = (
+  administrators: Admin[] | undefined,
+  employeeNames: Record<string, string | null>,
+  reporterUserId: string | undefined
+): string => {
+  if (!reporterUserId) return '(saknas)';
+
+  return (
+    getAdminName(findAdminByAccount(administrators, reporterUserId)!) ||
+    employeeNames[reporterUserId.toLowerCase()] ||
+    reporterUserId
+  );
+};
+
+/** The accounts the admin list cannot name, so only those are asked of the Employee API. */
+export const getUnresolvedReporterAccounts = (
+  errands: readonly SupportErrand[],
+  administrators: Admin[] | undefined
+): string[] =>
+  errands
+    .map((errand) => errand?.reporterUserId)
+    .filter((account): account is string => !!account)
+    .filter((account) => !getAdminName(findAdminByAccount(administrators, account)!));
+
 export const useSupportErrandTable = (statuses: Status[]) => {
   const { t } = useTranslation();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const administrators = useUserStore((s) => s.administrators);
+  const employeeNames = useEmployeeNameStore((s) => s.names);
 
   const labels = [
     {
       label: t('common:overview.status'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'status',
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <SupportStatusLabelComponent
@@ -42,6 +85,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.lastActivity'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'touched',
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => {
         const notification = sortBy(errand?.activeNotifications ?? [], 'created').reverse()[0];
@@ -70,6 +114,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       ),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'category',
       shownForStatus: All.ALL,
 
       render: (errand: SupportErrand) => (
@@ -95,10 +140,23 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       ),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'type',
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <div className="max-w-[280px]">
-          {appConfig.features.useThreeLevelCategorization ? (
+          {/*
+            An errand carrying a REPORT_TYPE label comes from the avvikelse tree, where the type is
+            Avvikelse/Missforhallande and the level below it is the subcategory. That tree has no
+            SUBTYPE at all, so rendering CATEGORY/TYPE/SUBTYPE here left the errand type unshown and
+            the second line permanently empty. Keyed off the label the errand actually carries, so
+            every other deployment falls through to the three-level rendering unchanged.
+          */}
+          {getLabelReportType(errand) ? (
+            <div>
+              <div>{getLabelDisplayName(getLabelReportType(errand), supportMetadata)}</div>
+              <div>{getLabelDisplayName(getMappedLabelSubType(errand), supportMetadata)}</div>
+            </div>
+          ) : appConfig.features.useThreeLevelCategorization ? (
             <div>
               <div>{getLabelDisplayName(getLabelType(errand), supportMetadata)}</div>
               <div>{getLabelDisplayName(getLabelSubType(errand), supportMetadata)}</div>
@@ -120,6 +178,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.incomingVia'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'channel',
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
@@ -134,6 +193,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.registered'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'created',
       shownForStatus: All.ALL,
       render: (errand: SupportErrand) => (
         <div className="whitespace-nowrap overflow-hidden text-ellipsis table-caption">
@@ -150,7 +210,16 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.priority'),
       screenReaderOnly: false,
       sortable: true,
-      shownForStatus: [Status.NEW, Status.ONGOING, Status.PENDING, Status.SOLVED, Status.SUSPENDED, Status.ASSIGNED],
+      sortKey: 'priority',
+      shownForStatus: [
+        Status.NEW,
+        Status.ONGOING,
+        Status.INQUIRY,
+        Status.PENDING,
+        Status.SOLVED,
+        Status.SUSPENDED,
+        Status.ASSIGNED,
+      ],
       render: (errand: SupportErrand) => (
         <PriorityComponent priority={(Priority as Record<string, string>)[errand.priority!]} />
       ),
@@ -159,6 +228,7 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.reminder'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'suspendedTo',
       shownForStatus: [Status.SUSPENDED],
       render: (errand: SupportErrand) => (
         <time dateTime={errand.touched}>{prettyTime(errand.suspension?.suspendedTo!)}</time>
@@ -168,18 +238,28 @@ export const useSupportErrandTable = (statuses: Status[]) => {
       label: t('common:overview.responsible'),
       screenReaderOnly: false,
       sortable: true,
+      sortKey: 'assignedUserId',
       shownForStatus: Object.values(Status).filter((status) => status !== Status.NEW),
       render: (errand: SupportErrand) => {
-        return <>{getAdminName(administrators?.find((a: Admin) => a?.adAccount === errand?.assignedUserId)!)}</>;
+        return <>{getAdminName(findAdminByAccount(administrators, errand?.assignedUserId)!)}</>;
       },
     },
     {
       label: t('common:overview.registeredBy'),
       screenReaderOnly: false,
       sortable: true,
+      // IAF and VOF register their errands in Draken, so there this column means the registrar.
+      // Every other drake reads it as the assigned handler and keeps exactly today's behaviour.
+      sortKey: isIAFOrVOF() ? 'reporterUserId' : 'assignedUserId',
       shownForStatus: [Status.NEW],
       render: (errand: SupportErrand) => {
-        return <>{getAdminName(administrators?.find((a: Admin) => a?.adAccount === errand?.assignedUserId)!)}</>;
+        return (
+          <>
+            {isIAFOrVOF()
+              ? getReporterDisplayName(administrators, employeeNames, errand?.reporterUserId)
+              : getAdminName(findAdminByAccount(administrators, errand?.assignedUserId)!)}
+          </>
+        );
       },
     },
   ];

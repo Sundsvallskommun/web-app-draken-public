@@ -2,10 +2,13 @@ import { appConfig } from '@config/appconfig';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import {
+  canReopenSupportErrand,
+  getOngoingStatus,
   getSupportErrandById,
   setSupportErrandStatus,
   Status,
 } from '@supportmanagement/services/support-errand-service';
+import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import dayjs from 'dayjs';
 import { Undo2 } from 'lucide-react';
 import { useState } from 'react';
@@ -26,7 +29,7 @@ export const SupportReopenErrandButton: React.FC<{ disabled?: boolean }> = ({ di
 
   const reopenErrand = () => {
     setIsLoading(true);
-    return setSupportErrandStatus(supportErrand!.id!, municipalityId, Status.ONGOING)
+    return setSupportErrandStatus(supportErrand!.id!, municipalityId, getOngoingStatus(), supportErrand!)
       .then(() => {
         toastMessage({
           position: 'bottom',
@@ -39,16 +42,20 @@ export const SupportReopenErrandButton: React.FC<{ disabled?: boolean }> = ({ di
           setIsLoading(false);
         });
       })
-      .catch(() => {
+      .catch((e) => {
         toastMessage({
           position: 'bottom',
           closeable: false,
-          message: 'Något gick fel när ärendet återöppnades',
+          message: supportErrandWriteErrorMessage(e, 'Något gick fel när ärendet återöppnades'),
           status: 'error',
         });
         setIsLoading(false);
       });
   };
+
+  if (!canReopenSupportErrand()) {
+    return null;
+  }
 
   return (
     <Button

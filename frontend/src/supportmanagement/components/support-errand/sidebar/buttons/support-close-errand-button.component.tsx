@@ -7,6 +7,7 @@ import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   closeSupportErrand,
   getSupportErrandById,
+  readSupportErrandWriteSnapshot,
   Resolution,
   ResolutionLabelBOU,
   ResolutionLabelIK,
@@ -20,6 +21,8 @@ import {
   Status,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
+import { SupportErrandStatusSnapshot } from '@supportmanagement/services/support-errand-status-transition';
+import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
 import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
 import { applicantHasContactChannel, getAdminName } from '@supportmanagement/services/support-stakeholder-service';
 import { ArrowLeft, Check } from 'lucide-react';
@@ -64,6 +67,10 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
   const [changeResolution, setChangeResolution] = useState<boolean>(false);
 
   const formControls: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
+  const hasUnsavedChanges = Object.values(deepFlattenToObject(formControls.formState.dirtyFields)).some((v) => v);
+  // A workflow closes errands with the status alone and records no resolution: its last phase allows
+  // closing, and Support Management moves an errand closed earlier into that phase in the same write.
+  const closesWithoutResolution = appConfig.features.useUiPhases;
 
   const showCloseErrorToast = (message = 'Något gick fel när ärendet skulle avslutas') => {
     toastMessage({
@@ -76,15 +83,31 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
 
   // When an errand is closed without a handler (e.g. directly from status NEW), the user who
   // closes it becomes the handler so the errand has a responsible person. Returns the resulting
-  // assigned user (the existing handler if one is already set).
-  const ensureHandlerAssigned = async (errandId: string): Promise<string | undefined> => {
-    if (supportErrand?.assignedUserId) return supportErrand.assignedUserId;
-    const currentAdmin = administrators.find((a) => a.adAccount === user.username);
-    if (currentAdmin) {
-      await setSupportErrandAdmin(errandId, municipalityId, currentAdmin.adAccount, undefined, currentAdmin.adAccount);
-      return currentAdmin.adAccount;
+  // assigned user (the existing handler if one is already set) together with the snapshot the
+  // close must be conditional on: the loaded errand when nothing was written, and the version our
+  // own assignment produced when it was.
+  const ensureHandlerAssigned = async (
+    errandId: string
+  ): Promise<{ assignedUserId?: string; expected: SupportErrandStatusSnapshot }> => {
+    if (supportErrand?.assignedUserId) {
+      return { assignedUserId: supportErrand.assignedUserId, expected: supportErrand };
     }
-    return undefined;
+    const currentAdmin = administrators.find((a) => a.adAccount === user.username);
+    if (!currentAdmin) return { assignedUserId: undefined, expected: supportErrand ?? {} };
+
+    await setSupportErrandAdmin(
+      errandId,
+      municipalityId,
+      currentAdmin.adAccount,
+      supportErrand?.version,
+      undefined,
+      currentAdmin.adAccount
+    );
+
+    return {
+      assignedUserId: currentAdmin.adAccount,
+      expected: await readSupportErrandWriteSnapshot(errandId, municipalityId),
+    };
   };
 
   const handleCloseErrand = async (resolution: Resolution, msg: boolean) => {
@@ -93,11 +116,12 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
     setIsLoading(true);
     let assignedUserId: string | undefined;
     try {
-      assignedUserId = await ensureHandlerAssigned(errandId);
-      await closeSupportErrand(errandId, municipalityId, resolution);
+      const assignment = await ensureHandlerAssigned(errandId);
+      assignedUserId = assignment.assignedUserId;
+      await closeSupportErrand(errandId, municipalityId, resolution, assignment.expected);
     } catch (e) {
       console.error('Failed to close support errand', e);
-      showCloseErrorToast();
+      showCloseErrorToast(supportErrandWriteErrorMessage(e, 'Något gick fel när ärendet skulle avslutas'));
       setIsLoading(false);
       return;
     }
@@ -129,24 +153,56 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
     getSupportErrandById(errandId, municipalityId).then((res) => setSupportErrand(res.errand));
   };
 
+  /** Closes a workflow errand with the status alone, and reads the closed errand back into the page. */
+  const closeWithoutResolution = async () => {
+    if (!supportErrand?.id) return;
+    const errandId = supportErrand.id;
+    setIsLoading(true);
+    try {
+      const assignment = await ensureHandlerAssigned(errandId);
+      await setSupportErrandStatus(errandId, municipalityId, Status.SOLVED, assignment.expected);
+      const closed = await getSupportErrandById(errandId, municipalityId);
+      if (closed.error) throw new Error('Could not read back the closed support errand');
+      setSupportErrand(closed.errand);
+      formControls.reset(closed.errand);
+      toastMessage(getToastOptions({ message: 'Ärendet avslutades', status: 'success' }));
+    } catch (e) {
+      console.error('Failed to close support errand', e);
+      showCloseErrorToast(supportErrandWriteErrorMessage(e, 'Något gick fel när ärendet skulle avslutas'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <>
       <Button
         className="w-full"
-        color="vattjom"
+        // A workflow moves and closes the errand with its phase button; this one stays secondary beside it.
+        color={closesWithoutResolution ? undefined : 'vattjom'}
         data-cy="solved-button"
         leftIcon={<Check />}
         variant={
-          !!(supportErrand?.status as Status) &&
-          [Status.NEW, Status.PENDING, Status.AWAITING_INTERNAL_RESPONSE, Status.SUSPENDED, Status.ASSIGNED].includes(
-            supportErrand?.status as Status
-          )
+          closesWithoutResolution ||
+          (!!(supportErrand?.status as Status) &&
+            [
+              Status.NEW,
+              Status.PENDING,
+              Status.AWAITING_INTERNAL_RESPONSE,
+              Status.AWAITING_RESPONSE,
+              Status.SUSPENDED,
+              Status.ASSIGNED,
+            ].includes(supportErrand?.status as Status))
             ? 'secondary'
             : 'primary'
         }
-        disabled={disabled}
+        disabled={disabled || isLoading}
+        loading={closesWithoutResolution && isLoading}
+        loadingText="Avslutar ärendet"
         onClick={() => {
-          setShowModal(true);
+          // Unsaved changes are still explained in the dialog; otherwise a workflow closes at once.
+          if (closesWithoutResolution && !hasUnsavedChanges) void closeWithoutResolution();
+          else setShowModal(true);
         }}
       >
         Avsluta ärendet
@@ -154,7 +210,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
       <Modal
         show={showModal}
         label={
-          Object.values(deepFlattenToObject(formControls.formState.dirtyFields)).some((v) => v) ? (
+          hasUnsavedChanges ? (
             'Du har osparade ändringar'
           ) : changeResolution ? (
             <div className="flex flex-row gap-8">
@@ -171,7 +227,7 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
           setChangeResolution(false);
         }}
       >
-        {Object.values(deepFlattenToObject(formControls.formState.dirtyFields)).some((v) => v) ? (
+        {hasUnsavedChanges ? (
           <>
             <Modal.Content>
               <p>Ärendet kan inte avslutas då du har osparade ändringar. Var god spara för att fortsätta.</p>
@@ -205,8 +261,13 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
               leftIcon={<Check />}
               onClick={async () => {
                 try {
-                  await ensureHandlerAssigned(supportErrand.id ?? '');
-                  await setSupportErrandStatus(supportErrand.id ?? '', municipalityId, Status.SOLVED);
+                  const assignment = await ensureHandlerAssigned(supportErrand.id ?? '');
+                  await setSupportErrandStatus(
+                    supportErrand.id ?? '',
+                    municipalityId,
+                    Status.SOLVED,
+                    assignment.expected
+                  );
                   window.close();
                 } catch (e) {
                   showCloseErrorToast();

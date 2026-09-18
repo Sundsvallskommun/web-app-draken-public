@@ -2,6 +2,8 @@ import { Admin } from '@common/services/user-service';
 import { Chip } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
+import type { LabelFilterGroupProjection } from '@supportmanagement/filters/label-filter-projector';
+import { reduceLabelFilterSelection } from '@supportmanagement/filters/label-filter-selection';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { Channels, Status } from '@supportmanagement/services/support-errand-service';
 import { SupportType } from '@supportmanagement/services/support-metadata-service';
@@ -13,9 +15,13 @@ import { SupportManagementFilter, SupportManagementValues } from '../supportmana
 
 interface SupportManagementFilterTagsProps {
   administrators: Admin[];
+  labelFilterProjections?: readonly LabelFilterGroupProjection[];
 }
 
-export const SupportManagementFilterTags: FC<SupportManagementFilterTagsProps> = ({ administrators }) => {
+export const SupportManagementFilterTags: FC<SupportManagementFilterTagsProps> = ({
+  administrators,
+  labelFilterProjections,
+}) => {
   const { watch, setValue, reset } = useFormContext<SupportManagementFilter>();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const selectedSupportErrandStatuses = useUiSettingsStore((s) => s.selectedErrandStatuses);
@@ -29,6 +35,7 @@ export const SupportManagementFilterTags: FC<SupportManagementFilterTagsProps> =
   const startdate = watch('startdate');
   const enddate = watch('enddate');
   const admins = watch('admins');
+  const labelFilterSelections = watch('labelFilter');
 
   const allCategories = supportMetadata?.categories;
   const allLabelCategories = supportMetadata?.labels?.labelStructure;
@@ -69,11 +76,27 @@ export const SupportManagementFilterTags: FC<SupportManagementFilterTagsProps> =
     categories.length > 0 ||
     labelCategories.length > 0 ||
     labelTypes.length > 0 ||
+    labelSubTypes.length > 0 ||
     types.length > 0 ||
+    channels.length > 0 ||
     priorities.length > 0 ||
     startdate ||
     enddate ||
-    admins.length > 0;
+    admins.length > 0 ||
+    labelFilterSelections.length > 0;
+
+  const labelFilterChoices = useMemo(
+    () =>
+      (labelFilterProjections ?? []).flatMap((group) =>
+        group.fields.flatMap((field) =>
+          field.choices.map((choice) => ({
+            ...choice,
+            fieldLabel: field.label,
+          }))
+        )
+      ),
+    [labelFilterProjections]
+  );
 
   const handleRemoveCategory = (category: string) => {
     const newCategories = categories.filter((_c) => _c !== category);
@@ -118,6 +141,18 @@ export const SupportManagementFilterTags: FC<SupportManagementFilterTagsProps> =
   const handleRemoveAdmin = (admin: string) => {
     const newAdmins = admins.filter((caseAdmin) => caseAdmin !== admin);
     setValue('admins', newAdmins);
+  };
+
+  const handleRemoveLabelFilter = (groupKey: string, fieldKey: string, resourcePath: string) => {
+    if (!labelFilterProjections) return;
+    setValue('labelFilter', [
+      ...reduceLabelFilterSelection(
+        labelFilterProjections,
+        labelFilterSelections,
+        { groupKey, fieldKey, resourcePath },
+        false
+      ),
+    ]);
   };
 
   const getAdminName = (adminId: string) => {
@@ -198,6 +233,26 @@ export const SupportManagementFilterTags: FC<SupportManagementFilterTagsProps> =
             {getAdminName(admin)}
           </Chip>
         ))}
+
+      {labelFilterSelections.map((selection) => {
+        const choice = labelFilterChoices.find(
+          (candidate) =>
+            candidate.groupKey === selection.groupKey &&
+            candidate.fieldKey === selection.fieldKey &&
+            candidate.resourcePath === selection.resourcePath
+        );
+        if (!choice) return null;
+
+        return (
+          <Chip
+            key={`${selection.groupKey}:${selection.fieldKey}:${selection.resourcePath}`}
+            aria-label={`Rensa ${choice.fieldLabel}`}
+            onClick={() => handleRemoveLabelFilter(selection.groupKey, selection.fieldKey, selection.resourcePath)}
+          >
+            {choice.fieldLabel}: {choice.displayName}
+          </Chip>
+        );
+      })}
 
       {hasTags && (
         <button className="sk-chip" onClick={() => handleReset()}>

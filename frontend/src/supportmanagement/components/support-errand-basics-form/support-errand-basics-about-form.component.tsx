@@ -4,6 +4,8 @@ import { isLOK } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
 import { Checkbox, cx, FormControl, FormErrorMessage, FormLabel, Select, Textarea } from '@sk-web-gui/react';
 import { useMetadataStore } from '@stores/index';
+import { getSupportErrandClassificationPlacement } from '@supportmanagement/investigation/investigation-classification-ownership';
+import { getInvestigationVariant } from '@supportmanagement/investigation/investigation-variant-registry';
 import {
   ContactChannelType,
   getErrandParameterValue,
@@ -17,6 +19,7 @@ import { FC, useLayoutEffect, useRef, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
+import { resolveCategorizationControl, resolveCategorizationMode } from './categorization-control';
 import { ThreeLevelCategorization } from './ThreeLevelCategorization';
 import { TwoLevelCategorization } from './TwoLevelCategorization';
 
@@ -45,6 +48,10 @@ export const SupportErrandBasicsAboutForm: FC<{
 
   const { description } = watch();
   const userHasEditedDescription = useRef(false);
+  const categorizationControl = resolveCategorizationControl(
+    resolveCategorizationMode(appConfig.features),
+    getSupportErrandClassificationPlacement()
+  );
 
   // useLayoutEffect fires synchronously after DOM update, before Quill's onChange
   useLayoutEffect(() => {
@@ -61,17 +68,23 @@ export const SupportErrandBasicsAboutForm: FC<{
         </FormControl>
       ) : null}
 
-      {appConfig.features.useTwoLevelCategorization ? (
+      {categorizationControl.kind === 'two-level' ? (
         <div className="flex gap-24">
           <TwoLevelCategorization />
         </div>
       ) : null}
 
-      {appConfig.features.useThreeLevelCategorization ? (
+      {categorizationControl.kind === 'three-level' ? (
         <div className="w-full flex gap-20">
           <ThreeLevelCategorization supportErrand={supportErrand} supportMetadata={supportMetadata!} />
         </div>
       ) : null}
+
+      {categorizationControl.kind === 'variant'
+        ? getInvestigationVariant()?.renderCategorizationControl?.({
+            disabled: categorizationControl.disabled || isSupportErrandLocked(supportErrand),
+          })
+        : null}
 
       {appConfig.features.useBusinessCase ? (
         <div className="flex gap-24">

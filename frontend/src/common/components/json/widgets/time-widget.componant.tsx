@@ -48,7 +48,8 @@ export function TimeWidget({
       readOnly={Boolean(readonly)}
       aria-describedby={ariaDescribedByIds(id)}
       aria-invalid={Boolean(rawErrors?.length)}
-      required={required}
+      // Required validation runs on save; untouched fields must not receive native :invalid styling.
+      aria-required={required}
       onBlur={() => onBlur(id, value)}
       onFocus={() => onFocus(id, value)}
       onChange={(e) => onChange(toSchemaValue(e.currentTarget.value, requiresSeconds))}

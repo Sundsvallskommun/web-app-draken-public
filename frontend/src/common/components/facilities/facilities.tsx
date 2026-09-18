@@ -1,7 +1,6 @@
 import { isErrandLocked } from '@casedata/services/casedata-errand-service';
 import { EstateInformation, EstateInfoSearch } from '@common/interfaces/estate-details';
 import { FacilityDTO } from '@common/interfaces/facilities';
-import { isKC } from '@common/services/application-service';
 import {
   getFacilityByAddress,
   getFacilityByDesignation,
@@ -10,6 +9,7 @@ import {
   removeMunicipalityName,
 } from '@common/services/facilities-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
+import { appConfig } from '@config/appconfig';
 import {
   Button,
   FormControl,
@@ -28,6 +28,7 @@ import { FC, useEffect, useState } from 'react';
 import { useForm, UseFormSetValue } from 'react-hook-form';
 
 import { FacilityDetails } from './facilities-details';
+import { FacilitiesErrandDomain, resolveFacilitiesEditingLock } from './facilities-lock-policy';
 
 const Facilities: FC<{
   setValue: UseFormSetValue<any>;
@@ -40,6 +41,11 @@ const Facilities: FC<{
 
   const supportErrand = useSupportStore((s) => s.supportErrand) as any;
   const errand = useCasedataStore((s) => s.errand) as any;
+  const errandDomain: FacilitiesErrandDomain = appConfig.isSupportManagement ? 'support-management' : 'case-data';
+  const editingLocked = resolveFacilitiesEditingLock(errandDomain, {
+    supportManagement: () => isSupportErrandLocked(supportErrand),
+    caseData: () => isErrandLocked(errand),
+  });
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchType, setSearchType] = useState<string>('');
@@ -154,7 +160,7 @@ const Facilities: FC<{
 
         <fieldset className="flex flex-row gap-12" data-cy="radio-button-group">
           <RadioButton
-            disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
+            disabled={editingLocked}
             value="PROPERTY"
             onClick={(e) => {
               const target = e.target as HTMLTextAreaElement;
@@ -169,7 +175,7 @@ const Facilities: FC<{
           </RadioButton>
           <RadioButton
             value="ADDRESS"
-            disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
+            disabled={editingLocked}
             onClick={(e) => {
               const target = e.target as HTMLTextAreaElement;
               setSearchType(target.value);
@@ -185,7 +191,7 @@ const Facilities: FC<{
 
         <SearchField.Suggestions autofilter={false} key={`search-field-${searchKey}`}>
           <SearchField.SuggestionsInput
-            disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
+            disabled={editingLocked}
             value={searchQuery}
             onChange={(event) => {
               setSearchQuery(event.target.value);
@@ -243,7 +249,7 @@ const Facilities: FC<{
                       <div className="relative flex justify-center items-center">
                         <Spinner id={`realEstate-spinner-${index}`} size={2} className="absolute invisible" />
                         <Link
-                          disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
+                          disabled={editingLocked}
                           id={`realEstate-link-${index}`}
                           variant="tertiary"
                           href="#"
@@ -256,7 +262,7 @@ const Facilities: FC<{
                     <Table.Column>
                       <Button
                         variant="tertiary"
-                        disabled={isKC() ? isSupportErrandLocked(supportErrand) : isErrandLocked(errand)}
+                        disabled={editingLocked}
                         onClick={() => {
                           setRealEstates((realEstates) => realEstates.filter((item) => item !== realEstate));
                           setValue(

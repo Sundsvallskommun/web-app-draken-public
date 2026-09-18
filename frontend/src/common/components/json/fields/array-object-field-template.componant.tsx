@@ -26,6 +26,8 @@ export function ArrayObjectFieldTemplate(props: ArrayFieldTemplateProps) {
   const addButtonLabel = stringOption(uiOptions, 'addButtonLabel') ?? 'Lägg till';
   const emptyMessage = stringOption(uiOptions, 'emptyMessage') ?? 'Inga poster har lagts till.';
   const showItemNumber = booleanOption(uiOptions, 'showItemNumber') ?? true;
+  const description =
+    stringOption(uiOptions, 'description') ?? (typeof schema.description === 'string' ? schema.description : undefined);
   const isLocked = Boolean(disabled || readonly);
   const formContext = props.registry?.formContext as { requiredIndicator?: string } | undefined;
   const requiredIndicator = formContext?.requiredIndicator ?? ' *';
@@ -38,6 +40,7 @@ export function ArrayObjectFieldTemplate(props: ArrayFieldTemplateProps) {
           {required ? requiredIndicator : ''}
         </legend>
       )}
+      {description && <p className="mb-12 text-small text-dark-secondary">{description}</p>}
       <div className="flex flex-col gap-16">
         {items.length === 0 && <p className="text-small text-dark-secondary">{emptyMessage}</p>}
 

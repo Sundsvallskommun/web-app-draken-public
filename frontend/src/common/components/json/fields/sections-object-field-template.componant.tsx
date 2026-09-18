@@ -367,8 +367,19 @@ function renderFields(
 }
 
 export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
-  const { properties, formData, formContext, uiSchema, disabled, readonly, idSchema, registry, required, title } =
-    props;
+  const {
+    properties,
+    formData,
+    formContext,
+    uiSchema,
+    disabled,
+    readonly,
+    description,
+    idSchema,
+    registry,
+    required,
+    title,
+  } = props;
 
   const ctx = formContext as FormContext | undefined;
   const externalFields = ctx?.externalFields ?? {};
@@ -425,6 +436,7 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
             {required ? ctx?.requiredIndicator ?? ' *' : ''}
           </legend>
         )}
+        {description && <p className="mb-16 text-small text-dark-secondary">{description}</p>}
         {renderedFields}
       </fieldset>
     );

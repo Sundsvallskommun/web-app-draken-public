@@ -8,12 +8,34 @@ import { DifferenceResponse, PageEvent } from '@/data-contracts/supportmanagemen
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
+import { SupportInvestigationPolicyService } from '@/services/support-investigation-policy.service';
+import { SupportJsonParameterService } from '@/services/support-json-parameter.service';
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
+const isAccessDenied = (error: unknown): boolean => isRecord(error) && (error.status === 401 || error.status === 403);
+const isJsonParameterRevisionPath = (path: string | undefined): boolean =>
+  !path || path === '/' || path === '/jsonParameters' || path.startsWith('/jsonParameters/');
+
+const redactJsonParameterRevisionOperations = (difference: DifferenceResponse): DifferenceResponse => ({
+  ...difference,
+  operations: difference.operations?.filter(operation => !isJsonParameterRevisionPath(operation.path)),
+});
 
 @Controller()
 export class SupportHistoryController {
   private apiService = new ApiService();
+  private readonly investigationPolicyService: SupportInvestigationPolicyService;
+  private readonly investigationDocumentService: SupportJsonParameterService;
   private namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private SERVICE = apiServiceName('supportmanagement');
+
+  constructor(
+    investigationPolicyService = new SupportInvestigationPolicyService(),
+    investigationDocumentService = new SupportJsonParameterService({ namespace: SUPPORTMANAGEMENT_NAMESPACE ?? '' }),
+  ) {
+    this.investigationPolicyService = investigationPolicyService;
+    this.investigationDocumentService = investigationDocumentService;
+  }
 
   @Get('/supporthistory/:municipalityId/:id')
   @OpenAPI({ summary: 'Get events for errand' })
@@ -41,8 +63,20 @@ export class SupportHistoryController {
     @Res() response: Response<DifferenceResponse, any>,
   ): Promise<Response<DifferenceResponse, any>> {
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/revisions/difference?source=${source}&target=${target}`;
-    const res = await this.apiService.get<DifferenceResponse>({ url }, req.user);
-    return response.status(200).send(res.data);
+    const documents = this.investigationPolicyService.profile.documents;
+    const [res, canReadInvestigationDocuments] = await Promise.all([
+      this.apiService.get<DifferenceResponse>({ url, propagateClientError: true }, req.user),
+      documents.length === 0
+        ? Promise.resolve(true)
+        : this.investigationDocumentService
+            .verifyReadableDocuments({ definitions: documents, municipalityId, errandId: id, user: req.user })
+            .then(() => true)
+            .catch(error => {
+              if (isAccessDenied(error)) return false;
+              throw error;
+            }),
+    ]);
+    return response.status(200).send(canReadInvestigationDocuments ? res.data : redactJsonParameterRevisionOperations(res.data));
   }
 
   @Get('/supporthistory/:municipalityId/:id/notes/:noteId/revisions/difference/')

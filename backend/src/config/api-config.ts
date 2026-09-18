@@ -1,6 +1,10 @@
 //Subscribed APIS as lowercased
 export const APIS = [
   {
+    name: 'access-mapper',
+    version: '2.2',
+  },
+  {
     name: 'activedirectory',
     version: '2.0',
   },
@@ -34,7 +38,26 @@ export const APIS = [
   },
   {
     name: 'supportmanagement',
-    version: '14.15',
+    version: '15.1',
+    // Runtime transport target only. The Support Management contract is generated
+    // from the sprint API below, which phases, measures and errand access are built
+    // against; the sprint API extends this one.
+    generateDataContract: false,
+  },
+  {
+    name: 'supportmanagement-sprint',
+    version: '16.0',
+    // Generated as the one Support Management contract application code imports,
+    // so the domain keeps a single TypeScript owner.
+    dataContractName: 'supportmanagement',
+  },
+  {
+    name: 'support-management-alkt-sprint',
+    version: '15.1',
+    // Runtime transport target only. Application code imports the stable
+    // Support Management facade, so generating a second unused contract would
+    // create two competing TypeScript owners for the same domain.
+    generateDataContract: false,
   },
   {
     name: 'billingpreprocessor',
@@ -74,7 +97,27 @@ export const APIS = [
   },
 ];
 
+export const SUPPORT_MANAGEMENT_API_TARGETS = ['stable', 'sprint', 'alktsprint'] as const;
+
+export type SupportManagementApiTarget = (typeof SUPPORT_MANAGEMENT_API_TARGETS)[number];
+
+const SUPPORT_MANAGEMENT_SERVICE_BY_TARGET: Readonly<Record<SupportManagementApiTarget, string>> = {
+  stable: 'supportmanagement',
+  sprint: 'supportmanagement-sprint',
+  alktsprint: 'support-management-alkt-sprint',
+};
+
+export const resolveSupportManagementApiTarget = (configuredTarget = process.env.SUPPORTMANAGEMENT_API_TARGET): SupportManagementApiTarget => {
+  const target = configuredTarget?.trim().toLowerCase() || 'stable';
+  if ((SUPPORT_MANAGEMENT_API_TARGETS as readonly string[]).includes(target)) {
+    return target as SupportManagementApiTarget;
+  }
+
+  throw new Error(`Unsupported SUPPORTMANAGEMENT_API_TARGET "${configuredTarget}". Expected one of: ${SUPPORT_MANAGEMENT_API_TARGETS.join(', ')}`);
+};
+
 export function apiServiceName(name: string): string {
-  const api = APIS.find(a => a.name === name);
+  const resolvedName = name === 'supportmanagement' ? SUPPORT_MANAGEMENT_SERVICE_BY_TARGET[resolveSupportManagementApiTarget()] : name;
+  const api = APIS.find(a => a.name === resolvedName);
   return api ? `${api.name}/${api.version}` : name;
 }

@@ -5,9 +5,8 @@ export default {
   mode: 'jit',
   content: [
     './node_modules/@sk-web-gui/*/dist/**/*.js',
-    // Only markup files carry class names. Classes that appear solely in UI schemas delivered by
-    // the API cannot be scanned and belong in the safelist below.
-    './src/**/*.tsx',
+    // Investigation UI schemas contain the same static design tokens as TSX and must be included in generated CSS.
+    './src/**/*.{js,ts,jsx,tsx,json}',
   ],
   safelist: ['text-error-surface-primary', 'text-vattjom-surface-primary', 'text-warning-surface-primary'],
   darkMode: 'class', // or 'media' or 'class'

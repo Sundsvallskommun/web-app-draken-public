@@ -37,7 +37,7 @@ import {
   useConfirm,
   useSnackbar,
 } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   getSupportAttachment,
   SingleSupportAttachment,
@@ -52,9 +52,12 @@ import {
   ExternalIdType,
   getSupportErrandById,
   isSupportErrandLocked,
+  readSupportErrandWriteSnapshot,
+  resolveAwaitingResponseStatus,
   setSupportErrandStatus,
-  Status,
 } from '@supportmanagement/services/support-errand-service';
+import { supportErrandWriteErrorMessage } from '@supportmanagement/services/support-errand-write-version';
+import { contactMeansCarriesAttachments } from '@supportmanagement/services/support-message-attachments';
 import { buildSupportReplyContext } from '@supportmanagement/services/support-message-reply-context-service';
 import { Message, MessageRequest, sendMessage } from '@supportmanagement/services/support-message-service';
 import { getSupportOwnerStakeholder } from '@supportmanagement/services/support-stakeholder-service';
@@ -283,7 +286,7 @@ export const SupportMessageForm: FC<{
 
     let sendPromise: Promise<any>;
 
-    if (contactMeans === 'draken' || contactMeans === 'minasidor') {
+    if (contactMeans === 'draken' || contactMeans === 'minasidor' || contactMeans === 'katla') {
       const conversationId = await getOrCreateSupportConversationId(
         municipalityId,
         supportErrand,
@@ -336,10 +339,17 @@ export const SupportMessageForm: FC<{
         props.setShowMessageForm(false);
         setValue('messageBody', emailBody);
 
-        if (typeOfMessage === 'infoCompletion') {
-          await setSupportErrandStatus(supportErrand.id!, municipalityId, Status.PENDING);
-        } else if (typeOfMessage === 'internalCompletion') {
-          await setSupportErrandStatus(supportErrand.id!, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
+        if (typeOfMessage === 'infoCompletion' || typeOfMessage === 'internalCompletion') {
+          // The send above is ours, so the version this form was opened with may already be stale.
+          const afterMessage = await readSupportErrandWriteSnapshot(supportErrand.id!, municipalityId);
+          // A workflow namespace waits for any completion in its phase's AWAITING_RESPONSE; the others keep
+          // their customer and internal waiting statuses.
+          const nextStatus = resolveAwaitingResponseStatus(
+            typeOfMessage === 'infoCompletion' ? 'info' : 'internal',
+            supportErrand.phases,
+            useMetadataStore.getState().supportMetadata?.phases
+          );
+          await setSupportErrandStatus(supportErrand.id!, municipalityId, nextStatus, afterMessage);
         }
 
         const updated = await getSupportErrandById(supportErrand.id!, municipalityId);
@@ -362,7 +372,9 @@ export const SupportMessageForm: FC<{
         toastMessage({
           position: 'bottom',
           closeable: false,
-          message: 'Något gick fel när meddelandet skulle skickas',
+          // The status change after a send is a conditional errand write, so this catch also
+          // sees 409/412 - reporting those as a send failure hides that someone else saved first.
+          message: supportErrandWriteErrorMessage(e, 'Något gick fel när meddelandet skulle skickas'),
           status: 'error',
         });
       })
@@ -528,6 +540,20 @@ export const SupportMessageForm: FC<{
                 {...register('contactMeans')}
               >
                 Draken
+              </RadioButton>
+            )}
+            {/* Katla answers on the errand's own internal conversation, the one no errand relation
+                points at, so it needs neither a linked errand nor the relations feature. */}
+            {(Channels as Record<string, string>)[supportErrand.channel!] === Channels.ESERVICE && (
+              <RadioButton
+                disabled={props.locked}
+                data-cy="useKatla-radiobutton-true"
+                className="mr-sm mt-4"
+                id="useKatla"
+                value="katla"
+                {...register('contactMeans')}
+              >
+                Katla
               </RadioButton>
             )}
             {appConfig.features.useMyPages &&
@@ -702,10 +728,7 @@ export const SupportMessageForm: FC<{
         </div>
       </div>
 
-      {contactMeans === 'email' ||
-      contactMeans === 'webmessage' ||
-      contactMeans === 'draken' ||
-      contactMeans === 'minasidor' ? (
+      {contactMeansCarriesAttachments(contactMeans) ? (
         <div className="w-full gap-xl mb-lg">
           {contactMeans === 'email' && (
             <CommonNestedEmailArrayV2
@@ -821,10 +844,7 @@ export const SupportMessageForm: FC<{
         </div>
       ) : null}
 
-      {(!props.locked && contactMeans === 'email') ||
-      contactMeans === 'webmessage' ||
-      contactMeans === 'draken' ||
-      contactMeans === 'minasidor' ? (
+      {(contactMeans === 'email' ? !props.locked : contactMeansCarriesAttachments(contactMeans)) ? (
         <div className="flex mb-24">
           <Button
             variant="tertiary"

@@ -1,14 +1,19 @@
 import { PriorityComponent } from '@common/components/priority/priority.component';
 import { prettyTime } from '@common/services/helper-service';
-import { useSupportStore } from '@stores/index';
+import { useMetadataStore, useSupportStore } from '@stores/index';
 import { Priority } from '@supportmanagement/interfaces/priority';
 import { Channels } from '@supportmanagement/services/support-errand-service';
+import { getLabelReportType } from '@supportmanagement/services/support-label-classification-service';
+import { getLabelDisplayName } from '@supportmanagement/services/support-label-service';
 import { getSupportReporterStakeholder } from '@supportmanagement/services/support-stakeholder-service';
 
 import { SupportStatusLabelComponent } from '../ongoing-support-errands/components/support-status-label.component';
 
 export const SupportErrandSummary: React.FC<{}> = () => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  // Avvikelse or Missförhållande, read from the errand's report-type label the way the overview reads it.
+  const reportType = getLabelDisplayName(getLabelReportType(supportErrand), supportMetadata);
 
   return (
     <>
@@ -47,7 +52,7 @@ export const SupportErrandSummary: React.FC<{}> = () => {
             <div className="font-bold" data-cy="errandStakeholderLabel">
               Rapportör
             </div>
-            <div className="underline" data-cy="errandStakeholder">
+            <div data-cy="errandStakeholder">
               {(() => {
                 const reporter = getSupportReporterStakeholder(supportErrand!);
                 if (reporter?.firstName && reporter?.lastName) {
@@ -59,10 +64,10 @@ export const SupportErrandSummary: React.FC<{}> = () => {
             </div>
           </div>
           <div className="pr-sm">
-            <div data-cy="errandRegisteredLabel" className="font-bold">
-              Kommun
+            <div className="font-bold" data-cy="errandReportTypeLabel">
+              Ärendetyp
             </div>
-            <div data-cy="errandRegistered">Sundsvalls kommun</div>
+            <div data-cy="errandReportType">{reportType || '(saknas)'}</div>
           </div>
         </div>
       </div>

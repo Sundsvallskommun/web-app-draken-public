@@ -19,6 +19,6 @@ const tasksFor = (pkg) => (files) => {
 };
 
 export default {
-  'frontend/src/**/*.{ts,tsx}': tasksFor('frontend'),
+  'frontend/src/**/*.{ts,tsx,mjs}': tasksFor('frontend'),
   'backend/src/**/*.ts': tasksFor('backend'),
 };

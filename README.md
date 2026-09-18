@@ -160,6 +160,73 @@ För LOK (Lokalplanering):
 
 ## Utveckling
 
+### AD-grupper för handläggare och utredning
+
+I IAF och VOF anger backendens `HEALTHCAREDEVIATION_HANDLER_ROLES` handläggarrollerna: en post per roll
+med den AD-grupp som har den. Samma lista fyller handläggarlistan, grupperad per roll, styr vilken roll
+överlämningsstegen kräver och avgör vem som registrerar åtgärder. Formatet beskrivs i
+`frontend/src/supportmanagement/measures/README.md`. Medlemmar i `SUPERADMIN_GROUP` har alla
+registreringsroller för åtgärder.
+
+Övriga drakar anger handläggarlistan med `ASSIGNABLE_HANDLER_GROUPS`, kommaseparerat:
+
+```env
+ASSIGNABLE_HANDLER_GROUPS="{{INSERT_HANDLER_GROUP}},{{INSERT_OTHER_HANDLER_GROUP}}"
+```
+
+Medlemmarna slås ihop utan dubbla AD-konton. Om ingen av inställningarna är satt används
+`ADMIN_GROUP`. Resultatet cachas i backend i en timme; om något gruppanrop misslyckas
+returneras ett fel i stället för en ofullständig lista. Starta om backendens
+`yarn dev:{drake}`-process efter en env-ändring och ladda om sidan.
+
+Gruppnamnen anges separat per miljö. Välj de faktiska test- eller produktionsgrupperna i env;
+koden ändrar inga suffix. Handläggarrollerna ger inga inloggnings- eller skrivrättigheter:
+`AUTHORIZED_GROUPS` styr inloggning och `ADMIN_GROUP`, `SUPERADMIN_GROUP` samt
+`DEVELOPER_GROUP` behåller sina befintliga applikationsroller. De tre tar en grupp eller en
+kommaseparerad lista med grupper.
+
+Utrednings- och beslutsdokumentens rättigheter hämtas per användare och ärende från
+Support Management Sprint 16.0, `GET /{municipalityId}/{namespace}/errands/{errandId}/access`.
+Backend erbjuder projektionen som `GET /supporterrands/{municipalityId}/{errandId}/investigation-access`.
+Den globala utredningsprofilen beskriver dokument och scheman; den innehåller inga behörigheter.
+
+Draken tolkar endast den nycklade samlingen `jsonParameters` och resursen `errand/json-parameter`
+i detta flöde. Explicit skrivrätt ger redigering, läsrätt ger ett skrivskyddat formulär och en
+utelämnad nyckel döljer dokumentet. `allKeys` gäller även dokument som ännu inte skapats.
+Ärendets nivå är överordnad: `R` och `LR` blockerar skrivning även om en resurs eller nyckel har `RW`.
+Access hämtas när ärendet öppnas, dess version eller etiketter ändras, fönstret återfår fokus,
+anslutningen återkommer och efter nekade dokumentanrop. Backend kontrollerar på nytt vid varje
+dokumentläsning och skrivning. Felaktiga eller otillgängliga svar ger ingen åtkomst.
+
+Dokumentutkast behålls i komponenternas minne när access kontrolleras eller nekas. Innehållet
+döljs tills en aktuell läsrätt har verifierats; omkontroll kan göras utan omladdning. Varningen
+för osparade ändringar gäller även dolda utkast. Utkast sparas inte över omladdning och följer
+inte med till en annan användare eller ett annat ärende.
+
+`SUPPORT_INVESTIGATION_DOCUMENT_GROUPS` används inte längre. AD-grupper, roller och dokumentgrants
+administreras i AccessMapper och Support Management. IAF/VOF kräver sprint-API:t även för access;
+en deployment utan detta kontrakt ska inte falla tillbaka till env-baserade skrivrättigheter.
+Kategoriseringen skriver vanliga ärendefält och behåller `canEditSupportManagement` utöver
+skrivrätten till ägardokumentet. Dokumentredigerare utan kategoriseringsrätt får ändra dokumentet
+när den befintliga kategoriseringen är giltig. Ändringar av lagrum som skulle kräva omklassificering
+stoppas direkt med en förklaring; saknad eller ogiltig kategorisering förklaras innan redigering.
+Övriga applikationsrättigheter och handläggarlistor migreras separat.
+
+### Tjänsteanteckningar i supportärenden
+
+`useServiceNotes` (`NEXT_PUBLIC_USE_SERVICE_NOTES`, eller Adminpanel vid runtime) visar
+**Tjänsteanteckningar** i sidopanelen, före **Kommentarer**. Support Management har ingen typ på
+anteckningar, så typen ligger i anteckningens `context`: kommentarer skrivs som tidigare med
+`context: SUPPORT` och `role: FIRST_LINE_SUPPORT`, tjänsteanteckningar med `context: SERVICE_NOTE`
+och `role: ERRAND_HANDLER`. Varje lista hämtar bara sin egen typ, så befintliga kommentarer i alla
+drakar påverkas inte.
+
+Som i CaseData skriver bara ärendets handläggare (`assignedUserId`) en tjänsteanteckning, och bara
+medan ärendet tar emot ändringar. En sparad tjänsteanteckning kan inte ändras eller tas bort genom
+Draken. AccessMapper ger behörighet till anteckningar som en resurs och kan inte skilja typerna åt,
+så reglerna ligger i backenden (`support-note.service.ts`). Texten får vara högst 2048 tecken, vilket
+är Support Managements gräns.
+
 ### Krav
 
 - Node >= 20 LTS
@@ -185,7 +252,7 @@ yarn install
 
 3. Skapa .env-filer
 
-**Tillgängliga drakar:** `kc`, `ka`, `mex`, `pt`, `rob`, `lop`, `ik`, `msva`, `se`, `bou`, `lok`
+**Tillgängliga drakar:** `kc`, `ka`, `mex`, `pt`, `rob`, `lop`, `ik`, `msva`, `se`, `bou`, `lok`, `iaf`, `vof`
 
 ### Skapa alla env-filer på en gång
 
@@ -202,7 +269,9 @@ cp .env.ik-example .env.ik && \
 cp .env.msva-example .env.msva && \
 cp .env.se-example .env.se && \
 cp .env.bou-example .env.bou && \
-cp .env.lok-example .env.lok
+cp .env.lok-example .env.lok && \
+cp .env.iaf-example .env.iaf && \
+cp .env.vof-example .env.vof
 ```
 
 Backend (kör från `backend/`):
@@ -218,7 +287,9 @@ cp .env.ik.example.local .env.ik.development.local && \
 cp .env.msva.example.local .env.msva.development.local && \
 cp .env.se.example.local .env.se.development.local && \
 cp .env.bou.example.local .env.bou.development.local && \
-cp .env.lok.example.local .env.lok.development.local
+cp .env.lok.example.local .env.lok.development.local && \
+cp .env.iaf.example.local .env.iaf.development.local && \
+cp .env.vof.example.local .env.vof.development.local
 ```
 
 ### Skapa för enskild drake
@@ -238,6 +309,50 @@ cd backend
 cp .env.{drake}.example.local .env.{drake}.development.local
 # Exempel: cp .env.se.example.local .env.se.development.local
 ```
+
+Support Management använder den stabila API-prenumerationen `supportmanagement/15.1` som standard. En drake som
+behöver sprintkontraktet (för närvarande IAF/VOF-utredning) ska välja det uttryckligen i backendmiljön:
+
+```env
+SUPPORTMANAGEMENT_API_TARGET=sprint
+```
+
+Tillåtna värden är `stable`, `sprint` och `alktsprint`. Ett okänt värde stoppar backend vid uppstart, så att en felstavad
+deploymentinställning inte tyst byter API-kontrakt för alla implementationer.
+
+Drakens ärende-, handläggar-, status- och fastighetskommandon kräver en exakt stark `If-Match` och skickar samma
+version vidare till Support Management. Den 2 september 2026 verifierades de publicerade OpenAPI-kontrakten för både
+`supportmanagement/15.1` och `supportmanagement-sprint/15.1`: båda deklarerar `If-Match`, svaren 409/412 och
+versionsfält på ärenden och JSON Parameters. Därmed använder stable- och sprintdeploymenterna samma atomiska
+skrivkontrakt utan en svag kompatibilitetsväg i Draken. Kontrollera kontrakten på nytt när någon prenumeration byter
+version; Drakens förkontroll av version och status ersätter inte atomisk versionskontroll i upstream.
+
+Statuskommandot validerar klientens källstatus och version mot ett färskt ärende samt målstatusen mot live metadata.
+Support Management 15.1 exponerar däremot ingen source→target-graf eller exekveringsroute för statusövergångar, så
+Draken kan inte auktorisera själva kanten utan att införa appspecifika regler. Den domänregeln behöver ägas av
+Support Management innan starkare generell transitionvalidering kan införas.
+
+Utredningsdokument aktiveras per app genom backendens runtimeprofil. Läs- och skrivrättigheter för dokumentens
+JSON Parameter-nycklar konfigureras i Support Managements AccessMapper för aktuellt namespace. Draken skickar den
+inloggades AD-identitet i `X-Sent-By` och låter Support Management vara enda ägare till åtkomstbeslutet:
+
+```env
+SUPPORT_INVESTIGATION_HANDOVER_TARGETS=[{"municipalityId":"2281","namespace":"target-namespace","documentKeys":["utredning-enhetschef","utredning-sol-lss","utredning-hsl"]}]
+```
+
+IAF/VOF med aktiverad utredning behöver AccessMapper-regler för profilens dokumentnycklar och
+`SUPPORTMANAGEMENT_API_TARGET=sprint`. Transportkravet
+deklareras i utredningsprofilen och kontrolleras i runtimepolicyn; en felaktig stable-deployment annonserar därför
+utredningen och dess registrering som otillgängliga i stället för att försöka använda ett inkompatibelt API.
+
+`SUPPORT_INVESTIGATION_HANDOVER_TARGETS` är en explicit allowlist över de kommun- och namespace-par som är
+förberedda att ta emot skyddade utredningsdokument samt exakt vilka `documentKeys` målet stöder. När källprofilen
+utökas måste målcapabilityn därför uppdateras uttryckligen innan överföring tillåts. Saknad eller ogiltig konfiguration tillåter aldrig sådan
+överföring. Draken verifierar läsåtkomst via Support Managements skyddade dokument-endpoint före överföring;
+förhandsgranskning kräver läsåtkomst till profilens samtliga dokumentnycklar och genomförandet kräver
+dessutom `canEditSupportManagement`. Support Management kontrollerar åtkomst före existens, så en nekad nyckel kan
+inte säkert behandlas som ett saknat dokument när upstreams överlämning arbetar på rådata. Överlämningar där
+`jsonParameters` inte väljs påverkas inte av denna kontroll.
 
 4. Konfigurera env-filer
 
@@ -272,6 +387,8 @@ Kör från repots rot:
 yarn verify # Typkontroll, strikt lint, formatkontroll, Knip och backendtester
 yarn knip   # Dödkod, oanvända exporter och oanvända dependencies
 ```
+
+Utvecklingsrouten `src/app/**/page.dev.{ts,tsx}` deklareras som entry i Knip, eftersom Next konfigurerar dessa sidändelser endast i utvecklingsläge. Labbet och dess beroenden analyseras därför också.
 
 Knip körs även vid `pre-push` och som en blockerande GitHub Actions-kontroll för pull requests samt push till `develop` och `main`.
 
@@ -313,9 +430,21 @@ Testerna ligger i `backend/src/tests/` (`*.service.test.ts`).
 **Frontend** (kör från `frontend/`):
 
 ```bash
-yarn test:e2e:{drake}    # Playwright E2E (mex | pt | kc | lop)
-yarn test:e2e:ui:{drake} # Interaktivt (mex | pt | kc | lop)
+yarn test                       # Enhetstester (Vitest)
+yarn test:watch                 # Vitest i watch-läge
+yarn test:coverage              # Med täckningsrapport (v8)
+yarn type-check:test            # Typkontroll av testerna
+yarn test:e2e:{drake}           # Playwright E2E (mex | pt | kc | lop | iaf | vof)
+yarn test:e2e:iaf-schema-lab    # Playwright E2E för utvecklingslabbet
+yarn test:e2e:ui:{drake}        # Interaktivt (mex | pt | kc | lop | vof)
 ```
+
+Enhetstesterna ligger bredvid modulen de testar (`<modul>.test.ts`) och körs med Vitest,
+samma testkörare som backend. Assertions skrivs med `node:assert/strict` i stället för
+`expect`, och `globals` är avstängt — allt importeras explicit. Alias som `@common/*` löses
+upp av Vite direkt ur `tsconfig.json`, så även moduler med beroenden går att enhetstesta;
+allt som kräver rendering hör fortfarande hemma i Playwright. Testerna omfattas inte av
+`yarn type-check` utan av `yarn type-check:test` (se CLAUDE.md för varför).
 
 ### Feature-flaggor
 

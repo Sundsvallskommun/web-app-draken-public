@@ -21,7 +21,9 @@ export const SupportErrandBasicsTab: FC<{
         <span>Fyll i följande uppgifter för att säkerställa att vi har all nödvändig information om ärendet.</span>
       </div>
 
-      <SupportErrandBasicsAboutDisclosure errand={props.errand} setUnsaved={props.setUnsaved} update={props.update} />
+      {appConfig.features.hideAboutErrandSection ? null : (
+        <SupportErrandBasicsAboutDisclosure errand={props.errand} setUnsaved={props.setUnsaved} update={props.update} />
+      )}
 
       {supportErrand?.id ? (
         <SupportContactsComponent

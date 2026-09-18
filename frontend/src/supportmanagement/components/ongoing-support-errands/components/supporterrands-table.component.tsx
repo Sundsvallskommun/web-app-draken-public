@@ -1,12 +1,15 @@
-import { isKC } from '@common/services/application-service';
+import { isIAFOrVOF } from '@common/services/application-service';
 import { Input, Pagination, Select, Spinner, Table } from '@sk-web-gui/react';
 import { SortMode } from '@sk-web-gui/table';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore, useEmployeeNameStore, useSupportStore, useUserStore } from '@stores/index';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
-import { useSupportErrandTable } from '@supportmanagement/components/support-errand/useSupportErrandTable';
+import {
+  getUnresolvedReporterAccounts,
+  useSupportErrandTable,
+} from '@supportmanagement/components/support-errand/useSupportErrandTable';
 import { Status, SupportErrand } from '@supportmanagement/services/support-errand-service';
 import { globalAcknowledgeSupportNotification } from '@supportmanagement/services/support-notification-service';
-import { FC, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 import { TableForm } from '../ongoing-support-errands.component';
@@ -34,54 +37,15 @@ export const SupportErrandsTable: FC = () => {
     desc: 'descending',
   };
 
-  const serverSideSortableColsKC: { [key: number]: string } = {
-    0: 'status',
-    1: 'touched',
-    2: 'category',
-    3: 'type',
-    4: 'channel',
-    5: 'created',
-    6: 'priority',
-    7: 'assignedUserId',
-  };
-
-  const serverSideSortableColsLOP: { [key: number]: string } =
-    data.errands && (data.errands[0]?.status === Status.SUSPENDED || data.errands[0]?.status === Status.ASSIGNED)
-      ? {
-          0: 'status',
-          1: 'touched',
-          2: 'category',
-          3: 'type',
-          4: 'channel',
-          5: 'created',
-          6: 'priority',
-          7: 'suspendedTo',
-          8: 'assignedUserId',
-        }
-      : {
-          0: 'status',
-          1: 'touched',
-          2: 'category',
-          3: 'type',
-          4: 'channel',
-          5: 'created',
-          6: 'priority',
-          7: 'assignedUserId',
-        };
-
-  const handleSort = (index: number) => {
-    if (isKC()) {
-      if (sortColumn === serverSideSortableColsKC[index]) {
-        setValue('sortOrder', sortOrder === 'desc' ? 'asc' : 'desc');
-      } else {
-        setValue('sortColumn', serverSideSortableColsKC[index]);
-      }
+  // Each column carries its own sort field. Keying this by column index instead meant the same
+  // index stood for a different column depending on the status filter - with only NEW selected
+  // the reminder and responsible columns drop out, so "Registrerad av" landed on the index that
+  // sorted by assignedUserId. That is also what forced a separate map per drake and per status.
+  const handleSort = (sortKey: string) => {
+    if (sortColumn === sortKey) {
+      setValue('sortOrder', sortOrder === 'desc' ? 'asc' : 'desc');
     } else {
-      if (sortColumn === serverSideSortableColsLOP[index]) {
-        setValue('sortOrder', sortOrder === 'desc' ? 'asc' : 'desc');
-      } else {
-        setValue('sortColumn', serverSideSortableColsLOP[index]);
-      }
+      setValue('sortColumn', sortKey);
     }
   };
 
@@ -96,17 +60,26 @@ export const SupportErrandsTable: FC = () => {
 
   const errandTableObject = useSupportErrandTable(selectedSupportErrandStatuses as Status[]);
 
+  // Only IAF/VOF show a registrar, and only the accounts the admin list cannot name need asking
+  // for. The store keeps answers and misses for the session, so paging back and forth costs
+  // nothing and a row that never resolves is not retried.
+  const administrators = useUserStore((s) => s.administrators);
+  const resolveEmployeeNames = useEmployeeNameStore((s) => s.resolveNames);
+
+  useEffect(() => {
+    if (!isIAFOrVOF()) return;
+    resolveEmployeeNames(getUnresolvedReporterAccounts(data.errands ?? [], administrators));
+  }, [data.errands, administrators, resolveEmployeeNames]);
+
   const headers = errandTableObject.map((column, index) => (
     <Table.HeaderColumn key={`header-${index}`}>
       {column.screenReaderOnly ? (
         <span className="sr-only">{column.label}</span>
-      ) : column.sortable ? (
+      ) : column.sortable && column.sortKey ? (
         <Table.SortButton
-          isActive={
-            isKC() ? sortColumn === serverSideSortableColsKC[index] : sortColumn === serverSideSortableColsLOP[index]
-          }
+          isActive={sortColumn === column.sortKey}
           sortOrder={sortOrders[sortOrder] as SortMode}
-          onClick={() => handleSort(index)}
+          onClick={() => handleSort(column.sortKey)}
         >
           {column.label}
         </Table.SortButton>

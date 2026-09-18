@@ -8,7 +8,7 @@ export interface AppConfig {
   features: AppConfigFeatures;
 }
 
-interface AppConfigFeatures {
+export interface AppConfigFeatures {
   useThreeLevelCategorization: boolean;
   useTwoLevelCategorization: boolean;
   useExplanationOfTheCause: boolean;
@@ -39,6 +39,19 @@ interface AppConfigFeatures {
   useServices: boolean;
   useAppeal: boolean;
   useHandover: boolean;
+  useInvestigation: boolean;
+  useMeasures: boolean;
+  /** Tjänsteanteckningar on a support errand: the handler's own record of it, kept apart from the comments. */
+  useServiceNotes: boolean;
+  useAvvikelseInvestigation: boolean;
+  useAotInvestigation: boolean;
+  /**
+   * Hides Grundinformation's "Om ärendet" section - ämnesrad, kategorisering, ärendebeskrivning and
+   * inkom via - for a deployment that collects all of it somewhere else. Phrased as "hide" rather
+   * than "use" on purpose: a flag list that does not mention it leaves the section in place, so a
+   * drake can never lose it by omission (Adminpanel resets every unknown flag to false).
+   */
+  hideAboutErrandSection: boolean;
 }
 
 // JSON.parse prevents the minifier from folding placeholder comparisons at build time.
@@ -87,6 +100,12 @@ export const appConfig: AppConfig = {
     useServices: envBool(process.env.NEXT_PUBLIC_USE_SERVICES),
     useAppeal: envBool(process.env.NEXT_PUBLIC_USE_APPEAL),
     useHandover: envBool(process.env.NEXT_PUBLIC_USE_HANDOVER),
+    useInvestigation: envBool(process.env.NEXT_PUBLIC_USE_INVESTIGATION),
+    useMeasures: envBool(process.env.NEXT_PUBLIC_USE_MEASURES),
+    useServiceNotes: envBool(process.env.NEXT_PUBLIC_USE_SERVICE_NOTES),
+    useAvvikelseInvestigation: envBool(process.env.NEXT_PUBLIC_USE_AVVIKELSE_INVESTIGATION),
+    useAotInvestigation: envBool(process.env.NEXT_PUBLIC_USE_AOT_INVESTIGATION),
+    hideAboutErrandSection: envBool(process.env.NEXT_PUBLIC_HIDE_ABOUT_ERRAND_SECTION),
   },
 };
 
