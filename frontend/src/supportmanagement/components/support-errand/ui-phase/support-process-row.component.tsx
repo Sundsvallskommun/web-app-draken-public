@@ -13,6 +13,8 @@ import {
 import { CircleAlert, CircleCheck } from 'lucide-react';
 import { FC } from 'react';
 
+import { SupportProcessLog } from './support-process-log.component';
+
 const ProcessStateIcon: FC<{ failed: boolean; completed: boolean }> = ({ failed, completed }) => {
   if (failed) return <Icon icon={<CircleAlert />} size="1.5rem" />;
   if (completed) return <Icon icon={<CircleCheck />} size="1.5rem" />;
@@ -31,7 +33,10 @@ export const SupportProcessRow = () => {
   const errorText = supportProcessErrorText(process);
 
   return (
-    <div className="flex items-center gap-12 rounded-xl border-1 h-[40px] w-fit px-12" data-cy="process-row">
+    <div
+      className="flex items-center gap-12 rounded-xl border-1 h-[40px] w-fit px-12 whitespace-nowrap"
+      data-cy="process-row"
+    >
       <ProcessStateIcon failed={failed} completed={completed} />
       {step ? <span className={cx('font-bold')}>{step}</span> : null}
       <Label rounded color={completed ? 'gronsta' : 'tertiary'} inverted={!failed}>
@@ -42,6 +47,7 @@ export const SupportProcessRow = () => {
           {errorText}
         </span>
       ) : null}
+      <SupportProcessLog />
     </div>
   );
 };

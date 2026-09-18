@@ -1,4 +1,9 @@
-import type { ErrandProcess } from '@common/data-contracts/supportmanagement/data-contracts';
+import type {
+  ErrandProcess,
+  PageProcessActivity,
+  ProcessActivity,
+} from '@common/data-contracts/supportmanagement/data-contracts';
+import { apiService } from '@common/services/api-service';
 
 import { SupportErrand } from './support-errand-service';
 
@@ -49,3 +54,12 @@ export const supportProcessErrorText = (process: ErrandProcess | undefined): str
   const parts = [process?.error?.code, process?.error?.message].filter(Boolean);
   return parts.join(': ');
 };
+
+export const getSupportProcessActivities = (errandId: string, municipalityId: string): Promise<ProcessActivity[]> =>
+  apiService
+    .get<PageProcessActivity>(`supportprocess/${municipalityId}/${errandId}/activities`)
+    .then((res) => res.data.content ?? [])
+    .catch((e) => {
+      console.error('Something went wrong when fetching process activities');
+      throw e;
+    });

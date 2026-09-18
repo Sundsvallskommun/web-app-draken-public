@@ -1,5 +1,6 @@
 'use client';
 
+import { appConfig } from '@config/appconfig';
 import { ProgressStepper } from '@sk-web-gui/react';
 import { useSupportStore } from '@stores/index';
 import { hasSupportErrandProcess } from '@supportmanagement/services/support-process-service';
@@ -17,7 +18,7 @@ export const SupportUiPhaseWrapper = () => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const activePhase = getSupportUiPhase(supportErrand);
 
-  if (hasSupportErrandProcess(supportErrand)) {
+  if (appConfig.features.useProcess && hasSupportErrandProcess(supportErrand)) {
     return <SupportProcessRow />;
   }
 
