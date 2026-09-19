@@ -1,7 +1,5 @@
 'use client';
 
-import { useMessageTemplates } from '@casedata/hooks/useMessageTemplates';
-import { ACCEPTED_UPLOAD_FILETYPES } from '@casedata/services/casedata-attachment-service';
 import CommonNestedEmailArrayV2 from '@common/components/commonNestedEmailArrayV2';
 import CommonNestedPhoneArrayV2 from '@common/components/commonNestedPhoneArrayV2';
 import TextEditor from '@common/components/dynamic-text-editor';
@@ -38,7 +36,9 @@ import {
   useSnackbar,
 } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import { useMessageTemplates } from '@supportmanagement/hooks/useMessageTemplates';
 import {
+  ACCEPTED_UPLOAD_FILETYPES,
   getSupportAttachment,
   SingleSupportAttachment,
   SupportAttachment,
