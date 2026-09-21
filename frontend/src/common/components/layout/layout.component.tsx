@@ -37,7 +37,7 @@ export default function Layout({ title, children }: { title: string; children: R
     (!followsProcess || hasSupportErrandProcess(supportErrand));
   const uiPhaseRow = appConfig.isSupportManagement ? <SupportUiPhaseWrapper /> : <UiPhaseWrapper />;
   const uiPhaseSection = (
-    <div className="flex items-center gap-12">
+    <div className="flex items-center gap-12 w-full justify-end">
       {uiPhaseRow}
       {followsProcess ? <SupportProcessLog /> : null}
     </div>

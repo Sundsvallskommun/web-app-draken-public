@@ -45,7 +45,7 @@ export const SupportProcessRow = () => {
 
   return (
     <div
-      className="flex items-center gap-12 rounded-xl border-1 h-[40px] w-fit px-12 whitespace-nowrap"
+      className="flex items-center gap-12 rounded-xl border-1 h-[40px] w-fit pl-12 whitespace-nowrap"
       data-cy="process-row"
     >
       {stepIndex >= 0 ? (
