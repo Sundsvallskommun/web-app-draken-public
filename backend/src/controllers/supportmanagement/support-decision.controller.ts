@@ -60,7 +60,8 @@ export class SupportDecisionController {
   private readonly namespace = SUPPORTMANAGEMENT_NAMESPACE;
   private readonly SERVICE = apiServiceName('supportmanagement');
 
-  private decisionsUrl = (municipalityId: string, errandId: string): string => `${municipalityId}/${this.namespace}/errands/${errandId}/decisions`;
+  private readonly decisionsUrl = (municipalityId: string, errandId: string): string =>
+    `${municipalityId}/${this.namespace}/errands/${errandId}/decisions`;
 
   private async readDecisions(municipalityId: string, errandId: string, user: RequestWithUser['user']): Promise<Decision[]> {
     const res = await this.apiService.get<Decision[]>(
