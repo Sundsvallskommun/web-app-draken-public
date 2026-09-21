@@ -32,6 +32,7 @@ export type SectionOpening = 'first' | 'none';
 
 interface FormContext {
   originalSchema?: RJSFSchema;
+  sectionOpening?: SectionOpening;
   idPrefix?: string;
   externalFields?: Readonly<Record<string, ReactNode>>;
   errorNavigation?: SchemaErrorNavigation;
@@ -118,12 +119,13 @@ interface SectionDisclosureProps {
 function SectionDisclosure({
   disclosureId,
   section,
+  initiallyOpen,
   isReadonly,
   showCompletionControl,
   children,
   errorNavigation,
 }: Readonly<SectionDisclosureProps>) {
-  const [open, setOpen] = useState(section.defaultOpen ?? false);
+  const [open, setOpen] = useState(initiallyOpen);
   const [doneMark, setDoneMark] = useState(false);
   const [lastErrorNavigation, setLastErrorNavigation] = useState(errorNavigation);
 
@@ -455,12 +457,16 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
   const holdsErrorTarget = (fieldId: string) =>
     errorNavigation?.fieldId === fieldId || errorNavigation?.ancestorIds.includes(fieldId);
 
+  const sectionFields = (section: SectionDefinition) =>
+    insertExternalFieldsInSectionOrder(order, section.fields).filter((fieldName) => visibleFields.has(fieldName));
+  const renderedSectionIds = sections
+    .filter((section) => sectionFields(section).length > 0)
+    .map((section) => section.id);
+
   return (
     <div className="flex min-w-0 max-w-full flex-col gap-32">
       {sections.map((section) => {
-        const sectionFieldsInOrder = insertExternalFieldsInSectionOrder(order, section.fields).filter((fieldName) =>
-          visibleFields.has(fieldName)
-        );
+        const sectionFieldsInOrder = sectionFields(section);
         if (sectionFieldsInOrder.length === 0) return null;
 
         return (
@@ -468,6 +474,7 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
             key={section.id}
             disclosureId={`${idSchema.$id}-${section.id}`}
             section={section}
+            initiallyOpen={resolveInitiallyOpen(section, renderedSectionIds.indexOf(section.id), ctx?.sectionOpening)}
             isReadonly={isReadonly}
             showCompletionControl={showCompletionControl}
             errorNavigation={

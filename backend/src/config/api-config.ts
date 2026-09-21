@@ -36,10 +36,6 @@ export const APIS: Api[] = [
   },
   {
     name: 'supportmanagement',
-    version: '15.6',
-  },
-  {
-    name: 'supportmanagement',
     service: 'support-management-alkt-sprint',
     version: '16.0',
   },

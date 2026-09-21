@@ -3,7 +3,10 @@
 import { ArrayObjectFieldTemplate } from '@common/components/json/fields/array-object-field-template.componant';
 import { FacilitySearchField } from '@common/components/json/fields/facility-search-field.componant';
 import { FieldTemplate } from '@common/components/json/fields/field-template.componant';
-import { SectionsObjectFieldTemplate } from '@common/components/json/fields/sections-object-field-template.componant';
+import {
+  SectionOpening,
+  SectionsObjectFieldTemplate,
+} from '@common/components/json/fields/sections-object-field-template.componant';
 import {
   SchemaSubmitButton,
   SubmitButtonFieldTemplate,
@@ -56,6 +59,8 @@ type SchemaFormProps = {
   onError?: FormProps['onError'];
   /** What marks a required field's label; the asterisk unless the form says otherwise. */
   requiredIndicator?: string;
+  /** Which sections start open when the form is shown; each section decides for itself unless set. */
+  sectionOpening?: SectionOpening;
 };
 
 export default function SchemaForm({
@@ -77,6 +82,7 @@ export default function SchemaForm({
   validationErrors,
   onError,
   requiredIndicator,
+  sectionOpening,
 }: SchemaFormProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [errorNavigation, setErrorNavigation] = useState<SchemaErrorNavigation>();
@@ -139,8 +145,18 @@ export default function SchemaForm({
       externalFields,
       errorNavigation,
       requiredIndicator,
+      sectionOpening,
     }),
-    [externalFields, idPrefix, schema, submitButtonOptions, submitButtonActions, errorNavigation, requiredIndicator]
+    [
+      externalFields,
+      idPrefix,
+      schema,
+      submitButtonOptions,
+      submitButtonActions,
+      errorNavigation,
+      requiredIndicator,
+      sectionOpening,
+    ]
   );
 
   const templates: NonNullable<FormProps['templates']> = {
