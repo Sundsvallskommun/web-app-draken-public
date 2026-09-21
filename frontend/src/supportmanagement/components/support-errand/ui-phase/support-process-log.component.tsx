@@ -60,16 +60,17 @@ export const SupportProcessLog = () => {
   return (
     <>
       <Button
-        iconButton
-        variant="tertiary"
+        variant="secondary"
         size="sm"
         showBackground={false}
         onClick={open}
         aria-label={t('common:process.log.open')}
         title={t('common:process.log.open')}
         data-cy="process-log-button"
+        leftIcon={<Info size={16} />}
+        className="ml-16"
       >
-        <Info size={16} />
+        {t('common:process.log.heading')}
       </Button>
       <Modal
         show={isOpen}
