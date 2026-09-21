@@ -340,7 +340,7 @@ export interface JsonParameter {
    * JSON structure value
    * @example {"firstName":"Joe","lastName":"Doe"}
    */
-  value: JsonNode;
+  value: any;
   /**
    * ID referencing a schema in the json-schema service
    * @minLength 1
