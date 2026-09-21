@@ -44,6 +44,7 @@ test.describe('errand page', () => {
     await mockRoute('**/saveFacilities/2281/c9a96dcb-24b1-479b-84cb-2cc0260bb490', mockSaveFacilities, { method: 'PATCH' });
     await mockRoute('**/sourcerelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/targetrelations/**/**', mockRelations, { method: 'GET' });
+    await mockRoute('**/communication/conversations/count-read-by*', [], { method: 'GET' });
     await mockRoute('**/namespace/errands/**/communication/conversations', mockConversations, { method: 'GET' });
     await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, { method: 'GET' });
     await mockRoute(`**/supporterrands/errandnumber/${mockSupportErrand.errandNumber}`, mockSupportErrand, { method: 'GET' });

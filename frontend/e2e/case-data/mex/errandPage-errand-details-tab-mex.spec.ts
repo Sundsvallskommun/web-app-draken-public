@@ -6,7 +6,7 @@ import { mockHistory } from '../fixtures/mockHistory';
 import { mockPersonId } from '../fixtures/mockPersonId';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockAsset } from '../fixtures/mockAsset';
-import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockLeaseAgreement } from '../fixtures/mockContract';
 import { mockConversationMessages, mockConversations } from '../fixtures/mockConversations';
 import { mockEstateByAddress } from '../fixtures/mockEstateByAddress';
 import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
@@ -59,7 +59,6 @@ test.describe('Errand details tab', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(mockMessages) });
     });
     await mockRoute('**/contracts/2024-01026', mockLeaseAgreement, { method: 'GET' }); // @getContract
-    await mockRoute('**/contracts/2281/2024-01026/attachments/1', mockContractAttachment, { method: 'GET' }); // @getContractAttachment
 
     await mockRoute('**/errand/errandNumber/*', mockMexErrand_base, { method: 'GET' }); // @getErrand
     await mockRoute('**/sourcerelations/**/**', mockRelations, { method: 'GET' }); // @getSourceRelations

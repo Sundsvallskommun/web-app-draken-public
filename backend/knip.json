@@ -5,8 +5,15 @@
     "src/types/**/*.d.ts"
   ],
   "project": ["src/**/*.ts"],
+  "exclude": [
+    "enumMembers"
+  ],
   "ignore": [
-    "src/data-contracts/**"
+    "src/data-contracts/**",
+    "src/tests/helpers/mock-data.ts"
+  ],
+  "tags": [
+    "-openapi"
   ],
   "ignoreDependencies": [
     "cors",

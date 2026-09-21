@@ -276,51 +276,6 @@ export const mockContractsList: PageContract = {
   totalPages: 1,
 };
 
-export const mockContractsListPage2: PageContract = {
-  content: [
-    {
-      contractId: '2049-00006',
-      externalReferenceId: '106',
-      status: Status.ACTIVE,
-      type: ContractType.LEASE_AGREEMENT,
-      leaseType: LeaseType.USUFRUCT_HUNTING,
-      notice: {
-        terms: [
-          {
-            party: 'LESSEE',
-            unit: TimeUnit.MONTHS,
-            periodOfNotice: '6',
-          },
-          {
-            party: 'LESSOR',
-            unit: TimeUnit.MONTHS,
-            periodOfNotice: '12',
-          },
-        ],
-      },
-      startDate: '2024-02-01',
-      endDate: '2025-01-31',
-      propertyDesignations: [{ name: 'TESTKOMMUN JAKTMARK 6:99', district: 'Testdistrikt Västra' }],
-      stakeholders: [
-        {
-          type: StakeholderType.ORGANIZATION,
-          roles: [],
-          organizationName: 'Test Kommun AB',
-        },
-        {
-          type: StakeholderType.ORGANIZATION,
-          roles: [],
-          organizationName: 'Testjakt Förening',
-        },
-      ],
-    },
-  ],
-  number: 1,
-  size: 12,
-  totalElements: 6,
-  totalPages: 2,
-};
-
 export const mockContractsListEmpty: PageContract = {
   content: [],
   number: 0,

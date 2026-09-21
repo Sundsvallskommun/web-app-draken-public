@@ -1,8 +1,8 @@
 import { Label } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
 
-export const ROOT_CLASSIFICATION = 'ROOT';
-export const CATEGORIZATION_ROOT_RESOURCE_PATH = 'CATEGORYROOT';
+const ROOT_CLASSIFICATION = 'ROOT';
+const CATEGORIZATION_ROOT_RESOURCE_PATH = 'CATEGORYROOT';
 
 const MAX_DEPTH_BELOW_ROOT = 3;
 

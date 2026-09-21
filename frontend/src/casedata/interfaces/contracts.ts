@@ -58,7 +58,7 @@ export enum Party {
 }
 
 /** Leasehold type */
-export enum LeaseholdType {
+enum LeaseholdType {
   AGRICULTURE = 'AGRICULTURE',
   APARTMENT = 'APARTMENT',
   BOATING_PLACE = 'BOATING_PLACE',
@@ -129,21 +129,10 @@ export enum AddressType {
   VISITING_ADDRESS = 'VISITING_ADDRESS',
 }
 
-export interface GeoJsonObject {
+interface GeoJsonObject {
   crs?: Crs;
   bbox?: number[];
   type: string;
-}
-
-export interface Problem {
-  /** @format uri */
-  instance?: string;
-  /** @format uri */
-  type?: string;
-  title?: string;
-  detail?: string;
-  /** @format int32 */
-  status?: number;
 }
 
 export interface Address {
@@ -169,15 +158,23 @@ export interface AttachmentMetadata {
   /**
    * The attachment filename
    * @minLength 1
+   * @maxLength 255
    */
   filename: string;
   /**
-   * The attachment mime-type
+   * The attachment mime-type, on the form 'type/subtype'. Parameters (e.g. ';charset=utf-8') are not accepted.
    * @minLength 1
+   * @maxLength 255
    */
   mimeType: string;
-  /** Notes on the attachment */
+  /**
+   * Notes on the attachment
+   * @minLength 0
+   * @maxLength 255
+   */
   note?: string;
+  /** SHA-256 hash, lower-case hex encoded, of the attachment's raw binary content. Identical to what the database produces with lower(sha2(file, 256)), and to the hash the same file is given in other services. */
+  hash?: string;
   /**
    * Date when the attachment was created
    * @format date-time
@@ -248,13 +245,13 @@ export interface Contract {
   areaData?: FeatureCollection;
 }
 
-export interface Crs {
+interface Crs {
   type?: CrsTypeEnum;
   properties?: Record<string, any>;
 }
 
 /** Extension */
-export interface Extension {
+interface Extension {
   /**
    * Marker for whether an agreement should be extended automatically or not
    * @default true
@@ -278,7 +275,7 @@ export interface ExtraParameterGroup {
   parameters?: Record<string, string>;
 }
 
-export interface Feature {
+interface Feature {
   properties?: Record<string, any>;
   geometry?:
     | Feature
@@ -295,7 +292,7 @@ export interface Feature {
   id?: string;
 }
 
-export interface FeatureCollection {
+interface FeatureCollection {
   crs?: Crs;
   bbox?: number[];
   features?: Feature[];
@@ -335,7 +332,7 @@ export interface Fees {
   additionalInformation?: string[];
 }
 
-export type GeometryCollection = GeoJsonObject & {
+type GeometryCollection = GeoJsonObject & {
   geometries?: (
     | Feature
     | FeatureCollection
@@ -350,7 +347,7 @@ export type GeometryCollection = GeoJsonObject & {
 };
 
 /** Invoicing details */
-export interface Invoicing {
+interface Invoicing {
   /** How often the lease is invoiced */
   invoiceInterval: IntervalType;
   /** Invoiced in */
@@ -358,7 +355,7 @@ export interface Invoicing {
 }
 
 /** Leasehold */
-export interface Leasehold {
+interface Leasehold {
   /** Leasehold type */
   purpose?: LeaseholdType;
   /** Description of the leasehold */
@@ -366,11 +363,11 @@ export interface Leasehold {
   additionalInformation?: string[];
 }
 
-export type LineString = GeoJsonObject & {
+type LineString = GeoJsonObject & {
   coordinates?: LngLatAlt[];
 };
 
-export interface LngLatAlt {
+interface LngLatAlt {
   /** @format double */
   longitude?: number;
   /** @format double */
@@ -380,20 +377,20 @@ export interface LngLatAlt {
   additionalElements?: number[];
 }
 
-export type MultiLineString = GeoJsonObject & {
+type MultiLineString = GeoJsonObject & {
   coordinates?: LngLatAlt[][];
 };
 
-export type MultiPoint = GeoJsonObject & {
+type MultiPoint = GeoJsonObject & {
   coordinates?: LngLatAlt[];
 };
 
-export type MultiPolygon = GeoJsonObject & {
+type MultiPolygon = GeoJsonObject & {
   coordinates?: LngLatAlt[][][];
 };
 
 /** Notice information */
-export interface Notice {
+interface Notice {
   terms?: NoticeTerm[];
   /**
    * Date when notice was given
@@ -405,7 +402,7 @@ export interface Notice {
 }
 
 /** Notice term */
-export interface NoticeTerm {
+interface NoticeTerm {
   /** The party type */
   party: Party;
   /**
@@ -419,7 +416,7 @@ export interface NoticeTerm {
 }
 
 /** Parameter model */
-export interface Parameter {
+interface Parameter {
   /**
    * Parameter key
    * @minLength 1
@@ -432,7 +429,7 @@ export interface Parameter {
 }
 
 /** Contract period */
-export interface Period {
+interface Period {
   /**
    * Period start date
    * @format date
@@ -445,16 +442,16 @@ export interface Period {
   endDate?: string;
 }
 
-export type Point = GeoJsonObject & {
+type Point = GeoJsonObject & {
   coordinates?: LngLatAlt;
 };
 
-export type Polygon = GeoJsonObject & {
+type Polygon = GeoJsonObject & {
   coordinates?: LngLatAlt[][];
 };
 
 /** PropertyDesignation */
-export interface PropertyDesignation {
+interface PropertyDesignation {
   /**
    * Name of property designation
    * @minLength 0
@@ -520,7 +517,7 @@ export interface Stakeholder {
 }
 
 /** Term */
-export interface Term {
+interface Term {
   /** Term description */
   description?: string;
   /** Term (name) */
@@ -528,26 +525,13 @@ export interface Term {
 }
 
 /** Term group */
-export interface TermGroup {
+interface TermGroup {
   /** The term group header */
   header?: string;
   terms?: Term[];
 }
 
-export interface ConstraintViolationProblem {
-  /** @format uri */
-  type?: string;
-  /** @format int32 */
-  status?: number;
-  violations?: Violation[];
-  title?: string;
-  /** @format uri */
-  instance?: string;
-  detail?: string;
-  causeAsProblem?: ThrowableProblem;
-}
-
-export interface ThrowableProblem {
+interface ThrowableProblem {
   /** @format uri */
   type?: string;
   title?: string;
@@ -559,45 +543,19 @@ export interface ThrowableProblem {
   causeAsProblem?: any;
 }
 
-export interface Violation {
+interface Violation {
   field?: string;
   message?: string;
 }
 
-/** Attachment */
-export interface Attachment {
-  /** Attachment data, i.e. the file */
-  attachmentData: AttachmentData;
-  /** Attachment metadata */
-  metadata: AttachmentMetadata;
-}
-
-/** Attachment content */
-export interface AttachmentData {
-  /**
-   * BASE64-encoded attachment file content
-   * @format base64
-   */
-  content?: string;
-}
-
-export interface Change {
+interface Change {
   type?: ChangeTypeEnum;
   path?: string;
   oldValue?: JsonNode;
   newValue?: JsonNode;
 }
 
-export interface Diff {
-  /** @format int32 */
-  oldVersion?: number;
-  /** @format int32 */
-  newVersion?: number;
-  changes?: Change[];
-  availableVersions?: number[];
-}
-
-export interface JsonNode {
+interface JsonNode {
   empty?: boolean;
   array?: boolean;
   null?: boolean;
@@ -625,61 +583,6 @@ export interface JsonNode {
   embeddedValue?: boolean;
 }
 
-/** Partial contract payload used for PATCH. Only the fields present in the payload are applied to the existing contract. */
-export interface PatchContract {
-  /** A description of the contract */
-  description?: string;
-  /** External referenceId */
-  externalReferenceId?: string;
-  /** Type of lease */
-  leaseType?: LeaseType;
-  /** Object identity (from Lantmäteriet) */
-  objectIdentity?: string;
-  /** Contract status */
-  status?: Status;
-  /** Contract type */
-  type?: ContractType;
-  /** Type of leasehold */
-  leasehold?: Leasehold;
-  additionalTerms?: TermGroup[];
-  /** Extra parameters */
-  extraParameters?: ExtraParameterGroup[];
-  indexTerms?: TermGroup[];
-  propertyDesignations?: PropertyDesignation[];
-  stakeholders?: Stakeholder[];
-  /** Lease extension */
-  extension?: Extension;
-  /** Fee details */
-  fees?: Fees;
-  /** Invoicing details */
-  invoicing?: Invoicing;
-  /**
-   * Start date of the contract
-   * @format date
-   */
-  startDate?: string;
-  /**
-   * End date of the contract. Set when the contract is terminated
-   * @format date
-   */
-  endDate?: string;
-  /** Notice details */
-  notice?: Notice;
-  /** Current contract period */
-  currentPeriod?: Period;
-  /**
-   * Leased area (m2)
-   * @format int32
-   */
-  area?: number;
-  /** Whether the contract is signed by a witness */
-  signedByWitness?: boolean;
-  /** Part(s) of property covered by the lease. Described by GeoJSON using polygon(s) */
-  areaData?: FeatureCollection;
-}
-
-export type SpecificationContractEntity = any;
-
 export interface PageContract {
   /** @format int64 */
   totalElements?: number;
@@ -699,7 +602,7 @@ export interface PageContract {
   empty?: boolean;
 }
 
-export interface PageableObject {
+interface PageableObject {
   /** @format int64 */
   offset?: number;
   paged?: boolean;
@@ -711,24 +614,24 @@ export interface PageableObject {
   unpaged?: boolean;
 }
 
-export interface SortObject {
+interface SortObject {
   empty?: boolean;
   sorted?: boolean;
   unsorted?: boolean;
 }
 
-export enum CrsTypeEnum {
+enum CrsTypeEnum {
   Name = 'name',
   Link = 'link',
 }
 
-export enum ChangeTypeEnum {
+enum ChangeTypeEnum {
   ADDITION = 'ADDITION',
   REMOVAL = 'REMOVAL',
   MODIFICATION = 'MODIFICATION',
 }
 
-export enum JsonNodeNodeTypeEnum {
+enum JsonNodeNodeTypeEnum {
   ARRAY = 'ARRAY',
   BINARY = 'BINARY',
   BOOLEAN = 'BOOLEAN',

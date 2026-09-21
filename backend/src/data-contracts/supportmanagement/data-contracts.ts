@@ -81,6 +81,7 @@ export interface ConstraintViolationProblem {
   instance?: string;
   causeAsProblem?: ThrowableProblem;
   detail?: string;
+  detail?: string;
 }
 
 export interface ThrowableProblem {
@@ -305,14 +306,9 @@ export interface JsonNode {
   null?: boolean;
   object?: boolean;
   float?: boolean;
-  number?: boolean;
   string?: boolean;
   boolean?: boolean;
-  nodeType?: JsonNodeNodeTypeEnum;
-  integralNumber?: boolean;
-  missingNode?: boolean;
-  valueNode?: boolean;
-  container?: boolean;
+  number?: boolean;
   pojo?: boolean;
   floatingPointNumber?: boolean;
   short?: boolean;
@@ -324,6 +320,11 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
+  integralNumber?: boolean;
+  missingNode?: boolean;
+  valueNode?: boolean;
+  container?: boolean;
+  nodeType?: JsonNodeNodeTypeEnum;
   embeddedValue?: boolean;
 }
 

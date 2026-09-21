@@ -8,7 +8,7 @@ export const APIS: Api[] = [
   },
   {
     name: 'contract',
-    version: '9.0',
+    version: '11.0',
   },
   {
     name: 'citizen',
@@ -33,6 +33,10 @@ export const APIS: Api[] = [
   {
     name: 'case-data',
     version: '13.0',
+  },
+  {
+    name: 'supportmanagement',
+    version: '15.6',
   },
   {
     name: 'supportmanagement',

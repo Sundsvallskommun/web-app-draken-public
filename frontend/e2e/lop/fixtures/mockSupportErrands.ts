@@ -1,13 +1,5 @@
 import { mockEnv } from '../../fixtures/mock-env';
 
-export const modifyField: (
-  base: { [key: string]: any },
-  obj: { [key: string]: any }
-) => { data: { [key: string]: any }; message: string } = (base, obj) => ({
-  ...base.data,
-  ...obj,
-});
-
 export const mockEmptySupportErrand = {
   id: 'c9a96dcb-24b1-479b-84cb-2cc0260bb490',
   // title: 'Empty errand',

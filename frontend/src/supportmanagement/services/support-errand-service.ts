@@ -6,7 +6,7 @@ import {
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
 import { isKC, isLOK, isROB } from '@common/services/application-service';
-import sanitized from '@common/services/sanitizer-service';
+import { sanitized } from '@common/services/sanitizer-service';
 import { appConfig } from '@config/appconfig';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
@@ -25,10 +25,6 @@ import { MessageRequest, sendMessage } from './support-message-service';
 import { SupportMetadata } from './support-metadata-service';
 import { saveSupportNote } from './support-note-service';
 import { buildStakeholdersList, mapExternalIdTypeToStakeholderType } from './support-stakeholder-service';
-export interface Customer {
-  id: string;
-  type: 'PRIVATE' | 'ENTERPRISE' | 'EMPLOYEE';
-}
 
 export enum ExternalIdType {
   PRIVATE = 'PRIVATE',
@@ -46,17 +42,13 @@ export enum ContactChannelType {
   PHONE = 'PHONE',
 }
 
-export enum PrettyRelation {
-  PERSON = 'Person',
-}
-
 // Define an enum for the stakeholder types
 export enum SupportStakeholderTypeEnum {
   PERSON = 'PERSON',
   ORGANIZATION = 'ORGANIZATION',
 }
 
-export interface RequestInfo {
+interface RequestInfo {
   contactMeans: string;
   email: string;
   phone: string;
@@ -65,7 +57,7 @@ export interface RequestInfo {
 }
 
 // Define a type based on the enum values
-export type SupportStakeholderType = keyof typeof SupportStakeholderTypeEnum;
+type SupportStakeholderType = keyof typeof SupportStakeholderTypeEnum;
 
 export type ExternalTags = Array<{ key: string; value: string }>;
 
@@ -86,7 +78,7 @@ export interface SupportErrand extends ApiSupportErrand {
   contacts: SupportStakeholderFormModel[];
 }
 
-export interface PagedApiSupportErrands extends ApiPagingData {
+interface PagedApiSupportErrands extends ApiPagingData {
   content: ApiSupportErrand[];
 }
 
@@ -104,17 +96,6 @@ export interface SupportErrandsData extends Data {
     sticky?: boolean;
     shownForStatus: All | Status[];
   }[];
-}
-
-export interface ResolutionUpdate {
-  id: string;
-  category: string;
-  type: string;
-  status: Status;
-  resolution: string;
-  assignedUserId: string;
-  escalationEmail?: string;
-  escalationMessageBody?: string;
 }
 
 export enum Channels {
@@ -139,11 +120,6 @@ export const getSelectableChannels = (): [string, string][] => {
   }
   return entries;
 };
-
-export const municipalityIds = [
-  { label: 'Sundsvall', id: '2281' },
-  { label: 'Timrå', id: '2262' },
-];
 
 export enum Status {
   NEW = 'NEW',
@@ -170,13 +146,7 @@ export const shouldShowResumeErrandButton = (status?: Status): boolean => {
   );
 };
 
-export enum AttestationStatus {
-  APPROVED = 'APPROVED',
-  DENIED = 'DENIED',
-  NONE = 'NONE',
-}
-
-export enum AttestationStatusLabel {
+enum AttestationStatusLabel {
   APPROVED = 'Godkänd',
   DENIED = 'Avslag',
   NONE = 'Attestera',
@@ -221,14 +191,8 @@ export const getStatusLabel = (statuses: Status[]) => {
   }
 };
 
-export const findPriorityKeyForPriorityLabel = (priorityKey: string) =>
-  Object.entries(Priority).find((e: [string, string]) => e[1] === priorityKey)?.[0];
-
 export const findPriorityLabelForPriorityKey = (priorityLabel: string) =>
   Object.entries(Priority).find((e: [string, string]) => e[0] === priorityLabel)?.[1];
-
-export const findAttestationStatusKeyForAttestationStatusLabel = (attestationStatusKey: string) =>
-  Object.entries(AttestationStatusLabel).find((e: [string, string]) => e[1] === attestationStatusKey)?.[0];
 
 export const findAttestationStatusLabelForAttestationStatusKey = (attestationStatusLabel: string) =>
   Object.entries(AttestationStatusLabel).find((e: [string, string]) => e[0] === attestationStatusLabel)?.[1];
@@ -388,11 +352,6 @@ export const emptyContact: SupportStakeholderFormModel = {
   emails: [],
   phoneNumbers: [],
   contactChannels: [],
-};
-
-export const emptySupportErrandList: SupportErrandsData = {
-  errands: [],
-  labels: [],
 };
 
 export const defaultSupportErrandInformation: SupportErrand | any = {
@@ -684,7 +643,7 @@ export const upsertErrandParameter = (
   return [...otherParameters, { key, displayName, values: [value] }];
 };
 
-export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => SupportErrand = (e) => {
+const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => SupportErrand = (e) => {
   try {
     const ierrand: SupportErrand = {
       ...e,
@@ -754,12 +713,12 @@ export const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => Suppor
   }
 };
 
-export const handleErrandResponse: (res: ApiSupportErrand[]) => SupportErrand[] = (res) => {
+const handleErrandResponse: (res: ApiSupportErrand[]) => SupportErrand[] = (res) => {
   const errands = res.map(mapApiSupportErrandToSupportErrand);
   return errands;
 };
 
-export const getSupportErrands: (
+const getSupportErrands: (
   municipalityId: string,
   page?: number,
   size?: number,
@@ -797,7 +756,7 @@ export const getSupportErrands: (
     });
 };
 
-export const getSupportErrandsCount: (
+const getSupportErrandsCount: (
   municipalityId: string,
   filter?: { [key: string]: string | boolean | number }
 ) => Promise<any> = (municipalityId, filter = {}) => {
@@ -931,8 +890,6 @@ export const updateSupportErrand: (
     });
 };
 
-export const getStatus: (errand: SupportErrand) => Status = (errand) => errand.status as Status;
-
 export const validateAction: (errand: SupportErrand, user: User) => boolean = (errand, user) => {
   let allowed = false;
   if (user.username.toLocaleLowerCase() === errand?.assignedUserId?.toLocaleLowerCase()) {
@@ -1029,24 +986,6 @@ export const setSuspension: (
     });
 };
 
-export const setSupportErrandPriority: (
-  errandId: string,
-  municipalityId: string,
-  priority: Priority
-) => Promise<boolean> = async (errandId, municipalityId, priority) => {
-  const data: Partial<SupportErrandDto> = { priority };
-
-  return apiService
-    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, data)
-    .then(() => {
-      return true;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when patching errand');
-      throw e;
-    });
-};
-
 export const forwardSupportErrand: (
   user: User,
   errand: SupportErrand,
@@ -1121,97 +1060,4 @@ export const forwardSupportErrand: (
   } else {
     throw new Error('Not implemented yet');
   }
-};
-
-export const requestInfo: (
-  user: User,
-  errand: SupportErrand,
-  municipalityId: string,
-  data: RequestInfo,
-  supportAttachment: SupportAttachment[]
-) => Promise<boolean> = async (user, errand, municipalityId, data, supportAttachment) => {
-  if (!errand.id) {
-    throw 'No errand id found. Cannot request info without id.';
-  }
-  if (!data.contactMeans) {
-    throw 'No contact means found. Cannot request info without contact means.';
-  }
-  if (!data.message) {
-    throw 'No message found. Cannot request info without message.';
-  }
-
-  let attachmentId = [] as string[];
-  for (const att of supportAttachment) {
-    attachmentId.push(att.id);
-  }
-
-  const message: MessageRequest = {
-    municipalityId: municipalityId,
-    errandId: errand.id,
-    contactMeans: data.contactMeans,
-    recipientEmail: data.email,
-    headerReplyTo: '',
-    headerReferences: '',
-    emails: data.contactMeans == 'email' ? [{ value: data.email }] : [],
-    subject: `Ärende #${errand.errandNumber} - du behöver komplettera informationen`,
-    htmlMessage: data.message,
-    plaintextMessage: data.messageBodyPlaintext,
-    senderName: user.name,
-    phoneNumbers: data.contactMeans == 'sms' ? [{ value: data.phone }] : [],
-    attachments: [],
-    existingAttachments: [],
-    attachmentIds: attachmentId,
-  };
-  const sendSuccess = await sendMessage(message);
-  if (!sendSuccess) {
-    throw new Error('SENDING_FAILED');
-  }
-  return setSupportErrandStatus(errand.id, municipalityId, Status.PENDING);
-};
-
-export const requestInternal: (
-  user: User,
-  errand: SupportErrand,
-  municipalityId: string,
-  data: RequestInfo,
-  supportAttachment: SupportAttachment[],
-  title: string
-) => Promise<boolean> = async (user, errand, municipalityId, data, supportAttachment, title) => {
-  if (!errand.id) {
-    throw 'No errand id found. Cannot request info without id.';
-  }
-  if (!data.contactMeans) {
-    throw 'No contact means found. Cannot request info without contact means.';
-  }
-  if (!data.message) {
-    throw 'No message found. Cannot request info without message.';
-  }
-
-  let attachmentId = [] as string[];
-  for (const att of supportAttachment) {
-    attachmentId.push(att.id);
-  }
-
-  const message: MessageRequest = {
-    municipalityId: municipalityId,
-    errandId: errand.id,
-    contactMeans: data.contactMeans,
-    recipientEmail: data.email,
-    headerReplyTo: '',
-    headerReferences: '',
-    emails: data.contactMeans == 'email' ? [{ value: data.email }] : [],
-    subject: `Ärende #${errand.errandNumber} - ${title} Behöver din återkoppling`,
-    htmlMessage: data.message,
-    plaintextMessage: data.messageBodyPlaintext,
-    senderName: user.name,
-    phoneNumbers: data.contactMeans == 'sms' ? [{ value: data.phone }] : [],
-    attachments: [],
-    existingAttachments: [],
-    attachmentIds: attachmentId,
-  };
-  const sendSuccess = await sendMessage(message);
-  if (!sendSuccess) {
-    throw new Error('SENDING_FAILED');
-  }
-  return setSupportErrandStatus(errand.id, municipalityId, Status.AWAITING_INTERNAL_RESPONSE);
 };

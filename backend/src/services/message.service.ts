@@ -1,4 +1,4 @@
-import { AgnosticMessageResponse, LetterResponse, MessageClassification } from '@controllers/message.controller';
+import { AgnosticMessageResponse, DecisionChannelResult, LetterResponse, MessageClassification } from '@controllers/message.controller';
 import { Role } from '@interfaces/role';
 import { User } from '@interfaces/users.interface';
 import { logger } from '@utils/logger';
@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import NodeFormData from 'form-data';
 import { v4 as uuidv4 } from 'uuid';
 
-import { CASEDATA_NAMESPACE, MUNICIPALITY_ID } from '@/config';
+import { CASEDATA_NAMESPACE, CASEDATA_REPLY_TO, CASEDATA_SENDER, CASEDATA_SENDER_EMAIL, MUNICIPALITY_ID } from '@/config';
 import { apiServiceName } from '@/config/api-config';
 import {
   Attachment,
@@ -27,12 +27,10 @@ import {
   EmailAttachment,
   EmailRequest,
   HistoryResponse,
-  LetterRequest,
   SmsRequest,
   WebMessageAttachment,
   WebMessageRequest,
 } from '@/data-contracts/messaging/data-contracts';
-import { HttpException } from '@/exceptions/HttpException';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import { FTCaseType, MEXCaseType, PTCaseType } from '@/interfaces/case-type.interface';
 import { apiURL, base64Encode } from '@/utils/util';
@@ -192,56 +190,7 @@ export const sendEmail = (
     });
 };
 
-export const sendDigitalMail = (
-  municipalityId: string,
-  message: LetterRequest & { message?: string },
-  req: RequestWithUser,
-  errandData: ApiResponse<ErrandDTO>,
-  classification: MessageClassification,
-) => {
-  const url = `${MESSAGING_SERVICE}/${municipalityId}/letter?async=false`;
-  const apiService = new ApiService();
-  return apiService
-    .post<LetterResponse, LetterRequest>({ url, data: message }, req.user)
-    .then(async (res: ApiResponse<LetterResponse>) => {
-      const id = res.data.messages?.[0]?.messageId;
-      if (!id) {
-        throw new Error('Error: no id returned when sending message');
-      }
-      return saveMessageOnErrand(
-        municipalityId,
-        errandData.data,
-        {
-          message: message.message ?? '',
-          id: id,
-          messageType: 'DIGITAL_MAIL',
-          messageClassification: classification,
-          header_message_Id: '',
-          header_reply_to: '',
-          header_references: '',
-        },
-        req.user,
-      )
-        .then(async _ => {
-          if (NOTIFY_CONTACTS) {
-            await notifyContactPersons(municipalityId, errandData.data, req.user);
-            return { data: { messageId: id }, message: `Message sent` };
-          } else {
-            return { data: { messageId: id }, message: `Message sent` };
-          }
-        })
-        .catch(e => {
-          logger.error('Error when saving message id:', e);
-          return { data: { messageId: id }, message: `Message sent but id could not be stored` };
-        });
-    })
-    .catch(e => {
-      logger.error('Error when sending message:', e);
-      throw e;
-    });
-};
-
-export const saveMessageOnErrand: (
+const saveMessageOnErrand: (
   municipalityId: string,
   errand: ErrandDTO,
   message: {
@@ -294,7 +243,7 @@ export const saveMessageOnErrand: (
     lastName: user.lastName,
     mobileNumber: message.mobileNumber || '',
     recipients: message.email ? [message.email] : [],
-    email: process.env.CASEDATA_SENDER_EMAIL || '',
+    email: CASEDATA_SENDER_EMAIL || '',
     userId: '',
     attachments: attachments.map(a => ({
       content: a.content ?? a.base64Data,
@@ -351,7 +300,7 @@ const buildEmail = (applicant: StakeholderDTO, contact: StakeholderDTO, message:
   return email;
 };
 
-export const notifyContactPersons: (municipalityId: string, errand: ErrandDTO, user: User) => Promise<boolean> = (municipalityId, errand, user) => {
+const notifyContactPersons: (municipalityId: string, errand: ErrandDTO, user: User) => Promise<boolean> = (municipalityId, errand, user) => {
   const apiService = new ApiService();
   const applicant = errand.stakeholders?.find(s => s.roles.includes(Role.APPLICANT));
   if (!applicant) {
@@ -380,7 +329,7 @@ export const notifyContactPersons: (municipalityId: string, errand: ErrandDTO, u
   });
 };
 
-export const setMessageViewed = (municipalityId: string, errandId: number, messageId: string, user: User) => {
+const setMessageViewed = (municipalityId: string, errandId: number, messageId: string, user: User) => {
   const apiService = new ApiService();
   const url = `${SERVICE}/${municipalityId}/${CASEDATA_NAMESPACE}/errands/${errandId}/messages/${messageId}/viewed/true`;
   return apiService.put<any, any>({ url }, user);
@@ -426,7 +375,7 @@ export const sendConversationTextMessage = async (errandId: string, conversation
   return await apiService.post<any, any>({ url, baseURL, data: formData, headers: { 'Content-Type': 'multipart/form-data' } }, user);
 };
 
-export const sendConversation = async (errandId: string, conversationId: string, user: User, pdf: Attachment, decisionId: number) => {
+const sendConversation = async (errandId: string, conversationId: string, user: User, pdf: Attachment, decisionId: number) => {
   const apiService = new ApiService();
   const url = `${SERVICE}/${MUNICIPALITY_ID}/${CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations/${conversationId}/messages`;
 
@@ -447,49 +396,65 @@ export const sendConversation = async (errandId: string, conversationId: string,
   return await apiService.post<any, any>({ url, data: formData, headers: { 'Content-Type': formData.getHeaders()['content-type'] } }, user);
 };
 
-export const sendDecisionToMinaSidor = async (baseURL: string, errandId: string, user: User, pdf: Attachment, decisionId: number) => {
-  const apiService = new ApiService();
-  const conversationUrl = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations`;
-  const conversationRes = await apiService.get<Conversation[]>({ url: conversationUrl, baseURL }, user);
-  let externalConversation: Conversation | undefined;
-  externalConversation = conversationRes.data.find(c => c.type === 'EXTERNAL');
-
-  if (externalConversation === undefined) {
-    externalConversation = await createConversation(errandId, user, 'EXTERNAL', 'Mina sidor', CASEDATA_NAMESPACE!);
-  }
-  return sendConversation(errandId, externalConversation!.id!, user, pdf, decisionId)
-    .then(async res => {
-      return { data: { ...res.data, messageId: externalConversation!.id }, message: `Message sent to Mina sidor` };
-    })
-    .catch(e => {
-      logger.error('Error when sending message to Mina sidor:', e);
-      return { data: e, message: `Error when sending message to Mina sidor` };
-    });
+const failureReason = (e: unknown): string => {
+  const status = (e as { status?: number; httpCode?: number })?.status ?? (e as { httpCode?: number })?.httpCode;
+  const message = e instanceof Error ? e.message : String(e);
+  return status ? `${status} ${message}` : message;
 };
 
-export const sendDecisionToKatla = async (baseURL: string, errand: ErrandDTO, user: User, pdf: Attachment, decisionId: number) => {
+export const sendDecisionToMinaSidor = async (
+  baseURL: string,
+  errandId: string,
+  user: User,
+  pdf: Attachment,
+  decisionId: number,
+): Promise<DecisionChannelResult> => {
+  try {
+    const apiService = new ApiService();
+    const conversationUrl = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errandId}/communication/conversations`;
+    const conversationRes = await apiService.get<Conversation[]>({ url: conversationUrl, baseURL }, user);
+    let externalConversation: Conversation | undefined;
+    externalConversation = conversationRes.data.find(c => c.type === 'EXTERNAL');
+
+    if (externalConversation === undefined) {
+      externalConversation = await createConversation(errandId, user, 'EXTERNAL', 'Mina sidor', CASEDATA_NAMESPACE!);
+    }
+    await sendConversation(errandId, externalConversation!.id!, user, pdf, decisionId);
+    return { channel: 'MINA_SIDOR', status: 'sent', data: { messageId: externalConversation!.id }, message: `Message sent to Mina sidor` };
+  } catch (e) {
+    logger.error('Error when sending message to Mina sidor:', e);
+    return { channel: 'MINA_SIDOR', status: 'failed', data: { reason: failureReason(e) }, message: `Message to Mina sidor failed` };
+  }
+};
+
+export const sendDecisionToKatla = async (
+  baseURL: string,
+  errand: ErrandDTO,
+  user: User,
+  pdf: Attachment,
+  decisionId: number,
+): Promise<DecisionChannelResult> => {
   if (errand.channel !== 'ESERVICE_KATLA') {
-    return { data: { messageId: 'Non Katla errand' }, message: `Non Katla errand` };
+    return { channel: 'KATLA', status: 'skipped', data: {}, message: `Non Katla errand` };
   }
 
-  const apiService = new ApiService();
-  const conversationUrl = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errand.id}/communication/conversations`;
-  const conversationRes = await apiService.get<Conversation[]>({ url: conversationUrl, baseURL }, user);
-  let relationlessConversation: Conversation | undefined;
+  try {
+    const apiService = new ApiService();
+    const conversationUrl = `${MUNICIPALITY_ID}/${process.env.CASEDATA_NAMESPACE}/errands/${errand.id}/communication/conversations`;
+    const conversationRes = await apiService.get<Conversation[]>({ url: conversationUrl, baseURL }, user);
+    let relationlessConversation: Conversation | undefined;
 
-  relationlessConversation = conversationRes.data.find(c => c.relationIds?.length === 0 && c.type !== 'EXTERNAL');
+    relationlessConversation = conversationRes.data.find(c => c.relationIds?.length === 0 && c.type !== 'EXTERNAL');
 
-  if (relationlessConversation === undefined) {
-    relationlessConversation = await createConversation(errand.id!.toString(), user, 'INTERNAL', errand.errandNumber!, CASEDATA_NAMESPACE!);
+    if (relationlessConversation === undefined) {
+      relationlessConversation = await createConversation(errand.id!.toString(), user, 'INTERNAL', errand.errandNumber!, CASEDATA_NAMESPACE!);
+    }
+    await sendConversation(errand.id!.toString(), relationlessConversation!.id!, user, pdf, decisionId);
+    return { channel: 'KATLA', status: 'sent', data: { messageId: relationlessConversation!.id }, message: `Message sent to Katla` };
+  } catch (e) {
+    logger.error('Error when sending message to Katla:', e);
+    return { channel: 'KATLA', status: 'failed', data: { reason: failureReason(e) }, message: `Message to Katla failed` };
   }
-  return sendConversation(errand.id!.toString(), relationlessConversation!.id!, user, pdf, decisionId)
-    .then(async res => {
-      return { data: { ...res.data, messageId: relationlessConversation!.id }, message: `Message sent to Katla` };
-    })
-    .catch(e => {
-      logger.error('Error when sending message to Katla:', e);
-      return { data: e, message: `Error when sending message to Katla` };
-    });
 };
 
 export const decisionMessageSubject = (errand: ErrandDTO) => {
@@ -503,14 +468,32 @@ export const decisionMessageSubject = (errand: ErrandDTO) => {
   return 'Beslutsmeddelande';
 };
 
-export const sendDecisionToDigitalMail = async (errand: ErrandDTO, user: User, pdf: Attachment, decisionId: number) => {
+export const sendDecisionToDigitalMail = async (
+  errand: ErrandDTO,
+  user: User,
+  pdf: Attachment,
+  decisionId: number,
+): Promise<DecisionChannelResult> => {
   const url = `${MESSAGING_SERVICE}/${MUNICIPALITY_ID}/letter?async=false`;
   const apiService = new ApiService();
 
   if (!pdf.id) {
-    throw new Error('Decision attachment is missing id, cannot fetch attachment content');
+    logger.error('Decision attachment is missing id, cannot fetch attachment content');
+    return {
+      channel: 'DIGITAL_MAIL',
+      status: 'failed',
+      data: { reason: 'Decision attachment is missing id, cannot fetch attachment content' },
+      message: `Digital mail failed`,
+    };
   }
-  const content = await getDecisionAttachmentAsBase64(MUNICIPALITY_ID!, errand.id!, decisionId, pdf.id, user);
+
+  let content: string;
+  try {
+    content = await getDecisionAttachmentAsBase64(MUNICIPALITY_ID!, errand.id!, decisionId, pdf.id, user);
+  } catch (e) {
+    logger.error('Error when fetching decision attachment content:', e);
+    return { channel: 'DIGITAL_MAIL', status: 'failed', data: { reason: failureReason(e) }, message: `Digital mail failed` };
+  }
 
   const attachments = [
     {
@@ -563,16 +546,22 @@ export const sendDecisionToDigitalMail = async (errand: ErrandDTO, user: User, p
         user,
       )
         .then(async _ => {
-          return { data: { messageId: id }, message: `Digital mail sent` };
+          return { channel: 'DIGITAL_MAIL', status: 'sent', data: { messageId: id }, message: `Digital mail sent` } as DecisionChannelResult;
         })
         .catch(e => {
+          // The letter was delivered, only the bookkeeping on the errand failed — still a send.
           logger.error('Error when saving message id:', e);
-          return { data: { messageId: id }, message: `Digital mail sent but id could not be stored` };
+          return {
+            channel: 'DIGITAL_MAIL',
+            status: 'sent',
+            data: { messageId: id },
+            message: `Digital mail sent but id could not be stored`,
+          } as DecisionChannelResult;
         });
     })
     .catch(e => {
       logger.error('Error when sending digital mail:', e);
-      throw e;
+      return { channel: 'DIGITAL_MAIL', status: 'failed', data: { reason: failureReason(e) }, message: `Digital mail failed` };
     });
 };
 
@@ -585,7 +574,7 @@ export const sendDecisionForMex = async (
   errandData: ApiResponse<ErrandDTO>,
   html: string,
   plaintext: string,
-): Promise<{ data: AgnosticMessageResponse; message: string }> => {
+): Promise<DecisionChannelResult> => {
   const errand = errandData.data;
 
   if (errand.externalCaseId) {
@@ -597,7 +586,13 @@ export const sendDecisionForMex = async (
       },
       message: plaintext,
     } as WebMessageRequest;
-    return sendWebMessage(municipalityId, message, req, errandData);
+    try {
+      const res = await sendWebMessage(municipalityId, message, req, errandData);
+      return { channel: 'WEBMESSAGE', status: 'sent', data: { messageId: res.data.messageId }, message: res.message };
+    } catch (e) {
+      logger.error('Error when sending decision as webmessage:', e);
+      return { channel: 'WEBMESSAGE', status: 'failed', data: { reason: failureReason(e) }, message: `Webmessage failed` };
+    }
   }
 
   const ownerEmail = getOwnerStakeholderEmail(errand);
@@ -613,16 +608,28 @@ export const sendDecisionForMex = async (
       message: cleanedBody,
       htmlMessage: base64Encode(cleanedBody),
       sender: {
-        name: process.env.CASEDATA_SENDER,
-        address: process.env.CASEDATA_SENDER_EMAIL,
-        replyTo: process.env.CASEDATA_REPLY_TO,
+        name: CASEDATA_SENDER,
+        address: CASEDATA_SENDER_EMAIL,
+        replyTo: CASEDATA_REPLY_TO,
       },
       headers: {
         MESSAGE_ID: [generateMessageId()],
       },
     } as EmailRequest;
-    return sendEmail(municipalityId, message, req, errandData, MessageClassification.Informationsmeddelande);
+    try {
+      const res = await sendEmail(municipalityId, message, req, errandData, MessageClassification.Informationsmeddelande);
+      return { channel: 'EMAIL', status: 'sent', data: { messageId: res.data.messageId }, message: res.message };
+    } catch (e) {
+      logger.error('Error when sending decision as email:', e);
+      return { channel: 'EMAIL', status: 'failed', data: { reason: failureReason(e) }, message: `Email failed` };
+    }
   }
 
-  throw new HttpException(400, 'Ärendeägaren har inga godkända kontaktsätt');
+  // Reported as a failed channel rather than thrown, so the remaining channels still get to report.
+  return {
+    channel: 'EMAIL',
+    status: 'failed',
+    data: { reason: 'Ärendeägaren har inga godkända kontaktsätt' },
+    message: `Email failed`,
+  };
 };

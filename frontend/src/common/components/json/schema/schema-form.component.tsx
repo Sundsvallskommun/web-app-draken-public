@@ -1,37 +1,38 @@
 'use client';
 
+import { ArrayObjectFieldTemplate } from '@common/components/json/fields/array-object-field-template.componant';
 import { FacilitySearchField } from '@common/components/json/fields/facility-search-field.componant';
 import { FieldTemplate } from '@common/components/json/fields/field-template.componant';
+import { SectionsObjectFieldTemplate } from '@common/components/json/fields/sections-object-field-template.componant';
 import {
-  SectionOpening,
-  SectionsObjectFieldTemplate,
-} from '@common/components/json/fields/sections-object-field-template.componant';
-import { SubmitButtonFieldTemplate } from '@common/components/json/fields/submit-button-field-template.componant';
+  SchemaSubmitButton,
+  SubmitButtonFieldTemplate,
+  type SubmitButtonOptions,
+} from '@common/components/json/fields/submit-button-field-template.componant';
 import { jsonWidgets } from '@common/components/json/widgets/index.componant';
 import Form, { FormProps, IChangeEvent } from '@rjsf/core';
-import type { RegistryFieldsType, RegistryWidgetsType, RJSFSchema, UiSchema } from '@rjsf/utils';
+import type {
+  ArrayFieldTemplateProps,
+  RegistryFieldsType,
+  RegistryWidgetsType,
+  RJSFSchema,
+  UiSchema,
+} from '@rjsf/utils';
 import { customizeValidator } from '@rjsf/validator-ajv8';
 import Ajv2020 from 'ajv/dist/2020';
-import { ComponentType, useCallback, useMemo, useState } from 'react';
+import { ComponentType, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import createJsonErrorTransformer from '../utils/schema-form-error-handling';
+import createJsonErrorTransformer, { type SchemaFormError } from '../utils/schema-form-error-handling';
+import { type SchemaErrorNavigation, SchemaFormErrorSummary } from './schema-form-error-summary.component';
+import { buildUiSchemaFromSchema } from './schema-form-ui-schema';
 
 // Schemas declare $schema: draft 2020-12, which the default AJV8 validator (draft-07) cannot compile.
 const validator = customizeValidator({ AjvClass: Ajv2020 });
 
-const widgets: RegistryWidgetsType = jsonWidgets as RegistryWidgetsType;
+const widgets: RegistryWidgetsType = jsonWidgets;
 
 const fields: RegistryFieldsType = {
   FacilitySearchWidget: FacilitySearchField as any,
-};
-
-type AnyProp = {
-  type?: string | string[];
-  format?: string;
-  oneOf?: any[];
-  enum?: any[];
-  items?: AnyProp;
-  widget?: string;
 };
 
 type SchemaFormProps = {
@@ -40,56 +41,22 @@ type SchemaFormProps = {
   formData?: any;
   onChange?: (data: any, e?: IChangeEvent) => void;
   onSubmit?: (payload: any, e: IChangeEvent) => void;
+  arrayFieldTemplate?: ComponentType<ArrayFieldTemplateProps>;
   objectFieldTemplate?: ComponentType<any>;
+  idPrefix?: string;
   disabled?: boolean;
-  submitButtonOptions?: { label?: string; leadingIcon?: boolean; loading?: boolean; disabled?: boolean };
+  readonly?: boolean;
+  defaultFormStateBehavior?: FormProps['experimental_defaultFormStateBehavior'];
+  submitButtonOptions?: SubmitButtonOptions;
+  /** Rendered beside the submit button, for actions that belong with saving rather than above the form. */
+  submitButtonActions?: ReactNode;
   extraContent?: React.ReactNode;
-  sectionOpening?: SectionOpening;
+  externalFields?: Readonly<Record<string, ReactNode>>;
+  validationErrors?: readonly SchemaFormError[];
+  onError?: FormProps['onError'];
+  /** What marks a required field's label; the asterisk unless the form says otherwise. */
+  requiredIndicator?: string;
 };
-
-const hasType = (p: AnyProp | undefined, t: string) =>
-  typeof p?.type === 'string' ? p!.type === t : Array.isArray(p?.type) ? p!.type!.includes(t) : false;
-const isOneOfStrings = (p?: AnyProp) => Array.isArray(p?.oneOf) && p!.oneOf.every((o) => typeof o?.const === 'string');
-const isEnumStrings = (p?: AnyProp) => Array.isArray(p?.enum) && p!.enum.every((v) => typeof v === 'string');
-
-function buildUiSchemaFromSchema(schema: RJSFSchema): UiSchema {
-  const ui: UiSchema = {};
-  const props = (schema?.properties ?? {}) as Record<string, AnyProp>;
-
-  for (const [key, prop] of Object.entries(props)) {
-    const entry: Record<string, any> = {};
-
-    if (prop.widget) {
-      entry['ui:widget'] = prop.widget;
-    } else {
-      if ((hasType(prop, 'string') || hasType(prop, 'null')) && prop.format === 'date') {
-        entry['ui:widget'] = 'date';
-      }
-
-      if (
-        hasType(prop, 'array') &&
-        prop.items &&
-        (hasType(prop.items, 'string') || !prop.items.type) &&
-        (isOneOfStrings(prop.items) || isEnumStrings(prop.items))
-      ) {
-        entry['ui:widget'] = 'ComboboxWidget';
-      }
-
-      if (hasType(prop, 'string') && (isOneOfStrings(prop) || isEnumStrings(prop))) {
-        entry['ui:widget'] ??= 'select';
-      }
-      if (hasType(prop, 'boolean')) {
-        entry['ui:widget'] ??= 'checkbox';
-      }
-      if (hasType(prop, 'string')) {
-        entry['ui:widget'] ??= 'TextWidget';
-      }
-    }
-
-    if (Object.keys(entry).length) ui[key] = entry;
-  }
-  return ui;
-}
 
 export default function SchemaForm({
   schema,
@@ -97,12 +64,44 @@ export default function SchemaForm({
   formData,
   onChange,
   onSubmit,
+  arrayFieldTemplate,
   objectFieldTemplate,
+  idPrefix,
   disabled,
+  readonly,
+  defaultFormStateBehavior,
   submitButtonOptions,
+  submitButtonActions,
   extraContent,
-  sectionOpening,
+  externalFields,
+  validationErrors,
+  onError,
+  requiredIndicator,
 }: SchemaFormProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [errorNavigation, setErrorNavigation] = useState<SchemaErrorNavigation>();
+
+  useEffect(() => {
+    if (!errorNavigation) return;
+    // Section disclosures consume the same request and open before the next paint.
+    const frame = requestAnimationFrame(() => {
+      const container = containerRef.current;
+      const target = container?.ownerDocument.getElementById(errorNavigation.fieldId);
+      const field = container?.ownerDocument.getElementById(`${errorNavigation.fieldId}__field`);
+      const boundary = field ?? target;
+      if (!container || !boundary || !container.contains(boundary)) return;
+      const controlSelector =
+        'input:not([type="hidden"]):not(:disabled), select:not(:disabled), textarea:not(:disabled), [contenteditable="true"]';
+      const control = target?.matches(controlSelector)
+        ? target
+        : boundary.querySelector<HTMLElement>('select[aria-invalid="true"]:not(:disabled)') ??
+          boundary.querySelector<HTMLElement>(controlSelector) ??
+          boundary.querySelector<HTMLElement>('button:not(:disabled)');
+      (control ?? boundary).focus({ preventScroll: true });
+      boundary.scrollIntoView({ block: 'center' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [errorNavigation]);
   const [localData, setLocalData] = useState<any>({});
   const data = formData ?? localData;
 
@@ -132,46 +131,78 @@ export default function SchemaForm({
 
   // Send original schema via formContext so ObjectFieldTemplate can read if/then conditions
   const formContext = useMemo(
-    () => ({ originalSchema: schema, submitButtonOptions, sectionOpening }),
-    [schema, submitButtonOptions, sectionOpening]
+    () => ({
+      originalSchema: schema,
+      submitButtonOptions,
+      submitButtonActions,
+      idPrefix,
+      externalFields,
+      errorNavigation,
+      requiredIndicator,
+    }),
+    [externalFields, idPrefix, schema, submitButtonOptions, submitButtonActions, errorNavigation, requiredIndicator]
   );
 
-  const templates: any = {
+  const templates: NonNullable<FormProps['templates']> = {
+    ArrayFieldTemplate: ArrayObjectFieldTemplate,
     FieldTemplate,
     ObjectFieldTemplate: SectionsObjectFieldTemplate,
     ButtonTemplates: { SubmitButton: SubmitButtonFieldTemplate },
   };
 
+  if (arrayFieldTemplate) {
+    templates.ArrayFieldTemplate = arrayFieldTemplate;
+  }
+
   if (objectFieldTemplate) {
     templates.ObjectFieldTemplate = objectFieldTemplate;
   }
 
+  const formProps: FormProps = {
+    schema: schema || { type: 'object', properties: {} },
+    idPrefix,
+    uiSchema: effectiveUiSchema,
+    formData: data,
+    formContext,
+    onChange: handleChange,
+    onSubmit: handleSubmit,
+    onError,
+    validator,
+    fields,
+    widgets,
+    templates,
+    transformErrors: createJsonErrorTransformer(schema),
+    noHtml5Validate: true,
+    showErrorList: false,
+    disabled,
+    readonly,
+    experimental_defaultFormStateBehavior: defaultFormStateBehavior,
+  };
+
+  const formWithoutSubmit = disabled || readonly;
   return (
-    <div className="w-full max-w-full">
+    <div ref={containerRef} className="w-full min-w-0 max-w-full">
+      {validationErrors && <SchemaFormErrorSummary errors={validationErrors} onNavigate={setErrorNavigation} />}
       <Form
-        schema={schema || { type: 'object', properties: {} }}
-        uiSchema={effectiveUiSchema}
-        formData={data}
-        formContext={formContext}
-        onChange={handleChange}
-        onSubmit={handleSubmit}
-        validator={validator}
-        fields={fields}
-        widgets={widgets}
-        templates={extraContent ? { ...templates, ButtonTemplates: { SubmitButton: () => null } } : templates}
-        transformErrors={createJsonErrorTransformer(schema)}
-        noHtml5Validate
-        showErrorList={false}
-        disabled={disabled}
+        {...formProps}
+        templates={
+          formWithoutSubmit || extraContent
+            ? { ...templates, ButtonTemplates: { SubmitButton: () => null } }
+            : templates
+        }
       >
-        {extraContent && (
+        {extraContent ? (
           <>
             {extraContent}
-            <SubmitButtonFieldTemplate {...({ registry: { formContext } } as any)} />
+            {!formWithoutSubmit && <SchemaSubmitButton options={submitButtonOptions} actions={submitButtonActions} />}
           </>
-        )}
-        {!extraContent && disabled && <></>}
+        ) : undefined}
       </Form>
+      {/* The form renders no submit button when it is read-only, but the actions beside it are not
+          about saving and must stay reachable - a finished, locked document is handed on from here. */}
+      {formWithoutSubmit && submitButtonActions && (
+        <div className="mt-[3.2rem] flex flex-wrap items-center gap-16">{submitButtonActions}</div>
+      )}
     </div>
   );
 }

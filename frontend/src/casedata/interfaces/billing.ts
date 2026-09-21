@@ -1,6 +1,6 @@
 import { CAccountInformation } from 'src/data-contracts/backend/data-contracts';
 
-export interface BillingAccountInformation extends CAccountInformation {
+interface BillingAccountInformation extends CAccountInformation {
   object?: string;
 }
 
@@ -16,7 +16,7 @@ export interface BillingServiceItem {
   accountInformation: BillingAccountInformation;
 }
 
-export interface BillingSpecificationsData {
+interface BillingSpecificationsData {
   ourReference: string;
   customerReference: string;
   rejectionDate?: string;

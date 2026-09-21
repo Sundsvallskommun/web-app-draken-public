@@ -1,14 +1,13 @@
-import { Config } from 'tailwindcss/types/config';
 import { preset } from '@sk-web-gui/core';
+import { Config } from 'tailwindcss/types/config';
 
 export default {
   mode: 'jit',
   content: [
     './node_modules/@sk-web-gui/*/dist/**/*.js',
-    './src/app/**/*.tsx',
-    './src/common/**/*.tsx',
-    './src/casedata/components/**/*.tsx',
-    './src/supportmanagement/components/**/*.tsx',
+    // Only markup files carry class names. Classes that appear solely in UI schemas delivered by
+    // the API cannot be scanned and belong in the safelist below.
+    './src/**/*.tsx',
   ],
   safelist: ['text-error-surface-primary', 'text-vattjom-surface-primary', 'text-warning-surface-primary'],
   darkMode: 'class', // or 'media' or 'class'

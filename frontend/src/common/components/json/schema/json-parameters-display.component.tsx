@@ -3,11 +3,18 @@
 import { SectionOpening } from '@common/components/json/fields/sections-object-field-template.componant';
 import { useJsonSchema } from '@common/components/json/hooks/useJsonSchema';
 import SchemaForm from '@common/components/json/schema/schema-form.component';
-import { JsonParameter } from '@common/data-contracts/supportmanagement/data-contracts';
-import { Spinner } from '@sk-web-gui/react';
+import { Alert, Spinner } from '@sk-web-gui/react';
 import { FC } from 'react';
+
+interface DisplayJsonParameter {
+  key: string;
+  value?: unknown;
+  schemaId: string;
+  version?: number;
+}
+
 interface JsonParameterItemProps {
-  param: JsonParameter;
+  param: DisplayJsonParameter;
   municipalityId: string;
   sectionOpening: SectionOpening;
 }
@@ -25,7 +32,16 @@ const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId, 
   }
 
   if (error || !schema) {
-    return null;
+    return (
+      <Alert type="error" className="mb-16">
+        <Alert.Icon />
+        <Alert.Content>
+          <Alert.Content.Description>
+            Uppgifterna för {param.key} kunde inte visas eftersom schemat {param.schemaId} inte kunde laddas.
+          </Alert.Content.Description>
+        </Alert.Content>
+      </Alert>
+    );
   }
 
   return (
@@ -34,7 +50,7 @@ const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId, 
         schema={schema}
         uiSchema={uiSchema ?? undefined}
         formData={param.value}
-        sectionOpening={sectionOpening}
+        idPrefix={param.key.replace(/[^\w-]/g, '_')}
         disabled
       />
     </div>
@@ -42,7 +58,7 @@ const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId, 
 };
 
 interface JsonParametersDisplayProps {
-  jsonParameters: JsonParameter[];
+  jsonParameters: DisplayJsonParameter[];
   municipalityId: string;
 }
 

@@ -1,18 +1,11 @@
 type MessageType = 'MESSAGE' | 'EMAIL' | 'SMS' | 'WEB_MESSAGE' | 'DIGITAL_MAIL';
-export type MessageStatus =
+type MessageStatus =
   | 'AWAITING_FEEDBACK'
   | 'PENDING'
   | 'SENT'
   | 'FAILED'
   | 'NO_FEEDBACK_SETTINGS_FOUND'
   | 'NO_FEEDBACK_WANTED';
-
-export enum MessageClassification {
-  'Informationsmeddelande' = 'Informationsmeddelande',
-  'Efterfrågan komplettering' = 'Efterfrågan komplettering',
-  'Hämta yttrande' = 'Hämta yttrande',
-  'Intern dialog' = 'Intern dialog',
-}
 
 interface EmailMessageContent {
   headers: [];

@@ -109,7 +109,7 @@ const mapAuthor = (author: string) => {
   return author === 'UNKNOWN' ? 'Okänt' : author;
 };
 
-export const mapProperty = (c: ParsedErrandChange) => {
+const mapProperty = (c: ParsedErrandChange) => {
   const valueObject = c.globalId?.valueObject?.split('.').reverse()?.[0];
   switch (c.property) {
     case 'statusType':
@@ -237,7 +237,7 @@ const parseChangeType: (c: ErrandChange) => { label: string; details: string } =
   return { label: `${c.changeType} ${c.property}`, details: '' };
 };
 
-export const parseChange: (c: ErrandChange) => ParsedErrandChange = (c) => {
+const parseChange: (c: ErrandChange) => ParsedErrandChange = (c) => {
   return {
     ...c,
     parsed: {
