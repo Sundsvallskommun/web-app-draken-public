@@ -16,8 +16,6 @@ import { CircleAlert, CircleCheck } from 'lucide-react';
 import { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { SupportProcessLog } from './support-process-log.component';
-
 const ProcessStateIcon: FC<{ failed: boolean; completed: boolean }> = ({ failed, completed }) => {
   if (failed) return <Icon icon={<CircleAlert />} size="1.5rem" />;
   if (completed) return <Icon icon={<CircleCheck />} size="1.5rem" />;
@@ -69,7 +67,6 @@ export const SupportProcessRow = () => {
           {errorText}
         </span>
       ) : null}
-      <SupportProcessLog />
     </div>
   );
 };
