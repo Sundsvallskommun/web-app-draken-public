@@ -23,7 +23,8 @@ const PROCESS_STATUS_KEYS: Record<string, string> = {
   [SupportProcessStatus.FAILED]: 'common:process.status.failed',
 };
 
-export const getSupportErrandProcess = (errand: SupportErrand | undefined): ErrandProcess | undefined => errand?.process;
+export const getSupportErrandProcess = (errand: SupportErrand | undefined): ErrandProcess | undefined =>
+  errand?.process;
 
 export const hasSupportErrandProcess = (errand: SupportErrand | undefined): boolean =>
   Boolean(getSupportErrandProcess(errand)?.processStatus);
@@ -34,7 +35,7 @@ export const hasSupportErrandProcess = (errand: SupportErrand | undefined): bool
  * cover is handed back as it stands instead of being treated as an error.
  */
 export const supportProcessStatusKey = (status: string | undefined): string =>
-  status ? (PROCESS_STATUS_KEYS[status] ?? status) : '';
+  status ? PROCESS_STATUS_KEYS[status] ?? status : '';
 
 export const isSupportProcessFailed = (process: ErrandProcess | undefined): boolean =>
   process?.processStatus === SupportProcessStatus.FAILED;
@@ -78,7 +79,11 @@ const SUPPORT_PROCESS_STEPS: { name: SupportProcessStepName; translationKey: str
     translationKey: 'common:process.steps.investigation',
     activityIds: ['investigation_phase'],
   },
-  { name: SupportProcessStep.DECISION, translationKey: 'common:process.steps.decision', activityIds: ['decision_phase'] },
+  {
+    name: SupportProcessStep.DECISION,
+    translationKey: 'common:process.steps.decision',
+    activityIds: ['decision_phase'],
+  },
   {
     name: SupportProcessStep.FOLLOW_UP,
     translationKey: 'common:process.steps.follow_up',
