@@ -468,6 +468,11 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
             key={section.id}
             disclosureId={`${idSchema.$id}-${section.id}`}
             section={section}
+            initiallyOpen={resolveInitiallyOpen(
+              section,
+              sections.indexOf(section),
+              (ctx as unknown as { sectionOpening?: SectionOpening })?.sectionOpening ?? undefined
+            )}
             isReadonly={isReadonly}
             showCompletionControl={showCompletionControl}
             errorNavigation={
