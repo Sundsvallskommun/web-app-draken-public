@@ -3,7 +3,10 @@
 import type { ProcessActivity } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Button, Modal, Spinner } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
-import { getSupportProcessActivities } from '@supportmanagement/services/support-process-service';
+import {
+  getSupportProcessActivities,
+  hasSupportErrandProcess,
+} from '@supportmanagement/services/support-process-service';
 import dayjs from 'dayjs';
 import { Info } from 'lucide-react';
 import { FC, useState } from 'react';
@@ -52,6 +55,8 @@ export const SupportProcessLog = () => {
       });
   };
 
+  if (!hasSupportErrandProcess(supportErrand)) return null;
+
   return (
     <>
       <Button
@@ -66,7 +71,12 @@ export const SupportProcessLog = () => {
       >
         <Info size={16} />
       </Button>
-      <Modal show={isOpen} onClose={() => setIsOpen(false)} label={t('common:process.log.heading')} className="w-[48rem] max-w-full">
+      <Modal
+        show={isOpen}
+        onClose={() => setIsOpen(false)}
+        label={t('common:process.log.heading')}
+        className="w-[48rem] max-w-full"
+      >
         <Modal.Content>
           {isLoading ? <Spinner size={3} aria-label={t('common:process.log.loading')} /> : null}
           {error ? <p>{t('common:process.log.error')}</p> : null}

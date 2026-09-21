@@ -8,6 +8,7 @@ import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
 import { SupportProcessLog } from '@supportmanagement/components/support-errand/ui-phase/support-process-log.component';
 import { SupportUiPhaseWrapper } from '@supportmanagement/components/support-errand/ui-phase/support-ui-phase-wrapper';
+import { hasSupportErrandProcess } from '@supportmanagement/services/support-process-service';
 import { ExternalLink, Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
@@ -28,12 +29,17 @@ export default function Layout({ title, children }: { title: string; children: R
   const errandNumber = params?.errandNumber;
   const [hostName, setHostName] = useState('');
 
-  const showUiPhases = appConfig.features.useUiPhases && (pathName === '/registrera' || pathName.includes('arende'));
+  const followsProcess = appConfig.features.useProcess && appConfig.isSupportManagement;
+
+  const showUiPhases =
+    appConfig.features.useUiPhases &&
+    (pathName === '/registrera' || pathName.includes('arende')) &&
+    (!followsProcess || hasSupportErrandProcess(supportErrand));
   const uiPhaseRow = appConfig.isSupportManagement ? <SupportUiPhaseWrapper /> : <UiPhaseWrapper />;
   const uiPhaseSection = (
     <div className="flex items-center gap-12">
       {uiPhaseRow}
-      {appConfig.features.useProcess && appConfig.isSupportManagement ? <SupportProcessLog /> : null}
+      {followsProcess ? <SupportProcessLog /> : null}
     </div>
   );
 
