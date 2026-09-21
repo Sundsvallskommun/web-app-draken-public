@@ -19,9 +19,9 @@ const resolvePageSize = (size?: number): number => {
 
 @Controller()
 export class SupportProcessController {
-  private apiService = new ApiService();
-  private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  private SERVICE = apiServiceName('supportmanagement');
+  private readonly apiService = new ApiService();
+  private readonly namespace = SUPPORTMANAGEMENT_NAMESPACE;
+  private readonly SERVICE = apiServiceName('supportmanagement');
 
   @Get('/supportprocess/:municipalityId/:id/activities')
   @OpenAPI({ summary: 'Get the process activity log for an errand' })

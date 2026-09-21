@@ -56,9 +56,9 @@ export class CreateSupportDecisionDto {
 
 @Controller()
 export class SupportDecisionController {
-  private apiService = new ApiService();
-  private namespace = SUPPORTMANAGEMENT_NAMESPACE;
-  private SERVICE = apiServiceName('supportmanagement');
+  private readonly apiService = new ApiService();
+  private readonly namespace = SUPPORTMANAGEMENT_NAMESPACE;
+  private readonly SERVICE = apiServiceName('supportmanagement');
 
   private decisionsUrl = (municipalityId: string, errandId: string): string => `${municipalityId}/${this.namespace}/errands/${errandId}/decisions`;
 
@@ -71,7 +71,7 @@ export class SupportDecisionController {
   }
 
   /** The decision just written: the newest of the errand's decisions, since the service answers a create with a location only. */
-  private newestDecision = (decisions: Decision[]): Decision | undefined =>
+  private readonly newestDecision = (decisions: Decision[]): Decision | undefined =>
     [...decisions].sort((a, b) => (b.created ?? '').localeCompare(a.created ?? ''))[0];
 
   private async readDecision(municipalityId: string, errandId: string, decisionId: string, user: RequestWithUser['user']): Promise<Decision> {
