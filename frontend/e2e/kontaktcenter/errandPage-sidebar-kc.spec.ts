@@ -50,6 +50,7 @@ test.describe('errand page', () => {
     await mockRoute('**/sourcerelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/targetrelations/**/**', mockRelations, { method: 'GET' });
     await mockRoute('**/resolvedrelations/**/**', mockResolvedRelations, { method: 'GET' });
+    await mockRoute('**/communication/conversations/count-read-by*', [], { method: 'GET' });
     await mockRoute('**/namespace/errands/**/communication/conversations', mockConversations, { method: 'GET' });
     await mockRoute('**/errands/**/communication/conversations/*/messages', mockConversationMessages, {
       method: 'GET',

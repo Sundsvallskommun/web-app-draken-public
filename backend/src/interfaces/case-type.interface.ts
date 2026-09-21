@@ -59,12 +59,3 @@ export enum MEXCaseType {
   MEX_BUY_SMALL_HOUSE_PLOT = 'MEX_BUY_SMALL_HOUSE_PLOT',
   MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE = 'MEX_REFERRAL_BUILDING_PERMIT_EARLY_DIALOGUE_PLANNING_NOTICE',
 }
-
-export const CaseType = { ...PTCaseType, ...MEXCaseType, ...FTCaseType };
-
-export const CaseTypes = {
-  PT: PTCaseType,
-  MEX: MEXCaseType,
-  FT: FTCaseType,
-  ALL: { ...PTCaseType, ...MEXCaseType, ...FTCaseType },
-};

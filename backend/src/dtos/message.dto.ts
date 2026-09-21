@@ -154,13 +154,14 @@ export interface AgnosticMessageResponse {
   messageId: string;
 }
 
-export interface WebMessageResponse {
-  messageId: string;
-  deliveries: {
-    deliveryId: string;
-    messageType: string;
-    status: string;
-  }[];
+type DecisionChannel = 'MINA_SIDOR' | 'KATLA' | 'DIGITAL_MAIL' | 'EMAIL' | 'WEBMESSAGE';
+type DecisionSendStatus = 'sent' | 'failed' | 'skipped';
+
+export interface DecisionChannelResult {
+  channel: DecisionChannel;
+  status: DecisionSendStatus;
+  data: { messageId?: string; reason?: string };
+  message: string;
 }
 
 export interface LetterResponse {

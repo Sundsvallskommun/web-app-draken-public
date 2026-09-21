@@ -2,6 +2,7 @@ import { MessageWrapper } from '@common/components/message/message-wrapper.compo
 import { Button, Divider, FormControl, FormLabel, Icon, Select } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportCommunicationType } from '@supportmanagement/services/support-communication-types';
+import { markSupportConversationMessagesAsRead } from '@supportmanagement/services/support-conversation-service';
 import { isSupportErrandLocked, Status, validateAction } from '@supportmanagement/services/support-errand-service';
 import { Message, setMessageViewStatus } from '@supportmanagement/services/support-message-service';
 import { Mail } from 'lucide-react';
@@ -42,9 +43,12 @@ export const SupportMessagesTab: FC<{
   const allowed = useMemo(() => (supportErrand ? validateAction(supportErrand, user) : false), [user, supportErrand]);
 
   const onSelect = (message: Message) => {
-    if (message.conversationId && message.conversationId !== '') {
-      console.warn('Not implemented');
-      props.update();
+    if (message.conversationId && message.messageId) {
+      markSupportConversationMessagesAsRead(municipalityId, supportErrand!.id!, message.conversationId, [
+        message.messageId,
+      ])
+        .then(() => props.update())
+        .catch((error) => console.error('Could not mark conversation message as read', error));
     } else if (!message.viewed && supportErrand?.assignedUserId === user.username) {
       setMessageViewStatus(supportErrand!.id!, municipalityId, message.communicationID, true).then(() => {
         props.update();

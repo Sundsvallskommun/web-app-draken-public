@@ -1,6 +1,6 @@
 import { MessageAvatar } from '@common/components/message/message-avatar.component';
 import { MessageResponseDirectionEnum } from '@common/data-contracts/case-data/data-contracts';
-import sanitized from '@common/services/sanitizer-service';
+import { sanitized } from '@common/services/sanitizer-service';
 import { Button, cx, Icon, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import {
@@ -112,7 +112,7 @@ export const RenderedSupportMessage: FC<{
   }
 
   useEffect(() => {
-    if (!message.viewed && supportErrand.assignedUserId === user.username) {
+    if (!message.conversationId && !message.viewed && supportErrand.assignedUserId === user.username) {
       expanded &&
         isInViewport(document.querySelector(`.message-${message.communicationID}`)!) &&
         setMessageViewStatus(supportErrand.id!, municipalityId, message.communicationID, true).then(() => {

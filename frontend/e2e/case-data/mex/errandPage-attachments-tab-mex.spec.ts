@@ -2,7 +2,7 @@ import { expect, test } from '../../fixtures/base.fixture';
 import { mockAdmins } from '../fixtures/mockAdmins';
 import { mockCropJpegBase64, mockJpegBase64, mockPdfBase64 } from '../fixtures/mockAttachmentContent';
 import { mockAttachments } from '../fixtures/mockAttachments';
-import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockLeaseAgreement } from '../fixtures/mockContract';
 import { mockEstateInfo11, mockEstateInfo12 } from '../fixtures/mockEstateInfo';
 import { mockHistory } from '../fixtures/mockHistory';
 import { mockMe } from '../fixtures/mockMe';
@@ -83,7 +83,6 @@ test.describe('Errand page attachments tab', () => {
     ); // @getContract
     await mockRoute('**/errands/*/history', mockHistory, { method: 'GET' }); // @getHistory
     await mockRoute('**/contracts/2024-01026', mockLeaseAgreement, { method: 'GET' }); // @getContract
-    await mockRoute('**/contracts/2281/2024-01026/attachments/1', mockContractAttachment, { method: 'GET' }); // @getContractAttachment
     await mockRoute('**/estateInfo/**1:1', mockEstateInfo11, { method: 'GET' }); // @getEstateInfo
     await mockRoute('**/estateInfo/**1:2', mockEstateInfo12, { method: 'GET' }); // @getEstateInfo
 

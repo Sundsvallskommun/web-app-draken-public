@@ -5,7 +5,6 @@ import {
   FTCaseType,
   FTNationalCaseTypes,
   FTNotificationCaseType,
-  MEXCaseType,
   PTCaseType,
 } from '@casedata/interfaces/case-type';
 import { ApiChannels, Channels } from '@casedata/interfaces/channels';
@@ -30,7 +29,7 @@ import {
 } from '@casedata/services/casedata-stakeholder-service';
 import { User } from '@common/interfaces/user';
 import { getApplicationEnvironment, isMEX, isPT } from '@common/services/application-service';
-import sanitized from '@common/services/sanitizer-service';
+import { sanitized } from '@common/services/sanitizer-service';
 import { useSnackbar } from '@sk-web-gui/react';
 import { useCasedataStore, useConfigStore } from '@stores/index';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
@@ -40,9 +39,9 @@ import { useCallback, useEffect } from 'react';
 import { ApiResponse, apiService } from '../../common/services/api-service';
 import { saveErrandNote } from './casedata-errand-notes-service';
 import { extraParametersToUppgiftMapper } from './casedata-extra-parameters-service';
-import { phaseChangeInProgress } from './process-service';
+import { getUiPhase, phaseChangeInProgress } from './process-service';
 
-export const municipalityIds = [
+const municipalityIds = [
   { label: 'Sundsvall', id: '2281' },
   { label: 'Timrå', id: '2262' },
   { label: 'Ånge', id: '2260' },
@@ -50,17 +49,12 @@ export const municipalityIds = [
 
 export const defaultMunicipality = municipalityIds.find((m) => m.id === process.env.NEXT_PUBLIC_MUNICIPALITY_ID);
 
-export const emptyMeaErrandList: ErrandsData = {
+const emptyErrandList: ErrandsData = {
   errands: [],
   labels: [],
 };
 
-export const emptyErrandList: ErrandsData = {
-  errands: [],
-  labels: [],
-};
-
-export const ongoingCaseDataErrandLabels = [
+const ongoingCaseDataErrandLabels = [
   { label: 'Fast.bet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -71,7 +65,7 @@ export const ongoingCaseDataErrandLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
 ];
 
-export const ongoingCaseDataPTErrandLabels = [
+const ongoingCaseDataPTErrandLabels = [
   { label: 'Status', screenReaderOnly: false, sortable: false, shownForStatus: All.ALL },
   { label: 'Senaste aktivitet', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
   { label: 'Ärendetyp', screenReaderOnly: false, sortable: true, shownForStatus: All.ALL },
@@ -123,7 +117,7 @@ export const getStatusLabel = (statuses: ErrandStatus[]) => {
   return 'Ärenden';
 };
 
-export const isFTCaseType = (caseType?: string): boolean =>
+const isFTCaseType = (caseType?: string): boolean =>
   !!caseType && Object.values(FTCaseType).includes(caseType as FTCaseType);
 
 export const isFTErrand = (errand: IErrand) => {
@@ -145,33 +139,11 @@ export const isFTNationalErrand = (errand: IErrand) => {
   return Object.values(FTNationalCaseTypes).includes(errand.caseType as FTNationalCaseTypes);
 };
 
-export const findPriorityKeyForPriorityLabel = (key: string) =>
-  Object.entries(Priority).find((e: [string, string]) => e[1] === key)?.[0];
-
 export const findStatusKeyForStatusLabel = (statusKey: string) =>
   Object.entries(ErrandStatus).find((e: [string, string]) => e[1] === statusKey)?.[0];
 
 export const findStatusLabelForStatusKey = (statusLabel: string) =>
   Object.entries(ErrandStatus).find((e: [string, string]) => e[1] === statusLabel)?.[1] || statusLabel;
-
-export const getCaseTypes = () => {
-  const isTest = getApplicationEnvironment() === 'TEST';
-
-  if (isPT()) {
-    return { ...PTCaseType, ...FTCaseType };
-  }
-
-  if (isMEX()) {
-    return MEXCaseType;
-  }
-
-  //Temporarily added to show all case types in test environment, this can later be changed to CaseTypes.ALL
-  if (isTest) {
-    return { ...PTCaseType, ...MEXCaseType, ...FTCaseType };
-  }
-
-  return { ...PTCaseType, ...MEXCaseType };
-};
 
 export const getCaseLabels = () => {
   const isTest = getApplicationEnvironment() === 'TEST';
@@ -192,14 +164,10 @@ export const getCaseLabels = () => {
   return { ...PTCaseLabel, ...MEXCaseLabel };
 };
 
-export const findCaseTypeForCaseLabel = (caseLabel: string) => {
-  return Object.entries(getCaseLabels()).find((e: [string, string]) => e[1] === caseLabel)?.[0];
-};
-
 export const findCaseLabelForCaseType = (caseType: string) =>
   Object.entries(getCaseLabels()).find((e: [string, string]) => e[0] === caseType)?.[1];
 
-export const isErrandClosed: (errand: IErrand | CasedataFormModel) => boolean = (errand) => {
+const isErrandClosed: (errand: IErrand | CasedataFormModel) => boolean = (errand) => {
   if (errand?.status && typeof errand?.status === 'object') {
     return errand?.status?.statusType === ErrandStatus.ArendeAvslutat;
   } else {
@@ -249,7 +217,7 @@ export const emptyErrand: Partial<IErrand> = {
   status: { statusType: ErrandStatus.ArendeInkommit },
 };
 
-export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErrand = (e, municipalityId): IErrand => {
+const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErrand = (e, municipalityId): IErrand => {
   const administrator = getLastUpdatedAdministrator(e.stakeholders);
   try {
     const ierrand: IErrand = {
@@ -293,7 +261,7 @@ export const mapErrandToIErrand: (e: ApiErrand, municipalityId: string) => IErra
   }
 };
 
-export const handleErrandResponse: (res: ApiErrand[], municipalityId: string) => IErrand[] = (res, municipalityId) => {
+const handleErrandResponse: (res: ApiErrand[], municipalityId: string) => IErrand[] = (res, municipalityId) => {
   const errands = res.map((res) => mapErrandToIErrand(res, municipalityId));
   return errands;
 };
@@ -364,7 +332,7 @@ export const getErrandByErrandNumber: (
     );
 };
 
-export const getErrands: (
+const getErrands: (
   municipalityId: string,
   page?: number,
   size?: number,
@@ -785,6 +753,101 @@ export const validateAction: (errand: IErrand, user: User) => boolean = (errand,
 
 export const isErrandAdmin: (errand: IErrand, user: User) => boolean = (errand, user) => {
   return user.username.toLocaleLowerCase() === errand?.administrator?.adAccount?.toLocaleLowerCase();
+};
+
+/**
+ * The two distinct ways a casedata errand can be closed. See `.claude/CLOSE_ERRAND_LOGIC.md`.
+ * - `Complete`: normal workflow completion fired from the final phase (`phaseAction = COMPLETE`,
+ *   `triggerErrandPhaseChange`). Surfaced by the PhaseChanger as "Avsluta ärende".
+ * - `Abort`: early termination before the process is finished (`phaseAction = CANCEL`,
+ *   `cancelErrandPhaseChange`), requires a reason note. Surfaced by the sidebar "Avsluta ärendet".
+ * - `None`: no close affordance applies (e.g. already closed, or mid-workflow with no abort offered).
+ */
+export enum ErrandCloseMode {
+  Complete = 'COMPLETE',
+  Abort = 'ABORT',
+  None = 'NONE',
+}
+
+/**
+ * Single source of truth for *which* close affordance applies to an errand, based on drake +
+ * phase/status.
+ */
+export const getErrandCloseMode: (errand: IErrand) => ErrandCloseMode = (errand) => {
+  if (!errand || isErrandClosed(errand)) {
+    return ErrandCloseMode.None;
+  }
+
+  const status = errand.status?.statusType as ErrandStatus;
+
+  // Normal completion is offered from the final phase: MEX at the `uppfoljning` phase,
+  // PT once the decision has been carried out (`Beslut verkställt`).
+  const completeFromFinalPhase =
+    (isPT() && status === ErrandStatus.BeslutVerkstallt) || errand.phase === ErrandPhase.uppfoljning;
+  if (completeFromFinalPhase) {
+    return ErrandCloseMode.Complete;
+  }
+
+  // The sidebar early-abort affordance is hidden once the errand reaches the verkställa/uppföljning
+  // phases (where completion takes over) or has only been assigned (`Tilldelat`).
+  const abortAvailable =
+    getUiPhase(errand) !== UiPhase.slutfor &&
+    errand.phase !== ErrandPhase.verkstalla &&
+    errand.phase !== ErrandPhase.uppfoljning &&
+    status !== ErrandStatus.Tilldelat;
+
+  return abortAvailable ? ErrandCloseMode.Abort : ErrandCloseMode.None;
+};
+
+/**
+ * Whether the current user may invoke the given close affordance right now. Folds together the
+ * lock/admin/permission checks that live inline in the PhaseChanger and sidebar `disabled`
+ * expressions, including the MEX/PT exceptions.
+ *
+ * MEX intentionally differs from the pre-refactor behaviour on the Complete path: at the
+ * `uppfoljning` phase the "Avsluta ärende" button is the *only* close affordance (the sidebar abort
+ * is hidden once `getErrandCloseMode` returns `Complete`), so a locked MEX errand's Complete button
+ * is deliberately left enabled where the old inline logic would have disabled it (DRAKEN-4480).
+ */
+export const canCloseErrand: (errand: IErrand, user: User, mode: ErrandCloseMode) => boolean = (errand, user, mode) => {
+  if (!errand || !user) {
+    return false;
+  }
+
+  if (phaseChangeInProgress(errand)) {
+    return false;
+  }
+
+  const status = errand.status?.statusType as ErrandStatus;
+
+  if (mode === ErrandCloseMode.Complete) {
+    // A locked errand still allows completion in the drake-specific terminal states:
+    // PT at `Beslut verkställt`, and MEX in any state other than already-closed. Since the
+    // PhaseChanger never renders this button once `status === ArendeAvslutat`, the MEX clause
+    // effectively bypasses the lock entirely for MEX — intentional, see the note above.
+    const lockBlocksCompletion =
+      isErrandLocked(errand) &&
+      !(isPT() && status === ErrandStatus.BeslutVerkstallt) &&
+      !(isMEX() && status !== ErrandStatus.ArendeAvslutat);
+    return !lockBlocksCompletion && validateAction(errand, user);
+  }
+
+  if (mode === ErrandCloseMode.Abort) {
+    // DRAKEN-4480: MEX may abort regardless of phase/lock; other drakar require the user to be the
+    // assigned administrator, the errand to be unlocked, and to be in an active handling phase.
+    if (isMEX()) {
+      return true;
+    }
+    const uiPhase = getUiPhase(errand);
+    const inAbortablePhase =
+      uiPhase === UiPhase.granskning ||
+      uiPhase === UiPhase.utredning ||
+      uiPhase === UiPhase.beslut ||
+      uiPhase === UiPhase.uppfoljning;
+    return inAbortablePhase && isErrandAdmin(errand, user) && !isErrandLocked(errand);
+  }
+
+  return false;
 };
 
 export const setErrandStatus = async (

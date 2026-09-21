@@ -44,7 +44,7 @@ export interface ApiErrand {
   relatesTo?: RelatedErrand[];
 }
 
-export interface ApiPagingData {
+interface ApiPagingData {
   pageable: {
     sort: {
       empty: boolean;

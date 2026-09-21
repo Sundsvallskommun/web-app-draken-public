@@ -15,8 +15,6 @@ export const isPT = () => APP === 'PT';
 
 export const isMEX = () => APP === 'MEX';
 
-export const isMSVA = () => APP === 'MSVA';
-
 export const isROB = () => APP === 'ROB';
 
 export const isSE = () => APP === 'SE';

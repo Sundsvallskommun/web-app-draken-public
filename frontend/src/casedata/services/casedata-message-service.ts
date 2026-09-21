@@ -1,4 +1,5 @@
 import { CasedataMessageTabFormModel } from '@casedata/components/errand/tabs/messages/message-composer.component';
+import { DecisionChannelResult } from '@casedata/interfaces/decision';
 import { IErrand } from '@casedata/interfaces/errand';
 import {
   fetchAttachment,
@@ -6,7 +7,7 @@ import {
   sendAttachments,
 } from '@casedata/services/casedata-attachment-service';
 import { CasedataMessageType } from '@casedata/services/casedata-message-types';
-import { Message, MessageStatus } from '@common/interfaces/message';
+import { Message } from '@common/interfaces/message';
 import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
 import { isMEX } from '@common/services/application-service';
@@ -16,14 +17,16 @@ import { UploadFile } from '@sk-web-gui/react';
 import dayjs from 'dayjs';
 import { MessageResponse } from 'src/data-contracts/backend/data-contracts';
 
+// One result per channel the backend tried. Channel failures are data, not errors: only a failed
+// request throws.
 export const sendDecisionMessage: (
   municipalityId: string,
   errand: IErrand,
   html: string,
   plaintext: string
-) => Promise<boolean> = (municipalityId, errand, html, plaintext) => {
+) => Promise<DecisionChannelResult[]> = (municipalityId, errand, html, plaintext) => {
   return apiService
-    .post<ApiResponse<MessageResponse>[], { errandId: string; html: string; plaintext: string }>(
+    .post<DecisionChannelResult[], { errandId: string; html: string; plaintext: string }>(
       `casedata/${municipalityId}/message/decision`,
       {
         errandId: errand.id.toString(),
@@ -31,11 +34,7 @@ export const sendDecisionMessage: (
         plaintext,
       }
     )
-    .then((res) => {
-      const allSuccess = res.data.every((c) => c?.data?.messageId);
-      if (allSuccess) return true;
-      throw new Error('Not all channels returned a messageId');
-    })
+    .then((res) => res.data)
     .catch((e) => {
       throw new Error(e?.response?.data?.message || 'Något gick fel när beslutet skulle skickas');
     });
@@ -304,36 +303,6 @@ export const fetchMessagesWithTree: (
     });
 };
 
-export const fetchMessagesTree: (municipalityId: string, errand: IErrand) => Promise<MessageNode[]> = (
-  municipalityId,
-  errand
-) => {
-  return getErrandMessages(municipalityId, errand)
-    .then((res) => {
-      const tree = buildTree(res);
-      return tree;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when fetching messages for errand:', errand.id, e);
-      throw e;
-    });
-};
-
-export const fetchMessages: (municipalityId: string, errand: IErrand) => Promise<MessageResponse[]> = (
-  municipalityId,
-  errand
-) => {
-  return getErrandMessages(municipalityId, errand)
-    .then((res) => {
-      const list: MessageResponse[] = sortMessagesBySentDesc(res);
-      return list;
-    })
-    .catch((e) => {
-      console.error('Something went wrong when fetching messages for errand:', errand.errandNumber, e);
-      throw e;
-    });
-};
-
 export const fetchMessage: (municipalityId: string, messageId: string) => Promise<ApiResponse<Message>> = (
   municipalityId,
   messageId
@@ -349,23 +318,6 @@ export const fetchMessage: (municipalityId: string, messageId: string) => Promis
       console.error('Something went wrong when fetching message: ', messageId);
       throw e;
     });
-};
-
-export const messageStatusMap = (s: MessageStatus) => {
-  switch (s) {
-    case 'AWAITING_FEEDBACK':
-      return 'Väntar på status';
-    case 'PENDING':
-      return 'Väntar';
-    case 'SENT':
-      return 'Skickat';
-    case 'FAILED':
-      return 'Misslyckades';
-    case 'NO_FEEDBACK_SETTINGS_FOUND':
-      return 'Okänt';
-    case 'NO_FEEDBACK_WANTED':
-      return 'Okänt';
-  }
 };
 
 export const setMessageViewStatus: (

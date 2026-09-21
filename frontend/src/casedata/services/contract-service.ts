@@ -2,37 +2,34 @@ import { ContractData, StakeholderWithPersonnumber } from '@casedata/interfaces/
 import {
   Address,
   AddressType,
-  Attachment,
   AttachmentCategory,
+  AttachmentMetadata,
   Contract,
   ContractType,
+  ExtraParameterGroup,
   Fees,
   IntervalType,
   InvoicedIn,
   LeaseType,
   PageContract,
-  Parameter,
   Party,
-  Stakeholder as ContractStakeholder,
   StakeholderRole as ContractStakeholderRole,
   StakeholderType as ContractStakeholderType,
   Status,
   TimeUnit,
 } from '@casedata/interfaces/contracts';
 import { IErrand } from '@casedata/interfaces/errand';
-import { PrettyRole, Role } from '@casedata/interfaces/role';
+import { Role } from '@casedata/interfaces/role';
 import { CasedataOwnerOrContact, StakeholderType } from '@casedata/interfaces/stakeholder';
 import { ExtraParameter } from '@common/data-contracts/case-data/data-contracts';
 import { EstateInfoSearch } from '@common/interfaces/estate-details';
-import { Render, TemplateSelector } from '@common/interfaces/template';
 import { ApiResponse, apiService } from '@common/services/api-service';
-import { base64ToFile } from '@common/services/attachment-service';
 import { getSingleFacilityByDesignation } from '@common/services/facilities-service';
-import { toBase64 } from '@common/utils/toBase64';
 import { UploadFile } from '@sk-web-gui/react';
 import { AxiosResponse } from 'axios';
 import { CBillingRecord, CBillingRecordStatusEnum } from 'src/data-contracts/backend/data-contracts';
 
+import { MAX_FILE_SIZE_MB, withRetries } from './casedata-attachment-service';
 import { saveExtraParameters } from './casedata-extra-parameters-service';
 
 export const contractTypes = [
@@ -57,13 +54,6 @@ export const leaseTypes = [
   { label: 'Arrende', key: LeaseType.OTHER_FEE }, // Ska inte kunna finnas för nya avtal
 ];
 
-export const getContractLabel = (contractType: ContractType, leaseType?: LeaseType): string => {
-  if (contractType === ContractType.LEASE_AGREEMENT && leaseType) {
-    return leaseTypes.find((t) => t.key === leaseType)?.label ?? 'okänd typ';
-  }
-  return contractTypes.find((t) => t.key === contractType)?.label ?? 'okänd typ';
-};
-
 const feeDescriptionByLeaseType: Partial<Record<LeaseType, string>> = {
   [LeaseType.SITE_LEASE_COMMERCIAL]: 'Avgift, anläggningsarrende',
   [LeaseType.LAND_LEASE_RESIDENTIAL]: 'Avgift, bostadsarrende',
@@ -81,12 +71,47 @@ const feeDescriptionByContractType: Partial<Record<ContractType, string>> = {
   [ContractType.LEASEHOLD]: 'Avgift, tomträttsavgäld',
 };
 
-export const getFeeDescription = (type: ContractType, leaseType?: LeaseType): string => {
+const getFeeDescription = (type: ContractType, leaseType?: LeaseType): string => {
   if (type === ContractType.LEASE_AGREEMENT && leaseType) {
     return feeDescriptionByLeaseType[leaseType] ?? 'Övrig avgift';
   }
   return feeDescriptionByContractType[type] ?? 'Övrig avgift';
 };
+
+// Extra avitexter for recurring invoicing are stored in the InvoiceInfo extraParameter group,
+// keyed detailedDescriptionNN (two-digit sequence: 01, 02, ...). Max 51 chars per value.
+export const MAX_DETAILED_DESCRIPTION_LENGTH = 51;
+const DETAILED_DESCRIPTION_KEY = /^detailedDescription\d{2}$/;
+
+export const isDetailedDescriptionKey = (key: string): boolean => DETAILED_DESCRIPTION_KEY.test(key);
+
+export const getDetailedDescriptionEntries = (parameters?: Record<string, string>): { key: string; value: string }[] =>
+  Object.keys(parameters ?? {})
+    .filter(isDetailedDescriptionKey)
+    .sort((left, right) => left.localeCompare(right))
+    .map((key) => ({ key, value: parameters?.[key] ?? '' }));
+
+const getDetailedDescriptions = (parameters?: Record<string, string>): string[] =>
+  getDetailedDescriptionEntries(parameters).map(({ value }) => value);
+
+export const toDetailedDescriptionParameters = (values: string[]): Record<string, string> =>
+  Object.fromEntries(values.map((value, i) => [`detailedDescription${String(i + 1).padStart(2, '0')}`, value]));
+
+// Drops empty rows and renumbers the remaining ones so the API always receives a contiguous
+// detailedDescription01..NN sequence capped at the max length.
+const sanitizeInvoiceInfoParameters = (groups?: ExtraParameterGroup[]): ExtraParameterGroup[] | undefined =>
+  groups?.map((group) => {
+    if (group.name !== 'InvoiceInfo') {
+      return group;
+    }
+    const otherParameters = Object.fromEntries(
+      Object.entries(group.parameters ?? {}).filter(([key]) => !isDetailedDescriptionKey(key))
+    );
+    const descriptions = getDetailedDescriptions(group.parameters)
+      .filter((value) => value?.trim())
+      .map((value) => value.slice(0, MAX_DETAILED_DESCRIPTION_LENGTH));
+    return { ...group, parameters: { ...otherParameters, ...toDetailedDescriptionParameters(descriptions) } };
+  });
 
 export const isLeaseAgreement = (contractType: ContractType) =>
   [
@@ -116,22 +141,6 @@ export const hasRecurringFee = (contractType: ContractType, leaseType?: LeaseTyp
       LeaseType.LAND_LEASE_LICENSE,
       LeaseType.OTHER_FEE,
     ].includes(leaseType));
-
-export const roleLabels: { [key in ContractStakeholderRole]: string } = {
-  BUYER: 'Köpare',
-  CONTACT_PERSON: 'Kontaktperson',
-  GRANTOR: 'Upplåtare',
-  LAND_RIGHT_OWNER: 'LAND_RIGHT_OWNER',
-  LEASEHOLDER: 'LEASEHOLDER',
-  PROPERTY_OWNER: 'PROPERTY_OWNER',
-  POWER_OF_ATTORNEY_CHECK: 'POWER_OF_ATTORNEY_CHECK',
-  POWER_OF_ATTORNEY_ROLE: 'POWER_OF_ATTORNEY_ROLE',
-  SELLER: 'SELLER',
-  SIGNATORY: 'SIGNATORY',
-  PRIMARY_BILLING_PARTY: 'PRIMARY_BILLING_PARTY',
-  LESSOR: 'LESSOR',
-  LESSEE: 'LESSEE',
-};
 
 export const defaultKopeavtal: ContractData = {
   status: Status.DRAFT,
@@ -213,18 +222,7 @@ export const saveContract: (contract: ContractData) => Promise<Contract> = (cont
   }
 };
 
-export const deleteContract: (contractId: string) => Promise<AxiosResponse<boolean>> = (contractId) => {
-  if (!contractId) {
-    console.error('No contract id found, cannot delete. Returning.');
-  }
-  const url = `contracts/${contractId}`;
-  return apiService.deleteRequest<boolean>(url).catch((e) => {
-    console.error('Something went wrong when deleting contract: ', contractId);
-    throw e;
-  });
-};
-
-export const fetchContract: (contractId: string) => Promise<ApiResponse<Contract>> = (contractId) => {
+const fetchContract: (contractId: string) => Promise<ApiResponse<Contract>> = (contractId) => {
   if (!contractId) {
     console.error('No contract id found, cannot fetch. Returning.');
   }
@@ -320,71 +318,6 @@ export const getErrandContract: (errand: IErrand) => Promise<ContractData> = (er
     });
 };
 
-export const renderContractPdf: (
-  errand: IErrand,
-  contract: Contract,
-  isDraft: boolean
-) => Promise<{ pdfBase64: string; error?: string }> = async (errand, contract, isDraft) => {
-  if (!contract?.contractId) {
-    console.error('No contract id found. Cannot render contract pdf.');
-  }
-
-  const templateIdentifier =
-    contract.type === ContractType.PURCHASE_AGREEMENT
-      ? `mex.contract.purchaseagreement`
-      : isLeaseAgreement(contract.type)
-      ? `mex.contract.landlease`
-      : 'mex.contract.purchaseagreement';
-
-  const renderBody: TemplateSelector = {
-    identifier: templateIdentifier,
-    parameters: {
-      header: contract.type === ContractType.PURCHASE_AGREEMENT ? 'KÖPEAVTAL' : 'AVTAL OM LÄGENHETSARRENDE',
-      description: `<b>Avtals ID:</b> ${contract.contractId}<br />
-                    <b>Ärendenummer:</b> ${errand.errandNumber} <br />`,
-      isDraft: isDraft,
-
-      stakeholders: (contract.stakeholders ?? []).map((s) => ({
-        name: s.type === 'PERSON' ? s.firstName + ' ' + s.lastName : s.organizationName + ' ' + s.organizationNumber,
-        street: s.address?.streetAddress ?? '',
-        careof: s.address?.careOf ?? '',
-        zip: (s.address?.postalCode ?? '') + ' ' + (s.address?.town ?? ''),
-        role: (s.roles ?? []).map((r) => (PrettyRole as Record<string, string>)[r]).join(', '),
-        extraInformation: s.parameters?.find((p) => p.key === 'extraInformation')?.values?.[0],
-      })),
-      sections: (contract.indexTerms ?? [])
-        .filter((t) => (t.terms ?? []).some((term) => term.term !== '' && typeof term.term !== 'undefined'))
-        .map((t) => ({
-          header: t.header,
-          content: (t.terms ?? []).map((t) => `<p>${t.term}</p>`).join('<br />'),
-        })),
-    },
-  };
-
-  return apiService
-    .post<ApiResponse<Render>, TemplateSelector>('render/pdf', renderBody)
-    .then((res) => {
-      const pdfBase64 = res.data.data.output;
-      return { pdfBase64 };
-    })
-    .catch((e) => {
-      throw new Error('Något gick fel när dokumentet skulle skapas');
-    });
-};
-
-// export const contractRoles: string[] = ['BUYER', 'SELLER', 'LEASEHOLDER', 'GRANTOR'];
-export const contractRoles: string[] = [
-  'BUYER',
-  'CONTACT_PERSON',
-  'GRANTOR',
-  'LAND_OWNER',
-  'LEASEHOLDER',
-  'POWER_OF_ATTORNEY_CHECK',
-  'POWER_OF_ATTORNEY_ROLE',
-  'SELLER',
-  'SIGNATORY',
-];
-
 export const prettyContractRoles: { [key: string]: string } = {
   BUYER: 'Köpare',
   SELLER: 'Säljare',
@@ -397,7 +330,7 @@ export const prettyContractRoles: { [key: string]: string } = {
 };
 
 // A party is an invoice recipient ("fakturamottagare") if it carries the PRIMARY_BILLING_PARTY role.
-export const isBillingParty = (stakeholder: { roles?: ContractStakeholderRole[] }): boolean =>
+const isBillingParty = (stakeholder: { roles?: ContractStakeholderRole[] }): boolean =>
   (stakeholder.roles ?? []).includes(ContractStakeholderRole.PRIMARY_BILLING_PARTY);
 
 // A party is *exclusively* an invoice recipient when PRIMARY_BILLING_PARTY is its only role.
@@ -406,16 +339,6 @@ export const isBillingParty = (stakeholder: { roles?: ContractStakeholderRole[] 
 export const isOnlyBillingParty = (stakeholder: { roles?: ContractStakeholderRole[] }): boolean =>
   isBillingParty(stakeholder) &&
   (stakeholder.roles ?? []).every((role) => role === ContractStakeholderRole.PRIMARY_BILLING_PARTY);
-
-export const prettyPaymentPeriods: {
-  [key in 'yearly' | 'byYear' | 'byLease' | 'indexAdjustedFee' | 'prepaid']: string;
-} = {
-  yearly: 'Årlig',
-  byYear: 'Per år',
-  byLease: 'Per arrende',
-  indexAdjustedFee: 'Indexjusterad',
-  prepaid: 'Förskott',
-};
 
 const toContractStakeholderRole = (role: Role): ContractStakeholderRole => {
   switch (role) {
@@ -439,44 +362,7 @@ const toContractStakeholderType = (type: StakeholderType): ContractStakeholderTy
   return type as ContractStakeholderType;
 };
 
-export const casedataStakeholderToContractStakeholder = (stakeholder: CasedataOwnerOrContact): ContractStakeholder => {
-  const phone = stakeholder.phoneNumbers?.[0] || '';
-  const email = stakeholder.emails?.[0] || '';
-  const address: Address = {
-    type: AddressType.POSTAL_ADDRESS,
-    streetAddress: stakeholder.street || '',
-    postalCode: stakeholder.zip || '',
-    town: stakeholder.city || '',
-    country: '',
-    attention: '',
-    careOf: stakeholder.careof || '',
-  };
-  const parameters: Parameter[] = [
-    {
-      key: 'extraParameter',
-      values: [stakeholder.extraInformation ?? ''],
-    },
-  ];
-  return {
-    ...(stakeholder.stakeholderType && { type: toContractStakeholderType(stakeholder.stakeholderType) }),
-    roles: stakeholder.roles.map(toContractStakeholderRole),
-    ...(stakeholder.personalNumber && { personalNumber: stakeholder.personalNumber }),
-    ...(stakeholder.organizationName && { organizationName: stakeholder.organizationName }),
-    ...(stakeholder.organizationNumber && { organizationNumber: stakeholder.organizationNumber }),
-    ...(stakeholder.firstName && { firstName: stakeholder.firstName }),
-    ...(stakeholder.lastName && { lastName: stakeholder.lastName }),
-    ...(stakeholder.personId && { partyId: stakeholder.personId }),
-    ...(stakeholder.id && { stakeholderId: String(stakeholder.id) }),
-    ...(stakeholder.extraInformation && { extraInformation: stakeholder.extraInformation }),
-    ...(stakeholder.extraInformation && { extraInformation: stakeholder.extraInformation }),
-    parameters: parameters,
-    ...(phone && { phone }),
-    ...(email && { email }),
-    ...(address && { address }),
-  };
-};
-
-export const kopeavtalToContract = (data: ContractData): Contract => {
+const kopeavtalToContract = (data: ContractData): Contract => {
   // Strip personalNumber and stakeholderId from stakeholders before sending to API
   const stakeholders = ((data.stakeholders ?? []) as StakeholderWithPersonnumber[]).map(
     ({ personalNumber, stakeholderId, ...rest }) => rest
@@ -504,7 +390,7 @@ export const contractToKopeavtal = (contract: Contract): ContractData => {
   };
 };
 
-export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
+const lagenhetsArrendeToContract = (data: ContractData): Contract => {
   console.log('transforming to contract: ', data);
   let fees: Fees | undefined = undefined;
   if (data.generateInvoice) {
@@ -565,7 +451,7 @@ export const lagenhetsArrendeToContract = (data: ContractData): Contract => {
     status: data.status,
     externalReferenceId: (data.externalReferenceId ?? '').toString(),
     stakeholders,
-    extraParameters: data.extraParameters,
+    extraParameters: sanitizeInvoiceInfoParameters(data.extraParameters),
     additionalTerms: data.additionalTerms,
   };
 };
@@ -644,68 +530,112 @@ export const fetchSignedContractAttachment: (
   municipalityId: string,
   contractId: string,
   attachmentId: number
-) => Promise<ApiResponse<Attachment>> = (municipalityId, contractId, attachmentId) => {
-  if (!attachmentId) {
-    console.error('No attachment id found, cannot fetch. Returning.');
+) => Promise<string> = (municipalityId, contractId, attachmentId) => {
+  if (!contractId) {
+    return Promise.reject(new Error('MISSING_CONTRACT_ID'));
   }
+  if (!attachmentId) {
+    return Promise.reject(new Error('No attachment id found, cannot fetch.'));
+  }
+  // The BFF answers with the raw base64-encoded bytes as plain text, not a JSON envelope.
   const url = `contracts/${municipalityId}/${contractId}/attachments/${attachmentId}`;
   return apiService
-    .get<ApiResponse<Attachment>>(url)
-    .then((res) => {
-      return res.data;
-    })
+    .get<string>(url)
+    .then((res) => res.data)
     .catch((e) => {
       console.error('Something went wrong when fetching attachment: ', attachmentId);
       throw e;
     });
 };
 
+/**
+ * The Contract API validates the mime-type as a bare `type/subtype` and rejects parameters, so a
+ * browser-supplied `text/plain;charset=utf-8` has to be trimmed down. Browsers also report an
+ * empty type for some files, Outlook messages in particular.
+ */
+const toContractMimeType = (file: File) => {
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+  if (extension === 'msg') {
+    return 'application/vnd.ms-outlook';
+  }
+  return file.type.split(';')[0].trim() || 'application/octet-stream';
+};
+
 export const saveSignedContractAttachment = (
   municipalityId: string,
   contractId: string,
-  attachment: UploadFile[],
-  note: string
+  attachments: UploadFile[],
+  note: string,
+  // Authorises writes to a migrated contract, which carries no errandId of its own.
+  errandId?: string,
+  // Creating an attachment is not idempotent: a response lost after the server committed makes a
+  // retry create a second copy. Nothing is deleted on success here, so retrying is the safer
+  // default - see sendAttachments for the case where it is not.
+  retries = 3
 ) => {
-  const attachmentPromise = attachment.map(async (attachment) => {
-    console.log('Processing attachment', attachment);
-    const fileData = await toBase64(attachment.file);
-
-    const formData: Attachment = {
-      attachmentData: {
-        content: fileData,
-      },
-      metadata: {
-        category: AttachmentCategory.CONTRACT,
-        filename: attachment.file.name,
-        mimeType: attachment.file.type,
-        note: note,
-      },
-    };
-
-    return apiService
-      .post<boolean, Attachment>(`contracts/${municipalityId}/${contractId}/attachments`, formData)
-      .then((res) => {
-        return res;
-      })
-      .catch((e) => {
-        console.error('Something went wrong when saving attachment');
-        throw e;
-      });
-  });
-
-  return Promise.all(attachmentPromise).then(() => {
-    return true;
-  });
-};
-
-export const deleteSignedContractAttachment = (municipalityId: string, contractId: string, attachmentId: number) => {
-  if (!attachmentId) {
-    console.error('No id found, cannot continue.');
-    return;
+  // An unsaved contract has no id, which would build `contracts/{municipalityId}//attachments`.
+  // Express does not match an empty path segment, so that 404s - and withRetries would send the
+  // same doomed request four times. Reject before any of that happens.
+  if (!contractId) {
+    return Promise.reject(new Error('MISSING_CONTRACT_ID'));
   }
 
+  // async so the guards below surface as a rejected promise rather than throwing synchronously
+  // out of saveSignedContractAttachment, past the caller's .catch().
+  const attachmentPromises = attachments.map(async (attachment) => {
+    const fileItem = attachment.file;
+
+    if (!fileItem) {
+      throw new Error('FILE_MISSING');
+    }
+
+    if (fileItem.size / 1024 / 1024 > MAX_FILE_SIZE_MB) {
+      throw new Error('MAX_SIZE');
+    }
+
+    // Field names have to match the BFF's @UploadedFiles('files') and its AttachmentMetadata body.
+    const formData = new FormData();
+    formData.append('files', fileItem, fileItem.name);
+    formData.append('category', AttachmentCategory.CONTRACT);
+    formData.append('filename', fileItem.name);
+    formData.append('mimeType', toContractMimeType(fileItem));
+    formData.append('note', note ?? '');
+    if (errandId) {
+      formData.append('errandId', errandId);
+    }
+
+    const postAttachment = () =>
+      apiService
+        .post<boolean, FormData>(`contracts/${municipalityId}/${contractId}/attachments`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        .catch((e) => {
+          console.error('Something went wrong when saving attachment');
+          throw e;
+        });
+
+    return withRetries(retries, postAttachment);
+  });
+
+  return Promise.all(attachmentPromises).then(() => true);
+};
+
+export const deleteSignedContractAttachment = (
+  municipalityId: string,
+  contractId: string,
+  attachmentId: number,
+  errandId?: string
+) => {
+  if (!contractId) {
+    return Promise.reject(new Error('MISSING_CONTRACT_ID'));
+  }
+  if (!attachmentId) {
+    return Promise.reject(new Error('No attachment id found, cannot delete.'));
+  }
+
+  const query = errandId ? `?errandId=${encodeURIComponent(errandId)}` : '';
   return apiService
-    .deleteRequest<boolean>(`contracts/${municipalityId}/${contractId}/attachments/${attachmentId}`)
+    .deleteRequest<boolean>(`contracts/${municipalityId}/${contractId}/attachments/${attachmentId}${query}`)
     .then((res) => {
       return res;
     })
@@ -715,37 +645,35 @@ export const deleteSignedContractAttachment = (municipalityId: string, contractI
     });
 };
 
-export function mapContractAttachmentToUploadFile<TExtraMeta extends object = object>(
-  attachment: Attachment
+/**
+ * Contract attachment content is fetched separately, so the metadata alone maps to an empty File.
+ * The full filename has to stay on that File: FileUpload derives the row's extension from
+ * `file.file.name` rather than from `meta.ending`.
+ */
+export function mapContractAttachmentMetadataToUploadFile<TExtraMeta extends object = object>(
+  metadata: AttachmentMetadata
 ): UploadFile<TExtraMeta> {
-  let file: File;
-  if (attachment.attachmentData.content) {
-    file = base64ToFile(
-      attachment.attachmentData.content,
-      `${attachment.metadata.filename}`,
-      attachment.metadata.mimeType
-    );
-  } else {
-    file = new File([], `${attachment.metadata.filename}`, { type: attachment.metadata.mimeType });
-  }
+  // Split on the last dot, the way FileUpload does, so `avtal.v2.pdf` keeps `pdf` as its ending.
+  const lastDotIndex = metadata.filename.lastIndexOf('.');
+  const name = lastDotIndex === -1 ? metadata.filename : metadata.filename.slice(0, lastDotIndex);
+  const ending = lastDotIndex === -1 ? '' : metadata.filename.slice(lastDotIndex + 1);
 
-  const a: UploadFile<TExtraMeta> = {
-    id: attachment.metadata.id?.toString() ?? crypto.randomUUID(),
-    file,
+  return {
+    id: metadata.id?.toString() ?? crypto.randomUUID(),
+    file: new File([], metadata.filename, { type: metadata.mimeType }),
     meta: {
-      name: attachment.metadata.filename.replace(/\.[^/.]+$/, ''),
-      ending: attachment.metadata.filename.split('.')?.[1] ?? '',
-      category: attachment.metadata.category,
-      note: attachment.metadata.note,
-      mimeType: attachment.metadata.mimeType,
+      name,
+      ending,
+      category: metadata.category,
+      note: metadata.note,
+      mimeType: metadata.mimeType,
       version: '',
-      created: attachment.metadata.created ?? '',
+      created: metadata.created ?? '',
       updated: '',
       ...({} as TExtraMeta),
-      isValidAttachment: attachment.attachmentData.content,
+      isValidAttachment: !!metadata.hash,
     },
   };
-  return a;
 }
 
 export const getErrandPropertyInformation: (errand: IErrand) => Promise<{ name: string; district: string }[]> = async (

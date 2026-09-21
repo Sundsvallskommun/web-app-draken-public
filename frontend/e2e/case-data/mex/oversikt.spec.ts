@@ -3,7 +3,7 @@ import { mockNotifications } from '../../kontaktcenter/fixtures/mockSupportNotif
 import { CaseLabels } from '../../../src/casedata/interfaces/case-label';
 import { ErrandStatus } from '../../../src/casedata/interfaces/errand-status';
 import { mockAdmins } from '../fixtures/mockAdmins';
-import { mockContractAttachment, mockLeaseAgreement } from '../fixtures/mockContract';
+import { mockLeaseAgreement } from '../fixtures/mockContract';
 import { emptyMockErrands, mockErrands_base, mockFilterErrandsByProperty } from '../fixtures/mockErrands';
 import { mockMe } from '../fixtures/mockMe';
 
@@ -15,7 +15,6 @@ test.describe('Overview page', () => {
     await mockRoute('**/errands*', mockErrands_base, { method: 'GET' }); // @getErrands
     await mockRoute('**/casedatanotifications/2281', mockNotifications, { method: 'GET' }); // @getNotifications
     await mockRoute('**/contracts/2024-01026', mockLeaseAgreement, { method: 'GET' }); // @getContract
-    await mockRoute('**/contracts/2281/2024-01026/attachments/1', mockContractAttachment, { method: 'GET' }); // @getContractAttachment
     await page.goto('oversikt');
     await page.waitForResponse((resp) => resp.url().includes('/errands') && resp.status() === 200);
     await dismissCookieConsent();
