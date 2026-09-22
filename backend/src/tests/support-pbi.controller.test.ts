@@ -34,18 +34,24 @@ const engagements = [
 
 interface ApiStub {
   get: ReturnType<typeof vi.fn>;
+  post: ReturnType<typeof vi.fn>;
   patch: ReturnType<typeof vi.fn>;
 }
+
+const resolvedBatch = async (config: { data?: string[] }) => ({
+  data: (config.data ?? []).map(personNumber => ({ personNumber, personId: mockCitizenPartyId, success: true })),
+  message: 'success',
+});
 
 const makeController = (stakeholders: object[] = [applicantCompany]) => {
   const controller = new SupportPbiController();
   const api: ApiStub = {
     get: vi.fn(async (config: { url?: string }) => {
       if (config.url === errandUrl) return { data: { id: mockSupportErrandId, version: 7, stakeholders }, message: 'success' };
-      if (config.url?.endsWith(`/${mockPersonNumber}/guid`)) return { data: mockCitizenPartyId, message: 'success' };
       if (config.url?.endsWith(`/${mockCitizenPartyId}`)) return { data: { givenname: mockFirstName, lastname: mockLastName }, message: 'success' };
       throw new Error(`Unexpected GET ${config.url}`);
     }),
+    post: vi.fn(resolvedBatch),
     patch: vi.fn(async () => ({ data: {}, message: 'success' })),
   };
   const organizationService = { getOrganizationEngagements: vi.fn(async () => ({ engagements })) };
@@ -82,8 +88,8 @@ describe('fetchCandidates', () => {
 
     expect(organizationService.getOrganizationEngagements).toHaveBeenCalledWith(MUNICIPALITY_ID, mockOrganizationPartyId, expect.anything());
     expect(res.body).toEqual([
-      expect.objectContaining({ name: 'Person i bolaget', partyId: mockCitizenPartyId, marked: true }),
-      expect.objectContaining({ name: 'Ägarbolaget AB', partyId: undefined, marked: false }),
+      expect.objectContaining({ name: 'Person i bolaget', partyId: mockCitizenPartyId, marked: true, unresolved: false }),
+      expect.objectContaining({ name: 'Ägarbolaget AB', partyId: undefined, marked: false, unresolved: false }),
     ]);
   });
 
@@ -97,19 +103,38 @@ describe('fetchCandidates', () => {
     expect(organizationService.getOrganizationEngagements).not.toHaveBeenCalled();
   });
 
-  it('keeps the list when a party id cannot be resolved', async () => {
+  it('asks Citizen once for all the people, with the personal numbers in the body rather than the url', async () => {
     const { controller, api } = makeController();
-    api.get.mockImplementation(async (config: { url?: string }) => {
-      if (config.url === errandUrl) return { data: { id: mockSupportErrandId, version: 7, stakeholders: [applicantCompany] }, message: 'success' };
-      throw new Error('citizen unavailable');
-    });
+
+    await controller.fetchCandidates(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, mockRes());
+
+    expect(api.post).toHaveBeenCalledTimes(1);
+    const [config] = api.post.mock.calls[0];
+    expect(config.url).toMatch(/\/guid\/batch$/);
+    expect(config.data).toEqual([mockPersonNumber]);
+    expect(api.get.mock.calls.map(([call]) => call.url).some(url => url?.includes(mockPersonNumber))).toBe(false);
+  });
+
+  it('marks a person Citizen cannot resolve as unresolved', async () => {
+    const { controller, api } = makeController();
+    api.post.mockResolvedValue({ data: [{ personNumber: mockPersonNumber, personId: null, success: false }], message: 'success' });
+    const res = mockRes();
+
+    await controller.fetchCandidates(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, res);
+
+    expect((res.body as object[])[0]).toMatchObject({ partyId: undefined, marked: false, unresolved: true });
+  });
+
+  it('keeps the list when Citizen cannot be reached', async () => {
+    const { controller, api } = makeController();
+    api.post.mockRejectedValue(new Error('citizen unavailable'));
     const res = mockRes();
 
     await controller.fetchCandidates(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, res);
 
     const candidates = res.body as object[];
     expect(candidates).toHaveLength(2);
-    expect(candidates[0]).toMatchObject({ partyId: undefined, marked: false });
+    expect(candidates[0]).toMatchObject({ partyId: undefined, marked: false, unresolved: true });
   });
 });
 

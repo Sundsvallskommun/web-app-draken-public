@@ -5,6 +5,7 @@ import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts
 export interface SupportPbiCandidate extends LegalEntityEngagement {
   partyId?: string;
   marked?: boolean;
+  unresolved?: boolean;
 }
 
 const SUPPORT_PBI_ROLE = 'PBI';

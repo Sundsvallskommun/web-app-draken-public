@@ -15,8 +15,12 @@ export const SupportErrandPbiCell: React.FC<{ engagement: SupportPbiCandidate; m
 }) => {
   const { t } = useTranslation();
   const confirm = useConfirm();
-  const { partyId, marked, name } = engagement;
-  if (!partyId) return null;
+  const { partyId, marked, name, unresolved } = engagement;
+  if (!partyId) {
+    return unresolved ? (
+      <span className="text-small text-dark-secondary">{t('common:company.pbi.unresolved')}</span>
+    ) : null;
+  }
 
   const confirmMarking = () =>
     confirm

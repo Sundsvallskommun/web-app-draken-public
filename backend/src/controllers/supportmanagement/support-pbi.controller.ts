@@ -4,7 +4,7 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { MUNICIPALITY_ID, SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { CitizenExtended } from '@/data-contracts/citizen/data-contracts';
+import { CitizenExtended, PersonGuidBatch } from '@/data-contracts/citizen/data-contracts';
 import { OrganizationEngagement } from '@/data-contracts/legalentity/data-contracts';
 import { Errand, Stakeholder } from '@/data-contracts/supportmanagement/data-contracts';
 import { HttpException } from '@/exceptions/HttpException';
@@ -30,6 +30,7 @@ export class MarkPbiDto {
 interface PbiCandidate extends OrganizationEngagement {
   partyId?: string;
   marked: boolean;
+  unresolved: boolean;
 }
 
 const isPersonIdentity = (engagement: OrganizationEngagement): boolean => {
@@ -67,13 +68,21 @@ export class SupportPbiController {
     return res.data;
   }
 
-  private async personPartyId(municipalityId: string, personalNumber: string, user: RequestWithUser['user']): Promise<string | undefined> {
+  private async personPartyIds(municipalityId: string, personalNumbers: string[], user: RequestWithUser['user']): Promise<Map<string, string>> {
+    if (personalNumbers.length === 0) return new Map();
     return this.apiService
-      .get<string>({ url: `${this.CITIZEN_SERVICE}/${municipalityId}/${personalNumber}/guid` }, user)
-      .then(res => res.data || undefined)
+      .post<PersonGuidBatch[], string[]>({ url: `${this.CITIZEN_SERVICE}/${municipalityId}/guid/batch`, data: personalNumbers }, user)
+      .then(
+        res =>
+          new Map(
+            (res.data ?? [])
+              .filter(result => result.success && result.personNumber && result.personId)
+              .map(result => [result.personNumber as string, result.personId as string]),
+          ),
+      )
       .catch(() => {
-        logger.error('Could not resolve the party id of a person engaged in the company');
-        return undefined;
+        logger.error('Could not resolve the party ids of the people engaged in the company');
+        return new Map();
       });
   }
 
@@ -83,13 +92,14 @@ export class SupportPbiController {
 
     const { engagements } = await this.organizationService.getOrganizationEngagements(municipalityId, company, user);
     const marked = markedPartyIds(errand);
+    const people = (engagements ?? []).filter(isPersonIdentity).map(engagement => engagement.identity!.code!);
+    const partyIds = await this.personPartyIds(municipalityId, people, user);
 
-    return Promise.all(
-      (engagements ?? []).map(async engagement => {
-        const partyId = isPersonIdentity(engagement) ? await this.personPartyId(municipalityId, engagement.identity!.code!, user) : undefined;
-        return { ...engagement, partyId, marked: !!partyId && marked.has(partyId) };
-      }),
-    );
+    return (engagements ?? []).map(engagement => {
+      const person = isPersonIdentity(engagement);
+      const partyId = person ? partyIds.get(engagement.identity!.code!) : undefined;
+      return { ...engagement, partyId, marked: !!partyId && marked.has(partyId), unresolved: person && !partyId };
+    });
   }
 
   private async personName(

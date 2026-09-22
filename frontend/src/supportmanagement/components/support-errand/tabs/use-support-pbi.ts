@@ -14,6 +14,9 @@ import { useTranslation } from 'react-i18next';
 
 type PbiWrite = (errandId: string, municipalityId: string, partyId: string) => Promise<void>;
 
+const withMarking = (candidates: SupportPbiCandidate[], partyId: string, marked: boolean): SupportPbiCandidate[] =>
+  candidates.map((candidate) => (candidate.partyId === partyId ? { ...candidate, marked } : candidate));
+
 export const useSupportPbi = (enabled: boolean) => {
   const { t } = useTranslation();
   const toastMessage = useSnackbar();
@@ -43,25 +46,28 @@ export const useSupportPbi = (enabled: boolean) => {
     };
   }, [enabled, errandId, municipalityId]);
 
-  const reloadErrandAndCandidates = useCallback(async () => {
+  const reloadErrand = useCallback(async () => {
     if (!errandId || !municipalityId) return;
-    const [{ errand }, list] = await Promise.all([
-      getSupportErrandById(errandId, municipalityId),
-      getSupportPbiCandidates(errandId, municipalityId),
-    ]);
+    const { errand } = await getSupportErrandById(errandId, municipalityId);
     setSupportErrand(errand);
     resetField('contacts', { defaultValue: errand.contacts });
     resetField('stakeholders', { defaultValue: errand.stakeholders });
-    setCandidates(list);
   }, [errandId, municipalityId, resetField, setSupportErrand]);
 
+  const reloadErrandAndCandidates = useCallback(async () => {
+    if (!errandId || !municipalityId) return;
+    const [list] = await Promise.all([getSupportPbiCandidates(errandId, municipalityId), reloadErrand()]);
+    setCandidates(list);
+  }, [errandId, municipalityId, reloadErrand]);
+
   const change = useCallback(
-    (write: PbiWrite) => async (partyId: string) => {
+    (write: PbiWrite, marked: boolean) => async (partyId: string) => {
       if (!errandId || !municipalityId) return;
       setBusyPartyId(partyId);
       try {
         await write(errandId, municipalityId, partyId);
-        await reloadErrandAndCandidates();
+        setCandidates((current) => withMarking(current, partyId, marked));
+        await reloadErrand().catch(() => undefined);
       } catch (error) {
         toastMessage({
           position: 'bottom',
@@ -74,7 +80,7 @@ export const useSupportPbi = (enabled: boolean) => {
         setBusyPartyId(undefined);
       }
     },
-    [errandId, municipalityId, reloadErrandAndCandidates, t, toastMessage]
+    [errandId, municipalityId, reloadErrand, reloadErrandAndCandidates, t, toastMessage]
   );
 
   if (!enabled) return { candidates: undefined, marking: undefined, notice: undefined };
@@ -84,8 +90,8 @@ export const useSupportPbi = (enabled: boolean) => {
     marking: {
       canEdit: !!canEditErrand && !hasUnsavedChanges,
       busyPartyId,
-      onMark: change(markSupportPbi),
-      onUnmark: change(unmarkSupportPbi),
+      onMark: change(markSupportPbi, true),
+      onUnmark: change(unmarkSupportPbi, false),
     },
     notice: canEditErrand && hasUnsavedChanges ? t('common:company.pbi.unsaved') : undefined,
   };
