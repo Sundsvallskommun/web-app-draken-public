@@ -43,7 +43,12 @@ export const HandoverThreeLevelClassification: React.FC<{
     <FormProvider {...methods}>
       {/* Same flex-row wrapper as the registration view so the two selects sit side by side. */}
       <div className="w-full flex gap-20">
-        <ThreeLevelCategorization supportErrand={errand} supportMetadata={targetMetadata} />
+        <ThreeLevelCategorization
+          supportErrand={errand}
+          supportMetadata={targetMetadata}
+          categoryLabel="Kategori"
+          categoryPlaceholder="Välj kategori"
+        />
       </div>
     </FormProvider>
   );

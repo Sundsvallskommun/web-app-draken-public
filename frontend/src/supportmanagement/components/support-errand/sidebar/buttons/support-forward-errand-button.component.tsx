@@ -36,7 +36,7 @@ import { useForm, useFormContext, UseFormReturn } from 'react-hook-form';
 import * as yup from 'yup';
 
 import { ForwardErrandSummary } from './forward-errand-summary.component';
-import { HandoverReview } from './handover/handover-review.component';
+import { HandoverClassificationPlaceholder, HandoverReview } from './handover/handover-review.component';
 import { MEX_DEPARTMENT_VALUE, useSupportHandover } from './handover/use-support-handover';
 
 const yupForwardForm = yup.object().shape(
@@ -305,60 +305,107 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                 </>
               )}
               {recipient === 'EMAIL' ? (
-                <FormControl id="email" className="w-full mb-md">
-                  <CommonNestedEmailArrayV2
-                    size="md"
-                    errand={supportErrand}
-                    data-cy="email-input"
-                    disabled={disabled}
-                    {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}
-                  />
-                  {errors && formState.errors.emails && (
-                    <div className="my-sm text-error">
-                      <FormErrorMessage>{formState.errors.emails?.message}</FormErrorMessage>
+                <>
+                  <FormControl id="email" className="w-full mb-md">
+                    <CommonNestedEmailArrayV2
+                      size="md"
+                      errand={supportErrand}
+                      data-cy="email-input"
+                      disabled={disabled}
+                      {...{ control, register, errors, watch, setValue, trigger, reset, getValues }}
+                    />
+                    {errors && formState.errors.emails && (
+                      <div className="my-sm text-error">
+                        <FormErrorMessage>{formState.errors.emails?.message}</FormErrorMessage>
+                      </div>
+                    )}
+                  </FormControl>
+                  <Divider />
+                  <h4 className="text-h4-md mt-12">Meddelande*</h4>
+                </>
+              ) : recipient === 'DEPARTMENT' ? (
+                <>
+                  <Divider />
+                  {/* Mottagare – no namespace is preselected; the user must actively choose one. */}
+                  <div className="flex flex-col gap-8 py-12" data-cy="handover-recipient-section">
+                    <h4 className="text-h4-md">Mottagare</h4>
+                    <span>Välj vilken verksamhet som ska ta emot ärendet.</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-24 mt-8">
+                      <FormControl id="department" className="w-full">
+                        <FormLabel className="font-semibold">Verksamhet</FormLabel>
+                        <Select
+                          className="w-full"
+                          size="md"
+                          data-cy="resolution-input"
+                          placeholder="Välj verksamhet"
+                          aria-label="Välj verksamhet"
+                          {...register('department')}
+                        >
+                          <Select.Option value="">Välj verksamhet</Select.Option>
+                          {handover.handoverTargets.map((target) => (
+                            <Select.Option key={target.namespace} value={target.namespace}>
+                              {target.displayName || target.namespace}
+                            </Select.Option>
+                          ))}
+                        </Select>
+                        {handover.targetsLoaded && handover.handoverTargets.length === 0 && (
+                          <small className="text-small" data-cy="handover-no-targets">
+                            Inga verksamheter är konfigurerade för överlämning. Använd e-post.
+                          </small>
+                        )}
+                      </FormControl>
+                    </div>
+                  </div>
+
+                  {/* Categorization at the receiver. The MEX (casedata) forward has no such choice, so the
+                      section is only shown for handover targets and before a target is chosen. */}
+                  {!isMexTarget && (
+                    <div className="flex flex-col gap-8 py-12" data-cy="handover-classification-section">
+                      <h4 className="text-h4-md">Så ska ärendet registreras hos mottagaren</h4>
+                      <span>
+                        Välj den kategori och ärendetyp som ärendet ska ha hos mottagaren. De kan skilja sig från
+                        uppgifterna i det här ärendet.
+                      </span>
+                      <div className="mt-8">
+                        {isHandover ? (
+                          <>
+                            {handover.step === 1 && handover.previewLoading && (
+                              <div className="flex items-center gap-8" data-cy="handover-preview-loading">
+                                <Spinner size={2} /> Hämtar förslag…
+                              </div>
+                            )}
+                            {handover.step === 1 && handover.previewError && (
+                              <Alert type="error" data-cy="handover-preview-error">
+                                <Alert.Icon />
+                                <Alert.Content>
+                                  <Alert.Content.Description>{handover.previewError}</Alert.Content.Description>
+                                </Alert.Content>
+                              </Alert>
+                            )}
+                            {handover.step === 2 && (
+                              <HandoverReview handover={handover} supportErrand={supportErrand!} />
+                            )}
+                          </>
+                        ) : (
+                          <HandoverClassificationPlaceholder />
+                        )}
+                      </div>
                     </div>
                   )}
-                </FormControl>
-              ) : recipient === 'DEPARTMENT' ? (
-                <FormControl id="resolution" className="w-full py-12">
-                  <FormLabel className="text-content font-semibold">Mottagande verksamhet</FormLabel>
-                  <Select
-                    className="w-fit"
-                    size="md"
-                    data-cy="resolution-input"
-                    placeholder="Välj verksamhet"
-                    aria-label="Välj verksamhet"
-                    {...register('department')}
-                  >
-                    <Select.Option value="">Välj verksamhet</Select.Option>
-                    {handover.handoverTargets.map((target) => (
-                      <Select.Option key={target.namespace} value={target.namespace}>
-                        {target.displayName || target.namespace}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                  {handover.targetsLoaded && handover.handoverTargets.length === 0 && (
-                    <small className="text-small" data-cy="handover-no-targets">
-                      Inga verksamheter är konfigurerade för överlämning. Använd e-post.
-                    </small>
-                  )}
-                </FormControl>
-              ) : null}
-              {recipient !== '' && <Divider />}
-              {isMexTarget ? (
-                <>
-                  <h4 className="text-h4-md py-12">Uppgifter från ärendet som överlämnas</h4>
-                  <ForwardErrandSummary errand={supportErrand} metadata={supportMetadata} />
+
+                  <Divider />
+                  <div className="flex flex-col gap-8 py-12" data-cy="handover-autocopy">
+                    <h4 className="text-h4-md">Uppgifter från ärendet som överlämnas</h4>
+                    <ForwardErrandSummary errand={supportErrand} metadata={supportMetadata} />
+                  </div>
 
                   <Divider />
                   <h4 className="text-h4-md mt-12">Meddelande</h4>
                   <span>Skriv ett meddelande om du vill skicka med mer information på ärendet.</span>
                 </>
-              ) : recipient === 'EMAIL' ? (
-                <h4 className="text-h4-md mt-12">Meddelande*</h4>
               ) : null}
 
-              {(recipient === 'EMAIL' || isMexTarget) && (
+              {(recipient === 'EMAIL' || recipient === 'DEPARTMENT') && (
                 <FormControl id="comment" className="w-full" required>
                   <Input data-cy="message-body-input" type="hidden" {...register('message')} />
                   <div data-cy="escalation-richtext-wrapper">
@@ -381,31 +428,13 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                 </FormControl>
               )}
 
-              {isHandover && (
-                <>
-                  {handover.step === 1 && handover.previewLoading && (
-                    <div className="flex items-center gap-8 mt-12" data-cy="handover-preview-loading">
-                      <Spinner size={2} /> Hämtar förslag…
-                    </div>
-                  )}
-                  {handover.step === 1 && handover.previewError && (
-                    <Alert type="error" className="mt-12" data-cy="handover-preview-error">
-                      <Alert.Icon />
-                      <Alert.Content>
-                        <Alert.Content.Description>{handover.previewError}</Alert.Content.Description>
-                      </Alert.Content>
-                    </Alert>
-                  )}
-                  {handover.step === 2 && <HandoverReview handover={handover} supportErrand={supportErrand!} />}
-                  {handover.step === 2 && handover.handoverError && (
-                    <Alert type="error" className="mt-12" data-cy="handover-error">
-                      <Alert.Icon />
-                      <Alert.Content>
-                        <Alert.Content.Description>{handover.handoverError}</Alert.Content.Description>
-                      </Alert.Content>
-                    </Alert>
-                  )}
-                </>
+              {isHandover && handover.step === 2 && handover.handoverError && (
+                <Alert type="error" className="mt-12" data-cy="handover-error">
+                  <Alert.Icon />
+                  <Alert.Content>
+                    <Alert.Content.Description>{handover.handoverError}</Alert.Content.Description>
+                  </Alert.Content>
+                </Alert>
               )}
             </Modal.Content>
             <Modal.Footer className="flex flex-row">
@@ -440,7 +469,7 @@ export const SupportForwardErrandButtonComponent: React.FC<{ disabled: boolean }
                             )
                             .then((confirmed) => {
                               if (confirmed && handoverTarget) {
-                                handover.runHandover(handoverTarget).then((result) => {
+                                handover.runHandover(handoverTarget, getValues('message')).then((result) => {
                                   if (result) {
                                     handleHandoverSuccess();
                                   }
