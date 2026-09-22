@@ -8,6 +8,7 @@ import {
   Category,
   ContactChannel,
   Errand as SupportManagementErrand,
+  ErrandLabel,
   MetadataResponse,
   Role,
   Stakeholder as SupportStakeholder,
@@ -19,6 +20,31 @@ import ApiService from '@/services/api.service';
 import { OrganizationService } from '@/services/organization.service';
 import { logger } from '@/utils/logger';
 import { apiURL, formatOrgNr, OrgNumberFormat } from '@/utils/util';
+
+interface ResolvedClassification {
+  category: string;
+  categoryDisplayName: string;
+  type: string;
+  typeDisplayName: string;
+  subType: string;
+  subTypeDisplayName: string;
+}
+
+type Level = { name: string; displayName: string };
+
+const level = (name?: string, displayName?: string): Level => ({
+  name: name ?? '',
+  displayName: displayName ?? name ?? '',
+});
+
+const toResolvedClassification = (category: Level, type: Level, subType: Level): ResolvedClassification => ({
+  category: category.name,
+  categoryDisplayName: category.displayName,
+  type: type.name,
+  typeDisplayName: type.displayName,
+  subType: subType.name,
+  subTypeDisplayName: subType.displayName,
+});
 
 interface ReferredFromStakeholder {
   externalId: string;
@@ -43,6 +69,8 @@ export interface ReferredFromErrandResponse {
   classificationCategoryDisplayName: string;
   classificationType: string;
   classificationTypeDisplayName: string;
+  classificationSubType: string;
+  classificationSubTypeDisplayName: string;
   priority: string;
   channel: string;
   created: string;
@@ -228,20 +256,20 @@ export class RelationsController {
     return res?.data ?? null;
   }
 
-  private resolveClassificationDisplayNames(
-    classification: { category?: string; type?: string } | undefined,
-    categories: Category[],
-  ): { categoryDisplayName: string; typeDisplayName: string } {
-    if (!classification) {
-      return { categoryDisplayName: '', typeDisplayName: '' };
+  private resolveClassification(errand: SupportManagementErrand, categories: Category[]): ResolvedClassification {
+    const labels = errand.labels ?? [];
+    if (labels.length > 0) {
+      const labelLevel = (classification: string) => {
+        const label = labels.find((l: ErrandLabel) => l.classification === classification);
+        return level(label?.resourceName, label?.displayName);
+      };
+      return toResolvedClassification(labelLevel('CATEGORY'), labelLevel('TYPE'), labelLevel('SUBTYPE'));
     }
 
-    const category = categories.find(c => c.name === classification.category);
-    const categoryDisplayName = category?.displayName ?? classification.category ?? '';
-    const type = category?.types?.find(t => t.name === classification.type);
-    const typeDisplayName = type?.displayName ?? classification.type ?? '';
-
-    return { categoryDisplayName, typeDisplayName };
+    const classification = errand.classification;
+    const category = categories.find(c => c.name === classification?.category);
+    const type = category?.types?.find(t => t.name === classification?.type);
+    return toResolvedClassification(level(classification?.category, category?.displayName), level(classification?.type, type?.displayName), level());
   }
 
   private mapPriority(priority: string): string {
@@ -352,14 +380,16 @@ export class RelationsController {
         }
         const metadata = metadataCache.get(namespaceName);
 
-        const { categoryDisplayName, typeDisplayName } = this.resolveClassificationDisplayNames(errand.classification, metadata?.categories ?? []);
+        const classification = this.resolveClassification(errand, metadata?.categories ?? []);
 
         const response: ReferredFromErrandResponse = {
           errandNumber: errand.errandNumber ?? '',
-          classificationCategory: errand.classification?.category ?? '',
-          classificationCategoryDisplayName: categoryDisplayName,
-          classificationType: errand.classification?.type ?? '',
-          classificationTypeDisplayName: typeDisplayName,
+          classificationCategory: classification.category,
+          classificationCategoryDisplayName: classification.categoryDisplayName,
+          classificationType: classification.type,
+          classificationTypeDisplayName: classification.typeDisplayName,
+          classificationSubType: classification.subType,
+          classificationSubTypeDisplayName: classification.subTypeDisplayName,
           priority: this.mapPriority(errand.priority ?? ''),
           channel: errand.channel ?? '',
           created: errand.created ?? '',
