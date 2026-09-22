@@ -64,7 +64,18 @@
     "table_address": "Adress",
     "table_employees": "Antal anställda",
     "no_description": "Ingen verksamhetsbeskrivning finns registrerad.",
-    "close_description": "Stäng verksamhetsbeskrivning"
+    "close_description": "Stäng verksamhetsbeskrivning",
+    "pbi": {
+      "column": "PBI",
+      "checkbox_aria": "Person med betydande inflytande: {{name}}",
+      "confirm_title": "Markera som PBI",
+      "confirm_text": "Vill du markera personen som PBI? Om du trycker JA kommer personen att läggas som ett ärendeintressent under övriga parter.",
+      "confirm_yes": "Ja",
+      "confirm_no": "Nej",
+      "unsaved": "Spara ärendet innan du ändrar PBI-markeringar.",
+      "conflict": "Ärendet har ändrats av någon annan. Uppgifterna är uppdaterade – försök igen.",
+      "error": "PBI-markeringen kunde inte sparas."
+    }
   },
   "process": {
     "steps": {
