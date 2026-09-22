@@ -20,7 +20,7 @@ import { apiURL, luhnCheck } from '@/utils/util';
 
 const PBI_ROLE = 'PBI';
 
-const PERSON_IDENTITY_TYPES = ['PERSONNUMMER', 'SAMORDNINGSNUMMER'];
+const PERSON_IDENTITY_TYPES = new Set(['PERSONNUMMER', 'SAMORDNINGSNUMMER']);
 
 export class MarkPbiDto {
   @IsUUID()
@@ -34,7 +34,7 @@ interface PbiCandidate extends OrganizationEngagement {
 
 const isPersonIdentity = (engagement: OrganizationEngagement): boolean => {
   const code = engagement.identity?.code ?? '';
-  return PERSON_IDENTITY_TYPES.includes(engagement.identity?.type ?? '') && code.length === 12 && luhnCheck(code);
+  return PERSON_IDENTITY_TYPES.has(engagement.identity?.type ?? '') && code.length === 12 && luhnCheck(code);
 };
 
 const companyPartyId = (errand: Errand): string | undefined =>
