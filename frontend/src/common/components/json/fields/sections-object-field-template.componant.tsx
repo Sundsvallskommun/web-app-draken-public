@@ -443,12 +443,6 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
 
   const sectionFieldNames = new Set(sections.flatMap((s) => s.fields));
   const unsectionedFields = order.filter((f) => !sectionFieldNames.has(f) && visibleFields.has(f));
-  const renderableSections = sections
-    .map((section) => ({
-      section,
-      fieldNames: order.filter((f) => section.fields.includes(f) && visibleFields.has(f)),
-    }))
-    .filter(({ fieldNames }) => fieldNames.length > 0);
   const renderedRows = new Set<string>();
   // A section opens for the error target when one of its fields is the target or encloses it.
   // The enclosing fields come with the navigation: a field name may itself contain the id
