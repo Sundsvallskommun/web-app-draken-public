@@ -160,6 +160,8 @@ export interface ReferredFromErrandResponse {
   classificationCategoryDisplayName: string;
   classificationType: string;
   classificationTypeDisplayName: string;
+  classificationSubType: string;
+  classificationSubTypeDisplayName: string;
   priority: string;
   channel: string;
   created: string;
