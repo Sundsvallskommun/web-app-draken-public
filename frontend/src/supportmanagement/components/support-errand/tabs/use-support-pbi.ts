@@ -24,7 +24,7 @@ export const useSupportPbi = (enabled: boolean) => {
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const canEditErrand = useUserStore((s) => s.user.permissions?.canEditSupportManagement);
-  const { formState, resetField } = useFormContext<SupportErrand>();
+  const { formState, reset } = useFormContext<SupportErrand>();
   const [candidates, setCandidates] = useState<SupportPbiCandidate[]>([]);
   const [busyPartyId, setBusyPartyId] = useState<string>();
 
@@ -50,9 +50,8 @@ export const useSupportPbi = (enabled: boolean) => {
     if (!errandId || !municipalityId) return;
     const { errand } = await getSupportErrandById(errandId, municipalityId);
     setSupportErrand(errand);
-    resetField('contacts', { defaultValue: errand.contacts });
-    resetField('stakeholders', { defaultValue: errand.stakeholders });
-  }, [errandId, municipalityId, resetField, setSupportErrand]);
+    reset(errand);
+  }, [errandId, municipalityId, reset, setSupportErrand]);
 
   const reloadErrandAndCandidates = useCallback(async () => {
     if (!errandId || !municipalityId) return;
