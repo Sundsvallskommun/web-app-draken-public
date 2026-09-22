@@ -23,7 +23,7 @@ export const useSupportPbi = (enabled: boolean) => {
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
-  const canEditErrand = useUserStore((s) => s.user.permissions.canEditSupportManagement);
+  const canEditErrand = useUserStore((s) => s.user.permissions?.canEditSupportManagement);
   const { formState, resetField } = useFormContext<SupportErrand>();
   const [candidates, setCandidates] = useState<SupportPbiCandidate[]>([]);
   const [busyPartyId, setBusyPartyId] = useState<string>();
