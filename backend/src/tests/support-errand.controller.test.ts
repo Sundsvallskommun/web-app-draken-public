@@ -511,6 +511,14 @@ describe('SupportErrandController', () => {
   describe('forwardSupportErrand', () => {
     const forwardBody = { department: mockDepartment, message: 'Vidarebefordras', messageBodyPlaintext: '' };
 
+    beforeEach(() => {
+      process.env.HANDOVER_TARGETS = mockDepartment;
+    });
+
+    afterEach(() => {
+      delete process.env.HANDOVER_TARGETS;
+    });
+
     const supportErrand = (overrides: Partial<SupportErrand> = {}): SupportErrand =>
       ({
         id: mockSupportErrandId,
@@ -540,6 +548,35 @@ describe('SupportErrandController', () => {
 
       expect(res.statusCode).toBe(400);
       expect(res.body).toBe('Errand id missing');
+      expect(api.get).not.toHaveBeenCalled();
+    });
+
+    it('rejects the forward with 403 when MEX is not in HANDOVER_TARGETS', async () => {
+      process.env.HANDOVER_TARGETS = mockSupportNamespace;
+      const { controller, api } = makeController();
+      const res = mockRes();
+
+      await controller.forwardSupportErrand(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, forwardBody, res);
+
+      expect(res.statusCode).toBe(403);
+      expect(api.get).not.toHaveBeenCalled();
+      expect(api.post).not.toHaveBeenCalled();
+    });
+
+    it('rejects a department other than MEX with 403 even when it is allow-listed', async () => {
+      process.env.HANDOVER_TARGETS = `${mockDepartment},${mockSupportNamespace}`;
+      const { controller, api } = makeController();
+      const res = mockRes();
+
+      await controller.forwardSupportErrand(
+        mockReq(),
+        mockSupportErrandId,
+        MUNICIPALITY_ID,
+        { ...forwardBody, department: mockSupportNamespace },
+        res,
+      );
+
+      expect(res.statusCode).toBe(403);
       expect(api.get).not.toHaveBeenCalled();
     });
 
