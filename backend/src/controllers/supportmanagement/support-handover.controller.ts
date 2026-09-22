@@ -18,6 +18,7 @@ import { User } from '@/interfaces/users.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
+import { getAllowedHandoverTargets, isAllowedHandoverTarget, MEX_HANDOVER_TARGET } from '@/services/handover-targets.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
@@ -71,12 +72,24 @@ export class SupportHandoverController {
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
   ): Promise<NamespaceConfig[]> {
+    const allowedTargets = getAllowedHandoverTargets();
+    if (allowedTargets.length === 0) {
+      return response.status(200).send([]);
+    }
     // SupportManagement NamespaceConfigResource lists configs at the service root with municipalityId
     // as a query parameter: GET /namespace-configs?municipalityId={id} (not a path segment).
+    const needsNamespaceConfigs = allowedTargets.some(target => target !== MEX_HANDOVER_TARGET);
     const url = `${this.SERVICE}/namespace-configs?municipalityId=${municipalityId}`;
-    const res = await this.apiService.get<NamespaceConfig[]>({ url }, req.user);
-    // Exclude the source namespace – an errand can not be handed over to the namespace it is in.
-    const targets = (res.data ?? []).filter(config => config.namespace !== this.namespace);
+    const configs = needsNamespaceConfigs ? ((await this.apiService.get<NamespaceConfig[]>({ url }, req.user)).data ?? []) : [];
+    const targets = allowedTargets
+      .map(target =>
+        // MEX is a casedata namespace and so has no supportmanagement namespace config.
+        target === MEX_HANDOVER_TARGET
+          ? ({ namespace: MEX_HANDOVER_TARGET, displayName: 'Mark och exploatering (MEX)', shortCode: 'MEX', municipalityId } as NamespaceConfig)
+          : configs.find(config => config.namespace === target),
+      )
+      // Exclude the source namespace – an errand can not be handed over to the namespace it is in.
+      .filter((config): config is NamespaceConfig => !!config && config.namespace !== this.namespace);
     return response.status(200).send(targets);
   }
 
@@ -105,6 +118,9 @@ export class SupportHandoverController {
     @Body() data: HandoverPreviewRequest,
     @Res() response: any,
   ): Promise<HandoverPreview> {
+    if (!this.isSupportHandoverTarget(data.targetNamespace)) {
+      return this.rejectTarget(data.targetNamespace, response);
+    }
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/handover/preview`;
     const res = await this.apiService.post<HandoverPreview, HandoverPreviewRequest>({ url, data, propagateClientError: true }, req.user);
     return response.status(200).send(res.data);
@@ -122,6 +138,9 @@ export class SupportHandoverController {
     @Body() data: HandoverErrandRequest & { message?: string },
     @Res() response: any,
   ): Promise<HandoverErrand> {
+    if (!this.isSupportHandoverTarget(data.target?.namespace)) {
+      return this.rejectTarget(data.target?.namespace, response);
+    }
     // `message` is consumed here (added as a conversation below) and not forwarded to the microservice.
     const { message, ...handoverRequest } = data;
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/errands/${id}/handover/execute`;
@@ -148,6 +167,16 @@ export class SupportHandoverController {
     }
 
     return response.status(201).send(result);
+  }
+
+  /** MEX is allow-listed like the rest but is a casedata forward, never a handover. */
+  private isSupportHandoverTarget(namespace?: string): boolean {
+    return namespace !== MEX_HANDOVER_TARGET && isAllowedHandoverTarget(namespace);
+  }
+
+  private rejectTarget(namespace: string | undefined, response: any) {
+    logger.error(`Handover target ${namespace} is not in HANDOVER_TARGETS`);
+    return response.status(403).send('Handover target not allowed');
   }
 
   /** Creates an internal "Överlämning" conversation on the handed-over errand and posts the message,

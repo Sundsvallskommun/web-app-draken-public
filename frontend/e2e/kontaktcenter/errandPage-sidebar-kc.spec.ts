@@ -9,6 +9,7 @@ import { mockRelations } from '../lop/fixtures/mockRelations';
 import { mockAdressResponse, mockPersonIdResponse } from './fixtures/mockAdressResponse';
 import { mockComments } from './fixtures/mockComments';
 import { mockForwardSupportErrandToMEX, mockForwardSupportMessage } from './fixtures/mockForwardSupportMessage';
+import { mockMexTarget } from './fixtures/mockHandover';
 import { mockMetaData } from './fixtures/mockMetadata';
 import { mockSetAdminResponse, mockSetSelfAssignAdminResponse } from './fixtures/mockSetAdminResponse';
 import { mockSidebarButtons } from './fixtures/mockSidebarButtons';
@@ -31,7 +32,7 @@ test.describe('errand page', () => {
     await mockRoute('**/users/admins', mockSupportAdminsResponse, { method: 'GET' });
     await mockRoute('**/me', mockMe, { method: 'GET' });
     await mockRoute('**/featureflags', [], { method: 'GET' });
-    await mockRoute('**/supportnamespaceconfigs/**', [], { method: 'GET' });
+    await mockRoute('**/supportnamespaceconfigs/**', [mockMexTarget], { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments', mockSupportAttachments, { method: 'GET' });
     await mockRoute('**/supportattachments/2281/errands/*/attachments/*', mockSupportAttachments[0], { method: 'GET' });
     await mockRoute(`**/supportmessage/2281/errands/${mockSupportErrand.id}/communication`, mockSupportMessages, {
@@ -175,7 +176,7 @@ test.describe('errand page', () => {
 
     await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
-    await page.locator(`${MODAL_DIALOG} [data-cy="resolution-input"]`).selectOption({ index: 0 });
+    await page.locator(`${MODAL_DIALOG} [data-cy="resolution-input"]`).selectOption(mockMexTarget.namespace);
 
     // Department forwards do not pre-fill a greeting (only email forwards do), so just assert
     // the editor is present.
@@ -202,7 +203,7 @@ test.describe('errand page', () => {
 
     await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
-    await page.locator(`${MODAL_DIALOG} [data-cy="resolution-input"]`).selectOption({ index: 0 });
+    await page.locator(`${MODAL_DIALOG} [data-cy="resolution-input"]`).selectOption(mockMexTarget.namespace);
     await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(1)).toHaveValue('EMAIL');
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(1).check();
     await page.locator(`${MODAL_DIALOG} [data-cy="new-email-input"]`).fill('test@test.se');
@@ -234,7 +235,7 @@ test.describe('errand page', () => {
 
     await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
-    await page.locator(`${MODAL_DIALOG} [data-cy="resolution-input"]`).selectOption({ index: 0 });
+    await page.locator(`${MODAL_DIALOG} [data-cy="resolution-input"]`).selectOption(mockMexTarget.namespace);
     await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(1)).toHaveValue('EMAIL');
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(1).check();
     await page.locator(`${MODAL_DIALOG} [data-cy="new-email-input"]`).fill('test@test.se');
@@ -451,6 +452,10 @@ test.describe('errand page', () => {
     await page.locator('[data-cy="forward-button"]').filter({ hasText: 'Överlämna ärendet' }).click();
     await expect(page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0)).toHaveValue('DEPARTMENT');
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
+    await expect(page.locator('[data-cy="resolution-input"]')).toHaveValue('');
+    await expect(
+      page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärende' })
+    ).toBeDisabled();
     await page.locator('[data-cy="resolution-input"]').selectOption('Mark och exploatering (MEX)');
     // Department forwards do not pre-fill a greeting (only email forwards do), so type a message
     // into the editor before forwarding.
