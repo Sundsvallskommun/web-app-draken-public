@@ -4,7 +4,7 @@ import { CaseStatusValues } from '@casedata/components/casedata-filtering/compon
 import { NotificationsBell } from '@common/components/notifications/notifications-bell';
 import { NotificationsWrapper } from '@common/components/notifications/notifications-wrapper';
 import { getApplicationEnvironment } from '@common/services/application-service';
-import { attestationEnabled, contractsEnabled } from '@common/services/feature-flag-service';
+import { attestationEnabled, contractsEnabled, useFeatureFlag } from '@common/services/feature-flag-service';
 import { appConfig } from '@config/appconfig';
 import { Badge, Button, cx, Divider, Logo, UserMenu } from '@sk-web-gui/react';
 import { useBillingStore, useConfigStore, useUserStore } from '@stores/index';
@@ -19,7 +19,7 @@ import NextLink from 'next/link';
 import { FC, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
-import { userMenuGroups } from '../layout/userMenuGroups';
+import { getUserMenuGroups } from '../layout/userMenuGroups';
 
 export const MainErrandsSidebar: FC<{
   showAttestationTable: boolean;
@@ -36,6 +36,8 @@ export const MainErrandsSidebar: FC<{
   const isLoading = useConfigStore((s) => s.isLoading);
   const [showNotifications, setShowNotifications] = useState(false);
   const applicationEnvironment = getApplicationEnvironment();
+  const errorReportingEnabled = useFeatureFlag('useErrorReporting');
+  const userMenuGroups = getUserMenuGroups(errorReportingEnabled);
 
   const MainTitle = (open: boolean) => (
     <NextLink
