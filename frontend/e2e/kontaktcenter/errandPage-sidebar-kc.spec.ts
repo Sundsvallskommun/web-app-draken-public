@@ -178,9 +178,10 @@ test.describe('errand page', () => {
     await page.locator(`${MODAL_DIALOG} [type="radio"]`).nth(0).check();
     await page.locator(`${MODAL_DIALOG} [data-cy="resolution-input"]`).selectOption(mockMexTarget.namespace);
 
-    // Department forwards do not pre-fill a greeting (only email forwards do), so just assert
-    // the editor is present.
+    // Department forwards do not pre-fill a greeting (only email forwards do), so type a message
+    // into the editor before forwarding.
     await expect(page.locator('[data-cy="escalation-richtext-wrapper"]')).toBeVisible();
+    await page.locator('[data-cy="escalation-richtext-wrapper"] .ql-editor').fill('TEST');
 
     await page.locator(`${MODAL_DIALOG} button.sk-btn-primary`).filter({ hasText: 'Överlämna ärendet' }).click();
 
