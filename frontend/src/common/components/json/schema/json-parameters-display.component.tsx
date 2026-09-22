@@ -51,6 +51,7 @@ const JsonParameterItem: FC<JsonParameterItemProps> = ({ param, municipalityId, 
         uiSchema={uiSchema ?? undefined}
         formData={param.value}
         idPrefix={param.key.replace(/[^\w-]/g, '_')}
+        sectionOpening={sectionOpening}
         disabled
       />
     </div>

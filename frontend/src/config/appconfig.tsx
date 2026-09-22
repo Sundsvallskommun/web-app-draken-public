@@ -38,6 +38,7 @@ interface AppConfigFeatures {
   useRelations: boolean;
   useMyPages: boolean;
   useUiPhases: boolean;
+  useProcess: boolean;
   useClosingMessageCheckbox: boolean;
   useMultipleContactChannels: boolean;
   useClosedAsDefaultResolution: boolean;
@@ -93,6 +94,7 @@ export const appConfig: AppConfig = {
     useRelations: envBool(process.env.NEXT_PUBLIC_USE_RELATIONS),
     useMyPages: envBool(process.env.NEXT_PUBLIC_USE_MY_PAGES),
     useUiPhases: envBool(process.env.NEXT_PUBLIC_USE_UI_PHASES),
+    useProcess: envBool(process.env.NEXT_PUBLIC_USE_PROCESS),
     useClosingMessageCheckbox: envBool(process.env.NEXT_PUBLIC_USE_CLOSING_MESSAGE_CHECKBOX),
     useMultipleContactChannels: envBool(process.env.NEXT_PUBLIC_USE_MULTIPLE_CONTACT_CHANNELS),
     useClosedAsDefaultResolution: envBool(process.env.NEXT_PUBLIC_USE_CLOSED_AS_DEFAULT_RESOLUTION),

@@ -1,4 +1,8 @@
-import { Label, Stakeholder as SupportStakeholder } from '@common/data-contracts/supportmanagement/data-contracts';
+import {
+  ErrandProcess,
+  Label,
+  Stakeholder as SupportStakeholder,
+} from '@common/data-contracts/supportmanagement/data-contracts';
 import { User } from '@common/interfaces/user';
 import { apiService, Data } from '@common/services/api-service';
 import { isKC, isLOK, isROB } from '@common/services/application-service';
@@ -59,6 +63,7 @@ export type ExternalTags = Array<{ key: string; value: string }>;
 
 export interface ApiSupportErrand extends SupportErrandDto {
   id?: string;
+  process?: ErrandProcess;
   created?: string;
   modified?: string;
   touched?: string;

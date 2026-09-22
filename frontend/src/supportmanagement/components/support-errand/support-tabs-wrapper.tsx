@@ -20,6 +20,12 @@ import {
   groupByConversationIdSortedTree,
   MessageNode,
 } from '@supportmanagement/services/support-message-service';
+import {
+  getSupportErrandProcess,
+  hasReachedSupportProcessStep,
+  SupportProcessStep,
+  SupportProcessStepName,
+} from '@supportmanagement/services/support-process-service';
 import { Dispatch, FC, ReactNode, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
@@ -111,6 +117,11 @@ export const SupportTabsWrapper: FC<{
     unreadMessageCount > 0 ? `, ${unreadMessageCount} ${unreadMessageCount === 1 ? 'oläst' : 'olästa'}` : ''
   })`;
 
+  const process = getSupportErrandProcess(supportErrand);
+
+  const awaitsStep = (step: SupportProcessStepName): boolean =>
+    appConfig.features.useProcess && Boolean(process) && !hasReachedSupportProcessStep(step, process);
+
   const tabs: {
     key: string;
     label: string;
@@ -168,21 +179,21 @@ export const SupportTabsWrapper: FC<{
         key: 'investigation',
         label: t('common:tabs.investigation'),
         content: supportErrand && <SupportErrandInvestigationTab />,
-        disabled: false,
+        disabled: awaitsStep(SupportProcessStep.INVESTIGATION),
         visibleFor: appConfig.features.useInvestigationTab,
       },
       {
         key: 'decision',
         label: t('common:tabs.decision'),
         content: supportErrand && <SupportErrandDecisionTab />,
-        disabled: false,
+        disabled: awaitsStep(SupportProcessStep.DECISION),
         visibleFor: appConfig.features.useDecisionTab,
       },
       {
         key: 'followup',
         label: t('common:tabs.followup'),
         content: supportErrand && <SupportErrandFollowUpTab />,
-        disabled: false,
+        disabled: awaitsStep(SupportProcessStep.FOLLOW_UP),
         visibleFor: appConfig.features.useFollowUpTab,
       },
       {

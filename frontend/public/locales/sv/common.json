@@ -51,14 +51,6 @@
     "decision": "Beslut",
     "followup": "Uppföljning"
   },
-  "ui_phases": {
-    "registered": "Registrerad",
-    "review": "Granskning",
-    "investigation": "Utredning",
-    "decision": "Beslut",
-    "follow_up": "Uppföljning",
-    "closed": "Avslut"
-  },
   "company": {
     "engagements_heading": "Förenklad bolagsdata",
     "engagements_description": "Nedan kan du se personer kopplade till ärendeägaren.",
@@ -73,5 +65,62 @@
     "table_employees": "Antal anställda",
     "no_description": "Ingen verksamhetsbeskrivning finns registrerad.",
     "close_description": "Stäng verksamhetsbeskrivning"
+  },
+  "process": {
+    "steps": {
+      "registration": "Registrerad",
+      "review": "Granskning",
+      "investigation": "Utredning",
+      "decision": "Beslut",
+      "follow_up": "Uppföljning",
+      "closing": "Avslut"
+    },
+    "status": {
+      "running": "Processen arbetar",
+      "waiting": "Väntar",
+      "retrying": "Försöker igen",
+      "completed": "Processen är avslutad",
+      "failed": "Processen misslyckades"
+    },
+    "log": {
+      "open": "Visa processloggen",
+      "heading": "Processlogg",
+      "loading": "Hämtar processloggen",
+      "error": "Processloggen kunde inte hämtas.",
+      "empty": "Processen har inte loggat något än."
+    }
+  },
+  "decision": {
+    "heading": "Beslut",
+    "loading": "Hämtar beslut",
+    "error": "Beslutet kunde inte hämtas.",
+    "locked": "Låst",
+    "method": {
+      "manual": "Beslut fattat av handläggare",
+      "automatic": "Automatiskt beslut"
+    },
+    "decided_by": "Beslutsfattare",
+    "decided_at": "Beslutsdatum",
+    "legal_basis": "Lagrum",
+    "delegation": "Delegationspunkt",
+    "justification": "Motivering",
+    "terms": "Villkor",
+    "outcome": "Utfall",
+    "outcome_placeholder": "Välj utfall",
+    "role": "Beslutsfattare enligt delegationsordning",
+    "roles": {
+      "handlaggare": "Handläggare",
+      "utskottet": "Utskottet",
+      "namndsordforande": "Nämndsordförande",
+      "namnd": "Nämnd"
+    },
+    "add_term": "Lägg till villkor",
+    "term_label": "Villkor {{number}}",
+    "remove_term": "Ta bort villkor {{number}}",
+    "save": "Spara beslutet",
+    "saving": "Sparar beslutet",
+    "saved": "Beslutet sparades",
+    "save_error": "Något gick fel när beslutet skulle sparas",
+    "empty_value": "—"
   }
 }

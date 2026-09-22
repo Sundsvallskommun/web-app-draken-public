@@ -6,7 +6,9 @@ import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThe
 import { useCasedataStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
+import { SupportProcessLog } from '@supportmanagement/components/support-errand/ui-phase/support-process-log.component';
 import { SupportUiPhaseWrapper } from '@supportmanagement/components/support-errand/ui-phase/support-ui-phase-wrapper';
+import { hasSupportErrandProcess } from '@supportmanagement/services/support-process-service';
 import { ExternalLink, Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
@@ -18,7 +20,7 @@ import { userMenuGroups } from './userMenuGroups';
 export default function Layout({ title, children }: { title: string; children: React.ReactNode }) {
   const user = useUserStore((s) => s.user);
   const applicationEnvironment = getApplicationEnvironment();
-  const { isMinLargeDevice } = useThemeQueries();
+  const { isMinLargeDevice, isMinDesktop } = useThemeQueries();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const pathName = usePathname() ?? '';
   const errand = useCasedataStore((s) => s.errand);
@@ -27,8 +29,21 @@ export default function Layout({ title, children }: { title: string; children: R
   const errandNumber = params?.errandNumber;
   const [hostName, setHostName] = useState('');
 
-  const showUiPhases = appConfig.features.useUiPhases && (pathName === '/registrera' || pathName.includes('arende'));
+  const followsProcess = appConfig.features.useProcess && appConfig.isSupportManagement;
+
+  const showUiPhases =
+    appConfig.features.useUiPhases &&
+    (pathName === '/registrera' || pathName.includes('arende')) &&
+    (!followsProcess || hasSupportErrandProcess(supportErrand));
   const uiPhaseRow = appConfig.isSupportManagement ? <SupportUiPhaseWrapper /> : <UiPhaseWrapper />;
+  const uiPhaseSection = (
+    <div className="flex items-center gap-12 w-full justify-end">
+      {uiPhaseRow}
+      {followsProcess ? <SupportProcessLog /> : null}
+    </div>
+  );
+
+  const uiPhaseSectionFitsBesideTitle = appConfig.features.useProcess ? isMinDesktop : isMinLargeDevice;
 
   useEffect(() => {
     setHostName(window.location.hostname);
@@ -95,6 +110,21 @@ export default function Layout({ title, children }: { title: string; children: R
     </div>
   );
 
+  const registerErrandSection = !appConfig.features.useProcess ? (
+    <>
+      <Divider orientation="vertical" className="mx-24" />
+      <Link
+        href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
+        target="_blank"
+        data-cy="register-new-errand-button"
+      >
+        <Button color={'primary'} variant={'tertiary'} rightIcon={<ExternalLink />}>
+          Nytt ärende
+        </Button>
+      </Link>
+    </>
+  ) : null;
+
   return (
     <>
       <div className="relative z-[15] bg-background-content">
@@ -112,17 +142,7 @@ export default function Layout({ title, children }: { title: string; children: R
                   buttonSize="sm"
                 />
               </span>
-
-              <Divider orientation="vertical" className="mx-24" />
-              <Link
-                href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
-                target="_blank"
-                data-cy="register-new-errand-button"
-              >
-                <Button color={'primary'} variant={'tertiary'} rightIcon={<ExternalLink />}>
-                  Nytt ärende
-                </Button>
-              </Link>
+              {registerErrandSection}
             </div>
           }
           mobileMenu={
@@ -154,9 +174,9 @@ export default function Layout({ title, children }: { title: string; children: R
               </PopupMenu.Panel>
             </PopupMenu>
           }
-          bottomContent={showUiPhases && !isMinLargeDevice ? uiPhaseRow : null}
+          bottomContent={showUiPhases && !uiPhaseSectionFitsBesideTitle ? uiPhaseSection : null}
         >
-          {showUiPhases && isMinLargeDevice ? uiPhaseRow : null}
+          {showUiPhases && uiPhaseSectionFitsBesideTitle ? uiPhaseSection : null}
         </PageHeader>
       </div>
 

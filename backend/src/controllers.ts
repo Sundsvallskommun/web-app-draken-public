@@ -29,6 +29,7 @@ import { OrganizationController } from './controllers/organization.controller';
 import { RelationsController } from './controllers/relations.controller';
 import { SupportAttachmentController } from './controllers/supportmanagement/support-attachment.controller';
 import { SupportConversationController } from './controllers/supportmanagement/support-conversation.controller';
+import { SupportDecisionController } from './controllers/supportmanagement/support-decision.controller';
 import { SupportErrandController } from './controllers/supportmanagement/support-errand.controller';
 import { SupportExportController } from './controllers/supportmanagement/support-export.controller';
 import { SupportFacilitiesController } from './controllers/supportmanagement/support-facilities.controller';
@@ -38,6 +39,7 @@ import { SupportMessageController } from './controllers/supportmanagement/suppor
 import { SupportMetadataController } from './controllers/supportmanagement/support-metadata.controller';
 import { SupportNoteController } from './controllers/supportmanagement/support-note.controller';
 import { SupportNotificationController } from './controllers/supportmanagement/support-notification.controller';
+import { SupportProcessController } from './controllers/supportmanagement/support-process.controller';
 import { TemplateController } from './controllers/template.controller';
 import { UserController } from './controllers/user.controller';
 
@@ -70,6 +72,7 @@ export const CONTROLLERS: NewableFunction[] = [
   IndexController,
   MessageController,
   SupportAttachmentController,
+  SupportDecisionController,
   SupportErrandController,
   SupportExportController,
   SupportFacilitiesController,
@@ -78,6 +81,7 @@ export const CONTROLLERS: NewableFunction[] = [
   SupportMessageController,
   SupportMetadataController,
   SupportNoteController,
+  SupportProcessController,
   SupportNotificationController,
   TemplateController,
   UserController,
