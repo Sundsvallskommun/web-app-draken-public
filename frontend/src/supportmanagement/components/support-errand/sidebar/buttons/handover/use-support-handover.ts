@@ -109,11 +109,8 @@ export const useSupportHandover = ({
 
   useEffect(() => {
     // MEX is one of the targets, so the list is needed even without useHandover.
-    if (
-      active &&
-      (appConfig.features.useHandover || appConfig.features.useDepartmentEscalation) &&
-      sourceMunicipalityId
-    ) {
+    const shouldLoadTargets = active && appConfig.features.useDepartmentEscalation && sourceMunicipalityId;
+    if (shouldLoadTargets) {
       getNamespaceConfigs(sourceMunicipalityId).then((configs) => {
         setNamespaceConfigs(configs);
         setTargetsLoaded(true);

@@ -30,6 +30,22 @@ interface ResolvedClassification {
   subTypeDisplayName: string;
 }
 
+type Level = { name: string; displayName: string };
+
+const level = (name?: string, displayName?: string): Level => ({
+  name: name ?? '',
+  displayName: displayName ?? name ?? '',
+});
+
+const toResolvedClassification = (category: Level, type: Level, subType: Level): ResolvedClassification => ({
+  category: category.name,
+  categoryDisplayName: category.displayName,
+  type: type.name,
+  typeDisplayName: type.displayName,
+  subType: subType.name,
+  subTypeDisplayName: subType.displayName,
+});
+
 interface ReferredFromStakeholder {
   externalId: string;
   externalIdType: string;
@@ -243,32 +259,17 @@ export class RelationsController {
   private resolveClassification(errand: SupportManagementErrand, categories: Category[]): ResolvedClassification {
     const labels = errand.labels ?? [];
     if (labels.length > 0) {
-      const level = (classification: string) => {
+      const labelLevel = (classification: string) => {
         const label = labels.find((l: ErrandLabel) => l.classification === classification);
-        return { name: label?.resourceName ?? '', displayName: label?.displayName ?? label?.resourceName ?? '' };
+        return level(label?.resourceName, label?.displayName);
       };
-      const [category, type, subType] = [level('CATEGORY'), level('TYPE'), level('SUBTYPE')];
-      return {
-        category: category.name,
-        categoryDisplayName: category.displayName,
-        type: type.name,
-        typeDisplayName: type.displayName,
-        subType: subType.name,
-        subTypeDisplayName: subType.displayName,
-      };
+      return toResolvedClassification(labelLevel('CATEGORY'), labelLevel('TYPE'), labelLevel('SUBTYPE'));
     }
 
     const classification = errand.classification;
     const category = categories.find(c => c.name === classification?.category);
     const type = category?.types?.find(t => t.name === classification?.type);
-    return {
-      category: classification?.category ?? '',
-      categoryDisplayName: category?.displayName ?? classification?.category ?? '',
-      type: classification?.type ?? '',
-      typeDisplayName: type?.displayName ?? classification?.type ?? '',
-      subType: '',
-      subTypeDisplayName: '',
-    };
+    return toResolvedClassification(level(classification?.category, category?.displayName), level(classification?.type, type?.displayName), level());
   }
 
   private mapPriority(priority: string): string {

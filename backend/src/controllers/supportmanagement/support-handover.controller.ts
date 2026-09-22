@@ -81,15 +81,18 @@ export class SupportHandoverController {
     const needsNamespaceConfigs = allowedTargets.some(target => target !== MEX_HANDOVER_TARGET);
     const url = `${this.SERVICE}/namespace-configs?municipalityId=${municipalityId}`;
     const configs = needsNamespaceConfigs ? ((await this.apiService.get<NamespaceConfig[]>({ url }, req.user)).data ?? []) : [];
+    const mexConfig: NamespaceConfig = {
+      namespace: MEX_HANDOVER_TARGET,
+      displayName: 'Mark och exploatering (MEX)',
+      shortCode: 'MEX',
+      municipalityId,
+    };
+    const toNamespaceConfig = (target: string): NamespaceConfig | undefined =>
+      target === MEX_HANDOVER_TARGET ? mexConfig : configs.find(config => config.namespace === target);
     const targets = allowedTargets
-      .map(target =>
-        // MEX is a casedata namespace and so has no supportmanagement namespace config.
-        target === MEX_HANDOVER_TARGET
-          ? ({ namespace: MEX_HANDOVER_TARGET, displayName: 'Mark och exploatering (MEX)', shortCode: 'MEX', municipalityId } as NamespaceConfig)
-          : configs.find(config => config.namespace === target),
-      )
-      // Exclude the source namespace – an errand can not be handed over to the namespace it is in.
-      .filter((config): config is NamespaceConfig => !!config && config.namespace !== this.namespace);
+      .filter(target => target !== this.namespace)
+      .map(toNamespaceConfig)
+      .filter((config): config is NamespaceConfig => config !== undefined);
     return response.status(200).send(targets);
   }
 
