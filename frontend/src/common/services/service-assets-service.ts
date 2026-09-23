@@ -62,7 +62,7 @@ const toTypeIds = (rawType: any): string[] => {
   return [];
 };
 
-export function mapFormToServiceFromPayload(fd: any, schema: RJSFSchema | null, id: string): Service {
+function mapFormToServiceFromPayload(fd: any, schema: RJSFSchema | null, id: string): Service {
   const mobilityIds = normalizeArray(fd?.mobilityAids);
   const addonIds = normalizeArray(fd?.additionalAids);
   const transportModeIds = normalizeArray(fd?.transportMode);
@@ -80,7 +80,7 @@ export function mapFormToServiceFromPayload(fd: any, schema: RJSFSchema | null, 
   };
 }
 
-export function extractFormDataFromAsset(asset: Asset, schemaId: string): any {
+function extractFormDataFromAsset(asset: Asset, schemaId: string): any {
   const jp = asset.jsonParameters?.find((p) => p.schemaId === schemaId) ?? asset.jsonParameters?.[0];
   if (!jp?.value) return null;
   try {
@@ -88,12 +88,6 @@ export function extractFormDataFromAsset(asset: Asset, schemaId: string): any {
   } catch {
     return null;
   }
-}
-
-export function assetToService(asset: Asset, schema: RJSFSchema | null, schemaId: string): Service | null {
-  const fd = extractFormDataFromAsset(asset, schemaId);
-  if (!fd) return null;
-  return mapFormToServiceFromPayload(fd, schema, asset.id);
 }
 
 const toFetchParams = ({ municipalityId, partyId, errandId, assetType, origin }: ErrandServiceAssetParams) => ({

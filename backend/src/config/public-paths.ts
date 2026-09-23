@@ -27,7 +27,7 @@ export const PUBLIC_PATHS: readonly string[] = ['/', '/health/up'];
  *
  * Keep this list minimal - prefix matching grants a whole subtree.
  */
-export const PUBLIC_PATH_PREFIXES: readonly string[] = ['/api-docs', '/swagger.json'];
+const PUBLIC_PATH_PREFIXES: readonly string[] = ['/api-docs', '/swagger.json'];
 
 /** Strips a single trailing slash so '/health/up/' matches '/health/up'. Keeps a bare '/'. */
 const normalizePath = (path: string): string => (path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path);

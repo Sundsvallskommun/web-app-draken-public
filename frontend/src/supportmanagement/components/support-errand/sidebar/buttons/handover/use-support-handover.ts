@@ -22,7 +22,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export type HandoverStep = 1 | 2;
 
-/** Special value used in the target dropdown for the existing casedata (MEX) forward flow. */
+/** Target namespace of the casedata (MEX) forward flow. */
 export const MEX_DEPARTMENT_VALUE = 'SBK_MEX';
 
 /**
@@ -37,7 +37,7 @@ export const MEX_DEPARTMENT_VALUE = 'SBK_MEX';
  * REMOVE this list – and always classify via labels – once the API migration to labels is done for
  * all namespaces.
  */
-export const TWO_LEVEL_CATEGORIZATION_NAMESPACES = ['CONTACTCENTER', 'CONTACTSUNDSVALL', 'ROB'];
+const TWO_LEVEL_CATEGORIZATION_NAMESPACES = ['CONTACTCENTER', 'CONTACTSUNDSVALL', 'ROB'];
 
 const defaultIncludes = (): HandoverInclude => ({
   stakeholders: true,
@@ -71,6 +71,7 @@ export const useSupportHandover = ({
   active,
 }: UseSupportHandoverArgs) => {
   const [namespaceConfigs, setNamespaceConfigs] = useState<NamespaceConfig[]>([]);
+  const [targetsLoaded, setTargetsLoaded] = useState(false);
   const [step, setStep] = useState<HandoverStep>(1);
 
   const [previewCache, setPreviewCache] = useState<Record<string, HandoverPreview>>({});
@@ -107,14 +108,26 @@ export const useSupportHandover = ({
   const [handoverError, setHandoverError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    if (active && appConfig.features.useHandover && sourceMunicipalityId) {
-      getNamespaceConfigs(sourceMunicipalityId).then(setNamespaceConfigs);
+    // MEX is one of the targets, so the list is needed even without useHandover.
+    const shouldLoadTargets = active && appConfig.features.useDepartmentEscalation && sourceMunicipalityId;
+    if (shouldLoadTargets) {
+      getNamespaceConfigs(sourceMunicipalityId).then((configs) => {
+        setNamespaceConfigs(configs);
+        setTargetsLoaded(true);
+      });
     }
   }, [active, sourceMunicipalityId]);
 
-  /** Target namespaces the errand can be handed over to (excluding the source namespace). */
+  /** Targets the errand can be handed over to, excluding the source namespace. Without useHandover
+   * only the MEX forward is available. */
   const handoverTargets = useMemo(
-    () => namespaceConfigs.filter((config) => config.namespace && config.namespace !== sourceNamespace),
+    () =>
+      namespaceConfigs.filter(
+        (config) =>
+          config.namespace &&
+          config.namespace !== sourceNamespace &&
+          (appConfig.features.useHandover || config.namespace === MEX_DEPARTMENT_VALUE)
+      ),
     [namespaceConfigs, sourceNamespace]
   );
 
@@ -300,6 +313,7 @@ export const useSupportHandover = ({
   return {
     namespaceConfigs,
     handoverTargets,
+    targetsLoaded,
     step,
     setStep,
     preview,

@@ -40,7 +40,7 @@ const leaseTypeOptions = leaseTypes.map((t) => ({
   value: t.key,
 }));
 
-export const ContractFilterStatusComponent: FC = () => {
+const ContractFilterStatusComponent: FC = () => {
   const { register } = useFormContext<ContractFilter>();
 
   return (
@@ -75,7 +75,7 @@ export const ContractFilterStatusComponent: FC = () => {
   );
 };
 
-export const ContractFilterTypeComponent: FC = () => {
+const ContractFilterTypeComponent: FC = () => {
   const { register } = useFormContext<ContractFilter>();
 
   return (
@@ -110,7 +110,7 @@ export const ContractFilterTypeComponent: FC = () => {
   );
 };
 
-export const ContractFilterLeaseTypeComponent: FC = () => {
+const ContractFilterLeaseTypeComponent: FC = () => {
   const { register } = useFormContext<ContractFilter>();
 
   return (
@@ -145,7 +145,7 @@ export const ContractFilterLeaseTypeComponent: FC = () => {
   );
 };
 
-export const ContractFilterDatesComponent: FC = () => {
+const ContractFilterDatesComponent: FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   const { setValue, watch } = useFormContext<ContractFilter>();
 
@@ -191,7 +191,7 @@ export const ContractFilterDatesComponent: FC = () => {
   );
 };
 
-export const ContractFilterQueryComponent: FC = () => {
+const ContractFilterQueryComponent: FC = () => {
   const { watch, setValue } = useFormContext<ContractFilter>();
   const value = watch('query');
   const [query, setQuery] = useState<string>(value);

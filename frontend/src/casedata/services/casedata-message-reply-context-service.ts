@@ -1,6 +1,6 @@
 import { MessageReplyContext } from '@common/interfaces/message-reply-context';
 import { MessageContactMeans } from '@common/services/message-template-body-service';
-import sanitized, { formatMessage, sanitizeHtmlMessageBody } from '@common/services/sanitizer-service';
+import { formatMessage, sanitized, sanitizeHtmlMessageBody } from '@common/services/sanitizer-service';
 
 import { MessageNode } from './casedata-message-service';
 import { CasedataMessageType, isCasedataWebMessageType } from './casedata-message-types';

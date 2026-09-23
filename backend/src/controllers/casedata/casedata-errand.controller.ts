@@ -111,7 +111,7 @@ export class CaseDataErrandController {
 
   @Get('/casedata/:municipalityId/errands')
   @OpenAPI({ summary: 'Return a list of errands for current logged in user' })
-  @UseBefore(authMiddleware, hasPermissions(['canEditCasedata'])) //hasRoles(['sg_mea_prh_utvecklare']))
+  @UseBefore(authMiddleware, hasPermissions(['canEditCasedata']))
   async getErrands(
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,

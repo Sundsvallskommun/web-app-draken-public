@@ -127,7 +127,7 @@ const satisfyApi = (data: CBillingRecord): CBillingRecord => {
   return processed as CBillingRecord;
 };
 
-export const getBillingRecordIdsFromErrand = (errand: IErrand): string[] => {
+const getBillingRecordIdsFromErrand = (errand: IErrand): string[] => {
   const param = errand.extraParameters?.find((p) => p.key === BILLING_RECORD_IDS_KEY);
   return param?.values || [];
 };
@@ -250,7 +250,7 @@ export const saveCasedataBillingRecord = async (
   }
 };
 
-export const getCasedataBillingRecord = async (recordId: string, municipalityId: string): Promise<CBillingRecord> => {
+const getCasedataBillingRecord = async (recordId: string, municipalityId: string): Promise<CBillingRecord> => {
   const url = `billing/${municipalityId}/billingrecords/${recordId}`;
   try {
     const res = await apiService.get<CBillingRecord>(url);
