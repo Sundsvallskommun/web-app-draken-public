@@ -79,9 +79,8 @@ export interface ConstraintViolationProblem {
   title?: string;
   /** @format uri */
   instance?: string;
+  detail?: string;
   causeAsProblem?: ThrowableProblem;
-  detail?: string;
-  detail?: string;
 }
 
 export interface ThrowableProblem {
@@ -320,11 +319,11 @@ export interface JsonNode {
   /** @deprecated */
   textual?: boolean;
   binary?: boolean;
-  integralNumber?: boolean;
-  missingNode?: boolean;
   valueNode?: boolean;
   container?: boolean;
+  missingNode?: boolean;
   nodeType?: JsonNodeNodeTypeEnum;
+  integralNumber?: boolean;
   embeddedValue?: boolean;
 }
 
@@ -354,10 +353,8 @@ export interface JsonParameter {
   version?: number;
 }
 
-/** A process attached to an errand, and its state */
-export interface ErrandProcess {
-  /** Unique id of the process row */
-  id?: string;
+/** What a process reports about itself: the state it is in, what it did and what it waits for */
+export interface ErrandProcessReport {
   /**
    * The service running the process, matching the process consumer configured for the namespace
    * @minLength 1
@@ -405,33 +402,24 @@ export interface ErrandProcess {
    */
   errandVersion?: number;
   /**
-   * When the process started
+   * When the process started. A later report that leaves it out does not clear it
    * @format date-time
    */
   started?: string;
-  /**
-   * When the process reached a state it does not leave. Set by this service from the reported state rather than taken from the report, and cleared again if the instance comes back to life.
-   * @format date-time
-   */
-  ended?: string;
   /** Why the process failed, set when the state says it did */
   error?: ProcessError;
   /**
-   * What the process did, appended to the activity log of the errand in the same call as the state. Read back through GET /errands/{errandId}/process-activities rather than here.
+   * What the process did, appended to the activity log of the errand in the same call as the state. Read back through GET /errands/{errandId}/process-activities.
    * @maxItems 100
    * @minItems 0
    */
   activities?: ProcessActivity[];
   /**
-   * When the process was first registered on the errand
-   * @format date-time
+   * What the process waits for from a handler right now: the signals a handler can send to step it past the gate it stands at. Replaces what the previous report said, and a report that leaves it out or sends it empty says the process waits for no person, which is the normal case for a gate the process passes by itself.
+   * @maxItems 50
+   * @minItems 0
    */
-  created?: string;
-  /**
-   * When the state of the process was last updated
-   * @format date-time
-   */
-  modified?: string;
+  awaitingSignals?: ProcessSignal[];
 }
 
 /** An entry in the activity log of an errand */
@@ -498,6 +486,64 @@ export interface ProcessError {
    * @maxLength 2048
    */
   message?: string;
+}
+
+/** A signal the process waits for from a handler: a gate it can be stepped past by hand */
+export interface ProcessSignal {
+  /**
+   * The message name of the signal in the process model. It is what a handler sends to step the process on, and what the process correlates on - exactly as given, case included.
+   * @minLength 0
+   * @maxLength 128
+   */
+  name: string;
+  /**
+   * Display text for the choice, taken from the process model
+   * @minLength 0
+   * @maxLength 255
+   */
+  label?: string;
+}
+
+/** A process attached to an errand, and its state */
+export interface ErrandProcess {
+  /** Unique id of the process row */
+  id?: string;
+  /** The service running the process */
+  processService?: string;
+  /** The process model this instance runs, as the process engine names it */
+  processKey?: string;
+  /** Id of the process instance in the process engine. Left out for a start that failed, since it never produced one */
+  processInstanceId?: string;
+  /** The state the process is in: RUNNING, WAITING, RETRYING, COMPLETED or FAILED. Carried as a string rather than as an enum so that a value added later does not break a client that generated one from this schema. */
+  processStatus?: string;
+  /** Identifier of the activity the process is at, as the process model names it */
+  currentActivityId?: string;
+  /** Display name of the activity the process is at */
+  currentActivityName?: string;
+  /**
+   * When the process started
+   * @format date-time
+   */
+  started?: string;
+  /**
+   * When the process reached a state it does not leave. Set by this service from the reported state, and cleared again if the instance comes back to life.
+   * @format date-time
+   */
+  ended?: string;
+  /** Why the process failed, set when the state says it did */
+  error?: ProcessError;
+  /** What the process waits for from a handler right now: the signals a handler can send to step it past the gate it stands at, through POST .../processes/{processInstanceId}/signals. Empty when the process waits for no person, which is the normal case for a gate the process passes by itself, and always empty for a process that has ended. */
+  awaitingSignals?: ProcessSignal[];
+  /**
+   * When the process was first registered on the errand
+   * @format date-time
+   */
+  created?: string;
+  /**
+   * When the state of the process was last updated
+   * @format date-time
+   */
+  modified?: string;
 }
 
 /** Email integration config model */
@@ -1666,6 +1712,16 @@ export interface Statement {
   version?: number;
 }
 
+/** A request to step a process past a gate it waits at */
+export interface ProcessSignalRequest {
+  /**
+   * The name of the signal to send, which has to be one of awaitingSignals on the process right now, exactly as given there. The process decides what the signal means where it stands - sending one steps past nothing the process does not allow.
+   * @minLength 0
+   * @maxLength 128
+   */
+  signal: string;
+}
+
 /** CreateErrandNoteRequest model */
 export interface CreateErrandNoteRequest {
   /**
@@ -2561,12 +2617,12 @@ export interface PageSubscriberNotification {
 export interface PageableObject {
   /** @format int64 */
   offset?: number;
+  sort?: SortObject;
   paged?: boolean;
   /** @format int32 */
   pageNumber?: number;
   /** @format int32 */
   pageSize?: number;
-  sort?: SortObject;
   unpaged?: boolean;
 }
 
