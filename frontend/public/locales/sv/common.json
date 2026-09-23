@@ -72,7 +72,7 @@
       "confirm_text": "Vill du markera personen som PBI? Om du trycker JA kommer personen att läggas som ett ärendeintressent under övriga parter.",
       "confirm_yes": "Ja",
       "confirm_no": "Nej",
-      "unsaved": "Spara ärendet innan du ändrar PBI-markeringar.",
+      "unsaved": "Spara ändringarna av ärendets intressenter innan du ändrar PBI-markeringar.",
       "conflict": "Ärendet har ändrats av någon annan. Uppgifterna är uppdaterade – försök igen.",
       "error": "PBI-markeringen kunde inte sparas.",
       "unresolved": "Kan inte slås upp i folkbokföringen"

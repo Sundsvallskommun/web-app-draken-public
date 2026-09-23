@@ -29,7 +29,7 @@ export const useSupportPbi = (enabled: boolean) => {
   const [busyPartyId, setBusyPartyId] = useState<string>();
 
   const errandId = supportErrand?.id;
-  const hasUnsavedChanges = Object.keys(formState.dirtyFields).length > 0;
+  const hasUnsavedStakeholders = !!formState.dirtyFields.contacts || !!formState.dirtyFields.customer;
 
   useEffect(() => {
     if (!enabled || !errandId || !municipalityId) return undefined;
@@ -50,7 +50,7 @@ export const useSupportPbi = (enabled: boolean) => {
     if (!errandId || !municipalityId) return;
     const { errand } = await getSupportErrandById(errandId, municipalityId);
     setSupportErrand(errand);
-    reset(errand);
+    reset(errand, { keepDirtyValues: true });
   }, [errandId, municipalityId, reset, setSupportErrand]);
 
   const reloadErrandAndCandidates = useCallback(async () => {
@@ -87,11 +87,11 @@ export const useSupportPbi = (enabled: boolean) => {
   return {
     candidates,
     marking: {
-      canEdit: !!canEditErrand && !hasUnsavedChanges,
+      canEdit: !!canEditErrand && !hasUnsavedStakeholders,
       busyPartyId,
       onMark: change(markSupportPbi, true),
       onUnmark: change(unmarkSupportPbi, false),
     },
-    notice: canEditErrand && hasUnsavedChanges ? t('common:company.pbi.unsaved') : undefined,
+    notice: canEditErrand && hasUnsavedStakeholders ? t('common:company.pbi.unsaved') : undefined,
   };
 };
