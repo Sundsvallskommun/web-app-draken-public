@@ -1,15 +1,19 @@
 import { engagementRoles } from '@common/services/legal-entity-service';
 import { Button, Card, Disclosure, Icon, Table } from '@sk-web-gui/react';
+import { SupportPbiCandidate } from '@supportmanagement/services/support-pbi-service';
 import { Building2, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { LegalEntityEngagement } from 'src/data-contracts/backend/data-contracts';
+
+import { PbiMarking, SupportErrandPbiCell } from './support-errand-pbi-cell.component';
 
 export const SupportErrandCompanyEngagements: React.FC<{
-  engagements: LegalEntityEngagement[];
+  engagements: SupportPbiCandidate[];
   initiallyOpen: boolean;
   companyName?: string | null;
   onShowBusinessDescription?: () => void;
-}> = ({ engagements, initiallyOpen, companyName, onShowBusinessDescription }) => {
+  pbiMarking?: PbiMarking;
+  pbiNotice?: string;
+}> = ({ engagements, initiallyOpen, companyName, onShowBusinessDescription, pbiMarking, pbiNotice }) => {
   const { t } = useTranslation();
 
   return (
@@ -39,11 +43,13 @@ export const SupportErrandCompanyEngagements: React.FC<{
             </div>
           </Card>
         ) : null}
+        {pbiNotice ? <p className="text-dark-secondary mb-16">{pbiNotice}</p> : null}
         <Table dense background data-cy="company-engagements">
           <Table.Header>
             <Table.HeaderColumn>{t('common:company.role')}</Table.HeaderColumn>
             <Table.HeaderColumn>{t('common:company.name')}</Table.HeaderColumn>
             <Table.HeaderColumn>{t('common:company.identity')}</Table.HeaderColumn>
+            {pbiMarking ? <Table.HeaderColumn>{t('common:company.pbi.column')}</Table.HeaderColumn> : null}
           </Table.Header>
           <Table.Body>
             {engagements.map((engagement) => (
@@ -51,6 +57,11 @@ export const SupportErrandCompanyEngagements: React.FC<{
                 <Table.Column>{engagementRoles(engagement)}</Table.Column>
                 <Table.Column>{engagement.name}</Table.Column>
                 <Table.Column>{engagement.identity?.code}</Table.Column>
+                {pbiMarking ? (
+                  <Table.Column>
+                    <SupportErrandPbiCell engagement={engagement} marking={pbiMarking} />
+                  </Table.Column>
+                ) : null}
               </Table.Row>
             ))}
           </Table.Body>
