@@ -1,14 +1,10 @@
-import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wrapper';
 import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
-import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
+import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu } from '@sk-web-gui/react';
 import { useCasedataStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
-import { SupportProcessLog } from '@supportmanagement/components/support-errand/ui-phase/support-process-log.component';
-import { SupportUiPhaseWrapper } from '@supportmanagement/components/support-errand/ui-phase/support-ui-phase-wrapper';
-import { hasSupportErrandProcess } from '@supportmanagement/services/support-process-service';
 import { ExternalLink, Menu } from 'lucide-react';
 import NextLink from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
@@ -20,7 +16,6 @@ import { userMenuGroups } from './userMenuGroups';
 export default function Layout({ title, children }: { title: string; children: React.ReactNode }) {
   const user = useUserStore((s) => s.user);
   const applicationEnvironment = getApplicationEnvironment();
-  const { isMinLargeDevice, isMinDesktop } = useThemeQueries();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const pathName = usePathname() ?? '';
   const errand = useCasedataStore((s) => s.errand);
@@ -28,22 +23,6 @@ export default function Layout({ title, children }: { title: string; children: R
   const params = useParams<{ errandNumber?: string }>();
   const errandNumber = params?.errandNumber;
   const [hostName, setHostName] = useState('');
-
-  const followsProcess = appConfig.features.useProcess && appConfig.isSupportManagement;
-
-  const showUiPhases =
-    appConfig.features.useUiPhases &&
-    (pathName === '/registrera' || pathName.includes('arende')) &&
-    (!followsProcess || hasSupportErrandProcess(supportErrand));
-  const uiPhaseRow = appConfig.isSupportManagement ? <SupportUiPhaseWrapper /> : <UiPhaseWrapper />;
-  const uiPhaseSection = (
-    <div className="flex items-center gap-12 w-full justify-end">
-      {uiPhaseRow}
-      {followsProcess ? <SupportProcessLog /> : null}
-    </div>
-  );
-
-  const uiPhaseSectionFitsBesideTitle = appConfig.features.useProcess ? isMinDesktop : isMinLargeDevice;
 
   useEffect(() => {
     setHostName(window.location.hostname);
@@ -174,10 +153,7 @@ export default function Layout({ title, children }: { title: string; children: R
               </PopupMenu.Panel>
             </PopupMenu>
           }
-          bottomContent={showUiPhases && !uiPhaseSectionFitsBesideTitle ? uiPhaseSection : null}
-        >
-          {showUiPhases && uiPhaseSectionFitsBesideTitle ? uiPhaseSection : null}
-        </PageHeader>
+        ></PageHeader>
       </div>
 
       {children}

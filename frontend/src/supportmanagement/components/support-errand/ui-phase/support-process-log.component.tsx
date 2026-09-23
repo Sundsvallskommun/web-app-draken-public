@@ -58,7 +58,7 @@ export const SupportProcessLog = () => {
   if (!hasSupportErrandProcess(supportErrand)) return null;
 
   return (
-    <>
+    <div>
       <Button
         variant="secondary"
         size="sm"
@@ -91,6 +91,6 @@ export const SupportProcessLog = () => {
           ) : null}
         </Modal.Content>
       </Modal>
-    </>
+    </div>
   );
 };
