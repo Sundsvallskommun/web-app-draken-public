@@ -458,6 +458,8 @@ export const SupportMessageForm: FC<{
   useEffect(() => {
     if (contactMeans === 'draken' && relationErrands.length > 0 && !selectedRelationId) {
       setSelectedRelationId(relationErrands[0].otherResourceId);
+    } else if (contactMeans !== 'draken' && selectedRelationId) {
+      setSelectedRelationId('');
     }
   }, [relationErrands, contactMeans, selectedRelationId]);
 
@@ -707,7 +709,7 @@ export const SupportMessageForm: FC<{
       contactMeans === 'draken' ||
       contactMeans === 'minasidor' ? (
         <div className="w-full gap-xl mb-lg">
-          {contactMeans === 'email' && (
+          {appConfig.features.useEmailContactChannel && contactMeans === 'email' && (
             <CommonNestedEmailArrayV2
               disabled={isSupportErrandLocked(supportErrand)}
               data-cy="email-input"
