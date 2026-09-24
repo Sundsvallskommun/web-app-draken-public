@@ -1,26 +1,13 @@
 import type { Investigation, InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
-import {
-  Button,
-  Disclosure,
-  FormControl,
-  FormLabel,
-  Label,
-  Select,
-  Spinner,
-  Textarea,
-  useSnackbar,
-} from '@sk-web-gui/react';
+import { Button, Disclosure, FormControl, FormLabel, Select, Spinner, Textarea, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
   getSupportInvestigation,
   isSupportInvestigationCompleted,
   isSupportInvestigationConflict,
   saveSupportInvestigation,
-  saveSupportInvestigationSection,
   startSupportInvestigation,
-  SUPPORT_INVESTIGATION_ASSESSMENTS,
   SUPPORT_INVESTIGATION_SECTIONS,
-  supportInvestigationAssessmentKey,
 } from '@supportmanagement/services/support-investigation-service';
 import {
   getSupportErrandProcess,
@@ -42,84 +29,17 @@ const MetaItem: React.FC<{ label: string; value: string }> = ({ label, value }) 
   </div>
 );
 
-const SectionDisclosure: React.FC<{
-  section: InvestigationSection;
-  readOnly: boolean;
-  onSave: (section: InvestigationSection, values: { text: string; assessment: string }) => Promise<void>;
-}> = ({ section, readOnly, onSave }) => {
+const SectionDisclosure: React.FC<{ section: InvestigationSection }> = ({ section }) => {
   const { t } = useTranslation();
-  const [text, setText] = useState(section.text ?? '');
-  const [assessment, setAssessment] = useState(section.assessment ?? 'PENDING');
-  const [isSaving, setIsSaving] = useState(false);
-
-  const unsaved = text !== (section.text ?? '') || assessment !== (section.assessment ?? 'PENDING');
-
-  const save = () => {
-    setIsSaving(true);
-    onSave(section, { text, assessment }).finally(() => setIsSaving(false));
-  };
 
   return (
     <Disclosure variant="alt" className="w-full" data-cy={`section-${section.sectionKey}`}>
       <Disclosure.Header>
         <Disclosure.Title>{section.heading}</Disclosure.Title>
-        <Label rounded color={section.assessment === 'PENDING' ? 'tertiary' : 'gronsta'}>
-          {t(supportInvestigationAssessmentKey(section.assessment))}
-        </Label>
         <Disclosure.Button />
       </Disclosure.Header>
       <Disclosure.Content>
-        <div className="flex flex-col gap-16">
-          <FormControl id={`assessment-${section.id}`} className="w-full max-w-[24rem]">
-            <FormLabel>{t('common:investigation.assessment')}</FormLabel>
-            <Select
-              className="w-full"
-              value={assessment}
-              disabled={readOnly}
-              onChange={(event) => setAssessment(event.target.value)}
-              data-cy={`assessment-${section.sectionKey}`}
-            >
-              {SUPPORT_INVESTIGATION_ASSESSMENTS.map((value) => (
-                <Select.Option key={value} value={value}>
-                  {t(supportInvestigationAssessmentKey(value))}
-                </Select.Option>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl id={`text-${section.id}`} className="w-full">
-            <FormLabel>{t('common:investigation.section_text')}</FormLabel>
-            <Textarea
-              className="w-full"
-              rows={4}
-              value={text}
-              disabled={readOnly}
-              onChange={(event) => setText(event.target.value)}
-              data-cy={`text-${section.sectionKey}`}
-            />
-          </FormControl>
-
-          {section.completedBy ? (
-            <p className="text-small text-dark-secondary m-0">
-              {t('common:investigation.assessed_by', { user: section.completedBy, date: asDate(section.completedAt) })}
-            </p>
-          ) : null}
-
-          {readOnly ? null : (
-            <div>
-              <Button
-                variant="secondary"
-                size="sm"
-                loading={isSaving}
-                disabled={isSaving || !unsaved}
-                onClick={save}
-                data-cy={`save-${section.sectionKey}`}
-              >
-                {t('common:investigation.save_section')}
-              </Button>
-            </div>
-          )}
-        </div>
+        <p className="text-dark-secondary m-0">{t('common:investigation.section_not_built')}</p>
       </Disclosure.Content>
     </Disclosure>
   );
@@ -221,16 +141,6 @@ export const SupportErrandInvestigationTab: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, error, investigation, inInvestigationStep, canEdit]);
 
-  const saveSection = (section: InvestigationSection, values: { text: string; assessment: string }) => {
-    if (!errandId || !investigation?.id || !section.id) return Promise.resolve();
-    return saveSupportInvestigationSection(errandId, municipalityId, investigation.id, section.id, values)
-      .then(receive)
-      .catch((failure) => {
-        reportFailure(failure);
-        reload();
-      });
-  };
-
   const save = () => {
     if (!errandId || !investigation?.id) return;
     setIsSaving(true);
@@ -263,7 +173,7 @@ export const SupportErrandInvestigationTab: React.FC = () => {
     <div className="pt-xl pb-16 px-40 flex flex-col gap-24">
       <div>
         <h2 className="text-h2-md mb-8">{t('common:investigation.heading')}</h2>
-        <p className="m-0 max-w-[64rem]">{t('common:investigation.intro')}</p>
+        <p className="m-0">{t('common:investigation.intro')}</p>
       </div>
 
       {isLoading ? <Spinner size={3} aria-label={t('common:investigation.loading')} /> : null}
@@ -291,9 +201,9 @@ export const SupportErrandInvestigationTab: React.FC = () => {
       ) : null}
 
       {!isLoading && !error && investigation ? (
-        <div className="flex flex-col gap-24 max-w-[64rem]">
+        <div className="flex flex-col gap-24">
           <div className="flex flex-wrap gap-40">
-            <MetaItem label={t('common:investigation.investigator')} value={investigation.investigatorUserId ?? '–'} />
+            <MetaItem label={t('common:investigation.investigator')} value={investigation.investigatorUserId ?? '-'} />
             <MetaItem label={t('common:investigation.started_at')} value={asDate(investigation.startedAt)} />
             <MetaItem label={t('common:investigation.due_at')} value={asDate(investigation.dueAt)} />
             {isSupportInvestigationCompleted(investigation) ? (
@@ -304,12 +214,7 @@ export const SupportErrandInvestigationTab: React.FC = () => {
 
           <div className="flex flex-col gap-8">
             {sections.map((section) => (
-              <SectionDisclosure
-                key={[section.id, section.assessment, section.text].join('-')}
-                section={section}
-                readOnly={readOnly}
-                onSave={saveSection}
-              />
+              <SectionDisclosure key={section.id ?? section.sectionKey} section={section} />
             ))}
 
             <Disclosure variant="alt" className="w-full" data-cy="investigation-conclusion-section">

@@ -87,10 +87,6 @@
     "error": "Utredningen kunde inte hämtas.",
     "status_active": "Pågår",
     "status_completed": "Avslutad",
-    "assessment": "Bedömning",
-    "section_text": "Noteringar",
-    "save_section": "Spara prövningen",
-    "assessed_by": "Bedömd av {{user}} {{date}}",
     "conclusion_heading": "Sammanvägd bedömning och förslag till beslut",
     "summary": "Det som har prövats",
     "conclusion": "Samlad bedömning",
@@ -109,12 +105,6 @@
       "knowledge_test": "Kunskapsprov",
       "premises": "Lokal och serveringsställe"
     },
-    "assessments": {
-      "pending": "Ej bedömd",
-      "approved": "Godkänd",
-      "deficiency": "Brist",
-      "not_applicable": "Ej aktuell"
-    },
     "processing_time": "Handläggningstiden räknas från det datum ansökan är komplett. Sundsvall har en normal handläggningstid på 6–8 veckor.",
     "not_started": "Utredningen är inte påbörjad.",
     "investigator": "Ansvarig handläggare",
@@ -130,7 +120,8 @@
     "start_error": "Ärendet kunde inte tas till utredning.",
     "start_stale": "Ärendet har flyttats vidare av någon annan. Uppgifterna är uppdaterade.",
     "ready_for_decision": "Redo för beslut",
-    "starting": "Utredningen påbörjas"
+    "starting": "Utredningen påbörjas",
+    "section_not_built": "Den här delen av utredningen är inte byggd än."
   },
   "process": {
     "steps": {
