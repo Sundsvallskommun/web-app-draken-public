@@ -90,12 +90,14 @@ describe('createInvestigation', () => {
     expect(api.post.mock.calls[2][0].data).toMatchObject({ sectionKey: 'knowledge_test', assessment: 'PENDING' });
   });
 
-  it('refuses a second investigation on the same errand', async () => {
-    const { controller, api } = makeController([{ id: INVESTIGATION_ID }]);
+  it('answers with the investigation the errand already has, and writes no second one', async () => {
+    const { controller, api } = makeController([{ id: INVESTIGATION_ID, status: 'ACTIVE' }]);
+    const res = mockRes();
 
-    await expect(controller.createInvestigation(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, { sections }, mockRes())).rejects.toMatchObject({
-      status: 409,
-    });
+    await controller.createInvestigation(mockReq(), mockSupportErrandId, MUNICIPALITY_ID, { sections }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({ id: INVESTIGATION_ID });
     expect(api.post).not.toHaveBeenCalled();
   });
 });

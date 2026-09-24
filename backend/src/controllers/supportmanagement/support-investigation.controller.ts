@@ -151,8 +151,9 @@ export class SupportInvestigationController {
       return response.status(400).send('Invalid municipality id');
     }
 
-    if ((await this.readInvestigations(municipalityId, id, req.user)).length > 0) {
-      throw new HttpException(409, 'The errand already has an investigation');
+    const [existing] = await this.readInvestigations(municipalityId, id, req.user);
+    if (existing) {
+      return response.status(200).send(existing);
     }
 
     const baseURL = apiURL(this.SERVICE);
