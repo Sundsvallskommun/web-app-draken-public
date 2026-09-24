@@ -458,6 +458,8 @@ export const SupportMessageForm: FC<{
   useEffect(() => {
     if (contactMeans === 'draken' && relationErrands.length > 0 && !selectedRelationId) {
       setSelectedRelationId(relationErrands[0].otherResourceId);
+    } else if (contactMeans !== 'draken' && selectedRelationId) {
+      setSelectedRelationId('');
     }
   }, [relationErrands, contactMeans, selectedRelationId]);
 
