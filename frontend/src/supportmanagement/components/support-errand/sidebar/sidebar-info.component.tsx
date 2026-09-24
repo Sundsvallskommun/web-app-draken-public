@@ -26,7 +26,7 @@ import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { SupportCloseErrandButtonComponent } from './buttons/support-close-errand-button.component';
 import { SupportForwardErrandButtonComponent } from './buttons/support-forward-errand-button.component';
-import { SupportInvestigationPhaseButton } from './buttons/support-investigation-phase-button.component';
+import { SupportProcessStepButton } from './buttons/support-process-step-button.component';
 import { SupportReopenErrandButton } from './buttons/support-reopen-errand-button.component';
 import { SupportResumeErrandButton } from './buttons/support-resume-errand-button.component';
 import { SupportStartProcessButtonComponent } from './buttons/support-start-process-button.component';
@@ -452,7 +452,7 @@ export const SidebarInfo: FC<{
           <>
             <Divider className="mt-16 mb-24" />
 
-            {appConfig.features.useProcess ? <SupportInvestigationPhaseButton /> : null}
+            {appConfig.features.useProcess ? <SupportProcessStepButton /> : null}
 
             {supportErrand?.status === Status.SOLVED ? (
               <>

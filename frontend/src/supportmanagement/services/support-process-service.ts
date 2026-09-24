@@ -93,7 +93,7 @@ const SUPPORT_PROCESS_STEPS: { name: SupportProcessStepName; translationKey: str
   {
     name: SupportProcessStep.CLOSING,
     translationKey: 'common:process.steps.closing',
-    activityIds: ['closing_phase', 'complete_phase'],
+    activityIds: ['closure_phase', 'closing_phase', 'complete_phase'],
   },
 ];
 
@@ -110,6 +110,10 @@ export const supportProcessStepIndex = (process: ErrandProcess | undefined): num
   if (!activityId) return -1;
   return SUPPORT_PROCESS_STEPS.findIndex((step) => step.activityIds.includes(activityId));
 };
+
+/** The step the process stands in, or undefined for an activity the mapping does not know. */
+export const supportProcessStepName = (process: ErrandProcess | undefined): SupportProcessStepName | undefined =>
+  SUPPORT_PROCESS_STEPS[supportProcessStepIndex(process)]?.name;
 
 export const supportProcessErrorText = (process: ErrandProcess | undefined): string => {
   const parts = [process?.error?.code, process?.error?.message].filter(Boolean);
