@@ -624,16 +624,28 @@ export const upsertErrandParameter = (
   return [...otherParameters, { key, displayName, values: [value] }];
 };
 
+const classifiedValue = (value: string | undefined): string => (!value || value === 'NONE' ? '' : value);
+
+const categorizationLabelPath = (errand: ApiSupportErrand, classification: string): string =>
+  (appConfig.features.useThreeLevelCategorization
+    ? errand.labels?.find((label) => label.classification === classification)?.resourcePath
+    : undefined) ?? '';
+
+const errandCategory = (errand: ApiSupportErrand): string =>
+  classifiedValue(errand.classification?.category) || categorizationLabelPath(errand, 'CATEGORY');
+
+const errandType = (errand: ApiSupportErrand): string =>
+  classifiedValue(errand.classification?.type) || categorizationLabelPath(errand, 'TYPE');
+
+const errandSubType = (errand: ApiSupportErrand): string => categorizationLabelPath(errand, 'SUBTYPE');
+
 const mapApiSupportErrandToSupportErrand: (e: ApiSupportErrand) => SupportErrand = (e) => {
   try {
     const ierrand: SupportErrand = {
       ...e,
-      category: (e.classification?.category === 'NONE' ? '' : e.classification?.category) || '',
-      type: (e.classification?.type === 'NONE' ? '' : e.classification?.type) || '',
-      subType:
-        (appConfig.features.useThreeLevelCategorization
-          ? e.labels?.find((l) => l.classification === 'SUBTYPE')?.resourcePath
-          : undefined) || '',
+      category: errandCategory(e),
+      type: errandType(e),
+      subType: errandSubType(e),
       contactReason: e.contactReason,
       contactReasonDescription: e.contactReasonDescription,
       businessRelated: e.businessRelated,
