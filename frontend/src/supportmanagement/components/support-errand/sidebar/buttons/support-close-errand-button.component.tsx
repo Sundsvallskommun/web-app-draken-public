@@ -22,6 +22,7 @@ import {
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
+import { hasSupportErrandProcess } from '@supportmanagement/services/support-process-service';
 import { applicantHasContactChannel, getAdminName } from '@supportmanagement/services/support-stakeholder-service';
 import { ArrowLeft, Check } from 'lucide-react';
 import React, { useState } from 'react';
@@ -66,6 +67,11 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
   const [changeResolution, setChangeResolution] = useState<boolean>(false);
 
   const formControls: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
+
+  // An errand driven by a process is closed from its own step, so the two ways out never compete.
+  if (appConfig.features.useProcess && hasSupportErrandProcess(supportErrand)) {
+    return null;
+  }
 
   const showCloseErrorToast = (message = 'Något gick fel när ärendet skulle avslutas') => {
     toastMessage({
