@@ -707,7 +707,7 @@ export const SupportMessageForm: FC<{
       contactMeans === 'draken' ||
       contactMeans === 'minasidor' ? (
         <div className="w-full gap-xl mb-lg">
-          {contactMeans === 'email' && (
+          {appConfig.features.useEmailContactChannel && contactMeans === 'email' && (
             <CommonNestedEmailArrayV2
               disabled={isSupportErrandLocked(supportErrand)}
               data-cy="email-input"
