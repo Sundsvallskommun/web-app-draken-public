@@ -222,12 +222,15 @@ export const getOrCreateSupportConversationId = async (
   messageConversationId: string
 ): Promise<string> => {
   const conversationType = contactMeans === 'draken' ? 'INTERNAL' : 'EXTERNAL';
-  const selectedEntry = relationErrands.find((entry) => entry.otherResourceId === selectedRelationId);
+  const selectedEntry =
+    contactMeans === 'draken'
+      ? relationErrands.find((entry) => entry.otherResourceId === selectedRelationId)
+      : undefined;
 
   const conversations = await getSupportConversations(municipalityId, supportErrand.id!);
   const existingExternalConversation = conversations.data.find((c) => c.type === 'EXTERNAL');
   const existingInternalConversation = conversations.data.find(
-    (conv: any) => conv.relationIds && conv.relationIds[0] === selectedEntry?.relation.id
+    (conv: any) => conv.type === 'INTERNAL' && conv.relationIds && conv.relationIds[0] === selectedEntry?.relation.id
   );
 
   let conversationId: string | undefined = undefined;
