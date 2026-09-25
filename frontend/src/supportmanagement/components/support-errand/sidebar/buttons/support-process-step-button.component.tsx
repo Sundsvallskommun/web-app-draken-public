@@ -4,6 +4,9 @@ import {
   closeSupportErrand,
   getSupportErrandById,
   Resolution,
+  setSupportErrandAdmin,
+  setSupportErrandStatus,
+  Status,
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import {
@@ -15,18 +18,28 @@ import {
   SupportProcessStepName,
   supportProcessStepName,
 } from '@supportmanagement/services/support-process-service';
-import { FC, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
+import { FC, ReactElement, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
 interface ProcessAction {
   key: string;
   variant: 'primary' | 'secondary';
+  color?: 'vattjom';
+  icon?: ReactElement;
   needsSignal: boolean;
+  /** Every step is confirmed in a dialog, except starting the handling, which never was. */
+  confirms?: boolean;
+  /** Takes the errand and sets it ongoing before the signal, the way the handling has always started. */
+  takesErrand?: boolean;
   tabKey?: string;
   closesErrand?: boolean;
   resolution?: Resolution;
 }
+
+/** Parked, solved and reopened errands are picked up from their own buttons, never started again. */
+const RESUMED_ELSEWHERE: string[] = [Status.SUSPENDED, Status.SOLVED, Status.REOPENED];
 
 const SIGNAL_REPORT_ATTEMPTS = 12;
 const SIGNAL_REPORT_INTERVAL = 2500;
@@ -55,6 +68,15 @@ const errandOnNextStep = async (
  * comes from the process, so a model that renames its gates needs no change here.
  */
 const STEP_ACTIONS: Partial<Record<SupportProcessStepName, ProcessAction>> = {
+  [SupportProcessStep.REGISTRATION]: {
+    key: 'start_handling',
+    variant: 'primary',
+    color: 'vattjom',
+    icon: <ArrowRight size={18} />,
+    needsSignal: true,
+    confirms: false,
+    takesErrand: true,
+  },
   [SupportProcessStep.REVIEW]: {
     key: 'start_investigation',
     variant: 'primary',
@@ -77,16 +99,22 @@ const STEP_ACTIONS: Partial<Record<SupportProcessStepName, ProcessAction>> = {
   },
 };
 
-export const SupportProcessStepButton: FC = () => {
+export const SupportProcessStepButton: FC<{
+  disabled?: boolean;
+  onSubmit?: () => Promise<any>;
+  onError?: () => void;
+}> = ({ disabled, onSubmit, onError }) => {
   const { t } = useTranslation();
   const confirm = useConfirm();
   const toastMessage = useSnackbar();
+  const user = useUserStore((s) => s.user);
+  const administrators = useUserStore((s) => s.administrators);
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const setActiveTabKey = useSupportStore((s) => s.setActiveTabKey);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const canEdit = useUserStore((s) => s.user.permissions?.canEditSupportManagement);
-  const { reset } = useFormContext();
+  const { handleSubmit, reset } = useFormContext();
   const [running, setRunning] = useState<string>();
 
   const process = getSupportErrandProcess(supportErrand);
@@ -97,6 +125,25 @@ export const SupportProcessStepButton: FC = () => {
   if (!supportErrand?.id) {
     return null;
   }
+
+  const takeErrand = async () => {
+    await onSubmit?.();
+
+    if (!supportErrand.assignedUserId) {
+      const currentAdmin = administrators.find((a) => a.adAccount === user.username);
+      if (currentAdmin) {
+        await setSupportErrandAdmin(
+          supportErrand.id!,
+          municipalityId,
+          currentAdmin.adAccount,
+          Status.ONGOING,
+          currentAdmin.adAccount
+        );
+      }
+    }
+
+    await setSupportErrandStatus(supportErrand.id!, municipalityId, Status.ONGOING);
+  };
 
   const closeThroughRemainingGates = async (errandId: string, action: ProcessAction): Promise<SupportErrand> => {
     if (action.needsSignal) {
@@ -115,6 +162,10 @@ export const SupportProcessStepButton: FC = () => {
   const run = async (action: ProcessAction) => {
     setRunning(action.key);
     try {
+      if (action.takesErrand) {
+        await takeErrand();
+      }
+
       if (action.needsSignal) {
         await sendSupportProcessSignal(supportErrand.id!, municipalityId, awaitingSignal.name!);
       }
@@ -164,19 +215,25 @@ export const SupportProcessStepButton: FC = () => {
         if (confirmed) run(action);
       });
 
+  const start = (action: ProcessAction) => (action.confirms === false ? run(action) : ask(action));
+
   const actionButton = (action: ProcessAction) => (
     <Button
       key={action.key}
       className="w-full my-8"
       variant={action.variant}
+      color={action.color}
+      rightIcon={action.icon}
       loading={running === action.key}
-      disabled={!canEdit || !!running || (action.needsSignal && !awaitingSignal?.name)}
-      onClick={() => ask(action)}
+      disabled={disabled || !canEdit || !!running || (action.needsSignal && !awaitingSignal?.name)}
+      onClick={action.takesErrand ? handleSubmit(() => start(action), onError) : () => start(action)}
       data-cy={`process-action-${action.key}`}
     >
       {t(`common:process.actions.${action.key}.label`)}
     </Button>
   );
 
-  return stepAction ? actionButton(stepAction) : null;
+  const startsAgain = stepAction?.takesErrand && RESUMED_ELSEWHERE.includes(supportErrand.status as Status);
+
+  return stepAction && !startsAgain ? actionButton(stepAction) : null;
 };

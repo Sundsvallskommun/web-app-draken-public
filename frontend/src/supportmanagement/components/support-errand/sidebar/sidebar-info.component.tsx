@@ -452,7 +452,13 @@ export const SidebarInfo: FC<{
           <>
             <Divider className="mt-16 mb-24" />
 
-            {appConfig.features.useProcess ? <SupportProcessStepButton /> : null}
+            {appConfig.features.useProcess ? (
+              <SupportProcessStepButton
+                disabled={!allowed || supportErrandIsEmpty(supportErrand!)}
+                onSubmit={onSubmit}
+                onError={onError}
+              />
+            ) : null}
 
             {supportErrand?.status === Status.SOLVED ? (
               <>

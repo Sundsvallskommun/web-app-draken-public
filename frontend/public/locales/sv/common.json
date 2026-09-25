@@ -139,6 +139,11 @@
     "actions": {
       "confirm_no": "Nej",
       "stale": "Ärendet har flyttats vidare av någon annan. Uppgifterna är uppdaterade.",
+      "start_handling": {
+        "label": "Starta handläggning",
+        "done": "Handläggning startad",
+        "error": "Något gick fel vid start av handläggning"
+      },
       "start_investigation": {
         "label": "Inled utredning",
         "confirm_title": "Ta ärendet till utredning?",
