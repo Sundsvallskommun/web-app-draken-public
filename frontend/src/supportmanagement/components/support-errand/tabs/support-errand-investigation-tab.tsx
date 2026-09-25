@@ -128,8 +128,8 @@ export const SupportErrandInvestigationTab: React.FC<{ setUnsaved: (unsaved: boo
       .catch(() => undefined);
   };
 
-  const start = () => {
-    if (!errandId) return Promise.resolve();
+  const start = (): Promise<Investigation | undefined> => {
+    if (!errandId) return Promise.resolve(undefined);
     setIsSaving(true);
     return startSupportInvestigation(
       errandId,
@@ -141,15 +141,23 @@ export const SupportErrandInvestigationTab: React.FC<{ setUnsaved: (unsaved: boo
         sortOrder: section.sortOrder,
       }))
     )
-      .then(receive)
-      .catch(reportFailure)
+      .then((result) => {
+        receive(result);
+        return result;
+      })
+      .catch((failure) => {
+        reportFailure(failure);
+        return undefined;
+      })
       .finally(() => setIsSaving(false));
   };
 
   useEffect(() => {
     if (isLoading || error || investigation || !inInvestigationStep || !canEdit || startedAutomatically.current) return;
     startedAutomatically.current = true;
-    start();
+    start().then((started) => {
+      if (!started) startedAutomatically.current = false;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, error, investigation, inInvestigationStep, canEdit]);
 
