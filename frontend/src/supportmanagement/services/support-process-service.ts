@@ -2,6 +2,7 @@ import type {
   ErrandProcess,
   PageProcessActivity,
   ProcessActivity,
+  ProcessSignal,
 } from '@common/data-contracts/supportmanagement/data-contracts';
 import { apiService } from '@common/services/api-service';
 
@@ -136,3 +137,23 @@ export const hasReachedSupportProcessStep = (
   if (current < 0) return false;
   return current >= SUPPORT_PROCESS_STEPS.findIndex((candidate) => candidate.name === step);
 };
+
+/**
+ * What the process waits for from the handler right now. The names come from the process model and
+ * are relayed as they are, so a gate added to the model shows up here without a change in Draken.
+ */
+export const supportProcessAwaitingSignals = (process: ErrandProcess | undefined): ProcessSignal[] =>
+  process?.awaitingSignals ?? [];
+
+export const sendSupportProcessSignal = (errandId: string, municipalityId: string, signal: string): Promise<void> =>
+  apiService
+    .post<void, { signal: string }>(`supportprocess/${municipalityId}/${errandId}/signals`, { signal })
+    .then(() => undefined)
+    .catch((e) => {
+      console.error('Something went wrong when stepping the process');
+      throw e;
+    });
+
+/** A signal the process no longer waits for: the button is stale and the errand has to be read again. */
+export const isSupportProcessSignalStale = (error: unknown): boolean =>
+  (error as { response?: { status?: number } })?.response?.status === 409;

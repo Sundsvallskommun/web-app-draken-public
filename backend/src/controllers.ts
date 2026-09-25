@@ -35,6 +35,7 @@ import { SupportExportController } from './controllers/supportmanagement/support
 import { SupportFacilitiesController } from './controllers/supportmanagement/support-facilities.controller';
 import { SupportHandoverController } from './controllers/supportmanagement/support-handover.controller';
 import { SupportHistoryController } from './controllers/supportmanagement/support-history.controller';
+import { SupportInvestigationController } from './controllers/supportmanagement/support-investigation.controller';
 import { SupportMessageController } from './controllers/supportmanagement/support-message.controller';
 import { SupportMetadataController } from './controllers/supportmanagement/support-metadata.controller';
 import { SupportNoteController } from './controllers/supportmanagement/support-note.controller';
@@ -79,6 +80,7 @@ export const CONTROLLERS: NewableFunction[] = [
   SupportFacilitiesController,
   SupportHandoverController,
   SupportHistoryController,
+  SupportInvestigationController,
   SupportMessageController,
   SupportMetadataController,
   SupportNoteController,
