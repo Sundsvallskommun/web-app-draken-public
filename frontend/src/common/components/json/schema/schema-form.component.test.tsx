@@ -418,3 +418,81 @@ test.each([
   await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce());
   expect(onSubmit.mock.calls[0][0]).toEqual({ time: expected });
 });
+
+test('marks sections complete or incomplete once a save has been attempted', async () => {
+  const { container } = render(
+    <SchemaForm
+      schema={{
+        type: 'object',
+        required: ['answer'],
+        properties: {
+          answer: { type: 'string', title: 'Svar' },
+          note: { type: 'string', title: 'Notering' },
+        },
+      }}
+      uiSchema={{
+        'ui:sections': [
+          { id: 'answers', title: 'Uppgifter', fields: ['answer'], defaultOpen: true },
+          { id: 'notes', title: 'Noteringar', fields: ['note'], defaultOpen: true },
+        ],
+      }}
+      submitButtonOptions={{ label: 'Spara', leadingIcon: false }}
+    />
+  );
+  const status = (section: string) => container.querySelector(`[data-cy="section-status-${section}"]`)?.textContent;
+
+  // Before a save attempt an empty required field is a field not filled in yet, not an error.
+  expect(status('answers')).toBeUndefined();
+  expect(status('notes')).toBeUndefined();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Spara' }));
+
+  await waitFor(() => expect(status('answers')).toBe('Ej komplett'));
+  expect(status('notes')).toBe('Komplett');
+
+  fireEvent.change(container.querySelector('#root_answer')!, { target: { value: 'Ifyllt' } });
+
+  await waitFor(() => expect(status('answers')).toBe('Komplett'));
+});
+
+// A nested field may share its name with a conditional question at the root - `personnummer` does
+// in the AoT schemas - and must be judged by its own object's schema and data slice, not the root's.
+test.each([
+  ['DRIVER_ANNAT_FORETAG_MED_TILLSTAND', 'Personnummer', false],
+  ['HAR_GODKANT_KUNSKAPSPROV', 'Personnummer', true],
+])('reveals a nested object and its like-named field for %s', (answer, label, shown) => {
+  render(
+    <SchemaForm
+      schema={{
+        type: 'object',
+        properties: {
+          kunskapOmAlkohollagen: {
+            type: 'string',
+            title: 'Kunskap om alkohollagen',
+            oneOf: [
+              { const: 'HAR_GODKANT_KUNSKAPSPROV', title: 'Godkänt kunskapsprov' },
+              { const: 'DRIVER_ANNAT_FORETAG_MED_TILLSTAND', title: 'Driver annat företag' },
+            ],
+          },
+          personnummer: {
+            type: 'object',
+            title: 'Personnummer',
+            properties: { personnummer: { type: 'string', title: 'Personnummer' } },
+          },
+        },
+        allOf: [
+          {
+            if: {
+              properties: { kunskapOmAlkohollagen: { const: 'HAR_GODKANT_KUNSKAPSPROV' } },
+              required: ['kunskapOmAlkohollagen'],
+            },
+            then: { properties: { personnummer: true }, required: ['personnummer'] },
+          },
+        ],
+      }}
+      formData={{ kunskapOmAlkohollagen: answer }}
+    />
+  );
+
+  expect(screen.queryAllByRole('textbox', { name: label }).length).toBe(shown ? 1 : 0);
+});

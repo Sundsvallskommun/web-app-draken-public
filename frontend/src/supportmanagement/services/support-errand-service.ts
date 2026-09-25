@@ -17,7 +17,7 @@ import { All, Priority } from '@supportmanagement/interfaces/priority';
 import { AxiosError } from 'axios';
 import dayjs from 'dayjs';
 import { useCallback, useEffect } from 'react';
-import { CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
+import { CJsonParameter, CParameter, SupportErrandDto } from 'src/data-contracts/backend/data-contracts';
 import { v4 as uuidv4 } from 'uuid';
 
 import { saveSupportAttachments, SupportAttachment } from './support-attachment-service';
@@ -392,6 +392,11 @@ export const defaultSupportErrandInformation: SupportErrand | any = {
 export const isOpenEErrand: (supportErrand: SupportErrand) => boolean = (supportErrand) => {
   return !!supportErrand?.externalTags?.find((tag) => tag.key === 'caseId')?.value;
 };
+
+export const isEserviceErrand: (errand: SupportErrand) => boolean = (errand) =>
+  errand?.channel === ('ESERVICE' satisfies keyof typeof Channels) ||
+  errand?.channel === ('ESERVICE_INTERNAL' satisfies keyof typeof Channels) ||
+  isOpenEErrand(errand);
 
 export const isSupportErrandLocked: (errand: SupportErrand) => boolean = (errand) => {
   return (
@@ -914,6 +919,23 @@ export const setSupportErrandAdmin: (
     })
     .catch((e) => {
       console.error('Something went wrong when patching errand');
+      throw e;
+    });
+};
+
+/** Replaces the errand's JSON documents; the caller sends every document to keep (see `upsertJsonParameter`). */
+export const saveSupportErrandJsonParameters: (
+  errandId: string,
+  municipalityId: string,
+  jsonParameters: CJsonParameter[]
+) => Promise<boolean> = async (errandId, municipalityId, jsonParameters) => {
+  return apiService
+    .patch<ApiSupportErrand, Partial<SupportErrandDto>>(`supporterrands/${municipalityId}/${errandId}`, {
+      jsonParameters,
+    })
+    .then(() => true)
+    .catch((e) => {
+      console.error('Something went wrong when patching errand json parameters');
       throw e;
     });
 };
