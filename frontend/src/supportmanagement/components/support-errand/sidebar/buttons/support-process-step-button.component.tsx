@@ -42,7 +42,7 @@ interface ProcessAction {
 }
 
 /** Parked, solved and reopened errands are picked up from their own buttons, never started again. */
-const RESUMED_ELSEWHERE: string[] = [Status.SUSPENDED, Status.SOLVED, Status.REOPENED];
+const RESUMED_ELSEWHERE = new Set([Status.SUSPENDED, Status.SOLVED, Status.REOPENED]);
 
 const SIGNAL_REPORT_ATTEMPTS = 12;
 const SIGNAL_REPORT_INTERVAL = 2500;
@@ -268,7 +268,7 @@ export const SupportProcessStepButton: FC<{
     </Button>
   );
 
-  const startsAgain = stepAction?.takesErrand && RESUMED_ELSEWHERE.includes(supportErrand.status as Status);
+  const startsAgain = stepAction?.takesErrand && RESUMED_ELSEWHERE.has(supportErrand.status as Status);
 
   return stepAction && !startsAgain ? actionButton(stepAction) : null;
 };
