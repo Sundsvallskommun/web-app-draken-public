@@ -49,14 +49,6 @@ const SIGNAL_REPORT_INTERVAL = 2500;
 
 const waitFor = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-/**
- * The step the errand has moved to, once the process has reported it. Nothing is pushed to Draken, so
- * the errand is read again until the step changes, or until the process reports that it is done -
- * the last step keeps its activity id to the end, so the name alone never says that.
- *
- * A read that fails leaves the errand undefined rather than throwing, so it counts as an attempt
- * and not as a step: a process that is lost sight of must not look like one that moved on.
- */
 const errandOnNextStep = async (
   errandId: string,
   municipalityId: string,
