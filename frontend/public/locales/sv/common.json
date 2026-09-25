@@ -49,7 +49,12 @@
   "tabs": {
     "investigation": "Utredning",
     "decision": "Beslut",
-    "followup": "Uppföljning"
+    "followup": "Uppföljning",
+    "unsaved_title": "Du har osparade ändringar",
+    "unsaved_investigation": "Utredningen är inte sparad. Det du skrivit ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara utredningen.",
+    "unsaved_decision": "Beslutet är inte sparat. Det du fyllt i ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara beslutet.",
+    "unsaved_leave": "Byt flik ändå",
+    "unsaved_stay": "Stanna kvar"
   },
   "company": {
     "engagements_heading": "Förenklad bolagsdata",
@@ -110,18 +115,10 @@
     "investigator": "Ansvarig handläggare",
     "started_at": "Utredning påbörjad",
     "due_at": "Beslutsfrist",
-    "start_phase": "Inled utredning",
-    "start_confirm_title": "Ta ärendet till utredning?",
-    "start_confirm_text": "När du tar ett ansökningsärende vidare till utredning innebär det att du anser att ärendet är tillräckligt komplett. Ett bekräftelsemeddelande skickas då till kunden via Mina sidor.",
-    "start_confirm_question": "Vill du gå vidare?",
-    "confirm_yes": "Ja",
-    "confirm_no": "Nej",
-    "started": "Ärendet är taget till utredning.",
-    "start_error": "Ärendet kunde inte tas till utredning.",
-    "start_stale": "Ärendet har flyttats vidare av någon annan. Uppgifterna är uppdaterade.",
-    "ready_for_decision": "Redo för beslut",
     "starting": "Utredningen påbörjas",
-    "section_not_built": "Den här delen av utredningen är inte byggd än."
+    "section_not_built": "Den här delen av utredningen är inte byggd än.",
+    "unsaved": "Osparade ändringar",
+    "saving": "Sparar"
   },
   "process": {
     "steps": {
@@ -145,6 +142,47 @@
       "loading": "Hämtar processloggen",
       "error": "Processloggen kunde inte hämtas.",
       "empty": "Processen har inte loggat något än."
+    },
+    "actions": {
+      "confirm_no": "Nej",
+      "stale": "Ärendet har flyttats vidare av någon annan. Uppgifterna är uppdaterade.",
+      "start_handling": {
+        "label": "Starta handläggning",
+        "done": "Handläggning startad",
+        "error": "Något gick fel vid start av handläggning"
+      },
+      "start_investigation": {
+        "label": "Inled utredning",
+        "confirm_title": "Ta ärendet till utredning?",
+        "confirm_text": "När du tar ett ansökningsärende vidare till utredning innebär det att du anser att ärendet är tillräckligt komplett. Ett bekräftelsemeddelande skickas då till kunden via Mina sidor.",
+        "done": "Ärendet är taget till utredning.",
+        "error": "Ärendet kunde inte tas till utredning.",
+        "confirm_yes": "Ja"
+      },
+      "ready_for_decision": {
+        "label": "Redo för beslut",
+        "confirm_title": "Ta ärendet till beslut?",
+        "confirm_text": "När du tar ärendet vidare till beslut innebär det att utredningen är klar och att underlaget räcker för att fatta beslut.",
+        "done": "Ärendet är taget till beslut.",
+        "error": "Ärendet kunde inte tas till beslut.",
+        "confirm_yes": "Ja"
+      },
+      "start_follow_up": {
+        "label": "Inled uppföljning",
+        "confirm_title": "Ta ärendet till uppföljning?",
+        "confirm_text": "När du tar ärendet vidare till uppföljning innebär det att beslutet är fattat och expedierat.",
+        "done": "Ärendet är taget till uppföljning.",
+        "error": "Ärendet kunde inte tas till uppföljning.",
+        "confirm_yes": "Ja"
+      },
+      "close_errand": {
+        "label": "Avsluta ärende",
+        "confirm_title": "Avsluta ärendet?",
+        "confirm_text": "Ärendet har följt hela processen (granska, utredning, beslut och uppföljning) och avslutas nu.",
+        "confirm_yes": "Ja, avsluta",
+        "done": "Ärendet är avslutat.",
+        "error": "Ärendet kunde inte avslutas."
+      }
     }
   },
   "decision": {
@@ -178,6 +216,7 @@
     "saving": "Sparar beslutet",
     "saved": "Beslutet sparades",
     "save_error": "Något gick fel när beslutet skulle sparas",
-    "empty_value": "—"
+    "empty_value": "—",
+    "unsaved": "Osparade ändringar"
   }
 }

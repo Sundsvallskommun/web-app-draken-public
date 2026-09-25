@@ -42,6 +42,10 @@ export const SupportProcessRow = () => {
   const stepIndex = supportProcessStepIndex(process);
   const errorText = supportProcessErrorText(process);
   const statusKey = supportProcessStatusKey(process.processStatus);
+  const steps = supportProcessStepKeys().map((key) => t(key));
+  // A step counts as done when it comes before the current one, so a finished process is one step
+  // past the last: then every step, the last one included, is ticked off.
+  const currentStep = completed ? steps.length : stepIndex;
 
   return (
     <div
@@ -50,8 +54,8 @@ export const SupportProcessRow = () => {
     >
       {stepIndex >= 0 ? (
         <ProgressStepper
-          steps={supportProcessStepKeys().map((key) => t(key))}
-          current={stepIndex}
+          steps={steps}
+          current={currentStep}
           labelPosition="right"
           size="sm"
           data-cy="process-stepper"

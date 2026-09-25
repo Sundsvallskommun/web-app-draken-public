@@ -1,3 +1,4 @@
+import { SaveRow } from '@common/components/save-row/save-row.component';
 import type { Decision, DecisionOutcome } from '@common/data-contracts/supportmanagement/data-contracts';
 import {
   Button,
@@ -70,7 +71,7 @@ const DecisionSummary: FC<{ decision: Decision; outcomes: DecisionOutcome[] }> =
   );
 };
 
-export const SupportErrandDecisionTab: React.FC = () => {
+export const SupportErrandDecisionTab: FC<{ setUnsaved: (unsaved: boolean) => void }> = ({ setUnsaved }) => {
   const { t } = useTranslation();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
@@ -110,6 +111,14 @@ export const SupportErrandDecisionTab: React.FC = () => {
       current = false;
     };
   }, [supportErrand?.id, municipalityId]);
+
+  // A decision is written once, with its own button, so anything filled in is still unsaved.
+  const edited =
+    !decisions.length && (!!outcome || !!legalBasis || !!delegationReference || !!justification || terms.some(Boolean));
+
+  useEffect(() => {
+    setUnsaved(edited);
+  }, [edited, setUnsaved]);
 
   const setTerm = (index: number, value: string) =>
     setTerms((current) => current.map((term, position) => (position === index ? value : term)));
@@ -256,19 +265,17 @@ export const SupportErrandDecisionTab: React.FC = () => {
             </Button>
           </div>
 
-          <div>
-            <Button
-              variant="primary"
-              color="vattjom"
-              disabled={!canEdit || !outcome || isSaving}
-              loading={isSaving}
-              loadingText={t('common:decision.saving')}
-              onClick={save}
-              data-cy="decision-save"
-            >
-              {t('common:decision.save')}
-            </Button>
-          </div>
+          <SaveRow
+            label={t('common:decision.save')}
+            loadingText={t('common:decision.saving')}
+            saving={isSaving}
+            disabled={!canEdit || !outcome || isSaving}
+            onSave={save}
+            unsaved={edited}
+            unsavedTitle={t('common:decision.unsaved')}
+            unsavedText={t('common:tabs.unsaved_decision')}
+            dataCy="decision-save"
+          />
         </div>
       ) : null}
     </div>

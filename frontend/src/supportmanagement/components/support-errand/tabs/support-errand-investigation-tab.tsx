@@ -1,4 +1,6 @@
+import { SaveRow } from '@common/components/save-row/save-row.component';
 import type { Investigation, InvestigationSection } from '@common/data-contracts/supportmanagement/data-contracts';
+import { useUnsavedEdits } from '@common/hooks/use-unsaved-edits';
 import { Button, Disclosure, FormControl, FormLabel, Select, Spinner, Textarea, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import {
@@ -47,7 +49,7 @@ const SectionDisclosure: React.FC<{ section: InvestigationSection }> = ({ sectio
   );
 };
 
-export const SupportErrandInvestigationTab: React.FC = () => {
+export const SupportErrandInvestigationTab: React.FC<{ setUnsaved: (unsaved: boolean) => void }> = ({ setUnsaved }) => {
   const { t } = useTranslation();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
@@ -59,10 +61,12 @@ export const SupportErrandInvestigationTab: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [summary, setSummary] = useState('');
-  const [conclusion, setConclusion] = useState('');
-  const [recommendation, setRecommendation] = useState('');
-  const [recommendationMotivation, setRecommendationMotivation] = useState('');
+  const { values, set, load, merge, edited } = useUnsavedEdits({
+    summary: '',
+    conclusion: '',
+    recommendation: '',
+    recommendationMotivation: '',
+  });
 
   const outcomes = supportMetadata?.decisionOutcomes ?? [];
   const errandId = supportErrand?.id;
@@ -76,10 +80,7 @@ export const SupportErrandInvestigationTab: React.FC = () => {
 
   const receive = (result: Investigation | undefined) => {
     setInvestigation(result);
-    setSummary(result?.summary ?? '');
-    setConclusion(result?.conclusion ?? '');
-    setRecommendation(result?.recommendation ?? '');
-    setRecommendationMotivation(result?.recommendationMotivation ?? '');
+    load(result);
   };
 
   useEffect(() => {
@@ -88,7 +89,11 @@ export const SupportErrandInvestigationTab: React.FC = () => {
     getSupportInvestigation(errandId, municipalityId)
       .then((result) => {
         if (!current) return;
-        receive(result);
+        // The investigation is read again every time the errand changes, saving the errand
+        // included, so what the handler has written but not yet saved is kept: the errand and the
+        // investigation are saved with their own buttons.
+        setInvestigation(result);
+        merge(result);
         setIsLoading(false);
       })
       .catch(() => {
@@ -99,7 +104,12 @@ export const SupportErrandInvestigationTab: React.FC = () => {
     return () => {
       current = false;
     };
-  }, [errandId, municipalityId, modified]);
+  }, [errandId, municipalityId, modified, merge]);
+
+  // The investigation is saved with its own button, so the wrapper warns before the page is left.
+  useEffect(() => {
+    setUnsaved(edited);
+  }, [edited, setUnsaved]);
 
   const reportFailure = (failure: unknown) =>
     toastMessage({
@@ -118,8 +128,8 @@ export const SupportErrandInvestigationTab: React.FC = () => {
       .catch(() => undefined);
   };
 
-  const start = () => {
-    if (!errandId) return Promise.resolve();
+  const start = (): Promise<Investigation | undefined> => {
+    if (!errandId) return Promise.resolve(undefined);
     setIsSaving(true);
     return startSupportInvestigation(
       errandId,
@@ -131,15 +141,23 @@ export const SupportErrandInvestigationTab: React.FC = () => {
         sortOrder: section.sortOrder,
       }))
     )
-      .then(receive)
-      .catch(reportFailure)
+      .then((result) => {
+        receive(result);
+        return result;
+      })
+      .catch((failure) => {
+        reportFailure(failure);
+        return undefined;
+      })
       .finally(() => setIsSaving(false));
   };
 
   useEffect(() => {
     if (isLoading || error || investigation || !inInvestigationStep || !canEdit || startedAutomatically.current) return;
     startedAutomatically.current = true;
-    start();
+    start().then((started) => {
+      if (!started) startedAutomatically.current = false;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, error, investigation, inInvestigationStep, canEdit]);
 
@@ -148,10 +166,10 @@ export const SupportErrandInvestigationTab: React.FC = () => {
     setIsSaving(true);
     saveSupportInvestigation(errandId, municipalityId, investigation.id, {
       version: investigation.version ?? 0,
-      summary,
-      conclusion,
-      recommendation: recommendation || undefined,
-      recommendationMotivation,
+      summary: values.summary,
+      conclusion: values.conclusion,
+      recommendation: values.recommendation || undefined,
+      recommendationMotivation: values.recommendationMotivation,
     })
       .then((result) => {
         receive(result);
@@ -231,9 +249,9 @@ export const SupportErrandInvestigationTab: React.FC = () => {
                     <Textarea
                       className="w-full"
                       rows={3}
-                      value={summary}
+                      value={values.summary}
                       disabled={readOnly}
-                      onChange={(event) => setSummary(event.target.value)}
+                      onChange={(event) => set('summary', event.target.value)}
                       data-cy="investigation-summary"
                     />
                   </FormControl>
@@ -243,9 +261,9 @@ export const SupportErrandInvestigationTab: React.FC = () => {
                     <Textarea
                       className="w-full"
                       rows={3}
-                      value={conclusion}
+                      value={values.conclusion}
                       disabled={readOnly}
-                      onChange={(event) => setConclusion(event.target.value)}
+                      onChange={(event) => set('conclusion', event.target.value)}
                       data-cy="investigation-conclusion"
                     />
                   </FormControl>
@@ -254,9 +272,9 @@ export const SupportErrandInvestigationTab: React.FC = () => {
                     <FormLabel>{t('common:investigation.recommendation')}</FormLabel>
                     <Select
                       className="w-full"
-                      value={recommendation}
+                      value={values.recommendation}
                       disabled={readOnly}
-                      onChange={(event) => setRecommendation(event.target.value)}
+                      onChange={(event) => set('recommendation', event.target.value)}
                       data-cy="investigation-recommendation"
                     >
                       <Select.Option value="">{t('common:investigation.recommendation_placeholder')}</Select.Option>
@@ -273,30 +291,30 @@ export const SupportErrandInvestigationTab: React.FC = () => {
                     <Textarea
                       className="w-full"
                       rows={3}
-                      value={recommendationMotivation}
+                      value={values.recommendationMotivation}
                       disabled={readOnly}
-                      onChange={(event) => setRecommendationMotivation(event.target.value)}
+                      onChange={(event) => set('recommendationMotivation', event.target.value)}
                       data-cy="investigation-motivation"
                     />
                   </FormControl>
-
-                  {readOnly ? null : (
-                    <div>
-                      <Button
-                        variant="secondary"
-                        loading={isSaving}
-                        disabled={isSaving}
-                        onClick={save}
-                        data-cy="save-investigation"
-                      >
-                        {t('common:investigation.save')}
-                      </Button>
-                    </div>
-                  )}
                 </div>
               </Disclosure.Content>
             </Disclosure>
           </div>
+
+          {readOnly ? null : (
+            <SaveRow
+              label={t('common:investigation.save')}
+              loadingText={t('common:investigation.saving')}
+              saving={isSaving}
+              disabled={isSaving}
+              onSave={save}
+              unsaved={edited}
+              unsavedTitle={t('common:investigation.unsaved')}
+              unsavedText={t('common:tabs.unsaved_investigation')}
+              dataCy="save-investigation"
+            />
+          )}
         </div>
       ) : null}
     </div>
