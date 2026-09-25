@@ -3,57 +3,20 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
-import { Label } from '@/data-contracts/supportmanagement/data-contracts';
+import { MetadataResponse, Role } from '@/data-contracts/supportmanagement/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
 import { withCategorizationLabels } from '@/utils/categorization-labels';
 
-interface SupportType {
-  name: string;
-  displayName: string;
-  escalationEmail?: string;
-  created: string;
-  modified?: string;
-}
+/**
+ * `namespace` is added here; upstream does not return it.
+ *
+ * Context: the namespace is needed by the frontend to construct the json schema name for
+ * the errand type, which is used to fetch the form for the errand's type.
+ * */
+type SupportMetadata = MetadataResponse & { namespace?: string };
 
-interface Category {
-  description?: string;
-  name: string;
-  displayName?: string;
-  types: SupportType[];
-  created?: string;
-  modified?: string;
-}
-
-interface ContactReason {
-  reason: string;
-  created: string;
-  modified: string;
-}
-
-interface SupportMetadata {
-  categories?: Category[];
-  externalIdTypes?: {
-    description?: string;
-    name: string;
-    created?: string;
-    modified?: string;
-  }[];
-  statuses?: {
-    description?: string;
-    name: string;
-    created?: string;
-    modified?: string;
-  }[];
-  contactReasons?: ContactReason[];
-  labels?: { labelStructure?: Label[] };
-}
-
-interface SupportRoles {
-  name: string;
-  displayName?: string;
-}
 @Controller()
 export class SupportMetadataController {
   private apiService = new ApiService();
@@ -70,7 +33,7 @@ export class SupportMetadataController {
   ): Promise<SupportMetadata> {
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata`;
     const res = await this.apiService.get<SupportMetadata>({ url }, req.user);
-    return response.status(200).send(withCategorizationLabels(res.data));
+    return response.status(200).send({ ...withCategorizationLabels(res.data), namespace: this.namespace });
   }
 
   @Get('/supportmetadata/:municipalityId/roles')
@@ -80,9 +43,9 @@ export class SupportMetadataController {
     @Req() req: RequestWithUser,
     @Param('municipalityId') municipalityId: string,
     @Res() response: any,
-  ): Promise<SupportRoles> {
+  ): Promise<Role[]> {
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata/roles`;
-    const res = await this.apiService.get<SupportRoles>({ url }, req.user);
+    const res = await this.apiService.get<Role[]>({ url }, req.user);
     return response.status(200).send(res.data);
   }
 }

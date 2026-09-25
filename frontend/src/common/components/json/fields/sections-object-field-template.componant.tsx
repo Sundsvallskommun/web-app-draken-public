@@ -1,11 +1,13 @@
 'use client';
 
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
-import type { ObjectFieldTemplateProps, RJSFSchema, SchemaUtilsType, UiSchema } from '@rjsf/utils';
+import type { ErrorSchema, ObjectFieldTemplateProps, RJSFSchema, SchemaUtilsType, UiSchema } from '@rjsf/utils';
 import { Checkbox, Disclosure, Divider, Label } from '@sk-web-gui/react';
 import { MouseEvent, ReactNode, useState } from 'react';
 
 import type { SchemaErrorNavigation } from '../schema/schema-form-error-summary.component';
+import { schemaForObject } from '../utils/schema-by-id';
+import { SectionStatus, SectionStatusLabel } from './section-status-label.componant';
 
 interface ConditionalRule {
   if: RJSFSchema;
@@ -32,11 +34,15 @@ export type SectionOpening = 'first' | 'none';
 
 interface FormContext {
   originalSchema?: RJSFSchema;
+  /** Sub-schema per RJSF field id, so a nested object is judged by its own conditions. */
+  schemaById?: Record<string, RJSFSchema>;
   sectionOpening?: SectionOpening;
   idPrefix?: string;
   externalFields?: Readonly<Record<string, ReactNode>>;
   errorNavigation?: SchemaErrorNavigation;
   requiredIndicator?: string;
+  /** Validation has run, so an empty required field is an error rather than a field not reached yet. */
+  validationActive?: boolean;
 }
 
 const externalFieldPrefix = '$external:';
@@ -92,6 +98,22 @@ function getConditionalFields(schema: RJSFSchema): Map<string, ConditionalRule['
   return conditionalFields;
 }
 
+/** A field can carry errors both on itself and in nested objects, so the whole branch is walked. */
+function containsErrors(node: unknown): boolean {
+  if (typeof node !== 'object' || node === null) return false;
+
+  const branch = node as Record<string, unknown>;
+  if (Array.isArray(branch.__errors) && branch.__errors.length > 0) return true;
+
+  return Object.entries(branch).some(([key, value]) => key !== '__errors' && containsErrors(value));
+}
+
+function sectionHasErrors(fieldNames: string[], errorSchema: ErrorSchema | undefined): boolean {
+  if (!errorSchema) return false;
+  const errors = errorSchema as Record<string, unknown>;
+  return fieldNames.some((fieldName) => containsErrors(errors[fieldName]));
+}
+
 function getRowDefinitions(uiSchema: UiSchema | undefined): RowDefinition[] {
   return (uiSchema?.['ui:rows'] ?? []) as RowDefinition[];
 }
@@ -112,6 +134,7 @@ interface SectionDisclosureProps {
   initiallyOpen: boolean;
   isReadonly: boolean;
   showCompletionControl: boolean;
+  status?: SectionStatus;
   children: ReactNode;
   errorNavigation?: SchemaErrorNavigation;
 }
@@ -122,6 +145,7 @@ function SectionDisclosure({
   initiallyOpen,
   isReadonly,
   showCompletionControl,
+  status,
   children,
   errorNavigation,
 }: Readonly<SectionDisclosureProps>) {
@@ -170,7 +194,8 @@ function SectionDisclosure({
         <Disclosure.Title id={`${disclosureId}-title`}>
           <h3>{section.title}</h3>
         </Disclosure.Title>
-        {doneMark && (
+        {status && <SectionStatusLabel status={status} data-cy={`section-status-${section.id}`} />}
+        {doneMark && !status && (
           <Label inverted rounded color="gronsta">
             Komplett
           </Label>
@@ -380,13 +405,16 @@ function renderFields(
 export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
   const { properties, formData, formContext, uiSchema, disabled, readonly, idSchema, registry, required, title } =
     props;
+  const errorSchema = props.errorSchema;
 
   const ctx = formContext as FormContext | undefined;
   const externalFields = ctx?.externalFields ?? {};
   const originalSchema = ctx?.originalSchema;
   const rootSchema = originalSchema ?? registry.rootSchema;
-  const conditionalFields = originalSchema
-    ? getConditionalFields(originalSchema)
+  const isRoot = idSchema.$id === (ctx?.idPrefix ?? 'root');
+  const objectSchema = schemaForObject(ctx?.schemaById, idSchema.$id, originalSchema, isRoot);
+  const conditionalFields = objectSchema
+    ? getConditionalFields(objectSchema)
     : new Map<string, ConditionalRule['if'][]>();
 
   const rows = getRowDefinitions(uiSchema);
@@ -395,7 +423,6 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
   const showCompletionControl = uiSchema?.['ui:options']?.showSectionCompletion !== false;
   const showObjectFieldset = uiSchema?.['ui:options']?.showObjectFieldset === true;
   const propertyNames = properties.map((p) => p.name);
-  const isRoot = idSchema.$id === (ctx?.idPrefix ?? 'root');
   const order = resolveObjectFieldOrder(uiSchema, propertyNames, externalFields, isRoot);
   const isReadonly = !!(disabled || readonly);
 
@@ -451,6 +478,8 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
   const holdsErrorTarget = (fieldId: string) =>
     errorNavigation?.fieldId === fieldId || errorNavigation?.ancestorIds.includes(fieldId);
 
+  const validationActive = ctx?.validationActive ?? false;
+
   const sectionFields = (section: SectionDefinition) =>
     insertExternalFieldsInSectionOrder(order, section.fields).filter((fieldName) => visibleFields.has(fieldName));
   const renderedSectionIds = sections
@@ -463,6 +492,12 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
         const sectionFieldsInOrder = sectionFields(section);
         if (sectionFieldsInOrder.length === 0) return null;
 
+        const status = !validationActive
+          ? undefined
+          : sectionHasErrors(sectionFieldsInOrder, errorSchema)
+          ? 'error'
+          : 'complete';
+
         return (
           <SectionDisclosure
             key={section.id}
@@ -471,6 +506,7 @@ export function SectionsObjectFieldTemplate(props: ObjectFieldTemplateProps) {
             initiallyOpen={resolveInitiallyOpen(section, renderedSectionIds.indexOf(section.id), ctx?.sectionOpening)}
             isReadonly={isReadonly}
             showCompletionControl={showCompletionControl}
+            status={status}
             errorNavigation={
               section.fields.some((fieldName) =>
                 holdsErrorTarget(`${idSchema.$id}_${fieldName.replace('$external:', 'external_')}`)

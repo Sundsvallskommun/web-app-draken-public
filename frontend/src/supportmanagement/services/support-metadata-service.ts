@@ -4,7 +4,8 @@ import { sortBy } from '@common/services/helper-service';
 
 export type SupportType = Type;
 
-export type SupportMetadata = MetadataResponse;
+/** `namespace` is added by the BFF; upstream does not return it. */
+export type SupportMetadata = MetadataResponse & { namespace?: string };
 
 export const getSupportMetadata: (municipalityId: string) => Promise<{ metadata: SupportMetadata; error?: string }> = (
   municipalityId
