@@ -11,6 +11,7 @@ import {
 } from '@supportmanagement/services/support-errand-service';
 import {
   getSupportErrandProcess,
+  isSupportProcessCompleted,
   isSupportProcessSignalStale,
   sendSupportProcessSignal,
   supportProcessAwaitingSignals,
@@ -50,7 +51,11 @@ const waitFor = (milliseconds: number) => new Promise((resolve) => setTimeout(re
 
 /**
  * The step the errand has moved to, once the process has reported it. Nothing is pushed to Draken, so
- * the errand is read again until the step changes or the process stops answering with something new.
+ * the errand is read again until the step changes, or until the process reports that it is done -
+ * the last step keeps its activity id to the end, so the name alone never says that.
+ *
+ * A read that fails leaves the errand undefined rather than throwing, so it counts as an attempt
+ * and not as a step: a process that is lost sight of must not look like one that moved on.
  */
 const errandOnNextStep = async (
   errandId: string,
@@ -60,7 +65,10 @@ const errandOnNextStep = async (
   for (let attempt = 0; attempt < SIGNAL_REPORT_ATTEMPTS; attempt++) {
     await waitFor(SIGNAL_REPORT_INTERVAL);
     const { errand } = await getSupportErrandById(errandId, municipalityId);
-    if (supportProcessStepName(getSupportErrandProcess(errand)) !== leaving) return errand;
+    if (!errand) continue;
+
+    const process = getSupportErrandProcess(errand);
+    if (isSupportProcessCompleted(process) || supportProcessStepName(process) !== leaving) return errand;
   }
   return undefined;
 };
@@ -155,13 +163,20 @@ export const SupportProcessStepButton: FC<{
     await setSupportErrandStatus(supportErrand.id!, municipalityId, Status.ONGOING);
   };
 
-  const closeThroughRemainingGates = async (errandId: string, action: ProcessAction): Promise<SupportErrand> => {
+  const closeThroughRemainingGates = async (
+    errandId: string,
+    action: ProcessAction
+  ): Promise<SupportErrand | undefined> => {
     if (action.needsSignal) {
       const onClosure = await errandOnNextStep(errandId, municipalityId, SupportProcessStep.FOLLOW_UP);
-      const closureSignal = supportProcessAwaitingSignals(getSupportErrandProcess(onClosure))[0];
+      const closureProcess = getSupportErrandProcess(onClosure);
+      const closureSignal = supportProcessAwaitingSignals(closureProcess)[0];
+
       if (closureSignal?.name) {
         await sendSupportProcessSignal(errandId, municipalityId, closureSignal.name);
         await errandOnNextStep(errandId, municipalityId, SupportProcessStep.CLOSING);
+      } else if (!isSupportProcessCompleted(closureProcess)) {
+        throw new Error('The process did not reach the step that closes the errand');
       }
     }
 
@@ -185,8 +200,10 @@ export const SupportProcessStepButton: FC<{
         : (await errandOnNextStep(supportErrand.id!, municipalityId, step)) ??
           (await getSupportErrandById(supportErrand.id!, municipalityId)).errand;
 
-      setSupportErrand(stepped);
-      reset(stepped);
+      if (stepped) {
+        setSupportErrand(stepped);
+        reset(stepped);
+      }
       if (action.tabKey) setActiveTabKey(action.tabKey);
       toastMessage({
         position: 'bottom',
@@ -210,7 +227,6 @@ export const SupportProcessStepButton: FC<{
     }
   };
 
-  /** The step does not save for the handler, so what is written and left behind is said out loud. */
   const unsavedBehind = (action: ProcessAction): boolean =>
     !!action.unsavedTabKey && !!unsavedTabs[action.unsavedTabKey];
 
