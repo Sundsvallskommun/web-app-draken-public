@@ -49,7 +49,12 @@
   "tabs": {
     "investigation": "Utredning",
     "decision": "Beslut",
-    "followup": "Uppföljning"
+    "followup": "Uppföljning",
+    "unsaved_title": "Du har osparade ändringar",
+    "unsaved_investigation": "Utredningen är inte sparad. Det du skrivit ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara utredningen.",
+    "unsaved_decision": "Beslutet är inte sparat. Det du fyllt i ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara beslutet.",
+    "unsaved_leave": "Byt flik ändå",
+    "unsaved_stay": "Stanna kvar"
   },
   "company": {
     "engagements_heading": "Förenklad bolagsdata",
@@ -111,7 +116,9 @@
     "started_at": "Utredning påbörjad",
     "due_at": "Beslutsfrist",
     "starting": "Utredningen påbörjas",
-    "section_not_built": "Den här delen av utredningen är inte byggd än."
+    "section_not_built": "Den här delen av utredningen är inte byggd än.",
+    "unsaved": "Osparade ändringar",
+    "saving": "Sparar"
   },
   "process": {
     "steps": {
@@ -209,6 +216,7 @@
     "saving": "Sparar beslutet",
     "saved": "Beslutet sparades",
     "save_error": "Något gick fel när beslutet skulle sparas",
-    "empty_value": "—"
+    "empty_value": "—",
+    "unsaved": "Osparade ändringar"
   }
 }
