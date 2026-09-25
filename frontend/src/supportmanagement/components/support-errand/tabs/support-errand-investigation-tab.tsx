@@ -14,13 +14,15 @@ import {
   hasReachedSupportProcessStep,
   SupportProcessStep,
 } from '@supportmanagement/services/support-process-service';
+import dayjs from 'dayjs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const sectionsInOrder = (investigation: Investigation | undefined): InvestigationSection[] =>
   [...(investigation?.sections ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
-const asDate = (value: string | undefined): string => value?.slice(0, 10) ?? '–';
+const asDate = (value: string | undefined): string =>
+  value && dayjs(value).isValid() ? dayjs(value).format('YYYY-MM-DD') : '–';
 
 const MetaItem: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <div className="flex flex-col">
