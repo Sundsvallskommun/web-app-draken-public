@@ -3,9 +3,11 @@ import { OpenAPI } from 'routing-controllers-openapi';
 
 import { SUPPORTMANAGEMENT_NAMESPACE } from '@/config';
 import { apiServiceName } from '@/config/api-config';
+import { Label } from '@/data-contracts/supportmanagement/data-contracts';
 import { RequestWithUser } from '@/interfaces/auth.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import ApiService from '@/services/api.service';
+import { withCategorizationLabels } from '@/utils/categorization-labels';
 
 interface SupportType {
   name: string;
@@ -45,6 +47,7 @@ interface SupportMetadata {
     modified?: string;
   }[];
   contactReasons?: ContactReason[];
+  labels?: { labelStructure?: Label[] };
 }
 
 interface SupportRoles {
@@ -67,7 +70,7 @@ export class SupportMetadataController {
   ): Promise<SupportMetadata> {
     const url = `${this.SERVICE}/${municipalityId}/${this.namespace}/metadata`;
     const res = await this.apiService.get<SupportMetadata>({ url }, req.user);
-    return response.status(200).send(res.data);
+    return response.status(200).send(withCategorizationLabels(res.data));
   }
 
   @Get('/supportmetadata/:municipalityId/roles')

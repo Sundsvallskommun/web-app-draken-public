@@ -1,5 +1,6 @@
 import iconMap from '@common/components/lucide-icon-map/lucide-icon-map.component';
 import { deepFlattenToObject, prettyTime } from '@common/services/helper-service';
+import { appConfig } from '@config/appconfig';
 import { Button, Divider, FormControl, FormLabel, Label, Select, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
@@ -25,6 +26,7 @@ import { useFormContext, UseFormReturn } from 'react-hook-form';
 
 import { SupportCloseErrandButtonComponent } from './buttons/support-close-errand-button.component';
 import { SupportForwardErrandButtonComponent } from './buttons/support-forward-errand-button.component';
+import { SupportProcessStepButton } from './buttons/support-process-step-button.component';
 import { SupportReopenErrandButton } from './buttons/support-reopen-errand-button.component';
 import { SupportResumeErrandButton } from './buttons/support-resume-errand-button.component';
 import { SupportStartProcessButtonComponent } from './buttons/support-start-process-button.component';
@@ -449,6 +451,14 @@ export const SidebarInfo: FC<{
           </Button>
           <>
             <Divider className="mt-16 mb-24" />
+
+            {appConfig.features.useProcess ? (
+              <SupportProcessStepButton
+                disabled={!allowed || supportErrandIsEmpty(supportErrand!)}
+                onSubmit={onSubmit}
+                onError={onError}
+              />
+            ) : null}
 
             {supportErrand?.status === Status.SOLVED ? (
               <>

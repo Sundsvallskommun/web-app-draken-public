@@ -45,5 +45,178 @@
     "priority": "Prioritet",
     "reminder": "Påminnelse",
     "responsible": "Ansvarig"
+  },
+  "tabs": {
+    "investigation": "Utredning",
+    "decision": "Beslut",
+    "followup": "Uppföljning",
+    "unsaved_title": "Du har osparade ändringar",
+    "unsaved_investigation": "Utredningen är inte sparad. Det du skrivit ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara utredningen.",
+    "unsaved_decision": "Beslutet är inte sparat. Det du fyllt i ligger kvar så länge du är kvar i ärendet, men sparas först när du klickar på Spara beslutet.",
+    "unsaved_leave": "Byt flik ändå",
+    "unsaved_stay": "Stanna kvar"
+  },
+  "company": {
+    "engagements_heading": "Förenklad bolagsdata",
+    "engagements_description": "Nedan kan du se personer kopplade till ärendeägaren.",
+    "role": "Roll",
+    "name": "Namn",
+    "identity": "Personnummer",
+    "show_more": "Visa mer information",
+    "description_heading": "Verksamhetsbeskrivning",
+    "accounting_period": "Räkenskapsår",
+    "table_company": "Bolag",
+    "table_address": "Adress",
+    "table_employees": "Antal anställda",
+    "no_description": "Ingen verksamhetsbeskrivning finns registrerad.",
+    "close_description": "Stäng verksamhetsbeskrivning",
+    "pbi": {
+      "column": "PBI",
+      "checkbox_aria": "Person med betydande inflytande: {{name}}",
+      "confirm_title": "Markera som PBI",
+      "confirm_text": "Vill du markera personen som PBI? Om du trycker JA kommer personen att läggas som ett ärendeintressent under övriga parter.",
+      "confirm_yes": "Ja",
+      "confirm_no": "Nej",
+      "unsaved": "Spara ändringarna av ärendets intressenter innan du ändrar PBI-markeringar.",
+      "conflict": "Ärendet har ändrats av någon annan. Uppgifterna är uppdaterade – försök igen.",
+      "error": "PBI-markeringen kunde inte sparas.",
+      "unresolved": "Kan inte slås upp i folkbokföringen"
+    }
+  },
+  "investigation": {
+    "heading": "Utredning – lämplighetsprövning",
+    "title": "Utredning av ansökan",
+    "intro": "Utredningen sammanställer beslutsunderlaget för ansökan. Lämpligheten prövas utifrån sökandens personliga och ekonomiska förhållanden enligt 8 kap. 12 § alkohollagen.",
+    "start": "Starta utredning",
+    "loading": "Hämtar utredningen",
+    "error": "Utredningen kunde inte hämtas.",
+    "status_active": "Pågår",
+    "status_completed": "Avslutad",
+    "conclusion_heading": "Sammanvägd bedömning och förslag till beslut",
+    "summary": "Det som har prövats",
+    "conclusion": "Samlad bedömning",
+    "recommendation": "Förslag till beslut",
+    "recommendation_placeholder": "Välj förslag till beslut",
+    "recommendation_motivation": "Motivering",
+    "save": "Spara utredningen",
+    "saved": "Utredningen är sparad.",
+    "completed_at": "Avslutad {{date}}",
+    "save_error": "Utredningen kunde inte sparas.",
+    "conflict": "Utredningen har ändrats av någon annan. Uppgifterna är uppdaterade – försök igen.",
+    "sections": {
+      "statements": "Remisser och yttranden",
+      "personal_suitability": "Personlig lämplighet",
+      "financial_suitability": "Ekonomisk lämplighet",
+      "knowledge_test": "Kunskapsprov",
+      "premises": "Lokal och serveringsställe"
+    },
+    "processing_time": "Handläggningstiden räknas från det datum ansökan är komplett. Sundsvall har en normal handläggningstid på 6–8 veckor.",
+    "not_started": "Utredningen är inte påbörjad.",
+    "investigator": "Ansvarig handläggare",
+    "started_at": "Utredning påbörjad",
+    "due_at": "Beslutsfrist",
+    "starting": "Utredningen påbörjas",
+    "section_not_built": "Den här delen av utredningen är inte byggd än.",
+    "unsaved": "Osparade ändringar",
+    "saving": "Sparar"
+  },
+  "process": {
+    "steps": {
+      "registration": "Registrerad",
+      "review": "Granskning",
+      "investigation": "Utredning",
+      "decision": "Beslut",
+      "follow_up": "Uppföljning",
+      "closing": "Avslut"
+    },
+    "status": {
+      "running": "Processen arbetar",
+      "waiting": "Väntar",
+      "retrying": "Försöker igen",
+      "completed": "Processen är avslutad",
+      "failed": "Processen misslyckades"
+    },
+    "log": {
+      "open": "Visa processloggen",
+      "heading": "Processlogg",
+      "loading": "Hämtar processloggen",
+      "error": "Processloggen kunde inte hämtas.",
+      "empty": "Processen har inte loggat något än."
+    },
+    "actions": {
+      "confirm_no": "Nej",
+      "stale": "Ärendet har flyttats vidare av någon annan. Uppgifterna är uppdaterade.",
+      "start_handling": {
+        "label": "Starta handläggning",
+        "done": "Handläggning startad",
+        "error": "Något gick fel vid start av handläggning"
+      },
+      "start_investigation": {
+        "label": "Inled utredning",
+        "confirm_title": "Ta ärendet till utredning?",
+        "confirm_text": "När du tar ett ansökningsärende vidare till utredning innebär det att du anser att ärendet är tillräckligt komplett. Ett bekräftelsemeddelande skickas då till kunden via Mina sidor.",
+        "done": "Ärendet är taget till utredning.",
+        "error": "Ärendet kunde inte tas till utredning.",
+        "confirm_yes": "Ja"
+      },
+      "ready_for_decision": {
+        "label": "Redo för beslut",
+        "confirm_title": "Ta ärendet till beslut?",
+        "confirm_text": "När du tar ärendet vidare till beslut innebär det att utredningen är klar och att underlaget räcker för att fatta beslut.",
+        "done": "Ärendet är taget till beslut.",
+        "error": "Ärendet kunde inte tas till beslut.",
+        "confirm_yes": "Ja"
+      },
+      "start_follow_up": {
+        "label": "Inled uppföljning",
+        "confirm_title": "Ta ärendet till uppföljning?",
+        "confirm_text": "När du tar ärendet vidare till uppföljning innebär det att beslutet är fattat och expedierat.",
+        "done": "Ärendet är taget till uppföljning.",
+        "error": "Ärendet kunde inte tas till uppföljning.",
+        "confirm_yes": "Ja"
+      },
+      "close_errand": {
+        "label": "Avsluta ärende",
+        "confirm_title": "Avsluta ärendet?",
+        "confirm_text": "Ärendet har följt hela processen (granska, utredning, beslut och uppföljning) och avslutas nu.",
+        "confirm_yes": "Ja, avsluta",
+        "done": "Ärendet är avslutat.",
+        "error": "Ärendet kunde inte avslutas."
+      }
+    }
+  },
+  "decision": {
+    "heading": "Beslut",
+    "loading": "Hämtar beslut",
+    "error": "Beslutet kunde inte hämtas.",
+    "locked": "Låst",
+    "method": {
+      "manual": "Beslut fattat av handläggare",
+      "automatic": "Automatiskt beslut"
+    },
+    "decided_by": "Beslutsfattare",
+    "decided_at": "Beslutsdatum",
+    "legal_basis": "Lagrum",
+    "delegation": "Delegationspunkt",
+    "justification": "Motivering",
+    "terms": "Villkor",
+    "outcome": "Utfall",
+    "outcome_placeholder": "Välj utfall",
+    "role": "Beslutsfattare enligt delegationsordning",
+    "roles": {
+      "handlaggare": "Handläggare",
+      "utskottet": "Utskottet",
+      "namndsordforande": "Nämndsordförande",
+      "namnd": "Nämnd"
+    },
+    "add_term": "Lägg till villkor",
+    "term_label": "Villkor {{number}}",
+    "remove_term": "Ta bort villkor {{number}}",
+    "save": "Spara beslutet",
+    "saving": "Sparar beslutet",
+    "saved": "Beslutet sparades",
+    "save_error": "Något gick fel när beslutet skulle sparas",
+    "empty_value": "—",
+    "unsaved": "Osparade ändringar"
   }
 }

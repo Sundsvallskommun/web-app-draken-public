@@ -1,4 +1,4 @@
-import { isBOU, isIK, isKA, isLOK, isLOP, isROB, isSE } from '@common/services/application-service';
+import { isAOT, isBOU, isIK, isKA, isLOK, isLOP, isROB, isSE } from '@common/services/application-service';
 import { deepFlattenToObject } from '@common/services/helper-service';
 import { getToastOptions } from '@common/utils/toast-message-settings';
 import { appConfig } from '@config/appconfig';
@@ -8,6 +8,7 @@ import {
   closeSupportErrand,
   getSupportErrandById,
   Resolution,
+  ResolutionLabelAOT,
   ResolutionLabelBOU,
   ResolutionLabelIK,
   ResolutionLabelKA,
@@ -21,6 +22,7 @@ import {
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import { sendClosingMessage } from '@supportmanagement/services/support-message-service';
+import { hasSupportErrandProcess } from '@supportmanagement/services/support-process-service';
 import { applicantHasContactChannel, getAdminName } from '@supportmanagement/services/support-stakeholder-service';
 import { ArrowLeft, Check } from 'lucide-react';
 import React, { useState } from 'react';
@@ -30,6 +32,7 @@ const RESOLUTION_DESCRIPTION =
   'Du kan avsluta ärendet med nuvarande lösningskod, eller ändra om något i ärendet har påverkat lösningen.';
 
 const getResolutionLabels = (): Record<string, string> => {
+  if (isAOT()) return ResolutionLabelAOT;
   if (isLOP()) return ResolutionLabelLOP;
   if (isIK() || isSE()) return ResolutionLabelIK;
   if (isKA()) return ResolutionLabelKA;
@@ -64,6 +67,11 @@ export const SupportCloseErrandButtonComponent: React.FC<{ disabled: boolean }> 
   const [changeResolution, setChangeResolution] = useState<boolean>(false);
 
   const formControls: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
+
+  // An errand driven by a process is closed from its own step, so the two ways out never compete.
+  if (appConfig.features.useProcess && hasSupportErrandProcess(supportErrand)) {
+    return null;
+  }
 
   const showCloseErrorToast = (message = 'Något gick fel när ärendet skulle avslutas') => {
     toastMessage({

@@ -1,8 +1,7 @@
-import { UiPhaseWrapper } from '@casedata/components/errand/ui-phase/ui-phase-wrapper';
 import { CasedataStatusLabelComponent } from '@casedata/components/ongoing-casedata-errands/components/casedata-status-label.component';
 import { getApplicationEnvironment } from '@common/services/application-service';
 import { appConfig } from '@config/appconfig';
-import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu, useThemeQueries } from '@sk-web-gui/react';
+import { Button, CookieConsent, Divider, Link, Logo, PopupMenu, UserMenu } from '@sk-web-gui/react';
 import { useCasedataStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { AngeSymbol } from '@styles/ange-symbol';
 import { SupportStatusLabelComponent } from '@supportmanagement/components/ongoing-support-errands/components/support-status-label.component';
@@ -17,7 +16,6 @@ import { userMenuGroups } from './userMenuGroups';
 export default function Layout({ title, children }: { title: string; children: React.ReactNode }) {
   const user = useUserStore((s) => s.user);
   const applicationEnvironment = getApplicationEnvironment();
-  const { isMinLargeDevice } = useThemeQueries();
   const supportMetadata = useMetadataStore((s) => s.supportMetadata);
   const pathName = usePathname() ?? '';
   const errand = useCasedataStore((s) => s.errand);
@@ -91,6 +89,21 @@ export default function Layout({ title, children }: { title: string; children: R
     </div>
   );
 
+  const registerErrandSection = !appConfig.features.useProcess ? (
+    <>
+      <Divider orientation="vertical" className="mx-24" />
+      <Link
+        href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
+        target="_blank"
+        data-cy="register-new-errand-button"
+      >
+        <Button color={'primary'} variant={'tertiary'} rightIcon={<ExternalLink />}>
+          Nytt ärende
+        </Button>
+      </Link>
+    </>
+  ) : null;
+
   return (
     <>
       <div className="relative z-[15] bg-background-content">
@@ -108,17 +121,7 @@ export default function Layout({ title, children }: { title: string; children: R
                   buttonSize="sm"
                 />
               </span>
-
-              <Divider orientation="vertical" className="mx-24" />
-              <Link
-                href={`${process.env.NEXT_PUBLIC_BASEPATH}/registrera`}
-                target="_blank"
-                data-cy="register-new-errand-button"
-              >
-                <Button color={'primary'} variant={'tertiary'} rightIcon={<ExternalLink />}>
-                  Nytt ärende
-                </Button>
-              </Link>
+              {registerErrandSection}
             </div>
           }
           mobileMenu={
@@ -150,20 +153,7 @@ export default function Layout({ title, children }: { title: string; children: R
               </PopupMenu.Panel>
             </PopupMenu>
           }
-          bottomContent={
-            appConfig.features.useUiPhases &&
-            !isMinLargeDevice &&
-            (pathName === '/registrera' || pathName.includes('arende')) ? (
-              <UiPhaseWrapper />
-            ) : null
-          }
-        >
-          {appConfig.features.useUiPhases &&
-          isMinLargeDevice &&
-          (pathName === '/registrera' || pathName.includes('arende')) ? (
-            <UiPhaseWrapper />
-          ) : null}
-        </PageHeader>
+        ></PageHeader>
       </div>
 
       {children}

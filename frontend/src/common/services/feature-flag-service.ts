@@ -8,6 +8,7 @@ import { isLOP } from './application-service';
 export const isAppealEnabled = () => appConfig.features.useAppeal;
 export const attestationEnabled = (user: User) => isLOP() && user.permissions?.canViewAttestations;
 export const contractsEnabled = () => appConfig.features.useContracts;
+export const customerPagesEnabled = () => appConfig.features.useCustomerPages;
 
 export const getFeatureFlags = async () => {
   return await apiService

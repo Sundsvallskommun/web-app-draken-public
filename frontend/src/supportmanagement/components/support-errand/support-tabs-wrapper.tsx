@@ -1,6 +1,6 @@
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
-import { cx, Tabs } from '@sk-web-gui/react';
+import { cx, Tabs, useConfirm } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore } from '@stores/index';
 import { SupportErrandInvoiceTab } from '@supportmanagement/components/support-errand/tabs/support-errand-invoice-tab';
 import { SupportErrandRecruitmentTab } from '@supportmanagement/components/support-errand/tabs/support-errand-recruitment-tab';
@@ -20,14 +20,24 @@ import {
   groupByConversationIdSortedTree,
   MessageNode,
 } from '@supportmanagement/services/support-message-service';
-import { Dispatch, FC, ReactNode, SetStateAction, useEffect, useMemo, useState } from 'react';
+import {
+  getSupportErrandProcess,
+  hasReachedSupportProcessStep,
+  SupportProcessStep,
+  SupportProcessStepName,
+} from '@supportmanagement/services/support-process-service';
+import { Dispatch, FC, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 
 import { SupportMessagesTab } from './tabs/messages/support-messages-tab';
 import { SupportErrandServicesTab } from './tabs/services/support-errand-services-tab';
 import { SupportErrandAttachmentsTab } from './tabs/support-errand-attachments-tab';
 import { SupportErrandBasicsTab } from './tabs/support-errand-basics-tab';
+import { SupportErrandDecisionTab } from './tabs/support-errand-decision-tab';
 import { SupportErrandDetailsTab } from './tabs/support-errand-details-tab';
+import { SupportErrandFollowUpTab } from './tabs/support-errand-followup-tab';
+import { SupportErrandInvestigationTab } from './tabs/support-errand-investigation-tab';
 
 export const SupportTabsWrapper: FC<{
   setUnsavedFacility: Dispatch<SetStateAction<boolean>>;
@@ -38,9 +48,20 @@ export const SupportTabsWrapper: FC<{
   const [conversationMessageTree, setConversationMessageTree] = useState<MessageNode[]>([]);
   const [conversationReadByCounts, setConversationReadByCounts] = useState<ConversationReadByCount[]>([]);
   const municipalityId = useConfigStore((s) => s.municipalityId);
+  const { t } = useTranslation();
   const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
 
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+  // The investigation and the decision are resources of their own, saved with their own buttons, so
+  // they are tracked apart from the errand form - in the store, since the sidebar asks about them too.
+  const unsavedTabs = useSupportStore((s) => s.unsavedTabs);
+  const setUnsavedTab = useSupportStore((s) => s.setUnsavedTab);
+  const setUnsavedInvestigation = useCallback(
+    (unsaved: boolean) => setUnsavedTab('investigation', unsaved),
+    [setUnsavedTab]
+  );
+  const setUnsavedDecision = useCallback((unsaved: boolean) => setUnsavedTab('decision', unsaved), [setUnsavedTab]);
+  const confirm = useConfirm();
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
@@ -106,6 +127,11 @@ export const SupportTabsWrapper: FC<{
     unreadMessageCount > 0 ? `, ${unreadMessageCount} ${unreadMessageCount === 1 ? 'oläst' : 'olästa'}` : ''
   })`;
 
+  const process = getSupportErrandProcess(supportErrand);
+
+  const awaitsStep = (step: SupportProcessStepName): boolean =>
+    appConfig.features.useProcess && Boolean(process) && !hasReachedSupportProcessStep(step, process);
+
   const tabs: {
     key: string;
     label: string;
@@ -160,6 +186,27 @@ export const SupportTabsWrapper: FC<{
         visibleFor: true,
       },
       {
+        key: 'investigation',
+        label: t('common:tabs.investigation'),
+        content: supportErrand && <SupportErrandInvestigationTab setUnsaved={setUnsavedInvestigation} />,
+        disabled: awaitsStep(SupportProcessStep.INVESTIGATION),
+        visibleFor: appConfig.features.useInvestigationTab,
+      },
+      {
+        key: 'decision',
+        label: t('common:tabs.decision'),
+        content: supportErrand && <SupportErrandDecisionTab setUnsaved={setUnsavedDecision} />,
+        disabled: awaitsStep(SupportProcessStep.DECISION),
+        visibleFor: appConfig.features.useDecisionTab,
+      },
+      {
+        key: 'followup',
+        label: t('common:tabs.followup'),
+        content: supportErrand && <SupportErrandFollowUpTab />,
+        disabled: awaitsStep(SupportProcessStep.FOLLOW_UP),
+        visibleFor: appConfig.features.useFollowUpTab,
+      },
+      {
         key: 'services',
         label: 'Beslut och dokument',
         content: supportErrand && (
@@ -198,10 +245,42 @@ export const SupportTabsWrapper: FC<{
       supportAttachments,
       supportConversations,
       supportErrand,
+      t,
     ]
   );
 
   const [activeTab, setActiveTab] = useState(0);
+
+  /** What the tab being left is holding, written but not yet saved. */
+  const unsavedInActiveTab = (): boolean => !!activeTabKey && !!unsavedTabs[activeTabKey];
+
+  /**
+   * Tabs moves itself when its button is clicked, unless the button brings its own handler, so the
+   * tab is changed from here alone - and declining the question leaves the tab where it stands.
+   */
+  const changeTab = (key: string) => {
+    if (key === activeTabKey) {
+      return;
+    }
+
+    if (!unsavedInActiveTab()) {
+      setActiveTabKey(key);
+      return;
+    }
+
+    confirm
+      .showConfirmation(
+        t('common:tabs.unsaved_title'),
+        t(`common:tabs.unsaved_${activeTabKey}`),
+        t('common:tabs.unsaved_leave'),
+        t('common:tabs.unsaved_stay'),
+        'info',
+        'info'
+      )
+      .then((confirmed) => {
+        if (confirmed) setActiveTabKey(key);
+      });
+  };
 
   useEffect(() => {
     const index = tabs.filter((tab) => tab.visibleFor).findIndex((tab) => tab.key === activeTabKey);
@@ -211,22 +290,23 @@ export const SupportTabsWrapper: FC<{
   return (
     <>
       <div className="mb-xl">
-        <WarnIfUnsavedChanges showWarning={unsavedChanges}>
+        <WarnIfUnsavedChanges showWarning={unsavedChanges || Object.values(unsavedTabs).some(Boolean)}>
           <Tabs
             className="border-1 rounded-12 bg-background-content pt-22 pl-5"
             tabslistClassName="border-0 border-red-500 -m-b-12 flex-wrap ml-10"
             panelsClassName="border-t-1"
             current={activeTab}
-            onTabChange={(e) => {
-              setActiveTabKey(tabs.filter((tab) => tab.visibleFor)[e].key);
-            }}
             size={'sm'}
           >
             {tabs
               .filter((tab) => tab.visibleFor)
               .map((tab, index) => (
                 <Tabs.Item key={tab.key}>
-                  <Tabs.Button disabled={tab.disabled} className={cx('text-base', index === 0 && 'ml-8')}>
+                  <Tabs.Button
+                    disabled={tab.disabled}
+                    onClick={() => changeTab(tab.key)}
+                    className={cx('text-base', index === 0 && 'ml-8')}
+                  >
                     {tab.label}
                   </Tabs.Button>
                   <Tabs.Content>{tab.content}</Tabs.Content>

@@ -1,13 +1,37 @@
 import { JsonParametersDisplay } from '@common/components/json/schema/json-parameters-display.component';
+import { useCompanyEngagements } from '@common/hooks/use-company-engagements';
+import { useCompanyProfile } from '@common/hooks/use-company-profile';
+import { appConfig } from '@config/appconfig';
 import { Table } from '@sk-web-gui/react';
-import { useConfigStore, useSupportStore } from '@stores/index';
+import { useConfigStore, useMetadataStore, useSupportStore } from '@stores/index';
 import { isOpenEErrand } from '@supportmanagement/services/support-errand-service';
-import { useMemo } from 'react';
+import { namespaceHasPbiRole } from '@supportmanagement/services/support-pbi-service';
+import { useMemo, useState } from 'react';
+
+import { SupportErrandBusinessDescriptionDrawer } from './support-errand-business-description-drawer.component';
+import { SupportErrandCompanyEngagements } from './support-errand-company-engagements.component';
+import { useSupportPbi } from './use-support-pbi';
 
 export const SupportErrandDetailsTab: React.FC<{}> = () => {
   const _supportErrand = useSupportStore((s) => s.supportErrand);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = _supportErrand!;
+  const ifJsonParameters = (supportErrand.jsonParameters?.length ?? 0) > 0;
+  const showsJsonParameters = ifJsonParameters && !!municipalityId;
+
+  const organizationStakeholder = supportErrand.stakeholders?.find(
+    (stakeholder) => stakeholder.role === 'PRIMARY' && stakeholder.externalIdType === 'COMPANY'
+  );
+  const organizationPartyId = organizationStakeholder?.externalId;
+  const companyInformation = appConfig.features.useCompanyInformation ? organizationPartyId : undefined;
+  const supportMetadata = useMetadataStore((s) => s.supportMetadata);
+  const marksPbi = !!companyInformation && namespaceHasPbiRole(supportMetadata);
+  const pbi = useSupportPbi(marksPbi);
+  const plainEngagements = useCompanyEngagements(marksPbi ? undefined : companyInformation);
+  const companyEngagements = pbi.candidates ?? plainEngagements;
+  const showsCompanyEngagements = companyEngagements.length > 0;
+  const companyProfile = useCompanyProfile(companyInformation);
+  const [showsBusinessDescription, setShowsBusinessDescription] = useState(false);
 
   const simpleParams = useMemo(
     () =>
@@ -100,13 +124,32 @@ export const SupportErrandDetailsTab: React.FC<{}> = () => {
             </Table>
           </div>
         ))}
-        {(supportErrand.jsonParameters?.length ?? 0) > 0 && municipalityId ? (
-          <div className="p-16">
+        {showsJsonParameters && municipalityId ? (
+          <div className={showsCompanyEngagements ? 'px-16 pt-16' : 'p-16'}>
             <JsonParametersDisplay
               jsonParameters={supportErrand.jsonParameters as any}
               municipalityId={municipalityId}
             />
           </div>
+        ) : null}
+        {showsCompanyEngagements ? (
+          <div className={showsJsonParameters ? 'px-16 pb-16' : 'p-16'}>
+            <SupportErrandCompanyEngagements
+              engagements={companyEngagements}
+              initiallyOpen={!showsJsonParameters}
+              companyName={companyProfile?.name ?? organizationStakeholder?.organizationName}
+              onShowBusinessDescription={companyProfile ? () => setShowsBusinessDescription(true) : undefined}
+              pbiMarking={pbi.marking}
+              pbiNotice={pbi.notice}
+            />
+          </div>
+        ) : null}
+        {companyProfile ? (
+          <SupportErrandBusinessDescriptionDrawer
+            show={showsBusinessDescription}
+            profile={companyProfile}
+            onClose={() => setShowsBusinessDescription(false)}
+          />
         ) : null}
       </div>
     </div>

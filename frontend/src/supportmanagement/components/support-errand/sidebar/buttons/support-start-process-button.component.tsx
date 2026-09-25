@@ -1,3 +1,4 @@
+import { appConfig } from '@config/appconfig';
 import { Button, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
 import {
@@ -6,6 +7,7 @@ import {
   setSupportErrandStatus,
   Status,
 } from '@supportmanagement/services/support-errand-service';
+import { hasSupportErrandProcess } from '@supportmanagement/services/support-process-service';
 import { ArrowRight } from 'lucide-react';
 import { FC } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -52,6 +54,11 @@ export const SupportStartProcessButtonComponent: FC<{
       toast({ message: 'Något gick fel vid start av handläggning', status: 'error', position: 'bottom' });
     }
   };
+
+  // An errand driven by a process starts its handling from its own step, so the two ways in never compete.
+  if (appConfig.features.useProcess && hasSupportErrandProcess(supportErrand)) {
+    return null;
+  }
 
   if (!supportErrand || supportErrand.status !== Status.NEW) {
     return null;

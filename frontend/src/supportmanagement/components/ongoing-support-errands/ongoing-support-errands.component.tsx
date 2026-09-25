@@ -3,6 +3,7 @@ import { attestationEnabled } from '@common/services/feature-flag-service';
 import { useDebounceEffect } from '@common/utils/useDebounceEffect';
 import { useBillingStore, useConfigStore, useMetadataStore, useSupportStore, useUserStore } from '@stores/index';
 import { useUiSettingsStore } from '@stores/ui-settings-store';
+import { OverviewNotice } from '@supportmanagement/components/overview-notice/overview-notice.component';
 import { getBillingRecords } from '@supportmanagement/services/support-billing-service';
 import {
   getLabelSubTypeFromName,
@@ -361,6 +362,7 @@ export const OngoingSupportErrands: FC<{ ongoing: ErrandsData }> = (props) => {
                 {sidebarLabel || 'Ärenden'}
                 {sidebarLabel === 'Avslutade ärenden' ? ' : ' + (solvedSupportErrands ?? '') : null}
               </h1>
+              <OverviewNotice />
             </div>
             <div>
               <FormProvider {...tableForm}>
