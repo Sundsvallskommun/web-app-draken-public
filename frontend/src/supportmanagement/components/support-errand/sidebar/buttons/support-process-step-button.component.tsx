@@ -33,6 +33,8 @@ interface ProcessAction {
   confirms?: boolean;
   /** Takes the errand and sets it ongoing before the signal, the way the handling has always started. */
   takesErrand?: boolean;
+  /** The tab whose unsaved work the step leaves behind, if it has one. */
+  unsavedTabKey?: string;
   tabKey?: string;
   closesErrand?: boolean;
   resolution?: Resolution;
@@ -88,8 +90,15 @@ const STEP_ACTIONS: Partial<Record<SupportProcessStepName, ProcessAction>> = {
     variant: 'primary',
     needsSignal: true,
     tabKey: 'decision',
+    unsavedTabKey: 'investigation',
   },
-  [SupportProcessStep.DECISION]: { key: 'start_follow_up', variant: 'primary', needsSignal: true, tabKey: 'followup' },
+  [SupportProcessStep.DECISION]: {
+    key: 'start_follow_up',
+    variant: 'primary',
+    needsSignal: true,
+    tabKey: 'followup',
+    unsavedTabKey: 'decision',
+  },
   [SupportProcessStep.FOLLOW_UP]: {
     key: 'close_errand',
     variant: 'primary',
@@ -112,6 +121,7 @@ export const SupportProcessStepButton: FC<{
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const setActiveTabKey = useSupportStore((s) => s.setActiveTabKey);
+  const unsavedTabs = useSupportStore((s) => s.unsavedTabs);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const canEdit = useUserStore((s) => s.user.permissions?.canEditSupportManagement);
   const { handleSubmit, reset } = useFormContext();
@@ -200,12 +210,21 @@ export const SupportProcessStepButton: FC<{
     }
   };
 
+  /** The step does not save for the handler, so what is written and left behind is said out loud. */
+  const unsavedBehind = (action: ProcessAction): boolean =>
+    !!action.unsavedTabKey && !!unsavedTabs[action.unsavedTabKey];
+
   const ask = (action: ProcessAction) =>
     confirm
       .showConfirmation(
         t(`common:process.actions.${action.key}.confirm_title`),
         <div className="flex flex-col gap-8">
           <span>{t(`common:process.actions.${action.key}.confirm_text`)}</span>
+          {unsavedBehind(action) ? (
+            <span className="font-bold" data-cy="process-action-unsaved">
+              {t(`common:tabs.unsaved_${action.unsavedTabKey}`)}
+            </span>
+          ) : null}
         </div>,
         t(`common:process.actions.${action.key}.confirm_yes`),
         t('common:process.actions.confirm_no'),
