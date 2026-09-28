@@ -11,7 +11,7 @@ export interface AppConfig {
 }
 
 // TODO: Remove as soon as customers are fetched from the API.
-export interface TestCustomer {
+interface TestCustomer {
   customerId: string;
   name: string;
 }

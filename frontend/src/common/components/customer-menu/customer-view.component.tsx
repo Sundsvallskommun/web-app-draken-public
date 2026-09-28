@@ -84,7 +84,7 @@ export const CustomerView: FC<{ customerId: string }> = ({ customerId }) => {
         <span className="text-dark-secondary">Inga ställen att visa ännu.</span>
       </div>
 
-      <CustomerTabs />
+      <CustomerTabs customerId={customerId} />
     </div>
   );
 };

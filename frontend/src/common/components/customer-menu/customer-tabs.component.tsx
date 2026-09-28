@@ -1,9 +1,10 @@
 'use client';
 
+import { CustomerAssets } from '@common/components/customer-menu/customer-assets.component';
 import { SegmentedControl } from '@sk-web-gui/react';
 import { FC, useState } from 'react';
 
-export const customerTabs = [
+const customerTabs = [
   { id: 'oversikt', label: 'Översikt' },
   { id: 'arenden', label: 'Ärenden' },
   { id: 'tillstand', label: 'Tillstånd' },
@@ -11,12 +12,12 @@ export const customerTabs = [
   { id: 'handelser', label: 'Händelser' },
 ] as const;
 
-export type CustomerTabId = (typeof customerTabs)[number]['id'];
+type CustomerTabId = (typeof customerTabs)[number]['id'];
 
 /**
  * Tab bar for the customer view. Tab state is local; the route stops at the customer id.
  */
-export const CustomerTabs: FC = () => {
+export const CustomerTabs: FC<{ customerId: string }> = ({ customerId }) => {
   const [selected, setSelected] = useState<number>(0);
   const activeTab = customerTabs[selected];
 
@@ -42,9 +43,13 @@ export const CustomerTabs: FC = () => {
         ))}
       </SegmentedControl>
 
-      {/* Placeholder until the tab contents are built. */}
       <section aria-label={activeTab.label} data-cy={`customer-tab-content-${activeTab.id}`}>
-        <p className="m-0 text-dark-secondary">{activeTab.label} kommer att visas här.</p>
+        {activeTab.id === 'tillstand' ? (
+          <CustomerAssets customerId={customerId} />
+        ) : (
+          // Placeholder until the remaining tab contents are built.
+          <p className="m-0 text-dark-secondary">{activeTab.label} kommer att visas här.</p>
+        )}
       </section>
     </div>
   );

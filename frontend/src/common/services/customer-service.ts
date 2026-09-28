@@ -1,5 +1,7 @@
 'use client';
 
+import { Asset } from '@common/interfaces/asset';
+import { getPartyServices } from '@common/services/asset-service';
 import { getCompanyProfileByPartyId } from '@common/services/legal-entity-service';
 
 /**
@@ -31,3 +33,24 @@ export const formatOrganizationNumber = (organizationNumber: string): string =>
   /^\d{10}$/.test(organizationNumber)
     ? `${organizationNumber.slice(0, 6)}-${organizationNumber.slice(6)}`
     : organizationNumber;
+
+/**
+ * PartyAssets type that represents an AOT tillstånd. Not decided yet, so no type filter is
+ * applied and every asset on the customer is returned.
+ * TODO: Set when the AOT asset type is decided.
+ */
+const CUSTOMER_ASSET_TYPE: string | undefined = undefined;
+
+/**
+ * Assets (tillstånd) for a customer. The id is resolved the same way as in
+ * getCustomerByCustomerId: today it is used directly as the PartyAssets partyId.
+ * Uses party-services so unissued DRAFT assets are excluded by the BFF.
+ */
+export const getCustomerAssets = async (
+  municipalityId: string,
+  customerId: string,
+  type: string | undefined = CUSTOMER_ASSET_TYPE
+): Promise<Asset[]> => {
+  const res = await getPartyServices({ municipalityId, partyId: customerId, type });
+  return res?.data ?? [];
+};
