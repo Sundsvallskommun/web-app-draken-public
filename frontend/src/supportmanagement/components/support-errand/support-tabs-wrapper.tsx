@@ -1,3 +1,4 @@
+import type { ProcessActivity } from '@common/data-contracts/supportmanagement/data-contracts';
 import WarnIfUnsavedChanges from '@common/utils/warnIfUnsavedChanges';
 import { appConfig } from '@config/appconfig';
 import { cx, Tabs, useConfirm } from '@sk-web-gui/react';
@@ -22,9 +23,11 @@ import {
 } from '@supportmanagement/services/support-message-service';
 import {
   getSupportErrandProcess,
-  hasReachedSupportProcessStep,
+  getSupportProcessActivities,
+  hasVisitedSupportProcessStep,
   SupportProcessStep,
   SupportProcessStepName,
+  supportProcessStepName,
 } from '@supportmanagement/services/support-process-service';
 import { Dispatch, FC, ReactNode, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { useFormContext, UseFormReturn } from 'react-hook-form';
@@ -56,12 +59,25 @@ export const SupportTabsWrapper: FC<{
   // they are tracked apart from the errand form - in the store, since the sidebar asks about them too.
   const unsavedTabs = useSupportStore((s) => s.unsavedTabs);
   const setUnsavedTab = useSupportStore((s) => s.setUnsavedTab);
+  const tabsWithContent = useSupportStore((s) => s.tabsWithContent);
+  const setTabHasContent = useSupportStore((s) => s.setTabHasContent);
+  const setInvestigationContent = useCallback(
+    (hasContent: boolean) => setTabHasContent('investigation', hasContent),
+    [setTabHasContent]
+  );
+  const setDecisionContent = useCallback(
+    (hasContent: boolean) => setTabHasContent('decision', hasContent),
+    [setTabHasContent]
+  );
   const setUnsavedInvestigation = useCallback(
     (unsaved: boolean) => setUnsavedTab('investigation', unsaved),
     [setUnsavedTab]
   );
   const setUnsavedDecision = useCallback((unsaved: boolean) => setUnsavedTab('decision', unsaved), [setUnsavedTab]);
   const confirm = useConfirm();
+  // Which phases the process has actually stood in. The tabs behind them open on that, not on their
+  // place in the order, so a model without an investigation or a decision never opens theirs.
+  const [processActivities, setProcessActivities] = useState<ProcessActivity[]>([]);
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
 
@@ -75,6 +91,21 @@ export const SupportTabsWrapper: FC<{
       setUnsavedChanges(Object.keys(methods.formState.dirtyFields).length === 0 ? false : methods.formState.isDirty);
     }
   }, [methods]);
+
+  // A step the process takes does not touch the errand, so the log is read again on the step itself:
+  // without it the phase just left looks unvisited, and its tab closes behind the handler.
+  useEffect(() => {
+    if (!appConfig.features.useProcess || !supportErrand?.id) return;
+    getSupportProcessActivities(supportErrand.id, municipalityId)
+      .then(setProcessActivities)
+      .catch(() => setProcessActivities([]));
+  }, [
+    supportErrand?.id,
+    supportErrand?.modified,
+    supportErrand?.process?.currentActivityId,
+    supportErrand?.process?.processStatus,
+    municipalityId,
+  ]);
 
   const getMessagesAndConversations = () => {
     getSupportAttachments(supportErrand!.id!, municipalityId).then(setSupportAttachments);
@@ -130,7 +161,21 @@ export const SupportTabsWrapper: FC<{
   const process = getSupportErrandProcess(supportErrand);
 
   const awaitsStep = (step: SupportProcessStepName): boolean =>
-    appConfig.features.useProcess && Boolean(process) && !hasReachedSupportProcessStep(step, process);
+    appConfig.features.useProcess &&
+    Boolean(process) &&
+    !hasVisitedSupportProcessStep(step, process, processActivities);
+
+  // A phase the process passed without a signal - a decision that carried its own phase forward -
+  // leaves nothing in the log, so what the tab already holds opens it for reading.
+  const tabIsClosed = (step: SupportProcessStepName, key: string): boolean => awaitsStep(step) && !tabsWithContent[key];
+
+  const standsInStep = (step: SupportProcessStepName): boolean =>
+    appConfig.features.useProcess && Boolean(process) && supportProcessStepName(process) === step;
+
+  // What belongs to a phase is written while the process stands in it. An errand no process drives
+  // closes nothing, since nothing there says when a phase is over.
+  const writableInStep = (step: SupportProcessStepName): boolean =>
+    !appConfig.features.useProcess || !process || standsInStep(step);
 
   const tabs: {
     key: string;
@@ -188,15 +233,28 @@ export const SupportTabsWrapper: FC<{
       {
         key: 'investigation',
         label: t('common:tabs.investigation'),
-        content: supportErrand && <SupportErrandInvestigationTab setUnsaved={setUnsavedInvestigation} />,
-        disabled: awaitsStep(SupportProcessStep.INVESTIGATION),
+        content: supportErrand && (
+          <SupportErrandInvestigationTab
+            setUnsaved={setUnsavedInvestigation}
+            setHasContent={setInvestigationContent}
+            inStep={standsInStep(SupportProcessStep.INVESTIGATION)}
+            writable={writableInStep(SupportProcessStep.INVESTIGATION)}
+          />
+        ),
+        disabled: tabIsClosed(SupportProcessStep.INVESTIGATION, 'investigation'),
         visibleFor: appConfig.features.useInvestigationTab,
       },
       {
         key: 'decision',
         label: t('common:tabs.decision'),
-        content: supportErrand && <SupportErrandDecisionTab setUnsaved={setUnsavedDecision} />,
-        disabled: awaitsStep(SupportProcessStep.DECISION),
+        content: supportErrand && (
+          <SupportErrandDecisionTab
+            setUnsaved={setUnsavedDecision}
+            setHasContent={setDecisionContent}
+            writable={writableInStep(SupportProcessStep.DECISION)}
+          />
+        ),
+        disabled: tabIsClosed(SupportProcessStep.DECISION, 'decision'),
         visibleFor: appConfig.features.useDecisionTab,
       },
       {

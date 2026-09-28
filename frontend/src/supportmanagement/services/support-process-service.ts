@@ -68,32 +68,47 @@ export const SupportProcessStep = {
 
 export type SupportProcessStepName = (typeof SupportProcessStep)[keyof typeof SupportProcessStep];
 
-const SUPPORT_PROCESS_STEPS: { name: SupportProcessStepName; translationKey: string; activityIds: string[] }[] = [
+const SUPPORT_PROCESS_STEPS: {
+  name: SupportProcessStepName;
+  translationKey: string;
+  activityIds: string[];
+  gate: string;
+}[] = [
   {
     name: SupportProcessStep.REGISTRATION,
     translationKey: 'common:process.steps.registration',
     activityIds: ['registration_phase', 'register_phase'],
+    gate: 'registration_completed',
   },
-  { name: SupportProcessStep.REVIEW, translationKey: 'common:process.steps.review', activityIds: ['review_phase'] },
+  {
+    name: SupportProcessStep.REVIEW,
+    translationKey: 'common:process.steps.review',
+    activityIds: ['review_phase'],
+    gate: 'review_completed',
+  },
   {
     name: SupportProcessStep.INVESTIGATION,
     translationKey: 'common:process.steps.investigation',
     activityIds: ['investigation_phase'],
+    gate: 'investigation_completed',
   },
   {
     name: SupportProcessStep.DECISION,
     translationKey: 'common:process.steps.decision',
     activityIds: ['decision_phase'],
+    gate: 'decision_completed',
   },
   {
     name: SupportProcessStep.FOLLOW_UP,
     translationKey: 'common:process.steps.follow_up',
     activityIds: ['follow_up_phase'],
+    gate: 'follow_up_completed',
   },
   {
     name: SupportProcessStep.CLOSING,
     translationKey: 'common:process.steps.closing',
     activityIds: ['closure_phase', 'closing_phase', 'complete_phase'],
+    gate: 'closure_completed',
   },
 ];
 
@@ -130,16 +145,20 @@ export const getSupportProcessActivities = (errandId: string, municipalityId: st
     });
 
 /**
- * Whether the process has reached a step - being in it counts, and so does having passed it. A
- * process the mapping cannot place, and an errand without a process at all, has reached nothing.
+ * Whether the process has stood in a step: it is there now, or the signal that leaves it has been
+ * sent. Counting the steps before the current one instead would place a phase in models that never
+ * have one - an anmälan has no investigation and no decision - and open what belongs to them.
  */
-export const hasReachedSupportProcessStep = (
+export const hasVisitedSupportProcessStep = (
   step: SupportProcessStepName,
-  process: ErrandProcess | undefined
+  process: ErrandProcess | undefined,
+  activities: ProcessActivity[]
 ): boolean => {
-  const current = supportProcessStepIndex(process);
-  if (current < 0) return false;
-  return current >= SUPPORT_PROCESS_STEPS.findIndex((candidate) => candidate.name === step);
+  if (!process) return false;
+  if (supportProcessStepName(process) === step) return true;
+
+  const gate = SUPPORT_PROCESS_STEPS.find((candidate) => candidate.name === step)?.gate;
+  return !!gate && activities.some((activity) => activity.activityId === gate);
 };
 
 /**
