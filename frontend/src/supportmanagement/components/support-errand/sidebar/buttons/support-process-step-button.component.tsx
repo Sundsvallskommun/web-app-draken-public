@@ -42,7 +42,7 @@ interface ProcessAction {
   takesErrand?: boolean;
   /** The tab whose unsaved work the step leaves behind, if it has one. */
   unsavedTabKey?: string;
-  requiresDecision?: boolean;
+  requiresDecisionOutcome?: boolean;
   completesDecision?: boolean;
   tabKey?: string;
   closesErrand?: boolean;
@@ -106,7 +106,7 @@ const STEP_ACTIONS: Partial<Record<SupportProcessStepName, ProcessAction>> = {
     needsSignal: true,
     tabKey: 'followup',
     unsavedTabKey: 'decision',
-    requiresDecision: true,
+    requiresDecisionOutcome: true,
     completesDecision: true,
   },
   [SupportProcessStep.FOLLOW_UP]: {
@@ -146,20 +146,19 @@ export const SupportProcessStepButton: FC<{
   const modified = supportErrand?.modified;
 
   useEffect(() => {
-    if (!errandId || !stepAction?.requiresDecision) return;
+    if (!errandId || !stepAction?.requiresDecisionOutcome) return;
     getSupportDecisions(errandId, municipalityId)
       .then(setDecisions)
       .catch(() => setDecisions(undefined));
-  }, [errandId, municipalityId, modified, stepAction?.requiresDecision]);
+  }, [errandId, municipalityId, modified, stepAction?.requiresDecisionOutcome]);
 
   if (!supportErrand?.id) {
     return null;
   }
 
-  const errandHasNoDecision = decisions?.length === 0;
-
   const signalIsRequired = (action: ProcessAction): boolean => action.needsSignal && !action.completesDecision;
-  const missingDecision = Boolean(stepAction?.requiresDecision) && errandHasNoDecision;
+
+  const decisionOutcomeIsMissing = decisions !== undefined && !decisions.some((decision) => !!decision.outcome);
   const draftDecision = decisions?.find(isSupportDecisionDraft);
 
   const sendSignal = (errandId: string, signal: string) => sendSupportProcessSignal(errandId, municipalityId, signal);
@@ -280,7 +279,33 @@ export const SupportProcessStepButton: FC<{
         if (confirmed) run(action);
       });
 
-  const start = (action: ProcessAction) => (action.confirms === false ? run(action) : ask(action));
+  const askForAnOutcomeFirst = () =>
+    confirm
+      .showConfirmation(
+        t('common:process.actions.missing_outcome.title'),
+        t('common:process.actions.missing_outcome.text'),
+        t('common:process.actions.missing_outcome.go_to_decision'),
+        t('common:process.actions.missing_outcome.cancel'),
+        'info',
+        'info'
+      )
+      .then((confirmed) => {
+        if (confirmed) setActiveTabKey('decision');
+      });
+
+  const start = (action: ProcessAction) => {
+    if (action.requiresDecisionOutcome && decisionOutcomeIsMissing) {
+      askForAnOutcomeFirst();
+      return;
+    }
+
+    if (action.confirms === false) {
+      run(action);
+      return;
+    }
+
+    ask(action);
+  };
 
   const actionButton = (action: ProcessAction) => (
     <Button
@@ -290,9 +315,7 @@ export const SupportProcessStepButton: FC<{
       color={action.color}
       rightIcon={action.icon}
       loading={running === action.key}
-      disabled={
-        disabled || !canEdit || !!running || missingDecision || (signalIsRequired(action) && !awaitingSignal?.name)
-      }
+      disabled={disabled || !canEdit || !!running || (signalIsRequired(action) && !awaitingSignal?.name)}
       onClick={action.takesErrand ? handleSubmit(() => start(action), onError) : () => start(action)}
       data-cy={`process-action-${action.key}`}
     >
@@ -306,14 +329,5 @@ export const SupportProcessStepButton: FC<{
     return null;
   }
 
-  return (
-    <>
-      {actionButton(stepAction)}
-      {missingDecision ? (
-        <p className="text-small text-dark-secondary m-0" data-cy="process-action-needs-decision">
-          {t(`common:process.actions.${stepAction.key}.needs_decision`)}
-        </p>
-      ) : null}
-    </>
-  );
+  return actionButton(stepAction);
 };

@@ -174,8 +174,7 @@
         "confirm_text": "När du tar ärendet vidare till uppföljning innebär det att beslutet är fattat och expedierat.",
         "done": "Ärendet är taget till uppföljning.",
         "error": "Ärendet kunde inte tas till uppföljning.",
-        "confirm_yes": "Ja",
-        "needs_decision": "Registrera beslutet i beslutsfliken innan ärendet går vidare till uppföljning."
+        "confirm_yes": "Ja"
       },
       "close_errand": {
         "label": "Avsluta ärende",
@@ -184,6 +183,12 @@
         "confirm_yes": "Ja, avsluta",
         "done": "Ärendet är avslutat.",
         "error": "Ärendet kunde inte avslutas."
+      },
+      "missing_outcome": {
+        "title": "Utfall saknas",
+        "text": "Ärendet kan inte gå vidare till uppföljning förrän ett beslut med utfall är sparat i beslutsfliken.",
+        "go_to_decision": "Till beslutsfliken",
+        "cancel": "Avbryt"
       }
     }
   },
