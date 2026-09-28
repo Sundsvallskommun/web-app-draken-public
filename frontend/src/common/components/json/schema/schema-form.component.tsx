@@ -25,6 +25,7 @@ import { customizeValidator } from '@rjsf/validator-ajv8';
 import Ajv2020 from 'ajv/dist/2020';
 import { ComponentType, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { collectSchemasById } from '../utils/schema-by-id';
 import createJsonErrorTransformer, { type SchemaFormError } from '../utils/schema-form-error-handling';
 import { type SchemaErrorNavigation, SchemaFormErrorSummary } from './schema-form-error-summary.component';
 import { buildUiSchemaFromSchema } from './schema-form-ui-schema';
@@ -57,6 +58,7 @@ type SchemaFormProps = {
   externalFields?: Readonly<Record<string, ReactNode>>;
   validationErrors?: readonly SchemaFormError[];
   onError?: FormProps['onError'];
+  showValidation?: boolean;
   /** What marks a required field's label; the asterisk unless the form says otherwise. */
   requiredIndicator?: string;
   /** Which sections start open when the form is shown; each section decides for itself unless set. */
@@ -81,6 +83,7 @@ export default function SchemaForm({
   externalFields,
   validationErrors,
   onError,
+  showValidation,
   requiredIndicator,
   sectionOpening,
 }: SchemaFormProps) {
@@ -109,7 +112,9 @@ export default function SchemaForm({
     return () => cancelAnimationFrame(frame);
   }, [errorNavigation]);
   const [localData, setLocalData] = useState<any>({});
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const data = formData ?? localData;
+  const validationActive = showValidation ?? hasSubmitted;
 
   const handleChange = useCallback<NonNullable<FormProps<any>['onChange']>>(
     (e) => {
@@ -124,13 +129,23 @@ export default function SchemaForm({
   );
 
   const autoUi = useMemo(() => buildUiSchemaFromSchema(schema), [schema]);
+  const schemaById = useMemo(() => collectSchemasById(schema, idPrefix ?? 'root'), [schema, idPrefix]);
 
   const handleSubmit = useCallback<NonNullable<FormProps<any>['onSubmit']>>(
     (e) => {
+      setHasSubmitted(true);
       const payload = e.formData;
       onSubmit?.(payload, e);
     },
     [onSubmit]
+  );
+
+  const handleError = useCallback<NonNullable<FormProps<any>['onError']>>(
+    (errors) => {
+      setHasSubmitted(true);
+      onError?.(errors);
+    },
+    [onError]
   );
 
   const effectiveUiSchema = uiSchema ?? autoUi;
@@ -139,6 +154,7 @@ export default function SchemaForm({
   const formContext = useMemo(
     () => ({
       originalSchema: schema,
+      schemaById,
       submitButtonOptions,
       submitButtonActions,
       idPrefix,
@@ -146,16 +162,19 @@ export default function SchemaForm({
       errorNavigation,
       requiredIndicator,
       sectionOpening,
+      validationActive,
     }),
     [
       externalFields,
       idPrefix,
       schema,
+      schemaById,
       submitButtonOptions,
       submitButtonActions,
       errorNavigation,
       requiredIndicator,
       sectionOpening,
+      validationActive,
     ]
   );
 
@@ -182,7 +201,7 @@ export default function SchemaForm({
     formContext,
     onChange: handleChange,
     onSubmit: handleSubmit,
-    onError,
+    onError: handleError,
     validator,
     fields,
     widgets,
@@ -190,6 +209,7 @@ export default function SchemaForm({
     transformErrors: createJsonErrorTransformer(schema),
     noHtml5Validate: true,
     showErrorList: false,
+    liveValidate: validationActive,
     disabled,
     readonly,
     experimental_defaultFormStateBehavior: defaultFormStateBehavior,
