@@ -1,4 +1,5 @@
 import { CustomerPageClient } from '@common/components/customer-menu/customer-page-client';
+import { CustomerSelect } from '@common/components/customer-menu/customer-select.component';
 import { appConfig } from '@config/appconfig';
 import { notFound } from 'next/navigation';
 
@@ -7,5 +8,9 @@ export default function KundbildPage() {
     notFound();
   }
 
-  return <CustomerPageClient heading="Kundbild" />;
+  return (
+    <CustomerPageClient heading="Kundbild">
+      <CustomerSelect />
+    </CustomerPageClient>
+  );
 }
