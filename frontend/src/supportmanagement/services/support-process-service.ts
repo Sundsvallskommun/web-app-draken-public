@@ -144,22 +144,19 @@ export const getSupportProcessActivities = (errandId: string, municipalityId: st
       throw e;
     });
 
-/**
- * Whether the process has stood in a step: it is there now, or the signal that leaves it has been
- * sent. Counting the steps before the current one instead would place a phase in models that never
- * have one - an anmälan has no investigation and no decision - and open what belongs to them.
- */
+const gateOfSupportProcessStep = (step: SupportProcessStepName): string | undefined =>
+  SUPPORT_PROCESS_STEPS.find((candidate) => candidate.name === step)?.gate;
+
+const gateHasBeenSent = (gate: string | undefined, activities: ProcessActivity[]): boolean =>
+  !!gate && activities.some((activity) => activity.activityId === gate);
+
 export const hasVisitedSupportProcessStep = (
   step: SupportProcessStepName,
   process: ErrandProcess | undefined,
   activities: ProcessActivity[]
-): boolean => {
-  if (!process) return false;
-  if (supportProcessStepName(process) === step) return true;
-
-  const gate = SUPPORT_PROCESS_STEPS.find((candidate) => candidate.name === step)?.gate;
-  return !!gate && activities.some((activity) => activity.activityId === gate);
-};
+): boolean =>
+  Boolean(process) &&
+  (supportProcessStepName(process) === step || gateHasBeenSent(gateOfSupportProcessStep(step), activities));
 
 /**
  * What the process waits for from the handler right now. The names come from the process model and

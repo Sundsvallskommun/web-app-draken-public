@@ -55,8 +55,6 @@ export const SupportTabsWrapper: FC<{
   const { supportErrand, setSupportErrand, supportAttachments, setSupportAttachments } = useSupportStore();
 
   const [unsavedChanges, setUnsavedChanges] = useState(false);
-  // The investigation and the decision are resources of their own, saved with their own buttons, so
-  // they are tracked apart from the errand form - in the store, since the sidebar asks about them too.
   const unsavedTabs = useSupportStore((s) => s.unsavedTabs);
   const setUnsavedTab = useSupportStore((s) => s.setUnsavedTab);
   const tabsWithContent = useSupportStore((s) => s.tabsWithContent);
@@ -75,8 +73,6 @@ export const SupportTabsWrapper: FC<{
   );
   const setUnsavedDecision = useCallback((unsaved: boolean) => setUnsavedTab('decision', unsaved), [setUnsavedTab]);
   const confirm = useConfirm();
-  // Which phases the process has actually stood in. The tabs behind them open on that, not on their
-  // place in the order, so a model without an investigation or a decision never opens theirs.
   const [processActivities, setProcessActivities] = useState<ProcessActivity[]>([]);
 
   const methods: UseFormReturn<SupportErrand, any, undefined> = useFormContext();
@@ -92,20 +88,18 @@ export const SupportTabsWrapper: FC<{
     }
   }, [methods]);
 
-  // A step the process takes does not touch the errand, so the log is read again on the step itself:
-  // without it the phase just left looks unvisited, and its tab closes behind the handler.
-  useEffect(() => {
-    if (!appConfig.features.useProcess || !supportErrand?.id) return;
-    getSupportProcessActivities(supportErrand.id, municipalityId)
+  const errandId = supportErrand?.id;
+  const stepTheProcessReports = supportErrand?.process?.currentActivityId;
+  const processStatus = supportErrand?.process?.processStatus;
+
+  const readProcessLog = useCallback(() => {
+    if (!appConfig.features.useProcess || !errandId) return;
+    getSupportProcessActivities(errandId, municipalityId)
       .then(setProcessActivities)
       .catch(() => setProcessActivities([]));
-  }, [
-    supportErrand?.id,
-    supportErrand?.modified,
-    supportErrand?.process?.currentActivityId,
-    supportErrand?.process?.processStatus,
-    municipalityId,
-  ]);
+  }, [errandId, municipalityId]);
+
+  useEffect(readProcessLog, [readProcessLog, supportErrand?.modified, stepTheProcessReports, processStatus]);
 
   const getMessagesAndConversations = () => {
     getSupportAttachments(supportErrand!.id!, municipalityId).then(setSupportAttachments);
@@ -165,17 +159,17 @@ export const SupportTabsWrapper: FC<{
     Boolean(process) &&
     !hasVisitedSupportProcessStep(step, process, processActivities);
 
-  // A phase the process passed without a signal - a decision that carried its own phase forward -
-  // leaves nothing in the log, so what the tab already holds opens it for reading.
-  const tabIsClosed = (step: SupportProcessStepName, key: string): boolean => awaitsStep(step) && !tabsWithContent[key];
+  const tabHoldsSomethingToRead = (key: string): boolean => !!tabsWithContent[key];
+
+  const tabIsClosed = (step: SupportProcessStepName, key: string): boolean =>
+    awaitsStep(step) && !tabHoldsSomethingToRead(key);
 
   const standsInStep = (step: SupportProcessStepName): boolean =>
     appConfig.features.useProcess && Boolean(process) && supportProcessStepName(process) === step;
 
-  // What belongs to a phase is written while the process stands in it. An errand no process drives
-  // closes nothing, since nothing there says when a phase is over.
-  const writableInStep = (step: SupportProcessStepName): boolean =>
-    !appConfig.features.useProcess || !process || standsInStep(step);
+  const noProcessCloses = (): boolean => !appConfig.features.useProcess || !process;
+
+  const writableInStep = (step: SupportProcessStepName): boolean => noProcessCloses() || standsInStep(step);
 
   const tabs: {
     key: string;
@@ -309,15 +303,11 @@ export const SupportTabsWrapper: FC<{
 
   const [activeTab, setActiveTab] = useState(0);
 
-  /** What the tab being left is holding, written but not yet saved. */
   const unsavedInActiveTab = (): boolean => !!activeTabKey && !!unsavedTabs[activeTabKey];
 
-  /**
-   * Tabs moves itself when its button is clicked, unless the button brings its own handler, so the
-   * tab is changed from here alone - and declining the question leaves the tab where it stands.
-   */
   const changeTab = (key: string) => {
-    if (key === activeTabKey) {
+    const tabIsAlreadyOpen = key === activeTabKey;
+    if (tabIsAlreadyOpen) {
       return;
     }
 

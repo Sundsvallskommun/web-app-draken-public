@@ -58,7 +58,6 @@ export const updateSupportDecision = (
       throw e;
     });
 
-/** Concluding the decision is what the process waits for, so it happens when the step is left. */
 export const completeSupportDecision = (
   errandId: string,
   municipalityId: string,
@@ -76,5 +75,4 @@ export const completeSupportDecision = (
 export const isSupportDecisionLocked = (decision: Decision | undefined): boolean =>
   decision?.status === 'COMPLETED' || decision?.status === 'CANCELLED';
 
-/** A decision still being written: it is saved on the errand, and the process has not been told. */
 export const isSupportDecisionDraft = (decision: Decision | undefined): boolean => decision?.status === 'DRAFT';

@@ -12,7 +12,7 @@ import {
   SUPPORT_INVESTIGATION_SECTIONS,
 } from '@supportmanagement/services/support-investigation-service';
 import dayjs from 'dayjs';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const sectionsInOrder = (investigation: Investigation | undefined): InvestigationSection[] =>
@@ -79,17 +79,21 @@ export const SupportErrandInvestigationTab: React.FC<{
     load(result);
   };
 
+  const receiveKeepingUnsavedEdits = useCallback(
+    (result: Investigation | undefined) => {
+      setInvestigation(result);
+      merge(result);
+    },
+    [merge]
+  );
+
   useEffect(() => {
     if (!errandId) return undefined;
     let current = true;
     getSupportInvestigation(errandId, municipalityId)
       .then((result) => {
         if (!current) return;
-        // The investigation is read again every time the errand changes, saving the errand
-        // included, so what the handler has written but not yet saved is kept: the errand and the
-        // investigation are saved with their own buttons.
-        setInvestigation(result);
-        merge(result);
+        receiveKeepingUnsavedEdits(result);
         setIsLoading(false);
       })
       .catch(() => {
@@ -100,9 +104,8 @@ export const SupportErrandInvestigationTab: React.FC<{
     return () => {
       current = false;
     };
-  }, [errandId, municipalityId, modified, merge]);
+  }, [errandId, municipalityId, modified, receiveKeepingUnsavedEdits]);
 
-  // The investigation is saved with its own button, so the wrapper warns before the page is left.
   useEffect(() => {
     setUnsaved(edited);
   }, [edited, setUnsaved]);
@@ -126,6 +129,10 @@ export const SupportErrandInvestigationTab: React.FC<{
     getSupportInvestigation(errandId, municipalityId)
       .then(receive)
       .catch(() => undefined);
+  };
+
+  const forgetAStartThatFailed = (started: Investigation | undefined) => {
+    if (!started) startedAutomatically.current = false;
   };
 
   const start = (): Promise<Investigation | undefined> => {
@@ -155,9 +162,7 @@ export const SupportErrandInvestigationTab: React.FC<{
   useEffect(() => {
     if (isLoading || error || investigation || !inStep || !canEdit || startedAutomatically.current) return;
     startedAutomatically.current = true;
-    start().then((started) => {
-      if (!started) startedAutomatically.current = false;
-    });
+    start().then(forgetAStartThatFailed);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, error, investigation, inStep, canEdit]);
 

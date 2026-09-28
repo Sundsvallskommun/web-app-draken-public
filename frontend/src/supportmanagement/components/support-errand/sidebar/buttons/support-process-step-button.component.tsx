@@ -42,9 +42,7 @@ interface ProcessAction {
   takesErrand?: boolean;
   /** The tab whose unsaved work the step leaves behind, if it has one. */
   unsavedTabKey?: string;
-  /** The step cannot be left until the errand carries a decision. */
   requiresDecision?: boolean;
-  /** Leaving the step concludes the draft decision, which is what the process waits for. */
   completesDecision?: boolean;
   tabKey?: string;
   closesErrand?: boolean;
@@ -147,7 +145,6 @@ export const SupportProcessStepButton: FC<{
   const errandId = supportErrand?.id;
   const modified = supportErrand?.modified;
 
-  // A step a decision has to carry asks the errand itself rather than trusting the tab beside it.
   useEffect(() => {
     if (!errandId || !stepAction?.requiresDecision) return;
     getSupportDecisions(errandId, municipalityId)
@@ -159,9 +156,16 @@ export const SupportProcessStepButton: FC<{
     return null;
   }
 
-  // A read that failed says nothing, and the process keeps its own gate, so only a known absence blocks.
-  const missingDecision = Boolean(stepAction?.requiresDecision) && decisions?.length === 0;
+  const errandHasNoDecision = decisions?.length === 0;
+  const missingDecision = Boolean(stepAction?.requiresDecision) && errandHasNoDecision;
   const draftDecision = decisions?.find(isSupportDecisionDraft);
+
+  const sendSignal = (errandId: string, signal: string) => sendSupportProcessSignal(errandId, municipalityId, signal);
+
+  const sendSignalToleratingAStepAlreadyLeft = (errandId: string, signal: string) =>
+    sendSignal(errandId, signal).catch((error) => {
+      if (!isSupportProcessSignalStale(error)) throw error;
+    });
 
   const takeErrand = async () => {
     await onSubmit?.();
@@ -210,16 +214,13 @@ export const SupportProcessStepButton: FC<{
         await takeErrand();
       }
 
-      // Concluding the decision is what the process waits for, and it may carry the process on its
-      // own, so the signal that follows is allowed to find the step already left.
       if (action.completesDecision && draftDecision?.id) {
         await completeSupportDecision(supportErrand.id!, municipalityId, draftDecision.id);
       }
 
       if (action.needsSignal) {
-        await sendSupportProcessSignal(supportErrand.id!, municipalityId, awaitingSignal.name!).catch((error) => {
-          if (!action.completesDecision || !isSupportProcessSignalStale(error)) throw error;
-        });
+        const send = action.completesDecision ? sendSignalToleratingAStepAlreadyLeft : sendSignal;
+        await send(supportErrand.id!, awaitingSignal.name!);
       }
 
       const stepped = action.closesErrand

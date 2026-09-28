@@ -159,6 +159,17 @@ export class SupportDecisionController {
     }
   }
 
+  private async replaceTerms(
+    municipalityId: string,
+    errandId: string,
+    decisionId: string,
+    terms: string[],
+    user: RequestWithUser['user'],
+  ): Promise<void> {
+    await this.clearTerms(municipalityId, errandId, decisionId, user);
+    await this.writeTerms(municipalityId, errandId, decisionId, terms, user);
+  }
+
   private async writeTerms(
     municipalityId: string,
     errandId: string,
@@ -212,8 +223,6 @@ export class SupportDecisionController {
     }
 
     const { terms, ...decision } = data;
-    // The decision stays a draft until the handler leaves the decision step: a completed decision is
-    // locked on an errand with a process, and its terms with it, so there would be no way back to it.
     await this.apiService.post<Decision, Decision>(
       {
         url: this.decisionsUrl(municipalityId, id),
@@ -278,10 +287,8 @@ export class SupportDecisionController {
       req.user,
     );
 
-    // The terms are a list the handler edits as a whole, so they are written as one.
     if (terms) {
-      await this.clearTerms(municipalityId, id, decisionId, req.user);
-      await this.writeTerms(municipalityId, id, decisionId, terms, req.user);
+      await this.replaceTerms(municipalityId, id, decisionId, terms, req.user);
     }
 
     return response.status(200).send(await this.readDecision(municipalityId, id, decisionId, req.user));

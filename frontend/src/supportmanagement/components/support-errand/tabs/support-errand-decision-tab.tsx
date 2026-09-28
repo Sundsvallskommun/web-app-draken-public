@@ -124,28 +124,37 @@ export const SupportErrandDecisionTab: FC<{
   const decision = decisions[0];
   const editable = writable && (!decision || isSupportDecisionDraft(decision));
 
-  // The draft is filled in again when the service has answered, and left alone in between.
+  const fillFormFrom = (draft: Decision) => {
+    setOutcome(draft.outcome ?? '');
+    setDecidedByRole(draft.decidedByRole || t(SUPPORT_DECISION_ROLE_KEYS[0]));
+    setLegalBasis(draft.legalBasis ?? '');
+    setDelegationReference(draft.delegationReference ?? '');
+    setJustification(draft.justification ?? '');
+    setTerms(termTexts(draft));
+  };
+
   useEffect(() => {
-    if (!decision) return;
-    setOutcome(decision.outcome ?? '');
-    setDecidedByRole(decision.decidedByRole || t(SUPPORT_DECISION_ROLE_KEYS[0]));
-    setLegalBasis(decision.legalBasis ?? '');
-    setDelegationReference(decision.delegationReference ?? '');
-    setJustification(decision.justification ?? '');
-    setTerms(termTexts(decision));
+    if (decision) fillFormFrom(decision);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [decision?.id, decision?.version]);
 
-  const edited =
-    editable &&
-    JSON.stringify({ outcome, legalBasis, delegationReference, justification, terms: terms.filter(Boolean) }) !==
-      JSON.stringify({
-        outcome: decision?.outcome ?? '',
-        legalBasis: decision?.legalBasis ?? '',
-        delegationReference: decision?.delegationReference ?? '',
-        justification: decision?.justification ?? '',
-        terms: termTexts(decision),
-      });
+  const formInHand = () => ({
+    outcome,
+    legalBasis,
+    delegationReference,
+    justification,
+    terms: terms.filter(Boolean),
+  });
+
+  const formAsSaved = () => ({
+    outcome: decision?.outcome ?? '',
+    legalBasis: decision?.legalBasis ?? '',
+    delegationReference: decision?.delegationReference ?? '',
+    justification: decision?.justification ?? '',
+    terms: termTexts(decision),
+  });
+
+  const edited = editable && JSON.stringify(formInHand()) !== JSON.stringify(formAsSaved());
 
   useEffect(() => {
     setUnsaved(edited);
@@ -172,8 +181,6 @@ export const SupportErrandDecisionTab: FC<{
       terms: terms.map((term) => term.trim()).filter(Boolean),
     };
 
-    // The decision stays a draft until the errand leaves the decision step, so saving it again is
-    // an ordinary correction rather than a second decision.
     const saving = decision?.id
       ? updateSupportDecision(supportErrand.id, municipalityId, decision.id, written)
       : createSupportDecision(supportErrand.id, municipalityId, written);
