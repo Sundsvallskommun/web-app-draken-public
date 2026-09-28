@@ -157,6 +157,8 @@ export const SupportProcessStepButton: FC<{
   }
 
   const errandHasNoDecision = decisions?.length === 0;
+
+  const signalIsRequired = (action: ProcessAction): boolean => action.needsSignal && !action.completesDecision;
   const missingDecision = Boolean(stepAction?.requiresDecision) && errandHasNoDecision;
   const draftDecision = decisions?.find(isSupportDecisionDraft);
 
@@ -218,9 +220,9 @@ export const SupportProcessStepButton: FC<{
         await completeSupportDecision(supportErrand.id!, municipalityId, draftDecision.id);
       }
 
-      if (action.needsSignal) {
+      if (action.needsSignal && awaitingSignal?.name) {
         const send = action.completesDecision ? sendSignalToleratingAStepAlreadyLeft : sendSignal;
-        await send(supportErrand.id!, awaitingSignal.name!);
+        await send(supportErrand.id!, awaitingSignal.name);
       }
 
       const stepped = action.closesErrand
@@ -288,7 +290,9 @@ export const SupportProcessStepButton: FC<{
       color={action.color}
       rightIcon={action.icon}
       loading={running === action.key}
-      disabled={disabled || !canEdit || !!running || missingDecision || (action.needsSignal && !awaitingSignal?.name)}
+      disabled={
+        disabled || !canEdit || !!running || missingDecision || (signalIsRequired(action) && !awaitingSignal?.name)
+      }
       onClick={action.takesErrand ? handleSubmit(() => start(action), onError) : () => start(action)}
       data-cy={`process-action-${action.key}`}
     >
