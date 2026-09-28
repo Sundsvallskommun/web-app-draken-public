@@ -159,6 +159,28 @@ export class SupportDecisionController {
     }
   }
 
+  private async patchDecision(
+    municipalityId: string,
+    errandId: string,
+    decisionId: string,
+    version: number | undefined,
+    data: Partial<Decision>,
+    user: RequestWithUser['user'],
+  ): Promise<Decision> {
+    await this.apiService.patch<Decision, Partial<Decision>>(
+      {
+        url: `${this.decisionsUrl(municipalityId, errandId)}/${decisionId}`,
+        baseURL: apiURL(this.SERVICE),
+        data,
+        headers: { 'If-Match': `"${version}"` },
+        propagateClientError: true,
+      },
+      user,
+    );
+
+    return this.readDecision(municipalityId, errandId, decisionId, user);
+  }
+
   private async replaceTerms(
     municipalityId: string,
     errandId: string,
@@ -275,22 +297,20 @@ export class SupportDecisionController {
 
     const { terms, ...decision } = data;
     const current = await this.readDecision(municipalityId, id, decisionId, req.user);
-
-    await this.apiService.patch<Decision, Partial<Decision>>(
-      {
-        url: `${this.decisionsUrl(municipalityId, id)}/${decisionId}`,
-        baseURL: apiURL(this.SERVICE),
-        data: { ...decision, decidedBy: req.user.username, decidedAt: new Date().toISOString() },
-        headers: { 'If-Match': `"${current.version}"` },
-        propagateClientError: true,
-      },
+    const written = await this.patchDecision(
+      municipalityId,
+      id,
+      decisionId,
+      current.version,
+      { ...decision, decidedBy: req.user.username, decidedAt: new Date().toISOString() },
       req.user,
     );
 
-    if (terms) {
-      await this.replaceTerms(municipalityId, id, decisionId, terms, req.user);
+    if (!terms) {
+      return response.status(200).send(written);
     }
 
+    await this.replaceTerms(municipalityId, id, decisionId, terms, req.user);
     return response.status(200).send(await this.readDecision(municipalityId, id, decisionId, req.user));
   }
 
@@ -313,17 +333,8 @@ export class SupportDecisionController {
       return response.status(200).send(current);
     }
 
-    await this.apiService.patch<Decision, { status: string }>(
-      {
-        url: `${this.decisionsUrl(municipalityId, id)}/${decisionId}`,
-        baseURL: apiURL(this.SERVICE),
-        data: { status: COMPLETED_STATUS },
-        headers: { 'If-Match': `"${current.version}"` },
-        propagateClientError: true,
-      },
-      req.user,
-    );
+    const concluded = await this.patchDecision(municipalityId, id, decisionId, current.version, { status: COMPLETED_STATUS }, req.user);
 
-    return response.status(200).send(await this.readDecision(municipalityId, id, decisionId, req.user));
+    return response.status(200).send(concluded);
   }
 }
