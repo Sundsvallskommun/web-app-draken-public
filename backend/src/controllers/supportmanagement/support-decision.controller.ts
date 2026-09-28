@@ -18,12 +18,7 @@ const MANUAL_METHOD = 'MANUAL';
 const DRAFT_STATUS = 'DRAFT';
 const COMPLETED_STATUS = 'COMPLETED';
 
-export class CreateSupportDecisionDto {
-  @IsString()
-  @MinLength(1)
-  @MaxLength(128)
-  outcome!: string;
-
+class SupportDecisionFieldsDto {
   @IsOptional()
   @IsString()
   @MaxLength(128)
@@ -54,41 +49,25 @@ export class CreateSupportDecisionDto {
   terms?: string[];
 }
 
-export class UpdateSupportDecisionDto {
+export class CreateSupportDecisionDto extends SupportDecisionFieldsDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(128)
+  outcome!: string;
+}
+
+export class UpdateSupportDecisionDto extends SupportDecisionFieldsDto {
   @IsOptional()
   @IsString()
   @MinLength(1)
   @MaxLength(128)
   outcome?: string;
+}
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(128)
-  decidedByRole?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(512)
-  legalBasis?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(512)
-  delegationReference?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(8192)
-  justification?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  appealable?: boolean;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  terms?: string[];
+interface DecisionRef {
+  municipalityId: string;
+  errandId: string;
+  decisionId: string;
 }
 
 @Controller()
@@ -100,6 +79,16 @@ export class SupportDecisionController {
   private readonly decisionsUrl = (municipalityId: string, errandId: string): string =>
     `${municipalityId}/${this.namespace}/errands/${errandId}/decisions`;
 
+  private readonly decisionUrl = (ref: DecisionRef): string => `${this.decisionsUrl(ref.municipalityId, ref.errandId)}/${ref.decisionId}`;
+
+  private readonly decidedNowBy = (user: RequestWithUser['user']): Partial<Decision> => ({
+    decidedBy: user.username,
+    decidedAt: new Date().toISOString(),
+  });
+
+  private readonly newestDecision = (decisions: Decision[]): Decision | undefined =>
+    [...decisions].sort((a, b) => (b.created ?? '').localeCompare(a.created ?? ''))[0];
+
   private async readDecisions(municipalityId: string, errandId: string, user: RequestWithUser['user']): Promise<Decision[]> {
     const res = await this.apiService.get<Decision[]>(
       { url: this.decisionsUrl(municipalityId, errandId), baseURL: apiURL(this.SERVICE), propagateClientError: true },
@@ -108,68 +97,20 @@ export class SupportDecisionController {
     return res.data ?? [];
   }
 
-  /** The decision just written: the newest of the errand's decisions, since the service answers a create with a location only. */
-  private readonly newestDecision = (decisions: Decision[]): Decision | undefined =>
-    [...decisions].sort((a, b) => (b.created ?? '').localeCompare(a.created ?? ''))[0];
-
-  private async readDecision(municipalityId: string, errandId: string, decisionId: string, user: RequestWithUser['user']): Promise<Decision> {
-    const res = await this.apiService.get<Decision>(
-      {
-        url: `${this.decisionsUrl(municipalityId, errandId)}/${decisionId}`,
-        baseURL: apiURL(this.SERVICE),
-        propagateClientError: true,
-      },
-      user,
-    );
+  private async readDecision(ref: DecisionRef, user: RequestWithUser['user']): Promise<Decision> {
+    const res = await this.apiService.get<Decision>({ url: this.decisionUrl(ref), baseURL: apiURL(this.SERVICE), propagateClientError: true }, user);
     return res.data;
   }
 
-  /**
-   * Removes a draft that could not be finished, so that a failed write leaves no half written decision
-   * on the errand. A draft that cannot be removed is logged rather than raised: the caller is already
-   * being told that the decision failed, and that is the error worth answering.
-   */
-  private async discardDecision(municipalityId: string, errandId: string, decisionId: string, user: RequestWithUser['user']): Promise<void> {
-    try {
-      await this.apiService.delete<void>(
-        {
-          url: `${this.decisionsUrl(municipalityId, errandId)}/${decisionId}`,
-          baseURL: apiURL(this.SERVICE),
-          propagateClientError: true,
-        },
-        user,
-      );
-    } catch (error) {
-      logger.error(`Could not remove the draft decision ${decisionId} after a failed write`);
-      logger.error(error);
-    }
-  }
-
-  private async clearTerms(municipalityId: string, errandId: string, decisionId: string, user: RequestWithUser['user']): Promise<void> {
-    const decision = await this.readDecision(municipalityId, errandId, decisionId, user);
-    for (const term of decision.terms ?? []) {
-      await this.apiService.delete<void>(
-        {
-          url: `${this.decisionsUrl(municipalityId, errandId)}/${decisionId}/terms/${term.id}`,
-          baseURL: apiURL(this.SERVICE),
-          propagateClientError: true,
-        },
-        user,
-      );
-    }
-  }
-
   private async patchDecision(
-    municipalityId: string,
-    errandId: string,
-    decisionId: string,
+    ref: DecisionRef,
     version: number | undefined,
     data: Partial<Decision>,
     user: RequestWithUser['user'],
   ): Promise<Decision> {
     await this.apiService.patch<Decision, Partial<Decision>>(
       {
-        url: `${this.decisionsUrl(municipalityId, errandId)}/${decisionId}`,
+        url: this.decisionUrl(ref),
         baseURL: apiURL(this.SERVICE),
         data,
         headers: { 'If-Match': `"${version}"` },
@@ -178,39 +119,45 @@ export class SupportDecisionController {
       user,
     );
 
-    return this.readDecision(municipalityId, errandId, decisionId, user);
+    return this.readDecision(ref, user);
   }
 
-  private async replaceTerms(
-    municipalityId: string,
-    errandId: string,
-    decisionId: string,
-    terms: string[],
-    user: RequestWithUser['user'],
-  ): Promise<void> {
-    await this.clearTerms(municipalityId, errandId, decisionId, user);
-    await this.writeTerms(municipalityId, errandId, decisionId, terms, user);
+  private async discardDecision(ref: DecisionRef, user: RequestWithUser['user']): Promise<void> {
+    try {
+      await this.apiService.delete<void>({ url: this.decisionUrl(ref), baseURL: apiURL(this.SERVICE), propagateClientError: true }, user);
+    } catch (error) {
+      logger.error(`Could not remove the draft decision ${ref.decisionId} after a failed write`);
+      logger.error(error);
+    }
   }
 
-  private async writeTerms(
-    municipalityId: string,
-    errandId: string,
-    decisionId: string,
-    terms: string[],
-    user: RequestWithUser['user'],
-  ): Promise<void> {
-    const baseURL = apiURL(this.SERVICE);
+  private async clearTerms(ref: DecisionRef, user: RequestWithUser['user']): Promise<void> {
+    const decision = await this.readDecision(ref, user);
+    for (const term of decision.terms ?? []) {
+      await this.apiService.delete<void>(
+        { url: `${this.decisionUrl(ref)}/terms/${term.id}`, baseURL: apiURL(this.SERVICE), propagateClientError: true },
+        user,
+      );
+    }
+  }
+
+  private async writeTerms(ref: DecisionRef, terms: string[], user: RequestWithUser['user']): Promise<void> {
     for (const [index, text] of terms.entries()) {
       await this.apiService.post<DecisionTerm, DecisionTerm>(
         {
-          url: `${this.decisionsUrl(municipalityId, errandId)}/${decisionId}/terms`,
-          baseURL,
+          url: `${this.decisionUrl(ref)}/terms`,
+          baseURL: apiURL(this.SERVICE),
           data: { sortOrder: index + 1, text },
           propagateClientError: true,
         },
         user,
       );
     }
+  }
+
+  private async replaceTerms(ref: DecisionRef, terms: string[], user: RequestWithUser['user']): Promise<void> {
+    await this.clearTerms(ref, user);
+    await this.writeTerms(ref, terms, user);
   }
 
   @Get('/supportdecisions/:municipalityId/:id')
@@ -249,15 +196,7 @@ export class SupportDecisionController {
       {
         url: this.decisionsUrl(municipalityId, id),
         baseURL: apiURL(this.SERVICE),
-        // The handler makes the decision, so it is manual and decided by them, here and now. A
-        // decision the process made carries the consumer's identity instead, and is never written here.
-        data: {
-          ...decision,
-          status: DRAFT_STATUS,
-          method: MANUAL_METHOD,
-          decidedBy: req.user.username,
-          decidedAt: new Date().toISOString(),
-        },
+        data: { ...decision, status: DRAFT_STATUS, method: MANUAL_METHOD, ...this.decidedNowBy(req.user) },
         propagateClientError: true,
       },
       req.user,
@@ -268,16 +207,18 @@ export class SupportDecisionController {
       throw new HttpException(502, 'Support Management did not return the decision that was written');
     }
 
+    const ref: DecisionRef = { municipalityId, errandId: id, decisionId: written.id };
+
     try {
       if (terms?.length) {
-        await this.writeTerms(municipalityId, id, written.id, terms, req.user);
+        await this.writeTerms(ref, terms, req.user);
       }
     } catch (error) {
-      await this.discardDecision(municipalityId, id, written.id, req.user);
+      await this.discardDecision(ref, req.user);
       throw error;
     }
 
-    return response.status(201).send(await this.readDecision(municipalityId, id, written.id, req.user));
+    return response.status(201).send(await this.readDecision(ref, req.user));
   }
 
   @Patch('/supportdecisions/:municipalityId/:id/:decisionId')
@@ -295,23 +236,17 @@ export class SupportDecisionController {
       return response.status(400).send('Invalid municipality id');
     }
 
+    const ref: DecisionRef = { municipalityId, errandId: id, decisionId };
     const { terms, ...decision } = data;
-    const current = await this.readDecision(municipalityId, id, decisionId, req.user);
-    const written = await this.patchDecision(
-      municipalityId,
-      id,
-      decisionId,
-      current.version,
-      { ...decision, decidedBy: req.user.username, decidedAt: new Date().toISOString() },
-      req.user,
-    );
+    const current = await this.readDecision(ref, req.user);
+    const written = await this.patchDecision(ref, current.version, { ...decision, ...this.decidedNowBy(req.user) }, req.user);
 
     if (!terms) {
       return response.status(200).send(written);
     }
 
-    await this.replaceTerms(municipalityId, id, decisionId, terms, req.user);
-    return response.status(200).send(await this.readDecision(municipalityId, id, decisionId, req.user));
+    await this.replaceTerms(ref, terms, req.user);
+    return response.status(200).send(await this.readDecision(ref, req.user));
   }
 
   @Post('/supportdecisions/:municipalityId/:id/:decisionId/complete')
@@ -328,13 +263,12 @@ export class SupportDecisionController {
       return response.status(400).send('Invalid municipality id');
     }
 
-    const current = await this.readDecision(municipalityId, id, decisionId, req.user);
+    const ref: DecisionRef = { municipalityId, errandId: id, decisionId };
+    const current = await this.readDecision(ref, req.user);
     if (current.status === COMPLETED_STATUS) {
       return response.status(200).send(current);
     }
 
-    const concluded = await this.patchDecision(municipalityId, id, decisionId, current.version, { status: COMPLETED_STATUS }, req.user);
-
-    return response.status(200).send(concluded);
+    return response.status(200).send(await this.patchDecision(ref, current.version, { status: COMPLETED_STATUS }, req.user));
   }
 }
