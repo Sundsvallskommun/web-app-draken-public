@@ -44,6 +44,37 @@ export const createSupportDecision = (
       throw e;
     });
 
+export const updateSupportDecision = (
+  errandId: string,
+  municipalityId: string,
+  decisionId: string,
+  decision: SupportDecisionInput
+): Promise<Decision> =>
+  apiService
+    .patch<Decision, SupportDecisionInput>(`supportdecisions/${municipalityId}/${errandId}/${decisionId}`, decision)
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when updating the decision');
+      throw e;
+    });
+
+/** Concluding the decision is what the process waits for, so it happens when the step is left. */
+export const completeSupportDecision = (
+  errandId: string,
+  municipalityId: string,
+  decisionId: string
+): Promise<Decision> =>
+  apiService
+    .post<Decision, undefined>(`supportdecisions/${municipalityId}/${errandId}/${decisionId}/complete`, undefined)
+    .then((res) => res.data)
+    .catch((e) => {
+      console.error('Something went wrong when concluding the decision');
+      throw e;
+    });
+
 /** A decision the service has locked: it is concluded, and a correction is a new errand. */
 export const isSupportDecisionLocked = (decision: Decision | undefined): boolean =>
   decision?.status === 'COMPLETED' || decision?.status === 'CANCELLED';
+
+/** A decision still being written: it is saved on the errand, and the process has not been told. */
+export const isSupportDecisionDraft = (decision: Decision | undefined): boolean => decision?.status === 'DRAFT';

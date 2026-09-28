@@ -1,5 +1,11 @@
+import type { Decision } from '@common/data-contracts/supportmanagement/data-contracts';
 import { Button, useConfirm, useSnackbar } from '@sk-web-gui/react';
 import { useConfigStore, useSupportStore, useUserStore } from '@stores/index';
+import {
+  completeSupportDecision,
+  getSupportDecisions,
+  isSupportDecisionDraft,
+} from '@supportmanagement/services/support-decision-service';
 import {
   closeSupportErrand,
   getSupportErrandById,
@@ -20,7 +26,7 @@ import {
   supportProcessStepName,
 } from '@supportmanagement/services/support-process-service';
 import { ArrowRight } from 'lucide-react';
-import { FC, ReactElement, useState } from 'react';
+import { FC, ReactElement, useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -36,6 +42,10 @@ interface ProcessAction {
   takesErrand?: boolean;
   /** The tab whose unsaved work the step leaves behind, if it has one. */
   unsavedTabKey?: string;
+  /** The step cannot be left until the errand carries a decision. */
+  requiresDecision?: boolean;
+  /** Leaving the step concludes the draft decision, which is what the process waits for. */
+  completesDecision?: boolean;
   tabKey?: string;
   closesErrand?: boolean;
   resolution?: Resolution;
@@ -98,6 +108,8 @@ const STEP_ACTIONS: Partial<Record<SupportProcessStepName, ProcessAction>> = {
     needsSignal: true,
     tabKey: 'followup',
     unsavedTabKey: 'decision',
+    requiresDecision: true,
+    completesDecision: true,
   },
   [SupportProcessStep.FOLLOW_UP]: {
     key: 'close_errand',
@@ -126,15 +138,30 @@ export const SupportProcessStepButton: FC<{
   const canEdit = useUserStore((s) => s.user.permissions?.canEditSupportManagement);
   const { handleSubmit, reset } = useFormContext();
   const [running, setRunning] = useState<string>();
+  const [decisions, setDecisions] = useState<Decision[]>();
 
   const process = getSupportErrandProcess(supportErrand);
   const step = supportProcessStepName(process);
   const stepAction = step ? STEP_ACTIONS[step] : undefined;
   const awaitingSignal = supportProcessAwaitingSignals(process)[0];
+  const errandId = supportErrand?.id;
+  const modified = supportErrand?.modified;
+
+  // A step a decision has to carry asks the errand itself rather than trusting the tab beside it.
+  useEffect(() => {
+    if (!errandId || !stepAction?.requiresDecision) return;
+    getSupportDecisions(errandId, municipalityId)
+      .then(setDecisions)
+      .catch(() => setDecisions(undefined));
+  }, [errandId, municipalityId, modified, stepAction?.requiresDecision]);
 
   if (!supportErrand?.id) {
     return null;
   }
+
+  // A read that failed says nothing, and the process keeps its own gate, so only a known absence blocks.
+  const missingDecision = Boolean(stepAction?.requiresDecision) && decisions?.length === 0;
+  const draftDecision = decisions?.find(isSupportDecisionDraft);
 
   const takeErrand = async () => {
     await onSubmit?.();
@@ -183,8 +210,16 @@ export const SupportProcessStepButton: FC<{
         await takeErrand();
       }
 
+      // Concluding the decision is what the process waits for, and it may carry the process on its
+      // own, so the signal that follows is allowed to find the step already left.
+      if (action.completesDecision && draftDecision?.id) {
+        await completeSupportDecision(supportErrand.id!, municipalityId, draftDecision.id);
+      }
+
       if (action.needsSignal) {
-        await sendSupportProcessSignal(supportErrand.id!, municipalityId, awaitingSignal.name!);
+        await sendSupportProcessSignal(supportErrand.id!, municipalityId, awaitingSignal.name!).catch((error) => {
+          if (!action.completesDecision || !isSupportProcessSignalStale(error)) throw error;
+        });
       }
 
       const stepped = action.closesErrand
@@ -252,7 +287,7 @@ export const SupportProcessStepButton: FC<{
       color={action.color}
       rightIcon={action.icon}
       loading={running === action.key}
-      disabled={disabled || !canEdit || !!running || (action.needsSignal && !awaitingSignal?.name)}
+      disabled={disabled || !canEdit || !!running || missingDecision || (action.needsSignal && !awaitingSignal?.name)}
       onClick={action.takesErrand ? handleSubmit(() => start(action), onError) : () => start(action)}
       data-cy={`process-action-${action.key}`}
     >
@@ -262,5 +297,18 @@ export const SupportProcessStepButton: FC<{
 
   const startsAgain = stepAction?.takesErrand && RESUMED_ELSEWHERE.has(supportErrand.status as Status);
 
-  return stepAction && !startsAgain ? actionButton(stepAction) : null;
+  if (!stepAction || startsAgain) {
+    return null;
+  }
+
+  return (
+    <>
+      {actionButton(stepAction)}
+      {missingDecision ? (
+        <p className="text-small text-dark-secondary m-0" data-cy="process-action-needs-decision">
+          {t(`common:process.actions.${stepAction.key}.needs_decision`)}
+        </p>
+      ) : null}
+    </>
+  );
 };

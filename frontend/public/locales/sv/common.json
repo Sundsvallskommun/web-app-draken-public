@@ -118,7 +118,8 @@
     "starting": "Utredningen påbörjas",
     "section_not_built": "Den här delen av utredningen är inte byggd än.",
     "unsaved": "Osparade ändringar",
-    "saving": "Sparar"
+    "saving": "Sparar",
+    "step_passed": "Processen har gått vidare från utredningen. Uppgifterna går inte längre att ändra här."
   },
   "process": {
     "steps": {
@@ -173,7 +174,8 @@
         "confirm_text": "När du tar ärendet vidare till uppföljning innebär det att beslutet är fattat och expedierat.",
         "done": "Ärendet är taget till uppföljning.",
         "error": "Ärendet kunde inte tas till uppföljning.",
-        "confirm_yes": "Ja"
+        "confirm_yes": "Ja",
+        "needs_decision": "Registrera beslutet i beslutsfliken innan ärendet går vidare till uppföljning."
       },
       "close_errand": {
         "label": "Avsluta ärende",
@@ -217,6 +219,7 @@
     "saved": "Beslutet sparades",
     "save_error": "Något gick fel när beslutet skulle sparas",
     "empty_value": "—",
-    "unsaved": "Osparade ändringar"
+    "unsaved": "Osparade ändringar",
+    "step_passed": "Ärendet har inget beslut, och processen står inte i beslutssteget."
   }
 }

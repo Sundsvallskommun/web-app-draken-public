@@ -15,8 +15,10 @@ import { useConfigStore, useMetadataStore, useSupportStore, useUserStore } from 
 import {
   createSupportDecision,
   getSupportDecisions,
+  isSupportDecisionDraft,
   isSupportDecisionLocked,
   SUPPORT_DECISION_ROLE_KEYS,
+  updateSupportDecision,
 } from '@supportmanagement/services/support-decision-service';
 import dayjs from 'dayjs';
 import { Plus, Trash } from 'lucide-react';
@@ -25,6 +27,9 @@ import { useTranslation } from 'react-i18next';
 
 const outcomeLabel = (outcomes: DecisionOutcome[], name: string | undefined): string =>
   outcomes.find((outcome) => outcome.name === name)?.displayName || name || '';
+
+const termTexts = (decision: Decision | undefined): string[] =>
+  [...(decision?.terms ?? [])].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)).map((term) => term.text ?? '');
 
 const DecisionSummary: FC<{ decision: Decision; outcomes: DecisionOutcome[] }> = ({ decision, outcomes }) => {
   const { t } = useTranslation();
@@ -71,7 +76,11 @@ const DecisionSummary: FC<{ decision: Decision; outcomes: DecisionOutcome[] }> =
   );
 };
 
-export const SupportErrandDecisionTab: FC<{ setUnsaved: (unsaved: boolean) => void }> = ({ setUnsaved }) => {
+export const SupportErrandDecisionTab: FC<{
+  setUnsaved: (unsaved: boolean) => void;
+  setHasContent: (hasContent: boolean) => void;
+  writable: boolean;
+}> = ({ setUnsaved, setHasContent, writable }) => {
   const { t } = useTranslation();
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const supportErrand = useSupportStore((s) => s.supportErrand);
@@ -110,15 +119,41 @@ export const SupportErrandDecisionTab: FC<{ setUnsaved: (unsaved: boolean) => vo
     return () => {
       current = false;
     };
-  }, [supportErrand?.id, municipalityId]);
+  }, [supportErrand?.id, municipalityId, supportErrand?.process?.currentActivityId]);
 
-  // A decision is written once, with its own button, so anything filled in is still unsaved.
+  const decision = decisions[0];
+  const editable = writable && (!decision || isSupportDecisionDraft(decision));
+
+  // The draft is filled in again when the service has answered, and left alone in between.
+  useEffect(() => {
+    if (!decision) return;
+    setOutcome(decision.outcome ?? '');
+    setDecidedByRole(decision.decidedByRole || t(SUPPORT_DECISION_ROLE_KEYS[0]));
+    setLegalBasis(decision.legalBasis ?? '');
+    setDelegationReference(decision.delegationReference ?? '');
+    setJustification(decision.justification ?? '');
+    setTerms(termTexts(decision));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decision?.id, decision?.version]);
+
   const edited =
-    !decisions.length && (!!outcome || !!legalBasis || !!delegationReference || !!justification || terms.some(Boolean));
+    editable &&
+    JSON.stringify({ outcome, legalBasis, delegationReference, justification, terms: terms.filter(Boolean) }) !==
+      JSON.stringify({
+        outcome: decision?.outcome ?? '',
+        legalBasis: decision?.legalBasis ?? '',
+        delegationReference: decision?.delegationReference ?? '',
+        justification: decision?.justification ?? '',
+        terms: termTexts(decision),
+      });
 
   useEffect(() => {
     setUnsaved(edited);
   }, [edited, setUnsaved]);
+
+  useEffect(() => {
+    setHasContent(decisions.length > 0);
+  }, [decisions, setHasContent]);
 
   const setTerm = (index: number, value: string) =>
     setTerms((current) => current.map((term, position) => (position === index ? value : term)));
@@ -128,16 +163,24 @@ export const SupportErrandDecisionTab: FC<{ setUnsaved: (unsaved: boolean) => vo
   const save = () => {
     if (!supportErrand?.id || !outcome) return;
     setIsSaving(true);
-    createSupportDecision(supportErrand.id, municipalityId, {
+    const written = {
       outcome,
       decidedByRole,
       legalBasis: legalBasis || undefined,
       delegationReference: delegationReference || undefined,
       justification: justification || undefined,
       terms: terms.map((term) => term.trim()).filter(Boolean),
-    })
-      .then((decision) => {
-        setDecisions([decision]);
+    };
+
+    // The decision stays a draft until the errand leaves the decision step, so saving it again is
+    // an ordinary correction rather than a second decision.
+    const saving = decision?.id
+      ? updateSupportDecision(supportErrand.id, municipalityId, decision.id, written)
+      : createSupportDecision(supportErrand.id, municipalityId, written);
+
+    saving
+      .then((saved) => {
+        setDecisions([saved]);
         setIsSaving(false);
         toastMessage({
           position: 'bottom',
@@ -157,8 +200,6 @@ export const SupportErrandDecisionTab: FC<{ setUnsaved: (unsaved: boolean) => vo
       });
   };
 
-  const decision = decisions[0];
-
   return (
     <div className="pt-xl pb-16 px-40 flex flex-col gap-24">
       <h2 className="text-h2-md">{t('common:decision.heading')}</h2>
@@ -166,9 +207,15 @@ export const SupportErrandDecisionTab: FC<{ setUnsaved: (unsaved: boolean) => vo
       {isLoading ? <Spinner size={3} aria-label={t('common:decision.loading')} /> : null}
       {error ? <p>{t('common:decision.error')}</p> : null}
 
-      {!isLoading && !error && decision ? <DecisionSummary decision={decision} outcomes={outcomes} /> : null}
+      {!isLoading && !error && decision && !editable ? (
+        <DecisionSummary decision={decision} outcomes={outcomes} />
+      ) : null}
 
-      {!isLoading && !error && !decision ? (
+      {!isLoading && !error && !decision && !writable ? (
+        <p className="m-0">{t('common:decision.step_passed')}</p>
+      ) : null}
+
+      {!isLoading && !error && editable ? (
         <div className="flex flex-col gap-16 max-w-[48rem]">
           <FormControl id="decision-outcome" className="w-full" required>
             <FormLabel>{t('common:decision.outcome')}</FormLabel>
