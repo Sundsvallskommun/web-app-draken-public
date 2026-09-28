@@ -233,7 +233,7 @@ export const SupportErrandDecisionTab: FC<{
               disabled={!canEdit}
               data-cy="decision-outcome"
             >
-              <Select.Option value="">{t('common:decision.outcome_placeholder')}</Select.Option>
+              {outcome ? null : <Select.Option value="">{t('common:decision.outcome_placeholder')}</Select.Option>}
               {outcomes.map((option) => (
                 <Select.Option key={option.name} value={option.name}>
                   {option.displayName || option.name}
