@@ -18,6 +18,8 @@ interface SupportState {
   activeTabKey?: string;
   /** Tabs holding a resource of their own, written but not yet saved. Keyed by tab key. */
   unsavedTabs: Record<string, boolean>;
+  /** Tabs holding a resource worth reading, even when the process left no trace of its phase. */
+  tabsWithContent: Record<string, boolean>;
 }
 
 interface SupportActions {
@@ -29,6 +31,7 @@ interface SupportActions {
   setNotifications: (notifications: (SupportNotification | CaseDataNotification)[]) => void;
   setActiveTabKey: (activeTabKey: string) => void;
   setUnsavedTab: (key: string, unsaved: boolean) => void;
+  setTabHasContent: (key: string, hasContent: boolean) => void;
   reset: () => void;
 }
 
@@ -43,7 +46,11 @@ const initialState: SupportState = {
   notifications: [],
   activeTabKey: 'basics',
   unsavedTabs: {},
+  tabsWithContent: {},
 };
+
+const flagged = (flags: Record<string, boolean>, key: string, value: boolean): Record<string, boolean> | undefined =>
+  flags[key] === value ? undefined : { ...flags, [key]: value };
 
 export const useSupportStore = create<SupportStore>((set) => ({
   ...initialState,
@@ -57,8 +64,14 @@ export const useSupportStore = create<SupportStore>((set) => ({
   // The same state is handed back when nothing changed, so a tab reporting what the store already
   // knows does not wake its subscribers.
   setUnsavedTab: (key, unsaved) =>
-    set((state) =>
-      state.unsavedTabs[key] === unsaved ? state : { unsavedTabs: { ...state.unsavedTabs, [key]: unsaved } }
-    ),
+    set((state) => {
+      const unsavedTabs = flagged(state.unsavedTabs, key, unsaved);
+      return unsavedTabs ? { unsavedTabs } : state;
+    }),
+  setTabHasContent: (key, hasContent) =>
+    set((state) => {
+      const tabsWithContent = flagged(state.tabsWithContent, key, hasContent);
+      return tabsWithContent ? { tabsWithContent } : state;
+    }),
   reset: () => set(initialState),
 }));
