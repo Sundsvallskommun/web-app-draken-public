@@ -14,6 +14,11 @@ const CONCURRENT_TASKS = 'CONCURRENT_EXTERNAL_TASKS';
 const roleTheErrandLacks = (message: string): string | undefined =>
   message.match(/has no stakeholder with role '([^']+)'/)?.[1];
 
+const serviceThatRefused = (message: string): { service: string; status: string } | undefined => {
+  const match = message.match(/([\w-]+) error: \{status=(\d{3})/);
+  return match ? { service: match[1], status: match[2] } : undefined;
+};
+
 const senderOfSignal = (message: string): string | undefined => message.match(/sent by ([^\s]+)/)?.[1];
 
 const technicalText = (parts: (string | undefined)[]): string | undefined => {
@@ -30,6 +35,11 @@ export const supportProcessErrorMessage = (process: ErrandProcess | undefined): 
 
   if (role) {
     return { key: 'common:process.trouble.missing_stakeholder_role', values: { role }, detail };
+  }
+
+  const refused = serviceThatRefused(error.message ?? '');
+  if (refused) {
+    return { key: 'common:process.trouble.upstream_refused', values: refused, detail };
   }
 
   return { key: 'common:process.trouble.unknown', detail };

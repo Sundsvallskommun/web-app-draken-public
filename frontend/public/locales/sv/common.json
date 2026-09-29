@@ -198,7 +198,8 @@
     "trouble": {
       "missing_stakeholder_role": "Processen stannade: ärendet saknar en intressent med rollen {{role}}. Det behöver rättas av teamet som förvaltar processen.",
       "concurrent_tasks": "Två steg i processen kördes samtidigt och slog ut varandra. Felet sitter i processmodellen.",
-      "unknown": "Processen stannade på ett tekniskt fel."
+      "unknown": "Processen stannade på ett tekniskt fel.",
+      "upstream_refused": "Processen fastnade mot tjänsten {{service}}, som svarade {{status}}. Det behöver rättas av teamet som förvaltar processen."
     }
   },
   "decision": {
