@@ -1,6 +1,6 @@
 import { MetadataResponse } from '@common/data-contracts/supportmanagement/data-contracts';
 
-import { mockEnv } from '../../fixtures/mock-env';
+import { mockEnv } from '../../../src/tests/mock-env';
 
 export const mockCategories = [
     {
