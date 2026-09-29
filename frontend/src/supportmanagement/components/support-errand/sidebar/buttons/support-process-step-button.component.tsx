@@ -335,9 +335,12 @@ export const SupportProcessStepButton: FC<{
     </Button>
   );
 
-  const startsAgain = stepAction?.takesErrand && RESUMED_ELSEWHERE.has(supportErrand.status as Status);
+  const errandIsClosed = supportErrand.status === Status.SOLVED;
+  const nothingLeftToDo =
+    (stepAction?.takesErrand && RESUMED_ELSEWHERE.has(supportErrand.status as Status)) ||
+    (stepAction?.closesErrand && errandIsClosed);
 
-  if (!stepAction || startsAgain) {
+  if (!stepAction || nothingLeftToDo) {
     return null;
   }
 
