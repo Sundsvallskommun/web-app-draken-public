@@ -19,6 +19,7 @@ import {
   awaitedGateOfStep,
   getSupportErrandProcess,
   isSupportProcessCompleted,
+  isSupportProcessFailed,
   isSupportProcessSignalStale,
   sendSupportProcessSignal,
   SupportProcessStep,
@@ -116,6 +117,13 @@ const STEP_ACTIONS: Partial<Record<SupportProcessStepName, ProcessAction>> = {
     closesErrand: true,
     resolution: Resolution.CLOSED,
   },
+  [SupportProcessStep.CLOSING]: {
+    key: 'close_errand',
+    variant: 'primary',
+    needsSignal: true,
+    closesErrand: true,
+    resolution: Resolution.CLOSED,
+  },
 };
 
 export const SupportProcessStepButton: FC<{
@@ -132,6 +140,7 @@ export const SupportProcessStepButton: FC<{
   const setSupportErrand = useSupportStore((s) => s.setSupportErrand);
   const setActiveTabKey = useSupportStore((s) => s.setActiveTabKey);
   const unsavedTabs = useSupportStore((s) => s.unsavedTabs);
+  const decisionTabHoldsDecision = useSupportStore((s) => s.tabsWithContent['decision']);
   const municipalityId = useConfigStore((s) => s.municipalityId);
   const canEdit = useUserStore((s) => s.user.permissions?.canEditSupportManagement);
   const { handleSubmit, reset } = useFormContext();
@@ -150,13 +159,16 @@ export const SupportProcessStepButton: FC<{
     getSupportDecisions(errandId, municipalityId)
       .then(setDecisions)
       .catch(() => setDecisions(undefined));
-  }, [errandId, municipalityId, modified, stepAction?.requiresDecisionOutcome]);
+  }, [errandId, municipalityId, modified, decisionTabHoldsDecision, stepAction?.requiresDecisionOutcome]);
 
   if (!supportErrand?.id) {
     return null;
   }
 
-  const signalIsRequired = (action: ProcessAction): boolean => action.needsSignal && !action.completesDecision;
+  const processIsOver = isSupportProcessCompleted(process) || isSupportProcessFailed(process);
+
+  const signalIsRequired = (action: ProcessAction): boolean =>
+    action.needsSignal && !action.completesDecision && !processIsOver;
 
   const decisionOutcomeIsMissing = decisions !== undefined && !decisions.some((decision) => !!decision.outcome);
   const draftDecision = decisions?.find(isSupportDecisionDraft);
@@ -191,7 +203,7 @@ export const SupportProcessStepButton: FC<{
     errandId: string,
     action: ProcessAction
   ): Promise<SupportErrand | undefined> => {
-    if (action.needsSignal) {
+    if (action.needsSignal && !processIsOver) {
       const onClosure = await errandOnNextStep(errandId, municipalityId, SupportProcessStep.FOLLOW_UP);
       const closureProcess = getSupportErrandProcess(onClosure);
       const closureSignal = awaitedGateOfStep(closureProcess, SupportProcessStep.CLOSING);
