@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge, Icon, Label, ProgressStepper } from '@sk-web-gui/react';
+import { Badge, Icon, Label, ProgressStepper, Spinner } from '@sk-web-gui/react';
 import { useSupportStore } from '@stores/index';
 import { supportProcessErrorMessage } from '@supportmanagement/services/support-process-messages';
 import {
@@ -16,16 +16,28 @@ import { CircleAlert, CircleCheck } from 'lucide-react';
 import { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const ProcessStateIcon: FC<{ failed: boolean; completed: boolean }> = ({ failed, completed }) => {
+import { useSupportProcessPoller } from './use-support-process-poller';
+
+const ProcessStateIcon: FC<{ failed: boolean; completed: boolean; working: boolean }> = ({
+  failed,
+  completed,
+  working,
+}) => {
+  if (working) return <Spinner size={2} />;
   if (failed) return <Icon icon={<CircleAlert />} size="1.5rem" />;
   if (completed) return <Icon icon={<CircleCheck />} size="1.5rem" />;
   return <Badge rounded counter={1} color="vattjom" inverted />;
 };
 
 /** The activity the process reports, for a step the six-step row does not cover. */
-const CurrentActivity: FC<{ failed: boolean; completed: boolean; label: string }> = ({ failed, completed, label }) => (
+const CurrentActivity: FC<{ failed: boolean; completed: boolean; working: boolean; label: string }> = ({
+  failed,
+  completed,
+  working,
+  label,
+}) => (
   <>
-    <ProcessStateIcon failed={failed} completed={completed} />
+    <ProcessStateIcon failed={failed} completed={completed} working={working} />
     {label ? <span className="font-bold">{label}</span> : null}
   </>
 );
@@ -34,6 +46,7 @@ export const SupportProcessRow = () => {
   const { t } = useTranslation();
   const supportErrand = useSupportStore((s) => s.supportErrand);
   const process = getSupportErrandProcess(supportErrand);
+  const working = useSupportProcessPoller();
 
   if (!process) return null;
 
@@ -61,9 +74,15 @@ export const SupportProcessRow = () => {
           data-cy="process-stepper"
         />
       ) : (
-        <CurrentActivity failed={failed} completed={completed} label={supportProcessStepLabel(process)} />
+        <CurrentActivity
+          failed={failed}
+          completed={completed}
+          working={working}
+          label={supportProcessStepLabel(process)}
+        />
       )}
       <Label rounded color={completed ? 'gronsta' : 'tertiary'} inverted={!failed}>
+        {working ? <Spinner size={1} className="mr-8" aria-hidden="true" /> : null}
         {t(statusKey, { defaultValue: process.processStatus })}
       </Label>
       {failed && errorMessage ? (

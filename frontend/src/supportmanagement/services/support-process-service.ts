@@ -44,13 +44,16 @@ export const isSupportProcessFailed = (process: ErrandProcess | undefined): bool
 export const isSupportProcessCompleted = (process: ErrandProcess | undefined): boolean =>
   process?.processStatus === SupportProcessStatus.COMPLETED;
 
+export const isSupportProcessWorking = (process: ErrandProcess | undefined): boolean =>
+  process?.processStatus === SupportProcessStatus.RUNNING || process?.processStatus === SupportProcessStatus.RETRYING;
+
 /**
  * The step the process is at, named as the process model names it. A step the model has not named
  * falls back to the process itself rather than to the model's own identifier, which says nothing to
  * a handler.
  */
 export const supportProcessStepLabel = (process: ErrandProcess | undefined): string =>
-  process?.currentActivityName || process?.processKey || '';
+  process?.currentActivityId || process?.processKey || '';
 
 /**
  * The steps the AoT process runs, in the order the business describes them. The process model has
