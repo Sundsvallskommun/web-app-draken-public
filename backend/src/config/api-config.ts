@@ -88,6 +88,10 @@ export const APIS = [
     name: 'company',
     version: '1.0',
   },
+  {
+    name: 'licensed-business',
+    version: '1.0',
+  },
 ];
 
 const SUPPORT_MANAGEMENT_API_TARGETS = ['stable', 'sprint', 'alktsprint'] as const;

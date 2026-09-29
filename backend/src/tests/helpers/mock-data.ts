@@ -79,6 +79,13 @@ export const mockFileContent = 'Hej';
 export const mockPropertyDesignation = 'SUNDSVALL BÖLE 1:1';
 export const mockSecondaryPropertyDesignation = 'SUNDSVALL HAGA 2:3';
 
+// LicensedBusiness (serveringsställen) identifiers, they do not identify any real premises
+export const mockLicensedBusinessAddressId = '9ce333ec-a473-438b-8406-a71e957dc107';
+export const mockRestaurantNumberId = '7b1d2c3e-4f50-4a61-8b72-9c83d4e5f601';
+export const mockRestaurantNumber = '22810001';
+export const mockAssignmentId = '3f2e1d0c-b9a8-4765-8432-10fedcba9876';
+export const mockPremisesName = 'Testkrogen';
+
 // The values below are seeded as env vars by src/tests/setup.ts before any module loads
 // (@/config snapshots process.env at import time), and are imported by the tests that
 // assert against them, so the two cannot drift.
