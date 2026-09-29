@@ -10,16 +10,24 @@ export interface SupportProcessMessage {
 }
 
 const CONCURRENT_TASKS = 'CONCURRENT_EXTERNAL_TASKS';
+const MISSING_ROLE = /has no stakeholder with role '([^']+)'/;
+const SIGNAL_SENDER = /sent by (\S+)/;
+const HTTP_STATUS = /^\d{3}$/;
+const REFUSAL = ' error: {status=';
 
-const roleTheErrandLacks = (message: string): string | undefined =>
-  message.match(/has no stakeholder with role '([^']+)'/)?.[1];
+const roleTheErrandLacks = (message: string): string | undefined => MISSING_ROLE.exec(message)?.[1];
 
 const serviceThatRefused = (message: string): { service: string; status: string } | undefined => {
-  const match = message.match(/([\w-]+) error: \{status=(\d{3})/);
-  return match ? { service: match[1], status: match[2] } : undefined;
+  const [refusedBy, refusal] = message.split(REFUSAL);
+  if (!refusal) return undefined;
+
+  const service = refusedBy.trim().split(' ').pop();
+  const status = refusal.slice(0, 3);
+
+  return service && HTTP_STATUS.test(status) ? { service, status } : undefined;
 };
 
-const senderOfSignal = (message: string): string | undefined => message.match(/sent by ([^\s]+)/)?.[1];
+const senderOfSignal = (message: string): string | undefined => SIGNAL_SENDER.exec(message)?.[1];
 
 const technicalText = (parts: (string | undefined)[]): string | undefined => {
   const detail = parts.filter(Boolean).join(': ');
