@@ -155,9 +155,7 @@ export const SupportTabsWrapper: FC<{
   const process = getSupportErrandProcess(supportErrand);
 
   const awaitsStep = (step: SupportProcessStepName): boolean =>
-    appConfig.features.useProcess &&
-    Boolean(process) &&
-    !hasVisitedSupportProcessStep(step, process, processActivities);
+    appConfig.features.useProcess && !hasVisitedSupportProcessStep(step, process, processActivities);
 
   const tabHoldsSomethingToRead = (key: string): boolean => !!tabsWithContent[key];
 
@@ -167,9 +165,9 @@ export const SupportTabsWrapper: FC<{
   const standsInStep = (step: SupportProcessStepName): boolean =>
     appConfig.features.useProcess && Boolean(process) && supportProcessStepName(process) === step;
 
-  const noProcessCloses = (): boolean => !appConfig.features.useProcess || !process;
+  const nothingCloses = (): boolean => !appConfig.features.useProcess;
 
-  const writableInStep = (step: SupportProcessStepName): boolean => noProcessCloses() || standsInStep(step);
+  const writableInStep = (step: SupportProcessStepName): boolean => nothingCloses() || standsInStep(step);
 
   const tabs: {
     key: string;
