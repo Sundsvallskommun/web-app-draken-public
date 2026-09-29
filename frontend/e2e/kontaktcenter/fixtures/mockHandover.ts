@@ -1,11 +1,18 @@
 // Mock data for the supportmanagement -> supportmanagement handover flow (KC -> another namespace).
 
-// The backend delivers the MEX forward as a namespace config like any other target.
+// The backend delivers the casedata forwards (MEX, PT) as namespace configs like any other target.
 export const mockMexTarget = {
   namespace: 'SBK_MEX',
   municipalityId: '2281',
   displayName: 'Mark och exploatering (MEX)',
   shortCode: 'MEX',
+};
+
+export const mockParkingPermitTarget = {
+  namespace: 'SBK_PARKING_PERMIT',
+  municipalityId: '2281',
+  displayName: 'Färdtjänst (PT)',
+  shortCode: 'PT',
 };
 
 export const mockNamespaceConfigs = [

@@ -18,7 +18,12 @@ import { User } from '@/interfaces/users.interface';
 import authMiddleware from '@/middlewares/auth.middleware';
 import { validationMiddleware } from '@/middlewares/validation.middleware';
 import ApiService from '@/services/api.service';
-import { getAllowedHandoverTargets, isAllowedHandoverTarget, MEX_HANDOVER_TARGET } from '@/services/handover-targets.service';
+import {
+  getAllowedHandoverTargets,
+  getCasedataForwardTarget,
+  isAllowedHandoverTarget,
+  isCasedataForwardTarget,
+} from '@/services/handover-targets.service';
 import { logger } from '@/utils/logger';
 import { apiURL } from '@/utils/util';
 
@@ -78,17 +83,18 @@ export class SupportHandoverController {
     }
     // SupportManagement NamespaceConfigResource lists configs at the service root with municipalityId
     // as a query parameter: GET /namespace-configs?municipalityId={id} (not a path segment).
-    const needsNamespaceConfigs = allowedTargets.some(target => target !== MEX_HANDOVER_TARGET);
+    // Casedata forward targets (MEX, PT) have no supportmanagement namespace config, so theirs is built here.
+    const needsNamespaceConfigs = allowedTargets.some(target => !isCasedataForwardTarget(target));
     const url = `${this.SERVICE}/namespace-configs?municipalityId=${municipalityId}`;
     const configs = needsNamespaceConfigs ? ((await this.apiService.get<NamespaceConfig[]>({ url }, req.user)).data ?? []) : [];
-    const mexConfig: NamespaceConfig = {
-      namespace: MEX_HANDOVER_TARGET,
-      displayName: 'Mark och exploatering (MEX)',
-      shortCode: 'MEX',
-      municipalityId,
+    const toNamespaceConfig = (target: string): NamespaceConfig | undefined => {
+      const forwardTarget = getCasedataForwardTarget(target);
+      if (forwardTarget) {
+        const { namespace, displayName, shortCode } = forwardTarget;
+        return { namespace, displayName, shortCode, municipalityId };
+      }
+      return configs.find(config => config.namespace === target);
     };
-    const toNamespaceConfig = (target: string): NamespaceConfig | undefined =>
-      target === MEX_HANDOVER_TARGET ? mexConfig : configs.find(config => config.namespace === target);
     const targets = allowedTargets
       .filter(target => target !== this.namespace)
       .map(toNamespaceConfig)
@@ -172,9 +178,9 @@ export class SupportHandoverController {
     return response.status(201).send(result);
   }
 
-  /** MEX is allow-listed like the rest but is a casedata forward, never a handover. */
+  /** Casedata namespaces (MEX, PT) are allow-listed like the rest but are a casedata forward, never a handover. */
   private isSupportHandoverTarget(namespace?: string): boolean {
-    return namespace !== MEX_HANDOVER_TARGET && isAllowedHandoverTarget(namespace);
+    return !isCasedataForwardTarget(namespace) && isAllowedHandoverTarget(namespace);
   }
 
   private rejectTarget(namespace: string | undefined, response: any) {

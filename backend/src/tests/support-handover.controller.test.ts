@@ -6,6 +6,7 @@ import {
   mockDepartment,
   mockHandoverNamespace,
   mockMunicipalityId,
+  mockParkingPermitDepartment,
   mockSecondaryHandoverNamespace,
   mockSupportErrandId,
   mockSupportNamespace,
@@ -75,14 +76,30 @@ describe('SupportHandoverController', () => {
       expect((res.body as NamespaceConfig[])[1].municipalityId).toBe(mockMunicipalityId);
     });
 
-    it('skips the upstream call when MEX is the only target', async () => {
-      process.env.HANDOVER_TARGETS = mockDepartment;
+    it('offers PT with its own display name although upstream has no namespace config for it', async () => {
+      process.env.HANDOVER_TARGETS = `${mockDepartment},${mockParkingPermitDepartment},${mockHandoverNamespace}`;
+      const { controller } = makeController();
+      const res = mockRes();
+
+      await controller.fetchNamespaceConfigs(mockReq(), mockMunicipalityId, res);
+
+      expect(namespaces(res.body)).toEqual([mockDepartment, mockParkingPermitDepartment, mockHandoverNamespace]);
+      expect((res.body as NamespaceConfig[])[1]).toEqual({
+        namespace: mockParkingPermitDepartment,
+        displayName: 'Färdtjänst (PT)',
+        shortCode: 'PT',
+        municipalityId: mockMunicipalityId,
+      });
+    });
+
+    it('skips the upstream call when the casedata namespaces are the only targets', async () => {
+      process.env.HANDOVER_TARGETS = `${mockDepartment},${mockParkingPermitDepartment}`;
       const { controller, api } = makeController();
       const res = mockRes();
 
       await controller.fetchNamespaceConfigs(mockReq(), mockMunicipalityId, res);
 
-      expect(namespaces(res.body)).toEqual([mockDepartment]);
+      expect(namespaces(res.body)).toEqual([mockDepartment, mockParkingPermitDepartment]);
       expect(api.get).not.toHaveBeenCalled();
     });
 
@@ -114,8 +131,9 @@ describe('SupportHandoverController', () => {
     it.each([
       ['a target outside the allow-list', mockSecondaryHandoverNamespace],
       ['MEX, which is a casedata forward', mockDepartment],
+      ['PT, which is a casedata forward', mockParkingPermitDepartment],
     ])('rejects %s with 403 and makes no API call', async (_, targetNamespace) => {
-      process.env.HANDOVER_TARGETS = `${mockHandoverNamespace},${mockDepartment}`;
+      process.env.HANDOVER_TARGETS = `${mockHandoverNamespace},${mockDepartment},${mockParkingPermitDepartment}`;
       const { controller, api } = makeController();
       const res = mockRes();
 

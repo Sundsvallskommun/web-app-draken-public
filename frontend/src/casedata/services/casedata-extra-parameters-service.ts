@@ -17,6 +17,7 @@ import { mexSellLandToTheMunicipality_UppgiftFieldTemplate } from '@casedata/com
 import { mexSquarePlace_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-square-place';
 import { mexTerminationOfLease_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/mex-templates/mex-termination-of-lease';
 import { changeApplication_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-change-application';
+import { paratransitFromKs_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-from-ks';
 import { nationalEservice_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-national-eservice';
 import { notification_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification';
 import { notificationBusCard_UppgiftFieldTemplate } from '@casedata/components/errand/extraparameter-templates/paratransit-templates/paratransit-notification-bus-card';
@@ -167,6 +168,7 @@ const template: ExtraParametersObject = {
   PARATRANSIT_NOTIFICATION_CHANGE: notificationChange_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_REASSESSMENT: notificationReassessment_UppgiftFieldTemplate,
   PARATRANSIT_NOTIFICATION_BUS_CARD: notificationBusCard_UppgiftFieldTemplate,
+  PARATRANSIT_FROM_KS: paratransitFromKs_UppgiftFieldTemplate,
 
   ANMALAN_ATTEFALL: [],
   MEX_LEASE_REQUEST: mexLeaseRequest_UppgiftFieldTemplate,
