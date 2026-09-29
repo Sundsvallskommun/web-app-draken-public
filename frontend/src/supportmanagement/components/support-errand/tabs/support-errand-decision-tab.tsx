@@ -17,6 +17,9 @@ import {
   getSupportDecisions,
   isSupportDecisionDraft,
   isSupportDecisionLocked,
+  outcomeForTerms,
+  outcomeWithoutConditions,
+  selectableSupportDecisionOutcomes,
   SUPPORT_DECISION_ROLE_KEYS,
   updateSupportDecision,
 } from '@supportmanagement/services/support-decision-service';
@@ -125,7 +128,7 @@ export const SupportErrandDecisionTab: FC<{
   const editable = writable && (!decision || isSupportDecisionDraft(decision));
 
   const fillFormFrom = (draft: Decision) => {
-    setOutcome(draft.outcome ?? '');
+    setOutcome(outcomeWithoutConditions(draft.outcome));
     setDecidedByRole(draft.decidedByRole || t(SUPPORT_DECISION_ROLE_KEYS[0]));
     setLegalBasis(draft.legalBasis ?? '');
     setDelegationReference(draft.delegationReference ?? '');
@@ -147,7 +150,7 @@ export const SupportErrandDecisionTab: FC<{
   });
 
   const formAsSaved = () => ({
-    outcome: decision?.outcome ?? '',
+    outcome: outcomeWithoutConditions(decision?.outcome),
     legalBasis: decision?.legalBasis ?? '',
     delegationReference: decision?.delegationReference ?? '',
     justification: decision?.justification ?? '',
@@ -172,13 +175,14 @@ export const SupportErrandDecisionTab: FC<{
   const save = () => {
     if (!supportErrand?.id || !outcome) return;
     setIsSaving(true);
+    const writtenTerms = terms.map((term) => term.trim()).filter(Boolean);
     const written = {
-      outcome,
+      outcome: outcomeForTerms(outcome, writtenTerms, outcomes),
       decidedByRole,
       legalBasis: legalBasis || undefined,
       delegationReference: delegationReference || undefined,
       justification: justification || undefined,
-      terms: terms.map((term) => term.trim()).filter(Boolean),
+      terms: writtenTerms,
     };
 
     const saving = decision?.id
@@ -233,8 +237,10 @@ export const SupportErrandDecisionTab: FC<{
               disabled={!canEdit}
               data-cy="decision-outcome"
             >
-              {outcome ? null : <Select.Option value="">{t('common:decision.outcome_placeholder')}</Select.Option>}
-              {outcomes.map((option) => (
+              <Select.Option value="" disabled>
+                {t('common:decision.outcome_placeholder')}
+              </Select.Option>
+              {selectableSupportDecisionOutcomes(outcomes).map((option) => (
                 <Select.Option key={option.name} value={option.name}>
                   {option.displayName || option.name}
                 </Select.Option>
