@@ -167,7 +167,7 @@ export const SupportTabsWrapper: FC<{
 
   const nothingCloses = (): boolean => !appConfig.features.useProcess;
 
-  const writableInStep = (step: SupportProcessStepName): boolean => nothingCloses() || standsInStep(step);
+  const writableInSteps = (...steps: SupportProcessStepName[]): boolean => nothingCloses() || steps.some(standsInStep);
 
   const tabs: {
     key: string;
@@ -230,7 +230,7 @@ export const SupportTabsWrapper: FC<{
             setUnsaved={setUnsavedInvestigation}
             setHasContent={setInvestigationContent}
             inStep={standsInStep(SupportProcessStep.INVESTIGATION)}
-            writable={writableInStep(SupportProcessStep.INVESTIGATION)}
+            writable={writableInSteps(SupportProcessStep.INVESTIGATION, SupportProcessStep.DECISION)}
           />
         ),
         disabled: tabIsClosed(SupportProcessStep.INVESTIGATION, 'investigation'),
@@ -243,7 +243,7 @@ export const SupportTabsWrapper: FC<{
           <SupportErrandDecisionTab
             setUnsaved={setUnsavedDecision}
             setHasContent={setDecisionContent}
-            writable={writableInStep(SupportProcessStep.DECISION)}
+            writable={writableInSteps(SupportProcessStep.DECISION)}
           />
         ),
         disabled: tabIsClosed(SupportProcessStep.DECISION, 'decision'),
