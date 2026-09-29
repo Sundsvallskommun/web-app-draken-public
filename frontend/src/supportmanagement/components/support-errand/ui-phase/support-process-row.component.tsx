@@ -2,11 +2,11 @@
 
 import { Badge, Icon, Label, ProgressStepper } from '@sk-web-gui/react';
 import { useSupportStore } from '@stores/index';
+import { supportProcessErrorMessage } from '@supportmanagement/services/support-process-messages';
 import {
   getSupportErrandProcess,
   isSupportProcessCompleted,
   isSupportProcessFailed,
-  supportProcessErrorText,
   supportProcessStatusKey,
   supportProcessStepIndex,
   supportProcessStepKeys,
@@ -40,7 +40,7 @@ export const SupportProcessRow = () => {
   const failed = isSupportProcessFailed(process);
   const completed = isSupportProcessCompleted(process);
   const stepIndex = supportProcessStepIndex(process);
-  const errorText = supportProcessErrorText(process);
+  const errorMessage = supportProcessErrorMessage(process);
   const statusKey = supportProcessStatusKey(process.processStatus);
   const steps = supportProcessStepKeys().map((key) => t(key));
   // A step counts as done when it comes before the current one, so a finished process is one step
@@ -66,9 +66,9 @@ export const SupportProcessRow = () => {
       <Label rounded color={completed ? 'gronsta' : 'tertiary'} inverted={!failed}>
         {t(statusKey, { defaultValue: process.processStatus })}
       </Label>
-      {failed && errorText ? (
-        <span className="text-small text-dark-secondary" data-cy="process-error">
-          {errorText}
+      {failed && errorMessage ? (
+        <span className="text-small text-dark-secondary" title={errorMessage.detail} data-cy="process-error">
+          {t(errorMessage.key, errorMessage.values)}
         </span>
       ) : null}
     </div>

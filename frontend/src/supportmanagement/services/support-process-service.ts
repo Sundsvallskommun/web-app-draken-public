@@ -130,11 +130,6 @@ export const supportProcessStepIndex = (process: ErrandProcess | undefined): num
 export const supportProcessStepName = (process: ErrandProcess | undefined): SupportProcessStepName | undefined =>
   SUPPORT_PROCESS_STEPS[supportProcessStepIndex(process)]?.name;
 
-export const supportProcessErrorText = (process: ErrandProcess | undefined): string => {
-  const parts = [process?.error?.code, process?.error?.message].filter(Boolean);
-  return parts.join(': ');
-};
-
 export const getSupportProcessActivities = (errandId: string, municipalityId: string): Promise<ProcessActivity[]> =>
   apiService
     .get<PageProcessActivity>(`supportprocess/${municipalityId}/${errandId}/activities`)
@@ -143,6 +138,9 @@ export const getSupportProcessActivities = (errandId: string, municipalityId: st
       console.error('Something went wrong when fetching process activities');
       throw e;
     });
+
+export const supportProcessStepKeyOfGate = (gate: string | undefined): string | undefined =>
+  SUPPORT_PROCESS_STEPS.find((candidate) => candidate.gate === gate)?.translationKey;
 
 const gateOfSupportProcessStep = (step: SupportProcessStepName): string | undefined =>
   SUPPORT_PROCESS_STEPS.find((candidate) => candidate.name === step)?.gate;

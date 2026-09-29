@@ -142,7 +142,11 @@
       "heading": "Processlogg",
       "loading": "Hämtar processloggen",
       "error": "Processloggen kunde inte hämtas.",
-      "empty": "Processen har inte loggat något än."
+      "empty": "Processen har inte loggat något än.",
+      "step_taken_by": "{{step}} markerades som klar av {{by}}",
+      "step_taken": "{{step}} markerades som klar",
+      "stepped_by": "Ärendet stegades vidare av {{by}}",
+      "reported": "Processen rapporterade {{activity}}"
     },
     "actions": {
       "confirm_no": "Nej",
@@ -190,6 +194,11 @@
         "go_to_decision": "Till beslutsfliken",
         "cancel": "Avbryt"
       }
+    },
+    "trouble": {
+      "missing_stakeholder_role": "Processen stannade: ärendet saknar en intressent med rollen {{role}}. Det behöver rättas av teamet som förvaltar processen.",
+      "concurrent_tasks": "Två steg i processen kördes samtidigt och slog ut varandra. Felet sitter i processmodellen.",
+      "unknown": "Processen stannade på ett tekniskt fel."
     }
   },
   "decision": {
