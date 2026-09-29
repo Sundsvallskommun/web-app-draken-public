@@ -160,8 +160,16 @@ export const hasVisitedSupportProcessStep = (
  * What the process waits for from the handler right now. The names come from the process model and
  * are relayed as they are, so a gate added to the model shows up here without a change in Draken.
  */
-export const supportProcessAwaitingSignals = (process: ErrandProcess | undefined): ProcessSignal[] =>
+const supportProcessAwaitingSignals = (process: ErrandProcess | undefined): ProcessSignal[] =>
   process?.awaitingSignals ?? [];
+
+export const awaitedGateOfStep = (
+  process: ErrandProcess | undefined,
+  step: SupportProcessStepName | undefined
+): ProcessSignal | undefined => {
+  const gate = step && gateOfSupportProcessStep(step);
+  return supportProcessAwaitingSignals(process).find((signal) => signal.name === gate);
+};
 
 export const sendSupportProcessSignal = (errandId: string, municipalityId: string, signal: string): Promise<void> =>
   apiService

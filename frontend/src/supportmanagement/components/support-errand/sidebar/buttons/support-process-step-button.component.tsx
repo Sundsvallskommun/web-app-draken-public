@@ -16,11 +16,11 @@ import {
   SupportErrand,
 } from '@supportmanagement/services/support-errand-service';
 import {
+  awaitedGateOfStep,
   getSupportErrandProcess,
   isSupportProcessCompleted,
   isSupportProcessSignalStale,
   sendSupportProcessSignal,
-  supportProcessAwaitingSignals,
   SupportProcessStep,
   SupportProcessStepName,
   supportProcessStepName,
@@ -141,7 +141,7 @@ export const SupportProcessStepButton: FC<{
   const process = getSupportErrandProcess(supportErrand);
   const step = supportProcessStepName(process);
   const stepAction = step ? STEP_ACTIONS[step] : undefined;
-  const awaitingSignal = supportProcessAwaitingSignals(process)[0];
+  const awaitingSignal = awaitedGateOfStep(process, step);
   const errandId = supportErrand?.id;
   const modified = supportErrand?.modified;
 
@@ -194,7 +194,7 @@ export const SupportProcessStepButton: FC<{
     if (action.needsSignal) {
       const onClosure = await errandOnNextStep(errandId, municipalityId, SupportProcessStep.FOLLOW_UP);
       const closureProcess = getSupportErrandProcess(onClosure);
-      const closureSignal = supportProcessAwaitingSignals(closureProcess)[0];
+      const closureSignal = awaitedGateOfStep(closureProcess, SupportProcessStep.CLOSING);
 
       if (closureSignal?.name) {
         await sendSupportProcessSignal(errandId, municipalityId, closureSignal.name);
